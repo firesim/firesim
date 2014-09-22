@@ -32,6 +32,7 @@ class DaisyWrapper(c: => Module, val datawidth: Int = 32) extends Module {
   }
 
   // Connect IOs
+  io.stepsIn.ready := !stepCounter.orR
   io.targetIO <> target.io 
 }
 
