@@ -20,7 +20,7 @@ class DaisyWrapper[+T <: Module](c: => T, val datawidth: Int = 32) extends Modul
   val io = new DaisyWrapperIO(target.io, datawidth)
 
   // Add step counters for simulation run or stall
-  val stepCounter = Reg(UInt())
+  val stepCounter = Reg(init=UInt(0))
   val fire = stepCounter.orR
   val fireDelay = Reg(next=fire)
 
