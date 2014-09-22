@@ -49,8 +49,6 @@ object DaisyBackend extends Backend {
         firePins(m) = addPin(m, Bool(INPUT), "fire")
         regsIns(m) = addPin(m, Valid(UInt(width=daisywidth)).flip, "regs_in")
         regsOuts(m) = addPin(m, Decoupled(UInt(width=daisywidth)), "regs_out")
-        // cntrIns(m) = addPin(m, Valid(INPUT, 1), "cntr_in")
-        // cntrOuts(m) = addPin(m, Decoupled(UInt()), "cntr_out") 
       } 
     } 
   }
