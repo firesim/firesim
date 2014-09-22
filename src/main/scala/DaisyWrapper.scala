@@ -19,7 +19,7 @@ object DaisyWrapper {
   }
 }
 
-class DaisyWrapper(c: => Module, val datawidth: Int = 32) extends Module {
+class DaisyWrapper[T :< Module](c: => T, val datawidth: Int = 32) extends Module {
   val target = Module(c)
   val io = new DaisyWrapperIO(target.io, datawidth)
 
