@@ -1,0 +1,6 @@
+[submodule "chisel"]
+	path = chisel
+	url = https://github.com/ucb-bar/chisel.git
+[submodule "tutorial"]
+	path = tutorial
+	url = https://github.com/ucb-bar/chisel-tutorial.git
