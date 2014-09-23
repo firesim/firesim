@@ -27,26 +27,15 @@ object DaisyBackend {
     Driver.backend.transforms += addSnapshotChains
   } 
 
-  def addPin[T <: Data](m: Module, pin: T, name: String) = {
-    for ((n, io) <- pin.flatten) {
-      io.component = m
-      io.isIo = true
-    }
-    if (name != "")
-      pin nameIt (name, true)
-    m.io.asInstanceOf[Bundle] += pin
-    pin
-  }
-
   def addDaisyPins(c: Module) {
     ChiselError.info("[DaisyBackend] add daisy pins")
     for (m <- Driver.sortedComps) {
       if (m.name == top.name) {
         firePins(m) = top.stepCounter.orR
       } else {
-        firePins(m) = addPin(m, Bool(INPUT), "fire")
-        regsIns(m) = addPin(m, Valid(UInt(width=daisywidth)).flip, "regs_in")
-        regsOuts(m) = addPin(m, Decoupled(UInt(width=daisywidth)), "regs_out")
+        firePins(m) = m.addPin(Bool(INPUT), "fire")
+        regsIns(m) = m.addPin(Valid(UInt(width=daisywidth)).flip, "regs_in")
+        regsOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "regs_out")
       } 
     } 
   }
@@ -119,7 +108,7 @@ object DaisyBackend {
           }
         } else {
           val datawidth = (elems foldLeft 0)(_ + _.needWidth())
-          val chain = Module(new RegChain(datawidth), m)
+          val chain = m.addModule(new RegChain(datawidth))
           chains += chain
           chain.io.dataIn := UInt(Concatenate(elems))
           chain.io.stall  := !firePins(m) 
