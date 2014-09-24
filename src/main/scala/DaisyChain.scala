@@ -2,38 +2,38 @@ package faee
 
 import Chisel._
 
-class RegChainIO(datawidth: Int, daisywidth: Int = 1) extends Bundle {
+class StateChainIO(datawidth: Int, daisywidth: Int) extends Bundle {
   val stall = Bool(INPUT)
-  val dataIn = UInt(INPUT, datawidth)
-  val regsIn = Valid(UInt(INPUT, daisywidth)).flip
-  val regsOut = Decoupled(UInt(INPUT, daisywidth))
+  val data = UInt(INPUT, datawidth)
+  val in = Valid(UInt(INPUT, daisywidth)).flip
+  val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
-class RegChain(val datawidth: Int, daisywidth: Int = 1) extends Module {
-  val io = new RegChainIO(datawidth, daisywidth)
+class StateChain(val datawidth: Int, daisywidth: Int = 1) extends Module {
+  val io = new StateChainIO(datawidth, daisywidth)
   val regs = Vec.fill(datawidth) { Reg(UInt(width=daisywidth)) }
   val copied = Reg(next=io.stall)
   val counter = Reg(UInt(width=log2Up(datawidth)))
   val copyCond = io.stall && !copied
-  val readCond = io.stall && copied && io.regsOut.fire()
+  val readCond = io.stall && copied && io.out.fire()
 
   // Connect daisy chains
-  io.regsOut.bits := regs(0)
-  io.regsOut.valid := !counter.orR
+  io.out.bits := regs(0)
+  io.out.valid := !counter.orR
   for (i <- 0 until datawidth) {
     when(copyCond) {
-      regs(i) := io.dataIn(i)
+      regs(i) := io.data(i)
     }
     when(readCond) {
       if (i < datawidth - 1)
         regs(i) := regs(i+1)
       else
-        regs(i) := io.regsIn.bits
+        regs(i) := io.in.bits
     }
   }
 
   // Counter logic
-  when (io.stall && io.regsOut.fire() && !io.regsIn.fire()) {
+  when(io.stall && io.out.fire() && !io.in.fire()) {
     counter := counter - UInt(1)
   }.elsewhen(!io.stall) {
     counter := UInt(datawidth)

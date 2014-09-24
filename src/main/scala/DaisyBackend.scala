@@ -5,10 +5,10 @@ import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import scala.collection.mutable.{Queue => ScalaQueue}
 
 object DaisyBackend { 
-  val chains = HashSet[Module]()
   val firePins = HashMap[Module, Bool]()
-  val regsIns = HashMap[Module, ValidIO[UInt]]()
-  val regsOuts = HashMap[Module, DecoupledIO[UInt]]()
+  val states = HashMap[Module, ArrayBuffer[Node]]()
+  val stateIns = HashMap[Module, ValidIO[UInt]]()
+  val stateOuts = HashMap[Module, DecoupledIO[UInt]]()
   val sramIns = HashMap[Module, ValidIO[UInt]]()
   val sramOuts = HashMap[Module, DecoupledIO[UInt]]()
   val cntrIns = HashMap[Module, ValidIO[UInt]]()
@@ -32,16 +32,18 @@ object DaisyBackend {
     for (m <- Driver.sortedComps) {
       if (m.name == top.name) {
         firePins(m) = top.stepCounter.orR
+        stateOuts(m) = top.io.stateOut
       } else {
         firePins(m) = m.addPin(Bool(INPUT), "fire")
-        regsIns(m) = m.addPin(Valid(UInt(width=daisywidth)).flip, "regs_in")
-        regsOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "regs_out")
+        stateIns(m) = m.addPin(Valid(UInt(width=daisywidth)).flip, "state_in")
+        stateOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "state_out")
       } 
     } 
   }
 
   def addIOBuffers(c: Module) {
     ChiselError.info("[DaisyBackend] add io buffers")
+    states(top) = ArrayBuffer[Node]()
     for ((n, pin) <- top.io.targetIO.flatten) {
       val buffer = Reg(UInt())
       buffer.comp.setName(pin.name + "_buf")
@@ -55,6 +57,8 @@ object DaisyBackend {
         }
         for (consumer <- pin.consumers) 
           consumer.inputs(0) = buffer
+        // inputs are the state of the design
+        states(top) += buffer
       }
       else if (pin.dir == OUTPUT) {
         // build ioMap for testers
@@ -71,10 +75,14 @@ object DaisyBackend {
   def connectFireSignals(c: Module) {
     ChiselError.info("[DaisyBackend] connect fire signals")
     for (m <- Driver.sortedComps ; if m.name != top.name) {
+      states(m) = ArrayBuffer[Node]()
       firePins(m) := firePins(m.parent)
       m bfs { _ match {
-        case reg: Reg =>
+        case reg: Reg => {
           reg.inputs(0) = Multiplex(firePins(m), reg.inputs(0), reg)
+          // Regs are the state of the design
+          states(m) += reg
+        }
         case mem: Mem[_] => {
           for (write <- mem.writeAccesses) {
             write.inputs(1) = write.cond.asInstanceOf[Bool] && firePins(m) 
@@ -87,47 +95,55 @@ object DaisyBackend {
 
   def addSnapshotChains(c: Module) {
     ChiselError.info("[DaisyBackend] add snapshot chains")
+    def insertStateChain(m: Module) = {
+      val datawidth = (states(m) foldLeft 0)(_ + _.needWidth())
+      val chain = m.addModule(new StateChain(datawidth))
+      chain.io.data := UInt(Concatenate(states(m)))
+      chain.io.stall := !firePins(m)
+      chain.io.out <> stateOuts(m)
+      if (m.children.size > 1) {
+        chain.io.in.bits := stateOuts(m.children.head).bits
+        chain.io.in.valid := stateOuts(m.children.head).valid
+        stateOuts(m.children.head).ready := stateOuts(m).ready
+      } else {
+        chain.io.in <> stateIns(m)
+      }
+      chain
+    }
+
     for (m <- Driver.sortedComps) { 
       if (m.name == top.name) {
-        top.io.regsOut <> regsOuts(top.target)
-        regsIns(top.target).bits := UInt(0)
-        regsIns(top.target).valid := Bool(false)
+        if (states(m).isEmpty) {
+          stateOuts(m) <> stateOuts(top.target)
+        } else {
+          insertStateChain(m)
+        }
+        stateIns(top.target).bits := UInt(0)
+        stateIns(top.target).valid := Bool(false)
       } else {
-        val elems = ArrayBuffer[Node]()
-        m bfs { _ match {
-          case reg: Reg => elems += reg
-          case _ =>
-        } }
-        if (elems.isEmpty) {
+        if (states(m).isEmpty) {
           if (m.children.isEmpty) {
-            regsOuts(m).bits := regsIns(m).bits
-            regsOuts(m).valid := regsIns(m).valid
+            stateOuts(m).bits := stateIns(m).bits
+            stateOuts(m).valid := stateIns(m).valid
           } else {
-            regsOuts(m) <> regsOuts(m.children.head)
-            regsIns(m.children.last) <> regsIns(m)
+            stateOuts(m) <> stateOuts(m.children.head)
+            stateIns(m.children.last).bits := stateIns(m).bits
+            stateIns(m.children.last).valid := stateIns(m).valid
           }
         } else {
-          val datawidth = (elems foldLeft 0)(_ + _.needWidth())
-          val chain = m.addModule(new RegChain(datawidth))
-          chains += chain
-          chain.io.dataIn := UInt(Concatenate(elems))
-          chain.io.stall  := !firePins(m) 
-          regsOuts(m) <> chain.io.regsOut
+          insertStateChain(m)
           if (m.children.size > 1) {
-            chain.io.regsIn.bits := regsOuts(m.children.head).bits
-            chain.io.regsIn.valid := regsOuts(m.children.head).valid
-            regsIns(m.children.last) <> regsIns(m)
-          } else {
-            chain.io.regsIn <> regsIns(m)
-          }
+            stateIns(m.children.last).bits := stateIns(m).bits
+            stateIns(m.children.last).valid := stateIns(m).valid
+          } 
         }
 
         for (s <- m.children sliding 2 ; if s.size == 2) {
-          regsIns(s.head).bits := regsOuts(s.last).bits
-          regsIns(s.head).valid := regsOuts(s.last).valid
-          regsOuts(s.last).ready := regsOuts(s.head).ready
+          stateIns(s.head).bits := stateOuts(s.last).bits
+          stateIns(s.head).valid := stateOuts(s.last).valid
+          stateOuts(s.last).ready := stateOuts(s.head).ready
         }
       } 
     }
-  }  
+  }
 }
