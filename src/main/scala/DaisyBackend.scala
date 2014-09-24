@@ -15,17 +15,27 @@ object DaisyBackend {
   val cntrOuts = HashMap[Module, DecoupledIO[UInt]]()
   val ioMap = HashMap[Bits, Bits]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyWrapper[Module]]
+  lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
 
   def addTransforms(width: Int = 1) {
     daisywidth = width
-    Driver.backend.transforms += addDaisyPins
-    Driver.backend.transforms += Driver.backend.findConsumers
-    Driver.backend.transforms += addIOBuffers
-    Driver.backend.transforms += connectFireSignals
-    Driver.backend.transforms += Driver.backend.inferAll
-    Driver.backend.transforms += addSnapshotChains
+    Driver.backend.transforms ++= Seq(
+      setTopModuleName,
+      addDaisyPins,
+      Driver.backend.findConsumers,
+      addIOBuffers,
+      connectFireSignals,
+      Driver.backend.findConsumers,
+      Driver.backend.inferAll,
+      addSnapshotChains,
+      printOutMappings
+    )
   } 
+
+  def setTopModuleName(c: Module) {
+    top.name = targetName + "Wrapper"
+  }
 
   def addDaisyPins(c: Module) {
     ChiselError.info("[DaisyBackend] add daisy pins")
@@ -116,7 +126,7 @@ object DaisyBackend {
         if (states(m).isEmpty) {
           stateOuts(m) <> stateOuts(top.target)
         } else {
-          insertStateChain(m)
+          val chain = insertStateChain(m)
         }
         stateIns(top.target).bits := UInt(0)
         stateIns(top.target).valid := Bool(false)
@@ -131,7 +141,7 @@ object DaisyBackend {
             stateIns(m.children.last).valid := stateIns(m).valid
           }
         } else {
-          insertStateChain(m)
+          val chain = insertStateChain(m)
           if (m.children.size > 1) {
             stateIns(m.children.last).bits := stateIns(m).bits
             stateIns(m.children.last).valid := stateIns(m).valid
@@ -144,6 +154,32 @@ object DaisyBackend {
           stateOuts(s.last).ready := stateOuts(s.head).ready
         }
       } 
+    }
+  }
+
+  def printOutMappings(c: Module) {
+    ChiselError.info("[DaisyBackend] print out chain mappings")
+    val prefix = top.name + "." + top.target.name
+
+    // Print out the chain mapping
+    val stateOut = new StringBuilder
+    val stateFile = Driver.createOutputFile(targetName + ".state.chain")
+    // Collect states
+    for (m <- Driver.sortedComps.reverse ; state <- states(m)) {
+      if (m.name == top.name) {
+        // Add input pins of the target instead of their io buffers
+        val pin = state.consumers.head
+        val path = targetName + "." + pin.name
+        stateOut append "%s %d\n".format(path, pin.needWidth)
+      } else {
+        val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
+        stateOut append "%s %d\n".format(path, state.needWidth)
+      }
+    }
+    try {
+      stateFile write stateOut.result
+    } finally {
+      stateFile.close
     }
   }
 }
