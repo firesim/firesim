@@ -1,20 +1,19 @@
 gendir  := generated
 tutdir  := tutorial/examples
-designs := $(filter-out examples Image Sound,\
-           $(notdir $(basename $(wildcard $(tutdir)/*.scala))))
-VPATH   := $(tutdir):$(generated)
+designs := GCD
+VPATH   := $(tutdir):$(gendir)
 
-C_FLAGS  := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
-V_FLAGS  := $(C_FLAGS) --v
+C_FLAGS := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
+V_FLAGS := $(C_FLAGS) --v
 
 all : cpp v
-cpp : $(addsuffix .cpp, $(designs))
-v   : $(addsuffix .v,   $(designs))
+cpp : $(addsuffix Wrapper.cpp, $(designs))
+v   : $(addsuffix Wrapper.v,   $(designs))
 
-%.cpp: %.scala 
+%Wrapper.cpp: %.scala 
 	sbt "run $(basename $@) $(C_FLAGS)" | tee $@.out
 
-%.v: %.scala 
+%Wrapper.v: %.scala 
 	sbt "run $(basename $@) $(V_FLAGS)" | tee $@.out
 
 clean:
