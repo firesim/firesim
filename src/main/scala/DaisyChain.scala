@@ -18,24 +18,25 @@ class StateChain(val datawidth: Int, daisywidth: Int = 1) extends Module {
   val readCond = io.stall && copied && io.out.fire()
 
   // Connect daisy chains
-  io.out.bits := regs(0)
-  io.out.valid := !counter.orR
+  io.out.bits := regs(datawidth-1)
+  io.out.valid := counter.orR
   for (i <- 0 until datawidth) {
     when(copyCond) {
       regs(i) := io.data(i)
     }
     when(readCond) {
-      if (i < datawidth - 1)
-        regs(i) := regs(i+1)
-      else
+      if (i == 0)
         regs(i) := io.in.bits
+      else
+        regs(i) := regs(i-1)
     }
   }
 
   // Counter logic
-  when(io.stall && io.out.fire() && !io.in.fire()) {
-    counter := counter - UInt(1)
-  }.elsewhen(!io.stall) {
+  when(copyCond) {
     counter := UInt(datawidth)
+  }
+  when(readCond && !io.in.valid && counter.orR) {
+    counter := counter - UInt(1)
   }
 }
