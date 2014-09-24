@@ -6,16 +6,16 @@ class DaisyWrapperIO[T <: Data](io: T, datawidth: Int = 32) extends Bundle {
   val targetIO: T = io.clone
   val stall = Bool(OUTPUT)
   val stepsIn = Decoupled(UInt(width=datawidth)).flip
-  val regsOut = Decoupled(UInt(width=1))
+  val stateOut = Decoupled(UInt(width=1))
   // val sramOut = Decoupled(UInt(width=1))
   // val cntrOut = Decoupled(UInt(width=1))
 }
 
 object DaisyWrapper {
-  def apply[T <: Module](c: => T) = Module(new DaisyWrapper(c))
+  def apply[T <: Module](c: =>T) = Module(new DaisyWrapper(c))
 }
 
-class DaisyWrapper[+T <: Module](c: => T, val datawidth: Int = 32) extends Module {
+class DaisyWrapper[+T <: Module](c: =>T, val datawidth: Int = 32) extends Module {
   val target = Module(c)
   val io = new DaisyWrapperIO(target.io, datawidth)
 
