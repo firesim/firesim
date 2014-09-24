@@ -9,17 +9,17 @@ class StateChainIO(datawidth: Int, daisywidth: Int) extends Bundle {
   val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
-class StateChain(val datawidth: Int, daisywidth: Int = 1) extends Module {
+class StateChain(datawidth: Int, daisywidth: Int = 1) extends Module {
   val io = new StateChainIO(datawidth, daisywidth)
   val regs = Vec.fill(datawidth) { Reg(UInt(width=daisywidth)) }
   val copied = Reg(next=io.stall)
-  val counter = Reg(UInt(width=log2Up(datawidth)))
+  val counter = Reg(UInt(width=log2Up(datawidth+1)))
   val copyCond = io.stall && !copied
   val readCond = io.stall && copied && io.out.fire()
 
   // Connect daisy chains
   io.out.bits := regs(datawidth-1)
-  io.out.valid := counter.orR
+  io.out.valid := counter.orR && io.out.ready
   for (i <- 0 until datawidth) {
     when(copyCond) {
       regs(i) := io.data(i)
@@ -36,7 +36,7 @@ class StateChain(val datawidth: Int, daisywidth: Int = 1) extends Module {
   when(copyCond) {
     counter := UInt(datawidth)
   }
-  when(readCond && !io.in.valid && counter.orR) {
+  when(readCond && counter.orR && !io.in.valid) {
     counter := counter - UInt(1)
   }
 }

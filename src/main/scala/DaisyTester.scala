@@ -57,10 +57,10 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
     val chain = new StringBuilder
 
     if (isTrace) println("Read Daisy Chain")
-    do {
-      poke(out.ready, 1)
+    poke(out.ready, 1)
+    while(peek(dumpName(out.valid)) == 0) {
       takeSteps(1)
-    } while(peek(dumpName(out.valid)) == 0)
+    }
 
     var count = 0
     do {
@@ -69,6 +69,7 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
       takeSteps(1)
       count += 1
     } while(peek(dumpName(out.valid)) == 1)
+    poke(out.ready, 0)
     if (isTrace) println("Read Count = %d".format(count))
 
     chain.result
@@ -76,17 +77,15 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
   
   def verifyDaisyChain(chain: String) {
     val values = ArrayBuffer[BigInt]()
-    for (name <- stateNames) {
-      values += peek(name)
-    }
+    values ++= stateNames map (peek _)
 
     var start = 0
-    for ((width, i) <- stateWidths.zipWithIndex ; if start < chain.length) {
+    for ((width, i) <- stateWidths.zipWithIndex) {
       val end = math.min(start + width, chain.length)
       val value = values(i).toString(2).reverse.padTo(width, '0').reverse
-      expect(value == chain.substring(start, end), stateNames(i))
-      println("%s %s".format(value, chain.substring(start, end)))
-      start += end
+      expect(start < end && value == chain.substring(start, end), stateNames(i))
+      // println("%s %s".format(value, chain.substring(start, end)))
+      start += width
     }
   }
 
