@@ -7,7 +7,7 @@ class DaisyWrapperIO[T <: Data](io: T, datawidth: Int = 32) extends Bundle {
   val stall = Bool(OUTPUT)
   val stepsIn = Decoupled(UInt(width=datawidth)).flip
   val stateOut = Decoupled(UInt(width=1))
-  // val sramOut = Decoupled(UInt(width=1))
+  val sramOut = Decoupled(UInt(width=1))
   // val cntrOut = Decoupled(UInt(width=1))
 }
 
@@ -19,7 +19,7 @@ class DaisyWrapper[+T <: Module](c: =>T, val datawidth: Int = 32) extends Module
   val target = Module(c)
   val io = new DaisyWrapperIO(target.io, datawidth)
 
-  // Add step counters for simulation run or stall
+  // Step counters for simulation run or stall
   val stepCounter = Reg(init=UInt(0))
   val fire = stepCounter.orR
   val fireDelay = Reg(next=fire)
@@ -29,6 +29,9 @@ class DaisyWrapper[+T <: Module](c: =>T, val datawidth: Int = 32) extends Module
   }.elsewhen(io.stepsIn.valid) {
     stepCounter := io.stepsIn.bits
   }
+
+  // Counters for the restart signal for sram chains
+  val sramChainCounter = Reg(UInt())
 
   // Connect IOs
   io.targetIO <> target.io
