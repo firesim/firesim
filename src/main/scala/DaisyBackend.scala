@@ -6,7 +6,9 @@ import scala.collection.mutable.{Queue => ScalaQueue}
 
 object DaisyBackend { 
   val firePins = HashMap[Module, Bool]()
+  val restartPins = HashMap[Module, Bool]()
   val states = HashMap[Module, ArrayBuffer[Node]]()
+  val srams = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val stateIns = HashMap[Module, ValidIO[UInt]]()
   val stateOuts = HashMap[Module, DecoupledIO[UInt]]()
   val sramIns = HashMap[Module, ValidIO[UInt]]()
@@ -17,18 +19,20 @@ object DaisyBackend {
   lazy val top = Driver.topComponent.asInstanceOf[DaisyWrapper[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
+  var sramCount = 0
 
   def addTransforms(width: Int = 1) {
     daisywidth = width
     Driver.backend.transforms ++= Seq(
       setTopModuleName,
-      addDaisyPins,
+      addTopLevelPins,
       Driver.backend.findConsumers,
       addIOBuffers,
-      connectFireSignals,
-      Driver.backend.findConsumers,
       Driver.backend.inferAll,
-      addSnapshotChains,
+      connectFireSignals,
+      addStateChains,
+      addSRAMChain,
+      Driver.backend.findConsumers,
       printOutMappings
     )
   } 
@@ -37,23 +41,17 @@ object DaisyBackend {
     top.name = targetName + "Wrapper"
   }
 
-  def addDaisyPins(c: Module) {
-    ChiselError.info("[DaisyBackend] add daisy pins")
-    for (m <- Driver.sortedComps) {
-      if (m.name == top.name) {
-        firePins(m) = top.stepCounter.orR
-        stateOuts(m) = top.io.stateOut
-      } else {
-        firePins(m) = m.addPin(Bool(INPUT), "fire")
-        stateIns(m) = m.addPin(Valid(UInt(width=daisywidth)).flip, "state_in")
-        stateOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "state_out")
-      } 
-    } 
+  def addTopLevelPins(c: Module) {
+    firePins(top) = top.stepCounter.orR
+    restartPins(top) = Bool(false)// !top.sramChainCounter.orR
+    stateOuts(top) = top.io.stateOut
+    sramOuts(top) = top.io.sramOut
   }
 
   def addIOBuffers(c: Module) {
     ChiselError.info("[DaisyBackend] add io buffers")
     states(top) = ArrayBuffer[Node]()
+    srams(top) = ArrayBuffer[Mem[_]]()
     for ((n, pin) <- top.io.targetIO.flatten) {
       val buffer = Reg(UInt())
       buffer.comp.setName(pin.name + "_buf")
@@ -84,18 +82,37 @@ object DaisyBackend {
 
   def connectFireSignals(c: Module) {
     ChiselError.info("[DaisyBackend] connect fire signals")
+
+    def connectFirePins(m: Module) {
+      firePins(m) = m.addPin(Bool(INPUT), "fire")
+      if (!(firePins contains m.parent)) connectFirePins(m.parent)
+      firePins(m) := firePins(m.parent)
+    }
+
     for (m <- Driver.sortedComps ; if m.name != top.name) {
       states(m) = ArrayBuffer[Node]()
-      firePins(m) := firePins(m.parent)
+      srams(m) = ArrayBuffer[Mem[_]]()
+      connectFirePins(m)
       m bfs { _ match {
         case reg: Reg => {
+          if (!(firePins contains m)) connectFirePins(m)
           reg.inputs(0) = Multiplex(firePins(m), reg.inputs(0), reg)
-          // Regs are the state of the design
+          // Add the register for daisy chains
           states(m) += reg
         }
         case mem: Mem[_] => {
+          if (!(firePins contains m)) connectFirePins(m)
           for (write <- mem.writeAccesses) {
             write.inputs(1) = write.cond.asInstanceOf[Bool] && firePins(m) 
+          }
+          if (mem.seqRead) {
+            srams(m) += mem
+          } else {
+            for (i <- 0 until mem.size) {
+              val read = new MemRead(mem, UInt(i)) 
+              read.infer
+              states(m) += read
+            }
           }
         }
         case _ =>
@@ -103,58 +120,137 @@ object DaisyBackend {
     }
   }
 
-  def addSnapshotChains(c: Module) {
-    ChiselError.info("[DaisyBackend] add snapshot chains")
+  def addStateChains(c: Module) {
+    ChiselError.info("[DaisyBackend] add state chains")
+
+    def insertStatePins(m: Module) {
+      stateIns(m)  = m.addPin(Valid(UInt(width=daisywidth)).flip, "state_in")
+      stateOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "state_out")
+    }
+
     def insertStateChain(m: Module) = {
       val datawidth = (states(m) foldLeft 0)(_ + _.needWidth())
-      val chain = m.addModule(new StateChain(datawidth))
-      chain.io.data := UInt(Concatenate(states(m)))
-      chain.io.stall := !firePins(m)
-      chain.io.out <> stateOuts(m)
-      if (m.children.size > 1) {
-        chain.io.in.bits := stateOuts(m.children.head).bits
-        chain.io.in.valid := stateOuts(m.children.head).valid
-        stateOuts(m.children.head).ready := stateOuts(m).ready
-      } else {
-        chain.io.in <> stateIns(m)
-      }
+      val chain = if (!states(m).isEmpty) m.addModule(new StateChain(datawidth)) else null
+      if (chain != null) {
+        if (m.name != top.name) insertStatePins(m)
+        chain.io.data := UInt(Concatenate(states(m)))
+        chain.io.stall := !firePins(m)
+        chain.io.out <> stateOuts(m)
+      } 
       chain
     }
 
-    for (m <- Driver.sortedComps) { 
-      if (m.name == top.name) {
-        if (states(m).isEmpty) {
-          stateOuts(m) <> stateOuts(top.target)
-        } else {
-          val chain = insertStateChain(m)
-        }
-        stateIns(top.target).bits := UInt(0)
-        stateIns(top.target).valid := Bool(false)
-      } else {
-        if (states(m).isEmpty) {
-          if (m.children.isEmpty) {
-            stateOuts(m).bits := stateIns(m).bits
-            stateOuts(m).valid := stateIns(m).valid
+    for (m <- Driver.sortedComps) {
+      val stateChain = insertStateChain(m)
+
+      // Filter children who have state chains
+      var last = -1
+      for ((child, cur) <- m.children.zipWithIndex; if (stateOuts contains child)) {
+        if (last < 0) {
+          if (stateChain != null) {
+            stateChain.io.in.bits := stateOuts(child).bits
+            stateChain.io.in.valid := stateOuts(child).valid
+            stateOuts(child).ready := stateOuts(m).ready
           } else {
-            stateOuts(m) <> stateOuts(m.children.head)
-            stateIns(m.children.last).bits := stateIns(m).bits
-            stateIns(m.children.last).valid := stateIns(m).valid
+            insertStatePins(m)
+            stateOuts(m) <> stateOuts(child)
           }
         } else {
-          val chain = insertStateChain(m)
-          if (m.children.size > 1) {
-            stateIns(m.children.last).bits := stateIns(m).bits
-            stateIns(m.children.last).valid := stateIns(m).valid
-          } 
+          val lastChild = m.children(last)
+          stateIns(child).bits := stateOuts(lastChild).bits
+          stateIns(child).valid := stateOuts(lastChild).valid
+          stateOuts(lastChild).ready := stateOuts(child).ready
         }
+        last = cur
+      }
 
-        for (s <- m.children sliding 2 ; if s.size == 2) {
-          stateIns(s.head).bits := stateOuts(s.last).bits
-          stateIns(s.head).valid := stateOuts(s.last).valid
-          stateOuts(s.last).ready := stateOuts(s.head).ready
+      if (last > -1) {
+        val lastChild = m.children(last)
+        if (m.name == top.name) {
+          stateIns(lastChild).bits := UInt(0)
+          stateIns(lastChild).valid := Bool(false)
+        } else {
+          stateIns(lastChild).bits := stateIns(m).bits
+          stateIns(lastChild).valid := stateIns(m).valid
         }
-      } 
+      } else if (stateChain != null) {
+        stateChain.io.in.bits := stateIns(m).bits
+        stateChain.io.in.valid := stateIns(m).valid
+      }
     }
+  } 
+
+  def addSRAMChain(c: Module) {
+    ChiselError.info("[DaisyBackend] add sram chains")
+
+    def connectRestartPins(m: Module) {
+      restartPins(m) = m.addPin(Bool(INPUT), "restart")
+      if (!(restartPins contains m.parent)) connectRestartPins(m.parent)
+      restartPins(m) := restartPins(m.parent)
+    }
+
+    def insertSRAMPins(m: Module) {
+      sramIns(m)  = m.addPin(Valid(UInt(width=daisywidth)).flip, "sram_in")
+      sramOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)), "sram_out")
+    }
+
+    def insertSRAMChain(m: Module) = {
+      var lastChain: SRAMChain = null
+      for (sram <- srams(m)) {
+        val datawidth = sram.needWidth()
+        val chain = m.addModule(new SRAMChain(sram.size, datawidth))
+        chain.io.data := UInt(Concatenate(states(m)))
+        chain.io.stall := !firePins(m)
+        if (lastChain == null) {
+          // connectRestartPins(m)
+          insertSRAMPins(m)
+          chain.io.out <> sramOuts(m)
+        } else {
+          chain.io.in.bits := lastChain.io.out.bits
+          chain.io.in.valid := lastChain.io.out.valid
+          // lastChain.io.out.ready := chain.io.out.ready
+        }
+        lastChain = chain
+      }
+      lastChain
+    }
+
+    for (m <- Driver.sortedComps) {
+      val sramChain  = insertSRAMChain(m)
+   
+      // Filter children who have sram chains
+      var last = -1
+      for ((child, cur) <- m.children.zipWithIndex; if (sramOuts contains child)) {
+        if (last < 0) {
+          if (sramChain != null) {
+            sramChain.io.in.bits := sramOuts(child).bits
+            sramChain.io.in.valid := sramOuts(child).valid
+            sramOuts(child).ready := sramOuts(m).ready
+          } else {
+            // connectRestartPins(m)
+            insertSRAMPins(m)
+            sramOuts(m) <> sramOuts(child)
+          }
+        } else {
+          sramOuts(child) <> sramOuts(m.children(last))
+        }
+        last = cur
+      }
+
+      if (last > -1) {
+        val lastChild = m.children(last)
+        if (m.name == top.name) {
+          sramIns(lastChild).bits := UInt(0)
+          sramIns(lastChild).valid := Bool(false)
+        } else {
+          sramIns(lastChild).bits := sramIns(m).bits
+          sramIns(lastChild).valid := sramIns(m).valid
+        }
+      } else if (sramChain != null) {
+        sramChain.io.in.bits := sramIns(m).bits
+        sramChain.io.in.valid := sramIns(m).valid
+      }     
+    } 
   }
 
   def printOutMappings(c: Module) {
@@ -172,8 +268,18 @@ object DaisyBackend {
         val path = targetName + "." + pin.name
         stateOut append "%s %d\n".format(path, pin.needWidth)
       } else {
-        val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
-        stateOut append "%s %d\n".format(path, state.needWidth)
+        state match {
+          case read: MemRead => {
+            val mem = read.mem
+            val addr = read.addr.litValue(0).toInt
+            val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + mem.name
+            stateOut append "%s[%d] %d\n".format(path, addr, mem.needWidth)
+          }
+          case _ => { 
+            val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
+            stateOut append "%s %d\n".format(path, state.needWidth)
+          }
+        }
       }
     }
     try {
