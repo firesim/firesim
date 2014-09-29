@@ -1,7 +1,8 @@
+srcdir  := src/main/scala
 gendir  := generated
 tutdir  := tutorial/examples
 designs := GCD
-VPATH   := $(tutdir):$(gendir)
+VPATH   := $(srcdir):$(gendir):$(tutdir)
 
 C_FLAGS := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
 V_FLAGS := $(C_FLAGS) --v

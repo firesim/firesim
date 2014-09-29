@@ -15,10 +15,9 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
   val counter = Reg(UInt(width=log2Up(datawidth+1)))
   def copied: Bool
   def copyCond: Bool
-  def readCond: Bool
-  // val readCond = io.stall && copied && counter.orR && io.out.fire()
+  lazy val readCond = io.stall && copied && counter.orR && io.out.fire()
 
-  def init {
+  def initChain {
     // Daisy chain datapath
     io.out.bits := regs(datawidth-1)
     io.out.valid := counter.orR && io.out.ready
@@ -52,8 +51,7 @@ class StateChain(datawidth: Int, daisywidth: Int = 1) extends
   val io = new StateChainIO(datawidth, daisywidth)
   val copied = Reg(next=io.stall)
   val copyCond = io.stall && !copied
-  val readCond = io.stall && copied && counter.orR && io.out.fire()
-  init
+  initChain
 }
 
 class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
@@ -67,7 +65,7 @@ class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends
   val io = new SRAMChainIO(n, datawidth, daisywidth)
   val copied = Reg(Bool())
   val copyCond = Reg(Bool())
-  val readCond = io.stall && copied && counter.orR && io.out.fire()
+  initChain
 
   // SRAM control
   val s_idle :: s_addrgen :: s_memread :: Nil = Enum(UInt(), 3)

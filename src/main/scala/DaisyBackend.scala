@@ -43,7 +43,7 @@ object DaisyBackend {
 
   def addTopLevelPins(c: Module) {
     firePins(top) = top.stepCounter.orR
-    restartPins(top) = Bool(false)// !top.sramChainCounter.orR
+    restartPins(top) = !top.sramChainCounter.orR
     stateOuts(top) = top.io.stateOut
     sramOuts(top) = top.io.sramOut
   }
@@ -157,9 +157,9 @@ object DaisyBackend {
           }
         } else {
           val lastChild = m.children(last)
-          stateIns(child).bits := stateOuts(lastChild).bits
-          stateIns(child).valid := stateOuts(lastChild).valid
-          stateOuts(lastChild).ready := stateOuts(child).ready
+          stateOuts(lastChild).bits := stateIns(child).bits
+          stateOuts(lastChild).valid := stateIns(child).valid
+          stateOuts(child).ready := stateOuts(m).ready
         }
         last = cur
       }
@@ -185,6 +185,7 @@ object DaisyBackend {
 
     def connectRestartPins(m: Module) {
       restartPins(m) = m.addPin(Bool(INPUT), "restart")
+      ChiselError.info(m.name)
       if (!(restartPins contains m.parent)) connectRestartPins(m.parent)
       restartPins(m) := restartPins(m.parent)
     }
@@ -197,19 +198,25 @@ object DaisyBackend {
     def insertSRAMChain(m: Module) = {
       var lastChain: SRAMChain = null
       for (sram <- srams(m)) {
+        val read = sram.readAccesses.head
         val datawidth = sram.needWidth()
         val chain = m.addModule(new SRAMChain(sram.size, datawidth))
         chain.io.data := UInt(Concatenate(states(m)))
         chain.io.stall := !firePins(m)
         if (lastChain == null) {
-          // connectRestartPins(m)
+          if (!(restartPins contains m))
+            connectRestartPins(m)
           insertSRAMPins(m)
           chain.io.out <> sramOuts(m)
         } else {
-          chain.io.in.bits := lastChain.io.out.bits
-          chain.io.in.valid := lastChain.io.out.valid
-          // lastChain.io.out.ready := chain.io.out.ready
+          lastChain.io.in.bits := chain.io.out.bits
+          lastChain.io.in.valid := chain.io.out.valid
+          chain.io.out.ready := sramOuts(m).ready
         }
+        chain.io.restart := restartPins(m)
+
+        read.addr.getNode.inputs(0) = Multiplex(
+          chain.io.addr.valid, chain.io.addr.bits, read.addr.getNode.inputs(0))
         lastChain = chain
       }
       lastChain
@@ -227,7 +234,8 @@ object DaisyBackend {
             sramChain.io.in.valid := sramOuts(child).valid
             sramOuts(child).ready := sramOuts(m).ready
           } else {
-            // connectRestartPins(m)
+            if (!(restartPins contains m))
+              connectRestartPins(m)
             insertSRAMPins(m)
             sramOuts(m) <> sramOuts(child)
           }
