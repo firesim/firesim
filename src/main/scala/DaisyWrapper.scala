@@ -110,8 +110,8 @@ class DaisyWrapper[+T <: Module](c: =>T,
       when(fire) {
         stepCounter := stepCounter - UInt(1)
       }.elsewhen(!fireDelay) {
-        // state := s_SNAP1
-        state := s_IDLE
+        state := s_SNAP1
+        // state := s_IDLE
         stateSnapCount := UInt(0)
         sramSnapCount := UInt(0)
       }
@@ -119,17 +119,19 @@ class DaisyWrapper[+T <: Module](c: =>T,
     // Snapshotring inputs and registers
     is(s_SNAP1) {
       stateOut.ready := Bool(true)
-      when(stateSnapCount >= UInt(buswidth)) {
-        io.memOut.bits := stateSnapBuf
-        io.memOut.valid := Bool(true)
-        stateSnapCount := UInt(0)
-      }
-      when(stateOut.valid) {
-        stateSnapBuf := Cat(stateSnapBuf, stateOut.bits)
-        stateSnapCount := stateSnapCount + UInt(daisywidth)
+      when(stateSnapCount >= UInt(buswidth)) { 
+        when(io.memOut.ready) {
+          io.memOut.bits := stateSnapBuf
+          io.memOut.valid := Bool(true)
+          stateSnapCount := stateSnapCount - UInt(buswidth-1)
+        }
+        when(!stateOut.valid) {
+          state := s_IDLE
+        }
       }.otherwise {
-        state := s_IDLE
-      }      
+        stateSnapCount := stateSnapCount + UInt(daisywidth)
+      }
+      stateSnapBuf := Cat(stateSnapBuf, stateOut.bits)
     }
     // Snapshotring SRAMs
     /*
@@ -149,17 +151,19 @@ class DaisyWrapper[+T <: Module](c: =>T,
           pokeCounter := pokeCounter - UInt(1)
         }
       }.otherwise {
-        state := s_IDLE
         io.hostIn.ready := Bool(false)
+        state := s_IDLE
       }
     }
     is(s_PEEK) {
       val id = UInt(outputs.length) - peekCounter
       when(peekCounter.orR) {
-        io.hostOut.valid := Bool(true)
         when(io.hostOut.ready) {
+          io.hostOut.valid := Bool(true)
           io.hostOut.bits := outputBufs(id)
           peekCounter := peekCounter - UInt(1)
+        }.otherwise {
+          io.hostOut.valid := Bool(false)
         }
       }.otherwise {
         io.hostOut.valid := Bool(false)

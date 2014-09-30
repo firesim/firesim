@@ -15,7 +15,6 @@ object DaisyBackend {
   val sramOuts = HashMap[Module, DecoupledIO[UInt]]()
   val cntrIns  = HashMap[Module, DecoupledIO[UInt]]()
   val cntrOuts = HashMap[Module, DecoupledIO[UInt]]()
-  // val ioMap = HashMap[Bits, Bits]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyWrapper[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
@@ -216,19 +215,6 @@ object DaisyBackend {
         sramChain.io.in.valid := sramIns(m).valid
       }     
     } 
-  }
-
-  def initSRAMChainCounter(c: Module) {
-    /*
-    if (sramChainLength > 0) {
-      val valid = sramOuts(top.target).valid
-      when (top.io.stall && !top.restart && valid) {
-        top.sramChainCounter := top.sramChainCounter - UInt(1)
-      }.elsewhen (!valid) {
-        top.sramChainCounter := UInt(sramChainLength)
-      }
-    } 
-    */
   }
 
   def printOutMappings(c: Module) {
