@@ -5,7 +5,7 @@ import Chisel._
 abstract class DaisyChainIO(datawidth: Int, daisywidth: Int) extends Bundle {
   val stall = Bool(INPUT)
   val data =  UInt(INPUT, datawidth)
-  val in  = Valid(UInt(INPUT, daisywidth)).flip
+  val in  = Decoupled(UInt(INPUT, daisywidth)).flip
   val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
@@ -21,6 +21,7 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
     // Daisy chain datapath
     io.out.bits := regs(datawidth-1)
     io.out.valid := counter.orR && io.out.ready
+    io.in.ready := io.out.ready
     for (i <- 0 until datawidth) {
       when(copyCond) {
         regs(i) := io.data(i)
@@ -68,20 +69,20 @@ class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends
   initChain
 
   // SRAM control
-  val s_idle :: s_addrgen :: s_memread :: Nil = Enum(UInt(), 3)
-  val addrState = Reg(init = s_idle)
+  val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: Nil = Enum(UInt(), 3)
+  val addrState = Reg(init = s_IDLE)
   val addr = Reg(UInt(width=log2Up(n)))
   io.addr.bits := addr
-  io.addr.valid := addrState === s_addrgen
+  io.addr.valid := addrState === s_ADDRGEN
   switch(addrState) {
-    is(s_idle) {
+    is(s_IDLE) {
       when(io.stall && !copied) {
         when(addr < UInt(n)) {
           addr := addr + UInt(1)
-          addrState := s_addrgen
+          addrState := s_ADDRGEN
         }.otherwise {
           addr := UInt(0)
-          addrState := s_memread
+          addrState := s_MEMREAD
         }
         copied := Bool(false)
       }
@@ -91,13 +92,13 @@ class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends
       }
       copyCond := Bool(false)
     }
-    is(s_addrgen) {
-      addrState := s_memread
+    is(s_ADDRGEN) {
+      addrState := s_MEMREAD
       copyCond  := Bool(true)
       copied    := Bool(false)
     }
-    is(s_memread) {
-      addrState := s_idle
+    is(s_MEMREAD) {
+      addrState := s_IDLE
       copyCond  := Bool(false)
       copied    := Bool(true)
     }

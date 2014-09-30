@@ -19,6 +19,7 @@ object FAEE {
       case "GCDWrapper" =>
         chiselMainTest(chiselArgs, () => DaisyWrapper(new GCD))(
           c => new GCDDaisyTests(c))
+        // chiselMain(chiselArgs, () => DaisyWrapper(new GCD))
       case "ParityWrapper" =>
         chiselMainTest(chiselArgs, () => DaisyWrapper(new Parity))(
           c => new ParityDaisyTests(c))
