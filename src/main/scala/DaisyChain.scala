@@ -65,20 +65,19 @@ class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int = 1) extends
 class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
   DaisyChain(datawidth, daisywidth) {
   val io = new SRAMChainIO(n, datawidth, daisywidth)
-  
-  // SRAM control
+
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = Reg(init=s_IDLE)
   val copyCond = addrState === s_MEMREAD
   val readCond = addrState === s_DONE
   val addrIn = Reg(UInt(width=log2Up(n)))
   val addrOut = Reg(UInt(width=log2Up(n)))
-
   initChain()
-
+  
   io.addrOut.bits := addrIn
   io.addrOut.valid := Bool(false)
 
+  // SRAM control
   switch(addrState) {
     is(s_IDLE) {
       addrIn := io.addrIn
