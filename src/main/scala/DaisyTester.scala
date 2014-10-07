@@ -141,19 +141,21 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
     var value = BigInt(0)
     var start = 0
     for ((stateName, i) <- stateNames.zipWithIndex) {
-      val path = targetPath + (stateName stripPrefix targetPrefix)
       val width = stateWidths(i)
-      val value = path match {
-        case MemRegex(name, idx) =>
-          peek(name, idx.toInt)
-        case _ =>
-          peek(path)
-      }
-      val end = math.min(start + width, chain.length)
-      val fromChain = chain.substring(start, end)
-      val fromSignal = value.toString(2).reverse.padTo(width, '0').reverse
-      expect(fromChain == fromSignal, "Snapshot " + stateName)
-      snaps append "POKE %s %d\n".format(stateName, value)
+      if (stateName != "null") {
+        val path = targetPath + (stateName stripPrefix targetPrefix)
+        val value = path match {
+          case MemRegex(name, idx) =>
+            peek(name, idx.toInt)
+          case _ =>
+            peek(path)
+        } 
+        val end = math.min(start + width, chain.length)
+        val fromChain = chain.substring(start, end)
+        val fromSignal = value.toString(2).reverse.padTo(width, '0').reverse
+        expect(fromChain == fromSignal, "Snapshot %s(%s?=%s)".format(stateName, fromChain, fromSignal))
+        snaps append "POKE %s %d\n".format(stateName, value)
+      } 
       start += width
     }
   }
@@ -168,7 +170,7 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
   def daisyStep(n: Int) {
     pokeSteps(n)
     takeSteps(n)
-    verifyDaisyChain(readDaisyChain)
+    if (t > 0) verifyDaisyChain(readDaisyChain)
   }
 
   override def step(n: Int = 1) {
@@ -204,8 +206,8 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
     }
   }
 
-  def readStateMapFile {
-    val filename = targetPrefix + ".state.map"
+  def readChainMapFile {
+    val filename = targetPrefix + ".chain.map"
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
       val tokens = line split " "
@@ -230,5 +232,5 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
     if (node.isInObject) signalMap(dumpName(node)) = node
   }
   readIoMapFile
-  readStateMapFile 
+  readChainMapFile 
 }

@@ -13,11 +13,10 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
   val regs = Vec.fill(datawidth) { Reg(UInt(width=daisywidth)) }
   def io: DaisyChainIO
   val counter = Reg(UInt(width=log2Up(datawidth+1)))
-  def copied: Bool
   def copyCond: Bool
-  lazy val readCond = io.stall && copied && counter.orR && io.out.fire()
+  def readCond: Bool
 
-  def initChain {
+  def initChain(fake: Int = 0) {
     // Daisy chain datapath
     io.out.bits := regs(datawidth-1)
     io.out.valid := counter.orR && io.out.ready
@@ -26,7 +25,7 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
       when(copyCond) {
         regs(i) := io.data(i)
       }
-      when(readCond) {
+      when(readCond && counter.orR && io.out.fire()) {
         if (i == 0)
           regs(i) := io.in.bits
         else
@@ -38,7 +37,7 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
     when(copyCond) {
       counter := UInt(datawidth)
     }
-    when(readCond && !io.in.valid) {
+    when(readCond && counter.orR && io.out.fire() && !io.in.valid) {
       counter := counter - UInt(1)
     }
   }
@@ -52,55 +51,60 @@ class StateChain(datawidth: Int, daisywidth: Int = 1) extends
   val io = new StateChainIO(datawidth, daisywidth)
   val copied = Reg(next=io.stall)
   val copyCond = io.stall && !copied
-  initChain
+  val readCond = io.stall && copied 
+  initChain()
 }
 
 class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
   DaisyChainIO(datawidth, daisywidth) {
-  val addr = Valid(UInt(width=log2Up(n)))
   val restart = Bool(INPUT)
+  val addrIn = UInt(INPUT, width=log2Up(n))
+  val addrOut = Valid(UInt(width=log2Up(n)))
 }
 
 class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
   DaisyChain(datawidth, daisywidth) {
   val io = new SRAMChainIO(n, datawidth, daisywidth)
-  val copied = Reg(Bool())
-  val copyCond = Reg(Bool())
-  initChain
-
+  
   // SRAM control
-  val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: Nil = Enum(UInt(), 3)
-  val addrState = Reg(init = s_IDLE)
-  val addr = Reg(UInt(width=log2Up(n)))
-  io.addr.bits := addr
-  io.addr.valid := addrState === s_ADDRGEN
+  val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
+  val addrState = Reg(init=s_IDLE)
+  val copyCond = addrState === s_MEMREAD
+  val readCond = addrState === s_DONE
+  val addrIn = Reg(UInt(width=log2Up(n)))
+  val addrOut = Reg(UInt(width=log2Up(n)))
+
+  initChain()
+
+  io.addrOut.bits := addrIn
+  io.addrOut.valid := Bool(false)
+
   switch(addrState) {
     is(s_IDLE) {
-      when(io.stall && !copied) {
-        when(addr < UInt(n)) {
-          addr := addr + UInt(1)
-          addrState := s_ADDRGEN
-        }.otherwise {
-          addr := UInt(0)
-          addrState := s_MEMREAD
-        }
-        copied := Bool(false)
+      addrIn := io.addrIn
+      addrOut := UInt(0)
+      when(io.stall) {
+        addrState := s_DONE
       }
-      // Read daisy chain again
-      when(io.stall && io.restart && copied) {
-        copied := Bool(false)
-      }
-      copyCond := Bool(false)
     }
     is(s_ADDRGEN) {
       addrState := s_MEMREAD
-      copyCond  := Bool(true)
-      copied    := Bool(false)
+      io.addrOut.bits := addrOut
+      io.addrOut.valid := Bool(true)
     }
     is(s_MEMREAD) {
-      addrState := s_IDLE
-      copyCond  := Bool(false)
-      copied    := Bool(true)
+      addrState := s_DONE
+      addrOut   := addrOut + UInt(1)
+    }
+    is(s_DONE) {
+      when(io.restart) {
+        addrState := s_ADDRGEN
+      }
+      when(!io.stall) {
+        addrState := s_IDLE
+      }
+      io.addrOut.bits := addrIn
+      io.addrOut.valid := io.stall
     }
   }
 }  
