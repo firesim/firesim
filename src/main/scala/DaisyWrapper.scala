@@ -23,11 +23,12 @@ class DaisyWrapper[+T <: Module](c: =>T,
   val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT) yield io
   val inputBufs = Vec.fill(inputs.length) { Reg(UInt()) }
   val outputBufs = Vec.fill(outputs.length) { Reg(UInt()) }
-  val firePin = target.addPin(Bool(INPUT), "fire")
+  val stallPin = target.addPin(Bool(INPUT), "stall")
   val stateIn = target.addPin(Decoupled(UInt(width=daisywidth)).flip, "state_in")
   val stateOut = target.addPin(Decoupled(UInt(width=daisywidth)), "state_out")
-  val sramIn = target.addPin(Decoupled(UInt(width=daisywidth)).flip, "sram_in")
-  val sramOut = target.addPin(Decoupled(UInt(width=daisywidth)), "sram_out")
+  val sramIn = if (Driver.hasSRAM) target.addPin(Decoupled(UInt(width=daisywidth)).flip, "sram_in") else null
+  val sramOut = if (Driver.hasSRAM) target.addPin(Decoupled(UInt(width=daisywidth)), "sram_out") else null
+  val sramRestart = if (Driver.hasSRAM) target.addPin(Bool(INPUT), "restart") else null
   // val cntrIn = target.addPin(Decoupled(UInt(width=daisywidth)).flip, "cntr_in")
   // val cntrOut = target.addPin(Decoupled(UInt(width=daisywidth)), "cntr_out")
 
@@ -39,7 +40,7 @@ class DaisyWrapper[+T <: Module](c: =>T,
   val peekCounter = Reg(init=UInt(0))
   val fire = stepCounter.orR
   val fireDelay = Reg(next=fire)
-  firePin := fire
+  stallPin := !fire
 
   // Debug APIs
   val STEP = UInt(0, opwidth)
@@ -47,10 +48,12 @@ class DaisyWrapper[+T <: Module](c: =>T,
   val PEEK = UInt(2, opwidth)
 
   // Registers for snapshotting
-  val stateSnapCount = Reg(UInt(width=log2Up(buswidth+1)))
-  val sramSnapCount = Reg(UInt(width=log2Up(buswidth+1)))
   val stateSnapBuf = Reg(UInt(width=buswidth))
-  val sramSnapBuf = Reg(UInt(width=buswidth))
+  val stateSnapCount = Reg(UInt(width=log2Up(buswidth+1)))
+  val sramSnapBuf = if (Driver.hasSRAM) Reg(UInt(width=buswidth)) else null
+  val sramSnapCount = if (Driver.hasSRAM) Reg(UInt(width=log2Up(buswidth+1))) else null
+  val sramRestartCount = if (Driver.hasSRAM) Reg(UInt(width=log2Up(Driver.sramMaxSize+1))) else null
+  val sramReady = if (Driver.hasSRAM) Reg(init=Bool(false)) else null
 
   // Connect target IOs with buffers
   for ((input, i) <- inputs.zipWithIndex) {
@@ -84,9 +87,12 @@ class DaisyWrapper[+T <: Module](c: =>T,
   stateIn.bits := UInt(0)
   stateIn.valid := Bool(false)
   stateOut.ready := Bool(false)
-  sramIn.bits := UInt(0)
-  sramIn.valid := Bool(false)
-  sramOut.ready := Bool(false)
+  if (Driver.hasSRAM) {
+    sramIn.bits := UInt(0)
+    sramIn.valid := Bool(false)
+    sramOut.ready := Bool(false)
+    sramRestart := Bool(false)
+  }
 
   val op = io.hostIn.bits(opwidth-1, 0)
   val stepNum = io.hostIn.bits(buswidth-1, opwidth)
@@ -111,9 +117,12 @@ class DaisyWrapper[+T <: Module](c: =>T,
         stepCounter := stepCounter - UInt(1)
       }.elsewhen(!fireDelay) {
         state := s_SNAP1
-        // state := s_IDLE
         stateSnapCount := UInt(0)
-        sramSnapCount := UInt(0)
+        if (Driver.hasSRAM) {
+          sramReady := Bool(false)
+          sramSnapCount := UInt(0)
+          sramRestartCount := UInt(Driver.sramMaxSize-1)
+        }
       }
     }
     // Snapshotring inputs and registers
@@ -126,7 +135,12 @@ class DaisyWrapper[+T <: Module](c: =>T,
           stateSnapCount := stateSnapCount - UInt(buswidth-1)
         }
         when(!stateOut.valid) {
-          state := s_IDLE
+          if (Driver.hasSRAM) {
+            sramRestart := Bool(true)
+            state := s_SNAP2 
+          } else { 
+            state := s_IDLE
+          }
         }
       }.otherwise {
         stateSnapCount := stateSnapCount + UInt(daisywidth)
@@ -134,10 +148,33 @@ class DaisyWrapper[+T <: Module](c: =>T,
       stateSnapBuf := Cat(stateSnapBuf, stateOut.bits)
     }
     // Snapshotring SRAMs
-    /*
-    is(s_SNAP2) {
+    if (Driver.hasSRAM) {
+      is(s_SNAP2) {
+        sramOut.ready := Bool(true)
+        when(!sramReady && sramOut.valid) {
+          sramReady := Bool(true)
+        }
+        when(sramSnapCount >= UInt(buswidth-1)) {
+          when(io.memOut.ready) {
+            io.memOut.bits := sramSnapBuf
+            io.memOut.valid := Bool(true)
+            sramSnapCount := sramSnapCount - UInt(buswidth-1)
+          }
+          when(!sramOut.valid) {
+            sramReady := Bool(false)
+            when(sramRestartCount.orR) {
+              sramRestartCount := sramRestartCount - UInt(1)
+              sramRestart := Bool(true)
+            }.otherwise {
+              state := s_IDLE
+            }
+          }
+        }.elsewhen(sramReady) {
+          sramSnapCount := sramSnapCount + UInt(daisywidth)
+        }
+        sramSnapBuf := Cat(sramSnapBuf, sramOut.bits)
+      } 
     }
-    */
     is(s_POKE) {
       val id = UInt(inputs.length) - pokeCounter
       val valid = io.hostIn.bits(0)

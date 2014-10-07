@@ -11,8 +11,8 @@ class RiscSRAM extends Module {
     val valid  = Bool(OUTPUT)
     val out    = Bits(OUTPUT, 32)
   }
-  val file = Mem(Bits(width = 32), 256, seqRead = true)
-  val code = Mem(Bits(width = 32), 256, seqRead = true)
+  val file = Mem(Bits(width = 32), 16 /*256*/, seqRead = true)
+  val code = Mem(Bits(width = 32), 16 /*256*/, seqRead = true)
 
   val add_op :: imm_op :: Nil = Enum(Bits(), 2)
 
@@ -187,7 +187,7 @@ class RiscSRAMTests(c: RiscSRAM) extends Tester(c) {
   expect(c.io.out, 40)
 }
 
-class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c) {  
+class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c/*, isTrace = false*/) {  
   def wr(addr: UInt, data: UInt)  = {
     poke(c.target.io.isWr,   1)
     poke(c.target.io.wrAddr, addr.litValue())
@@ -210,6 +210,7 @@ class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c) {
     I(c.target.imm_op,   1, 0, 1), // r1 <- 1
     I(c.target.add_op,   1, 1, 1), // r1 <- r1 + r1
     I(c.target.add_op,   1, 1, 1), // r1 <- r1 + r1
+    /*
     I(c.target.imm_op,   1, 0, 2), // r1 <- 2
     I(c.target.add_op,   1, 1, 1), // r1 <- r1 + r1
     I(c.target.add_op,   1, 1, 1), // r1 <- r1 + r1
@@ -267,6 +268,7 @@ class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c) {
     I(c.target.imm_op,   2, 0, 10), // r1 <- 10
     I(c.target.add_op,   2, 2, 1), // r1 <- r1 + r1
     I(c.target.add_op,   2, 2, 1), // r1 <- r1 + r1
+    */
     I(c.target.add_op, 255, 1, 0)) // rh <- r1
   wr(UInt(0), Bits(0)) // skip reset
   for (addr <- 0 until app.length) 
@@ -275,7 +277,7 @@ class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c) {
   var k = 0
   do {
     tick(); k += 1
-  } while (peek(c.target.io.valid) == 0 && k < 400)
-  expect(k < 400, "TIME LIMIT")
-  expect(c.target.io.out, 40)
+  } while (peek(c.target.io.valid) == 0 && k < 40)
+  expect(k < 40, "TIME LIMIT")
+  expect(c.target.io.out, /*40*/ 4)
 }

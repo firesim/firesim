@@ -17,6 +17,12 @@ v   : $(addsuffix Wrapper.v,   $(designs))
 %Wrapper.v: %.scala 
 	sbt "run $(basename $@) $(V_FLAGS)" | tee $@.out
 
+%.v: %.scala 
+	sbt "run $(basename $@) $(V_FLAGS)" | tee $@.out
+
+%.cpp: %.scala 
+	sbt "run $(basename $@) $(C_FLAGS)" | tee $@.out
+
 clean:
 	rm -rf $(gendir) *.out
 
