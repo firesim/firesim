@@ -1,9 +1,9 @@
-package faee
+package DebugMachine
 
 import Chisel._
 import TutorialExamples._
 
-object FAEE {
+object DebugMachine {
   def main(args: Array[String]) {
     val chiselArgs = args.slice(1, args.length)
     val res = args(0) match {

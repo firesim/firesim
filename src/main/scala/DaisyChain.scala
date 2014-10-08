@@ -1,15 +1,22 @@
-package faee
+package DebugMachine
 
 import Chisel._
 
-abstract class DaisyChainIO(datawidth: Int, daisywidth: Int) extends Bundle {
+case object Datawidth extends Field[Int]
+case object SRAMSize extends Field[Int]
+
+abstract class DaisyChainIO extends Bundle {
+  val datawidth = params(Datawidth)
+  val daisywidth = params(Daisywidth)
   val stall = Bool(INPUT)
   val data =  UInt(INPUT, datawidth)
   val in  = Decoupled(UInt(INPUT, daisywidth)).flip
   val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
-abstract class DaisyChain(datawidth: Int, daisywidth: Int) extends Module {
+abstract class DaisyChain extends Module {
+  val datawidth = params(Datawidth)
+  val daisywidth = params(Daisywidth)
   def io: DaisyChainIO
   def copyCond: Bool
   def readCond: Bool
@@ -20,7 +27,7 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int) extends Module {
   def initChain(fake: Int = 0) {
     // Daisy chain datapath
     io.out.bits := regs(daisylen-1)
-    io.out.valid := counter.orR // && io.out.ready
+    io.out.valid := counter.orR 
     io.in.ready := io.out.ready
     var high = datawidth-1 
     for (i <- (0 until daisylen).reverse) {
@@ -51,29 +58,26 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int) extends Module {
   }
 }
 
-class StateChainIO(datawidth: Int, daisywidth: Int = 1) extends 
-  DaisyChainIO(datawidth, daisywidth)
+class StateChainIO extends DaisyChainIO
 
-class StateChain(datawidth: Int, daisywidth: Int = 1) extends 
-  DaisyChain(datawidth, daisywidth) {
-  val io = new StateChainIO(datawidth, daisywidth)
+class StateChain extends DaisyChain {
+  val io = new StateChainIO
   val copied = Reg(next=io.stall)
   val copyCond = io.stall && !copied
   val readCond = io.stall && copied 
   initChain()
 }
 
-class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int) extends 
-  DaisyChainIO(datawidth, daisywidth) {
+class SRAMChainIO extends DaisyChainIO {
+  val n = params(SRAMSize)
   val restart = Bool(INPUT)
   val addrIn = UInt(INPUT, width=log2Up(n))
   val addrOut = Valid(UInt(width=log2Up(n)))
 }
 
-class SRAMChain(n: Int, datawidth: Int, daisywidth: Int) extends 
-  DaisyChain(datawidth, daisywidth) {
-  val io = new SRAMChainIO(n, datawidth, daisywidth)
-
+class SRAMChain extends DaisyChain {
+  val n = params(SRAMSize)
+  val io = new SRAMChainIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = Reg(init=s_IDLE)
   val copyCond = addrState === s_MEMREAD

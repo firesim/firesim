@@ -1,4 +1,4 @@
-package faee
+package DebugMachine
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
@@ -101,7 +101,7 @@ object DaisyBackend {
 
     def insertStateChain(m: Module) = {
       val datawidth = (states(m) foldLeft 0)(_ + _.needWidth)
-      val chain = if (!states(m).isEmpty) m.addModule(new StateChain(datawidth, daisywidth)) else null
+      val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case Datawidth => datawidth}) else null
       if (chain != null) {
         if (m.name != top.name) insertStatePins(m)
         chain.io.data := UInt(Concatenate(states(m)))
@@ -161,7 +161,9 @@ object DaisyBackend {
       for (sram <- srams(m)) {
         val read = sram.readAccesses.head
         val datawidth = sram.needWidth
-        val chain = m.addModule(new SRAMChain(sram.size, datawidth, daisywidth))
+        val chain = m.addModule(new SRAMChain, {
+          case Datawidth => datawidth 
+          case SRAMSize => sram.size})
         chain.io.data := UInt(read)
         chain.io.stall := stallPins(m)
         if (lastChain == null) {

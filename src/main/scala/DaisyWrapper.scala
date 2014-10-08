@@ -1,23 +1,46 @@
-package faee
+package DebugMachine
 
 import Chisel._
 
-class DaisyWrapperIO[T <: Data](buswidth: Int) extends Bundle {
+case object Buswidth extends Field[Int]
+case object Daisywidth extends Field[Int]
+case object Opwidth extends Field[Int]
+case object OpSTEP extends Field[UInt]
+case object OpPEEK extends Field[UInt]
+case object OpPOKE extends Field[UInt]
+
+object DaisyWrapper {
+  val opwidth = 6
+  val daisy_parameters = Parameters.empty alter (
+    (key, site, here, up) => key match { 
+      case Buswidth => 64
+      case Daisywidth => 4
+      case Opwidth => opwidth
+      case OpSTEP => UInt(0, opwidth)
+      case OpPOKE => UInt(1, opwidth)
+      case OpPEEK => UInt(2, opwidth)
+    })
+  def apply[T <: Module](c: =>T) = Module(new DaisyWrapper(c))(Some(daisy_parameters))
+}
+
+class DaisyWrapperIO[T <: Data] extends Bundle {
+  val buswidth = params(Buswidth)
   val hostIn = Decoupled(UInt(width=buswidth)).flip
   val hostOut = Decoupled(UInt(width=buswidth))
   val memIn = Decoupled(UInt(width=buswidth)).flip
   val memOut = Decoupled(UInt(width=buswidth))
 }
 
-object DaisyWrapper {
-  def apply[T <: Module](c: =>T) = Module(new DaisyWrapper(c))
-}
+class DaisyWrapper[+T <: Module](c: =>T) extends Module {
+  // Params
+  val buswidth = params(Buswidth) 
+  val daisywidth = params(Daisywidth)
+  val opwidth = params(Opwidth)
+  val STEP = params(OpSTEP)
+  val POKE = params(OpPOKE)
+  val PEEK = params(OpPEEK)
 
-class DaisyWrapper[+T <: Module](c: =>T, 
-  val buswidth: Int = 64, 
-  val daisywidth: Int = 3, 
-  val opwidth: Int = 6) extends Module {
-  val io = new DaisyWrapperIO(buswidth)
+  val io = new DaisyWrapperIO
   val target = Module(c)
   val inputs = for ((n, io) <- target.wires ; if io.dir == INPUT) yield io
   val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT) yield io
@@ -41,11 +64,6 @@ class DaisyWrapper[+T <: Module](c: =>T,
   val fire = stepCounter.orR
   val fireDelay = Reg(next=fire)
   stallPin := !fire
-
-  // Debug APIs
-  val STEP = UInt(0, opwidth)
-  val POKE = UInt(1, opwidth)
-  val PEEK = UInt(2, opwidth)
 
   // Counters for snapshotting
   val snapBuffer = Reg(UInt(width=buswidth+daisywidth))
