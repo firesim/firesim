@@ -1,4 +1,4 @@
-package faee
+package DebugMachine
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
