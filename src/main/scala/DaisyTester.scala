@@ -212,7 +212,8 @@ abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = 
     for (line <- lines) {
       val tokens = line split " "
       stateNames += tokens.head
-      stateWidths += tokens.last.toInt 
+      stateWidths += tokens.last.toInt
+println("%s %d".format(tokens.head, tokens.last.toInt))
     }
   }
  

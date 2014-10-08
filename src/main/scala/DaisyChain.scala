@@ -9,21 +9,28 @@ abstract class DaisyChainIO(datawidth: Int, daisywidth: Int) extends Bundle {
   val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
-abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
-  val regs = Vec.fill(datawidth) { Reg(UInt(width=daisywidth)) }
+abstract class DaisyChain(datawidth: Int, daisywidth: Int) extends Module {
   def io: DaisyChainIO
-  val counter = Reg(UInt(width=log2Up(datawidth+1)))
   def copyCond: Bool
   def readCond: Bool
+  val daisylen = (datawidth - 1) / daisywidth + 1
+  val regs = Vec.fill(daisylen) { Reg(UInt(width=daisywidth)) }
+  val counter = Reg(UInt(width=log2Up(daisylen+1)))
 
   def initChain(fake: Int = 0) {
     // Daisy chain datapath
-    io.out.bits := regs(datawidth-1)
-    io.out.valid := counter.orR && io.out.ready
+    io.out.bits := regs(daisylen-1)
+    io.out.valid := counter.orR // && io.out.ready
     io.in.ready := io.out.ready
-    for (i <- 0 until datawidth) {
+    var high = datawidth-1 
+    for (i <- (0 until daisylen).reverse) {
+      val low = math.max(high-daisywidth+1, 0)
+      val padwidth = daisywidth-(high-low+1)
       when(copyCond) {
-        regs(i) := io.data(i)
+        if (padwidth > 0)
+          regs(i) := Cat(io.data(high, low), UInt(0, padwidth))
+        else 
+          regs(i) := io.data(high, low)
       }
       when(readCond && counter.orR && io.out.fire()) {
         if (i == 0)
@@ -31,11 +38,12 @@ abstract class DaisyChain(datawidth: Int, daisywidth: Int = 1) extends Module {
         else
           regs(i) := regs(i-1)
       }
+      high -= daisywidth
     }
 
     // Daisy chain control logic
     when(copyCond) {
-      counter := UInt(datawidth)
+      counter := UInt(daisylen)
     }
     when(readCond && counter.orR && io.out.fire() && !io.in.valid) {
       counter := counter - UInt(1)
@@ -55,14 +63,14 @@ class StateChain(datawidth: Int, daisywidth: Int = 1) extends
   initChain()
 }
 
-class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
+class SRAMChainIO(n: Int, datawidth: Int, daisywidth: Int) extends 
   DaisyChainIO(datawidth, daisywidth) {
   val restart = Bool(INPUT)
   val addrIn = UInt(INPUT, width=log2Up(n))
   val addrOut = Valid(UInt(width=log2Up(n)))
 }
 
-class SRAMChain(n: Int, datawidth: Int, daisywidth: Int = 1) extends 
+class SRAMChain(n: Int, datawidth: Int, daisywidth: Int) extends 
   DaisyChain(datawidth, daisywidth) {
   val io = new SRAMChainIO(n, datawidth, daisywidth)
 

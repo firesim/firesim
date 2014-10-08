@@ -2,7 +2,7 @@ package faee
 
 import Chisel._
 
-class DaisyWrapperIO[T <: Data](buswidth: Int = 64) extends Bundle {
+class DaisyWrapperIO[T <: Data](buswidth: Int) extends Bundle {
   val hostIn = Decoupled(UInt(width=buswidth)).flip
   val hostOut = Decoupled(UInt(width=buswidth))
   val memIn = Decoupled(UInt(width=buswidth)).flip
@@ -15,7 +15,7 @@ object DaisyWrapper {
 
 class DaisyWrapper[+T <: Module](c: =>T, 
   val buswidth: Int = 64, 
-  val daisywidth: Int = 1, 
+  val daisywidth: Int = 3, 
   val opwidth: Int = 6) extends Module {
   val io = new DaisyWrapperIO(buswidth)
   val target = Module(c)
@@ -48,9 +48,10 @@ class DaisyWrapper[+T <: Module](c: =>T,
   val PEEK = UInt(2, opwidth)
 
   // Counters for snapshotting
-  val snapBuffer = Reg(UInt(width=buswidth))
+  val snapBuffer = Reg(UInt(width=buswidth+daisywidth))
   val snapCount = Reg(UInt(width=log2Up(buswidth+1)))
   val snapReady = Reg(Bool())
+  val snapFinish = Reg(Bool())
   val sramRestartCount = if (Driver.hasSRAM) Reg(UInt(width=log2Up(Driver.sramMaxSize+1))) else null
 
   // Connect target IOs with buffers
@@ -124,20 +125,22 @@ class DaisyWrapper[+T <: Module](c: =>T,
     }
     // Snapshotring inputs and registers
     is(s_SNAP1) {
-      stateOut.ready := Bool(true)
+      stateOut.ready := snapReady
       when(!snapReady && stateOut.valid) {
         snapReady := Bool(true)
       }
-      when(snapCount >= UInt(buswidth-1)) { 
+      snapFinish := !stateOut.valid
+      when(snapCount >= UInt(buswidth)) { 
         when(io.memOut.ready) {
-          io.memOut.bits := snapBuffer
+          io.memOut.bits := snapBuffer >> (snapCount - UInt(buswidth))
           io.memOut.valid := Bool(true)
-          snapCount := snapCount - UInt(buswidth-1)
+          snapCount := snapCount - UInt(buswidth-daisywidth)
         }
-        when(!stateOut.valid) {
+        when(snapFinish || !stateOut.valid && snapCount === UInt(buswidth)){ 
+          snapCount := UInt(0)
+          snapReady := Bool(false)
+          snapFinish := Bool(false)
           if (Driver.hasSRAM) {
-            snapCount := UInt(0)
-            snapReady := Bool(false)
             sramRestart := Bool(true)
             state := s_SNAP2 
           } else { 
@@ -152,18 +155,21 @@ class DaisyWrapper[+T <: Module](c: =>T,
     // Snapshotring SRAMs
     if (Driver.hasSRAM) {
       is(s_SNAP2) {
-        sramOut.ready := Bool(true)
+        sramOut.ready := snapReady
         when(!snapReady && sramOut.valid) {
           snapReady := Bool(true)
         }
-        when(snapCount >= UInt(buswidth-1)) {
+        snapFinish := !stateOut.valid
+        when(snapCount >= UInt(buswidth)) {
           when(io.memOut.ready) {
             io.memOut.bits := snapBuffer
             io.memOut.valid := Bool(true)
-            snapCount := snapCount - UInt(buswidth-1)
+            snapCount := snapCount - UInt(buswidth-daisywidth)
           }
-          when(!sramOut.valid) {
+          when(snapFinish || !stateOut.valid && snapCount === UInt(buswidth)) { 
+            snapCount := UInt(0)
             snapReady := Bool(false)
+            snapFinish := Bool(false)
             when(sramRestartCount.orR) {
               sramRestartCount := sramRestartCount - UInt(1)
               sramRestart := Bool(true)
