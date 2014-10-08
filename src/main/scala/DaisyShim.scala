@@ -9,38 +9,39 @@ case object OpSTEP extends Field[UInt]
 case object OpPEEK extends Field[UInt]
 case object OpPOKE extends Field[UInt]
 
-object DaisyWrapper {
+object DaisyShim {
   val opwidth = 6
   val daisy_parameters = Parameters.empty alter (
     (key, site, here, up) => key match { 
       case Buswidth => 64
-      case Daisywidth => 4
+      case Daisywidth => 32
       case Opwidth => opwidth
       case OpSTEP => UInt(0, opwidth)
       case OpPOKE => UInt(1, opwidth)
       case OpPEEK => UInt(2, opwidth)
     })
-  def apply[T <: Module](c: =>T) = Module(new DaisyWrapper(c))(Some(daisy_parameters))
+  def apply[T <: Module](c: =>T) = Module(new DaisyShim(c))(daisy_parameters)
 }
 
-class DaisyWrapperIO[T <: Data] extends Bundle {
-  val buswidth = params(Buswidth)
+abstract trait DaisyShimParams extends UsesParameters {
+  val buswidth = params(Buswidth) 
+  val daisywidth = params(Daisywidth)
+  val opwidth = params(Opwidth)
+  val STEP = params(OpSTEP)
+  val POKE = params(OpPOKE)
+  val PEEK = params(OpPEEK)  
+}
+
+class DaisyShimIO[T <: Data] extends Bundle {
+  val buswidth = params(Buswidth) 
   val hostIn = Decoupled(UInt(width=buswidth)).flip
   val hostOut = Decoupled(UInt(width=buswidth))
   val memIn = Decoupled(UInt(width=buswidth)).flip
   val memOut = Decoupled(UInt(width=buswidth))
 }
 
-class DaisyWrapper[+T <: Module](c: =>T) extends Module {
-  // Params
-  val buswidth = params(Buswidth) 
-  val daisywidth = params(Daisywidth)
-  val opwidth = params(Opwidth)
-  val STEP = params(OpSTEP)
-  val POKE = params(OpPOKE)
-  val PEEK = params(OpPEEK)
-
-  val io = new DaisyWrapperIO
+class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams {
+  val io = new DaisyShimIO
   val target = Module(c)
   val inputs = for ((n, io) <- target.wires ; if io.dir == INPUT) yield io
   val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT) yield io

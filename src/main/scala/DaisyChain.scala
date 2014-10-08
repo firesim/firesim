@@ -5,18 +5,19 @@ import Chisel._
 case object Datawidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
-abstract class DaisyChainIO extends Bundle {
+abstract trait DaisyChainParams extends UsesParameters {
   val datawidth = params(Datawidth)
   val daisywidth = params(Daisywidth)
+}
+
+abstract class DaisyChainIO extends Bundle with DaisyChainParams {
   val stall = Bool(INPUT)
   val data =  UInt(INPUT, datawidth)
   val in  = Decoupled(UInt(INPUT, daisywidth)).flip
   val out = Decoupled(UInt(INPUT, daisywidth))
 }
 
-abstract class DaisyChain extends Module {
-  val datawidth = params(Datawidth)
-  val daisywidth = params(Daisywidth)
+abstract class DaisyChain extends Module with DaisyChainParams {
   def io: DaisyChainIO
   def copyCond: Bool
   def readCond: Bool
@@ -68,15 +69,17 @@ class StateChain extends DaisyChain {
   initChain()
 }
 
-class SRAMChainIO extends DaisyChainIO {
+abstract trait SRAMChainParams extends UsesParameters {
   val n = params(SRAMSize)
+}
+
+class SRAMChainIO extends DaisyChainIO with SRAMChainParams {
   val restart = Bool(INPUT)
   val addrIn = UInt(INPUT, width=log2Up(n))
   val addrOut = Valid(UInt(width=log2Up(n)))
 }
 
-class SRAMChain extends DaisyChain {
-  val n = params(SRAMSize)
+class SRAMChain extends DaisyChain with SRAMChainParams {
   val io = new SRAMChainIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = Reg(init=s_IDLE)

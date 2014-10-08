@@ -3,7 +3,7 @@ package DebugMachine
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-abstract class DaisyTester[+T <: DaisyWrapper[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
+abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]()
   val inputMap = HashMap[String, BigInt]()
   val outputMap = HashMap[String, BigInt]()

@@ -15,7 +15,7 @@ object DaisyBackend {
   val sramRestarts = HashMap[Module, Bool]()
   val cntrIns  = HashMap[Module, DecoupledIO[UInt]]()
   val cntrOuts = HashMap[Module, DecoupledIO[UInt]]()
-  lazy val top = Driver.topComponent.asInstanceOf[DaisyWrapper[Module]]
+  lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
 
