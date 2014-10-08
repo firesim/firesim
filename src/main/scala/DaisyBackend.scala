@@ -101,7 +101,7 @@ object DaisyBackend {
 
     def insertStateChain(m: Module) = {
       val datawidth = (states(m) foldLeft 0)(_ + _.needWidth)
-      val chain = if (!states(m).isEmpty) m.addModule(new StateChain(datawidth)) else null
+      val chain = if (!states(m).isEmpty) m.addModule(new StateChain(datawidth, daisywidth)) else null
       if (chain != null) {
         if (m.name != top.name) insertStatePins(m)
         chain.io.data := UInt(Concatenate(states(m)))
@@ -161,7 +161,7 @@ object DaisyBackend {
       for (sram <- srams(m)) {
         val read = sram.readAccesses.head
         val datawidth = sram.needWidth
-        val chain = m.addModule(new SRAMChain(sram.size, datawidth))
+        val chain = m.addModule(new SRAMChain(sram.size, datawidth, daisywidth))
         chain.io.data := UInt(read)
         chain.io.stall := stallPins(m)
         if (lastChain == null) {
@@ -240,8 +240,10 @@ object DaisyBackend {
     val chainFile = Driver.createOutputFile(targetName + ".chain.map")
     // Collect states
     var stateWidth = 0
-    var totalWidth = top.buswidth
+    var totalWidth = 0
     for (m <- Driver.sortedComps.reverse ; if m.name != top.name) {
+      var daisyWidth = 0
+      var thisWidth = 0
       for (state <- states(m)) {
         state match {
           case read: MemRead => {
@@ -251,30 +253,44 @@ object DaisyBackend {
             val width = mem.needWidth
             res append "%s[%d] %d\n".format(path, addr, width)
             stateWidth += width
-            if (totalWidth < stateWidth) totalWidth += top.buswidth
+            thisWidth += width
+            while (totalWidth < stateWidth) totalWidth += top.buswidth
+            while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
           case _ => { 
             val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
             stateWidth += width
-            if (totalWidth < stateWidth) totalWidth += top.buswidth
+            while (totalWidth < stateWidth) totalWidth += top.buswidth
+            while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
         }
       }
+      val daisyPadWidth = daisyWidth - thisWidth
+      if (daisyPadWidth > 0) {
+        res append "null %d\n".format(daisyPadWidth)  
+      }
     }
-    val padWidth = totalWidth - stateWidth
-    if (padWidth > 0) {
-      res append "null %d\n".format(padWidth)
+    val totalPadWidth = totalWidth - stateWidth
+    if (totalPadWidth > 0) {
+      res append "null %d\n".format(totalPadWidth)
     }
 
     for (i <- 0 until Driver.sramMaxSize ; m <- Driver.sortedComps.reverse ; if m.name != top.name) {
       for (sram <- srams(m)) {
         val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + sram.name
+        val width = sram.needWidth
+        var daisyWidth = 0
         if (i < sram.n) 
-          res append "%s[%d] %d\n".format(path, i, sram.needWidth)
+          res append "%s[%d] %d\n".format(path, i, width)
         else 
-          res append "null %d\n".format(sram.needWidth)
+          res append "null %d\n".format(width)
+        while (daisyWidth < width) daisyWidth += top.daisywidth
+        val daisyPadWidth = daisyWidth - width
+        if (daisyPadWidth > 0) {
+          res append "null %d\n".format(daisyPadWidth)  
+        }
       }
     }
     try {
