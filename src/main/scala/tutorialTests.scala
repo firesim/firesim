@@ -4,7 +4,7 @@ import Chisel._
 import TutorialExamples._
 import scala.collection.mutable.{Stack => ScalaStack}
 
-class GCDDaisyTests(c: DaisyWrapper[GCD]) extends DaisyTester(c) {
+class GCDDaisyTests(c: DaisyShim[GCD]) extends DaisyTester(c) {
   val (a, b, z) = (64, 48, 16)
   do {
     val first = if (t == 0) 1 else 0
@@ -16,7 +16,7 @@ class GCDDaisyTests(c: DaisyWrapper[GCD]) extends DaisyTester(c) {
   expect(c.target.io.z, z)
 }
 
-class ParityDaisyTests(c: DaisyWrapper[Parity]) extends DaisyTester(c) {
+class ParityDaisyTests(c: DaisyShim[Parity]) extends DaisyTester(c) {
   var isOdd = 0
   for (t <- 0 until 10) {
     val bit = rnd.nextInt(2)
@@ -27,7 +27,7 @@ class ParityDaisyTests(c: DaisyWrapper[Parity]) extends DaisyTester(c) {
   }
 }
 
-class StackDaisyTests(c: DaisyWrapper[Stack]) extends DaisyTester(c) {  
+class StackDaisyTests(c: DaisyShim[Stack]) extends DaisyTester(c) {  
   var nxtDataOut = 0
   var dataOut = 0
   val stack = new ScalaStack[Int]()
@@ -59,7 +59,7 @@ class StackDaisyTests(c: DaisyWrapper[Stack]) extends DaisyTester(c) {
   }
 }
 
-class ShiftRegisterDaisyTests(c: DaisyWrapper[ShiftRegister]) extends DaisyTester(c) {  
+class ShiftRegisterDaisyTests(c: DaisyShim[ShiftRegister]) extends DaisyTester(c) {  
   val reg     = Array.fill(4){ 0 }
   for (t <- 0 until 64) {
     val in = rnd.nextInt(2)
@@ -72,7 +72,7 @@ class ShiftRegisterDaisyTests(c: DaisyWrapper[ShiftRegister]) extends DaisyTeste
   }
 }
 
-class EnableShiftRegisterDaisyTests(c: DaisyWrapper[EnableShiftRegister]) extends DaisyTester(c) {  
+class EnableShiftRegisterDaisyTests(c: DaisyShim[EnableShiftRegister]) extends DaisyTester(c) {  
   val reg = Array.fill(4){ 0 }
   for (t <- 0 until 16) {
     val in    = rnd.nextInt(2)
@@ -89,7 +89,7 @@ class EnableShiftRegisterDaisyTests(c: DaisyWrapper[EnableShiftRegister]) extend
   }
 }
 
-class MemorySearchDaisyTests(c: DaisyWrapper[MemorySearch]) extends DaisyTester(c) {
+class MemorySearchDaisyTests(c: DaisyShim[MemorySearch]) extends DaisyTester(c) {
   val list = c.target.elts.map(int(_)) 
   val n = 8
   val maxT = n * (list.length + 3)
@@ -108,7 +108,7 @@ class MemorySearchDaisyTests(c: DaisyWrapper[MemorySearch]) extends DaisyTester(
   }
 }
 
-class ResetShiftRegisterDaisyTests(c: DaisyWrapper[ResetShiftRegister]) extends DaisyTester(c) {  
+class ResetShiftRegisterDaisyTests(c: DaisyShim[ResetShiftRegister]) extends DaisyTester(c) {  
   val ins = Array.fill(5){ 0 }
   var k   = 0
   for (n <- 0 until 16) {
@@ -125,7 +125,7 @@ class ResetShiftRegisterDaisyTests(c: DaisyWrapper[ResetShiftRegister]) extends 
   }
 }
 
-class RiscDaisyTests(c: DaisyWrapper[Risc]) extends DaisyTester(c) {  
+class RiscDaisyTests(c: DaisyShim[Risc]) extends DaisyTester(c) {  
   def wr(addr: UInt, data: UInt)  = {
     poke(c.target.io.isWr,   1)
     poke(c.target.io.wrAddr, addr.litValue())
@@ -160,7 +160,7 @@ class RiscDaisyTests(c: DaisyWrapper[Risc]) extends DaisyTester(c) {
   expect(c.target.io.out, 4)
 }
 
-class RouterDaisyTests(c: DaisyWrapper[Router]) extends DaisyTester(c) {  
+class RouterDaisyTests(c: DaisyShim[Router]) extends DaisyTester(c) {  
   def rd(addr: Int, data: Int) = {
     poke(c.target.io.in.valid,        0)
     poke(c.target.io.writes.valid,    0)

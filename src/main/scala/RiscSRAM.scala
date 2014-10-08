@@ -187,7 +187,7 @@ class RiscSRAMTests(c: RiscSRAM) extends Tester(c) {
   expect(c.io.out, 40)
 }
 
-class RiscSRAMDaisyTests(c: DaisyWrapper[RiscSRAM]) extends DaisyTester(c/*, isTrace = false*/) {  
+class RiscSRAMDaisyTests(c: DaisyShim[RiscSRAM]) extends DaisyTester(c/*, isTrace = false*/) {  
   def wr(addr: UInt, data: UInt)  = {
     poke(c.target.io.isWr,   1)
     poke(c.target.io.wrAddr, addr.litValue())
