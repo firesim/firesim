@@ -118,19 +118,50 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("==========")
   }
 
-  def readDaisyChain = {
-    if (isTrace) println("Read State Daisy Chain")
-    // Read daisy chain
-    var res = new StringBuilder
-    poke(c.io.mem.reqData.ready, 1)
+  def pokeSnap(addr: Int) {
+    if (isTrace) println("Poke Snap(addr : %d)".format(addr))
+    val snapOp = c.SNAP.getNode.asInstanceOf[Literal].value
+    // Send POKE command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
+    }
+    poke(c.io.host.in.bits, (addr << c.opwidth) | snapOp)
+    poke(c.io.host.in.valid, 1)
+    takeSteps(1)
+    poke(c.io.host.in.valid, 0)    
+    if (isTrace) println("==========")
+  }
+
+  def readDaisyChain(addr: Int) = {
+    if (isTrace) println("Read State Daisy Chain")
+
+    // Read daisy chain
+    val res = new StringBuilder
+    var start = false
+    var offset = 0
+    while (peek(dumpName(c.io.host.in.ready)) == 0) {
+      takeSteps(1)
+      // Mem request command
+      if (peek(dumpName(c.io.mem.reqCmd.valid)) == 1) {
+        poke(c.io.mem.reqCmd.ready, 1)
+        expect(c.io.mem.reqCmd.bits.addr, addr + offset)
+        expect(c.io.mem.reqCmd.bits.rw, 1)
+        expect(c.io.mem.reqCmd.bits.tag, 0)
+        takeSteps(1)
+        poke(c.io.mem.reqCmd.ready, 0)
+        offset += (c.buswidth >> 2)
+      }
+      // Mem request data
       if (peek(dumpName(c.io.mem.reqData.valid)) == 1) {
+        poke(c.io.mem.reqData.ready, 1)
         val value = peek(c.io.mem.reqData.bits.data)
         val fromChain = value.toString(2).reverse.padTo(c.buswidth, '0').reverse
         res append fromChain
+        takeSteps(1)
+        poke(c.io.mem.reqData.ready, 0)
       }
     }
+    poke(c.io.mem.reqCmd.ready, 0)
     poke(c.io.mem.reqData.ready, 0)
     if (isTrace) println("Chain: " + res.result)
     res.result
@@ -167,10 +198,15 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  def daisyStep(n: Int) {
+  def daisyStep(n: Int) {    
+    var addr = 0
+    for (i <- 0 until (c.addrwidth >> 1)) {
+      addr = (addr << 1) | rnd.nextInt(2)
+    }
+    if (t > 0) pokeSnap(addr)
     pokeSteps(n)
     takeSteps(n)
-    if (t > 0) verifyDaisyChain(readDaisyChain)
+    if (t > 0) verifyDaisyChain(readDaisyChain(addr))
   }
 
   override def step(n: Int = 1) {
