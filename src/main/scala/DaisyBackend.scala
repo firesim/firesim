@@ -1,20 +1,12 @@
 package DebugMachine
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
-import scala.collection.mutable.{Queue => ScalaQueue}
+import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
+import addDaisyPins._
 
 object DaisyBackend { 
-  val stallPins = HashMap[Module, Bool]()
   val states = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
-  val stateIns  = HashMap[Module, DecoupledIO[UInt]]()
-  val stateOuts = HashMap[Module, DecoupledIO[UInt]]()
-  val sramIns  = HashMap[Module, DecoupledIO[UInt]]()
-  val sramOuts = HashMap[Module, DecoupledIO[UInt]]()
-  val sramRestarts = HashMap[Module, Bool]()
-  val cntrIns  = HashMap[Module, DecoupledIO[UInt]]()
-  val cntrOuts = HashMap[Module, DecoupledIO[UInt]]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
@@ -34,13 +26,9 @@ object DaisyBackend {
 
   def initDaisy(c: Module) {
     top.name = targetName + "Wrapper"
-    stallPins(top.target) = top.stallPin
-    stateIns(top.target) = top.stateIn
-    stateOuts(top.target) = top.stateOut
-    if (Driver.hasSRAM) {
-      sramIns(top.target) = top.sramIn
-      sramOuts(top.target) = top.sramOut
-      sramRestarts(top.target) = top.sramRestart
+    for (m <- Driver.sortedComps ; 
+    if m.name != top.name && m.name != top.target.name) {
+      addDaisyPins(m, daisywidth)
     }
   }
 
@@ -49,10 +37,9 @@ object DaisyBackend {
     ChiselError.info("[DaisyBackend] connect stall signals")
 
     def connectStallPins(m: Module) {
-      if (!(stallPins contains m)) {
-        stallPins(m) = m.addPin(Bool(INPUT), "stall")
-        if (!(stallPins contains m.parent)) connectStallPins(m.parent)
-        stallPins(m) := stallPins(m.parent)
+      if (daisyPins(m).stall.inputs.isEmpty && m.name != top.target.name) {
+        connectStallPins(m.parent)
+        daisyPins(m).stall := daisyPins(m.parent).stall
       }
     }
 
@@ -65,14 +52,14 @@ object DaisyBackend {
       m bfs { _ match {
         case reg: Reg => { 
           connectStallPins(m)
-          reg.inputs(0) = Multiplex(stallPins(m), reg, reg.inputs(0))
+          reg.inputs(0) = Multiplex(daisyPins(m).stall, reg, reg.inputs(0))
           // Add the register for daisy chains
           states(m) += reg
         }
         case mem: Mem[_] => {
           connectStallPins(m)
           for (write <- mem.writeAccesses) {
-            write cond_= write.cond.asInstanceOf[Bool] && !stallPins(m) 
+            write cond_= write.cond.asInstanceOf[Bool] && !daisyPins(m).stall
           }
           if (mem.seqRead) {
             srams(m) += mem
@@ -92,21 +79,15 @@ object DaisyBackend {
   def addStateChains(c: Module) {
     ChiselError.info("[DaisyBackend] add state chains")
 
-    def insertStatePins(m: Module) {
-      if (m.name != top.target.name) {
-        stateIns(m)  = m.addPin(Decoupled(UInt(width=daisywidth)).flip, "state_in")
-        stateOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)),      "state_out")
-      }
-    }
-
+    val hasStateChain = HashSet[Module]()
     def insertStateChain(m: Module) = {
       val datawidth = (states(m) foldLeft 0)(_ + _.needWidth)
-      val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case Datawidth => datawidth}) else null
+      val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case DataWidth => datawidth}) else null
       if (chain != null) {
-        if (m.name != top.name) insertStatePins(m)
         chain.io.dataIo.data := UInt(Concatenate(states(m)))
-        chain.io.dataIo.out <> stateOuts(m)
-        chain.io.stall := stallPins(m)
+        chain.io.dataIo.out <> daisyPins(m).state.out
+        chain.io.stall := daisyPins(m).stall
+        hasStateChain += m
       } 
       chain
     }
@@ -115,25 +96,25 @@ object DaisyBackend {
       val stateChain = insertStateChain(m)
       // Filter children who have state chains
       var last = -1
-      for ((child, cur) <- m.children.zipWithIndex; if (stateOuts contains child)) {
+      for ((child, cur) <- m.children.zipWithIndex ; if hasStateChain contains child) {
         if (last < 0) {
           if (stateChain != null) {
-            stateChain.io.dataIo.in <> stateOuts(child)
+            stateChain.io.dataIo.in <> daisyPins(child).state.out
           } else {
-            insertStatePins(m)
-            stateOuts(m) <> stateOuts(child)
+            daisyPins(m).state.out <> daisyPins(child).state.out
           }
         } else {
           val lastChild = m.children(last)
-          stateOuts(lastChild) <> stateIns(m)
+          daisyPins(lastChild).state.out <> daisyPins(m).state.in
         }
         last = cur
       }
 
       if (last > -1) {
-        stateIns(m) <> stateIns(m.children(last))
+        hasStateChain += m
+        daisyPins(m).state.in <> daisyPins(m.children(last)).state.in
       } else if (stateChain != null) {
-        stateIns(m) <> stateChain.io.dataIo.in
+        daisyPins(m).state.in <> stateChain.io.dataIo.in
       }
     }
   } 
@@ -142,38 +123,30 @@ object DaisyBackend {
     ChiselError.info("[DaisyBackend] add sram chains")
 
     def connectSRAMRestarts(m: Module) {
-      if (!(sramRestarts contains m)) {
-        sramRestarts(m) = m.addPin(Bool(INPUT), "restart")
-        if (!(sramRestarts contains m.parent)) connectSRAMRestarts(m.parent)
-        sramRestarts(m) := sramRestarts(m.parent)
+      if (daisyPins(m).stall.inputs.isEmpty && m.name != top.target.name) {
+        connectSRAMRestarts(m.parent)
+        daisyPins(m).sram.restart := daisyPins(m.parent).sram.restart
       }
     }
 
-    def insertSRAMPins(m: Module) {
-      if (m.name != top.target.name) {
-        sramIns(m)  = m.addPin(Decoupled(UInt(width=daisywidth)).flip, "sram_in")
-        sramOuts(m) = m.addPin(Decoupled(UInt(width=daisywidth)),      "sram_out")
-      }
-    }
-
+    val hasSRAMChain = HashSet[Module]()
     def insertSRAMChain(m: Module) = {
       var lastChain: SRAMChain = null
       for (sram <- srams(m)) {
         val read = sram.readAccesses.head
         val datawidth = sram.needWidth
         val chain = m.addModule(new SRAMChain, {
-          case Datawidth => datawidth 
+          case DataWidth => datawidth 
           case SRAMSize => sram.size})
-        chain.io.stall := stallPins(m)
+        chain.io.stall := daisyPins(m).stall
         chain.io.dataIo.data := UInt(read)
         if (lastChain == null) {
           connectSRAMRestarts(m)
-          insertSRAMPins(m)
-          sramOuts(m) <> chain.io.dataIo.out
+          daisyPins(m).sram.out <> chain.io.dataIo.out
         } else {
           lastChain.io.dataIo.in <> chain.io.dataIo.out
         }
-        chain.io.restart := sramRestarts(m)
+        chain.io.restart := daisyPins(m).sram.restart
         // Connect chain addr to SRAM addr
         val readAddr = read.addr.asInstanceOf[Bits]
         chain.io.addrIo.in := readAddr
@@ -182,6 +155,7 @@ object DaisyBackend {
         }
         lastChain = chain
       }
+      if (lastChain != null) hasSRAMChain += m
       lastChain
     }
 
@@ -190,25 +164,25 @@ object DaisyBackend {
         val sramChain = insertSRAMChain(m)   
         // Filter children who have sram chains
         var last = -1
-        for ((child, cur) <- m.children.zipWithIndex; if (sramOuts contains child)) {
+        for ((child, cur) <- m.children.zipWithIndex; if hasSRAMChain contains child) {
           if (last < 0) {
             if (sramChain != null) {
-              sramChain.io.dataIo.in <> sramOuts(child)
+              sramChain.io.dataIo.in <> daisyPins(child).sram.out
             } else {
               connectSRAMRestarts(m)
-              insertSRAMPins(m)
-              sramOuts(m) <> sramOuts(child)
+              daisyPins(m).sram.out <> daisyPins(child).sram.out
             }
           } else {
-            sramOuts(child) <> sramOuts(m.children(last))
+            daisyPins(child).sram.out <> daisyPins(m.children(last)).sram.out
           }
           last = cur
         }
 
         if (last > -1) {
-          sramIns(m) <> sramIns(m.children(last))
+          hasSRAMChain += m
+          daisyPins(m).sram.in <> daisyPins(m.children(last)).sram.in
         } else if (sramChain != null) {
-          sramIns(m) <> sramChain.io.dataIo.in
+          daisyPins(m).sram.in <> sramChain.io.dataIo.in
         }     
       } 
     }
