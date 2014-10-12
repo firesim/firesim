@@ -104,9 +104,9 @@ object DaisyBackend {
       val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case Datawidth => datawidth}) else null
       if (chain != null) {
         if (m.name != top.name) insertStatePins(m)
-        chain.io.data := UInt(Concatenate(states(m)))
+        chain.io.dataIo.data := UInt(Concatenate(states(m)))
+        chain.io.dataIo.out <> stateOuts(m)
         chain.io.stall := stallPins(m)
-        chain.io.out <> stateOuts(m)
       } 
       chain
     }
@@ -118,7 +118,7 @@ object DaisyBackend {
       for ((child, cur) <- m.children.zipWithIndex; if (stateOuts contains child)) {
         if (last < 0) {
           if (stateChain != null) {
-            stateChain.io.in <> stateOuts(child)
+            stateChain.io.dataIo.in <> stateOuts(child)
           } else {
             insertStatePins(m)
             stateOuts(m) <> stateOuts(child)
@@ -133,7 +133,7 @@ object DaisyBackend {
       if (last > -1) {
         stateIns(m) <> stateIns(m.children(last))
       } else if (stateChain != null) {
-        stateIns(m) <> stateChain.io.in
+        stateIns(m) <> stateChain.io.dataIo.in
       }
     }
   } 
@@ -164,21 +164,21 @@ object DaisyBackend {
         val chain = m.addModule(new SRAMChain, {
           case Datawidth => datawidth 
           case SRAMSize => sram.size})
-        chain.io.data := UInt(read)
         chain.io.stall := stallPins(m)
+        chain.io.dataIo.data := UInt(read)
         if (lastChain == null) {
           connectSRAMRestarts(m)
           insertSRAMPins(m)
-          sramOuts(m) <> chain.io.out
+          sramOuts(m) <> chain.io.dataIo.out
         } else {
-          lastChain.io.in <> chain.io.out
+          lastChain.io.dataIo.in <> chain.io.dataIo.out
         }
         chain.io.restart := sramRestarts(m)
         // Connect chain addr to SRAM addr
         val readAddr = read.addr.asInstanceOf[Bits]
-        chain.io.addrIn := readAddr
-        when(chain.io.addrOut.valid) {
-          readAddr := chain.io.addrOut.bits
+        chain.io.addrIo.in := readAddr
+        when(chain.io.addrIo.out.valid) {
+          readAddr := chain.io.addrIo.out.bits
         }
         lastChain = chain
       }
@@ -193,7 +193,7 @@ object DaisyBackend {
         for ((child, cur) <- m.children.zipWithIndex; if (sramOuts contains child)) {
           if (last < 0) {
             if (sramChain != null) {
-              sramChain.io.in <> sramOuts(child)
+              sramChain.io.dataIo.in <> sramOuts(child)
             } else {
               connectSRAMRestarts(m)
               insertSRAMPins(m)
@@ -208,7 +208,7 @@ object DaisyBackend {
         if (last > -1) {
           sramIns(m) <> sramIns(m.children(last))
         } else if (sramChain != null) {
-          sramIns(m) <> sramChain.io.in
+          sramIns(m) <> sramChain.io.dataIo.in
         }     
       } 
     }
