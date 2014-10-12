@@ -2,17 +2,19 @@ package DebugMachine
 
 import Chisel._
 
-case object Datawidth extends Field[Int]
+case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
 // Common structures for daisy chains
 abstract trait DaisyChainParams extends UsesParameters {
-  val datawidth = params(Datawidth)
-  val daisywidth = params(Daisywidth)
+  val datawidth = params(DataWidth)
+  val daisywidth = params(DaisyWidth)
   val daisylen = (datawidth - 1) / daisywidth + 1
 }
 
-class DataIO extends Bundle with DaisyChainParams {
+abstract class DaisyChainBundle extends Bundle with DaisyChainParams
+
+class DataIO extends DaisyChainBundle {
   val in  = Decoupled(UInt(INPUT, daisywidth)).flip
   val out = Decoupled(UInt(INPUT, daisywidth))
   val data = UInt(INPUT, datawidth)
@@ -31,7 +33,9 @@ class DaisyDatapathIO extends Bundle {
   val ctrlIo = (new CntrIO).flip
 }
 
-class DaisyDatapath extends Module with DaisyChainParams { 
+abstract class DaisyChainModule extends Module with DaisyChainParams
+
+class DaisyDatapath extends DaisyChainModule { 
   val io = new DaisyDatapathIO
   val regs = Vec.fill(daisylen) { Reg(UInt(width=daisywidth)) }
 
@@ -83,7 +87,7 @@ class DaisyCounter(io: DaisyControlIO, daisylen: Int) {
 // Define state daisy chains
 class StateChainControlIO extends DaisyControlIO
 
-class StateChainControl extends Module with DaisyChainParams {
+class StateChainControl extends DaisyChainModule {
   val io = new StateChainControlIO
   val copied = Reg(next=io.stall)
   val counter = new DaisyCounter(io, daisylen)
@@ -124,7 +128,7 @@ class SRAMChainControlIO extends DaisyControlIO {
   val addrIo = new AddrIO
 }
 
-class SRAMChainControl extends Module with DaisyChainParams with SRAMChainParams {
+class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val io = new SRAMChainControlIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = Reg(init=s_IDLE)
