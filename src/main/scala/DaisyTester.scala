@@ -142,27 +142,27 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
       // Mem request command
-      if (peek(dumpName(c.io.mem.reqCmd.valid)) == 1) {
-        poke(c.io.mem.reqCmd.ready, 1)
-        expect(c.io.mem.reqCmd.bits.addr, addr + offset)
-        expect(c.io.mem.reqCmd.bits.rw, 1)
-        expect(c.io.mem.reqCmd.bits.tag, 0)
+      if (peek(dumpName(c.io.mem.req_cmd.valid)) == 1) {
+        poke(c.io.mem.req_cmd.ready, 1)
+        expect(c.io.mem.req_cmd.bits.addr, addr + offset)
+        expect(c.io.mem.req_cmd.bits.rw, 1)
+        expect(c.io.mem.req_cmd.bits.tag, 0)
         takeSteps(1)
-        poke(c.io.mem.reqCmd.ready, 0)
+        poke(c.io.mem.req_cmd.ready, 0)
         offset += (c.memwidth >> 2)
       }
       // Mem request data
-      if (peek(dumpName(c.io.mem.reqData.valid)) == 1) {
-        poke(c.io.mem.reqData.ready, 1)
-        val value = peek(c.io.mem.reqData.bits.data)
+      if (peek(dumpName(c.io.mem.req_data.valid)) == 1) {
+        poke(c.io.mem.req_data.ready, 1)
+        val value = peek(c.io.mem.req_data.bits.data)
         val fromChain = value.toString(2).reverse.padTo(c.memwidth, '0').reverse
         res append fromChain
         takeSteps(1)
-        poke(c.io.mem.reqData.ready, 0)
+        poke(c.io.mem.req_data.ready, 0)
       }
     }
-    poke(c.io.mem.reqCmd.ready, 0)
-    poke(c.io.mem.reqData.ready, 0)
+    poke(c.io.mem.req_cmd.ready, 0)
+    poke(c.io.mem.req_data.ready, 0)
     if (isTrace) println("Chain: " + res.result)
     res.result
   }
