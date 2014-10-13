@@ -25,7 +25,7 @@ object DaisyBackend {
   } 
 
   def initDaisy(c: Module) {
-    top.name = targetName + "Wrapper"
+    top.name = targetName + "Shim"
     for (m <- Driver.sortedComps ; 
     if m.name != top.name && m.name != top.target.name) {
       addDaisyPins(m, daisywidth)
@@ -37,7 +37,7 @@ object DaisyBackend {
     ChiselError.info("[DaisyBackend] connect stall signals")
 
     def connectStallPins(m: Module) {
-      if (daisyPins(m).stall.inputs.isEmpty && m.name != top.target.name) {
+      if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
         connectStallPins(m.parent)
         daisyPins(m).stall := daisyPins(m.parent).stall
       }
@@ -230,7 +230,7 @@ object DaisyBackend {
             res append "%s[%d] %d\n".format(path, addr, width)
             stateWidth += width
             thisWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.buswidth
+            while (totalWidth < stateWidth) totalWidth += top.memwidth
             while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
           case _ => { 
@@ -238,7 +238,7 @@ object DaisyBackend {
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
             stateWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.buswidth
+            while (totalWidth < stateWidth) totalWidth += top.memwidth
             while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
         }
