@@ -149,13 +149,13 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         expect(c.io.mem.reqCmd.bits.tag, 0)
         takeSteps(1)
         poke(c.io.mem.reqCmd.ready, 0)
-        offset += (c.buswidth >> 2)
+        offset += (c.memwidth >> 2)
       }
       // Mem request data
       if (peek(dumpName(c.io.mem.reqData.valid)) == 1) {
         poke(c.io.mem.reqData.ready, 1)
         val value = peek(c.io.mem.reqData.bits.data)
-        val fromChain = value.toString(2).reverse.padTo(c.buswidth, '0').reverse
+        val fromChain = value.toString(2).reverse.padTo(c.memwidth, '0').reverse
         res append fromChain
         takeSteps(1)
         poke(c.io.mem.reqData.ready, 0)

@@ -8,13 +8,13 @@ C_FLAGS := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
 V_FLAGS := $(C_FLAGS) --v
 
 all : cpp v
-cpp : $(addsuffix Wrapper.cpp, $(designs))
-v   : $(addsuffix Wrapper.v,   $(designs))
+cpp : $(addsuffix Shim.cpp, $(designs))
+v   : $(addsuffix Shim.v,   $(designs))
 
-%Wrapper.cpp: %.scala 
+%Shim.cpp: %.scala 
 	sbt "run $(basename $@) $(C_FLAGS)" | tee $@.out
 
-%Wrapper.v: %.scala 
+%Shim.v: %.scala 
 	sbt "run $(basename $@) $(V_FLAGS)" | tee $@.out
 
 clean:

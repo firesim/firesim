@@ -2,7 +2,8 @@ package DebugMachine
 
 import Chisel._
 
-case object BusWidth extends Field[Int]
+case object HostWidth extends Field[Int]
+case object MemWidth extends Field[Int]
 case object AddrWidth extends Field[Int]
 case object TagWidth extends Field[Int]
 case object DaisyWidth extends Field[Int]
@@ -11,8 +12,9 @@ case object OpWidth extends Field[Int]
 object DaisyShim {
   val opwidth = 6
   val daisy_parameters = Parameters.empty alter (
-    (key, site, here, up) => key match { 
-      case BusWidth => 64
+    (key, site, here, up) => key match {
+      case HostWidth => 32
+      case MemWidth => 64
       case AddrWidth => 32
       case TagWidth => 5
       case DaisyWidth => 32
@@ -22,7 +24,8 @@ object DaisyShim {
 }
 
 abstract trait DaisyShimParams extends UsesParameters {
-  val buswidth = params(BusWidth) 
+  val hostwidth = params(HostWidth)
+  val memwidth = params(MemWidth) 
   val addrwidth = params(AddrWidth)
   val tagwidth = params(TagWidth)
   val daisywidth = params(DaisyWidth)
@@ -39,12 +42,12 @@ abstract trait DebugCommands extends UsesParameters {
 abstract trait DaisyBundle extends Bundle with DaisyShimParams
 
 class HostIO extends DaisyBundle {
-  val in = Decoupled(UInt(width=buswidth)).flip
-  val out = Decoupled(UInt(width=buswidth))
+  val in = Decoupled(UInt(width=hostwidth)).flip
+  val out = Decoupled(UInt(width=hostwidth))
 }
 
 trait HasMemData extends DaisyBundle {
-  val data = UInt(width=buswidth)
+  val data = UInt(width=memwidth)
 }
 
 trait HasMemAddr extends DaisyBundle {
@@ -95,8 +98,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   // For snapshotting
   val isSnap = Reg(init=Bool(false))
   val snapMemAddr = Reg(UInt(width=addrwidth))
-  val snapBuffer = Reg(UInt(width=buswidth+daisywidth))
-  val snapCount = Reg(UInt(width=log2Up(buswidth+1)))
+  val snapBuffer = Reg(UInt(width=memwidth+daisywidth))
+  val snapCount = Reg(UInt(width=log2Up(memwidth+1)))
   val snapReady = Reg(Bool())
   val snapFinish = Reg(Bool())
   val sramRestartCount = Reg(UInt(width=log2Up(Driver.sramMaxSize+1)))
@@ -151,7 +154,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       when(io.host.in.fire()) {
         val op = io.host.in.bits(opwidth-1, 0)
         when(op === STEP) {
-          val stepNum = io.host.in.bits(buswidth-1, opwidth)
+          val stepNum = io.host.in.bits(hostwidth-1, opwidth)
           stepCounter := stepNum
           debugState := debug_STEP
         }.elsewhen(op === POKE) {
@@ -161,7 +164,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           peekCounter := UInt(outputs.length)
           debugState := debug_PEEK
         }.elsewhen(op === SNAP) {
-          val addr = io.host.in.bits(addrwidth+opwidth-1, opwidth)
+          val addr = io.host.in.bits(hostwidth-1, opwidth)
           snapMemAddr := addr
           isSnap := Bool(true)
         }
@@ -193,12 +196,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           }
         }
         is(snap_READ) {
-          when(snapCount < UInt(buswidth)) {
+          when(snapCount < UInt(memwidth)) {
             daisy.state.out.ready := Bool(true)
             snapBuffer := Cat(snapBuffer, daisy.state.out.bits)
             snapCount := snapCount + UInt(daisywidth)
           }.otherwise {
-            snapCount := snapCount - UInt(buswidth)
+            snapCount := snapCount - UInt(memwidth)
             snapState := snap_MEM_CMD
           }
         }
@@ -208,7 +211,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             io.mem.reqCmd.bits.rw := Bool(true)
             io.mem.reqCmd.bits.tag := UInt(0)
             io.mem.reqCmd.bits.addr := snapMemAddr
-            snapMemAddr := snapMemAddr + UInt(buswidth >> 2)
+            snapMemAddr := snapMemAddr + UInt(memwidth >> 2)
             snapState := snap_MEM_WR
           }
         }
@@ -243,12 +246,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             }
           }
           is(snap_READ) {
-            when(snapCount < UInt(buswidth)) {
+            when(snapCount < UInt(memwidth)) {
               daisy.sram.out.ready := Bool(true)
               snapBuffer := Cat(snapBuffer, daisy.sram.out.bits)
               snapCount := snapCount + UInt(daisywidth)
             }.otherwise {
-              snapCount := snapCount - UInt(buswidth)
+              snapCount := snapCount - UInt(memwidth)
               snapState := snap_MEM_CMD
             }
           }
@@ -258,7 +261,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
               io.mem.reqCmd.bits.rw := Bool(true)
               io.mem.reqCmd.bits.tag := UInt(0)
               io.mem.reqCmd.bits.addr := snapMemAddr
-              snapMemAddr := snapMemAddr + UInt(buswidth >> 2)
+              snapMemAddr := snapMemAddr + UInt(memwidth >> 2)
               snapState := snap_MEM_WR
             }
           }
@@ -286,7 +289,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     is(debug_POKE) {
       val id = UInt(inputs.length) - pokeCounter
       val valid = io.host.in.bits(0)
-      val data  = io.host.in.bits(buswidth-1, 1)
+      val data  = io.host.in.bits(hostwidth-1, 1)
       when(pokeCounter.orR) {
         io.host.in.ready := Bool(true)
         when (io.host.in.valid) {
