@@ -65,8 +65,8 @@ class MemResp extends HasMemData with HasMemTag
 class MemData extends HasMemData
 
 class MemIO extends DaisyBundle {
-  val reqCmd = Decoupled(new MemReqCmd)
-  val reqData = Decoupled(new MemData)
+  val req_cmd = Decoupled(new MemReqCmd)
+  val req_data = Decoupled(new MemData)
   val resp = Decoupled(new MemResp).flip
 }
 
@@ -129,12 +129,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   io.host.out.valid := Bool(false)
   io.host.out.bits := UInt(0)
   // Memory IO pins
-  io.mem.reqCmd.valid := Bool(false)
-  io.mem.reqCmd.bits.rw := Bool(false)
-  io.mem.reqCmd.bits.tag := UInt(0)
-  io.mem.reqCmd.bits.addr := UInt(0)
-  io.mem.reqData.valid := Bool(false)
-  io.mem.reqData.bits.data := UInt(0)
+  io.mem.req_cmd.valid := Bool(false)
+  io.mem.req_cmd.bits.rw := Bool(false)
+  io.mem.req_cmd.bits.tag := UInt(0)
+  io.mem.req_cmd.bits.addr := UInt(0)
+  io.mem.req_data.valid := Bool(false)
+  io.mem.req_data.bits.data := UInt(0)
   // Daisy pins
   val daisy = addDaisyPins(target, daisywidth)
   daisy.stall := !fire
@@ -206,21 +206,21 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           }
         }
         is(snap_MEM_CMD) {
-          io.mem.reqCmd.valid := Bool(true)
-          when (io.mem.reqCmd.ready) {
-            io.mem.reqCmd.bits.rw := Bool(true)
-            io.mem.reqCmd.bits.tag := UInt(0)
-            io.mem.reqCmd.bits.addr := snapMemAddr
+          io.mem.req_cmd.valid := Bool(true)
+          when (io.mem.req_cmd.ready) {
+            io.mem.req_cmd.bits.rw := Bool(true)
+            io.mem.req_cmd.bits.tag := UInt(0)
+            io.mem.req_cmd.bits.addr := snapMemAddr
             snapMemAddr := snapMemAddr + UInt(memwidth >> 2)
             snapState := snap_MEM_WR
           }
         }
         is(snap_MEM_WR) {
-          io.mem.reqData.valid := Bool(true)
-          when (io.mem.reqData.ready) {
-            io.mem.reqCmd.valid := Bool(false)
-            io.mem.reqData.valid := Bool(true)
-            io.mem.reqData.bits.data := snapBuffer >> snapCount
+          io.mem.req_data.valid := Bool(true)
+          when (io.mem.req_data.ready) {
+            io.mem.req_cmd.valid := Bool(false)
+            io.mem.req_data.valid := Bool(true)
+            io.mem.req_data.bits.data := snapBuffer >> snapCount
             when (daisy.state.out.valid) {
               snapState := snap_READ
             }.otherwise {
@@ -256,21 +256,21 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             }
           }
           is(snap_MEM_CMD) {
-            io.mem.reqCmd.valid := Bool(true)
-            when (io.mem.reqCmd.ready) {
-              io.mem.reqCmd.bits.rw := Bool(true)
-              io.mem.reqCmd.bits.tag := UInt(0)
-              io.mem.reqCmd.bits.addr := snapMemAddr
+            io.mem.req_cmd.valid := Bool(true)
+            when (io.mem.req_cmd.ready) {
+              io.mem.req_cmd.bits.rw := Bool(true)
+              io.mem.req_cmd.bits.tag := UInt(0)
+              io.mem.req_cmd.bits.addr := snapMemAddr
               snapMemAddr := snapMemAddr + UInt(memwidth >> 2)
               snapState := snap_MEM_WR
             }
           }
           is(snap_MEM_WR) {
-            io.mem.reqData.valid := Bool(true)
-            when (io.mem.reqData.ready) {
-              io.mem.reqCmd.valid := Bool(false)
-              io.mem.reqData.valid := Bool(true)
-              io.mem.reqData.bits.data := snapBuffer >> snapCount
+            io.mem.req_data.valid := Bool(true)
+            when (io.mem.req_data.ready) {
+              io.mem.req_cmd.valid := Bool(false)
+              io.mem.req_data.valid := Bool(true)
+              io.mem.req_data.bits.data := snapBuffer >> snapCount
               when (daisy.sram.out.valid) {
                 snapState := snap_READ
               }.elsewhen (sramRestartCount.orR) {
