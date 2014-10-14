@@ -123,7 +123,7 @@ object DaisyBackend {
     ChiselError.info("[DaisyBackend] add sram chains")
 
     def connectSRAMRestarts(m: Module) {
-      if (daisyPins(m).stall.inputs.isEmpty && m.name != top.target.name) {
+      if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
         connectSRAMRestarts(m.parent)
         daisyPins(m).sram.restart := daisyPins(m.parent).sram.restart
       }

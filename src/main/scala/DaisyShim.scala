@@ -10,7 +10,6 @@ case object DaisyWidth extends Field[Int]
 case object OpWidth extends Field[Int]
 
 object DaisyShim {
-  val opwidth = 6
   val daisy_parameters = Parameters.empty alter (
     (key, site, here, up) => key match {
       case HostWidth => 32
@@ -18,7 +17,7 @@ object DaisyShim {
       case AddrWidth => 32
       case TagWidth => 5
       case DaisyWidth => 32
-      case OpWidth => opwidth
+      case OpWidth => 6
     })
   def apply[T <: Module](c: =>T) = Module(new DaisyShim(c))(daisy_parameters)
 }
