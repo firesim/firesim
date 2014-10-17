@@ -83,7 +83,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val outputBufs = Vec.fill(outputs.length) { Reg(UInt()) }
 
   // Step counters for simulation run or stall
-  val debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: debug_POKE :: debug_PEEK :: Nil = Enum(UInt(), 6)
+  val debug_IDLE :: debug_STEP :: debug_SNAP0 :: debug_SNAP1 :: debug_SNAP2 :: debug_POKE :: debug_PEEK :: Nil = Enum(UInt(), 7)
   val debugState = Reg(init=debug_IDLE)
   val snap_IDLE :: snap_READ :: snap_MEM_CMD :: snap_MEM_WR :: Nil = Enum(UInt(), 4)
   val snapState = Reg(init=snap_IDLE)
@@ -163,9 +163,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           peekCounter := UInt(outputs.length)
           debugState := debug_PEEK
         }.elsewhen(op === SNAP) {
-          val addr = io.host.in.bits(hostwidth-1, opwidth)
-          snapMemAddr := addr
-          isSnap := Bool(true)
+          debugState := debug_SNAP0;
         }
       }
     }
@@ -185,6 +183,15 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           sramRestartCount := UInt(Driver.sramMaxSize-1)
         }
       }
+    }
+    // Snapshotting initialization (set mem addr)
+    is(debug_SNAP0) {
+      io.host.in.ready := Bool(true)
+      when (io.host.in.fire()) {
+        snapMemAddr := io.host.in.bits
+        debugState := debug_IDLE
+        isSnap := Bool(true)
+      } 
     }
     // Snapshotring inputs and registers
     is(debug_SNAP1) {
