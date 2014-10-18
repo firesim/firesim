@@ -37,6 +37,7 @@ $(fpga): %-fpga: %Shim.v
 	cd $(zeddir); make $(bitstream) DESIGN=$*; cp $(bitstream) $(resdir)
 
 $(driver): %-zedborad: $(csrcdir)/%.cc $(csrcdir)/debug_api.cc $(csrcdir)/debug_api.h
+	mkdir -p $(resdir)
 	cd $(resdir); $(CXX) $(CXXFLAGS) $^ -o $@
 
 clean:

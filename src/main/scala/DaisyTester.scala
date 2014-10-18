@@ -9,13 +9,9 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   val outputMap = HashMap[String, BigInt]()
   val pokeMap = HashMap[BigInt, BigInt]()
   val peekMap = HashMap[BigInt, BigInt]()
-  val chainNames = ArrayBuffer[String]()
-  val chainWidths = ArrayBuffer[Int]()
+  val signals = ArrayBuffer[String]()
+  val widths = ArrayBuffer[Int]()
   val replay = new StringBuilder
-  val snapPaddr = BigInt(Integer.parseInt("40000000", 16))
-  var snapData = BigInt(0)
-  var snapDataSize = 0
-  var snapLength = 0
 
   lazy val targetPath = c.target.getPathName(".")
   lazy val targetPrefix = Driver.backend.extractClassName(c.target)
@@ -54,8 +50,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     val clk = emulatorCmd("step %d".format(n))
   }
 
-  def pokeSnap(addr: BigInt) {
-    if (isTrace) println("Poke Snap(addr : %d)".format(addr))
+  def pokeSnap {
+    if (isTrace) println("Poke Snap")
     val snapOp = c.SNAP.getNode.asInstanceOf[Literal].value
     // Send POKE command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
@@ -65,18 +61,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     poke(c.io.host.in.valid, 1)
     takeSteps(1)
     poke(c.io.host.in.valid, 0)    
-    while (peek(dumpName(c.io.host.in.ready)) == 0) {
-      takeSteps(1)
-    }
-    poke(c.io.host.in.bits, addr)
-    poke(c.io.host.in.valid, 1)    
-    takeSteps(1)
-    poke(c.io.host.in.valid, 0)    
     if (isTrace) println("==========")
   }
 
   def pokeAll {
-    val pokeOp = c.POKE.getNode.asInstanceOf[Literal].value
+    val pokeOp = c.POKE.litValue()
     if (isTrace) println("Poke All")
     // Send POKE command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
@@ -104,7 +93,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def peekAll {
     if (isTrace) println("Peek All")
-    val peekOp = c.PEEK.getNode.asInstanceOf[Literal].value
+    val peekOp = c.PEEK.litValue()
+    peekMap.clear
     // Send PEEK command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
@@ -129,7 +119,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def pokeSteps(n: Int) {
     if (isTrace) println("Poke Steps")
-    val stepOp = c.STEP.getNode.asInstanceOf[Literal].value
+    val stepOp = c.STEP.litValue()
     // Send PEEK command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
@@ -139,80 +129,68 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     takeSteps(1)
     poke(c.io.host.in.valid, 0)
     if (isTrace) println("==========")
+    takeSteps(n)
   }
 
-  def readDaisyChain {
-    if (isTrace) println("Read Daisy Chain")
+  def snapshot = {
+    if (isTrace) println("Snapshotting")
+    val snap = new StringBuilder
     var offset = 0
+    poke(c.io.host.out.ready, 1)
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
-      // Mem request command
-      if (peek(dumpName(c.io.mem.req_cmd.valid)) == 1) {
-        poke(c.io.mem.req_cmd.ready, 1)
-        expect(c.io.mem.req_cmd.bits.addr, snapPaddr + offset)
-        expect(c.io.mem.req_cmd.bits.rw, 1)
-        expect(c.io.mem.req_cmd.bits.tag, 0)
-        takeSteps(1)
-        poke(c.io.mem.req_cmd.ready, 0)
-        offset += (c.memwidth >> 2)
-      }
-      // Mem request data
-      if (peek(dumpName(c.io.mem.req_data.valid)) == 1) {
-        poke(c.io.mem.req_data.ready, 1)
-        snapData = snapData << c.memwidth | peek(c.io.mem.req_data.bits.data)
-        takeSteps(1)
-        poke(c.io.mem.req_data.ready, 0)
+      if (peek(dumpName(c.io.host.out.valid)) == 1) {
+        val value = peek(c.io.host.out.bits)
+        snap append value.toString(2).reverse.padTo(c.hostwidth, '0').reverse
       }
     }
-    poke(c.io.mem.req_cmd.ready, 0)
-    poke(c.io.mem.req_data.ready, 0)
-    if (isTrace) println("Chain: " + snapData.toString(2))
+    poke(c.io.host.out.ready, 0)
+    if (isTrace) println("Chain: " + snap.result)
+    snap.result
   }
 
-  def verifyDaisyChain {
+  var begin = false
+  def writeSnap(snap: String, n: Int) {
+    if (begin) {
+      replay append "STEP %d\n".format(n)
+      for (out <- c.outputs) {
+        val name = targetPrefix + (dumpName(out) stripPrefix targetPath)
+        replay append "EXPECT %s %d\n".format(name, peek(out))
+      }
+    }
+
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
-    for ((chainName, i) <- chainNames.zipWithIndex) {
-      val width = chainWidths(i)
-      if (chainName != "null") {
-        val path = targetPath + (chainName stripPrefix targetPrefix)
+    var start = 0
+    for ((signal, i) <- signals.zipWithIndex) {
+      val width = widths(i)
+      if (signal != "null") {
+        val path = targetPath + (signal stripPrefix targetPrefix)
         val value = path match {
           case MemRegex(name, idx) =>
             peek(name, idx.toInt)
           case _ =>
             peek(path)
         }
-        val mask = snapData & ((BigInt(1) << width) - 1)
-        expect(mask == value, "Snapshot %s(%d?=%d)".format(chainName, mask, value)) 
-        replay append "POKE %s %d\n".format(chainName, value)
+        val end = math.min(start + width, snap.length)
+        val fromSnap = snap.substring(start, end)
+        val fromSignal = value.toString(2).reverse.padTo(width, '0').reverse
+        expect(fromSnap == fromSignal, "Snapshot %s(%s?=%s)".format(signal, fromSnap, fromSignal)) 
+        replay append "POKE %s %d\n".format(signal, value)
       } 
-      snapData = snapData >> width
+      start += width
     }
-  }
-
-  def addExpected {
-    for (out <- c.outputs) {
-      val name = targetPrefix + (dumpName(out) stripPrefix targetPath)
-      replay append "EXPECT %s %d\n".format(name, peek(out))
-    }
+    begin = true
   }
 
   override def step(n: Int = 1) {
     val target = t + n
-    if (t > 0) {
-      pokeSnap(snapPaddr)
-    }
     pokeAll
+    if (t > 0) pokeSnap
     pokeSteps(n)
-    takeSteps(n)
-    if (t > 0) {
-      readDaisyChain
-      verifyDaisyChain
-    }
-    replay append "STEP %d\n".format(n)
+    val snap = if (t > 0) snapshot else ""
     if (isTrace) println("STEP " + n + " -> " + target)
-
     peekAll
-    addExpected
+    if (t > 0) writeSnap(snap, n)
     t += n
   }
 
@@ -242,8 +220,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
       val tokens = line split " "
-      chainNames prepend tokens.head
-      chainWidths prepend tokens.last.toInt
+      signals += tokens.head
+      widths += tokens.last.toInt
     }
   }
  

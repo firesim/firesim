@@ -5,19 +5,20 @@
 #include <assert.h>
 #include <iostream>
 #include <fstream>
-#include <sstream>
+#include <bitset>
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
+#define HOSTWIDTH 32
 #define OPWIDTH 6
 #define STEP 0
 #define POKE 1
 #define PEEK 2
 #define SNAP 3
 
-debug_api_t::debug_api_t(std::string design)
-  : t(0), pass(true)
+debug_api_t::debug_api_t(std::string design_)
+  : t(0), snap_size(0), pass(true), design(design_)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
@@ -29,9 +30,16 @@ debug_api_t::debug_api_t(std::string design)
 
   dev_vaddr = (uintptr_t*)mmap(0, pgsize, host_prot, flags, fd, dev_paddr);
   assert(dev_vaddr != MAP_FAILED);
-  write_reg(31, 0); // reset
-  __sync_synchronize();
 
+  // Reset
+  write_reg(31, 0); 
+  __sync_synchronize();
+  // Empty output queues before starting!
+  while ((uint32_t) read_reg(0) > 0) {
+    uint32_t temp = read_reg(1);
+  }
+
+  // Read mapping files
   read_io_map_file(design + ".io.map");
   read_chain_map_file(design + ".chain.map");
 }
@@ -42,13 +50,15 @@ debug_api_t::~debug_api_t() {
     std::cout << " Passed" << std::endl;
   else 
     std::cout << " Failed" << std::endl;
+
+  write_replay_file(design + ".replay");
 }
 
 void debug_api_t::read_io_map_file(std::string filename) {
   std::ifstream file(filename.c_str());
   std::string line;
   bool isInput = false;
-  if (file.is_open()) {
+  if (file) {
     while (getline(file, line)) {
       if (line == "INPUT:") {
         isInput = true;
@@ -62,6 +72,7 @@ void debug_api_t::read_io_map_file(std::string filename) {
         if (isInput) {
           input_map[path] = id;
         } else {
+          outputs.push_back(path);
           output_map[path] = id;
         }
       }
@@ -75,13 +86,26 @@ void debug_api_t::read_io_map_file(std::string filename) {
 void debug_api_t::read_chain_map_file(std::string filename) {
   std::ifstream file(filename.c_str());
   std::string line;
-  if (file.is_open()) {
-     std::istringstream iss(line);
-     std::string path;
-     int width;
-     iss >> path >> width;
-     chain_names.push_back(path);
-     chain_widths.push_back(width);
+  if (file) {
+    while(getline(file, line)) {
+      std::istringstream iss(line);
+      std::string path;
+      int width;
+      iss >> path >> width;
+      signals.push_back(path);
+      widths.push_back(width);
+      snap_size += width;
+    }
+  } else {
+    std::cout << "Cannot open " << filename << std::endl;
+  }
+  file.close();
+}
+
+void debug_api_t::write_replay_file(std::string filename) {
+  std::ofstream file(filename.c_str());
+  if (file) {
+    file << replay.str();    
   } else {
     std::cout << "Cannot open " << filename << std::endl;
   }
@@ -101,16 +125,73 @@ void debug_api_t::poke_all() {
       __sync_synchronize();
     }
   }
+  poke_map.clear();
 }
 
 void debug_api_t::peek_all() {
+  peek_map.clear();
   write_reg(0, PEEK);
   __sync_synchronize();
 
-  for (int i = 0 ; i < output_map.size() ; i++) {
+  int i = 0;
+  int limit = output_map.size();
+  while (i < limit) {
     __sync_synchronize();
-    peek_map[i] = (uint32_t) read_reg(1);
+    uint32_t c = (uint32_t) read_reg(0);
+    if (c > 0) {
+      for (int j = 0 ; j < c ; j++) {
+        peek_map[i] = (uint32_t) read_reg(1);
+        i++;
+      }
+    }
   }
+}
+
+void debug_api_t::snapshot(std::string &snap) {
+  int i = 0;
+  int limit = snap_size / HOSTWIDTH;
+  while (i < limit) {
+    __sync_synchronize();
+    uint32_t c = (uint32_t) read_reg(0);
+    if (c > 0) {
+      for (int j = 0 ; j < c ; j++) {
+        uint32_t value = (uint32_t) read_reg(1);
+        std::bitset<sizeof(uint32_t) * 8> bin_value(value);
+        snap += bin_value.to_string();
+        i++;
+      }
+    }
+  }
+}
+
+void debug_api_t::write_snap(std::string &snap, uint32_t n) {
+  static bool begin = false;
+  if (begin) {
+    replay << "STEP " << n << std::endl;
+    for (int i = 0 ; i < outputs.size() ; i++) {
+      std::string output = outputs[i];
+      int idx = output_map[output];
+      replay << "EXPECT " << output << " " << peek_map[idx] << std::endl;
+    }
+  }
+
+  // Translate and write snapshots
+  int offset = 0;
+  for (int i = 0 ; i < signals.size() ; i++) {
+    std::string signal = signals[i];
+    int width = widths[i];
+    if (signal != "null") {
+      std::bitset<512> value(snap.substr(offset, width));
+      replay << "POKE " << signal << " " << value.to_ulong() << std::endl;
+    }
+    offset += width;
+  }
+  begin = true;
+}
+
+void debug_api_t::poke_snap() {
+  write_reg(0, SNAP);
+  __sync_synchronize();
 }
 
 void debug_api_t::poke_steps(uint32_t n) {
@@ -119,17 +200,22 @@ void debug_api_t::poke_steps(uint32_t n) {
 }
 
 void debug_api_t::step(uint32_t n) {
+  std::string snap = "";
   poke_all();
+  if (t > 0) poke_snap();
   poke_steps(n);
-  t += n;
+  if (t > 0) snapshot(snap);
   std::cout << "* STEP " << n << " -> " << t << " * " << std::endl;
   peek_all();
+
+  if (t > 0) write_snap(snap, n);
+  t += n;
 }
 
 void debug_api_t::poke(std::string path, uint32_t value) {
   assert(input_map.find(path) != input_map.end());
-  std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
   poke_map[input_map[path]] = value;
+  std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
 }
 
 uint32_t debug_api_t::peek(std::string path) {
@@ -143,7 +229,7 @@ uint32_t debug_api_t::peek(std::string path) {
 bool debug_api_t::expect(std::string path, uint32_t expected) {
   int value = peek(path);
   bool ok = value == expected;
-  std::cout << "* EXPECT " << path << " -> " << value << " == " << expected << " * " << std::endl;
   pass &= ok;
+  std::cout << "* EXPECT " << path << " -> " << value << " == " << expected << " * " << std::endl;
   return ok;
 }

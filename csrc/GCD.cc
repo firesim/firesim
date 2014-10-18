@@ -2,23 +2,27 @@
 #include <assert.h>
 #include <iostream>
 
+class GCD_t: debug_api_t
+{
+public:
+  GCD_t(): debug_api_t("GCD") {}
+  void run() {
+    uint32_t a = 64, b = 48, z = 16; //test vectors
+    do {
+      uint32_t first = 0;
+      if (t == 0) first = 1;
+      poke("GCD.io_a", a);
+      poke("GCD.io_b", b);
+      poke("GCD.io_e", first);
+      step(1);
+    } while (t <= 1 || peek("GCD.io_v") == 0);
+    expect("GCD.io_z", z);
+  }
+};
+
 int main() 
 {
-  debug_api_t api("GCD");
-  
-  // Tests
-  uint32_t a = 64, b = 48, z = 16; //test vectors
-  uint32_t peek_v; // output values
-  int t = 0;
-  do {
-    uint32_t first = 0;
-    if (api.cycle() == 0) first = 1;
-    api.poke("GCD.io_a", a);
-    api.poke("GCD.io_b", b);
-    api.poke("GCD.io_e", first);
-    api.step(1);
-  } while (api.cycle() <= 1 || api.peek("GCD.io_v") == 0);
-  api.expect("GCD.io_z", z);
-
+  GCD_t GCD;
+  GCD.run();
   return 0;
 }
