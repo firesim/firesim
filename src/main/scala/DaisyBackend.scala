@@ -230,7 +230,7 @@ object DaisyBackend {
             res append "%s[%d] %d\n".format(path, addr, width)
             stateWidth += width
             thisWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.memwidth
+            while (totalWidth < stateWidth) totalWidth += top.hostwidth
             while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
           case _ => { 
@@ -238,7 +238,7 @@ object DaisyBackend {
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
             stateWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.memwidth
+            while (totalWidth < stateWidth) totalWidth += top.hostwidth
             while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
           }
         }
