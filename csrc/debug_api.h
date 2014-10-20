@@ -10,7 +10,7 @@
 class debug_api_t
 {
   public:
-    debug_api_t(std::string design);
+    debug_api_t(std::string design, bool trace_);
     ~debug_api_t();
     virtual void run() = 0;
 
@@ -44,8 +44,9 @@ class debug_api_t
     int input_num;
     int output_num;
 
-    int64_t fail_t;
+    bool trace;
     bool pass;
+    int64_t fail_t;
     uint64_t snap_size;
     
     volatile uintptr_t* dev_vaddr;

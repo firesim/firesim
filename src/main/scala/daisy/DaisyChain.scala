@@ -1,4 +1,4 @@
-package DebugMachine
+package Daisy
 
 import Chisel._
 

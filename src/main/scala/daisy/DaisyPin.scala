@@ -1,4 +1,4 @@
-package DebugMachine
+package Daisy
 
 import Chisel._
 import scala.collection.mutable.HashMap

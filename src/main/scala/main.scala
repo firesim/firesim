@@ -1,6 +1,8 @@
 package DebugMachine
 
 import Chisel._
+import Daisy._
+import Designs._
 import TutorialExamples._
 
 object DebugMachine {
@@ -40,6 +42,9 @@ object DebugMachine {
       case "MemorySearchShim" =>
         chiselMainTest(chiselArgs, () => DaisyShim(new MemorySearch))(
           c => new MemorySearchDaisyTests(c))
+      case "FIR2DShim" =>
+        chiselMainTest(chiselArgs, () => DaisyShim(new FIR2D(32, 8, 3)))(
+          c => new FIR2DDaisyTests(c, 32, 8, 3))
       case _ =>
     }
   }

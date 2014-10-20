@@ -1,5 +1,5 @@
 basedir := $(abspath .)
-srcdir  := $(basedir)/src/main/scala
+srcdir  := $(basedir)/src/main/scala/designs
 csrcdir := $(basedir)/csrc
 tutdir  := $(basedir)/tutorial/examples
 gendir  := $(basedir)/generated
@@ -7,7 +7,7 @@ logdir  := $(basedir)/logs
 resdir  := $(basedir)/results
 zeddir  := $(basedir)/fpga-zynq/zedboard
 bitstream := fpga-images-zedboard/boot.bin
-designs := GCD Parity Stack Router Risc RiscSRAM \
+designs := GCD Parity Stack Router Risc RiscSRAM FIR2D\
 	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch
 VPATH   := $(srcdir):$(gendir):$(tutdir):$(gendir)
 

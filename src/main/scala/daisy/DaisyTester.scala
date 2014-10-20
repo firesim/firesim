@@ -1,4 +1,4 @@
-package DebugMachine
+package Daisy
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
@@ -180,9 +180,9 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         val path = targetPath + (signal stripPrefix targetPrefix)
         val value = path match {
           case MemRegex(name, idx) =>
-            peek(dumpName(name), idx.toInt)
+            peek(name, idx.toInt)
           case _ =>
-            peek(dumpName(path))
+            peek(path)
         }
         val end = math.min(start + width, snap.length)
         val fromSnap = snap.substring(start, end)

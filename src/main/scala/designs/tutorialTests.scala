@@ -1,6 +1,7 @@
-package DebugMachine
+package Designs
 
 import Chisel._
+import Daisy._
 import TutorialExamples._
 import scala.collection.mutable.{Stack => ScalaStack}
 
