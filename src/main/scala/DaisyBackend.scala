@@ -231,17 +231,31 @@ object DaisyBackend {
     val prefix = top.name + "." + top.target.name
     val res = new StringBuilder
 
-    // Print out the IO mapping for pokes and peeks
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
+    // Print out parameters
+    res append "HOSTWIDTH: %d\n".format(top.hostwidth)
+    res append "OPWIDTH: %d\n".format(top.opwidth)
+    res append "STEP: %d\n".format(top.STEP.litValue())
+    res append "POKE: %d\n".format(top.POKE.litValue())
+    res append "PEEK: %d\n".format(top.PEEK.litValue())
+    res append "SNAP: %d\n".format(top.SNAP.litValue())
+
+    // Print out the IO mapping for pokes and peeks
     res append "INPUT:\n"
-    for ((input, i) <- top.inputs.zipWithIndex) {
+    var inputNum = 0
+    // for ((input, i) <- top.inputs.zipWithIndex) {
+    for (input <- top.inputs) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + input.name
-      res append "%s %d\n".format(path, i)
+      val width = input.needWidth
+      val n = (width - 1) / top.hostwidth + 1
+      res append "%s %d\n".format(path, width)
     }
     res append "OUTPUT:\n"
     for ((output, i) <- top.outputs.zipWithIndex) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + output.name
-      res append "%s %d\n".format(path, i)
+      val width = output.needWidth
+      val n = (width - 1) / top.hostwidth + 1
+      res append "%s %d\n".format(path, width)
     }
     try {
       ioFile write res.result

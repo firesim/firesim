@@ -27,28 +27,37 @@ class debug_api_t
 
     std::map<int, uint32_t> poke_map;
     std::map<int, uint32_t> peek_map;
-    std::map<std::string, int> input_map;
-    std::map<std::string, int> output_map;
+    std::map<std::string, std::vector<int> > input_map;
+    std::map<std::string, std::vector<int> > output_map;
     std::vector<std::string> outputs;
     std::vector<std::string> signals;
     std::vector<int> widths;
     std::string design;
     std::ostringstream replay;
 
+    int hostwidth;
+    int opwidth;
+    int STEP;
+    int POKE;
+    int PEEK;
+    int SNAP;
+    int input_num;
+    int output_num;
+
+    int64_t fail_t;
     bool pass;
-    int32_t fail_t;
-    uint32_t snap_size;
+    uint64_t snap_size;
+    
     volatile uintptr_t* dev_vaddr;
     const static uintptr_t dev_paddr = 0x43C00000;
 
   protected:
     void step(uint32_t n);
-    void poke(std::string path, uint32_t value);
-    uint32_t peek(std::string path);
-    bool expect(std::string path, uint32_t expected);
+    void poke(std::string path, uint64_t value);
+    uint64_t peek(std::string path);
+    bool expect(std::string path, uint64_t expected);
     bool expect(bool ok, std::string s);
-    uint32_t rand_next(int limit); 
-
+    uint64_t rand_next(int limit); 
     uint64_t t;
 };
 
