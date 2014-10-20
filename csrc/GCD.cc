@@ -1,6 +1,4 @@
 #include "debug_api.h"
-#include <assert.h>
-#include <iostream>
 
 class GCD_t: debug_api_t
 {
