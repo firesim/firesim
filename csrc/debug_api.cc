@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <bitset>
+#include <stdlib.h>
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
@@ -18,7 +19,7 @@
 #define SNAP 3
 
 debug_api_t::debug_api_t(std::string design_)
-  : t(0), snap_size(0), pass(true), design(design_)
+  : t(0), snap_size(0), pass(true), fail_t(-1), design(design_)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
@@ -42,6 +43,8 @@ debug_api_t::debug_api_t(std::string design_)
   // Read mapping files
   read_io_map_file(design + ".io.map");
   read_chain_map_file(design + ".chain.map");
+
+  srand(time(NULL));
 }
 
 debug_api_t::~debug_api_t() {
@@ -49,7 +52,7 @@ debug_api_t::~debug_api_t() {
   if (pass) 
     std::cout << " Passed" << std::endl;
   else 
-    std::cout << " Failed" << std::endl;
+    std::cout << " Failed, first at cycle " << fail_t << std::endl;
 
   write_replay_file(design + ".replay");
 }
@@ -159,6 +162,7 @@ void debug_api_t::snapshot(std::string &snap) {
         std::bitset<sizeof(uint32_t) * 8> bin_value(value);
         snap += bin_value.to_string();
         i++;
+        if (i >= limit) break;
       }
     }
   }
@@ -205,7 +209,7 @@ void debug_api_t::step(uint32_t n) {
   if (t > 0) poke_snap();
   poke_steps(n);
   if (t > 0) snapshot(snap);
-  std::cout << "* STEP " << n << " -> " << t << " * " << std::endl;
+  std::cout << "* STEP " << n << " -> " << (t + n) << " * " << std::endl;
   peek_all();
 
   if (t > 0) write_snap(snap, n);
@@ -229,7 +233,29 @@ uint32_t debug_api_t::peek(std::string path) {
 bool debug_api_t::expect(std::string path, uint32_t expected) {
   int value = peek(path);
   bool ok = value == expected;
+  std::cout << "* EXPECT " << path << " -> " << value << " == " << expected;
+  if (ok) {
+    std::cout << " PASS * " << std::endl;
+  } else {
+    if (fail_t < 0) fail_t = t;
+    std::cout << " FAIL * " << std::endl;
+  }
   pass &= ok;
-  std::cout << "* EXPECT " << path << " -> " << value << " == " << expected << " * " << std::endl;
   return ok;
+}
+
+bool debug_api_t::expect(bool ok, std::string s) {
+  std::cout << "* " << s;
+  if (ok) {
+    std::cout << " PASS * " << std::endl;
+  } else {
+    if (fail_t < 0) fail_t = t;
+    std::cout << " FAIL * " << std::endl;
+  }
+  pass &= ok;
+  return ok;
+} 
+
+uint32_t debug_api_t::rand_next(int limit) {
+  return rand() % limit;
 }

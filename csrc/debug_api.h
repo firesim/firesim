@@ -36,6 +36,7 @@ class debug_api_t
     std::ostringstream replay;
 
     bool pass;
+    int32_t fail_t;
     uint32_t snap_size;
     volatile uintptr_t* dev_vaddr;
     const static uintptr_t dev_paddr = 0x43C00000;
@@ -45,6 +46,8 @@ class debug_api_t
     void poke(std::string path, uint32_t value);
     uint32_t peek(std::string path);
     bool expect(std::string path, uint32_t expected);
+    bool expect(bool ok, std::string s);
+    uint32_t rand_next(int limit); 
 
     uint64_t t;
 };

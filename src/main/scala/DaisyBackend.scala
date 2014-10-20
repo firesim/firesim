@@ -89,8 +89,8 @@ object DaisyBackend {
         for (i <- (0 until chain.daisylen).reverse) {
           val wires = ArrayBuffer[UInt]()
           var totalWidth = 0
-          while (totalWidth < top.daisywidth) {
-            val totalMargin = top.daisywidth - totalWidth
+          while (totalWidth < daisywidth) {
+            val totalMargin = daisywidth - totalWidth
             if (stateIdx < states(m).size) {
               val state = states(m)(stateIdx)
               val stateWidth = state.needWidth
@@ -168,7 +168,7 @@ object DaisyBackend {
         chain.io.stall := daisyPins(m).stall
         var high = datawidth-1
         for (i <- (0 until chain.daisylen).reverse) {
-          val low = math.max(high-chain.daisywidth+1, 0)
+          val low = math.max(high-daisywidth+1, 0)
           val widthMargin = daisywidth-(high-low+1)
           val data = UInt(read)(high, low)
           if (widthMargin == 0) {
@@ -176,7 +176,7 @@ object DaisyBackend {
           } else {
             chain.io.dataIo.data(i) := Cat(data, UInt(0, widthMargin))
           }
-          high -= chain.daisywidth
+          high -= daisywidth
         }
         if (lastChain == null) {
           connectSRAMRestarts(m)
@@ -269,7 +269,7 @@ object DaisyBackend {
             stateWidth += width
             thisWidth += width
             while (totalWidth < stateWidth) totalWidth += top.hostwidth
-            while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
+            while (daisyWidth < thisWidth) daisyWidth += daisywidth
           }
           case _ => { 
             val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
@@ -277,7 +277,7 @@ object DaisyBackend {
             res append "%s %d\n".format(path, width)
             stateWidth += width
             while (totalWidth < stateWidth) totalWidth += top.hostwidth
-            while (daisyWidth < thisWidth) daisyWidth += top.daisywidth
+            while (daisyWidth < thisWidth) daisyWidth += daisywidth
           }
         }
       }
@@ -300,7 +300,7 @@ object DaisyBackend {
           res append "%s[%d] %d\n".format(path, i, width)
         else 
           res append "null %d\n".format(width)
-        while (daisyWidth < width) daisyWidth += top.daisywidth
+        while (daisyWidth < width) daisyWidth += daisywidth
         val daisyPadWidth = daisyWidth - width
         if (daisyPadWidth > 0) {
           res append "null %d\n".format(daisyPadWidth)  
