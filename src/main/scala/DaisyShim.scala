@@ -16,7 +16,7 @@ object DaisyShim {
       case MemWidth => 64
       case AddrWidth => 32
       case TagWidth => 5
-      case DaisyWidth => 16
+      case DaisyWidth => 32
       case OpWidth => 6
     })
   def apply[T <: Module](c: =>T) = Module(new DaisyShim(c))(daisy_parameters)
@@ -244,7 +244,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             when(io.host.out.ready) {
               io.host.out.valid := Bool(true)
               io.host.out.bits := snapBuffer >> snapCount
-              when (daisy.state.out.valid) {
+              when (daisy.sram.out.valid) {
                 snapState := snap_READ
               }.elsewhen (sramRestartCount.orR) {
                 sramRestartCount := sramRestartCount - UInt(1)
