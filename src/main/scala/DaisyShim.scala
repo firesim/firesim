@@ -79,8 +79,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val target = Module(c)
   val inputs = for ((n, io) <- target.wires ; if io.dir == INPUT) yield io
   val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT) yield io
-  val inputBufs = Vec.fill(inputs.length) { Reg(UInt()) }
-  val outputBufs = Vec.fill(outputs.length) { Reg(UInt()) }
 
   // Step counters for simulation run or stall
   val debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: debug_POKE :: debug_PEEK :: Nil = Enum(UInt(), 6)
@@ -104,22 +102,43 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val sramRestartCount = Reg(UInt(width=log2Up(Driver.sramMaxSize+1)))
 
   // Connect target IOs with buffers
-  for ((input, i) <- inputs.zipWithIndex) {
+  val inputNum = (inputs foldLeft 0)((res, input) => res + (input.needWidth-1)/(hostwidth-1) + 1)
+  val outputNum = (outputs foldLeft 0)((res, output) => res + (output.needWidth-1)/hostwidth + 1)
+  val inputBufs = Vec.fill(inputNum) { Reg(UInt()) }
+  val outputBufs = Vec.fill(outputNum) { Reg(UInt()) }
+  var inputId = 0
+  var outputId = 0
+  for (input <- inputs) {
     // Resove width error
     input match {
-      case _: Bool => inputBufs(i).init("", 1)
+      case _: Bool => inputBufs(inputId).init("", 1)
       case _ => 
     }
-    input := inputBufs(i)
+    val width = input.needWidth
+    val n = (width-1) / (hostwidth-1) + 1
+    if (width <= hostwidth-1) {
+      input := inputBufs(inputId)
+      inputId += 1
+    } else {
+      val bufs = (0 until n) map { x => inputBufs(inputId + x) }
+      input := Cat(bufs)
+      inputId += n
+    }
   }
-  for ((output, i) <- outputs.zipWithIndex) {
-    // Resove width error
+  for (output <- outputs) {
     output match {
-      case _: Bool => outputBufs(i).init("", 1)
+      case _: Bool => outputBufs(outputId).init("", 1)
       case _ => 
     }
     when (fireDelay) {
-      outputBufs(i) := output
+      val width = output.needWidth
+      val n = (width-1) / hostwidth + 1
+      for (i <- 0 until n) {
+        val low = i * hostwidth
+        val high = math.min(hostwidth-1+low, width-1)
+        outputBufs(outputId) := output(high, low)
+        outputId += 1
+      }
     }
   }
 
@@ -157,10 +176,10 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           stepCounter := stepNum
           debugState := debug_STEP
         }.elsewhen(op === POKE) {
-          pokeCounter := UInt(inputs.length)
+          pokeCounter := UInt(inputNum)
           debugState := debug_POKE
         }.elsewhen(op === PEEK) {
-          peekCounter := UInt(outputs.length)
+          peekCounter := UInt(outputNum)
           debugState := debug_PEEK
         }.elsewhen(op === SNAP) {
           isSnap := Bool(true)
@@ -260,7 +279,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       }
     }
     is(debug_POKE) {
-      val id = UInt(inputs.length) - pokeCounter
+      val id = UInt(inputNum) - pokeCounter
       val valid = io.host.in.bits(0)
       val data  = io.host.in.bits(hostwidth-1, 1)
       when(pokeCounter.orR) {
@@ -277,7 +296,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       }
     }
     is(debug_PEEK) {
-      val id = UInt(outputs.length) - peekCounter
+      val id = UInt(outputNum) - peekCounter
       when(peekCounter.orR) {
         when(io.host.out.ready) {
           io.host.out.valid := Bool(true)

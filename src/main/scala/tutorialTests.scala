@@ -196,7 +196,7 @@ class RouterDaisyTests(c: DaisyShim[Router]) extends DaisyTester(c) {
     do {
       step(1)
       i += 1
-    } while (!isAnyValidOuts() || i > 10)
+    } while (!isAnyValidOuts() && i < 10)
     expect(i < 10, "FIND VALID OUT")
   }
   rd(0, 0)

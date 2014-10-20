@@ -5,8 +5,8 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]()
-  val inputMap = HashMap[String, BigInt]()
-  val outputMap = HashMap[String, BigInt]()
+  val inputMap = HashMap[String, ArrayBuffer[BigInt]]()
+  val outputMap = HashMap[String, ArrayBuffer[BigInt]]()
   val pokeMap = HashMap[BigInt, BigInt]()
   val peekMap = HashMap[BigInt, BigInt]()
   val signals = ArrayBuffer[String]()
@@ -17,10 +17,23 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   lazy val targetPrefix = Driver.backend.extractClassName(c.target)
   lazy val basedir = ensureDir(Driver.targetDir)
 
+  var hostwidth = 0
+  var opwidth = 0
+  var STEP = -1
+  var POKE = -1
+  var PEEK = -1
+  var SNAP = -1
+  var inputNum = 0
+  var outputNum = 0
+
   override def poke(data: Bits, x: BigInt) {
     if (inputMap contains dumpName(data)) {
       if (isTrace) println("* POKE " + dumpName(data) + " <- " + x + " *")
-      pokeMap(inputMap(dumpName(data))) = x
+      val ids = inputMap(dumpName(data))
+      for (i <- 0 until ids.size) {
+        val mask = (x >> (i * (hostwidth - 1))) & ((1 << (hostwidth - 1)) - 1)
+        pokeMap(ids(ids.size-1-i)) = mask
+      }
     } else {
       super.poke(data, x)
     }
@@ -28,7 +41,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   override def peek(data: Bits) = {
     if (outputMap contains dumpName(data)) {
-      val x = peekMap(outputMap(dumpName(data)))
+      var x = BigInt(0)
+      val ids = outputMap(dumpName(data))
+      for (i <- 0 until ids.size) {
+        x = x << hostwidth | peekMap(ids(ids.size-1-i))
+      }
       if (isTrace) println("* PEEK " + dumpName(data) + " <- " + x + " *")
       x
     } else {
@@ -52,12 +69,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def pokeSnap {
     if (isTrace) println("Poke Snap")
-    val snapOp = c.SNAP.getNode.asInstanceOf[Literal].value
     // Send POKE command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
     }
-    poke(c.io.host.in.bits, snapOp)
+    poke(c.io.host.in.bits, SNAP)
     poke(c.io.host.in.valid, 1)
     takeSteps(1)
     poke(c.io.host.in.valid, 0)    
@@ -65,19 +81,18 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def pokeAll {
-    val pokeOp = c.POKE.litValue()
     if (isTrace) println("Poke All")
     // Send POKE command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
     }
-    poke(c.io.host.in.bits, pokeOp)
+    poke(c.io.host.in.bits, POKE)
     poke(c.io.host.in.valid, 1)
     takeSteps(1)
     poke(c.io.host.in.valid, 0)
 
     // Send Values
-    for (i <- 0 until inputMap.size) {
+    for (i <- 0 until inputNum) {
       val in = if (pokeMap contains i) (pokeMap(i) << 1) | 1 else BigInt(0)
       while (peek(dumpName(c.io.host.in.ready)) == 0) {
         takeSteps(1)
@@ -93,19 +108,18 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def peekAll {
     if (isTrace) println("Peek All")
-    val peekOp = c.PEEK.litValue()
     peekMap.clear
     // Send PEEK command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
     }
-    poke(c.io.host.in.bits, peekOp)
+    poke(c.io.host.in.bits, PEEK)
     poke(c.io.host.in.valid, 1)
     takeSteps(1)
     poke(c.io.host.in.valid, 0)
 
     // Get values
-    for (i <- 0 until outputMap.size) {
+    for (i <- 0 until outputNum) {
       poke(c.io.host.out.ready, 1)
       while (peek(dumpName(c.io.host.out.valid)) == 0) {
         takeSteps(1)
@@ -119,12 +133,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def pokeSteps(n: Int) {
     if (isTrace) println("Poke Steps")
-    val stepOp = c.STEP.litValue()
-    // Send PEEK command
+    // Send STEP command
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       takeSteps(1)
     }
-    poke(c.io.host.in.bits, (n << c.opwidth) | stepOp)
+    poke(c.io.host.in.bits, (n << opwidth) | STEP)
     poke(c.io.host.in.valid, 1)
     takeSteps(1)
     poke(c.io.host.in.valid, 0)
@@ -141,7 +154,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       takeSteps(1)
       if (peek(dumpName(c.io.host.out.valid)) == 1) {
         val value = peek(c.io.host.out.bits)
-        snap append value.toString(2).reverse.padTo(c.hostwidth, '0').reverse
+        snap append value.toString(2).reverse.padTo(hostwidth, '0').reverse
       }
     }
     poke(c.io.host.out.ready, 0)
@@ -167,9 +180,9 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         val path = targetPath + (signal stripPrefix targetPrefix)
         val value = path match {
           case MemRegex(name, idx) =>
-            peek(name, idx.toInt)
+            peek(dumpName(name), idx.toInt)
           case _ =>
-            peek(path)
+            peek(dumpName(path))
         }
         val end = math.min(start + width, snap.length)
         val fromSnap = snap.substring(start, end)
@@ -199,19 +212,34 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     var isInput = false
     for (line <- lines) {
-      if (line == "INPUT:") {
-        isInput = true
-      }
-      else if (line == "OUTPUT:") {
-        isInput = false
-      }
-      else {
-        val tokens = line split " "
-        val path = targetPath + (tokens.head stripPrefix targetPrefix)
-        if (isInput) 
-          inputMap(path) = BigInt(tokens.last)
-        else
-          outputMap(path) = BigInt(tokens.last)
+      val tokens = line split " "
+      tokens.head match {
+        case "HOSTWIDTH:" => hostwidth = tokens.last.toInt
+        case "OPWIDTH:"   => opwidth = tokens.last.toInt
+        case "STEP:"      => STEP = tokens.last.toInt
+        case "POKE:"      => POKE = tokens.last.toInt
+        case "PEEK:"      => PEEK = tokens.last.toInt
+        case "SNAP:"      => SNAP = tokens.last.toInt
+        case "INPUT:"     => isInput = true
+        case "OUTPUT:"    => isInput = false
+        case _ => {
+          val path = targetPath + (tokens.head stripPrefix targetPrefix)
+          val width = tokens.last.toInt
+          val n = (width - 1) / (if (isInput) hostwidth - 1 else hostwidth) + 1
+          if (isInput) {
+            inputMap(path) = ArrayBuffer[BigInt]()
+            for (i <- 0 until n) {
+              inputMap(path) += BigInt(inputNum)
+              inputNum += 1
+            }
+          } else {
+            outputMap(path) = ArrayBuffer[BigInt]()
+            for (i <- 0 until n) {
+              outputMap(path) += BigInt(outputNum)
+              outputNum += 1
+            }
+          }
+        }
       }
     }
   }
