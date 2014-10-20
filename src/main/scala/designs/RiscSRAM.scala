@@ -1,6 +1,7 @@
-package DebugMachine
+package Designs
 
 import Chisel._
+import Daisy._
 
 class RiscSRAM extends Module {
   val io = new Bundle {

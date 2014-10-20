@@ -11,8 +11,8 @@
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
-debug_api_t::debug_api_t(std::string design_)
-  : t(0), snap_size(0), pass(true), fail_t(-1), design(design_), input_num(0), output_num(0)
+debug_api_t::debug_api_t(std::string design_, bool trace_ = true)
+  : design(design_), trace(trace_), t(0), snap_size(0), pass(true), fail_t(-1), input_num(0), output_num(0)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
@@ -215,7 +215,7 @@ void debug_api_t::step(uint32_t n) {
   poke_steps(n);
   if (t > 0) snapshot(snap);
   peek_all();
-  std::cout << "* STEP " << n << " -> " << (t + n) << " * " << std::endl;
+  if (trace) std::cout << "* STEP " << n << " -> " << (t + n) << " * " << std::endl;
 
   if (t > 0) write_snap(snap, n);
   t += n;
@@ -223,7 +223,7 @@ void debug_api_t::step(uint32_t n) {
 
 void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
-  std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
+  if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
   std::vector<int> ids = input_map[path];
   for (int i = 0 ; i < ids.size() ; i++) {
     int id = ids[ids.size()-1-i];
@@ -241,33 +241,37 @@ uint64_t debug_api_t::peek(std::string path) {
     assert(peek_map.find(id) != peek_map.end());
     value = value << hostwidth | peek_map[id];
   }
-  std::cout << "* PEEK " << path << " -> " << value << " * " << std::endl;
+  if (trace) std::cout << "* PEEK " << path << " -> " << value << " * " << std::endl;
   return value;
 }
 
 bool debug_api_t::expect(std::string path, uint64_t expected) {
   int value = peek(path);
   bool ok = value == expected;
-  std::cout << "* EXPECT " << path << " -> " << value << " == " << expected;
-  if (ok) {
-    std::cout << " PASS * " << std::endl;
-  } else {
-    if (fail_t < 0) fail_t = t;
-    std::cout << " FAIL * " << std::endl;
-  }
   pass &= ok;
+  if (trace) {
+    std::cout << "* EXPECT " << path << " -> " << value << " == " << expected;
+    if (ok) {
+      std::cout << " PASS * " << std::endl;
+    }  else {
+      if (fail_t < 0) fail_t = t;
+      std::cout << " FAIL * " << std::endl;
+    }
+  }
   return ok;
 }
 
 bool debug_api_t::expect(bool ok, std::string s) {
-  std::cout << "* " << s;
-  if (ok) {
-    std::cout << " PASS * " << std::endl;
-  } else {
-    if (fail_t < 0) fail_t = t;
-    std::cout << " FAIL * " << std::endl;
-  }
   pass &= ok;
+  if (trace) {
+    std::cout << "* " << s;
+    if (ok) {
+      std::cout << " PASS * " << std::endl;
+    } else {
+      if (fail_t < 0) fail_t = t;
+      std::cout << " FAIL * " << std::endl;
+    }
+  }
   return ok;
 } 
 
