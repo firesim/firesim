@@ -84,7 +84,34 @@ object DaisyBackend {
       val datawidth = (states(m) foldLeft 0)(_ + _.needWidth)
       val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case DataWidth => datawidth}) else null
       if (chain != null) {
-        chain.io.dataIo.data := UInt(Concatenate(states(m)))
+        var stateIdx = 0
+        var stateOff = 0
+        for (i <- (0 until chain.daisylen).reverse) {
+          val wires = ArrayBuffer[UInt]()
+          var totalWidth = 0
+          while (totalWidth < top.daisywidth) {
+            val totalMargin = top.daisywidth - totalWidth
+            if (stateIdx < states(m).size) {
+              val state = states(m)(stateIdx)
+              val stateWidth = state.needWidth
+              val stateMargin = stateWidth - stateOff
+              if (stateMargin <= totalMargin) {
+                wires += UInt(state)(stateMargin-1, 0)
+                totalWidth += stateMargin
+                stateOff = 0
+                stateIdx += 1
+              } else {
+                wires += UInt(state)(stateMargin-1, stateMargin-totalMargin)
+                totalWidth += totalMargin
+                stateOff += totalMargin
+              }
+            } else {
+              wires += UInt(0, totalMargin)
+              totalWidth += totalMargin 
+            }
+            chain.io.dataIo.data(i) := Cat(wires) 
+          }
+        }
         chain.io.dataIo.out <> daisyPins(m).state.out
         chain.io.stall := daisyPins(m).stall
         hasStateChain += m
@@ -139,7 +166,18 @@ object DaisyBackend {
           case DataWidth => datawidth 
           case SRAMSize => sram.size})
         chain.io.stall := daisyPins(m).stall
-        chain.io.dataIo.data := UInt(read)
+        var high = datawidth-1
+        for (i <- (0 until chain.daisylen).reverse) {
+          val low = math.max(high-chain.daisywidth+1, 0)
+          val widthMargin = daisywidth-(high-low+1)
+          val data = UInt(read)(high, low)
+          if (widthMargin == 0) {
+            chain.io.dataIo.data(i) := data
+          } else {
+            chain.io.dataIo.data(i) := Cat(data, UInt(0, widthMargin))
+          }
+          high -= chain.daisywidth
+        }
         if (lastChain == null) {
           connectSRAMRestarts(m)
           daisyPins(m).sram.out <> chain.io.dataIo.out
