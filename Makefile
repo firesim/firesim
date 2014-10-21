@@ -11,15 +11,19 @@ designs := GCD Parity Stack Router Risc RiscSRAM FIR2D\
 	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch
 VPATH   := $(srcdir):$(gendir):$(tutdir):$(gendir)
 
+memgen := $(basedir)/scripts/fpga_mem_gen
+
 C_FLAGS := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
 V_FLAGS := $(C_FLAGS) --v
+FPGA_FLAGS := --targetDir $(gendir) --backend fpga
 CXX := arm-xilinx-linux-gnueabi-g++
 CXXFLAGS := -static -O2
 
 default: GCD
 
 cpp := $(addsuffix Shim.cpp, $(designs))
-v   := $(addsuffix Shim.v,   $(designs))
+harness := $(addsuffix Shim-harness.v, $(designs))
+v := $(addsuffix Shim.v, $(designs))
 fpga := $(addsuffix -fpga, $(designs))
 driver := $(addsuffix -zedborad, $(designs))
 
@@ -29,13 +33,20 @@ $(cpp): %Shim.cpp: %.scala
 	mkdir -p $(logdir)
 	sbt "run $(basename $@) $(C_FLAGS)" | tee $(logdir)/$@.out
 
-$(v)  : %Shim.v: %.scala 
+$(harness): %Shim-harness.v: %.scala 
 	mkdir -p $(logdir) $(resdir)
-	sbt "run $(basename $@) $(V_FLAGS)" | tee $(logdir)/$@.out
-	cd $(gendir); cp $*.io.map $*.chain.map $(resdir)
+	sbt "run $*Shim $(V_FLAGS)" | tee $(logdir)/$*Shim.v.out
+
+$(v): %Shim.v: %.scala
+	rm -rf $(gendir)/$@
+	mkdir -p $(logdir) $(resdir)
+	sbt "run $(basename $@) $(FPGA_FLAGS)"
+	if [ -a $(gendir)/$(basename $@).conf ]; then \
+          $(memgen) $(gendir)/$(basename $@).conf >> $(gendir)/$(basename $@).v; \
+        fi
+	cd $(gendir) ; cp $*.io.map $*.chain.map $(resdir)
 
 $(fpga): %-fpga: %Shim.v
-	mkdir -p $(resdir)
 	cd $(zeddir); make clean; make $(bitstream) DESIGN=$*; cp $(bitstream) $(resdir)
 
 $(driver): %-zedborad: $(csrcdir)/%.cc $(csrcdir)/debug_api.cc $(csrcdir)/debug_api.h
@@ -49,4 +60,4 @@ cleanall:
 	rm -rf project/target target
 	$(MAKE) -C chisel clean	
 
-.PHONY: all cpp v *-fpga clean cleanall
+.PHONY: all cpp v $(v) $(fpga) clean cleanall
