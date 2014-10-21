@@ -7,6 +7,7 @@ import addDaisyPins._
 object DaisyBackend { 
   val states = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
+  val sramAddrs = HashMap[Mem[_], Reg]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   var daisywidth = -1
@@ -160,7 +161,26 @@ object DaisyBackend {
     def insertSRAMChain(m: Module) = {
       var lastChain: SRAMChain = null
       for (sram <- srams(m)) {
-        val read = sram.readAccesses.head
+        var addr: Reg = null
+        var data: Node = null
+        for (read <- sram.readAccesses) {
+          read match {
+            case mr: MemRead => {
+              mr.addr.getNode match {
+                case addrReg: Reg => {
+                  addr = addrReg
+                  data = mr
+                }
+                case _ =>
+              }
+            }
+            case msr: MemSeqRead => {
+              addr = msr.addrReg
+              data = msr
+            }
+            case _ =>
+          }
+        }
         val datawidth = sram.needWidth
         val chain = m.addModule(new SRAMChain, {
           case DataWidth => datawidth 
@@ -170,11 +190,11 @@ object DaisyBackend {
         for (i <- (0 until chain.daisylen).reverse) {
           val low = math.max(high-daisywidth+1, 0)
           val widthMargin = daisywidth-(high-low+1)
-          val data = UInt(read)(high, low)
+          val thisData = UInt(data)(high, low)
           if (widthMargin == 0) {
-            chain.io.dataIo.data(i) := data
+            chain.io.dataIo.data(i) := thisData
           } else {
-            chain.io.dataIo.data(i) := Cat(data, UInt(0, widthMargin))
+            chain.io.dataIo.data(i) := Cat(thisData, UInt(0, widthMargin))
           }
           high -= daisywidth
         }
@@ -186,11 +206,9 @@ object DaisyBackend {
         }
         chain.io.restart := daisyPins(m).sram.restart
         // Connect chain addr to SRAM addr
-        val readAddr = read.addr.asInstanceOf[Bits]
-        chain.io.addrIo.in := readAddr
-        when(chain.io.addrIo.out.valid) {
-          readAddr := chain.io.addrIo.out.bits
-        }
+        chain.io.addrIo.in := UInt(addr)
+        addr.inputs(0) = Multiplex(chain.io.addrIo.out.valid, 
+                                   chain.io.addrIo.out.bits, addr.inputs(0))
         lastChain = chain
       }
       if (lastChain != null) hasSRAMChain += m
@@ -243,7 +261,6 @@ object DaisyBackend {
     // Print out the IO mapping for pokes and peeks
     res append "INPUT:\n"
     var inputNum = 0
-    // for ((input, i) <- top.inputs.zipWithIndex) {
     for (input <- top.inputs) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + input.name
       val width = input.needWidth
@@ -251,7 +268,7 @@ object DaisyBackend {
       res append "%s %d\n".format(path, width)
     }
     res append "OUTPUT:\n"
-    for ((output, i) <- top.outputs.zipWithIndex) {
+    for (output <- top.outputs) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + output.name
       val width = output.needWidth
       val n = (width - 1) / top.hostwidth + 1

@@ -10,6 +10,7 @@
 class debug_api_t
 {
   public:
+    debug_api_t(std::string design): debug_api_t(design, false) {}
     debug_api_t(std::string design, bool trace_);
     ~debug_api_t();
     virtual void run() = 0;

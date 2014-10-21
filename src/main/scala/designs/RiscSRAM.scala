@@ -12,8 +12,8 @@ class RiscSRAM extends Module {
     val valid  = Bool(OUTPUT)
     val out    = Bits(OUTPUT, 32)
   }
-  val file = Mem(Bits(width = 32), 16 /*256*/, seqRead = true)
-  val code = Mem(Bits(width = 32), 16 /*256*/, seqRead = true)
+  val file = Mem(Bits(width = 32), 256, seqRead = true)
+  val code = Mem(Bits(width = 32), 256, seqRead = true)
 
   val add_op :: imm_op :: Nil = Enum(Bits(), 2)
 

@@ -11,7 +11,7 @@
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
-debug_api_t::debug_api_t(std::string design_, bool trace_ = true)
+debug_api_t::debug_api_t(std::string design_, bool trace_)
   : design(design_), trace(trace_), t(0), snap_size(0), pass(true), fail_t(-1), input_num(0), output_num(0)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
