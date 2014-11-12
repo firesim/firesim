@@ -117,11 +117,11 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     val width = input.needWidth
     val n = (width-1) / (hostwidth-1) + 1
     if (width <= hostwidth-1) {
-      input := inputBufs(inputId)
+      input := Mux(fire, inputBufs(inputId), UInt(0))
       inputId += 1
     } else {
       val bufs = (0 until n) map { x => inputBufs(inputId + x) }
-      input := Cat(bufs)
+      input := Mux(fire, Cat(bufs), UInt(0))
       inputId += n
     }
   }

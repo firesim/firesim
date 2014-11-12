@@ -1,15 +1,17 @@
 basedir := $(abspath .)
 srcdir  := $(basedir)/src/main/scala/designs
-csrcdir := $(basedir)/csrc
 tutdir  := $(basedir)/tutorial/examples
+minidir := $(basedir)/riscv-mini/src/main/scala/designs
+csrcdir := $(basedir)/csrc
 gendir  := $(basedir)/generated
 logdir  := $(basedir)/logs
 resdir  := $(basedir)/results
 zeddir  := $(basedir)/fpga-zynq/zedboard
 bitstream := fpga-images-zedboard/boot.bin
-designs := GCD Parity Stack Router Risc RiscSRAM FIR2D\
-	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch
-VPATH   := $(srcdir):$(gendir):$(tutdir):$(gendir)
+designs := GCD Parity Stack Router Risc RiscSRAM FIR2D \
+	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch \
+	Core
+VPATH   := $(srcdir):$(tutdir):$(minidir):$(gendir):$(logdir)
 
 memgen := $(basedir)/scripts/fpga_mem_gen
 
@@ -25,7 +27,7 @@ cpp := $(addsuffix Shim.cpp, $(designs))
 harness := $(addsuffix Shim-harness.v, $(designs))
 v := $(addsuffix Shim.v, $(designs))
 fpga := $(addsuffix -fpga, $(designs))
-driver := $(addsuffix -zedborad, $(designs))
+driver := $(addsuffix -zedboard, $(designs))
 
 $(designs): %: %Shim.v %-fpga %-zedborad
 
@@ -49,9 +51,31 @@ $(v): %Shim.v: %.scala
 $(fpga): %-fpga: %Shim.v
 	cd $(zeddir); make clean; make $(bitstream) DESIGN=$*; cp $(bitstream) $(resdir)
 
-$(driver): %-zedborad: $(csrcdir)/%.cc $(csrcdir)/debug_api.cc $(csrcdir)/debug_api.h
+$(driver): %-zedboard: $(csrcdir)/%.cc $(csrcdir)/debug_api.cc $(csrcdir)/debug_api.h
 	mkdir -p $(resdir)
 	cd $(resdir); $(CXX) $(CXXFLAGS) $^ -o $@
+
+tests_isa_dir  := $(basedir)/riscv-mini/tests/isa
+timeout_cycles := 10000
+include riscv-mini/Makefrag-sim
+
+core_asm_c = $(addprefix Core., $(addsuffix .cpp.out, $(asm_p_tests)))
+$(core_asm_c): Core.%.cpp.out: $(tests_isa_dir)/%.hex $(minidir)/Core.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run CoreShim $(C_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles)" \
+        | tee $(logdir)/$(notdir $@)
+core_asm_c: $(core_asm_c)
+	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+	$(addprefix $(logdir)/, $(core_asm_c)); echo;
+
+core_asm_v = $(addprefix Core., $(addsuffix .v.out, $(asm_p_tests)))
+$(core_asm_v): Core.%.v.out: $(tests_isa_dir)/%.hex $(minidir)/Core.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run CoreShim $(V_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles)" \
+        | tee $(logdir)/$(notdir $@)
+core_asm_v: $(core_asm_v)
+	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+	$(addprefix $(logdir)/, $(core_asm_v)); echo;
 
 clean:
 	rm -rf $(gendir) $(logdir) $(resdir) 

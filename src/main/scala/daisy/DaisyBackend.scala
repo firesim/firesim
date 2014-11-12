@@ -132,17 +132,16 @@ object DaisyBackend {
             daisyPins(m).state.out <> daisyPins(child).state.out
           }
         } else {
-          val lastChild = m.children(last)
-          daisyPins(lastChild).state.out <> daisyPins(m).state.in
+          daisyPins(m.children(last)).state.in <> daisyPins(child).state.out
         }
         last = cur
       }
 
       if (last > -1) {
         hasStateChain += m
-        daisyPins(m).state.in <> daisyPins(m.children(last)).state.in
+        daisyPins(m.children(last)).state.in <> daisyPins(m).state.in
       } else if (stateChain != null) {
-        daisyPins(m).state.in <> stateChain.io.dataIo.in
+        stateChain.io.dataIo.in <> daisyPins(m).state.in
       }
     }
   } 
@@ -229,7 +228,7 @@ object DaisyBackend {
               daisyPins(m).sram.out <> daisyPins(child).sram.out
             }
           } else {
-            daisyPins(child).sram.out <> daisyPins(m.children(last)).sram.out
+            daisyPins(m.children(last)).sram.in <> daisyPins(child).sram.out
           }
           last = cur
         }
@@ -294,7 +293,7 @@ object DaisyBackend {
           case read: MemRead => {
             val mem = read.mem
             val addr = read.addr.litValue(0).toInt
-            val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + mem.name
+            val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + mem.name
             val width = mem.needWidth
             res append "%s[%d] %d\n".format(path, addr, width)
             stateWidth += width
@@ -303,10 +302,11 @@ object DaisyBackend {
             while (daisyWidth < thisWidth) daisyWidth += daisywidth
           }
           case _ => { 
-            val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + state.name
+            val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + state.name
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
             stateWidth += width
+            thisWidth += width
             while (totalWidth < stateWidth) totalWidth += top.hostwidth
             while (daisyWidth < thisWidth) daisyWidth += daisywidth
           }
@@ -324,7 +324,7 @@ object DaisyBackend {
 
     for (i <- 0 until Driver.sramMaxSize ; m <- Driver.sortedComps.reverse ; if m.name != top.name) {
       for (sram <- srams(m)) {
-        val path = targetName + "." + (m.getPathName(".") stripPrefix prefix) + sram.name
+        val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + sram.name
         val width = sram.needWidth
         var daisyWidth = 0
         if (i < sram.n) 

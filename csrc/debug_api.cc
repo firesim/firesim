@@ -38,6 +38,8 @@ debug_api_t::debug_api_t(std::string design_, bool trace_)
   read_chain_map_file(design + ".chain.map");
 
   srand(time(NULL));
+
+  replayfile = design + ".replay";
 }
 
 debug_api_t::~debug_api_t() {
@@ -47,7 +49,7 @@ debug_api_t::~debug_api_t() {
   else 
     std::cout << " Failed, first at cycle " << fail_t << std::endl;
 
-  write_replay_file(design + ".replay");
+  write_replay_file(replayfile);
 }
 
 void debug_api_t::read_io_map_file(std::string filename) {
