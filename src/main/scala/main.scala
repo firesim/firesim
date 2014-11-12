@@ -4,10 +4,11 @@ import Chisel._
 import Daisy._
 import Designs._
 import TutorialExamples._
+import mini.Core
 
 object DebugMachine {
   def main(args: Array[String]) {
-    val chiselArgs = args.slice(1, args.length)
+    val (chiselArgs, testArgs) = args.tail partition (_.head != '+')
     val res = args(0) match {
       case "RiscSRAM" =>
         chiselMainTest(chiselArgs, () => Module(new RiscSRAM))(
@@ -45,6 +46,9 @@ object DebugMachine {
       case "FIR2DShim" =>
         chiselMainTest(chiselArgs, () => DaisyShim(new FIR2D(32, 8, 3)))(
           c => new FIR2DDaisyTests(c, 32, 8, 3))
+      case "CoreShim" => 
+        chiselMainTest(chiselArgs, () => DaisyShim(new Core))(
+          c => new CoreDaisyTests(c, testArgs))
       case _ =>
     }
   }

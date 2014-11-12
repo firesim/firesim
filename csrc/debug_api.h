@@ -54,6 +54,7 @@ class debug_api_t
     const static uintptr_t dev_paddr = 0x43C00000;
 
   protected:
+    std::string replayfile;
     void step(uint32_t n);
     void poke(std::string path, uint64_t value);
     uint64_t peek(std::string path);
