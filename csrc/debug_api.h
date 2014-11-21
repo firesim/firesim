@@ -17,10 +17,12 @@ class debug_api_t
 
   private:
     void poke_steps(uint32_t n);
+    void poke(uint64_t value);
+    uint64_t peek();
     void poke_all();
     void peek_all();
     void poke_snap();
-    void snapshot(std::string& snap);
+    void read_snap(std::string& snap);
     void write_snap(std::string& snap, uint32_t n);
     void read_io_map_file(std::string filename);
     void read_chain_map_file(std::string filename);
@@ -38,10 +40,13 @@ class debug_api_t
 
     int hostwidth;
     int opwidth;
+    int addrwidth;
+    int memwidth;
     int STEP;
     int POKE;
     int PEEK;
     int SNAP;
+    int MEM;
     int input_num;
     int output_num;
 
@@ -60,6 +65,8 @@ class debug_api_t
     uint64_t peek(std::string path);
     bool expect(std::string path, uint64_t expected);
     bool expect(bool ok, std::string s);
+    void write_mem(uint64_t addr, uint64_t data);
+    uint64_t read_mem(uint64_t addr);
     uint64_t rand_next(int limit); 
     uint64_t t;
 };

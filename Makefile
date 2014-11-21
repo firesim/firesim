@@ -29,7 +29,7 @@ v := $(addsuffix Shim.v, $(designs))
 fpga := $(addsuffix -fpga, $(designs))
 driver := $(addsuffix -zedboard, $(designs))
 
-$(designs): %: %Shim.v %-fpga %-zedborad
+$(designs): %: %Shim.v %-fpga %-zedboard
 
 $(cpp): %Shim.cpp: %.scala 
 	mkdir -p $(logdir)
