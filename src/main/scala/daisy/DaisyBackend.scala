@@ -10,6 +10,8 @@ object DaisyBackend {
   val sramAddrs = HashMap[Mem[_], Reg]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
+  lazy val targetComps = Driver.sortedComps filterNot (x => 
+    x.name == top.name || (x.name != top.target.name && (top.children contains x)))
   var daisywidth = -1
 
   def addTransforms(width: Int) {
@@ -27,8 +29,7 @@ object DaisyBackend {
 
   def initDaisy(c: Module) {
     top.name = targetName + "Shim"
-    for (m <- Driver.sortedComps ; 
-    if m.name != top.name && m.name != top.target.name) {
+    for (m <- targetComps ; if m.name != top.target.name) {
       addDaisyPins(m, daisywidth)
     }
   }
@@ -44,7 +45,7 @@ object DaisyBackend {
       }
     }
 
-    for (m <- Driver.sortedComps ; if m.name != top.name) {
+    for (m <- targetComps) {
       states(m) = ArrayBuffer[Node]()
       srams(m) = ArrayBuffer[Mem[_]]()
       connectStallPins(m)
@@ -120,7 +121,7 @@ object DaisyBackend {
       chain
     }
 
-    for (m <- Driver.sortedComps ; if m.name != top.name) {
+    for (m <- targetComps) {
       val stateChain = insertStateChain(m)
       // Filter children who have state chains
       var last = -1
@@ -215,7 +216,7 @@ object DaisyBackend {
     }
 
     if (Driver.hasSRAM) {
-      for (m <- Driver.sortedComps ; if m.name != top.name) {
+      for (m <- targetComps) {
         val sramChain = insertSRAMChain(m)   
         // Filter children who have sram chains
         var last = -1
@@ -252,10 +253,13 @@ object DaisyBackend {
     // Print out parameters
     res append "HOSTWIDTH: %d\n".format(top.hostwidth)
     res append "OPWIDTH: %d\n".format(top.opwidth)
+    res append "ADDRWIDTH: %d\n".format(top.addrwidth)
+    res append "MEMWIDTH: %d\n".format(top.memwidth)
     res append "STEP: %d\n".format(top.STEP.litValue())
     res append "POKE: %d\n".format(top.POKE.litValue())
     res append "PEEK: %d\n".format(top.PEEK.litValue())
     res append "SNAP: %d\n".format(top.SNAP.litValue())
+    res append "MEM: %d\n".format(top.MEM.litValue())
 
     // Print out the IO mapping for pokes and peeks
     res append "INPUT:\n"
@@ -285,9 +289,9 @@ object DaisyBackend {
     // Collect states
     var stateWidth = 0
     var totalWidth = 0
-    for (m <- Driver.sortedComps.reverse ; if m.name != top.name) {
+    for (m <- targetComps) {
       var daisyWidth = 0
-      var thisWidth = 0
+      var localWidth = 0
       for (state <- states(m)) {
         state match {
           case read: MemRead => {
@@ -297,24 +301,25 @@ object DaisyBackend {
             val width = mem.needWidth
             res append "%s[%d] %d\n".format(path, addr, width)
             stateWidth += width
-            thisWidth += width
+            localWidth += width
             while (totalWidth < stateWidth) totalWidth += top.hostwidth
-            while (daisyWidth < thisWidth) daisyWidth += daisywidth
+            while (daisyWidth < localWidth) daisyWidth += daisywidth
           }
           case _ => { 
             val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + state.name
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
             stateWidth += width
-            thisWidth += width
+            localWidth += width
             while (totalWidth < stateWidth) totalWidth += top.hostwidth
-            while (daisyWidth < thisWidth) daisyWidth += daisywidth
+            while (daisyWidth < localWidth) daisyWidth += daisywidth
           }
         }
       }
-      val daisyPadWidth = daisyWidth - thisWidth
+      val daisyPadWidth = daisyWidth - localWidth
       if (daisyPadWidth > 0) {
-        res append "null %d\n".format(daisyPadWidth)  
+        res append "null %d\n".format(daisyPadWidth)
+        stateWidth += daisyPadWidth
       }
     }
     val totalPadWidth = totalWidth - stateWidth
@@ -322,7 +327,7 @@ object DaisyBackend {
       res append "null %d\n".format(totalPadWidth)
     }
 
-    for (i <- 0 until Driver.sramMaxSize ; m <- Driver.sortedComps.reverse ; if m.name != top.name) {
+    for (i <- 0 until Driver.sramMaxSize ; m <- targetComps.reverse) {
       for (sram <- srams(m)) {
         val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + sram.name
         val width = sram.needWidth

@@ -30,7 +30,7 @@ debug_api_t::debug_api_t(std::string design_, bool trace_)
   __sync_synchronize();
   // Empty output queues before starting!
   while ((uint32_t) read_reg(0) > 0) {
-    uint32_t temp = read_reg(1);
+    uint32_t temp = (uint32_t) read_reg(1);
   }
 
   // Read mapping files
@@ -63,10 +63,13 @@ void debug_api_t::read_io_map_file(std::string filename) {
       iss >> head;
       if (head == "HOSTWIDTH:") iss >> hostwidth;
       else if (head == "OPWIDTH:") iss >> opwidth;
+      else if (head == "ADDRWIDTH:") iss >> addrwidth;
+      else if (head == "MEMWIDTH:") iss >> memwidth;
       else if (head == "STEP:") iss >> STEP;
       else if (head == "POKE:") iss >> POKE;
       else if (head == "PEEK:") iss >> PEEK;
       else if (head == "SNAP:") iss >> SNAP;
+      else if (head == "MEM:") iss >> MEM;
       else if (head == "INPUT:") isInput = true;
       else if (head == "OUTPUT:") isInput = false;
       else {
@@ -124,17 +127,24 @@ void debug_api_t::write_replay_file(std::string filename) {
   file.close();
 }
 
-void debug_api_t::poke_all() {
-  write_reg(0, POKE);
+void debug_api_t::poke(uint64_t value) {
+  write_reg(0, value);
   __sync_synchronize();
+}
 
+uint64_t debug_api_t::peek() {
+  __sync_synchronize();
+  while ((uint32_t) read_reg(0) == 0);
+  return (uint32_t) read_reg(1);
+}
+
+void debug_api_t::poke_all() {
+  poke(POKE);
   for (int i = 0 ; i < input_num ; i++) {
     if (poke_map.find(i) != poke_map.end()) {
-      write_reg(0, poke_map[i] << 1 | 1);
-      __sync_synchronize();
+      poke(poke_map[i] << 1 | 1);
     } else {
-      write_reg(0, 0);
-      __sync_synchronize();
+      poke(0);
     }
   }
   poke_map.clear();
@@ -142,37 +152,17 @@ void debug_api_t::poke_all() {
 
 void debug_api_t::peek_all() {
   peek_map.clear();
-  write_reg(0, PEEK);
-  __sync_synchronize();
-
-  int i = 0;
-  while (i < output_num) {
-    __sync_synchronize();
-    uint32_t c = (uint32_t) read_reg(0);
-    if (c > 0) {
-      for (int j = 0 ; j < c ; j++) {
-        peek_map[i] = (uint32_t) read_reg(1);
-        i++;
-      }
-    }
+  poke(PEEK);
+  for (int i = 0 ; i < output_num ; i++) {
+    peek_map[i] = peek();
   }
 }
 
-void debug_api_t::snapshot(std::string &snap) {
-  int i = 0;
-  int limit = snap_size / hostwidth;
-  while (i < limit) {
-    __sync_synchronize();
-    uint32_t c = (uint32_t) read_reg(0);
-    if (c > 0) {
-      for (int j = 0 ; j < c ; j++) {
-        uint32_t value = (uint32_t) read_reg(1);
-        std::bitset<sizeof(uint32_t) * 8> bin_value(value);
-        snap += bin_value.to_string();
-        i++;
-        if (i >= limit) break;
-      }
-    }
+void debug_api_t::read_snap(std::string &snap) {
+  for (int i = 0 ; i < snap_size / hostwidth ; i++) {
+    uint32_t value = peek();
+    std::bitset<sizeof(uint32_t)*8> bin_value(value);
+    snap += bin_value.to_string();
   }
 }
 
@@ -201,13 +191,11 @@ void debug_api_t::write_snap(std::string &snap, uint32_t n) {
 }
 
 void debug_api_t::poke_snap() {
-  write_reg(0, SNAP);
-  __sync_synchronize();
+  poke(SNAP);
 }
 
 void debug_api_t::poke_steps(uint32_t n) {
-  write_reg(0, n << opwidth | STEP);
-  __sync_synchronize();
+  poke(n << opwidth | STEP);
 }
 
 void debug_api_t::step(uint32_t n) {
@@ -215,10 +203,9 @@ void debug_api_t::step(uint32_t n) {
   poke_all();
   if (t > 0) poke_snap();
   poke_steps(n);
-  if (t > 0) snapshot(snap);
+  if (t > 0) read_snap(snap);
   peek_all();
   if (trace) std::cout << "* STEP " << n << " -> " << (t + n) << " * " << std::endl;
-
   if (t > 0) write_snap(snap, n);
   t += n;
 }
@@ -227,10 +214,12 @@ void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
   if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
   std::vector<int> ids = input_map[path];
+  uint64_t mask = (1 << (hostwidth-1)) - 1;
   for (int i = 0 ; i < ids.size() ; i++) {
     int id = ids[ids.size()-1-i];
-    uint32_t mask = (value >> (i * (hostwidth - 1))) & ((1 << (hostwidth - 1)) - 1);
-    poke_map[id] = mask;
+    int shift = (hostwidth-1) * i;
+    uint32_t data = (value >> shift) & mask;
+    poke_map[id] = data;
   }
 }
 
@@ -275,7 +264,31 @@ bool debug_api_t::expect(bool ok, std::string s) {
     }
   }
   return ok;
-} 
+}
+
+void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
+  poke((1 << opwidth) | MEM);
+  uint64_t mask = (1<<hostwidth)-1;
+  for (int i = (addrwidth-1)/hostwidth+1 ; i > 0 ; i--) {
+    poke((addr >> (hostwidth * (i-1))) & mask);
+  }
+  for (int i = (memwidth-1)/hostwidth+1 ; i > 0 ; i--) {
+    poke((data >> (hostwidth * (i-1))) & mask);
+  }
+}
+
+uint64_t debug_api_t::read_mem(uint64_t addr) {
+  poke((0 << opwidth) | MEM);
+  uint64_t mask = (1<<hostwidth)-1;
+  for (int i = (addrwidth-1)/hostwidth+1 ; i > 0 ; i--) {
+    poke((addr >> (hostwidth * (i-1))) & mask);
+  }
+  uint64_t data = 0;
+  for (int i = 0 ; i < (memwidth-1)/hostwidth+1 ; i ++) {
+    data |= peek() << (hostwidth * i);
+  }
+  return data;
+}
 
 uint64_t debug_api_t::rand_next(int limit) {
   return rand() % limit;
