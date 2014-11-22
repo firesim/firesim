@@ -61,10 +61,10 @@ void debug_api_t::read_io_map_file(std::string filename) {
       std::istringstream iss(line);
       std::string head;
       iss >> head;
-      if (head == "HOSTWIDTH:") iss >> hostwidth;
-      else if (head == "OPWIDTH:") iss >> opwidth;
-      else if (head == "ADDRWIDTH:") iss >> addrwidth;
-      else if (head == "MEMWIDTH:") iss >> memwidth;
+           if (head == "HOSTLEN:") iss >> hostlen;
+      else if (head == "ADDRLEN:") iss >> addrlen;
+      else if (head == "MEMLEN:") iss >> memlen;
+      else if (head == "CMDLEN:") iss >> cmdlen;
       else if (head == "STEP:") iss >> STEP;
       else if (head == "POKE:") iss >> POKE;
       else if (head == "PEEK:") iss >> PEEK;
@@ -76,14 +76,14 @@ void debug_api_t::read_io_map_file(std::string filename) {
         int width;
         iss >> width;
         if (isInput) {
-          int n = (width - 1) / (hostwidth - 1) + 1;
+          int n = (width - 1) / (hostlen - 1) + 1;
           input_map[head] = std::vector<int>();
           for (int i = 0 ; i < n ; i++) {
             input_map[head].push_back(input_num);
             input_num++;
           }
         } else {
-          int n = (width - 1) / hostwidth + 1;
+          int n = (width - 1) / hostlen + 1;
           output_map[head] = std::vector<int>();
           for (int i = 0 ; i < n ; i++) {
             output_map[head].push_back(output_num);
@@ -159,7 +159,7 @@ void debug_api_t::peek_all() {
 }
 
 void debug_api_t::read_snap(std::string &snap) {
-  for (int i = 0 ; i < snap_size / hostwidth ; i++) {
+  for (int i = 0 ; i < snap_size / hostlen ; i++) {
     uint32_t value = peek();
     std::bitset<sizeof(uint32_t)*8> bin_value(value);
     snap += bin_value.to_string();
@@ -195,7 +195,7 @@ void debug_api_t::poke_snap() {
 }
 
 void debug_api_t::poke_steps(uint32_t n) {
-  poke(n << opwidth | STEP);
+  poke(n << cmdlen | STEP);
 }
 
 void debug_api_t::step(uint32_t n) {
@@ -214,10 +214,10 @@ void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
   if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
   std::vector<int> ids = input_map[path];
-  uint64_t mask = (1 << (hostwidth-1)) - 1;
+  uint64_t mask = (1 << (hostlen-1)) - 1;
   for (int i = 0 ; i < ids.size() ; i++) {
     int id = ids[ids.size()-1-i];
-    int shift = (hostwidth-1) * i;
+    int shift = (hostlen-1) * i;
     uint32_t data = (value >> shift) & mask;
     poke_map[id] = data;
   }
@@ -230,7 +230,7 @@ uint64_t debug_api_t::peek(std::string path) {
   for (int i = 0 ; i < ids.size() ; i++) {
     int id = ids[ids.size()-1-i];
     assert(peek_map.find(id) != peek_map.end());
-    value = value << hostwidth | peek_map[id];
+    value = value << hostlen | peek_map[id];
   }
   if (trace) std::cout << "* PEEK " << path << " -> " << value << " * " << std::endl;
   return value;
@@ -267,25 +267,25 @@ bool debug_api_t::expect(bool ok, std::string s) {
 }
 
 void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
-  poke((1 << opwidth) | MEM);
-  uint64_t mask = (1<<hostwidth)-1;
-  for (int i = (addrwidth-1)/hostwidth+1 ; i > 0 ; i--) {
-    poke((addr >> (hostwidth * (i-1))) & mask);
+  poke((1 << cmdlen) | MEM);
+  uint64_t mask = (1<<hostlen)-1;
+  for (int i = (addrlen-1)/hostlen+1 ; i > 0 ; i--) {
+    poke((addr >> (hostlen * (i-1))) & mask);
   }
-  for (int i = (memwidth-1)/hostwidth+1 ; i > 0 ; i--) {
-    poke((data >> (hostwidth * (i-1))) & mask);
+  for (int i = (memlen-1)/hostlen+1 ; i > 0 ; i--) {
+    poke((data >> (hostlen * (i-1))) & mask);
   }
 }
 
 uint64_t debug_api_t::read_mem(uint64_t addr) {
-  poke((0 << opwidth) | MEM);
-  uint64_t mask = (1<<hostwidth)-1;
-  for (int i = (addrwidth-1)/hostwidth+1 ; i > 0 ; i--) {
-    poke((addr >> (hostwidth * (i-1))) & mask);
+  poke((0 << cmdlen) | MEM);
+  uint64_t mask = (1<<hostlen)-1;
+  for (int i = (addrlen-1)/hostlen+1 ; i > 0 ; i--) {
+    poke((addr >> (hostlen * (i-1))) & mask);
   }
   uint64_t data = 0;
-  for (int i = 0 ; i < (memwidth-1)/hostwidth+1 ; i ++) {
-    data |= peek() << (hostwidth * i);
+  for (int i = 0 ; i < (memlen-1)/hostlen+1 ; i ++) {
+    data |= peek() << (hostlen * i);
   }
   return data;
 }
