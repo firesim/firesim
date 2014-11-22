@@ -22,11 +22,49 @@ object DaisyShim {
   def apply[T <: Module](c: =>T) = Module(new DaisyShim(c))(daisy_parameters)
 }
 
+class HostIO extends Bundle {
+  val hostLen = params(HostLen)
+  val in = Decoupled(UInt(width=hostLen)).flip
+  val out = Decoupled(UInt(width=hostLen))
+}
+
+trait HasMemData extends Bundle {
+  val memLen = params(MemLen) 
+  val data = UInt(width=memLen)
+}
+
+trait HasMemAddr extends Bundle {
+  val addrLen = params(AddrLen)
+  val addr = UInt(width=addrLen)
+}
+
+trait HasMemTag extends Bundle {
+  val tagLen = params(TagLen)
+  val tag = UInt(width=tagLen)
+}
+
+class MemReqCmd extends HasMemAddr with HasMemTag {
+  val rw = Bool()
+}
+class MemResp extends HasMemData with HasMemTag
+class MemData extends HasMemData
+
+class MemIO extends Bundle {
+  val req_cmd = Decoupled(new MemReqCmd)
+  val req_data = Decoupled(new MemData)
+  val resp = Decoupled(new MemResp).flip
+}
+
+class DaisyShimIO extends Bundle {
+  val host = new HostIO
+  val mem = new MemIO 
+}
+
 abstract trait DaisyShimParams extends UsesParameters {
   val hostLen = params(HostLen)
   val addrLen = params(AddrLen)
-  val memLen = params(MemLen) 
   val tagLen = params(TagLen)
+  val memLen = params(MemLen) 
   val daisyLen = params(DaisyLen)
 }
 
@@ -37,42 +75,6 @@ abstract trait DebugCommands extends UsesParameters {
   val PEEK = UInt(2, cmdLen)
   val SNAP = UInt(3, cmdLen)
   val MEM  = UInt(4, cmdLen)
-}
-
-abstract trait DaisyBundle extends Bundle with DaisyShimParams
-
-class HostIO extends DaisyBundle {
-  val in = Decoupled(UInt(width=hostLen)).flip
-  val out = Decoupled(UInt(width=hostLen))
-}
-
-trait HasMemData extends DaisyBundle {
-  val data = UInt(width=memLen)
-}
-
-trait HasMemAddr extends DaisyBundle {
-  val addr = UInt(width=addrLen)
-}
-
-trait HasMemTag extends DaisyBundle {
-  val tag = UInt(width=tagLen)
-}
-
-class MemReqCmd extends HasMemAddr with HasMemTag {
-  val rw = Bool()
-}
-class MemResp extends HasMemData with HasMemTag
-class MemData extends HasMemData
-
-class MemIO extends DaisyBundle {
-  val req_cmd = Decoupled(new MemReqCmd)
-  val req_data = Decoupled(new MemData)
-  val resp = Decoupled(new MemResp).flip
-}
-
-class DaisyShimIO extends Bundle {
-  val host = new HostIO
-  val mem = new MemIO 
 }
 
 class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with DebugCommands {
