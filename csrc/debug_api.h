@@ -38,10 +38,10 @@ class debug_api_t
     std::string design;
     std::ostringstream replay;
 
-    int hostwidth;
-    int opwidth;
-    int addrwidth;
-    int memwidth;
+    int hostlen;
+    int addrlen;
+    int memlen;
+    int cmdlen;
     int STEP;
     int POKE;
     int PEEK;

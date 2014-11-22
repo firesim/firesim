@@ -2,22 +2,22 @@ package Daisy
 
 import Chisel._
 
-case object DataWidth extends Field[Int]
+case object DataLen extends Field[Int]
 case object SRAMSize extends Field[Int]
 
 // Common structures for daisy chains
 abstract trait DaisyChainParams extends UsesParameters {
-  val datawidth = params(DataWidth)
-  val daisywidth = params(DaisyWidth)
-  val daisylen = (datawidth - 1) / daisywidth + 1
+  val dataLen = params(DataLen)
+  val daisyLen = params(DaisyLen)
+  val daisySize = (dataLen - 1) / daisyLen + 1
 }
 
 abstract class DaisyChainBundle extends Bundle with DaisyChainParams
 
 class DataIO extends DaisyChainBundle {
-  val in  = Decoupled(UInt(INPUT, daisywidth)).flip
-  val out = Decoupled(UInt(INPUT, daisywidth))
-  val data = Vec.fill(daisylen) { UInt(INPUT, daisywidth) }
+  val in  = Decoupled(UInt(INPUT, daisyLen)).flip
+  val out = Decoupled(UInt(INPUT, daisyLen))
+  val data = Vec.fill(daisySize) { UInt(INPUT, daisyLen) }
 }
 
 class CntrIO extends Bundle {
@@ -37,27 +37,18 @@ abstract class DaisyChainModule extends Module with DaisyChainParams
 
 class DaisyDatapath extends DaisyChainModule { 
   val io = new DaisyDatapathIO
-  val regs = Vec.fill(daisylen) { Reg(UInt(width=daisywidth)) }
+  val regs = Vec.fill(daisySize) { Reg(UInt(width=daisyLen)) }
 
-  io.dataIo.out.bits := regs(daisylen-1)
+  io.dataIo.out.bits := regs(daisySize-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero
   io.dataIo.in.ready := io.dataIo.out.ready
   io.ctrlIo.outFire := io.dataIo.out.fire()
   io.ctrlIo.inValid := io.dataIo.in.valid
 
   val readCondAndOutFire = io.ctrlIo.readCond && io.dataIo.out.fire()
-  // var high = datawidth-1 
-  for (i <- (0 until daisylen).reverse) {
-    // val low = math.max(high-daisywidth+1, 0)
-    // val padwidth = daisywidth-(high-low+1)
+  for (i <- (0 until daisySize).reverse) {
     when(io.ctrlIo.copyCond) {
       regs(i) := io.dataIo.data(i)
-      /*
-      if (padwidth > 0)
-        regs(i) := Cat(io.dataIo.data(high, low), UInt(0, padwidth))
-      else 
-        regs(i) := io.dataIo.data(high, low)
-      */
     }
     when(readCondAndOutFire) {
       if (i == 0)
@@ -65,7 +56,6 @@ class DaisyDatapath extends DaisyChainModule {
       else
         regs(i) := regs(i-1)
     }
-    // high -= daisywidth
   }
 }
 
@@ -74,13 +64,13 @@ class DaisyControlIO extends Bundle {
   val ctrlIo = new CntrIO
 }
 
-class DaisyCounter(ctrlIo: CntrIO, daisylen: Int) {
-  val counter = Reg(UInt(width=log2Up(daisylen+1)))
+class DaisyCounter(ctrlIo: CntrIO, daisySize: Int) {
+  val counter = Reg(UInt(width=log2Up(daisySize+1)))
   def isNotZero = counter.orR
 
   // Daisy chain control logic
   when(ctrlIo.copyCond) {
-    counter := UInt(daisylen)
+    counter := UInt(daisySize)
   }
   when(ctrlIo.readCond && ctrlIo.outFire && !ctrlIo.inValid) {
     counter := counter - UInt(1)
@@ -94,7 +84,7 @@ class StateChainControlIO extends DaisyControlIO
 class StateChainControl extends DaisyChainModule {
   val io = new StateChainControlIO
   val copied = Reg(next=io.stall)
-  val counter = new DaisyCounter(io.ctrlIo, daisylen)
+  val counter = new DaisyCounter(io.ctrlIo, daisySize)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := io.stall && !copied
@@ -138,7 +128,7 @@ class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val addrState = Reg(init=s_IDLE)
   val addrIn = Reg(UInt(width=log2Up(n)))
   val addrOut = Reg(UInt(width=log2Up(n)))
-  val counter = new DaisyCounter(io.ctrlIo, daisylen)
+  val counter = new DaisyCounter(io.ctrlIo, daisySize)
 
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD

@@ -18,6 +18,7 @@ class GCDDaisyTests(c: DaisyShim[GCD]) extends DaisyTester(c) {
 }
 
 class ParityDaisyTests(c: DaisyShim[Parity]) extends DaisyTester(c) {
+  writeMem(4, 0xdeadbeef)
   var isOdd = 0
   for (t <- 0 until 10) {
     val bit = rnd.nextInt(2)
@@ -26,6 +27,7 @@ class ParityDaisyTests(c: DaisyShim[Parity]) extends DaisyTester(c) {
     isOdd = (isOdd + bit) % 2;
     expect(c.target.io.out, isOdd)
   }
+  println(readMem(4).toString(16))
 }
 
 class StackDaisyTests(c: DaisyShim[Stack]) extends DaisyTester(c) {  
