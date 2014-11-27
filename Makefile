@@ -10,7 +10,7 @@ zeddir  := $(basedir)/fpga-zynq/zedboard
 bitstream := fpga-images-zedboard/boot.bin
 designs := GCD Parity Stack Router Risc RiscSRAM FIR2D \
 	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch \
-	Core
+	Core Tile
 VPATH   := $(srcdir):$(tutdir):$(minidir):$(gendir):$(logdir)
 
 memgen := $(basedir)/scripts/fpga_mem_gen
@@ -76,6 +76,24 @@ $(core_asm_v): Core.%.v.out: $(tests_isa_dir)/%.hex $(minidir)/Core.scala
 core_asm_v: $(core_asm_v)
 	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
 	$(addprefix $(logdir)/, $(core_asm_v)); echo;
+
+tile_asm_c = $(addprefix Tile., $(addsuffix .cpp.out, $(asm_p_tests)))
+$(tile_asm_c): Tile.%.cpp.out: $(tests_isa_dir)/%.hex $(minidir)/Tile.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run TileShim $(C_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles)" \
+        | tee $(logdir)/$(notdir $@)
+tile_asm_c: $(tile_asm_c)
+	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+	$(addprefix $(logdir)/, $(tile_asm_c)); echo;
+
+tile_asm_v = $(addprefix Tile., $(addsuffix .v.out, $(asm_p_tests)))
+$(tile_asm_v): Tile.%.v.out: $(tests_isa_dir)/%.hex $(minidir)/Tile.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run TileShim $(V_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles)" \
+        | tee $(logdir)/$(notdir $@)
+tile_asm_v: $(tile_asm_v)
+	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+	$(addprefix $(logdir)/, $(tile_asm_v)); echo;
 
 clean:
 	rm -rf $(gendir) $(logdir) $(resdir) 

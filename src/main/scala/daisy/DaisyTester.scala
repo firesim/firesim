@@ -2,6 +2,7 @@ package Daisy
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.io.Source
 
 abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]()
@@ -80,10 +81,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def peek: BigInt = {
+    poke(c.io.host.out.ready, 1)
     while (peek(dumpName(c.io.host.out.valid)) == 0) {
       takeSteps(1)
     } 
-    poke(c.io.host.out.ready, 1)
     val data = peek(c.io.host.out.bits)
     takeSteps(1)
     poke(c.io.host.out.ready, 0)
@@ -132,7 +133,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     // Send STEP command
     poke((n << cmdLen) | STEP)
     if (isTrace) println("==========")
-    takeSteps(n)
   }
 
   def readSnap = {
@@ -198,7 +198,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         mem(addr+i) = (data >> (8*i)) & 0xff
       }
     }
-    println("Tick Memory")
+    if (isTrace) println("Tick Memory")
     if (memcycles > 0) {
       poke(c.io.mem.req_cmd.ready, 0)
       poke(c.io.mem.req_data.ready, 0)
@@ -209,7 +209,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         memtag  = peek(c.io.mem.req_cmd.bits.tag)
         memaddr = peek(c.io.mem.req_cmd.bits.addr)
         if (peek(c.io.mem.req_cmd.bits.rw) == 0) {
-          memcycles = 10
+          memcycles = 2
           poke(c.io.mem.req_cmd.ready, 1)
         }
       }
@@ -218,7 +218,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         poke(c.io.mem.req_cmd.ready, 1)
         poke(c.io.mem.req_data.ready, 1)
         write(memaddr, data)
-        memcycles = 5
+        memcycles = 1
       }
     } else {
       if (peek(dumpName(c.io.mem.resp.ready)) == 1) {
@@ -229,7 +229,26 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       }
       memcycles -= 1
     }
-    println("===========")
+    if (isTrace) println("===========")
+  }
+
+  def readMem(addr: BigInt) = {
+    poke((0 << cmdLen) | MEM)
+    val mask = (BigInt(1) << hostLen) - 1
+    for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
+      poke(addr >> (hostLen * (i-1)) & mask)
+      tickMem
+      takeSteps(1)
+    }
+    do {
+      tickMem
+      takeSteps(1)
+    } while (memcycles >= 0) 
+    var data = BigInt(0)
+    for (i <- 0 until (memLen-1)/hostLen+1) {
+      data |= peek << (i * hostLen)
+    }
+    data
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
@@ -252,23 +271,36 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     } while (memcycles >= 0)
   }
 
-  def readMem(addr: BigInt) = {
-    poke((0 << cmdLen) | MEM)
-    val mask = (BigInt(1) << hostLen) - 1
-    for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
-      poke(addr >> (hostLen * (i-1)) & mask)
-      tickMem
-      takeSteps(1)
+  def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
+
+  def slowLoadMem(filename: String) {
+    val lines = Source.fromFile(filename).getLines
+    for ((line, i) <- lines.zipWithIndex) {
+      val base = (i * line.length) / 2
+      var offset = 0
+      for (k <- (line.length - 8) to 0 by -8) {
+        val data = 
+          BigInt((parseNibble(line(k)) << 28) | (parseNibble(line(k+1)) << 24)) |
+          BigInt((parseNibble(line(k+2)) << 20) | (parseNibble(line(k+3)) << 16)) |
+          BigInt((parseNibble(line(k+4)) << 12) | (parseNibble(line(k+5)) << 8)) |
+          BigInt((parseNibble(line(k+6)) << 4) | parseNibble(line(k+7)))
+        writeMem(base+offset, data)
+        offset += 4
+      }
     }
-    do {
-      tickMem
-      takeSteps(1)
-    } while (memcycles >= 0) 
-    var data = BigInt(0)
-    for (i <- 0 until (memLen-1)/hostLen+1) {
-      data |= peek << (i * hostLen)
+  }
+
+  def fastLoadMem(filename: String) {
+    val lines = Source.fromFile(filename).getLines
+    for ((line, i) <- lines.zipWithIndex) {
+      val base = (i * line.length) / 2
+      var offset = 0
+      for (k <- (line.length - 2) to 0 by -2) {
+        val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
+        mem(base+offset) = data
+        offset += 1
+      }
     }
-    data
   }
 
   override def step(n: Int = 1) {
@@ -276,6 +308,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     pokeAll
     if (t > 0) pokeSnap
     pokeSteps(n)
+    for (i <- 0 until n) {
+      tickMem
+      takeSteps(1)
+    }
     val snap = if (t > 0) readSnap else ""
     if (isTrace) println("STEP " + n + " -> " + target)
     peekAll
