@@ -10,16 +10,18 @@ case object DaisyLen extends Field[Int]
 case object CmdLen extends Field[Int]
 
 object DaisyShim {
-  val daisy_parameters = Parameters.empty alter (
-    (key, site, here, up) => key match {
-      case HostLen => 32
-      case AddrLen => 32
-      case TagLen => 5
-      case MemLen => 32 
-      case DaisyLen => 32
-      case CmdLen => 6
-    })
-  def apply[T <: Module](c: =>T) = Module(new DaisyShim(c))(daisy_parameters)
+  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
+    val daisyParams = targetParams alter (
+      (key, site, here, up) => key match {
+        case HostLen => 32
+        case AddrLen => 32
+        case TagLen => 5
+        case MemLen => 32 
+        case DaisyLen => 32
+        case CmdLen => 6
+      })
+    Module(new DaisyShim(c))(daisyParams)
+  }
 }
 
 class HostIO extends Bundle {
@@ -48,11 +50,12 @@ class MemReqCmd extends HasMemAddr with HasMemTag {
 }
 class MemResp extends HasMemData with HasMemTag
 class MemData extends HasMemData
+class MemTag extends HasMemTag
 
 class MemIO extends Bundle {
-  val req_cmd = Decoupled(new MemReqCmd)
+  val req_cmd  = Decoupled(new MemReqCmd)
   val req_data = Decoupled(new MemData)
-  val resp = Decoupled(new MemResp).flip
+  val resp     = Decoupled(new MemResp).flip
 }
 
 class DaisyShimIO extends Bundle {
@@ -63,8 +66,8 @@ class DaisyShimIO extends Bundle {
 abstract trait DaisyShimParams extends UsesParameters {
   val hostLen = params(HostLen)
   val addrLen = params(AddrLen)
-  val tagLen = params(TagLen)
-  val memLen = params(MemLen) 
+  val tagLen  = params(TagLen)
+  val memLen  = params(MemLen) 
   val daisyLen = params(DaisyLen)
 }
 
@@ -80,10 +83,35 @@ abstract trait DebugCommands extends UsesParameters {
 class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with DebugCommands {
   val io = new DaisyShimIO
   val target = Module(c)
-  val inputs = for ((n, io) <- target.wires ; if io.dir == INPUT) yield io
-  val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT) yield io
+  val targetMemPins = target.io match {
+    case b: Bundle => b.elements find { case (n, wires) => {
+      val hostMemIoNames   = io.mem.flatten.unzip._1
+      val targetMemIoNames = wires.flatten.unzip._1.toSet
+      hostMemIoNames forall (targetMemIoNames contains _)
+    } }
+    case _ => None
+  }
+  val targetMemIo = new MemIO
+  targetMemPins match {
+    case None =>
+    case Some((n, io)) => {
+      for ((n0, io0) <- io.flatten ; (n1, io1) <- targetMemIo.flatten ; if n0 == n1) {
+        if (io0.dir == INPUT) {
+          io0 := io1
+        } else if (io0.dir == OUTPUT) {
+          io1 := io0
+        }
+      }
+    }
+  }
+  def isMemIo(name: String) = targetMemPins match {
+    case None => false
+    case Some((n, io)) => io.flatten.unzip._1 exists (n + "_" + _ == name)
+  }
+  val inputs = for ((n, io) <- target.wires ; if io.dir == INPUT && !isMemIo(n)) yield io 
+  val outputs = for ((n, io) <- target.wires ; if io.dir == OUTPUT && !isMemIo(n)) yield io 
 
-  // Step counters for simulation run or stall
+  // Machine states
   val (debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: 
        debug_POKE :: debug_PEEK :: debug_MEM :: Nil) = Enum(UInt(), 7)
   val debugState = RegInit(debug_IDLE)
@@ -92,6 +120,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val mem_REQ_CMD :: mem_REQ_DATA :: mem_WAIT :: mem_RESP :: Nil = Enum(UInt(), 4)
   val memState = RegInit(mem_REQ_CMD)
 
+  // Step counters for simulation run or stall
   val stepCounter = RegInit(UInt(0))
   val pokeCounter = RegInit(UInt(0))
   val peekCounter = RegInit(UInt(0))
@@ -99,23 +128,24 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val fireDelay = RegNext(fire)
 
   // For snapshotting
-  val isSnap = RegInit(Bool(false))
+  val isSnap      = RegInit(Bool(false))
   val snapMemAddr = Reg(UInt(width=addrLen))
-  val snapBuffer = Reg(UInt(width=hostLen+daisyLen))
-  val snapCount = Reg(UInt(width=log2Up(hostLen+1)))
-  val snapReady = Reg(Bool())
-  val snapFinish = Reg(Bool())
+  val snapBuffer  = Reg(UInt(width=hostLen+daisyLen))
+  val snapCount   = Reg(UInt(width=log2Up(hostLen+1)))
+  val snapReady   = Reg(Bool())
+  val snapFinish  = Reg(Bool())
   val sramRestartCount = Reg(UInt(width=log2Up(Driver.sramMaxSize+1)))
 
   // For memory cmd
-  val memRW   = Reg(Bool())
-  val memTag  = RegInit(UInt(0, tagLen))
-  val memAddr = Reg(UInt(width=addrLen))
-  val memData = Reg(UInt(width=memLen))
+  val memReqCmd = Reg(new MemReqCmd)
+  val memReq    = Reg(new MemData)
+  val memResp   = Reg(new MemData)
+  val memTagCounter  = RegInit(UInt(0, tagLen))
   val memAddrCounter = Reg(UInt())
   val memDataCounter = Reg(UInt())
   val memReqCmdQueue = Module(new Queue(io.mem.req_cmd.bits.clone, 2))
-  val memReqDataQueue = Module(new Queue(io.mem.req_data.bits.clone, 2))
+  val memReqQueue    = Module(new Queue(io.mem.req_data.bits.clone, 2))
+  val memRespQueue   = Module(new Queue(io.mem.resp.bits.clone, 3))
 
   // Connect target IOs with buffers
   val inputNum = (inputs foldLeft 0)((res, input) => res + (input.needWidth-1)/(hostLen-1) + 1)
@@ -158,20 +188,58 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     }
   }
 
-  // HostIO pins
-  io.host.in.ready := Bool(false)
+  // Host pins
+  io.host.in.ready  := Bool(false)
   io.host.out.valid := Bool(false)
-  io.host.out.bits := UInt(0)
-  // Memory IO pins
-  io.mem.req_cmd <> memReqCmdQueue.io.deq
-  io.mem.req_data <> memReqDataQueue.io.deq
-  memReqCmdQueue.io.enq.bits.rw   := memRW
-  memReqCmdQueue.io.enq.bits.tag  := memTag
-  memReqCmdQueue.io.enq.bits.addr := memAddr
+  io.host.out.bits  := UInt(0)
+
+  // Memory Requests
+  memReqCmdQueue.io.enq.bits  := memReqCmd
   memReqCmdQueue.io.enq.valid := Bool(false)
-  memReqDataQueue.io.enq.bits.data := memData
-  memReqDataQueue.io.enq.valid := Bool(false)
-  io.mem.resp.ready := Bool(false)
+  memReqQueue.io.enq.bits     := memReq
+  memReqQueue.io.enq.valid    := Bool(false)
+  // Todo: io.mem.req_cmd <> memReqCmdQueue.io.deq
+  io.mem.req_cmd.bits := memReqCmdQueue.io.deq.bits
+  io.mem.req_cmd.valid := memReqCmdQueue.io.deq.valid
+  memReqCmdQueue.io.deq.ready := io.mem.req_cmd.ready
+  // Todo: io.mem.req_data <> memReqQueue.io.deq
+  io.mem.req_data.bits := memReqQueue.io.deq.bits
+  io.mem.req_data.valid := memReqQueue.io.deq.valid
+  memReqQueue.io.deq.ready := io.mem.req_data.ready
+ 
+  // Memory response
+  // Todo: memRespQueue.io.enq <> io.mem.resp
+  memRespQueue.io.enq.bits  := io.mem.resp.bits
+  memRespQueue.io.enq.valid := io.mem.resp.valid
+  io.mem.resp.ready         := memRespQueue.io.enq.ready
+
+  if (targetMemPins != None) {
+    targetMemIo.req_cmd.ready      := Bool(false)
+    targetMemIo.req_data.ready     := Bool(false)
+    when (fire) {
+      // Handle target memeory request
+      io.mem.req_cmd.bits        := targetMemIo.req_cmd.bits
+      io.mem.req_cmd.valid       := targetMemIo.req_cmd.valid
+      targetMemIo.req_cmd.ready  := io.mem.req_cmd.ready 
+      io.mem.req_data.bits       := targetMemIo.req_data.bits
+      io.mem.req_data.valid      := targetMemIo.req_data.valid
+      targetMemIo.req_data.ready := io.mem.req_data.ready
+      memReqCmdQueue.io.deq.ready := Bool(false)
+      memReqQueue.io.deq.ready    := Bool(false)
+      when(targetMemIo.req_cmd.fire() && !targetMemIo.req_cmd.bits.rw) {
+        memTagCounter := targetMemIo.req_cmd.bits.tag + UInt(1)
+      }
+    }
+
+    // Todo: targetMemIo.resp <> targetMemRespQueue.io.deq
+    targetMemIo.resp.bits  := memRespQueue.io.deq.bits  
+    targetMemIo.resp.valid := memRespQueue.io.deq.valid 
+    memRespQueue.io.deq.ready := targetMemIo.resp.ready
+  } else {
+    memRespQueue.io.deq.ready := Bool(true)
+  }
+
+  
   // Daisy pins
   val daisy = addDaisyPins(target, daisyLen)
   daisy.stall := !fire
@@ -191,8 +259,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       when(io.host.in.fire()) {
         val cmd = io.host.in.bits(cmdLen-1, 0)
         when(cmd === STEP) {
-          val stepNum = io.host.in.bits(hostLen-1, cmdLen)
-          stepCounter := stepNum
+          stepCounter := io.host.in.bits(hostLen-1, cmdLen)
           debugState := debug_STEP
         }.elsewhen(cmd === POKE) {
           pokeCounter := UInt(inputNum)
@@ -203,15 +270,15 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
         }.elsewhen(cmd === SNAP) {
           isSnap := Bool(true)
         }.elsewhen(cmd === MEM) {
-          memRW := io.host.in.bits(cmdLen)
-          memAddr := UInt(0)
-          memData := UInt(0)
+          memReqCmd.rw   := io.host.in.bits(cmdLen) 
+          memReqCmd.tag  := memTagCounter
           memAddrCounter := UInt((addrLen-1)/hostLen + 1)
           memDataCounter := UInt((memLen-1)/hostLen + 1)
-          debugState := debug_MEM
+          debugState     := debug_MEM
         }
       }
     }
+
     is(debug_STEP) {
       when(fire) {
         stepCounter := stepCounter - UInt(1)
@@ -246,9 +313,9 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           }
         }
         is(snap_SEND) {
-          io.host.out.bits  := snapBuffer >> snapCount
-          io.host.out.valid := Bool(true)
-          when(io.host.out.fire()) {
+          when(io.host.out.ready) {
+            io.host.out.bits  := snapBuffer >> snapCount
+            io.host.out.valid := Bool(true)
             when (daisy.state.out.valid) {
               snapState := snap_READ
             }.otherwise {
@@ -282,9 +349,9 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             }
           }
           is(snap_SEND) {
-            io.host.out.bits  := snapBuffer >> snapCount
-            io.host.out.valid := Bool(true)
-            when(io.host.out.fire()) {
+            when(io.host.out.ready) {
+              io.host.out.bits  := snapBuffer >> snapCount
+              io.host.out.valid := Bool(true)
               when (daisy.sram.out.valid) {
                 snapState := snap_READ
               }.elsewhen (sramRestartCount.orR) {
@@ -330,41 +397,40 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           io.host.in.ready := memAddrCounter.orR
           memReqCmdQueue.io.enq.valid := !io.host.in.ready
           when(io.host.in.fire()) {
-            memAddr := (memAddr << UInt(hostLen)) | io.host.in.bits
+            memReqCmd.addr := (memReqCmd.addr << UInt(hostLen)) | io.host.in.bits
             memAddrCounter := memAddrCounter - UInt(1)
           }
           when(memReqCmdQueue.io.enq.fire()) {
-            memState := Mux(memRW, mem_REQ_DATA, mem_WAIT)
+            memState := Mux(memReqCmd.rw, mem_REQ_DATA, mem_WAIT)
           }
         }
         is(mem_REQ_DATA) {
           io.host.in.ready := memDataCounter.orR
-          memReqDataQueue.io.enq.valid := !io.host.in.ready
+          memReqQueue.io.enq.valid := !io.host.in.ready
           when(io.host.in.fire()) {
-            memData := (memData << UInt(hostLen)) | io.host.in.bits
+            memReq.data    := (memReq.data << UInt(hostLen)) | io.host.in.bits
             memDataCounter := memDataCounter - UInt(1)
           }
-          when(memReqDataQueue.io.enq.fire()) {
-            memState := mem_REQ_CMD
+          when(memReqQueue.io.enq.fire()) {
+            memState   := mem_REQ_CMD
             debugState := debug_IDLE
           }
         }
         is(mem_WAIT) {
-          io.mem.resp.ready := Bool(true)
-          when(io.mem.resp.fire() && io.mem.resp.bits.tag === memTag /* Should match! */) {
-            memData  := io.mem.resp.bits.data
-            memTag   := memTag + UInt(1)
-            memState := mem_RESP
+          when(io.mem.resp.fire() && io.mem.resp.bits.tag === memReqCmd.tag) {
+            memRespQueue.io.enq.valid := Bool(false)
+            memResp.data := io.mem.resp.bits.data
+            memState     := mem_RESP
           }
         }
         is(mem_RESP) {
           io.host.out.valid := memDataCounter.orR
           when(io.host.out.fire()) {
-            io.host.out.bits := memData(hostLen-1, 0)
-            memData := memData >> UInt(hostLen)
-            memDataCounter := memDataCounter - UInt(1)
+            io.host.out.bits := memResp.data(hostLen-1, 0)
+            memResp.data     := memResp.data >> UInt(hostLen)
+            memDataCounter   := memDataCounter - UInt(1)
           }.elsewhen(!io.host.out.valid) {
-            memState := mem_REQ_CMD
+            memState   := mem_REQ_CMD
             debugState := debug_IDLE
           }
         }

@@ -65,6 +65,7 @@ class debug_api_t
     uint64_t peek(std::string path);
     bool expect(std::string path, uint64_t expected);
     bool expect(bool ok, std::string s);
+    void load_mem(std::string filename);
     void write_mem(uint64_t addr, uint64_t data);
     uint64_t read_mem(uint64_t addr);
     uint64_t rand_next(int limit); 

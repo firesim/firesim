@@ -22,7 +22,7 @@ class CoreDaisyTests(c: DaisyShim[Core], args: Array[String]) extends DaisyTeste
     }
   }
 
-  def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
+  // def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
 
   def loadMem {
     val lines = Source.fromFile(filename).getLines

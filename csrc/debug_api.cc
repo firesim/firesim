@@ -134,7 +134,7 @@ void debug_api_t::poke(uint64_t value) {
 
 uint64_t debug_api_t::peek() {
   __sync_synchronize();
-  while ((uint32_t) read_reg(0) == 0);
+  while ((uint32_t) read_reg(0) == 0); 
   return (uint32_t) read_reg(1);
 }
 
@@ -159,6 +159,7 @@ void debug_api_t::peek_all() {
 }
 
 void debug_api_t::read_snap(std::string &snap) {
+// void debug_api_t::read_snap(std::ostringstream &snap) {
   for (int i = 0 ; i < snap_size / hostlen ; i++) {
     uint32_t value = peek();
     std::bitset<sizeof(uint32_t)*8> bin_value(value);
@@ -264,6 +265,33 @@ bool debug_api_t::expect(bool ok, std::string s) {
     }
   }
   return ok;
+}
+
+void debug_api_t::load_mem(std::string filename) {
+  std::ifstream in(filename.c_str());
+  if (!in) {
+    std::cerr << "cound not open " << filename << std::endl;
+    exit(1);
+  }
+  
+  std::string line;
+  int i = 0;
+  while (std::getline(in, line)) {
+    #define parse_nibble(c) ((c) >= 'a' ? (c)-'a'+10 : (c)-'0')
+    uint64_t base = (i * line.length()) / 2;
+    uint64_t offset = 0;
+    for (int k = line.length() - 8 ; k >= 0 ; k -= 8) {
+      uint64_t addr = base + offset;
+      uint64_t data = 
+        (parse_nibble(line[k]) << 28) | (parse_nibble(line[k+1]) << 24) |
+        (parse_nibble(line[k+2]) << 20) | (parse_nibble(line[k+3]) << 16) |
+        (parse_nibble(line[k+4]) << 12) | (parse_nibble(line[k+5]) << 8) |
+        (parse_nibble(line[k+6]) << 4) | parse_nibble(line[k+7]);
+      write_mem(base + offset, data);
+      offset += 4;
+    }
+    i += 1;
+  }
 }
 
 void debug_api_t::write_mem(uint64_t addr, uint64_t data) {

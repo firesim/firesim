@@ -1,7 +1,7 @@
 package Daisy
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
+import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
 import addDaisyPins._
 
 object DaisyBackend { 
@@ -10,14 +10,20 @@ object DaisyBackend {
   val sramAddrs = HashMap[Mem[_], Reg]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
-  lazy val targetComps = Driver.sortedComps filterNot (x => 
-    x.name == top.name || (x.name != top.target.name && (top.children contains x)))
+  lazy val (targetComps, targetCompsRev) = {
+    def collect(c: Module): Vector[Module] = 
+      (c.children foldLeft Vector[Module]())((res, x) => res ++ collect(x)) ++ Vector(c)
+    def collectRev(c: Module): Vector[Module] = 
+      Vector(c) ++ (c.children foldLeft Vector[Module]())((res, x) => res ++ collectRev(x))
+    (collect(top.target), collectRev(top.target))
+  }
   var daisyLen = -1
 
   def addTransforms(width: Int) {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
       initDaisy,
+      c => Driver.backend.verifyAllMuxes,
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
       connectStallSignals,
@@ -289,7 +295,7 @@ object DaisyBackend {
     // Collect states
     var stateWidth = 0
     var totalWidth = 0
-    for (m <- targetComps) {
+    for (m <- targetCompsRev) {
       var daisyWidth = 0
       var localWidth = 0
       for (state <- states(m)) {
@@ -327,7 +333,7 @@ object DaisyBackend {
       res append "null %d\n".format(totalPadWidth)
     }
 
-    for (i <- 0 until Driver.sramMaxSize ; m <- targetComps.reverse) {
+    for (i <- 0 until Driver.sramMaxSize ; m <- targetCompsRev) {
       for (sram <- srams(m)) {
         val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + sram.name
         val width = sram.needWidth

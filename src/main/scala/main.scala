@@ -5,6 +5,7 @@ import Daisy._
 import Designs._
 import TutorialExamples._
 import mini.Core
+import mini.Tile
 
 object DebugMachine {
   def main(args: Array[String]) {
@@ -47,8 +48,11 @@ object DebugMachine {
         chiselMainTest(chiselArgs, () => DaisyShim(new FIR2D(32, 8, 3)))(
           c => new FIR2DDaisyTests(c, 32, 8, 3))
       case "CoreShim" => 
-        chiselMainTest(chiselArgs, () => DaisyShim(new Core))(
+        chiselMainTest(chiselArgs, () => DaisyShim(new Core, mini.Config.params))(
           c => new CoreDaisyTests(c, testArgs))
+      case "TileShim" => 
+        chiselMainTest(chiselArgs, () => DaisyShim(new Tile, mini.Config.params))(
+          c => new TileDaisyTests(c, testArgs))
       case _ =>
     }
   }
