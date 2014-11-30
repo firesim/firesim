@@ -135,20 +135,28 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("==========")
   }
 
+  private def intToBin(value: BigInt, size: Int) = {
+    var bin = ""
+    for (i <- 0 until size) {
+      bin += (((value >> (size-1-i)) & 0x1) + '0').toChar
+    }
+    bin
+  }
+
   def readSnap = {
     if (isTrace) println("Snapshotting")
     val snap = new StringBuilder
     var offset = 0
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
-      snap append peek.toString(2).reverse.padTo(hostLen, '0').reverse
+      snap append intToBin(peek, hostLen) 
     }
     if (isTrace) println("Chain: " + snap.result)
     snap.result
   }
 
-  var begin = false
+  var beginSnap = false
   def writeSnap(snap: String, n: Int) {
-    if (begin) {
+    if (beginSnap) {
       replay append "STEP %d\n".format(n)
       for (out <- c.outputs) {
         val name = targetPrefix + (dumpName(out) stripPrefix targetPath)
@@ -170,13 +178,13 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         }
         val end = math.min(start + width, snap.length)
         val fromSnap = snap.substring(start, end)
-        val fromSignal = value.toString(2).reverse.padTo(width, '0').reverse
+        val fromSignal = intToBin(value, width) 
         expect(fromSnap == fromSignal, "Snapshot %s(%s?=%s)".format(signal, fromSnap, fromSignal)) 
         replay append "POKE %s %d\n".format(signal, value)
       } 
       start += width
     }
-    begin = true
+    beginSnap = true
   }
 
   // Emulate AXI Slave
@@ -305,17 +313,17 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   override def step(n: Int = 1) {
     val target = t + n
+    if (isTrace) println("STEP " + n + " -> " + target)
     pokeAll
-    if (t > 0) pokeSnap
+    pokeSnap
     pokeSteps(n)
     for (i <- 0 until n) {
       tickMem
       takeSteps(1)
     }
-    val snap = if (t > 0) readSnap else ""
-    if (isTrace) println("STEP " + n + " -> " + target)
+    val snap = readSnap 
     peekAll
-    if (t > 0) writeSnap(snap, n)
+    writeSnap(snap, n)
     t += n
   }
 
@@ -369,7 +377,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
  
   override def finish = {
-    // val filename = targetPrefix + ".replay"
     val snapfile = createOutputFile(snapfilename)
     try {
       snapfile write replay.result

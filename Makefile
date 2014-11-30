@@ -9,12 +9,9 @@ resdir  := $(basedir)/results
 zeddir  := $(basedir)/fpga-zynq/zedboard
 bitstream := fpga-images-zedboard/boot.bin
 designs := GCD Parity Stack Router Risc RiscSRAM FIR2D \
-	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch \
-	Core Tile
+	ShiftRegister ResetShiftRegister EnableShiftRegister MemorySearch
 VPATH   := $(srcdir):$(tutdir):$(minidir):$(gendir):$(logdir)
-
-memgen := $(basedir)/scripts/fpga_mem_gen
-
+memgen  := $(basedir)/scripts/fpga_mem_gen
 C_FLAGS := --targetDir $(gendir) --genHarness --compile --test --vcd --debug
 V_FLAGS := $(C_FLAGS) --v
 FPGA_FLAGS := --targetDir $(gendir) --backend fpga
@@ -25,9 +22,12 @@ default: GCD
 
 cpp := $(addsuffix Shim.cpp, $(designs))
 harness := $(addsuffix Shim-harness.v, $(designs))
-v := $(addsuffix Shim.v, $(designs))
-fpga := $(addsuffix -fpga, $(designs))
-driver := $(addsuffix -zedboard, $(designs))
+v := $(addsuffix Shim.v, $(designs) Core Tile)
+fpga := $(addsuffix -fpga, $(designs) Core Tile)
+driver := $(addsuffix -zedboard, $(designs) Core Tile)
+
+cpp: $(cpp)
+harness: $(harness)
 
 $(designs): %: %Shim.v %-fpga %-zedboard
 
