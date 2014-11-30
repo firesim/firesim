@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <iostream>
 #include <fstream>
-#include <bitset>
 #include <stdlib.h>
 
 #define read_reg(r) (dev_vaddr[r])
@@ -73,18 +72,18 @@ void debug_api_t::read_io_map_file(std::string filename) {
       else if (head == "INPUT:") isInput = true;
       else if (head == "OUTPUT:") isInput = false;
       else {
-        int width;
+        size_t width;
         iss >> width;
         if (isInput) {
-          int n = (width - 1) / (hostlen - 1) + 1;
-          input_map[head] = std::vector<int>();
+          size_t n = (width - 1) / (hostlen - 1) + 1;
+          input_map[head] = std::vector<size_t>();
           for (int i = 0 ; i < n ; i++) {
             input_map[head].push_back(input_num);
             input_num++;
           }
         } else {
-          int n = (width - 1) / hostlen + 1;
-          output_map[head] = std::vector<int>();
+          size_t n = (width - 1) / hostlen + 1;
+          output_map[head] = std::vector<size_t>();
           for (int i = 0 ; i < n ; i++) {
             output_map[head].push_back(output_num);
             output_num++;
@@ -93,7 +92,8 @@ void debug_api_t::read_io_map_file(std::string filename) {
       }
     }
   } else {
-    std::cout << "Cannot open " << filename << std::endl;
+    std::cerr << "Cannot open " << filename << std::endl;
+    exit(0);
   }
   file.close();
 }
@@ -105,14 +105,15 @@ void debug_api_t::read_chain_map_file(std::string filename) {
     while(getline(file, line)) {
       std::istringstream iss(line);
       std::string path;
-      int width;
+      size_t width;
       iss >> path >> width;
       signals.push_back(path);
       widths.push_back(width);
       snap_size += width;
     }
   } else {
-    std::cout << "Cannot open " << filename << std::endl;
+    std::cerr << "Cannot open " << filename << std::endl;
+    exit(0);
   }
   file.close();
 }
@@ -122,7 +123,8 @@ void debug_api_t::write_replay_file(std::string filename) {
   if (file) {
     file << replay.str();    
   } else {
-    std::cout << "Cannot open " << filename << std::endl;
+    std::cerr << "Cannot open " << filename << std::endl;
+    exit(0);
   }
   file.close();
 }
@@ -158,16 +160,23 @@ void debug_api_t::peek_all() {
   }
 }
 
+static inline char* int_to_bin(uint32_t value, size_t size) {
+  char* bin = new char[size];
+  for(int i = 0 ; i < size ; i++) {
+    bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
+  }
+  return bin;
+}
+
 void debug_api_t::read_snap(std::string &snap) {
-// void debug_api_t::read_snap(std::ostringstream &snap) {
   for (int i = 0 ; i < snap_size / hostlen ; i++) {
-    uint32_t value = peek();
-    std::bitset<sizeof(uint32_t)*8> bin_value(value);
-    snap += bin_value.to_string();
+    char* value = int_to_bin(peek(), hostlen);
+    snap += value;
+    delete[] value; 
   }
 }
 
-void debug_api_t::write_snap(std::string &snap, uint32_t n) {
+void debug_api_t::write_snap(std::string &snap, size_t n) {
   static bool begin = false;
   if (begin) {
     replay << "STEP " << n << std::endl;
@@ -178,13 +187,17 @@ void debug_api_t::write_snap(std::string &snap, uint32_t n) {
   }
 
   // Translate and write snapshots
-  int offset = 0;
+  size_t offset = 0;
   for (int i = 0 ; i < signals.size() ; i++) {
     std::string signal = signals[i];
-    int width = widths[i];
+    size_t width = widths[i];
     if (signal != "null") {
-      std::bitset<512> value(snap.substr(offset, width));
-      replay << "POKE " << signal << " " << value.to_ulong() << std::endl;
+      std::string bin = snap.substr(offset, width);
+      uint64_t value = 0;
+      for (int i = 0 ; i < width ; i++) {
+        value = (value << 1) | (bin[i] - '0'); // index?
+      }
+      replay << "POKE " << signal << " " << value << std::endl;
     }
     offset += width;
   }
@@ -195,30 +208,31 @@ void debug_api_t::poke_snap() {
   poke(SNAP);
 }
 
-void debug_api_t::poke_steps(uint32_t n) {
+void debug_api_t::poke_steps(size_t n) {
   poke(n << cmdlen | STEP);
 }
 
-void debug_api_t::step(uint32_t n) {
+void debug_api_t::step(size_t n) {
   std::string snap = "";
+  uint64_t target = t + n;
+  if (trace) std::cout << "* STEP " << n << " -> " << target << " * " << std::endl;
   poke_all();
-  if (t > 0) poke_snap();
+  poke_snap();
   poke_steps(n);
-  if (t > 0) read_snap(snap);
+  read_snap(snap);
   peek_all();
-  if (trace) std::cout << "* STEP " << n << " -> " << (t + n) << " * " << std::endl;
-  if (t > 0) write_snap(snap, n);
+  write_snap(snap, n);
   t += n;
 }
 
 void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
   if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
-  std::vector<int> ids = input_map[path];
+  std::vector<size_t> ids = input_map[path];
   uint64_t mask = (1 << (hostlen-1)) - 1;
   for (int i = 0 ; i < ids.size() ; i++) {
-    int id = ids[ids.size()-1-i];
-    int shift = (hostlen-1) * i;
+    size_t id = ids[ids.size()-1-i];
+    size_t shift = (hostlen-1) * i;
     uint32_t data = (value >> shift) & mask;
     poke_map[id] = data;
   }
@@ -227,9 +241,9 @@ void debug_api_t::poke(std::string path, uint64_t value) {
 uint64_t debug_api_t::peek(std::string path) {
   assert(output_map.find(path) != output_map.end());
   uint64_t value = 0;
-  std::vector<int> ids = output_map[path];
+  std::vector<size_t> ids = output_map[path];
   for (int i = 0 ; i < ids.size() ; i++) {
-    int id = ids[ids.size()-1-i];
+    size_t id = ids[ids.size()-1-i];
     assert(peek_map.find(id) != peek_map.end());
     value = value << hostlen | peek_map[id];
   }
@@ -238,7 +252,7 @@ uint64_t debug_api_t::peek(std::string path) {
 }
 
 bool debug_api_t::expect(std::string path, uint64_t expected) {
-  int value = peek(path);
+  uint64_t value = peek(path);
   bool ok = value == expected;
   pass &= ok;
   if (trace) {
@@ -268,30 +282,31 @@ bool debug_api_t::expect(bool ok, std::string s) {
 }
 
 void debug_api_t::load_mem(std::string filename) {
-  std::ifstream in(filename.c_str());
-  if (!in) {
+  std::ifstream file(filename.c_str());
+  if (file) { 
+    std::string line;
+    int i = 0;
+    while (std::getline(file, line)) {
+      #define parse_nibble(c) ((c) >= 'a' ? (c)-'a'+10 : (c)-'0')
+      uint64_t base = (i * line.length()) / 2;
+      uint64_t offset = 0;
+      for (int k = line.length() - 8 ; k >= 0 ; k -= 8) {
+        uint64_t addr = base + offset;
+        uint64_t data = 
+          (parse_nibble(line[k]) << 28) | (parse_nibble(line[k+1]) << 24) |
+          (parse_nibble(line[k+2]) << 20) | (parse_nibble(line[k+3]) << 16) |
+          (parse_nibble(line[k+4]) << 12) | (parse_nibble(line[k+5]) << 8) |
+          (parse_nibble(line[k+6]) << 4) | parse_nibble(line[k+7]);
+        write_mem(base + offset, data);
+        offset += 4;
+      }
+      i += 1;
+    }
+  } else {
     std::cerr << "cound not open " << filename << std::endl;
     exit(1);
   }
-  
-  std::string line;
-  int i = 0;
-  while (std::getline(in, line)) {
-    #define parse_nibble(c) ((c) >= 'a' ? (c)-'a'+10 : (c)-'0')
-    uint64_t base = (i * line.length()) / 2;
-    uint64_t offset = 0;
-    for (int k = line.length() - 8 ; k >= 0 ; k -= 8) {
-      uint64_t addr = base + offset;
-      uint64_t data = 
-        (parse_nibble(line[k]) << 28) | (parse_nibble(line[k+1]) << 24) |
-        (parse_nibble(line[k+2]) << 20) | (parse_nibble(line[k+3]) << 16) |
-        (parse_nibble(line[k+4]) << 12) | (parse_nibble(line[k+5]) << 8) |
-        (parse_nibble(line[k+6]) << 4) | parse_nibble(line[k+7]);
-      write_mem(base + offset, data);
-      offset += 4;
-    }
-    i += 1;
-  }
+  file.close();
 }
 
 void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
@@ -318,6 +333,6 @@ uint64_t debug_api_t::read_mem(uint64_t addr) {
   return data;
 }
 
-uint64_t debug_api_t::rand_next(int limit) {
+uint64_t debug_api_t::rand_next(size_t limit) {
   return rand() % limit;
 }
