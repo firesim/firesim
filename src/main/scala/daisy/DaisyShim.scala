@@ -148,7 +148,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val memRespQueue   = Module(new Queue(io.mem.resp.bits.clone, 2))
 
   // Connect target IOs with buffers
-  val inputNum = (inputs foldLeft 0)((res, input) => res + (input.needWidth-1)/(hostLen-1) + 1)
+  val inputNum = (inputs foldLeft 0)((res, input) => res + (input.needWidth-1)/hostLen + 1)
   val outputNum = (outputs foldLeft 0)((res, output) => res + (output.needWidth-1)/hostLen + 1)
   val inputBufs = Vec.fill(inputNum) { Reg(UInt()) }
   val outputBufs = Vec.fill(outputNum) { Reg(UInt()) }
@@ -161,8 +161,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       case _ => 
     }
     val width = input.needWidth
-    val n = (width-1) / (hostLen-1) + 1
-    if (width <= hostLen-1) {
+    val n = (width-1) / hostLen + 1
+    if (width <= hostLen) {
       input := Mux(fire, inputBufs(inputId), UInt(0))
       inputId += 1
     } else {
@@ -357,11 +357,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
 
     is(debug_POKE) {
       val id = UInt(inputNum) - pokeCounter
-      val valid = io.host.in.bits(0)
-      val data  = io.host.in.bits(hostLen-1, 1)
+      // val valid = io.host.in.bits(0)
+      // val data  = io.host.in.bits(hostLen-1, 1)
       io.host.in.ready := pokeCounter.orR
       when(io.host.in.fire()) {
-        inputBufs(id) := Mux(valid, data, inputBufs(id))
+        inputBufs(id) := io.host.in.bits 
+        // inputBufs(id) := Mux(valid, data, inputBufs(id))
         pokeCounter := pokeCounter - UInt(1)
       }.elsewhen(!io.host.in.ready) {
         debugState := debug_IDLE

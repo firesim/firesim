@@ -23,7 +23,6 @@ object DaisyBackend {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
       initDaisy,
-      c => Driver.backend.verifyAllMuxes,
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
       connectStallSignals,
@@ -273,14 +272,12 @@ object DaisyBackend {
     for (input <- top.inputs) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + input.name
       val width = input.needWidth
-      val n = (width - 1) / top.hostLen + 1
       res append "%s %d\n".format(path, width)
     }
     res append "OUTPUT:\n"
     for (output <- top.outputs) {
       val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + output.name
       val width = output.needWidth
-      val n = (width - 1) / top.hostLen + 1
       res append "%s %d\n".format(path, width)
     }
     try {
@@ -293,11 +290,10 @@ object DaisyBackend {
     // Print out the chain mapping
     val chainFile = Driver.createOutputFile(targetName + ".chain.map")
     // Collect states
-    var stateWidth = 0
-    var totalWidth = 0
+    var daisyWidthSum = 0
     for (m <- targetCompsRev) {
       var daisyWidth = 0
-      var localWidth = 0
+      var dataWidth = 0
       for (state <- states(m)) {
         state match {
           case read: MemRead => {
@@ -306,44 +302,42 @@ object DaisyBackend {
             val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + mem.name
             val width = mem.needWidth
             res append "%s[%d] %d\n".format(path, addr, width)
-            stateWidth += width
-            localWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.hostLen
-            while (daisyWidth < localWidth) daisyWidth += daisyLen
+            dataWidth += width
+            while (daisyWidth < dataWidth) daisyWidth += daisyLen
           }
           case _ => { 
             val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + state.name
             val width = state.needWidth
             res append "%s %d\n".format(path, width)
-            stateWidth += width
-            localWidth += width
-            while (totalWidth < stateWidth) totalWidth += top.hostLen
-            while (daisyWidth < localWidth) daisyWidth += daisyLen
+            dataWidth += width
+            while (daisyWidth < dataWidth) daisyWidth += daisyLen
           }
         }
       }
-      val daisyPadWidth = daisyWidth - localWidth
+      val daisyPadWidth = daisyWidth - dataWidth
       if (daisyPadWidth > 0) {
         res append "null %d\n".format(daisyPadWidth)
-        stateWidth += daisyPadWidth
       }
+      daisyWidthSum += daisyWidth
     }
-    val totalPadWidth = totalWidth - stateWidth
-    if (totalPadWidth > 0) {
-      res append "null %d\n".format(totalPadWidth)
+    var hostWidthSum = 0
+    while (hostWidthSum < daisyWidthSum) hostWidthSum += top.hostLen
+    val padWidth = hostWidthSum - daisyWidthSum
+    if (padWidth > 0) {
+      res append "null %d\n".format(padWidth)
     }
 
     for (i <- 0 until Driver.sramMaxSize ; m <- targetCompsRev) {
       for (sram <- srams(m)) {
         val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + sram.name
-        val width = sram.needWidth
+        val dataWidth = sram.needWidth
         var daisyWidth = 0
         if (i < sram.n) 
-          res append "%s[%d] %d\n".format(path, i, width)
+          res append "%s[%d] %d\n".format(path, i, dataWidth)
         else 
-          res append "null %d\n".format(width)
-        while (daisyWidth < width) daisyWidth += daisyLen
-        val daisyPadWidth = daisyWidth - width
+          res append "null %d\n".format(dataWidth)
+        while (daisyWidth < dataWidth) daisyWidth += daisyLen
+        val daisyPadWidth = daisyWidth - dataWidth
         if (daisyPadWidth > 0) {
           res append "null %d\n".format(daisyPadWidth)  
         }

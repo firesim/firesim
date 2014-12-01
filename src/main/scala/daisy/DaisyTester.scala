@@ -35,9 +35,9 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (inputMap contains dumpName(data)) {
       if (isTrace) println("* POKE " + dumpName(data) + " <- " + x + " *")
       val ids = inputMap(dumpName(data))
-      val mask = (1 << (hostLen-1)) - 1
+      val mask = (BigInt(1) << hostLen) - 1
       for (i <- 0 until ids.size) {
-        val shift = (hostLen-1) * i
+        val shift = hostLen * i
         val data = (x >> shift) & mask 
         pokeMap(ids(ids.size-1-i)) = data
       }
@@ -118,9 +118,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     // Send Values
     for (i <- 0 until inputNum) {
       stayIdle()
-      poke(if (pokeMap contains i) (pokeMap(i) << 1) | 1 else BigInt(0))
+      poke(pokeMap getOrElse (i, BigInt(0)))
     }
-    pokeMap.clear
     stayIdle()
     if (isTrace) println("==========")
   }
@@ -361,7 +360,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         case _ => {
           val path = targetPath + (tokens.head stripPrefix targetPrefix)
           val width = tokens.last.toInt
-          val n = (width - 1) / (if (isInput) hostLen - 1 else hostLen) + 1
+          val n = (width - 1) / hostLen + 1
           if (isInput) {
             inputMap(path) = ArrayBuffer[BigInt]()
             for (i <- 0 until n) {
