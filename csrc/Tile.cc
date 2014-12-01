@@ -1,6 +1,7 @@
 #include "debug_api.h"
-#include <fstream>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <stdlib.h>
 
 class Tile_t: debug_api_t
@@ -23,7 +24,7 @@ public:
   }
   void run() {
     do {
-       step(1);
+      step(10);
     } while (peek("Tile.io_htif_host_tohost") == 0 && t < timeout);
     uint64_t tohost = peek("Tile.io_htif_host_tohost");
     std::ostringstream reason;

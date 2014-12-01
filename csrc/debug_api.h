@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <map>
 
@@ -36,17 +35,17 @@ class debug_api_t
     std::vector<std::string> signals;
     std::vector<size_t> widths;
     std::string design;
-    std::ostringstream replay;
+    // std::ostringstream replay;
 
     size_t hostlen;
     size_t addrlen;
     size_t memlen;
     size_t cmdlen;
-    size_t STEP;
-    size_t POKE;
-    size_t PEEK;
-    size_t SNAP;
-    size_t MEM;
+    size_t _step;
+    size_t _poke;
+    size_t _peek;
+    size_t _snap;
+    size_t _mem;
     size_t input_num;
     size_t output_num;
 
