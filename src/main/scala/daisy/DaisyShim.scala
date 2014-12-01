@@ -143,9 +143,9 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val memTagCounter  = RegInit(UInt(0, tagLen))
   val memAddrCounter = Reg(UInt())
   val memDataCounter = Reg(UInt())
-  val memReqCmdQueue = Module(new Queue(io.mem.req_cmd.bits.clone, 2))
-  val memReqQueue    = Module(new Queue(io.mem.req_data.bits.clone, 2))
-  val memRespQueue   = Module(new Queue(io.mem.resp.bits.clone, 3))
+  val memReqCmdQueue = Module(new Queue(io.mem.req_cmd.bits.clone, 4))
+  val memReqQueue    = Module(new Queue(io.mem.req_data.bits.clone, 4))
+  val memRespQueue   = Module(new Queue(io.mem.resp.bits.clone, 2))
 
   // Connect target IOs with buffers
   val inputNum = (inputs foldLeft 0)((res, input) => res + (input.needWidth-1)/(hostLen-1) + 1)
@@ -194,10 +194,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   io.host.out.bits  := UInt(0)
 
   // Memory Requests
-  memReqCmdQueue.io.enq.bits  := memReqCmd
-  memReqCmdQueue.io.enq.valid := Bool(false)
-  memReqQueue.io.enq.bits     := memReq
-  memReqQueue.io.enq.valid    := Bool(false)
   // Todo: io.mem.req_cmd <> memReqCmdQueue.io.deq
   io.mem.req_cmd.bits := memReqCmdQueue.io.deq.bits
   io.mem.req_cmd.valid := memReqCmdQueue.io.deq.valid
@@ -214,32 +210,23 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   io.mem.resp.ready         := memRespQueue.io.enq.ready
 
   if (targetMemPins != None) {
-    targetMemIo.req_cmd.ready      := Bool(false)
-    targetMemIo.req_data.ready     := Bool(false)
-    when (fire) {
-      // Handle target memeory request
-      io.mem.req_cmd.bits        := targetMemIo.req_cmd.bits
-      io.mem.req_cmd.valid       := targetMemIo.req_cmd.valid
-      targetMemIo.req_cmd.ready  := io.mem.req_cmd.ready 
-      io.mem.req_data.bits       := targetMemIo.req_data.bits
-      io.mem.req_data.valid      := targetMemIo.req_data.valid
-      targetMemIo.req_data.ready := io.mem.req_data.ready
-      memReqCmdQueue.io.deq.ready := Bool(false)
-      memReqQueue.io.deq.ready    := Bool(false)
-      when(targetMemIo.req_cmd.fire() && !targetMemIo.req_cmd.bits.rw) {
-        memTagCounter := targetMemIo.req_cmd.bits.tag + UInt(1)
-      }
-    }
-
-    // Todo: targetMemIo.resp <> targetMemRespQueue.io.deq
-    targetMemIo.resp.bits  := memRespQueue.io.deq.bits  
-    targetMemIo.resp.valid := memRespQueue.io.deq.valid 
-    memRespQueue.io.deq.ready := targetMemIo.resp.ready
+    memReqCmdQueue.io.enq.bits  := Mux(fireDelay, targetMemIo.req_cmd.bits, memReqCmd)
+    memReqCmdQueue.io.enq.valid := fireDelay && targetMemIo.req_cmd.valid
+    targetMemIo.req_cmd.ready   := memReqCmdQueue.io.enq.ready
+    memReqQueue.io.enq.bits     := Mux(fireDelay, targetMemIo.req_data.bits, memReq)
+    memReqQueue.io.enq.valid    := fireDelay && targetMemIo.req_data.valid
+    targetMemIo.req_data.ready  := memReqQueue.io.enq.ready
+    targetMemIo.resp.bits       := memRespQueue.io.deq.bits
+    targetMemIo.resp.valid      := memRespQueue.io.deq.valid
+    memRespQueue.io.deq.ready   := fire && targetMemIo.resp.ready
   } else {
-    memRespQueue.io.deq.ready := Bool(true)
+    memReqCmdQueue.io.enq.bits  := memReqCmd
+    memReqCmdQueue.io.enq.valid := Bool(false)
+    memReqQueue.io.enq.bits     := memReq
+    memReqQueue.io.enq.valid    := Bool(false)
+    memRespQueue.io.deq.ready   := Bool(true)
   }
-
-  
+ 
   // Daisy pins
   val daisy = addDaisyPins(target, daisyLen)
   daisy.stall := !fire

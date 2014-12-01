@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdlib.h>
 
 #define read_reg(r) (dev_vaddr[r])
@@ -47,8 +48,6 @@ debug_api_t::~debug_api_t() {
     std::cout << " Passed" << std::endl;
   else 
     std::cout << " Failed, first at cycle " << fail_t << std::endl;
-
-  write_replay_file(replayfile);
 }
 
 void debug_api_t::read_io_map_file(std::string filename) {
@@ -64,11 +63,11 @@ void debug_api_t::read_io_map_file(std::string filename) {
       else if (head == "ADDRLEN:") iss >> addrlen;
       else if (head == "MEMLEN:") iss >> memlen;
       else if (head == "CMDLEN:") iss >> cmdlen;
-      else if (head == "STEP:") iss >> STEP;
-      else if (head == "POKE:") iss >> POKE;
-      else if (head == "PEEK:") iss >> PEEK;
-      else if (head == "SNAP:") iss >> SNAP;
-      else if (head == "MEM:") iss >> MEM;
+      else if (head == "STEP:") iss >> _step;
+      else if (head == "POKE:") iss >> _poke;
+      else if (head == "PEEK:") iss >> _peek;
+      else if (head == "SNAP:") iss >> _snap;
+      else if (head == "MEM:") iss >> _mem;
       else if (head == "INPUT:") isInput = true;
       else if (head == "OUTPUT:") isInput = false;
       else {
@@ -118,17 +117,6 @@ void debug_api_t::read_chain_map_file(std::string filename) {
   file.close();
 }
 
-void debug_api_t::write_replay_file(std::string filename) {
-  std::ofstream file(filename.c_str());
-  if (file) {
-    file << replay.str();    
-  } else {
-    std::cerr << "Cannot open " << filename << std::endl;
-    exit(0);
-  }
-  file.close();
-}
-
 void debug_api_t::poke(uint64_t value) {
   write_reg(0, value);
   __sync_synchronize();
@@ -141,7 +129,7 @@ uint64_t debug_api_t::peek() {
 }
 
 void debug_api_t::poke_all() {
-  poke(POKE);
+  poke(_poke);
   for (int i = 0 ; i < input_num ; i++) {
     if (poke_map.find(i) != poke_map.end()) {
       poke(poke_map[i] << 1 | 1);
@@ -154,7 +142,7 @@ void debug_api_t::poke_all() {
 
 void debug_api_t::peek_all() {
   peek_map.clear();
-  poke(PEEK);
+  poke(_peek);
   for (int i = 0 ; i < output_num ; i++) {
     peek_map[i] = peek();
   }
@@ -178,11 +166,12 @@ void debug_api_t::read_snap(std::string &snap) {
 
 void debug_api_t::write_snap(std::string &snap, size_t n) {
   static bool begin = false;
+  std::ostringstream oss;
   if (begin) {
-    replay << "STEP " << n << std::endl;
+    oss << "STEP " << n << std::endl;
     for (int i = 0 ; i < outputs.size() ; i++) {
       std::string output = outputs[i];
-      replay << "EXPECT " << output << " " << peek(output) << std::endl;
+      oss << "EXPECT " << output << " " << peek(output) << std::endl;
     }
   }
 
@@ -197,19 +186,30 @@ void debug_api_t::write_snap(std::string &snap, size_t n) {
       for (int i = 0 ; i < width ; i++) {
         value = (value << 1) | (bin[i] - '0'); // index?
       }
-      replay << "POKE " << signal << " " << value << std::endl;
+      oss << "POKE " << signal << " " << value << std::endl;
     }
     offset += width;
   }
+  std::ofstream file(replayfile.c_str(), std::ios::app);
+  if (file) {
+    file << oss.str();    
+  } else {
+    std::cerr << "Cannot open " << replayfile << std::endl;
+    exit(0);
+  }
+  file.close();
+
+  oss.clear();
   begin = true;
+
 }
 
 void debug_api_t::poke_snap() {
-  poke(SNAP);
+  poke(_snap);
 }
 
 void debug_api_t::poke_steps(size_t n) {
-  poke(n << cmdlen | STEP);
+  poke(n << cmdlen | _step);
 }
 
 void debug_api_t::step(size_t n) {
@@ -310,7 +310,7 @@ void debug_api_t::load_mem(std::string filename) {
 }
 
 void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
-  poke((1 << cmdlen) | MEM);
+  poke((1 << cmdlen) | _mem);
   uint64_t mask = (1<<hostlen)-1;
   for (int i = (addrlen-1)/hostlen+1 ; i > 0 ; i--) {
     poke((addr >> (hostlen * (i-1))) & mask);
@@ -321,7 +321,7 @@ void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
 }
 
 uint64_t debug_api_t::read_mem(uint64_t addr) {
-  poke((0 << cmdlen) | MEM);
+  poke((0 << cmdlen) | _mem);
   uint64_t mask = (1<<hostlen)-1;
   for (int i = (addrlen-1)/hostlen+1 ; i > 0 ; i--) {
     poke((addr >> (hostlen * (i-1))) & mask);

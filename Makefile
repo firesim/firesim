@@ -29,7 +29,7 @@ driver := $(addsuffix -zedboard, $(designs) Core Tile)
 cpp: $(cpp)
 harness: $(harness)
 
-$(designs): %: %Shim.v %-fpga %-zedboard
+$(designs) Core Tile: %: %Shim.v %-fpga %-zedboard
 
 $(cpp): %Shim.cpp: %.scala 
 	mkdir -p $(logdir)
@@ -89,7 +89,7 @@ tile_asm_c: $(tile_asm_c)
 tile_asm_v = $(addprefix Tile., $(addsuffix .v.out, $(asm_p_tests)))
 $(tile_asm_v): Tile.%.v.out: $(tests_isa_dir)/%.hex $(minidir)/Tile.scala
 	mkdir -p $(logdir)
-	cd $(basedir) ; sbt "run TileShim $(V_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles)" \
+	cd $(basedir) ; sbt "run TileShim $(V_FLAGS) +loadmem=$< +max-cycles=$(timeout_cycles) +verbose" \
         | tee $(logdir)/$(notdir $@)
 tile_asm_v: $(tile_asm_v)
 	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
