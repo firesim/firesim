@@ -59,7 +59,7 @@ void debug_api_t::read_io_map_file(std::string filename) {
       std::istringstream iss(line);
       std::string head;
       iss >> head;
-           if (head == "HOSTLEN:") iss >> hostlen;
+      if (head == "HOSTLEN:") iss >> hostlen;
       else if (head == "ADDRLEN:") iss >> addrlen;
       else if (head == "MEMLEN:") iss >> memlen;
       else if (head == "CMDLEN:") iss >> cmdlen;
@@ -73,15 +73,14 @@ void debug_api_t::read_io_map_file(std::string filename) {
       else {
         size_t width;
         iss >> width;
+        size_t n = (width - 1) / hostlen + 1;
         if (isInput) {
-          size_t n = (width - 1) / (hostlen - 1) + 1;
           input_map[head] = std::vector<size_t>();
           for (int i = 0 ; i < n ; i++) {
             input_map[head].push_back(input_num);
             input_num++;
           }
         } else {
-          size_t n = (width - 1) / hostlen + 1;
           output_map[head] = std::vector<size_t>();
           for (int i = 0 ; i < n ; i++) {
             output_map[head].push_back(output_num);
@@ -132,12 +131,11 @@ void debug_api_t::poke_all() {
   poke(_poke);
   for (int i = 0 ; i < input_num ; i++) {
     if (poke_map.find(i) != poke_map.end()) {
-      poke(poke_map[i] << 1 | 1);
+      poke(poke_map[i]);
     } else {
       poke(0);
     }
   }
-  poke_map.clear();
 }
 
 void debug_api_t::peek_all() {
@@ -190,6 +188,7 @@ void debug_api_t::write_snap(std::string &snap, size_t n) {
     }
     offset += width;
   }
+
   std::ofstream file(replayfile.c_str(), std::ios::app);
   if (file) {
     file << oss.str();    
@@ -198,10 +197,8 @@ void debug_api_t::write_snap(std::string &snap, size_t n) {
     exit(0);
   }
   file.close();
-
   oss.clear();
   begin = true;
-
 }
 
 void debug_api_t::poke_snap() {
@@ -229,10 +226,10 @@ void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
   if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
   std::vector<size_t> ids = input_map[path];
-  uint64_t mask = (1 << (hostlen-1)) - 1;
+  uint64_t mask = (1 << hostlen) - 1;
   for (int i = 0 ; i < ids.size() ; i++) {
     size_t id = ids[ids.size()-1-i];
-    size_t shift = (hostlen-1) * i;
+    size_t shift = hostlen * i;
     uint32_t data = (value >> shift) & mask;
     poke_map[id] = data;
   }
