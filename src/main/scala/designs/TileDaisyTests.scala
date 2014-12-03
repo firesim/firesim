@@ -9,7 +9,7 @@ class TileDaisyTests(c: DaisyShim[Tile], args: Array[String]) extends DaisyTeste
   def runTests(maxcycles: Int, verbose: Boolean) {
     pokeAt(c.target.core.dpath.regFile, 0, 0)
     do {
-      step(1)
+      step(10)
       if (verbose) {
         val pc     = peek(c.target.core.dpath.ew_pc)
         val inst   = UInt(peek(c.target.core.dpath.ew_inst), 32)

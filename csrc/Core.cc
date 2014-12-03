@@ -6,7 +6,7 @@
 class Core_t: debug_api_t
 {
 public:
-  Core_t(int argc, char** argv): debug_api_t("Core") {
+  Core_t(int argc, char** argv): debug_api_t("Core", false) {
     for (int i = 0 ; i < argc ; i++) {
       std::string arg = argv[i];
       if (arg.substr(0, 12) == "+max-cycles=") {

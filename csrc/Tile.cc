@@ -7,7 +7,7 @@
 class Tile_t: debug_api_t
 {
 public:
-  Tile_t(int argc, char** argv): debug_api_t("Tile") {
+  Tile_t(int argc, char** argv): debug_api_t("Tile", false) {
     std::string filename;
     for (int i = 0 ; i < argc ; i++) {
       std::string arg = argv[i];
@@ -18,7 +18,7 @@ public:
       }
     }
     testname = filename.substr(filename.rfind("/")+1);
-    replayfile = testname + ".replay";
+    snapfilename = testname + ".snap";
 
     load_mem(filename);
   }

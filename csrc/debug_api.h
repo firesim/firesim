@@ -9,7 +9,7 @@
 class debug_api_t
 {
   public:
-    debug_api_t(std::string design): debug_api_t(design, false) {}
+    debug_api_t(std::string design): debug_api_t(design, true) {}
     debug_api_t(std::string design, bool trace_);
     ~debug_api_t();
     virtual void run() = 0;
@@ -21,12 +21,16 @@ class debug_api_t
     void poke_all();
     void peek_all();
     void poke_snap();
-    void read_snap(std::string& snap);
-    void write_snap(std::string& snap, size_t n);
+    uint32_t trace_mem();
+    // void read_snap(std::string& snap);
+    // void write_snap(std::string& snap);
+    void read_snap(char* snap);
+    void write_snap(char* snap);
     void read_io_map_file(std::string filename);
     void read_chain_map_file(std::string filename);
     void write_replay_file(std::string filename);
 
+    std::map<uint32_t, uint32_t> mem;
     std::map<size_t, uint32_t> poke_map;
     std::map<size_t, uint32_t> peek_map;
     std::map<std::string, std::vector<size_t> > input_map;
@@ -35,12 +39,12 @@ class debug_api_t
     std::vector<std::string> signals;
     std::vector<size_t> widths;
     std::string design;
-    // std::ostringstream replay;
 
     size_t hostlen;
     size_t addrlen;
     size_t memlen;
     size_t cmdlen;
+    size_t snaplen;
     size_t _step;
     size_t _poke;
     size_t _peek;
@@ -52,13 +56,12 @@ class debug_api_t
     bool trace;
     bool pass;
     int64_t fail_t;
-    uint64_t snap_size;
     
     volatile uintptr_t* dev_vaddr;
     const static uintptr_t dev_paddr = 0x43C00000;
 
   protected:
-    std::string replayfile;
+    std::string snapfilename;
     void step(size_t n);
     void poke(std::string path, uint64_t value);
     uint64_t peek(std::string path);

@@ -1,7 +1,7 @@
 package Daisy
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
 import scala.io.Source
 
 abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
@@ -195,11 +195,17 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       } 
       start += width
     }
+    
+    for ((addr, data) <- mem) {
+      replay append "MEM[%h] = %h\n".format(addr, data)
+    } 
+    mem.clear()
+
     beginSnap = true
   }
 
   // Emulate AXI Slave
-  private val mem = HashMap[BigInt, BigInt]()
+  private val dram = HashMap[BigInt, BigInt]()
   private var memrw   = false
   private var memtag  = BigInt(0)
   private var memaddr = BigInt(0)
@@ -209,13 +215,13 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     def read(addr: BigInt) = {
       var data = BigInt(0)
       for (i <- 0 until (memLen-1)/8+1) {
-        data |= mem(memaddr+i) << (8*i)
+        data |= dram(memaddr+i) << (8*i)
       }
       data
     }
     def write(addr: BigInt, data: BigInt) {
       for (i <- 0 until (memLen-1)/8+1) {
-        mem(addr+i) = (data >> (8*i)) & 0xff
+        dram(addr+i) = (data >> (8*i)) & 0xff
       }
     }
     if (isTrace) println("Tick Memory")
@@ -276,6 +282,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
+    // Memory trace
+    for (shift <- 0 until memLen by 8) {
+      val offset = shift / 8
+      mem(addr+offset) = (data >> shift) & 0xff
+    }
     poke((1 << cmdLen) | MEM)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
@@ -319,9 +330,31 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       for (k <- (line.length - 2) to 0 by -2) {
         val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
         mem(base+offset) = data
+        dram(base+offset) = data
         offset += 1
       }
     }
+  }
+
+  // Memory trace
+  private val mem = LinkedHashMap[BigInt, BigInt]()
+  def traceMem = {
+    val count = peek.toInt
+    for (i <- 0 until count) {
+      var addr = BigInt(0)
+      for (k <- 0 until addrLen by hostLen) {
+        addr = (addr << hostLen) | peek
+      }
+      var data = BigInt(0)
+      for (k <- 0 until memLen by hostLen) {
+        data = (data << hostLen) | peek
+      }
+      for (shift <- 0 until memLen by 8) {
+        val offset = shift / 8
+        mem(addr+offset) = (data >> shift) & 0xff
+      }
+    }
+    count
   }
 
   override def step(n: Int = 1) {
@@ -332,7 +365,9 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     pokeSteps(n)
     for (i <- 0 until n) {
       tickMem
+      if (peek(dumpName(c.io.host.out.valid)) == 1) traceMem
     }
+    while(traceMem > 0) {}
     val snap = readSnap 
     peekAll
     writeSnap(snap, n)
