@@ -7,12 +7,13 @@
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
+#include <string.h>
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
 debug_api_t::debug_api_t(std::string design_, bool trace_)
-  : design(design_), trace(trace_), t(0), snap_size(0), pass(true), fail_t(-1), input_num(0), output_num(0)
+  : design(design_), trace(trace_), t(0), snaplen(0), pass(true), fail_t(-1), input_num(0), output_num(0)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
@@ -37,9 +38,11 @@ debug_api_t::debug_api_t(std::string design_, bool trace_)
   read_io_map_file(design + ".io.map");
   read_chain_map_file(design + ".chain.map");
 
-  srand(time(NULL));
+  // Remove snapshot files before getting started
+  snapfilename = design + ".snap";
+  remove(snapfilename.c_str());  
 
-  replayfile = design + ".replay";
+  srand(time(NULL));
 }
 
 debug_api_t::~debug_api_t() {
@@ -107,7 +110,7 @@ void debug_api_t::read_chain_map_file(std::string filename) {
       iss >> path >> width;
       signals.push_back(path);
       widths.push_back(width);
-      snap_size += width;
+      snaplen += width;
     }
   } else {
     std::cerr << "Cannot open " << filename << std::endl;
@@ -146,61 +149,6 @@ void debug_api_t::peek_all() {
   }
 }
 
-static inline char* int_to_bin(uint32_t value, size_t size) {
-  char* bin = new char[size];
-  for(int i = 0 ; i < size ; i++) {
-    bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
-  }
-  return bin;
-}
-
-void debug_api_t::read_snap(std::string &snap) {
-  for (int i = 0 ; i < snap_size / hostlen ; i++) {
-    char* value = int_to_bin(peek(), hostlen);
-    snap += value;
-    delete[] value; 
-  }
-}
-
-void debug_api_t::write_snap(std::string &snap, size_t n) {
-  static bool begin = false;
-  std::ostringstream oss;
-  if (begin) {
-    oss << "STEP " << n << std::endl;
-    for (int i = 0 ; i < outputs.size() ; i++) {
-      std::string output = outputs[i];
-      oss << "EXPECT " << output << " " << peek(output) << std::endl;
-    }
-  }
-
-  // Translate and write snapshots
-  size_t offset = 0;
-  for (int i = 0 ; i < signals.size() ; i++) {
-    std::string signal = signals[i];
-    size_t width = widths[i];
-    if (signal != "null") {
-      std::string bin = snap.substr(offset, width);
-      uint64_t value = 0;
-      for (int i = 0 ; i < width ; i++) {
-        value = (value << 1) | (bin[i] - '0'); // index?
-      }
-      oss << "POKE " << signal << " " << value << std::endl;
-    }
-    offset += width;
-  }
-
-  std::ofstream file(replayfile.c_str(), std::ios::app);
-  if (file) {
-    file << oss.str();    
-  } else {
-    std::cerr << "Cannot open " << replayfile << std::endl;
-    exit(0);
-  }
-  file.close();
-  oss.clear();
-  begin = true;
-}
-
 void debug_api_t::poke_snap() {
   poke(_snap);
 }
@@ -209,22 +157,91 @@ void debug_api_t::poke_steps(size_t n) {
   poke(n << cmdlen | _step);
 }
 
+uint32_t debug_api_t::trace_mem() {
+  uint32_t count = peek();
+  for (int i = 0 ; i < count ; i++) {
+    uint32_t addr = 0;
+    for (int k = 0 ; k < addrlen ; k += hostlen) {
+      addr = (addr << hostlen) | peek();
+    }
+    uint32_t data = 0;
+    for (int k = 0 ; k < memlen ; k += hostlen) {
+      data = (data << hostlen) | peek();
+    }
+    mem[addr] = data;
+  }
+  return count;
+}
+
+static inline char* int_to_bin(uint32_t value, size_t size) {
+  char* bin = new char[size];
+  for(int i = 0 ; i < size ; i++) {
+    bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
+  }
+  return bin;
+}
+
+void debug_api_t::read_snap(char *snap) {
+  for (size_t offset = 0 ; offset < snaplen ; offset += hostlen) {
+    char* value = int_to_bin(peek(), hostlen);
+    memcpy(snap+offset, value, (offset+hostlen < snaplen) ? hostlen : snaplen-offset);
+    delete[] value; 
+  }
+}
+
+void debug_api_t::write_snap(char *snap) {
+  FILE *file = fopen(snapfilename.c_str(), "a");
+  if (file) {
+    size_t offset = 0;
+    for (int i = 0 ; i < signals.size() ; i++) {
+      std::string signal = signals[i];
+      size_t width = widths[i];
+      if (signal != "null") {
+        char *bin = new char[width];
+        uint32_t value = 0; // TODO: more than 32 bits?
+        memcpy(bin, snap+offset, width);
+        for (int i = 0 ; i < width ; i++) {
+          value = (value << 1) | (bin[i] - '0'); // index?
+        }
+        fprintf(file, "%s %x\n", signal.c_str(), value);
+        delete[] bin;
+      }
+      offset += width;
+    }
+
+    for (std::map<uint32_t, uint32_t>::iterator it = mem.begin() ; it != mem.end() ; it++) {
+      uint32_t addr = it->first;
+      uint32_t data = it->second;
+      fprintf(file, "dram[%x] %08x\n", addr, data);
+    }
+    mem.clear();
+  } else {
+    std::cerr << "Cannot open " << snapfilename << std::endl;
+    exit(0);
+  }
+
+  fprintf(file, "//\n");
+  fclose(file);
+}
+
 void debug_api_t::step(size_t n) {
-  std::string snap = "";
+  char *snap = new char[snaplen];
   uint64_t target = t + n;
-  if (trace) std::cout << "* STEP " << n << " -> " << target << " * " << std::endl;
+  if (trace) std::cout << "* STEP " << n << " -> " << target << " *" << std::endl;
   poke_all();
   poke_snap();
   poke_steps(n);
+  while(trace_mem() > 0) {}
   read_snap(snap);
   peek_all();
-  write_snap(snap, n);
+  write_snap(snap);
   t += n;
+  delete[] snap;
 }
 
 void debug_api_t::poke(std::string path, uint64_t value) {
   assert(input_map.find(path) != input_map.end());
-  if (trace) std::cout << "* POKE " << path << " <- " << value << " * " << std::endl;
+  if (trace) std::cout << "* POKE " << path << " <- " << value << " *" << std::endl;
   std::vector<size_t> ids = input_map[path];
   uint64_t mask = (1 << hostlen) - 1;
   for (int i = 0 ; i < ids.size() ; i++) {
@@ -244,7 +261,7 @@ uint64_t debug_api_t::peek(std::string path) {
     assert(peek_map.find(id) != peek_map.end());
     value = value << hostlen | peek_map[id];
   }
-  if (trace) std::cout << "* PEEK " << path << " -> " << value << " * " << std::endl;
+  if (trace) std::cout << "* PEEK " << path << " -> " << value << " *" << std::endl;
   return value;
 }
 
@@ -252,29 +269,16 @@ bool debug_api_t::expect(std::string path, uint64_t expected) {
   uint64_t value = peek(path);
   bool ok = value == expected;
   pass &= ok;
-  if (trace) {
-    std::cout << "* EXPECT " << path << " -> " << value << " == " << expected;
-    if (ok) {
-      std::cout << " PASS * " << std::endl;
-    }  else {
-      if (fail_t < 0) fail_t = t;
-      std::cout << " FAIL * " << std::endl;
-    }
-  }
+  if (!ok && fail_t < 0) fail_t = t;
+  if (trace) std::cout << "* EXPECT " << path << " -> " << value << " == " << expected 
+                       << (ok ? "PASS" : "FAIL") << " *" << std::endl;
   return ok;
 }
 
 bool debug_api_t::expect(bool ok, std::string s) {
   pass &= ok;
-  if (trace) {
-    std::cout << "* " << s;
-    if (ok) {
-      std::cout << " PASS * " << std::endl;
-    } else {
-      if (fail_t < 0) fail_t = t;
-      std::cout << " FAIL * " << std::endl;
-    }
-  }
+  if (!ok && fail_t < 0) fail_t = t;
+  if (trace) std::cout << "* " << s << " " << (ok ? "PASS" : "FAIL") << " *" << std::endl;
   return ok;
 }
 
@@ -300,7 +304,7 @@ void debug_api_t::load_mem(std::string filename) {
       i += 1;
     }
   } else {
-    std::cerr << "cound not open " << filename << std::endl;
+    std::cerr << "Cannot open " << filename << std::endl;
     exit(1);
   }
   file.close();
@@ -315,6 +319,8 @@ void debug_api_t::write_mem(uint64_t addr, uint64_t data) {
   for (int i = (memlen-1)/hostlen+1 ; i > 0 ; i--) {
     poke((data >> (hostlen * (i-1))) & mask);
   }
+
+  mem[addr] = data;
 }
 
 uint64_t debug_api_t::read_mem(uint64_t addr) {
