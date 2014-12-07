@@ -7,7 +7,7 @@ import TestCommon._
 
 class TileDaisyTests(c: DaisyShim[Tile], args: Array[String]) extends DaisyTester(c, false) {
   def runTests(maxcycles: Int, verbose: Boolean) {
-    pokeAt(c.target.core.dpath.regFile, 0, 0)
+    pokeAt(c.target.core.dpath.regFile.regs, 0, 0)
     do {
       step(10)
       if (verbose) {
@@ -16,7 +16,7 @@ class TileDaisyTests(c: DaisyShim[Tile], args: Array[String]) extends DaisyTeste
         val wb_en  = peek(c.target.core.ctrl.io.ctrl.wb_en)
         val wb_val = 
           if (wb_en == 1) peek(c.target.core.dpath.regWrite) 
-          else peekAt(c.target.core.dpath.regFile, rd(inst)) 
+          else peekAt(c.target.core.dpath.regFile.regs, rd(inst)) 
         println("[%h] %s -> RegFile[%d] = %h".format(
                 pc, instStr(inst), rd(inst), wb_val))
       }
