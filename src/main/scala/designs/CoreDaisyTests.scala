@@ -54,7 +54,7 @@ class CoreDaisyTests(c: DaisyShim[Core], args: Array[String]) extends DaisyTeste
 
   def runTests {
     poke(c.target.io.stall, 1)
-    pokeAt(c.target.dpath.regFile, 0, 0)
+    pokeAt(c.target.dpath.regFile.regs, 0, 0)
     step(1)
     poke(c.target.io.stall, 0)
     do {
@@ -80,7 +80,7 @@ class CoreDaisyTests(c: DaisyShim[Core], args: Array[String]) extends DaisyTeste
       val pc     = peek(c.target.dpath.ew_pc).toString(16)
       val inst   = UInt(peek(c.target.dpath.ew_inst), 32)
       val wb_en  = peek(c.target.ctrl.io.ctrl.wb_en)
-      val wb_val = if (wb_en == 1) peek(c.target.dpath.regWrite) else peekAt(c.target.dpath.regFile, rd(inst)) 
+      val wb_val = if (wb_en == 1) peek(c.target.dpath.regWrite) else peekAt(c.target.dpath.regFile.regs, rd(inst)) 
       println("[%s] %s -> RegFile[%d] = %s".format(pc, instStr(inst), rd(inst), wb_val.toString(16)))
     } while (peek(c.target.io.host.tohost) == 0 && t < timeout)
     val tohost = peek(c.target.io.host.tohost)

@@ -27,6 +27,7 @@ object DaisyBackend {
       Driver.backend.inferAll,
       connectStallSignals,
       addStateChains,
+      Driver.backend.computeMemPorts,
       addSRAMChain,
       printOutMappings
     )
@@ -89,41 +90,44 @@ object DaisyBackend {
     val hasStateChain = HashSet[Module]()
     def insertStateChain(m: Module) = {
       val dataLen = (states(m) foldLeft 0)(_ + _.needWidth)
-      val chain = if (!states(m).isEmpty) m.addModule(new StateChain, {case DataLen => dataLen}) else null
-      if (chain != null) {
-        var stateIdx = 0
-        var stateOff = 0
-        for (i <- (0 until chain.daisySize).reverse) {
-          val wires = ArrayBuffer[UInt]()
-          var totalWidth = 0
-          while (totalWidth < daisyLen) {
-            val totalMargin = daisyLen - totalWidth
-            if (stateIdx < states(m).size) {
-              val state = states(m)(stateIdx)
-              val stateWidth = state.needWidth
-              val stateMargin = stateWidth - stateOff
-              if (stateMargin <= totalMargin) {
-                wires += UInt(state)(stateMargin-1, 0)
-                totalWidth += stateMargin
-                stateOff = 0
-                stateIdx += 1
+      val stateChain = if (!states(m).isEmpty) Some(m.addModule(new StateChain, {case DataLen => dataLen})) else None
+      stateChain match {
+        case None =>
+        case Some(chain) => {
+          var stateIdx = 0
+          var stateOff = 0
+          for (i <- (0 until chain.daisySize).reverse) {
+            val wires = ArrayBuffer[UInt]()
+            var totalWidth = 0
+            while (totalWidth < daisyLen) {
+              val totalMargin = daisyLen - totalWidth
+              if (stateIdx < states(m).size) {
+                val state = states(m)(stateIdx)
+                val stateWidth = state.needWidth
+                val stateMargin = stateWidth - stateOff
+                if (stateMargin <= totalMargin) {
+                  wires += UInt(state)(stateMargin-1, 0)
+                  totalWidth += stateMargin
+                  stateOff = 0
+                  stateIdx += 1
+                } else {
+                  wires += UInt(state)(stateMargin-1, stateMargin-totalMargin)
+                  totalWidth += totalMargin
+                  stateOff += totalMargin
+                }
               } else {
-                wires += UInt(state)(stateMargin-1, stateMargin-totalMargin)
-                totalWidth += totalMargin
-                stateOff += totalMargin
+                wires += UInt(0, totalMargin)
+                totalWidth += totalMargin 
               }
-            } else {
-              wires += UInt(0, totalMargin)
-              totalWidth += totalMargin 
+              chain.io.dataIo.data(i) := Cat(wires) 
             }
-            chain.io.dataIo.data(i) := Cat(wires) 
           }
+          chain.io.dataIo.out <> daisyPins(m).state.out
+          chain.io.stall := daisyPins(m).stall
+          hasStateChain += m
         }
-        chain.io.dataIo.out <> daisyPins(m).state.out
-        chain.io.stall := daisyPins(m).stall
-        hasStateChain += m
-      } 
-      chain
+      }      
+      stateChain
     }
 
     for (m <- targetComps) {
@@ -132,10 +136,9 @@ object DaisyBackend {
       var last = -1
       for ((child, cur) <- m.children.zipWithIndex ; if hasStateChain contains child) {
         if (last < 0) {
-          if (stateChain != null) {
-            stateChain.io.dataIo.in <> daisyPins(child).state.out
-          } else {
-            daisyPins(m).state.out <> daisyPins(child).state.out
+          stateChain match {
+            case None        => daisyPins(m).state.out <> daisyPins(child).state.out
+            case Some(chain) => chain.io.dataIo.in <> daisyPins(child).state.out
           }
         } else {
           daisyPins(m.children(last)).state.in <> daisyPins(child).state.out
@@ -146,8 +149,11 @@ object DaisyBackend {
       if (last > -1) {
         hasStateChain += m
         daisyPins(m.children(last)).state.in <> daisyPins(m).state.in
-      } else if (stateChain != null) {
-        stateChain.io.dataIo.in <> daisyPins(m).state.in
+      } else {
+        stateChain match {
+          case None =>
+          case Some(chain) => chain.io.dataIo.in <> daisyPins(m).state.in
+        }
       }
     }
   } 
@@ -164,27 +170,12 @@ object DaisyBackend {
 
     val hasSRAMChain = HashSet[Module]()
     def insertSRAMChain(m: Module) = {
-      var lastChain: SRAMChain = null
+      var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        var addr: Reg = null
-        var data: Node = null
-        for (read <- sram.readAccesses) {
-          read match {
-            case mr: MemRead => {
-              mr.addr.getNode match {
-                case addrReg: Reg => {
-                  addr = addrReg
-                  data = mr
-                }
-                case _ =>
-              }
-            }
-            case msr: MemSeqRead => {
-              addr = msr.addrReg
-              data = msr
-            }
-            case _ =>
-          }
+        val data = if (Driver.isInlineMem) sram.reads.last else sram.seqreads.last
+        val addr = data match {
+          case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
+          case msr: MemSeqRead => msr.addrReg
         }
         val dataLen = sram.needWidth
         val chain = m.addModule(new SRAMChain, {
@@ -203,20 +194,23 @@ object DaisyBackend {
           }
           high -= daisyLen
         }
-        if (lastChain == null) {
-          connectSRAMRestarts(m)
-          daisyPins(m).sram.out <> chain.io.dataIo.out
-        } else {
-          lastChain.io.dataIo.in <> chain.io.dataIo.out
+        lastChain match {
+          case None => {
+            connectSRAMRestarts(m)
+            daisyPins(m).sram.out <> chain.io.dataIo.out
+          }
+          case Some(last) => {
+            last.io.dataIo.in <> chain.io.dataIo.out
+          }
         }
         chain.io.restart := daisyPins(m).sram.restart
         // Connect chain addr to SRAM addr
         chain.io.addrIo.in := UInt(addr)
         addr.inputs(0) = Multiplex(chain.io.addrIo.out.valid, 
                                    chain.io.addrIo.out.bits, addr.inputs(0))
-        lastChain = chain
+        lastChain = Some(chain)
       }
-      if (lastChain != null) hasSRAMChain += m
+      if (lastChain != None) hasSRAMChain += m
       lastChain
     }
 
@@ -227,11 +221,14 @@ object DaisyBackend {
         var last = -1
         for ((child, cur) <- m.children.zipWithIndex; if hasSRAMChain contains child) {
           if (last < 0) {
-            if (sramChain != null) {
-              sramChain.io.dataIo.in <> daisyPins(child).sram.out
-            } else {
-              connectSRAMRestarts(m)
-              daisyPins(m).sram.out <> daisyPins(child).sram.out
+            sramChain match {
+              case None => {
+                connectSRAMRestarts(m)
+                daisyPins(m).sram.out <> daisyPins(child).sram.out
+              }
+              case Some(chain) => {
+                chain.io.dataIo.in <> daisyPins(child).sram.out
+              }
             }
           } else {
             daisyPins(m.children(last)).sram.in <> daisyPins(child).sram.out
@@ -242,8 +239,11 @@ object DaisyBackend {
         if (last > -1) {
           hasSRAMChain += m
           daisyPins(m).sram.in <> daisyPins(m.children(last)).sram.in
-        } else if (sramChain != null) {
-          daisyPins(m).sram.in <> sramChain.io.dataIo.in
+        } else {
+          sramChain match {
+            case None =>
+            case Some(chain) => daisyPins(m).sram.in <> chain.io.dataIo.in
+          }
         }     
       } 
     }
