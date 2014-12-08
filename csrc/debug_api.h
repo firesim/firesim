@@ -23,10 +23,11 @@ class debug_api_t
     void poke_snap();
     uint32_t trace_mem();
     void read_snap(char* snap);
-    void write_snap(char* snap, size_t n);
+    void record_ins(FILE *file);
+    void record_outs(FILE *file);
+    void record_snap(FILE *file, char *snap);
     void read_io_map_file(std::string filename);
     void read_chain_map_file(std::string filename);
-    void write_replay_file(std::string filename);
 
     std::map<uint32_t, uint32_t> mem;
     std::map<size_t, uint32_t> poke_map;

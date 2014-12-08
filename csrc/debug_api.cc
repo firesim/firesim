@@ -185,83 +185,81 @@ void debug_api_t::read_snap(char *snap) {
   }
 }
 
-void debug_api_t::write_snap(char *snap, size_t n) {
-  static bool begin_snap = false;
-  FILE *file = fopen(snapfilename.c_str(), "a");
-  if (file) {
-    if (begin_snap) {
-      fprintf(file, "STEP %x\n", n);
-      for (std::map<std::string, std::vector<size_t> >::iterator it = output_map.begin() ; 
-           it != output_map.end() ; it++) {
-        std::string signal = it->first;
-        std::vector<size_t> ids = it->second;
-        uint32_t data = 0;
-        for (int i = 0 ; i < ids.size() ; i++) {
-          size_t id = ids[i];
-          data = (data << hostlen) | ((peek_map.find(id) != peek_map.end()) ? peek_map[id] : 0);
-        } 
-        fprintf(file, "EXPECT %s %x\n", signal.c_str(), data);
-      }
-      fprintf(file, "//\n");
-    }
+void debug_api_t::record_ins(FILE *file) {
+  for (std::map<std::string, std::vector<size_t> >::iterator it = input_map.begin() ; 
+       it != input_map.end() ; it++) {
+    std::string signal = it->first;
+    std::vector<size_t> ids = it->second;
+    uint32_t data = 0;
+    for (int i = 0 ; i < ids.size() ; i++) {
+      size_t id = ids[i];
+      data = (data << hostlen) | ((poke_map.find(id) != poke_map.end()) ? poke_map[id] : 0);
+    } 
+    fprintf(file, "POKE %s %x\n", signal.c_str(), data);
+  }
+}
 
-    for (std::map<std::string, std::vector<size_t> >::iterator it = input_map.begin() ; 
-         it != input_map.end() ; it++) {
-      std::string signal = it->first;
-      std::vector<size_t> ids = it->second;
-      uint32_t data = 0;
-      for (int i = 0 ; i < ids.size() ; i++) {
-        size_t id = ids[i];
-        data = (data << hostlen) | ((poke_map.find(id) != poke_map.end()) ? poke_map[id] : 0);
-      } 
-      fprintf(file, "%s %x\n", signal.c_str(), data);
-    }
- 
-    size_t offset = 0;
-    for (int i = 0 ; i < signals.size() ; i++) {
-      std::string signal = signals[i];
-      size_t width = widths[i];
-      if (signal != "null") {
-        char *bin = new char[width];
-        uint32_t value = 0; // TODO: more than 32 bits?
-        memcpy(bin, snap+offset, width);
-        for (int i = 0 ; i < width ; i++) {
-          value = (value << 1) | (bin[i] - '0'); // index?
-        }
-        fprintf(file, "%s %x\n", signal.c_str(), value);
-        delete[] bin;
-      }
-      offset += width;
-    }
+void debug_api_t::record_outs(FILE *file) {
+  for (std::map<std::string, std::vector<size_t> >::iterator it = output_map.begin() ; 
+       it != output_map.end() ; it++) {
+    std::string signal = it->first;
+    std::vector<size_t> ids = it->second;
+    uint32_t data = 0;
+    for (int i = 0 ; i < ids.size() ; i++) {
+      size_t id = ids[i];
+      assert(peek_map.find(id) != peek_map.end());
+      data = (data << hostlen) | peek_map[id];
+    } 
+    fprintf(file, "EXPECT %s %x\n", signal.c_str(), data);
+  }
+}
 
-    for (std::map<uint32_t, uint32_t>::iterator it = mem.begin() ; it != mem.end() ; it++) {
-      uint32_t addr = it->first;
-      uint32_t data = it->second;
-      fprintf(file, "dram[%x] %08x\n", addr, data);
+void debug_api_t::record_snap(FILE *file, char *snap) {
+  size_t offset = 0;
+  for (int i = 0 ; i < signals.size() ; i++) {
+    std::string signal = signals[i];
+    size_t width = widths[i];
+    if (signal != "null") {
+      char *bin = new char[width];
+      uint32_t value = 0; // TODO: more than 32 bits?
+      memcpy(bin, snap+offset, width);
+      for (int i = 0 ; i < width ; i++) {
+        value = (value << 1) | (bin[i] - '0'); // index?
+      }
+      fprintf(file, "POKE %s %x\n", signal.c_str(), value);
+      delete[] bin;
     }
-    mem.clear();
-  } else {
-    std::cerr << "Cannot open " << snapfilename << std::endl;
-    exit(0);
+    offset += width;
   }
 
-  fclose(file);
-  begin_snap = true;
+  for (std::map<uint32_t, uint32_t>::iterator it = mem.begin() ; it != mem.end() ; it++) {
+    uint32_t addr = it->first;
+    uint32_t data = it->second;
+    fprintf(file, "LOAD %x %08x\n", addr, data);
+  }
+  mem.clear();
 }
 
 void debug_api_t::step(size_t n) {
+  FILE *file = fopen(snapfilename.c_str(), "a");
   char *snap = new char[snaplen];
+  record_ins(file);
+
   uint64_t target = t + n;
   if (trace) std::cout << "* STEP " << n << " -> " << target << " *" << std::endl;
+  fprintf(file, "STEP %d\n", n);
   poke_all();
   poke_snap();
   poke_steps(n);
   while(trace_mem() > 0) {}
   read_snap(snap);
   peek_all();
-  write_snap(snap, n);
+
+  record_outs(file);
+  record_snap(file, snap);
   t += n;
   delete[] snap;
+  fclose(file);
 }
 
 void debug_api_t::poke(std::string path, uint64_t value) {

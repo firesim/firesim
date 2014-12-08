@@ -7,15 +7,15 @@ import scala.io.Source
 class ReplayTester[+T <: Module](c: T) extends Tester(c) {
   lazy val basedir = ensureDir(Driver.targetDir)
 
-  def poke(name: String, value: BigInt) {
-    val cmd = "wire_poke %s %d".format(name, value)
+  def poke(name: String, value: String) {
+    val cmd = "wire_poke %s 0x%s".format(name, value)
     if (emulatorCmd(cmd) != "ok") {
        System.err.print("POKE %s with %d FAILED\n".format(name, value))
     }
   }
 
-  def poke(name: String, value: BigInt, off: Int) = {
-    val cmd = "mem_poke %s %d %d".format(name, off, value)
+  def poke(name: String, value: String, off: Int) = {
+    val cmd = "mem_poke %s %d 0x%s".format(name, off, value)
     if (emulatorCmd(cmd) != "ok") {
        System.err.print("POKE %s with %d FAILED\n".format(name, value))
     }
@@ -42,27 +42,33 @@ class ReplayTester[+T <: Module](c: T) extends Tester(c) {
     for (line <- lines) {
       val tokens = line split " "
       tokens.head match {
+        case "POKE" => {
+          val signal = tokens.tail.head
+          val value = tokens.last
+          println("POKE %s <- %s".format(signal, BigInt(value, 16)))
+          signal match {
+            case MemRegex(name, idx) =>
+              poke(name, value, idx.toInt)
+            case _ => 
+              poke(signal, value)
+          }
+        }
+        case "LOAD" => {
+          val addr = BigInt(tokens.tail.head, 16)
+          val data = BigInt(tokens.last, 16)
+          
+        }
         case "STEP" => {
-          val n = Integer.parseInt(tokens.last, 16)
+          val n = tokens.last.toInt
           step(n)
         }
         case "EXPECT" => {
           val signal = tokens.tail.head
-          val expected = parseHex(tokens.last)
+          val expected = BigInt(tokens.last, 16)
           val got = peek(signal)
           expect(got == expected, "EXPECT %s <- %d == %d".format(signal, got, expected))
         }
-        case "//" => // TODO: ??
-        case MemRegex(name, idx) => {
-          val value = parseHex(tokens.last)
-          println("LOAD %s[%s] <- %s".format(name, idx, value.toString))
-          poke(name, value, idx.toInt)
-        }
-        case signal => {
-          val value = parseHex(tokens.last)
-          println("LOAD %s <- %s".format(signal, value.toString))
-          poke(signal, value)
-        }
+        case _ =>
       }
     }
   }
