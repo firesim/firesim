@@ -65,7 +65,7 @@ class DaisyControlIO extends Bundle {
 }
 
 class DaisyCounter(ctrlIo: CntrIO, daisySize: Int) {
-  val counter = Reg(UInt(width=log2Up(daisySize+1)))
+  val counter = RegInit(UInt(0, log2Up(daisySize+1)))
   def isNotZero = counter.orR
 
   // Daisy chain control logic
