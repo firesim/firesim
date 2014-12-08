@@ -83,7 +83,7 @@ class RegChainControlIO extends DaisyControlIO
 
 class RegChainControl extends DaisyChainModule {
   val io = new RegChainControlIO
-  val copied = RegNext(io.stall) 
+  val copied = RegNext(io.stall)
   val counter = new DaisyCounter(io.ctrlIo, daisySize)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
@@ -125,7 +125,7 @@ class SRAMChainControlIO extends DaisyControlIO {
 class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val io = new SRAMChainControlIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
-  val addrState = Reg(init=s_IDLE)
+  val addrState = RegInit(s_IDLE)
   val addrIn = Reg(UInt(width=log2Up(n)))
   val addrOut = Reg(UInt(width=log2Up(n)))
   val counter = new DaisyCounter(io.ctrlIo, daisySize)
@@ -158,7 +158,7 @@ class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
       when(io.restart) {
         addrState := s_ADDRGEN
       }
-      when(io.stall) {
+      when(!io.stall) {
         addrState := s_IDLE
       }
       io.addrIo.out.bits := addrIn
