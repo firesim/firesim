@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
 import addDaisyPins._
 
 object DaisyBackend { 
-  val states = HashMap[Module, ArrayBuffer[Node]]()
+  val regs = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val sramAddrs = HashMap[Mem[_], Reg]()
   lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
@@ -26,7 +26,7 @@ object DaisyBackend {
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
       connectStallSignals,
-      addStateChains,
+      addRegChains,
       Driver.backend.computeMemPorts,
       addSRAMChain,
       printOutMappings
@@ -52,17 +52,17 @@ object DaisyBackend {
     }
 
     for (m <- targetComps) {
-      states(m) = ArrayBuffer[Node]()
+      regs(m) = ArrayBuffer[Node]()
       srams(m) = ArrayBuffer[Mem[_]]()
       connectStallPins(m)
       // Add target's inputs
-      if (m.name == top.target.name) states(m) ++= top.inputs
+      // if (m.name == top.target.name) regs(m) ++= top.inputs
       m bfs { _ match {
         case reg: Reg => { 
           connectStallPins(m)
           reg.inputs(0) = Multiplex(daisyPins(m).stall && !m.reset, reg, reg.inputs(0))
           // Add the register for daisy chains
-          states(m) += reg
+          regs(m) += reg
         }
         case mem: Mem[_] => {
           connectStallPins(m)
@@ -75,7 +75,7 @@ object DaisyBackend {
             for (i <- 0 until mem.size) {
               val read = new MemRead(mem, UInt(i)) 
               read.infer
-              states(m) += read
+              regs(m) += read
             }
           }
         }
@@ -84,36 +84,36 @@ object DaisyBackend {
     }
   }
 
-  def addStateChains(c: Module) {
-    ChiselError.info("[DaisyBackend] add state chains")
+  def addRegChains(c: Module) {
+    ChiselError.info("[DaisyBackend] add reg chains")
 
-    val hasStateChain = HashSet[Module]()
-    def insertStateChain(m: Module) = {
-      val dataLen = (states(m) foldLeft 0)(_ + _.needWidth)
-      val stateChain = if (!states(m).isEmpty) Some(m.addModule(new StateChain, {case DataLen => dataLen})) else None
-      stateChain match {
+    val hasRegChain = HashSet[Module]()
+    def insertRegChain(m: Module) = {
+      val dataLen = (regs(m) foldLeft 0)(_ + _.needWidth)
+      val regChain = if (!regs(m).isEmpty) Some(m.addModule(new RegChain, {case DataLen => dataLen})) else None
+      regChain match {
         case None =>
         case Some(chain) => {
-          var stateIdx = 0
-          var stateOff = 0
+          var regIdx = 0
+          var regOff = 0
           for (i <- (0 until chain.daisySize).reverse) {
             val wires = ArrayBuffer[UInt]()
             var totalWidth = 0
             while (totalWidth < daisyLen) {
               val totalMargin = daisyLen - totalWidth
-              if (stateIdx < states(m).size) {
-                val state = states(m)(stateIdx)
-                val stateWidth = state.needWidth
-                val stateMargin = stateWidth - stateOff
-                if (stateMargin <= totalMargin) {
-                  wires += UInt(state)(stateMargin-1, 0)
-                  totalWidth += stateMargin
-                  stateOff = 0
-                  stateIdx += 1
+              if (regIdx < regs(m).size) {
+                val reg = regs(m)(regIdx)
+                val regWidth = reg.needWidth
+                val regMargin = regWidth - regOff
+                if (regMargin <= totalMargin) {
+                  wires += UInt(reg)(regMargin-1, 0)
+                  totalWidth += regMargin
+                  regOff = 0
+                  regIdx += 1
                 } else {
-                  wires += UInt(state)(stateMargin-1, stateMargin-totalMargin)
+                  wires += UInt(reg)(regMargin-1, regMargin-totalMargin)
                   totalWidth += totalMargin
-                  stateOff += totalMargin
+                  regOff += totalMargin
                 }
               } else {
                 wires += UInt(0, totalMargin)
@@ -122,37 +122,37 @@ object DaisyBackend {
               chain.io.dataIo.data(i) := Cat(wires) 
             }
           }
-          chain.io.dataIo.out <> daisyPins(m).state.out
+          chain.io.dataIo.out <> daisyPins(m).regs.out
           chain.io.stall := daisyPins(m).stall
-          hasStateChain += m
+          hasRegChain += m
         }
       }      
-      stateChain
+      regChain
     }
 
     for (m <- targetComps) {
-      val stateChain = insertStateChain(m)
-      // Filter children who have state chains
+      val regChain = insertRegChain(m)
+      // Filter children who have reg chains
       var last = -1
-      for ((child, cur) <- m.children.zipWithIndex ; if hasStateChain contains child) {
+      for ((child, cur) <- m.children.zipWithIndex ; if hasRegChain contains child) {
         if (last < 0) {
-          stateChain match {
-            case None        => daisyPins(m).state.out <> daisyPins(child).state.out
-            case Some(chain) => chain.io.dataIo.in <> daisyPins(child).state.out
+          regChain match {
+            case None => daisyPins(m).regs.out <> daisyPins(child).regs.out
+            case Some(chain) => chain.io.dataIo.in <> daisyPins(child).regs.out
           }
         } else {
-          daisyPins(m.children(last)).state.in <> daisyPins(child).state.out
+          daisyPins(m.children(last)).regs.in <> daisyPins(child).regs.out
         }
         last = cur
       }
 
       if (last > -1) {
-        hasStateChain += m
-        daisyPins(m.children(last)).state.in <> daisyPins(m).state.in
+        hasRegChain += m
+        daisyPins(m.children(last)).regs.in <> daisyPins(m).regs.in
       } else {
-        stateChain match {
+        regChain match {
           case None =>
-          case Some(chain) => chain.io.dataIo.in <> daisyPins(m).state.in
+          case Some(chain) => chain.io.dataIo.in <> daisyPins(m).regs.in
         }
       }
     }
@@ -289,13 +289,13 @@ object DaisyBackend {
 
     // Print out the chain mapping
     val chainFile = Driver.createOutputFile(targetName + ".chain.map")
-    // Collect states
+    // Collect regs
     var daisyWidthSum = 0
     for (m <- targetCompsRev) {
       var daisyWidth = 0
       var dataWidth = 0
-      for (state <- states(m)) {
-        state match {
+      for (reg <- regs(m)) {
+        reg match {
           case read: MemRead => {
             val mem = read.mem
             val addr = read.addr.litValue(0).toInt
@@ -306,8 +306,8 @@ object DaisyBackend {
             while (daisyWidth < dataWidth) daisyWidth += daisyLen
           }
           case _ => { 
-            val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + state.name
-            val width = state.needWidth
+            val path = targetName + (m.getPathName(".") stripPrefix prefix) + "." + reg.name
+            val width = reg.needWidth
             res append "%s %d\n".format(path, width)
             dataWidth += width
             while (daisyWidth < dataWidth) daisyWidth += daisyLen

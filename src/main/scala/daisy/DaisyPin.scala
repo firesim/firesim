@@ -9,7 +9,7 @@ class DaisyData(daisywidth: Int) extends Bundle {
   val out = Decoupled(UInt(width=daisywidth))
 }
 
-class StateData(daisywidth: Int) extends DaisyData(daisywidth) 
+class RegData(daisywidth: Int) extends DaisyData(daisywidth) 
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
   val restart = Bool(INPUT)
 }
@@ -17,7 +17,7 @@ class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
 class DaisyPins(daisywidth: Int) extends Bundle {
   val stall = Bool(INPUT)
-  val state = new StateData(daisywidth)
+  val regs = new RegData(daisywidth)
   val sram = new SRAMData(daisywidth)
   val cntr = new CntrData(daisywidth)
 }

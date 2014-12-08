@@ -6,13 +6,13 @@ import scala.io.Source
 
 abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]()
-  val inputMap = HashMap[String, ArrayBuffer[BigInt]]()
-  val outputMap = HashMap[String, ArrayBuffer[BigInt]]()
+  val inputMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
+  val outputMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val pokeMap = HashMap[BigInt, BigInt]()
   val peekMap = HashMap[BigInt, BigInt]()
   val signals = ArrayBuffer[String]()
   val widths = ArrayBuffer[Int]()
-  val replay = new StringBuilder
+  val snaps = new StringBuilder
   var snapfilename = ""
 
   lazy val targetPath = c.target.getPathName(".")
@@ -168,13 +168,25 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   var beginSnap = false
   def writeSnap(snap: String, n: Int) {
     if (beginSnap) {
-      replay append "STEP %d\n".format(n)
-      for (out <- c.outputs) {
-        val name = targetPrefix + (dumpName(out) stripPrefix targetPath)
-        replay append "EXPECT %s %d\n".format(name, peek(out))
+      snaps append "STEP %h\n".format(n)
+      for ((path, ids) <- outputMap) {
+        val signal = targetPrefix + (path stripPrefix targetPath) 
+        val data = (ids foldLeft BigInt(0))(
+          (res, i) => (res << hostLen) | (peekMap getOrElse (i, BigInt(0))))
+        snaps append "EXPECT %s %h\n".format(signal, data)
       }
+      snaps append "//\n"
     }
 
+    // Write inputs
+    for ((path, ids) <- inputMap) {
+      val signal = targetPrefix + (path stripPrefix targetPath) 
+      val data = (ids foldLeft BigInt(0))(
+        (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
+      snaps append "%s %h\n".format(signal, data)
+    }
+
+    // Write registers & srams
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     var start = 0
     for ((signal, i) <- signals.zipWithIndex) {
@@ -191,13 +203,14 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         val fromSnap = snap.substring(start, end)
         val fromSignal = intToBin(value, width) 
         expect(fromSnap == fromSignal, "Snapshot %s(%s?=%s)".format(signal, fromSnap, fromSignal)) 
-        replay append "POKE %s %d\n".format(signal, value)
+        snaps append "%s %h\n".format(signal, value)
       } 
       start += width
     }
     
+    // Write drams
     for ((addr, data) <- mem) {
-      replay append "MEM[%h] = %h\n".format(addr, data)
+      snaps append "dram[%h] %h\n".format(addr, data)
     } 
     mem.clear()
 
@@ -426,7 +439,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   override def finish = {
     val snapfile = createOutputFile(snapfilename)
     try {
-      snapfile write replay.result
+      snapfile write snaps.result
     } finally {
       snapfile.close
     }
@@ -438,5 +451,5 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
   readIoMapFile(targetPrefix + ".io.map")
   readChainMapFile(targetPrefix + ".chain.map")
-  snapfilename = targetPrefix + ".replay"
+  snapfilename = targetPrefix + ".snap"
 }
