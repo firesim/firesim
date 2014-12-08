@@ -60,7 +60,7 @@ object DaisyBackend {
       m bfs { _ match {
         case reg: Reg => { 
           connectStallPins(m)
-          reg.inputs(0) = Multiplex(daisyPins(m).stall, reg, reg.inputs(0))
+          reg.inputs(0) = Multiplex(daisyPins(m).stall && !m.reset, reg, reg.inputs(0))
           // Add the register for daisy chains
           states(m) += reg
         }
