@@ -11,9 +11,11 @@ object DebugMachine {
   def main(args: Array[String]) {
     val (chiselArgs, testArgs) = args.tail partition (_.head != '+')
     val res = args(0) match {
+      /*
       case "RiscSRAM" =>
         chiselMainTest(chiselArgs, () => Module(new RiscSRAM))(
           c => new RiscSRAMTests(c))
+      */
       case "RiscSRAMShim" =>
         chiselMainTest(chiselArgs, () => DaisyShim(new RiscSRAM))(
           c => new RiscSRAMDaisyTests(c))
