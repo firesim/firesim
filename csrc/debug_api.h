@@ -22,10 +22,8 @@ class debug_api_t
     void peek_all();
     void poke_snap();
     uint32_t trace_mem();
-    // void read_snap(std::string& snap);
-    // void write_snap(std::string& snap);
     void read_snap(char* snap);
-    void write_snap(char* snap);
+    void write_snap(char* snap, size_t n);
     void read_io_map_file(std::string filename);
     void read_chain_map_file(std::string filename);
     void write_replay_file(std::string filename);
@@ -35,7 +33,6 @@ class debug_api_t
     std::map<size_t, uint32_t> peek_map;
     std::map<std::string, std::vector<size_t> > input_map;
     std::map<std::string, std::vector<size_t> > output_map;
-    std::vector<std::string> outputs;
     std::vector<std::string> signals;
     std::vector<size_t> widths;
     std::string design;

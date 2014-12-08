@@ -163,6 +163,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val outputBufs = Vec.fill(outputNum) { Reg(UInt()) }
   var inputId = 0
   var outputId = 0
+  val inputEn = fire && fireDelay
   for (input <- inputs) {
     // Resove width error
     input match {
@@ -172,11 +173,18 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     val width = input.needWidth
     val n = (width-1) / hostLen + 1
     if (width <= hostLen) {
-      input := Mux(fire, inputBufs(inputId), UInt(0))
+      input := inputBufs(inputId)
+      /*
+      when(fire || fireDelay) {
+        input := inputBufs(inputId) // Mux(fireDelay, inputBufs(inputId), UInt(0))
+      }.otherwise {
+        input := UInt(0)
+      }
+      */
       inputId += 1
     } else {
       val bufs = (0 until n) map { x => inputBufs(inputId + x) }
-      input := Mux(fire, Cat(bufs), UInt(0))
+      input := Cat(bufs) // Mux(inputEn, Cat(bufs), UInt(0))
       inputId += n
     }
   }
@@ -251,9 +259,9 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   // Daisy pins
   val daisy = addDaisyPins(target, daisyLen)
   daisy.stall := !fire 
-  daisy.state.in.bits := UInt(0)
-  daisy.state.in.valid := Bool(false)
-  daisy.state.out.ready := Bool(false)
+  daisy.regs.in.bits := UInt(0)
+  daisy.regs.in.valid := Bool(false)
+  daisy.regs.out.ready := Bool(false)
   if (Driver.hasSRAM) {
     daisy.sram.in.bits := UInt(0)
     daisy.sram.in.valid := Bool(false)
@@ -354,12 +362,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     is(debug_SNAP1) {
       switch(snapState) {
         is(snap_IDLE) {
-          snapState := Mux(daisy.state.out.valid, snap_READ, snap_IDLE)
+          snapState := Mux(daisy.regs.out.valid, snap_READ, snap_IDLE)
         }
         is(snap_READ) {
           when(snapCount < UInt(hostLen)) {
-            daisy.state.out.ready := Bool(true)
-            snapBuffer := Cat(snapBuffer, daisy.state.out.bits)
+            daisy.regs.out.ready := Bool(true)
+            snapBuffer := Cat(snapBuffer, daisy.regs.out.bits)
             snapCount := snapCount + UInt(daisyLen)
           }.otherwise {
             snapCount := snapCount - UInt(hostLen)
@@ -370,7 +378,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           when(io.host.out.ready) {
             io.host.out.bits  := snapBuffer >> snapCount
             io.host.out.valid := Bool(true)
-            when (daisy.state.out.valid) {
+            when (daisy.regs.out.valid) {
               snapState := snap_READ
             }.otherwise {
               snapState := snap_IDLE

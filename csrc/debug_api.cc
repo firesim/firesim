@@ -133,11 +133,13 @@ uint64_t debug_api_t::peek() {
 void debug_api_t::poke_all() {
   poke(_poke);
   for (int i = 0 ; i < input_num ; i++) {
+    poke((poke_map.find(i) != poke_map.end()) ? poke_map[i] : 0);
+    /*
     if (poke_map.find(i) != poke_map.end()) {
       poke(poke_map[i]);
     } else {
       poke(0);
-    }
+    }*/
   }
 }
 
@@ -189,9 +191,38 @@ void debug_api_t::read_snap(char *snap) {
   }
 }
 
-void debug_api_t::write_snap(char *snap) {
+void debug_api_t::write_snap(char *snap, size_t n) {
+  static bool begin_snap = false;
   FILE *file = fopen(snapfilename.c_str(), "a");
   if (file) {
+    if (begin_snap) {
+      fprintf(file, "STEP %x\n", n);
+      for (std::map<std::string, std::vector<size_t> >::iterator it = output_map.begin() ; 
+           it != output_map.end() ; it++) {
+        std::string signal = it->first;
+        std::vector<size_t> ids = it->second;
+        uint32_t data = 0;
+        for (int i = 0 ; i < ids.size() ; i++) {
+          size_t id = ids[i];
+          data = (data << hostlen) | ((peek_map.find(id) != peek_map.end()) ? peek_map[id] : 0);
+        } 
+        fprintf(file, "EXPECT %s %x\n", signal.c_str(), data);
+      }
+      fprintf(file, "//\n");
+    }
+
+    for (std::map<std::string, std::vector<size_t> >::iterator it = input_map.begin() ; 
+         it != input_map.end() ; it++) {
+      std::string signal = it->first;
+      std::vector<size_t> ids = it->second;
+      uint32_t data = 0;
+      for (int i = 0 ; i < ids.size() ; i++) {
+        size_t id = ids[i];
+        data = (data << hostlen) | ((poke_map.find(id) != poke_map.end()) ? poke_map[id] : 0);
+      } 
+      fprintf(file, "%s %x\n", signal.c_str(), data);
+    }
+ 
     size_t offset = 0;
     for (int i = 0 ; i < signals.size() ; i++) {
       std::string signal = signals[i];
@@ -220,8 +251,8 @@ void debug_api_t::write_snap(char *snap) {
     exit(0);
   }
 
-  fprintf(file, "//\n");
   fclose(file);
+  begin_snap = true;
 }
 
 void debug_api_t::step(size_t n) {
@@ -234,7 +265,7 @@ void debug_api_t::step(size_t n) {
   while(trace_mem() > 0) {}
   read_snap(snap);
   peek_all();
-  write_snap(snap);
+  write_snap(snap, n);
   t += n;
   delete[] snap;
 }
