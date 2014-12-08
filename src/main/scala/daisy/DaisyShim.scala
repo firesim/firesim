@@ -174,17 +174,10 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     val n = (width-1) / hostLen + 1
     if (width <= hostLen) {
       input := inputBufs(inputId)
-      /*
-      when(fire || fireDelay) {
-        input := inputBufs(inputId) // Mux(fireDelay, inputBufs(inputId), UInt(0))
-      }.otherwise {
-        input := UInt(0)
-      }
-      */
       inputId += 1
     } else {
       val bufs = (0 until n) map { x => inputBufs(inputId + x) }
-      input := Cat(bufs) // Mux(inputEn, Cat(bufs), UInt(0))
+      input := Cat(bufs) 
       inputId += n
     }
   }

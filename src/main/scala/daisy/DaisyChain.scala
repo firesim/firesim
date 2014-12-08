@@ -83,7 +83,7 @@ class RegChainControlIO extends DaisyControlIO
 
 class RegChainControl extends DaisyChainModule {
   val io = new RegChainControlIO
-  val copied = Reg(next=io.stall)
+  val copied = RegNext(io.stall) 
   val counter = new DaisyCounter(io.ctrlIo, daisySize)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
@@ -125,41 +125,41 @@ class SRAMChainControlIO extends DaisyControlIO {
 class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val io = new SRAMChainControlIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
-  val addrReg = Reg(init=s_IDLE)
+  val addrState = Reg(init=s_IDLE)
   val addrIn = Reg(UInt(width=log2Up(n)))
   val addrOut = Reg(UInt(width=log2Up(n)))
   val counter = new DaisyCounter(io.ctrlIo, daisySize)
 
   io.ctrlIo.cntrNotZero := counter.isNotZero
-  io.ctrlIo.copyCond := addrReg === s_MEMREAD
-  io.ctrlIo.readCond := addrReg === s_DONE && counter.isNotZero
+  io.ctrlIo.copyCond := addrState === s_MEMREAD
+  io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
   io.addrIo.out.bits := addrIn
   io.addrIo.out.valid := Bool(false)
 
   // SRAM control
-  switch(addrReg) {
+  switch(addrState) {
     is(s_IDLE) {
       addrIn := io.addrIo.in
       addrOut := UInt(0)
       when(io.stall) {
-        addrReg := s_DONE
+        addrState := s_DONE
       }
     }
     is(s_ADDRGEN) {
-      addrReg := s_MEMREAD
+      addrState := s_MEMREAD
       io.addrIo.out.bits := addrOut
       io.addrIo.out.valid := Bool(true)
     }
     is(s_MEMREAD) {
-      addrReg := s_DONE
+      addrState := s_DONE
       addrOut   := addrOut + UInt(1)
     }
     is(s_DONE) {
       when(io.restart) {
-        addrReg := s_ADDRGEN
+        addrState := s_ADDRGEN
       }
-      when(!io.stall) {
-        addrReg := s_IDLE
+      when(io.stall) {
+        addrState := s_IDLE
       }
       io.addrIo.out.bits := addrIn
       io.addrIo.out.valid := io.stall

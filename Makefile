@@ -20,14 +20,19 @@ CXXFLAGS := -static -O2
 
 default: GCD
 
-cpp := $(addsuffix Shim.cpp, $(designs))
+cpp     := $(addsuffix Shim.cpp, $(designs))
 harness := $(addsuffix Shim-harness.v, $(designs))
-v := $(addsuffix Shim.v, $(designs) Core Tile)
-fpga := $(addsuffix -fpga, $(designs) Core Tile)
-driver := $(addsuffix -zedboard, $(designs) Core Tile)
+v       := $(addsuffix Shim.v, $(designs) Core Tile)
+fpga    := $(addsuffix -fpga, $(designs) Core Tile)
+driver  := $(addsuffix -zedboard, $(designs) Core Tile)
+
+replay_cpp := $(addsuffix .cpp, $(designs))
+replay_v   := $(addsuffix .v,   $(designs))
 
 cpp: $(cpp)
 harness: $(harness)
+replay-cpp: $(replay_cpp)
+replay-v: $(replay_v)
 
 $(designs) Core Tile: %: %Shim.v %-fpga %-zedboard
 
@@ -38,6 +43,14 @@ $(cpp): %Shim.cpp: %.scala
 $(harness): %Shim-harness.v: %.scala 
 	mkdir -p $(logdir) $(resdir)
 	sbt "run $*Shim $(V_FLAGS)" | tee $(logdir)/$*Shim.v.out
+
+$(replay_cpp): %.cpp: %.scala %Shim.cpp
+	mkdir -p $(logdir)
+	sbt "run $(basename $@) $(C_FLAGS)" | tee $(logdir)/$@.out
+
+$(replay_v): %.v: %.scala %Shim-harness.v
+	mkdir -p $(logdir)
+	sbt "run $(basename $@) $(V_FLAGS)" | tee $(logdir)/$@.out
 
 $(v): %Shim.v: %.scala
 	rm -rf $(gendir)/$@
