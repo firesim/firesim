@@ -165,20 +165,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     snap.result
   }
 
-  var beginSnap = false
-  def writeSnap(snap: String, n: Int) {
-    if (beginSnap) {
-      snaps append "STEP %h\n".format(n)
-      for ((path, ids) <- outputMap) {
-        val signal = targetPrefix + (path stripPrefix targetPath) 
-        val data = (ids foldLeft BigInt(0))(
-          (res, i) => (res << hostLen) | (peekMap getOrElse (i, BigInt(0))))
-        snaps append "EXPECT %s %h\n".format(signal, data)
-      }
-      snaps append "//\n"
-    }
-
-    // Write inputs
+  def recordIo {
+    // record inputs
     for ((path, ids) <- inputMap) {
       val signal = targetPrefix + (path stripPrefix targetPath) 
       val data = (ids foldLeft BigInt(0))(
@@ -186,7 +174,19 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       snaps append "%s %h\n".format(signal, data)
     }
 
-    // Write registers & srams
+    if (t > 0) {
+      // record outputs
+      for ((path, ids) <- outputMap) {
+        val signal = targetPrefix + (path stripPrefix targetPath) 
+        val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
+        snaps append "EXPECT %s %h\n".format(signal, data)
+      }
+      // snaps append "//\n"
+    }
+  }
+
+  def recordSnap(snap: String) {
+    // write registers & srams
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     var start = 0
     for ((signal, i) <- signals.zipWithIndex) {
@@ -213,8 +213,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       snaps append "dram[%h] %h\n".format(addr, data)
     } 
     mem.clear()
-
-    beginSnap = true
   }
 
   // Emulate AXI Slave
@@ -371,8 +369,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   override def step(n: Int = 1) {
+    recordIo
     val target = t + n
     if (isTrace) println("STEP " + n + " -> " + target)
+    snaps append "STEP %h\n".format(n)
     pokeAll
     pokeSnap
     pokeSteps(n)
@@ -382,8 +382,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     }
     while(traceMem > 0) {}
     val snap = readSnap 
+    recordSnap(snap)
     peekAll
-    writeSnap(snap, n)
     t += n
   }
 

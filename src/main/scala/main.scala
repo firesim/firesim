@@ -53,6 +53,29 @@ object DebugMachine {
       case "TileShim" => 
         chiselMainTest(chiselArgs, () => DaisyShim(new Tile, mini.Config.params))(
           c => new TileDaisyTests(c, testArgs))
+
+      case "RiscSRAM" =>
+        chiselMainTest(chiselArgs, () => Module(new RiscSRAM))(c => new ReplayTester(c))
+      case "Risc" =>
+        chiselMainTest(chiselArgs, () => Module(new Risc))(c => new ReplayTester(c))
+      case "GCD" =>
+        chiselMainTest(chiselArgs, () => Module(new GCD))(c => new ReplayTester(c))
+      case "Parity" =>
+        chiselMainTest(chiselArgs, () => Module(new Parity))(c => new ReplayTester(c))
+      case "Stack" =>
+        chiselMainTest(chiselArgs, () => Module(new Stack(8)))(c => new ReplayTester(c))
+      case "Router" =>
+        chiselMainTest(chiselArgs, () => Module(new Router))(c => new ReplayTester(c))
+      case "ShiftRegister" =>
+        chiselMainTest(chiselArgs, () => Module(new ShiftRegister))(c => new ReplayTester(c))
+      case "ResetShiftRegister" =>
+        chiselMainTest(chiselArgs, () => Module(new ResetShiftRegister))(c => new ReplayTester(c))
+      case "EnableShiftRegister" =>
+        chiselMainTest(chiselArgs, () => Module(new EnableShiftRegister))(c => new ReplayTester(c))
+      case "MemorySearch" =>
+        chiselMainTest(chiselArgs, () => Module(new MemorySearch))(c => new ReplayTester(c))
+      case "FIR2D" =>
+        chiselMainTest(chiselArgs, () => Module(new FIR2D(32, 8, 3)))(c => new ReplayTester(c))
       case _ =>
     }
   }

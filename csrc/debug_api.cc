@@ -134,12 +134,6 @@ void debug_api_t::poke_all() {
   poke(_poke);
   for (int i = 0 ; i < input_num ; i++) {
     poke((poke_map.find(i) != poke_map.end()) ? poke_map[i] : 0);
-    /*
-    if (poke_map.find(i) != poke_map.end()) {
-      poke(poke_map[i]);
-    } else {
-      poke(0);
-    }*/
   }
 }
 
