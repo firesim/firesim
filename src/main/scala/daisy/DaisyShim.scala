@@ -163,7 +163,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val outputBufs = Vec.fill(outputNum) { Reg(UInt()) }
   var inputId = 0
   var outputId = 0
-  val inputEn = fire && fireDelay
   for (input <- inputs) {
     // Resove width error
     input match {
