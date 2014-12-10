@@ -4,7 +4,7 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
 import scala.io.Source
 
-class ReplayTester[+T <: Module](c: T) extends Tester(c) {
+abstract class ReplayTester[+T <: Module](c: T) extends Tester(c) {
   lazy val basedir = ensureDir(Driver.targetDir)
 
   def poke(name: String, value: String) {
@@ -26,17 +26,11 @@ class ReplayTester[+T <: Module](c: T) extends Tester(c) {
     Literal.toLitVal(emulatorCmd(cmd))
   }
 
-  def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
+  def replayMem(addr: BigInt, data: BigInt) { }
+  
+  def runTests(args: Any*) { }
 
-  def parseHex(hex: String) = {
-    var data = BigInt(0)
-    for (digit <- hex) {
-      data = (data << 4) | parseNibble(digit)
-    }
-    data
-  }
-
-  def loadSnap(filename: String) {
+  def loadSnap(filename: String, args: Any*) {
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
@@ -56,7 +50,7 @@ class ReplayTester[+T <: Module](c: T) extends Tester(c) {
         case "LOAD" => {
           val addr = BigInt(tokens.tail.head, 16)
           val data = BigInt(tokens.last, 16)
-          
+          replayMem(addr, data)        
         }
         case "STEP" => {
           val n = tokens.last.toInt
@@ -68,10 +62,15 @@ class ReplayTester[+T <: Module](c: T) extends Tester(c) {
           val got = peek(signal)
           expect(got == expected, "EXPECT %s <- %d == %d".format(signal, got, expected))
         }
+        case "//" => 
+          runTests(args:_*)
         case _ =>
       }
     }
   }
+}
 
-  loadSnap(c.name + ".snap")
+class Replay[+T <: Module](c: T) extends ReplayTester(c) {
+  lazy val filename = c.name + ".snap"
+  loadSnap(filename)
 }
