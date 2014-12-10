@@ -181,7 +181,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
       snaps append "EXPECT %s %h\n".format(signal, data)
     }
-    snaps append "//\n"
   }
 
   def recordSnap(snap: String) {
@@ -209,7 +208,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     
     // Write drams
     for ((addr, data) <- mem) {
-      snaps append "LOAD %h %h\n".format(addr, data)
+      snaps append "LOAD %h %s\n".format(addr, data.toString(16).padTo(8, '0').reverse)
     } 
     mem.clear()
   }
@@ -368,7 +367,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   override def step(n: Int = 1) {
-    recordIns
+    if (t > 0) {
+      recordIns
+      snaps append "//\n"
+    }
 
     val target = t + n
     if (isTrace) println("STEP " + n + " -> " + target)
@@ -383,8 +385,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     val snap = readSnap 
     peekAll
 
-    snaps append "STEP %d\n".format(n)
-    recordOuts
+    if (t > 0) {
+      snaps append "STEP %d\n".format(n)
+      recordOuts
+    }
     recordSnap(snap)
     t += n
   }

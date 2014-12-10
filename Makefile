@@ -108,6 +108,20 @@ tile_asm_v: $(tile_asm_v)
 	@echo; perl -ne 'print " [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
 	$(addprefix $(logdir)/, $(tile_asm_v)); echo;
 
+tile_replay_cpp = $(addprefix Tile., $(addsuffix .cpp.replay, $(asm_p_tests)))
+$(tile_replay_cpp): Tile.%.cpp.replay: Tile.%.cpp.out $(minidir)/Tile.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run Tile $(C_FLAGS) +loadmem=Tile.snap +max-cycles=$(timeout_cycles) +verbose" \
+        | tee $(logdir)/$(notdir $@)
+tile_replay_cpp: $(tile_replay_cpp)
+
+tile_replay_v = $(addprefix Tile., $(addsuffix .v.replay, $(asm_p_tests)))
+$(tile_replay_v): Tile.%.v.replay: Tile.%.v.out $(minidir)/Tile.scala
+	mkdir -p $(logdir)
+	cd $(basedir) ; sbt "run Tile $(V_FLAGS) +loadmem=Tile.snap +max-cycles=$(timeout_cycles) +verbose" \
+        | tee $(logdir)/$(notdir $@)
+tile_replay_v: $(tile_replay_v)
+
 clean:
 	rm -rf $(gendir) $(logdir) $(resdir) 
 
