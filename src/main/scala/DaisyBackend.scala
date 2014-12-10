@@ -25,9 +25,10 @@ object DaisyBackend {
       initDaisy,
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
+      Driver.backend.removeTypeNodes, 
+      Driver.backend.computeMemPorts,
       connectStallSignals,
       addRegChains,
-      Driver.backend.computeMemPorts,
       addSRAMChain,
       printOutMappings
     )
@@ -67,7 +68,7 @@ object DaisyBackend {
         case mem: Mem[_] => {
           connectStallPins(m)
           for (write <- mem.writeAccesses) {
-            write cond_= write.cond.asInstanceOf[Bool] && !daisyPins(m).stall
+            write cond_= Bool().fromNode(write.cond) && !daisyPins(m).stall
           }
           if (mem.seqRead) {
             srams(m) += mem
@@ -172,7 +173,7 @@ object DaisyBackend {
     def insertSRAMChain(m: Module) = {
       var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        val data = if (Driver.isInlineMem) sram.reads.last else sram.seqreads.last
+        val data = sram.readAccesses.last // if (Driver.isInlineMem) sram.reads.last else sram.seqreads.last
         val addr = data match {
           case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
           case msr: MemSeqRead => msr.addrReg
