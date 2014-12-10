@@ -1,4 +1,4 @@
-package Daisy
+package daisy
 
 import Chisel._
 
@@ -11,16 +11,8 @@ case object CmdLen extends Field[Int]
 
 object DaisyShim {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val daisyParams = targetParams alter (
-      (key, site, here, up) => key match {
-        case HostLen => 32
-        case AddrLen => 32
-        case TagLen => 5
-        case MemLen => 32 
-        case DaisyLen => 32
-        case CmdLen => 6
-      })
-    Module(new DaisyShim(c))(daisyParams)
+    val params = targetParams alter daisyParams.mask
+    Module(new DaisyShim(c))(params)
   }
 }
 

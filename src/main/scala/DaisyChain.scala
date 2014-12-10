@@ -1,4 +1,4 @@
-package Daisy
+package daisy
 
 import Chisel._
 
