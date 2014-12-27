@@ -2,6 +2,13 @@ package daisy
 
 import Chisel._
 
+case object HostLen extends Field[Int]
+case object AddrLen extends Field[Int]
+case object TagLen extends Field[Int]
+case object MemLen extends Field[Int]
+case object DaisyLen extends Field[Int]
+case object CmdLen extends Field[Int]
+
 object daisyParams {
   val hostlen = 32
   val addrlen = 32
@@ -32,3 +39,20 @@ class DaisyConfig extends ChiselConfig (
     case CmdLen => cmdlen
   }
 )
+
+abstract trait DaisyShimParams extends UsesParameters {
+  val hostLen = params(HostLen)
+  val addrLen = params(AddrLen)
+  val tagLen  = params(TagLen)
+  val memLen  = params(MemLen) 
+  val daisyLen = params(DaisyLen)
+}
+
+abstract trait DebugCommands extends UsesParameters {
+  val cmdLen = params(CmdLen)
+  val STEP = UInt(0, cmdLen)
+  val POKE = UInt(1, cmdLen)
+  val PEEK = UInt(2, cmdLen)
+  val MEM  = UInt(3, cmdLen)
+}
+

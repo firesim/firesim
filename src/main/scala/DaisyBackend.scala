@@ -264,7 +264,7 @@ object DaisyBackend {
     res append "STEP: %d\n".format(top.STEP.litValue())
     res append "POKE: %d\n".format(top.POKE.litValue())
     res append "PEEK: %d\n".format(top.PEEK.litValue())
-    res append "SNAP: %d\n".format(top.SNAP.litValue())
+    // res append "SNAP: %d\n".format(top.SNAP.litValue())
     res append "MEM: %d\n".format(top.MEM.litValue())
 
     // Print out the IO mapping for pokes and peeks

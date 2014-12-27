@@ -26,7 +26,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   var STEP = -1
   var POKE = -1
   var PEEK = -1
-  var SNAP = -1
   var MEM = -1
   var inputNum = 0
   var outputNum = 0
@@ -100,15 +99,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     takeSteps(n) 
   }
 
-  def pokeSnap {
-    if (isTrace) println("Poke Snap")
-    stayIdle()
-    // Send SNAP command
-    poke(SNAP)
-    stayIdle()
-    if (isTrace) println("==========")
-  }
-
   def pokeAll {
     if (isTrace) println("Poke All")
     // Send POKE command
@@ -139,10 +129,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("==========")
   }
 
-  def pokeSteps(n: Int) {
+  def pokeSteps(n: Int, isSnap: Boolean = true) {
     if (isTrace) println("Poke Steps")
     // Send STEP command
-    poke((n << cmdLen) | STEP)
+    poke((n << (cmdLen+1)) | ((if (isSnap) 1 else 0) << cmdLen) | STEP)
     if (isTrace) println("==========")
   }
 
@@ -375,7 +365,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     val target = t + n
     if (isTrace) println("STEP " + n + " -> " + target)
     pokeAll
-    pokeSnap
     pokeSteps(n)
     for (i <- 0 until n) {
       tickMem
@@ -407,7 +396,6 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         case "STEP:"    => STEP = tokens.last.toInt
         case "POKE:"    => POKE = tokens.last.toInt
         case "PEEK:"    => PEEK = tokens.last.toInt
-        case "SNAP:"    => SNAP = tokens.last.toInt
         case "MEM:"     => MEM = tokens.last.toInt
         case "INPUT:"   => isInput = true
         case "OUTPUT:"  => isInput = false
