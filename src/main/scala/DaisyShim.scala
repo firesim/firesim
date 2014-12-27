@@ -2,13 +2,6 @@ package daisy
 
 import Chisel._
 
-case object HostLen extends Field[Int]
-case object AddrLen extends Field[Int]
-case object TagLen extends Field[Int]
-case object MemLen extends Field[Int]
-case object DaisyLen extends Field[Int]
-case object CmdLen extends Field[Int]
-
 object DaisyShim {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
     val params = targetParams alter daisyParams.mask
@@ -54,23 +47,6 @@ class MemIO extends Bundle {
 class DaisyShimIO extends Bundle {
   val host = new HostIO
   val mem = new MemIO 
-}
-
-abstract trait DaisyShimParams extends UsesParameters {
-  val hostLen = params(HostLen)
-  val addrLen = params(AddrLen)
-  val tagLen  = params(TagLen)
-  val memLen  = params(MemLen) 
-  val daisyLen = params(DaisyLen)
-}
-
-abstract trait DebugCommands extends UsesParameters {
-  val cmdLen = params(CmdLen)
-  val STEP = UInt(0, cmdLen)
-  val POKE = UInt(1, cmdLen)
-  val PEEK = UInt(2, cmdLen)
-  val SNAP = UInt(3, cmdLen)
-  val MEM  = UInt(4, cmdLen)
 }
 
 class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with DebugCommands {
@@ -259,7 +235,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       when(io.host.in.fire()) {
         val cmd = io.host.in.bits(cmdLen-1, 0)
         when(cmd === STEP) {
-          stepCounter := io.host.in.bits(hostLen-1, cmdLen)
+          isSnap := io.host.in.bits(cmdLen)
+          stepCounter := io.host.in.bits(hostLen-1, cmdLen+1)
           debugState := debug_STEP
         }.elsewhen(cmd === POKE) {
           pokeCounter := UInt(inputNum)
@@ -267,8 +244,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
         }.elsewhen(cmd === PEEK) {
           peekCounter := UInt(outputNum)
           debugState := debug_PEEK
-        }.elsewhen(cmd === SNAP) {
-          isSnap := Bool(true)
         }.elsewhen(cmd === MEM) {
           memReqCmd.rw   := io.host.in.bits(cmdLen) 
           memReqCmd.tag  := memTagCounter
