@@ -19,15 +19,16 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   val snaps = new StringBuilder
   var snapfilename = ""
 
-  lazy val targetPath = c.target.getPathName(".")
-  lazy val targetPrefix = Driver.backend.extractClassName(c.target)
-  lazy val basedir = ensureDir(Driver.targetDir)
+  val targetPath = c.target.getPathName(".")
+  val targetPrefix = Driver.backend.extractClassName(c.target)
+  val basedir = ensureDir(Driver.targetDir)
 
-  lazy val hostLen = c.hostLen
-  lazy val cmdLen = c.cmdLen
-  lazy val addrLen = c.addrLen
-  lazy val memLen = c.memLen
-  lazy val blkLen = memLen / 8
+  val hostLen = c.hostLen
+  val cmdLen = c.cmdLen
+  val addrLen = c.addrLen
+  val memLen = c.memLen
+  val tagLen = c.tagLen
+  val blkLen = memLen / 8
 
   var dInNum = 0
   var dOutNum = 0
@@ -218,8 +219,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     for ((addr, data) <- memwrites) {
       snaps append "%d %x %08x\n".format(SnapCmd.WRITE.id, addr, data) 
     } 
-    for (addr <- memreads) {
-      snaps append "%d %x\n".format(SnapCmd.READ.id, addr)
+    for ((tag, addr) <- memreads) {
+      snaps append "%d %x %x\n".format(SnapCmd.READ.id, addr, tag)
     }
     memwrites.clear
     memreads.clear
@@ -360,7 +361,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   // Memory trace
   private val memwrites = LinkedHashMap[BigInt, BigInt]()
-  private val memreads = ArrayBuffer[BigInt]()
+  private val memreads = LinkedHashMap[BigInt, BigInt]()
   def traceMem {
     val waddr = ArrayBuffer[BigInt]()
     val wdata = ArrayBuffer[BigInt]()
@@ -390,7 +391,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       for (k <- 0 until addrLen by hostLen) {
         addr = (addr << hostLen) | peek
       }
-      memreads += addr
+      var tag = BigInt(0)
+      for (k <- 0 until tagLen by hostLen) {
+        tag = (tag << hostLen) | peek
+      }
+      memreads(tag) = addr
     }
   }
 
