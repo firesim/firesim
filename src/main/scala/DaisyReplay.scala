@@ -14,13 +14,13 @@ case class Step(n: Int) extends ReplayCmd
 case class Poke(node: Node, value: BigInt, off: Int = -1) extends ReplayCmd
 case class Expect(node: Bits, value: BigInt) extends ReplayCmd
 case class Write(addr: BigInt, data: BigInt) extends ReplayCmd
-case class Read(addr: BigInt) extends ReplayCmd
+case class Read(addr: BigInt, tag: BigInt) extends ReplayCmd
 
 class Snapshot {
   val cmds = ArrayBuffer[ReplayCmd]()
 }
 
-class DaisyReplay[+T <: Module](c: T) extends Tester(c) {
+class DaisyReplay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val basedir = ensureDir(Driver.targetDir)
   val snapfile = c.name + ".snap" 
   val snaps = ArrayBuffer[Snapshot]()
@@ -29,8 +29,8 @@ class DaisyReplay[+T <: Module](c: T) extends Tester(c) {
   def loadSnap(filename: String) {
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
+    var snap = new Snapshot
     for (line <- lines) {
-      val snap = new Snapshot
       val tokens = line split " "
       val cmd = tokens.head.toInt
       if (cmd == SnapCmd.STEP.id) {
@@ -55,14 +55,17 @@ class DaisyReplay[+T <: Module](c: T) extends Tester(c) {
         snap.cmds += Write(addr, data)
       } else if (cmd == SnapCmd.READ.id) {
         val addr = BigInt(tokens.tail.head, 16)
-        val data = BigInt(tokens.last, 16)
-        snap.cmds += Write(addr, data)
+        val tag = BigInt(tokens.last, 16)
+        snap.cmds += Read(addr, tag)
+      } else if (cmd == SnapCmd.FIN.id) {
+        snaps += snap
+        snap = new Snapshot
       }
-      snaps += snap
     }
+    snaps += snap
   }
  
-  def read(addr: BigInt) { }
+  def read(addr: BigInt, tag: BigInt) { }
 
   def write(addr: BigInt, data: BigInt) { }
 
@@ -73,7 +76,6 @@ class DaisyReplay[+T <: Module](c: T) extends Tester(c) {
   }
 
   loadSnap(snapfile)
-
   for (snap <- snaps) {
     for (cmd <- snap.cmds) {
       cmd match {
@@ -81,7 +83,7 @@ class DaisyReplay[+T <: Module](c: T) extends Tester(c) {
         case Poke(node, value, off) => pokeBits(node, value, off)
         case Expect(node, value) => expect(node, value)
         case Write(addr, data) => write(addr, data)
-        case Read(addr) => read(addr)
+        case Read(addr, tag) => read(addr, tag)
       }
     }
     run

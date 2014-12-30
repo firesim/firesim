@@ -112,10 +112,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       // Trace write addr
       wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
       wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
-      // Turn on rAddrTrace
       when(!tMemReqCmd.rw && memReqCmdQ.io.enq.valid) {
+        // Turn on rAddrTrace
         rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
-        rAddrValid(tMemReqCmd.tag) := Bool(true)   
+        rAddrValid(tMemReqCmd.tag) := Bool(true)
+        // Set memTag's value
+        memTag := tMemReqCmd.tag + UInt(1)
       }
       dOutNum -= 1
       dOuts -= q
@@ -324,7 +326,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val peekdState = RegInit(peekd_COUNT)
 
   val raddrcount = Reg(UInt())
-  val trace_WCOUNT :: trace_WADDR :: trace_WDATA :: trace_RCOUNT :: trace_RADDR :: Nil = Enum(UInt(), 5)
+  val (trace_WCOUNT :: trace_WADDR :: trace_WDATA :: 
+       trace_RCOUNT :: trace_RADDR :: trace_RTAG :: Nil) = Enum(UInt(), 6)
   val traceState = RegInit(trace_WCOUNT)
 
   val addrcount = Reg(UInt())
@@ -554,6 +557,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           io.host.out.valid := Bool(true)
           when(io.host.out.fire()) {
             traceState := trace_WADDR
+            addrcount := UInt((addrLen-1)/hostLen + 1)
+            datacount := UInt((memLen-1)/hostLen + 1)
           }          
         }
         is(trace_WADDR) {
@@ -578,16 +583,27 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           when(io.host.out.fire()) {
             traceState := trace_RADDR
             raddrcount := UInt(tagNum)
+            addrcount := UInt((addrLen-1)/hostLen + 1)
           }
         }
+        val id = UInt(tagNum) - raddrcount
         is(trace_RADDR) {
-          val id = UInt(tagNum) - raddrcount
           io.host.out.bits := rAddrTrace(id).addr
           io.host.out.valid := rAddrValid(id)
-          when(!raddrcount.orR) {
+          when(io.host.out.fire()) {
+            traceState := trace_RTAG
+          }.elsewhen(!raddrcount.orR) {
             traceState := trace_WCOUNT
             debugState := Mux(stepcount.orR, debug_STEP, debug_IDLE)    
-          }.elsewhen(io.host.out.fire() || !io.host.out.valid) {
+          }.elsewhen(!io.host.out.valid) {
+            raddrcount := raddrcount - UInt(1)
+          }
+        }
+        is(trace_RTAG) {
+          io.host.out.bits := id
+          io.host.out.valid := Bool(true)
+          when(io.host.out.fire()) {
+            traceState := trace_RADDR
             raddrcount := raddrcount - UInt(1)
           }
         }
@@ -634,6 +650,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
             memResp.data := memResp.data >> UInt(hostLen)
             datacount := datacount - UInt(1)
           }.elsewhen(!io.host.out.valid) {
+            memTag := memTag + UInt(1)
             memState := mem_REQ_CMD
             debugState := debug_IDLE
           }
