@@ -300,7 +300,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val debugState = RegInit(debug_IDLE)
 
   val stepcount = RegInit(UInt(0)) // Step Counter
-  val step_FIN :: step_TRACE :: step_PEEKD :: Nil = Enum(UInt(), 3)
   // Define the fire signal
   fire := (dOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
           wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&

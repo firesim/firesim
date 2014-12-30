@@ -4,13 +4,7 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
 import scala.io.Source
 
-// Enum Types to read IO maps
-object IOTYPE extends Enumeration {
-  type IOTYPE = Value
-  val DIN, DOUT, WIN, WOUT = Value
-}
-
-abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
+abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true, checkOut : Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]() 
   val dInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val dOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
@@ -34,13 +28,13 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   lazy val addrLen = c.addrLen
   lazy val memLen = c.memLen
   lazy val blkLen = memLen / 8
-  val c_STEP :: c_POKE :: c_PEEK :: c_POKED :: c_PEEKED :: c_TRACE :: c_MEM :: _ = (0 until math.pow(2, cmdLen).toInt).toList
-  val step_FIN :: step_TRACE :: step_PEEKD :: _ = (0 until 3).toList
 
   var dInNum = 0
   var dOutNum = 0
   var wInNum = 0
   var wOutNum = 0
+
+  import DebugCmd._
 
   override def poke(data: Bits, x: BigInt) {
     if (wInMap contains dumpName(data)) {
@@ -117,7 +111,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("Poke All")
     // Send POKE command
     stayIdle()
-    poke(c_POKE)
+    poke(DebugCmd.POKE.id)
 
     // Send Values
     for (i <- 0 until wInNum) {
@@ -133,7 +127,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     stayIdle()
     peekMap.clear
     // Send PEEK command
-    poke(c_PEEK)
+    poke(DebugCmd.PEEK.id)
     // Get values
     for (i <- 0 until wOutNum) {
       stayIdle()
@@ -146,14 +140,14 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   def peekTrace {
     if (isTrace) println("Peek Trace")
     stayIdle()
-    poke(c_TRACE)
+    poke(DebugCmd.TRACE.id)
     traceMem
   }
 
   def pokeSteps(n: Int, isRecord: Boolean = true) {
     if (isTrace) println("Poke Steps")
     // Send STEP command
-    poke((n << (cmdLen+1)) | ((if (isRecord) 1 else 0) << cmdLen) | c_STEP)
+    poke((n << (cmdLen+1)) | ((if (isRecord) 1 else 0) << cmdLen) | DebugCmd.STEP.id)
     if (isTrace) println("==========")
   }
 
@@ -182,15 +176,17 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       val signal = targetPrefix + (path stripPrefix targetPath) 
       val data = (ids foldLeft BigInt(0))(
         (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
-      snaps append "%s %x\n".format(signal, data)
+      snaps append "%d %s %x\n".format(SnapCmd.POKE.id, signal, data)
     }
     // record outputs
-    for ((path, ids) <- wOutMap) {
-      val signal = targetPrefix + (path stripPrefix targetPath) 
-      val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
-      snaps append "%s %x\n".format(signal, data)
+    if (checkOut) {
+      for ((path, ids) <- wOutMap) {
+        val signal = targetPrefix + (path stripPrefix targetPath) 
+        val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
+        snaps append "%d %s %x\n".format(SnapCmd.EXPECT.id, signal, data)
+      }
     }
-    snaps append "//\n" // indicate the end of one snapshot
+    snaps append "%d\n".format(SnapCmd.FIN.id) // indicate the end of one snapshot
   }
 
   def recordSnap(snap: String) {
@@ -211,7 +207,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         val fromSnap = snap.substring(start, end)
         val fromSignal = intToBin(value, width) 
         expect(fromSnap == fromSignal, "Snapshot %s(%s?=%s)".format(signal, fromSnap, fromSignal)) 
-        snaps append "%s %x\n".format(signal, value)
+        snaps append "%d %s %x\n".format(SnapCmd.POKE.id, signal, value)
       } 
       start += width
     }
@@ -220,10 +216,10 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   def recordMem { 
     // Mem Writes
     for ((addr, data) <- memwrites) {
-      snaps append "Mem[%x] %08x\n".format(addr, data) 
+      snaps append "%d %x %08x\n".format(SnapCmd.WRITE.id, addr, data) 
     } 
     for (addr <- memreads) {
-      snaps append "Mem[%x]\n".format(addr)
+      snaps append "%d %x\n".format(SnapCmd.READ.id, addr)
     }
     memwrites.clear
     memreads.clear
@@ -290,7 +286,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def readMem(addr: BigInt) = {
-    poke((0 << cmdLen) | c_MEM)
+    poke((0 << cmdLen) | DebugCmd.MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
       poke(addr >> (hostLen * (i-1)) & mask)
@@ -308,7 +304,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def writeMem(addr: BigInt, data: BigInt) {
     memwrites(addr) = data // Memory trace
-    poke((1 << cmdLen) | c_MEM)
+    poke((1 << cmdLen) | DebugCmd.MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
       poke(addr >> (hostLen * (i-1)) & mask)
@@ -403,16 +399,17 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
     val target = t + n
     if (isTrace) println("STEP " + n + " -> " + target)
+    if (checkOut) snaps append "%d %d\n".format(SnapCmd.STEP.id, n)
     pokeAll
     pokeSteps(n)
     var fin = false
     while (!fin) {
       tickMem
       if (peekReady) {
-        val ret = peek
-        if (ret == step_FIN) fin = true
-        else if (ret == step_TRACE) traceMem
-        else if (ret == step_PEEKD) { /* TODO */ } 
+        val resp = peek
+        if (resp == StepResp.FIN.id) fin = true
+        else if (resp == StepResp.TRACE.id) traceMem
+        else if (resp == StepResp.PEEKD.id) { /* TODO */ } 
       }
     }
     val snap = readSnap 
@@ -424,7 +421,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def readIoMapFile(filename: String) {
-    import IOTYPE._
+    object IOType extends Enumeration {
+      val DIN, DOUT, WIN, WOUT = Value
+    }
+    import IOType._
+
     val filename = targetPrefix + ".io.map"
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     var iotype = DIN
