@@ -22,6 +22,7 @@ object DaisyBackend {
   def addTransforms(width: Int) {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
+      c => Driver.backend.verifyAllMuxes,
       initDaisy,
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
@@ -56,8 +57,6 @@ object DaisyBackend {
       regs(m) = ArrayBuffer[Node]()
       srams(m) = ArrayBuffer[Mem[_]]()
       connectStallPins(m)
-      // Add target's inputs
-      // if (m.name == top.target.name) regs(m) ++= top.inputs
       m bfs { _ match {
         case reg: Reg => { 
           connectStallPins(m)
@@ -173,7 +172,7 @@ object DaisyBackend {
     def insertSRAMChain(m: Module) = {
       var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        val data = sram.readAccesses.last // if (Driver.isInlineMem) sram.reads.last else sram.seqreads.last
+        val data = sram.readAccesses.last 
         val addr = data match {
           case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
           case msr: MemSeqRead => msr.addrReg
@@ -256,31 +255,43 @@ object DaisyBackend {
     val res = new StringBuilder
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
-    // Print out parameters
-    res append "HOSTLEN: %d\n".format(top.hostLen)
-    res append "ADDRLEN: %d\n".format(top.addrLen)
-    res append "MEMLEN: %d\n".format(top.memLen)
-    res append "CMDLEN: %d\n".format(top.cmdLen)
-    res append "STEP: %d\n".format(top.STEP.litValue())
-    res append "POKE: %d\n".format(top.POKE.litValue())
-    res append "PEEK: %d\n".format(top.PEEK.litValue())
-    // res append "SNAP: %d\n".format(top.SNAP.litValue())
-    res append "MEM: %d\n".format(top.MEM.litValue())
-
     // Print out the IO mapping for pokes and peeks
-    res append "INPUT:\n"
-    var inputNum = 0
-    for (input <- top.inputs) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + input.name
-      val width = input.needWidth
-      res append "%s %d\n".format(path, width)
+    if (top.dInNum > 0) {
+      res append "DIN:\n"
+      for (in <- top.dIns ; (_, io) <- in.bits.flatten) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+        val width = io.needWidth
+        res append "%s %d\n".format(path, width)
+      }
     }
-    res append "OUTPUT:\n"
-    for (output <- top.outputs) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + output.name
-      val width = output.needWidth
-      res append "%s %d\n".format(path, width)
+
+    if (top.dOutNum > 0) {
+      res append "DOUT:\n"
+      for (in <- top.dOuts ; (_, io) <- in.bits.flatten) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+        val width = io.needWidth
+        res append "%s %d\n".format(path, width)
+      }
     }
+
+    if (top.wInNum > 0) {
+      res append "WIN:\n"
+      for (in <- top.wIns) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
+        val width = in.needWidth
+        res append "%s %d\n".format(path, width)
+      }
+    }
+    
+    if (top.wOutNum > 0) {
+      res append "WOUT:\n"
+      for (out <- top.wOuts) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
+        val width = out.needWidth
+        res append "%s %d\n".format(path, width)
+      }
+    }
+
     try {
       ioFile write res.result
     } finally {
