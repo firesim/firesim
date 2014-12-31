@@ -23,8 +23,11 @@ class Snapshot {
 class DaisyReplay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val basedir = ensureDir(Driver.targetDir)
   val snapfile = c.name + ".snap" 
-  val snaps = ArrayBuffer[Snapshot]()
-  val signalMap = HashMap[String, Node]()
+  private val snaps = ArrayBuffer[Snapshot]()
+  private val mem = HashMap[BigInt, BigInt]()
+  private val signalMap = HashMap[String, Node]()
+
+  object FAILED extends Exception 
 
   def loadSnap(filename: String) {
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
@@ -67,25 +70,32 @@ class DaisyReplay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c,
  
   def read(addr: BigInt, tag: BigInt) { }
 
-  def write(addr: BigInt, data: BigInt) { }
+  def write(addr: BigInt, data: BigInt) { mem(addr) = data }
+
+  def loadMem(mem: List[(BigInt, BigInt)]) = { }
 
   def run = { }
-  
+ 
   Driver.dfs { node =>
     if (node.isInObject) signalMap(dumpName(node)) = node
   }
 
   loadSnap(snapfile)
-  for (snap <- snaps) {
-    for (cmd <- snap.cmds) {
-      cmd match {
-        case Step(n) => step(n)
-        case Poke(node, value, off) => pokeBits(node, value, off)
-        case Expect(node, value) => expect(node, value)
-        case Write(addr, data) => write(addr, data)
-        case Read(addr, tag) => read(addr, tag)
+  try {
+    for (snap <- snaps) {
+      for (cmd <- snap.cmds) {
+        cmd match {
+          case Step(n) => step(n)
+          case Poke(node, value, off) => pokeBits(node, value, off)
+          case Expect(node, value) => expect(node, value)
+          case Read(addr, tag) => read(addr, tag)
+          case Write(addr, data) => write(addr, data)
+        }
       }
+      loadMem(mem.toList)
+      run
     }
-    run
+  } catch {
+    case FAILED =>
   }
 }
