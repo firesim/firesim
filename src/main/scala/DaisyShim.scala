@@ -76,6 +76,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   findIOs(target.io)
 
   val fire = Bool()
+  val fireNext = RegNext(fire)
   val record = RegInit(Bool(false)) // Todo: incorperate this signal to IO recordording
 
   // For memory commands
@@ -149,7 +150,7 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     }
   }
   wDataTrace.io.deq.ready := Bool(false)
- 
+
   (dIns find { wires =>
     val hostNames = io.mem.resp.flatten.unzip._1
     val targetNames = wires.flatten.unzip._1.toSet
@@ -163,8 +164,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       q.valid := memRespQ.io.deq.valid && fire
       memRespQ.io.deq.ready := q.ready && fire
       // Turn off rAddrTrace
-      when(q.valid) {
-        rAddrValid(memRespQ.io.deq.bits.tag) := Bool(false)
+      when(RegEnable(memRespQ.io.deq.valid, fire) && fire) {
+        rAddrValid(RegEnable(memRespQ.io.deq.bits.tag, fire)) := Bool(false)
       }
       dInNum -= 1
       dIns -= q
@@ -253,7 +254,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
 
   val wOutNum = (wOuts foldLeft 0)((res, out) => res + (out.needWidth-1)/hostLen + 1)
   val wOutFFs = Vec.fill(wOutNum) { Reg(UInt()) }
-  val fireNext = RegNext(fire)
   id = 0
   for (out <- wOuts) {
     out match {
