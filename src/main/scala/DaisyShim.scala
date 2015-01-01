@@ -271,12 +271,19 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     id += n
   }
 
-  // Host pins
+  // Host pin connection
   io.host.in.ready  := Bool(false)
   io.host.out.valid := Bool(false)
   io.host.out.bits  := UInt(0)
 
-  // Daisy pins
+  // Memory pin connection
+  io.mem.req_cmd <> memReqCmdQ.io.deq
+  io.mem.req_data <> memReqDataQ.io.deq
+  memRespQ.io.enq.bits := io.mem.resp.bits
+  memRespQ.io.enq.valid := io.mem.resp.valid
+  io.mem.resp.ready := memRespQ.io.enq.ready
+
+  // Daisy pin connection
   val daisy = addDaisyPins(target, daisyLen)
   daisy.stall := !fire 
   daisy.regs.in.bits := UInt(0)
@@ -288,13 +295,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     daisy.sram.out.ready := Bool(false)
     daisy.sram.restart := Bool(false)
   }
-
-  // Memory Pins
-  io.mem.req_cmd <> memReqCmdQ.io.deq
-  io.mem.req_data <> memReqDataQ.io.deq
-  memRespQ.io.enq.bits := io.mem.resp.bits
-  memRespQ.io.enq.valid := io.mem.resp.valid
-  io.mem.resp.ready := memRespQ.io.enq.ready
 
   // Machine states
   val (debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: debug_TRACE :: 
@@ -325,6 +325,8 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val peekd_COUNT :: peekd_DATA :: Nil = Enum(UInt(), 2)
   val peekdState = RegInit(peekd_COUNT)
 
+  val waddrcount = Reg(UInt(width=log2Up(addrLen+1)))
+  val wdatacount = Reg(UInt(width=log2Up(memLen+1)))
   val raddrcount = Reg(UInt())
   val (trace_WCOUNT :: trace_WADDR :: trace_WDATA :: 
        trace_RCOUNT :: trace_RADDR :: trace_RTAG :: Nil) = Enum(UInt(), 6)
@@ -553,28 +555,35 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
     is(debug_TRACE) {
       switch(traceState) {
         is(trace_WCOUNT) {
-          io.host.out.bits := wAddrTrace.io.count
+          io.host.out.bits := wDataTrace.io.count
           io.host.out.valid := Bool(true)
           when(io.host.out.fire()) {
             traceState := trace_WADDR
-            addrcount := UInt((addrLen-1)/hostLen + 1)
-            datacount := UInt((memLen-1)/hostLen + 1)
+            waddrcount := UInt(0)
+            wdatacount := UInt(0)
           }          
         }
         is(trace_WADDR) {
-          io.host.out.bits := wAddrTrace.io.deq.bits.addr
+          val toNext = if (addrLen > hostLen) waddrcount >= UInt(addrLen-hostLen) else Bool(true)
+          io.host.out.bits := wAddrTrace.io.deq.bits.addr >> waddrcount
           io.host.out.valid := wAddrTrace.io.deq.valid
-          wAddrTrace.io.deq.ready := io.host.out.ready
-          when(!io.host.out.valid) {
+          wAddrTrace.io.deq.ready := io.host.out.ready && toNext
+          when(io.host.out.fire()) {
+            waddrcount := Mux(toNext, UInt(0), waddrcount + UInt(hostLen))
+          }.elsewhen(!io.host.out.valid) {
             traceState := trace_WDATA
           }
         }
         is(trace_WDATA) {
-          io.host.out.bits := wDataTrace.io.deq.bits.data
+          val toNext = if (memLen > hostLen) wdatacount >= UInt(memLen-hostLen) else Bool(true)
+          io.host.out.bits := wDataTrace.io.deq.bits.data >> wdatacount
           io.host.out.valid := wDataTrace.io.deq.valid
-          wDataTrace.io.deq.ready := io.host.out.ready
-          when(!io.host.out.valid) {
-            traceState := trace_RCOUNT
+          wDataTrace.io.deq.ready := io.host.out.ready && toNext
+          when(io.host.out.fire()) {
+            wdatacount := Mux(toNext, UInt(0), wdatacount + UInt(hostLen))
+          }.elsewhen(!io.host.out.valid) {
+            traceState := Mux(stepcount.orR, trace_WCOUNT, trace_RCOUNT)
+            debugState := Mux(stepcount.orR, debug_STEP, debug_TRACE)    
           }
         }
         is(trace_RCOUNT) {
@@ -590,11 +599,11 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
         is(trace_RADDR) {
           io.host.out.bits := rAddrTrace(id).addr
           io.host.out.valid := rAddrValid(id)
-          when(io.host.out.fire()) {
-            traceState := trace_RTAG
-          }.elsewhen(!raddrcount.orR) {
+          when(!raddrcount.orR) {
             traceState := trace_WCOUNT
-            debugState := Mux(stepcount.orR, debug_STEP, debug_IDLE)    
+            debugState := debug_IDLE
+          }.elsewhen(io.host.out.fire()) {
+            traceState := trace_RTAG
           }.elsewhen(!io.host.out.valid) {
             raddrcount := raddrcount - UInt(1)
           }
