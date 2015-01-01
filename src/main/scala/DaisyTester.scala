@@ -112,7 +112,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("Poke All")
     // Send POKE command
     stayIdle()
-    poke(DebugCmd.POKE.id)
+    poke(POKE.id)
 
     // Send Values
     for (i <- 0 until wInNum) {
@@ -128,7 +128,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     stayIdle()
     peekMap.clear
     // Send PEEK command
-    poke(DebugCmd.PEEK.id)
+    poke(PEEK.id)
     // Get values
     for (i <- 0 until wOutNum) {
       stayIdle()
@@ -141,14 +141,14 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   def peekTrace {
     if (isTrace) println("Peek Trace")
     stayIdle()
-    poke(DebugCmd.TRACE.id)
+    poke(TRACE.id)
     traceMem
   }
 
   def pokeSteps(n: Int, isRecord: Boolean = true) {
     if (isTrace) println("Poke Steps")
     // Send STEP command
-    poke((n << (cmdLen+1)) | ((if (isRecord) 1 else 0) << cmdLen) | DebugCmd.STEP.id)
+    poke((n << (cmdLen+1)) | ((if (isRecord) 1 else 0) << cmdLen) | STEP.id)
     if (isTrace) println("==========")
   }
 
@@ -171,7 +171,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     snap.result
   }
 
-  def recordIOs {
+  def recordIo {
     // record inputs
     for ((path, ids) <- wInMap) {
       val signal = targetPrefix + (path stripPrefix targetPath) 
@@ -287,7 +287,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def readMem(addr: BigInt) = {
-    poke((0 << cmdLen) | DebugCmd.MEM.id)
+    poke((0 << cmdLen) | MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
       poke(addr >> (hostLen * (i-1)) & mask)
@@ -305,7 +305,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def writeMem(addr: BigInt, data: BigInt) {
     memwrites(addr) = data // Memory trace
-    poke((1 << cmdLen) | DebugCmd.MEM.id)
+    poke((1 << cmdLen) | MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
       poke(addr >> (hostLen * (i-1)) & mask)
@@ -369,14 +369,14 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     for (i <- 0 until wcount) {
       var addr = BigInt(0)
       for (k <- 0 until addrLen by hostLen) {
-        addr = (addr << hostLen) | peek
+        addr |= peek << k
       }
       waddr += addr
     }
     for (i <- 0 until wcount) {
       var data = BigInt(0)
       for (k <- 0 until memLen by hostLen) {
-        data = (data << hostLen) | peek
+        data |= peek << k
       }
       wdata += data
     }
@@ -400,9 +400,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   override def step(n: Int = 1) {
-    if (t > 0) recordIOs
-
     val target = t + n
+    if (t > 0) recordIo
     if (isTrace) println("STEP " + n + " -> " + target)
     if (checkOut) snaps append "%d %d\n".format(SnapCmd.STEP.id, n)
     pokeAll
@@ -444,13 +443,13 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         case _ => {
           val path = targetPath + (tokens.head stripPrefix targetPrefix)
           val width = tokens.last.toInt
+          val n = (width - 1) / hostLen + 1
           val map = iotype match {
             case DIN => dInMap
             case DOUT => dOutMap
             case WIN => wInMap
             case WOUT => wOutMap
           }
-          val n = (width - 1) / hostLen + 1
           map(path) = ArrayBuffer[BigInt]()
           for (i <- 0 until n) {
             val num = iotype match {
