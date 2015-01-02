@@ -31,7 +31,8 @@ object DaisyBackend {
       connectStallSignals,
       addRegChains,
       addSRAMChain,
-      printOutMappings
+      dumpMappings,
+      dumpParams
     )
   } 
 
@@ -249,7 +250,7 @@ object DaisyBackend {
     }
   }
 
-  def printOutMappings(c: Module) {
+  def dumpMappings(c: Module) {
     ChiselError.info("[DaisyBackend] print out chain mappings")
     val prefix = top.name + "." + top.target.name
     val res = new StringBuilder
@@ -362,4 +363,16 @@ object DaisyBackend {
       res.clear
     }
   }
+
+  // Todo: move this path to the ChiselBackend
+  def dumpParams(c: Module) {
+    if (Driver.chiselConfigMode != None && 
+        Driver.chiselConfigMode.get != "instance" &&
+        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
+      val w = Driver.createOutputFile(top.name + ".prm")
+      w.write(Dump.getDump)
+      w.close
+    }
+  }
 }
+

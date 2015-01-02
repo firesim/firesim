@@ -592,7 +592,6 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
           when(io.host.out.fire()) {
             traceState := trace_RADDR
             raddrcount := UInt(tagNum)
-            addrcount := UInt((addrLen-1)/hostLen + 1)
           }
         }
         val id = UInt(tagNum) - raddrcount

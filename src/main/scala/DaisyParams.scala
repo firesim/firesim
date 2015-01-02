@@ -12,36 +12,25 @@ case object TraceLen extends Field[Int]
 
 object daisyParams {
   val hostlen = 32
-  val addrlen = 32
-  val taglen = 5
+  val addrlen = 26
   val memlen = 32
+  val taglen = 5
+  val cmdlen = 4
   val daisylen = 32
-  val cmdlen = 6
   val tracelen = 16  
 
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case HostLen => hostlen
-    case AddrLen => addrlen
-    case TagLen => taglen
-    case MemLen => memlen
+    case HostLen => Dump("HTIF_WIDTH", hostlen)
+    case AddrLen => Dump("MIF_ADDR_BITS", addrlen)
+    case MemLen => Dump("MIF_DATA_BITS", memlen)
+    case TagLen => Dump("MIF_TAG_BITS", taglen)
+    case CmdLen => Dump("CMD_BITS", cmdlen)
     case DaisyLen => daisylen
-    case CmdLen => cmdlen
     case TraceLen => tracelen
   }
 }
 
 import daisyParams._
-
-class DaisyConfig extends ChiselConfig (
-  (pname,site,here) => pname match {
-    case HostLen => hostlen
-    case AddrLen => addrlen
-    case TagLen => taglen
-    case MemLen => memlen
-    case DaisyLen => daisylen
-    case CmdLen => cmdlen
-  }
-)
 
 // Enum type for step response
 object StepResp extends Enumeration {

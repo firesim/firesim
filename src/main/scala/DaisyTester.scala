@@ -23,12 +23,12 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   val targetPrefix = Driver.backend.extractClassName(c.target)
   val basedir = ensureDir(Driver.targetDir)
 
-  val hostLen = c.hostLen
-  val cmdLen = c.cmdLen
-  val addrLen = c.addrLen
-  val memLen = c.memLen
-  val tagLen = c.tagLen
-  val blkLen = memLen / 8
+  var hostLen = -1 
+  var addrLen = -1
+  var memLen = -1 
+  var tagLen = -1
+  var cmdLen = -1 
+  lazy val blkLen = memLen / 8
 
   var dInNum = 0
   var dOutNum = 0
@@ -424,7 +424,25 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     t += n
   }
 
-  def readIoMapFile(filename: String) {
+  def readParams(filename: String) {
+    val ParamRegex = """\(([\w\.]+),(\d+)\)""".r
+    val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
+    for (line <- lines) {
+      line match {
+        case ParamRegex(param, value) => param match {
+          case "HTIF_WIDTH" => hostLen = value.toInt
+          case "MIF_ADDR_BITS" => addrLen = value.toInt
+          case "MIF_DATA_BITS" => memLen = value.toInt
+          case "MIF_TAG_BITS" => tagLen = value.toInt
+          case "CMD_BITS" => cmdLen = value.toInt
+          case _ =>
+        }
+        case _ =>
+      }
+    }
+  }
+
+  def readIoMap(filename: String) {
     object IOType extends Enumeration {
       val DIN, DOUT, WIN, WOUT = Value
     }
@@ -444,26 +462,34 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
           val path = targetPath + (tokens.head stripPrefix targetPrefix)
           val width = tokens.last.toInt
           val n = (width - 1) / hostLen + 1
-          val map = iotype match {
-            case DIN => dInMap
-            case DOUT => dOutMap
-            case WIN => wInMap
-            case WOUT => wOutMap
-          }
-          map(path) = ArrayBuffer[BigInt]()
-          for (i <- 0 until n) {
-            val num = iotype match {
-              case DIN => dInNum
-              case DOUT => dOutNum
-              case WIN => wInNum
-              case WOUT => wOutNum
+          iotype match {
+            case DIN => {
+              dInMap(path) = ArrayBuffer[BigInt]()
+              for (i <- 0 until n) {
+                dInMap(path) += BigInt(dInNum)
+                dInNum += 1
+              }
             }
-            map(path) += BigInt(num)
-            iotype match {
-              case DIN => dInNum += 1
-              case DOUT => dOutNum += 1
-              case WIN => wInNum += 1
-              case WOUT => wOutNum += 1
+            case DOUT => {
+              dOutMap(path) = ArrayBuffer[BigInt]()
+              for (i <- 0 until n) {
+                dOutMap(path) += BigInt(dOutNum)
+                dOutNum += 1
+              }
+            }
+            case WIN => {
+              wInMap(path) = ArrayBuffer[BigInt]()
+              for (i <- 0 until n) {
+                wInMap(path) += BigInt(wInNum)
+                wInNum += 1
+              }
+            }
+            case WOUT => {
+              wOutMap(path) = ArrayBuffer[BigInt]()
+              for (i <- 0 until n) {
+                wOutMap(path) += BigInt(wOutNum)
+                wOutNum += 1
+              }
             }
           }
         }
@@ -471,7 +497,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  def readChainMapFile(filename: String) {
+  def readChainMap(filename: String) {
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
       val tokens = line split " "
@@ -493,7 +519,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   Driver.dfs { node =>
     if (node.isInObject) signalMap(dumpName(node)) = node
   }
-  readIoMapFile(targetPrefix + ".io.map")
-  readChainMapFile(targetPrefix + ".chain.map")
+  readParams(c.name + ".prm")
+  readIoMap(targetPrefix + ".io.map")
+  readChainMap(targetPrefix + ".chain.map")
   snapfilename = targetPrefix + ".snap"
 }
