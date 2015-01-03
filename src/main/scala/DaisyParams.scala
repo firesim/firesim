@@ -9,6 +9,7 @@ case object MemLen extends Field[Int]
 case object DaisyLen extends Field[Int]
 case object CmdLen extends Field[Int]
 case object TraceLen extends Field[Int]
+case object HTIFLen extends Field[Int]
 
 object daisyParams {
   val hostlen = 32
@@ -18,14 +19,16 @@ object daisyParams {
   val cmdlen = 4
   val daisylen = 32
   val tracelen = 16  
+  val htiflen = 16
 
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case HostLen => Dump("HTIF_WIDTH", hostlen)
+    case HostLen => Dump("HOST_LEN", hostlen)
     case AddrLen => Dump("MIF_ADDR_BITS", addrlen)
     case MemLen => Dump("MIF_DATA_BITS", memlen)
     case TagLen => Dump("MIF_TAG_BITS", taglen)
-    case CmdLen => Dump("CMD_BITS", cmdlen)
+    case CmdLen => Dump("CMD_LEN", cmdlen)
     case TraceLen => Dump("TRACE_LEN", tracelen)
+    case HTIFLen => htiflen
     case DaisyLen => daisylen
   }
 }
