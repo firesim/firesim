@@ -4,10 +4,16 @@ import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
 object DaisyShim {
-  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty, hasMem: Boolean = true) = {
+  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty, hasMem: Boolean = true, hasHTIF: Boolean = true) = {
     val params = targetParams alter daisyParams.mask
-    Module(new DaisyShim(c, hasMem))(params)
+    Module(new DaisyShim(c, hasMem, hasHTIF))(params)
   }
+}
+
+class HTIFIO extends Bundle {
+  val htifLen = params(HTIFLen)
+  val in = Decoupled(UInt(width=htifLen)).flip
+  val out = Decoupled(UInt(width=htifLen))
 }
 
 class HostIO extends Bundle {
@@ -45,11 +51,12 @@ class MemIO extends Bundle {
 }
 
 class DaisyShimIO extends Bundle {
+  val htif = new HTIFIO
   val host = new HostIO
   val mem = new MemIO 
 }
 
-class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true) extends Module with DaisyShimParams with DebugCommands {
+class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) extends Module with DaisyShimParams with DebugCommands {
   val io = new DaisyShimIO
   val target = Module(c)
   val qIns = ArrayBuffer[DecoupledIO[Data]]()
@@ -171,6 +178,34 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true) extends Module wit
       memRespQ.io.deq.ready := Bool(true)
     }
   }
+
+  // Find the tqget's HTIF
+  // TODO: it's a hack for referencechip, it shouldn't be exposed though...
+  (target.io match {
+    case b: Bundle => b.elements find { case (name, wires) => {
+      (name == "host") && (io.htif.flatten forall {case (n0, io0) =>
+        wires.flatten exists {case (n1, io1) =>
+          n0 == n1 && io0.needWidth == io1.needWidth
+        }
+      })
+    } }
+    case _ => None
+  }) match {
+    case Some((n, q)) if hasHTIF => {
+       io.htif <> q
+       q match {
+         case b: Bundle => for ((n, io) <- b.elements) {
+           io match {
+             case dio: DecoupledIO[Data] if dio.valid.dir == INPUT => qIns -= dio
+             case dio: DecoupledIO[Data] if dio.valid.dir == OUTPUT => qOuts -= dio
+             case _ =>
+           }
+         }
+         case _ =>
+       }
+    }
+    case _ =>
+  } 
 
   /*** IO Recording ***/
   // For decoupled IOs, insert FIFOs

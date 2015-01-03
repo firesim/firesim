@@ -506,11 +506,11 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     for (line <- lines) {
       line match {
         case ParamRegex(param, value) => param match {
-          case "HTIF_WIDTH" => hostLen = value.toInt
+          case "HOST_LEN" => hostLen = value.toInt
           case "MIF_ADDR_BITS" => addrLen = value.toInt
           case "MIF_DATA_BITS" => memLen = value.toInt
           case "MIF_TAG_BITS" => tagLen = value.toInt
-          case "CMD_BITS" => cmdLen = value.toInt
+          case "CMD_LEN" => cmdLen = value.toInt
           case "TRACE_LEN" => traceLen = value.toInt
           case _ =>
         }
