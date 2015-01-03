@@ -478,7 +478,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (checkOut) snaps append "%d %d\n".format(SnapCmd.STEP.id, n)
     pokeAll
     pokeqAll
-    pokeSteps(n)
+    pokeSteps(n, record)
     var fin = false
     while (!fin) {
       tickMem
