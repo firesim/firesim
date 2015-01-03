@@ -4,9 +4,9 @@ import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
 object DaisyShim {
-  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
+  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty, hasMem: Boolean = true) = {
     val params = targetParams alter daisyParams.mask
-    Module(new DaisyShim(c))(params)
+    Module(new DaisyShim(c, hasMem))(params)
   }
 }
 
@@ -49,17 +49,17 @@ class DaisyShimIO extends Bundle {
   val mem = new MemIO 
 }
 
-class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with DebugCommands {
+class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true) extends Module with DaisyShimParams with DebugCommands {
   val io = new DaisyShimIO
   val target = Module(c)
-  val dIns = ArrayBuffer[DecoupledIO[Data]]()
-  val dOuts = ArrayBuffer[DecoupledIO[Data]]()
+  val qIns = ArrayBuffer[DecoupledIO[Data]]()
+  val qOuts = ArrayBuffer[DecoupledIO[Data]]()
   val wIns = ArrayBuffer[Bits]()
   val wOuts = ArrayBuffer[Bits]()
   def findIOs[T <: Data](io: T, name: String = "") {
     io match {
       case dIO: DecoupledIO[Data] => {
-        if (dIO.valid.dir == INPUT) dIns += dIO else dOuts += dIO
+        if (dIO.valid.dir == INPUT) qIns += dIO else qOuts += dIO
       }
       case b: Bundle => {
         for ((n, elm) <- b.elements) {
@@ -94,17 +94,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
 
   // Find the target's MemIO
   // todo: extend multi mem ports
-  (dOuts find { wires =>
+  (qOuts find { wires =>
     val hostNames = io.mem.req_cmd.flatten.unzip._1
     val targetNames = wires.flatten.unzip._1.toSet
     hostNames forall (targetNames contains _)
   }) match {
-    case None => {
-      memReqCmdQ.io.enq.bits := memReqCmd
-      memReqCmdQ.io.enq.valid := Bool(false)
-      wAddrTrace.io.enq.valid := Bool(false)
-    }
-    case Some(q) => {
+    case Some(q) if hasMem => {
       val tMemReqCmd = new MemReqCmd
       tMemReqCmd := q.bits // to avoid type error......
       memReqCmdQ.io.enq.bits := Mux(fire, tMemReqCmd, memReqCmd)
@@ -120,23 +115,23 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
         // Set memTag's value
         memTag := tMemReqCmd.tag + UInt(1)
       }
-      dOutNum -= 1
-      dOuts -= q
+      qOutNum -= 1
+      qOuts -= q
+    }
+    case _ => {
+      memReqCmdQ.io.enq.bits := memReqCmd
+      memReqCmdQ.io.enq.valid := Bool(false)
+      wAddrTrace.io.enq.valid := Bool(false)
     }
   }
   wAddrTrace.io.deq.ready := Bool(false)
 
-  (dOuts find { wires =>
+  (qOuts find { wires =>
     val hostNames = io.mem.req_data.flatten.unzip._1
     val targetNames = wires.flatten.unzip._1.toSet
     hostNames forall (targetNames contains _)
   }) match {
-    case None => {
-      memReqDataQ.io.enq.bits := memReqData
-      memReqDataQ.io.enq.valid := Bool(false)
-      wDataTrace.io.enq.valid := Bool(false)
-    }
-    case Some(q) => {
+    case Some(q) if hasMem => {
       val tMemReqData = new MemData
       tMemReqData := q.bits // to avoid type error ......!
       memReqDataQ.io.enq.bits := Mux(fire, tMemReqData, memReqData)
@@ -145,21 +140,23 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       // Trace write data
       wDataTrace.io.enq.bits.data := tMemReqData.data
       wDataTrace.io.enq.valid := q.valid && fire
-      dOutNum -= 1
-      dOuts -= q
+      qOutNum -= 1
+      qOuts -= q
+    }
+    case _ => {
+      memReqDataQ.io.enq.bits := memReqData
+      memReqDataQ.io.enq.valid := Bool(false)
+      wDataTrace.io.enq.valid := Bool(false)
     }
   }
   wDataTrace.io.deq.ready := Bool(false)
 
-  (dIns find { wires =>
+  (qIns find { wires =>
     val hostNames = io.mem.resp.flatten.unzip._1
     val targetNames = wires.flatten.unzip._1.toSet
     hostNames forall (targetNames contains _)
   }) match {
-    case None => {
-      memRespQ.io.deq.ready := Bool(true)
-    }
-    case Some(q) => {
+    case Some(q) if hasMem => {
       q.bits := memRespQ.io.deq.bits
       q.valid := memRespQ.io.deq.valid && fire
       memRespQ.io.deq.ready := q.ready && fire
@@ -167,17 +164,20 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       when(RegEnable(memRespQ.io.deq.valid, fire) && fire) {
         rAddrValid(RegEnable(memRespQ.io.deq.bits.tag, fire)) := Bool(false)
       }
-      dInNum -= 1
-      dIns -= q
+      qInNum -= 1
+      qIns -= q
+    }
+    case _ => {
+      memRespQ.io.deq.ready := Bool(true)
     }
   }
 
   /*** IO Recording ***/
   // For decoupled IOs, insert FIFOs
-  var dInNum = 0
-  val dInQs = ArrayBuffer[Queue[UInt]]() 
+  var qInNum = 0
+  val qInQs = ArrayBuffer[Queue[UInt]]() 
   var id = 0
-  for (in <- dIns) {
+  for (in <- qIns) {
     var valid = Bool(true)
     for ((_, io) <- in.bits.flatten) {
       val width = io.needWidth
@@ -193,21 +193,21 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       io := Cat(qs map (_.io.deq.bits))
       valid = valid && (qs.tail foldLeft qs.head.io.deq.valid)(_ && _.io.deq.valid)
       id += n
-      dInNum += n
-      dInQs ++= qs
+      qInNum += n
+      qInQs ++= qs
       qs.clear
     }
     in.valid := fire && valid
   }
-  val dInEnqs = Vec(dInQs map (_.io.enq.clone.flip))
-  dInQs.zipWithIndex foreach { case (q, id) => dInEnqs(id) <> q.io.enq }
-  dInEnqs foreach (_.bits := Bits(0))
-  dInEnqs foreach (_.valid := Bool(false))
+  val qInEnqs = Vec(qInQs map (_.io.enq.clone.flip))
+  qInQs.zipWithIndex foreach { case (q, id) => qInEnqs(id) <> q.io.enq }
+  qInEnqs foreach (_.bits := Bits(0))
+  qInEnqs foreach (_.valid := Bool(false))
 
-  var dOutNum = 0
-  val dOutQs = ArrayBuffer[Queue[UInt]]() 
+  var qOutNum = 0
+  val qOutQs = ArrayBuffer[Queue[UInt]]() 
   id = 0
-  for (out <- dOuts) {
+  for (out <- qOuts) {
     var ready = Bool(true)
     for ((_, io) <- out.bits.flatten) {
       val width = io.needWidth
@@ -223,17 +223,17 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       }
       ready = ready && (qs.tail foldLeft qs.head.io.enq.ready)(_ && _.io.enq.ready)
       id += n
-      dOutNum += n
-      dOutQs ++= qs
+      qOutNum += n
+      qOutQs ++= qs
       qs.clear
     }
     out.ready := fire && ready
   }
-  val dOutDeqs = Vec(dOutQs map (_.io.deq.clone))
-  val dOutCnts = Vec(dOutQs map (_.io.count.clone))
-  dOutQs.zipWithIndex foreach { case (q, id) => q.io.deq <> dOutDeqs(id) }
-  dOutQs.zipWithIndex foreach { case (q, id) => q.io.count <> dOutCnts(id) }
-  dOutDeqs foreach (_.ready := Bool(false))
+  val qOutDeqs = Vec(qOutQs map (_.io.deq.clone))
+  val qOutCnts = Vec(qOutQs map (_.io.count.clone))
+  qOutQs.zipWithIndex foreach { case (q, id) => q.io.deq <> qOutDeqs(id) }
+  qOutQs.zipWithIndex foreach { case (q, id) => q.io.count <> qOutCnts(id) }
+  qOutDeqs foreach (_.ready := Bool(false))
 
   // For wire IOs, insert FFs
   val wInNum = (wIns foldLeft 0)((res, in) => res + (in.needWidth-1)/hostLen + 1)
@@ -298,12 +298,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
 
   // Machine states
   val (debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: debug_TRACE :: 
-       debug_POKE :: debug_PEEK :: debug_POKED :: debug_PEEKD :: debug_MEM :: Nil) = Enum(UInt(), 10)
+       debug_POKE :: debug_PEEK :: debug_POKEQ :: debug_PEEKQ :: debug_MEM :: Nil) = Enum(UInt(), 10)
   val debugState = RegInit(debug_IDLE)
 
   val stepcount = RegInit(UInt(0)) // Step Counter
   // Define the fire signal
-  fire := (dOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
+  fire := (qOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
           wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
           debugState === debug_STEP
 
@@ -316,14 +316,15 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
   val pokecount = Reg(UInt())
   val peekcount = Reg(UInt())
 
-  val pokedlen = Reg(UInt(width=log2Up(traceLen)))
-  val pokedcount = Reg(UInt())
-  val poked_COUNT :: poked_DATA :: Nil = Enum(UInt(), 2)
-  val pokedState = RegInit(poked_COUNT)
+  val pokeqlen = Reg(UInt(width=log2Up(traceLen+1)))
+  val peekqlen = Reg(UInt(width=log2Up(traceLen+1)))
+  val pokeqcount = Reg(UInt())
+  val pokeq_COUNT :: pokeq_DATA :: Nil = Enum(UInt(), 2)
+  val pokeqState = RegInit(pokeq_COUNT)
 
-  val peekdcount = Reg(UInt())
-  val peekd_COUNT :: peekd_DATA :: Nil = Enum(UInt(), 2)
-  val peekdState = RegInit(peekd_COUNT)
+  val peekqcount = Reg(UInt())
+  val peekq_COUNT :: peekq_DATA :: Nil = Enum(UInt(), 2)
+  val peekqState = RegInit(peekq_COUNT)
 
   val waddrcount = Reg(UInt(width=log2Up(addrLen+1)))
   val wdatacount = Reg(UInt(width=log2Up(memLen+1)))
@@ -352,12 +353,12 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
         }.elsewhen(cmd === PEEK) {
           peekcount := UInt(wOutNum)
           debugState := debug_PEEK
-        }.elsewhen(cmd === POKED) {
-          pokedcount := UInt(dInNum)
-          debugState := debug_POKED
-        }.elsewhen(cmd === PEEKD) {
-          pokedcount := UInt(dOutNum)
-          debugState := debug_PEEKD
+        }.elsewhen(cmd === POKEQ) {
+          pokeqcount := UInt(qInNum)
+          debugState := debug_POKEQ
+        }.elsewhen(cmd === PEEKQ) {
+          peekqcount := UInt(qOutNum)
+          debugState := debug_PEEKQ
         }.elsewhen(cmd === TRACE) {
           debugState := debug_TRACE
         }.elsewhen(cmd === MEM) {
@@ -382,11 +383,11 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
               debugState := debug_TRACE 
             } 
           }.otherwise {
-            io.host.out.bits := step_PEEKD
+            io.host.out.bits := step_PEEKQ
             io.host.out.valid := Bool(true)
-            peekdcount := UInt(dOutNum)
+            peekqcount := UInt(qOutNum)
             when(io.host.out.fire()) {
-              debugState := debug_PEEKD
+              debugState := debug_PEEKQ
             }
           }
         }.elsewhen(RegNext(!stepcount.orR)) {
@@ -495,57 +496,59 @@ class DaisyShim[+T <: Module](c: =>T) extends Module with DaisyShimParams with D
       }
     }
 
-    if (dInNum > 0) {
-      is(debug_POKED) {
-        val id = UInt(dInNum) - pokedcount
-        switch(pokedState) {
-          is(poked_COUNT) {
-            io.host.in.ready := pokedcount.orR
+    if (qInNum > 0) {
+      is(debug_POKEQ) {
+        val id = UInt(qInNum) - pokeqcount
+        switch(pokeqState) {
+          is(pokeq_COUNT) {
+            io.host.in.ready := pokeqcount.orR
             when(io.host.in.fire()) {
-              pokedlen := io.host.in.bits
-              pokedcount := pokedcount - UInt(1)
-              pokedState := poked_DATA
+              pokeqlen := io.host.in.bits
+              pokeqState := pokeq_DATA
             }.elsewhen(!io.host.in.ready) {
               debugState := debug_IDLE
             }
           }
-          is(poked_DATA) {
-            dInEnqs(id).bits := io.host.in.bits
-            dInEnqs(id).valid := io.host.in.valid && pokedlen.orR
-            io.host.in.ready := dInEnqs(id).ready && pokedlen.orR
+          is(pokeq_DATA) {
+            qInEnqs(id).bits := io.host.in.bits
+            qInEnqs(id).valid := io.host.in.valid && pokeqlen.orR
+            io.host.in.ready := qInEnqs(id).ready && pokeqlen.orR
             when(io.host.in.fire()) {
-              pokedlen := pokedlen - UInt(1)
+              pokeqlen := pokeqlen - UInt(1)
             }.elsewhen(!io.host.in.ready) {
-              pokedcount := pokedcount - UInt(1)
-              pokedState := poked_COUNT
-           }
+              pokeqcount := pokeqcount - UInt(1)
+              pokeqState := pokeq_COUNT
+            }
           } 
         }
       }
     }
 
-    if (dOutNum > 0) {
+    if (qOutNum > 0) {
       // IO trace stage when any trace Q is full
       // Todo: this will be very slow...
-      is(debug_PEEKD) {
-        val id = UInt(dOutNum) - peekdcount
-        switch(peekdState) {
-          is(peekd_COUNT) {
-            io.host.out.bits := dOutCnts(id)
-            io.host.out.valid := peekdcount.orR
+      is(debug_PEEKQ) {
+        val id = UInt(qOutNum) - peekqcount
+        switch(peekqState) {
+          is(peekq_COUNT) {
+            io.host.out.bits := qOutCnts(id)
+            io.host.out.valid := peekqcount.orR
             when(io.host.out.fire()) {
-              peekdState := peekd_DATA
+              peekqlen := io.host.out.bits
+              peekqState := peekq_DATA
             }.elsewhen(!io.host.out.valid) {
               debugState := Mux(stepcount.orR, debug_STEP, debug_IDLE)
             }
           }
-          is(peekd_DATA) {
-            io.host.out.bits := dOutDeqs(id).bits
-            io.host.out.valid := dOutDeqs(id).valid
-            dOutDeqs(id).ready := io.host.out.ready
-            when(!io.host.out.valid) {
-              peekdcount := peekdcount - UInt(1)
-              peekdState := peekd_COUNT
+          is(peekq_DATA) {
+            io.host.out.bits := qOutDeqs(id).bits
+            io.host.out.valid := qOutDeqs(id).valid && peekqlen.orR
+            qOutDeqs(id).ready := io.host.out.ready && peekqlen.orR
+            when(io.host.out.fire()) {
+              peekqlen := peekqlen - UInt(1)
+            }.elsewhen(!io.host.out.valid) {
+              peekqcount := peekqcount - UInt(1)
+              peekqState := peekq_COUNT
             }
           } 
         }

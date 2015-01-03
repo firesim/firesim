@@ -1,19 +1,19 @@
 package daisy
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => ScalaQueue}
 import scala.io.Source
 
 abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true, checkOut : Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]() 
-  val dInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
-  val dOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
+  val qInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
+  val qOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val wInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val wOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val pokeMap = HashMap[BigInt, BigInt]()
   val peekMap = HashMap[BigInt, BigInt]()
-  val pokedMap = HashMap[BigInt, BigInt]()
-  val peekdMap = HashMap[BigInt, BigInt]()
+  val pokeqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
+  val peekqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
   val signals = ArrayBuffer[String]()
   val widths = ArrayBuffer[Int]()
   val snaps = new StringBuilder
@@ -27,11 +27,12 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   var addrLen = -1
   var memLen = -1 
   var tagLen = -1
-  var cmdLen = -1 
+  var cmdLen = -1
+  var traceLen  = -1 
   lazy val blkLen = memLen / 8
 
-  var dInNum = 0
-  var dOutNum = 0
+  var qInNum = 0
+  var qOutNum = 0
   var wInNum = 0
   var wOutNum = 0
 
@@ -44,8 +45,8 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
       val mask = (BigInt(1) << hostLen) - 1
       for (i <- 0 until ids.size) {
         val shift = hostLen * i
-        val data = (x >> shift) & mask 
-        pokeMap(ids(ids.size-1-i)) = data
+        val value = (x >> shift) & mask 
+        pokeMap(ids(ids.size-1-i)) = value
       }
     } else {
       super.poke(data, x)
@@ -54,16 +55,50 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   override def peek(data: Bits) = {
     if (wOutMap contains dumpName(data)) {
-      var x = BigInt(0)
+      var value = BigInt(0)
       val ids = wOutMap(dumpName(data))
       for (i <- 0 until ids.size) {
-        x = x << hostLen | peekMap(ids(ids.size-1-i))
+        value = value << hostLen | peekMap(ids(ids.size-1-i))
       }
-      if (isTrace) println("* PEEK " + dumpName(data) + " <- " + x + " *")
-      x
+      if (isTrace) println("* PEEK " + dumpName(data) + " <- " + value + " *")
+      value
     } else {
       super.peek(data)
     }
+  }
+
+  def pokeq(data: Bits, x: BigInt) {
+    assert(qInMap contains dumpName(data))
+    val ids = qInMap(dumpName(data))
+    val mask = (BigInt(1) << hostLen) - 1
+    for (i <- 0 until ids.size) {
+      val shift = hostLen * i
+      val value = (x >> shift) & mask
+      assert(pokeqMap contains ids(ids.size-1-i))
+      pokeqMap(ids(ids.size-1-i)) enqueue value
+    }
+  }
+
+  def peekq(data: Bits) = {
+    assert(qOutMap contains dumpName(data))
+    var value = BigInt(0)
+    val ids = qOutMap(dumpName(data))
+    for (i <- 0 until ids.size) {
+      assert(peekqMap contains ids(ids.size-1-i))
+      value = value << hostLen | peekqMap(ids(ids.size-1-i)).dequeue
+    }
+    value
+  }
+
+  def peekqValid(data: Bits) = {
+    assert(qOutMap contains dumpName(data))
+    var valid = true
+    val ids = qOutMap(dumpName(data))
+    for (i <- 0 until ids.size) {
+      assert(peekqMap contains ids(ids.size-1-i))
+      valid &= !peekqMap(ids(ids.size-1-i)).isEmpty
+    }
+    valid
   }
 
   def peek(name: String) = {
@@ -109,7 +144,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   }
 
   def pokeAll {
-    if (isTrace) println("Poke All")
+    if (isTrace) println("POKE ALL")
     // Send POKE command
     stayIdle()
     poke(POKE.id)
@@ -117,14 +152,15 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     // Send Values
     for (i <- 0 until wInNum) {
       stayIdle()
-      poke(pokeMap getOrElse (i, BigInt(0)))
+      assert(pokeMap contains i)
+      poke(pokeMap(i))
     }
     stayIdle()
     if (isTrace) println("==========")
   }
 
   def peekAll {
-    if (isTrace) println("Peek All")
+    if (isTrace) println("PEEK ALL")
     stayIdle()
     peekMap.clear
     // Send PEEK command
@@ -138,11 +174,85 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("==========")
   }
 
+  def pokeqAll {
+    if (isTrace) println("Pokeq All")
+    stayIdle()
+    // Send POKEQ command
+    if (qInNum > 0) poke(POKEQ.id)
+   
+    for (i <- 0 until qInNum) {
+      val count = math.min(pokeqMap(i).size, traceLen)
+      poke(count)
+      for (k <- 0 until count) {
+        poke(pokeqMap(i).dequeue)
+      } 
+    }
+    if (isTrace) println("==========")
+  }
+
+  def peekqAll {
+    if (isTrace) println("Peekq All")
+    stayIdle()
+    // Send PEEKQ command
+    if (qOutNum > 0) poke(PEEKQ.id)
+    traceQout
+    if (isTrace) println("==========")
+  }
+
+  def traceQout = {
+    for (i <- 0 until qOutNum) {
+      val count = peek.toInt
+      for (k <- 0 until count) {
+        peekqMap(i) enqueue peek
+      } 
+    }
+  }
+
   def peekTrace {
     if (isTrace) println("Peek Trace")
     stayIdle()
     poke(TRACE.id)
     traceMem
+  }
+
+  // Memory trace
+  private val memwrites = LinkedHashMap[BigInt, BigInt]()
+  private val memreads = LinkedHashMap[BigInt, BigInt]()
+  def traceMem {
+    val waddr = ArrayBuffer[BigInt]()
+    val wdata = ArrayBuffer[BigInt]()
+    val wcount = peek.toInt
+    for (i <- 0 until wcount) {
+      var addr = BigInt(0)
+      for (k <- 0 until addrLen by hostLen) {
+        addr |= peek << k
+      }
+      waddr += addr
+    }
+    for (i <- 0 until wcount) {
+      var data = BigInt(0)
+      for (k <- 0 until memLen by hostLen) {
+        data |= peek << k
+      }
+      wdata += data
+    }
+    for ((addr, data) <- waddr zip wdata) {
+      memwrites(addr) = data
+    }
+    waddr.clear
+    wdata.clear
+    val rcount = peek.toInt
+    for (i <- 0 until rcount) {
+      var addr = BigInt(0)
+      for (k <- 0 until addrLen by hostLen) {
+        addr = (addr << hostLen) | peek
+      }
+      var tag = BigInt(0)
+      for (k <- 0 until tagLen by hostLen) {
+        tag = (tag << hostLen) | peek
+      }
+      memreads(tag) = addr
+    }
   }
 
   def pokeSteps(n: Int, isRecord: Boolean = true) {
@@ -359,52 +469,15 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  // Memory trace
-  private val memwrites = LinkedHashMap[BigInt, BigInt]()
-  private val memreads = LinkedHashMap[BigInt, BigInt]()
-  def traceMem {
-    val waddr = ArrayBuffer[BigInt]()
-    val wdata = ArrayBuffer[BigInt]()
-    val wcount = peek.toInt
-    for (i <- 0 until wcount) {
-      var addr = BigInt(0)
-      for (k <- 0 until addrLen by hostLen) {
-        addr |= peek << k
-      }
-      waddr += addr
-    }
-    for (i <- 0 until wcount) {
-      var data = BigInt(0)
-      for (k <- 0 until memLen by hostLen) {
-        data |= peek << k
-      }
-      wdata += data
-    }
-    for ((addr, data) <- waddr zip wdata) {
-      memwrites(addr) = data
-    }
-    waddr.clear
-    wdata.clear
-    val rcount = peek.toInt
-    for (i <- 0 until rcount) {
-      var addr = BigInt(0)
-      for (k <- 0 until addrLen by hostLen) {
-        addr = (addr << hostLen) | peek
-      }
-      var tag = BigInt(0)
-      for (k <- 0 until tagLen by hostLen) {
-        tag = (tag << hostLen) | peek
-      }
-      memreads(tag) = addr
-    }
-  }
+  override def step(n: Int = 1) = step(n, true)
 
-  override def step(n: Int = 1) {
+  def step(n: Int, record: Boolean) {
     val target = t + n
-    if (t > 0) recordIo
+    if (record && t > 0) recordIo
     if (isTrace) println("STEP " + n + " -> " + target)
     if (checkOut) snaps append "%d %d\n".format(SnapCmd.STEP.id, n)
     pokeAll
+    pokeqAll
     pokeSteps(n)
     var fin = false
     while (!fin) {
@@ -413,14 +486,17 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
         val resp = peek
         if (resp == StepResp.FIN.id) fin = true
         else if (resp == StepResp.TRACE.id) traceMem
-        else if (resp == StepResp.PEEKD.id) { /* TODO */ } 
+        else if (resp == StepResp.PEEKQ.id) traceQout
       }
     }
-    val snap = readSnap 
+    val snap = if (record) readSnap else ""
     peekAll
-    peekTrace
-    recordSnap(snap)
-    recordMem
+    peekqAll
+    if (record) {
+      peekTrace
+      recordSnap(snap)
+      recordMem
+    }
     t += n
   }
 
@@ -435,6 +511,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
           case "MIF_DATA_BITS" => memLen = value.toInt
           case "MIF_TAG_BITS" => tagLen = value.toInt
           case "CMD_BITS" => cmdLen = value.toInt
+          case "TRACE_LEN" => traceLen = value.toInt
           case _ =>
         }
         case _ =>
@@ -444,18 +521,18 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
 
   def readIoMap(filename: String) {
     object IOType extends Enumeration {
-      val DIN, DOUT, WIN, WOUT = Value
+      val QIN, QOUT, WIN, WOUT = Value
     }
     import IOType._
 
     val filename = targetPrefix + ".io.map"
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
-    var iotype = DIN
+    var iotype = QIN
     for (line <- lines) {
       val tokens = line split " "
       tokens.head match {
-        case "DIN:"  => iotype = DIN
-        case "DOUT:" => iotype = DOUT
+        case "QIN:"  => iotype = QIN
+        case "QOUT:" => iotype = QOUT
         case "WIN:"  => iotype = WIN
         case "WOUT:" => iotype = WOUT
         case _ => {
@@ -463,18 +540,18 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
           val width = tokens.last.toInt
           val n = (width - 1) / hostLen + 1
           iotype match {
-            case DIN => {
-              dInMap(path) = ArrayBuffer[BigInt]()
+            case QIN => {
+              qInMap(path) = ArrayBuffer[BigInt]()
               for (i <- 0 until n) {
-                dInMap(path) += BigInt(dInNum)
-                dInNum += 1
+                qInMap(path) += BigInt(qInNum)
+                qInNum += 1
               }
             }
-            case DOUT => {
-              dOutMap(path) = ArrayBuffer[BigInt]()
+            case QOUT => {
+              qOutMap(path) = ArrayBuffer[BigInt]()
               for (i <- 0 until n) {
-                dOutMap(path) += BigInt(dOutNum)
-                dOutNum += 1
+                qOutMap(path) += BigInt(qOutNum)
+                qOutNum += 1
               }
             }
             case WIN => {
@@ -494,6 +571,16 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
           }
         }
       }
+    }
+    // initialize pokeqMap & peekqMap
+    for (i <- 0 until wInNum) {
+      pokeMap(i) = 0
+    }
+    for (i <- 0 until qInNum) {
+      pokeqMap(i) = ScalaQueue[BigInt]()
+    }
+    for (i <- 0 until qOutNum) {
+      peekqMap(i) = ScalaQueue[BigInt]()
     }
   }
 

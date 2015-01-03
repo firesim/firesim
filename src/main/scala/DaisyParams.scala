@@ -25,8 +25,8 @@ object daisyParams {
     case MemLen => Dump("MIF_DATA_BITS", memlen)
     case TagLen => Dump("MIF_TAG_BITS", taglen)
     case CmdLen => Dump("CMD_BITS", cmdlen)
+    case TraceLen => Dump("TRACE_LEN", tracelen)
     case DaisyLen => daisylen
-    case TraceLen => tracelen
   }
 }
 
@@ -34,7 +34,7 @@ import daisyParams._
 
 // Enum type for step response
 object StepResp extends Enumeration {
-  val FIN, TRACE, PEEKD = Value
+  val FIN, TRACE, PEEKQ = Value
 }
 
 abstract trait DaisyShimParams extends UsesParameters {
@@ -47,12 +47,12 @@ abstract trait DaisyShimParams extends UsesParameters {
   val tagNum = math.pow(2, tagLen).toInt
   val step_FIN   = UInt(StepResp.FIN.id)
   val step_TRACE = UInt(StepResp.TRACE.id)
-  val step_PEEKD = UInt(StepResp.PEEKD.id)
+  val step_PEEKQ = UInt(StepResp.PEEKQ.id)
 }
 
 // Enum type for debug commands
 object DebugCmd extends Enumeration {
-  val STEP, POKE, PEEK, POKED, PEEKD, TRACE, MEM = Value
+  val STEP, POKE, PEEK, POKEQ, PEEKQ, TRACE, MEM = Value
 }
 
 abstract trait DebugCommands extends UsesParameters {
@@ -60,8 +60,8 @@ abstract trait DebugCommands extends UsesParameters {
   val STEP  = UInt(DebugCmd.STEP.id, cmdLen)
   val POKE  = UInt(DebugCmd.POKE.id, cmdLen)
   val PEEK  = UInt(DebugCmd.PEEK.id, cmdLen)
-  val POKED = UInt(DebugCmd.POKED.id, cmdLen)
-  val PEEKD = UInt(DebugCmd.PEEKD.id, cmdLen)
+  val POKEQ = UInt(DebugCmd.POKEQ.id, cmdLen)
+  val PEEKQ = UInt(DebugCmd.PEEKQ.id, cmdLen)
   val TRACE = UInt(DebugCmd.TRACE.id, cmdLen)
   val MEM   = UInt(DebugCmd.MEM.id, cmdLen)
 }

@@ -257,18 +257,18 @@ object DaisyBackend {
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
     // Print out the IO mapping for pokes and peeks
-    if (top.dInNum > 0) {
-      res append "DIN:\n"
-      for (in <- top.dIns ; (_, io) <- in.bits.flatten) {
+    if (top.qInNum > 0) {
+      res append "QIN:\n"
+      for (in <- top.qIns ; (_, io) <- in.bits.flatten) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
         val width = io.needWidth
         res append "%s %d\n".format(path, width)
       }
     }
 
-    if (top.dOutNum > 0) {
-      res append "DOUT:\n"
-      for (in <- top.dOuts ; (_, io) <- in.bits.flatten) {
+    if (top.qOutNum > 0) {
+      res append "QOUT:\n"
+      for (in <- top.qOuts ; (_, io) <- in.bits.flatten) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
         val width = io.needWidth
         res append "%s %d\n".format(path, width)
