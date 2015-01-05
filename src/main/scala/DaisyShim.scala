@@ -192,16 +192,28 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean =
     case _ => None
   }) match {
     case Some((n, q)) if hasHTIF => {
-       io.htif <> q
+       // io.htif <> q
        q match {
-         case b: Bundle => for ((n, io) <- b.elements) {
-           io match {
-             case dio: DecoupledIO[Data] if dio.valid.dir == INPUT => qIns -= dio
-             case dio: DecoupledIO[Data] if dio.valid.dir == OUTPUT => qOuts -= dio
-             case _ =>
+         case b: Bundle => for ((n, i) <- b.elements) {
+           i match {
+             case dio: DecoupledIO[Data] if dio.valid.dir == INPUT => {
+               // host_in
+               dio.bits <> io.htif.in.bits
+               dio.valid := io.htif.in.valid && fire
+               io.htif.in.ready := dio.ready && fire
+               qIns -= dio
+             }
+             case dio: DecoupledIO[Data] if dio.valid.dir == OUTPUT => {
+               // host_out
+               io.htif.out.bits <> dio.bits
+               io.htif.out.valid := dio.valid && fire
+               dio.ready := io.htif.out.ready && fire
+               qOuts -= dio
+             }
+             case _ => // This shouldn't occur
            }
          }
-         case _ =>
+         case _ => 
        }
     }
     case _ =>
