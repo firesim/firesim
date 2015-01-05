@@ -26,7 +26,6 @@ object DaisyBackend {
       initDaisy,
       Driver.backend.findConsumers,
       Driver.backend.inferAll,
-      Driver.backend.removeTypeNodes, 
       Driver.backend.computeMemPorts,
       connectStallSignals,
       addRegChains,
