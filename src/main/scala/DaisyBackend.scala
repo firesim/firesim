@@ -22,11 +22,10 @@ object DaisyBackend {
   def addTransforms(width: Int) {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
-      c => Driver.backend.verifyAllMuxes,
       initDaisy,
-      Driver.backend.findConsumers,
       Driver.backend.inferAll,
       Driver.backend.computeMemPorts,
+      Driver.backend.findConsumers,
       connectStallSignals,
       addRegChains,
       addSRAMChain,
@@ -36,6 +35,7 @@ object DaisyBackend {
   } 
 
   def initDaisy(c: Module) {
+    top.reset setName "reset_top"
     top.name = targetName + "Shim"
     for (m <- targetComps ; if m.name != top.target.name) {
       addDaisyPins(m, daisyLen)
@@ -90,7 +90,8 @@ object DaisyBackend {
     val hasRegChain = HashSet[Module]()
     def insertRegChain(m: Module) = {
       val dataLen = (regs(m) foldLeft 0)(_ + _.needWidth)
-      val regChain = if (!regs(m).isEmpty) Some(m.addModule(new RegChain, {case DataLen => dataLen})) else None
+      val regChain = if (!regs(m).isEmpty) 
+        Some(m.addModule(new RegChain(top.reset), {case DataLen => dataLen})) else None
       regChain match {
         case None =>
         case Some(chain) => {
@@ -162,7 +163,7 @@ object DaisyBackend {
     ChiselError.info("[DaisyBackend] add sram chains")
 
     def connectSRAMRestarts(m: Module) {
-      if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
+      if (m.name != top.target.name && daisyPins(m).sram.restart.inputs.isEmpty) {
         connectSRAMRestarts(m.parent)
         daisyPins(m).sram.restart := daisyPins(m.parent).sram.restart
       }
@@ -178,7 +179,7 @@ object DaisyBackend {
           case msr: MemSeqRead => msr.addrReg
         }
         val dataLen = sram.needWidth
-        val chain = m.addModule(new SRAMChain, {
+        val chain = m.addModule(new SRAMChain(top.reset), {
           case DataLen => dataLen 
           case SRAMSize => sram.size})
         chain.io.stall := daisyPins(m).stall

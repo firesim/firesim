@@ -96,7 +96,7 @@ class RegChainIO extends Bundle {
   val dataIo = new DataIO
 }
 
-class RegChain extends Module with DaisyChainParams {
+class RegChain(reset: Bool = null) extends Module(_reset = reset) with DaisyChainParams {
   val io = new RegChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new RegChainControl)
@@ -172,7 +172,7 @@ class SRAMChainIO extends RegChainIO {
   val addrIo = new AddrIO
 }
 
-class SRAMChain extends Module with DaisyChainParams {
+class SRAMChain(reset: Bool = null)  extends Module(_reset = reset) with DaisyChainParams {
   val io = new SRAMChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new SRAMChainControl)

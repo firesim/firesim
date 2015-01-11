@@ -113,8 +113,8 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean =
       memReqCmdQ.io.enq.valid := q.valid && fire
       q.ready := memReqCmdQ.io.enq.ready && fire
       // Trace write addr
-      wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
-      wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
+      // wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
+      // wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
       when(!tMemReqCmd.rw && memReqCmdQ.io.enq.valid) {
         // Turn on rAddrTrace
         rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
@@ -145,8 +145,8 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean =
       memReqDataQ.io.enq.valid := q.valid && fire
       q.ready := memReqDataQ.io.enq.ready && fire
       // Trace write data
-      wDataTrace.io.enq.bits.data := tMemReqData.data
-      wDataTrace.io.enq.valid := q.valid && fire
+      // wDataTrace.io.enq.bits.data := tMemReqData.data
+      // wDataTrace.io.enq.valid := q.valid && fire
       qOutNum -= 1
       qOuts -= q
     }
@@ -351,7 +351,7 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean =
   val stepcount = RegInit(UInt(0)) // Step Counter
   // Define the fire signal
   fire := (qOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
-          wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
+          // wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
           debugState === debug_STEP
 
   val snapbuf   = Reg(UInt(width=hostLen+daisyLen))
