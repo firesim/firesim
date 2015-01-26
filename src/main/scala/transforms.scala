@@ -37,7 +37,7 @@ object transforms {
   def initDaisy(c: Module) {
     Driver.implicitReset setName "reset_top"
     top.reset setName "reset_top"
-    top.name = targetName + "Shim"
+    top.name = targetName + "Strober"
     for (m <- targetComps ; if m.name != top.target.name) {
       addDaisyPins(m, daisyLen)
     }
