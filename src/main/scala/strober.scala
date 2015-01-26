@@ -1,12 +1,12 @@
-package daisy
+package strober
 
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
-object DaisyShim {
+object Strober {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty, hasMem: Boolean = true, hasHTIF: Boolean = true) = {
-    val params = targetParams alter daisyParams.mask
-    Module(new DaisyShim(c, hasMem, hasHTIF))(params)
+    val params = targetParams alter StroberParams.mask
+    Module(new Strober(c, hasMem, hasHTIF))(params)
   }
 }
 
@@ -50,14 +50,14 @@ class MemIO extends Bundle {
   val resp     = Decoupled(new MemResp).flip
 }
 
-class DaisyShimIO extends Bundle {
+class StroberIO extends Bundle {
   val htif = new HTIFIO
   val host = new HostIO
   val mem = new MemIO 
 }
 
-class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) extends Module with DaisyShimParams with DebugCommands {
-  val io = new DaisyShimIO
+class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) extends Module with StroberParams with Commands {
+  val io = new StroberIO
   val target = Module(c)
   val qIns = ArrayBuffer[DecoupledIO[Data]]()
   val qOuts = ArrayBuffer[DecoupledIO[Data]]()
@@ -718,5 +718,5 @@ class DaisyShim[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean =
   }
 
   // add custom transforms for daisy chains
-  DaisyBackend.addTransforms(daisyLen)
+  transforms.addTransforms(daisyLen)
 }

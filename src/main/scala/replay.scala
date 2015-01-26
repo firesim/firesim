@@ -1,4 +1,4 @@
-package daisy
+package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
@@ -20,7 +20,7 @@ class Snapshot {
   val cmds = ArrayBuffer[ReplayCmd]()
 }
 
-class DaisyReplay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
+class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val basedir = ensureDir(Driver.targetDir)
   val snapfile = c.name + ".snap" 
   private val snaps = ArrayBuffer[Snapshot]()

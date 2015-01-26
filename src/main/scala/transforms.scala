@@ -1,14 +1,14 @@
-package daisy
+package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
 import addDaisyPins._
 
-object DaisyBackend { 
+object transforms { 
   val regs = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val sramAddrs = HashMap[Mem[_], Reg]()
-  lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
+  lazy val top = Driver.topComponent.asInstanceOf[Strober[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   lazy val (targetComps, targetCompsRev) = {
     def collect(c: Module): Vector[Module] = 
@@ -45,7 +45,7 @@ object DaisyBackend {
 
   // Connect the stall signal to the register and memory writes for freezing
   def connectStallSignals(c: Module) {
-    ChiselError.info("[DaisyBackend] connect stall signals")
+    ChiselError.info("[transforms] connect stall signals")
 
     def connectStallPins(m: Module) {
       if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
@@ -86,7 +86,7 @@ object DaisyBackend {
   }
 
   def addRegChains(c: Module) {
-    ChiselError.info("[DaisyBackend] add reg chains")
+    ChiselError.info("[transforms] add reg chains")
 
     val hasRegChain = HashSet[Module]()
     def insertRegChain(m: Module) = {
@@ -161,7 +161,7 @@ object DaisyBackend {
   } 
 
   def addSRAMChain(c: Module) {
-    ChiselError.info("[DaisyBackend] add sram chains")
+    ChiselError.info("[transforms] add sram chains")
 
     def connectSRAMRestarts(m: Module) {
       if (m.name != top.target.name && daisyPins(m).sram.restart.inputs.isEmpty) {
@@ -252,7 +252,7 @@ object DaisyBackend {
   }
 
   def dumpMappings(c: Module) {
-    ChiselError.info("[DaisyBackend] print out chain mappings")
+    ChiselError.info("[transforms] print out chain mappings")
     val prefix = top.name + "." + top.target.name
     val res = new StringBuilder
 
