@@ -1,10 +1,10 @@
-package daisy
+package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => ScalaQueue}
 import scala.io.Source
 
-abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = true, checkOut : Boolean = true) extends Tester(c, isTrace) {
+abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = true, checkOut : Boolean = true) extends Tester(c, isTrace) {
   val signalMap = HashMap[String, Node]() 
   val qInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val qOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
@@ -36,7 +36,7 @@ abstract class DaisyTester[+T <: DaisyShim[Module]](c: T, isTrace: Boolean = tru
   var wInNum = 0
   var wOutNum = 0
 
-  import DebugCmd._
+  import Cmd._
 
   override def poke(data: Bits, x: BigInt) {
     if (wInMap contains dumpName(data)) {

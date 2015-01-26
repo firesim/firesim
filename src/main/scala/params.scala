@@ -1,4 +1,4 @@
-package daisy
+package strober
 
 import Chisel._
 
@@ -11,7 +11,7 @@ case object CmdLen extends Field[Int]
 case object TraceLen extends Field[Int]
 case object HTIFLen extends Field[Int]
 
-object daisyParams {
+object StroberParams {
   val hostlen = 32
   val addrlen = 26
   val memlen = 32
@@ -32,14 +32,14 @@ object daisyParams {
   }
 }
 
-import daisyParams._
-
 // Enum type for step response
 object StepResp extends Enumeration {
   val FIN, TRACE, PEEKQ = Value
 }
 
-abstract trait DaisyShimParams extends UsesParameters {
+// import daisyParams._
+
+abstract trait StroberParams extends UsesParameters {
   val hostLen = params(HostLen)
   val addrLen = params(AddrLen)
   val tagLen  = params(TagLen)
@@ -53,18 +53,18 @@ abstract trait DaisyShimParams extends UsesParameters {
 }
 
 // Enum type for debug commands
-object DebugCmd extends Enumeration {
+object Cmd extends Enumeration {
   val STEP, POKE, PEEK, POKEQ, PEEKQ, TRACE, MEM = Value
 }
 
-abstract trait DebugCommands extends UsesParameters {
+abstract trait Commands extends UsesParameters {
   val cmdLen = params(CmdLen)
-  val STEP  = UInt(DebugCmd.STEP.id, cmdLen)
-  val POKE  = UInt(DebugCmd.POKE.id, cmdLen)
-  val PEEK  = UInt(DebugCmd.PEEK.id, cmdLen)
-  val POKEQ = UInt(DebugCmd.POKEQ.id, cmdLen)
-  val PEEKQ = UInt(DebugCmd.PEEKQ.id, cmdLen)
-  val TRACE = UInt(DebugCmd.TRACE.id, cmdLen)
-  val MEM   = UInt(DebugCmd.MEM.id, cmdLen)
+  val STEP  = UInt(Cmd.STEP.id, cmdLen)
+  val POKE  = UInt(Cmd.POKE.id, cmdLen)
+  val PEEK  = UInt(Cmd.PEEK.id, cmdLen)
+  val POKEQ = UInt(Cmd.POKEQ.id, cmdLen)
+  val PEEKQ = UInt(Cmd.PEEKQ.id, cmdLen)
+  val TRACE = UInt(Cmd.TRACE.id, cmdLen)
+  val MEM   = UInt(Cmd.MEM.id, cmdLen)
 }
 
