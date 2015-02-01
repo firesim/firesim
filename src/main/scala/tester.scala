@@ -4,8 +4,7 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => ScalaQueue}
 import scala.io.Source
 
-abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = true, checkOut : Boolean = true) extends Tester(c, isTrace) {
-  val signalMap = HashMap[String, Node]() 
+abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = true, checkSample : Boolean = true) extends Tester(c, isTrace) {
   val qInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val qOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val wInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
@@ -14,21 +13,17 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   val peekMap = HashMap[BigInt, BigInt]()
   val pokeqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
   val peekqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
-  val signals = ArrayBuffer[String]()
-  val widths = ArrayBuffer[Int]()
-  val snaps = new StringBuilder
-  var snapfilename = ""
 
   val targetPath = c.target.getPathName(".")
   val targetPrefix = Driver.backend.extractClassName(c.target)
   val basedir = ensureDir(Driver.targetDir)
 
-  var hostLen = -1 
-  var addrLen = -1
-  var memLen = -1 
-  var tagLen = -1
-  var cmdLen = -1
-  var traceLen  = -1 
+  lazy val hostLen = c.hostLen
+  lazy val addrLen = c.addrLen
+  lazy val tagLen = c.tagLen
+  lazy val memLen = c.memLen
+  lazy val cmdLen = c.cmdLen
+  lazy val traceLen  = c.traceLen
   lazy val blkLen = memLen / 8
 
   var qInNum = 0
@@ -281,59 +276,20 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     snap.result
   }
 
-  def recordIo {
-    // record inputs
-    for ((path, ids) <- wInMap) {
-      val signal = targetPrefix + (path stripPrefix targetPath) 
-      val data = (ids foldLeft BigInt(0))(
-        (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
-      snaps append "%d %s %x\n".format(SnapCmd.POKE.id, signal, data)
-    }
-    // record outputs
-    if (checkOut) {
-      for ((path, ids) <- wOutMap) {
-        val signal = targetPrefix + (path stripPrefix targetPath) 
-        val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
-        snaps append "%d %s %x\n".format(SnapCmd.EXPECT.id, signal, data)
+  def verifySnap(pokes: Vector[SampleInst]) {
+    println("Verify Snapshot")
+    val MemRegex = """([\w\.]+)\[(\d+)\]""".r
+    for (poke <- pokes) {
+      poke match {
+        case Poke(signal, value, off) => {
+          val path = targetPath + (signal stripPrefix targetPrefix)
+          val peekValue = if (off == -1) peek(path) else peek(path, off)
+          expect(value == peekValue, "EXPECT %s <- %d == %d".format(signal, peekValue, value))
+        }
+        case _ => // cannnot happen!
       }
     }
-    snaps append "%d\n".format(SnapCmd.FIN.id) // indicate the end of one snapshot
-  }
-
-  def recordSnap(snap: String) {
-    // write registers & srams
-    val MemRegex = """([\w\.]+)\[(\d+)\]""".r
-    var start = 0
-    for ((signal, i) <- signals.zipWithIndex) {
-      val width = widths(i)
-      if (signal != "null") {
-        val path = targetPath + (signal stripPrefix targetPrefix)
-        val value = path match {
-          case MemRegex(name, idx) =>
-            peek(name, idx.toInt)
-          case _ =>
-            peek(path)
-        }
-        val end = math.min(start + width, snap.length)
-        val fromSnap = snap.substring(start, end)
-        val fromSignal = intToBin(value, width) 
-        expect(fromSnap == fromSignal, "Snapshot %s(%s?=%s)".format(signal, fromSnap, fromSignal)) 
-        snaps append "%d %s %x\n".format(SnapCmd.POKE.id, signal, value)
-      } 
-      start += width
-    }
-  }
-  
-  def recordMem { 
-    // Mem Writes
-    for ((addr, data) <- memwrites) {
-      snaps append "%d %x %08x\n".format(SnapCmd.WRITE.id, addr, data) 
-    } 
-    for ((tag, addr) <- memreads) {
-      snaps append "%d %x %x\n".format(SnapCmd.READ.id, addr, tag)
-    }
-    memwrites.clear
-    memreads.clear
+    println("===============")
   }
 
   // Emulate AXI Slave
@@ -469,16 +425,31 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  override def step(n: Int = 1) = step(n, true)
+  override def step(n: Int) = step(n, true)
 
   def step(n: Int, record: Boolean) {
-    val target = t + n
-    if (record && t > 0) recordIo
-    if (isTrace) println("STEP " + n + " -> " + target)
-    if (checkOut) snaps append "%d %d\n".format(SnapCmd.STEP.id, n)
+    if (record && t > 0) {
+      // Record inputs
+      for ((path, ids) <- wInMap) {
+        val signal = targetPrefix + (path stripPrefix targetPath) 
+        val data = (ids foldLeft BigInt(0))(
+          (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
+        Sample(Poke(signal, data))
+      }
+      // Record outputs
+      if (checkSample) {
+        for ((path, ids) <- wOutMap) {
+          val signal = targetPrefix + (path stripPrefix targetPath) 
+          val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
+          Sample(Expect(signal, data)) 
+        }
+        Sample(Step(n))
+      }
+    }
     pokeAll
     pokeqAll
     pokeSteps(n, record)
+    if (isTrace) println("STEP " + n + " -> " + t + n)
     var fin = false
     while (!fin) {
       tickMem
@@ -489,34 +460,21 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
         else if (resp == StepResp.PEEKQ.id) traceQout
       }
     }
-    val snap = if (record) readSnap else ""
+    if (record) {
+      // record snaps
+      verifySnap(Sample(readSnap).toVector)
+      // record mems
+      peekTrace
+      for ((addr, data) <- memwrites) 
+        Sample(Write(addr, data))
+      for ((tag, addr) <- memreads)
+        Sample(Read(addr, tag))
+      memwrites.clear
+      memreads.clear
+    }
     peekAll
     peekqAll
-    if (record) {
-      peekTrace
-      recordSnap(snap)
-      recordMem
-    }
     t += n
-  }
-
-  def readParams(filename: String) {
-    val ParamRegex = """\(([\w\.]+),(\d+)\)""".r
-    val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
-    for (line <- lines) {
-      line match {
-        case ParamRegex(param, value) => param match {
-          case "HOST_LEN" => hostLen = value.toInt
-          case "MIF_ADDR_BITS" => addrLen = value.toInt
-          case "MIF_DATA_BITS" => memLen = value.toInt
-          case "MIF_TAG_BITS" => tagLen = value.toInt
-          case "CMD_LEN" => cmdLen = value.toInt
-          case "TRACE_LEN" => traceLen = value.toInt
-          case _ =>
-        }
-        case _ =>
-      }
-    }
   }
 
   def readIoMap(filename: String) {
@@ -588,26 +546,21 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
       val tokens = line split " "
-      signals += tokens.head
-      widths += tokens.last.toInt
+      Sample.addMapping(tokens.head, tokens.last.toInt)
     }
   }
  
   override def finish = {
-    val snapfile = createOutputFile(snapfilename)
+    val filename = targetPrefix + ".sample"
+    val file = createOutputFile(filename)
     try {
-      snapfile write snaps.result
+      file write Sample.dump
     } finally {
-      snapfile.close
+      file.close
     }
     super.finish
   }
 
-  Driver.dfs { node =>
-    if (node.isInObject) signalMap(dumpName(node)) = node
-  }
-  readParams(c.name + ".prm")
   readIoMap(targetPrefix + ".io.map")
   readChainMap(targetPrefix + ".chain.map")
-  snapfilename = targetPrefix + ".snap"
 }
