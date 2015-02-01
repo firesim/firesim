@@ -3,7 +3,7 @@ package strober
 import scala.collection.mutable.ArrayBuffer 
 
 // Enum type for replay commands
-object ReplayCmd extends Enumeration {
+object SampleCmd extends Enumeration {
   val FIN, STEP, POKE, EXPECT, WRITE, READ = Value
 }
 
@@ -57,21 +57,21 @@ object Sample {
         cmd match {
           case Poke(node, value, off) => 
             if (off == -1) {
-              res append "%d %s %x\n".format(ReplayCmd.POKE.id, node, value)
+              res append "%d %s %x\n".format(SampleCmd.POKE.id, node, value)
             } else {
-              res append "%d %s[%d] %x\n".format(ReplayCmd.POKE.id, node, off, value)
+              res append "%d %s[%d] %x\n".format(SampleCmd.POKE.id, node, off, value)
             }
           case Expect(node, value) =>
-            res append "%d %s %x\n".format(ReplayCmd.EXPECT.id, node, value)
+            res append "%d %s %x\n".format(SampleCmd.EXPECT.id, node, value)
           case Step(n) =>
-            res append "%d %d\n".format(ReplayCmd.STEP.id, n)
+            res append "%d %d\n".format(SampleCmd.STEP.id, n)
           case Write(addr, data) =>
-            res append "%d %x %08x\n".format(ReplayCmd.WRITE.id, addr, data)
+            res append "%d %x %08x\n".format(SampleCmd.WRITE.id, addr, data)
           case Read(addr, tag) =>
-            res append "%d %x %x\n".format(ReplayCmd.READ.id, addr, tag)
+            res append "%d %x %x\n".format(SampleCmd.READ.id, addr, tag)
         }
       }
-      res append "%d\n".format(ReplayCmd.FIN.id) 
+      res append "%d\n".format(SampleCmd.FIN.id) 
     }
     res.result
   }
@@ -82,10 +82,10 @@ object Sample {
     for (line <- lines) {
       val tokens = line split " "
       val cmd = tokens.head.toInt
-      if (cmd == ReplayCmd.STEP.id) {
+      if (cmd == SampleCmd.STEP.id) {
         val n = tokens.last.toInt
         sample.cmds += Step(n)
-      } else if (cmd == ReplayCmd.POKE.id) {
+      } else if (cmd == SampleCmd.POKE.id) {
         val name = tokens.tail.head
         val value = BigInt(tokens.last, 16)
         name match {
@@ -94,19 +94,19 @@ object Sample {
           case _ =>
             sample.cmds += Poke(name, value)
         }
-      } else if (cmd == ReplayCmd.EXPECT.id) {
+      } else if (cmd == SampleCmd.EXPECT.id) {
         val name  = tokens.tail.head
         val value = BigInt(tokens.last, 16)
         sample.cmds += Expect(name, value)
-      } else if (cmd == ReplayCmd.WRITE.id) {
+      } else if (cmd == SampleCmd.WRITE.id) {
         val addr = BigInt(tokens.tail.head, 16)
         val data = BigInt(tokens.last, 16)
         sample.cmds += Write(addr, data)
-      } else if (cmd == ReplayCmd.READ.id) {
+      } else if (cmd == SampleCmd.READ.id) {
         val addr = BigInt(tokens.tail.head, 16)
         val tag  = BigInt(tokens.last, 16)
         sample.cmds += Read(addr, tag)
-      } else if (cmd == ReplayCmd.FIN.id) {
+      } else if (cmd == SampleCmd.FIN.id) {
         samples += sample
         sample = new Sample
       }
