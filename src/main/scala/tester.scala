@@ -277,7 +277,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   def verifySnap(pokes: Vector[SampleInst]) {
-    println("Verify Snapshot")
+    if (isTrace) println("Verify Snapshot")
     val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     for (poke <- pokes) {
       poke match {
@@ -289,7 +289,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
         case _ => // cannnot happen!
       }
     }
-    println("===============")
+    if (isTrace) println("===============")
   }
 
   // Emulate AXI Slave
