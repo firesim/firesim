@@ -7,6 +7,7 @@ import scala.io.Source
 class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   val basedir = ensureDir(Driver.targetDir)
   val samplefile = c.name + ".sample" 
+  lazy val samples = Sample.load(basedir + "/" + samplefile)
   private val mem = HashMap[BigInt, BigInt]()
   private val signalMap = HashMap[String, Node]()
 
@@ -23,17 +24,19 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
   Driver.dfs { node =>
     if (node.isInObject) signalMap(dumpName(node)) = node
   }
-  Sample.load(basedir + "/" + samplefile)
   try {
-    for (sample <- Sample.samples) {
+    for (sample <- samples) {
       for (cmd <- sample.cmds) {
         cmd match {
           case Step(n) => step(n)
           case Poke(node, value, off) => pokeBits(signalMap(node), value, off)
           case Expect(node, value) => expect(signalMap(node).toBits, value)
           case Read(addr, tag) => read(addr, tag)
-          case Write(addr, data) => write(addr, data)
+          // case Write(addr, data) => write(addr, data)
         }
+      }
+      for ((addr, data) <- sample.mem) {
+        write(addr, data)
       }
       loadMem(mem.toList)
       run
