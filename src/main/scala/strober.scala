@@ -113,8 +113,8 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       memReqCmdQ.io.enq.valid := q.valid && fire
       q.ready := memReqCmdQ.io.enq.ready && fire
       // Trace write addr
-      // wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
-      // wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
+      wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
+      wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
       when(!tMemReqCmd.rw && memReqCmdQ.io.enq.valid) {
         // Turn on rAddrTrace
         rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
@@ -145,8 +145,8 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       memReqDataQ.io.enq.valid := q.valid && fire
       q.ready := memReqDataQ.io.enq.ready && fire
       // Trace write data
-      // wDataTrace.io.enq.bits.data := tMemReqData.data
-      // wDataTrace.io.enq.valid := q.valid && fire
+      wDataTrace.io.enq.bits.data := tMemReqData.data
+      wDataTrace.io.enq.valid := q.valid && fire
       qOutNum -= 1
       qOuts -= q
     }
