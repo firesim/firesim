@@ -32,9 +32,9 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   var wOutNum = 0
 
   val samples = ArrayBuffer[Sample]()
-  val sortedSamples = ArrayBuffer[Sample]()
   var sampleNum = 20
   var stepSize = 1
+  var prefix = ""
 
   import Cmd._
 
@@ -271,7 +271,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   def readSnap = {
-    if (isTrace) println("SNAPSHOTTING")
+    if (isTrace) println("SNAPSHOT!")
     val snap = new StringBuilder
     var offset = 0
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
@@ -378,7 +378,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
-    memwrites(addr) = data // Memory trace
+    // memwrites(addr) = data // Memory trace, deprecated
     poke((1 << cmdLen) | MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
@@ -611,7 +611,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
  
   override def finish = {
-    val filename = targetPrefix + ".sample"
+    val filename = targetPrefix + prefix + ".sample"
     val file = createOutputFile(filename)
     try {
       file write Sample.dump(samples.toList)
