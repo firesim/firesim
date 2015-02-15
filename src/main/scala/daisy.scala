@@ -1,6 +1,35 @@
-package daisy
+package strober
 
 import Chisel._
+import scala.collection.mutable.HashMap
+
+// Declare daisy pins
+class DaisyData(daisywidth: Int) extends Bundle {
+  val in = Decoupled(UInt(width=daisywidth)).flip
+  val out = Decoupled(UInt(width=daisywidth))
+}
+
+class RegData(daisywidth: Int) extends DaisyData(daisywidth) 
+class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
+  val restart = Bool(INPUT)
+}
+class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
+
+class DaisyPins(daisywidth: Int) extends Bundle {
+  val stall = Bool(INPUT)
+  val regs = new RegData(daisywidth)
+  val sram = new SRAMData(daisywidth)
+  val cntr = new CntrData(daisywidth)
+}
+
+object addDaisyPins {
+  val daisyPins = HashMap[Module, DaisyPins]()
+  def apply(c: Module, daisywidth: Int) = {
+    val daisyPin = c.addPin(new DaisyPins(daisywidth), "daisy_pins")
+    daisyPins(c) = daisyPin
+    daisyPin
+  }
+}
 
 case object DataLen extends Field[Int]
 case object SRAMSize extends Field[Int]
@@ -96,7 +125,7 @@ class RegChainIO extends Bundle {
   val dataIo = new DataIO
 }
 
-class RegChain extends Module with DaisyChainParams {
+class RegChain(reset: Bool = null) extends Module(_reset = reset) with DaisyChainParams {
   val io = new RegChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new RegChainControl)
@@ -172,7 +201,7 @@ class SRAMChainIO extends RegChainIO {
   val addrIo = new AddrIO
 }
 
-class SRAMChain extends Module with DaisyChainParams {
+class SRAMChain(reset: Bool = null)  extends Module(_reset = reset) with DaisyChainParams {
   val io = new SRAMChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new SRAMChainControl)

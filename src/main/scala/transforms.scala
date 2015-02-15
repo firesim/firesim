@@ -1,14 +1,14 @@
-package daisy
+package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
 import addDaisyPins._
 
-object DaisyBackend { 
+object transforms { 
   val regs = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val sramAddrs = HashMap[Mem[_], Reg]()
-  lazy val top = Driver.topComponent.asInstanceOf[DaisyShim[Module]]
+  lazy val top = Driver.topComponent.asInstanceOf[Strober[Module]]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   lazy val (targetComps, targetCompsRev) = {
     def collect(c: Module): Vector[Module] = 
@@ -23,19 +23,21 @@ object DaisyBackend {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
       initDaisy,
-      Driver.backend.findConsumers,
       Driver.backend.inferAll,
-      Driver.backend.removeTypeNodes, 
       Driver.backend.computeMemPorts,
+      Driver.backend.findConsumers,
       connectStallSignals,
       addRegChains,
       addSRAMChain,
-      printOutMappings
+      dumpMappings,
+      dumpParams
     )
   } 
 
   def initDaisy(c: Module) {
-    top.name = targetName + "Shim"
+    Driver.implicitReset setName "reset_top"
+    top.reset setName "reset_top"
+    top.name = targetName + "Strober"
     for (m <- targetComps ; if m.name != top.target.name) {
       addDaisyPins(m, daisyLen)
     }
@@ -43,7 +45,7 @@ object DaisyBackend {
 
   // Connect the stall signal to the register and memory writes for freezing
   def connectStallSignals(c: Module) {
-    ChiselError.info("[DaisyBackend] connect stall signals")
+    ChiselError.info("[transforms] connect stall signals")
 
     def connectStallPins(m: Module) {
       if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
@@ -56,8 +58,6 @@ object DaisyBackend {
       regs(m) = ArrayBuffer[Node]()
       srams(m) = ArrayBuffer[Mem[_]]()
       connectStallPins(m)
-      // Add target's inputs
-      // if (m.name == top.target.name) regs(m) ++= top.inputs
       m bfs { _ match {
         case reg: Reg => { 
           connectStallPins(m)
@@ -86,12 +86,13 @@ object DaisyBackend {
   }
 
   def addRegChains(c: Module) {
-    ChiselError.info("[DaisyBackend] add reg chains")
+    ChiselError.info("[transforms] add reg chains")
 
     val hasRegChain = HashSet[Module]()
     def insertRegChain(m: Module) = {
       val dataLen = (regs(m) foldLeft 0)(_ + _.needWidth)
-      val regChain = if (!regs(m).isEmpty) Some(m.addModule(new RegChain, {case DataLen => dataLen})) else None
+      val regChain = if (!regs(m).isEmpty) 
+        Some(m.addModule(new RegChain(top.reset), {case DataLen => dataLen})) else None
       regChain match {
         case None =>
         case Some(chain) => {
@@ -160,10 +161,10 @@ object DaisyBackend {
   } 
 
   def addSRAMChain(c: Module) {
-    ChiselError.info("[DaisyBackend] add sram chains")
+    ChiselError.info("[transforms] add sram chains")
 
     def connectSRAMRestarts(m: Module) {
-      if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
+      if (m.name != top.target.name && daisyPins(m).sram.restart.inputs.isEmpty) {
         connectSRAMRestarts(m.parent)
         daisyPins(m).sram.restart := daisyPins(m.parent).sram.restart
       }
@@ -173,13 +174,13 @@ object DaisyBackend {
     def insertSRAMChain(m: Module) = {
       var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        val data = sram.readAccesses.last // if (Driver.isInlineMem) sram.reads.last else sram.seqreads.last
+        val data = sram.readAccesses.last 
         val addr = data match {
           case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
           case msr: MemSeqRead => msr.addrReg
         }
         val dataLen = sram.needWidth
-        val chain = m.addModule(new SRAMChain, {
+        val chain = m.addModule(new SRAMChain(top.reset), {
           case DataLen => dataLen 
           case SRAMSize => sram.size})
         chain.io.stall := daisyPins(m).stall
@@ -250,37 +251,49 @@ object DaisyBackend {
     }
   }
 
-  def printOutMappings(c: Module) {
-    ChiselError.info("[DaisyBackend] print out chain mappings")
+  def dumpMappings(c: Module) {
+    ChiselError.info("[transforms] print out chain mappings")
     val prefix = top.name + "." + top.target.name
     val res = new StringBuilder
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
-    // Print out parameters
-    res append "HOSTLEN: %d\n".format(top.hostLen)
-    res append "ADDRLEN: %d\n".format(top.addrLen)
-    res append "MEMLEN: %d\n".format(top.memLen)
-    res append "CMDLEN: %d\n".format(top.cmdLen)
-    res append "STEP: %d\n".format(top.STEP.litValue())
-    res append "POKE: %d\n".format(top.POKE.litValue())
-    res append "PEEK: %d\n".format(top.PEEK.litValue())
-    res append "SNAP: %d\n".format(top.SNAP.litValue())
-    res append "MEM: %d\n".format(top.MEM.litValue())
-
     // Print out the IO mapping for pokes and peeks
-    res append "INPUT:\n"
-    var inputNum = 0
-    for (input <- top.inputs) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + input.name
-      val width = input.needWidth
-      res append "%s %d\n".format(path, width)
+    if (top.qInNum > 0) {
+      res append "QIN:\n"
+      for (in <- top.qIns ; (_, io) <- in.bits.flatten) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+        val width = io.needWidth
+        res append "%s %d\n".format(path, width)
+      }
     }
-    res append "OUTPUT:\n"
-    for (output <- top.outputs) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + output.name
-      val width = output.needWidth
-      res append "%s %d\n".format(path, width)
+
+    if (top.qOutNum > 0) {
+      res append "QOUT:\n"
+      for (in <- top.qOuts ; (_, io) <- in.bits.flatten) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+        val width = io.needWidth
+        res append "%s %d\n".format(path, width)
+      }
     }
+
+    if (top.wInNum > 0) {
+      res append "WIN:\n"
+      for (in <- top.wIns) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
+        val width = in.needWidth
+        res append "%s %d\n".format(path, width)
+      }
+    }
+    
+    if (top.wOutNum > 0) {
+      res append "WOUT:\n"
+      for (out <- top.wOuts) {
+        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
+        val width = out.needWidth
+        res append "%s %d\n".format(path, width)
+      }
+    }
+
     try {
       ioFile write res.result
     } finally {
@@ -351,4 +364,16 @@ object DaisyBackend {
       res.clear
     }
   }
+
+  // Todo: move this path to the ChiselBackend
+  def dumpParams(c: Module) {
+    if (Driver.chiselConfigMode != None && 
+        Driver.chiselConfigMode.get != "instance" &&
+        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
+      val w = Driver.createOutputFile(top.name + ".prm")
+      w.write(Dump.getDump)
+      w.close
+    }
+  }
 }
+
