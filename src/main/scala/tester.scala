@@ -421,13 +421,9 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
       var offset = 0
       var write = BigInt(0)
       for (k <- (line.length - 2) to 0 by -2) {
+        val addr = base + offset
         val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
-        dram(base+offset) = data
-        write = write | (data << (8*((base+offset)%blkLen)))
-        if ((base+offset) % blkLen == blkLen-1) {
-          memwrites((base+offset)-(blkLen-1)) = write
-          write = BigInt(0)
-        }
+        dram(addr) = data
         offset += 1
       }
     }

@@ -13,21 +13,30 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
 
   def read(addr: BigInt, tag: BigInt) { }
 
-  def write(addr: BigInt, data: BigInt) { mem(addr) = data }
+  def write(addr: BigInt, data: BigInt) { 
+    mem(addr) = data 
+  }
 
   def loadMem(mem: List[(BigInt, BigInt)]) { }
 
   def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
 
-  def loadMem(filename: String) {
+  def loadMem(filename: String, memLen: Int = 32) {
+    require(memLen % 8 == 0)
+    val blkLen = memLen / 8
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2
       var offset = 0
+      var write = BigInt(0)
       for (k <- (line.length - 2) to 0 by -2) {
-        val addr = BigInt(base + offset) 
+        val addr = base + offset
         val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
-        mem(addr) = data
+        write = write | (data << (8 * (addr % blkLen)))
+        if (addr % blkLen == blkLen-1) {
+          mem(addr - (blkLen-1)) = write
+          write = BigInt(0)
+        }
         offset += 1
       }
     }
