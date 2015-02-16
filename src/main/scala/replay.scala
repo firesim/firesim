@@ -6,7 +6,7 @@ import scala.io.Source
 
 class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   private val basedir = ensureDir(Driver.targetDir)
-  private val mem = HashMap[BigInt, BigInt]()
+  private val mem = LinkedHashMap[BigInt, BigInt]()
   private val signalMap = HashMap[String, Node]()
 
   object FAILED extends Exception 
@@ -19,16 +19,15 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
 
   def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
 
-  def loadMem(filename: String, memLen: Int) {
-    require(memLen % 8 == 0)
-    val blkLen = memLen / 8
+  def loadMem(filename: String) {
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2
       var offset = 0
       for (k <- (line.length - 2) to 0 by -2) {
+        val addr = BigInt(base + offset) 
         val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
-        write(base+offset, data)
+        mem(addr) = data
         offset += 1
       }
     }
