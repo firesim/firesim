@@ -84,7 +84,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
 
   val fire = Bool()
   val fireNext = RegNext(fire)
-  val record = RegInit(Bool(false)) // Todo: incorperate this signal to IO recordording
+  val readNext = RegInit(Bool(false)) // Todo: incorperate this signal to IO readNextording
 
   // For memory commands
   val memReqCmd   = Reg(new MemReqCmd)
@@ -100,7 +100,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   val rAddrValid  = Vec.fill(tagNum)(RegInit(Bool(false)))
 
   // Find the target's MemIO
-  // todo: extend multi mem ports
+  // todo: extend it for multi mem ports
   (qOuts find { wires =>
     val hostNames = io.mem.req_cmd.flatten.unzip._1
     val targetNames = wires.flatten.unzip._1.toSet
@@ -221,9 +221,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
 
   /*** IO Recording ***/
   // For decoupled IOs, insert FIFOs
+  var id = 0
   var qInNum = 0
   val qInQs = ArrayBuffer[Queue[UInt]]() 
-  var id = 0
   for (in <- qIns) {
     var valid = Bool(true)
     for ((_, io) <- in.bits.flatten) {
@@ -251,9 +251,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   qInEnqs foreach (_.bits := Bits(0))
   qInEnqs foreach (_.valid := Bool(false))
 
+  id = 0
   var qOutNum = 0
   val qOutQs = ArrayBuffer[Queue[UInt]]() 
-  id = 0
   for (out <- qOuts) {
     var ready = Bool(true)
     for ((_, io) <- out.bits.flatten) {
@@ -283,9 +283,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   qOutDeqs foreach (_.ready := Bool(false))
 
   // For wire IOs, insert FFs
+  id = 0
   val wInNum = (wIns foldLeft 0)((res, in) => res + (in.needWidth-1)/hostLen + 1)
   val wInFFs = Vec.fill(wInNum) { Reg(UInt()) }
-  id = 0
   for (in <- wIns) {
     // Resove width error
     in match {
@@ -299,9 +299,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
     id += n
   }
 
+  id = 0
   val wOutNum = (wOuts foldLeft 0)((res, out) => res + (out.needWidth-1)/hostLen + 1)
   val wOutFFs = Vec.fill(wOutNum) { Reg(UInt()) }
-  id = 0
   for (out <- wOuts) {
     out match {
       case _: Bool => wOutFFs(id).init("", 1)
@@ -351,7 +351,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   val stepcount = RegInit(UInt(0)) // Step Counter
   // Define the fire signal
   fire := (qOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
-          // wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
+          wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
           debugState === debug_STEP
 
   val snapbuf   = Reg(UInt(width=hostLen+daisyLen))
@@ -391,7 +391,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       when(io.host.in.fire()) {
         val cmd = io.host.in.bits(cmdLen-1, 0)
         when(cmd === STEP) {
-          record := io.host.in.bits(cmdLen)
+          readNext := io.host.in.bits(cmdLen)
           stepcount := io.host.in.bits(hostLen-1, cmdLen+1)
           debugState := debug_STEP
         }.elsewhen(cmd === POKE) {
@@ -437,15 +437,15 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
               debugState := debug_PEEKQ
             }
           }
-        }.elsewhen(RegNext(!stepcount.orR)) {
+        }.elsewhen(!fireNext) {
           snapcount := UInt(0)
-          if (Driver.hasSRAM) { sramcount := UInt(Driver.sramMaxSize-1) }
           io.host.out.bits := step_FIN
           io.host.out.valid := Bool(true) 
           when(io.host.out.fire()) {
-            debugState := Mux(record, debug_SNAP1, debug_IDLE)
-            record := Bool(false)
+            debugState := Mux(readNext, debug_SNAP1, debug_IDLE)
+            readNext := Bool(false)
           }
+          if (Driver.hasSRAM) sramcount := UInt(Driver.sramMaxSize-1)
         }
       }
     }
@@ -647,7 +647,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
         val id = UInt(tagNum) - raddrcount
         is(trace_RADDR) {
           io.host.out.bits := rAddrTrace(id).addr
-          io.host.out.valid := rAddrValid(id)
+          io.host.out.valid := rAddrValid(id) && raddrcount.orR
           when(!raddrcount.orR) {
             traceState := trace_WCOUNT
             debugState := debug_IDLE

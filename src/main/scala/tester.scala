@@ -25,6 +25,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   val cmdLen = c.cmdLen
   val traceLen  = c.traceLen
   val blkLen = memLen / 8
+  var snapLen = 0
 
   var qInNum = 0
   var qOutNum = 0
@@ -32,7 +33,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   var wOutNum = 0
 
   val samples = ArrayBuffer[Sample]()
-  var sampleNum = 20
+  var sampleNum = 200
   var stepSize = 1
   var prefix = ""
 
@@ -241,6 +242,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     }
     waddr.clear
     wdata.clear
+
     val rcount = peek.toInt
     for (i <- 0 until rcount) {
       var addr = BigInt(0)
@@ -255,10 +257,10 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  def pokeSteps(n: Int, isRecord: Boolean = true) {
+  def pokeSteps(n: Int, readNext: Boolean = true) {
     if (isTrace) println("POKE STEPS")
     // Send STEP command
-    poke((n << (cmdLen+1)) | ((if (isRecord) 1 else 0) << cmdLen) | STEP.id)
+    poke((n << (cmdLen+1)) | ((if (readNext) 1 else 0) << cmdLen) | STEP.id)
     if (isTrace) println("==========")
   }
 
@@ -273,26 +275,27 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   def readSnap = {
     if (isTrace) println("SNAPSHOT!")
     val snap = new StringBuilder
-    var offset = 0
     while (peek(dumpName(c.io.host.in.ready)) == 0) {
       snap append intToBin(peek, hostLen) 
     }
     if (isTrace) {
-      println("Chain: " + snap.result)
+      println("SNAPCHAIN: " + snap.result)
       println("===========")
     }
+    assert(snap.result.size == snapLen)
     snap.result
   }
 
   def verifySnap(pokes: List[SampleInst]) {
     if (isTrace) println("VERIFY SNAPSHOT")
-    val MemRegex = """([\w\.]+)\[(\d+)\]""".r
     for (poke <- pokes) {
       poke match {
-        case Poke(signal, value, off) => {
+        case Poke(signal, value, off) if off == -1 => {
           val path = targetPath + (signal stripPrefix targetPrefix)
           val peekValue = if (off == -1) peek(path) else peek(path, off)
-          expect(value == peekValue, "EXPECT %s <- %d == %d".format(signal, peekValue, value))
+          expect(value == peekValue, "EXPECT %s <- %d == %d".format(
+            if (off == -1) signal else signal + "[%d]".format(off), 
+            peekValue, value))
         }
         case _ => // cannnot happen!
       }
@@ -378,7 +381,6 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
-    // memwrites(addr) = data // Memory trace, deprecated
     poke((1 << cmdLen) | MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
@@ -429,20 +431,19 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     }
   }
 
-  var sampleRec = false
-  var sampleIdx = -1
+  var readNext = false
+  var lastR = -1
   override def step(n: Int) {
     require(n % stepSize == 0)
-    if (sampleRec) {
-      recordIo(sampleIdx, n)
-    }
+    if (isTrace) println("STEP " + n + " -> " + t + n)
+    if (readNext) recordIo(lastR, n)
     pokeAll
     pokeqAll
-    val rIdx = t / stepSize
-    val sIdx = if (rIdx < sampleNum) rIdx else rnd.nextInt(rIdx+1)
-    sampleRec = sampleCheck || sIdx < sampleNum 
-    if (isTrace) println("STEP " + n + " -> " + t + n)
-    pokeSteps(n, sampleRec)
+    val index = t / stepSize
+    val r = if (index < sampleNum) index else rnd.nextInt(index+1)
+    readNext = sampleCheck || r < sampleNum 
+    pokeSteps(n, readNext)
+    for (i <- 0 until n) tickMem
     var fin = false
     while (!fin) {
       tickMem
@@ -453,24 +454,17 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
         else if (resp == StepResp.PEEKQ.id) traceQout
       }
     }
-    if (sampleRec) {
-      doSampling(rIdx, sIdx, sampleIdx)
-      sampleIdx = sIdx
+    if (readNext) {
+      doSampling(index, r, lastR)
+      lastR = r
     }
     peekAll
     peekqAll
     t += n
   }
 
-  def recordIo(idx: Int, n: Int) {
-    val sample = if (sampleCheck) samples.last else samples(idx)
-    // Record inputs
-    for ((path, ids) <- wInMap) {
-      val signal = targetPrefix + (path stripPrefix targetPath) 
-      val data = (ids foldLeft BigInt(0))(
-        (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
-      sample.cmds += Poke(signal, data)
-    }
+  def recordIo(r: Int, n: Int) {
+    val sample = if (sampleCheck) samples.last else samples(r)
     // Record outputs
     if (sampleCheck) {
       for ((path, ids) <- wOutMap) {
@@ -478,13 +472,20 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
         val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
         sample.cmds += Expect(signal, data)
       }
-      sample.cmds += Step(n)
     }
+    // Record inputs
+    for ((path, ids) <- wInMap) {
+      val signal = targetPrefix + (path stripPrefix targetPath) 
+      val data = (ids foldLeft BigInt(0))(
+        (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
+      sample.cmds += Poke(signal, data)
+    }
+    if (sampleCheck) sample.cmds += Step(n)
   }
 
-  def doSampling(rIdx: Int, thisIdx: Int, prevIdx: Int) {
+  def doSampling(index: Int, r: Int, lastR: Int) {
     // record snaps
-    val sample = Sample(rIdx, readSnap)
+    val sample = Sample(index, readSnap)
     verifySnap(sample.cmds.toList)
     // record mems
     peekTrace
@@ -502,12 +503,12 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
       }
       samples += sample 
     } else {
-      // mergy memory
-      samples(thisIdx).next match {
+      // memory merge
+      samples(r).next match {
         case None => {
-          assert(thisIdx == prevIdx)
-          sample.mem ++= samples(thisIdx).mem
-          samples(thisIdx).prev match {
+          assert(r == lastR)
+          sample.mem ++= samples(r).mem
+          samples(r).prev match {
             case None =>
             case Some(prev) => {
               sample.prev = Some(prev)
@@ -516,8 +517,8 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
           }
         }
         case Some(next) => {
-          next.mem ++= samples(thisIdx).mem
-          samples(thisIdx).prev match {
+          next.mem ++= samples(r).mem
+          samples(r).prev match {
             case None =>
             case Some(prev) => {
               prev.next = Some(next)
@@ -525,10 +526,10 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
             }
           }
         }
-        val last = samples(prevIdx)
+        val last = samples(lastR)
         sample.prev = Some(last)
         last.next = Some(sample)
-        samples(thisIdx) = sample
+        samples(r) = sample
       }
     }
   }
@@ -602,7 +603,10 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
     for (line <- lines) {
       val tokens = line split " "
-      Sample.addMapping(tokens.head, tokens.last.toInt)
+      val path = tokens.head
+      val width = tokens.last.toInt
+      Sample.addMapping(path, width)
+      snapLen += width
     }
   }
  
