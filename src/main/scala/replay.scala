@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
+import scala.collection.mutable.{HashMap, LinkedHashMap, Queue => ScalaQueue}
 import scala.io.Source
 
 class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
@@ -9,9 +9,17 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
   private val mem = LinkedHashMap[BigInt, BigInt]()
   private val signalMap = HashMap[String, Node]()
 
+  val memrw = ScalaQueue[Boolean]()
+  val memtag = ScalaQueue[BigInt]()
+  val memaddr = ScalaQueue[BigInt]()
+
   object FAILED extends Exception 
 
-  def read(addr: BigInt, tag: BigInt) { }
+  def read(addr: BigInt, tag: BigInt) { 
+    memrw enqueue false
+    memtag enqueue tag
+    memaddr enqueue addr 
+  }
 
   def write(addr: BigInt, data: BigInt) { 
     mem(addr) = data 

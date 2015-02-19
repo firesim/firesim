@@ -290,7 +290,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     if (isTrace) println("VERIFY SNAPSHOT")
     for (poke <- pokes) {
       poke match {
-        case Poke(signal, value, off) if off == -1 => {
+        case Poke(signal, value, off) => {
           val path = targetPath + (signal stripPrefix targetPrefix)
           val peekValue = if (off == -1) peek(path) else peek(path, off)
           expect(value == peekValue, "EXPECT %s <- %d == %d".format(
@@ -305,16 +305,17 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
 
   // Emulate AXI Slave
   private val dram = HashMap[BigInt, BigInt]()
-  private var memrw   = false
-  private var memtag  = BigInt(0)
-  private var memaddr = BigInt(0)
-  private var memdata = BigInt(0)
+  private val memrw = ScalaQueue[Boolean]()
+  private val memtag = ScalaQueue[BigInt]()
+  private val memaddr = ScalaQueue[BigInt]()
   private var memcycles = -1
+  private val readcycles = 2
+  private val writecycles = 1
   def tickMem {
     def read(addr: BigInt) = {
       var data = BigInt(0)
       for (i <- 0 until (memLen-1)/8+1) {
-        data |= dram(memaddr+i) << (8*i)
+        data |= dram(addr+i) << (8*i)
       }
       data
     }
@@ -332,28 +333,33 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     } else if (memcycles < 0) {
       poke(c.io.mem.resp.valid, 0)
       if (peek(dumpName(c.io.mem.req_cmd.valid)) == 1) {
-        memrw   = if (peek(c.io.mem.req_cmd.bits.rw) == 1) true else false
-        memtag  = peek(c.io.mem.req_cmd.bits.tag)
-        memaddr = peek(c.io.mem.req_cmd.bits.addr)
-        if (!memrw) {
-          memcycles = 2
-          poke(c.io.mem.req_cmd.ready, 1)
-        }
+        memrw enqueue (peek(c.io.mem.req_cmd.bits.rw) == 1)
+        memtag enqueue peek(c.io.mem.req_cmd.bits.tag)
+        memaddr enqueue peek(c.io.mem.req_cmd.bits.addr)
+        if (!memrw.head) poke(c.io.mem.req_cmd.ready, 1)
       }
       if (peek(dumpName(c.io.mem.req_data.valid)) == 1) {
         val data = peek(c.io.mem.req_data.bits.data)
         poke(c.io.mem.req_cmd.ready, 1)
         poke(c.io.mem.req_data.ready, 1)
-        write(memaddr, data)
-        memcycles = 1
+        write(memaddr.head, data)
+      }
+      assert(memrw.size == memtag.size)
+      assert(memrw.size == memaddr.size)
+      if (!memrw.isEmpty) {
+        memcycles = if (!memrw.head) readcycles else writecycles
       }
     } else {
-      if (!memrw) {
-        val data = read(memaddr)
+      val addr = memaddr.dequeue
+      val tag = memtag.dequeue
+      if (!memrw.dequeue) {
+        val data = read(addr)
         poke(c.io.mem.resp.bits.data, data)
-        poke(c.io.mem.resp.bits.tag, memtag)
+        poke(c.io.mem.resp.bits.tag, tag)
         poke(c.io.mem.resp.valid, 1)
       }
+      assert(memrw.size == memtag.size)
+      assert(memrw.size == memaddr.size)
       memcycles -= 1
     }
     takeSteps(1)
