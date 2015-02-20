@@ -56,7 +56,8 @@ class StroberIO extends Bundle {
   val mem = new MemIO 
 }
 
-class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) extends Module with StroberParams with Commands {
+class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) 
+  extends Module with StroberParams with Commands {
   val io = new StroberIO
   val target = Module(c)
   val qIns = ArrayBuffer[DecoupledIO[Data]]()
@@ -114,7 +115,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       q.ready := memReqCmdQ.io.enq.ready && fire
       // Trace write addr
       wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
-      wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fire
+      wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fireNext 
       when(!tMemReqCmd.rw && memReqCmdQ.io.enq.valid) {
         // Turn on rAddrTrace
         rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
@@ -146,7 +147,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       q.ready := memReqDataQ.io.enq.ready && fire
       // Trace write data
       wDataTrace.io.enq.bits.data := tMemReqData.data
-      wDataTrace.io.enq.valid := q.valid && fire
+      wDataTrace.io.enq.valid := q.valid && fireNext
       qOutNum -= 1
       qOuts -= q
     }

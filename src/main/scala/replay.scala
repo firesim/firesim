@@ -6,19 +6,34 @@ import scala.io.Source
 
 class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
   private val basedir = ensureDir(Driver.targetDir)
-  private val mem = LinkedHashMap[BigInt, BigInt]()
   private val signalMap = HashMap[String, Node]()
-
-  val memrw = ScalaQueue[Boolean]()
-  val memtag = ScalaQueue[BigInt]()
-  val memaddr = ScalaQueue[BigInt]()
+  private val mem = LinkedHashMap[BigInt, BigInt]()
+  private val memrw = ScalaQueue[Boolean]()
+  private val memtag = ScalaQueue[BigInt]()
+  private val memaddr = ScalaQueue[BigInt]()
 
   object FAILED extends Exception 
 
-  def read(addr: BigInt, tag: BigInt) { 
-    memrw enqueue false
+  def pushMemReq(addr: BigInt, tag: BigInt, rw: Boolean) {
+    require(memrw.size == memtag.size)
+    require(memrw.size == memaddr.size)
+    memrw enqueue rw
     memtag enqueue tag
     memaddr enqueue addr 
+  }
+
+  def popMemReq = {
+    require(memrw.size == memtag.size)
+    require(memrw.size == memaddr.size)
+    (memaddr.dequeue, memtag.dequeue, memrw.dequeue)
+  }
+
+  def hasMemReq = !memrw.isEmpty
+  def getMemAddr = memaddr.head
+  def isMemReqRead = !memrw.head
+
+  def read(addr: BigInt, tag: BigInt) { 
+    pushMemReq(addr, tag, false)
   }
 
   def write(addr: BigInt, data: BigInt) { 
@@ -56,6 +71,9 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
     val samples = Sample.load(basedir + "/" + filename)
     try {
       for (sample <- samples) {
+        memrw.clear
+        memtag.clear
+        memaddr.clear
         for (cmd <- sample.cmds) {
           cmd match {
             case Step(n) => step(n)
