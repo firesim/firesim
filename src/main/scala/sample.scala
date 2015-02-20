@@ -46,7 +46,8 @@ object Sample {
 
   def dump(samples: List[Sample]) = {
     val res = new StringBuilder
-    for (sample <- samples.sortWith(_.t < _.t)) {
+    for ((sample, i) <- samples.sortWith(_.t < _.t).zipWithIndex) {
+      res append "99 Sample#%d\n".format(i)
       for (cmd <- sample.cmds) {
         cmd match {
           case Poke(node, value, off) => 
