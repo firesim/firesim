@@ -22,7 +22,7 @@ object transforms {
   def addTransforms(width: Int) {
     daisyLen = width
     Driver.backend.transforms ++= Seq(
-      initDaisy,
+      initStrober,
       Driver.backend.inferAll,
       Driver.backend.computeMemPorts,
       Driver.backend.findConsumers,
@@ -34,7 +34,7 @@ object transforms {
     )
   } 
 
-  def initDaisy(c: Module) {
+  def initStrober(c: Module) {
     Driver.implicitReset setName "reset_top"
     top.reset setName "reset_top"
     top.name = targetName + "Strober"

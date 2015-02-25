@@ -24,7 +24,6 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   val memLen = c.memLen
   val cmdLen = c.cmdLen
   val traceLen  = c.traceLen
-  val blkLen = memLen / 8
   var snapLen = 0
 
   var qInNum = 0
@@ -249,10 +248,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
       for (k <- 0 until addrLen by hostLen) {
         addr = (addr << hostLen) | peek
       }
-      var tag = BigInt(0)
-      for (k <- 0 until tagLen by hostLen) {
-        tag = (tag << hostLen) | peek
-      }
+      val tag = peek
       memreads(tag) = addr
     }
   }
@@ -386,16 +382,15 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     data
   }
 
-  def writeMem(addr: BigInt, data: BigInt) {
+  def writeMem(addr: BigInt, data: ArrayBuffer[Int]) {
     poke((1 << cmdLen) | MEM.id)
     val mask = (BigInt(1) << hostLen) - 1
     for (i <- (addrLen-1)/hostLen+1 until 0 by -1) {
       poke(addr >> (hostLen * (i-1)) & mask)
       tickMem
     }
-    for (i <- (memLen-1)/hostLen+1 until 0 by -1) {
-      poke(data >> (hostLen * (i-1)) & mask)
-      (data >> (hostLen * (i-1)) & mask)
+    for (i <- 0 until data.size) {
+      poke(data(i))
       tickMem
     }
     do {
@@ -403,20 +398,31 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     } while (memcycles >= 0)
   }
 
+  def writeMem(addr: BigInt, data: Int) {
+    writeMem(addr, ArrayBuffer(data))
+  }
+
   def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
 
-  def slowLoadMem(filename: String) {
+  def loadMem(filename: String) {
+    val blkLen = memLen / 4
+    val chunkNum = memLen / 32
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
+      assert(line.length % blkLen == 0)
       val base = (i * line.length) / 2
       var offset = 0
-      for (k <- (line.length - 8) to 0 by -8) {
-        val data = 
-          BigInt((parseNibble(line(k)) << 28) | (parseNibble(line(k+1)) << 24)) |
-          BigInt((parseNibble(line(k+2)) << 20) | (parseNibble(line(k+3)) << 16)) |
-          BigInt((parseNibble(line(k+4)) << 12) | (parseNibble(line(k+5)) << 8)) |
-          BigInt((parseNibble(line(k+6)) << 4) | parseNibble(line(k+7)))
+      for (k <- (line.length - blkLen) to 0 by blkLen) {
+        val data = ArrayBuffer[Int]()
+        for (j <- 0 until chunkNum) {
+          val s = k + 8 * j
+          data += ((parseNibble(line(s)) << 28) | (parseNibble(line(s+1)) << 24)) |
+            ((parseNibble(line(s+2)) << 20) | (parseNibble(line(s+3)) << 16)) |
+            ((parseNibble(line(s+4)) << 12) | (parseNibble(line(s+5)) << 8)) |
+            ((parseNibble(line(s+6)) << 4) | parseNibble(line(s+7)))
+        }
         writeMem(base+offset, data)
+        data.clear
         offset += 4
       }
     }
@@ -430,7 +436,7 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
       var write = BigInt(0)
       for (k <- (line.length - 2) to 0 by -2) {
         val addr = base + offset
-        val data = BigInt((parseNibble(line(k)) << 4) | parseNibble(line(k+1)))
+        val data = (parseNibble(line(k)) << 4) | parseNibble(line(k+1))
         dram(addr) = data
         offset += 1
       }
