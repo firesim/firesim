@@ -31,22 +31,22 @@ object addDaisyPins {
   }
 }
 
-case object DataLen extends Field[Int]
+case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
 // Common structures for daisy chains
 abstract trait DaisyChainParams extends UsesParameters {
-  val dataLen = params(DataLen)
-  val daisyLen = params(DaisyLen)
-  val daisySize = (dataLen - 1) / daisyLen + 1
+  val dataWidth = params(DataWidth)
+  val daisyWidth = params(DaisyWidth)
+  val daisySize = (dataWidth-1)/daisyWidth + 1
 }
 
 abstract class DaisyChainBundle extends Bundle with DaisyChainParams
 
 class DataIO extends DaisyChainBundle {
-  val in  = Decoupled(UInt(INPUT, daisyLen)).flip
-  val out = Decoupled(UInt(INPUT, daisyLen))
-  val data = Vec.fill(daisySize) { UInt(INPUT, daisyLen) }
+  val in  = Decoupled(UInt(INPUT, daisyWidth)).flip
+  val out = Decoupled(UInt(INPUT, daisyWidth))
+  val data = Vec.fill(daisySize) { UInt(INPUT, daisyWidth) }
 }
 
 class CntrIO extends Bundle {
@@ -66,7 +66,7 @@ abstract class DaisyChainModule extends Module with DaisyChainParams
 
 class DaisyDatapath extends DaisyChainModule { 
   val io = new DaisyDatapathIO
-  val regs = Vec.fill(daisySize) { Reg(UInt(width=daisyLen)) }
+  val regs = Vec.fill(daisySize) { Reg(UInt(width=daisyWidth)) }
 
   io.dataIo.out.bits := regs(daisySize-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero

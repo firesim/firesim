@@ -8,7 +8,7 @@ object transforms {
   val regs = HashMap[Module, ArrayBuffer[Node]]()
   val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val sramAddrs = HashMap[Mem[_], Reg]()
-  lazy val top = Driver.topComponent.asInstanceOf[Strober[Module]]
+  lazy val top = Driver.topComponent.asInstanceOf[Strober]
   lazy val targetName = Driver.backend.extractClassName(top.target)
   lazy val (targetComps, targetCompsRev) = {
     def collect(c: Module): Vector[Module] = 
@@ -90,9 +90,9 @@ object transforms {
 
     val hasRegChain = HashSet[Module]()
     def insertRegChain(m: Module) = {
-      val dataLen = (regs(m) foldLeft 0)(_ + _.needWidth)
+      val dataWidth = (regs(m) foldLeft 0)(_ + _.needWidth)
       val regChain = if (!regs(m).isEmpty) 
-        Some(m.addModule(new RegChain(top.reset), {case DataLen => dataLen})) else None
+        Some(m.addModule(new RegChain(top.reset), {case DataWidth => dataWidth})) else None
       regChain match {
         case None =>
         case Some(chain) => {
@@ -179,12 +179,12 @@ object transforms {
           case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
           case msr: MemSeqRead => msr.addrReg
         }
-        val dataLen = sram.needWidth
+        val dataWidth = sram.needWidth
         val chain = m.addModule(new SRAMChain(top.reset), {
-          case DataLen => dataLen 
+          case DataWidth => dataWidth 
           case SRAMSize => sram.size})
         chain.io.stall := daisyPins(m).stall
-        var high = dataLen-1
+        var high = dataWidth-1
         for (i <- (0 until chain.daisySize).reverse) {
           val low = math.max(high-daisyLen+1, 0)
           val widthMargin = daisyLen-(high-low+1)
@@ -258,41 +258,41 @@ object transforms {
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
     // Print out the IO mapping for pokes and peeks
-    if (top.qInNum > 0) {
+    // if (top.q_ins.size > 0) {
       res append "QIN:\n"
-      for (in <- top.qIns ; (_, io) <- in.bits.flatten) {
+      for (in <- top.q_ins ; (_, io) <- in.bits.flatten) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
         val width = io.needWidth
         res append "%s %d\n".format(path, width)
       }
-    }
+    // }
 
-    if (top.qOutNum > 0) {
+    // if (top.q_outs.size > 0) {
       res append "QOUT:\n"
-      for (in <- top.qOuts ; (_, io) <- in.bits.flatten) {
+      for (in <- top.q_outs ; (_, io) <- in.bits.flatten) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
         val width = io.needWidth
         res append "%s %d\n".format(path, width)
       }
-    }
+    // }
 
-    if (top.wInNum > 0) {
+    // if (top.w_ > 0) {
       res append "WIN:\n"
-      for (in <- top.wIns) {
+      for (in <- top.w_ins) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
         val width = in.needWidth
         res append "%s %d\n".format(path, width)
       }
-    }
+    // }
     
-    if (top.wOutNum > 0) {
+    // if (top.wOutNum > 0) {
       res append "WOUT:\n"
-      for (out <- top.wOuts) {
+      for (out <- top.w_outs) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
         val width = out.needWidth
         res append "%s %d\n".format(path, width)
       }
-    }
+    // }
 
     try {
       ioFile write res.result
@@ -335,7 +335,7 @@ object transforms {
       daisyWidthSum += daisyWidth
     }
     var hostWidthSum = 0
-    while (hostWidthSum < daisyWidthSum) hostWidthSum += top.hostLen
+    while (hostWidthSum < daisyWidthSum) hostWidthSum += top.axiDataWidth
     val padWidth = hostWidthSum - daisyWidthSum
     if (padWidth > 0) {
       res append "null %d\n".format(padWidth)
