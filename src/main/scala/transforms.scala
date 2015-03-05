@@ -258,41 +258,33 @@ object transforms {
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
     // Print out the IO mapping for pokes and peeks
-    // if (top.q_ins.size > 0) {
-      res append "QIN:\n"
-      for (in <- top.q_ins ; (_, io) <- in.bits.flatten) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-        val width = io.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    // }
+    if (!top.q_ins.isEmpty) res append "QIN:\n"
+    for (in <- top.q_ins ; (_, io) <- in.bits.flatten) {
+      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+      val width = io.needWidth
+      res append "%s %d\n".format(path, width)
+    }
 
-    // if (top.q_outs.size > 0) {
-      res append "QOUT:\n"
-      for (in <- top.q_outs ; (_, io) <- in.bits.flatten) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-        val width = io.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    // }
+    if (!top.q_outs.isEmpty) res append "QOUT:\n"
+    for (in <- top.q_outs ; (_, io) <- in.bits.flatten) {
+      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
+      val width = io.needWidth
+      res append "%s %d\n".format(path, width)
+    }
 
-    // if (top.w_ > 0) {
-      res append "WIN:\n"
-      for (in <- top.w_ins) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
-        val width = in.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    // }
+    if (!top.w_ins.isEmpty) res append "WIN:\n"
+    for (in <- top.w_ins) {
+      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
+      val width = in.needWidth
+      res append "%s %d\n".format(path, width)
+    }
     
-    // if (top.wOutNum > 0) {
-      res append "WOUT:\n"
-      for (out <- top.w_outs) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
-        val width = out.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    // }
+    if (!top.w_outs.isEmpty) res append "WOUT:\n"
+    for (out <- top.w_outs) {
+      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
+      val width = out.needWidth
+      res append "%s %d\n".format(path, width)
+    }
 
     try {
       ioFile write res.result
