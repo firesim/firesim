@@ -159,6 +159,8 @@ class StroberHostIF extends Module with HostIFParams {
           readNext  := hostInFifo.io.deq.bits(cmdWidth)
           stepcount := hostInFifo.io.deq.bits(axiDataWidth-1, cmdWidth+1)
           simState  := sim_STEP
+        }.elsewhen(cmd === TRACE) {
+          simState  := sim_TRACE
         }.elsewhen(cmd === MEM) {
           memReqCmd.rw  := hostInFifo.io.deq.bits(cmdWidth) 
           memReqCmd.tag := memTag
