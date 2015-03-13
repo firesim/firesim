@@ -305,6 +305,6 @@ class StroberAXI4Wrapper[+T <: Module](c: =>T, hasMem: Boolean = true) extends S
   hostif.io.daisy <> addDaisyPins(target, daisyWidth)
   // 
   hostif.io.fifoReady := 
-    (w_in_fifos foldLeft Bool(false))(_ && _.io.enq.ready) &&
-    (q_in_fifos foldLeft Bool(false))(_ && _.io.enq.ready)
+    (w_in_fifos foldLeft Bool(true))(_ && _.io.enq.ready) &&
+    (q_in_fifos foldLeft Bool(true))(_ && _.io.enq.ready)
 }
