@@ -4,9 +4,9 @@ import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
 object Strober {
-  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty, hasMem: Boolean = true, hasHTIF: Boolean = true) = {
+  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
     val params = targetParams alter StroberParams.mask
-    Module(new Strober(c, hasMem, hasHTIF))(params)
+    Module(new Strober(c))(params)
   }
 }
 
@@ -56,132 +56,90 @@ class StroberIO extends Bundle {
   val mem = new MemIO 
 }
 
-class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = true) 
-  extends Module with StroberParams with Commands {
+class Strober[+T <: Module](c: =>T) extends Module with StroberParams with Commands {
   val io = new StroberIO
   val target = Module(c)
-  val qIns = ArrayBuffer[DecoupledIO[Data]]()
-  val qOuts = ArrayBuffer[DecoupledIO[Data]]()
-  val wIns = ArrayBuffer[Bits]()
-  val wOuts = ArrayBuffer[Bits]()
-  def findIOs[T <: Data](io: T, name: String = "") {
-    io match {
-      case dIO: DecoupledIO[Data] => {
-        if (dIO.valid.dir == INPUT) qIns += dIO else qOuts += dIO
-      }
-      case b: Bundle => {
-        for ((n, elm) <- b.elements) {
-          findIOs(elm, n)
-        }
-      }
-      case _ => {
-        val (ins, outs) = io.flatten partition (_._2.dir == INPUT)
-        wIns ++= ins.unzip._2
-        wOuts ++= outs.unzip._2
-      }
-    }
-  }
-  findIOs(target.io)
-
-  val fire = Bool()
-  val fireNext = RegNext(fire)
-  val readNext = RegInit(Bool(false)) // Todo: incorperate this signal to IO readNextording
-
-  // For memory commands
-  val memReqCmd   = Reg(new MemReqCmd)
-  val memReqData  = Reg(new MemData)
-  val memResp     = Reg(new MemResp)
-  val memTag      = RegInit(UInt(0, tagLen))
-  val memReqCmdQ  = Module(new Queue(io.mem.req_cmd.bits.clone, traceLen))
-  val memReqDataQ = Module(new Queue(io.mem.req_data.bits.clone, traceLen))
-  val memRespQ    = Module(new Queue(io.mem.resp.bits.clone, traceLen))
-  val wAddrTrace  = Module(new Queue(new MemAddr, traceLen))
-  val wDataTrace  = Module(new Queue(new MemData, traceLen))
+  val stepcount  = RegInit(UInt(0)) 
+  val fire       = stepcount.orR
+  val fireNext   = RegNext(fire)
+  val readNext   = RegInit(Bool(false)) 
+  val memReqCmd  = Reg(new MemReqCmd)
+  val memReqData = Reg(new MemData)
+  val memResp    = Reg(new MemResp)
+  val memTag     = RegInit(UInt(0, tagLen))
   val rAddrTrace  = Vec.fill(tagNum)(Reg(new MemAddr))
   val rAddrValid  = Vec.fill(tagNum)(RegInit(Bool(false)))
+  val memReqCmdFifo  = Module(new Queue(io.mem.req_cmd.bits.clone, 8))
+  val memReqDataFifo = Module(new Queue(io.mem.req_data.bits.clone, 8))
+  val memRespFifo    = Module(new Queue(io.mem.resp.bits.clone, 8))
+  val (ins: ArrayBuffer[Bits], outs: ArrayBuffer[Bits]) = 
+    target.io.flatten.unzip._2 partition (_.dir == INPUT)
 
-  // Find the target's MemIO
-  // todo: extend it for multi mem ports
-  (qOuts find { wires =>
-    val hostNames = io.mem.req_cmd.flatten.unzip._1
-    val targetNames = wires.flatten.unzip._1.toSet
-    hostNames forall (targetNames contains _)
+  // Find MemIO
+  (target.io match {
+    case b: Bundle => b.elements find { case (name, wires) => {
+      (name == "mem") && (io.mem.flatten forall {case (n0, io0) =>
+        wires.flatten exists {case (n1, io1) =>
+          n0 == n1 && io0.needWidth == io1.needWidth
+        }
+      })
+    } }
+    case _ => None
   }) match {
-    case Some(q) if hasMem => {
-      val tMemReqCmd = new MemReqCmd
-      tMemReqCmd := q.bits // to avoid type error......
-      memReqCmdQ.io.enq.bits := Mux(fire, tMemReqCmd, memReqCmd)
-      memReqCmdQ.io.enq.valid := q.valid && fire
-      q.ready := memReqCmdQ.io.enq.ready && fire
-      // Trace write addr
-      wAddrTrace.io.enq.bits.addr := tMemReqCmd.addr
-      wAddrTrace.io.enq.valid := tMemReqCmd.rw && q.valid && fireNext 
-      when(!tMemReqCmd.rw && memReqCmdQ.io.enq.valid) {
-        // Turn on rAddrTrace
-        rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
-        rAddrValid(tMemReqCmd.tag) := Bool(true)
-        // Set memTag's value
-        memTag := tMemReqCmd.tag + UInt(1)
+    case None => {
+      memReqCmdFifo.io.enq.valid := Bool(false)
+      memReqDataFifo.io.enq.valid := Bool(false)
+      memRespFifo.io.deq.ready := Bool(true)
+    }
+    case Some((n, q)) => q match {
+      case b: Bundle => {
+        for ((n, i) <- b.elements) {
+          i match {
+            case dio: DecoupledIO[Data] if n == "req_cmd" => {
+              val tMemReqCmd = new MemReqCmd
+              tMemReqCmd := dio.bits // to avoid type error......
+              memReqCmdFifo.io.enq.bits := Mux(fire, tMemReqCmd, memReqCmd)
+              memReqCmdFifo.io.enq.valid := dio.valid && fire
+              dio.ready := memReqCmdFifo.io.enq.ready && fire
+              when(!tMemReqCmd.rw && memReqCmdFifo.io.enq.valid) {
+                // Turn on rAddrTrace
+                rAddrTrace(tMemReqCmd.tag).addr := tMemReqCmd.addr
+                rAddrValid(tMemReqCmd.tag) := Bool(true)
+                // Set memTag's value
+                memTag := tMemReqCmd.tag + UInt(1)
+              }
+            }
+            case dio: DecoupledIO[Data] if n == "req_data" => {
+              val tMemReqData = new MemData
+              tMemReqData := dio.bits // to avoid type error ......!
+              memReqDataFifo.io.enq.bits := Mux(fire, tMemReqData, memReqData)
+              memReqDataFifo.io.enq.valid := dio.valid && fire
+              dio.ready := memReqDataFifo.io.enq.ready && fire
+            } 
+            case dio: DecoupledIO[Data] if n == "resp" => {
+              dio.bits := memRespFifo.io.deq.bits
+              dio.valid := memRespFifo.io.deq.valid && fire
+              memRespFifo.io.deq.ready := dio.valid && fire
+              // Turn off rAddrTrace
+              when(RegEnable(memRespFifo.io.deq.valid, fire) && fire) {
+                rAddrValid(RegEnable(memRespFifo.io.deq.bits.tag, fire)) := Bool(false)
+              }
+            }
+            case _ => 
+          }
+        }
+        for ((n, io) <- b.flatten) {
+          if (io.dir == INPUT)
+            ins -= io
+          else
+            outs -= io
+        }
       }
-      qOutNum -= 1
-      qOuts -= q
-    }
-    case _ => {
-      memReqCmdQ.io.enq.bits := memReqCmd
-      memReqCmdQ.io.enq.valid := Bool(false)
-      wAddrTrace.io.enq.valid := Bool(false)
-    }
-  }
-  wAddrTrace.io.deq.ready := Bool(false)
-
-  (qOuts find { wires =>
-    val hostNames = io.mem.req_data.flatten.unzip._1
-    val targetNames = wires.flatten.unzip._1.toSet
-    hostNames forall (targetNames contains _)
-  }) match {
-    case Some(q) if hasMem => {
-      val tMemReqData = new MemData
-      tMemReqData := q.bits // to avoid type error ......!
-      memReqDataQ.io.enq.bits := Mux(fire, tMemReqData, memReqData)
-      memReqDataQ.io.enq.valid := q.valid && fire
-      q.ready := memReqDataQ.io.enq.ready && fire
-      // Trace write data
-      wDataTrace.io.enq.bits.data := tMemReqData.data
-      wDataTrace.io.enq.valid := q.valid && fireNext
-      qOutNum -= 1
-      qOuts -= q
-    }
-    case _ => {
-      memReqDataQ.io.enq.bits := memReqData
-      memReqDataQ.io.enq.valid := Bool(false)
-      wDataTrace.io.enq.valid := Bool(false)
-    }
-  }
-  wDataTrace.io.deq.ready := Bool(false)
-
-  (qIns find { wires =>
-    val hostNames = io.mem.resp.flatten.unzip._1
-    val targetNames = wires.flatten.unzip._1.toSet
-    hostNames forall (targetNames contains _)
-  }) match {
-    case Some(q) if hasMem => {
-      q.bits := memRespQ.io.deq.bits
-      q.valid := memRespQ.io.deq.valid && fire
-      memRespQ.io.deq.ready := q.ready && fire
-      // Turn off rAddrTrace
-      when(RegEnable(memRespQ.io.deq.valid, fire) && fire) {
-        rAddrValid(RegEnable(memRespQ.io.deq.bits.tag, fire)) := Bool(false)
-      }
-      qInNum -= 1
-      qIns -= q
-    }
-    case _ => {
-      memRespQ.io.deq.ready := Bool(true)
+      case _ =>
     }
   }
 
-  // Find the tqget's HTIF
-  // TODO: it's a hack for referencechip, it shouldn't be exposed though...
+  // Find HTIF
   (target.io match {
     case b: Bundle => b.elements find { case (name, wires) => {
       (name == "host") && (io.htif.flatten forall {case (n0, io0) =>
@@ -192,129 +150,68 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
     } }
     case _ => None
   }) match {
-    case Some((n, q)) if hasHTIF => {
-       // io.htif <> q
-       q match {
-         case b: Bundle => for ((n, i) <- b.elements) {
+    case None =>
+    case Some((n, q)) => q match {
+       case b: Bundle => {
+         for ((n, i) <- b.elements) {
            i match {
              case dio: DecoupledIO[Data] if dio.valid.dir == INPUT => {
                // host_in
                dio.bits <> io.htif.in.bits
                dio.valid := io.htif.in.valid && fire
                io.htif.in.ready := dio.ready && fire
-               qIns -= dio
              }
              case dio: DecoupledIO[Data] if dio.valid.dir == OUTPUT => {
                // host_out
                io.htif.out.bits <> dio.bits
                io.htif.out.valid := dio.valid && fire
                dio.ready := io.htif.out.ready && fire
-               qOuts -= dio
              }
              case _ => // This shouldn't occur
            }
          }
-         case _ => 
-       }
+         for ((n, io) <- b.flatten) {
+           if (io.dir == INPUT)
+             ins -= io
+           else
+             outs -= io
+         }
+      }
+      case _ =>
     }
-    case _ =>
   } 
 
-  /*** IO Recording ***/
-  // For decoupled IOs, insert FIFOs
   var id = 0
-  var qInNum = 0
-  val qInQs = ArrayBuffer[Queue[UInt]]() 
-  for (in <- qIns) {
-    var valid = Bool(true)
-    for ((_, io) <- in.bits.flatten) {
-      val width = io.needWidth
-      val n = (width-1) / hostLen + 1
-      val qs = ArrayBuffer[Queue[UInt]]()
-      for (i <- 0 until n) {
-        val low = i * hostLen
-        val high = math.min(hostLen-1+low, width-1)  
-        val q = Module(new Queue(UInt(width=high-low+1), traceLen))
-        q.io.deq.ready := in.ready && fire 
-        qs += q
-      }
-      io := Cat(qs map (_.io.deq.bits))
-      valid = valid && (qs.tail foldLeft qs.head.io.deq.valid)(_ && _.io.deq.valid)
-      id += n
-      qInNum += n
-      qInQs ++= qs
-      qs.clear
-    }
-    in.valid := fire && valid
-  }
-  val qInEnqs = Vec(qInQs map (_.io.enq.clone.flip))
-  qInQs.zipWithIndex foreach { case (q, id) => qInEnqs(id) <> q.io.enq }
-  qInEnqs foreach (_.bits := Bits(0))
-  qInEnqs foreach (_.valid := Bool(false))
-
-  id = 0
-  var qOutNum = 0
-  val qOutQs = ArrayBuffer[Queue[UInt]]() 
-  for (out <- qOuts) {
-    var ready = Bool(true)
-    for ((_, io) <- out.bits.flatten) {
-      val width = io.needWidth
-      val n = (width-1) / hostLen + 1
-      val qs = ArrayBuffer[Queue[UInt]]()
-      for (i <- 0 until n) {
-        val low = i * hostLen
-        val high = math.min(hostLen-1+low, width-1)  
-        val q = Module(new Queue(UInt(width=high-low+1), traceLen))
-        q.io.enq.bits := io(high, low)
-        q.io.enq.valid := out.valid && fire
-        qs += q
-      }
-      ready = ready && (qs.tail foldLeft qs.head.io.enq.ready)(_ && _.io.enq.ready)
-      id += n
-      qOutNum += n
-      qOutQs ++= qs
-      qs.clear
-    }
-    out.ready := fire && ready
-  }
-  val qOutDeqs = Vec(qOutQs map (_.io.deq.clone))
-  val qOutCnts = Vec(qOutQs map (_.io.count.clone))
-  qOutQs.zipWithIndex foreach { case (q, id) => q.io.deq <> qOutDeqs(id) }
-  qOutQs.zipWithIndex foreach { case (q, id) => q.io.count <> qOutCnts(id) }
-  qOutDeqs foreach (_.ready := Bool(false))
-
-  // For wire IOs, insert FFs
-  id = 0
-  val wInNum = (wIns foldLeft 0)((res, in) => res + (in.needWidth-1)/hostLen + 1)
-  val wInFFs = Vec.fill(wInNum) { Reg(UInt()) }
-  for (in <- wIns) {
+  val inNum = (ins foldLeft 0)((res, in) => res + (in.needWidth-1)/hostLen + 1)
+  val inRegs = Vec.fill(inNum) { Reg(UInt()) }
+  for (in <- ins) {
     // Resove width error
     in match {
-      case _: Bool => wInFFs(id).init("", 1)
+      case _: Bool => inRegs(id).init("", 1)
       case _ => 
     }
     val width = in.needWidth
     val n = (width-1) / hostLen + 1
-    val ffs = (0 until n) map { x => wInFFs(id+x) }
-    in := Mux(fire, Cat(ffs), UInt(0))
+    val regs = (0 until n) map { x => inRegs(id+x) }
+    in := Mux(fire, Cat(regs), UInt(0))
     id += n
   }
 
   id = 0
-  val wOutNum = (wOuts foldLeft 0)((res, out) => res + (out.needWidth-1)/hostLen + 1)
-  val wOutFFs = Vec.fill(wOutNum) { Reg(UInt()) }
-  for (out <- wOuts) {
+  val outNum = (outs foldLeft 0)((res, out) => res + (out.needWidth-1)/hostLen + 1)
+  val outRegs = Vec.fill(outNum) { Reg(UInt()) }
+  for (out <- outs) {
     out match {
-      case _: Bool => wOutFFs(id).init("", 1)
+      case _: Bool => outRegs(id).init("", 1)
       case _ => 
     }
     val width = out.needWidth
     val n = (width-1) / hostLen + 1
-    val ffs = (0 until n) map { x => wOutFFs(id+x) }
-    for ((ff, x) <- ffs.zipWithIndex) {
+    val regs = (0 until n) map { x => outRegs(id+x) }
+    for ((reg, x) <- regs.zipWithIndex) {
       val low = x * hostLen
       val high = math.min(hostLen-1+low, width-1)
-      ff := Mux(fireNext, out(high, low), ff)
+      reg := Mux(fireNext, out(high, low), reg)
     }
     id += n
   }
@@ -325,11 +222,11 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   io.host.out.bits  := UInt(0)
 
   // Memory pin connection
-  io.mem.req_cmd <> memReqCmdQ.io.deq
-  io.mem.req_data <> memReqDataQ.io.deq
-  memRespQ.io.enq.bits := io.mem.resp.bits
-  memRespQ.io.enq.valid := io.mem.resp.valid
-  io.mem.resp.ready := memRespQ.io.enq.ready
+  io.mem.req_cmd <> memReqCmdFifo.io.deq
+  io.mem.req_data <> memReqDataFifo.io.deq
+  memRespFifo.io.enq.bits := io.mem.resp.bits
+  memRespFifo.io.enq.valid := io.mem.resp.valid
+  io.mem.resp.ready := memRespFifo.io.enq.ready
 
   // Daisy pin connection
   val daisy = addDaisyPins(target, daisyLen)
@@ -345,15 +242,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   }
 
   // Machine states
-  val (debug_IDLE :: debug_STEP :: debug_SNAP1 :: debug_SNAP2 :: debug_TRACE :: 
-       debug_POKE :: debug_PEEK :: debug_POKEQ :: debug_PEEKQ :: debug_MEM :: Nil) = Enum(UInt(), 10)
-  val debugState = RegInit(debug_IDLE)
-
-  val stepcount = RegInit(UInt(0)) // Step Counter
-  // Define the fire signal
-  fire := (qOutQs foldLeft stepcount.orR)(_ && _.io.enq.ready) &&
-          wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready &&
-          debugState === debug_STEP
+  val (sim_IDLE :: sim_STEP :: sim_SNAP1 :: sim_SNAP2 :: sim_TRACE :: 
+       sim_POKE :: sim_PEEK :: sim_MEM :: Nil) = Enum(UInt(), 8)
+  val simState = RegInit(sim_IDLE)
 
   val snapbuf   = Reg(UInt(width=hostLen+daisyLen))
   val snapcount = Reg(UInt(width=log2Up(hostLen+1)))
@@ -364,95 +255,61 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
   val pokecount = Reg(UInt())
   val peekcount = Reg(UInt())
 
-  val pokeqlen = Reg(UInt(width=log2Up(traceLen+1)))
-  val peekqlen = Reg(UInt(width=log2Up(traceLen+1)))
-  val pokeqcount = Reg(UInt())
-  val pokeq_COUNT :: pokeq_DATA :: Nil = Enum(UInt(), 2)
-  val pokeqState = RegInit(pokeq_COUNT)
-
-  val peekqcount = Reg(UInt())
-  val peekq_COUNT :: peekq_DATA :: Nil = Enum(UInt(), 2)
-  val peekqState = RegInit(peekq_COUNT)
-
   val waddrcount = Reg(UInt(width=log2Up(addrLen+1)))
   val wdatacount = Reg(UInt(width=log2Up(memLen+1)))
   val raddrcount = Reg(UInt())
-  val (trace_WCOUNT :: trace_WADDR :: trace_WDATA :: 
-       trace_RCOUNT :: trace_RADDR :: trace_RTAG :: Nil) = Enum(UInt(), 6)
-  val traceState = RegInit(trace_WCOUNT)
+  val trace_COUNT :: trace_ADDR :: trace_TAG :: Nil = Enum(UInt(), 3)
+  val traceState = RegInit(trace_COUNT)
 
   val addrcount = Reg(UInt())
   val datacount = Reg(UInt())
   val mem_REQ_CMD :: mem_REQ_DATA :: mem_WAIT :: mem_RESP :: Nil = Enum(UInt(), 4)
   val memState = RegInit(mem_REQ_CMD)
 
-  switch(debugState) {
-    is(debug_IDLE) {
+  switch(simState) {
+    is(sim_IDLE) {
       io.host.in.ready := Bool(true)
       when(io.host.in.fire()) {
         val cmd = io.host.in.bits(cmdLen-1, 0)
         when(cmd === STEP) {
           readNext := io.host.in.bits(cmdLen)
           stepcount := io.host.in.bits(hostLen-1, cmdLen+1)
-          debugState := debug_STEP
+          simState := sim_STEP
         }.elsewhen(cmd === POKE) {
-          pokecount := UInt(wInNum)
-          debugState := debug_POKE
+          pokecount := UInt(inNum)
+          simState := sim_POKE
         }.elsewhen(cmd === PEEK) {
-          peekcount := UInt(wOutNum)
-          debugState := debug_PEEK
-        }.elsewhen(cmd === POKEQ) {
-          pokeqcount := UInt(qInNum)
-          debugState := debug_POKEQ
-        }.elsewhen(cmd === PEEKQ) {
-          peekqcount := UInt(qOutNum)
-          debugState := debug_PEEKQ
+          peekcount := UInt(outNum)
+          simState := sim_PEEK
         }.elsewhen(cmd === TRACE) {
-          debugState := debug_TRACE
+          simState := sim_TRACE
         }.elsewhen(cmd === MEM) {
           memReqCmd.rw := io.host.in.bits(cmdLen) 
           memReqCmd.tag := memTag
           addrcount := UInt((addrLen-1)/hostLen + 1)
           datacount := UInt((memLen-1)/hostLen + 1)
-          debugState := debug_MEM
+          simState := sim_MEM
         }
       }
     }
 
-    is(debug_STEP) {
+    is(sim_STEP) {
       when(fire) {
         stepcount := stepcount - UInt(1)
-      }.otherwise {
-        when(stepcount.orR) {
-          when(!(wAddrTrace.io.enq.ready && wDataTrace.io.enq.ready)) {
-            io.host.out.bits := step_TRACE
-            io.host.out.valid := Bool(true)
-            when(io.host.out.fire()) {
-              debugState := debug_TRACE 
-            } 
-          }.otherwise {
-            io.host.out.bits := step_PEEKQ
-            io.host.out.valid := Bool(true)
-            peekqcount := UInt(qOutNum)
-            when(io.host.out.fire()) {
-              debugState := debug_PEEKQ
-            }
-          }
-        }.elsewhen(!fireNext) {
-          snapcount := UInt(0)
-          io.host.out.bits := step_FIN
-          io.host.out.valid := Bool(true) 
-          when(io.host.out.fire()) {
-            debugState := Mux(readNext, debug_SNAP1, debug_IDLE)
-            readNext := Bool(false)
-          }
-          if (Driver.hasSRAM) sramcount := UInt(Driver.sramMaxSize-1)
+      }.elsewhen(!fireNext) {
+        snapcount := UInt(0)
+        io.host.out.bits := UInt(0)
+        io.host.out.valid := Bool(true) 
+        when(io.host.out.fire()) {
+          simState := Mux(readNext, sim_SNAP1, sim_IDLE)
+          readNext := Bool(false)
         }
+        if (Driver.hasSRAM) sramcount := UInt(Driver.sramMaxSize-1)
       }
     }
 
     // Snapshoting inputs and registers
-    is(debug_SNAP1) {
+    is(sim_SNAP1) {
       switch(snapState) {
         is(snap_IDLE) {
           snapState := Mux(daisy.regs.out.valid, snap_READ, snap_IDLE)
@@ -477,9 +334,9 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
               snapState := snap_IDLE
               if (Driver.hasSRAM) {
                 daisy.sram.restart := Bool(true)
-                debugState := debug_SNAP2
+                simState := sim_SNAP2
               } else {
-                debugState := debug_IDLE
+                simState := sim_IDLE
               }
             }
           }
@@ -488,7 +345,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
     }
     // Snapshotring SRAMs
     if (Driver.hasSRAM) {
-      is(debug_SNAP2) {
+      is(sim_SNAP2) {
         switch(snapState) {
           is(snap_IDLE) {
             snapState := Mux(daisy.sram.out.valid, snap_READ, snap_IDLE)
@@ -515,7 +372,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
                 snapState := snap_IDLE
               }.otherwise {
                 snapState := snap_IDLE
-                debugState := debug_IDLE
+                simState := sim_IDLE
               }
             }
           }
@@ -523,180 +380,89 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
       }
     }
 
-    is(debug_POKE) {
-      val id = UInt(wInNum) - pokecount
+    is(sim_POKE) {
+      val id = UInt(inNum) - pokecount
       io.host.in.ready := pokecount.orR
       when(io.host.in.fire()) {
-        wInFFs(id) := io.host.in.bits 
+        inRegs(id) := io.host.in.bits 
         pokecount := pokecount - UInt(1)
       }.elsewhen(!io.host.in.ready) {
-        debugState := debug_IDLE
+        simState := sim_IDLE
       }
     }
-    is(debug_PEEK) {
-      val id = UInt(wOutNum) - peekcount
-      io.host.out.bits  := wOutFFs(id)
+    is(sim_PEEK) {
+      val id = UInt(outNum) - peekcount
+      io.host.out.bits  := outRegs(id)
       io.host.out.valid := peekcount.orR
       when(io.host.out.fire()) {
         peekcount := peekcount - UInt(1)
       }.elsewhen(!io.host.out.valid) {
-        debugState := debug_IDLE
+        simState := sim_IDLE
       }
     }
 
-    if (qInNum > 0) {
-      is(debug_POKEQ) {
-        val id = UInt(qInNum) - pokeqcount
-        switch(pokeqState) {
-          is(pokeq_COUNT) {
-            io.host.in.ready := pokeqcount.orR
-            when(io.host.in.fire()) {
-              pokeqlen := io.host.in.bits
-              pokeqState := pokeq_DATA
-            }.elsewhen(!io.host.in.ready) {
-              debugState := debug_IDLE
-            }
-          }
-          is(pokeq_DATA) {
-            qInEnqs(id).bits := io.host.in.bits
-            qInEnqs(id).valid := io.host.in.valid && pokeqlen.orR
-            io.host.in.ready := qInEnqs(id).ready && pokeqlen.orR
-            when(io.host.in.fire()) {
-              pokeqlen := pokeqlen - UInt(1)
-            }.elsewhen(!io.host.in.ready) {
-              pokeqcount := pokeqcount - UInt(1)
-              pokeqState := pokeq_COUNT
-            }
-          } 
-        }
-      }
-    }
-
-    if (qOutNum > 0) {
-      // IO trace stage when any trace Q is full
-      // Todo: this will be very slow...
-      is(debug_PEEKQ) {
-        val id = UInt(qOutNum) - peekqcount
-        switch(peekqState) {
-          is(peekq_COUNT) {
-            io.host.out.bits := qOutCnts(id)
-            io.host.out.valid := peekqcount.orR
-            when(io.host.out.fire()) {
-              peekqlen := io.host.out.bits
-              peekqState := peekq_DATA
-            }.elsewhen(!io.host.out.valid) {
-              debugState := Mux(stepcount.orR, debug_STEP, debug_IDLE)
-            }
-          }
-          is(peekq_DATA) {
-            io.host.out.bits := qOutDeqs(id).bits
-            io.host.out.valid := qOutDeqs(id).valid && peekqlen.orR
-            qOutDeqs(id).ready := io.host.out.ready && peekqlen.orR
-            when(io.host.out.fire()) {
-              peekqlen := peekqlen - UInt(1)
-            }.elsewhen(!io.host.out.valid) {
-              peekqcount := peekqcount - UInt(1)
-              peekqState := peekq_COUNT
-            }
-          } 
-        }
-      }
-    }
-
-    is(debug_TRACE) {
+    is(sim_TRACE) {
       switch(traceState) {
-        is(trace_WCOUNT) {
-          io.host.out.bits := wDataTrace.io.count
-          io.host.out.valid := Bool(true)
-          when(io.host.out.fire()) {
-            traceState := trace_WADDR
-            waddrcount := UInt(0)
-            wdatacount := UInt(0)
-          }          
-        }
-        is(trace_WADDR) {
-          val toNext = if (addrLen > hostLen) waddrcount >= UInt(addrLen-hostLen) else Bool(true)
-          io.host.out.bits := wAddrTrace.io.deq.bits.addr >> waddrcount
-          io.host.out.valid := wAddrTrace.io.deq.valid
-          wAddrTrace.io.deq.ready := io.host.out.ready && toNext
-          when(io.host.out.fire()) {
-            waddrcount := Mux(toNext, UInt(0), waddrcount + UInt(hostLen))
-          }.elsewhen(!io.host.out.valid) {
-            traceState := trace_WDATA
-          }
-        }
-        is(trace_WDATA) {
-          val toNext = if (memLen > hostLen) wdatacount >= UInt(memLen-hostLen) else Bool(true)
-          io.host.out.bits := wDataTrace.io.deq.bits.data >> wdatacount
-          io.host.out.valid := wDataTrace.io.deq.valid
-          wDataTrace.io.deq.ready := io.host.out.ready && toNext
-          when(io.host.out.fire()) {
-            wdatacount := Mux(toNext, UInt(0), wdatacount + UInt(hostLen))
-          }.elsewhen(!io.host.out.valid) {
-            traceState := Mux(stepcount.orR, trace_WCOUNT, trace_RCOUNT)
-            debugState := Mux(stepcount.orR, debug_STEP, debug_TRACE)    
-          }
-        }
-        is(trace_RCOUNT) {
+        is(trace_COUNT) {
           io.host.out.bits := PopCount(rAddrValid)
           io.host.out.valid := Bool(true)
           when(io.host.out.fire()) {
-            traceState := trace_RADDR
+            traceState := trace_ADDR
             raddrcount := UInt(tagNum)
           }
         }
         val id = UInt(tagNum) - raddrcount
-        is(trace_RADDR) {
+        is(trace_ADDR) {
           io.host.out.bits := rAddrTrace(id).addr
           io.host.out.valid := rAddrValid(id) && raddrcount.orR
           when(!raddrcount.orR) {
-            traceState := trace_WCOUNT
-            debugState := debug_IDLE
+            traceState := trace_COUNT
+            simState := sim_IDLE
           }.elsewhen(io.host.out.fire()) {
-            traceState := trace_RTAG
+            traceState := trace_TAG
           }.elsewhen(!io.host.out.valid) {
             raddrcount := raddrcount - UInt(1)
           }
         }
-        is(trace_RTAG) {
+        is(trace_TAG) {
           io.host.out.bits := id
           io.host.out.valid := Bool(true)
           when(io.host.out.fire()) {
-            traceState := trace_RADDR
+            traceState := trace_ADDR
             raddrcount := raddrcount - UInt(1)
           }
         }
       }
     }
 
-    is(debug_MEM) {
+    is(sim_MEM) {
       switch(memState) {
         is(mem_REQ_CMD) {
           io.host.in.ready := addrcount.orR
-          memReqCmdQ.io.enq.valid := !io.host.in.ready
+          memReqCmdFifo.io.enq.valid := !io.host.in.ready
           when(io.host.in.fire()) {
             memReqCmd.addr := (memReqCmd.addr << UInt(hostLen)) | io.host.in.bits
             addrcount := addrcount - UInt(1)
           }
-          when(memReqCmdQ.io.enq.fire()) {
+          when(memReqCmdFifo.io.enq.fire()) {
             memState := Mux(memReqCmd.rw, mem_REQ_DATA, mem_WAIT)
           }
         }
         is(mem_REQ_DATA) {
           io.host.in.ready := datacount.orR
-          memReqDataQ.io.enq.valid := !io.host.in.ready
+          memReqDataFifo.io.enq.valid := !io.host.in.ready
           when(io.host.in.fire()) {
             memReqData.data := (memReqData.data << UInt(hostLen)) | io.host.in.bits
             datacount := datacount - UInt(1)
           }
-          when(memReqDataQ.io.enq.fire()) {
+          when(memReqDataFifo.io.enq.fire()) {
             memState := mem_REQ_CMD
-            debugState := debug_IDLE
+            simState := sim_IDLE
           }
         }
         is(mem_WAIT) {
           when(io.mem.resp.fire() && io.mem.resp.bits.tag === memReqCmd.tag) {
-            memRespQ.io.enq.valid := Bool(false)
+            memRespFifo.io.enq.valid := Bool(false)
             memResp.data := io.mem.resp.bits.data
             memResp.tag := io.mem.resp.bits.tag
             memState := mem_RESP
@@ -711,7 +477,7 @@ class Strober[+T <: Module](c: =>T, hasMem: Boolean = true, hasHTIF: Boolean = t
           }.elsewhen(!io.host.out.valid) {
             memTag := memTag + UInt(1)
             memState := mem_REQ_CMD
-            debugState := debug_IDLE
+            simState := sim_IDLE
           }
         }
       }
