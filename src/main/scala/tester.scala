@@ -5,14 +5,10 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => S
 import scala.io.Source
 
 abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = true, sampleCheck : Boolean = true) extends Tester(c, isTrace) {
-  val qInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
-  val qOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
-  val wInMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
-  val wOutMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
+  val inMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
+  val outMap = LinkedHashMap[String, ArrayBuffer[BigInt]]()
   val pokeMap = HashMap[BigInt, BigInt]()
   val peekMap = HashMap[BigInt, BigInt]()
-  val pokeqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
-  val peekqMap = HashMap[BigInt, ScalaQueue[BigInt]]()
 
   val targetPath = c.target.getPathName(".")
   val targetPrefix = Driver.backend.extractClassName(c.target)
@@ -23,13 +19,10 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   val tagLen = c.tagLen
   val memLen = c.memLen
   val cmdLen = c.cmdLen
-  val traceLen  = c.traceLen
   var snapLen = 0
 
-  var qInNum = 0
-  var qOutNum = 0
-  var wInNum = 0
-  var wOutNum = 0
+  var inNum = 0
+  var outNum = 0
 
   val samples = ArrayBuffer[Sample]()
   var sampleNum = 200
@@ -39,9 +32,9 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   import Cmd._
 
   override def poke(data: Bits, x: BigInt) {
-    if (wInMap contains dumpName(data)) {
+    if (inMap contains dumpName(data)) {
       if (isTrace) println("* POKE " + dumpName(data) + " <- " + x + " *")
-      val ids = wInMap(dumpName(data))
+      val ids = inMap(dumpName(data))
       val mask = (BigInt(1) << hostLen) - 1
       for (i <- 0 until ids.size) {
         val shift = hostLen * i
@@ -54,9 +47,9 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   override def peek(data: Bits) = {
-    if (wOutMap contains dumpName(data)) {
+    if (outMap contains dumpName(data)) {
       var value = BigInt(0)
-      val ids = wOutMap(dumpName(data))
+      val ids = outMap(dumpName(data))
       for (i <- 0 until ids.size) {
         value = value << hostLen | peekMap(ids(ids.size-1-i))
       }
@@ -65,40 +58,6 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     } else {
       super.peek(data)
     }
-  }
-
-  def pokeq(data: Bits, x: BigInt) {
-    assert(qInMap contains dumpName(data))
-    val ids = qInMap(dumpName(data))
-    val mask = (BigInt(1) << hostLen) - 1
-    for (i <- 0 until ids.size) {
-      val shift = hostLen * i
-      val value = (x >> shift) & mask
-      assert(pokeqMap contains ids(ids.size-1-i))
-      pokeqMap(ids(ids.size-1-i)) enqueue value
-    }
-  }
-
-  def peekq(data: Bits) = {
-    assert(qOutMap contains dumpName(data))
-    var value = BigInt(0)
-    val ids = qOutMap(dumpName(data))
-    for (i <- 0 until ids.size) {
-      assert(peekqMap contains ids(ids.size-1-i))
-      value = value << hostLen | peekqMap(ids(ids.size-1-i)).dequeue
-    }
-    value
-  }
-
-  def peekqValid(data: Bits) = {
-    assert(qOutMap contains dumpName(data))
-    var valid = true
-    val ids = qOutMap(dumpName(data))
-    for (i <- 0 until ids.size) {
-      assert(peekqMap contains ids(ids.size-1-i))
-      valid &= !peekqMap(ids(ids.size-1-i)).isEmpty
-    }
-    valid
   }
 
   def peek(name: String) = {
@@ -138,117 +97,47 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     val clk = emulatorCmd("step %d".format(n))
   }
 
-  def stayIdle(n: Int = 2) {
-    // the mathine is idle in realistic cases
-    takeSteps(n) 
-  }
-
   def pokeAll {
     if (isTrace) println("POKE ALL")
     // Send POKE command
-    stayIdle()
     poke(POKE.id)
 
     // Send Values
-    for (i <- 0 until wInNum) {
-      stayIdle()
+    for (i <- 0 until inNum) {
       assert(pokeMap contains i)
       poke(pokeMap(i))
     }
-    stayIdle()
     if (isTrace) println("==========")
   }
 
   def peekAll {
     if (isTrace) println("PEEK ALL")
-    stayIdle()
     peekMap.clear
     // Send PEEK command
     poke(PEEK.id)
     // Get values
-    for (i <- 0 until wOutNum) {
-      stayIdle()
+    for (i <- 0 until outNum) {
       peekMap(i) = peek
     }
-    stayIdle()
     if (isTrace) println("==========")
-  }
-
-  def pokeqAll {
-    if (isTrace) println("POKEQ ALL")
-    stayIdle()
-    // Send POKEQ command
-    if (qInNum > 0) poke(POKEQ.id)
-   
-    for (i <- 0 until qInNum) {
-      val count = math.min(pokeqMap(i).size, traceLen)
-      poke(count)
-      for (k <- 0 until count) {
-        poke(pokeqMap(i).dequeue)
-      } 
-    }
-    if (isTrace) println("==========")
-  }
-
-  def peekqAll {
-    if (isTrace) println("PEEKQ ALL")
-    stayIdle()
-    // Send PEEKQ command
-    if (qOutNum > 0) poke(PEEKQ.id)
-    traceQout
-    if (isTrace) println("==========")
-  }
-
-  def traceQout = {
-    for (i <- 0 until qOutNum) {
-      val count = peek.toInt
-      for (k <- 0 until count) {
-        peekqMap(i) enqueue peek
-      } 
-    }
   }
 
   def peekTrace {
     if (isTrace) println("PEEK TRACE")
-    stayIdle()
     poke(TRACE.id)
     traceMem
   }
 
   // Memory trace
-  private val memwrites = LinkedHashMap[BigInt, BigInt]()
-  private val memreads = LinkedHashMap[BigInt, BigInt]()
+  private val memreads = LinkedHashMap[Int, BigInt]()
   def traceMem {
-    val waddr = ArrayBuffer[BigInt]()
-    val wdata = ArrayBuffer[BigInt]()
-    val wcount = peek.toInt
-    for (i <- 0 until wcount) {
-      var addr = BigInt(0)
-      for (k <- 0 until addrLen by hostLen) {
-        addr |= peek << k
-      }
-      waddr += addr
-    }
-    for (i <- 0 until wcount) {
-      var data = BigInt(0)
-      for (k <- 0 until memLen by hostLen) {
-        data |= peek << k
-      }
-      wdata += data
-    }
-    for ((addr, data) <- waddr zip wdata) {
-      memwrites(addr) = data
-    }
-    waddr.clear
-    wdata.clear
-
     val rcount = peek.toInt
     for (i <- 0 until rcount) {
       var addr = BigInt(0)
       for (k <- 0 until addrLen by hostLen) {
         addr = (addr << hostLen) | peek
       }
-      val tag = peek
+      val tag = peek.toInt
       memreads(tag) = addr
     }
   }
@@ -444,49 +333,35 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
   }
 
   var readNext = false
-  var lastR = -1
+  var r = 0
   override def step(n: Int) {
     require(n % stepSize == 0)
     if (isTrace) println("STEP " + n + " -> " + t + n)
-    if (readNext) recordIo(lastR, n)
-    pokeAll
-    pokeqAll
+    if (readNext) recordIo(r, n)
     val index = t / stepSize
-    val r = if (index < sampleNum) index else rnd.nextInt(index+1)
-    readNext = sampleCheck || r < sampleNum 
+    r = if (index < sampleNum || sampleCheck) index else rnd.nextInt(index+1)
+    readNext = r < sampleNum || sampleCheck
+    pokeAll
     pokeSteps(n, readNext)
-    for (i <- 0 until n) tickMem
-    var fin = false
-    while (!fin) {
-      tickMem
-      if (peekReady) {
-        val resp = peek
-        if (resp == StepResp.FIN.id) fin = true
-        else if (resp == StepResp.TRACE.id) traceMem
-        else if (resp == StepResp.PEEKQ.id) traceQout
-      }
-    }
-    if (readNext) {
-      doSampling(index, r, lastR)
-      lastR = r
-    }
+    while(!peekReady) { tickStep }
+    assert(peek == 0)
+    if (readNext) doSampling(r)
     peekAll
-    peekqAll
     t += n
   }
 
+  def tickStep { tickMem }
+
   def recordIo(r: Int, n: Int) {
-    val sample = if (sampleCheck) samples.last else samples(r)
-    // Record outputs
+    val sample = samples(r)
     if (sampleCheck) {
-      for ((path, ids) <- wOutMap) {
+      for ((path, ids) <- outMap) {
         val signal = targetPrefix + (path stripPrefix targetPath) 
         val data = (ids foldLeft BigInt(0))((res, i) => (res << hostLen) | (peekMap(i)))
         sample.cmds += Expect(signal, data)
       }
     }
-    // Record inputs
-    for ((path, ids) <- wInMap) {
+    for ((path, ids) <- inMap) {
       val signal = targetPrefix + (path stripPrefix targetPath) 
       val data = (ids foldLeft BigInt(0))(
         (res, i) => (res << hostLen) | (pokeMap getOrElse (i, BigInt(0))))
@@ -495,119 +370,61 @@ abstract class StroberTester[+T <: Strober[Module]](c: T, isTrace: Boolean = tru
     if (sampleCheck) sample.cmds += Step(n)
   }
 
-  def doSampling(index: Int, r: Int, lastR: Int) {
+  def doSampling(r: Int) {
     // record snaps
-    val sample = Sample(index, readSnap)
+    val sample = Sample(readSnap)
     verifySnap(sample.cmds.toList)
     // record mems
     peekTrace
     for ((tag, addr) <- memreads)
       sample.cmds += Read(addr, tag)
-    for ((addr, data) <- memwrites)
-      sample.mem(addr) = data
     memreads.clear
-    memwrites.clear
-    if (sampleCheck || samples.size < sampleNum) { 
-      if (!samples.isEmpty) {
-        val last = samples.last
-        last.next = Some(sample)
-        sample.prev = Some(last)
-      }
+
+    if (r < samples.size) 
+      samples(r) = sample
+    else 
       samples += sample 
-    } else {
-      // memory merge
-      samples(r).next match {
-        case None => {
-          assert(r == lastR)
-          sample.mem ++= samples(r).mem
-          samples(r).prev match {
-            case None =>
-            case Some(prev) => {
-              sample.prev = Some(prev)
-              prev.next = Some(sample)
-            }
-          }
-        }
-        case Some(next) => {
-          next.mem ++= samples(r).mem
-          samples(r).prev match {
-            case None =>
-            case Some(prev) => {
-              prev.next = Some(next)
-              next.prev = Some(prev)
-            }
-          }
-        }
-        val last = samples(lastR)
-        sample.prev = Some(last)
-        last.next = Some(sample)
-        samples(r) = sample
-      }
-    }
   }
 
   def readIoMap(filename: String) {
     object IOType extends Enumeration {
-      val QIN, QOUT, WIN, WOUT = Value
+      val IN, OUT = Value
     }
     import IOType._
 
     val filename = targetPrefix + ".io.map"
     val lines = scala.io.Source.fromFile(basedir + "/" + filename).getLines
-    var iotype = QIN
+    var iotype = IN
     for (line <- lines) {
       val tokens = line split " "
       tokens.head match {
-        case "QIN:"  => iotype = QIN
-        case "QOUT:" => iotype = QOUT
-        case "WIN:"  => iotype = WIN
-        case "WOUT:" => iotype = WOUT
+        case "IN:"  => iotype = IN
+        case "OUT:" => iotype = OUT
         case _ => {
           val path = targetPath + (tokens.head stripPrefix targetPrefix)
           val width = tokens.last.toInt
           val n = (width - 1) / hostLen + 1
           iotype match {
-            case QIN => {
-              qInMap(path) = ArrayBuffer[BigInt]()
+            case IN => {
+              inMap(path) = ArrayBuffer[BigInt]()
               for (i <- 0 until n) {
-                qInMap(path) += BigInt(qInNum)
-                qInNum += 1
+                inMap(path) += BigInt(inNum)
+                inNum += 1
               }
             }
-            case QOUT => {
-              qOutMap(path) = ArrayBuffer[BigInt]()
+            case OUT => {
+              outMap(path) = ArrayBuffer[BigInt]()
               for (i <- 0 until n) {
-                qOutMap(path) += BigInt(qOutNum)
-                qOutNum += 1
-              }
-            }
-            case WIN => {
-              wInMap(path) = ArrayBuffer[BigInt]()
-              for (i <- 0 until n) {
-                wInMap(path) += BigInt(wInNum)
-                wInNum += 1
-              }
-            }
-            case WOUT => {
-              wOutMap(path) = ArrayBuffer[BigInt]()
-              for (i <- 0 until n) {
-                wOutMap(path) += BigInt(wOutNum)
-                wOutNum += 1
+                outMap(path) += BigInt(outNum)
+                outNum += 1
               }
             }
           }
         }
       }
     }
-    // initialize pokeqMap & peekqMap
-    for (i <- 0 until wInNum) {
+    for (i <- 0 until inNum) {
       pokeMap(i) = 0
-    }
-    for (i <- 0 until qInNum) {
-      pokeqMap(i) = ScalaQueue[BigInt]()
-    }
-    for (i <- 0 until qOutNum) {
-      peekqMap(i) = ScalaQueue[BigInt]()
     }
   }
 

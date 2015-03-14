@@ -24,8 +24,8 @@ object Sample {
     widths  += width
   }
 
-  def apply(t: BigInt, snap: String) = {
-    val sample = new Sample(t)
+  def apply(snap: String) = {
+    val sample = new Sample
     var start = 0
     for ((signal, i) <- signals.zipWithIndex) {
       val width = widths(i)
@@ -46,7 +46,7 @@ object Sample {
 
   def dump(samples: List[Sample]) = {
     val res = new StringBuilder
-    for ((sample, i) <- samples.sortWith(_.t < _.t).zipWithIndex) {
+    for ((sample, i) <- samples.zipWithIndex) {
       res append "99 Sample#%d\n".format(i)
       for (cmd <- sample.cmds) {
         cmd match {
@@ -110,9 +110,7 @@ object Sample {
   }
 }
 
-class Sample(val t: BigInt = 0) {
+class Sample {
   val cmds = ArrayBuffer[SampleInst]()
   val mem  = LinkedHashMap[BigInt, BigInt]()
-  var prev: Option[Sample] = None
-  var next: Option[Sample] = None
 }

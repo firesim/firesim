@@ -258,36 +258,18 @@ object transforms {
 
     val ioFile = Driver.createOutputFile(targetName + ".io.map")
     // Print out the IO mapping for pokes and peeks
-    if (top.qInNum > 0) {
-      res append "QIN:\n"
-      for (in <- top.qIns ; (_, io) <- in.bits.flatten) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-        val width = io.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    }
-
-    if (top.qOutNum > 0) {
-      res append "QOUT:\n"
-      for (in <- top.qOuts ; (_, io) <- in.bits.flatten) {
-        val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-        val width = io.needWidth
-        res append "%s %d\n".format(path, width)
-      }
-    }
-
-    if (top.wInNum > 0) {
-      res append "WIN:\n"
-      for (in <- top.wIns) {
+    if (top.inNum > 0) {
+      res append "IN:\n"
+      for (in <- top.ins) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
         val width = in.needWidth
         res append "%s %d\n".format(path, width)
       }
     }
     
-    if (top.wOutNum > 0) {
-      res append "WOUT:\n"
-      for (out <- top.wOuts) {
+    if (top.outNum > 0) {
+      res append "OUT:\n"
+      for (out <- top.outs) {
         val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
         val width = out.needWidth
         res append "%s %d\n".format(path, width)
