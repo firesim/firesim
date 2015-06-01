@@ -5,86 +5,90 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
 import addDaisyPins._
 
 object transforms { 
-  val regs = HashMap[Module, ArrayBuffer[Node]]()
-  val srams  = HashMap[Module, ArrayBuffer[Mem[_]]]()
   val sramAddrs = HashMap[Mem[_], Reg]()
-  lazy val top = Driver.topComponent.asInstanceOf[Strober]
-  lazy val targetName = Driver.backend.extractClassName(top.target)
-  lazy val (targetComps, targetCompsRev) = {
+  // var daisyLen = -1
+
+  val wrappers = ArrayBuffer[SimWrapper[Module]]()
+  val stallPins = HashMap[Module, Bool]()
+  val comps = HashMap[Module, Vector[Module]]()
+  val compsRev = HashMap[Module, Vector[Module]]()
+  val regs = HashMap[Module, ArrayBuffer[Node]]()
+  val srams = HashMap[Module, ArrayBuffer[Mem[_]]]()
+
+  def init[T <: Module](w: SimWrapper[T], stall: Bool) {
+    // Add backend passes
+    if (wrappers.isEmpty) { 
+      Driver.backend.transforms ++= Seq(
+        Driver.backend.inferAll,
+        Driver.backend.computeMemPorts,
+        Driver.backend.findConsumers,
+        initWrappers
+        // connectStallSignals // ,
+        // addRegChains,
+        // addSRAMChain,
+        // dumpMappings,
+        // dumpParams
+      )
+    }
+
+    w.name = Driver.backend.extractClassName(w.target) + "Wrapper"
+    wrappers += w
+    stallPins(w.target) = stall
+  } 
+
+  def initWrappers(c: Module) {
+    ChiselError.info("[transforms] initiate simulation modules")
+    // This pass initiate simulation modules
     def collect(c: Module): Vector[Module] = 
       (c.children foldLeft Vector[Module]())((res, x) => res ++ collect(x)) ++ Vector(c)
     def collectRev(c: Module): Vector[Module] = 
       Vector(c) ++ (c.children foldLeft Vector[Module]())((res, x) => res ++ collectRev(x))
-    (collect(top.target), collectRev(top.target))
-  }
-  var daisyLen = -1
 
-  def addTransforms(width: Int) {
-    daisyLen = width
-    Driver.backend.transforms ++= Seq(
-      initStrober,
-      Driver.backend.inferAll,
-      Driver.backend.computeMemPorts,
-      Driver.backend.findConsumers,
-      connectStallSignals,
-      addRegChains,
-      addSRAMChain,
-      dumpMappings,
-      dumpParams
-    )
-  } 
+    for (w <- wrappers) {
+      val t = w.target
+      comps(t) = collect(t)
+      compsRev(t) = collectRev(t)
 
-  def initStrober(c: Module) {
-    Driver.implicitReset setName "reset_top"
-    top.reset setName "reset_top"
-    top.name = targetName + "Strober"
-    for (m <- targetComps ; if m.name != top.target.name) {
-      addDaisyPins(m, daisyLen)
-    }
-  }
-
-  // Connect the stall signal to the register and memory writes for freezing
-  def connectStallSignals(c: Module) {
-    ChiselError.info("[transforms] connect stall signals")
-
-    def connectStallPins(m: Module) {
-      if (m.name != top.target.name && daisyPins(m).stall.inputs.isEmpty) {
-        connectStallPins(m.parent)
-        daisyPins(m).stall := daisyPins(m.parent).stall
-      }
-    }
-
-    for (m <- targetComps) {
-      regs(m) = ArrayBuffer[Node]()
-      srams(m) = ArrayBuffer[Mem[_]]()
-      connectStallPins(m)
-      m bfs { _ match {
-        case reg: Reg => { 
-          connectStallPins(m)
-          reg.inputs(0) = Multiplex(daisyPins(m).stall && !m.reset, reg, reg.inputs(0))
-          // Add the register for daisy chains
-          regs(m) += reg
+      def connectStallPins(m: Module) {
+        if (m != t && stallPins(m).inputs.isEmpty) {
+          connectStallPins(m.parent)
+          stallPins(m) = m.addPin(Bool(), "stall")
+          stallPins(m) := stallPins(m.parent)
         }
-        case mem: Mem[_] => {
-          connectStallPins(m)
-          for (write <- mem.writeAccesses) {
-            write cond_= Bool().fromNode(write.cond) && !daisyPins(m).stall
+      }
+      // Connect the stall signal to the register and memory writes for freezing
+      for (m <- comps(t)) {
+        if (!(stallPins contains m)) stallPins(m) = m.addPin(Bool(INPUT), "io_stall")
+        connectStallPins(m)
+        regs(m) = ArrayBuffer[Node]()
+        srams(m) = ArrayBuffer[Mem[_]]()
+        m bfs { _ match {
+          case reg: Reg => { 
+            reg.inputs(0) = Multiplex(stallPins(m) && !m.reset, reg, reg.inputs(0))
+            // Add the register for daisy chains
+            regs(m) += reg
           }
-          if (mem.seqRead) {
-            srams(m) += mem
-          } else {
-            for (i <- 0 until mem.size) {
-              val read = new MemRead(mem, UInt(i)) 
-              read.infer
-              regs(m) += read
+          case mem: Mem[_] => {
+            for (write <- mem.writeAccesses) {
+              write cond_= Bool().fromNode(write.cond) && !stallPins(m)
+            }
+            if (mem.seqRead) {
+              srams(m) += mem
+            } else {
+              for (i <- 0 until mem.size) {
+                val read = new MemRead(mem, UInt(i)) 
+                read.infer
+                regs(m) += read
+              }
             }
           }
-        }
-        case _ =>
-      } }
+          case _ =>
+        } }
+      }
     }
   }
 
+  /*
   def addRegChains(c: Module) {
     ChiselError.info("[transforms] add reg chains")
 
@@ -367,5 +371,6 @@ object transforms {
       w.close
     }
   }
+  */
 }
 
