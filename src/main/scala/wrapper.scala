@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer}
 
 object SimWrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = targetParams alter StroberParams.mask
+    val params = targetParams alter SimParams.mask
     Module(new SimWrapper(c))(params)
   }
 }
@@ -22,7 +22,13 @@ class SimWrapperIO(target_ins: Array[(String, Bits)], target_outs: Array[(String
   val outs = Vec(target_outs map genPacket)
 }
 
-class SimWrapper[+T <: Module](c: =>T) extends Module {
+abstract class SimNetwork extends Module {
+  def io: SimWrapperIO 
+  def inMap: Map[Bits, Int]
+  def outMap: Map[Bits, Int]
+}
+
+class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
   val (target_ins, target_outs) = target.wires partition (_._2.dir == INPUT)
   val io = new SimWrapperIO(target_ins, target_outs)
@@ -43,13 +49,13 @@ class SimWrapper[+T <: Module](c: =>T) extends Module {
   for ((in, i) <- io.ins.zipWithIndex) {
     val channel = in_channels(i)
     in <> channel.io.in
-    target_ins(i)._2 := channel.io.out.bits.payload
+    target_ins(i)._2 := channel.io.out.bits.data
   }
 
   for ((out, i) <- io.outs.zipWithIndex) {
     val channel = out_channels(i)
     channel.io.out <> out
-    channel.io.in.bits.payload := target_outs(i)._2
+    channel.io.in.bits.data := target_outs(i)._2
   }
   
   // Control
