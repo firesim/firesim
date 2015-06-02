@@ -4,76 +4,134 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => ScalaQueue}
 import scala.io.Source
 
-abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) extends Tester(c, false) {
-  val target = c.target
+abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c, false) {
   val pokeMap = HashMap[Int, BigInt]()
   val peekMap = HashMap[Int, BigInt]()
+
+  def inMap: Map[Bits, Int]
+  def outMap: Map[Bits, Int]
+
+  def pokeChannel(addr: Int, data: BigInt): Unit
+  def peekChannel(addr: Int): BigInt
 
   def takeSteps(n: Int) {
     val clk = emulatorCmd("step %d".format(n))
   }
 
   def pokePort(port: Bits, x: BigInt) {
-    assert(c.inMap contains port)
+    assert(inMap contains port)
     if (isTrace) println("* POKE " + dumpName(port) + " <- " + x + " *")
-    pokeMap(c.inMap(port)) = x 
+    pokeMap(inMap(port)) = x 
   }
  
   def peekPort(port: Bits) = {
-    assert(c.outMap contains port)
-    val value = peekMap(c.outMap(port))
+    assert(outMap contains port)
+    val value = peekMap(outMap(port))
     if (isTrace) println("* PEEK " + dumpName(port) + " -> " + value + " *")
     value
   }
 
   def expectPort(port: Bits, expected: BigInt) = {
-    assert(c.outMap contains port)
-    val value = peekMap(c.outMap(port))
+    assert(outMap contains port)
+    val value = peekMap(outMap(port))
     val pass = value == expected 
     if (isTrace) println("* EXPECT " + dumpName(port) + " -> " + value + " == " + expected + 
       (if (pass) ", PASS" else ", FAIL"))
     pass
   }
-
+ 
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
     var exit = false
     for (i <- 0 until n) {
-      do {
-        exit = true
-        takeSteps(1)
-        for ((in, id) <- c.inMap) {
-          exit &= peek(c.io.ins(id).ready) == 1
-        }
-      } while(!exit)
-
-      for ((in, id) <- c.inMap) {
+      for ((in, id) <- inMap) {
         assert(pokeMap contains id)
-        poke(c.io.ins(id).bits.payload, pokeMap(id))
-        poke(c.io.ins(id).valid, 1)
+        pokeChannel(id, pokeMap(id))
       }
-      takeSteps(1)
-      for ((in, id) <- c.inMap) {
-        poke(c.io.ins(id).valid, 0)
-      }
-      do {
-        exit = true
-        takeSteps(1)
-        for ((out, id) <- c.outMap) {
-          exit &= peek(c.io.outs(id).valid) == 1
-        }
-      } while(!exit)
-
       peekMap.clear
-      for ((out, id) <- c.outMap) {
-        peekMap(id) = peek(c.io.outs(id).bits.payload)
-        poke(c.io.outs(id).ready, 1)
-      }
-      takeSteps(1)
-      for ((out, id) <- c.outMap) {
-        poke(c.io.outs(id).ready, 0) 
+      for ((out, id) <- outMap) {
+        peekMap(id) = peekChannel(id)
       }
     }
     t += n
+  }
+}
+
+abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) 
+  extends SimTester(c, isTrace) {
+  val inMap = c.inMap
+  val outMap = c.outMap
+
+  def pokeChannel(addr: Int, data: BigInt) {
+    while(peek(c.io.ins(addr).ready) == 0) {
+      takeSteps(1)
+    }
+    assert(pokeMap contains addr)
+    poke(c.io.ins(addr).bits.data, pokeMap(addr))
+    poke(c.io.ins(addr).valid, 1)
+    takeSteps(1)
+    poke(c.io.ins(addr).valid, 0)
+  }
+
+  def peekChannel(addr: Int) = {
+    while(peek(c.io.outs(addr).valid) == 0) {
+      takeSteps(1)
+    }
+    val value = peek(c.io.outs(addr).bits.data)
+    poke(c.io.outs(addr).ready, 1)
+    takeSteps(1)
+    poke(c.io.outs(addr).ready, 0)
+    value
+  }
+}
+
+abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
+  extends SimTester(c, isTrace) {
+  val inMap = c.inMap
+  val outMap = c.outMap
+
+  def pokeChannel(addr: Int, data: BigInt) {
+    do {
+      poke(c.io.M_AXI.aw.bits.id, 0)
+      poke(c.io.M_AXI.aw.bits.addr, addr << 2)
+      poke(c.io.M_AXI.aw.valid, 1)
+      poke(c.io.M_AXI.w.bits.data, data)
+      poke(c.io.M_AXI.w.valid, 1)
+      takeSteps(1)
+    } while (peek(c.io.M_AXI.aw.ready) == 0 || peek(c.io.M_AXI.w.ready) == 0)
+
+    do {
+      poke(c.io.M_AXI.aw.valid, 0)
+      poke(c.io.M_AXI.w.valid, 0)
+      takeSteps(1)
+    } while (peek(c.io.M_AXI.b.valid) == 0)
+
+    assert(peek(c.io.M_AXI.b.bits.id) == 0)
+    poke(c.io.M_AXI.b.ready, 1)
+    takeSteps(1)
+    poke(c.io.M_AXI.b.ready, 0)
+  }
+
+  def peekChannel(addr: Int) = {
+    while (peek(c.io.M_AXI.ar.ready) == 0) {
+      takeSteps(1)
+    }
+
+    poke(c.io.M_AXI.ar.bits.addr, addr << 2)
+    poke(c.io.M_AXI.ar.bits.id, 0)
+    poke(c.io.M_AXI.ar.valid, 1)
+    takeSteps(1)
+    poke(c.io.M_AXI.ar.valid, 0)
+
+    while (peek(c.io.M_AXI.r.valid) == 0) {
+      takeSteps(1)
+    }
+
+    val value = peek(c.io.M_AXI.r.bits.data)
+    assert(peek(c.io.M_AXI.r.bits.id) == 0)
+    poke(c.io.M_AXI.r.ready, 1)
+    takeSteps(1)
+    poke(c.io.M_AXI.r.ready, 0)
+    value
   }
 }

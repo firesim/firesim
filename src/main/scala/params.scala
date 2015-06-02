@@ -15,9 +15,23 @@ case object MemAddrWidth extends Field[Int]
 case object MemTagWidth extends Field[Int]
 case object HostCmdWidth extends Field[Int]
 
-object StroberParams {
+object AXI4Params {
   val axiAddrWidth = 32
   val axiDataWidth = 32
+
+  val mask = (key: Any, site: View, here: View, up: View) => key match {
+    case AXIAddrWidth => Dump("AXI_ADDR_WIDTH", axiAddrWidth)
+    case AXIDataWidth => Dump("AXI_DATA_WIDTH", axiDataWidth)
+  }
+}
+
+object SimParams {
+  val mask = (key: Any, site: View, here: View, up: View) => key match {
+    case _ =>
+  }
+}
+
+object StroberParams {
   val axiFifoLen = 32
   val traceLen = 32
   val memAddrWidth = 32
@@ -26,8 +40,6 @@ object StroberParams {
   val cmdWidth = 2
 
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case AXIAddrWidth => Dump("AXI_ADDR_WIDTH", axiAddrWidth)
-    case AXIDataWidth => Dump("AXI_DATA_WIDTH", axiDataWidth)
     case AXIFifoLen => Dump("AXI_FIFO_LEN", axiFifoLen)
     case TraceLen => Dump("TRACE_LEN", traceLen)
 

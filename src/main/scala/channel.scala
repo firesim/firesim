@@ -8,7 +8,7 @@ class Header extends Bundle {
 
 class Packet[T <: Bits](gen: T) extends Bundle {
   // val header  = new Header
-  val payload = gen.clone
+  val data = gen.clone
   override def clone: this.type = new Packet(gen).asInstanceOf[this.type]
 }
 
@@ -19,9 +19,9 @@ class ChannelIO[T <: Bits](gen: T) extends Bundle {
 
 class Channel[T <: Bits](gen: T, entries: Int = 2) extends Module {
   // Chnnel is plugged into one "flattened" IO
-  // Channel has more than on FIFOs: header and payload
+  // Channel has more than on FIFOs: header and data
   // This is because it's sometimes hard to encapsulate 
-  // header and payload into one packet (e.g. AXI buses)
+  // header and data into one packet (e.g. AXI buses)
   val io      = new ChannelIO[T](gen)
   val packets = Module(new Queue(new Packet[T](gen), entries))
   io.in <> packets.io.enq
