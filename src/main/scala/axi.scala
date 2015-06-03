@@ -244,4 +244,6 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.r.bits.last := io.M_AXI.r.valid
   io.M_AXI.r.bits.id   := arid_r
   io.M_AXI.r.bits.data := out_data(raddr_r)
+
+  transforms.init(this)
 }

@@ -44,12 +44,15 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
     channel.name = "Channel_" + x._1
     channel
   }
+  val fire = Bool()
+  val fireNext = RegNext(fire)
 
   // Datapath: Channels <> IOs
   for ((in, i) <- io.ins.zipWithIndex) {
     val channel = in_channels(i)
+    val buffer = RegEnable(channel.io.out.bits.data, fire)
+    target_ins(i)._2 := Mux(fire, channel.io.out.bits.data, buffer)
     in <> channel.io.in
-    target_ins(i)._2 := channel.io.out.bits.data
   }
 
   for ((out, i) <- io.outs.zipWithIndex) {
@@ -62,9 +65,8 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   // Firing condtion:
   // 1) all input values are valid
   // 2) all output FIFOs are not full
-  val fire = (in_channels foldLeft Bool(true))(_ && _.io.out.valid) && 
-             (out_channels foldLeft Bool(true))(_ && _.io.in.ready)
-  val fireNext = RegNext(fire)
+  fire := (in_channels foldLeft Bool(true))(_ && _.io.out.valid) && 
+          (out_channels foldLeft Bool(true))(_ && _.io.in.ready)
  
   // Inputs are consumed when firing conditions are met
   in_channels foreach { channel =>
@@ -73,7 +75,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
    
   // Outputs should be ready after one cycle
   out_channels foreach { channel =>
-     channel.io.in.valid := fireNext
+    channel.io.in.valid := fireNext
   }
 
   val stall = target.addPin(Bool(INPUT), "io_stall")

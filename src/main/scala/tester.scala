@@ -31,22 +31,30 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     value
   }
 
+  override def expect(pass: Boolean, msg: String) = {
+    if (isTrace) println(msg + (if (pass) " : PASS" else " : FAIL"))
+    if (!pass && failureTime < 0) failureTime = t
+    ok &= pass
+    pass
+  }
+ 
   def expectPort(port: Bits, expected: BigInt) = {
     assert(outMap contains port)
     val value = peekMap(outMap(port))
     val pass = value == expected 
-    if (isTrace) println("* EXPECT " + dumpName(port) + " -> " + value + " == " + expected + 
-      (if (pass) ", PASS" else ", FAIL"))
-    pass
+    expect(pass, "* EXPECT " + dumpName(port) + " -> " + value + " == " + expected)
   }
- 
+
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
     var exit = false
     for (i <- 0 until n) {
       for ((in, id) <- inMap) {
-        assert(pokeMap contains id)
-        pokeChannel(id, pokeMap(id))
+        if (pokeMap contains id) {
+          pokeChannel(id, pokeMap(id))
+        } else {
+          pokeChannel(id, 0)
+        }
       }
       peekMap.clear
       for ((out, id) <- outMap) {
@@ -66,8 +74,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     while(peek(c.io.ins(addr).ready) == 0) {
       takeSteps(1)
     }
-    assert(pokeMap contains addr)
-    poke(c.io.ins(addr).bits.data, pokeMap(addr))
+    poke(c.io.ins(addr).bits.data, data)
     poke(c.io.ins(addr).valid, 1)
     takeSteps(1)
     poke(c.io.ins(addr).valid, 0)
