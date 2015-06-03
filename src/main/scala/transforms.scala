@@ -22,7 +22,7 @@ object transforms {
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
-        initWrappers
+        initSimWrappers
         // connectStallSignals // ,
         // addRegChains,
         // addSRAMChain,
@@ -36,7 +36,12 @@ object transforms {
     stallPins(w.target) = stall
   } 
 
-  def initWrappers(c: Module) {
+  def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
+    val targetName = wrappers.head.name stripSuffix "Wrapper"
+    w.name = targetName + "AXI4Wrapper"
+  }
+
+  def initSimWrappers(c: Module) {
     ChiselError.info("[transforms] initiate simulation modules")
     // This pass initiate simulation modules
     def collect(c: Module): Vector[Module] = 
