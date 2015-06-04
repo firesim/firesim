@@ -145,6 +145,7 @@ class Channel2AXI[T <: Bits](gen: Packet[T], addr: Int) extends Module {
           when(count.orR) {
             count := count - UInt(1)
           }.otherwise {
+            count := UInt((dataWidth-1)/axiDataWidth)
             state := s_IDLE
           }
         } else {
@@ -160,6 +161,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val io = new AXI4
   val inMap = sim.inMap
   val outMap = sim.outMap
+  val axiAddrWidth = params(AXIAddrWidth)
+  val axiDataWidth = params(AXIDataWidth)
 
   /*** M_AXI INPUTS ***/
   val waddr_r = RegInit(UInt(0))
