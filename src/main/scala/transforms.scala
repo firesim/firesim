@@ -54,17 +54,12 @@ object transforms {
       comps(t) = collect(t)
       compsRev(t) = collectRev(t)
 
-      def connectStallPins(m: Module) {
-        if (m != t && stallPins(m).inputs.isEmpty) {
-          connectStallPins(m.parent)
-          stallPins(m) = m.addPin(Bool(), "stall")
+      // Connect the stall signal to the register and memory writes for freezing
+      for (m <- compsRev(t)) {
+        if (!(stallPins contains m)) { 
+          stallPins(m) = m.addPin(Bool(INPUT), "io_stall_t")
           stallPins(m) := stallPins(m.parent)
         }
-      }
-      // Connect the stall signal to the register and memory writes for freezing
-      for (m <- comps(t)) {
-        if (!(stallPins contains m)) stallPins(m) = m.addPin(Bool(INPUT), "io_stall")
-        connectStallPins(m)
         regs(m) = ArrayBuffer[Node]()
         srams(m) = ArrayBuffer[Mem[_]]()
         m bfs { _ match {
