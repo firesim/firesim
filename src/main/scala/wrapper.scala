@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer}
 
 object SimWrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = targetParams alter SimParams.mask
+    val params = targetParams // alter SimParams.mask
     Module(new SimWrapper(c))(params)
   }
 }
@@ -70,15 +70,15 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
  
   // Inputs are consumed when firing conditions are met
   in_channels foreach { channel =>
-    channel.io.out.ready := fire
+    channel.io.out.ready := fire 
   }
    
   // Outputs should be ready after one cycle
   out_channels foreach { channel =>
-    channel.io.in.valid := fireNext
+    channel.io.in.valid := fireNext || RegNext(reset) 
   }
 
-  val stall = target.addPin(Bool(INPUT), "io_stall")
+  val stall = target.addPin(Bool(INPUT), "io_stall_t")
   stall := !fire
 
   transforms.init(this, stall)

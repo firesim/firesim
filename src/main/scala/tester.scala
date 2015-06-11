@@ -50,11 +50,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     var exit = false
     for (i <- 0 until n) {
       for ((in, id) <- inMap) {
-        if (pokeMap contains id) {
-          pokeChannel(id, pokeMap(id))
-        } else {
-          pokeChannel(id, 0)
-        }
+        pokeChannel(id, pokeMap getOrElse (id, 0))
       }
       peekMap.clear
       for ((out, id) <- outMap) {
@@ -62,6 +58,14 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       }
     }
     t += n
+  }
+
+  def init {
+    // Consumes initial output tokens
+    peekMap.clear
+    for ((out, id) <- outMap) {
+      peekMap(id) = peekChannel(id)
+    }
   }
 }
 
@@ -90,6 +94,8 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     poke(c.io.outs(addr).ready, 0)
     value
   }
+
+  init
 }
 
 abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
@@ -152,4 +158,6 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     }
     data
   }
+
+  init
 }
