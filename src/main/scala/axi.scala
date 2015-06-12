@@ -159,8 +159,6 @@ class Channel2AXI[T <: Bits](gen: Packet[T], addr: Int) extends Module {
 class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val sim: T = Module(c)
   val io = new AXI4
-  val inMap = sim.inMap
-  val outMap = sim.outMap
   val axiAddrWidth = params(AXIAddrWidth)
   val axiDataWidth = params(AXIDataWidth)
 

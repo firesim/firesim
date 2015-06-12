@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Stack}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet, Stack}
 import addDaisyPins._
 
 object transforms { 
@@ -14,6 +14,9 @@ object transforms {
   val compsRev = HashMap[Module, Vector[Module]]()
   val regs = HashMap[Module, ArrayBuffer[Node]]()
   val srams = HashMap[Module, ArrayBuffer[Mem[_]]]()
+  val inMap = LinkedHashMap[Bits, Int]()
+  val outMap = LinkedHashMap[Bits, Int]()
+  lazy val targetName = wrappers.last.name stripSuffix "Wrapper"
 
   def init[T <: Module](w: SimWrapper[T], stall: Bool) {
     // Add backend passes
@@ -22,11 +25,10 @@ object transforms {
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
-        initSimWrappers
-        // connectStallSignals // ,
+        initSimWrappers,
+        dumpIoMaps
         // addRegChains,
         // addSRAMChain,
-        // dumpMappings,
         // dumpParams
       )
     }
@@ -34,10 +36,11 @@ object transforms {
     w.name = Driver.backend.extractClassName(w.target) + "Wrapper"
     wrappers += w
     stallPins(w.target) = stall
+    inMap ++= w.target_ins.unzip._2.zipWithIndex
+    outMap ++= w.target_outs.unzip._2.zipWithIndex
   } 
 
   def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
-    val targetName = wrappers.head.name stripSuffix "Wrapper"
     w.name = targetName + "AXI4Wrapper"
   }
 
@@ -85,6 +88,36 @@ object transforms {
           case _ =>
         } }
       }
+    }
+  }
+
+  def dumpIoMaps(c: Module) {
+    ChiselError.info("[transforms] dump io maps")
+    val res = new StringBuilder
+    val inFile = Driver.createOutputFile(targetName + ".in.map")
+    for ((in, id) <- inMap) {
+      val path = Driver.backend.extractClassName(in.component) + "." + in.name
+      val width = in.needWidth
+      res append "%s %d %d\n".format(path, id, width)
+    }
+    try {
+      inFile write res.result
+    } finally {
+      inFile.close
+      res.clear
+    }
+
+    val outFile = Driver.createOutputFile(targetName + ".out.map")
+    for ((out, id) <- outMap) {
+      val path = Driver.backend.extractClassName(out.component) + "." + out.name
+      val width = out.needWidth
+      res append "%s %d %d\n".format(path, id, width)
+    }
+    try {
+      outFile write res.result
+    } finally {
+      outFile.close
+      res.clear
     }
   }
 
@@ -259,43 +292,6 @@ object transforms {
     ChiselError.info("[transforms] print out chain mappings")
     val prefix = top.name + "." + top.target.name
     val res = new StringBuilder
-
-    val ioFile = Driver.createOutputFile(targetName + ".io.map")
-    // Print out the IO mapping for pokes and peeks
-    if (!top.q_ins.isEmpty) res append "QIN:\n"
-    for (in <- top.q_ins ; (_, io) <- in.bits.flatten) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-      val width = io.needWidth
-      res append "%s %d\n".format(path, width)
-    }
-
-    if (!top.q_outs.isEmpty) res append "QOUT:\n"
-    for (in <- top.q_outs ; (_, io) <- in.bits.flatten) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + io.name
-      val width = io.needWidth
-      res append "%s %d\n".format(path, width)
-    }
-
-    if (!top.w_ins.isEmpty) res append "WIN:\n"
-    for (in <- top.w_ins) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + in.name
-      val width = in.needWidth
-      res append "%s %d\n".format(path, width)
-    }
-    
-    if (!top.w_outs.isEmpty) res append "WOUT:\n"
-    for (out <- top.w_outs) {
-      val path = targetName + "." + (top.target.getPathName(".") stripPrefix prefix) + out.name
-      val width = out.needWidth
-      res append "%s %d\n".format(path, width)
-    }
-
-    try {
-      ioFile write res.result
-    } finally {
-      ioFile.close
-      res.clear
-    }
 
     // Print out the chain mapping
     val chainFile = Driver.createOutputFile(targetName + ".chain.map")
