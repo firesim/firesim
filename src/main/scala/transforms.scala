@@ -26,10 +26,10 @@ object transforms {
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
         initSimWrappers,
-        dumpIoMaps
+        dumpIoMaps,
+        dumpParams
         // addRegChains,
         // addSRAMChain,
-        // dumpParams
       )
     }
 
@@ -118,6 +118,17 @@ object transforms {
     } finally {
       outFile.close
       res.clear
+    }
+  }
+
+  // Todo: move this path to the ChiselBackend
+  def dumpParams(c: Module) {
+    if (Driver.chiselConfigMode != None && 
+        Driver.chiselConfigMode.get != "instance" &&
+        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
+      val w = Driver.createOutputFile(targetName + ".prm")
+      w.write(Dump.getDump)
+      w.close
     }
   }
 
@@ -354,17 +365,6 @@ object transforms {
     } finally {
       chainFile.close
       res.clear
-    }
-  }
-
-  // Todo: move this path to the ChiselBackend
-  def dumpParams(c: Module) {
-    if (Driver.chiselConfigMode != None && 
-        Driver.chiselConfigMode.get != "instance" &&
-        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
-      val w = Driver.createOutputFile(top.name + ".prm")
-      w.write(Dump.getDump)
-      w.close
     }
   }
   */

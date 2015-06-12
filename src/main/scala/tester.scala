@@ -97,9 +97,9 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   extends SimTester(c, isTrace) {
   val inWidths = inMap map { case (k, v) => (v, k.needWidth) }
   val outWidths = outMap map { case (k, v) => (v, k.needWidth) }
-  val mask = (BigInt(1) << c.axiDataWidth) - 1
 
   def pokeChannel(addr: Int, data: BigInt) {
+    val mask = (BigInt(1) << c.axiDataWidth) - 1
     val limit = (inWidths(addr) - 1) / c.axiDataWidth + 1
     for (i <- limit - 1 to 0 by -1) {
       val maskedData = (data >> (i * c.axiDataWidth)) & mask
