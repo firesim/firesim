@@ -24,16 +24,12 @@ class SimWrapperIO(target_ins: Array[(String, Bits)], target_outs: Array[(String
 
 abstract class SimNetwork extends Module {
   def io: SimWrapperIO 
-  def inMap: Map[Bits, Int]
-  def outMap: Map[Bits, Int]
 }
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
   val (target_ins, target_outs) = target.wires partition (_._2.dir == INPUT)
   val io = new SimWrapperIO(target_ins, target_outs)
-  val inMap = target_ins.unzip._2.zipWithIndex.toMap
-  val outMap = target_outs.unzip._2.zipWithIndex.toMap
   val in_channels = target_ins map { x => 
     val channel = Module(new Channel(x._2)) 
     channel.name = "Channel_" + x._1
