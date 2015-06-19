@@ -161,16 +161,21 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val io = new AXI4
   val axiAddrWidth = params(AXIAddrWidth)
   val axiDataWidth = params(AXIDataWidth)
+  val addrRegWidth = params(AddrRegWidth)
+  val resetAddr = params(ResetAddr)
 
   /*** M_AXI INPUTS ***/
-  val waddr_r = RegInit(UInt(0))
+  val waddr_r = RegInit(UInt(0, addrRegWidth))
   val awid_r  = RegInit(UInt(0))
   val st_wr_idle::st_wr_write::st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
+  val reset_t = do_write && (waddr_r === UInt(resetAddr))
+  sim.reset := reset_t
 
   val in_convs = sim.io.ins.zipWithIndex map { case (in, i) =>
     val converter = Module(new AXI2Channel(in.bits, i))
+    converter.reset := reset_t
     converter.io.addr := waddr_r
     converter.io.in.bits := io.M_AXI.w.bits.data
     converter.io.in.valid := do_write
@@ -191,7 +196,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
     is(st_wr_write) {
-      when(in_ready(waddr_r)) {
+      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr)) {
         st_wr := st_wr_ack
       } 
     }
@@ -207,15 +212,17 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.b.bits.id := awid_r
 
   /*** M_AXI OUTPUS ***/
-  val raddr_r = RegInit(UInt(0))
+  val raddr_r = RegInit(UInt(0, addrRegWidth))
   val arid_r  = RegInit(UInt(0))
-  val st_rd_idle :: st_rd_read :: st_rd_ack :: Nil = Enum(UInt(), 3)
+  val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
-  
+  val do_read = st_rd === st_rd_read  
+
   val out_convs = sim.io.outs.zipWithIndex map { case (out, i) =>
     val converter = Module(new Channel2AXI(out.bits, i))
+    converter.reset := reset_t
     out <> converter.io.in
-    converter.io.out.ready := io.M_AXI.r.ready
+    converter.io.out.ready := do_read && io.M_AXI.r.ready 
     converter.io.addr := raddr_r
     converter
   }
@@ -235,13 +242,13 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
     is(st_rd_read) {
-      when(io.M_AXI.r.fire()) {
+      when(io.M_AXI.r.ready) {
         st_rd   := st_rd_idle
       }
     }
   }
   io.M_AXI.ar.ready    := st_rd === st_rd_idle
-  io.M_AXI.r.valid     := st_rd === st_rd_read && out_valid(raddr_r)
+  io.M_AXI.r.valid     := do_read && out_valid(raddr_r) 
   io.M_AXI.r.bits.last := io.M_AXI.r.valid
   io.M_AXI.r.bits.id   := arid_r
   io.M_AXI.r.bits.data := out_data(raddr_r)

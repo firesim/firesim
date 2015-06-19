@@ -20,7 +20,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
 
   def pokePort(port: Bits, x: BigInt) {
     assert(inMap contains port)
-    if (isTrace) println("* POKE " + dumpName(port) + " <- " + x + " *")
+    if (isTrace) println("* POKE " + dumpName(port) + " <- " + x.toString(16) + " *")
     pokeMap(inMap(port)) = x 
   }
  
@@ -28,7 +28,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     assert(outMap contains port)
     assert(peekMap contains outMap(port))
     val value = peekMap(outMap(port))
-    if (isTrace) println("* PEEK " + dumpName(port) + " -> " + value + " *")
+    if (isTrace) println("* PEEK " + dumpName(port) + " -> " + value.toString(16) + " *")
     value
   }
 
@@ -44,7 +44,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     assert(peekMap contains outMap(port))
     val value = peekMap(outMap(port))
     val pass = value == expected 
-    expect(pass, "* EXPECT " + dumpName(port) + " -> " + value + " == " + expected)
+    expect(pass, "* EXPECT " + dumpName(port) + " -> " + value.toString(16) + " == " + expected.toString(16))
   }
 
   override def step(n: Int) {
@@ -61,10 +61,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     t += n
   }
 
-  // Consumes initial output tokens
-  peekMap.clear
-  for ((out, id) <- outMap) {
-    peekMap(id) = peekChannel(id)
+  def init {
+    // Consumes initial output tokens
+    peekMap.clear
+    for ((out, id) <- outMap) {
+      peekMap(id) = peekChannel(id)
+    }
   }
 }
 
@@ -91,16 +93,18 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     poke(c.io.outs(addr).ready, 0)
     value
   }
+
+  init
 }
 
 abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
   extends SimTester(c, isTrace) {
-  val inWidths = inMap map { case (k, v) => (v, k.needWidth) }
-  val outWidths = outMap map { case (k, v) => (v, k.needWidth) }
+  lazy val inWidths = inMap map { case (k, v) => (v, k.needWidth) }
+  lazy val outWidths = outMap map { case (k, v) => (v, k.needWidth) }
 
   def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.axiDataWidth) - 1
-    val limit = (inWidths(addr) - 1) / c.axiDataWidth + 1
+    val limit = if (addr == c.resetAddr) 1 else (inWidths(addr) - 1) / c.axiDataWidth + 1
     for (i <- limit - 1 to 0 by -1) {
       val maskedData = (data >> (i * c.axiDataWidth)) & mask
       do {
@@ -149,6 +153,10 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       takeSteps(1)
       poke(c.io.M_AXI.r.ready, 0)
     }
+    assert(peek(c.io.M_AXI.r.valid) == 0)
     data
   }
+
+  pokeChannel(c.resetAddr, 0)
+  init
 }
