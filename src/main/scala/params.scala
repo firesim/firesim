@@ -5,7 +5,9 @@ import Chisel._
 // AXI Params
 case object AXIAddrWidth extends Field[Int]
 case object AXIDataWidth extends Field[Int]
-case object AXIFifoLen extends Field[Int]
+case object AddrRegWidth extends Field[Int]
+case object ResetAddr extends Field[Int]
+
 // Snapshot Params
 case object TraceLen extends Field[Int]
 case object DaisyWidth extends Field[Int]
@@ -18,10 +20,13 @@ case object HostCmdWidth extends Field[Int]
 object AXI4Params {
   val axiAddrWidth = 32
   val axiDataWidth = 32
+  val addrRegWidth = 10
 
   val mask = (key: Any, site: View, here: View, up: View) => key match {
     case AXIAddrWidth => Dump("AXI_ADDR_WIDTH", axiAddrWidth)
     case AXIDataWidth => Dump("AXI_DATA_WIDTH", axiDataWidth)
+    case AddrRegWidth => Dump("ADDR_REG_WIDTH", addrRegWidth)
+    case ResetAddr => Dump("RESET_ADDR", (1 << addrRegWidth) - 1)
   }
 }
 
@@ -40,7 +45,6 @@ object StroberParams {
   val cmdWidth = 2
 
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case AXIFifoLen => Dump("AXI_FIFO_LEN", axiFifoLen)
     case TraceLen => Dump("TRACE_LEN", traceLen)
 
     case MemAddrWidth => Dump("MIF_ADDR_BITS", memAddrWidth)
@@ -59,7 +63,6 @@ abstract trait SnapshotParams extends UsesParameters {
 abstract trait AXIParams extends UsesParameters {
   val axiDataWidth = params(AXIDataWidth)
   val axiAddrWidth = params(AXIAddrWidth)
-  val axiFifoLen   = params(AXIFifoLen)
 }
 
 abstract trait StroberParams extends SnapshotParams with AXIParams
