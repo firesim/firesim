@@ -29,22 +29,22 @@ simif_zynq_t::simif_zynq_t(
   init();
 }
 
-void simif_zynq_t::poke_channel(size_t addr, uint64_t data) {
+void simif_zynq_t::poke_channel(size_t addr, biguint_t data) {
   uint64_t mask = (uint64_t(1) << AXI_DATA_WIDTH) - 1;
   size_t limit = (addr == RESET_ADDR) ? 1 : (in_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
   for (ssize_t i = limit - 1 ; i >= 0 ; i--) {
-    uint64_t masked_data = (data >> (i * AXI_DATA_WIDTH)) & mask;
-    write_reg(addr, data);
+    uint64_t masked_data = ((data >> (i * AXI_DATA_WIDTH)) & mask).uint();
+    write_reg(addr, masked_data);
     __sync_synchronize();
   }
 }
 
-uint64_t simif_zynq_t::peek_channel(size_t addr) {
-  uint64_t data = 0;
+biguint_t simif_zynq_t::peek_channel(size_t addr) {
+  biguint_t data = 0;
   size_t limit = (out_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
   for (size_t i = 0 ; i < limit ; i++) {
     __sync_synchronize();
-    data |= read_reg(addr) << (i * AXI_DATA_WIDTH);
+    data |= biguint_t(read_reg(addr)) << (i * AXI_DATA_WIDTH);
   }
   return data;
 }

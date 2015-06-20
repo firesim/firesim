@@ -10,7 +10,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   // initialization
   ok = true;
   t = 0;
-  fail_t = -1;
+  fail_t = 0;
   prefix = _prefix;
 
   in_num = 0;
@@ -82,17 +82,17 @@ void simif_t::init() {
   }
 }
 
-void simif_t::poke_port(std::string path, uint64_t value) {
+void simif_t::poke_port(std::string path, biguint_t value) {
   assert(in_map.find(path) != in_map.end());
-  if (log) fprintf(stdout, "* POKE %s <- %llu *\n", path.c_str(), value);
+  if (log) fprintf(stdout, "* POKE %s <- %s *\n", path.c_str(), value.str().c_str());
   poke_map[in_map[path]] = value;
 }
 
-uint64_t simif_t::peek_port(std::string path) {
+biguint_t simif_t::peek_port(std::string path) {
   assert(out_map.find(path) != out_map.end());
   assert(peek_map.find(out_map[path]) != peek_map.end());
-  uint64_t value = peek_map[out_map[path]];
-  if (log) fprintf(stdout, "* PEEK %s -> %llu *\n", path.c_str(), value);
+  biguint_t value = peek_map[out_map[path]];
+  if (log) fprintf(stdout, "* PEEK %s -> %s *\n", path.c_str(), value.str().c_str());
   return value;
 }
 
@@ -103,10 +103,10 @@ bool simif_t::expect(bool pass, const char *s) {
   return pass;
 }
 
-bool simif_t::expect_port(std::string path, uint64_t expected) {
+bool simif_t::expect_port(std::string path, biguint_t expected) {
   assert(out_map.find(path) != out_map.end());
   assert(peek_map.find(out_map[path]) != peek_map.end());
-  uint64_t value = peek_map[out_map[path]];
+  biguint_t value = peek_map[out_map[path]];
   bool pass = value == expected;
   std::ostringstream oss;
   oss << "EXPECT " << path << " " << value << " == " << expected;
