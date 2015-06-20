@@ -105,9 +105,8 @@ void biguint_t::copy_biguint(const biguint_t &that) {
 }
 
 void biguint_t::bit_or(const biguint_t &a, const biguint_t &b) {
-  if (data) delete[] data;
   size = std::max(a.size, b.size);
-  data = new uint64_t[size];
+  uint64_t *data = new uint64_t[size];
   for (size_t i = 0 ; i < std::min(a.size, b.size) ; i++) {
     data[i] = a.data[i] | b.data[i];
   }
@@ -117,15 +116,18 @@ void biguint_t::bit_or(const biguint_t &a, const biguint_t &b) {
   for (size_t i = b.size ; i < size ; i++) {
     data[i] = a.data[i];
   }
+  if (this->data) delete[] this->data;
+  this->data = data;
 }
 
 void biguint_t::bit_and(const biguint_t &a, const biguint_t&b) {
-  if (data) delete[] data;
   size = std::min(a.size, b.size);
-  data = new uint64_t[size];
+  uint64_t *data = new uint64_t[size];
   for (size_t i = 0 ; i < size ; i++) {
     data[i] = a.data[i] & b.data[i];
   }
+  if (this->data) delete[] this->data;
+  this->data = data;
 }
 
 biguint_t biguint_t::operator=(const biguint_t &that) {
