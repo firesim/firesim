@@ -7,10 +7,11 @@
 #include <map>
 #include <deque>
 #include <queue>
+#include <biguint.h>
 
 typedef std::map< std::string, size_t > iomap_t;
 typedef std::map< size_t, size_t > wmap_t;
-typedef std::map< size_t, uint64_t > map_t;
+typedef std::map< size_t, biguint_t > map_t;
 
 class simif_t
 {
@@ -25,8 +26,8 @@ class simif_t
 
   private:
     // channel communication
-    virtual void poke_channel(size_t addr, uint64_t data) = 0;
-    virtual uint64_t peek_channel(size_t addr) = 0;
+    virtual void poke_channel(size_t addr, biguint_t data) = 0;
+    virtual biguint_t peek_channel(size_t addr) = 0;
     void read_map(std::string filename);
 
     // maps 
@@ -52,9 +53,9 @@ class simif_t
     wmap_t out_widths;
 
     // Simulation APIs
-    void poke_port(std::string path, uint64_t value);
-    uint64_t peek_port(std::string path);
-    bool expect_port(std::string path, uint64_t expected);
+    void poke_port(std::string path, biguint_t value);
+    biguint_t peek_port(std::string path);
+    bool expect_port(std::string path, biguint_t expected);
     bool expect(bool ok, const char *s);
     void step(size_t n);
 
