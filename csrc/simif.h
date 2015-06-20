@@ -49,6 +49,7 @@ class simif_t
 
   protected:
     std::string prefix;
+    std::string loadmem;
     wmap_t in_widths;
     wmap_t out_widths;
 
@@ -61,8 +62,6 @@ class simif_t
 
     void init();
     uint64_t cycles() { return t; }
-    // bool timeout() { return t >= max_cycles; }
-
     uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
 };
 
