@@ -31,12 +31,10 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   targs.insert(targs.begin(), args.begin() + i, args.end());
 
   for (auto &arg: hargs) {
-    if (arg.find("+max-cycles=") == 0) {
-      // max_cycles = atoi(arg.c_str()+12);
-    } else if (arg.find("+sample-num=") == 0) {
+    if (arg.find("+sample-num=") == 0) {
       // sample_num = atoi(arg.c_str()+12);
     } else if (arg.find("+loadmem=") == 0) {
-      // loadmem = arg.c_str()+9;
+      loadmem = arg.c_str()+9;
     }
   }
 }
