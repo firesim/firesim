@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet, Stack}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 import addDaisyPins._
 
 object transforms { 
@@ -36,15 +36,17 @@ object transforms {
     w.name = Driver.backend.extractClassName(w.target) + "Wrapper"
     wrappers += w
     stallPins(w.target) = stall
-    inMap ++= w.target_ins.unzip._2.zipWithIndex
-    outMap ++= w.target_outs.unzip._2.zipWithIndex
+    inMap ++= w.ins.unzip._2.zipWithIndex 
+    outMap ++= w.outs.unzip._2.zipWithIndex 
   } 
 
   def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
     w.name = targetName + "AXI4Wrapper"
+    inMap --= MemIO.ins 
+    outMap --= MemIO.outs 
   }
 
-  def initSimWrappers(c: Module) {
+  private def initSimWrappers(c: Module) {
     ChiselError.info("[transforms] initiate simulation modules")
     // This pass initiate simulation modules
     def collect(c: Module): Vector[Module] = 
@@ -91,7 +93,7 @@ object transforms {
     }
   }
 
-  def dumpIoMaps(c: Module) {
+  private def dumpIoMaps(c: Module) {
     ChiselError.info("[transforms] dump io maps")
     val res = new StringBuilder
     val inFile = Driver.createOutputFile(targetName + ".in.map")
@@ -122,7 +124,7 @@ object transforms {
   }
 
   // Todo: move this path to the ChiselBackend
-  def dumpParams(c: Module) {
+  private def dumpParams(c: Module) {
     if (Driver.chiselConfigMode != None && 
         Driver.chiselConfigMode.get != "instance" &&
         Driver.chiselConfigDump && !Dump.dump.isEmpty) {

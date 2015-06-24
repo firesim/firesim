@@ -10,7 +10,7 @@ object SimWrapper {
   }
 }
 
-class SimWrapperIO(target_ins: Array[(String, Bits)], target_outs: Array[(String, Bits)]) extends Bundle {
+class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, Bits)]) extends Bundle {
   def genPacket(arg: (String, Bits)) = {
     val (name, port) = arg
     val packet = Decoupled(new Packet(port))
@@ -18,8 +18,8 @@ class SimWrapperIO(target_ins: Array[(String, Bits)], target_outs: Array[(String
     packet nameIt ("io_" + name + "_channel", true)
     packet
   }
-  val ins = Vec(target_ins map genPacket)
-  val outs = Vec(target_outs map genPacket)
+  val ins = Vec(t_ins map genPacket)
+  val outs = Vec(t_outs map genPacket)
 }
 
 abstract class SimNetwork extends Module {
@@ -28,14 +28,14 @@ abstract class SimNetwork extends Module {
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
-  val (target_ins, target_outs) = target.wires partition (_._2.dir == INPUT)
-  val io = new SimWrapperIO(target_ins, target_outs)
-  val in_channels = target_ins map { x => 
+  val (ins, outs) = target.wires partition (_._2.dir == INPUT)
+  val io = new SimWrapperIO(ins, outs)
+  val in_channels = ins map { x => 
     val channel = Module(new Channel(x._2)) 
     channel.name = "Channel_" + x._1
     channel
   }
-  val out_channels = target_outs map { x => 
+  val out_channels = outs map { x => 
     val channel = Module(new Channel(x._2)) 
     channel.name = "Channel_" + x._1
     channel
@@ -47,14 +47,14 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   for ((in, i) <- io.ins.zipWithIndex) {
     val channel = in_channels(i)
     val buffer = RegEnable(channel.io.out.bits.data, fire)
-    target_ins(i)._2 := Mux(fire, channel.io.out.bits.data, buffer)
+    ins(i)._2 := Mux(fire, channel.io.out.bits.data, buffer)
     in <> channel.io.in
   }
 
   for ((out, i) <- io.outs.zipWithIndex) {
     val channel = out_channels(i)
     channel.io.out <> out
-    channel.io.in.bits.data := target_outs(i)._2
+    channel.io.in.bits.data := outs(i)._2
   }
   
   // Control
