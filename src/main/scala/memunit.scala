@@ -170,7 +170,6 @@ class MemUnit(n: Int = 1) extends Module {
   val req_cmd_bufs = (0 until n) map { i => Module(new Queue(new MemReqCmd, 2)) }
   val req_data_bufs = (0 until n) map { i => Module(new Queue(new MemData, 2)) }
   val resp_bufs = (0 until n) map { i => Module(new Queue(new MemResp, 2)) }
-  val inflight = Vec.fill(n) { RegInit(Bool(false)) }
 
   // Todo: fix this in Chisel(naming problem)
   req_cmd_bufs.zipWithIndex map { case (x, i) => x.name = "req_cmd_buf_" + i }
@@ -185,7 +184,7 @@ class MemUnit(n: Int = 1) extends Module {
       io.req_cmd_addr(i).valid && io.req_cmd_tag(i).valid && io.req_cmd_rw(i).valid
     val req_data_valid = io.req_data_ready(i).ready && io.req_data_valid(i).valid &&
       io.req_data_bits(i).valid
-    val req_fire = !inflight(i) && req_cmd_valid && req_data_valid && 
+    val req_fire = req_cmd_valid && req_data_valid && 
       req_cmd_buf.io.enq.ready && req_data_buf.io.enq.ready
     val resp_fire = io.resp_ready(i).valid && io.resp_valid(i).ready &&
       io.resp_data(i).ready && io.resp_tag(i).ready
@@ -194,7 +193,7 @@ class MemUnit(n: Int = 1) extends Module {
     req_cmd_valid.getNode nameIt ("req_cmd_ready_" + i, false)
     req_data_valid.getNode nameIt ("req_data_ready_" + i, false)
     req_fire.getNode nameIt ("req_fire_" + i, false)
-    resp_fire.getNode nameIt ("resp_fire" + i, false)
+    resp_fire.getNode nameIt ("resp_fire_" + i, false)
 
     req_cmd_buf.io.enq.bits.addr := io.req_cmd_addr(i).bits.data
     req_cmd_buf.io.enq.bits.tag := io.req_cmd_tag(i).bits.data
@@ -229,12 +228,6 @@ class MemUnit(n: Int = 1) extends Module {
     io.resp_data(i).valid := io.resp_ready(i).ready
     io.resp_tag(i).bits.data := resp_buf.io.deq.bits.tag
     io.resp_tag(i).valid := io.resp_ready(i).ready
-
-    when (req_fire && io.req_cmd_rw(i).bits.data) {
-      inflight(i) := Bool(true)
-    }.elsewhen(resp_buf.io.deq.valid) {
-      inflight(i) := Bool(false)
-    }
   }
 
   if (n > 1) {
