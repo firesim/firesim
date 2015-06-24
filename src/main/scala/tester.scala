@@ -157,6 +157,97 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     data
   }
 
+  private val mem = Array.fill(1<<23){0.toByte} // size = 8MB
+
+  private def tickMem {
+    if (peek(c.io.S_AXI.ar.valid) == 1) {
+      // handle read address
+      val ar = peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
+      val tag = peek(c.io.S_AXI.ar.bits.id)
+      val len = peek(c.io.S_AXI.ar.bits.len).toInt
+      val size = 1 << peek(c.io.S_AXI.ar.bits.size).toInt
+      poke(c.io.S_AXI.ar.ready, 1)
+      do {
+        takeSteps(1)
+      } while (peek(c.io.S_AXI.r.ready) == 0)
+      poke(c.io.S_AXI.ar.ready, 0)
+      // handle read data
+      for (k <- 0 to len) {
+        var data = BigInt(0)
+        for (i <- 0 until size) {
+          val addr = ar+k*(size+1)+i
+          data |= (mem(addr) & 0xff) << (8*i)
+        }
+        poke(c.io.S_AXI.r.bits.data, data)
+        poke(c.io.S_AXI.r.bits.id, tag)
+        poke(c.io.S_AXI.r.bits.last, 1)
+        poke(c.io.S_AXI.r.valid, 1)
+        do {
+          takeSteps(1)
+        } while (peek(c.io.S_AXI.r.ready) == 0)
+        poke(c.io.S_AXI.r.bits.last, 0)
+        poke(c.io.S_AXI.r.valid, 0)
+      }
+    } else if (peek(c.io.S_AXI.aw.valid) == 1) {
+      // handle write address
+      val aw = peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
+      val len = peek(c.io.S_AXI.aw.bits.len).toInt
+      val size = 1 << peek(c.io.S_AXI.aw.bits.size).toInt
+      poke(c.io.S_AXI.aw.ready, 1)
+      do {
+        takeSteps(1)
+      } while (peek(c.io.S_AXI.w.valid) == 0)
+      poke(c.io.S_AXI.aw.ready, 0)
+      // handle write data
+      for (k <- 0 to len) {
+        while (peek(c.io.S_AXI.w.valid) == 0) {
+          takeSteps(1)
+        }
+        val data = peek(c.io.S_AXI.w.bits.data)
+        for (i <- 0 until size) {
+          val addr = aw+k*(size+1)+i
+          mem(addr) = ((data >> (8*i)) & 0xff).toByte
+        }
+        poke(c.io.S_AXI.w.ready, 1)
+        assert(k < len || peek(c.io.S_AXI.w.bits.last) == 1)
+        takeSteps(1)
+        poke(c.io.S_AXI.w.ready, 0)
+      }
+    } else {
+      poke(c.io.S_AXI.ar.ready, 0)
+      poke(c.io.S_AXI.r.bits.last, 0)
+      poke(c.io.S_AXI.r.valid, 0)
+      poke(c.io.S_AXI.aw.ready, 0)
+      poke(c.io.S_AXI.w.ready, 0)
+    }
+  }
+
+  private def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
+
+  def loadMem(filename: String) {
+    val lines = Source.fromFile(filename).getLines
+    for ((line, i) <- lines.zipWithIndex) {
+      val base = (i * line.length) / 2
+      var offset = 0
+      for (k <- (line.length - 2) to 0 by -2) {
+        val data = ((parseNibble(line(k)) << 4) | parseNibble(line(k+1))).toByte
+        mem(base+offset) = data
+        offset += 1
+      }
+    }
+  }
+
+  override def step(n: Int) {
+    if (MemIO.count > 0) {
+      for (i <- 0 until n) {
+        super.step(1)
+        tickMem  
+      }
+    } else {
+      super.step(n)
+    }
+  }
+
   pokeChannel(c.resetAddr, 0)
   init
 }
