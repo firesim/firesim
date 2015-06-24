@@ -250,8 +250,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     converter
   }
 
-  val in_ready = Vec.fill(in_convs.size){Bool()}
-  in_ready.zipWithIndex foreach { case (ready, i) => ready := in_convs(i).io.in.ready }
+  val in_ready = Vec(in_convs map (_.io.in.ready))
 
   // M_AXI Write FSM
   switch(st_wr) {
@@ -299,10 +298,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     converter
   }
 
-  val out_data = Vec.fill(out_convs.size){UInt()}
-  val out_valid = Vec.fill(out_convs.size){Bool()}
-  out_data.zipWithIndex foreach { case (data, i) => data := out_convs(i).io.out.bits }
-  out_valid.zipWithIndex foreach { case (valid, i) => valid := out_convs(i).io.out.valid }
+  val out_data = Vec(out_convs map (_.io.out.bits))
+  val out_valid = Vec(out_convs map (_.io.out.valid))
 
   // M_AXI Read FSM
   switch(st_rd) {
