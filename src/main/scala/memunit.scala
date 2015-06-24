@@ -230,14 +230,39 @@ class MemUnit(n: Int = 1) extends Module {
     io.resp_tag(i).valid := io.resp_ready(i).ready
   }
 
-  if (n > 1) {
+  // if (n > 1) {
     // TODO: multi MemIOs
-  } else {
-    val req_cmd_buf = req_cmd_bufs.head
-    val req_data_buf = req_data_bufs.head
-    val resp_buf = resp_bufs.head
-    io.out.req_cmd <> req_cmd_buf.io.deq
-    io.out.req_data <> req_data_buf.io.deq
-    resp_buf.io.enq <> io.out.resp
-  }
+    val arb = Module(new RRArbiter(new MemReqCmd, n))
+    val req_data_bufs_bits = Vec(req_data_bufs map (_.io.deq.bits))
+    val req_data_bufs_valid = Vec(req_data_bufs map (_.io.deq.valid))
+    val resp_bufs_ready = Vec(resp_bufs map (_.io.enq.ready))
+    val req_fire = arb.io.out.valid && io.out.req_cmd.ready // && (!arb.io.out.bits.rw ||
+      // (req_data_bufs_valid(arb.io.chosen) /*&& io.out.req_data.ready*/))
+    val chosen_buf = RegEnable(arb.io.chosen, req_fire)
+    val chosen = Mux(req_fire, arb.io.chosen, chosen_buf)
+    
+    req_cmd_bufs.zipWithIndex foreach { case (b, i) => b.io.deq <> arb.io.in(i) }
+    io.out.req_cmd.bits := arb.io.out.bits
+    io.out.req_cmd.valid := arb.io.out.valid
+    arb.io.out.ready := req_fire
+
+    io.out.req_data.bits := req_data_bufs_bits(chosen)
+    io.out.req_data.valid := req_data_bufs_valid(chosen)
+    req_data_bufs.zipWithIndex foreach { case (b, i) => 
+      b.io.deq.ready := io.out.req_data.ready && chosen === UInt(i) 
+    }
+
+    resp_bufs.zipWithIndex foreach { case (b, i) => 
+      b.io.enq.bits := io.out.resp.bits 
+      b.io.enq.valid := io.out.resp.valid && chosen === UInt(i)
+    }
+    io.out.resp.ready := resp_bufs_ready(chosen)
+  /* } else {
+    val req_cmd_buf = req_cmd_bufs.last
+    val req_data_buf = req_data_bufs.last
+    val resp_buf = resp_bufs.last
+    req_cmd_buf.io.deq <> io.out.req_cmd 
+    req_data_buf.io.deq <> io.out.req_data
+    io.out.resp <> resp_buf.io.enq
+  } */
 }

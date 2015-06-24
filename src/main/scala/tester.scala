@@ -103,10 +103,10 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   lazy val outWidths = outMap map { case (k, v) => (v, k.needWidth) }
 
   def pokeChannel(addr: Int, data: BigInt) {
-    val mask = (BigInt(1) << c.axiDataWidth) - 1
-    val limit = if (addr == c.resetAddr) 1 else (inWidths(addr) - 1) / c.axiDataWidth + 1
+    val mask = (BigInt(1) << c.m_axiDataWidth) - 1
+    val limit = if (addr == c.resetAddr) 1 else (inWidths(addr) - 1) / c.m_axiDataWidth + 1
     for (i <- limit - 1 to 0 by -1) {
-      val maskedData = (data >> (i * c.axiDataWidth)) & mask
+      val maskedData = (data >> (i * c.m_axiDataWidth)) & mask
       do {
         poke(c.io.M_AXI.aw.bits.id, 0)
         poke(c.io.M_AXI.aw.bits.addr, addr << 2)
@@ -131,7 +131,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
   def peekChannel(addr: Int) = {
     var data = BigInt(0)
-    val limit = (outWidths(addr) - 1) / c.axiDataWidth + 1
+    val limit = (outWidths(addr) - 1) / c.m_axiDataWidth + 1
     for (i <- 0 until limit) {
       while (peek(c.io.M_AXI.ar.ready) == 0) {
         takeSteps(1)
@@ -147,7 +147,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         takeSteps(1)
       }
 
-      data |= peek(c.io.M_AXI.r.bits.data) << (i * c.axiDataWidth)
+      data |= peek(c.io.M_AXI.r.bits.data) << (i * c.m_axiDataWidth)
       assert(peek(c.io.M_AXI.r.bits.id) == 0)
       poke(c.io.M_AXI.r.ready, 1)
       takeSteps(1)
