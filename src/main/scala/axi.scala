@@ -189,16 +189,43 @@ class Channel2MAXI[T <: Bits](gen: Packet[T], addr: Int) extends Module {
 
 class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   // params
-  val axiAddrWidth = params(MAXIAddrWidth)
-  val axiDataWidth = params(MAXIDataWidth)
+  val m_axiAddrWidth = params(MAXIAddrWidth)
+  val m_axiDataWidth = params(MAXIDataWidth)
   val addrOffset = params(MAXISpaceOffset)
   val resetAddr = params(ResetAddr)
 
   // sim target
   val sim: T = Module(c)
   val io = new AXI4
+  val inMap = (sim.io.t_ins.unzip._2 zip sim.io.ins).toMap
+  val outMap = (sim.io.t_outs.unzip._2 zip sim.io.outs).toMap
+
+  // MemUnits for memory requests
   val memIns = MemIO.ins
   val memOuts = MemIO.outs
+  val mem = Module(new MemUnit(MemIO.count+1))
+  // Connect Memory Signal Channals to MemUnit
+  for (i <- 0 until MemIO.count) {
+    val (req_cmd_ready, req_cmd_valid, req_cmd_addr, req_cmd_tag, req_cmd_rw) = MemReqCmd(i)
+    val (req_data_ready, req_data_valid, req_data_bits) = MemReqData(i)
+    val (resp_ready, resp_valid, resp_data, resp_tag) = MemResp(i)
+
+    mem.io.req_cmd_ready(i) <> inMap(req_cmd_ready)
+    mem.io.req_cmd_valid(i) <> outMap(req_cmd_valid)
+    mem.io.req_cmd_addr(i) <> outMap(req_cmd_addr)
+    mem.io.req_cmd_tag(i) <> outMap(req_cmd_tag)
+    mem.io.req_cmd_rw(i) <> outMap(req_cmd_rw)
+
+    mem.io.req_data_ready(i) <> inMap(req_data_ready)
+    mem.io.req_data_valid(i) <> outMap(req_data_valid)
+    mem.io.req_data_bits(i) <> outMap(req_data_bits)
+
+    mem.io.resp_ready(i) <> outMap(resp_ready)
+    mem.io.resp_valid(i) <> inMap(resp_valid)
+    mem.io.resp_data(i) <> inMap(resp_data)
+    mem.io.resp_tag(i) <> inMap(resp_tag)
+  }
+
   /*** M_AXI INPUTS ***/
   val waddr_r = RegInit(UInt(0, addrOffset))
   val awid_r  = RegInit(UInt(0))
@@ -207,6 +234,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
   sim.reset := reset_t
+  mem.reset := reset_t
 
   val in_convs = (sim.io.ins.zipWithIndex filterNot { x => 
     val id = x._2
@@ -298,136 +326,111 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.r.bits.data := out_data(raddr_r)
 
   /*** S_AXI ***/
-  if (MemIO.count > 0) {
-    val axiAddrWidth = params(SAXIAddrWidth)
-    val axiDataWidth = params(SAXIDataWidth)
-    val memAddrWidth = params(MemAddrWidth)
-    val memDataWidth = params(MemDataWidth)
-    val blockOffset = params(BlockOffset)
-    val memAddrOffset = memAddrWidth + blockOffset
-    val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / axiDataWidth
-    val dataChunkLimit = (memDataWidth - 1) / axiDataWidth
+  val s_axiAddrWidth = params(SAXIAddrWidth)
+  val s_axiDataWidth = params(SAXIDataWidth)
+  val memAddrWidth = params(MemAddrWidth)
+  val memDataWidth = params(MemDataWidth)
+  val blockOffset = params(BlockOffset)
+  val memAddrOffset = memAddrWidth + blockOffset
+  val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / s_axiDataWidth
+  val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
 
-    val inMap = (sim.io.t_ins.unzip._2 zip sim.io.ins).toMap
-    val outMap = (sim.io.t_outs.unzip._2 zip sim.io.outs).toMap
-    val mem = Module(new MemUnit(MemIO.count))
-    mem.reset := reset_t
-    // Connect Memory Signal Channals to MemUnit
-    for (i <- 0 until MemIO.count) {
-      val (req_cmd_ready, req_cmd_valid, req_cmd_addr, req_cmd_tag, req_cmd_rw) = MemReqCmd(i)
-      val (req_data_ready, req_data_valid, req_data_bits) = MemReqData(i)
-      val (resp_ready, resp_valid, resp_data, resp_tag) = MemResp(i)
+  val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
+  val state_r = RegInit(st_idle)
+  val do_mem_write = state_r === st_write
+  val resp_data_buf = Vec.fill(dataChunkLimit){Reg(UInt(width=s_axiDataWidth))}
+  val read_count = RegInit(UInt(0))
+  val write_count = RegInit(UInt(0))
+  val s_axi_addr = 
+    if (memAddrOffset == s_axiAddrWidth - 4)
+      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
+    else if (memAddrOffset > s_axiAddrWidth - 4) 
+      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr(s_axiAddrWidth-4-blockOffset-1,0), UInt(0, blockOffset))
+    else
+      Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
 
-      mem.io.req_cmd_ready(i) <> inMap(req_cmd_ready)
-      mem.io.req_cmd_valid(i) <> outMap(req_cmd_valid)
-      mem.io.req_cmd_addr(i) <> outMap(req_cmd_addr)
-      mem.io.req_cmd_tag(i) <> outMap(req_cmd_tag)
-      mem.io.req_cmd_rw(i) <> outMap(req_cmd_rw)
+  /* S_AXI Read Signals */
+  // Read Address
+  io.S_AXI.ar.bits.addr := s_axi_addr
+  io.S_AXI.ar.bits.id := mem.io.out.req_cmd.bits.tag
+  io.S_AXI.ar.bits.burst := UInt(1) // type INCR
+  io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
+  io.S_AXI.ar.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
+  io.S_AXI.ar.valid := state_r === st_read
+  // Read Data
+  io.S_AXI.r.ready := mem.io.out.resp.ready
 
-      mem.io.req_data_ready(i) <> inMap(req_data_ready)
-      mem.io.req_data_valid(i) <> outMap(req_data_valid)
-      mem.io.req_data_bits(i) <> outMap(req_data_bits)
+  /* S_AXI Write Signals */
+  // Write Address
+  io.S_AXI.aw.bits.addr := s_axi_addr
+  io.S_AXI.aw.bits.id := UInt(0)
+  io.S_AXI.aw.bits.burst := UInt(1) // type INCR
+  io.S_AXI.aw.bits.len := UInt(dataCountLimit) // burst length (transfers)
+  io.S_AXI.aw.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
+  io.S_AXI.aw.valid := state_r === st_start_write
+  // Write Data
+  io.S_AXI.w.valid := do_mem_write && mem.io.out.req_data.valid
+  io.S_AXI.w.bits.strb := UInt(0xff)
+  io.S_AXI.w.bits.data := {
+    val wire = mem.io.out.req_data.bits.data 
+    val width = s_axiDataWidth
+    if (dataChunkLimit > 0) Lookup(write_count, wire(width-1,0),
+      ((1 to dataChunkLimit) map (i => ((UInt(i) -> wire((i+1)*width-1,i*width))))).toList)
+    else wire
+  }
+  io.S_AXI.w.bits.last := do_mem_write && 
+    (if (dataCountLimit > 0) write_count === UInt(dataCountLimit) else Bool(true))
+  // Write Response
+  io.S_AXI.b.ready := Bool(true)
 
-      mem.io.resp_ready(i) <> outMap(resp_ready)
-      mem.io.resp_valid(i) <> inMap(resp_valid)
-      mem.io.resp_data(i) <> inMap(resp_data)
-      mem.io.resp_tag(i) <> inMap(resp_tag)
+  /* MemUnit Signals */
+  mem.io.out.req_cmd.ready := 
+    ((state_r === st_start_write) && io.S_AXI.aw.ready) || ((state_r === st_read) && io.S_AXI.ar.ready)
+  mem.io.out.req_data.ready := (state_r === st_write) && io.S_AXI.w.ready &&
+    (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
+  mem.io.out.resp.bits.data := 
+    (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
+  mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
+  mem.io.out.resp.valid := io.S_AXI.r.valid && 
+    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit-1) else Bool(true))
+
+  if (dataChunkLimit > 0) {
+    when(io.S_AXI.r.fire()) {
+      read_count := Mux(read_count === UInt(dataChunkLimit-1), UInt(0), read_count + UInt(1))
     }
-
-    val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
-    val state_r = RegInit(st_idle)
-    val do_mem_write = state_r === st_write
-    val resp_data_buf = Vec.fill(dataChunkLimit){Reg(UInt(width=axiDataWidth))}
-    val read_count = RegInit(UInt(0))
-    val write_count = RegInit(UInt(0))
-    val s_axi_addr = 
-      if (memAddrOffset == axiAddrWidth - 4)
-        Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
-      else if (memAddrOffset > axiAddrWidth - 4) 
-        Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr(axiAddrWidth-4-blockOffset-1,0), UInt(0, blockOffset))
-      else
-        Cat(UInt(1, 4), UInt(0, axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
-
-    /* S_AXI Read Signals */
-    // Read Address
-    io.S_AXI.ar.bits.addr := s_axi_addr
-    io.S_AXI.ar.bits.id := mem.io.out.req_cmd.bits.tag
-    io.S_AXI.ar.bits.burst := UInt(1) // type INCR
-    io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
-    io.S_AXI.ar.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
-    io.S_AXI.ar.valid := state_r === st_read
-    // Read Data
-    io.S_AXI.r.ready := mem.io.out.resp.ready
-
-    /* S_AXI Write Signals */
-    // Write Address
-    io.S_AXI.aw.bits.addr := s_axi_addr
-    io.S_AXI.aw.bits.id := UInt(0)
-    io.S_AXI.aw.bits.burst := UInt(1) // type INCR
-    io.S_AXI.aw.bits.len := UInt(dataCountLimit) // burst length (transfers)
-    io.S_AXI.aw.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
-    io.S_AXI.aw.valid := state_r === st_start_write
-    // Write Data
-    io.S_AXI.w.valid := do_mem_write && mem.io.out.req_data.valid
-    io.S_AXI.w.bits.strb := UInt(0xff)
-    io.S_AXI.w.bits.data := 
-      (if (dataChunkLimit > 0) Lookup(write_count, mem.io.out.req_data.bits.data(axiDataWidth-1,0),
-        ((1 to dataChunkLimit) map (i => ((UInt(i), 
-          mem.io.out.req_data.bits.data((i+1)*axiDataWidth-1,i*axiDataWidth))))).toList)
-       else mem.io.out.req_data.bits.data)
-    io.S_AXI.w.bits.last := do_mem_write && 
-      (if (dataCountLimit > 0) write_count === UInt(dataCountLimit) else Bool(true))
-    // Write Response
-    io.S_AXI.b.ready := Bool(true)
-
-    /* MemUnit Signals */
-    mem.io.out.req_cmd.ready := 
-      ((state_r === st_start_write) && io.S_AXI.aw.ready) || ((state_r === st_read) && io.S_AXI.ar.ready)
-    mem.io.out.req_data.ready := (state_r === st_write) && io.S_AXI.w.ready &&
-      (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
-    mem.io.out.resp.bits.data := 
-      (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
-    mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
-    mem.io.out.resp.valid := io.S_AXI.r.valid && 
-      (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit-1) else Bool(true))
-
-    if (dataChunkLimit > 0) {
-      when(io.S_AXI.r.fire()) {
-        read_count := Mux(read_count === UInt(dataChunkLimit-1), UInt(0), read_count + UInt(1))
-      }
-      when(io.S_AXI.r.valid) {
-        resp_data_buf(read_count) := io.S_AXI.r.bits.data
-      }
+    when(io.S_AXI.r.valid) {
+      resp_data_buf(read_count) := io.S_AXI.r.bits.data
     }
+  }
 
-    /* FSM for memory requests */
-    switch(state_r) {
-      is(st_idle) {
-        state_r := 
-          Mux(mem.io.out.req_cmd.valid && !mem.io.out.req_cmd.bits.rw, st_read,
-          Mux(mem.io.out.req_cmd.valid && mem.io.out.req_cmd.bits.rw && mem.io.out.req_data.valid, 
-              st_start_write, st_idle))
-      }
-      is(st_read) {
-        state_r := Mux(io.S_AXI.ar.ready, st_idle, st_read)
-      }
-      is(st_start_write) {
-        state_r := Mux(io.S_AXI.aw.ready, st_write, st_start_write)
-      }
-      is(st_write) {
-        when(io.S_AXI.w.ready && mem.io.out.req_data.valid) {
-          if (dataCountLimit > 0) {
-            write_count := write_count + UInt(1)
-            when (io.S_AXI.w.bits.last) {
-              write_count := UInt(0)
-              state_r := st_idle
-            }
-          } else {
-            state_r := st_idle 
+  /* FSM for memory requests */
+  switch(state_r) {
+    is(st_idle) {
+      state_r := 
+        Mux(mem.io.out.req_cmd.valid && !mem.io.out.req_cmd.bits.rw, st_read,
+        Mux(mem.io.out.req_cmd.valid && mem.io.out.req_cmd.bits.rw && mem.io.out.req_data.valid, 
+            st_start_write, st_idle))
+    }
+    is(st_read) {
+      state_r := Mux(io.S_AXI.ar.ready, st_idle, st_read)
+    }
+    is(st_start_write) {
+      state_r := Mux(io.S_AXI.aw.ready, st_write, st_start_write)
+    }
+    is(st_write) {
+      when(io.S_AXI.w.ready && mem.io.out.req_data.valid) {
+        if (dataCountLimit > 0) {
+          write_count := write_count + UInt(1)
+          when (io.S_AXI.w.bits.last) {
+            write_count := UInt(0)
+            state_r := st_idle
           }
+        } else {
+          state_r := st_idle 
         }
       }
     }
-  } 
+  }
+ 
   transforms.init(this)
 }
