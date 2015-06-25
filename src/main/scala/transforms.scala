@@ -8,17 +8,19 @@ object transforms {
   val sramAddrs = HashMap[Mem[_], Reg]()
   // var daisyLen = -1
 
-  val wrappers = ArrayBuffer[SimWrapper[Module]]()
-  val stallPins = HashMap[Module, Bool]()
-  val comps = HashMap[Module, Vector[Module]]()
-  val compsRev = HashMap[Module, Vector[Module]]()
-  val regs = HashMap[Module, ArrayBuffer[Node]]()
-  val srams = HashMap[Module, ArrayBuffer[Mem[_]]]()
-  val inMap = LinkedHashMap[Bits, Int]()
-  val outMap = LinkedHashMap[Bits, Int]()
-  lazy val targetName = wrappers.last.name stripSuffix "Wrapper"
+  private val wrappers = ArrayBuffer[SimWrapper[Module]]()
+  private val stallPins = HashMap[Module, Bool]()
+  private val comps = HashMap[Module, Vector[Module]]()
+  private val compsRev = HashMap[Module, Vector[Module]]()
+  private val regs = HashMap[Module, ArrayBuffer[Node]]()
+  private val srams = HashMap[Module, ArrayBuffer[Mem[_]]]()
+  private[strober] val inMap = LinkedHashMap[Bits, Int]()
+  private[strober] val outMap = LinkedHashMap[Bits, Int]()
+  private[strober] val reqMap = LinkedHashMap[Bits, Int]()
+  private[strober] val respMap = LinkedHashMap[Bits, Int]()
+  private lazy val targetName = wrappers.last.name stripSuffix "Wrapper"
 
-  def init[T <: Module](w: SimWrapper[T], stall: Bool) {
+  private[strober] def init[T <: Module](w: SimWrapper[T], stall: Bool) {
     // Add backend passes
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
@@ -36,14 +38,17 @@ object transforms {
     w.name = Driver.backend.extractClassName(w.target) + "Wrapper"
     wrappers += w
     stallPins(w.target) = stall
-    inMap ++= w.ins.unzip._2.zipWithIndex 
-    outMap ++= w.outs.unzip._2.zipWithIndex 
   } 
 
-  def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
+  private[strober] def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
     w.name = targetName + "AXI4Wrapper"
-    inMap --= MemIO.ins 
-    outMap --= MemIO.outs 
+    inMap ++= w.ioInMap.unzip._1.zipWithIndex
+    outMap ++= w.ioOutMap.unzip._1.zipWithIndex
+    reqMap(w.mem_req_cmd_addr) = w.ioInMap.size
+    reqMap(w.mem_req_cmd_tag) = w.ioInMap.size + 1
+    reqMap(w.mem_req_data) = w.ioInMap.size + 2
+    respMap(w.mem_resp_data) = w.ioOutMap.size
+    respMap(w.mem_resp_tag) = w.ioOutMap.size + 1
   }
 
   private def initSimWrappers(c: Module) {
