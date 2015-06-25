@@ -1,7 +1,8 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable.ListMap
 
 object SimAXI4Wrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
@@ -87,37 +88,32 @@ class AXI4 extends Bundle {
   val S_AXI = new SAXI4_IO
 }
 
-class MAXI2Channel[T <: Bits](gen: Packet[T], addr: Int) extends Module {
+class MAXI2Input[T <: Data](gen: T, addr: Int) extends Module {
   val axiAddrWidth = params(MAXIAddrWidth)
   val axiDataWidth = params(MAXIDataWidth)
-  val dataWidth = gen.data.needWidth
+  val dataWidth = (gen.flatten.unzip._2 foldLeft 0)(_ + _.needWidth)
   val io = new Bundle {
     val addr = UInt(INPUT, axiAddrWidth)
     val in = Decoupled(UInt(width=axiDataWidth)).flip
     val out = Decoupled(gen)
   }
-  val s_HEADER :: s_DATA :: s_DONE :: Nil = Enum(UInt(), 3)
+  val s_DATA :: s_DONE :: Nil = Enum(UInt(), 2)
   val state = RegInit(s_DATA)
   val count = RegInit(UInt((dataWidth-1)/axiDataWidth))
   val buf = Reg(gen)
  
-  io.in.ready := io.out.ready
+  io.in.ready := state === s_DATA
   io.out.bits := buf
   io.out.valid := state === s_DONE
 
   switch(state) {
-    /*
-    is(s_HEADER) {
-      when(io.in.fire()) {
-        buf.header := in.bits
-        count := UInt((dataWidth-1)/axiWidth)
-        state := s_DATA
-      }
-    }
-    */
     is(s_DATA) {
       when(io.in.fire() && io.addr === UInt(addr)) {
-        buf.data := (buf.data << UInt(axiDataWidth)) | io.in.bits
+        val b = buf match {
+          case p: Packet[_] => p.data
+          case b: Bits => b
+        }
+        b := (b << UInt(axiDataWidth)) | io.in.bits
         if (dataWidth > axiDataWidth) {
           when(count.orR) {
             count := count - UInt(1)
@@ -131,27 +127,27 @@ class MAXI2Channel[T <: Bits](gen: Packet[T], addr: Int) extends Module {
       }
     }
     is(s_DONE) {
-      state := s_DATA
+      state := Mux(io.out.ready, s_DATA, s_DONE)
     }
   }
 }
  
-class Channel2MAXI[T <: Bits](gen: Packet[T], addr: Int) extends Module {
+class Output2MAXI[T <: Data](gen: T, addr: Int) extends Module {
   val axiAddrWidth = params(MAXIAddrWidth)
   val axiDataWidth = params(MAXIDataWidth)
-  val dataWidth = gen.data.needWidth
+  val dataWidth = (gen.flatten.unzip._2 foldLeft 0)(_ + _.needWidth)
   val io = new Bundle {
     val addr = UInt(INPUT, axiAddrWidth)
     val in = Decoupled(gen).flip
     val out = Decoupled(UInt(width=axiDataWidth))
   }
-  val s_IDLE :: s_HEADER :: s_DATA :: Nil = Enum(UInt(), 3)
+  val s_IDLE :: s_DATA :: Nil = Enum(UInt(), 2)
   val state = RegInit(s_IDLE)
   val count = RegInit(UInt((dataWidth-1)/axiDataWidth))
   val buf = Reg(gen)
 
   io.in.ready := state === s_IDLE
-  io.out.bits := buf.data
+  io.out.bits := buf.toBits
   io.out.valid := state === s_DATA
 
   switch(state) {
@@ -159,20 +155,14 @@ class Channel2MAXI[T <: Bits](gen: Packet[T], addr: Int) extends Module {
       state := Mux(io.in.fire(), s_DATA, s_IDLE)
       buf := io.in.bits
     }
-    /*
-    is(s_HEADER) {
-      when(io.out.ready) {
-        io.out.bits := buf.header
-        io.out.valid := Bool(true)
-        count := UInt((dataWidth-1)/axiDataWidth)
-        state := s_DATA
-      }
-    }
-    */
     is(s_DATA) {
       when(io.out.ready && io.addr === UInt(addr)) {
         if (dataWidth > axiDataWidth) {
-          buf.data := buf.data.toUInt >> UInt(axiDataWidth)
+          val b = buf match {
+            case p: Packet[_] => p.data
+            case b: Bits => b
+          }
+          b := b.toUInt >> UInt(axiDataWidth)
           when(count.orR) {
             count := count - UInt(1)
           }.otherwise {
@@ -191,57 +181,47 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   // params
   val m_axiAddrWidth = params(MAXIAddrWidth)
   val m_axiDataWidth = params(MAXIDataWidth)
-  val addrOffset = params(MAXISpaceOffset)
+  val addrSize = params(MAXIAddrSize)
+  val addrOffset = params(MAXIAddrOffset)
   val resetAddr = params(ResetAddr)
+  val s_axiAddrWidth = params(SAXIAddrWidth)
+  val s_axiDataWidth = params(SAXIDataWidth)
+  val memAddrWidth = params(MemAddrWidth)
+  val memDataWidth = params(MemDataWidth)
+  val memTagWidth = params(MemTagWidth)
+  val blockOffset = params(BlockOffset)
+  val memAddrOffset = memAddrWidth + blockOffset
+  val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / s_axiDataWidth
+  val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
 
-  // sim target
-  val sim: T = Module(c)
   val io = new AXI4
-  val inMap = (sim.io.t_ins.unzip._2 zip sim.io.ins).toMap
-  val outMap = (sim.io.t_outs.unzip._2 zip sim.io.outs).toMap
+  // Simulation Target
+  val sim: T = Module(c)
+  val (memInMap, ioInMap) = ListMap((sim.io.t_ins.unzip._2 zip sim.io.ins):_*) partition (MemIO.ins contains _._1)
+  val (memOutMap, ioOutMap) = ListMap((sim.io.t_outs.unzip._2 zip sim.io.outs):_*) partition (MemIO.outs contains _._1)
 
-  // MemUnits for memory requests
-  val memIns = MemIO.ins
-  val memOuts = MemIO.outs
-  val mem = Module(new MemUnit(MemIO.count+1))
-  // Connect Memory Signal Channals to MemUnit
-  for (i <- 0 until MemIO.count) {
-    val (req_cmd_ready, req_cmd_valid, req_cmd_addr, req_cmd_tag, req_cmd_rw) = MemReqCmd(i)
-    val (req_data_ready, req_data_valid, req_data_bits) = MemReqData(i)
-    val (resp_ready, resp_valid, resp_data, resp_tag) = MemResp(i)
-
-    mem.io.req_cmd_ready(i) <> inMap(req_cmd_ready)
-    mem.io.req_cmd_valid(i) <> outMap(req_cmd_valid)
-    mem.io.req_cmd_addr(i) <> outMap(req_cmd_addr)
-    mem.io.req_cmd_tag(i) <> outMap(req_cmd_tag)
-    mem.io.req_cmd_rw(i) <> outMap(req_cmd_rw)
-
-    mem.io.req_data_ready(i) <> inMap(req_data_ready)
-    mem.io.req_data_valid(i) <> outMap(req_data_valid)
-    mem.io.req_data_bits(i) <> outMap(req_data_bits)
-
-    mem.io.resp_ready(i) <> outMap(resp_ready)
-    mem.io.resp_valid(i) <> inMap(resp_valid)
-    mem.io.resp_data(i) <> inMap(resp_data)
-    mem.io.resp_tag(i) <> inMap(resp_tag)
-  }
+  // MemIO Converter
+  val mem_conv = Module(new MAXI_MemIOConverter(ioInMap.size, ioOutMap.size))
+  // Fake wires for accesses from outside FPGA
+  val mem_req_cmd_addr = UInt(INPUT, memAddrWidth)
+  val mem_req_cmd_tag = UInt(INPUT, memTagWidth+1)
+  val mem_req_data = UInt(INPUT, memDataWidth)
+  val mem_resp_data = UInt(OUTPUT, memDataWidth)
+  val mem_resp_tag = UInt(OUTPUT, memTagWidth)
 
   /*** M_AXI INPUTS ***/
-  val waddr_r = RegInit(UInt(0, addrOffset))
+  val waddr_r = RegInit(UInt(0, addrSize))
   val awid_r  = RegInit(UInt(0))
   val st_wr_idle::st_wr_write::st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
   sim.reset := reset_t
-  mem.reset := reset_t
+  mem_conv.reset := reset_t
 
-  val in_convs = (sim.io.ins.zipWithIndex filterNot { x => 
-    val id = x._2
-    val wire = sim.io.t_ins(id)._2
-    memIns contains wire 
-  }) map { case (in, i) =>
-    val converter = Module(new MAXI2Channel(in.bits, i))
+  val in_convs = ioInMap.zipWithIndex map { case ((wire, in), id) =>
+    val converter = Module(new MAXI2Input(in.bits, id))
+    converter.name = "in_conv_" + id
     converter.reset := reset_t
     converter.io.addr := waddr_r
     converter.io.in.bits := io.M_AXI.w.bits.data
@@ -249,20 +229,23 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     converter.io.out <> in
     converter
   }
-
   val in_ready = Vec(in_convs map (_.io.in.ready))
+  mem_conv.io.in_addr := waddr_r
+  mem_conv.io.in.bits := io.M_AXI.w.bits.data
+  mem_conv.io.in.valid := do_write
 
   // M_AXI Write FSM
   switch(st_wr) {
     is(st_wr_idle) {
       when(io.M_AXI.aw.valid && io.M_AXI.w.valid) {
         st_wr   := st_wr_write
-        waddr_r := io.M_AXI.aw.bits.addr >> UInt(2)
+        waddr_r := io.M_AXI.aw.bits.addr >> UInt(addrOffset)
         awid_r  := io.M_AXI.aw.bits.id
       }
     }
     is(st_wr_write) {
-      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr)) {
+      when(Mux(waddr_r < UInt(ioInMap.size), in_ready(waddr_r), mem_conv.io.in.ready) || 
+               waddr_r === UInt(resetAddr)) {
         st_wr := st_wr_ack
       } 
     }
@@ -279,34 +262,32 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.b.bits.resp := Bits(0)
 
   /*** M_AXI OUTPUS ***/
-  val raddr_r = RegInit(UInt(0, addrOffset))
+  val raddr_r = RegInit(UInt(0, addrSize))
   val arid_r  = RegInit(UInt(0))
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read  
 
-  val out_convs = (sim.io.outs.zipWithIndex filterNot { x => 
-    val id = x._2
-    val wire = sim.io.t_outs(id)._2
-    memOuts contains wire 
-  }) map { case (out, i) =>
-    val converter = Module(new Channel2MAXI(out.bits, i))
+  val out_convs = ioOutMap.zipWithIndex map { case ((wire, out), id) =>
+    val converter = Module(new Output2MAXI(out.bits, id))
+    converter.name = "out_conv_" + id
     converter.reset := reset_t
+    converter.io.addr := raddr_r
     out <> converter.io.in
     converter.io.out.ready := do_read && io.M_AXI.r.ready 
-    converter.io.addr := raddr_r
     converter
   }
-
   val out_data = Vec(out_convs map (_.io.out.bits))
   val out_valid = Vec(out_convs map (_.io.out.valid))
+  mem_conv.io.out_addr := raddr_r
+  mem_conv.io.out.ready := do_read && io.M_AXI.r.ready
 
   // M_AXI Read FSM
   switch(st_rd) {
     is(st_rd_idle) {
       when(io.M_AXI.ar.valid) {
         st_rd   := st_rd_read
-        raddr_r := io.M_AXI.ar.bits.addr >> UInt(2)
+        raddr_r := io.M_AXI.ar.bits.addr >> UInt(blockOffset)
         arid_r  := io.M_AXI.ar.bits.id
       }
     }
@@ -317,20 +298,37 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     }
   }
   io.M_AXI.ar.ready    := st_rd === st_rd_idle
-  io.M_AXI.r.valid     := do_read && out_valid(raddr_r) 
+  io.M_AXI.r.valid     := Mux(raddr_r < UInt(ioOutMap.size), out_valid(raddr_r), mem_conv.io.out.valid) && do_read
+  io.M_AXI.r.bits.data := Mux(raddr_r < UInt(ioOutMap.size), out_data(raddr_r), mem_conv.io.out.bits) 
   io.M_AXI.r.bits.last := io.M_AXI.r.valid
   io.M_AXI.r.bits.id   := arid_r
-  io.M_AXI.r.bits.data := out_data(raddr_r)
 
   /*** S_AXI ***/
-  val s_axiAddrWidth = params(SAXIAddrWidth)
-  val s_axiDataWidth = params(SAXIDataWidth)
-  val memAddrWidth = params(MemAddrWidth)
-  val memDataWidth = params(MemDataWidth)
-  val blockOffset = params(BlockOffset)
-  val memAddrOffset = memAddrWidth + blockOffset
-  val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / s_axiDataWidth
-  val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
+  val mem = Module(new MemArbiter(MemIO.count+1))
+  mem.reset := reset_t
+  // Connect Memory Signal Channals to MemUnit
+  for (i <- 0 until MemIO.count) {
+    val conv = Module(new Channels2MemIO)
+    conv.name = "mem_conv_" + i 
+    conv.reset := reset_t
+    conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
+    conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
+    conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
+    conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
+    conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
+
+    conv.io.req_data_ready <> memInMap(MemData(i)(0))
+    conv.io.req_data_valid <> memOutMap(MemData(i)(1))
+    conv.io.req_data_bits <> memOutMap(MemData(i)(2))
+
+    conv.io.resp_ready <> memOutMap(MemResp(i)(0))
+    conv.io.resp_valid <> memInMap(MemResp(i)(1))
+    conv.io.resp_data <> memInMap(MemResp(i)(2))
+    conv.io.resp_tag <> memInMap(MemResp(i)(3))
+
+    conv.io.mem <> mem.io.ins(i)
+  }
+  mem_conv.io.mem <> mem.io.ins(MemIO.count)
 
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
   val state_r = RegInit(st_idle)
@@ -428,6 +426,6 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
   }
- 
-  transforms.init(this)
+
+  transforms.init(this) 
 }

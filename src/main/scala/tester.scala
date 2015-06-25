@@ -5,16 +5,15 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => S
 import scala.io.Source
 
 abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c, false) {
-  val pokeMap = HashMap[Int, BigInt]()
-  val peekMap = HashMap[Int, BigInt]()
+  protected val inMap = transforms.inMap
+  protected val outMap = transforms.outMap
+  private val pokeMap = HashMap[Int, BigInt]()
+  private val peekMap = HashMap[Int, BigInt]()
 
-  val inMap = transforms.inMap
-  val outMap = transforms.outMap
+  protected def pokeChannel(addr: Int, data: BigInt): Unit
+  protected def peekChannel(addr: Int): BigInt
 
-  def pokeChannel(addr: Int, data: BigInt): Unit
-  def peekChannel(addr: Int): BigInt
-
-  def takeSteps(n: Int) {
+  protected def takeSteps(n: Int) {
     val clk = emulatorCmd("step %d".format(n))
   }
 
@@ -94,13 +93,17 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     value
   }
 
+  inMap ++= c.ins.unzip._2.zipWithIndex
+  outMap ++= c.outs.unzip._2.zipWithIndex
   init
 }
 
 abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
   extends SimTester(c, isTrace) {
-  lazy val inWidths = inMap map { case (k, v) => (v, k.needWidth) }
-  lazy val outWidths = outMap map { case (k, v) => (v, k.needWidth) }
+  private val reqMap = transforms.reqMap
+  private val respMap = transforms.respMap
+  private lazy val inWidths = (inMap ++ reqMap) map {case (k, v) => v -> k.needWidth}
+  private lazy val outWidths = (outMap ++ respMap) map {case (k, v) => v -> k.needWidth}
 
   def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
@@ -137,7 +140,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         takeSteps(1)
       }
 
-      poke(c.io.M_AXI.ar.bits.addr, addr << 2)
+      poke(c.io.M_AXI.ar.bits.addr, addr << c.addrOffset)
       poke(c.io.M_AXI.ar.bits.id, 0)
       poke(c.io.M_AXI.ar.valid, 1)
       takeSteps(1)
@@ -158,6 +161,27 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   private val mem = Array.fill(1<<23){0.toByte} // size = 8MB
+
+  def readMem(addr: BigInt) = {
+    pokeChannel(reqMap(c.mem_req_cmd_addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.mem_req_cmd_tag), 0)
+    do {
+      takeSteps(1)
+    } while (peek(c.io.S_AXI.ar.valid) == 0) 
+    tickMem
+    assert(peekChannel(respMap(c.mem_resp_tag)) == 0)
+    peekChannel(respMap(c.mem_resp_data))
+  }
+
+  def writeMem(addr: BigInt, data: BigInt) {
+    pokeChannel(reqMap(c.mem_req_cmd_addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.mem_req_cmd_tag), 1)
+    pokeChannel(reqMap(c.mem_req_data), data)
+    do {
+      takeSteps(1)
+    } while (peek(c.io.S_AXI.aw.valid) == 0) 
+    tickMem
+  } 
 
   private def tickMem {
     if (peek(c.io.S_AXI.ar.valid) == 1) {
@@ -204,6 +228,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
           takeSteps(1)
         }
         val data = peek(c.io.S_AXI.w.bits.data)
+println("[S_AXI] addr: %x, data: %x".format(aw, data))
         for (i <- 0 until size) {
           val addr = aw+k*(size+1)+i
           mem(addr) = ((data >> (8*i)) & 0xff).toByte
@@ -233,6 +258,23 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         val data = ((parseNibble(line(k)) << 4) | parseNibble(line(k+1))).toByte
         mem(base+offset) = data
         offset += 1
+      }
+    }
+  }
+
+  def slowLoadMem(filename: String) {
+    val step = c.memDataWidth / 4
+    val lines = Source.fromFile(filename).getLines
+    for ((line, i) <- lines.zipWithIndex) {
+      val base = (i * line.length) / 2
+      var offset = 0
+      for (j <- (line.length - step) to 0 by -step) {
+        var data = BigInt(0)
+        for (k <- 0 until step) {
+          data |= parseNibble(line(j+k)) << (4*(step-1-k))
+        }
+        writeMem(base+offset, data)
+        offset += step / 2
       }
     }
   }
