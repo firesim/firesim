@@ -24,7 +24,7 @@ object AXI4Params {
     case MAXIAddrWidth => Dump("M_AXI_ADDR_WIDTH", 32)
     case MAXIDataWidth => Dump("M_AXI_DATA_WIDTH", 32)
     case MAXIAddrSize => 10
-    case MAXIAddrOffset => Dump("M_ADDR_OFFSET", (scala.math.log(site(MAXIAddrWidth)>>3) / scala.math.log(2)).toInt)
+    case MAXIAddrOffset => Dump("M_ADDR_OFFSET", log2Up(site(MAXIAddrWidth)>>3))
     case ResetAddr => Dump("RESET_ADDR", (1 << site(MAXIAddrSize)) - 1)
     case SAXIAddrWidth => Dump("S_AXI_ADDR_WIDTH", 32)
     case SAXIDataWidth => Dump("S_AXI_DATA_WIDTH", 64)

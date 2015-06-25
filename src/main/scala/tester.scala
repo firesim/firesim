@@ -228,7 +228,6 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
           takeSteps(1)
         }
         val data = peek(c.io.S_AXI.w.bits.data)
-println("[S_AXI] addr: %x, data: %x".format(aw, data))
         for (i <- 0 until size) {
           val addr = aw+k*(size+1)+i
           mem(addr) = ((data >> (8*i)) & 0xff).toByte
