@@ -293,19 +293,18 @@ class MemArbiter(n: Int) extends Module {
     val ins = Vec.fill(n){(new MemIO).flip}
     val out = new MemIO  
   }
-  val arb = Module(new RRArbiter(new MemReqCmd, n))
-  val s_READY :: s_WRITE :: s_READ :: Nil = Enum(UInt(), 3)
+  val s_READY :: s_READ :: Nil = Enum(UInt(), 2)
   val state = RegInit(s_READY)
-  val chosen = Reg(arb.io.chosen)
+  val chosen = RegInit(UInt(n-1))
 
-  io.ins.zipWithIndex foreach { case (in, i) => in.req_cmd <> arb.io.in(i) }
-  // arb.io.out <> io.out.req_cmd
-  io.out.req_cmd.bits := arb.io.out.bits
-  io.out.req_cmd.valid := arb.io.out.valid && state === s_READY
-  arb.io.out.ready := io.out.req_cmd.ready
+  io.out.req_cmd.bits := io.ins(chosen).req_cmd.bits
+  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
+  io.ins.zipWithIndex foreach { case (in, i) => 
+    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
+  }
 
-  io.out.req_data.bits := io.ins(arb.io.chosen).req_data.bits
-  io.out.req_data.valid := io.ins(arb.io.chosen).req_data.valid && state === s_READY
+  io.out.req_data.bits := io.ins(chosen).req_data.bits
+  io.out.req_data.valid := io.ins(chosen).req_data.valid && state === s_READY
   io.ins.zipWithIndex foreach { case (in, i) => 
     in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) 
   }
@@ -318,13 +317,13 @@ class MemArbiter(n: Int) extends Module {
 
   switch(state) {
     is(s_READY) {
-      state := Mux(arb.io.out.valid && !arb.io.out.bits.rw, s_READ, s_READY)
-      when(arb.io.out.valid && (!arb.io.out.bits.rw || io.out.req_data.valid)) {
-        chosen := arb.io.chosen
-      } 
+      state := Mux(io.out.req_cmd.valid && !io.out.req_cmd.bits.rw, s_READ, s_READY)
+      when(!io.ins(chosen).req_cmd.valid && !io.ins(chosen).req_data.valid) {
+        chosen := Mux(chosen.orR, chosen - UInt(1), UInt(n-1))
+      }
     }
     is(s_READ) {
       state := Mux(io.ins(chosen).resp.valid, s_READY, s_READ)
-    }
+    } 
   }
 }
