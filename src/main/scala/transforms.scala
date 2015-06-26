@@ -28,7 +28,7 @@ object transforms {
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
         initSimWrappers,
-        dumpIoMaps,
+        dumpMaps,
         dumpParams
         // addRegChains,
         // addSRAMChain,
@@ -98,32 +98,34 @@ object transforms {
     }
   }
 
-  private def dumpIoMaps(c: Module) {
-    ChiselError.info("[transforms] dump io maps")
+  private def dumpMaps(c: Module) {
+    object MapType extends Enumeration { val IoIn, IoOut, MemIn, MemOut = Value }
+    ChiselError.info("[transforms] dump the io & mem maps")
     val res = new StringBuilder
-    val inFile = Driver.createOutputFile(targetName + ".in.map")
     for ((in, id) <- inMap) {
       val path = Driver.backend.extractClassName(in.component) + "." + in.name
       val width = in.needWidth
-      res append "%s %d %d\n".format(path, id, width)
+      res append "%d %s %d %d\n".format(MapType.IoIn.id, path, id, width)
     }
-    try {
-      inFile write res.result
-    } finally {
-      inFile.close
-      res.clear
-    }
-
-    val outFile = Driver.createOutputFile(targetName + ".out.map")
     for ((out, id) <- outMap) {
       val path = Driver.backend.extractClassName(out.component) + "." + out.name
       val width = out.needWidth
-      res append "%s %d %d\n".format(path, id, width)
+      res append "%d %s %d %d\n".format(MapType.IoOut.id, path, id, width)
     }
+    for ((req, id) <- reqMap) {
+      val width = req.needWidth
+      res append "%d %s %d %d\n".format(MapType.MemIn.id, req.name, id, width)
+    }
+    for ((resp, id) <- respMap) {
+      val width = resp.needWidth
+      res append "%d %s %d %d\n".format(MapType.MemOut.id, resp.name, id, width)
+    }
+
+    val file = Driver.createOutputFile(targetName + ".map")
     try {
-      outFile write res.result
+      file write res.result
     } finally {
-      outFile.close
+      file.close
       res.clear
     }
   }
