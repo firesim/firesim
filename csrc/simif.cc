@@ -5,22 +5,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): log(_log)
+simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): prefix(_prefix), log(_log)
 {
-  // initialization
   ok = true;
   t = 0;
   fail_t = 0;
-  prefix = _prefix;
-
-  in_num = 0;
-  out_num = 0;
-
   srand(time(NULL));
-
-  // Read mapping files
-  read_map(prefix + ".in.map");
-  read_map(prefix + ".out.map");
 
   size_t i;
   for (i = 0 ; i < args.size() ; i++) {
@@ -29,42 +19,44 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   hargs.insert(hargs.begin(), args.begin(), args.begin() + i);
   targs.insert(targs.begin(), args.begin() + i, args.end());
-
-  for (auto &arg: hargs) {
-    if (arg.find("+sample-num=") == 0) {
-      // sample_num = atoi(arg.c_str()+12);
-    } else if (arg.find("+loadmem=") == 0) {
-      loadmem = arg.c_str()+9;
-    }
-  }
 }
 
 simif_t::~simif_t() { 
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
-  if (!ok) {
-    fprintf(stdout, " at cycle %lu", fail_t);
-  }
+  if (!ok) { fprintf(stdout, " at cycle %lu", fail_t); }
   fprintf(stdout, "\n");
 }
 
 void simif_t::read_map(std::string filename) {
+  enum map_type { IoIn, IoOut, MemIn, MemOut };
   std::ifstream file(filename.c_str());
   std::string line;
   if (file) {
     while (getline(file, line)) {
       std::istringstream iss(line);
       std::string path;
-      size_t id, width;
-      iss >> path >> id >> width;
-      if (filename.find(".in.map") != std::string::npos) {
-        in_num++;
-        in_map[path] = id;
-        in_widths[id] = width;
-      } else if (filename.find(".out.map") != std::string::npos) {
-        out_num++;
-        out_map[path] = id;
-        out_widths[id] = width;
-      } 
+      size_t type, id, width;
+      iss >> type >> path >> id >> width;
+      switch (static_cast<map_type>(type)) {
+        case IoIn:
+          in_map[path] = id;
+          in_widths[id] = width;
+          break;
+        case IoOut:
+          out_map[path] = id;
+          out_widths[id] = width;
+          break;
+        case MemIn:
+          req_map[path] = id;
+          in_widths[id] = width;
+          break;
+        case MemOut:
+          resp_map[path] = id;
+          out_widths[id] = width;
+          break;
+        default:
+          break;
+      }
     }
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
@@ -74,8 +66,19 @@ void simif_t::read_map(std::string filename) {
 }
 
 void simif_t::init() {
+  for (auto &arg: hargs) {
+    if (arg.find("+sample-num=") == 0) {
+      // sample_num = atoi(arg.c_str()+12);
+    } else if (arg.find("+loadmem=") == 0) {
+      std::string filename = arg.c_str()+9;
+      load_mem(filename);
+    }
+  }
+  // Read mapping files
+  read_map(prefix+".map");
   peek_map.clear();
-  for (size_t id = 0 ; id < out_num ; id++) {
+  for (iomap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
+    size_t id = it->second;
     peek_map[id] = peek_channel(id);
   }
 }
@@ -114,11 +117,13 @@ bool simif_t::expect_port(std::string path, biguint_t expected) {
 void simif_t::step(size_t n) {
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   for (size_t i = 0 ; i < n ; i++) {
-    for (size_t id = 0 ; id < in_num ; id++) {
+    for (iomap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
+      size_t id = it->second;
       poke_channel(id, poke_map.find(id) != poke_map.end() ? poke_map[id] : 0);
     }
     peek_map.clear();
-    for (size_t id = 0 ; id < out_num ; id++) {
+    for (iomap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
+      size_t id = it->second;
       peek_map[id] = peek_channel(id);
     }
   }

@@ -21,17 +21,17 @@ case object DaisyWidth extends Field[Int]
 
 object AXI4Params {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case MAXIAddrWidth => Dump("M_AXI_ADDR_WIDTH", 32)
-    case MAXIDataWidth => Dump("M_AXI_DATA_WIDTH", 32)
+    case MAXIAddrWidth => Dump("AXI_ADDR_WIDTH", 32)
+    case MAXIDataWidth => Dump("AXI_DATA_WIDTH", 32)
     case MAXIAddrSize => 10
-    case MAXIAddrOffset => Dump("M_ADDR_OFFSET", log2Up(site(MAXIAddrWidth)>>3))
+    case MAXIAddrOffset => log2Up(site(MAXIAddrWidth)>>3)
     case ResetAddr => Dump("RESET_ADDR", (1 << site(MAXIAddrSize)) - 1)
-    case SAXIAddrWidth => Dump("S_AXI_ADDR_WIDTH", 32)
-    case SAXIDataWidth => Dump("S_AXI_DATA_WIDTH", 64)
+    case SAXIAddrWidth => 32 
+    case SAXIDataWidth => 64 
     case MemAddrWidth => Dump("MEM_ADDR_WIDTH", 32)
     case MemDataWidth => Dump("MEM_DATA_WIDTH", 32)
     case MemTagWidth => 5
-    case BlockOffset => 2
+    case BlockOffset => Dump("MEM_BLOCK_OFFSET", 2)
   }
 }
 

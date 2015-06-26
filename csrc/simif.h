@@ -10,6 +10,7 @@
 #include <biguint.h>
 
 typedef std::map< std::string, size_t > iomap_t;
+typedef std::map< std::string, size_t >::const_iterator iomap_it_t;
 typedef std::map< size_t, size_t > wmap_t;
 typedef std::map< size_t, biguint_t > map_t;
 
@@ -25,14 +26,10 @@ class simif_t
     virtual int run() = 0;
 
   private:
-    // channel communication
-    virtual void poke_channel(size_t addr, biguint_t data) = 0;
-    virtual biguint_t peek_channel(size_t addr) = 0;
+    virtual void load_mem(std::string filename) = 0;
     void read_map(std::string filename);
 
     // maps 
-    size_t in_num;
-    size_t out_num;
     iomap_t in_map;
     iomap_t out_map;
     map_t poke_map;
@@ -49,9 +46,16 @@ class simif_t
 
   protected:
     std::string prefix;
-    std::string loadmem;
+    iomap_t req_map;
+    iomap_t resp_map;
     wmap_t in_widths;
     wmap_t out_widths;
+
+    // channel communication
+    virtual void poke_channel(size_t addr, biguint_t data) = 0;
+    virtual biguint_t peek_channel(size_t addr) = 0;
+    virtual void write_mem(size_t addr, biguint_t data) = 0;
+    virtual biguint_t read_mem(size_t addr) = 0;
 
     // Simulation APIs
     void poke_port(std::string path, biguint_t value);
