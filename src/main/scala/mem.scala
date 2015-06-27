@@ -273,8 +273,10 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   io.mem.resp <> resp_buf.io.enq
 
   // buffer to converters
+  resp_data.io.addr := io.out_addr
   resp_data.io.in.bits := resp_buf.io.deq.bits.data
   resp_data.io.in.valid := resp_buf.io.deq.valid
+  resp_tag.io.addr := io.out_addr
   resp_tag.io.in.bits := resp_buf.io.deq.bits.tag
   resp_tag.io.in.valid := resp_buf.io.deq.valid
   resp_buf.io.deq.ready := resp_data.io.in.ready && resp_tag.io.in.ready
