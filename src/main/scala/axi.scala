@@ -186,15 +186,18 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val memDataWidth = params(MemDataWidth)
   val memTagWidth = params(MemTagWidth)
   val blockOffset = params(BlockOffset)
-  val memAddrOffset = memAddrWidth + blockOffset
+  val s_axiAddrOffset = scala.math.max(blockOffset, log2Up(s_axiDataWidth>>3))
+  val memAddrOffset = memAddrWidth + s_axiAddrOffset
   val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / s_axiDataWidth
   val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
 
   val io = new AXI4
   // Simulation Target
   val sim: T = Module(c)
-  val (memInMap, ioInMap) = ListMap((sim.io.t_ins.unzip._2 zip sim.io.ins):_*) partition (MemIO.ins contains _._1)
-  val (memOutMap, ioOutMap) = ListMap((sim.io.t_outs.unzip._2 zip sim.io.outs):_*) partition (MemIO.outs contains _._1)
+  val (memInMap, ioInMap) = 
+    ListMap((sim.io.t_ins.unzip._2 zip sim.io.ins):_*) partition (MemIO.ins contains _._1)
+  val (memOutMap, ioOutMap) = 
+    ListMap((sim.io.t_outs.unzip._2 zip sim.io.outs):_*) partition (MemIO.outs contains _._1)
 
   // MemIO Converter
   val mem_conv = Module(new MAXI_MemIOConverter(ioInMap.size, ioOutMap.size))
@@ -283,7 +286,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     is(st_rd_idle) {
       when(io.M_AXI.ar.valid) {
         st_rd   := st_rd_read
-        raddr_r := io.M_AXI.ar.bits.addr >> UInt(blockOffset)
+        raddr_r := io.M_AXI.ar.bits.addr >> UInt(log2Up(m_axiDataWidth>>3))
         arid_r  := io.M_AXI.ar.bits.id
       }
     }
@@ -334,11 +337,11 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val write_count = RegInit(UInt(0))
   val s_axi_addr = 
     if (memAddrOffset == s_axiAddrWidth - 4)
-      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
+      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
     else if (memAddrOffset > s_axiAddrWidth - 4) 
-      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr(s_axiAddrWidth-4-blockOffset-1,0), UInt(0, blockOffset))
+      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr(s_axiAddrWidth-4-s_axiAddrOffset-1,0), UInt(0, s_axiAddrOffset))
     else
-      Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
+      Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
 
   mem.io.out.req_cmd.ready := 
     (state_r === st_start_write && io.S_AXI.aw.ready) || (state_r === st_read && io.S_AXI.ar.ready)
