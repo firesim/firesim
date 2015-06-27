@@ -14,63 +14,59 @@ object SimAXI4Wrapper {
 trait HasMAXI4Addr extends Bundle {
   val axiAddrWidth = params(MAXIAddrWidth)
   val addr = Bits(width=axiAddrWidth)
+  val len  = Bits(width=8)
+  val size = Bits(width=3)
 }
 
 trait HasSAXI4Addr extends Bundle {
   val axiAddrWidth = params(SAXIAddrWidth)
   val addr = Bits(width=axiAddrWidth)
+  val len  = Bits(width=8)
+  val size = Bits(width=3)
 }
 
 trait HasMAXI4Data extends Bundle {
   val axiDataWidth = params(MAXIDataWidth)
   val data = Bits(width=axiDataWidth)
+  val last = Bool()
 }
 
 trait HasSAXI4Data extends Bundle {
   val axiDataWidth = params(SAXIDataWidth)
   val data = Bits(width=axiDataWidth)
-}
-
-abstract class AXI4Addr extends Bundle {
-  // Write / Read Address Channel Signals
-  val id    = Bits(width=12)
-  val len   = Bits(width=8)
-  val size  = Bits(width=3)
-  val burst = Bits(width=2)
-  // def data: Bits
-}
-class MAXI4Addr extends AXI4Addr with HasMAXI4Addr
-class SAXI4Addr extends AXI4Addr with HasSAXI4Addr
-
-abstract class AXI4Read extends Bundle {
-  // Read Data Channel Signals
   val last = Bool()
-  val id   = Bits(width=12)
+}
+
+trait HasMAXI4Tag extends Bundle {
+  val axiTagWidth  = params(MAXITagWidth)
+  val id = Bits(width=axiTagWidth) 
+}
+
+trait HasSAXI4Tag extends Bundle {
+  val axiTagWidth  = params(SAXITagWidth)
+  val id = Bits(width=axiTagWidth) 
+}
+
+trait HasAXI4Resp extends Bundle {
   val resp = Bits(width=2)
-  // def data: Bits
 }
-class MAXI4Read extends AXI4Read with HasMAXI4Data
-class SAXI4Read extends AXI4Read with HasSAXI4Data
 
-abstract class AXI4Write extends Bundle {
-  // Write Data Channel Signals
-  val last = Bool()
-  val strb = Bits(width=4)
-  // def data: Bits
-}
-class MAXI4Write extends AXI4Write with HasMAXI4Data
-class SAXI4Write extends AXI4Write with HasSAXI4Data
+class MAXI4Addr extends HasMAXI4Addr with HasMAXI4Tag
+class SAXI4Addr extends HasSAXI4Addr with HasSAXI4Tag
 
-class AXI4Resp extends Bundle {
-  // Write Response Channel Signals
-  val id   = Bits(width=12)
-  val resp = Bits(width=2) // Not used here
-}
+class MAXI4Read extends HasMAXI4Data with HasAXI4Resp with HasMAXI4Tag
+class SAXI4Read extends HasSAXI4Data with HasAXI4Resp with HasSAXI4Tag
+
+class MAXI4Write extends HasMAXI4Data
+class SAXI4Write extends HasSAXI4Data
+
+class MAXI4Resp extends HasAXI4Resp with HasMAXI4Tag
+class SAXI4Resp extends HasAXI4Resp with HasSAXI4Tag
 
 class MAXI4_IO extends Bundle { 
   val aw = Decoupled(new MAXI4Addr).flip
   val w  = Decoupled(new MAXI4Write).flip
-  val b  = Decoupled(new AXI4Resp)
+  val b  = Decoupled(new MAXI4Resp)
   val ar = Decoupled(new MAXI4Addr).flip
   val r  = Decoupled(new MAXI4Read)
 }
@@ -78,7 +74,7 @@ class MAXI4_IO extends Bundle {
 class SAXI4_IO extends Bundle { 
   val aw = Decoupled(new SAXI4Addr)
   val w  = Decoupled(new SAXI4Write)
-  val b  = Decoupled(new AXI4Resp).flip
+  val b  = Decoupled(new SAXI4Resp).flip
   val ar = Decoupled(new SAXI4Addr)
   val r  = Decoupled(new SAXI4Read).flip
 }
@@ -344,28 +340,33 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     else
       Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, blockOffset))
 
+  mem.io.out.req_cmd.ready := 
+    (state_r === st_start_write && io.S_AXI.aw.ready) || (state_r === st_read && io.S_AXI.ar.ready)
+
   /* S_AXI Read Signals */
   // Read Address
   io.S_AXI.ar.bits.addr := s_axi_addr
   io.S_AXI.ar.bits.id := mem.io.out.req_cmd.bits.tag
-  io.S_AXI.ar.bits.burst := UInt(1) // type INCR
   io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
   io.S_AXI.ar.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
   io.S_AXI.ar.valid := state_r === st_read
   // Read Data
   io.S_AXI.r.ready := mem.io.out.resp.ready
+  mem.io.out.resp.valid := io.S_AXI.r.valid && 
+    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit-1) else Bool(true))
+  mem.io.out.resp.bits.data := 
+    (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
+  mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
 
   /* S_AXI Write Signals */
   // Write Address
   io.S_AXI.aw.bits.addr := s_axi_addr
   io.S_AXI.aw.bits.id := UInt(0)
-  io.S_AXI.aw.bits.burst := UInt(1) // type INCR
   io.S_AXI.aw.bits.len := UInt(dataCountLimit) // burst length (transfers)
   io.S_AXI.aw.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
   io.S_AXI.aw.valid := state_r === st_start_write
   // Write Data
   io.S_AXI.w.valid := do_mem_write && mem.io.out.req_data.valid
-  io.S_AXI.w.bits.strb := UInt(0xff)
   io.S_AXI.w.bits.data := {
     val wire = mem.io.out.req_data.bits.data 
     val width = s_axiDataWidth
@@ -373,21 +374,13 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       ((1 to dataChunkLimit) map (i => ((UInt(i) -> wire((i+1)*width-1,i*width))))).toList)
     else wire
   }
-  io.S_AXI.w.bits.last := do_mem_write && 
+  io.S_AXI.w.bits.last := io.S_AXI.w.valid &&
     (if (dataCountLimit > 0) write_count === UInt(dataCountLimit) else Bool(true))
+  mem.io.out.req_data.ready := io.S_AXI.w.fire() && 
+    (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
   // Write Response
   io.S_AXI.b.ready := Bool(true)
 
-  /* MemUnit Signals */
-  mem.io.out.req_cmd.ready := 
-    ((state_r === st_start_write) && io.S_AXI.aw.ready) || ((state_r === st_read) && io.S_AXI.ar.ready)
-  mem.io.out.req_data.ready := (state_r === st_write) && io.S_AXI.w.ready &&
-    (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
-  mem.io.out.resp.bits.data := 
-    (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
-  mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
-  mem.io.out.resp.valid := io.S_AXI.r.valid && 
-    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit-1) else Bool(true))
 
   if (dataChunkLimit > 0) {
     when(io.S_AXI.r.fire()) {
