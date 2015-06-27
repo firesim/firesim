@@ -52,13 +52,13 @@ biguint_t simif_zynq_t::peek_channel(size_t addr) {
 
 void simif_zynq_t::write_mem(size_t addr, biguint_t data) {
   poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
-  poke_channel(req_map["mem_req_cmd_tag"], 0);
+  poke_channel(req_map["mem_req_cmd_tag"], 1);
   poke_channel(req_map["mem_req_data"], data);
 }
 
 biguint_t simif_zynq_t::read_mem(size_t addr) {
   poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
-  poke_channel(req_map["mem_req_cmd_tag"], 1);
+  poke_channel(req_map["mem_req_cmd_tag"], 0);
   assert(peek_channel(resp_map["mem_resp_tag"]) == 0);
   return peek_channel(resp_map["mem_resp_data"]);
 }
