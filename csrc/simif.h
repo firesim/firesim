@@ -26,8 +26,8 @@ class simif_t
     virtual int run() = 0;
 
   private:
-    virtual void load_mem(std::string filename) = 0;
     void read_map(std::string filename);
+    virtual void load_mem(std::string filename);
 
     // maps 
     iomap_t in_map;
@@ -54,8 +54,6 @@ class simif_t
     // channel communication
     virtual void poke_channel(size_t addr, biguint_t data) = 0;
     virtual biguint_t peek_channel(size_t addr) = 0;
-    virtual void write_mem(size_t addr, biguint_t data) = 0;
-    virtual biguint_t read_mem(size_t addr) = 0;
 
     // Simulation APIs
     void poke_port(std::string path, biguint_t value);
@@ -63,6 +61,8 @@ class simif_t
     bool expect_port(std::string path, biguint_t expected);
     bool expect(bool ok, const char *s);
     void step(size_t n);
+    virtual void write_mem(size_t addr, biguint_t data);
+    virtual biguint_t read_mem(size_t addr);
 
     void init();
     uint64_t cycles() { return t; }

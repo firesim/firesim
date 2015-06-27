@@ -1,9 +1,9 @@
+#include "simif_zynq.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fstream>
-#include "simif_zynq.h"
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
@@ -48,44 +48,5 @@ biguint_t simif_zynq_t::peek_channel(size_t addr) {
     data |= biguint_t(read_reg(addr)) << (i * AXI_DATA_WIDTH);
   }
   return data;
-}
-
-void simif_zynq_t::write_mem(size_t addr, biguint_t data) {
-  poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
-  poke_channel(req_map["mem_req_cmd_tag"], 1);
-  poke_channel(req_map["mem_req_data"], data);
-}
-
-biguint_t simif_zynq_t::read_mem(size_t addr) {
-  poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
-  poke_channel(req_map["mem_req_cmd_tag"], 0);
-  assert(peek_channel(resp_map["mem_resp_tag"]) == 0);
-  return peek_channel(resp_map["mem_resp_data"]);
-}
-
-void simif_zynq_t::load_mem(std::string filename) {
-  const size_t step = AXI_DATA_WIDTH >> 2; // -> AXI_DATA_WIDTH / 4
-  std::ifstream file(filename.c_str());
-  if (file) {
-    std::string line;
-    int i = 0;
-    while (std::getline(file, line)) {
-      uint64_t base = (i * line.length()) / 2;
-      size_t offset = 0;
-      for (int j = line.length() - step ; j >= 0 ; j -= step) {
-        biguint_t data = 0;
-        for (int k = 0 ; k < step ; k++) {
-          data |= parse_nibble(line[j+k]) << (4*(step-1-k));
-        }
-        write_mem(base+offset, data);
-        offset += step >> 1; // -> step / 2
-      }
-      i = 1;
-    }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(1);
-  }
-  file.close();
 }
 
