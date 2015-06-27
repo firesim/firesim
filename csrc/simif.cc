@@ -19,6 +19,9 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   hargs.insert(hargs.begin(), args.begin(), args.begin() + i);
   targs.insert(targs.begin(), args.begin() + i, args.end());
+
+  // Read mapping files
+  read_map(prefix+".map");
 }
 
 simif_t::~simif_t() { 
@@ -65,17 +68,44 @@ void simif_t::read_map(std::string filename) {
   file.close();
 }
 
+void simif_t::load_mem(std::string filename) {
+  const size_t step = MEM_DATA_WIDTH >> 2; // -> MEM_DATA_WIDTH / 4
+  std::ifstream file(filename.c_str());
+  if (file) {
+    int i = 0;
+    std::string line;
+    while (std::getline(file, line)) {
+      uint32_t base = (i * line.length()) >> 1;
+      size_t offset = 0;
+      for (int j = line.length() - step ; j >= 0 ; j -= step) {
+        biguint_t data = 0;
+        for (int k = 0 ; k < step ; k++) {
+          data |= parse_nibble(line[j+k]) << (4*(step-1-k));
+        }
+        write_mem(base+offset, data);
+        offset += step >> 1; // -> step / 2
+      }
+      i += 1;
+    }
+  } else {
+    fprintf(stderr, "Cannot open %s\n", filename.c_str());
+    exit(1);
+  }
+  file.close();
+}
+
 void simif_t::init() {
   for (auto &arg: hargs) {
     if (arg.find("+sample-num=") == 0) {
       // sample_num = atoi(arg.c_str()+12);
     } else if (arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
+      fprintf(stdout, "[loadmem] start loading\n");
       load_mem(filename);
+      fprintf(stdout, "[loadmem] done\n");
     }
   }
-  // Read mapping files
-  read_map(prefix+".map");
+
   peek_map.clear();
   for (iomap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
     size_t id = it->second;
@@ -128,4 +158,17 @@ void simif_t::step(size_t n) {
     }
   }
   t += n;
+}
+
+void simif_t::write_mem(size_t addr, biguint_t data) {
+  poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
+  poke_channel(req_map["mem_req_cmd_tag"], 1);
+  poke_channel(req_map["mem_req_data"], data);
+}
+
+biguint_t simif_t::read_mem(size_t addr) {
+  poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
+  poke_channel(req_map["mem_req_cmd_tag"], 0);
+  assert(peek_channel(resp_map["mem_resp_tag"]) == 0);
+  return peek_channel(resp_map["mem_resp_data"]);
 }
