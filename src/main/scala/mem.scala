@@ -143,9 +143,10 @@ class MemIO extends Bundle {
   val resp     = Decoupled(new MemResp).flip
 }
 
-class Channels2MemIO extends Module {
+class ChannelMemIOConverter extends Module {
   val addrWidth = params(MemAddrWidth)
   val memWidth = params(MemDataWidth) 
+  val memCount = params(MemDataCount) 
   val tagWidth = params(MemTagWidth)
 
   val io = new Bundle {
@@ -168,8 +169,8 @@ class Channels2MemIO extends Module {
   }
 
   val req_cmd_buf = Module(new Queue(new MemReqCmd, 2))
-  val req_data_buf = Module(new Queue(new MemData, 2)) 
-  val resp_buf = Module(new Queue(new MemResp, 2))
+  val req_data_buf = Module(new Queue(new MemData, 2*memCount)) 
+  val resp_buf = Module(new Queue(new MemResp, 2*memCount))
   val req_cmd_valid = io.req_cmd_ready.ready && io.req_cmd_valid.valid &&
     io.req_cmd_addr.valid && io.req_cmd_tag.valid && io.req_cmd_rw.valid
   val req_data_valid = io.req_data_ready.ready && io.req_data_valid.valid && io.req_data_bits.valid
@@ -219,6 +220,7 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   val axiDataWidth = params(MAXIDataWidth)
   val addrWidth = params(MemAddrWidth)
   val memWidth = params(MemDataWidth) 
+  val memCount = params(MemDataCount) 
   val tagWidth = params(MemTagWidth)
   val io = new Bundle {
     val in = Decoupled(UInt(width=axiDataWidth)).flip
@@ -236,10 +238,12 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   val req_cmd_tag = Module(new MAXI2Input(UInt(width=tagWidth+1), rAddrOffset+1))
   val req_data = Module(new MAXI2Input(UInt(width=memWidth), rAddrOffset+2))
   val req_cmd_buf = Module(new Queue(new MemReqCmd, 2))
-  val req_data_buf = Module(new Queue(new MemData, 2)) 
-  val resp_buf = Module(new Queue(new MemResp, 2))
+  val req_data_buf = Module(new Queue(new MemData, 2*memCount)) 
+  val resp_buf = Module(new Queue(new MemResp, 2*memCount))
   val resp_data = Module(new Output2MAXI(UInt(width=memWidth), wAddrOffset))
   val resp_tag = Module(new Output2MAXI(UInt(width=tagWidth), wAddrOffset+1))
+  val resp_data_in_ready = RegInit(Bool(false))
+  val resp_tag_in_ready = RegInit(Bool(false))
 
   // input to converters
   val req_ready = Vec(req_cmd_addr.io.in.ready, req_cmd_tag.io.in.ready, req_data.io.in.ready)
@@ -279,8 +283,19 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   resp_tag.io.addr := io.out_addr
   resp_tag.io.in.bits := resp_buf.io.deq.bits.tag
   resp_tag.io.in.valid := resp_buf.io.deq.valid
-  resp_buf.io.deq.ready := resp_data.io.in.ready && resp_tag.io.in.ready
-  
+  resp_buf.io.deq.ready := resp_data_in_ready && resp_tag_in_ready
+
+  when(resp_data.io.in.ready) {
+    resp_data_in_ready := Bool(true)
+  }
+  when(resp_tag.io.in.ready) {
+    resp_tag_in_ready := Bool(true)
+  }
+  when(resp_buf.io.deq.ready) {
+    resp_data_in_ready := Bool(false)
+    resp_tag_in_ready := Bool(false)
+  }
+
   // converters to output
   val resp_bits = Vec(resp_data.io.out.bits, resp_tag.io.out.bits)
   val resp_valid = Vec(resp_data.io.out.valid, resp_tag.io.out.valid)
