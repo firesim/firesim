@@ -112,7 +112,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       val maskedData = (data >> (i * c.m_axiDataWidth)) & mask
       do {
         poke(c.io.M_AXI.aw.bits.id, 0)
-        poke(c.io.M_AXI.aw.bits.addr, addr << 2)
+        poke(c.io.M_AXI.aw.bits.addr, addr << c.addrOffset)
         poke(c.io.M_AXI.aw.valid, 1)
         poke(c.io.M_AXI.w.bits.data, maskedData)
         poke(c.io.M_AXI.w.valid, 1)
@@ -169,14 +169,21 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       takeSteps(1)
     } while (peek(c.io.S_AXI.ar.valid) == 0) 
     tickMem
-    assert(peekChannel(respMap(c.mem_resp_tag)) == 0)
-    peekChannel(respMap(c.mem_resp_data))
+
+    var data = BigInt(0)
+    for (i <- 0 until c.memDataCount) {
+      assert(peekChannel(respMap(c.mem_resp_tag)) == 0)
+      data |= peekChannel(respMap(c.mem_resp_data)) << (i * c.memDataWidth)
+    }
+    data
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
     pokeChannel(reqMap(c.mem_req_cmd_addr), addr >> c.blockOffset)
     pokeChannel(reqMap(c.mem_req_cmd_tag), 1)
-    pokeChannel(reqMap(c.mem_req_data), data)
+    for (i <- 0 until c.memDataCount) {
+      pokeChannel(reqMap(c.mem_req_data), data >> (i * c.memDataWidth))
+    }
     do {
       takeSteps(1)
     } while (peek(c.io.S_AXI.aw.valid) == 0) 
@@ -200,7 +207,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         var data = BigInt(0)
         for (i <- 0 until size) {
           val addr = ar+k*(size+1)+i
-          data |= (mem(addr) & 0xff) << (8*i)
+          data |= BigInt(mem(addr) & 0xff) << (8*i)
         }
         poke(c.io.S_AXI.r.bits.data, data)
         poke(c.io.S_AXI.r.bits.id, tag)
@@ -262,7 +269,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   def slowLoadMem(filename: String) {
-    val step = c.memDataWidth / 4
+    val step = 1 << (c.blockOffset+1)
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2

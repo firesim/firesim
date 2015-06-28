@@ -69,7 +69,7 @@ void simif_t::read_map(std::string filename) {
 }
 
 void simif_t::load_mem(std::string filename) {
-  const size_t step = MEM_DATA_WIDTH >> 2; // -> MEM_DATA_WIDTH / 4
+  const size_t step = 1 << (MEM_BLOCK_OFFSET + 1);
   std::ifstream file(filename.c_str());
   if (file) {
     int i = 0;
@@ -163,12 +163,19 @@ void simif_t::step(size_t n) {
 void simif_t::write_mem(size_t addr, biguint_t data) {
   poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
   poke_channel(req_map["mem_req_cmd_tag"], 1);
-  poke_channel(req_map["mem_req_data"], data);
+  for (size_t i = 0 ; i < MEM_DATA_COUNT ; i++) {
+    poke_channel(req_map["mem_req_data"], data >> (i * MEM_DATA_WIDTH));
+  }
 }
 
 biguint_t simif_t::read_mem(size_t addr) {
   poke_channel(req_map["mem_req_cmd_addr"], addr >> MEM_BLOCK_OFFSET);
   poke_channel(req_map["mem_req_cmd_tag"], 0);
-  assert(peek_channel(resp_map["mem_resp_tag"]) == 0);
-  return peek_channel(resp_map["mem_resp_data"]);
+
+  biguint_t data = 0;
+  for (size_t i = 0 ; i < MEM_DATA_COUNT ; i++) {
+    assert(peek_channel(resp_map["mem_resp_tag"]) == 0);
+    data |= peek_channel(resp_map["mem_resp_data"]) << (i * MEM_DATA_WIDTH);
+  }
+  return data;
 }

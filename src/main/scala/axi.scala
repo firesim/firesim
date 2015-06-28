@@ -184,12 +184,14 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val s_axiDataWidth = params(SAXIDataWidth)
   val memAddrWidth = params(MemAddrWidth)
   val memDataWidth = params(MemDataWidth)
+  val memDataCount = params(MemDataCount)
   val memTagWidth = params(MemTagWidth)
   val blockOffset = params(BlockOffset)
-  val s_axiAddrOffset = scala.math.max(blockOffset, log2Up(s_axiDataWidth>>3))
-  val memAddrOffset = memAddrWidth + s_axiAddrOffset
-  val dataCountLimit = ((1 << (blockOffset + 3)) - 1) / s_axiDataWidth
-  val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
+  private val s_axiAddrOffset = scala.math.max(blockOffset, log2Up(s_axiDataWidth>>3))
+  private val memAddrOffset = memAddrWidth + s_axiAddrOffset
+  private val dataCountLimit = ((1 << (blockOffset+3)) - 1) / s_axiDataWidth
+  private val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
+  require(dataCountLimit >= dataChunkLimit && (dataChunkLimit == 0 || dataCountLimit % dataChunkLimit == 0))
 
   val io = new AXI4
   // Simulation Target
@@ -286,7 +288,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     is(st_rd_idle) {
       when(io.M_AXI.ar.valid) {
         st_rd   := st_rd_read
-        raddr_r := io.M_AXI.ar.bits.addr >> UInt(log2Up(m_axiDataWidth>>3))
+        raddr_r := io.M_AXI.ar.bits.addr >> UInt(addrOffset)
         arid_r  := io.M_AXI.ar.bits.id
       }
     }
@@ -307,7 +309,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   mem.reset := reset_t
   // Connect Memory Signal Channals to MemUnit
   for (i <- 0 until MemIO.count) {
-    val conv = Module(new Channels2MemIO)
+    val conv = Module(new ChannelMemIOConverter)
     conv.name = "mem_conv_" + i 
     conv.reset := reset_t
     conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
@@ -333,8 +335,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val state_r = RegInit(st_idle)
   val do_mem_write = state_r === st_write
   val resp_data_buf = Vec.fill(dataChunkLimit){Reg(UInt(width=s_axiDataWidth))}
-  val read_count = RegInit(UInt(0))
-  val write_count = RegInit(UInt(0))
+  val read_count = RegInit(UInt(0, log2Up(dataChunkLimit+1)))
+  val write_count = RegInit(UInt(0, log2Up(dataCountLimit+1)))
   val s_axi_addr = 
     if (memAddrOffset == s_axiAddrWidth - 4)
       Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
@@ -351,12 +353,12 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.S_AXI.ar.bits.addr := s_axi_addr
   io.S_AXI.ar.bits.id := mem.io.out.req_cmd.bits.tag
   io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
-  io.S_AXI.ar.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
+  io.S_AXI.ar.bits.size := UInt(log2Up(scala.math.min(memDataWidth, s_axiDataWidth))-3) // burst size (bits/beat)
   io.S_AXI.ar.valid := state_r === st_read
   // Read Data
   io.S_AXI.r.ready := mem.io.out.resp.ready
   mem.io.out.resp.valid := io.S_AXI.r.valid && 
-    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit-1) else Bool(true))
+    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit) else Bool(true))
   mem.io.out.resp.bits.data := 
     (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
   mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
@@ -365,15 +367,15 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   // Write Address
   io.S_AXI.aw.bits.addr := s_axi_addr
   io.S_AXI.aw.bits.id := UInt(0)
-  io.S_AXI.aw.bits.len := UInt(dataCountLimit) // burst length (transfers)
-  io.S_AXI.aw.bits.size := UInt(log2Up(memDataWidth)-3) // burst size (bits/beat)
+  io.S_AXI.aw.bits.len := io.S_AXI.ar.bits.len // burst length (transfers)
+  io.S_AXI.aw.bits.size := io.S_AXI.ar.bits.size // burst size (bits/beat)
   io.S_AXI.aw.valid := state_r === st_start_write
   // Write Data
   io.S_AXI.w.valid := do_mem_write && mem.io.out.req_data.valid
   io.S_AXI.w.bits.data := {
     val wire = mem.io.out.req_data.bits.data 
     val width = s_axiDataWidth
-    if (dataChunkLimit > 0) Lookup(write_count, wire(width-1,0),
+    if (dataChunkLimit > 0) Lookup(write_count(log2Up(dataChunkLimit+1)-1, 0), wire(width-1,0),
       ((1 to dataChunkLimit) map (i => ((UInt(i) -> wire((i+1)*width-1,i*width))))).toList)
     else wire
   }
@@ -387,7 +389,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
 
   if (dataChunkLimit > 0) {
     when(io.S_AXI.r.fire()) {
-      read_count := Mux(read_count === UInt(dataChunkLimit-1), UInt(0), read_count + UInt(1))
+      read_count := Mux(read_count === UInt(dataChunkLimit), UInt(0), read_count + UInt(1))
     }
     when(io.S_AXI.r.valid) {
       resp_data_buf(read_count) := io.S_AXI.r.bits.data
@@ -410,7 +412,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     }
     is(st_write) {
       when(io.S_AXI.w.ready && mem.io.out.req_data.valid) {
-        if (dataCountLimit > 0) {
+        if (dataChunkLimit > 0) {
           write_count := write_count + UInt(1)
           when (io.S_AXI.w.bits.last) {
             write_count := UInt(0)
