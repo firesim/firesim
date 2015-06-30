@@ -24,6 +24,7 @@ object transforms {
     // Add backend passes
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
+        connectIOs,
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
@@ -49,6 +50,37 @@ object transforms {
     reqMap(w.mem_req_data) = w.ioInMap.size + 2
     respMap(w.mem_resp_data) = w.ioOutMap.size
     respMap(w.mem_resp_tag) = w.ioOutMap.size + 1
+  }
+
+  private def connectIOs(c: Module) {
+    c match {
+      case w: SimAXI4Wrapper[_] => {
+        val mem = w.addModule(new MemArbiter(MemIO.count+1))
+        for (i <- 0 until MemIO.count) {
+          val conv = w.addModule(new ChannelMemIOConverter)
+          conv.name = "mem_conv_" + i
+          conv.reset := w.reset_t
+          conv.io.req_cmd_ready <> w.memInMap(MemReqCmd(i)(0))
+          conv.io.req_cmd_valid <> w.memOutMap(MemReqCmd(i)(1))
+          conv.io.req_cmd_addr <> w.memOutMap(MemReqCmd(i)(2))
+          conv.io.req_cmd_tag <> w.memOutMap(MemReqCmd(i)(3))
+          conv.io.req_cmd_rw <> w.memOutMap(MemReqCmd(i)(4))
+
+          conv.io.req_data_ready <> w.memInMap(MemData(i)(0))
+          conv.io.req_data_valid <> w.memOutMap(MemData(i)(1))
+          conv.io.req_data_bits <> w.memOutMap(MemData(i)(2))
+
+          conv.io.resp_ready <> w.memOutMap(MemResp(i)(0))
+          conv.io.resp_valid <> w.memInMap(MemResp(i)(1))
+          conv.io.resp_data <> w.memInMap(MemResp(i)(2))
+          conv.io.resp_tag <> w.memInMap(MemResp(i)(3))
+          conv.io.mem <> mem.io.ins(i)
+        }
+        w.mem_conv.io.mem <> mem.io.ins(MemIO.count)
+        mem.io.out <> w.mem
+      }
+      case _ =>
+    }
   }
 
   private def initSimWrappers(c: Module) {

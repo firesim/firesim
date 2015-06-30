@@ -6,7 +6,7 @@ import scala.collection.immutable.ListMap
 
 object SimAXI4Wrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = (targetParams alter AXI4Params.mask) // alter SimParams.mask
+    val params = (targetParams alter AXI4Params.mask) alter SimParams.mask
     Module(new SimAXI4Wrapper(new SimWrapper(c)))(params)
   }
 }
@@ -305,32 +305,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.r.bits.id   := arid_r
 
   /*** S_AXI ***/
-  val mem = Module(new MemArbiter(MemIO.count+1))
-  mem.reset := reset_t
-  // Connect Memory Signal Channals to MemUnit
-  for (i <- 0 until MemIO.count) {
-    val conv = Module(new ChannelMemIOConverter)
-    conv.name = "mem_conv_" + i 
-    conv.reset := reset_t
-    conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
-    conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
-    conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
-    conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
-    conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
-
-    conv.io.req_data_ready <> memInMap(MemData(i)(0))
-    conv.io.req_data_valid <> memOutMap(MemData(i)(1))
-    conv.io.req_data_bits <> memOutMap(MemData(i)(2))
-
-    conv.io.resp_ready <> memOutMap(MemResp(i)(0))
-    conv.io.resp_valid <> memInMap(MemResp(i)(1))
-    conv.io.resp_data <> memInMap(MemResp(i)(2))
-    conv.io.resp_tag <> memInMap(MemResp(i)(3))
-
-    conv.io.mem <> mem.io.ins(i)
-  }
-  mem_conv.io.mem <> mem.io.ins(MemIO.count)
-
+  val mem = new MemIO
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
   val state_r = RegInit(st_idle)
   val do_mem_write = state_r === st_write
@@ -339,29 +314,29 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val write_count = RegInit(UInt(0, log2Up(dataCountLimit+1)))
   val s_axi_addr = 
     if (memAddrOffset == s_axiAddrWidth - 4)
-      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
+      Cat(UInt(1, 4), mem.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
     else if (memAddrOffset > s_axiAddrWidth - 4) 
-      Cat(UInt(1, 4), mem.io.out.req_cmd.bits.addr(s_axiAddrWidth-4-s_axiAddrOffset-1,0), UInt(0, s_axiAddrOffset))
+      Cat(UInt(1, 4), mem.req_cmd.bits.addr(s_axiAddrWidth-4-s_axiAddrOffset-1,0), UInt(0, s_axiAddrOffset))
     else
-      Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.io.out.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
+      Cat(UInt(1, 4), UInt(0, s_axiAddrWidth-4-memAddrOffset), mem.req_cmd.bits.addr, UInt(0, s_axiAddrOffset))
 
-  mem.io.out.req_cmd.ready := 
+  mem.req_cmd.ready := 
     (state_r === st_start_write && io.S_AXI.aw.ready) || (state_r === st_read && io.S_AXI.ar.ready)
 
   /* S_AXI Read Signals */
   // Read Address
   io.S_AXI.ar.bits.addr := s_axi_addr
-  io.S_AXI.ar.bits.id := mem.io.out.req_cmd.bits.tag
+  io.S_AXI.ar.bits.id := mem.req_cmd.bits.tag
   io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
   io.S_AXI.ar.bits.size := UInt(log2Up(scala.math.min(memDataWidth, s_axiDataWidth))-3) // burst size (bits/beat)
   io.S_AXI.ar.valid := state_r === st_read
   // Read Data
-  io.S_AXI.r.ready := mem.io.out.resp.ready
-  mem.io.out.resp.valid := io.S_AXI.r.valid && 
+  io.S_AXI.r.ready := mem.resp.ready
+  mem.resp.valid := io.S_AXI.r.valid && 
     (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit) else Bool(true))
-  mem.io.out.resp.bits.data := 
+  mem.resp.bits.data := 
     (if (dataChunkLimit > 0) Cat(io.S_AXI.r.bits.data :: resp_data_buf.toList.reverse) else io.S_AXI.r.bits.data)
-  mem.io.out.resp.bits.tag := io.S_AXI.r.bits.id
+  mem.resp.bits.tag := io.S_AXI.r.bits.id
 
   /* S_AXI Write Signals */
   // Write Address
@@ -371,9 +346,9 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.S_AXI.aw.bits.size := io.S_AXI.ar.bits.size // burst size (bits/beat)
   io.S_AXI.aw.valid := state_r === st_start_write
   // Write Data
-  io.S_AXI.w.valid := do_mem_write && mem.io.out.req_data.valid
+  io.S_AXI.w.valid := do_mem_write && mem.req_data.valid
   io.S_AXI.w.bits.data := {
-    val wire = mem.io.out.req_data.bits.data 
+    val wire = mem.req_data.bits.data 
     val width = s_axiDataWidth
     if (dataChunkLimit > 0) Lookup(write_count(log2Up(dataChunkLimit+1)-1, 0), wire(width-1,0),
       ((1 to dataChunkLimit) map (i => ((UInt(i) -> wire((i+1)*width-1,i*width))))).toList)
@@ -381,7 +356,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   }
   io.S_AXI.w.bits.last := io.S_AXI.w.valid &&
     (if (dataCountLimit > 0) write_count === UInt(dataCountLimit) else Bool(true))
-  mem.io.out.req_data.ready := io.S_AXI.w.fire() && 
+  mem.req_data.ready := io.S_AXI.w.fire() && 
     (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
   // Write Response
   io.S_AXI.b.ready := Bool(true)
@@ -400,8 +375,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   switch(state_r) {
     is(st_idle) {
       state_r := 
-        Mux(mem.io.out.req_cmd.valid && !mem.io.out.req_cmd.bits.rw, st_read,
-        Mux(mem.io.out.req_cmd.valid && mem.io.out.req_cmd.bits.rw && mem.io.out.req_data.valid, 
+        Mux(mem.req_cmd.valid && !mem.req_cmd.bits.rw, st_read,
+        Mux(mem.req_cmd.valid && mem.req_cmd.bits.rw && mem.req_data.valid, 
             st_start_write, st_idle))
     }
     is(st_read) {
@@ -411,7 +386,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       state_r := Mux(io.S_AXI.aw.ready, st_write, st_start_write)
     }
     is(st_write) {
-      when(io.S_AXI.w.ready && mem.io.out.req_data.valid) {
+      when(io.S_AXI.w.ready && mem.req_data.valid) {
         if (dataChunkLimit > 0) {
           write_count := write_count + UInt(1)
           when (io.S_AXI.w.bits.last) {
