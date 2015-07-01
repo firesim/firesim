@@ -2,6 +2,7 @@ package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
+import scala.collection.immutable.ListMap
 import addDaisyPins._
 
 object transforms { 
@@ -41,43 +42,86 @@ object transforms {
     stallPins(w.target) = stall
   } 
 
-  private[strober] def init[T <: SimNetwork](w: SimAXI4Wrapper[T]) {
-    w.name = targetName + "AXI4Wrapper"
-    inMap ++= w.ioInMap.unzip._1.zipWithIndex
-    outMap ++= w.ioOutMap.unzip._1.zipWithIndex
-    reqMap(w.mem_req_cmd_addr) = w.ioInMap.size
-    reqMap(w.mem_req_cmd_tag) = w.ioInMap.size + 1
-    reqMap(w.mem_req_data) = w.ioInMap.size + 2
-    respMap(w.mem_resp_data) = w.ioOutMap.size
-    respMap(w.mem_resp_tag) = w.ioOutMap.size + 1
-  }
-
   private def connectIOs(c: Module) {
+    ChiselError.info("[transforms] connect IOs to AXI busses")
     c match {
       case w: SimAXI4Wrapper[_] => {
-        val mem = w.addModule(new MemArbiter(MemIO.count+1))
+        w.name = targetName + "AXI4Wrapper"
+        val (memInMap, ioInMap) =
+          ListMap((w.sim.io.t_ins.unzip._2 zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
+        val (memOutMap, ioOutMap) =
+          ListMap((w.sim.io.t_outs.unzip._2 zip w.sim.io.outs):_*) partition (MemIO.outs contains _._1)
+        inMap ++= ioInMap.unzip._1.zipWithIndex
+        outMap ++= ioOutMap.unzip._1.zipWithIndex
+        reqMap(w.mem_req_cmd_addr) = ioInMap.size
+        reqMap(w.mem_req_cmd_tag) = ioInMap.size + 1
+        reqMap(w.mem_req_data) = ioInMap.size + 2
+        respMap(w.mem_resp_data) = ioOutMap.size
+        respMap(w.mem_resp_tag) = ioOutMap.size + 1
+
+        // Inputs
+        for (((wire, in), id) <- ioInMap.zipWithIndex) {
+          val conv = w.addModule(new MAXI2Input(in.bits, id))
+          conv.name = "in_conv_" + id
+          conv.reset := w.reset_t
+          conv.io.addr := w.waddr_r
+          conv.io.in.bits := w.io.M_AXI.w.bits.data
+          conv.io.in.valid := w.do_write
+          conv.io.out <> in
+          w.in_ready(id) := conv.io.in.ready
+        }
+ 
+        // Outputs
+        for (((wire, out), id) <- ioOutMap.zipWithIndex) {
+          val conv = w.addModule(new Output2MAXI(out.bits, id))
+          conv.name = "out_conv_" + id
+          conv.reset := w.reset_t
+          conv.io.addr := w.raddr_r
+          conv.io.in <> out
+          conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
+          w.out_data(id) := conv.io.out.bits
+          w.out_valid(id) := conv.io.out.valid
+        }
+
+        // MemIOs
+        val conv = w.addModule(new MAXI_MemIOConverter(ioInMap.size, ioOutMap.size))
+        conv.reset := w.reset_t
+        conv.io.in_addr := w.waddr_r
+        conv.io.out_addr := w.raddr_r
+        for ((in, i) <- conv.io.ins.zipWithIndex) {
+          in.bits := w.io.M_AXI.w.bits.data
+          in.valid := w.do_write
+          w.in_ready(ioInMap.size+i) := in.ready
+        }
+        for ((out, i) <- conv.io.outs.zipWithIndex) {
+          w.out_data(ioOutMap.size+i) := out.bits
+          w.out_valid(ioOutMap.size+i) := out.valid
+          out.ready := w.do_read && w.io.M_AXI.r.ready
+        }
+
+        val arb = w.addModule(new MemArbiter(MemIO.count+1))
         for (i <- 0 until MemIO.count) {
           val conv = w.addModule(new ChannelMemIOConverter)
           conv.name = "mem_conv_" + i
           conv.reset := w.reset_t
-          conv.io.req_cmd_ready <> w.memInMap(MemReqCmd(i)(0))
-          conv.io.req_cmd_valid <> w.memOutMap(MemReqCmd(i)(1))
-          conv.io.req_cmd_addr <> w.memOutMap(MemReqCmd(i)(2))
-          conv.io.req_cmd_tag <> w.memOutMap(MemReqCmd(i)(3))
-          conv.io.req_cmd_rw <> w.memOutMap(MemReqCmd(i)(4))
+          conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
+          conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
+          conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
+          conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
+          conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
 
-          conv.io.req_data_ready <> w.memInMap(MemData(i)(0))
-          conv.io.req_data_valid <> w.memOutMap(MemData(i)(1))
-          conv.io.req_data_bits <> w.memOutMap(MemData(i)(2))
+          conv.io.req_data_ready <> memInMap(MemData(i)(0))
+          conv.io.req_data_valid <> memOutMap(MemData(i)(1))
+          conv.io.req_data_bits <> memOutMap(MemData(i)(2))
 
-          conv.io.resp_ready <> w.memOutMap(MemResp(i)(0))
-          conv.io.resp_valid <> w.memInMap(MemResp(i)(1))
-          conv.io.resp_data <> w.memInMap(MemResp(i)(2))
-          conv.io.resp_tag <> w.memInMap(MemResp(i)(3))
-          conv.io.mem <> mem.io.ins(i)
+          conv.io.resp_ready <> memOutMap(MemResp(i)(0))
+          conv.io.resp_valid <> memInMap(MemResp(i)(1))
+          conv.io.resp_data <> memInMap(MemResp(i)(2))
+          conv.io.resp_tag <> memInMap(MemResp(i)(3))
+          conv.io.mem <> arb.io.ins(i)
         }
-        w.mem_conv.io.mem <> mem.io.ins(MemIO.count)
-        mem.io.out <> w.mem
+        conv.io.mem <> arb.io.ins(MemIO.count)
+        arb.io.out <> w.mem
       }
       case _ =>
     }

@@ -215,25 +215,36 @@ class ChannelMemIOConverter extends Module {
   resp_buf.io.enq <> io.mem.resp
 }
 
-class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
-  val axiAddrWidth = params(MAXIAddrWidth)
-  val axiDataWidth = params(MAXIDataWidth)
-  val addrWidth = params(MemAddrWidth)
-  val memWidth = params(MemDataWidth) 
-  val memCount = params(MemDataCount) 
-  val tagWidth = params(MemTagWidth)
-  val io = new Bundle {
-    val in = Decoupled(UInt(width=axiDataWidth)).flip
-    val in_addr = UInt(INPUT, axiAddrWidth)
-    val out = Decoupled(UInt(width=axiDataWidth))
-    val out_addr = UInt(INPUT, axiAddrWidth)
-    val mem = new MemIO
-  }
+object MAXI_MemIO_ConverterIO {
   // rAddrOffset + 0 : req_cmd_addr
   // rAddrOffset + 1 : {req_cmd_tag, req_cmd_rw}
   // rAddrOffset + 2 : req_cmd_data
   // wAddrOffset + 0 : resp_data
   // wAddrOffset + 1 : resp_tag
+  val inNum = 3
+  val outNum = 2
+}
+
+class MAXI_MemIO_ConverterIO extends Bundle {
+  val axiAddrWidth = params(MAXIAddrWidth)
+  val axiDataWidth = params(MAXIDataWidth)
+  val inNum = MAXI_MemIO_ConverterIO.inNum
+  val outNum = MAXI_MemIO_ConverterIO.outNum
+
+  val ins = Vec.fill(inNum){Decoupled(UInt(width=axiDataWidth)).flip}
+  val in_addr = UInt(INPUT, axiAddrWidth)
+  val outs = Vec.fill(outNum){Decoupled(UInt(width=axiDataWidth))}
+  val out_addr = UInt(INPUT, axiAddrWidth)
+  val mem = new MemIO
+}
+
+class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
+  val addrWidth = params(MemAddrWidth)
+  val memWidth = params(MemDataWidth) 
+  val memCount = params(MemDataCount) 
+  val tagWidth = params(MemTagWidth)
+
+  val io = new MAXI_MemIO_ConverterIO
   val req_cmd_addr = Module(new MAXI2Input(UInt(width=addrWidth), rAddrOffset))
   val req_cmd_tag = Module(new MAXI2Input(UInt(width=tagWidth+1), rAddrOffset+1))
   val req_data = Module(new MAXI2Input(UInt(width=memWidth), rAddrOffset+2))
@@ -246,18 +257,13 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   val resp_tag_in_ready = RegInit(Bool(false))
 
   // input to converters
-  val req_ready = Vec(req_cmd_addr.io.in.ready, req_cmd_tag.io.in.ready, req_data.io.in.ready)
-  req_cmd_addr.io.in.bits := io.in.bits
-  req_cmd_addr.io.in.valid := io.in.valid
+  req_cmd_addr.io.in <> io.ins(0)
   req_cmd_addr.io.addr := io.in_addr
-  req_cmd_tag.io.in.bits := io.in.bits
-  req_cmd_tag.io.in.valid := io.in.valid
+  req_cmd_tag.io.in <> io.ins(1)
   req_cmd_tag.io.addr := io.in_addr
-  req_data.io.in.bits := io.in.bits
-  req_data.io.in.valid := io.in.valid
+  req_data.io.in <> io.ins(2)
   req_data.io.addr := io.in_addr
-  io.in.ready := req_ready(io.in_addr - UInt(rAddrOffset))
-  
+
   // converters to buffers
   req_cmd_buf.io.enq.bits.addr := req_cmd_addr.io.out.bits
   req_cmd_buf.io.enq.bits.tag := req_cmd_tag.io.out.bits >> UInt(1)
@@ -297,12 +303,8 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   }
 
   // converters to output
-  val resp_bits = Vec(resp_data.io.out.bits, resp_tag.io.out.bits)
-  val resp_valid = Vec(resp_data.io.out.valid, resp_tag.io.out.valid)
-  io.out.bits := resp_bits(io.out_addr - UInt(wAddrOffset)) 
-  io.out.valid := resp_valid(io.out_addr - UInt(wAddrOffset))
-  resp_data.io.out.ready := io.out.ready
-  resp_tag.io.out.ready := io.out.ready
+  resp_data.io.out <> io.outs(0)
+  resp_tag.io.out <> io.outs(1)
 }
 
 class MemArbiter(n: Int) extends Module {
