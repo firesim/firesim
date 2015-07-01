@@ -1,8 +1,6 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable.ListMap
 
 object SimAXI4Wrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
@@ -196,13 +194,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val io = new AXI4
   // Simulation Target
   val sim: T = Module(c)
-  val (memInMap, ioInMap) = 
-    ListMap((sim.io.t_ins.unzip._2 zip sim.io.ins):_*) partition (MemIO.ins contains _._1)
-  val (memOutMap, ioOutMap) = 
-    ListMap((sim.io.t_outs.unzip._2 zip sim.io.outs):_*) partition (MemIO.outs contains _._1)
 
-  // MemIO Converter
-  val mem_conv = Module(new MAXI_MemIOConverter(ioInMap.size, ioOutMap.size))
   // Fake wires for accesses from outside FPGA
   val mem_req_cmd_addr = UInt(INPUT, memAddrWidth)
   val mem_req_cmd_tag = UInt(INPUT, memTagWidth+1)
@@ -213,29 +205,15 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   /*** M_AXI INPUTS ***/
   val waddr_r = RegInit(UInt(0, addrSize))
   val awid_r  = RegInit(UInt(0))
-  val st_wr_idle::st_wr_write::st_wr_ack :: Nil = Enum(UInt(), 3)
+  val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
-  sim.reset := reset_t
-  mem_conv.reset := reset_t
-
-  val in_convs = ioInMap.zipWithIndex map { case ((wire, in), id) =>
-    val converter = Module(new MAXI2Input(in.bits, id))
-    converter.name = "in_conv_" + id
-    converter.reset := reset_t
-    converter.io.addr := waddr_r
-    converter.io.in.bits := io.M_AXI.w.bits.data
-    converter.io.in.valid := do_write
-    converter.io.out <> in
-    converter
-  }
-  val in_ready = Vec(in_convs map (_.io.in.ready))
-  mem_conv.io.in_addr := waddr_r
-  mem_conv.io.in.bits := io.M_AXI.w.bits.data
-  mem_conv.io.in.valid := do_write
+  val memInNum = MAXI_MemIO_ConverterIO.inNum - MemIO.ins.size
+  val in_ready = Vec.fill(sim.io.ins.size + memInNum){Bool()}
 
   // M_AXI Write FSM
+  sim.reset := reset_t
   switch(st_wr) {
     is(st_wr_idle) {
       when(io.M_AXI.aw.valid && io.M_AXI.w.valid) {
@@ -245,8 +223,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
     is(st_wr_write) {
-      when(Mux(waddr_r < UInt(ioInMap.size), in_ready(waddr_r), mem_conv.io.in.ready) || 
-               waddr_r === UInt(resetAddr)) {
+      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr)) {
         st_wr := st_wr_ack
       } 
     }
@@ -268,20 +245,9 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read  
-
-  val out_convs = ioOutMap.zipWithIndex map { case ((wire, out), id) =>
-    val converter = Module(new Output2MAXI(out.bits, id))
-    converter.name = "out_conv_" + id
-    converter.reset := reset_t
-    converter.io.addr := raddr_r
-    out <> converter.io.in
-    converter.io.out.ready := do_read && io.M_AXI.r.ready 
-    converter
-  }
-  val out_data = Vec(out_convs map (_.io.out.bits))
-  val out_valid = Vec(out_convs map (_.io.out.valid))
-  mem_conv.io.out_addr := raddr_r
-  mem_conv.io.out.ready := do_read && io.M_AXI.r.ready
+  val memOutNum = MAXI_MemIO_ConverterIO.outNum - MemIO.outs.size
+  val out_data = Vec.fill(sim.io.outs.size + memOutNum){UInt()}
+  val out_valid = Vec.fill(sim.io.outs.size + memOutNum){Bool()}
 
   // M_AXI Read FSM
   switch(st_rd) {
@@ -299,8 +265,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     }
   }
   io.M_AXI.ar.ready    := st_rd === st_rd_idle
-  io.M_AXI.r.valid     := Mux(raddr_r < UInt(ioOutMap.size), out_valid(raddr_r), mem_conv.io.out.valid) && do_read
-  io.M_AXI.r.bits.data := Mux(raddr_r < UInt(ioOutMap.size), out_data(raddr_r), mem_conv.io.out.bits) 
+  io.M_AXI.r.valid     := out_valid(raddr_r) && do_read
+  io.M_AXI.r.bits.data := out_data(raddr_r)
   io.M_AXI.r.bits.last := io.M_AXI.r.valid
   io.M_AXI.r.bits.id   := arid_r
 
@@ -399,6 +365,4 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
   }
-
-  transforms.init(this) 
 }
