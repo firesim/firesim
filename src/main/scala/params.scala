@@ -20,6 +20,9 @@ case object MemAddrWidth extends Field[Int]
 case object MemTagWidth extends Field[Int]
 case object BlockOffset extends Field[Int]
 
+// Simulation Params
+case object SampleNum extends Field[Int]
+case object TraceLen extends Field[Int]
 case object DaisyWidth extends Field[Int]
 
 object AXI4Params {
@@ -43,6 +46,8 @@ object AXI4Params {
 
 object SimParams {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case _ =>
+    case SampleNum => 10
+    case TraceLen => 1
+    case DaisyWidth => site(MAXIDataWidth)
   }
 }

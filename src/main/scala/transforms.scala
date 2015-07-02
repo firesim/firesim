@@ -19,7 +19,10 @@ object transforms {
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val reqMap = LinkedHashMap[Bits, Int]()
   private[strober] val respMap = LinkedHashMap[Bits, Int]()
-  private lazy val targetName = wrappers.last.name stripSuffix "Wrapper"
+  private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
+  private[strober] val outTraceMap = LinkedHashMap[Bits, Int]()
+  private[strober] var targetName = ""
+  private[strober] var targetPath = ""
 
   private[strober] def init[T <: Module](w: SimWrapper[T], stall: Bool) {
     // Add backend passes
@@ -37,27 +40,22 @@ object transforms {
       )
     }
 
-    w.name = Driver.backend.extractClassName(w.target) + "Wrapper"
+    targetName = Driver.backend.extractClassName(w.target) 
+    w.name = targetName + "Wrapper"
     wrappers += w
     stallPins(w.target) = stall
-  } 
+  }
 
   private def connectIOs(c: Module) {
-    ChiselError.info("[transforms] connect IOs to AXI busses")
     c match {
       case w: SimAXI4Wrapper[_] => {
+        ChiselError.info("[transforms] connect IOs to AXI busses")
+        targetPath = wrappers.last.target.getPathName(".")
         w.name = targetName + "AXI4Wrapper"
         val (memInMap, ioInMap) =
           ListMap((w.sim.io.t_ins.unzip._2 zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
         val (memOutMap, ioOutMap) =
           ListMap((w.sim.io.t_outs.unzip._2 zip w.sim.io.outs):_*) partition (MemIO.outs contains _._1)
-        inMap ++= ioInMap.unzip._1.zipWithIndex
-        outMap ++= ioOutMap.unzip._1.zipWithIndex
-        reqMap(w.mem_req_cmd_addr) = ioInMap.size
-        reqMap(w.mem_req_cmd_tag) = ioInMap.size + 1
-        reqMap(w.mem_req_data) = ioInMap.size + 2
-        respMap(w.mem_resp_data) = ioOutMap.size
-        respMap(w.mem_resp_tag) = ioOutMap.size + 1
 
         // Inputs
         for (((wire, in), id) <- ioInMap.zipWithIndex) {
@@ -69,6 +67,7 @@ object transforms {
           conv.io.in.valid := w.do_write
           conv.io.out <> in
           w.in_ready(id) := conv.io.in.ready
+          inMap(wire) = id
         }
  
         // Outputs
@@ -81,6 +80,7 @@ object transforms {
           conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
           w.out_data(id) := conv.io.out.bits
           w.out_valid(id) := conv.io.out.valid
+          outMap(wire) = id
         }
 
         // MemIOs
@@ -88,16 +88,25 @@ object transforms {
         conv.reset := w.reset_t
         conv.io.in_addr := w.waddr_r
         conv.io.out_addr := w.raddr_r
+
         for ((in, i) <- conv.io.ins.zipWithIndex) {
+          val id = ioInMap.size + i
           in.bits := w.io.M_AXI.w.bits.data
           in.valid := w.do_write
-          w.in_ready(ioInMap.size+i) := in.ready
+          w.in_ready(id) := in.ready
         }
+        reqMap(w.memReq.addr) = ioInMap.size
+        reqMap(w.memReq.tag) = ioInMap.size + 1
+        reqMap(w.memReq.data) = ioInMap.size + 2
+
         for ((out, i) <- conv.io.outs.zipWithIndex) {
-          w.out_data(ioOutMap.size+i) := out.bits
-          w.out_valid(ioOutMap.size+i) := out.valid
+          val id = ioOutMap.size + i
+          w.out_data(id) := out.bits
+          w.out_valid(id) := out.valid
           out.ready := w.do_read && w.io.M_AXI.r.ready
         }
+        respMap(w.memResp.data) = ioOutMap.size
+        respMap(w.memResp.tag) = ioOutMap.size + 1
 
         val arb = w.addModule(new MemArbiter(MemIO.count+1))
         for (i <- 0 until MemIO.count) {
@@ -122,8 +131,42 @@ object transforms {
         }
         conv.io.mem <> arb.io.ins(MemIO.count)
         arb.io.out <> w.mem
+
+        // Trace
+        val inTraces = w.sim.io.t_ins.unzip._2.zipWithIndex filter (MemIO.ins contains _._1) map { 
+          case (wire, i) => {
+            val channel = w.sim.in_channels(i)
+            val trace = w.sim.addPin(Decoupled(wire), wire.name + "_trace")
+            trace <> channel.initTrace
+            (trace, wire)
+          }
+        }
+        val outTraces = w.sim.io.t_outs.unzip._2.zipWithIndex filter (MemIO.outs contains _._1) map {
+          case (wire, i) => {
+            val channel = w.sim.out_channels(i)
+            val trace = w.sim.addPin(Decoupled(wire), wire.name + "_trace")
+            trace <> channel.initTrace
+            (trace, wire)
+          }
+        } 
+        for (((trace, wire), i) <- (inTraces ++ outTraces).zipWithIndex) {
+          val id = w.sim.io.outs.size - MemIO.outs.size + w.memResp.flatten.size + i
+          val conv = w.addModule(new Output2MAXI(trace.bits, id))
+          conv.name = "out_conv_" + id
+          conv.reset := w.reset_t
+          conv.io.addr := w.raddr_r
+          conv.io.in <> trace
+          conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
+          w.out_data(id) := conv.io.out.bits
+          w.out_valid(id) := conv.io.out.valid
+          if (MemIO.ins contains wire) inTraceMap(wire) = id else outTraceMap(wire) = id
+        }
       }
-      case _ =>
+      case w: SimWrapper[Module] => {
+        targetPath = w.target.getPathName(".")
+        inMap ++= w.ins.unzip._2.zipWithIndex
+        outMap ++= w.outs.unzip._2.zipWithIndex
+      }
     }
   }
 
@@ -175,7 +218,7 @@ object transforms {
   }
 
   private def dumpMaps(c: Module) {
-    object MapType extends Enumeration { val IoIn, IoOut, MemIn, MemOut = Value }
+    object MapType extends Enumeration { val IoIn, IoOut, MemIn, MemOut, InTrace, OutTrace = Value }
     ChiselError.info("[transforms] dump the io & mem maps")
     val res = new StringBuilder
     for ((in, id) <- inMap) {
@@ -195,6 +238,16 @@ object transforms {
     for ((resp, id) <- respMap) {
       val width = resp.needWidth
       res append "%d %s %d %d\n".format(MapType.MemOut.id, resp.name, id, width)
+    }
+    for ((in, id) <- inTraceMap) {
+      val path = Driver.backend.extractClassName(in.component) + "." + in.name
+      val width = in.needWidth
+      res append "%d %s %d %d\n".format(MapType.InTrace.id, path, id, width)
+    }
+    for ((out, id) <- outTraceMap) {
+      val path = Driver.backend.extractClassName(out.component) + "." + out.name
+      val width = out.needWidth
+      res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
     }
 
     val file = Driver.createOutputFile(targetName + ".map")

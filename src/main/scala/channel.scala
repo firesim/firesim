@@ -15,15 +15,23 @@ class Packet[T <: Bits](gen: T) extends Bundle {
 class ChannelIO[T <: Bits](gen: T) extends Bundle {
   val in  = Decoupled(new Packet[T](gen)).flip
   val out = Decoupled(new Packet[T](gen))
+  val trace = Decoupled(gen)
 }
 
 class Channel[T <: Bits](gen: T, entries: Int = 2) extends Module {
   // Chnnel is plugged into one "flattened" IO
-  // Channel has more than on FIFOs: header and data
-  // This is because it's sometimes hard to encapsulate 
-  // header and data into one packet (e.g. AXI buses)
-  val io      = new ChannelIO[T](gen)
-  val packets = Module(new Queue(new Packet[T](gen), entries))
+  val traceLen = params(TraceLen)
+  val io       = new ChannelIO[T](gen)
+  val packets  = Module(new Queue(new Packet[T](gen), entries))
+  val trace    = Module(new Queue(gen, traceLen))
   io.in <> packets.io.enq
   packets.io.deq <> io.out
+  def initTrace  = {
+    // instantiate trace in the backend(lazy connection?)
+    // trace queue will not appear until this is executed
+    trace.io.enq.bits := io.in.bits.data
+    trace.io.enq.valid := io.in.valid && trace.io.enq.ready
+    trace.io.deq <> io.trace
+    io.trace
+  }
 }

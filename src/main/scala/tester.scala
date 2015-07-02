@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, Queue => ScalaQueue}
+import scala.collection.mutable.{HashMap, Queue => ScalaQueue}
 import scala.io.Source
 
 abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c, false) {
@@ -9,6 +9,15 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected val outMap = transforms.outMap
   private val pokeMap = HashMap[Int, BigInt]()
   private val peekMap = HashMap[Int, BigInt]()
+  protected def traceLen: Int
+  private var traceCount = 0
+  private val inTraces = HashMap[Int, ScalaQueue[BigInt]]()
+  private val outTraces = HashMap[Int, ScalaQueue[BigInt]]()
+  protected val inTraceMap = transforms.inTraceMap
+  protected val outTraceMap = transforms.outTraceMap
+  protected def sampleNum: Int
+  private lazy val samples = Array.fill(sampleNum){Sample()}
+  private var lastSampleId: Option[Int] = None
 
   protected def pokeChannel(addr: Int, data: BigInt): Unit
   protected def peekChannel(addr: Int): BigInt
@@ -46,31 +55,100 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     expect(pass, "* EXPECT " + dumpName(port) + " -> " + value.toString(16) + " == " + expected.toString(16))
   }
 
+  def tracePorts(id: Int) {
+    val sample = samples(id)
+    for (i <- 0 until traceLen) {
+      for ((wire, i) <- inMap) {
+        val trace = inTraces(i)
+        assert(i != 0 || trace.size == traceLen)
+        sample addCmd PokePort(wire, trace.dequeue)
+      }
+      for ((wire, i) <- inTraceMap) {
+        sample addCmd PokePort(wire, peekChannel(i))
+      }
+      sample addCmd Step(1)
+      for ((wire, i) <- outMap) {
+        val trace = outTraces(i)
+        assert(i != 0 || trace.size == traceLen)
+        sample addCmd ExpectPort(wire, trace.dequeue)
+      }
+      for ((wire, i) <- outTraceMap) {
+        sample addCmd ExpectPort(wire, peekChannel(i))
+      }
+    }
+  }
+
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
     for (i <- 0 until n) {
       for ((in, id) <- inMap) {
-        pokeChannel(id, pokeMap getOrElse (id, 0))
+        val data = pokeMap getOrElse (id, BigInt(0))
+        pokeChannel(id, data)
+        if (traceCount < traceLen) {
+          inTraces(id) enqueue data
+        }
       }
       peekMap.clear
       for ((out, id) <- outMap) {
-        peekMap(id) = peekChannel(id)
+        val data = peekChannel(id)
+        peekMap(id) = data
+        if (traceCount < traceLen) {
+          outTraces(id) enqueue data
+        }
       }
+      // reservoir sampling
+      if (t % traceLen == 0) {
+        val recordId = t / traceLen
+        val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
+        if (sampleId < sampleNum) {
+          lastSampleId match {
+            case None =>
+            case Some(id) => tracePorts(id)
+          }
+          samples(sampleId) = Sample() 
+          lastSampleId = Some(sampleId)
+          traceCount = 0
+        }
+      } else if (traceCount < traceLen) {
+        traceCount += 1
+      }
+      t += 1
     }
-    t += n
   }
 
   def init {
+    traceCount = traceLen
     // Consumes initial output tokens
     peekMap.clear
+    for ((in, id) <- inMap) {
+      inTraces(id) = ScalaQueue[BigInt]()
+    }
     for ((out, id) <- outMap) {
       peekMap(id) = peekChannel(id)
+      outTraces(id) = ScalaQueue[BigInt]()
     }
+  }
+
+  override def finish = {
+    val res = new StringBuilder
+    for (sample <- samples) {
+      res append sample.toString
+    }
+    val filename = transforms.targetName + ".sample"
+    val file = createOutputFile(filename)
+    try {
+      file write res.result
+    } finally {
+      file.close
+    }
+    super.finish
   }
 }
 
 abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) 
   extends SimTester(c, isTrace) {
+  protected val sampleNum = c.sampleNum
+  protected val traceLen = c.traceLen
 
   def pokeChannel(addr: Int, data: BigInt) {
     while(peek(c.io.ins(addr).ready) == 0) {
@@ -93,17 +171,17 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     value
   }
 
-  inMap ++= c.ins.unzip._2.zipWithIndex
-  outMap ++= c.outs.unzip._2.zipWithIndex
   init
 }
 
 abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
   extends SimTester(c, isTrace) {
+  protected val sampleNum = c.sim.sampleNum
+  protected val traceLen = c.sim.traceLen
   private val reqMap = transforms.reqMap
   private val respMap = transforms.respMap
-  private lazy val inWidths = (inMap ++ reqMap) map {case (k, v) => v -> k.needWidth}
-  private lazy val outWidths = (outMap ++ respMap) map {case (k, v) => v -> k.needWidth}
+  private lazy val inWidths = (inMap++reqMap) map {case (k, v) => v -> k.needWidth}
+  private lazy val outWidths = (outMap++respMap++inTraceMap++outTraceMap) map {case (k, v) => v -> k.needWidth}
 
   def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
@@ -163,8 +241,8 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   private val mem = Array.fill(1<<23){0.toByte} // size = 8MB
 
   def readMem(addr: BigInt) = {
-    pokeChannel(reqMap(c.mem_req_cmd_addr), addr >> c.blockOffset)
-    pokeChannel(reqMap(c.mem_req_cmd_tag), 0)
+    pokeChannel(reqMap(c.memReq.addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.memReq.tag), 0)
     do {
       takeSteps(1)
     } while (peek(c.io.S_AXI.ar.valid) == 0) 
@@ -172,17 +250,17 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
     var data = BigInt(0)
     for (i <- 0 until c.memDataCount) {
-      assert(peekChannel(respMap(c.mem_resp_tag)) == 0)
-      data |= peekChannel(respMap(c.mem_resp_data)) << (i * c.memDataWidth)
+      assert(peekChannel(respMap(c.memResp.tag)) == 0)
+      data |= peekChannel(respMap(c.memResp.data)) << (i * c.memDataWidth)
     }
     data
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
-    pokeChannel(reqMap(c.mem_req_cmd_addr), addr >> c.blockOffset)
-    pokeChannel(reqMap(c.mem_req_cmd_tag), 1)
+    pokeChannel(reqMap(c.memReq.addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.memReq.tag), 1)
     for (i <- 0 until c.memDataCount) {
-      pokeChannel(reqMap(c.mem_req_data), data >> (i * c.memDataWidth))
+      pokeChannel(reqMap(c.memReq.data), data >> (i * c.memDataWidth))
     }
     do {
       takeSteps(1)

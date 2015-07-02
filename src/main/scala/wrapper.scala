@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer}
 
 object SimWrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = targetParams // alter SimParams.mask
+    val params = targetParams alter SimParams.mask
     Module(new SimWrapper(c))(params)
   }
 }
@@ -24,18 +24,22 @@ class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, 
 
 abstract class SimNetwork extends Module {
   def io: SimWrapperIO 
+  def in_channels: Seq[Channel[Bits]]
+  def out_channels: Seq[Channel[Bits]]
+  val sampleNum = params(SampleNum)
+  val traceLen = params(TraceLen)
 }
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
   val (ins, outs) = target.wires partition (_._2.dir == INPUT)
   val io = new SimWrapperIO(ins, outs)
-  val in_channels = ins map { x => 
+  val in_channels: Seq[Channel[Bits]] = ins map { x => 
     val channel = Module(new Channel(x._2)) 
     channel.name = "Channel_" + x._1
     channel
   }
-  val out_channels = outs map { x => 
+  val out_channels: Seq[Channel[Bits]] = outs map { x => 
     val channel = Module(new Channel(x._2)) 
     channel.name = "Channel_" + x._1
     channel

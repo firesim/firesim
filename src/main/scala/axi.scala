@@ -196,11 +196,15 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val sim: T = Module(c)
 
   // Fake wires for accesses from outside FPGA
-  val mem_req_cmd_addr = UInt(INPUT, memAddrWidth)
-  val mem_req_cmd_tag = UInt(INPUT, memTagWidth+1)
-  val mem_req_data = UInt(INPUT, memDataWidth)
-  val mem_resp_data = UInt(OUTPUT, memDataWidth)
-  val mem_resp_tag = UInt(OUTPUT, memTagWidth)
+  val memReq = new Bundle {
+    val addr = UInt(INPUT, memAddrWidth)
+    val tag = UInt(INPUT, memTagWidth+1)
+    val data = UInt(INPUT, memDataWidth)
+  }
+  val memResp = new Bundle {
+    val data = UInt(OUTPUT, memDataWidth)
+    val tag = UInt(OUTPUT, memTagWidth)
+  }
 
   /*** M_AXI INPUTS ***/
   val waddr_r = RegInit(UInt(0, addrSize))
@@ -209,8 +213,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
-  val memInNum = MAXI_MemIO_ConverterIO.inNum - MemIO.ins.size
-  val in_ready = Vec.fill(sim.io.ins.size + memInNum){Bool()}
+  val in_ready = Vec.fill(sim.io.ins.size + memReq.flatten.size - MemIO.ins.size){Bool()}
 
   // M_AXI Write FSM
   sim.reset := reset_t
@@ -244,10 +247,9 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val arid_r  = RegInit(UInt(0))
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
-  val do_read = st_rd === st_rd_read  
-  val memOutNum = MAXI_MemIO_ConverterIO.outNum - MemIO.outs.size
-  val out_data = Vec.fill(sim.io.outs.size + memOutNum){UInt()}
-  val out_valid = Vec.fill(sim.io.outs.size + memOutNum){Bool()}
+  val do_read = st_rd === st_rd_read
+  val out_data = Vec.fill(sim.io.outs.size + memResp.flatten.size + MemIO.ins.size){UInt()}
+  val out_valid = Vec.fill(sim.io.outs.size + memResp.flatten.size + MemIO.ins.size){Bool()}
 
   // M_AXI Read FSM
   switch(st_rd) {
