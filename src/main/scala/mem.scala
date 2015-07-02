@@ -2,6 +2,7 @@ package strober
 
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable.ListSet
 
 object MemReqCmd {
   private val ready_wires = ArrayBuffer[Bool]()
@@ -32,8 +33,8 @@ object MemReqCmd {
   }
 
   def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), addr_wires(i), tag_wires(i), rw_wires(i))
-  def ins = ready_wires.toSet  
-  def outs = (valid_wires ++ addr_wires ++ tag_wires ++ rw_wires).toSet
+  def ins = ListSet(ready_wires:_*)
+  def outs = ListSet((valid_wires ++ addr_wires ++ tag_wires ++ rw_wires):_*)
   def size = {
     assert(ready_wires.size == valid_wires.size)
     assert(ready_wires.size == addr_wires.size)
@@ -62,8 +63,8 @@ object MemData {
   }
 
   def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), bits_wires(i))
-  def ins = ready_wires.toSet  
-  def outs = (valid_wires ++ bits_wires).toSet
+  def ins = ListSet(ready_wires:_*)
+  def outs = ListSet((valid_wires ++ bits_wires):_*)
   def size = {
     assert(ready_wires.size == valid_wires.size)
     assert(ready_wires.size == bits_wires.size)
@@ -95,8 +96,8 @@ object MemResp {
   }
 
   def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), data_wires(i), tag_wires(i))
-  def ins = (valid_wires ++ data_wires ++ tag_wires).toSet
-  def outs = ready_wires.toSet  
+  def ins = ListSet((valid_wires ++ data_wires ++ tag_wires):_*)
+  def outs = ListSet(ready_wires:_*)
   def size = {
     assert(ready_wires.size == valid_wires.size)
     assert(ready_wires.size == data_wires.size)
