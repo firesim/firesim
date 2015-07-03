@@ -205,6 +205,12 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     val data = UInt(OUTPUT, memDataWidth)
     val tag = UInt(OUTPUT, memTagWidth)
   }
+  // Fake wires for snapshotting
+  val snapOut = new Bundle {
+    val regs = UInt(OUTPUT, sim.daisyWidth)
+    val sram = UInt(OUTPUT, sim.daisyWidth)
+    val cntr = UInt(OUTPUT, sim.daisyWidth)
+  }
 
   /*** M_AXI INPUTS ***/
   val waddr_r = RegInit(UInt(0, addrSize))
@@ -213,7 +219,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
-  val in_ready = Vec.fill(sim.io.ins.size + memReq.flatten.size - MemIO.ins.size){Bool()}
+  val in_num = sim.io.ins.size + memReq.flatten.size - MemIO.ins.size
+  val in_ready = Vec.fill(in_num){Bool()}
 
   // M_AXI Write FSM
   sim.reset := reset_t
@@ -248,8 +255,9 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read
-  val out_data = Vec.fill(sim.io.outs.size + memResp.flatten.size + MemIO.ins.size){UInt()}
-  val out_valid = Vec.fill(sim.io.outs.size + memResp.flatten.size + MemIO.ins.size){Bool()}
+  val out_num = sim.io.outs.size + memResp.flatten.size + MemIO.ins.size + snapOut.flatten.size
+  val out_data = Vec.fill(out_num){UInt()}
+  val out_valid = Vec.fill(out_num){Bool()}
 
   // M_AXI Read FSM
   switch(st_rd) {
