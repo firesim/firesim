@@ -246,7 +246,8 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
   def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
-    val limit = if (addr == c.resetAddr) 1 else (inWidths(addr) - 1) / c.m_axiDataWidth + 1
+    val limit = if (addr == c.resetAddr || addr == c.sramRestartAddr) 1 
+                else (inWidths(addr) - 1) / c.m_axiDataWidth + 1
     for (i <- limit - 1 to 0 by -1) {
       val maskedData = (data >> (i * c.m_axiDataWidth)) & mask
       do {
@@ -429,8 +430,11 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     for (i <- 0 until regSnapLen) {
       snap append intToBin(peekChannel(snapOutMap(c.snapOut.regs)), daisyWidth)
     }
-    for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
-      snap append intToBin(peekChannel(snapOutMap(c.snapOut.sram)), daisyWidth)
+    for (k <- 0 until sramMaxSize) {
+      pokeChannel(c.sramRestartAddr, 0)
+      for (i <- 0 until sramSnapLen) {
+        snap append intToBin(peekChannel(snapOutMap(c.snapOut.sram)), daisyWidth)
+      }
     }
     snap.result
   }
