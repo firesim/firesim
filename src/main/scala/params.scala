@@ -48,6 +48,6 @@ object SimParams {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
     case SampleNum => 10
     case TraceLen => 1
-    case DaisyWidth => site(MAXIDataWidth)
+    case DaisyWidth => 32
   }
 }

@@ -11,6 +11,7 @@ object SimWrapper {
 }
 
 class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, Bits)]) extends Bundle {
+  val daisyWidth = params(DaisyWidth)
   def genPacket(arg: (String, Bits)) = {
     val (name, port) = arg
     val packet = Decoupled(new Packet(port))
@@ -20,6 +21,7 @@ class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, 
   }
   val ins = Vec(t_ins map genPacket)
   val outs = Vec(t_outs map genPacket)
+  val daisy = new DaisyBundle(daisyWidth)
 }
 
 abstract class SimNetwork extends Module {
@@ -28,6 +30,7 @@ abstract class SimNetwork extends Module {
   def out_channels: Seq[Channel[Bits]]
   val sampleNum = params(SampleNum)
   val traceLen = params(TraceLen)
+  val daisyWidth = params(DaisyWidth)
 }
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {

@@ -15,9 +15,13 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   private val outTraces = HashMap[Int, ScalaQueue[BigInt]]()
   protected val inTraceMap = transforms.inTraceMap
   protected val outTraceMap = transforms.outTraceMap
+  protected def daisyWidth: Int
+  protected lazy val regSnapLen = transforms.regSnapLen
+  protected lazy val sramSnapLen = transforms.sramSnapLen
+  protected lazy val sramMaxSize = transforms.sramMaxSize
   protected def sampleNum: Int
-  private lazy val samples = Array.fill(sampleNum){Sample()}
-  private var lastSampleId: Option[Int] = None
+  private lazy val samples = Array.fill(sampleNum){new Sample}
+  private var lastSample: Option[(Sample, Int)] = None
 
   protected def pokeChannel(addr: Int, data: BigInt): Unit
   protected def peekChannel(addr: Int): BigInt
@@ -55,12 +59,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     expect(pass, "* EXPECT " + dumpName(port) + " -> " + value.toString(16) + " == " + expected.toString(16))
   }
 
-  def tracePorts(id: Int) {
-    val sample = samples(id)
+  def tracePorts(sample: Sample) = {
     for (i <- 0 until traceLen) {
       for ((wire, i) <- inMap) {
         val trace = inTraces(i)
-        assert(i != 0 || trace.size == traceLen)
+        assert(i != 0 || trace.size == traceLen, 
+          "trace size: %d != trace len: %d".format(trace.size, traceLen))
         sample addCmd PokePort(wire, trace.dequeue)
       }
       for ((wire, i) <- inTraceMap) {
@@ -69,14 +73,26 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       sample addCmd Step(1)
       for ((wire, i) <- outMap) {
         val trace = outTraces(i)
-        assert(i != 0 || trace.size == traceLen)
+        assert(i != 0 || trace.size == traceLen,
+          "trace size: %d != trace len: %d".format(trace.size, traceLen))
         sample addCmd ExpectPort(wire, trace.dequeue)
       }
       for ((wire, i) <- outTraceMap) {
         sample addCmd ExpectPort(wire, peekChannel(i))
       }
     }
+    sample
   }
+
+  protected def intToBin(value: BigInt, size: Int) = {
+    var bin = ""
+    for (i <- 0 until size) {
+      bin += (((value >> (size-1-i)) & 0x1) + '0').toChar
+    }
+    bin
+  }
+
+  def readSnapshot: String
 
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
@@ -96,22 +112,23 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           outTraces(id) enqueue data
         }
       }
+
+      if (traceCount < traceLen) {
+        traceCount += 1
+      }
       // reservoir sampling
       if (t % traceLen == 0) {
         val recordId = t / traceLen
         val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
         if (sampleId < sampleNum) {
-          lastSampleId match {
+          lastSample match {
             case None =>
-            case Some(id) => tracePorts(id)
+            case Some((sample, id)) => samples(id) = tracePorts(sample)
           }
-          samples(sampleId) = Sample() 
-          lastSampleId = Some(sampleId)
+          lastSample = Some((Sample(readSnapshot), sampleId))
           traceCount = 0
         }
-      } else if (traceCount < traceLen) {
-        traceCount += 1
-      }
+      } 
       t += 1
     }
   }
@@ -149,6 +166,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   extends SimTester(c, isTrace) {
   protected val sampleNum = c.sampleNum
   protected val traceLen = c.traceLen
+  protected val daisyWidth = c.daisyWidth
 
   def pokeChannel(addr: Int, data: BigInt) {
     while(peek(c.io.ins(addr).ready) == 0) {
@@ -171,6 +189,31 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     value
   }
 
+  def readSnapshot = {
+    val snap = new StringBuilder
+    for (i <- 0 until regSnapLen) {
+      while(peek(c.io.daisy.regs.out.valid) == 0) {
+        takeSteps(1)
+      }
+      snap append intToBin(peek(c.io.daisy.regs.out.bits), daisyWidth)
+      poke(c.io.daisy.regs.out.ready, 1)
+      takeSteps(1)
+      poke(c.io.daisy.regs.out.ready, 0)
+    }
+    for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
+      poke(c.io.daisy.sram.restart, 1)
+      while(peek(c.io.daisy.sram.out.valid) == 0) {
+        takeSteps(1)
+      }
+      poke(c.io.daisy.sram.restart, 0)
+      snap append intToBin(peek(c.io.daisy.sram.out.bits), daisyWidth)
+      poke(c.io.daisy.sram.out.ready, 1)
+      takeSteps(1)
+      poke(c.io.daisy.sram.out.ready, 0)
+    }
+    snap.result
+  }
+
   init
 }
 
@@ -178,10 +221,13 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   extends SimTester(c, isTrace) {
   protected val sampleNum = c.sim.sampleNum
   protected val traceLen = c.sim.traceLen
+  protected val daisyWidth = c.sim.daisyWidth
   private val reqMap = transforms.reqMap
   private val respMap = transforms.respMap
-  private lazy val inWidths = (inMap++reqMap) map {case (k, v) => v -> k.needWidth}
-  private lazy val outWidths = (outMap++respMap++inTraceMap++outTraceMap) map {case (k, v) => v -> k.needWidth}
+  private val snapOutMap = transforms.snapOutMap
+  private lazy val inWidths = (inMap ++ reqMap) map {case (k, v) => v -> k.needWidth}
+  private lazy val outWidths = 
+    (outMap ++ respMap ++ inTraceMap ++ outTraceMap ++ snapOutMap) map {case (k, v) => v -> k.needWidth}
 
   def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
@@ -361,6 +407,17 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         offset += step / 2
       }
     }
+  }
+
+  def readSnapshot = {
+    val snap = new StringBuilder
+    for (i <- 0 until regSnapLen) {
+      snap append intToBin(peekChannel(snapOutMap(c.snapOut.regs)), daisyWidth)
+    }
+    for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
+      snap append intToBin(peekChannel(snapOutMap(c.snapOut.sram)), daisyWidth)
+    }
+    snap.result
   }
 
   override def step(n: Int) {
