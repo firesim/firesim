@@ -94,6 +94,15 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
 
   def readSnapshot: String
 
+  def verifySnapshot(sample: Sample) = {
+    val pass = (sample map {
+      case Load(signal, value, off) => 
+        peekBits(signal, off.getOrElse(-1)) == value
+      case _ => true   
+    }) reduce (_ && _)
+    expect(pass, "* SNAPSHOT")
+  }
+
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
     for (i <- 0 until n) {
@@ -125,7 +134,9 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
             case None =>
             case Some((sample, id)) => samples(id) = tracePorts(sample)
           }
-          lastSample = Some((Sample(readSnapshot), sampleId))
+          val sample = Sample(readSnapshot)
+          lastSample = Some((sample, sampleId))
+          verifySnapshot(sample)
           traceCount = 0
         }
       } 
