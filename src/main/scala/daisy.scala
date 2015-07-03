@@ -85,16 +85,17 @@ class DaisyControlIO extends Bundle {
   val ctrlIo = new CntrIO
 }
 
-class DaisyCounter(ctrlIo: CntrIO, daisyLen: Int) {
+class DaisyCounter(stall: Bool, ctrlIo: CntrIO, daisyLen: Int) {
   val counter = RegInit(UInt(0, log2Up(daisyLen+1)))
   def isNotZero = counter.orR
   counter nameIt ("counter", false)
 
   // Daisy chain control logic
-  when(ctrlIo.copyCond) {
+  when(!stall) {
+    counter:= UInt(0)
+  }.elsewhen(ctrlIo.copyCond) {
     counter := UInt(daisyLen)
-  }
-  when(ctrlIo.readCond && ctrlIo.outFire && !ctrlIo.inValid) {
+  }.elsewhen(ctrlIo.readCond && ctrlIo.outFire && !ctrlIo.inValid) {
     counter := counter - UInt(1)
   }
 }
@@ -106,7 +107,7 @@ class RegChainControlIO extends DaisyControlIO
 class RegChainControl extends DaisyChainModule {
   val io = new RegChainControlIO
   val copied = RegNext(io.stall)
-  val counter = new DaisyCounter(io.ctrlIo, daisyLen)
+  val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := io.stall && !copied
@@ -150,7 +151,7 @@ class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val addrState = RegInit(s_IDLE)
   val addrIn = Reg(UInt(width=log2Up(n)))
   val addrOut = Reg(UInt(width=log2Up(n)))
-  val counter = new DaisyCounter(io.ctrlIo, daisyLen)
+  val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
 
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD

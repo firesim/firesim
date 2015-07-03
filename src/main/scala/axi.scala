@@ -140,13 +140,13 @@ class Output2MAXI[T <: Data](gen: T, addr: Int) extends Module {
   val count = RegInit(UInt((dataWidth-1)/axiDataWidth))
   val buf = Reg(gen)
 
-  io.in.ready := state === s_IDLE
+  io.in.ready := Bool(false)
   io.out.bits := buf.toBits
   io.out.valid := state === s_DATA
 
   switch(state) {
     is(s_IDLE) {
-      state := Mux(io.in.fire(), s_DATA, s_IDLE)
+      state := Mux(io.in.valid, s_DATA, s_IDLE)
       buf := io.in.bits
     }
     is(s_DATA) {
@@ -162,10 +162,15 @@ class Output2MAXI[T <: Data](gen: T, addr: Int) extends Module {
           }.otherwise {
             count := UInt((dataWidth-1)/axiDataWidth)
             state := s_IDLE
+            io.in.ready := Bool(true)
           }
         } else {
           state := s_IDLE
+          io.in.ready := Bool(true)
         }
+      }
+      when(!io.in.valid) {
+        state := s_IDLE
       }
     }
   }

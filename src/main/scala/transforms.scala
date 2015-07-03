@@ -183,7 +183,7 @@ object transforms {
         }
         snapOutMap(w.snapOut.regs) = snapOutBase
         snapOutMap(w.snapOut.sram) = snapOutBase + 1 
-        snapOutMap(w.snapOut.sram) = snapOutBase + 2
+        snapOutMap(w.snapOut.cntr) = snapOutBase + 2
       }
       case w: SimWrapper[Module] => {
         daisyWidth = w.daisyWidth
@@ -408,7 +408,9 @@ object transforms {
 
  
   private def dumpMaps(c: Module) {
-    object MapType extends Enumeration { val IoIn, IoOut, MemIn, MemOut, InTrace, OutTrace = Value }
+    object MapType extends Enumeration { 
+      val IoIn, IoOut, MemIn, MemOut, InTrace, OutTrace, SnapOut = Value 
+    }
     ChiselError.info("[transforms] dump the io & mem mapping")
     val res = new StringBuilder
     for ((in, id) <- inMap) {
@@ -438,6 +440,15 @@ object transforms {
       val path = nameMap(out)
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
+    }
+    for ((out, id) <- outTraceMap) {
+      val path = nameMap(out)
+      val width = out.needWidth
+      res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
+    }
+    for ((out, id) <- snapOutMap) {
+      val width = out.needWidth
+      res append "%d %s %d %d\n".format(MapType.SnapOut.id, out.name, id, width)
     }
 
     val file = Driver.createOutputFile(targetName + ".map")

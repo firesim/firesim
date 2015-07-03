@@ -23,12 +23,13 @@ class Channel[T <: Bits](gen: T, entries: Int = 2) extends Module {
   val traceLen = params(TraceLen)
   val io       = new ChannelIO[T](gen)
   val packets  = Module(new Queue(new Packet[T](gen), entries))
-  val trace    = Module(new Queue(gen, traceLen))
   io.in <> packets.io.enq
   packets.io.deq <> io.out
   def initTrace  = {
     // instantiate trace in the backend(lazy connection?)
     // trace queue will not appear until this is executed
+    val trace = addModule(new Queue(gen, traceLen))
+    trace.name = "trace"
     trace.io.enq.bits := io.in.bits.data
     trace.io.enq.valid := io.in.valid && trace.io.enq.ready
     trace.io.deq <> io.trace

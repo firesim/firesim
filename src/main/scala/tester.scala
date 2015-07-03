@@ -122,6 +122,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
         }
       }
 
+      t += 1
       if (traceCount < traceLen) {
         traceCount += 1
       }
@@ -140,7 +141,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           traceCount = 0
         }
       } 
-      t += 1
     }
   }
 
@@ -154,6 +154,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     for ((out, id) <- outMap) {
       peekMap(id) = peekChannel(id)
       outTraces(id) = ScalaQueue[BigInt]()
+    }
+    for ((wire, i) <- (inTraceMap ++ outTraceMap)) {
+      // flush traces from initialization
+      val flush = peekChannel(i)
     }
   }
 
