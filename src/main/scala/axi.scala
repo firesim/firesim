@@ -183,6 +183,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val addrSize = params(MAXIAddrSize)
   val addrOffset = params(MAXIAddrOffset)
   val resetAddr = params(ResetAddr)
+  val sramRestartAddr = params(SRAMRestartAddr)
   val s_axiAddrWidth = params(SAXIAddrWidth)
   val s_axiDataWidth = params(SAXIDataWidth)
   val memAddrWidth = params(MemAddrWidth)
@@ -224,11 +225,14 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
+  val sram_restart = do_write && (waddr_r === UInt(sramRestartAddr))
   val in_num = sim.io.ins.size + memReq.flatten.size - MemIO.ins.size
-  val in_ready = Vec.fill(in_num){Bool()}
+  val in_ready = Vec.fill(in_num){Bool()} 
+
+  sim.reset := reset_t
+  sim.io.daisy.sram.restart := sram_restart
 
   // M_AXI Write FSM
-  sim.reset := reset_t
   switch(st_wr) {
     is(st_wr_idle) {
       when(io.M_AXI.aw.valid && io.M_AXI.w.valid) {
@@ -238,7 +242,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
     is(st_wr_write) {
-      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr)) {
+      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
         st_wr := st_wr_ack
       } 
     }

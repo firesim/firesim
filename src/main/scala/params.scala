@@ -9,6 +9,7 @@ case object MAXITagWidth extends Field[Int]
 case object MAXIAddrSize extends Field[Int]
 case object MAXIAddrOffset extends Field[Int]
 case object ResetAddr extends Field[Int]
+case object SRAMRestartAddr extends Field[Int]
 case object SAXIAddrWidth extends Field[Int]
 case object SAXIDataWidth extends Field[Int]
 case object SAXITagWidth extends Field[Int]
@@ -33,6 +34,7 @@ object AXI4Params {
     case MAXIAddrSize => 10
     case MAXIAddrOffset => log2Up(site(MAXIAddrWidth)>>3)
     case ResetAddr => Dump("RESET_ADDR", (1 << site(MAXIAddrSize)) - 1)
+    case SRAMRestartAddr => Dump("SRAM_RESTART_ADDR", site(ResetAddr) - 1)
     case SAXIAddrWidth => 32 
     case SAXIDataWidth => 64 
     case SAXITagWidth => 6
