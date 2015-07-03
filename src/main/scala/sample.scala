@@ -44,27 +44,25 @@ class Sample {
     cmds += cmd
   }
 
-  def foreach(f: SampleInst => Unit) {
-    cmds foreach f
+  def map[T](f: SampleInst => T) = {
+    cmds map f
   }
 
   override def toString = {
     val res = new StringBuilder
-    for (cmd <- cmds) {
-      cmd match {
-        case Step(n) => res append "%d %d\n".format(SampleInstType.STEP.id, n)
-        case Load(node, value, off) => {
-          val path = transforms.nameMap(node)
-          res append "%d %s %s %d\n".format(SampleInstType.LOAD.id, path, value.toString(16), off.getOrElse(-1))
-        }
-        case PokePort(node, value) => {
-          val path = transforms.nameMap(node)
-          res append "%d %s %s\n".format(SampleInstType.POKE.id, path, value.toString(16))
-        }
-        case ExpectPort(node, value) => {
-          val path = transforms.nameMap(node)
-          res append "%d %s %s\n".format(SampleInstType.EXPECT.id, path, value.toString(16))
-        }
+    map {
+      case Step(n) => res append "%d %d\n".format(SampleInstType.STEP.id, n)
+      case Load(node, value, off) => {
+        val path = transforms.nameMap(node)
+        res append "%d %s %s %d\n".format(SampleInstType.LOAD.id, path, value.toString(16), off.getOrElse(-1))
+      }
+      case PokePort(node, value) => {
+        val path = transforms.nameMap(node)
+        res append "%d %s %s\n".format(SampleInstType.POKE.id, path, value.toString(16))
+      }
+      case ExpectPort(node, value) => {
+        val path = transforms.nameMap(node)
+        res append "%d %s %s\n".format(SampleInstType.EXPECT.id, path, value.toString(16))
       }
     }
     res append "%d\n".format(SampleInstType.FIN.id)

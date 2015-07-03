@@ -41,7 +41,7 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
 
   def run {
     for (sample <- samples) {
-      sample foreach {
+      sample map {
         case Step(n) => step(n)
         case Load(node, value, off) => pokeBits(node, value, off.getOrElse(-1))
         case PokePort(node, value) => pokeBits(node, value)
