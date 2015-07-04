@@ -32,7 +32,7 @@ simif_zynq_t::simif_zynq_t(
 
 void simif_zynq_t::poke_channel(size_t addr, biguint_t data) {
   uint64_t mask = (uint64_t(1) << AXI_DATA_WIDTH) - 1;
-  size_t limit = (addr == RESET_ADDR) ? 1 : (in_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
+  size_t limit = (addr == RESET_ADDR || addr == SRAM_RESTART_ADDR) ? 1 : (in_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
   for (ssize_t i = limit - 1 ; i >= 0 ; i--) {
     uint64_t masked_data = ((data >> (i * AXI_DATA_WIDTH)) & mask).uint();
     write_reg(addr, masked_data);

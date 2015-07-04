@@ -48,8 +48,8 @@ object AXI4Params {
 
 object SimParams {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
-    case SampleNum => 10
-    case TraceLen => 1
-    case DaisyWidth => 32
+    case SampleNum => Dump("SAMPLE_NUM", 10)
+    case TraceLen => Dump("TRACE_LEN", 1)
+    case DaisyWidth => Dump("DAISY_WIDTH", 32)
   }
 }

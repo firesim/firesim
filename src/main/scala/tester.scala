@@ -63,7 +63,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     for (i <- 0 until traceLen) {
       for ((wire, i) <- inMap) {
         val trace = inTraces(i)
-        assert(i != 0 || trace.size == traceLen, 
+        assert(i > 0 || trace.size == traceLen, 
           "trace size: %d != trace len: %d".format(trace.size, traceLen))
         sample addCmd PokePort(wire, trace.dequeue)
       }
@@ -73,7 +73,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       sample addCmd Step(1)
       for ((wire, i) <- outMap) {
         val trace = outTraces(i)
-        assert(i != 0 || trace.size == traceLen,
+        assert(i > 0 || trace.size == traceLen,
           "trace size: %d != trace len: %d".format(trace.size, traceLen))
         sample addCmd ExpectPort(wire, trace.dequeue)
       }

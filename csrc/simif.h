@@ -5,14 +5,17 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <deque>
 #include <queue>
-#include <biguint.h>
+#include "biguint.h"
+#include "sample.h"
 
-typedef std::map< std::string, size_t > iomap_t;
-typedef std::map< std::string, size_t >::const_iterator iomap_it_t;
+typedef std::map< std::string, size_t > idmap_t;
+typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
 typedef std::map< size_t, size_t > wmap_t;
 typedef std::map< size_t, biguint_t > map_t;
+typedef std::queue<biguint_t> trace_t;
+typedef std::map< size_t, trace_t > qmap_t;
+typedef std::map< size_t, trace_t >::const_iterator qmap_it_t;
 
 class simif_t
 {
@@ -27,11 +30,18 @@ class simif_t
 
   private:
     void read_map(std::string filename);
+    void read_chain(std::string filename);
     virtual void load_mem(std::string filename);
+    void dump_samples(std::string filename);
 
     // maps 
-    iomap_t in_map;
-    iomap_t out_map;
+    idmap_t in_map;
+    idmap_t out_map;
+    idmap_t req_map;
+    idmap_t resp_map;
+    idmap_t in_trace_map;
+    idmap_t out_trace_map;
+    idmap_t snap_out_map;
     map_t poke_map;
     map_t peek_map;
 
@@ -40,14 +50,27 @@ class simif_t
     bool ok;
     uint64_t t;
     uint64_t fail_t;
+    
+    // trace information
+    size_t trace_count;
+    qmap_t in_traces;
+    qmap_t out_traces; 
+
+    // snapshotting information
+    size_t REG_SNAP_LEN;
+    size_t SRAM_SNAP_LEN;
+    size_t SRAM_MAX_SIZE;
+
+    // sample information
+    sample_t* samples[SAMPLE_NUM];
+    sample_t* last_sample;
+    size_t last_sample_id;
 
     std::vector<std::string> hargs;
     std::vector<std::string> targs;
 
   protected:
     std::string prefix;
-    iomap_t req_map;
-    iomap_t resp_map;
     wmap_t in_widths;
     wmap_t out_widths;
 
@@ -63,6 +86,8 @@ class simif_t
     void step(size_t n);
     virtual void write_mem(size_t addr, biguint_t data);
     virtual biguint_t read_mem(size_t addr);
+    sample_t* trace_ports(sample_t* s);
+    std::string read_snapshot();
 
     void init();
     uint64_t cycles() { return t; }
