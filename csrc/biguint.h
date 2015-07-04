@@ -22,8 +22,8 @@ public:
   ~biguint_t() { if (size > 0) delete[] data; }
   uint64_t uint() { return data[0]; }
   std::string str();
-  biguint_t operator<<(const int shamt);
-  biguint_t operator>>(const int shamt);
+  biguint_t operator<<(const size_t shamt);
+  biguint_t operator>>(const size_t shamt);
   biguint_t operator=(const biguint_t &that);
   biguint_t operator|(const biguint_t &that);
   biguint_t operator&(const biguint_t &that);

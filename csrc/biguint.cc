@@ -50,7 +50,7 @@ void biguint_t::init(const uint64_t* value, const size_t s) {
   }
 }
 
-inline void pad_num(char *buf, const char* value, int padw) {
+inline void pad_num(char *buf, const char* value, size_t padw) {
   for (size_t i = 0 ; i < padw ; i++) {
     buf[i] = '0';
   }
@@ -85,7 +85,7 @@ void biguint_t::init_bin(const char* value) {
   for (int i = size - 1 ; i >= 0 ; i--) {
     char num[65];
     strncpy(num, value + 64*i, 64);
-    num[65] = '\0';
+    num[64] = '\0';
     data[i] = bin_to_dec(num);
   }
   delete[] buf;
@@ -135,11 +135,10 @@ biguint_t biguint_t::operator=(const biguint_t &that) {
   return *this;
 }
 
-biguint_t biguint_t::operator<<(const int shamt) {
+biguint_t biguint_t::operator<<(const size_t shamt) {
   biguint_t res;
   int offset = shamt / 64;
   int shift = shamt % 64;
-  uint64_t mask = uint64_t(1) << shift - 1;
   res.size = size + offset;
   res.data = new uint64_t[res.size];
   for (int i = size - 1 ; i >= 0 ; i--) {
@@ -149,12 +148,12 @@ biguint_t biguint_t::operator<<(const int shamt) {
   return res;
 }
 
-biguint_t biguint_t::operator>>(const int shamt) {
+biguint_t biguint_t::operator>>(const size_t shamt) {
   biguint_t res;
   if (shamt < 64 * size) {
     int offset = shamt / 64;
     int shift = shamt % 64;
-    uint64_t mask = uint64_t(1) << shift - 1;
+    uint64_t mask = (uint64_t(1) << shift) - 1;
     res.size = size - offset;
     res.data = new uint64_t[res.size];
     for (size_t i = 0 ; i < size - offset ; i++) {

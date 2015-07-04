@@ -15,7 +15,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   SRAM_SNAP_LEN = 0;
   SRAM_MAX_SIZE = 0;
 
-  for (size_t i ; i < SAMPLE_NUM ; i++) {
+  for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
     samples[i] = NULL;
   }
   last_sample = NULL;
@@ -39,7 +39,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
 simif_t::~simif_t() { 
   dump_samples(prefix+".sample");
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
-  if (!ok) { fprintf(stdout, " at cycle %lu", fail_t); }
+  if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
   fprintf(stdout, "\n");
 }
 
@@ -123,7 +123,7 @@ void simif_t::read_chain(std::string filename) {
             SRAM_SNAP_LEN++;
             sram_chain_width -= DAISY_WIDTH;
           }
-          if (SRAM_MAX_SIZE < off + 1) { 
+          if (SRAM_MAX_SIZE < (size_t) (off + 1)) { 
             SRAM_MAX_SIZE = off + 1;
           }
           sample_t::add_to_chains(path, width, off);
@@ -152,7 +152,7 @@ void simif_t::load_mem(std::string filename) {
       size_t offset = 0;
       for (int j = line.length() - step ; j >= 0 ; j -= step) {
         biguint_t data = 0;
-        for (int k = 0 ; k < step ; k++) {
+        for (size_t k = 0 ; k < step ; k++) {
           data |= parse_nibble(line[j+k]) << (4*(step-1-k));
         }
         write_mem(base+offset, data);
@@ -293,7 +293,6 @@ void simif_t::write_mem(size_t addr, biguint_t data) {
   size_t addr_id = req_map["memReq_addr"];
   size_t tag_id = req_map["memReq_tag"];
   size_t data_id = req_map["memReq_data"];
-
   poke_channel(addr_id, addr >> MEM_BLOCK_OFFSET);
   poke_channel(tag_id, 1);
   for (size_t i = 0 ; i < MEM_DATA_COUNT ; i++) {
@@ -356,7 +355,7 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
   return sample;
 }
 
-static inline char* int_to_bin(char *bin, uint64_t value, size_t size) {
+static inline void int_to_bin(char *bin, uint64_t value, size_t size) {
   for (size_t i = 0 ; i < size; i++) {
     bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
   }

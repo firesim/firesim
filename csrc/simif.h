@@ -20,10 +20,7 @@ typedef std::map< size_t, trace_t >::const_iterator qmap_it_t;
 class simif_t
 {
   public:
-    simif_t(
-      std::vector<std::string> args, 
-      std::string prefix = "Top", 
-      bool _log = false); 
+    simif_t(std::vector<std::string> args, std::string prefix, bool _log = false); 
     ~simif_t();
 
     virtual int run() = 0;
@@ -46,6 +43,7 @@ class simif_t
     map_t peek_map;
 
     // simulation information
+    const std::string prefix;
     const bool log; 
     bool ok;
     uint64_t t;
@@ -70,7 +68,6 @@ class simif_t
     std::vector<std::string> targs;
 
   protected:
-    std::string prefix;
     wmap_t in_widths;
     wmap_t out_widths;
 
