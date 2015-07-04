@@ -462,7 +462,7 @@ object transforms {
 
   private def dumpChains(c: Module) {
     ChiselError.info("[transforms] dump the chain mapping")
-    object ChainType extends Enumeration { val Regs, SRAM, Counter = Value }
+    object ChainType extends Enumeration { val Regs, SRAM, Cntr = Value }
     val res = new StringBuilder
     for (w <- wrappers ; m <- compsRev(w)) {
       var chainWidth = 0
@@ -475,14 +475,14 @@ object transforms {
             (reg, reg.needWidth, None)
         }
         Sample.addToChains(Some(node), width, off) // for testers
-        res append "%d %s %d %d\n".format(ChainType.Regs.id, nameMap(node), off.getOrElse(-1), width)
+        res append "%d %s %d %d\n".format(ChainType.Regs.id, nameMap(node), width, off.getOrElse(-1))
         dataWidth += width
         while (chainWidth < dataWidth) chainWidth += daisyWidth
       }
       val padWidth = chainWidth - dataWidth
       if (padWidth > 0) {
         Sample.addToChains(None, padWidth) // for testers
-        res append "%d null %d\n".format(ChainType.Regs.id, padWidth)
+        res append "%d null %d -1\n".format(ChainType.Regs.id, padWidth)
       }
     }
     for (i <- 0 until sramMaxSize ; w <- wrappers ; m <- compsRev(w)) {
@@ -493,16 +493,16 @@ object transforms {
         var chainWidth = 0
         if (i < sram.size) { 
           Sample.addToChains(Some(sram), dataWidth, Some(i)) // for testers
-          res append "%d %s[%d] %d\n".format(ChainType.SRAM.id, path, i, dataWidth)
+          res append "%d %s %d %d\n".format(ChainType.SRAM.id, path, dataWidth, i)
         } else { 
           Sample.addToChains(None, dataWidth) // for testers
-          res append "%d null %d\n".format(ChainType.SRAM.id, dataWidth)
+          res append "%d null %d -1\n".format(ChainType.SRAM.id, dataWidth)
         }
         while (chainWidth < dataWidth) chainWidth += daisyWidth
         val padWidth = chainWidth - dataWidth
         if (padWidth > 0) {
           Sample.addToChains(None, padWidth) // for testers
-          res append "%d null %d\n".format(ChainType.SRAM.id, padWidth)
+          res append "%d null %d -1\n".format(ChainType.SRAM.id, padWidth)
         }
       }
     }

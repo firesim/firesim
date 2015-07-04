@@ -4,12 +4,9 @@
 #include <string>
 #include <vector>
 #include <ostream>
-#include <map>
 #include "biguint.h"
 
-enum SAMPLE_CMD {
-  FIN, STEP, POKE, EXPECT, READ, WRITE
-};
+enum SAMPLE_INST_TYPE { FIN, LOAD, POKE, STEP, EXPECT };
 
 class sample_inst_t { 
 public:
@@ -30,11 +27,25 @@ private:
   const size_t n;
 };
 
+class load_t: public sample_inst_t {
+public:
+  load_t(std::string& node_, biguint_t value_, int off_ = -1): 
+    node(node_.c_str()), value(value_), off(off_) { }
+  std::ostream& dump(std::ostream &os) const {
+    return os << LOAD << " " << node << " " << value << " " << off << std::endl;
+  }
+private:
+  const char* node;
+  const biguint_t value;
+  const int off;
+};
+
 class poke_t: public sample_inst_t {
 public:
-  poke_t(std::string& node_, biguint_t &value_): node(node_.c_str()), value(value_) { }
+  poke_t(std::string& node_, biguint_t value_): 
+    node(node_.c_str()), value(value_) { }
   std::ostream& dump(std::ostream &os) const {
-    return os << POKE << " " << node << " " << std::hex << value << std::dec << std::endl;
+    return os << POKE << " " << node << " " << value << std::endl;
   } 
 private:
   const char* node;
@@ -43,63 +54,64 @@ private:
 
 class expect_t: public sample_inst_t {
 public:
-  expect_t(std::string& node_, biguint_t &value_): node(node_.c_str()), value(value_) { }
+  expect_t(std::string& node_, biguint_t &value_): 
+    node(node_.c_str()), value(value_) { }
   std::ostream& dump(std::ostream &os) const {
-    return os << EXPECT << " " << node << " " << std::hex << value << std::dec << std::endl;
+    return os << EXPECT << " " << node << " " << value << std::endl;
   }
 private:
   const char* node;
   const biguint_t value;
 };
 
-class read_t: public sample_inst_t {
-public:
-  read_t(uint64_t addr_, size_t tag_): addr(addr_), tag(tag_) { }
-  std::ostream& dump(std::ostream &os) const {
-    return os << READ << std::hex << " " << addr << " " << tag << std::dec << std::endl; 
-  } 
-private:
-  const uint64_t addr;
-  const size_t tag;
-};
-
-typedef std::map< uint64_t, biguint_t > mem_t;
-
-class simif_t;
 class sample_t {
 public:
-  sample_t(size_t t_, std::string& snap);
-  ~sample_t(); 
+  sample_t(std::string& snap) {
+    size_t start = 0;
+    for (size_t i = 0 ; i < signals.size() ; i++) {
+      std::string signal = signals[i];
+      size_t width = widths[i];
+      int off = offsets[i];
+      if (signal != "null") {
+        biguint_t value(snap.substr(start, width).c_str(), 2);
+        add_cmd(new load_t(signal, value, off));
+      }
+      start += width;
+    }
+  }
 
-  sample_t& operator+=(const sample_inst_t *cmd);
-  sample_t& operator+=(const sample_t& that);
+  ~sample_t() {
+    for (size_t i = 0 ; i < cmds.size() ; i++) {
+      delete cmds[i];
+    }
+    cmds.clear();
+  }
 
   void add_cmd(sample_inst_t *cmd) {
     cmds.push_back(cmd);
   }
 
-  void add_mem(uint64_t addr, biguint_t &data) {
-    mem[addr] = data;
-  }
-
-  static void add_mapping(std::string signal, size_t width) {
+  static void add_to_chains(std::string signal, size_t width, int off = -1) {
     signals.push_back(signal);
     widths.push_back(width);
+    offsets.push_back(off);
   }
 
-  static void dump(std::ostream &os, std::vector<sample_t*> &samples);
+  std::ostream& dump(std::ostream &os) const {
+    for (size_t i = 0 ; i < cmds.size() ; i++) {
+      os << *cmds[i];
+    }
+    return os;
+  }
 
-  friend bool sample_cmp(sample_t*, sample_t*);
-  friend std::ostream& operator<<(std::ostream&, const sample_t&);
-  friend simif_t;
+  friend std::ostream& operator<<(std::ostream& os, const sample_t& s) {
+    return s.dump(os);
+  }
 private:
-  const size_t t;
   std::vector<sample_inst_t*> cmds;
-  mem_t mem;
-  sample_t *prev = NULL;
-  sample_t *next = NULL;
   static std::vector<std::string> signals;
   static std::vector<size_t> widths;
+  static std::vector<int> offsets;
 };
 
 #endif // __SAMPLE_H
