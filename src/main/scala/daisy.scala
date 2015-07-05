@@ -110,7 +110,7 @@ class RegChainControl extends DaisyChainModule {
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
-  io.ctrlIo.copyCond := io.stall && !copied
+  io.ctrlIo.copyCond := io.stall && !copied || RegNext(reset)
   io.ctrlIo.readCond := io.stall && copied && counter.isNotZero
 }
 
@@ -154,7 +154,7 @@ class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
 
   io.ctrlIo.cntrNotZero := counter.isNotZero
-  io.ctrlIo.copyCond := addrState === s_MEMREAD
+  io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
   io.addrIo.out.bits := addrIn
   io.addrIo.out.valid := Bool(false)
