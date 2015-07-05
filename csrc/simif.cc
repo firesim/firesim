@@ -205,10 +205,6 @@ void simif_t::init() {
     peek_map[id] = peek_channel(id);
     out_traces[id] = trace_t ();
   }
-  for (idmap_it_t it = in_trace_map.begin() ; it != in_trace_map.end() ; it++) {
-    size_t id = it->second;
-    biguint_t flush = peek_channel(id);
-  }
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
     size_t id = it->second;
     biguint_t flush = peek_channel(id);
@@ -249,6 +245,22 @@ bool simif_t::expect_port(std::string path, biguint_t expected) {
 void simif_t::step(size_t n) {
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   for (size_t i = 0 ; i < n ; i++) {
+    // reservoir sampling
+    if (t % TRACE_LEN == 0) {
+      size_t record_id = t / TRACE_LEN;
+      size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
+      if (sample_id < SAMPLE_NUM) {
+        if (last_sample != NULL) {
+          if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
+          samples[last_sample_id] = trace_ports(last_sample);
+        }
+        std::string snap = read_snapshot();
+        last_sample = new sample_t(snap);
+        last_sample_id = sample_id;
+        trace_count = 0;
+      }
+    }
+
     for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
       size_t id = it->second;
       biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;  
@@ -271,21 +283,6 @@ void simif_t::step(size_t n) {
     if (trace_count < TRACE_LEN) {
       trace_count++;
     }  
-    // reservoir sampling
-    if (t % TRACE_LEN == 0) {
-      size_t record_id = t / TRACE_LEN;
-      size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
-      if (sample_id < SAMPLE_NUM) {
-        if (last_sample != NULL) {
-          if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
-          samples[last_sample_id] = trace_ports(last_sample);
-        }
-        std::string snap = read_snapshot();
-        last_sample = new sample_t(snap);
-        last_sample_id = sample_id;
-        trace_count = 0;
-      }
-    }
   }
 }
 

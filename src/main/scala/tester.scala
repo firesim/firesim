@@ -106,26 +106,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   override def step(n: Int) {
     if (isTrace) println("STEP " + n + " -> " + (t + n))
     for (i <- 0 until n) {
-      for ((in, id) <- inMap) {
-        val data = pokeMap getOrElse (id, BigInt(0))
-        pokeChannel(id, data)
-        if (traceCount < traceLen) {
-          inTraces(id) enqueue data
-        }
-      }
-      peekMap.clear
-      for ((out, id) <- outMap) {
-        val data = peekChannel(id)
-        peekMap(id) = data
-        if (traceCount < traceLen) {
-          outTraces(id) enqueue data
-        }
-      }
-
-      t += 1
-      if (traceCount < traceLen) {
-        traceCount += 1
-      }
       // reservoir sampling
       if (t % traceLen == 0) {
         val recordId = t / traceLen
@@ -140,7 +120,30 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           verifySnapshot(sample)
           traceCount = 0
         }
-      } 
+      }
+ 
+      // take a step
+      for ((in, id) <- inMap) {
+        val data = pokeMap getOrElse (id, BigInt(0))
+        pokeChannel(id, data)
+        if (traceCount < traceLen) {
+          inTraces(id) enqueue data
+        }
+      }
+
+      peekMap.clear
+      for ((out, id) <- outMap) {
+        val data = peekChannel(id)
+        peekMap(id) = data
+        if (traceCount < traceLen) {
+          outTraces(id) enqueue data
+        }
+      }
+
+      t += 1
+      if (traceCount < traceLen) {
+        traceCount += 1
+      }
     }
   }
 
@@ -155,7 +158,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       peekMap(id) = peekChannel(id)
       outTraces(id) = ScalaQueue[BigInt]()
     }
-    for ((wire, i) <- (inTraceMap ++ outTraceMap)) {
+    for ((wire, i) <- outTraceMap) {
       // flush traces from initialization
       val flush = peekChannel(i)
     }
