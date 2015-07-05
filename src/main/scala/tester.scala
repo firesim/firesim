@@ -165,6 +165,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   }
 
   override def finish = {
+    // tail samples
+    lastSample match {
+      case None =>
+      case Some((sample, id)) => samples(id) = tracePorts(sample)
+    }
+
     val res = new StringBuilder
     for (sample <- samples) {
       res append sample.toString
@@ -306,7 +312,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   private val mem = Array.fill(1<<23){0.toByte} // size = 8MB
 
   def readMem(addr: BigInt) = {
-    pokeChannel(reqMap(c.memReq.addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.memReq.addr), addr >> c.memBlockOffset)
     pokeChannel(reqMap(c.memReq.tag), 0)
     do {
       takeSteps(1)
@@ -322,7 +328,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
-    pokeChannel(reqMap(c.memReq.addr), addr >> c.blockOffset)
+    pokeChannel(reqMap(c.memReq.addr), addr >> c.memBlockOffset)
     pokeChannel(reqMap(c.memReq.tag), 1)
     for (i <- 0 until c.memDataCount) {
       pokeChannel(reqMap(c.memReq.data), data >> (i * c.memDataWidth))
@@ -412,7 +418,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   def slowLoadMem(filename: String) {
-    val step = 1 << (c.blockOffset+1)
+    val step = 1 << (c.memBlockOffset+1)
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2

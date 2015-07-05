@@ -10,7 +10,7 @@ class simif_zynq_t : public simif_t
       std::vector<std::string> args, 
       std::string prefix, 
       bool log = false);
-    ~simif_zynq_t() { }
+    ~simif_zynq_t() { finish(); }
 
   private:
     volatile uintptr_t* dev_vaddr;
