@@ -190,12 +190,14 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val memDataWidth = params(MemDataWidth)
   val memDataCount = params(MemDataCount)
   val memTagWidth = params(MemTagWidth)
-  val blockOffset = params(BlockOffset)
-  private val s_axiAddrOffset = scala.math.max(blockOffset, log2Up(s_axiDataWidth>>3))
+  val memBlockSize = params(MemBlockSize)
+  val memBlockOffset = params(MemBlockOffset)
+  private val s_axiAddrOffset = scala.math.max(memBlockOffset, log2Up(s_axiDataWidth>>3))
   private val memAddrOffset = memAddrWidth + s_axiAddrOffset
-  private val dataCountLimit = ((1 << (blockOffset+3)) - 1) / s_axiDataWidth
+  private val dataCountLimit = (memBlockSize - 1) / (s_axiDataWidth>>3)
   private val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
-  require(dataCountLimit >= dataChunkLimit && (dataChunkLimit == 0 || dataCountLimit % dataChunkLimit == 0))
+  require(dataCountLimit >= dataChunkLimit && (dataChunkLimit == 0 || (dataCountLimit+1) % (dataChunkLimit+1) == 0),
+    "dataCountLimit+1 = %d, dataChunkLimit+1 = %d".format(dataCountLimit+1, dataChunkLimit+1))
 
   val io = new AXI4
   // Simulation Target

@@ -37,7 +37,6 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
 }
 
 simif_t::~simif_t() { 
-  dump_samples(prefix+".sample");
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
   if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
   fprintf(stdout, "\n");
@@ -167,22 +166,6 @@ void simif_t::load_mem(std::string filename) {
   file.close();
 }
 
-void simif_t::dump_samples(std::string filename) {
-  std::ofstream file(filename.c_str());
-  if (file) {
-    for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
-      if (samples[i] != NULL) { 
-        file << *samples[i];
-        delete samples[i];
-      }
-    }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
-  }
-  file.close();
-}
-
 void simif_t::init() {
   for (auto &arg: hargs) {
     if (arg.find("+loadmem=") == 0) {
@@ -206,9 +189,33 @@ void simif_t::init() {
     out_traces[id] = trace_t ();
   }
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
+    // flush traces from initialization
     size_t id = it->second;
     biguint_t flush = peek_channel(id);
   }
+}
+
+void simif_t::finish() {
+  // tail samples
+  if (last_sample != NULL) {
+    if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
+    samples[last_sample_id] = trace_ports(last_sample);
+  }
+  // dump samples
+  std::string filename = prefix + ".sample";
+  std::ofstream file(filename.c_str());
+  if (file) {
+    for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
+      if (samples[i] != NULL) { 
+        file << *samples[i];
+        delete samples[i];
+      }
+    }
+  } else {
+    fprintf(stderr, "Cannot open %s\n", filename.c_str());
+    exit(0);
+  }
+  file.close();
 }
 
 void simif_t::poke_port(std::string path, biguint_t value) {
@@ -261,6 +268,7 @@ void simif_t::step(size_t n) {
       }
     }
 
+    // take a step
     for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
       size_t id = it->second;
       biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;  

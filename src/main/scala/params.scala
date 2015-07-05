@@ -19,7 +19,8 @@ case object MemDataCount extends Field[Int]
 case object MemDataWidth extends Field[Int]
 case object MemAddrWidth extends Field[Int]
 case object MemTagWidth extends Field[Int]
-case object BlockOffset extends Field[Int]
+case object MemBlockSize extends Field[Int]
+case object MemBlockOffset extends Field[Int]
 
 // Simulation Params
 case object SampleNum extends Field[Int]
@@ -40,9 +41,10 @@ object AXI4Params {
     case SAXITagWidth => 6
     case MemAddrWidth => Dump("MEM_ADDR_WIDTH", 32)
     case MemDataWidth => Dump("MEM_DATA_WIDTH", 32)
-    case MemDataCount => Dump("MEM_DATA_COUNT", (1 << site(BlockOffset)) / (site(MemDataWidth) >> 3))
+    case MemDataCount => Dump("MEM_DATA_COUNT", (8*site(MemBlockSize)) / site(MemDataWidth))
     case MemTagWidth => 5
-    case BlockOffset => Dump("MEM_BLOCK_OFFSET", 2) 
+    case MemBlockSize => 4 // in bytes
+    case MemBlockOffset => Dump("MEM_BLOCK_OFFSET", log2Up(site(MemBlockSize))) // bit width 
   }
 }
 

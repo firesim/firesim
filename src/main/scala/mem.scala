@@ -290,17 +290,16 @@ class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
   resp_tag.io.addr := io.out_addr
   resp_tag.io.in.bits := resp_buf.io.deq.bits.tag
   resp_tag.io.in.valid := resp_buf.io.deq.valid
-  resp_buf.io.deq.ready := resp_data_in_ready && resp_tag_in_ready
+  resp_buf.io.deq.ready := 
+    (resp_data.io.in.ready || resp_data_in_ready) && (resp_tag.io.in.ready || resp_tag_in_ready)
 
-  when(resp_data.io.in.ready) {
-    resp_data_in_ready := Bool(true)
-  }
-  when(resp_tag.io.in.ready) {
-    resp_tag_in_ready := Bool(true)
-  }
   when(resp_buf.io.deq.ready) {
     resp_data_in_ready := Bool(false)
     resp_tag_in_ready := Bool(false)
+  }.elsewhen(resp_data.io.in.ready) {
+    resp_data_in_ready := Bool(true)
+  }.elsewhen(resp_tag.io.in.ready) {
+    resp_tag_in_ready := Bool(true)
   }
 
   // converters to output

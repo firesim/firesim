@@ -29,7 +29,6 @@ class simif_t
     void read_map(std::string filename);
     void read_chain(std::string filename);
     virtual void load_mem(std::string filename);
-    void dump_samples(std::string filename);
 
     // maps 
     idmap_t in_map;
@@ -87,6 +86,7 @@ class simif_t
     std::string read_snapshot();
 
     void init();
+    void finish();
     uint64_t cycles() { return t; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
 };
