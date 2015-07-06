@@ -6,10 +6,7 @@
 class simif_zynq_t : public simif_t
 {
   public:
-    simif_zynq_t(
-      std::vector<std::string> args, 
-      std::string prefix, 
-      bool log = false);
+    simif_zynq_t(std::vector<std::string> args, std::string prefix, bool log = false);
     ~simif_zynq_t() { finish(); }
 
   private:

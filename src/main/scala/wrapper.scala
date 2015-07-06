@@ -10,10 +10,9 @@ object SimWrapper {
   }
 }
 
-class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, Bits)]) extends Bundle {
+class SimWrapperIO(t_ins: Array[(String, Bits)], t_outs: Array[(String, Bits)]) extends Bundle {
   val daisyWidth = params(DaisyWidth)
-  def genPacket(arg: (String, Bits)) = {
-    val (name, port) = arg
+  def genPacket[T <: Bits](arg: (String, Bits)) = arg match { case (name, port) =>
     val packet = Decoupled(new Packet(port))
     if (port.dir == INPUT) packet.flip
     packet nameIt ("io_" + name + "_channel", true)
@@ -22,6 +21,8 @@ class SimWrapperIO(val t_ins: Array[(String, Bits)], val t_outs: Array[(String, 
   val ins = Vec(t_ins map genPacket)
   val outs = Vec(t_outs map genPacket)
   val daisy = new DaisyBundle(daisyWidth)
+  val in_wires = t_ins.unzip._2
+  val out_wires = t_outs.unzip._2 
 }
 
 abstract class SimNetwork extends Module {
@@ -31,6 +32,13 @@ abstract class SimNetwork extends Module {
   val sampleNum = params(SampleNum)
   val traceLen = params(TraceLen)
   val daisyWidth = params(DaisyWidth)
+
+  def initTrace[T <: Bits](arg: (T, Int)) = arg match { case (gen, id) =>
+    val trace = addPin(Decoupled(gen), gen.name + "_trace")
+    val channel = if (gen.dir == INPUT) in_channels(id) else out_channels(id)
+    trace <> channel.initTrace
+    (trace, gen)
+  }
 }
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
@@ -72,14 +80,10 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
           (out_channels foldLeft Bool(true))(_ && _.io.in.ready)
  
   // Inputs are consumed when firing conditions are met
-  in_channels foreach { channel =>
-    channel.io.out.ready := fire 
-  }
+  in_channels foreach (_.io.out.ready := fire)
    
   // Outputs should be ready after one cycle
-  out_channels foreach { channel =>
-    channel.io.in.valid := fireNext || RegNext(reset) 
-  }
+  out_channels foreach (_.io.in.valid := fireNext || RegNext(reset))
 
   val stall = target.addPin(Bool(INPUT), "io_stall_t")
   stall := !fire
