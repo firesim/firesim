@@ -11,11 +11,8 @@
 
 typedef std::map< std::string, size_t > idmap_t;
 typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
-typedef std::map< size_t, size_t > wmap_t;
 typedef std::map< size_t, biguint_t > map_t;
 typedef std::queue<biguint_t> trace_t;
-typedef std::map< size_t, trace_t > qmap_t;
-typedef std::map< size_t, trace_t >::const_iterator qmap_it_t;
 
 class simif_t
 {
@@ -33,11 +30,8 @@ class simif_t
     // maps 
     idmap_t in_map;
     idmap_t out_map;
-    idmap_t req_map;
-    idmap_t resp_map;
     idmap_t in_trace_map;
     idmap_t out_trace_map;
-    idmap_t snap_out_map;
     map_t poke_map;
     map_t peek_map;
 
@@ -50,8 +44,18 @@ class simif_t
     
     // trace information
     size_t trace_count;
-    qmap_t in_traces;
-    qmap_t out_traces; 
+    std::vector<trace_t> in_traces;
+    std::vector<trace_t> out_traces; 
+
+    // addrs
+    size_t SNAP_OUT_REGS;
+    size_t SNAP_OUT_SRAM;
+    size_t SNAP_OUT_CNTR;
+    size_t MEM_REQ_ADDR;
+    size_t MEM_REQ_TAG;
+    size_t MEM_REQ_DATA;
+    size_t MEM_RESP_DATA;
+    size_t MEM_RESP_TAG;
 
     // snapshotting information
     size_t REG_SNAP_LEN;
@@ -67,8 +71,8 @@ class simif_t
     std::vector<std::string> targs;
 
   protected:
-    wmap_t in_widths;
-    wmap_t out_widths;
+    std::vector<size_t> in_widths;
+    std::vector<size_t> out_widths;
 
     // channel communication
     virtual void poke_channel(size_t addr, biguint_t data) = 0;

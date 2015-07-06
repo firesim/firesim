@@ -169,6 +169,7 @@ class Output2MAXI[T <: Data](gen: T, addr: Int) extends Module {
           io.in.ready := Bool(true)
         }
       }
+      // flush when the input is no longer valid
       when(!io.in.valid) {
         state := s_IDLE
       }
@@ -203,21 +204,21 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   // Simulation Target
   val sim: T = Module(c)
 
+  // Fake wires for snapshotting
+  val snap_out = new Bundle {
+    val regs = UInt(OUTPUT, sim.daisyWidth)
+    val sram = UInt(OUTPUT, sim.daisyWidth)
+    val cntr = UInt(OUTPUT, sim.daisyWidth)
+  }
   // Fake wires for accesses from outside FPGA
-  val memReq = new Bundle {
+  val mem_req = new Bundle {
     val addr = UInt(INPUT, memAddrWidth)
     val tag = UInt(INPUT, memTagWidth+1)
     val data = UInt(INPUT, memDataWidth)
   }
-  val memResp = new Bundle {
+  val mem_resp = new Bundle {
     val data = UInt(OUTPUT, memDataWidth)
     val tag = UInt(OUTPUT, memTagWidth)
-  }
-  // Fake wires for snapshotting
-  val snapOut = new Bundle {
-    val regs = UInt(OUTPUT, sim.daisyWidth)
-    val sram = UInt(OUTPUT, sim.daisyWidth)
-    val cntr = UInt(OUTPUT, sim.daisyWidth)
   }
 
   /*** M_AXI INPUTS ***/
@@ -228,8 +229,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val do_write = st_wr === st_wr_write
   val reset_t = do_write && (waddr_r === UInt(resetAddr))
   val sram_restart = do_write && (waddr_r === UInt(sramRestartAddr))
-  val in_num = sim.io.ins.size + memReq.flatten.size - MemIO.ins.size
-  val in_ready = Vec.fill(in_num){Bool()} 
+  val in_ready = Bool() // Connected in the backend 
 
   sim.reset := reset_t
   sim.io.daisy.sram.restart := sram_restart
@@ -244,7 +244,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
     is(st_wr_write) {
-      when(in_ready(waddr_r) || waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
+      when(in_ready || waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
         st_wr := st_wr_ack
       } 
     }
@@ -266,9 +266,8 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read
-  val out_num = sim.io.outs.size + memResp.flatten.size + MemIO.ins.size + snapOut.flatten.size
-  val out_data = Vec.fill(out_num){UInt()}
-  val out_valid = Vec.fill(out_num){Bool()}
+  val out_data = UInt() // Connected in the backend 
+  val out_valid = Bool() // Connected in the backend 
 
   // M_AXI Read FSM
   switch(st_rd) {
@@ -286,13 +285,13 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
     }
   }
   io.M_AXI.ar.ready    := st_rd === st_rd_idle
-  io.M_AXI.r.valid     := out_valid(raddr_r) && do_read
-  io.M_AXI.r.bits.data := out_data(raddr_r)
+  io.M_AXI.r.valid     := out_valid && do_read
+  io.M_AXI.r.bits.data := out_data
   io.M_AXI.r.bits.last := io.M_AXI.r.valid
   io.M_AXI.r.bits.id   := arid_r
 
   /*** S_AXI ***/
-  val mem = new MemIO
+  val mem = new MemIO // connected in the backend
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
   val state_r = RegInit(st_idle)
   val do_mem_write = state_r === st_write

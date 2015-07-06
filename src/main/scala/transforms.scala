@@ -18,14 +18,12 @@ object transforms {
   private[strober] var sramMaxSize = 0
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
-  private[strober] val reqMap = LinkedHashMap[Bits, Int]()
-  private[strober] val respMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
   private[strober] val outTraceMap = LinkedHashMap[Bits, Int]()
-  private[strober] val snapOutMap = LinkedHashMap[Bits, Int]()
+  private[strober] val miscMap = LinkedHashMap[Bits, Int]()
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
-
+  
   private[strober] def init[T <: Module](w: SimWrapper[T], stall: Bool) {
     // Add backend passes
     if (wrappers.isEmpty) { 
@@ -50,146 +48,144 @@ object transforms {
     daisyPins(w) = w.io.daisy
   }
 
-  private def connectIOs(c: Module) {
-    c match {
-      case w: SimAXI4Wrapper[_] => {
-        ChiselError.info("[transforms] connect IOs to AXI busses")
-        daisyWidth = w.sim.daisyWidth
-        w.name = targetName + "AXI4Wrapper"
-        val (memInMap, ioInMap) =
-          ListMap((w.sim.io.t_ins.unzip._2 zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
-        val (memOutMap, ioOutMap) =
-          ListMap((w.sim.io.t_outs.unzip._2 zip w.sim.io.outs):_*) partition (MemIO.outs contains _._1)
+  private val connectIOs: Module => Unit = {
+    case w: SimAXI4Wrapper[SimNetwork] => {
+      ChiselError.info("[transforms] connect IOs to AXI busses")
+      daisyWidth = w.sim.daisyWidth
+      w.name = targetName + "AXI4Wrapper"
+      val (memInMap, ioInMap) =
+        ListMap((w.sim.io.in_wires zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
+      val (memOutMap, ioOutMap) =
+        ListMap((w.sim.io.out_wires zip w.sim.io.outs):_*) partition (MemIO.outs contains _._1)
+      var inCount = 0
+      var outCount = 0
+      val inReady = ArrayBuffer[Bool]()
+      val outData = ArrayBuffer[UInt]()
+      val outValid = ArrayBuffer[Bool]()
 
-        def initInConv[T <: Data](gen: T, id: Int) = {
-          val conv = w.addModule(new MAXI2Input(gen, id))
-          conv.name = "in_conv_" + id
-          conv.reset := w.reset_t
-          conv.io.addr := w.waddr_r
-          conv.io.in.bits := w.io.M_AXI.w.bits.data
-          conv.io.in.valid := w.do_write
-          w.in_ready(id) := conv.io.in.ready
-          conv
-        }
-
-        def initOutConv[T <: Data](gen: T, id: Int) = {
-          val conv = w.addModule(new Output2MAXI(gen, id))
-          conv.name = "out_conv_" + id
-          conv.reset := w.reset_t
-          conv.io.addr := w.raddr_r
-          conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
-          w.out_data(id) := conv.io.out.bits
-          w.out_valid(id) := conv.io.out.valid
-          conv
-        }
-
-        // Inputs
-        for (((wire, in), id) <- ioInMap.zipWithIndex) {
-          val conv = initInConv(in.bits, id)
-          conv.io.out <> in
-          inMap(wire) = id
-        }
- 
-        // Outputs
-        for (((wire, out), id) <- ioOutMap.zipWithIndex) {
-          val conv = initOutConv(out.bits, id)
-          conv.io.in <> out
-          outMap(wire) = id
-        }
-
-        // MemIOs
-        val conv = w.addModule(new MAXI_MemIOConverter(ioInMap.size, ioOutMap.size))
+      def initInConv[T <: Data](gen: T, id: Int) = {
+        val conv = w.addModule(new MAXI2Input(gen, id))
+        conv.name = "in_conv_" + id
         conv.reset := w.reset_t
-        conv.io.in_addr := w.waddr_r
-        conv.io.out_addr := w.raddr_r
-
-        for ((in, i) <- conv.io.ins.zipWithIndex) {
-          val id = ioInMap.size + i
-          in.bits := w.io.M_AXI.w.bits.data
-          in.valid := w.do_write
-          w.in_ready(id) := in.ready
-        }
-        reqMap(w.memReq.addr) = ioInMap.size
-        reqMap(w.memReq.tag) = ioInMap.size + 1
-        reqMap(w.memReq.data) = ioInMap.size + 2
-
-        for ((out, i) <- conv.io.outs.zipWithIndex) {
-          val id = ioOutMap.size + i
-          w.out_data(id) := out.bits
-          w.out_valid(id) := out.valid
-          out.ready := w.do_read && w.io.M_AXI.r.ready
-        }
-        respMap(w.memResp.data) = ioOutMap.size
-        respMap(w.memResp.tag) = ioOutMap.size + 1
-
-        val arb = w.addModule(new MemArbiter(MemIO.count+1))
-        for (i <- 0 until MemIO.count) {
-          val conv = w.addModule(new ChannelMemIOConverter)
-          conv.name = "mem_conv_" + i
-          conv.reset := w.reset_t
-          conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
-          conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
-          conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
-          conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
-          conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
-
-          conv.io.req_data_ready <> memInMap(MemData(i)(0))
-          conv.io.req_data_valid <> memOutMap(MemData(i)(1))
-          conv.io.req_data_bits <> memOutMap(MemData(i)(2))
-
-          conv.io.resp_ready <> memOutMap(MemResp(i)(0))
-          conv.io.resp_valid <> memInMap(MemResp(i)(1))
-          conv.io.resp_data <> memInMap(MemResp(i)(2))
-          conv.io.resp_tag <> memInMap(MemResp(i)(3))
-          conv.io.mem <> arb.io.ins(i)
-        }
-        conv.io.mem <> arb.io.ins(MemIO.count)
-        arb.io.out <> w.mem
-
-        // Traces
-        val inTraces = w.sim.io.t_ins.unzip._2.zipWithIndex filter (MemIO.ins contains _._1) map { 
-          case (wire, i) => {
-            val channel = w.sim.in_channels(i)
-            val trace = w.sim.addPin(Decoupled(wire), wire.name + "_trace")
-            trace <> channel.initTrace
-            (trace, wire)
-          }
-        }
-        val outTraces = w.sim.io.t_outs.unzip._2.zipWithIndex filter (MemIO.outs contains _._1) map {
-          case (wire, i) => {
-            val channel = w.sim.out_channels(i)
-            val trace = w.sim.addPin(Decoupled(wire), wire.name + "_trace")
-            trace <> channel.initTrace
-            (trace, wire)
-          }
-        } 
-        for (((trace, wire), i) <- (inTraces ++ outTraces).zipWithIndex) {
-          val id = w.sim.io.outs.size - MemIO.outs.size + w.memResp.flatten.size + i
-          val conv = initOutConv(trace.bits, id)
-          conv.io.in <> trace
-          if (MemIO.ins contains wire) inTraceMap(wire) = id else outTraceMap(wire) = id
-        }
-
-        // Snapshots
-        val snapOut = List(w.sim.io.daisy.regs.out, w.sim.io.daisy.sram.out, w.sim.io.daisy.cntr.out)
-        val snapOutBase = w.sim.io.outs.size + w.memResp.flatten.size + MemIO.ins.size
-        for ((out, i) <- snapOut.zipWithIndex) {
-          val id = snapOutBase + i
-          val conv = initOutConv(out.bits, id)
-          // conv.io.in <> out
-          conv.io.in.bits := out.bits
-          conv.io.in.valid := out.valid
-          out.ready := conv.io.in.ready
-        }
-        snapOutMap(w.snapOut.regs) = snapOutBase
-        snapOutMap(w.snapOut.sram) = snapOutBase + 1 
-        snapOutMap(w.snapOut.cntr) = snapOutBase + 2
+        conv.io.addr := w.waddr_r
+        conv.io.in.bits := w.io.M_AXI.w.bits.data
+        conv.io.in.valid := w.do_write
+        inReady += conv.io.in.ready
+        conv
       }
-      case w: SimWrapper[Module] => {
-        daisyWidth = w.daisyWidth
-        inMap ++= w.ins.unzip._2.zipWithIndex
-        outMap ++= w.outs.unzip._2.zipWithIndex
+
+      def initOutConv[T <: Data](gen: T, id: Int) = {
+        val conv = w.addModule(new Output2MAXI(gen, id))
+        conv.name = "out_conv_" + id
+        conv.reset := w.reset_t
+        conv.io.addr := w.raddr_r
+        conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
+        outData += conv.io.out.bits
+        outValid += conv.io.out.valid
+        conv
       }
+
+      // Inputs
+      for (((wire, in), i) <- ioInMap.zipWithIndex) {
+        val id = inCount + i
+        val conv = initInConv(in.bits, id)
+        conv.io.out <> in
+        inMap(wire) = id
+      }
+      inCount += ioInMap.size 
+
+      // Outputs
+      for (((wire, out), i) <- ioOutMap.zipWithIndex) {
+        val id = outCount + i
+        val conv = initOutConv(out.bits, id)
+        conv.io.in <> out
+        outMap(wire) = id
+      }
+      outCount += ioOutMap.size
+
+      // Traces
+      val inTraces = w.sim.io.in_wires.zipWithIndex filter (MemIO.ins contains _._1) map (w.sim.initTrace(_)) 
+      val outTraces = w.sim.io.out_wires.zipWithIndex  filter (MemIO.outs contains _._1) map (w.sim.initTrace(_))
+      for (((trace, wire), i) <- (inTraces ++ outTraces).zipWithIndex) {
+        val id = outCount + i
+        val conv = initOutConv(trace.bits, id)
+        conv.io.in <> trace
+        if (MemIO.ins contains wire) 
+          inTraceMap(wire) = id
+        else 
+          outTraceMap(wire) = id
+      }
+      outCount += (inTraces.size + outTraces.size)
+
+      // Snapshots
+      val snapOuts = List(w.sim.io.daisy.regs.out, w.sim.io.daisy.sram.out, w.sim.io.daisy.cntr.out)
+      for ((out, i) <- snapOuts.zipWithIndex) {
+        val conv = initOutConv(out.bits, outCount + i)
+        conv.io.in.bits := out.bits
+        conv.io.in.valid := out.valid
+        out.ready := conv.io.in.ready
+      }
+      miscMap(w.snap_out.regs) = outCount
+      miscMap(w.snap_out.sram) = outCount + 1 
+      miscMap(w.snap_out.cntr) = outCount + 2
+      outCount += snapOuts.size
+
+      // MemIOs
+      val conv = w.addModule(new MAXI_MemIOConverter(inCount, outCount))
+      conv.reset := w.reset_t
+      conv.io.in_addr := w.waddr_r
+      conv.io.out_addr := w.raddr_r
+
+      for (in <- conv.io.ins) {
+        in.bits := w.io.M_AXI.w.bits.data
+        in.valid := w.do_write
+        inReady += in.ready
+      }
+      for (out <- conv.io.outs) {
+        out.ready := w.do_read && w.io.M_AXI.r.ready
+        outData += out.bits
+        outValid += out.valid
+      }
+      miscMap(w.mem_req.addr) = inCount
+      miscMap(w.mem_req.tag) = inCount + 1
+      miscMap(w.mem_req.data) = inCount + 2
+      miscMap(w.mem_resp.data) = outCount
+      miscMap(w.mem_resp.tag) = outCount + 1
+      inCount += conv.io.ins.size
+      outCount += conv.io.outs.size
+
+      val arb = w.addModule(new MemArbiter(MemIO.count+1))
+      for (i <- 0 until MemIO.count) {
+        val conv = w.addModule(new ChannelMemIOConverter)
+        conv.name = "mem_conv_" + i
+        conv.reset := w.reset_t
+        conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
+        conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
+        conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
+        conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
+        conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
+
+        conv.io.req_data_ready <> memInMap(MemData(i)(0))
+        conv.io.req_data_valid <> memOutMap(MemData(i)(1))
+        conv.io.req_data_bits <> memOutMap(MemData(i)(2))
+
+        conv.io.resp_ready <> memOutMap(MemResp(i)(0))
+        conv.io.resp_valid <> memInMap(MemResp(i)(1))
+        conv.io.resp_data <> memInMap(MemResp(i)(2))
+        conv.io.resp_tag <> memInMap(MemResp(i)(3))
+        conv.io.mem <> arb.io.ins(i)
+      }
+      conv.io.mem <> arb.io.ins(MemIO.count)
+      arb.io.out <> w.mem
+
+      w.in_ready := Vec(inReady)(w.waddr_r)
+      w.out_data := Vec(outData)(w.raddr_r)
+      w.out_valid := Vec(outValid)(w.raddr_r)
+    }
+    case w: SimWrapper[Module] => {
+      daisyWidth = w.daisyWidth
+      inMap ++= w.ins.unzip._2.zipWithIndex
+      outMap ++= w.outs.unzip._2.zipWithIndex
     }
   }
 
@@ -210,7 +206,7 @@ object transforms {
 
       def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
 
-      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire)}
+      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
 
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
@@ -409,7 +405,7 @@ object transforms {
  
   private def dumpMaps(c: Module) {
     object MapType extends Enumeration { 
-      val IoIn, IoOut, MemIn, MemOut, InTrace, OutTrace, SnapOut = Value 
+      val IoIn, IoOut, InTrace, OutTrace, Misc = Value 
     }
     ChiselError.info("[transforms] dump the io & mem mapping")
     val res = new StringBuilder
@@ -422,14 +418,6 @@ object transforms {
       val path = nameMap(out)
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.IoOut.id, path, id, width)
-    }
-    for ((req, id) <- reqMap) {
-      val width = req.needWidth
-      res append "%d %s %d %d\n".format(MapType.MemIn.id, req.name, id, width)
-    }
-    for ((resp, id) <- respMap) {
-      val width = resp.needWidth
-      res append "%d %s %d %d\n".format(MapType.MemOut.id, resp.name, id, width)
     }
     for ((in, id) <- inTraceMap) {
       val path = nameMap(in)
@@ -446,9 +434,9 @@ object transforms {
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
     }
-    for ((out, id) <- snapOutMap) {
-      val width = out.needWidth
-      res append "%d %s %d %d\n".format(MapType.SnapOut.id, out.name, id, width)
+    for ((wire, id) <- miscMap) {
+      val width = wire.needWidth
+      res append "%d %s %d %d\n".format(MapType.Misc.id, wire.name, id, width)
     }
 
     val file = Driver.createOutputFile(targetName + ".map")
