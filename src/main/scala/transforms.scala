@@ -429,11 +429,6 @@ object transforms {
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
     }
-    for ((out, id) <- outTraceMap) {
-      val path = nameMap(out)
-      val width = out.needWidth
-      res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
-    }
     for ((wire, id) <- miscMap) {
       val width = wire.needWidth
       res append "%d %s %d %d\n".format(MapType.Misc.id, wire.name, id, width)

@@ -60,25 +60,26 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   }
 
   def tracePorts(sample: Sample) = {
-    for (i <- 0 until traceLen) {
-      for ((wire, i) <- inMap) {
-        val trace = inTraces(i)
-        assert(i > 0 || trace.size == traceLen, 
-          "trace size: %d != trace len: %d".format(trace.size, traceLen))
+    val len = inTraces(0).size  // can be less than traceLen, but same for all traces
+    for (i <- 0 until len) {
+      for ((wire, id) <- inMap) {
+        val trace = inTraces(id)
+        assert(i > 0 || trace.size == len, 
+          "trace size: %d != trace len: %d".format(trace.size, len))
         sample addCmd PokePort(wire, trace.dequeue)
       }
-      for ((wire, i) <- inTraceMap) {
-        sample addCmd PokePort(wire, peekChannel(i))
+      for ((wire, id) <- inTraceMap) {
+        sample addCmd PokePort(wire, peekChannel(id))
       }
       sample addCmd Step(1)
-      for ((wire, i) <- outMap) {
-        val trace = outTraces(i)
-        assert(i > 0 || trace.size == traceLen,
-          "trace size: %d != trace len: %d".format(trace.size, traceLen))
+      for ((wire, id) <- outMap) {
+        val trace = outTraces(id)
+        assert(i > 0 || trace.size == len, 
+          "trace size: %d != trace len: %d".format(trace.size, len))
         sample addCmd ExpectPort(wire, trace.dequeue)
       }
-      for ((wire, i) <- outTraceMap) {
-        sample addCmd ExpectPort(wire, peekChannel(i))
+      for ((wire, id) <- outTraceMap) {
+        sample addCmd ExpectPort(wire, peekChannel(id))
       }
     }
     sample
@@ -118,7 +119,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           val sample = Sample(readSnapshot)
           lastSample = Some((sample, sampleId))
           verifySnapshot(sample)
-          traceCount = 0
+          traceCount = 0 
         }
       }
  
@@ -148,7 +149,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   }
 
   def init {
-    traceCount = traceLen
     // Consumes initial output tokens
     peekMap.clear
     for ((in, id) <- inMap) {
@@ -172,7 +172,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       case None =>
       case Some((sample, id)) => samples(id) = tracePorts(sample)
     }
-
     val res = new StringBuilder
     for (sample <- samples) {
       res append sample.toString
@@ -248,8 +247,8 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   protected val sampleNum = c.sim.sampleNum
   protected val traceLen = c.sim.traceLen
   protected val daisyWidth = c.sim.daisyWidth
-  private val inWidths = ArrayBuffer[Int]() //HashMap[Int, Int]() 
-  private val outWidths = ArrayBuffer[Int]() // HashMap[Int, Int]()
+  private val inWidths = ArrayBuffer[Int]() 
+  private val outWidths = ArrayBuffer[Int]() 
   // addrs
   private lazy val SNAP_OUT_REGS = transforms.miscMap(c.snap_out.regs)
   private lazy val SNAP_OUT_SRAM = transforms.miscMap(c.snap_out.sram)
