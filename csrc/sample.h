@@ -54,7 +54,7 @@ private:
 
 class expect_t: public sample_inst_t {
 public:
-  expect_t(std::string& node_, biguint_t &value_): 
+  expect_t(std::string& node_, biguint_t value_): 
     node(node_.c_str()), value(value_) { }
   std::ostream& dump(std::ostream &os) const {
     return os << EXPECT << " " << node << " " << value << std::endl;

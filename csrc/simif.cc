@@ -350,14 +350,14 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       size_t id = it->second;
       trace_t &trace = out_traces[id];
       assert(i > 0 || trace.size() == len);
-      sample->add_cmd(new poke_t(wire, trace.front()));
+      sample->add_cmd(new expect_t(wire, trace.front()));
       trace.pop();
     }
     // output traces from FPGA
     for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
       std::string wire = it->first;
       size_t id = it->second;
-      sample->add_cmd(new poke_t(wire, peek_channel(id)));
+      sample->add_cmd(new expect_t(wire, peek_channel(id)));
     }
   }
 
