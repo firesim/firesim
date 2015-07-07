@@ -190,8 +190,6 @@ void simif_t::init() {
     }
   }
 
-  trace_count = TRACE_LEN;
-
   peek_map.clear();
   for (size_t i = 0 ; i < in_map.size() ; i++) {
     in_traces.push_back(trace_t());
@@ -263,6 +261,7 @@ bool simif_t::expect_port(std::string path, biguint_t expected) {
 
 void simif_t::step(size_t n) {
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
+    
   for (size_t i = 0 ; i < n ; i++) {
     // reservoir sampling
     if (t % TRACE_LEN == 0) {
@@ -327,13 +326,14 @@ biguint_t simif_t::read_mem(size_t addr) {
 }
 
 sample_t* simif_t::trace_ports(sample_t *sample) {
-  for (size_t i = 0 ; i < TRACE_LEN ; i++) {
+  size_t len = in_traces[0].size(); // can be less than TRACE_LEN, but same for all traces
+  for (size_t i = 0 ; i < len ; i++) {
     // input traces by the driver
     for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
       std::string wire = it->first;
       size_t id = it->second;
       trace_t &trace = in_traces[id];
-      assert(i > 0 || trace.size() == TRACE_LEN);
+      assert(i > 0 || trace.size() == len);
       sample->add_cmd(new poke_t(wire, trace.front()));
       trace.pop();
     }
@@ -349,7 +349,7 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       std::string wire = it->first;
       size_t id = it->second;
       trace_t &trace = out_traces[id];
-      assert(i > 0 || trace.size() == TRACE_LEN);
+      assert(i > 0 || trace.size() == len);
       sample->add_cmd(new poke_t(wire, trace.front()));
       trace.pop();
     }
