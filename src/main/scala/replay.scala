@@ -5,13 +5,13 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
 
 class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
-  private val basedir = ensureDir(Driver.targetDir)
+  private val basedir = Driver.targetDir
   private val signalMap = HashMap[String, Node]()
   private val samples = ArrayBuffer[Sample]()
 
   def loadSamples(filename: String) {
     samples += new Sample
-    val lines = scala.io.Source.fromFile(basedir+filename).getLines
+    val lines = scala.io.Source.fromFile(basedir+"/"+filename).getLines
     for (line <- lines) {
       val tokens = line split " "
       val cmd = SampleInstType(tokens.head.toInt)
@@ -43,15 +43,15 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
     for (sample <- samples) {
       sample map {
         case Step(n) => step(n)
-        case Load(node, value, off) => pokeBits(node, value, off.getOrElse(-1))
-        case PokePort(node, value) => pokeBits(node, value)
+        case Load(node, value, off) => pokeBits(node, value, off)
+        case PokePort(node, value) => poke(node, value)
         case ExpectPort(node, value) => expect(node, value)
       }
     }
   }
 
   Driver.dfs { node =>
-    if (node.isInObject) signalMap(dumpName(node)) = node
+    if (node.isReg || node.isIo) signalMap(node.chiselName) = node
   }
   loadSamples(c.name + ".sample")
   run

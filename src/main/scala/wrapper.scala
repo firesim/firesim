@@ -85,8 +85,5 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   // Outputs should be ready after one cycle
   out_channels foreach (_.io.in.valid := fireNext || RegNext(reset))
 
-  val stall = target.addPin(Bool(INPUT), "io_stall_t")
-  stall := !fire
-
-  transforms.init(this, stall)
+  transforms.init(this, fire)
 }

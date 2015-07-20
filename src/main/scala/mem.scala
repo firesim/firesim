@@ -172,17 +172,21 @@ class ChannelMemIOConverter extends Module {
   val req_cmd_buf = Module(new Queue(new MemReqCmd, 2))
   val req_data_buf = Module(new Queue(new MemData, 2*memCount)) 
   val resp_buf = Module(new Queue(new MemResp, 2*memCount))
+  // req_cmd is valid when 1) input tokens are valid, and 2) output tokens are ready
   val req_cmd_valid = io.req_cmd_ready.ready && io.req_cmd_valid.valid &&
     io.req_cmd_addr.valid && io.req_cmd_tag.valid && io.req_cmd_rw.valid
+  // req_data is valid when 1) input tokens are valid, and 2) output tokens are ready
   val req_data_valid = io.req_data_ready.ready && io.req_data_valid.valid && io.req_data_bits.valid
+  // mem reqest can fire when req_cmd & read data are valid 
   val req_fire = req_cmd_valid && req_data_valid && req_cmd_buf.io.enq.ready && req_data_buf.io.enq.ready
+  // mem response can fire when 1) input tokens are valid, and 2) output tokens are ready
   val resp_fire = io.resp_ready.valid && io.resp_valid.ready && io.resp_data.ready && io.resp_tag.ready
   req_cmd_buf.io.enq.bits.addr := io.req_cmd_addr.bits.data
   req_cmd_buf.io.enq.bits.tag := io.req_cmd_tag.bits.data
   req_cmd_buf.io.enq.bits.rw := io.req_cmd_rw.bits.data
-  // Send memory request only when valid
+  // Send memory request only when mem_req can be fired
   req_cmd_buf.io.enq.valid := req_fire && io.req_cmd_valid.bits.data
-  // Consums timing tokens 
+  // Consumes timing tokens 
   io.req_cmd_valid.ready := req_fire
   io.req_cmd_addr.ready := req_fire
   io.req_cmd_tag.ready := req_fire
@@ -194,20 +198,26 @@ class ChannelMemIOConverter extends Module {
   req_data_buf.io.enq.bits.data := io.req_data_bits.bits.data
   // Send memory data only when valid
   req_data_buf.io.enq.valid := req_fire && io.req_data_valid.bits.data
-  // Consums timing tokens 
+  // Consumes timing tokens 
   io.req_data_valid.ready := req_fire
   io.req_data_bits.ready := req_fire
   // 
   io.req_data_ready.bits.data := io.req_data_valid.bits.data 
   io.req_data_ready.valid := (req_fire && !io.req_cmd_valid.bits.data) || req_fire
 
-  resp_buf.io.deq.ready := resp_fire
+  resp_buf.io.deq.ready := resp_fire && io.resp_ready.bits.data
+  // Consume resp timing tokens when
+  // 1) resp can fire, and
+  // 2) either of them is true
+  //   i) req can fire, but it is not valid or not read
+  //   ii) resp is valid
   io.resp_ready.ready := resp_fire &&
     ((req_fire && (!io.req_cmd_valid.bits.data || io.req_cmd_rw.bits.data)) || resp_buf.io.deq.valid)
+  // 
   io.resp_valid.bits.data := resp_buf.io.deq.valid
-  io.resp_valid.valid := io.resp_ready.ready
+  io.resp_valid.valid := io.resp_ready.ready 
   io.resp_data.bits.data := resp_buf.io.deq.bits.data
-  io.resp_data.valid := io.resp_ready.ready
+  io.resp_data.valid := io.resp_ready.ready 
   io.resp_tag.bits.data := resp_buf.io.deq.bits.tag
   io.resp_tag.valid := io.resp_ready.ready
 

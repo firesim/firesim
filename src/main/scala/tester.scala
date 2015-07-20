@@ -26,10 +26,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected def pokeChannel(addr: Int, data: BigInt): Unit
   protected def peekChannel(addr: Int): BigInt
 
-  protected def takeSteps(n: Int) {
-    val clk = emulatorCmd("step %d".format(n))
-  }
-
   def pokePort(port: Bits, x: BigInt) {
     assert(inMap contains port)
     if (isTrace) println("* POKE " + dumpName(port) + " <- " + x.toString(16) + " *")
@@ -98,7 +94,9 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   def verifySnapshot(sample: Sample) = {
     val pass = (sample map {
       case Load(signal, value, off) => 
-        peekBits(signal, off.getOrElse(-1)) == value
+        val expected = peekBits(signal, off) 
+        expect(expected == value, "%s%s -> %s == %s".format(transforms.nameMap(signal),
+          off map ("[" + _ + "]") getOrElse "", expected.toString(16), value.toString(16)))
       case _ => true   
     }) reduce (_ && _)
     expect(pass, "* SNAPSHOT")
@@ -131,7 +129,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           inTraces(id) enqueue data
         }
       }
-
       peekMap.clear
       for ((out, id) <- outMap) {
         val data = peekChannel(id)
@@ -140,7 +137,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           outTraces(id) enqueue data
         }
       }
-
       t += 1
       if (traceCount < traceLen) {
         traceCount += 1
@@ -172,14 +168,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       case None =>
       case Some((sample, id)) => samples(id) = tracePorts(sample)
     }
-    val res = new StringBuilder
-    for (sample <- samples) {
-      res append sample.toString
-    }
     val filename = transforms.targetName + ".sample"
     val file = createOutputFile(filename)
     try {
-      file write res.result
+      file write (samples map (_.toString) mkString "")
     } finally {
       file.close
     }
@@ -195,21 +187,21 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
 
   def pokeChannel(addr: Int, data: BigInt) {
     while(peek(c.io.ins(addr).ready) == 0) {
-      takeSteps(1)
+      takeStep
     }
     poke(c.io.ins(addr).bits.data, data)
     poke(c.io.ins(addr).valid, 1)
-    takeSteps(1)
+    takeStep
     poke(c.io.ins(addr).valid, 0)
   }
 
   def peekChannel(addr: Int) = {
     while(peek(c.io.outs(addr).valid) == 0) {
-      takeSteps(1)
+      takeStep
     }
     val value = peek(c.io.outs(addr).bits.data)
     poke(c.io.outs(addr).ready, 1)
-    takeSteps(1)
+    takeStep
     poke(c.io.outs(addr).ready, 0)
     value
   }
@@ -218,22 +210,22 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     val snap = new StringBuilder
     for (i <- 0 until regSnapLen) {
       while(peek(c.io.daisy.regs.out.valid) == 0) {
-        takeSteps(1)
+        takeStep
       }
       snap append intToBin(peek(c.io.daisy.regs.out.bits), daisyWidth)
       poke(c.io.daisy.regs.out.ready, 1)
-      takeSteps(1)
+      takeStep
       poke(c.io.daisy.regs.out.ready, 0)
     }
     for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
       poke(c.io.daisy.sram.restart, 1)
       while(peek(c.io.daisy.sram.out.valid) == 0) {
-        takeSteps(1)
+        takeStep
       }
       poke(c.io.daisy.sram.restart, 0)
       snap append intToBin(peek(c.io.daisy.sram.out.bits), daisyWidth)
       poke(c.io.daisy.sram.out.ready, 1)
-      takeSteps(1)
+      takeStep
       poke(c.io.daisy.sram.out.ready, 0)
     }
     snap.result
@@ -271,18 +263,18 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         poke(c.io.M_AXI.aw.valid, 1)
         poke(c.io.M_AXI.w.bits.data, maskedData)
         poke(c.io.M_AXI.w.valid, 1)
-        takeSteps(1)
+        takeStep
       } while (peek(c.io.M_AXI.aw.ready) == 0 || peek(c.io.M_AXI.w.ready) == 0)
 
       do {
         poke(c.io.M_AXI.aw.valid, 0)
         poke(c.io.M_AXI.w.valid, 0)
-        takeSteps(1)
+        takeStep
       } while (peek(c.io.M_AXI.b.valid) == 0)
 
       assert(peek(c.io.M_AXI.b.bits.id) == 0)
       poke(c.io.M_AXI.b.ready, 1)
-      takeSteps(1)
+      takeStep
       poke(c.io.M_AXI.b.ready, 0)
     }
   }
@@ -292,23 +284,23 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     val limit = (outWidths(addr) - 1) / c.m_axiDataWidth + 1
     for (i <- 0 until limit) {
       while (peek(c.io.M_AXI.ar.ready) == 0) {
-        takeSteps(1)
+        takeStep
       }
 
       poke(c.io.M_AXI.ar.bits.addr, addr << c.addrOffset)
       poke(c.io.M_AXI.ar.bits.id, 0)
       poke(c.io.M_AXI.ar.valid, 1)
-      takeSteps(1)
+      takeStep
       poke(c.io.M_AXI.ar.valid, 0)
 
       while (peek(c.io.M_AXI.r.valid) == 0) {
-        takeSteps(1)
+        takeStep
       }
 
       data |= peek(c.io.M_AXI.r.bits.data) << (i * c.m_axiDataWidth)
       assert(peek(c.io.M_AXI.r.bits.id) == 0)
       poke(c.io.M_AXI.r.ready, 1)
-      takeSteps(1)
+      takeStep
       poke(c.io.M_AXI.r.ready, 0)
     }
     assert(peek(c.io.M_AXI.r.valid) == 0)
@@ -321,7 +313,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     pokeChannel(MEM_REQ_ADDR, addr >> c.memBlockOffset)
     pokeChannel(MEM_REQ_TAG, 0)
     do {
-      takeSteps(1)
+      takeStep
     } while (peek(c.io.S_AXI.ar.valid) == 0) 
     tickMem
 
@@ -340,7 +332,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       pokeChannel(MEM_REQ_DATA, data >> (i * c.memDataWidth))
     }
     do {
-      takeSteps(1)
+      takeStep
     } while (peek(c.io.S_AXI.aw.valid) == 0) 
     tickMem
   } 
@@ -354,7 +346,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       val size = 1 << peek(c.io.S_AXI.ar.bits.size).toInt
       poke(c.io.S_AXI.ar.ready, 1)
       do {
-        takeSteps(1)
+        takeStep
       } while (peek(c.io.S_AXI.r.ready) == 0)
       poke(c.io.S_AXI.ar.ready, 0)
       // handle read data
@@ -369,7 +361,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         poke(c.io.S_AXI.r.bits.last, 1)
         poke(c.io.S_AXI.r.valid, 1)
         do {
-          takeSteps(1)
+          takeStep
         } while (peek(c.io.S_AXI.r.ready) == 0)
         poke(c.io.S_AXI.r.bits.last, 0)
         poke(c.io.S_AXI.r.valid, 0)
@@ -381,13 +373,13 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       val size = 1 << peek(c.io.S_AXI.aw.bits.size).toInt
       poke(c.io.S_AXI.aw.ready, 1)
       do {
-        takeSteps(1)
+        takeStep
       } while (peek(c.io.S_AXI.w.valid) == 0)
       poke(c.io.S_AXI.aw.ready, 0)
       // handle write data
       for (k <- 0 to len) {
         while (peek(c.io.S_AXI.w.valid) == 0) {
-          takeSteps(1)
+          takeStep
         }
         val data = peek(c.io.S_AXI.w.bits.data)
         for (i <- 0 until size) {
@@ -396,7 +388,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
         }
         poke(c.io.S_AXI.w.ready, 1)
         assert(k < len || peek(c.io.S_AXI.w.bits.last) == 1)
-        takeSteps(1)
+        takeStep
         poke(c.io.S_AXI.w.ready, 0)
       }
     } else {
