@@ -51,13 +51,17 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
   }
 
   def loadWires(node: Node, value: BigInt, off: Option[Int]) {
-    (0 until node.needWidth) foreach { idx =>
-      val path = dumpName(node) + "[" + idx + "]" + (off map ("[" + _ + "]") getOrElse "")
+    def loadff(path: String, v: BigInt) {
       try {
-         pokePath(matchMap(path), (value >> idx) & 0x1)
+         pokePath(matchMap(path), v) 
       } catch {
         case e: NoSuchElementException => // skip
       }
+    }
+    if (node.needWidth == 1) loadff(dumpName(node), value)
+    else (0 until node.needWidth) foreach { idx =>
+      val path = dumpName(node) + "[" + idx + "]" + (off map ("[" + _ + "]") getOrElse "")
+      loadff(path, (value >> idx) & 0x1)
     }
   } 
 
