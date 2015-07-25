@@ -94,7 +94,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   def verifySnapshot(sample: Sample) = {
     val pass = (sample map {
       case Load(signal, value, off) => 
-        val expected = peekBits(signal, off) 
+        val expected = peekNode(signal, off) 
         expect(expected == value, "%s%s -> %s == %s".format(transforms.nameMap(signal),
           off map ("[" + _ + "]") getOrElse "", expected.toString(16), value.toString(16)))
       case _ => true   

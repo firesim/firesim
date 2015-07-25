@@ -4,7 +4,7 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
 
-class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTrace) {
+class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Boolean = true) extends Tester(c, isTrace) {
   private val basedir = Driver.targetDir
   private val signalMap = HashMap[String, Node]()
   private val samples = ArrayBuffer[Sample]()
@@ -39,11 +39,36 @@ class Replay[+T <: Module](c: T, isTrace: Boolean = true) extends Tester(c, isTr
     }
   }
 
+  private val matchMap = matchFile match {
+    case None => Map[String, String]()
+    case Some(f) => {
+      val lines = scala.io.Source.fromFile(f).getLines
+      (lines map { line =>
+        val tokens = line split " "
+        tokens.head -> (tokens.last + ".Q")
+      }).toMap
+    }
+  }
+
+  def loadWires(node: Node, value: BigInt, off: Option[Int]) {
+    (0 until node.needWidth) foreach { idx =>
+      val path = dumpName(node) + "[" + idx + "]" + (off map ("[" + _ + "]") getOrElse "")
+      try {
+         pokePath(matchMap(path), (value >> idx) & 0x1)
+      } catch {
+        case e: NoSuchElementException => // skip
+      }
+    }
+  } 
+
   def run {
     for (sample <- samples) {
       sample map {
         case Step(n) => step(n)
-        case Load(node, value, off) => pokeBits(node, value, off)
+        case Load(node, value, off) => matchFile match {
+          case None => pokeNode(node, value, off)
+          case Some(f) => loadWires(node, value, off)
+        }
         case PokePort(node, value) => poke(node, value)
         case ExpectPort(node, value) => expect(node, value)
       }
