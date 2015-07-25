@@ -58,9 +58,12 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
         case e: NoSuchElementException => // skip
       }
     }
-    if (node.needWidth == 1) loadff(dumpName(node), value)
+    if (node.needWidth == 1) {
+      val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") 
+      loadff(path, value)
+    }
     else (0 until node.needWidth) foreach { idx =>
-      val path = dumpName(node) + "[" + idx + "]" + (off map ("[" + _ + "]") getOrElse "")
+      val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "]" 
       loadff(path, (value >> idx) & 0x1)
     }
   } 
