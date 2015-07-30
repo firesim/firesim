@@ -12,6 +12,7 @@ object transforms {
   private val compsRev = HashMap[Module, List[Module]]()
   private val regs = HashMap[Module, ArrayBuffer[Node]]()
   private val srams = HashMap[Module, ArrayBuffer[Mem[Data]]]()
+  private var hasRegs = false
   private var daisyWidth = 0
   private[strober] var regSnapLen = 0
   private[strober] var sramSnapLen = 0
@@ -24,15 +25,16 @@ object transforms {
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
   
-  private[strober] def init[T <: Module](w: SimWrapper[T], stall: Bool) {
+  private[strober] def init[T <: Module](w: SimWrapper[T], fire: Bool) {
     // Add backend passes
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
+        probeDesign,
         connectIOs,
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         Driver.backend.findConsumers,
-        connectStallSignals,
+        connectCtrlSignals,
         addRegChains,
         addSRAMChain,
         dumpMaps,
@@ -44,15 +46,50 @@ object transforms {
     targetName = Driver.backend.extractClassName(w.target) 
     w.name = targetName + "Wrapper"
     wrappers += w
-    stallPins(w.target) = stall
+    stallPins(w) = !fire
     daisyPins(w) = w.io.daisy
+  }
+
+  private[strober] def init[T <: Module](w: SimAXI4Wrapper[SimNetwork]) {
+    w.name = targetName + "AXI4Wrapper"
+  }
+
+  private def probeDesign(c: Module) {
+    // This pass initiate simulation modules
+    def collect(c: Module): List[Module] = 
+      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
+    def collectRev(c: Module): List[Module] = 
+      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
+
+    for (w <- wrappers) {
+      val t = w.target
+      val tName = Driver.backend.extractClassName(t) 
+      val tPath = t.getPathName(".")
+      def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
+
+      comps(w) = collect(t)
+      compsRev(w) = collectRev(t)
+
+      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
+
+      for (m <- comps(w)) {
+        m bfs { 
+          case m: Mem[_] if m.seqRead => 
+            sramMaxSize = math.max(m.size, sramMaxSize)
+            nameMap(m) = getPath(m)
+          case r @ (_: Mem[_] | _: Reg) => 
+            hasRegs = true
+            nameMap(r) = getPath(r)
+          case _ => 
+        }
+      }
+    }
   }
 
   private val connectIOs: Module => Unit = {
     case w: SimAXI4Wrapper[SimNetwork] => {
       ChiselError.info("[transforms] connect IOs to AXI busses")
       daisyWidth = w.sim.daisyWidth
-      w.name = targetName + "AXI4Wrapper"
       val (memInMap, ioInMap) =
         ListMap((w.sim.io.in_wires zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
       val (memOutMap, ioOutMap) =
@@ -118,17 +155,26 @@ object transforms {
       outCount += (inTraces.size + outTraces.size)
 
       // Snapshots
-      val snapOuts = List(w.sim.io.daisy.regs.out, w.sim.io.daisy.sram.out, w.sim.io.daisy.cntr.out)
-      for ((out, i) <- snapOuts.zipWithIndex) {
-        val conv = initOutConv(out.bits, outCount + i)
+      if (hasRegs) {
+        val out = w.sim.io.daisy.regs.out
+        val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
       }
       miscMap(w.snap_out.regs) = outCount
-      miscMap(w.snap_out.sram) = outCount + 1 
-      miscMap(w.snap_out.cntr) = outCount + 2
-      outCount += snapOuts.size
+      outCount += 1
+      if (sramMaxSize > 0) { 
+        val out = w.sim.io.daisy.sram.out
+        val conv = initOutConv(out.bits, outCount)
+        conv.io.in.bits := out.bits
+        conv.io.in.valid := out.valid
+        out.ready := conv.io.in.ready
+      }
+      miscMap(w.snap_out.sram) = outCount
+      outCount += 1
+      miscMap(w.snap_out.cntr) = outCount
+      outCount += 1 
 
       // MemIOs
       val conv = w.addModule(new MAXI_MemIOConverter(inCount, outCount))
@@ -189,67 +235,59 @@ object transforms {
     }
   }
 
-  private def connectStallSignals(c: Module) {
-    ChiselError.info("[transforms] connect stall signals")
-    // This pass initiate simulation modules
-    def collect(c: Module): List[Module] = 
-      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
-    def collectRev(c: Module): List[Module] = 
-      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
+  private def connectCtrlSignals(c: Module) {
+    ChiselError.info("[transforms] connect control signals")
+
+    def connectStall(m: Module) {
+      stallPins(m) = m.addPin(Bool(INPUT), "io_stall_t")
+      val p = m.parent
+      if (!(stallPins contains p)) connectStall(p)
+      stallPins(m) := stallPins(p)
+    }
+
+    def connectSRAMRestart(m: Module): Unit = m.parent match {
+      case w: SimAXI4Wrapper[SimNetwork] =>
+        daisyPins(m).sram.restart := w.sram_restart
+      case p if daisyPins contains p =>
+        if (p != c && daisyPins(p).sram.restart.inputs.isEmpty)
+          connectSRAMRestart(p)
+        daisyPins(m).sram.restart := daisyPins(p).sram.restart
+      case _ =>
+    }
 
     for (w <- wrappers) {
-      val t = w.target
-      val tName = Driver.backend.extractClassName(t) 
-      val tPath = t.getPathName(".")
-      comps(w) = collect(t)
-      compsRev(w) = collectRev(t)
-
-      def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
-
-      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
-
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
-        if (!(stallPins contains m)) { 
-          stallPins(m) = m.addPin(Bool(INPUT), "io_stall_t")
-          stallPins(m) := stallPins(m.parent)
-        }
-        if (!(daisyPins contains m)) { 
-          daisyPins(m) = m.addPin(new DaisyBundle(daisyWidth), "io_daisy")
-          daisyPins(m).sram.restart := daisyPins(m.parent).sram.restart
-        }
         regs(m) = ArrayBuffer[Node]()
         srams(m) = ArrayBuffer[Mem[Data]]()
+        if (!(daisyPins contains m)) { 
+          daisyPins(m) = m.addPin(new DaisyBundle(daisyWidth), "io_daisy")
+        }
         m bfs { 
-          case reg: Reg => { 
+          case reg: Reg =>  
+            if (!(stallPins contains m)) connectStall(m)
             reg.inputs(0) = Multiplex(stallPins(m) && !m.reset, reg, reg.inputs(0))
-            // Add the register for daisy chains
             regs(m) += reg
-            nameMap(reg) = getPath(reg)
-          }
-          case mem: Mem[Data] => {
-            for (write <- mem.writeAccesses) {
-              write cond_= Bool().fromNode(write.cond) && !stallPins(m)
-            }
+          case mem: Mem[_] => 
+            if (!(stallPins contains m)) connectStall(m)
+            for (write <- mem.writeAccesses) 
+              write.cond = Bool().fromNode(write.cond) && !stallPins(m)
             if (mem.seqRead) {
-              srams(m) += mem
+              srams(m) += mem.asInstanceOf[Mem[Data]]
               if (sramMaxSize < mem.size) sramMaxSize = mem.size
-            } else {
-              for (i <- 0 until mem.size) {
-                val read = new MemRead(mem, UInt(i)) 
-                read.infer
-                regs(m) += read
-              }
+            } else (0 until mem.size) map (UInt(_)) foreach { idx =>
+              val read = new MemRead(mem, idx) 
+              read.infer
+              regs(m) += read
             }
-            nameMap(mem) = getPath(mem)
-          }
           case _ =>
-        } 
+        }
+        if (!srams(m).isEmpty) connectSRAMRestart(m) 
       }
     }
   }
 
-  private def addRegChains(c: Module) {
+  private def addRegChains(c: Module) = if (hasRegs) {
     ChiselError.info("[transforms] add daisy chains for registers")
 
     val hasRegChain = HashSet[Module]()
@@ -327,7 +365,7 @@ object transforms {
     }
   }
 
-  def addSRAMChain(c: Module) {
+  def addSRAMChain(c: Module) = if (sramMaxSize > 0) {
     ChiselError.info("[transforms] add sram chains")
     val hasSRAMChain = HashSet[Module]()
     def insertSRAMChain(m: Module) = {
@@ -400,7 +438,7 @@ object transforms {
     for (w <- wrappers) {
       w.io.daisy.sram <> daisyPins(w.target).sram
     }
-  }
+  } 
 
  
   private def dumpMaps(c: Module) {

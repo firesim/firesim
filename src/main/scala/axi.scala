@@ -232,7 +232,6 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val in_ready = Bool() // Connected in the backend 
 
   sim.reset := reset_t
-  sim.io.daisy.sram.restart := sram_restart
 
   // M_AXI Write FSM
   switch(st_wr) {
@@ -385,4 +384,6 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
       }
     }
   }
+
+  transforms.init(this)
 }
