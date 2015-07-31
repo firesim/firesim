@@ -52,27 +52,25 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
 
   def loadWires(node: Node, value: BigInt, off: Option[Int]) {
     def loadsram(path: String, v: BigInt, off: Int) {
-      try {
-        pokePath("%s.memory[%d]".format(matchMap(path), off), v) 
-      } catch {
-        case e: NoSuchElementException => // skip
+      (matchMap get path) match {
+        case None => // skip
+        case Some(p) => pokePath("%s.memory[%d]".format(p, off), v) 
       }
     }
     def loadff(path: String, v: BigInt) {
-      try {
-         pokePath(matchMap(path), v) 
-      } catch {
-        case e: NoSuchElementException => // skip
+      (matchMap get path) match {
+        case None => // skip
+        case Some(p) => pokePath(p, v) 
       }
     }
     node match {
       case mem: Mem[_] if mem.seqRead =>
         loadsram(dumpName(mem), value, off.get)
       case _ if (node.needWidth == 1) => 
-        val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") + ".Q" 
+        val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") 
         loadff(path, value)
       case _ => (0 until node.needWidth) foreach { idx =>
-        val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "].Q" 
+        val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "]"
         loadff(path, (value >> idx) & 0x1)
       }
     }
