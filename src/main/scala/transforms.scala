@@ -361,8 +361,12 @@ object transforms {
       }
     }
     for (w <- wrappers) {
-      w.io.daisy.regs.in.bits := UInt(0)
-      w.io.daisy.regs.in.valid := Bool(false)
+      c match { 
+        case _: SimAXI4Wrapper[SimNetwork] =>
+          w.io.daisy.regs.in.bits := UInt(0)
+          w.io.daisy.regs.in.valid := Bool(false)
+        case _ =>
+      }
       w.io.daisy.regs <> daisyPins(w.target).regs
     }
   }
@@ -438,8 +442,12 @@ object transforms {
       }
     } 
     for (w <- wrappers) {
-      w.io.daisy.sram.in.bits := UInt(0)
-      w.io.daisy.sram.in.valid := Bool(false)
+      c match { 
+        case _: SimAXI4Wrapper[SimNetwork] =>
+          w.io.daisy.sram.in.bits := UInt(0)
+          w.io.daisy.sram.in.valid := Bool(false)
+        case _ =>
+      }
       w.io.daisy.sram <> daisyPins(w.target).sram
     }
   } 
