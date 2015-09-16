@@ -503,7 +503,7 @@ object transforms {
       for (reg <- regs(m)) {
         val (node, width, off) = reg match {
           case read: MemRead => 
-            (read.mem, read.needWidth, Some(read.addr.litValue(0).toInt))
+            (read.mem.asInstanceOf[Mem[Data]], read.needWidth, Some(read.addr.litValue(0).toInt))
           case _ => 
             (reg, reg.needWidth, None)
         }
