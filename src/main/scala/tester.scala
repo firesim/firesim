@@ -26,13 +26,16 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected def pokeChannel(addr: Int, data: BigInt): Unit
   protected def peekChannel(addr: Int): BigInt
 
-  def pokePort(port: Bits, x: BigInt) {
+  def _poke(data: Bits, x: BigInt) = super.poke(data, x)
+  def _peek(data: Bits) = super.peek(data)
+
+  override def poke(port: Bits, x: BigInt) {
     assert(inMap contains port)
     if (isTrace) println("* POKE " + dumpName(port) + " <- " + x.toString(16) + " *")
     pokeMap(inMap(port)) = x 
   }
  
-  def peekPort(port: Bits) = {
+  override def peek(port: Bits) = {
     assert(outMap contains port)
     assert(peekMap contains outMap(port))
     val value = peekMap(outMap(port))
@@ -47,7 +50,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     pass
   }
  
-  def expectPort(port: Bits, expected: BigInt) = {
+  override def expect(port: Bits, expected: BigInt) = {
     assert(outMap contains port)
     assert(peekMap contains outMap(port))
     val value = peekMap(outMap(port))
@@ -55,7 +58,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     expect(pass, "* EXPECT " + dumpName(port) + " -> " + value.toString(16) + " == " + expected.toString(16))
   }
 
-  def tracePorts(sample: Sample) = {
+  def traces(sample: Sample) = {
     val len = inTraces(0).size  // can be less than traceLen, but same for all traces
     for (i <- 0 until len) {
       for ((wire, id) <- inMap) {
@@ -112,7 +115,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
         if (sampleId < sampleNum) {
           lastSample match {
             case None =>
-            case Some((sample, id)) => samples(id) = tracePorts(sample)
+            case Some((sample, id)) => samples(id) = traces(sample)
           }
           val sample = Sample(readSnapshot)
           lastSample = Some((sample, sampleId))
@@ -166,7 +169,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     // tail samples
     lastSample match {
       case None =>
-      case Some((sample, id)) => samples(id) = tracePorts(sample)
+      case Some((sample, id)) => samples(id) = traces(sample)
     }
     val filename = transforms.targetName + ".sample"
     val file = createOutputFile(filename)
@@ -179,54 +182,53 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   }
 }
 
-abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) 
-  extends SimTester(c, isTrace) {
+abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
   protected val sampleNum = c.sampleNum
   protected val traceLen = c.traceLen
   protected val daisyWidth = c.daisyWidth
 
   def pokeChannel(addr: Int, data: BigInt) {
-    while(peek(c.io.ins(addr).ready) == 0) {
+    while(_peek(c.io.ins(addr).ready) == 0) {
       takeStep
     }
-    poke(c.io.ins(addr).bits.data, data)
-    poke(c.io.ins(addr).valid, 1)
+    _poke(c.io.ins(addr).bits.data, data)
+    _poke(c.io.ins(addr).valid, 1)
     takeStep
-    poke(c.io.ins(addr).valid, 0)
+    _poke(c.io.ins(addr).valid, 0)
   }
 
   def peekChannel(addr: Int) = {
-    while(peek(c.io.outs(addr).valid) == 0) {
+    while(_peek(c.io.outs(addr).valid) == 0) {
       takeStep
     }
-    val value = peek(c.io.outs(addr).bits.data)
-    poke(c.io.outs(addr).ready, 1)
+    val value = _peek(c.io.outs(addr).bits.data)
+    _poke(c.io.outs(addr).ready, 1)
     takeStep
-    poke(c.io.outs(addr).ready, 0)
+    _poke(c.io.outs(addr).ready, 0)
     value
   }
 
   def readSnapshot = {
     val snap = new StringBuilder
     for (i <- 0 until regSnapLen) {
-      while(peek(c.io.daisy.regs.out.valid) == 0) {
+      while(_peek(c.io.daisy.regs.out.valid) == 0) {
         takeStep
       }
-      snap append intToBin(peek(c.io.daisy.regs.out.bits), daisyWidth)
-      poke(c.io.daisy.regs.out.ready, 1)
+      snap append intToBin(_peek(c.io.daisy.regs.out.bits), daisyWidth)
+      _poke(c.io.daisy.regs.out.ready, 1)
       takeStep
-      poke(c.io.daisy.regs.out.ready, 0)
+      _poke(c.io.daisy.regs.out.ready, 0)
     }
     for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
-      poke(c.io.daisy.sram.restart, 1)
-      while(peek(c.io.daisy.sram.out.valid) == 0) {
+      _poke(c.io.daisy.sram.restart, 1)
+      while(_peek(c.io.daisy.sram.out.valid) == 0) {
         takeStep
       }
-      poke(c.io.daisy.sram.restart, 0)
-      snap append intToBin(peek(c.io.daisy.sram.out.bits), daisyWidth)
-      poke(c.io.daisy.sram.out.ready, 1)
+      _poke(c.io.daisy.sram.restart, 0)
+      snap append intToBin(_peek(c.io.daisy.sram.out.bits), daisyWidth)
+      _poke(c.io.daisy.sram.out.ready, 1)
       takeStep
-      poke(c.io.daisy.sram.out.ready, 0)
+      _poke(c.io.daisy.sram.out.ready, 0)
     }
     snap.result
   }
@@ -234,8 +236,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   init
 }
 
-abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) 
-  extends SimTester(c, isTrace) {
+abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
   protected val sampleNum = c.sim.sampleNum
   protected val traceLen = c.sim.traceLen
   protected val daisyWidth = c.sim.daisyWidth
@@ -258,24 +259,24 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     for (i <- limit - 1 to 0 by -1) {
       val maskedData = (data >> (i * c.m_axiDataWidth)) & mask
       do {
-        poke(c.io.M_AXI.aw.bits.id, 0)
-        poke(c.io.M_AXI.aw.bits.addr, addr << c.addrOffset)
-        poke(c.io.M_AXI.aw.valid, 1)
-        poke(c.io.M_AXI.w.bits.data, maskedData)
-        poke(c.io.M_AXI.w.valid, 1)
+        _poke(c.io.M_AXI.aw.bits.id, 0)
+        _poke(c.io.M_AXI.aw.bits.addr, addr << c.addrOffset)
+        _poke(c.io.M_AXI.aw.valid, 1)
+        _poke(c.io.M_AXI.w.bits.data, maskedData)
+        _poke(c.io.M_AXI.w.valid, 1)
         takeStep
-      } while (peek(c.io.M_AXI.aw.ready) == 0 || peek(c.io.M_AXI.w.ready) == 0)
+      } while (_peek(c.io.M_AXI.aw.ready) == 0 || _peek(c.io.M_AXI.w.ready) == 0)
 
       do {
-        poke(c.io.M_AXI.aw.valid, 0)
-        poke(c.io.M_AXI.w.valid, 0)
+        _poke(c.io.M_AXI.aw.valid, 0)
+        _poke(c.io.M_AXI.w.valid, 0)
         takeStep
-      } while (peek(c.io.M_AXI.b.valid) == 0)
+      } while (_peek(c.io.M_AXI.b.valid) == 0)
 
-      assert(peek(c.io.M_AXI.b.bits.id) == 0)
-      poke(c.io.M_AXI.b.ready, 1)
+      assert(_peek(c.io.M_AXI.b.bits.id) == 0)
+      _poke(c.io.M_AXI.b.ready, 1)
       takeStep
-      poke(c.io.M_AXI.b.ready, 0)
+      _poke(c.io.M_AXI.b.ready, 0)
     }
   }
 
@@ -283,27 +284,27 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     var data = BigInt(0)
     val limit = (outWidths(addr) - 1) / c.m_axiDataWidth + 1
     for (i <- 0 until limit) {
-      while (peek(c.io.M_AXI.ar.ready) == 0) {
+      while (_peek(c.io.M_AXI.ar.ready) == 0) {
         takeStep
       }
 
-      poke(c.io.M_AXI.ar.bits.addr, addr << c.addrOffset)
-      poke(c.io.M_AXI.ar.bits.id, 0)
-      poke(c.io.M_AXI.ar.valid, 1)
+      _poke(c.io.M_AXI.ar.bits.addr, addr << c.addrOffset)
+      _poke(c.io.M_AXI.ar.bits.id, 0)
+      _poke(c.io.M_AXI.ar.valid, 1)
       takeStep
-      poke(c.io.M_AXI.ar.valid, 0)
+      _poke(c.io.M_AXI.ar.valid, 0)
 
-      while (peek(c.io.M_AXI.r.valid) == 0) {
+      while (_peek(c.io.M_AXI.r.valid) == 0) {
         takeStep
       }
 
-      data |= peek(c.io.M_AXI.r.bits.data) << (i * c.m_axiDataWidth)
-      assert(peek(c.io.M_AXI.r.bits.id) == 0)
-      poke(c.io.M_AXI.r.ready, 1)
+      data |= _peek(c.io.M_AXI.r.bits.data) << (i * c.m_axiDataWidth)
+      assert(_peek(c.io.M_AXI.r.bits.id) == 0)
+      _poke(c.io.M_AXI.r.ready, 1)
       takeStep
-      poke(c.io.M_AXI.r.ready, 0)
+      _poke(c.io.M_AXI.r.ready, 0)
     }
-    assert(peek(c.io.M_AXI.r.valid) == 0)
+    assert(_peek(c.io.M_AXI.r.valid) == 0)
     data
   }
 
@@ -314,7 +315,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     pokeChannel(MEM_REQ_TAG, 0)
     do {
       takeStep
-    } while (peek(c.io.S_AXI.ar.valid) == 0) 
+    } while (_peek(c.io.S_AXI.ar.valid) == 0) 
     tickMem
 
     var data = BigInt(0)
@@ -333,22 +334,22 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     }
     do {
       takeStep
-    } while (peek(c.io.S_AXI.aw.valid) == 0) 
+    } while (_peek(c.io.S_AXI.aw.valid) == 0) 
     tickMem
   } 
 
   private def tickMem {
-    if (peek(c.io.S_AXI.ar.valid) == 1) {
+    if (_peek(c.io.S_AXI.ar.valid) == 1) {
       // handle read address
-      val ar = peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
-      val tag = peek(c.io.S_AXI.ar.bits.id)
-      val len = peek(c.io.S_AXI.ar.bits.len).toInt
-      val size = 1 << peek(c.io.S_AXI.ar.bits.size).toInt
-      poke(c.io.S_AXI.ar.ready, 1)
+      val ar = _peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
+      val tag = _peek(c.io.S_AXI.ar.bits.id)
+      val len = _peek(c.io.S_AXI.ar.bits.len).toInt
+      val size = 1 << _peek(c.io.S_AXI.ar.bits.size).toInt
+      _poke(c.io.S_AXI.ar.ready, 1)
       do {
         takeStep
-      } while (peek(c.io.S_AXI.r.ready) == 0)
-      poke(c.io.S_AXI.ar.ready, 0)
+      } while (_peek(c.io.S_AXI.r.ready) == 0)
+      _poke(c.io.S_AXI.ar.ready, 0)
       // handle read data
       for (k <- 0 to len) {
         var data = BigInt(0)
@@ -356,47 +357,47 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
           val addr = ar+k*(size+1)+i
           data |= BigInt(mem(addr) & 0xff) << (8*i)
         }
-        poke(c.io.S_AXI.r.bits.data, data)
-        poke(c.io.S_AXI.r.bits.id, tag)
-        poke(c.io.S_AXI.r.bits.last, 1)
-        poke(c.io.S_AXI.r.valid, 1)
+        _poke(c.io.S_AXI.r.bits.data, data)
+        _poke(c.io.S_AXI.r.bits.id, tag)
+        _poke(c.io.S_AXI.r.bits.last, 1)
+        _poke(c.io.S_AXI.r.valid, 1)
         do {
           takeStep
-        } while (peek(c.io.S_AXI.r.ready) == 0)
-        poke(c.io.S_AXI.r.bits.last, 0)
-        poke(c.io.S_AXI.r.valid, 0)
+        } while (_peek(c.io.S_AXI.r.ready) == 0)
+        _poke(c.io.S_AXI.r.bits.last, 0)
+        _poke(c.io.S_AXI.r.valid, 0)
       }
-    } else if (peek(c.io.S_AXI.aw.valid) == 1) {
+    } else if (_peek(c.io.S_AXI.aw.valid) == 1) {
       // handle write address
-      val aw = peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
-      val len = peek(c.io.S_AXI.aw.bits.len).toInt
-      val size = 1 << peek(c.io.S_AXI.aw.bits.size).toInt
-      poke(c.io.S_AXI.aw.ready, 1)
+      val aw = _peek(c.io.S_AXI.ar.bits.addr).toInt & 0xffff
+      val len = _peek(c.io.S_AXI.aw.bits.len).toInt
+      val size = 1 << _peek(c.io.S_AXI.aw.bits.size).toInt
+      _poke(c.io.S_AXI.aw.ready, 1)
       do {
         takeStep
-      } while (peek(c.io.S_AXI.w.valid) == 0)
-      poke(c.io.S_AXI.aw.ready, 0)
+      } while (_peek(c.io.S_AXI.w.valid) == 0)
+      _poke(c.io.S_AXI.aw.ready, 0)
       // handle write data
       for (k <- 0 to len) {
-        while (peek(c.io.S_AXI.w.valid) == 0) {
+        while (_peek(c.io.S_AXI.w.valid) == 0) {
           takeStep
         }
-        val data = peek(c.io.S_AXI.w.bits.data)
+        val data = _peek(c.io.S_AXI.w.bits.data)
         for (i <- 0 until size) {
           val addr = aw+k*(size+1)+i
           mem(addr) = ((data >> (8*i)) & 0xff).toByte
         }
-        poke(c.io.S_AXI.w.ready, 1)
-        assert(k < len || peek(c.io.S_AXI.w.bits.last) == 1)
+        _poke(c.io.S_AXI.w.ready, 1)
+        assert(k < len || _peek(c.io.S_AXI.w.bits.last) == 1)
         takeStep
-        poke(c.io.S_AXI.w.ready, 0)
+        _poke(c.io.S_AXI.w.ready, 0)
       }
     } else {
-      poke(c.io.S_AXI.ar.ready, 0)
-      poke(c.io.S_AXI.r.bits.last, 0)
-      poke(c.io.S_AXI.r.valid, 0)
-      poke(c.io.S_AXI.aw.ready, 0)
-      poke(c.io.S_AXI.w.ready, 0)
+      _poke(c.io.S_AXI.ar.ready, 0)
+      _poke(c.io.S_AXI.r.bits.last, 0)
+      _poke(c.io.S_AXI.r.valid, 0)
+      _poke(c.io.S_AXI.aw.ready, 0)
+      _poke(c.io.S_AXI.w.ready, 0)
     }
   }
 
