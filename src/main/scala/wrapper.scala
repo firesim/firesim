@@ -47,15 +47,15 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val io = new SimWrapperIO(ins, outs)
   val in_channels: Seq[Channel[Bits]] = ins map { x => 
     val channel = Module(new Channel(x._2)) 
-    channel.name = "Channel_" + x._1
+    channel setName ("Channel_" + x._1)
     channel
   }
   val out_channels: Seq[Channel[Bits]] = outs map { x => 
     val channel = Module(new Channel(x._2)) 
-    channel.name = "Channel_" + x._1
+    channel setName ("Channel_" + x._1)
     channel
   }
-  val fire = Bool()
+  val fire = Wire(Bool())
   val fireNext = RegNext(fire)
 
   // Datapath: Channels <> IOs

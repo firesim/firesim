@@ -377,7 +377,8 @@ object transforms {
     def insertSRAMChain(m: Module) = {
       var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        val data = sram.readAccesses.last 
+        val data = if (!Driver.isInlineMem) sram.readAccesses.last
+          else (sram.readAccesses find (_.addr.getNode match { case _: Reg => true case _ => false })).get
         val addr = data match {
           case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
           case msr: MemSeqRead => msr.addrReg

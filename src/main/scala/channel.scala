@@ -29,7 +29,7 @@ class Channel[T <: Bits](gen: T, entries: Int = 2) extends Module {
     // instantiate trace in the backend(lazy connection?)
     // trace queue will not appear until this is executed
     val trace = addModule(new Queue(gen, traceLen))
-    trace.name = "trace"
+    trace setName "trace"
     // trace is written when a token is consumed
     trace.io.enq.bits := io.out.bits.data
     trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
