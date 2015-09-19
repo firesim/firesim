@@ -177,7 +177,7 @@ class ChannelMemIOConverter extends Module {
     io.req_cmd_addr.valid && io.req_cmd_tag.valid && io.req_cmd_rw.valid
   // req_data is valid when 1) input tokens are valid, and 2) output tokens are ready
   val req_data_valid = io.req_data_ready.ready && io.req_data_valid.valid && io.req_data_bits.valid
-  // mem reqest can fire when req_cmd & read data are valid 
+  // mem request can fire when req_cmd & read data are valid 
   val req_fire = req_cmd_valid && req_data_valid && req_cmd_buf.io.enq.ready && req_data_buf.io.enq.ready
   // mem response can fire when 1) input tokens are valid, and 2) output tokens are ready
   val resp_fire = io.resp_ready.valid && io.resp_valid.ready && io.resp_data.ready && io.resp_tag.ready
