@@ -424,7 +424,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   private def parseNibble(hex: Int) = if (hex >= 'a') hex - 'a' + 10 else hex - '0'
 
   def loadMem(filename: String) {
-    val lines = Source.fromFile(filename + ".hex").getLines
+    val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2
       var offset = 0
@@ -438,7 +438,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
   def slowLoadMem(filename: String) {
     val step = 1 << (c.memBlockOffset+1)
-    val lines = Source.fromFile(filename + ".hex").getLines
+    val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
       val base = (i * line.length) / 2
       var offset = 0
