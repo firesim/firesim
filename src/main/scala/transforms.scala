@@ -29,11 +29,9 @@ object transforms {
     // Add backend passes
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
-        probeDesign,
         connectIOs,
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
-        Driver.backend.findConsumers,
         connectCtrlSignals,
         addRegChains,
         addSRAMChain,
@@ -54,36 +52,16 @@ object transforms {
     w.name = targetName + "AXI4Wrapper"
   }
 
-  private def probeDesign(c: Module) {
-    // This pass initiate simulation modules
-    def collect(c: Module): List[Module] = 
-      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
-    def collectRev(c: Module): List[Module] = 
-      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
-
-    for (w <- wrappers) {
-      val t = w.target
-      val tName = Driver.backend.extractClassName(t) 
-      val tPath = t.getPathName(".")
-      def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
-
-      comps(w) = collect(t)
-      compsRev(w) = collectRev(t)
-
-      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
-
-      for (m <- comps(w)) {
-        m bfs { 
-          case m: Mem[_] if m.seqRead => 
-            sramMaxSize = math.max(m.size, sramMaxSize)
-            nameMap(m) = getPath(m)
-          case r @ (_: Mem[_] | _: Reg) => 
-            hasRegs = true
-            nameMap(r) = getPath(r)
-          case _ => 
-        }
-      }
+  private def findSRAMRead[T <: Data](sram: Mem[T]) = {
+    val data = if (!Driver.isInlineMem) sram.readAccesses.last
+      else (sram.readAccesses find (_.addr.getNode match { 
+        case _: Reg => true 
+        case _      => false })).get
+    val addr = data match {
+      case mr:  MemRead    => mr.addr.getNode match { case addrReg: Reg => addrReg }
+      case msr: MemSeqRead => msr.addrReg
     }
+    (addr, data)
   }
 
   private val connectIOs: Module => Unit = {
@@ -238,6 +216,11 @@ object transforms {
   private def connectCtrlSignals(c: Module) {
     ChiselError.info("[transforms] connect control signals")
 
+    def collect(c: Module): List[Module] = 
+      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
+    def collectRev(c: Module): List[Module] = 
+      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
+
     def connectStall(m: Module) {
       stallPins(m) = m.addPin(Bool(INPUT), "io_stall_t")
       val p = m.parent
@@ -256,6 +239,16 @@ object transforms {
     }
 
     for (w <- wrappers) {
+      val t = w.target
+      val tName = Driver.backend.extractClassName(t) 
+      val tPath = t.getPathName(".")
+      def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
+
+      comps(w) = collect(t)
+      compsRev(w) = collectRev(t)
+
+      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
+
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
         regs(m) = ArrayBuffer[Node]()
@@ -268,18 +261,22 @@ object transforms {
             if (!(stallPins contains m)) connectStall(m)
             reg.inputs(0) = Multiplex(stallPins(m) && !m.reset, reg, reg.inputs(0))
             regs(m) += reg
+            nameMap(reg) = getPath(reg)
+            hasRegs = true
           case mem: Mem[_] => 
             if (!(stallPins contains m)) connectStall(m)
             for (write <- mem.writeAccesses) 
               write.cond = Bool().fromNode(write.cond) && !stallPins(m)
             if (mem.seqRead) {
               srams(m) += mem.asInstanceOf[Mem[Data]]
-              if (sramMaxSize < mem.size) sramMaxSize = mem.size
+              sramMaxSize = math.max(mem.size, sramMaxSize)
             } else (0 until mem.size) map (UInt(_)) foreach { idx =>
               val read = new MemRead(mem, idx) 
               read.infer
               regs(m) += read
+              hasRegs = true
             }
+            nameMap(mem) = getPath(mem)
           case _ =>
         }
         if (!srams(m).isEmpty) connectSRAMRestart(m) 
@@ -377,12 +374,7 @@ object transforms {
     def insertSRAMChain(m: Module) = {
       var lastChain: Option[SRAMChain] = None 
       for (sram <- srams(m)) {
-        val data = if (!Driver.isInlineMem) sram.readAccesses.last
-          else (sram.readAccesses find (_.addr.getNode match { case _: Reg => true case _ => false })).get
-        val addr = data match {
-          case mr: MemRead => mr.addr.getNode match { case addrReg: Reg => addrReg }
-          case msr: MemSeqRead => msr.addrReg
-        }
+        val (addr, data) = findSRAMRead(sram)
         val dataWidth = sram.needWidth
         val chain = m.addModule(new SRAMChain, {
           case DataWidth => dataWidth 
