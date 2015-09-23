@@ -18,10 +18,13 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
       cmd match {
         case SampleInstType.FIN => samples += new Sample
         case SampleInstType.LOAD => {
-          val node = signalMap(tokens.tail.head)
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
-          samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
+          (signalMap get tokens.tail.head) match {
+            case None =>
+            case Some(node) => 
+              samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
+          }
         }
         case SampleInstType.POKE => {
           val node = signalMap(tokens.tail.head).asInstanceOf[Bits]
@@ -80,7 +83,12 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
     samples foreach (_ map {
       case Step(n) => step(n)
       case Load(node, value, off) => matchFile match {
-        case None => pokeNode(node, value, off)
+        case None => node match {
+          case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem =>
+            pokePath("%s.sram.memory[%d]".format(dumpName(node), off.get), value)
+          case _ => 
+            pokeNode(node, value, off)
+        }
         case Some(f) => loadWires(node, value, off)
       }
       case PokePort(node, value) => poke(node, value)
@@ -88,8 +96,19 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
     })
   }
 
-  Driver.dfs { node =>
-    if (node.isReg || node.isIo) signalMap(node.chiselName) = node
+  private val srams = ArrayBuffer[Mem[_]]()
+  Driver.dfs {
+    case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem =>
+      srams += mem
+      signalMap(mem.chiselName) = mem
+    case node if node.isReg || node.isIo =>
+      signalMap(node.chiselName) = node
+    case _ =>
+  }
+  for (sram <- srams) {
+    val read = sram.readAccesses.head match { case r: MemSeqRead => r }
+    val path = read.mem.component.getPathName(".") + "." + read.name
+    signalMap -= read.addrReg.chiselName
   }
   loadSamples(c.name + ".sample")
   run
