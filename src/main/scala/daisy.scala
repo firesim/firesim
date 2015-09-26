@@ -11,15 +11,17 @@ class DaisyData(daisywidth: Int) extends Bundle {
 
 class RegData(daisywidth: Int) extends DaisyData(daisywidth) {
 } 
+class TraceData(daisywidth: Int) extends DaisyData(daisywidth)
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
   val restart = Bool(INPUT)
 }
 class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
 class DaisyBundle(daisywidth: Int) extends Bundle {
-  val regs = new RegData(daisywidth)
-  val sram = new SRAMData(daisywidth)
-  val cntr = new CntrData(daisywidth)
+  val regs  = new RegData(daisywidth)
+  val trace = new TraceData(daisywidth)
+  val sram  = new SRAMData(daisywidth)
+  val cntr  = new CntrData(daisywidth)
   override def clone: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
 }
 
