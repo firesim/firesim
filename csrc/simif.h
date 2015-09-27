@@ -49,6 +49,7 @@ class simif_t
 
     // addrs
     size_t SNAP_OUT_REGS;
+    size_t SNAP_OUT_TRACE;
     size_t SNAP_OUT_SRAM;
     size_t SNAP_OUT_CNTR;
     size_t MEM_REQ_ADDR;
@@ -59,6 +60,7 @@ class simif_t
 
     // snapshotting information
     size_t REG_SNAP_LEN;
+    size_t TRACE_SNAP_LEN;
     size_t SRAM_SNAP_LEN;
     size_t SRAM_MAX_SIZE;
 

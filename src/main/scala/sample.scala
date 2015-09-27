@@ -47,6 +47,7 @@ object Sample {
       start += width
     }
 
+    val traceLen = traceChain.size / warmingCycles
     for (((signal, width), i) <- traceChain.zipWithIndex) {
       val end = math.min(start + width, snap.length)
       val value = BigInt(snap.substring(start, end), 2)
@@ -55,7 +56,7 @@ object Sample {
         case Some(p) => sample addCmd Force(p, value)
       }
       start += width
-      val doStep = (i + 1) % (traceChain.size / warmingCycles) == 0
+      val doStep = (i + 1) % traceLen == 0
       if (doStep) sample addCmd Step(1)
     }
 
