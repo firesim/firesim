@@ -12,6 +12,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   fail_t = 0;
  
   REG_SNAP_LEN = 0;
+  TRACE_SNAP_LEN = 0;
   SRAM_SNAP_LEN = 0;
   SRAM_MAX_SIZE = 0;
 
@@ -77,6 +78,9 @@ void simif_t::read_map(std::string filename) {
           } else if (path == "snap_out_sram") {
             SNAP_OUT_SRAM = id;
             out_widths.push_back(width);
+          } else if (path == "snap_out_trace") {
+            SNAP_OUT_TRACE = id;
+            out_widths.push_back(width);
           } else if (path == "snap_out_cntr") {
             SNAP_OUT_CNTR = id;
             out_widths.push_back(width);
@@ -109,11 +113,12 @@ void simif_t::read_map(std::string filename) {
 }
 
 void simif_t::read_chain(std::string filename) {
-  enum CHAIN_TYPE { REGS, SRAM, CNTR };
+  enum CHAIN_TYPE { REGS, TRACE, SRAM, CNTR };
   std::ifstream file(filename.c_str());
   if (file) {
     std::string line;
     size_t reg_chain_width = 0;
+    size_t trace_chain_width = 0;
     size_t sram_chain_width = 0;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
@@ -128,7 +133,15 @@ void simif_t::read_chain(std::string filename) {
             REG_SNAP_LEN++;
             reg_chain_width -= DAISY_WIDTH;
           }
-          sample_t::add_to_chains(path, width, off);
+          sample_t::add_to_reg_chains(path, width, off);
+          break;
+        case TRACE:
+          trace_chain_width += width;
+          while (trace_chain_width >= DAISY_WIDTH) {
+            TRACE_SNAP_LEN++;
+            trace_chain_width -= DAISY_WIDTH;
+          }
+          sample_t::add_to_trace_chains(path, width);
           break;
         case SRAM:
           if (off == 0) sram_chain_width += width;
@@ -139,7 +152,7 @@ void simif_t::read_chain(std::string filename) {
           if (SRAM_MAX_SIZE < (size_t) (off + 1)) { 
             SRAM_MAX_SIZE = off + 1;
           }
-          sample_t::add_to_chains(path, width, off);
+          sample_t::add_to_sram_chains(path, width, off);
           break;
         case CNTR:
           break;
@@ -375,11 +388,6 @@ std::string simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
 
-  for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_REGS).uint(), DAISY_WIDTH);
-    snap << bin;
-  } 
-
   for (size_t k = 0 ; k < SRAM_MAX_SIZE ; k++) {
     poke_channel(SRAM_RESTART_ADDR, 0);
     for (size_t i = 0 ; i < SRAM_SNAP_LEN ; i++) {
@@ -387,6 +395,14 @@ std::string simif_t::read_snapshot() {
       snap << bin;
     }
   }
+  for (size_t i = 0 ; i < TRACE_SNAP_LEN ; i++) {
+    int_to_bin(bin, peek_channel(SNAP_OUT_TRACE).uint(), DAISY_WIDTH);
+    snap << bin;
+  } 
+  for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
+    int_to_bin(bin, peek_channel(SNAP_OUT_REGS).uint(), DAISY_WIDTH);
+    snap << bin;
+  } 
 
   return snap.str();
 }

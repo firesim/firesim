@@ -571,7 +571,7 @@ object transforms {
     object MapType extends Enumeration { 
       val IoIn, IoOut, InTrace, OutTrace, Misc = Value 
     }
-    ChiselError.info("[transforms] dump the io & mem mapping")
+    ChiselError.info("[transforms] dump io & mem mapping")
     val res = new StringBuilder
     for ((in, id) <- inMap) {
       val path = nameMap(in)
@@ -608,7 +608,7 @@ object transforms {
   }
 
   private def dumpChains(c: Module) {
-    ChiselError.info("[transforms] dump the chain mapping")
+    ChiselError.info("[transforms] dump chain mapping")
     object ChainType extends Enumeration { val Regs, Traces, SRAM, Cntr = Value }
     val res = new StringBuilder
 
@@ -683,14 +683,16 @@ object transforms {
     }
   }
 
-  // Todo: move this path to the ChiselBackend
   private def dumpParams(c: Module) {
-    if (Driver.chiselConfigMode != None && 
-        Driver.chiselConfigMode.get != "instance" &&
-        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
-      val w = Driver.createOutputFile(targetName + ".prm")
-      w.write(Dump.getDump)
+    ChiselError.info("[transforms] dump params")
+    val w = Driver.createOutputFile(targetName + ".prm")
+    val sb = new StringBuilder(Dump.getDump)
+    sb append "(WARMING_CYCLES,%d)\n".format(warmingCycles) 
+    try {
+      w.write(sb.result)
+    } finally {
       w.close
+      sb.clear
     }
   }
 }
