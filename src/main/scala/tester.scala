@@ -448,6 +448,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   def slowLoadMem(filename: String) {
+    println("[AXI4 LOADMEM] LOADING " + filename)
     val step = 1 << (c.memBlockOffset+1)
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
@@ -456,12 +457,13 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       for (j <- (line.length - step) to 0 by -step) {
         var data = BigInt(0)
         for (k <- 0 until step) {
-          data |= parseNibble(line(j+k)) << (4*(step-1-k))
+          data |= BigInt(parseNibble(line(j+k))) << (4*(step-1-k))
         }
         writeMem(base+offset, data)
         offset += step / 2
       }
     }
+    println("[AXI4 LOADMEM] DONE ")
   }
 
   protected[strober] def readSnapshot = {
@@ -510,9 +512,10 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
   inWidths ++= inMap map {case (k, _) => k.needWidth}
   outWidths ++= (outMap ++ inTraceMap ++ outTraceMap) map {case (k, _) => k.needWidth}
-  outWidths += c.snap_out.regs.needWidth
-  outWidths += c.snap_out.sram.needWidth
-  outWidths += c.snap_out.cntr.needWidth
+  if (transforms.hasRegs) outWidths += c.snap_out.regs.needWidth
+  if (transforms.warmCycles > 0) outWidths += c.snap_out.trace.needWidth
+  if (transforms.sramMaxSize > 0) outWidths += c.snap_out.sram.needWidth
+  // outWidths += c.snap_out.cntr.needWidth
   inWidths += c.mem_req.addr.needWidth
   inWidths += c.mem_req.tag.needWidth
   inWidths += c.mem_req.data.needWidth

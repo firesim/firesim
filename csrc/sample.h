@@ -91,8 +91,8 @@ public:
       start += width;
     }
 
-    static const size_t trace_len = trace_signals.size() / WARMING_CYCLES;
     for (size_t i = 0 ; i < trace_signals.size() ; i++) {
+      static const size_t trace_len = trace_signals.size() / WARM_CYCLES;
       std::string signal = trace_signals[i];
       size_t width = trace_widths[i];
       if (signal != "null") {

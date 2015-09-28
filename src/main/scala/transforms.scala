@@ -27,14 +27,13 @@ object transforms {
   private val regs = HashMap[Module, ArrayBuffer[Node]]()
   private val traces = HashMap[Module, ArrayBuffer[Node]]()
   private val srams = HashMap[Module, ArrayBuffer[Mem[Data]]]()
-  private var hasRegs = false
-  private var hasTraces = false
   private var daisyWidth = 0
-  private[strober] var warmingCycles = 0
   private[strober] var regSnapLen = 0
   private[strober] var traceSnapLen = 0
   private[strober] var sramSnapLen = 0
+  private[strober] var hasRegs = false
   private[strober] var sramMaxSize = 0
+  private[strober] var warmCycles = 0
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
@@ -86,9 +85,8 @@ object transforms {
         m bfs { 
           case reg: Reg => hasRegs = true
           case mem: Mem[_] if mem.seqRead => 
-            if (warmingCycles == 0) warmingCycles = 1
+            warmCycles  = math.max(1, warmCycles)
             sramMaxSize = math.max(mem.size, sramMaxSize)
-            hasTraces = true
           case mem: Mem[_] => hasRegs = true
           case _ =>
         }
@@ -171,36 +169,35 @@ object transforms {
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
+        miscMap(w.snap_out.regs) = outCount
+        outCount += 1
       }
-      miscMap(w.snap_out.regs) = outCount
-      outCount += 1
+      if (warmCycles > 0) { 
+        val out = w.sim.io.daisy.trace.out
+        val conv = initOutConv(out.bits, outCount)
+        conv.io.in.bits := out.bits
+        conv.io.in.valid := out.valid
+        out.ready := conv.io.in.ready
+        miscMap(w.snap_out.trace) = outCount
+        outCount += 1 
+      }
       if (sramMaxSize > 0) { 
         val out = w.sim.io.daisy.sram.out
         val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
+        miscMap(w.snap_out.sram) = outCount
+        outCount += 1
       }
-      miscMap(w.snap_out.sram) = outCount
-      outCount += 1
-      if (hasTraces) { 
-        val out = w.sim.io.daisy.trace.out
-        val conv = initOutConv(out.bits, outCount)
-        conv.io.in.bits := out.bits
-        conv.io.in.valid := out.valid
-        out.ready := conv.io.in.ready
-      }
-      miscMap(w.snap_out.trace) = outCount
-      outCount += 1 
-      miscMap(w.snap_out.cntr) = outCount
-      outCount += 1 
+      // miscMap(w.snap_out.cntr) = outCount
+      // outCount += 1 
 
       // MemIOs
       val conv = w.addModule(new MAXI_MemIOConverter(inCount, outCount))
       conv.reset := w.reset_t
       conv.io.in_addr := w.waddr_r
       conv.io.out_addr := w.raddr_r
-
       for (in <- conv.io.ins) {
         in.bits := w.io.M_AXI.w.bits.data
         in.valid := w.do_write
@@ -299,7 +296,7 @@ object transforms {
             if (!(stallPins contains m)) connectStall(m)
             if (mem.seqRead) {
               srams(m) += mem.asInstanceOf[Mem[Data]]
-              sramAddrs(mem) = Vector.fill(warmingCycles)(findSRAMRead(mem)._1)
+              sramAddrs(mem) = Vector.fill(warmCycles)(findSRAMRead(mem)._1)
             } else (0 until mem.size) map (UInt(_)) foreach { idx =>
               val read = new MemRead(mem, idx) 
               read.infer
@@ -311,7 +308,7 @@ object transforms {
           case _ =>
         }
         if (!srams(m).isEmpty) connectSRAMRestart(m) 
-        for (i <- 0 until warmingCycles ; sram <- srams(m)) {
+        for (i <- 0 until warmCycles ; sram <- srams(m)) {
           val addr = sramAddrs(sram)(i)
           regs(m) -= addr
           traces(m) += addr
@@ -405,7 +402,7 @@ object transforms {
     }
   }
 
-  private def addTraceChains(c: Module) = if (hasTraces) {
+  private def addTraceChains(c: Module) = if (warmCycles > 0) {
     ChiselError.info("[transforms] add daisy chains for input traces")
 
     val hasTraceChain = HashSet[Module]()
@@ -566,7 +563,6 @@ object transforms {
     }
   } 
 
- 
   private def dumpMaps(c: Module) {
     object MapType extends Enumeration { 
       val IoIn, IoOut, InTrace, OutTrace, Misc = Value 
@@ -673,7 +669,6 @@ object transforms {
       }
     }
 
-
     val file = Driver.createOutputFile(targetName + ".chain")
     try {
       file write res.result
@@ -687,7 +682,11 @@ object transforms {
     ChiselError.info("[transforms] dump params")
     val w = Driver.createOutputFile(targetName + ".prm")
     val sb = new StringBuilder(Dump.getDump)
-    sb append "(WARMING_CYCLES,%d)\n".format(warmingCycles) 
+    sb append "(REG_SNAP_LEN,%d)\n".format(regSnapLen) 
+    sb append "(TRACE_SNAP_LEN,%d)\n".format(traceSnapLen) 
+    sb append "(SRAM_SNAP_LEN,%d)\n".format(sramSnapLen) 
+    sb append "(SRAM_MAX_SIZE,%d)\n".format(sramMaxSize) 
+    sb append "(WARM_CYCLES,%d)\n".format(warmCycles) 
     try {
       w.write(sb.result)
     } finally {

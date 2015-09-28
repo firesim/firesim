@@ -58,12 +58,6 @@ class simif_t
     size_t MEM_RESP_DATA;
     size_t MEM_RESP_TAG;
 
-    // snapshotting information
-    size_t REG_SNAP_LEN;
-    size_t TRACE_SNAP_LEN;
-    size_t SRAM_SNAP_LEN;
-    size_t SRAM_MAX_SIZE;
-
     // sample information
     sample_t* samples[SAMPLE_NUM];
     sample_t* last_sample;

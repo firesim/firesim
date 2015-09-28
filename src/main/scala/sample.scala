@@ -19,7 +19,7 @@ object Sample {
   private val sramChain = ArrayBuffer[(Option[Node], Int, Option[Int])]()
   private val traceChain = ArrayBuffer[(Option[Node], Int)]()
   private val regChain = ArrayBuffer[(Option[Node], Int, Option[Int])]()
-  private lazy val warmingCycles = transforms.warmingCycles
+  private lazy val warmCycles = transforms.warmCycles
 
   def addToSRAMChain(signal: Option[Node], width: Int, off: Option[Int] = None) {
     sramChain += ((signal, width, off))
@@ -47,8 +47,8 @@ object Sample {
       start += width
     }
 
-    val traceLen = traceChain.size / warmingCycles
     for (((signal, width), i) <- traceChain.zipWithIndex) {
+      val traceLen = traceChain.size / warmCycles
       val end = math.min(start + width, snap.length)
       val value = BigInt(snap.substring(start, end), 2)
       signal match {
