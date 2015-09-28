@@ -39,7 +39,7 @@ simif_t::~simif_t() {
 }
 
 void simif_t::read_map(std::string filename) {
-  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE, MISC };
+  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE, MISC_IN, MISC_OUT };
   std::ifstream file(filename.c_str());
   std::string line;
   if (file) {
@@ -66,35 +66,11 @@ void simif_t::read_map(std::string filename) {
           out_trace_map[path] = id;
           out_widths.push_back(width);
           break;
-        case MISC:
-          if (path == "snap_out_regs") {
-            SNAP_OUT_REGS = id;
-            out_widths.push_back(width);
-          } else if (path == "snap_out_trace") {
-            SNAP_OUT_TRACE = id;
-            out_widths.push_back(width);
-          } else if (path == "snap_out_sram") {
-            SNAP_OUT_SRAM = id;
-            out_widths.push_back(width);
-          } else if (path == "snap_out_cntr") {
-            SNAP_OUT_CNTR = id;
-            out_widths.push_back(width);
-          } else if (path == "mem_req_addr") {
-            MEM_REQ_ADDR = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_req_tag") {
-            MEM_REQ_TAG = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_req_data") {
-            MEM_REQ_DATA = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_resp_data") {
-            MEM_RESP_DATA = id;
-            out_widths.push_back(width);
-          } else if (path == "mem_resp_tag") {
-            MEM_RESP_TAG = id;
-            out_widths.push_back(width);
-          } 
+        case MISC_IN:
+          in_widths.push_back(width);
+          break;
+        case MISC_OUT:
+          out_widths.push_back(width);
           break;
         default:
           break;

@@ -269,15 +269,15 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   private val inWidths = ArrayBuffer[Int]() 
   private val outWidths = ArrayBuffer[Int]() 
   // addrs
-  private lazy val SNAP_OUT_REGS = transforms.miscMap(c.snap_out.regs)
-  private lazy val SNAP_OUT_SRAM = transforms.miscMap(c.snap_out.sram)
-  private lazy val SNAP_OUT_TRACE = transforms.miscMap(c.snap_out.trace)
-  private lazy val SNAP_OUT_CNTR = transforms.miscMap(c.snap_out.cntr)
-  private lazy val MEM_REQ_ADDR = transforms.miscMap(c.mem_req.addr)
-  private lazy val MEM_REQ_TAG = transforms.miscMap(c.mem_req.tag)
-  private lazy val MEM_REQ_DATA = transforms.miscMap(c.mem_req.data)
-  private lazy val MEM_RESP_DATA = transforms.miscMap(c.mem_resp.data)
-  private lazy val MEM_RESP_TAG = transforms.miscMap(c.mem_resp.tag)
+  private lazy val MEM_REQ_ADDR = transforms.miscInMap(c.mem_req.addr)
+  private lazy val MEM_REQ_TAG = transforms.miscInMap(c.mem_req.tag)
+  private lazy val MEM_REQ_DATA = transforms.miscInMap(c.mem_req.data)
+  private lazy val SNAP_OUT_REGS = transforms.miscOutMap(c.snap_out.regs)
+  private lazy val SNAP_OUT_SRAM = transforms.miscOutMap(c.snap_out.sram)
+  private lazy val SNAP_OUT_TRACE = transforms.miscOutMap(c.snap_out.trace)
+  private lazy val SNAP_OUT_CNTR = transforms.miscOutMap(c.snap_out.cntr)
+  private lazy val MEM_RESP_DATA = transforms.miscOutMap(c.mem_resp.data)
+  private lazy val MEM_RESP_TAG = transforms.miscOutMap(c.mem_resp.tag)
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
