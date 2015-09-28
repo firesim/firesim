@@ -47,17 +47,6 @@ class simif_t
     std::vector<trace_t> in_traces;
     std::vector<trace_t> out_traces; 
 
-    // addrs
-    size_t SNAP_OUT_REGS;
-    size_t SNAP_OUT_TRACE;
-    size_t SNAP_OUT_SRAM;
-    size_t SNAP_OUT_CNTR;
-    size_t MEM_REQ_ADDR;
-    size_t MEM_REQ_TAG;
-    size_t MEM_REQ_DATA;
-    size_t MEM_RESP_DATA;
-    size_t MEM_RESP_TAG;
-
     // sample information
     sample_t* samples[SAMPLE_NUM];
     sample_t* last_sample;

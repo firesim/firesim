@@ -3,6 +3,7 @@ package strober
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet, LinkedHashSet}
 import scala.collection.immutable.ListMap
+import scala.util.matching.Regex
 
 object findSRAMRead {
   def apply[T <: Data](sram: Mem[T]) = {
@@ -38,7 +39,8 @@ object transforms {
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
   private[strober] val outTraceMap = LinkedHashMap[Bits, Int]()
-  private[strober] val miscMap = LinkedHashMap[Bits, Int]()
+  private[strober] val miscInMap = LinkedHashMap[Bits, Int]()
+  private[strober] val miscOutMap = LinkedHashMap[Bits, Int]()
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
   
@@ -169,7 +171,7 @@ object transforms {
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
-        miscMap(w.snap_out.regs) = outCount
+        miscOutMap(w.snap_out.regs) = outCount
         outCount += 1
       }
       if (warmCycles > 0) { 
@@ -178,7 +180,7 @@ object transforms {
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
-        miscMap(w.snap_out.trace) = outCount
+        miscOutMap(w.snap_out.trace) = outCount
         outCount += 1 
       }
       if (sramMaxSize > 0) { 
@@ -187,10 +189,10 @@ object transforms {
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
-        miscMap(w.snap_out.sram) = outCount
+        miscOutMap(w.snap_out.sram) = outCount
         outCount += 1
       }
-      // miscMap(w.snap_out.cntr) = outCount
+      // miscOutMap(w.snap_out.cntr) = outCount
       // outCount += 1 
 
       // MemIOs
@@ -208,11 +210,11 @@ object transforms {
         outData += out.bits
         outValid += out.valid
       }
-      miscMap(w.mem_req.addr) = inCount
-      miscMap(w.mem_req.tag) = inCount + 1
-      miscMap(w.mem_req.data) = inCount + 2
-      miscMap(w.mem_resp.data) = outCount
-      miscMap(w.mem_resp.tag) = outCount + 1
+      miscInMap(w.mem_req.addr) = inCount
+      miscInMap(w.mem_req.tag) = inCount + 1
+      miscInMap(w.mem_req.data) = inCount + 2
+      miscOutMap(w.mem_resp.data) = outCount
+      miscOutMap(w.mem_resp.tag) = outCount + 1
       inCount += conv.io.ins.size
       outCount += conv.io.outs.size
 
@@ -565,7 +567,7 @@ object transforms {
 
   private def dumpMaps(c: Module) {
     object MapType extends Enumeration { 
-      val IoIn, IoOut, InTrace, OutTrace, Misc = Value 
+      val IoIn, IoOut, InTrace, OutTrace, MiscIn, MiscOut = Value 
     }
     ChiselError.info("[transforms] dump io & mem mapping")
     val res = new StringBuilder
@@ -589,9 +591,13 @@ object transforms {
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
     }
-    for ((wire, id) <- miscMap) {
+    for ((wire, id) <- miscInMap) {
       val width = wire.needWidth
-      res append "%d %s %d %d\n".format(MapType.Misc.id, wire.name, id, width)
+      res append "%d %s %d %d\n".format(MapType.MiscIn.id, wire.name, id, width)
+    }
+    for ((wire, id) <- miscOutMap) {
+      val width = wire.needWidth
+      res append "%d %s %d %d\n".format(MapType.MiscOut.id, wire.name, id, width)
     }
 
     val file = Driver.createOutputFile(targetName + ".map")
@@ -678,21 +684,43 @@ object transforms {
     }
   }
 
-  private def dumpParams(c: Module) {
-    ChiselError.info("[transforms] dump params")
-    val w = Driver.createOutputFile(targetName + ".prm")
-    val sb = new StringBuilder(Dump.getDump)
-    sb append "(REG_SNAP_LEN,%d)\n".format(regSnapLen) 
-    sb append "(TRACE_SNAP_LEN,%d)\n".format(traceSnapLen) 
-    sb append "(SRAM_SNAP_LEN,%d)\n".format(sramSnapLen) 
-    sb append "(SRAM_MAX_SIZE,%d)\n".format(sramMaxSize) 
-    sb append "(WARM_CYCLES,%d)\n".format(warmCycles) 
-    try {
-      w.write(sb.result)
-    } finally {
-      w.close
-      sb.clear
-    }
+  private val dumpParams: Module => Unit = {
+    case w: SimAXI4Wrapper[SimNetwork] if Driver.chiselConfigDump => 
+      ChiselError.info("[transforms] dump param header")
+      val Param = """\(([\w_]+),([\w_]+)\)""".r
+      val sb = new StringBuilder
+      sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
+      sb append "#define __%s_H\n".format(targetName.toUpperCase)
+      (Dump.getDump split '\n') foreach {
+        case Param(p, v) => sb append "#define %s %s\n".format(p, v)
+        case _ =>
+      }
+      // addrs
+      sb append "#define MEM_REQ_ADDR %d\n".format(miscInMap(w.mem_req.addr))
+      sb append "#define MEM_REQ_TAG %d\n".format(miscInMap(w.mem_req.tag))
+      sb append "#define MEM_REQ_DATA %d\n".format(miscInMap(w.mem_req.data))
+      sb append "#define SNAP_OUT_REGS %d\n".format(miscOutMap(w.snap_out.regs)) 
+      sb append "#define SNAP_OUT_TRACE %d\n".format(miscOutMap(w.snap_out.trace)) 
+      sb append "#define SNAP_OUT_SRAM %d\n".format(miscOutMap(w.snap_out.sram)) 
+      // sb append "#define SNAP_OUT_CNTR %d\n".format(miscOutMap(w.snap_out.cntr)) 
+      sb append "#define MEM_RESP_DATA %d\n".format(miscOutMap(w.mem_resp.data))
+      sb append "#define MEM_RESP_TAG %d\n".format(miscOutMap(w.mem_resp.tag))
+      // snapshot info
+      sb append "#define REG_SNAP_LEN %d\n".format(regSnapLen) 
+      sb append "#define TRACE_SNAP_LEN %d\n".format(traceSnapLen) 
+      sb append "#define SRAM_SNAP_LEN %d\n".format(sramSnapLen) 
+      sb append "#define SRAM_MAX_SIZE %d\n".format(sramMaxSize) 
+      sb append "#define WARM_CYCLES %d\n".format(warmCycles) 
+      sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
+
+      val file = Driver.createOutputFile(targetName + "-param.h")
+      try {
+        file.write(sb.result)
+      } finally {
+        file.close
+        sb.clear
+      }
+    case _ =>
   }
 }
 
