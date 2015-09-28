@@ -10,11 +10,6 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   ok = true;
   t = 0;
   fail_t = 0;
- 
-  REG_SNAP_LEN = 0;
-  TRACE_SNAP_LEN = 0;
-  SRAM_SNAP_LEN = 0;
-  SRAM_MAX_SIZE = 0;
 
   for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
     samples[i] = NULL;
@@ -75,11 +70,11 @@ void simif_t::read_map(std::string filename) {
           if (path == "snap_out_regs") {
             SNAP_OUT_REGS = id;
             out_widths.push_back(width);
-          } else if (path == "snap_out_sram") {
-            SNAP_OUT_SRAM = id;
-            out_widths.push_back(width);
           } else if (path == "snap_out_trace") {
             SNAP_OUT_TRACE = id;
+            out_widths.push_back(width);
+          } else if (path == "snap_out_sram") {
+            SNAP_OUT_SRAM = id;
             out_widths.push_back(width);
           } else if (path == "snap_out_cntr") {
             SNAP_OUT_CNTR = id;
@@ -97,7 +92,7 @@ void simif_t::read_map(std::string filename) {
             MEM_RESP_DATA = id;
             out_widths.push_back(width);
           } else if (path == "mem_resp_tag") {
-            MEM_RESP_DATA = id;
+            MEM_RESP_TAG = id;
             out_widths.push_back(width);
           } 
           break;
@@ -117,9 +112,6 @@ void simif_t::read_chain(std::string filename) {
   std::ifstream file(filename.c_str());
   if (file) {
     std::string line;
-    size_t reg_chain_width = 0;
-    size_t trace_chain_width = 0;
-    size_t sram_chain_width = 0;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
       std::string path;
@@ -128,30 +120,12 @@ void simif_t::read_chain(std::string filename) {
       iss >> type >> path >> width >> off;
       switch (static_cast<CHAIN_TYPE>(type)) {
         case REGS:
-          reg_chain_width += width;
-          while (reg_chain_width >= DAISY_WIDTH) {
-            REG_SNAP_LEN++;
-            reg_chain_width -= DAISY_WIDTH;
-          }
           sample_t::add_to_reg_chains(path, width, off);
           break;
         case TRACE:
-          trace_chain_width += width;
-          while (trace_chain_width >= DAISY_WIDTH) {
-            TRACE_SNAP_LEN++;
-            trace_chain_width -= DAISY_WIDTH;
-          }
           sample_t::add_to_trace_chains(path, width);
           break;
         case SRAM:
-          if (off == 0) sram_chain_width += width;
-          while (sram_chain_width >= DAISY_WIDTH) {
-            SRAM_SNAP_LEN++;
-            sram_chain_width -= DAISY_WIDTH;
-          }
-          if (SRAM_MAX_SIZE < (size_t) (off + 1)) { 
-            SRAM_MAX_SIZE = off + 1;
-          }
           sample_t::add_to_sram_chains(path, width, off);
           break;
         case CNTR:
@@ -179,7 +153,7 @@ void simif_t::load_mem(std::string filename) {
       for (int j = line.length() - step ; j >= 0 ; j -= step) {
         biguint_t data = 0;
         for (size_t k = 0 ; k < step ; k++) {
-          data |= parse_nibble(line[j+k]) << (4*(step-1-k));
+          data |= biguint_t(parse_nibble(line[j+k])) << (4*(step-1-k));
         }
         write_mem(base+offset, data);
         offset += step >> 1; // -> step / 2
@@ -189,7 +163,7 @@ void simif_t::load_mem(std::string filename) {
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
     exit(0);
-  }
+  } 
   file.close();
 }
 

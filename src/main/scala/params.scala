@@ -41,7 +41,7 @@ object AXI4Params {
     case SAXITagWidth => 6
     case MemAddrWidth => Dump("MEM_ADDR_WIDTH", 32)
     case MemDataWidth => Dump("MEM_DATA_WIDTH", 16 << 3)
-    case MemDataCount => Dump("MEM_DATA_COUNT", (8*site(MemBlockSize)) / site(MemDataWidth))
+    case MemDataCount => Dump("MEM_DATA_COUNT", (site(MemBlockSize) << 3) / site(MemDataWidth))
     case MemTagWidth => 5
     case MemBlockSize => 16 // in bytes
     case MemBlockOffset => Dump("MEM_BLOCK_OFFSET", log2Up(site(MemBlockSize))) // bit width 
