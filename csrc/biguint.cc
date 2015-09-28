@@ -84,12 +84,12 @@ void biguint_t::init_bin(const char* value) {
   // padding
   char *buf = new char[size*UINT64_WIDTH+1];
   pad_num(buf, value, size*UINT64_WIDTH-len);
-  // convering
-  for (int i = size - 1 ; i >= 0 ; i--) {
+  // converting
+  for (size_t i = 0 ; i < size ; i++) {
     char num[UINT64_WIDTH+1];
     strncpy(num, value + i*UINT64_WIDTH, UINT64_WIDTH);
     num[UINT64_WIDTH] = '\0';
-    data[i] = bin_to_dec(num);
+    data[size-1-i] = bin_to_dec(num);
   }
   delete[] buf;
 }
