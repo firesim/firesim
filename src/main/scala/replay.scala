@@ -84,6 +84,7 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
   } 
 
   def run {
+    val startTime = System.nanoTime
     samples foreach (_ map {
       case Step(n) => step(n)
       case Force(node, value) => node match {
@@ -107,6 +108,10 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
       case PokePort(node, value) => poke(node, value)
       case ExpectPort(node, value) => expect(node, value)
     })
+    val endTime = System.nanoTime
+    val simTime = (endTime - startTime) / 1000000000.0
+    val simSpeed = t / simTime
+    println("Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed))
   }
 
   Driver.dfs { node =>
