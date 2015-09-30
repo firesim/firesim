@@ -1,8 +1,23 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet, LinkedHashSet}
 import scala.collection.immutable.ListMap
+import scala.util.matching.Regex
+
+object findSRAMRead {
+  def apply[T <: Data](sram: Mem[T]) = {
+    val data = if (!Driver.isInlineMem) sram.readAccesses.last
+      else (sram.readAccesses find (_.addr.getNode match { 
+        case _: Reg => true 
+        case _      => false })).get
+    val addr = data match {
+      case mr:  MemRead    => mr.addr.getNode match { case addrReg: Reg => addrReg }
+      case msr: MemSeqRead => msr.addrReg
+    }
+    (addr, data)
+  }
+}
 
 object transforms { 
   private val wrappers = ArrayBuffer[SimWrapper[Module]]()
@@ -11,17 +26,21 @@ object transforms {
   private val comps = HashMap[Module, List[Module]]()
   private val compsRev = HashMap[Module, List[Module]]()
   private val regs = HashMap[Module, ArrayBuffer[Node]]()
+  private val traces = HashMap[Module, ArrayBuffer[Node]]()
   private val srams = HashMap[Module, ArrayBuffer[Mem[Data]]]()
-  private var hasRegs = false
   private var daisyWidth = 0
   private[strober] var regSnapLen = 0
+  private[strober] var traceSnapLen = 0
   private[strober] var sramSnapLen = 0
+  private[strober] var hasRegs = false
   private[strober] var sramMaxSize = 0
+  private[strober] var warmCycles = 0
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
   private[strober] val outTraceMap = LinkedHashMap[Bits, Int]()
-  private[strober] val miscMap = LinkedHashMap[Bits, Int]()
+  private[strober] val miscInMap = LinkedHashMap[Bits, Int]()
+  private[strober] val miscOutMap = LinkedHashMap[Bits, Int]()
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
   
@@ -29,11 +48,13 @@ object transforms {
     // Add backend passes
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
+        probeDesign,
         connectIOs,
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         connectCtrlSignals,
         addRegChains,
+        addTraceChains,
         addSRAMChain,
         dumpMaps,
         dumpChains,
@@ -52,16 +73,27 @@ object transforms {
     w.name = targetName + "AXI4Wrapper"
   }
 
-  private def findSRAMRead[T <: Data](sram: Mem[T]) = {
-    val data = if (!Driver.isInlineMem) sram.readAccesses.last
-      else (sram.readAccesses find (_.addr.getNode match { 
-        case _: Reg => true 
-        case _      => false })).get
-    val addr = data match {
-      case mr:  MemRead    => mr.addr.getNode match { case addrReg: Reg => addrReg }
-      case msr: MemSeqRead => msr.addrReg
+  private[strober] def probeDesign(c: Module) {
+    def collect(c: Module): List[Module] = 
+      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
+    def collectRev(c: Module): List[Module] = 
+      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
+
+    for (w <- wrappers) {
+      val t = w.target
+      comps(w) = collect(t)
+      compsRev(w) = collectRev(t)
+      for (m <- compsRev(w)) {
+        m bfs { 
+          case reg: Reg => hasRegs = true
+          case mem: Mem[_] if mem.seqRead => 
+            warmCycles  = math.max(1, warmCycles)
+            sramMaxSize = math.max(mem.size, sramMaxSize)
+          case mem: Mem[_] => hasRegs = true
+          case _ =>
+        }
+      }
     }
-    (addr, data)
   }
 
   private val connectIOs: Module => Unit = {
@@ -139,27 +171,35 @@ object transforms {
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
+        miscOutMap(w.snap_out.regs) = outCount
+        outCount += 1
       }
-      miscMap(w.snap_out.regs) = outCount
-      outCount += 1
+      if (warmCycles > 0) { 
+        val out = w.sim.io.daisy.trace.out
+        val conv = initOutConv(out.bits, outCount)
+        conv.io.in.bits := out.bits
+        conv.io.in.valid := out.valid
+        out.ready := conv.io.in.ready
+        miscOutMap(w.snap_out.trace) = outCount
+        outCount += 1 
+      }
       if (sramMaxSize > 0) { 
         val out = w.sim.io.daisy.sram.out
         val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
         conv.io.in.valid := out.valid
         out.ready := conv.io.in.ready
+        miscOutMap(w.snap_out.sram) = outCount
+        outCount += 1
       }
-      miscMap(w.snap_out.sram) = outCount
-      outCount += 1
-      miscMap(w.snap_out.cntr) = outCount
-      outCount += 1 
+      // miscOutMap(w.snap_out.cntr) = outCount
+      // outCount += 1 
 
       // MemIOs
       val conv = w.addModule(new MAXI_MemIOConverter(inCount, outCount))
       conv.reset := w.reset_t
       conv.io.in_addr := w.waddr_r
       conv.io.out_addr := w.raddr_r
-
       for (in <- conv.io.ins) {
         in.bits := w.io.M_AXI.w.bits.data
         in.valid := w.do_write
@@ -170,11 +210,11 @@ object transforms {
         outData += out.bits
         outValid += out.valid
       }
-      miscMap(w.mem_req.addr) = inCount
-      miscMap(w.mem_req.tag) = inCount + 1
-      miscMap(w.mem_req.data) = inCount + 2
-      miscMap(w.mem_resp.data) = outCount
-      miscMap(w.mem_resp.tag) = outCount + 1
+      miscInMap(w.mem_req.addr) = inCount
+      miscInMap(w.mem_req.tag) = inCount + 1
+      miscInMap(w.mem_req.data) = inCount + 2
+      miscOutMap(w.mem_resp.data) = outCount
+      miscOutMap(w.mem_resp.tag) = outCount + 1
       inCount += conv.io.ins.size
       outCount += conv.io.outs.size
 
@@ -216,11 +256,6 @@ object transforms {
   private def connectCtrlSignals(c: Module) {
     ChiselError.info("[transforms] connect control signals")
 
-    def collect(c: Module): List[Module] = 
-      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
-    def collectRev(c: Module): List[Module] = 
-      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
-
     def connectStall(m: Module) {
       stallPins(m) = m.addPin(Bool(INPUT), "io_stall_t")
       val p = m.parent
@@ -243,43 +278,44 @@ object transforms {
       val tName = Driver.backend.extractClassName(t) 
       val tPath = t.getPathName(".")
       def getPath(node: Node) = tName + (node.chiselName stripPrefix tPath)
-
-      comps(w) = collect(t)
-      compsRev(w) = collectRev(t)
-
       for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
-
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
         regs(m) = ArrayBuffer[Node]()
+        traces(m) = ArrayBuffer[Node]()
         srams(m) = ArrayBuffer[Mem[Data]]()
         if (!(daisyPins contains m)) { 
           daisyPins(m) = m.addPin(new DaisyBundle(daisyWidth), "io_daisy")
         }
+        val sramAddrs = HashMap[Mem[_], Vector[Reg]]()
         m bfs { 
           case reg: Reg =>  
             if (!(stallPins contains m)) connectStall(m)
             reg.inputs(0) = Multiplex(stallPins(m) && !m.reset, reg, reg.inputs(0))
             regs(m) += reg
             nameMap(reg) = getPath(reg)
-            hasRegs = true
           case mem: Mem[_] => 
             if (!(stallPins contains m)) connectStall(m)
-            for (write <- mem.writeAccesses) 
-              write.cond = Bool().fromNode(write.cond) && !stallPins(m)
             if (mem.seqRead) {
               srams(m) += mem.asInstanceOf[Mem[Data]]
-              sramMaxSize = math.max(mem.size, sramMaxSize)
+              sramAddrs(mem) = Vector.fill(warmCycles)(findSRAMRead(mem)._1)
             } else (0 until mem.size) map (UInt(_)) foreach { idx =>
               val read = new MemRead(mem, idx) 
               read.infer
               regs(m) += read
-              hasRegs = true
             }
+            for (write <- mem.writeAccesses) 
+              write.cond = Bool().fromNode(write.cond) && !stallPins(m)
             nameMap(mem) = getPath(mem)
           case _ =>
         }
         if (!srams(m).isEmpty) connectSRAMRestart(m) 
+        for (i <- 0 until warmCycles ; sram <- srams(m)) {
+          val addr = sramAddrs(sram)(i)
+          regs(m) -= addr
+          traces(m) += addr
+          nameMap(addr) = getPath(sram)
+        }
       }
     }
   }
@@ -368,6 +404,90 @@ object transforms {
     }
   }
 
+  private def addTraceChains(c: Module) = if (warmCycles > 0) {
+    ChiselError.info("[transforms] add daisy chains for input traces")
+
+    val hasTraceChain = HashSet[Module]()
+    def insertTraceChain(m: Module) = {
+      val dataWidth = (traces(m) foldLeft 0)(_ + _.needWidth)
+      val traceChain = if (!traces(m).isEmpty) 
+        Some(m.addModule(new RegChain, {case DataWidth => dataWidth})) else None
+      traceChain match {
+        case None =>
+        case Some(chain) => {
+          var index = 0
+          var offset = 0
+          for (i <- (0 until chain.daisyLen).reverse) {
+            val wires = ArrayBuffer[UInt]()
+            var totalWidth = 0
+            while (totalWidth < daisyWidth) {
+              val totalMargin = daisyWidth - totalWidth
+              if (index < traces(m).size) {
+                val trace = traces(m)(index)
+                val width = trace.needWidth
+                val margin = width - offset
+                if (margin <= totalMargin) {
+                  wires += UInt(trace)(margin-1, 0)
+                  totalWidth += margin
+                  offset = 0
+                  index += 1
+                } else {
+                  wires += UInt(trace)(margin-1, margin-totalMargin)
+                  totalWidth += totalMargin
+                  offset += totalMargin
+                }
+              } else {
+                wires += UInt(0, totalMargin)
+                totalWidth += totalMargin 
+              }
+              chain.io.dataIo.data(i) := Cat(wires) 
+            }
+          }
+          chain.io.dataIo.out <> daisyPins(m).trace.out
+          chain.io.stall := stallPins(m)
+          hasTraceChain += m
+          traceSnapLen += chain.daisyLen
+        }
+      }      
+     traceChain
+    }
+
+    for (w <- wrappers ; m <- comps(w)) {
+      val regChain = insertTraceChain(m)
+      // Filter children who have reg chains
+      var prev: Option[Module] = None
+      for (child <- m.children ; if hasTraceChain contains child) {
+        prev match {
+          case None => regChain match {
+            case None => daisyPins(m).trace.out <> daisyPins(child).trace.out
+            case Some(chain) => chain.io.dataIo.in <> daisyPins(child).trace.out
+          }
+          case Some(p) => daisyPins(p).trace.in <> daisyPins(child).trace.out
+        }
+        prev = Some(child)
+      }
+      prev match {
+        case None => regChain match {
+          case None => 
+          case Some(chain) => chain.io.dataIo.in <> daisyPins(m).trace.in
+        }
+        case Some(p) => {
+          hasTraceChain += m
+          daisyPins(p).trace.in <> daisyPins(m).trace.in
+        }
+      }
+    }
+    for (w <- wrappers) {
+      c match { 
+        case _: SimAXI4Wrapper[SimNetwork] =>
+          w.io.daisy.trace.in.bits := UInt(0)
+          w.io.daisy.trace.in.valid := Bool(false)
+        case _ =>
+      }
+      w.io.daisy.trace <> daisyPins(w.target).trace
+    }
+  }
+
   def addSRAMChain(c: Module) = if (sramMaxSize > 0) {
     ChiselError.info("[transforms] add sram chains")
     val hasSRAMChain = HashSet[Module]()
@@ -445,12 +565,11 @@ object transforms {
     }
   } 
 
- 
   private def dumpMaps(c: Module) {
     object MapType extends Enumeration { 
-      val IoIn, IoOut, InTrace, OutTrace, Misc = Value 
+      val IoIn, IoOut, InTrace, OutTrace, MiscIn, MiscOut = Value 
     }
-    ChiselError.info("[transforms] dump the io & mem mapping")
+    ChiselError.info("[transforms] dump io & mem mapping")
     val res = new StringBuilder
     for ((in, id) <- inMap) {
       val path = nameMap(in)
@@ -472,9 +591,13 @@ object transforms {
       val width = out.needWidth
       res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
     }
-    for ((wire, id) <- miscMap) {
+    for ((wire, id) <- miscInMap) {
       val width = wire.needWidth
-      res append "%d %s %d %d\n".format(MapType.Misc.id, wire.name, id, width)
+      res append "%d %s %d %d\n".format(MapType.MiscIn.id, wire.name, id, width)
+    }
+    for ((wire, id) <- miscOutMap) {
+      val width = wire.needWidth
+      res append "%d %s %d %d\n".format(MapType.MiscOut.id, wire.name, id, width)
     }
 
     val file = Driver.createOutputFile(targetName + ".map")
@@ -487,9 +610,49 @@ object transforms {
   }
 
   private def dumpChains(c: Module) {
-    ChiselError.info("[transforms] dump the chain mapping")
-    object ChainType extends Enumeration { val Regs, SRAM, Cntr = Value }
+    ChiselError.info("[transforms] dump chain mapping")
+    object ChainType extends Enumeration { val Regs, Traces, SRAM, Cntr = Value }
     val res = new StringBuilder
+
+    for (i <- 0 until sramMaxSize ; w <- wrappers ; m <- compsRev(w)) {
+      var chainWidth = 0
+      for (sram <- srams(m)) {
+        val path = nameMap(sram)
+        val dataWidth = sram.needWidth
+        var chainWidth = 0
+        if (i < sram.size) { 
+          Sample.addToSRAMChain(Some(sram), dataWidth, Some(i)) // for testers
+          res append "%d %s %d %d\n".format(ChainType.SRAM.id, path, dataWidth, i)
+        } else { 
+          Sample.addToSRAMChain(None, dataWidth) // for testers
+          res append "%d null %d -1\n".format(ChainType.SRAM.id, dataWidth)
+        }
+        while (chainWidth < dataWidth) chainWidth += daisyWidth
+        val padWidth = chainWidth - dataWidth
+        if (padWidth > 0) {
+          Sample.addToSRAMChain(None, padWidth) // for testers
+          res append "%d null %d -1\n".format(ChainType.SRAM.id, padWidth)
+        }
+      }
+    }
+
+    for (w <- wrappers ; m <- compsRev(w)) {
+      var chainWidth = 0
+      var dataWidth = 0
+      for (trace <- traces(m)) {
+        val (node, width) = (trace, trace.needWidth)
+        Sample.addToTraceChain(Some(node), width) // for testers
+        res append "%d %s %d -1\n".format(ChainType.Traces.id, nameMap(node), width)
+        dataWidth += width
+        while (chainWidth < dataWidth) chainWidth += daisyWidth
+      }
+      val padWidth = chainWidth - dataWidth
+      if (padWidth > 0) {
+        Sample.addToTraceChain(None, padWidth) // for testers
+        res append "%d null %d -1\n".format(ChainType.Traces.id, padWidth)
+      }
+    }
+
     for (w <- wrappers ; m <- compsRev(w)) {
       var chainWidth = 0
       var dataWidth = 0
@@ -500,36 +663,15 @@ object transforms {
           case _ => 
             (reg, reg.needWidth, None)
         }
-        Sample.addToChains(Some(node), width, off) // for testers
+        Sample.addToRegChain(Some(node), width, off) // for testers
         res append "%d %s %d %d\n".format(ChainType.Regs.id, nameMap(node), width, off.getOrElse(-1))
         dataWidth += width
         while (chainWidth < dataWidth) chainWidth += daisyWidth
       }
       val padWidth = chainWidth - dataWidth
       if (padWidth > 0) {
-        Sample.addToChains(None, padWidth) // for testers
+        Sample.addToRegChain(None, padWidth) // for testers
         res append "%d null %d -1\n".format(ChainType.Regs.id, padWidth)
-      }
-    }
-    for (i <- 0 until sramMaxSize ; w <- wrappers ; m <- compsRev(w)) {
-      var chainWidth = 0
-      for (sram <- srams(m)) {
-        val path = nameMap(sram)
-        val dataWidth = sram.needWidth
-        var chainWidth = 0
-        if (i < sram.size) { 
-          Sample.addToChains(Some(sram), dataWidth, Some(i)) // for testers
-          res append "%d %s %d %d\n".format(ChainType.SRAM.id, path, dataWidth, i)
-        } else { 
-          Sample.addToChains(None, dataWidth) // for testers
-          res append "%d null %d -1\n".format(ChainType.SRAM.id, dataWidth)
-        }
-        while (chainWidth < dataWidth) chainWidth += daisyWidth
-        val padWidth = chainWidth - dataWidth
-        if (padWidth > 0) {
-          Sample.addToChains(None, padWidth) // for testers
-          res append "%d null %d -1\n".format(ChainType.SRAM.id, padWidth)
-        }
       }
     }
 
@@ -542,15 +684,43 @@ object transforms {
     }
   }
 
-  // Todo: move this path to the ChiselBackend
-  private def dumpParams(c: Module) {
-    if (Driver.chiselConfigMode != None && 
-        Driver.chiselConfigMode.get != "instance" &&
-        Driver.chiselConfigDump && !Dump.dump.isEmpty) {
-      val w = Driver.createOutputFile(targetName + ".prm")
-      w.write(Dump.getDump)
-      w.close
-    }
+  private val dumpParams: Module => Unit = {
+    case w: SimAXI4Wrapper[SimNetwork] if Driver.chiselConfigDump => 
+      ChiselError.info("[transforms] dump param header")
+      val Param = """\(([\w_]+),([\w_]+)\)""".r
+      val sb = new StringBuilder
+      sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
+      sb append "#define __%s_H\n".format(targetName.toUpperCase)
+      (Dump.getDump split '\n') foreach {
+        case Param(p, v) => sb append "#define %s %s\n".format(p, v)
+        case _ =>
+      }
+      // addrs
+      sb append "#define MEM_REQ_ADDR %d\n".format(miscInMap(w.mem_req.addr))
+      sb append "#define MEM_REQ_TAG %d\n".format(miscInMap(w.mem_req.tag))
+      sb append "#define MEM_REQ_DATA %d\n".format(miscInMap(w.mem_req.data))
+      sb append "#define SNAP_OUT_REGS %d\n".format(miscOutMap(w.snap_out.regs)) 
+      sb append "#define SNAP_OUT_TRACE %d\n".format(miscOutMap(w.snap_out.trace)) 
+      sb append "#define SNAP_OUT_SRAM %d\n".format(miscOutMap(w.snap_out.sram)) 
+      // sb append "#define SNAP_OUT_CNTR %d\n".format(miscOutMap(w.snap_out.cntr)) 
+      sb append "#define MEM_RESP_DATA %d\n".format(miscOutMap(w.mem_resp.data))
+      sb append "#define MEM_RESP_TAG %d\n".format(miscOutMap(w.mem_resp.tag))
+      // snapshot info
+      sb append "#define REG_SNAP_LEN %d\n".format(regSnapLen) 
+      sb append "#define TRACE_SNAP_LEN %d\n".format(traceSnapLen) 
+      sb append "#define SRAM_SNAP_LEN %d\n".format(sramSnapLen) 
+      sb append "#define SRAM_MAX_SIZE %d\n".format(sramMaxSize) 
+      sb append "#define WARM_CYCLES %d\n".format(warmCycles) 
+      sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
+
+      val file = Driver.createOutputFile(targetName + "-param.h")
+      try {
+        file.write(sb.result)
+      } finally {
+        file.close
+        sb.clear
+      }
+    case _ =>
   }
 }
 

@@ -17,6 +17,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected[strober] val outTraceMap = transforms.outTraceMap
   protected[strober] def daisyWidth: Int
   protected[strober] lazy val regSnapLen = transforms.regSnapLen
+  protected[strober] lazy val traceSnapLen = transforms.traceSnapLen
   protected[strober] lazy val sramSnapLen = transforms.sramSnapLen
   protected[strober] lazy val sramMaxSize = transforms.sramMaxSize
   protected[strober] def sampleNum: Int
@@ -214,15 +215,6 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (i <- 0 until regSnapLen) {
-      while(_peek(c.io.daisy.regs.out.valid) == 0) {
-        takeStep
-      }
-      snap append intToBin(_peek(c.io.daisy.regs.out.bits), daisyWidth)
-      _poke(c.io.daisy.regs.out.ready, 1)
-      takeStep
-      _poke(c.io.daisy.regs.out.ready, 0)
-    }
     for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
       _poke(c.io.daisy.sram.restart, 1)
       while(_peek(c.io.daisy.sram.out.valid) == 0) {
@@ -233,6 +225,24 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
       _poke(c.io.daisy.sram.out.ready, 1)
       takeStep
       _poke(c.io.daisy.sram.out.ready, 0)
+    }
+    for (i <- 0 until traceSnapLen) {
+      while(_peek(c.io.daisy.trace.out.valid) == 0) {
+        takeStep
+      }
+      snap append intToBin(_peek(c.io.daisy.trace.out.bits), daisyWidth)
+      _poke(c.io.daisy.trace.out.ready, 1)
+      takeStep
+      _poke(c.io.daisy.trace.out.ready, 0)
+    }
+    for (i <- 0 until regSnapLen) {
+      while(_peek(c.io.daisy.regs.out.valid) == 0) {
+        takeStep
+      }
+      snap append intToBin(_peek(c.io.daisy.regs.out.bits), daisyWidth)
+      _poke(c.io.daisy.regs.out.ready, 1)
+      takeStep
+      _poke(c.io.daisy.regs.out.ready, 0)
     }
     snap.result
   }
@@ -259,14 +269,15 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   private val inWidths = ArrayBuffer[Int]() 
   private val outWidths = ArrayBuffer[Int]() 
   // addrs
-  private lazy val SNAP_OUT_REGS = transforms.miscMap(c.snap_out.regs)
-  private lazy val SNAP_OUT_SRAM = transforms.miscMap(c.snap_out.sram)
-  private lazy val SNAP_OUT_CNTR = transforms.miscMap(c.snap_out.cntr)
-  private lazy val MEM_REQ_ADDR = transforms.miscMap(c.mem_req.addr)
-  private lazy val MEM_REQ_TAG = transforms.miscMap(c.mem_req.tag)
-  private lazy val MEM_REQ_DATA = transforms.miscMap(c.mem_req.data)
-  private lazy val MEM_RESP_DATA = transforms.miscMap(c.mem_resp.data)
-  private lazy val MEM_RESP_TAG = transforms.miscMap(c.mem_resp.tag)
+  private lazy val MEM_REQ_ADDR = transforms.miscInMap(c.mem_req.addr)
+  private lazy val MEM_REQ_TAG = transforms.miscInMap(c.mem_req.tag)
+  private lazy val MEM_REQ_DATA = transforms.miscInMap(c.mem_req.data)
+  private lazy val SNAP_OUT_REGS = transforms.miscOutMap(c.snap_out.regs)
+  private lazy val SNAP_OUT_SRAM = transforms.miscOutMap(c.snap_out.sram)
+  private lazy val SNAP_OUT_TRACE = transforms.miscOutMap(c.snap_out.trace)
+  private lazy val SNAP_OUT_CNTR = transforms.miscOutMap(c.snap_out.cntr)
+  private lazy val MEM_RESP_DATA = transforms.miscOutMap(c.mem_resp.data)
+  private lazy val MEM_RESP_TAG = transforms.miscOutMap(c.mem_resp.tag)
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
     val mask = (BigInt(1) << c.m_axiDataWidth) - 1
@@ -437,6 +448,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   def slowLoadMem(filename: String) {
+    println("[AXI4 LOADMEM] LOADING " + filename)
     val step = 1 << (c.memBlockOffset+1)
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
@@ -445,24 +457,28 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
       for (j <- (line.length - step) to 0 by -step) {
         var data = BigInt(0)
         for (k <- 0 until step) {
-          data |= parseNibble(line(j+k)) << (4*(step-1-k))
+          data |= BigInt(parseNibble(line(j+k))) << (4*(step-1-k))
         }
         writeMem(base+offset, data)
         offset += step / 2
       }
     }
+    println("[AXI4 LOADMEM] DONE ")
   }
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (i <- 0 until regSnapLen) {
-      snap append intToBin(peekChannel(SNAP_OUT_REGS), daisyWidth)
-    }
     for (k <- 0 until sramMaxSize) {
       pokeChannel(c.sramRestartAddr, 0)
       for (i <- 0 until sramSnapLen) {
         snap append intToBin(peekChannel(SNAP_OUT_SRAM), daisyWidth)
       }
+    }
+    for (i <- 0 until traceSnapLen) {
+      snap append intToBin(peekChannel(SNAP_OUT_TRACE), daisyWidth)
+    }
+    for (i <- 0 until regSnapLen) {
+      snap append intToBin(peekChannel(SNAP_OUT_REGS), daisyWidth)
     }
     snap.result
   }
@@ -496,9 +512,10 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
 
   inWidths ++= inMap map {case (k, _) => k.needWidth}
   outWidths ++= (outMap ++ inTraceMap ++ outTraceMap) map {case (k, _) => k.needWidth}
-  outWidths += c.snap_out.regs.needWidth
-  outWidths += c.snap_out.sram.needWidth
-  outWidths += c.snap_out.cntr.needWidth
+  if (transforms.hasRegs) outWidths += c.snap_out.regs.needWidth
+  if (transforms.warmCycles > 0) outWidths += c.snap_out.trace.needWidth
+  if (transforms.sramMaxSize > 0) outWidths += c.snap_out.sram.needWidth
+  // outWidths += c.snap_out.cntr.needWidth
   inWidths += c.mem_req.addr.needWidth
   inWidths += c.mem_req.tag.needWidth
   inWidths += c.mem_req.data.needWidth

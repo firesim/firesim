@@ -10,16 +10,13 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   ok = true;
   t = 0;
   fail_t = 0;
- 
-  REG_SNAP_LEN = 0;
-  SRAM_SNAP_LEN = 0;
-  SRAM_MAX_SIZE = 0;
 
   for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
     samples[i] = NULL;
   }
   last_sample = NULL;
   last_sample_id = 0;
+  sample_split = true;
 
   srand(time(NULL));
 
@@ -43,7 +40,7 @@ simif_t::~simif_t() {
 }
 
 void simif_t::read_map(std::string filename) {
-  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE, MISC };
+  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE, MISC_IN, MISC_OUT };
   std::ifstream file(filename.c_str());
   std::string line;
   if (file) {
@@ -70,32 +67,11 @@ void simif_t::read_map(std::string filename) {
           out_trace_map[path] = id;
           out_widths.push_back(width);
           break;
-        case MISC:
-          if (path == "snap_out_regs") {
-            SNAP_OUT_REGS = id;
-            out_widths.push_back(width);
-          } else if (path == "snap_out_sram") {
-            SNAP_OUT_SRAM = id;
-            out_widths.push_back(width);
-          } else if (path == "snap_out_cntr") {
-            SNAP_OUT_CNTR = id;
-            out_widths.push_back(width);
-          } else if (path == "mem_req_addr") {
-            MEM_REQ_ADDR = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_req_tag") {
-            MEM_REQ_TAG = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_req_data") {
-            MEM_REQ_DATA = id;
-            in_widths.push_back(width);
-          } else if (path == "mem_resp_data") {
-            MEM_RESP_DATA = id;
-            out_widths.push_back(width);
-          } else if (path == "mem_resp_tag") {
-            MEM_RESP_DATA = id;
-            out_widths.push_back(width);
-          } 
+        case MISC_IN:
+          in_widths.push_back(width);
+          break;
+        case MISC_OUT:
+          out_widths.push_back(width);
           break;
         default:
           break;
@@ -109,12 +85,10 @@ void simif_t::read_map(std::string filename) {
 }
 
 void simif_t::read_chain(std::string filename) {
-  enum CHAIN_TYPE { REGS, SRAM, CNTR };
+  enum CHAIN_TYPE { REGS, TRACE, SRAM, CNTR };
   std::ifstream file(filename.c_str());
   if (file) {
     std::string line;
-    size_t reg_chain_width = 0;
-    size_t sram_chain_width = 0;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
       std::string path;
@@ -123,23 +97,13 @@ void simif_t::read_chain(std::string filename) {
       iss >> type >> path >> width >> off;
       switch (static_cast<CHAIN_TYPE>(type)) {
         case REGS:
-          reg_chain_width += width;
-          while (reg_chain_width >= DAISY_WIDTH) {
-            REG_SNAP_LEN++;
-            reg_chain_width -= DAISY_WIDTH;
-          }
-          sample_t::add_to_chains(path, width, off);
+          sample_t::add_to_reg_chains(path, width, off);
+          break;
+        case TRACE:
+          sample_t::add_to_trace_chains(path, width);
           break;
         case SRAM:
-          if (off == 0) sram_chain_width += width;
-          while (sram_chain_width >= DAISY_WIDTH) {
-            SRAM_SNAP_LEN++;
-            sram_chain_width -= DAISY_WIDTH;
-          }
-          if (SRAM_MAX_SIZE < (size_t) (off + 1)) { 
-            SRAM_MAX_SIZE = off + 1;
-          }
-          sample_t::add_to_chains(path, width, off);
+          sample_t::add_to_sram_chains(path, width, off);
           break;
         case CNTR:
           break;
@@ -166,7 +130,7 @@ void simif_t::load_mem(std::string filename) {
       for (int j = line.length() - step ; j >= 0 ; j -= step) {
         biguint_t data = 0;
         for (size_t k = 0 ; k < step ; k++) {
-          data |= parse_nibble(line[j+k]) << (4*(step-1-k));
+          data |= biguint_t(parse_nibble(line[j+k])) << (4*(step-1-k));
         }
         write_mem(base+offset, data);
         offset += step >> 1; // -> step / 2
@@ -176,7 +140,7 @@ void simif_t::load_mem(std::string filename) {
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
     exit(0);
-  }
+  } 
   file.close();
 }
 
@@ -214,16 +178,17 @@ void simif_t::finish() {
   // dump samples
   std::string filename = prefix + ".sample";
   std::ofstream file(filename.c_str());
-  if (file) {
-    for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
-      if (samples[i] != NULL) { 
-        file << *samples[i];
-        delete samples[i];
-      }
+  for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
+    if (sample_split) {
+      file.close();
+      std::ostringstream oss;
+      oss << prefix << "_" << i << ".sample";
+      file.open(oss.str());
     }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
+    if (samples[i] != NULL) { 
+      file << *samples[i];
+      delete samples[i];
+    }
   }
   file.close();
 }
@@ -375,11 +340,6 @@ std::string simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
 
-  for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_REGS).uint(), DAISY_WIDTH);
-    snap << bin;
-  } 
-
   for (size_t k = 0 ; k < SRAM_MAX_SIZE ; k++) {
     poke_channel(SRAM_RESTART_ADDR, 0);
     for (size_t i = 0 ; i < SRAM_SNAP_LEN ; i++) {
@@ -387,6 +347,14 @@ std::string simif_t::read_snapshot() {
       snap << bin;
     }
   }
+  for (size_t i = 0 ; i < TRACE_SNAP_LEN ; i++) {
+    int_to_bin(bin, peek_channel(SNAP_OUT_TRACE).uint(), DAISY_WIDTH);
+    snap << bin;
+  } 
+  for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
+    int_to_bin(bin, peek_channel(SNAP_OUT_REGS).uint(), DAISY_WIDTH);
+    snap << bin;
+  } 
 
   return snap.str();
 }

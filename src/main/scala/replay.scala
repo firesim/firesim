@@ -4,20 +4,23 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
 
-class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Boolean = true) extends Tester(c, isTrace) {
+class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = true) extends Tester(c, isTrace) {
   private val basedir = Driver.targetDir
   private val signalMap = HashMap[String, Node]()
+  private val matchMap = HashMap[String, String]()
   private val samples = ArrayBuffer[Sample]()
+  private var sampleFile: Option[String] = None
 
   def loadSamples(filename: String) {
     samples += new Sample
-    val lines = scala.io.Source.fromFile(basedir+"/"+filename).getLines
+    val lines = scala.io.Source.fromFile(filename).getLines
+    var forced = false
     for (line <- lines) {
       val tokens = line split " "
       val cmd = SampleInstType(tokens.head.toInt)
       cmd match {
         case SampleInstType.FIN => samples += new Sample
-        case SampleInstType.LOAD => {
+        case SampleInstType.LOAD =>
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
           (signalMap get tokens.tail.head) match {
@@ -25,31 +28,23 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
             case Some(node) => 
               samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
           }
-        }
-        case SampleInstType.POKE => {
+        case SampleInstType.FORCE => 
+          val node = signalMap(tokens.tail.head)
+          val value = BigInt(tokens.last, 16)
+          samples.last addCmd Force(node, value)
+          forced = true
+        case SampleInstType.POKE => 
           val node = signalMap(tokens.tail.head).asInstanceOf[Bits]
           val value = BigInt(tokens.last, 16)
           samples.last addCmd PokePort(node, value)
-        }
         case SampleInstType.STEP => 
-          samples.last addCmd Step(tokens.last.toInt)
-        case SampleInstType.EXPECT => {
+          if (!forced || !Driver.isInlineMem) samples.last addCmd Step(tokens.last.toInt)
+          forced = false
+        case SampleInstType.EXPECT => 
           val node = signalMap(tokens.tail.head).asInstanceOf[Bits]
           val value = BigInt(tokens.last, 16)
           samples.last addCmd ExpectPort(node, value)
-        }
       }
-    }
-  }
-
-  private val matchMap = matchFile match {
-    case None => Map[String, String]()
-    case Some(f) => {
-      val lines = scala.io.Source.fromFile(f).getLines
-      (lines map { line =>
-        val tokens = line split " "
-        tokens.head -> tokens.last
-      }).toMap
     }
   }
 
@@ -63,7 +58,7 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
     def loadff(path: String, v: BigInt) {
       (matchMap get path) match {
         case None => // skip
-        case Some(p) => pokePath(p, v) 
+        case Some(p) => pokePath(p, v)
       }
     }
     node match {
@@ -80,36 +75,51 @@ class Replay[+T <: Module](c: T, matchFile: Option[String] = None, isTrace: Bool
   } 
 
   def run {
+    val startTime = System.nanoTime
     samples foreach (_ map {
       case Step(n) => step(n)
-      case Load(node, value, off) => matchFile match {
-        case None => node match {
+      case Force(node, value) => node match {
+        case mem: Mem[_] if mem.seqRead => if (!Driver.isInlineMem) {
+          pokePath("%s.sram.A1".format(dumpName(mem)), value, true)
+          pokePath("%s.sram.WEB1".format(dumpName(mem)), BigInt(1), true)
+        } else {
+          pokeNode(findSRAMRead(mem)._1, value)
+        }
+        case _ => // Todo
+      }
+      case Load(node, value, off) => if (matchMap.isEmpty) {
+        node match {
           case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem =>
-            pokePath("%s.sram.memory[%d]".format(dumpName(node), off.get), value)
+            pokePath("%s.sram.memory[%d]".format(dumpName(mem), off.get), value)
           case _ => 
             pokeNode(node, value, off)
         }
-        case Some(f) => loadWires(node, value, off)
-      }
+      } else loadWires(node, value, off)
       case PokePort(node, value) => poke(node, value)
       case ExpectPort(node, value) => expect(node, value)
     })
+    val endTime = System.nanoTime
+    val simTime = (endTime - startTime) / 1000000000.0
+    val simSpeed = t / simTime
+    println("Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed))
   }
 
-  private val srams = ArrayBuffer[Mem[_]]()
-  Driver.dfs {
-    case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem =>
-      srams += mem
-      signalMap(mem.chiselName) = mem
-    case node if node.isReg || node.isIo =>
-      signalMap(node.chiselName) = node
-    case _ =>
+  args foreach { arg =>
+    if (arg.size >= 7 && arg.substring(0, 7) == "+match=") {
+      val lines = scala.io.Source.fromFile(arg.substring(7)).getLines
+      lines foreach { line =>
+        val tokens = line split " "
+        matchMap(tokens.head) = tokens.last
+      }
+    }
+    if (arg.size >= 8 && arg.substring(0, 8) == "+sample=") {
+      sampleFile = Some(arg.substring(8))
+    }
   }
-  for (sram <- srams) {
-    val read = sram.readAccesses.head match { case r: MemSeqRead => r }
-    val path = read.mem.component.getPathName(".") + "." + read.name
-    signalMap -= read.addrReg.chiselName
+
+  Driver.dfs { node =>
+    if (node.isReg || node.isIo) signalMap(node.chiselName) = node
   }
-  loadSamples(c.name + ".sample")
+  loadSamples(sampleFile match { case None => basedir + c.name + ".sample" case Some(f) => f})
   run
 }
