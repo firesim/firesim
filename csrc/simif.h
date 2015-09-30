@@ -51,6 +51,7 @@ class simif_t
     sample_t* samples[SAMPLE_NUM];
     sample_t* last_sample;
     size_t last_sample_id;
+    bool sample_split;
 
     std::vector<std::string> hargs;
     std::vector<std::string> targs;

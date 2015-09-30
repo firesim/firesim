@@ -16,6 +16,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   last_sample = NULL;
   last_sample_id = 0;
+  sample_split = true;
 
   srand(time(NULL));
 
@@ -177,16 +178,17 @@ void simif_t::finish() {
   // dump samples
   std::string filename = prefix + ".sample";
   std::ofstream file(filename.c_str());
-  if (file) {
-    for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
-      if (samples[i] != NULL) { 
-        file << *samples[i];
-        delete samples[i];
-      }
+  for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
+    if (sample_split) {
+      file.close();
+      std::ostringstream oss;
+      oss << prefix << "_" << i << ".sample";
+      file.open(oss.str());
     }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
+    if (samples[i] != NULL) { 
+      file << *samples[i];
+      delete samples[i];
+    }
   }
   file.close();
 }
