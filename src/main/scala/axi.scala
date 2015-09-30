@@ -208,6 +208,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val snap_out = new Bundle {
     val regs = UInt(OUTPUT, sim.daisyWidth)
     val sram = UInt(OUTPUT, sim.daisyWidth)
+    val trace = UInt(OUTPUT, sim.daisyWidth)
     val cntr = UInt(OUTPUT, sim.daisyWidth)
   }
   // Fake wires for accesses from outside FPGA
