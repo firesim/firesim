@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer}
+import scala.collection.immutable.ListMap
 
 object SimWrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
@@ -20,17 +20,17 @@ class SimWrapperIO(t_ins: Array[(String, Bits)], t_outs: Array[(String, Bits)]) 
   }
   val ins = Vec(t_ins map genPacket)
   val outs = Vec(t_outs map genPacket)
+  val inMap = ListMap((t_ins.unzip._2 zip ins):_*)
+  val outMap = ListMap((t_outs.unzip._2 zip outs):_*)
   val daisy = new DaisyBundle(daisyWidth)
-  val in_wires = t_ins.unzip._2
-  val out_wires = t_outs.unzip._2 
 }
 
 abstract class SimNetwork extends Module {
   def io: SimWrapperIO 
   def in_channels: Seq[Channel[Bits]]
   def out_channels: Seq[Channel[Bits]]
-  val sampleNum = params(SampleNum)
-  val traceLen = params(TraceLen)
+  val sampleNum  = params(SampleNum)
+  val traceLen   = params(TraceLen)
   val daisyWidth = params(DaisyWidth)
 
   def initTrace[T <: Bits](arg: (T, Int)) = arg match { case (gen, id) =>

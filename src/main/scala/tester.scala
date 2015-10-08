@@ -348,7 +348,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     var data = BigInt(0)
     for (i <- 0 until c.memDataCount) {
       assert(peekChannel(MEM_RESP_TAG) == 0)
-      data |= peekChannel(MEM_RESP_DATA) << (i * c.memDataWidth)
+      data |= peekChannel(MEM_RESP_DATA) << (i * c.mifDataBits)
     }
     if (isTrace) println("[MEM READ] addr: %x, data: %s".format(addr, data.toString(16)))
     data
@@ -359,7 +359,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
     pokeChannel(MEM_REQ_ADDR, addr >> c.memBlockOffset)
     pokeChannel(MEM_REQ_TAG, 1)
     for (i <- 0 until c.memDataCount) {
-      pokeChannel(MEM_REQ_DATA, data >> (i * c.memDataWidth))
+      pokeChannel(MEM_REQ_DATA, data >> (i * c.mifDataBits))
     }
     do {
       takeStep
@@ -499,7 +499,7 @@ abstract class SimAXI4WrapperTester[+T <: SimAXI4Wrapper[SimNetwork]](c: T, isTr
   }
 
   override def step(n: Int) {
-    if (MemIO.count > 0) {
+    if (SimMemIO.size > 0) {
       for (i <- 0 until n) {
         super.step(1)
         (0 until 5) foreach (_ => takeStep)

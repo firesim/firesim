@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import junctions.{MemIO, MIFParameters}
 
 object SimAXI4Wrapper {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
@@ -177,7 +178,7 @@ class Output2MAXI[T <: Data](gen: T, addr: Int) extends Module {
   }
 }
 
-class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
+class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module with MIFParameters {
   // params
   val m_axiAddrWidth = params(MAXIAddrWidth)
   val m_axiDataWidth = params(MAXIDataWidth)
@@ -187,16 +188,15 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   val sramRestartAddr = params(SRAMRestartAddr)
   val s_axiAddrWidth = params(SAXIAddrWidth)
   val s_axiDataWidth = params(SAXIDataWidth)
-  val memAddrWidth = params(MemAddrWidth)
-  val memDataWidth = params(MemDataWidth)
-  val memDataCount = params(MemDataCount)
-  val memTagWidth = params(MemTagWidth)
-  val memBlockSize = params(MemBlockSize)
-  val memBlockOffset = params(MemBlockOffset)
+
+  val memBlockBytes  = params(MemBlockBytes)
+  val memBlockOffset = log2Up(memBlockBytes) 
+  val memDataCount   =  8 * memBlockBytes / mifDataBits
+
   private val s_axiAddrOffset = scala.math.max(memBlockOffset, log2Up(s_axiDataWidth>>3))
-  private val memAddrOffset = memAddrWidth + s_axiAddrOffset
-  private val dataCountLimit = (memBlockSize - 1) / (s_axiDataWidth>>3)
-  private val dataChunkLimit = (memDataWidth - 1) / s_axiDataWidth
+  private val memAddrOffset = mifAddrBits + s_axiAddrOffset
+  private val dataCountLimit = (memBlockBytes - 1) / (s_axiDataWidth>>3)
+  private val dataChunkLimit = (mifDataBits - 1) / s_axiDataWidth
   require(dataCountLimit >= dataChunkLimit && (dataChunkLimit == 0 || (dataCountLimit+1) % (dataChunkLimit+1) == 0),
     "dataCountLimit+1 = %d, dataChunkLimit+1 = %d".format(dataCountLimit+1, dataChunkLimit+1))
 
@@ -213,13 +213,13 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   }
   // Fake wires for accesses from outside FPGA
   val mem_req = new Bundle {
-    val addr = UInt(INPUT, memAddrWidth)
-    val tag = UInt(INPUT, memTagWidth+1)
-    val data = UInt(INPUT, memDataWidth)
+    val addr = UInt(INPUT, mifAddrBits)
+    val tag = UInt(INPUT, mifTagBits+1)
+    val data = UInt(INPUT, mifDataBits)
   }
   val mem_resp = new Bundle {
-    val data = UInt(OUTPUT, memDataWidth)
-    val tag = UInt(OUTPUT, memTagWidth)
+    val data = UInt(OUTPUT, mifDataBits)
+    val tag = UInt(OUTPUT, mifTagBits)
   }
 
   /*** M_AXI INPUTS ***/
@@ -291,7 +291,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.M_AXI.r.bits.id   := arid_r
 
   /*** S_AXI ***/
-  val mem = new MemIO // connected in the backend
+  val mem = new MemIO // Wire(new MemIO) // connected in the backend
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
   val state_r = RegInit(st_idle)
   val do_mem_write = state_r === st_write
@@ -314,7 +314,7 @@ class SimAXI4Wrapper[+T <: SimNetwork](c: =>T) extends Module {
   io.S_AXI.ar.bits.addr := s_axi_addr
   io.S_AXI.ar.bits.id := mem.req_cmd.bits.tag
   io.S_AXI.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
-  io.S_AXI.ar.bits.size := UInt(log2Up(scala.math.min(memDataWidth, s_axiDataWidth))-3) // burst size (bits/beat)
+  io.S_AXI.ar.bits.size := UInt(log2Up(scala.math.min(mifDataBits, s_axiDataWidth))-3) // burst size (bits/beat)
   io.S_AXI.ar.valid := state_r === st_read
   // Read Data
   io.S_AXI.r.ready := mem.resp.ready

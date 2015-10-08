@@ -100,10 +100,8 @@ object transforms {
     case w: SimAXI4Wrapper[SimNetwork] => {
       ChiselError.info("[transforms] connect IOs to AXI busses")
       daisyWidth = w.sim.daisyWidth
-      val (memInMap, ioInMap) =
-        ListMap((w.sim.io.in_wires zip w.sim.io.ins):_*) partition (MemIO.ins contains _._1)
-      val (memOutMap, ioOutMap) =
-        ListMap((w.sim.io.out_wires zip w.sim.io.outs):_*) partition (MemIO.outs contains _._1)
+      val (memInMap,  ioInMap)  = w.sim.io.inMap  partition (SimMemIO contains _._1)
+      val (memOutMap, ioOutMap) = w.sim.io.outMap partition (SimMemIO contains _._1)
       var inCount = 0
       var outCount = 0
       val inReady = ArrayBuffer[Bool]()
@@ -151,16 +149,15 @@ object transforms {
       outCount += ioOutMap.size
 
       // Traces
-      val inTraces = w.sim.io.in_wires.zipWithIndex filter (MemIO.ins contains _._1) map (w.sim.initTrace(_)) 
-      val outTraces = w.sim.io.out_wires.zipWithIndex  filter (MemIO.outs contains _._1) map (w.sim.initTrace(_))
+      val inTraces = w.sim.io.inMap.unzip._1.zipWithIndex filter 
+        (SimMemIO contains _._1) map (w.sim.initTrace(_)) 
+      val outTraces = w.sim.io.outMap.unzip._1.zipWithIndex filter 
+        (SimMemIO contains _._1) map (w.sim.initTrace(_))
       for (((trace, wire), i) <- (inTraces ++ outTraces).zipWithIndex) {
         val id = outCount + i
         val conv = initOutConv(trace.bits, id)
+        if (wire.dir == INPUT) inTraceMap(wire) = id else outTraceMap(wire) = id
         conv.io.in <> trace
-        if (MemIO.ins contains wire) 
-          inTraceMap(wire) = id
-        else 
-          outTraceMap(wire) = id
       }
       outCount += (inTraces.size + outTraces.size)
 
@@ -218,29 +215,16 @@ object transforms {
       inCount += conv.io.ins.size
       outCount += conv.io.outs.size
 
-      val arb = w.addModule(new MemArbiter(MemIO.count+1))
-      for (i <- 0 until MemIO.count) {
+      val arb = w.addModule(new MemArbiter(SimMemIO.size+1))
+      for (i <- 0 until SimMemIO.size) {
         val conv = w.addModule(new ChannelMemIOConverter)
         conv.name = "mem_conv_" + i
         conv.reset := w.reset_t
-        conv.io.req_cmd_ready <> memInMap(MemReqCmd(i)(0))
-        conv.io.req_cmd_valid <> memOutMap(MemReqCmd(i)(1))
-        conv.io.req_cmd_addr <> memOutMap(MemReqCmd(i)(2))
-        conv.io.req_cmd_tag <> memOutMap(MemReqCmd(i)(3))
-        conv.io.req_cmd_rw <> memOutMap(MemReqCmd(i)(4))
-
-        conv.io.req_data_ready <> memInMap(MemData(i)(0))
-        conv.io.req_data_valid <> memOutMap(MemData(i)(1))
-        conv.io.req_data_bits <> memOutMap(MemData(i)(2))
-
-        conv.io.resp_ready <> memOutMap(MemResp(i)(0))
-        conv.io.resp_valid <> memInMap(MemResp(i)(1))
-        conv.io.resp_data <> memInMap(MemResp(i)(2))
-        conv.io.resp_tag <> memInMap(MemResp(i)(3))
-        conv.io.mem <> arb.io.ins(i)
-      }
-      conv.io.mem <> arb.io.ins(MemIO.count)
-      arb.io.out <> w.mem
+        conv.io.sim_mem  <> (SimMemIO(i), w.sim.io)
+        conv.io.host_mem <> arb.io.ins(i)
+      } 
+      conv.io.mem <> arb.io.ins(SimMemIO.size)
+      arb.io.out  <> w.mem
 
       w.in_ready := Vec(inReady)(w.waddr_r)
       w.out_data := Vec(outData)(w.raddr_r)
@@ -695,6 +679,8 @@ object transforms {
         case Param(p, v) => sb append "#define %s %s\n".format(p, v)
         case _ =>
       }
+      sb append "#define MEM_DATA_COUNT %d\n".format(w.memDataCount)
+      sb append "#define MEM_BLOCK_OFFSET %d\n".format(w.memBlockOffset)
       // addrs
       sb append "#define MEM_REQ_ADDR %d\n".format(miscInMap(w.mem_req.addr))
       sb append "#define MEM_REQ_TAG %d\n".format(miscInMap(w.mem_req.tag))
