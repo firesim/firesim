@@ -16,7 +16,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   last_sample = NULL;
   last_sample_id = 0;
-  sample_split = true;
+  sample_split = false;
 
   srand(time(NULL));
 
