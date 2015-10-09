@@ -1,17 +1,15 @@
 package strober
 
 import Chisel._
-import junctions.{NASTIDataBits, NASTIAddrBits, NASTIIdBits}
-import junctions.{MIFAddrBits, MIFDataBits, MIFTagBits, MIFDataBeats}
+import junctions._
 
 // NASTI Params
 case object NASTIName extends Field[String]
 case object NASTIAddrSizeBits extends Field[Int]
-case object ResetAddr extends Field[Int]
-case object SRAMRestartAddr extends Field[Int]
 
 // Mem Params
 case object MemBlockBytes extends Field[Int]
+case object MemAddrSizeBits extends Field[Int]
 
 // Simulation Params
 case object SampleNum  extends Field[Int]
@@ -33,14 +31,13 @@ object NASTIParams {
       case "Slave"  => 6
     }
     case NASTIAddrSizeBits => 10
-    // case ResetAddr         => Dump("RESET_ADDR", (1 << site(MAXIAddrSize)) - 1)
-    // case SRAMRestartAddr   => Dump("SRAM_RESTART_ADDR", site(ResetAddr) - 1)
 
     case MIFAddrBits     => Dump("MEM_ADDR_WIDTH", 32)
     case MIFDataBits     => Dump("MEM_DATA_WIDTH", 16 << 3)
     case MIFTagBits      => 5
-    case MIFDataBeats    => 0
+    case MIFDataBeats    => 1
     case MemBlockBytes   => 16
+    case MemAddrSizeBits => 28
   }
 }
 
