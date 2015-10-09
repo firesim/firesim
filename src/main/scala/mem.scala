@@ -1,7 +1,8 @@
 package strober
 
 import Chisel._
-import junctions.{MemIO, MemReqCmd, MemData, MemResp, MIFBundle, MIFModule}
+import junctions.{MemIO, MemReqCmd, MemData, MemResp, MIFBundle, MIFModule, NASTIBundle}
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.ListSet
 
@@ -109,7 +110,7 @@ class ChannelMemIOConverter extends MIFModule {
   resp_buf.io.enq      <> io.host_mem.resp
 }
 
-object MAXI_MemIO_ConverterIO {
+object NASTI_MemIO_ConverterIO {
   // rAddrOffset + 0 : req_cmd_addr
   // rAddrOffset + 1 : {req_cmd_tag, req_cmd_rw}
   // rAddrOffset + 2 : req_cmd_data
@@ -119,26 +120,24 @@ object MAXI_MemIO_ConverterIO {
   val outNum = 2
 }
 
-class MAXI_MemIO_ConverterIO extends Bundle {
-  val axiAddrWidth = params(MAXIAddrWidth)
-  val axiDataWidth = params(MAXIDataWidth)
-  val inNum = MAXI_MemIO_ConverterIO.inNum
-  val outNum = MAXI_MemIO_ConverterIO.outNum
+class NASTI_MemIO_ConverterIO extends NASTIBundle {
+  val inNum = NASTI_MemIO_ConverterIO.inNum
+  val outNum = NASTI_MemIO_ConverterIO.outNum
 
-  val ins = Vec.fill(inNum){Decoupled(UInt(width=axiDataWidth)).flip}
-  val in_addr = UInt(INPUT, axiAddrWidth)
-  val outs = Vec.fill(outNum){Decoupled(UInt(width=axiDataWidth))}
-  val out_addr = UInt(INPUT, axiAddrWidth)
+  val ins = Vec.fill(inNum){Decoupled(UInt(width=nastiXDataBits)).flip}
+  val in_addr = UInt(INPUT, nastiXAddrBits)
+  val outs = Vec.fill(outNum){Decoupled(UInt(width=nastiXDataBits))}
+  val out_addr = UInt(INPUT, nastiXAddrBits)
   val mem = new MemIO
 }
 
-class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends MIFModule {
-  val io = new MAXI_MemIO_ConverterIO
-  val req_cmd_addr = Module(new MAXI2Input(UInt(width=mifAddrBits),  rAddrOffset))
-  val req_cmd_tag  = Module(new MAXI2Input(UInt(width=mifTagBits+1), rAddrOffset+1))
-  val req_data     = Module(new MAXI2Input(UInt(width=mifDataBits),  rAddrOffset+2))
-  val resp_data    = Module(new Output2MAXI(UInt(width=mifDataBits), wAddrOffset))
-  val resp_tag     = Module(new Output2MAXI(UInt(width=mifTagBits),  wAddrOffset+1))
+class NASTI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends MIFModule {
+  val io = new NASTI_MemIO_ConverterIO
+  val req_cmd_addr = Module(new NASTI2Input(UInt(width=mifAddrBits),  rAddrOffset))
+  val req_cmd_tag  = Module(new NASTI2Input(UInt(width=mifTagBits+1), rAddrOffset+1))
+  val req_data     = Module(new NASTI2Input(UInt(width=mifDataBits),  rAddrOffset+2))
+  val resp_data    = Module(new Output2NASTI(UInt(width=mifDataBits), wAddrOffset))
+  val resp_tag     = Module(new Output2NASTI(UInt(width=mifTagBits),  wAddrOffset+1))
   val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2))
   val req_data_buf = Module(new Queue(new MemData, 2))
   val resp_buf     = Module(new Queue(new MemResp, 2))
