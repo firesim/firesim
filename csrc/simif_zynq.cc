@@ -28,10 +28,10 @@ simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bo
 }
 
 void simif_zynq_t::poke_channel(size_t addr, biguint_t data) {
-  uint64_t mask = (uint64_t(1) << AXI_DATA_WIDTH) - 1;
-  size_t limit = (addr == RESET_ADDR || addr == SRAM_RESTART_ADDR) ? 1 : (in_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
+  uint64_t mask = (uint64_t(1) << NASTI_DATA_WIDTH) - 1;
+  size_t limit = (addr == RESET_ADDR || addr == SRAM_RESTART_ADDR) ? 1 : (in_widths[addr] - 1) / NASTI_DATA_WIDTH + 1;
   for (ssize_t i = limit - 1 ; i >= 0 ; i--) {
-    uint64_t masked_data = ((data >> (i * AXI_DATA_WIDTH)) & mask).uint();
+    uint64_t masked_data = ((data >> (i * NASTI_DATA_WIDTH)) & mask).uint();
     write_reg(addr, masked_data);
     __sync_synchronize();
   }
@@ -39,10 +39,10 @@ void simif_zynq_t::poke_channel(size_t addr, biguint_t data) {
 
 biguint_t simif_zynq_t::peek_channel(size_t addr) {
   biguint_t data = 0;
-  size_t limit = (out_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
+  size_t limit = (out_widths[addr] - 1) / NASTI_DATA_WIDTH + 1;
   for (size_t i = 0 ; i < limit ; i++) {
     __sync_synchronize();
-    data |= biguint_t(read_reg(addr)) << (i * AXI_DATA_WIDTH);
+    data |= biguint_t(read_reg(addr)) << (i * NASTI_DATA_WIDTH);
   }
   return data;
 }

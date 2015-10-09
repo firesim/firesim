@@ -69,8 +69,8 @@ object transforms {
     daisyPins(w) = w.io.daisy
   }
 
-  private[strober] def init[T <: Module](w: SimAXI4Wrapper[SimNetwork]) {
-    w.name = targetName + "AXI4Wrapper"
+  private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
+    w.name = targetName + "NASTIShim"
   }
 
   private[strober] def probeDesign(c: Module) {
@@ -97,7 +97,7 @@ object transforms {
   }
 
   private val connectIOs: Module => Unit = {
-    case w: SimAXI4Wrapper[SimNetwork] => {
+    case w: NASTIShim[SimNetwork] => {
       ChiselError.info("[transforms] connect IOs to AXI busses")
       daisyWidth = w.sim.daisyWidth
       val (memInMap,  ioInMap)  = w.sim.io.inMap  partition (SimMemIO contains _._1)
@@ -109,22 +109,22 @@ object transforms {
       val outValid = ArrayBuffer[Bool]()
 
       def initInConv[T <: Data](gen: T, id: Int) = {
-        val conv = w.addModule(new MAXI2Input(gen, id))
+        val conv = w.addModule(new NASTI2Input(gen, id), {case NASTIName => "Master"})
         conv.name = "in_conv_" + id
         conv.reset := w.reset_t
         conv.io.addr := w.waddr_r
-        conv.io.in.bits := w.io.M_AXI.w.bits.data
+        conv.io.in.bits := w.io.mnasti.w.bits.data
         conv.io.in.valid := w.do_write
         inReady += conv.io.in.ready
         conv
       }
 
       def initOutConv[T <: Data](gen: T, id: Int) = {
-        val conv = w.addModule(new Output2MAXI(gen, id))
+        val conv = w.addModule(new Output2NASTI(gen, id), {case NASTIName => "Master"})
         conv.name = "out_conv_" + id
         conv.reset := w.reset_t
         conv.io.addr := w.raddr_r
-        conv.io.out.ready := w.do_read && w.io.M_AXI.r.ready
+        conv.io.out.ready := w.do_read && w.io.mnasti.r.ready
         outData += conv.io.out.bits
         outValid += conv.io.out.valid
         conv
@@ -162,7 +162,8 @@ object transforms {
       outCount += (inTraces.size + outTraces.size)
 
       // Snapshots
-      if (hasRegs) {
+      // if (hasRegs) 
+      {
         val out = w.sim.io.daisy.regs.out
         val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
@@ -171,7 +172,8 @@ object transforms {
         miscOutMap(w.snap_out.regs) = outCount
         outCount += 1
       }
-      if (warmCycles > 0) { 
+      // if (warmCycles > 0) 
+      { 
         val out = w.sim.io.daisy.trace.out
         val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
@@ -180,7 +182,8 @@ object transforms {
         miscOutMap(w.snap_out.trace) = outCount
         outCount += 1 
       }
-      if (sramMaxSize > 0) { 
+      // if (sramMaxSize > 0) 
+      { 
         val out = w.sim.io.daisy.sram.out
         val conv = initOutConv(out.bits, outCount)
         conv.io.in.bits := out.bits
@@ -193,17 +196,17 @@ object transforms {
       // outCount += 1 
 
       // MemIOs
-      val conv = w.addModule(new MAXI_MemIOConverter(inCount, outCount))
+      val conv = w.addModule(new NASTI_MemIOConverter(inCount, outCount), {case NASTIName => "Master"})
       conv.reset := w.reset_t
       conv.io.in_addr := w.waddr_r
       conv.io.out_addr := w.raddr_r
       for (in <- conv.io.ins) {
-        in.bits := w.io.M_AXI.w.bits.data
+        in.bits := w.io.mnasti.w.bits.data
         in.valid := w.do_write
         inReady += in.ready
       }
       for (out <- conv.io.outs) {
-        out.ready := w.do_read && w.io.M_AXI.r.ready
+        out.ready := w.do_read && w.io.mnasti.r.ready
         outData += out.bits
         outValid += out.valid
       }
@@ -248,7 +251,7 @@ object transforms {
     }
 
     def connectSRAMRestart(m: Module): Unit = m.parent match {
-      case w: SimAXI4Wrapper[SimNetwork] =>
+      case w: NASTIShim[SimNetwork] =>
         daisyPins(m).sram.restart := w.sram_restart
       case p if daisyPins contains p =>
         if (p != c && daisyPins(p).sram.restart.inputs.isEmpty)
@@ -379,7 +382,7 @@ object transforms {
     }
     for (w <- wrappers) {
       c match { 
-        case _: SimAXI4Wrapper[SimNetwork] =>
+        case _: NASTIShim[SimNetwork] =>
           w.io.daisy.regs.in.bits := UInt(0)
           w.io.daisy.regs.in.valid := Bool(false)
         case _ =>
@@ -463,7 +466,7 @@ object transforms {
     }
     for (w <- wrappers) {
       c match { 
-        case _: SimAXI4Wrapper[SimNetwork] =>
+        case _: NASTIShim[SimNetwork] =>
           w.io.daisy.trace.in.bits := UInt(0)
           w.io.daisy.trace.in.valid := Bool(false)
         case _ =>
@@ -540,7 +543,7 @@ object transforms {
     } 
     for (w <- wrappers) {
       c match { 
-        case _: SimAXI4Wrapper[SimNetwork] =>
+        case _: NASTIShim[SimNetwork] =>
           w.io.daisy.sram.in.bits := UInt(0)
           w.io.daisy.sram.in.valid := Bool(false)
         case _ =>
@@ -669,7 +672,7 @@ object transforms {
   }
 
   private val dumpParams: Module => Unit = {
-    case w: SimAXI4Wrapper[SimNetwork] if Driver.chiselConfigDump => 
+    case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
       ChiselError.info("[transforms] dump param header")
       val Param = """\(([\w_]+),([\w_]+)\)""".r
       val sb = new StringBuilder
@@ -682,6 +685,8 @@ object transforms {
       sb append "#define MEM_DATA_COUNT %d\n".format(w.memDataCount)
       sb append "#define MEM_BLOCK_OFFSET %d\n".format(w.memBlockOffset)
       // addrs
+      sb append "#define RESET_ADDR %d\n".format(w.resetAddr)
+      sb append "#define SRAM_RESTART_ADDR %d\n".format(w.sramRestartAddr)
       sb append "#define MEM_REQ_ADDR %d\n".format(miscInMap(w.mem_req.addr))
       sb append "#define MEM_REQ_TAG %d\n".format(miscInMap(w.mem_req.tag))
       sb append "#define MEM_REQ_DATA %d\n".format(miscInMap(w.mem_req.data))
@@ -696,7 +701,7 @@ object transforms {
       sb append "#define TRACE_SNAP_LEN %d\n".format(traceSnapLen) 
       sb append "#define SRAM_SNAP_LEN %d\n".format(sramSnapLen) 
       sb append "#define SRAM_MAX_SIZE %d\n".format(sramMaxSize) 
-      sb append "#define WARM_CYCLES %d\n".format(warmCycles) 
+      if (warmCycles > 0) sb append "#define WARM_CYCLES %d\n".format(warmCycles) 
       sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
       val file = Driver.createOutputFile(targetName + "-param.h")
