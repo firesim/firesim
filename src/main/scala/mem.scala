@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import junctions.{MemIO, MemReqCmd, MemData, MemResp, MIFBundle, MIFModule, NASTIBundle}
+import junctions._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.ListSet

@@ -227,7 +227,7 @@ object transforms {
         conv.io.host_mem <> arb.io.ins(i)
       } 
       conv.io.mem <> arb.io.ins(SimMemIO.size)
-      arb.io.out  <> w.mem
+      arb.io.out  <> w.snasti_mem_conv.io.mem
 
       w.in_ready := Vec(inReady)(w.waddr_r)
       w.out_data := Vec(outData)(w.raddr_r)

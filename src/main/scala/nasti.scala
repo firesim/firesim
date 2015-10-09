@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import junctions.{NASTIMasterIO, NASTISlaveIO, NASTIModule, MemIO, MIFModule}
+import junctions._
 
 object NASTIShim {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
@@ -101,13 +101,88 @@ class Output2NASTI[T <: Data](gen: T, addr: Int) extends NASTIModule {
   }
 }
 
+class NASTISlaveIOMemIOConverter extends MIFModule with NASTIParameters {
+  val io = new Bundle {
+    val mem = (new MemIO).flip
+    val nasti = (new NASTISlaveIO).flip
+  }
+  val memBlockBytes  = params(MemBlockBytes)
+  val addrSizeBits   = params(MemAddrSizeBits)
+  val addrOffsetBits = log2Up(scala.math.max(memBlockBytes, nastiXDataBits/8))
+  val nastiDataBeats = scala.math.max(1, mifDataBits / nastiXDataBits)
+
+  val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
+  val state_r = RegInit(st_idle)
+  val resp_data_buf = Vec.fill(nastiDataBeats-1){Reg(UInt(width=nastiXDataBits))}
+  val (read_count,  read_wrap_out)  = Counter(io.nasti.r.fire(), nastiDataBeats)
+  val (write_count, write_wrap_out) = Counter(io.nasti.w.fire(), nastiDataBeats)
+  val addr = Wire(UInt(width=addrSizeBits-addrOffsetBits))
+  addr := io.mem.req_cmd.bits.addr
+  io.mem.req_cmd.ready := 
+    (state_r === st_start_write && io.nasti.aw.ready) || (state_r === st_read && io.nasti.ar.ready)
+
+  /* Read Signals */
+  // Read Address
+  io.nasti.ar.bits.addr := Cat(UInt(1, 4), addr, UInt(0, addrOffsetBits))
+  io.nasti.ar.bits.id   := io.mem.req_cmd.bits.tag
+  io.nasti.ar.bits.len  := UInt(nastiDataBeats-1) // burst length (transfers)
+  io.nasti.ar.bits.size := UInt(log2Up(scala.math.min(mifDataBits/8, nastiXDataBits/8))) // burst size (bits/beat)
+  io.nasti.ar.valid     := state_r === st_read 
+  // Read Data
+  io.nasti.r.ready      := io.mem.resp.ready
+  io.mem.resp.bits.tag  := io.nasti.r.bits.id
+  io.mem.resp.valid     := read_wrap_out 
+  io.mem.resp.bits.data := 
+    (if (nastiDataBeats > 1) Cat(io.nasti.r.bits.data, resp_data_buf.toBits) else io.nasti.r.bits.data)
+
+  /* Write Signals */
+  // Write Address
+  io.nasti.aw.bits.addr := io.nasti.ar.bits.addr
+  io.nasti.aw.bits.id   := UInt(0)
+  io.nasti.aw.bits.len  := io.nasti.ar.bits.len  // burst length (transfers)
+  io.nasti.aw.bits.size := io.nasti.ar.bits.size // burst size (bits/beat)
+  io.nasti.aw.valid     := state_r === st_start_write
+  // Write Data
+  io.mem.req_data.ready := io.nasti.w.bits.last
+  io.nasti.w.valid      := io.mem.req_data.valid && state_r === st_write
+  io.nasti.w.bits.last  := write_wrap_out
+  io.nasti.w.bits.data  := Vec((0 until nastiDataBeats) map (i =>
+    io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count)
+  // Write Response
+  io.nasti.b.ready := Bool(true)
+
+  if (nastiDataBeats > 1) {
+    when(io.nasti.r.valid && !read_wrap_out) {
+      resp_data_buf(read_count) := io.nasti.r.bits.data
+    }
+  }
+
+  /* FSM for memory requests */
+  switch(state_r) {
+    is(st_idle) {
+      state_r := 
+        Mux(io.mem.req_cmd.valid && !io.mem.req_cmd.bits.rw, st_read,
+        Mux(io.mem.req_cmd.valid && io.mem.req_cmd.bits.rw && io.mem.req_data.valid, 
+            st_start_write, st_idle))
+    }
+    is(st_read) {
+      state_r := Mux(io.nasti.ar.ready, st_idle, st_read)
+    }
+    is(st_start_write) {
+      state_r := Mux(io.nasti.aw.ready, st_write, st_start_write)
+    }
+    is(st_write) {
+      state_r := Mux(io.nasti.w.fire() && write_wrap_out, st_idle, st_write)
+    }
+  }
+}
+
+
 class NASTIShimIO extends Bundle {
   val mnasti = Bundle((new NASTIMasterIO).flip, {case NASTIName => "Master"})
   val snasti = Bundle((new NASTISlaveIO).flip,  {case NASTIName => "Slave"})
   val mAddrBits = mnasti.ar.bits.nastiXAddrBits
-  val sAddrBits = snasti.ar.bits.nastiXAddrBits
   val mDataBits = mnasti.r.bits.nastiXDataBits
-  val sDataBits = snasti.r.bits.nastiXDataBits
 }
 
 class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
@@ -117,19 +192,7 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   val resetAddr       = (1 << addrSizeBits) - 1
   val sramRestartAddr = (1 << addrSizeBits) - 2
 
-  val memBlockBytes  = params(MemBlockBytes)
-  val memBlockOffset = log2Up(memBlockBytes) 
-  val memDataCount   = 8*memBlockBytes / mifDataBits
-
   val mAddrOffset = log2Up(io.mAddrBits/8)
-  val sAddrOffset = scala.math.max(memBlockOffset, log2Up(io.sDataBits/8))
-
-  private val memAddrOffset = mifAddrBits + sAddrOffset
-  private val dataCountLimit = (memBlockBytes-1) / (io.sDataBits/8)
-  private val dataChunkLimit = (mifDataBits-1) / io.sDataBits
-  require(dataCountLimit >= dataChunkLimit && (dataChunkLimit == 0 || (dataCountLimit+1) % (dataChunkLimit+1) == 0),
-    "dataCountLimit+1 = %d, dataChunkLimit+1 = %d".format(dataCountLimit+1, dataChunkLimit+1))
-
   // Simulation Target
   val sim: T = Module(c)
 
@@ -220,100 +283,12 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   io.mnasti.r.bits.id   := arid_r
 
   /*** snasti ***/
-  val mem = new MemIO // Wire(new MemIO) // connected in the backend
-  val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
-  val state_r = RegInit(st_idle)
-  val do_mem_write = state_r === st_write
-  val resp_data_buf = Vec.fill(dataChunkLimit){Reg(UInt(width=io.sDataBits))}
-  val read_count = RegInit(UInt(0, log2Up(dataChunkLimit+1)))
-  val write_count = RegInit(UInt(0, log2Up(dataCountLimit+1)))
-  val s_axi_addr = 
-    if (memAddrOffset == io.sAddrBits - 4)
-      Cat(UInt(1, 4), mem.req_cmd.bits.addr, UInt(0, sAddrOffset))
-    else if (memAddrOffset > io.sAddrBits - 4) 
-      Cat(UInt(1, 4), mem.req_cmd.bits.addr(io.sAddrBits-4-sAddrOffset-1,0), UInt(0, sAddrOffset))
-    else
-      Cat(UInt(1, 4), UInt(0, io.sAddrBits-4-memAddrOffset), mem.req_cmd.bits.addr, UInt(0, sAddrOffset))
+  val memBlockBytes  = params(MemBlockBytes)
+  val memBlockOffset = log2Up(memBlockBytes)
+  val memDataCount   = 8*memBlockBytes / mifDataBits
 
-  mem.req_cmd.ready := 
-    (state_r === st_start_write && io.snasti.aw.ready) || (state_r === st_read && io.snasti.ar.ready)
-
-  /* snasti Read Signals */
-  // Read Address
-  io.snasti.ar.bits.addr := s_axi_addr
-  io.snasti.ar.bits.id := mem.req_cmd.bits.tag
-  io.snasti.ar.bits.len := UInt(dataCountLimit) // burst length (transfers)
-  io.snasti.ar.bits.size := UInt(log2Up(scala.math.min(mifDataBits, io.sDataBits))-3) // burst size (bits/beat)
-  io.snasti.ar.valid := state_r === st_read
-  // Read Data
-  io.snasti.r.ready := mem.resp.ready
-  mem.resp.valid := io.snasti.r.valid && 
-    (if (dataChunkLimit > 0) read_count === UInt(dataChunkLimit) else Bool(true))
-  mem.resp.bits.data := 
-    (if (dataChunkLimit > 0) Cat(io.snasti.r.bits.data :: resp_data_buf.toList.reverse) else io.snasti.r.bits.data)
-  mem.resp.bits.tag := io.snasti.r.bits.id
-
-  /* snasti Write Signals */
-  // Write Address
-  io.snasti.aw.bits.addr := s_axi_addr
-  io.snasti.aw.bits.id := UInt(0)
-  io.snasti.aw.bits.len := io.snasti.ar.bits.len // burst length (transfers)
-  io.snasti.aw.bits.size := io.snasti.ar.bits.size // burst size (bits/beat)
-  io.snasti.aw.valid := state_r === st_start_write
-  // Write Data
-  io.snasti.w.valid := do_mem_write && mem.req_data.valid
-  io.snasti.w.bits.data := {
-    val wire = mem.req_data.bits.data 
-    val width = io.sDataBits
-    if (dataChunkLimit > 0) Lookup(write_count(log2Up(dataChunkLimit+1)-1, 0), wire(width-1,0),
-      ((1 to dataChunkLimit) map (i => ((UInt(i) -> wire((i+1)*width-1,i*width))))).toList)
-    else wire
-  }
-  io.snasti.w.bits.last := io.snasti.w.valid &&
-    (if (dataCountLimit > 0) write_count === UInt(dataCountLimit) else Bool(true))
-  mem.req_data.ready := io.snasti.w.fire() && 
-    (if (dataChunkLimit > 0) write_count(log2Up(dataChunkLimit+1)-1, 0) === UInt(dataChunkLimit) else Bool(true))
-  // Write Response
-  io.snasti.b.ready := Bool(true)
-
-
-  if (dataChunkLimit > 0) {
-    when(io.snasti.r.fire()) {
-      read_count := Mux(read_count === UInt(dataChunkLimit), UInt(0), read_count + UInt(1))
-    }
-    when(io.snasti.r.valid) {
-      resp_data_buf(read_count) := io.snasti.r.bits.data
-    }
-  }
-
-  /* FSM for memory requests */
-  switch(state_r) {
-    is(st_idle) {
-      state_r := 
-        Mux(mem.req_cmd.valid && !mem.req_cmd.bits.rw, st_read,
-        Mux(mem.req_cmd.valid && mem.req_cmd.bits.rw && mem.req_data.valid, 
-            st_start_write, st_idle))
-    }
-    is(st_read) {
-      state_r := Mux(io.snasti.ar.ready, st_idle, st_read)
-    }
-    is(st_start_write) {
-      state_r := Mux(io.snasti.aw.ready, st_write, st_start_write)
-    }
-    is(st_write) {
-      when(io.snasti.w.ready && mem.req_data.valid) {
-        if (dataChunkLimit > 0) {
-          write_count := write_count + UInt(1)
-          when (io.snasti.w.bits.last) {
-            write_count := UInt(0)
-            state_r := st_idle
-          }
-        } else {
-          state_r := st_idle 
-        }
-      }
-    }
-  }
+  val snasti_mem_conv = Module(new NASTISlaveIOMemIOConverter, {case NASTIName => "Slave"})
+  snasti_mem_conv.io.nasti <> io.snasti
 
   transforms.init(this)
 }
