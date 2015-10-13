@@ -1,8 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet, LinkedHashSet}
-import scala.collection.immutable.ListMap
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 import scala.util.matching.Regex
 
 object findSRAMRead {
@@ -28,13 +27,18 @@ object transforms {
   private val regs = HashMap[Module, ArrayBuffer[Node]]()
   private val traces = HashMap[Module, ArrayBuffer[Node]]()
   private val srams = HashMap[Module, ArrayBuffer[Mem[Data]]]()
-  private var daisyWidth = 0
+
+  private[strober] var sampleNum = 0
+  private[strober] var daisyWidth = 0
+  private[strober] var channelWidth = 0
+  private[strober] var traceLen = 0
   private[strober] var regSnapLen = 0
   private[strober] var traceSnapLen = 0
   private[strober] var sramSnapLen = 0
   private[strober] var hasRegs = false
   private[strober] var sramMaxSize = 0
   private[strober] var warmCycles = 0
+
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
@@ -49,7 +53,6 @@ object transforms {
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
         probeDesign,
-        connectIOs,
         Driver.backend.inferAll,
         Driver.backend.computeMemPorts,
         connectCtrlSignals,
@@ -62,9 +65,13 @@ object transforms {
       )
     }
 
-    targetName = Driver.backend.extractClassName(w.target) 
-    w.name = targetName + "Wrapper"
-    wrappers += w
+    sampleNum    = w.sampleNum
+    daisyWidth   = w.daisyWidth
+    channelWidth = w.channelWidth
+    traceLen     = w.traceLen
+    targetName   = Driver.backend.extractClassName(w.target) 
+    w.name       = targetName + "Wrapper"
+    wrappers    += w
     stallPins(w) = !fire
     daisyPins(w) = w.io.daisy
   }
@@ -96,150 +103,6 @@ object transforms {
     }
   }
 
-  private val connectIOs: Module => Unit = {
-    case w: NASTIShim[SimNetwork] => {
-      ChiselError.info("[transforms] connect IOs to AXI busses")
-      daisyWidth = w.sim.daisyWidth
-      val (memInMap,  ioInMap)  = w.sim.io.inMap  partition (SimMemIO contains _._1)
-      val (memOutMap, ioOutMap) = w.sim.io.outMap partition (SimMemIO contains _._1)
-      var inCount = 0
-      var outCount = 0
-      val inReady = ArrayBuffer[Bool]()
-      val outData = ArrayBuffer[UInt]()
-      val outValid = ArrayBuffer[Bool]()
-
-      def initInConv[T <: Data](gen: T, id: Int) = {
-        val conv = w.addModule(new NASTI2Input(gen, id), {case NASTIName => "Master"})
-        conv.name = "in_conv_" + id
-        conv.reset := w.reset_t
-        conv.io.addr := w.waddr_r
-        conv.io.in.bits := w.io.mnasti.w.bits.data
-        conv.io.in.valid := w.do_write
-        inReady += conv.io.in.ready
-        conv
-      }
-
-      def initOutConv[T <: Data](gen: T, id: Int) = {
-        val conv = w.addModule(new Output2NASTI(gen, id), {case NASTIName => "Master"})
-        conv.name = "out_conv_" + id
-        conv.reset := w.reset_t
-        conv.io.addr := w.raddr_r
-        conv.io.out.ready := w.do_read && w.io.mnasti.r.ready
-        outData += conv.io.out.bits
-        outValid += conv.io.out.valid
-        conv
-      }
-
-      // Inputs
-      for (((wire, in), i) <- ioInMap.zipWithIndex) {
-        val id = inCount + i
-        val conv = initInConv(in.bits, id)
-        conv.io.out <> in
-        inMap(wire) = id
-      }
-      inCount += ioInMap.size 
-
-      // Outputs
-      for (((wire, out), i) <- ioOutMap.zipWithIndex) {
-        val id = outCount + i
-        val conv = initOutConv(out.bits, id)
-        conv.io.in <> out
-        outMap(wire) = id
-      }
-      outCount += ioOutMap.size
-
-      // Traces
-      val inTraces = w.sim.io.inMap.unzip._1.zipWithIndex filter 
-        (SimMemIO contains _._1) map (w.sim.initTrace(_)) 
-      val outTraces = w.sim.io.outMap.unzip._1.zipWithIndex filter 
-        (SimMemIO contains _._1) map (w.sim.initTrace(_))
-      for (((trace, wire), i) <- (inTraces ++ outTraces).zipWithIndex) {
-        val id = outCount + i
-        val conv = initOutConv(trace.bits, id)
-        if (wire.dir == INPUT) inTraceMap(wire) = id else outTraceMap(wire) = id
-        conv.io.in <> trace
-      }
-      outCount += (inTraces.size + outTraces.size)
-
-      // Snapshots
-      // if (hasRegs) 
-      {
-        val out = w.sim.io.daisy.regs.out
-        val conv = initOutConv(out.bits, outCount)
-        conv.io.in.bits := out.bits
-        conv.io.in.valid := out.valid
-        out.ready := conv.io.in.ready
-        miscOutMap(w.snap_out.regs) = outCount
-        outCount += 1
-      }
-      // if (warmCycles > 0) 
-      { 
-        val out = w.sim.io.daisy.trace.out
-        val conv = initOutConv(out.bits, outCount)
-        conv.io.in.bits := out.bits
-        conv.io.in.valid := out.valid
-        out.ready := conv.io.in.ready
-        miscOutMap(w.snap_out.trace) = outCount
-        outCount += 1 
-      }
-      // if (sramMaxSize > 0) 
-      { 
-        val out = w.sim.io.daisy.sram.out
-        val conv = initOutConv(out.bits, outCount)
-        conv.io.in.bits := out.bits
-        conv.io.in.valid := out.valid
-        out.ready := conv.io.in.ready
-        miscOutMap(w.snap_out.sram) = outCount
-        outCount += 1
-      }
-      // miscOutMap(w.snap_out.cntr) = outCount
-      // outCount += 1 
-
-      // MemIOs
-      val conv = w.addModule(new NASTI_MemIOConverter(inCount, outCount), {case NASTIName => "Master"})
-      conv.reset := w.reset_t
-      conv.io.in_addr := w.waddr_r
-      conv.io.out_addr := w.raddr_r
-      for (in <- conv.io.ins) {
-        in.bits := w.io.mnasti.w.bits.data
-        in.valid := w.do_write
-        inReady += in.ready
-      }
-      for (out <- conv.io.outs) {
-        out.ready := w.do_read && w.io.mnasti.r.ready
-        outData += out.bits
-        outValid += out.valid
-      }
-      miscInMap(w.mem_req.addr) = inCount
-      miscInMap(w.mem_req.tag) = inCount + 1
-      miscInMap(w.mem_req.data) = inCount + 2
-      miscOutMap(w.mem_resp.data) = outCount
-      miscOutMap(w.mem_resp.tag) = outCount + 1
-      inCount += conv.io.ins.size
-      outCount += conv.io.outs.size
-
-      val arb = w.addModule(new MemArbiter(SimMemIO.size+1))
-      for (i <- 0 until SimMemIO.size) {
-        val conv = w.addModule(new ChannelMemIOConverter)
-        conv.name = "mem_conv_" + i
-        conv.reset := w.reset_t
-        conv.io.sim_mem  <> (SimMemIO(i), w.sim.io)
-        conv.io.host_mem <> arb.io.ins(i)
-      } 
-      conv.io.mem <> arb.io.ins(SimMemIO.size)
-      arb.io.out  <> w.snasti_mem_conv.io.mem
-
-      w.in_ready := Vec(inReady)(w.waddr_r)
-      w.out_data := Vec(outData)(w.raddr_r)
-      w.out_valid := Vec(outValid)(w.raddr_r)
-    }
-    case w: SimWrapper[Module] => {
-      daisyWidth = w.daisyWidth
-      inMap ++= w.ins.unzip._2.zipWithIndex
-      outMap ++= w.outs.unzip._2.zipWithIndex
-    }
-  }
-
   private def connectCtrlSignals(c: Module) {
     ChiselError.info("[transforms] connect control signals")
 
@@ -251,8 +114,6 @@ object transforms {
     }
 
     def connectSRAMRestart(m: Module): Unit = m.parent match {
-      case w: NASTIShim[SimNetwork] =>
-        daisyPins(m).sram.restart := w.sram_restart
       case p if daisyPins contains p =>
         if (p != c && daisyPins(p).sram.restart.inputs.isEmpty)
           connectSRAMRestart(p)
@@ -381,12 +242,6 @@ object transforms {
       }
     }
     for (w <- wrappers) {
-      c match { 
-        case _: NASTIShim[SimNetwork] =>
-          w.io.daisy.regs.in.bits := UInt(0)
-          w.io.daisy.regs.in.valid := Bool(false)
-        case _ =>
-      }
       w.io.daisy.regs <> daisyPins(w.target).regs
     }
   }
@@ -465,14 +320,8 @@ object transforms {
       }
     }
     for (w <- wrappers) {
-      c match { 
-        case _: NASTIShim[SimNetwork] =>
-          w.io.daisy.trace.in.bits := UInt(0)
-          w.io.daisy.trace.in.valid := Bool(false)
-        case _ =>
-      }
       w.io.daisy.trace <> daisyPins(w.target).trace
-    }
+    } 
   }
 
   def addSRAMChain(c: Module) = if (sramMaxSize > 0) {
@@ -542,58 +391,31 @@ object transforms {
       }
     } 
     for (w <- wrappers) {
-      c match { 
-        case _: NASTIShim[SimNetwork] =>
-          w.io.daisy.sram.in.bits := UInt(0)
-          w.io.daisy.sram.in.valid := Bool(false)
-        case _ =>
-      }
       w.io.daisy.sram <> daisyPins(w.target).sram
-    }
+    } 
   } 
 
-  private def dumpMaps(c: Module) {
-    object MapType extends Enumeration { 
-      val IoIn, IoOut, InTrace, OutTrace, MiscIn, MiscOut = Value 
-    }
-    ChiselError.info("[transforms] dump io & mem mapping")
-    val res = new StringBuilder
-    for ((in, id) <- inMap) {
-      val path = nameMap(in)
-      val width = in.needWidth
-      res append "%d %s %d %d\n".format(MapType.IoIn.id, path, id, width)
-    }
-    for ((out, id) <- outMap) {
-      val path = nameMap(out)
-      val width = out.needWidth
-      res append "%d %s %d %d\n".format(MapType.IoOut.id, path, id, width)
-    }
-    for ((in, id) <- inTraceMap) {
-      val path = nameMap(in)
-      val width = in.needWidth
-      res append "%d %s %d %d\n".format(MapType.InTrace.id, path, id, width)
-    }
-    for ((out, id) <- outTraceMap) {
-      val path = nameMap(out)
-      val width = out.needWidth
-      res append "%d %s %d %d\n".format(MapType.OutTrace.id, path, id, width)
-    }
-    for ((wire, id) <- miscInMap) {
-      val width = wire.needWidth
-      res append "%d %s %d %d\n".format(MapType.MiscIn.id, wire.name, id, width)
-    }
-    for ((wire, id) <- miscOutMap) {
-      val width = wire.needWidth
-      res append "%d %s %d %d\n".format(MapType.MiscOut.id, wire.name, id, width)
-    }
+  object MapType extends Enumeration { val IoIn, IoOut, InTrace, OutTrace = Value }
+  private val dumpMaps: Module => Unit = {
+    case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
+      ChiselError.info("[transforms] dump io & mem mapping")
+      def dump(map_t: MapType.Value, arg: (Bits, Int)) = arg match { 
+        case (wire, id) => s"${map_t.id} ${nameMap(wire)} ${id} ${w.sim.io.chunk(wire)}\n"} 
 
-    val file = Driver.createOutputFile(targetName + ".map")
-    try {
-      file write res.result
-    } finally {
-      file.close
-      res.clear
-    }
+      val res = new StringBuilder
+      res append (w.master.inMap    map {dump(MapType.IoIn,     _)} mkString "")
+      res append (w.master.outMap   map {dump(MapType.IoOut,    _)} mkString "")
+      res append (w.master.inTrMap  map {dump(MapType.InTrace,  _)} mkString "")
+      res append (w.master.outTrMap map {dump(MapType.OutTrace, _)} mkString "")
+
+      val file = Driver.createOutputFile(targetName + ".map")
+      try {
+        file write res.result
+      } finally {
+        file.close
+        res.clear
+      }
+    case _ =>
   }
 
   private def dumpChains(c: Module) {
@@ -682,26 +504,29 @@ object transforms {
         case Param(p, v) => sb append "#define %s %s\n".format(p, v)
         case _ =>
       }
-      sb append "#define MEM_DATA_COUNT %d\n".format(w.memDataCount)
       sb append "#define MEM_BLOCK_OFFSET %d\n".format(w.memBlockOffset)
-      // addrs
-      sb append "#define RESET_ADDR %d\n".format(w.resetAddr)
-      sb append "#define SRAM_RESTART_ADDR %d\n".format(w.sramRestartAddr)
-      sb append "#define MEM_REQ_ADDR %d\n".format(miscInMap(w.mem_req.addr))
-      sb append "#define MEM_REQ_TAG %d\n".format(miscInMap(w.mem_req.tag))
-      sb append "#define MEM_REQ_DATA %d\n".format(miscInMap(w.mem_req.data))
-      sb append "#define SNAP_OUT_REGS %d\n".format(miscOutMap(w.snap_out.regs)) 
-      sb append "#define SNAP_OUT_TRACE %d\n".format(miscOutMap(w.snap_out.trace)) 
-      sb append "#define SNAP_OUT_SRAM %d\n".format(miscOutMap(w.snap_out.sram)) 
-      // sb append "#define SNAP_OUT_CNTR %d\n".format(miscOutMap(w.snap_out.cntr)) 
-      sb append "#define MEM_RESP_DATA %d\n".format(miscOutMap(w.mem_resp.data))
-      sb append "#define MEM_RESP_TAG %d\n".format(miscOutMap(w.mem_resp.tag))
-      // snapshot info
+      sb append "#define CHANNEL_OFFSET %d\n".format(log2Up(channelWidth))
       sb append "#define REG_SNAP_LEN %d\n".format(regSnapLen) 
       sb append "#define TRACE_SNAP_LEN %d\n".format(traceSnapLen) 
       sb append "#define SRAM_SNAP_LEN %d\n".format(sramSnapLen) 
       sb append "#define SRAM_MAX_SIZE %d\n".format(sramMaxSize) 
-      if (warmCycles > 0) sb append "#define WARM_CYCLES %d\n".format(warmCycles) 
+      // addrs
+      sb append "#define RESET_ADDR %d\n".format(w.master.resetAddr)
+      sb append "#define SRAM_RESTART_ADDR %d\n".format(w.master.sramRestartAddr)
+      sb append "#define SNAP_OUT_REGS %d\n".format(w.master.snapOutMap(w.sim.io.daisy.regs.out)) 
+      sb append "#define SNAP_OUT_TRACE %d\n".format(w.master.snapOutMap(w.sim.io.daisy.trace.out))
+      sb append "#define SNAP_OUT_SRAM %d\n".format(w.master.snapOutMap(w.sim.io.daisy.sram.out)) 
+      // sb append "#define SNAP_OUT_CNTR %d\n".format(miscOutMap(w.snap_out.cntr)) 
+      sb append "#define MEM_REQ_ADDR %d\n".format(w.master.reqMap(w.mem.req_cmd.bits.addr))
+      sb append "#define MEM_REQ_TAG %d\n".format(w.master.reqMap(w.mem.req_cmd.bits.tag))
+      sb append "#define MEM_REQ_RW %d\n".format(w.master.reqMap(w.mem.req_cmd.bits.rw))
+      sb append "#define MEM_REQ_DATA %d\n".format(w.master.reqMap(w.mem.req_data.bits.data))
+      sb append "#define MEM_RESP_DATA %d\n".format(w.master.respMap(w.mem.resp.bits.data))
+      sb append "#define MEM_RESP_TAG %d\n".format(w.master.respMap(w.mem.resp.bits.tag))
+      sb append "#define MEM_DATA_CHUNK %d\n".format(w.sim.io.chunk(w.mem.resp.bits.data))
+      
+      // snapshot info
+      if (warmCycles > 0) sb append "#define WARM_CYCLES %d\n".format(warmCycles)
       sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
       val file = Driver.createOutputFile(targetName + "-param.h")

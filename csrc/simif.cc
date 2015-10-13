@@ -40,38 +40,31 @@ simif_t::~simif_t() {
 }
 
 void simif_t::read_map(std::string filename) {
-  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE, MISC_IN, MISC_OUT };
+  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE };
   std::ifstream file(filename.c_str());
   std::string line;
   if (file) {
     while (getline(file, line)) {
       std::istringstream iss(line);
       std::string path;
-      size_t type, id, width;
-      iss >> type >> path >> id >> width;
-      assert(in_widths.size() || out_widths.size() == id);
+      size_t type, id, chunk;
+      iss >> type >> path >> id >> chunk;
       switch (static_cast<MAP_TYPE>(type)) {
         case IO_IN:
           in_map[path] = id;
-          in_widths.push_back(width);
+          in_chunks[id] = chunk;
           break;
         case IO_OUT:
           out_map[path] = id;
-          out_widths.push_back(width);
+          out_chunks[id] = chunk;
           break;
         case IN_TRACE:
           in_trace_map[path] = id;
-          out_widths.push_back(width);
+          out_chunks[id] = chunk;
           break;
         case OUT_TRACE:
           out_trace_map[path] = id;
-          out_widths.push_back(width);
-          break;
-        case MISC_IN:
-          in_widths.push_back(width);
-          break;
-        case MISC_OUT:
-          out_widths.push_back(width);
+          out_chunks[id] = chunk;
           break;
         default:
           break;
@@ -158,14 +151,14 @@ void simif_t::init() {
   for (size_t i = 0 ; i < in_map.size() ; i++) {
     in_traces.push_back(trace_t());
   }
-  for (size_t i = 0 ; i < out_map.size() ; i++) {
+  for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
+    size_t id = it->second;
+    peek_map[id] = peek_port(id);
     out_traces.push_back(trace_t());
-    peek_map[i] = peek_channel(i);
   }
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
     // flush traces from initialization
-    size_t id = it->second;
-    biguint_t flush = peek_channel(id);
+    biguint_t flush = peek_port(it->second);
   }
 }
 
@@ -245,21 +238,23 @@ void simif_t::step(size_t n) {
     }
 
     // take a step
-    for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
+    size_t k;
+    idmap_it_t it;
+    for (it = in_map.begin(), k = 0 ; it != in_map.end() ; it++, k++) {
       size_t id = it->second;
-      biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;  
-      poke_channel(id, data);
+      biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;
+      poke_port(id, data);
       if (trace_count < TRACE_LEN) {
-        in_traces[id].push(data);
+        in_traces[k].push(data);
       } 
     }
     peek_map.clear();
-    for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
+    for (it = out_map.begin(), k = 0 ; it != out_map.end() ; it++, k++) {
       size_t id = it->second;
-      biguint_t data = peek_channel(id);
+      biguint_t data = peek_port(id); 
       peek_map[id] = data; 
       if (trace_count < TRACE_LEN) {
-        out_traces[id].push(data);
+        out_traces[k].push(data);
       } 
     }
 
@@ -272,20 +267,22 @@ void simif_t::step(size_t n) {
 
 void simif_t::write_mem(size_t addr, biguint_t data) {
   poke_channel(MEM_REQ_ADDR, addr >> MEM_BLOCK_OFFSET);
-  poke_channel(MEM_REQ_TAG, 1);
-  for (size_t i = 0 ; i < MEM_DATA_COUNT ; i++) {
-    poke_channel(MEM_REQ_DATA, data >> (i * MEM_DATA_WIDTH));
+  poke_channel(MEM_REQ_TAG,  0);
+  poke_channel(MEM_REQ_RW,   1);
+  for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
+    poke_channel(MEM_REQ_DATA+off, (data >> (off << CHANNEL_OFFSET)).uint());
   }
 }
 
 biguint_t simif_t::read_mem(size_t addr) {
   poke_channel(MEM_REQ_ADDR, addr >> MEM_BLOCK_OFFSET);
-  poke_channel(MEM_REQ_TAG, 0);
+  poke_channel(MEM_REQ_TAG,  0);
+  poke_channel(MEM_REQ_RW,   0);
 
   biguint_t data = 0;
-  for (size_t i = 0 ; i < MEM_DATA_COUNT ; i++) {
+  for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
     assert(peek_channel(MEM_RESP_TAG) == 0);
-    data |= peek_channel(MEM_RESP_DATA) << (i * MEM_DATA_WIDTH);
+    data |= peek_channel(MEM_RESP_DATA+off) << (off << CHANNEL_OFFSET);
   }
   return data;
 }
@@ -296,33 +293,29 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
     // input traces by the driver
     for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
       std::string wire = it->first;
-      size_t id = it->second;
-      trace_t &trace = in_traces[id];
-      assert(i > 0 || trace.size() == len);
+      trace_t &trace = in_traces[it->second];
+      assert(trace.size() + i == len);
       sample->add_cmd(new poke_t(wire, trace.front()));
       trace.pop();
     }
     // input traces from FPGA
     for (idmap_it_t it = in_trace_map.begin() ; it != in_trace_map.end() ; it++) {
       std::string wire = it->first;
-      size_t id = it->second;
-      sample->add_cmd(new poke_t(wire, peek_channel(id)));
+      sample->add_cmd(new poke_t(wire, peek_port(it->second)));
     }
     sample->add_cmd(new step_t(1));
     // output traces by the driver
     for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
       std::string wire = it->first;
-      size_t id = it->second;
-      trace_t &trace = out_traces[id];
-      assert(i > 0 || trace.size() == len);
+      trace_t &trace = out_traces[it->second];
+      assert(trace.size() + i == len);
       sample->add_cmd(new expect_t(wire, trace.front()));
       trace.pop();
     }
     // output traces from FPGA
     for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
       std::string wire = it->first;
-      size_t id = it->second;
-      sample->add_cmd(new expect_t(wire, peek_channel(id)));
+      sample->add_cmd(new expect_t(wire, peek_port(it->second)));
     }
   }
 
@@ -343,18 +336,18 @@ std::string simif_t::read_snapshot() {
   for (size_t k = 0 ; k < SRAM_MAX_SIZE ; k++) {
     poke_channel(SRAM_RESTART_ADDR, 0);
     for (size_t i = 0 ; i < SRAM_SNAP_LEN ; i++) {
-      int_to_bin(bin, peek_channel(SNAP_OUT_SRAM).uint(), DAISY_WIDTH);
+      int_to_bin(bin, peek_channel(SNAP_OUT_SRAM), DAISY_WIDTH);
       snap << bin;
     }
   }
   for (size_t i = 0 ; i < TRACE_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_TRACE).uint(), DAISY_WIDTH);
+    int_to_bin(bin, peek_channel(SNAP_OUT_TRACE), DAISY_WIDTH);
     snap << bin;
   } 
   for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_REGS).uint(), DAISY_WIDTH);
+    int_to_bin(bin, peek_channel(SNAP_OUT_REGS), DAISY_WIDTH);
     snap << bin;
-  } 
+  }
 
   return snap.str();
 }
