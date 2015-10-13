@@ -44,8 +44,8 @@ class simif_t
     
     // trace information
     size_t trace_count;
-    std::vector<trace_t> in_traces;
-    std::vector<trace_t> out_traces; 
+    std::map<size_t, trace_t> in_traces;
+    std::map<size_t, trace_t> out_traces; 
 
     // sample information
     sample_t* samples[SAMPLE_NUM];

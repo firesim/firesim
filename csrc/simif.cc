@@ -148,13 +148,13 @@ void simif_t::init() {
   }
 
   peek_map.clear();
-  for (size_t i = 0 ; i < in_map.size() ; i++) {
-    in_traces.push_back(trace_t());
+  for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
+    in_traces[it->second] = trace_t();
   }
   for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
     size_t id = it->second;
     peek_map[id] = peek_port(id);
-    out_traces.push_back(trace_t());
+    out_traces[id] = trace_t();
   }
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
     // flush traces from initialization
@@ -238,23 +238,21 @@ void simif_t::step(size_t n) {
     }
 
     // take a step
-    size_t k;
-    idmap_it_t it;
-    for (it = in_map.begin(), k = 0 ; it != in_map.end() ; it++, k++) {
+    for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
       size_t id = it->second;
       biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;
       poke_port(id, data);
       if (trace_count < TRACE_LEN) {
-        in_traces[k].push(data);
+        in_traces[id].push(data);
       } 
     }
     peek_map.clear();
-    for (it = out_map.begin(), k = 0 ; it != out_map.end() ; it++, k++) {
+    for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
       size_t id = it->second;
       biguint_t data = peek_port(id); 
       peek_map[id] = data; 
       if (trace_count < TRACE_LEN) {
-        out_traces[k].push(data);
+        out_traces[id].push(data);
       } 
     }
 
@@ -333,7 +331,7 @@ std::string simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
 
-  for (size_t k = 0 ; k < SRAM_MAX_SIZE ; k++) {
+  for (size_t k = 0 ; k < SRAM_SNAP_SIZE ; k++) {
     poke_channel(SRAM_RESTART_ADDR, 0);
     for (size_t i = 0 ; i < SRAM_SNAP_LEN ; i++) {
       int_to_bin(bin, peek_channel(SNAP_OUT_SRAM), DAISY_WIDTH);

@@ -91,7 +91,7 @@ public:
       start += width;
     }
 
-#ifdef WARM_CYCLES
+#if WARM_CYCLES > 0
     static const size_t trace_len = trace_signals.size() / WARM_CYCLES;
     for (size_t i = 0 ; i < trace_signals.size() ; i++) {
       std::string signal = trace_signals[i];
