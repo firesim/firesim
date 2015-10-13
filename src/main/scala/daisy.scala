@@ -3,6 +3,10 @@ package strober
 import Chisel._
 import scala.collection.mutable.HashMap
 
+case object DaisyWidth extends Field[Int]
+case object DataWidth extends Field[Int]
+case object SRAMSize extends Field[Int]
+
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
   val in = Decoupled(UInt(width=daisywidth)).flip
@@ -24,9 +28,6 @@ class DaisyBundle(daisywidth: Int) extends Bundle {
   val cntr  = new CntrData(daisywidth)
   override def clone: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
 }
-
-case object DataWidth extends Field[Int]
-case object SRAMSize extends Field[Int]
 
 // Common structures for daisy chains
 abstract trait DaisyChainParams extends UsesParameters {

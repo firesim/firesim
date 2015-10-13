@@ -14,8 +14,8 @@ class simif_zynq_t : public simif_t
     const static uintptr_t dev_paddr = 0x43C00000; 
   
   protected:
-    virtual void poke_channel(size_t addr, biguint_t data);
-    virtual biguint_t peek_channel(size_t addr);
+    virtual void poke_channel(size_t addr, uint64_t data);
+    virtual uint64_t peek_channel(size_t addr);
 };
 
 #endif // __SIMIF_ZYNQ_H

@@ -3,19 +3,6 @@ package strober
 import Chisel._
 import junctions._
 
-// NASTI Params
-case object NASTIName extends Field[String]
-case object NASTIAddrSizeBits extends Field[Int]
-
-// Mem Params
-case object MemBlockBytes extends Field[Int]
-case object MemAddrSizeBits extends Field[Int]
-
-// Simulation Params
-case object SampleNum  extends Field[Int]
-case object TraceLen   extends Field[Int]
-case object DaisyWidth extends Field[Int]
-
 object NASTIParams {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
     case NASTIAddrBits => site(NASTIName) match {
@@ -46,5 +33,6 @@ object SimParams {
     case SampleNum  => Dump("SAMPLE_NUM",  30)
     case TraceLen   => Dump("TRACE_LEN",   16)
     case DaisyWidth => Dump("DAISY_WIDTH", 32)
+    case ChannelWidth => Dump("CHANNEL_WIDTH", 32)
   }
 }

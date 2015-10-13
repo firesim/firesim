@@ -2,38 +2,32 @@ package strober
 
 import Chisel._
 import scala.collection.immutable.ListMap
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-class Header extends Bundle {
-  val void = Bool()
+case object SampleNum    extends Field[Int]
+case object TraceLen     extends Field[Int]
+case object ChannelWidth extends Field[Int]
+
+class ChannelIO(w: Int)  extends Bundle {
+  val in    = Decoupled(UInt(width=w)).flip
+  val out   = Decoupled(UInt(width=w))
+  val trace = Decoupled(UInt(width=w))
 }
 
-class Packet[T <: Bits](gen: T) extends Bundle {
-  // val header  = new Header
-  val data = gen.clone
-  override def clone: this.type = new Packet(gen).asInstanceOf[this.type]
-}
-
-class ChannelIO[T <: Bits](gen: T) extends Bundle {
-  val in  = Decoupled(new Packet[T](gen)).flip
-  val out = Decoupled(new Packet[T](gen))
-  val trace = Decoupled(gen)
-}
-
-class Channel[T <: Bits](gen: T, entries: Int = 2) extends Module {
-  // Chnnel is plugged into one "flattened" IO
+class Channel(w: Int, entries: Int = 2) extends Module {
   val traceLen = params(TraceLen)
-  val io       = new ChannelIO[T](gen)
-  val packets  = Module(new Queue(new Packet[T](gen), entries))
-  io.in <> packets.io.enq
-  packets.io.deq <> io.out
+  val io       = new ChannelIO(w)
+  val tokens   = Module(new Queue(UInt(width=w), entries))
+  val out_fire = io.out.fire()
+  io.in <> tokens.io.enq
+  tokens.io.deq <> io.out
   def initTrace  = {
-    // instantiate trace in the backend(lazy connection?)
-    // trace queue will not appear until this is executed
-    val trace = addModule(new Queue(gen, traceLen))
+    // lazy instantiation
+    val trace = addModule(new Queue(UInt(width=w), traceLen))
     trace setName "trace"
     // trace is written when a token is consumed
-    trace.io.enq.bits := io.out.bits.data
-    trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
+    trace.io.enq.bits  := io.out.bits
+    trace.io.enq.valid := addNode(trace.io.enq.ready && out_fire)
     trace.io.deq <> io.trace
     io.trace
   }
@@ -46,67 +40,118 @@ object SimWrapper {
   }
 }
 
-class SimWrapperIO(t_ins: Array[(String, Bits)], t_outs: Array[(String, Bits)]) extends Bundle {
-  val daisyWidth = params(DaisyWidth)
-  def genPacket[T <: Bits](arg: (String, Bits)) = arg match { case (name, port) =>
-    val packet = Decoupled(new Packet(port))
-    if (port.dir == INPUT) packet.flip
-    packet nameIt ("io_" + name + "_channel", true)
+class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits)]) extends Bundle {
+  val channelWidth = params(ChannelWidth)
+  val daisyWidth   = params(DaisyWidth)
+  val names = ((t_ins ++ t_outs) map (x => x._2 -> x._1)).toMap
+
+  private val chunks = HashMap[Bits, Int]()
+  def chunk(wire: Bits) = chunks getOrElseUpdate (wire, (wire.needWidth-1)/channelWidth+1)
+
+  val ins   = Vec(t_ins flatMap genPacket)
+  val outs  = Vec(t_outs flatMap genPacket)
+  val daisy = new DaisyBundle(daisyWidth)
+
+  def genPacket[T <: Bits](arg: (String, Bits)) = arg match {case (name, port) =>
+    val packet = (0 until chunk(port)) map {i =>
+      val width = scala.math.min(channelWidth, port.needWidth-i*channelWidth)
+      val token = Decoupled(UInt(width=width))
+      token nameIt ("io_" + name + "_channel_" + i, true)
+      if (port.dir == INPUT) token.flip else token
+    }
     packet
   }
-  val ins = Vec(t_ins map genPacket)
-  val outs = Vec(t_outs map genPacket)
-  val inMap = ListMap((t_ins.unzip._2 zip ins):_*)
-  val outMap = ListMap((t_outs.unzip._2 zip outs):_*)
-  val daisy = new DaisyBundle(daisyWidth)
+
+  lazy val inMap  = genIoMap(t_ins)
+  lazy val outMap = genIoMap(t_outs)
+  val in_traces  = ArrayBuffer[DecoupledIO[Bits]]()
+  val out_traces = ArrayBuffer[DecoupledIO[Bits]]()
+
+  def genIoMap(wires: Seq[(String, Bits)]) = ListMap(((wires foldLeft (Seq[(Bits, Int)](), 0)){
+    case ((map, i), (name, wire)) => (map:+(wire->i), i+chunk(wire))})._1:_*)
+
+  def getIns(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => ins(id+off))}
+  def getOuts(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => outs(id+off))}
+  def getIns(wire: Bits) = (0 until chunk(wire)) map (off => ins(inMap(wire)+off))
+  def getOuts(wire: Bits) = (0 until chunk(wire)) map (off => outs(outMap(wire)+off))
 }
 
 abstract class SimNetwork extends Module {
   def io: SimWrapperIO 
-  def in_channels: Seq[Channel[Bits]]
-  def out_channels: Seq[Channel[Bits]]
-  val sampleNum  = params(SampleNum)
-  val traceLen   = params(TraceLen)
-  val daisyWidth = params(DaisyWidth)
+  def in_channels: Seq[Channel]
+  def out_channels: Seq[Channel]
+  val sampleNum    = params(SampleNum)
+  val traceLen     = params(TraceLen)
+  val daisyWidth   = params(DaisyWidth)
+  val channelWidth = params(ChannelWidth)
 
   def initTrace[T <: Bits](arg: (T, Int)) = arg match { case (gen, id) =>
-    val trace = addPin(Decoupled(gen), gen.name + "_trace")
-    val channel = if (gen.dir == INPUT) in_channels(id) else out_channels(id)
-    trace <> channel.initTrace
-    (trace, gen)
+    for (off <- 0 until io.chunk(gen)) {
+      val width = scala.math.min(channelWidth, gen.needWidth-off*channelWidth)
+      val trace = addPin(Decoupled(UInt(width=width)), "io_" + io.names(gen) + "_trace_" + off)
+      if (gen.dir == INPUT) {
+        trace <> in_channels(id+off).initTrace
+        io.in_traces += trace
+      } else {
+        trace <> out_channels(id+off).initTrace
+        io.out_traces += trace
+      }
+    }
   }
+
+  def genChannels[T <: Bits](arg: (String, T))(implicit mod: Module = this) = 
+    arg match {case (name, port) => (0 until io.chunk(port)) map { off => 
+      val width = scala.math.min(channelWidth, port.needWidth-off*channelWidth)
+      val channel = mod.addModule(new Channel(width)) 
+      channel setName ("Channel_" + name + "_" + off)
+      channel
+    }}
+
+  def connectInput[T <: Bits](i: Int, arg: (String, Bits), inChannels: Seq[Channel], fire: Option[Bool] = None) =
+    arg match { case (name, wire) =>
+      val channels = inChannels slice (i, i+io.chunk(wire))
+      val channelOuts = wire match {
+        case _: Bool => channels.head.io.out.bits.toBool
+        case _ => Vec(channels map (_.io.out.bits)).toBits
+      }
+      fire match {
+        case None => wire := channelOuts
+        case Some(p) =>
+          val buffer = RegEnable(channelOuts, p)
+          buffer setName (name + "_buffer") 
+          wire := Mux(p, channelOuts, buffer)
+      }
+      i + io.chunk(wire)
+    }
+
+  def connectOutput[T <: Bits](i: Int, arg: (String, Bits), outChannels: Seq[Channel]) =
+    arg match { case (name, wire) =>
+      val channels = outChannels slice (i, i+io.chunk(wire))
+      channels.zipWithIndex foreach {case (channel, idx) =>
+        channel.io.in.bits := wire.toUInt >> UInt(idx*channelWidth)
+      }
+      i + io.chunk(wire)
+    }
 }
 
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
   val (ins, outs) = target.wires partition (_._2.dir == INPUT)
+
   val io = new SimWrapperIO(ins, outs)
-  val in_channels: Seq[Channel[Bits]] = ins map { x => 
-    val channel = Module(new Channel(x._2)) 
-    channel setName ("Channel_" + x._1)
-    channel
-  }
-  val out_channels: Seq[Channel[Bits]] = outs map { x => 
-    val channel = Module(new Channel(x._2)) 
-    channel setName ("Channel_" + x._1)
-    channel
-  }
+
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
 
-  // Datapath: Channels <> IOs
-  for ((in, i) <- io.ins.zipWithIndex) {
-    val channel = in_channels(i)
-    val buffer = RegEnable(channel.io.out.bits.data, fire)
-    ins(i)._2 := Mux(fire, channel.io.out.bits.data, buffer)
-    in <> channel.io.in
-  }
+  val in_channels: Seq[Channel] = ins flatMap genChannels
+  val out_channels: Seq[Channel] = outs flatMap genChannels
 
-  for ((out, i) <- io.outs.zipWithIndex) {
-    val channel = out_channels(i)
-    channel.io.out <> out
-    channel.io.in.bits.data := outs(i)._2
-  }
+  // Datapath: Channels <> IOs
+  (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
+  (ins foldLeft 0)(connectInput(_, _, in_channels, Some(fire))) 
+
+  (out_channels zip io.outs) foreach {case (channel, out) => channel.io.out <> out}
+  (outs foldLeft 0)(connectOutput(_, _, out_channels))
   
   // Control
   // Firing condtion:

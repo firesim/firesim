@@ -56,13 +56,26 @@ class simif_t
     std::vector<std::string> hargs;
     std::vector<std::string> targs;
 
-  protected:
-    std::vector<size_t> in_widths;
-    std::vector<size_t> out_widths;
+    std::map<size_t, size_t> in_chunks;
+    std::map<size_t, size_t> out_chunks;
 
+    void poke_port(size_t id, biguint_t data) {
+      for (size_t off = 0 ; off < in_chunks[id] ; off++) {
+        poke_channel(id+off, (data >> (off << CHANNEL_OFFSET)).uint());
+      }
+    }
+    biguint_t peek_port(size_t id) {
+      biguint_t data = 0;
+      for (size_t off = 0 ; off < out_chunks[id] ; off++) {
+        data |= biguint_t(peek_channel(id+off)) << (off << CHANNEL_OFFSET);
+      }
+      return data;
+    }
+
+  protected:
     // channel communication
-    virtual void poke_channel(size_t addr, biguint_t data) = 0;
-    virtual biguint_t peek_channel(size_t addr) = 0;
+    virtual void poke_channel(size_t addr, uint64_t data) = 0;
+    virtual uint64_t peek_channel(size_t addr) = 0;
 
     // Simulation APIs
     void poke_port(std::string path, biguint_t value);

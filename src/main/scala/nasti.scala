@@ -3,6 +3,11 @@ package strober
 import Chisel._
 import junctions._
 
+case object NASTIName extends Field[String]
+case object NASTIAddrSizeBits extends Field[Int]
+case object MemBlockBytes extends Field[Int]
+case object MemAddrSizeBits extends Field[Int]
+
 object NASTIShim {
   def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
     val params = (targetParams alter NASTIParams.mask) alter SimParams.mask
@@ -10,101 +15,143 @@ object NASTIShim {
   }
 }
 
-class NASTI2Input[T <: Data](gen: T, addr: Int) extends NASTIModule {
-  val dataWidth = (gen.flatten.unzip._2 foldLeft 0)(_ + _.needWidth)
+class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule {
   val io = new Bundle {
-    val addr = UInt(INPUT, nastiXAddrBits)
-    val in = Decoupled(UInt(width=nastiXDataBits)).flip
-    val out = Decoupled(gen)
+    val nasti = (new NASTIIO).flip
+    val ins   = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap 
+                    simIo.getIns map (_.clone))
+    val outs  = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap 
+                    simIo.getOuts map (_.clone.flip))
+    val inT   = Vec(simIo.in_traces map (_.clone.flip))
+    val outT  = Vec(simIo.out_traces map (_.clone.flip))
+    val daisy = simIo.daisy.clone.flip
+    val reset_t = Bool(OUTPUT)
+    val mem = new Bundle {
+      val req_cmd = Vec(memIo.req_cmd.bits.clone.asOutput.flatten map {case (name, wire) =>
+       ("req_cmd_" + name, wire)} flatMap simIo.genPacket)
+      val req_data = Vec(memIo.req_data.bits.clone.asOutput.flatten map {case (name, wire) =>
+       ("req_data_" + name, wire)} flatMap simIo.genPacket)
+      val resp = Vec(memIo.resp.bits.clone.asInput.flatten map {case (name, wire) =>
+       ("resp_" + name, wire)} flatMap simIo.genPacket)
+    }
   }
-  val s_DATA :: s_DONE :: Nil = Enum(UInt(), 2)
-  val state = RegInit(s_DATA)
-  val count = RegInit(UInt((dataWidth-1)/nastiXDataBits))
-  val buf = Reg(gen)
- 
-  io.in.ready := state === s_DATA
-  io.out.bits := buf
-  io.out.valid := state === s_DONE
+  val channelWidth    = params(ChannelWidth)
+  val addrSizeBits    = params(NASTIAddrSizeBits)
+  val addrOffset      = log2Up(nastiXDataBits/8)
+  val resetAddr       = (1 << addrSizeBits) - 1
+  val sramRestartAddr = (1 << addrSizeBits) - 2
 
-  switch(state) {
-    is(s_DATA) {
-      when(io.in.fire() && io.addr === UInt(addr)) {
-        val b = buf match {
-          case p: Packet[_] => p.data
-          case b: Bits => b
-        }
-        b := (b << UInt(nastiXDataBits)) | io.in.bits
-        if (dataWidth > nastiXDataBits) {
-          when(count.orR) {
-            count := count - UInt(1)
-          }.otherwise {
-            count := UInt((dataWidth-1)/nastiXDataBits)
-            state := s_DONE
-          }
-        } else { 
-          state := s_DONE
-        }
+  require(channelWidth == nastiXDataBits, "Channel width and NASTI data width should be the same")
+
+  /*** INPUTS ***/
+  val waddr_r = RegInit(UInt(0, addrSizeBits))
+  val awid_r  = RegInit(UInt(0))
+  val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
+  val st_wr = RegInit(st_wr_idle)
+  val do_write = st_wr === st_wr_write
+  val ins = io.ins ++ io.mem.req_cmd ++ io.mem.req_data
+  ins.zipWithIndex foreach {case (in, i) =>
+    val off = UInt(i)
+    in.bits  := io.nasti.w.bits.data
+    in.valid := waddr_r === off && do_write
+  }
+  io.reset_t            := do_write && (waddr_r === UInt(resetAddr))
+  io.daisy.sram.restart := do_write && (waddr_r === UInt(sramRestartAddr))
+
+  // Write FSM
+  switch(st_wr) {
+    is(st_wr_idle) {
+      when(io.nasti.aw.valid && io.nasti.w.valid) {
+        st_wr   := st_wr_write
+        waddr_r := io.nasti.aw.bits.addr >> UInt(addrOffset)
+        awid_r  := io.nasti.aw.bits.id
       }
     }
-    is(s_DONE) {
-      state := Mux(io.out.ready, s_DATA, s_DONE)
+    is(st_wr_write) {
+      when(Vec(ins map (_.ready))(waddr_r) || 
+           waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
+        st_wr := st_wr_ack
+      } 
+    }
+    is(st_wr_ack) {
+      when(io.nasti.b.ready) {
+        st_wr := st_wr_idle
+      }
     }
   }
+  io.nasti.aw.ready    := do_write
+  io.nasti.w.ready     := do_write
+  io.nasti.b.valid     := st_wr === st_wr_ack
+  io.nasti.b.bits.id   := awid_r
+  io.nasti.b.bits.resp := Bits(0)
+
+  /*** OUTPUTS ***/
+  val raddr_r = RegInit(UInt(0, addrSizeBits))
+  val arid_r  = RegInit(UInt(0))
+  val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
+  val st_rd = RegInit(st_rd_idle)
+  val do_read = st_rd === st_rd_read
+
+  val snapOuts = List(io.daisy.regs.out, io.daisy.trace.out, io.daisy.sram.out)
+  val outs = io.outs ++ io.inT ++ io.outT ++ io.mem.resp ++ snapOuts
+
+  outs.zipWithIndex foreach {case (out, i) =>
+    val off = UInt(i)
+    out.ready := raddr_r === off && do_read
+  }
+
+  // Read FSM
+  switch(st_rd) {
+    is(st_rd_idle) {
+      when(io.nasti.ar.valid) {
+        st_rd   := st_rd_read
+        raddr_r := io.nasti.ar.bits.addr >> UInt(addrOffset)
+        arid_r  := io.nasti.ar.bits.id
+      }
+    }
+    is(st_rd_read) {
+      when(io.nasti.r.ready) {
+        st_rd   := st_rd_idle
+      }
+    }
+  }
+  io.nasti.ar.ready    := st_rd === st_rd_idle
+  io.nasti.r.valid     := Vec(outs map (_.valid))(raddr_r) && do_read
+  io.nasti.r.bits.data := Vec(outs map (_.bits))(raddr_r)
+  io.nasti.r.bits.last := io.nasti.r.valid
+  io.nasti.r.bits.id   := arid_r
+  
+  // TODO:
+  io.daisy.regs.in.bits := UInt(0)
+  io.daisy.regs.in.valid := Bool(false)
+  io.daisy.trace.in.bits := UInt(0)
+  io.daisy.trace.in.valid := Bool(false)
+  io.daisy.sram.in.bits := UInt(0)
+  io.daisy.sram.in.valid := Bool(false)
+
+  // address assignmnet
+  val inMap = simIo.genIoMap(simIo.t_ins filterNot (SimMemIO contains _._2))
+  val reqMap = simIo.genIoMap(memIo.req_cmd.bits.flatten ++ memIo.req_data.bits.flatten) map {
+    case (wire, id) => wire -> (io.ins.size + id) }
+
+  val outMap = simIo.genIoMap(simIo.t_outs filterNot (SimMemIO contains _._2))
+  val inTrMap = simIo.genIoMap(simIo.t_ins filter (SimMemIO contains _._2)) map {
+    case (wire, id) => wire -> (io.outs.size + id) }
+  val outTrMap = simIo.genIoMap(simIo.t_outs filter (SimMemIO contains _._2)) map {
+    case (wire, id) => wire -> (io.outs.size + io.inT.size + id)}
+  val respMap = simIo.genIoMap(memIo.resp.bits.flatten) map {
+    case (wire, id) => wire -> (io.outs.size + io.inT.size + io.outT.size + id) }
+  val snapOutMap = {
+    val off = io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size
+    Map(simIo.daisy.regs.out  ->  off,
+        simIo.daisy.trace.out -> (off + 1),
+        simIo.daisy.sram.out  -> (off + 2)) }
 }
- 
-class Output2NASTI[T <: Data](gen: T, addr: Int) extends NASTIModule {
-  val dataWidth = (gen.flatten.unzip._2 foldLeft 0)(_ + _.needWidth)
-  val io = new Bundle {
-    val addr = UInt(INPUT, nastiXAddrBits)
-    val in = Decoupled(gen).flip
-    val out = Decoupled(UInt(width=nastiXDataBits))
-  }
-  val s_IDLE :: s_DATA :: Nil = Enum(UInt(), 2)
-  val state = RegInit(s_IDLE)
-  val count = RegInit(UInt((dataWidth-1)/nastiXDataBits))
-  val buf = Reg(gen)
 
-  io.in.ready := Bool(false)
-  io.out.bits := buf.toBits
-  io.out.valid := state === s_DATA
-
-  switch(state) {
-    is(s_IDLE) {
-      state := Mux(io.in.valid, s_DATA, s_IDLE)
-      buf := io.in.bits
-    }
-    is(s_DATA) {
-      when(io.out.ready && io.addr === UInt(addr)) {
-        if (dataWidth > nastiXDataBits) {
-          val b = buf match {
-            case p: Packet[_] => p.data
-            case b: Bits => b
-          }
-          b := b.toUInt >> UInt(nastiXDataBits)
-          when(count.orR) {
-            count := count - UInt(1)
-          }.otherwise {
-            count := UInt((dataWidth-1)/nastiXDataBits)
-            state := s_IDLE
-            io.in.ready := Bool(true)
-          }
-        } else {
-          state := s_IDLE
-          io.in.ready := Bool(true)
-        }
-      }
-      // flush when the input is no longer valid
-      when(!io.in.valid) {
-        state := s_IDLE
-      }
-    }
-  }
-}
-
-class NASTISlaveIOMemIOConverter extends MIFModule with NASTIParameters {
+class NASTISlaveHandler extends MIFModule with NASTIParameters {
   val io = new Bundle {
     val mem = (new MemIO).flip
-    val nasti = (new NASTISlaveIO).flip
+    val nasti = new NASTIIO
   }
   val memBlockBytes  = params(MemBlockBytes)
   val addrSizeBits   = params(MemAddrSizeBits)
@@ -149,7 +196,7 @@ class NASTISlaveIOMemIOConverter extends MIFModule with NASTIParameters {
   io.nasti.w.bits.data  := Vec((0 until nastiDataBeats) map (i =>
     io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count)
   // Write Response
-  io.nasti.b.ready := Bool(true)
+  io.nasti.b.ready      := Bool(true)
 
   if (nastiDataBeats > 1) {
     when(io.nasti.r.valid && !read_wrap_out) {
@@ -177,118 +224,88 @@ class NASTISlaveIOMemIOConverter extends MIFModule with NASTIParameters {
   }
 }
 
-
 class NASTIShimIO extends Bundle {
-  val mnasti = Bundle((new NASTIMasterIO).flip, {case NASTIName => "Master"})
-  val snasti = Bundle((new NASTISlaveIO).flip,  {case NASTIName => "Slave"})
+  val mnasti = Bundle((new NASTIIO).flip, {case NASTIName => "Master"})
+  val snasti = Bundle( new NASTIIO,       {case NASTIName => "Slave"})
   val mAddrBits = mnasti.ar.bits.nastiXAddrBits
   val mDataBits = mnasti.r.bits.nastiXDataBits
 }
 
 class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   val io = new NASTIShimIO
-  // params
-  val addrSizeBits    = params(NASTIAddrSizeBits)
-  val resetAddr       = (1 << addrSizeBits) - 1
-  val sramRestartAddr = (1 << addrSizeBits) - 2
-
-  val mAddrOffset = log2Up(io.mAddrBits/8)
   // Simulation Target
   val sim: T = Module(c)
+  val ins  = Vec(sim.io.inMap  filterNot (SimMemIO contains _._1) flatMap sim.io.getIns)
+  val outs = Vec(sim.io.outMap filterNot (SimMemIO contains _._1) flatMap sim.io.getOuts)
+  sim.io.inMap filter (SimMemIO contains _._1) foreach sim.initTrace
+  sim.io.outMap filter (SimMemIO contains _._1) foreach sim.initTrace
 
-  // Fake wires for snapshotting
-  val snap_out = new Bundle {
-    val regs = UInt(OUTPUT, sim.daisyWidth)
-    val sram = UInt(OUTPUT, sim.daisyWidth)
-    val trace = UInt(OUTPUT, sim.daisyWidth)
-    val cntr = UInt(OUTPUT, sim.daisyWidth)
-  }
-  // Fake wires for accesses from outside FPGA
-  val mem_req = new Bundle {
-    val addr = UInt(INPUT, mifAddrBits)
-    val tag = UInt(INPUT, mifTagBits+1)
-    val data = UInt(INPUT, mifDataBits)
-  }
-  val mem_resp = new Bundle {
-    val data = UInt(OUTPUT, mifDataBits)
-    val tag = UInt(OUTPUT, mifTagBits)
-  }
-
-  /*** mnasti INPUTS ***/
-  val waddr_r = RegInit(UInt(0, addrSizeBits))
-  val awid_r  = RegInit(UInt(0))
-  val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
-  val st_wr = RegInit(st_wr_idle)
-  val do_write = st_wr === st_wr_write
-  val reset_t = do_write && (waddr_r === UInt(resetAddr))
-  val sram_restart = do_write && (waddr_r === UInt(sramRestartAddr))
-  val in_ready = Bool() // Connected in the backend 
-
-  sim.reset := reset_t
-
-  // mnasti Write FSM
-  switch(st_wr) {
-    is(st_wr_idle) {
-      when(io.mnasti.aw.valid && io.mnasti.w.valid) {
-        st_wr   := st_wr_write
-        waddr_r := io.mnasti.aw.bits.addr >> UInt(mAddrOffset)
-        awid_r  := io.mnasti.aw.bits.id
-      }
-    }
-    is(st_wr_write) {
-      when(in_ready || waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
-        st_wr := st_wr_ack
-      } 
-    }
-    is(st_wr_ack) {
-      when(io.mnasti.b.ready) {
-        st_wr := st_wr_idle
-      }
-    }
-  }
-  io.mnasti.aw.ready    := do_write
-  io.mnasti.w.ready     := do_write
-  io.mnasti.b.valid     := st_wr === st_wr_ack
-  io.mnasti.b.bits.id   := awid_r
-  io.mnasti.b.bits.resp := Bits(0)
-
-  /*** mnasti OUTPUS ***/
-  val raddr_r = RegInit(UInt(0, addrSizeBits))
-  val arid_r  = RegInit(UInt(0))
-  val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
-  val st_rd = RegInit(st_rd_idle)
-  val do_read = st_rd === st_rd_read
-  val out_data = UInt() // Connected in the backend 
-  val out_valid = Bool() // Connected in the backend 
-
-  // mnasti Read FSM
-  switch(st_rd) {
-    is(st_rd_idle) {
-      when(io.mnasti.ar.valid) {
-        st_rd   := st_rd_read
-        raddr_r := io.mnasti.ar.bits.addr >> UInt(mAddrOffset)
-        arid_r  := io.mnasti.ar.bits.id
-      }
-    }
-    is(st_rd_read) {
-      when(io.mnasti.r.ready) {
-        st_rd   := st_rd_idle
-      }
-    }
-  }
-  io.mnasti.ar.ready    := st_rd === st_rd_idle
-  io.mnasti.r.valid     := out_valid && do_read
-  io.mnasti.r.bits.data := out_data
-  io.mnasti.r.bits.last := io.mnasti.r.valid
-  io.mnasti.r.bits.id   := arid_r
-
-  /*** snasti ***/
+  // TODO: Delete!!!
+  val addrSizeBits   = params(NASTIAddrSizeBits)
+  val addrOffset     = log2Up(io.mAddrBits/8)
   val memBlockBytes  = params(MemBlockBytes)
   val memBlockOffset = log2Up(memBlockBytes)
   val memDataCount   = 8*memBlockBytes / mifDataBits
 
-  val snasti_mem_conv = Module(new NASTISlaveIOMemIOConverter, {case NASTIName => "Slave"})
-  snasti_mem_conv.io.nasti <> io.snasti
+  val arb    = Module(new MemArbiter(SimMemIO.size+1))
+  val mem    = arb.io.ins(SimMemIO.size)
+  val master = Module(new NASTIMasterHandler(sim.io, mem), {case NASTIName => "Master"})
+  val slave  = Module(new NASTISlaveHandler,               {case NASTIName => "Slave"})
+  val reqCmdChannels = mem.req_cmd.bits.flatten map {case (name, wire) => 
+    ("req_cmd_" + name, wire)} flatMap (sim.genChannels(_)(this))
+  val reqDataChannels = mem.req_data.bits.flatten map {case (name, wire) =>
+    ("req_data_" + name, wire)} flatMap (sim.genChannels(_)(this))
+  val respChannels = mem.resp.bits.flatten map {case (name, wire) =>
+    ("resp_" + name, wire)} flatMap (sim.genChannels(_)(this))
+  // Master Connection
+  master.io.nasti <> io.mnasti
+  master.io.ins   <> ins 
+  master.io.outs  <> outs 
+  master.io.inT   <> Vec(sim.io.in_traces)
+  master.io.outT  <> Vec(sim.io.out_traces)
+  master.io.mem.req_cmd <> Vec(reqCmdChannels map (_.io.in))
+  master.io.mem.req_data <> Vec(reqDataChannels map (_.io.in))
+  master.io.mem.resp <> Vec(respChannels map (_.io.out))
+  sim.reset := master.io.reset_t
+  master.io.daisy.regs.in  <> sim.io.daisy.regs.in
+  master.io.daisy.trace.in <> sim.io.daisy.trace.in
+  master.io.daisy.sram.in  <> sim.io.daisy.sram.in
+  // bulk connection not working due to empty outputs for now
+  master.io.daisy.regs.out.bits  := sim.io.daisy.regs.out.bits
+  master.io.daisy.regs.out.valid := sim.io.daisy.regs.out.valid
+  sim.io.daisy.regs.out.ready := master.io.daisy.regs.out.ready
+  master.io.daisy.trace.out.bits  := sim.io.daisy.trace.out.bits
+  master.io.daisy.trace.out.valid := sim.io.daisy.trace.out.valid
+  sim.io.daisy.trace.out.ready := master.io.daisy.trace.out.ready
+  master.io.daisy.sram.out.bits  := sim.io.daisy.sram.out.bits
+  master.io.daisy.sram.out.valid := sim.io.daisy.sram.out.valid
+  sim.io.daisy.sram.out.ready := master.io.daisy.sram.out.ready
+  sim.io.daisy.sram.restart := master.io.daisy.sram.restart
+
+  // Slave Connection
+  slave.io.nasti <> io.snasti
+  slave.io.mem <> arb.io.out
+
+  // Memory Connection
+  for (i <-0 until SimMemIO.size) {
+    val conv = Module(new ChannelMemIOConverter)
+    conv setName "mem_conv_" + i
+    conv.reset := master.io.reset_t
+    conv.io.sim_mem  <> (SimMemIO(i), sim.io)
+    conv.io.host_mem <> arb.io.ins(i)
+  }
+
+  (mem.req_cmd.bits.flatten foldLeft 0)(sim.connectInput(_, _, reqCmdChannels))
+  mem.req_cmd.valid := (reqCmdChannels foldLeft Bool(true))(_ && _.io.out.valid)
+  reqCmdChannels foreach (_.io.out.ready := mem.req_cmd.ready)
+
+  (mem.req_data.bits.flatten foldLeft 0)(sim.connectInput(_, _, reqDataChannels))
+  mem.req_data.valid := (reqDataChannels foldLeft Bool(true))(_ && _.io.out.valid)
+  reqDataChannels foreach (_.io.out.ready := mem.req_data.ready)
+
+  (mem.resp.bits.flatten foldLeft 0)(sim.connectOutput(_, _, respChannels))
+  mem.resp.ready := (reqDataChannels foldLeft Bool(true))(_ && _.io.in.ready)
+  respChannels foreach (_.io.in.valid := mem.resp.valid)
 
   transforms.init(this)
 }
