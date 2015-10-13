@@ -155,6 +155,14 @@ object transforms {
             for (write <- mem.writeAccesses) 
               write.cond = Bool().fromNode(write.cond) && !stallPins(m)
             nameMap(mem) = getPath(mem)
+          case assert: Assert =>
+            if (!(stallPins contains m)) connectStall(m)
+            assert.cond = Bool().fromNode(assert.cond) && !stallPins(m)
+            m.debug(assert.cond)
+          case printf: Printf =>
+            if (!(stallPins contains m)) connectStall(m)
+            printf.cond = Bool().fromNode(printf.cond) && !stallPins(m)
+            m.debug(printf.cond)
           case _ =>
         }
         if (!srams(m).isEmpty) connectSRAMRestart(m) 
