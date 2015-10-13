@@ -21,11 +21,18 @@ class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
 }
 class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
+object ChainType extends Enumeration { val Regs, Trs, SRAM, Cntr = Value }
 class DaisyBundle(daisywidth: Int) extends Bundle {
   val regs  = new RegData(daisywidth)
   val trace = new TraceData(daisywidth)
   val sram  = new SRAMData(daisywidth)
   val cntr  = new CntrData(daisywidth)
+  def apply(t: ChainType.Value) = t match {
+    case ChainType.Regs => regs
+    case ChainType.Trs  => trace
+    case ChainType.SRAM => sram
+    case ChainType.Cntr => cntr
+  }
   override def clone: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
 }
 
@@ -122,7 +129,7 @@ class RegChainIO extends Bundle {
   val dataIo = new DataIO
 }
 
-class RegChain extends Module with DaisyChainParams {
+class RegChain extends DaisyChainModule {
   val io = new RegChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new RegChainControl)
@@ -131,7 +138,6 @@ class RegChain extends Module with DaisyChainParams {
   io.dataIo <> datapath.io.dataIo
   control.io.ctrlIo <> datapath.io.ctrlIo
 }
-
 
 // Define sram daisy chains
 abstract trait SRAMChainParams extends UsesParameters {
@@ -198,7 +204,7 @@ class SRAMChainIO extends RegChainIO {
   val addrIo = new AddrIO
 }
 
-class SRAMChain extends Module with DaisyChainParams {
+class SRAMChain extends DaisyChainModule {
   val io = new SRAMChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new SRAMChainControl)

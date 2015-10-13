@@ -17,14 +17,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected[strober] def outTrMap: Map[Bits, Int]
   protected[strober] def chunk(wire: Bits): Int
 
+  protected[strober] lazy val chainSize = transforms.chainSize
+  protected[strober] lazy val chainLen = transforms.chainLen
   protected[strober] lazy val sampleNum = transforms.sampleNum
   protected[strober] lazy val channelOff = log2Up(transforms.channelWidth)
   protected[strober] lazy val traceLen = transforms.traceLen
   protected[strober] lazy val daisyWidth = transforms.daisyWidth
-  protected[strober] lazy val regSnapLen = transforms.regSnapLen
-  protected[strober] lazy val traceSnapLen = transforms.traceSnapLen
-  protected[strober] lazy val sramSnapLen = transforms.sramSnapLen
-  protected[strober] lazy val sramMaxSize = transforms.sramMaxSize
 
   protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
   protected[strober] var lastSample: Option[(Sample, Int)] = None
@@ -230,7 +228,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (k <- 0 until sramMaxSize ; i <- 0 until sramSnapLen) {
+    for (k <- 0 until chainSize(ChainType.SRAM) ; i <- 0 until chainLen(ChainType.SRAM)) {
       _poke(c.io.daisy.sram.restart, 1)
       while(_peek(c.io.daisy.sram.out.valid) == 0) {
         takeStep
@@ -241,23 +239,16 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
       takeStep
       _poke(c.io.daisy.sram.out.ready, 0)
     }
-    for (i <- 0 until traceSnapLen) {
-      while(_peek(c.io.daisy.trace.out.valid) == 0) {
+    List(ChainType.Trs, ChainType.Regs) map { t =>
+      for (i <- 0 until chainLen(t)) {
+        while(_peek(c.io.daisy(t).out.valid) == 0) {
+          takeStep
+        }
+        snap append intToBin(_peek(c.io.daisy(t).out.bits), daisyWidth)
+        _poke(c.io.daisy(t).out.ready, 1)
         takeStep
+        _poke(c.io.daisy(t).out.ready, 0)
       }
-      snap append intToBin(_peek(c.io.daisy.trace.out.bits), daisyWidth)
-      _poke(c.io.daisy.trace.out.ready, 1)
-      takeStep
-      _poke(c.io.daisy.trace.out.ready, 0)
-    }
-    for (i <- 0 until regSnapLen) {
-      while(_peek(c.io.daisy.regs.out.valid) == 0) {
-        takeStep
-      }
-      snap append intToBin(_peek(c.io.daisy.regs.out.bits), daisyWidth)
-      _poke(c.io.daisy.regs.out.ready, 1)
-      takeStep
-      _poke(c.io.daisy.regs.out.ready, 0)
     }
     snap.result
   }
@@ -457,17 +448,16 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (k <- 0 until sramMaxSize) {
+    for (k <- 0 until chainSize(ChainType.SRAM)) {
       pokeChannel(c.master.sramRestartAddr, 0)
-      for (i <- 0 until sramSnapLen) {
+      for (i <- 0 until chainLen(ChainType.SRAM)) {
         snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy.sram.out)), daisyWidth)
       }
     }
-    for (i <- 0 until traceSnapLen) {
-      snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy.trace.out)), daisyWidth)
-    }
-    for (i <- 0 until regSnapLen) {
-      snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy.regs.out)), daisyWidth)
+    List(ChainType.Trs, ChainType.Regs) map { t =>
+      for (i <- 0 until chainLen(t)) {
+        snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy(t).out)), daisyWidth)
+      }
     }
     snap.result
   }
