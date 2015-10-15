@@ -6,6 +6,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 case object SampleNum    extends Field[Int]
 case object TraceLen     extends Field[Int]
+case object ChannelLen   extends Field[Int]
 case object ChannelWidth extends Field[Int]
 
 class ChannelIO(w: Int)  extends Bundle {
@@ -14,20 +15,20 @@ class ChannelIO(w: Int)  extends Bundle {
   val trace = Decoupled(UInt(width=w))
 }
 
-class Channel(w: Int, entries: Int = 2) extends Module {
-  val traceLen = params(TraceLen)
-  val io       = new ChannelIO(w)
-  val tokens   = Module(new Queue(UInt(width=w), entries))
-  val out_fire = io.out.fire()
+class Channel(w: Int, doTrace: Boolean = true) extends Module {
+  val traceLen   = params(TraceLen)
+  val channelLen = params(ChannelLen)
+  val io         = new ChannelIO(w)
+  val tokens     = Module(new Queue(UInt(width=w), channelLen))
   io.in <> tokens.io.enq
   tokens.io.deq <> io.out
-  def initTrace  = {
+  if (doTrace) {
     // lazy instantiation
-    val trace = addModule(new Queue(UInt(width=w), traceLen))
+    val trace = Module(new Queue(UInt(width=w), traceLen))
     trace setName "trace"
     // trace is written when a token is consumed
     trace.io.enq.bits  := io.out.bits
-    trace.io.enq.valid := addNode(trace.io.enq.ready && out_fire)
+    trace.io.enq.valid := io.out.fire() && trace.io.enq.ready 
     trace.io.deq <> io.trace
     io.trace
   }
@@ -41,15 +42,17 @@ object SimWrapper {
 }
 
 class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits)]) extends Bundle {
-  val channelWidth = params(ChannelWidth)
   val daisyWidth   = params(DaisyWidth)
+  val channelWidth = params(ChannelWidth)
   val names = ((t_ins ++ t_outs) map (x => x._2 -> x._1)).toMap
 
   private val chunks = HashMap[Bits, Int]()
   def chunk(wire: Bits) = chunks getOrElseUpdate (wire, (wire.needWidth-1)/channelWidth+1)
 
-  val ins   = Vec(t_ins flatMap genPacket)
+  val ins   = Vec(t_ins  flatMap genPacket)
   val outs  = Vec(t_outs flatMap genPacket)
+  val inT   = Vec(t_ins  flatMap genPacket map (_.flip))
+  val outT  = Vec(t_outs flatMap genPacket)
   val daisy = new DaisyBundle(daisyWidth)
 
   def genPacket[T <: Bits](arg: (String, Bits)) = arg match {case (name, port) =>
@@ -62,15 +65,15 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
     packet
   }
 
-  lazy val inMap  = genIoMap(t_ins)
-  lazy val outMap = genIoMap(t_outs)
-  val in_traces  = ArrayBuffer[DecoupledIO[Bits]]()
-  val out_traces = ArrayBuffer[DecoupledIO[Bits]]()
+  lazy val inMap    = genIoMap(t_ins)
+  lazy val outMap   = genIoMap(t_outs)
+  lazy val inTrMap  = inMap  map {case (wire, id) => wire -> (outs.size + id)}
+  lazy val outTrMap = outMap map {case (wire, id) => wire -> (outs.size + inT.size + id)}
 
   def genIoMap(wires: Seq[(String, Bits)]) = ListMap(((wires foldLeft (Seq[(Bits, Int)](), 0)){
     case ((map, i), (name, wire)) => (map:+(wire->i), i+chunk(wire))})._1:_*)
 
-  def getIns(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => ins(id+off))}
+  def getIns(arg: (Bits, Int))  = arg match {case (wire, id) => (0 until chunk(wire)) map (off => ins(id+off))}
   def getOuts(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => outs(id+off))}
   def getIns(wire: Bits) = (0 until chunk(wire)) map (off => ins(inMap(wire)+off))
   def getOuts(wire: Bits) = (0 until chunk(wire)) map (off => outs(outMap(wire)+off))
@@ -85,24 +88,10 @@ abstract class SimNetwork extends Module {
   val daisyWidth   = params(DaisyWidth)
   val channelWidth = params(ChannelWidth)
 
-  def initTrace[T <: Bits](arg: (T, Int)) = arg match { case (gen, id) =>
-    for (off <- 0 until io.chunk(gen)) {
-      val width = scala.math.min(channelWidth, gen.needWidth-off*channelWidth)
-      val trace = addPin(Decoupled(UInt(width=width)), "io_" + io.names(gen) + "_trace_" + off)
-      if (gen.dir == INPUT) {
-        trace <> in_channels(id+off).initTrace
-        io.in_traces += trace
-      } else {
-        trace <> out_channels(id+off).initTrace
-        io.out_traces += trace
-      }
-    }
-  }
-
-  def genChannels[T <: Bits](arg: (String, T))(implicit mod: Module = this) = 
+  def genChannels[T <: Bits](arg: (String, T))(implicit mod: Module = this, tr: Boolean = true) = 
     arg match {case (name, port) => (0 until io.chunk(port)) map { off => 
       val width = scala.math.min(channelWidth, port.needWidth-off*channelWidth)
-      val channel = mod.addModule(new Channel(width)) 
+      val channel = mod.addModule(new Channel(width, tr)) 
       channel setName ("Channel_" + name + "_" + off)
       channel
     }}
@@ -143,7 +132,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
 
-  val in_channels: Seq[Channel] = ins flatMap genChannels
+  val in_channels:  Seq[Channel] = ins flatMap genChannels
   val out_channels: Seq[Channel] = outs flatMap genChannels
 
   // Datapath: Channels <> IOs
@@ -152,6 +141,9 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
 
   (out_channels zip io.outs) foreach {case (channel, out) => channel.io.out <> out}
   (outs foldLeft 0)(connectOutput(_, _, out_channels))
+
+  (in_channels zip io.inT)   foreach {case (channel, trace) => channel.io.trace <> trace}
+  (out_channels zip io.outT) foreach {case (channel, trace) => channel.io.trace <> trace}
   
   // Control
   // Firing condtion:

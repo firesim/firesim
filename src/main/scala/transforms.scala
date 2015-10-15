@@ -220,35 +220,35 @@ object transforms {
     }
 
     def insertSRAMChain(m: Module) = {
-      val chain = (srams(m) foldLeft (None: Option[SRAMChain])){ case (lastChain, sram) =>
+      val sramChain = (srams(m) foldLeft (None: Option[SRAMChain])){ case (lastChain, sram) =>
         val (addr, data) = findSRAMRead(sram)
-        val dataWidth = sram.needWidth
-        val chain = m.addModule(new SRAMChain, { case DataWidth => dataWidth case SRAMSize => sram.size })
-        chain.io.stall := stallPins(m)
-        ((0 until chain.daisyLen) foldRight 0){ case (high, i) =>
+        val width = sram.needWidth
+        val daisy = m.addModule(new SRAMChain, { case DataWidth => width case SRAMSize => sram.size })
+        daisy.io.stall := stallPins(m)
+        ((0 until daisy.daisyLen) foldRight (width-1)){ case (i, high) =>
           val low = math.max(high-daisyWidth+1, 0)
           val margin = daisyWidth-(high-low+1)
-          val chainIn = UInt(data)(high, low)
+          val daisyIn = UInt(data)(high, low)
           if (margin == 0) {
-            chain.io.dataIo.data(i) := chainIn
+            daisy.io.dataIo.data(i) := daisyIn
           } else {
-            chain.io.dataIo.data(i) := Cat(chainIn, UInt(0, margin))
+            daisy.io.dataIo.data(i) := Cat(daisyIn, UInt(0, margin))
           }
           high - daisyWidth
         }
         lastChain match {
-          case None => daisyPins(m).sram.out <> chain.io.dataIo.out
-          case Some(last) => last.io.dataIo.in <> chain.io.dataIo.out
+          case None => daisyPins(m).sram.out <> daisy.io.dataIo.out
+          case Some(last) => last.io.dataIo.in <> daisy.io.dataIo.out
         }
-        chain.io.restart := daisyPins(m).sram.restart
-        // Connect chain addr to SRAM addr
-        chain.io.addrIo.in := UInt(addr)
-        addr.inputs(0) = Multiplex(chain.io.addrIo.out.valid, chain.io.addrIo.out.bits, addr.inputs(0))
-        chainLen(chainType) += chain.daisyLen
-        Some(chain)
+        daisy.io.restart := daisyPins(m).sram.restart
+        // Connect daisy addr to SRAM addr
+        daisy.io.addrIo.in := UInt(addr)
+        addr.inputs(0) = Multiplex(daisy.io.addrIo.out.valid, daisy.io.addrIo.out.bits, addr.inputs(0))
+        chainLen(chainType) += daisy.daisyLen
+        Some(daisy)
       }
-      if (chain != None) hasChain += m
-      chain
+      if (sramChain != None) hasChain += m
+      sramChain
     }
 
     for (w <- wrappers ; m <- comps(w)) {
@@ -376,6 +376,9 @@ object transforms {
         "SRAM_SNAP_LEN"     -> chainLen(ChainType.SRAM),
         "SRAM_SNAP_SIZE"    -> chainSize(ChainType.SRAM),
         "WARM_CYCLES"       -> chainSize(ChainType.Trs),
+        
+        "POKE_SIZE"         -> w.master.io.ins.size,
+        "PEEK_SIZE"         -> w.master.io.outs.size,
 
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,

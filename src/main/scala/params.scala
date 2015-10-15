@@ -33,6 +33,7 @@ object SimParams {
     case SampleNum  => Dump("SAMPLE_NUM",  30)
     case TraceLen   => Dump("TRACE_LEN",   16)
     case DaisyWidth => Dump("DAISY_WIDTH", 32)
+    case ChannelLen   => 2
     case ChannelWidth => Dump("CHANNEL_WIDTH", 32)
   }
 }

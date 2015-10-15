@@ -37,3 +37,15 @@ uint64_t simif_zynq_t::peek_channel(size_t addr) {
   return read_reg(addr);
 }
 
+void simif_zynq_t::send_tokens(uint32_t* const map, size_t size, size_t off) {
+  for (size_t i = 0 ; i < size ; i++) {
+    write_reg(off+i, map[i]);
+  }
+}
+
+void simif_zynq_t::recv_tokens(uint32_t* const map, size_t size, size_t off) {
+  __sync_synchronize();
+  for (size_t i = 0 ; i < size ; i++) {
+    map[i] = read_reg(off+i);
+  }
+}

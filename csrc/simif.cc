@@ -5,7 +5,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): prefix(_prefix), log(_log)
+simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): 
+  prefix(_prefix), log(_log), poke_map(new uint32_t[POKE_SIZE]), peek_map(new uint32_t[PEEK_SIZE])
 {
   ok = true;
   t = 0;
@@ -18,7 +19,11 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   last_sample_id = 0;
   sample_split = false;
 
-  srand(time(NULL));
+  profile = false;
+  sample_time = 0;
+
+  seed = time(NULL);
+  srand(seed);
 
   size_t i;
   for (i = 0 ; i < args.size() ; i++) {
@@ -36,7 +41,9 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
 simif_t::~simif_t() { 
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
   if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
-  fprintf(stdout, "\n");
+  fprintf(stdout, "\nSEED: %ld\n", seed);
+  delete[] poke_map;
+  delete[] peek_map;
 }
 
 void simif_t::read_map(std::string filename) {
@@ -145,17 +152,12 @@ void simif_t::init() {
       load_mem(filename);
       fprintf(stdout, "[loadmem] done\n");
     }
+    if (arg.find("+split") == 0) sample_split = true;
+    if (arg.find("+profile") == 0) profile = true;
   }
 
-  peek_map.clear();
-  for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
-    in_traces[it->second] = trace_t();
-  }
-  for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
-    size_t id = it->second;
-    peek_map[id] = peek_port(id);
-    out_traces[id] = trace_t();
-  }
+  if (profile) sim_start_time = timestamp();
+  recv_tokens(peek_map, PEEK_SIZE, 0);
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
     // flush traces from initialization
     biguint_t flush = peek_port(it->second);
@@ -167,6 +169,11 @@ void simif_t::finish() {
   if (last_sample != NULL) {
     if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
     samples[last_sample_id] = trace_ports(last_sample);
+  }
+  if (profile) {
+    double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
+    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s\n", 
+                    sim_time, (double) sample_time / 1000000.0);
   }
   // dump samples
   std::string filename = prefix + ".sample";
@@ -186,18 +193,24 @@ void simif_t::finish() {
   file.close();
 }
 
-void simif_t::poke_port(std::string path, biguint_t value) {
+size_t simif_t::get_in_id(std::string path) { 
   assert(in_map.find(path) != in_map.end());
-  if (log) fprintf(stdout, "* POKE %s <- %s *\n", path.c_str(), value.str().c_str());
-  poke_map[in_map[path]] = value;
+  return in_map[path];
 }
 
-biguint_t simif_t::peek_port(std::string path) {
+size_t simif_t::get_out_id(std::string path) {
   assert(out_map.find(path) != out_map.end());
-  assert(peek_map.find(out_map[path]) != peek_map.end());
-  biguint_t value = peek_map[out_map[path]];
-  if (log) fprintf(stdout, "* PEEK %s -> %s *\n", path.c_str(), value.str().c_str());
-  return value;
+  return out_map[path];
+}
+
+void simif_t::poke_port(std::string path, uint32_t value) {
+  if (log) fprintf(stdout, "* POKE %s <- %x *\n", path.c_str(), value);
+  poke_map[get_in_id(path)] = value;
+}
+
+uint32_t& simif_t::peek_port(std::string path, uint32_t& value) {
+  if (log) fprintf(stdout, "* PEEK %s -> %x *\n", path.c_str(), value);
+  return value = peek_map[get_out_id(path)];
 }
 
 bool simif_t::expect(bool pass, const char *s) {
@@ -207,10 +220,9 @@ bool simif_t::expect(bool pass, const char *s) {
   return pass;
 }
 
-bool simif_t::expect_port(std::string path, biguint_t expected) {
+bool simif_t::expect_port(std::string path, uint32_t expected) {
   assert(out_map.find(path) != out_map.end());
-  assert(peek_map.find(out_map[path]) != peek_map.end());
-  biguint_t value = peek_map[out_map[path]];
+  uint32_t value = peek_map[out_map[path]];
   bool pass = value == expected;
   std::ostringstream oss;
   oss << "EXPECT " << path << " " << value << " == " << expected;
@@ -223,9 +235,11 @@ void simif_t::step(size_t n) {
   for (size_t i = 0 ; i < n ; i++) {
     // reservoir sampling
     if (t % TRACE_LEN == 0) {
+      uint64_t start_time = 0;
       size_t record_id = t / TRACE_LEN;
       size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
       if (sample_id < SAMPLE_NUM) {
+      if (profile) start_time = timestamp();
         if (last_sample != NULL) {
           if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
           samples[last_sample_id] = trace_ports(last_sample);
@@ -234,32 +248,16 @@ void simif_t::step(size_t n) {
         last_sample = new sample_t(snap);
         last_sample_id = sample_id;
         trace_count = 0;
-      }
+        if (profile) sample_time += (timestamp() - start_time);
+      } 
     }
 
     // take a step
-    for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
-      size_t id = it->second;
-      biguint_t data = poke_map.find(id) != poke_map.end() ? poke_map[id] : 0;
-      poke_port(id, data);
-      if (trace_count < TRACE_LEN) {
-        in_traces[id].push(data);
-      } 
-    }
-    peek_map.clear();
-    for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
-      size_t id = it->second;
-      biguint_t data = peek_port(id); 
-      peek_map[id] = data; 
-      if (trace_count < TRACE_LEN) {
-        out_traces[id].push(data);
-      } 
-    }
+    send_tokens(poke_map, POKE_SIZE, 0);
+    recv_tokens(peek_map, PEEK_SIZE, 0);
 
     t++;
-    if (trace_count < TRACE_LEN) {
-      trace_count++;
-    }  
+    if (trace_count < TRACE_LEN) trace_count++;
   }
 }
 
@@ -286,30 +284,13 @@ biguint_t simif_t::read_mem(size_t addr) {
 }
 
 sample_t* simif_t::trace_ports(sample_t *sample) {
-  size_t len = in_traces[0].size(); // can be less than TRACE_LEN, but same for all traces
-  for (size_t i = 0 ; i < len ; i++) {
-    // input traces by the driver
-    for (idmap_it_t it = in_map.begin() ; it != in_map.end() ; it++) {
-      std::string wire = it->first;
-      trace_t &trace = in_traces[it->second];
-      assert(trace.size() + i == len);
-      sample->add_cmd(new poke_t(wire, trace.front()));
-      trace.pop();
-    }
+  for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
     for (idmap_it_t it = in_trace_map.begin() ; it != in_trace_map.end() ; it++) {
       std::string wire = it->first;
       sample->add_cmd(new poke_t(wire, peek_port(it->second)));
     }
     sample->add_cmd(new step_t(1));
-    // output traces by the driver
-    for (idmap_it_t it = out_map.begin() ; it != out_map.end() ; it++) {
-      std::string wire = it->first;
-      trace_t &trace = out_traces[it->second];
-      assert(trace.size() + i == len);
-      sample->add_cmd(new expect_t(wire, trace.front()));
-      trace.pop();
-    }
     // output traces from FPGA
     for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
       std::string wire = it->first;
