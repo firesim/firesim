@@ -17,11 +17,11 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   protected[strober] def outTrMap: Map[Bits, Int]
   protected[strober] def chunk(wire: Bits): Int
 
-  protected[strober] lazy val chainSize = transforms.chainSize
-  protected[strober] lazy val chainLen = transforms.chainLen
-  protected[strober] lazy val sampleNum = transforms.sampleNum
+  protected[strober] lazy val chainSize  = transforms.chainSize
+  protected[strober] lazy val chainLen   = transforms.chainLen
+  protected[strober] lazy val sampleNum  = transforms.sampleNum
   protected[strober] lazy val channelOff = log2Up(transforms.channelWidth)
-  protected[strober] lazy val traceLen = transforms.traceLen
+  protected[strober] lazy val traceLen   = transforms.traceLen
   protected[strober] lazy val daisyWidth = transforms.daisyWidth
 
   protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
@@ -70,24 +70,11 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
   }
 
   protected[strober] def traces(sample: Sample) = {
-    val len = inTraces(0).size  // can be less than traceLen, but same for all traces
-    for (i <- 0 until len) {
-      for ((wire, id) <- inMap.unzip._1.zipWithIndex) {
-        val trace = inTraces(id)
-        assert(i > 0 || trace.size == len, 
-          "trace size: %d != trace len: %d".format(trace.size, len))
-        sample addCmd PokePort(wire, trace.dequeue)
-      }
+    for (i <- 0 until traceCount) {
       for ((wire, id) <- inTrMap) {
         sample addCmd PokePort(wire, peekPort(wire, id))
       }
       sample addCmd Step(1)
-      for ((wire, id) <- outMap.unzip._1.zipWithIndex) {
-        val trace = outTraces(id)
-        assert(i > 0 || trace.size == len, 
-          "trace size: %d != trace len: %d".format(trace.size, len))
-        sample addCmd ExpectPort(wire, trace.dequeue)
-      }
       for ((wire, id) <- outTrMap) {
         sample addCmd ExpectPort(wire, peekPort(wire, id))
       }
@@ -139,17 +126,11 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
       for (((in, id), i) <- inMap.zipWithIndex) {
         val data = pokeMap getOrElse (id, BigInt(0))
         pokePort(in, id, data)
-        if (traceCount < traceLen) {
-          inTraces(i) enqueue data
-        }
       }
       peekMap.clear
       for (((out, id), i) <- outMap.zipWithIndex) {
         val data = peekPort(out, id)
         peekMap(id) = data 
-        if (traceCount < traceLen) {
-          outTraces(i) enqueue data
-        } 
       }
       t += 1
       if (traceCount < traceLen) {
@@ -167,18 +148,6 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     for ((wire, i) <- outTrMap) {
       val trace = peekPort(wire, i)
     }
-  }
-
-  protected[strober] def init {
-    for ((in, i) <- inMap.unzip._1.zipWithIndex) {
-      assert(inTraces.size == i)
-      inTraces += ScalaQueue[BigInt]()
-    }
-    for ((out, i) <- outMap.unzip._1.zipWithIndex) {
-      assert(outTraces.size == i)
-      outTraces += ScalaQueue[BigInt]()
-    }
-    flush
   }
 
   override def finish = {
@@ -201,28 +170,31 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
 abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
   protected[strober] val inMap = c.io.inMap
   protected[strober] val outMap = c.io.outMap
-  protected[strober] val inTrMap = Map[Bits,Int]()
-  protected[strober] val outTrMap = Map[Bits,Int]()
+  protected[strober] val inTrMap = c.io.inTrMap
+  protected[strober] val outTrMap = c.io.outTrMap
   protected[strober] def chunk(wire: Bits) = c.io.chunk(wire)
 
+  private val ins = c.io.ins
+  private val outs = c.io.outs ++ c.io.inT ++ c.io.outT
+
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
-    while(_peek(c.io.ins(addr).ready) == 0) {
+    while(_peek(ins(addr).ready) == 0) {
       takeStep
     }
-    _poke(c.io.ins(addr).bits, data)
-    _poke(c.io.ins(addr).valid, 1)
+    _poke(ins(addr).bits, data)
+    _poke(ins(addr).valid, 1)
     takeStep
-    _poke(c.io.ins(addr).valid, 0)
+    _poke(ins(addr).valid, 0)
   }
 
   protected[strober] def peekChannel(addr: Int) = {
-    while(_peek(c.io.outs(addr).valid) == 0) {
+    while(_peek(outs(addr).valid) == 0) {
       takeStep
     }
-    val value = _peek(c.io.outs(addr).bits)
-    _poke(c.io.outs(addr).ready, 1)
+    val value = _peek(outs(addr).bits)
+    _poke(outs(addr).ready, 1)
     takeStep
-    _poke(c.io.outs(addr).ready, 0)
+    _poke(outs(addr).ready, 0)
     value
   }
 
@@ -265,7 +237,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     t = 0
   }
 
-  init
+  flush
 }
 
 abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
@@ -274,7 +246,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
   protected[strober] val inTrMap = c.master.inTrMap
   protected[strober] val outTrMap = c.master.outTrMap
   protected[strober] def chunk(wire: Bits) = c.sim.io.chunk(wire)
-
+  
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
     do {
       _poke(c.io.mnasti.aw.bits.addr, addr << c.addrOffset)
@@ -493,5 +465,5 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
     pokeChannel(c.master.resetAddr, 0)
     super.reset(1)
   }
-  init
+  flush
 }

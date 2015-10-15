@@ -22,8 +22,8 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
                     simIo.getIns map (_.clone))
     val outs  = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap 
                     simIo.getOuts map (_.clone.flip))
-    val inT   = Vec(simIo.in_traces map (_.clone.flip))
-    val outT  = Vec(simIo.out_traces map (_.clone.flip))
+    val inT   = Vec(simIo.inMap  flatMap simIo.getIns  map (_.clone.flip))
+    val outT  = Vec(simIo.outMap flatMap simIo.getOuts map (_.clone.flip))
     val daisy = simIo.daisy.clone.flip
     val reset_t = Bool(OUTPUT)
     val mem = new Bundle {
@@ -134,12 +134,10 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   val reqMap = simIo.genIoMap(memIo.req_cmd.bits.flatten ++ memIo.req_data.bits.flatten) map {
     case (wire, id) => wire -> (io.ins.size + id) }
 
-  val outMap = simIo.genIoMap(simIo.t_outs filterNot (SimMemIO contains _._2))
-  val inTrMap = simIo.genIoMap(simIo.t_ins filter (SimMemIO contains _._2)) map {
-    case (wire, id) => wire -> (io.outs.size + id) }
-  val outTrMap = simIo.genIoMap(simIo.t_outs filter (SimMemIO contains _._2)) map {
-    case (wire, id) => wire -> (io.outs.size + io.inT.size + id)}
-  val respMap = simIo.genIoMap(memIo.resp.bits.flatten) map {
+  val outMap   = simIo.genIoMap(simIo.t_outs filterNot (SimMemIO contains _._2))
+  val inTrMap  = simIo.inMap  map {case (wire, id) => wire -> (io.outs.size + id)}
+  val outTrMap = simIo.outMap map {case (wire, id) => wire -> (io.outs.size + io.inT.size + id)}
+  val respMap  = simIo.genIoMap(memIo.resp.bits.flatten) map {
     case (wire, id) => wire -> (io.outs.size + io.inT.size + io.outT.size + id) }
   val snapOutMap = {
     val off = io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size
@@ -237,8 +235,6 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   val sim: T = Module(c)
   val ins  = Vec(sim.io.inMap  filterNot (SimMemIO contains _._1) flatMap sim.io.getIns)
   val outs = Vec(sim.io.outMap filterNot (SimMemIO contains _._1) flatMap sim.io.getOuts)
-  sim.io.inMap filter (SimMemIO contains _._1) foreach sim.initTrace
-  sim.io.outMap filter (SimMemIO contains _._1) foreach sim.initTrace
 
   // TODO: Delete!!!
   val addrSizeBits   = params(NASTIAddrSizeBits)
@@ -252,20 +248,20 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   val master = Module(new NASTIMasterHandler(sim.io, mem), {case NASTIName => "Master"})
   val slave  = Module(new NASTISlaveHandler,               {case NASTIName => "Slave"})
   val reqCmdChannels = mem.req_cmd.bits.flatten map {case (name, wire) => 
-    ("req_cmd_" + name, wire)} flatMap (sim.genChannels(_)(this))
+    ("req_cmd_" + name, wire)} flatMap (sim.genChannels(_)(this, false))
   val reqDataChannels = mem.req_data.bits.flatten map {case (name, wire) =>
-    ("req_data_" + name, wire)} flatMap (sim.genChannels(_)(this))
+    ("req_data_" + name, wire)} flatMap (sim.genChannels(_)(this, false))
   val respChannels = mem.resp.bits.flatten map {case (name, wire) =>
-    ("resp_" + name, wire)} flatMap (sim.genChannels(_)(this))
+    ("resp_" + name, wire)} flatMap (sim.genChannels(_)(this, false))
   // Master Connection
   master.io.nasti <> io.mnasti
   master.io.ins   <> ins 
   master.io.outs  <> outs 
-  master.io.inT   <> Vec(sim.io.in_traces)
-  master.io.outT  <> Vec(sim.io.out_traces)
-  master.io.mem.req_cmd <> Vec(reqCmdChannels map (_.io.in))
+  master.io.inT   <> sim.io.inT
+  master.io.outT  <> sim.io.outT
+  master.io.mem.req_cmd  <> Vec(reqCmdChannels  map (_.io.in))
   master.io.mem.req_data <> Vec(reqDataChannels map (_.io.in))
-  master.io.mem.resp <> Vec(respChannels map (_.io.out))
+  master.io.mem.resp     <> Vec(respChannels    map (_.io.out))
   sim.reset := master.io.reset_t
   master.io.daisy.regs.in  <> sim.io.daisy.regs.in
   master.io.daisy.trace.in <> sim.io.daisy.trace.in
