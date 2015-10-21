@@ -16,52 +16,42 @@ case class PokePort(node: Bits, value: BigInt) extends SampleInst
 case class ExpectPort(node: Bits, value: BigInt) extends SampleInst
 
 object Sample {
-  private lazy val warmCycles = transforms.chainSize(ChainType.Trs)
   private val chains = Map(
     ChainType.Regs -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.Trs  -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.SRAM -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.Cntr -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
   )
+  private val chainSize  = transforms.chainSize
+  private val daisyWidth = transforms.daisyWidth
 
   def addToChain(t: ChainType.Value, signal: Option[Node], width: Int, off: Option[Int] = None) {
     chains(t) += ((signal, width, off))
   }
 
-  private lazy val traceLen = chains(ChainType.Trs).size / warmCycles
   def apply(snap: String = "") = {
-    val sample = new Sample()
+    val sample = new Sample
 
-    val sram_off = (chains(ChainType.SRAM) foldLeft 0){case (start, (signal, width, off)) =>
-      val end = math.min(start + width, snap.length)
-      val value = BigInt(snap.substring(start, end), 2)
-      signal match {
-        case None =>
-        case Some(p) => sample addCmd Load(p, value, off)
+    (List(ChainType.SRAM, ChainType.Trs, ChainType.Regs) foldLeft 0){case (base, chainType) =>
+      ((0 until chainSize(chainType)) foldLeft base){case (offset, i) =>
+        val next = (chains(chainType) foldLeft offset){case (start, (signal, width, idx)) =>
+          val end = math.min(start + width, snap.length)
+          val value = BigInt(snap.substring(start, end), 2)
+          signal match {
+            case Some(p) if chainType == ChainType.SRAM && i < idx.get =>
+              sample addCmd Load(p, value, Some(i))
+            case Some(p) if chainType == ChainType.Trs => 
+              sample addCmd Force(p, value)
+            case Some(p) if chainType == ChainType.Regs => 
+              sample addCmd Load(p, value, idx)
+            case _ =>
+          }
+          end
+        }
+        if (chainType == ChainType.Trs) sample addCmd Step(1)
+        assert(next % daisyWidth == 0)
+        next
       }
-      start + width
-    }
-
-    val tr_off = (chains(ChainType.Trs).zipWithIndex foldLeft sram_off){case (start, ((signal, width, _), i)) =>
-      val end = math.min(start + width, snap.length)
-      val value = BigInt(snap.substring(start, end), 2)
-      signal match {
-        case None =>
-        case Some(p) => sample addCmd Force(p, value)
-      }
-      val doStep = (i + 1) % traceLen == 0
-      if (doStep) sample addCmd Step(1)
-      start + width
-    }
-
-    val reg_off = (chains(ChainType.Regs) foldLeft tr_off){case (start, (signal, width, off)) =>
-      val end = math.min(start + width, snap.length)
-      val value = BigInt(snap.substring(start, end), 2)
-      signal match {
-        case None =>
-        case Some(p) => sample addCmd Load(p, value, off)
-      }
-      start + width
     }
 
     sample

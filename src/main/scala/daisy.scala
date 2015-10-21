@@ -7,6 +7,8 @@ case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
+object ChainType extends Enumeration { val SRAM, Trs, Regs, Cntr = Value }
+
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
   val in = Decoupled(UInt(width=daisywidth)).flip
@@ -21,7 +23,6 @@ class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
 }
 class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
-object ChainType extends Enumeration { val Regs, Trs, SRAM, Cntr = Value }
 class DaisyBundle(daisywidth: Int) extends Bundle {
   val regs  = new RegData(daisywidth)
   val trace = new TraceData(daisywidth)
@@ -138,6 +139,7 @@ class RegChain extends DaisyChainModule {
   io.dataIo <> datapath.io.dataIo
   control.io.ctrlIo <> datapath.io.ctrlIo
 }
+
 
 // Define sram daisy chains
 abstract trait SRAMChainParams extends UsesParameters {

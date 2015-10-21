@@ -6,10 +6,10 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <sys/time.h>
 #include "biguint.h"
 #include "sample.h"
 
-#include <sys/time.h>
 static inline uint64_t timestamp() {
   struct timeval tv;
   gettimeofday(&tv,NULL);
@@ -46,8 +46,8 @@ class simif_t
     idmap_t out_map;
     idmap_t in_trace_map;
     idmap_t out_trace_map;
-    uint32_t* const poke_map;
-    uint32_t* const peek_map;
+    uint32_t poke_map[POKE_SIZE];
+    uint32_t peek_map[PEEK_SIZE];
 
     // sample information
     sample_t* samples[SAMPLE_NUM];
@@ -80,7 +80,7 @@ class simif_t
       }
       return data;
     }
-
+    
   protected:
     // channel communication
     virtual void poke_channel(size_t addr, uint64_t data) = 0;

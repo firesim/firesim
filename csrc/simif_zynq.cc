@@ -1,9 +1,8 @@
 #include "simif_zynq.h"
-#include <assert.h>
+#include <cassert>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <fstream>
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
