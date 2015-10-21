@@ -92,7 +92,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read
 
-  val snapOuts = List(io.daisy.regs.out, io.daisy.trace.out, io.daisy.sram.out)
+  val snapOuts = ChainType.values.toList map (t => io.daisy(t).out)
   val outs = io.outs ++ io.inT ++ io.outT ++ io.mem.resp ++ snapOuts
 
   outs.zipWithIndex foreach {case (out, i) =>
@@ -139,11 +139,8 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   val outTrMap = simIo.outMap map {case (wire, id) => wire -> (io.outs.size + io.inT.size + id)}
   val respMap  = simIo.genIoMap(memIo.resp.bits.flatten) map {
     case (wire, id) => wire -> (io.outs.size + io.inT.size + io.outT.size + id) }
-  val snapOutMap = {
-    val off = io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size
-    Map(simIo.daisy.regs.out  ->  off,
-        simIo.daisy.trace.out -> (off + 1),
-        simIo.daisy.sram.out  -> (off + 2)) }
+  val snapOutMap = (ChainType.values.toList map (t => t -> (t.id +
+    io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size))).toMap
 }
 
 class NASTISlaveHandler extends MIFModule with NASTIParameters {

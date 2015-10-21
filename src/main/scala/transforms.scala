@@ -45,6 +45,11 @@ object transforms {
     ChainType.Trs  -> 0,
     ChainType.SRAM -> 0,
     ChainType.Cntr -> 0)
+  private[strober] val chainName = Map(
+    ChainType.Regs -> "REG_CHAIN",
+    ChainType.Trs  -> "TR_CHAIN",
+    ChainType.SRAM -> "SRAM_CHAIN",
+    ChainType.Cntr -> "CNTR_CHAIN")
   
   private[strober] var sampleNum = 0
   private[strober] var daisyWidth = 0
@@ -179,12 +184,7 @@ object transforms {
   }
 
   private def addDaisyChains(chainType: ChainType.Value) = (c: Module) => if (chainSize(chainType) > 0) {
-    ChiselError.info("[transforms] add daisy chains for " + (chainType match {
-      case ChainType.Regs => "registers"
-      case ChainType.Trs  => "traces"
-      case ChainType.SRAM => "SRAMs"
-      case ChainType.Cntr => "counters"
-    }))
+    ChiselError.info(s"""[transforms] add ${chainName(chainType).toLowerCase replace ("_", " ")}""")
   
     val hasChain = HashSet[Module]()
 
@@ -322,16 +322,14 @@ object transforms {
     }
 
     List(ChainType.SRAM, ChainType.Trs, ChainType.Regs) foreach { t =>
-      for (i <- 0 until chainSize(t) ; w <- wrappers ; m <- compsRev(w)) {
+      for (w <- wrappers ; m <- compsRev(w)) {
         val (cw, dw) = (chain(t)(m) foldLeft (0, 0)){case ((chainWidth, dataWidth), state) =>
           val width = state.needWidth
           val dw = dataWidth + width
           val cw = (Stream.from(0) map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           val (node, off) = state match {
-            case sram: Mem[_] if sram.seqRead && sram.size > i =>
-              (Some(sram), Some(i))
             case sram: Mem[_] if sram.seqRead =>
-              (None, None)
+              (Some(sram), Some(sram.size))
             case read: MemRead => 
               (Some(read.mem.asInstanceOf[Mem[Data]]), Some(read.addr.litValue(0).toInt))
             case _ => 
@@ -371,21 +369,12 @@ object transforms {
         "MEM_BLOCK_OFFSET"  -> w.memBlockOffset,
         "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
         "CHANNEL_OFFSET"    -> log2Up(channelWidth),
-        "REG_SNAP_LEN"      -> chainLen(ChainType.Regs),
-        "TRACE_SNAP_LEN"    -> chainLen(ChainType.Trs),
-        "SRAM_SNAP_LEN"     -> chainLen(ChainType.SRAM),
-        "SRAM_SNAP_SIZE"    -> chainSize(ChainType.SRAM),
-        "WARM_CYCLES"       -> chainSize(ChainType.Trs),
-        
+
         "POKE_SIZE"         -> w.master.io.ins.size,
         "PEEK_SIZE"         -> w.master.io.outs.size,
 
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
-        "SNAP_OUT_REGS"     -> w.master.snapOutMap(w.sim.io.daisy.regs.out),
-        "SNAP_OUT_TRACE"    -> w.master.snapOutMap(w.sim.io.daisy.trace.out),
-        "SNAP_OUT_SRAM"     -> w.master.snapOutMap(w.sim.io.daisy.sram.out),
-        // "SNAP_OUT_CNTR"     -> w.master.snapOutMap(w.sim.io.daisy.cntr.out),
 
         "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
         "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
@@ -394,7 +383,6 @@ object transforms {
         "MEM_RESP_DATA"     -> w.master.respMap(w.mem.resp.bits.data),
         "MEM_RESP_TAG"      -> w.master.respMap(w.mem.resp.bits.tag)
       )
-
       val sb = new StringBuilder
       val Param = """\(([\w_]+),([\w_]+)\)""".r
       sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
@@ -403,7 +391,15 @@ object transforms {
         case Param(p, v) => sb append dump(p, v.toInt)
         case _ =>
       }
-      consts foreach (sb append dump(_)) 
+      consts foreach (sb append dump(_))
+      val chain_name = ChainType.values.toList map chainName mkString ","
+      val chain_addr = ChainType.values.toList map w.master.snapOutMap mkString ","
+      val chain_size = ChainType.values.toList map chainSize mkString ","
+      val chain_len  = ChainType.values.toList map chainLen  mkString ","
+      sb append s"""enum CHAIN_TYPE {${chain_name},CHAIN_NUM};\n"""
+      sb append s"""const unsigned CHAIN_ADDR[CHAIN_NUM] = {${chain_addr}};\n"""
+      sb append s"""const unsigned CHAIN_SIZE[CHAIN_NUM] = {${chain_size}};\n"""
+      sb append s"""const unsigned CHAIN_LEN[CHAIN_NUM]  = {${chain_len}};\n"""
       sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
       val file = Driver.createOutputFile(targetName + "-const.h")
@@ -416,4 +412,3 @@ object transforms {
     case _ =>
   }
 }
-

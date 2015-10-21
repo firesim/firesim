@@ -4,7 +4,7 @@ import Chisel._
 import scala.collection.mutable.{HashMap, Queue => ScalaQueue, ArrayBuffer}
 import scala.io.Source
 
-abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c, false) {
+abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolean) extends Tester(c, false) {
   private val pokeMap = HashMap[Int, BigInt]()
   private val peekMap = HashMap[Int, BigInt]()
   private val inTraces = ArrayBuffer[ScalaQueue[BigInt]]()
@@ -41,7 +41,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
 
   override def poke(port: Bits, x: BigInt) {
     assert(inMap contains port)
-    if (isTrace) println("* POKE " + dumpName(port) + " <- " + x.toString(16) + " *")
+    if (isTrace) println("* POKE %s <- %x *".format(dumpName(port), x))
     pokeMap(inMap(port)) = x
   }
  
@@ -50,12 +50,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     assert(peekMap contains outMap(port))
     val addr = outMap(port)
     val value = peekMap(outMap(port))
-    if (isTrace) println("* PEEK " + dumpName(port) + " -> " + value.toString(16) + " *")
+    if (isTrace) println("* PEEK %s -> %x *".format(dumpName(port), value))
     value
   }
 
-  override def expect(pass: Boolean, msg: String) = {
-    if (isTrace) println(msg + (if (pass) " : PASS" else " : FAIL"))
+  override def expect(pass: Boolean, msg: => String) = {
+    if (isTrace) println(s"""${msg} : ${if (pass) "PASS" else "FAIL"}""")
     if (!pass && failureTime < 0) failureTime = t
     ok &= pass
     pass
@@ -66,7 +66,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     assert(peekMap contains outMap(port))
     val value = peekMap(outMap(port))
     val pass = value == expected 
-    expect(pass, "* EXPECT " + dumpName(port) + " -> " + value.toString(16) + " == " + expected.toString(16))
+    expect(pass, "* EXPECT %s -> %x == %x".format(dumpName(port), value, expected))
   }
 
   protected[strober] def traces(sample: Sample) = {
@@ -96,15 +96,15 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     val pass = (sample map {
       case Load(signal, value, off) => 
         val expected = peekNode(signal, off) 
-        expect(expected == value, "%s%s -> %s == %s".format(transforms.nameMap(signal),
-          off map ("[" + _ + "]") getOrElse "", expected.toString(16), value.toString(16)))
+        expect(expected == value, "%s%s -> %x == %x".format(transforms.nameMap(signal),
+          off map (x => s"[${x}]") getOrElse "", expected, value))
       case _ => true   
     }) reduce (_ && _)
     expect(pass, "* SNAPSHOT")
   }
 
   override def step(n: Int) {
-    if (isTrace) println("STEP " + n + " -> " + (t + n))
+    if (isTrace) println(s"STEP ${n} -> ${t+n}")
     for (i <- 0 until n) {
       // reservoir sampling
       if (t % traceLen == 0) {
@@ -117,11 +117,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
           }
           val sample = Sample(readSnapshot)
           lastSample = Some((sample, sampleId)) 
-          verifySnapshot(sample)
+          if (snapCheck) verifySnapshot(sample)
           traceCount = 0 
         }
       } 
-
       // take a step
       for (((in, id), i) <- inMap.zipWithIndex) {
         val data = pokeMap getOrElse (id, BigInt(0))
@@ -133,9 +132,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
         peekMap(id) = data 
       }
       t += 1
-      if (traceCount < traceLen) {
-        traceCount += 1
-      }
+      if (traceCount < traceLen) traceCount += 1
     }
   }
 
@@ -165,9 +162,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean) extends Tester(c,
     }
     super.finish
   }
+  if (!snapCheck) ChiselError.info("[Strober Tester] No Snapshot Checking...")
 }
 
-abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
+abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean = true, snapCheck: Boolean = true) extends SimTester(c, isTrace, snapCheck) {
   protected[strober] val inMap = c.io.inMap
   protected[strober] val outMap = c.io.outMap
   protected[strober] val inTrMap = c.io.inTrMap
@@ -200,22 +198,13 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (k <- 0 until chainSize(ChainType.SRAM) ; i <- 0 until chainLen(ChainType.SRAM)) {
-      _poke(c.io.daisy.sram.restart, 1)
-      while(_peek(c.io.daisy.sram.out.valid) == 0) {
-        takeStep
-      }
-      _poke(c.io.daisy.sram.restart, 0)
-      snap append intToBin(_peek(c.io.daisy.sram.out.bits), daisyWidth)
-      _poke(c.io.daisy.sram.out.ready, 1)
-      takeStep
-      _poke(c.io.daisy.sram.out.ready, 0)
-    }
-    List(ChainType.Trs, ChainType.Regs) map { t =>
-      for (i <- 0 until chainLen(t)) {
+    ChainType.values.toList foreach { t =>
+      for (k <- 0 until chainSize(t) ; i <- 0 until chainLen(t)) {
+        if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 1)
         while(_peek(c.io.daisy(t).out.valid) == 0) {
           takeStep
         }
+        if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 0)
         snap append intToBin(_peek(c.io.daisy(t).out.bits), daisyWidth)
         _poke(c.io.daisy(t).out.ready, 1)
         takeStep
@@ -240,7 +229,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   flush
 }
 
-abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boolean = true) extends SimTester(c, isTrace) {
+abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boolean = true, snapCheck: Boolean = true) extends SimTester(c, isTrace, snapCheck) {
   protected[strober] val inMap = c.master.inMap
   protected[strober] val outMap = c.master.outMap
   protected[strober] val inTrMap = c.master.inTrMap
@@ -400,7 +389,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
   }
 
   def slowLoadMem(filename: String) {
-    println("[AXI4 LOADMEM] LOADING " + filename)
+    println("[LOADMEM] LOADING " + filename)
     val step = 1 << (c.memBlockOffset+1)
     val lines = Source.fromFile(filename).getLines
     for ((line, i) <- lines.zipWithIndex) {
@@ -415,20 +404,17 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
         offset += step / 2
       }
     }
-    println("[AXI4 LOADMEM] DONE ")
+    println("[LOADMEM] DONE ")
   }
 
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
-    for (k <- 0 until chainSize(ChainType.SRAM)) {
-      pokeChannel(c.master.sramRestartAddr, 0)
-      for (i <- 0 until chainLen(ChainType.SRAM)) {
-        snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy.sram.out)), daisyWidth)
-      }
-    }
-    List(ChainType.Trs, ChainType.Regs) map { t =>
-      for (i <- 0 until chainLen(t)) {
-        snap append intToBin(peekChannel(c.master.snapOutMap(c.sim.io.daisy(t).out)), daisyWidth)
+    ChainType.values.toList foreach { t =>
+      for (k <- 0 until chainSize(t)) {
+        if (t == ChainType.SRAM) pokeChannel(c.master.sramRestartAddr, 0)
+        for (i <- 0 until chainLen(t)) {
+          snap append intToBin(peekChannel(c.master.snapOutMap(t)), daisyWidth)
+        }
       }
     }
     snap.result

@@ -89,7 +89,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
       }
       case Load(node, value, off) => if (matchMap.isEmpty) {
         node match {
-          case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem =>
+          case mem: Mem[_] if mem.seqRead && !Driver.isInlineMem && off.get < mem.n =>
             pokePath("%s.sram.memory[%d]".format(dumpName(mem), off.get), value)
           case _ => 
             pokeNode(node, value, off)

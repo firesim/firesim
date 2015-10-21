@@ -1,12 +1,8 @@
 #include "simif.h"
 #include <fstream>
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
+#include <cassert>
 
-simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): 
-  prefix(_prefix), log(_log), poke_map(new uint32_t[POKE_SIZE]), peek_map(new uint32_t[PEEK_SIZE])
+simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): prefix(_prefix), log(_log) 
 {
   ok = true;
   t = 0;
@@ -42,8 +38,6 @@ simif_t::~simif_t() {
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
   if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
   fprintf(stdout, "\nSEED: %ld\n", seed);
-  delete[] poke_map;
-  delete[] peek_map;
 }
 
 void simif_t::read_map(std::string filename) {
@@ -85,7 +79,7 @@ void simif_t::read_map(std::string filename) {
 }
 
 void simif_t::read_chain(std::string filename) {
-  enum CHAIN_TYPE { REGS, TRACE, SRAM, CNTR };
+  sample_t::init_chains();
   std::ifstream file(filename.c_str());
   if (file) {
     std::string line;
@@ -95,21 +89,8 @@ void simif_t::read_chain(std::string filename) {
       size_t type, width;
       int off;
       iss >> type >> path >> width >> off;
-      switch (static_cast<CHAIN_TYPE>(type)) {
-        case REGS:
-          sample_t::add_to_reg_chains(path, width, off);
-          break;
-        case TRACE:
-          sample_t::add_to_trace_chains(path, width);
-          break;
-        case SRAM:
-          sample_t::add_to_sram_chains(path, width, off);
-          break;
-        case CNTR:
-          break;
-        default:
-          break;
-      }
+      if (path == "null") path = "";
+      sample_t::add_to_chains(static_cast<CHAIN_TYPE>(type), path, width, off);
     }
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
@@ -301,32 +282,26 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
   return sample;
 }
 
-static inline void int_to_bin(char *bin, uint64_t value, size_t size) {
+static inline char* int_to_bin(char *bin, uint64_t value, size_t size) {
   for (size_t i = 0 ; i < size; i++) {
     bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
   }
   bin[size] = 0;
+  return bin;
 }
 
 std::string simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
-
-  for (size_t k = 0 ; k < SRAM_SNAP_SIZE ; k++) {
-    poke_channel(SRAM_RESTART_ADDR, 0);
-    for (size_t i = 0 ; i < SRAM_SNAP_LEN ; i++) {
-      int_to_bin(bin, peek_channel(SNAP_OUT_SRAM), DAISY_WIDTH);
-      snap << bin;
+  
+  for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
+    CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
+    for (size_t k = 0 ; k < CHAIN_SIZE[t]; k++) {
+      if (type == SRAM_CHAIN) poke_channel(SRAM_RESTART_ADDR, 0);
+      for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
+        snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
+      }
     }
   }
-  for (size_t i = 0 ; i < TRACE_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_TRACE), DAISY_WIDTH);
-    snap << bin;
-  } 
-  for (size_t i = 0 ; i < REG_SNAP_LEN ; i++) {
-    int_to_bin(bin, peek_channel(SNAP_OUT_REGS), DAISY_WIDTH);
-    snap << bin;
-  }
-
   return snap.str();
 }
