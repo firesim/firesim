@@ -95,7 +95,7 @@ object transforms {
   }
 
   private def connectCtrlSignals(c: Module) {
-    ChiselError.info("[transforms] connect control signals")
+    ChiselError.info("[Strober Transforms] connect control signals")
     def collect(c: Module): List[Module] = 
       (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
     def collectRev(c: Module): List[Module] = 
@@ -184,7 +184,7 @@ object transforms {
   }
 
   private def addDaisyChains(chainType: ChainType.Value) = (c: Module) => if (chainSize(chainType) > 0) {
-    ChiselError.info(s"""[transforms] add ${chainName(chainType).toLowerCase replace ("_", " ")}""")
+    ChiselError.info(s"""[Strober Transforms] add ${chainName(chainType).toLowerCase replace ("_", " ")}""")
   
     val hasChain = HashSet[Module]()
 
@@ -284,16 +284,16 @@ object transforms {
 
   private val dumpMaps: Module => Unit = {
     case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
-      object MapType extends Enumeration { val IoIn, IoOut, InTrace, OutTrace = Value }
-      ChiselError.info("[transforms] dump io & mem mapping")
+      object MapType extends Enumeration { val IoIn, IoOut, InTr, OutTr = Value }
+      ChiselError.info("[Strober Transforms] dump io & mem mapping")
       def dump(map_t: MapType.Value, arg: (Bits, Int)) = arg match { 
         case (wire, id) => s"${map_t.id} ${nameMap(wire)} ${id} ${w.sim.io.chunk(wire)}\n"} 
 
       val res = new StringBuilder
-      res append (w.master.inMap    map {dump(MapType.IoIn,     _)} mkString "")
-      res append (w.master.outMap   map {dump(MapType.IoOut,    _)} mkString "")
-      res append (w.master.inTrMap  map {dump(MapType.InTrace,  _)} mkString "")
-      res append (w.master.outTrMap map {dump(MapType.OutTrace, _)} mkString "")
+      res append (w.master.inMap    map {dump(MapType.IoIn,  _)} mkString "")
+      res append (w.master.outMap   map {dump(MapType.IoOut, _)} mkString "")
+      res append (w.master.inTrMap  map {dump(MapType.InTr,  _)} mkString "")
+      res append (w.master.outTrMap map {dump(MapType.OutTr, _)} mkString "")
 
       val file = Driver.createOutputFile(targetName + ".map")
       try {
@@ -306,7 +306,7 @@ object transforms {
   }
 
   private def dumpChains(c: Module) {
-    ChiselError.info("[transforms] dump chain mapping")
+    ChiselError.info("[Strober Transforms] dump chain mapping")
     val res = new StringBuilder
     def dump(chain_t: ChainType.Value, state: Option[Node], width: Int, off: Option[Int]) = {
       val path = state match { case Some(p) => nameMap(p) case None => "null" }
@@ -363,7 +363,7 @@ object transforms {
 
   private val dumpConsts: Module => Unit = {
     case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
-      ChiselError.info("[transforms] dump constant header")
+      ChiselError.info("[Strober Transforms] dump constant header")
       def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
       val consts = List(
         "MEM_BLOCK_OFFSET"  -> w.memBlockOffset,

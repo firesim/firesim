@@ -1,6 +1,7 @@
 #ifndef __SIMIF_H
 #define __SIMIF_H
 
+#include <cassert>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -59,28 +60,26 @@ class simif_t
     bool profile;
     uint64_t sample_time;
     uint64_t sim_start_time;
-
     std::vector<std::string> hargs;
     std::vector<std::string> targs;
 
     std::map<size_t, size_t> in_chunks;
     std::map<size_t, size_t> out_chunks;
 
-    void poke_port(size_t id, biguint_t data) {
+    inline void poke_id(size_t id, biguint_t& data) {
       for (size_t off = 0 ; off < in_chunks[id] ; off++) {
         uint64_t value = (data >> (off << CHANNEL_OFFSET)).uint();
         poke_channel(id+off, value);
       }
     }
-    biguint_t peek_port(size_t id) {
+
+    inline biguint_t peek_id(size_t id) {
       biguint_t data = 0;
       for (size_t off = 0 ; off < out_chunks[id] ; off++) {
-        uint64_t value = peek_channel(id+off);
-        data |= biguint_t(value) << (off << CHANNEL_OFFSET);
+        data |= biguint_t(peek_channel(id+off)) << (off << CHANNEL_OFFSET);
       }
       return data;
     }
-    
   protected:
     // channel communication
     virtual void poke_channel(size_t addr, uint64_t data) = 0;
@@ -90,14 +89,78 @@ class simif_t
     virtual void recv_tokens(uint32_t* const map, size_t size, size_t off) = 0;
 
     // Simulation APIs
-    size_t get_in_id(std::string path);
-    size_t get_out_id(std::string path);
-    void poke_port(size_t id, uint32_t value) { poke_map[id] = value; }
-    uint32_t& peek_port(size_t id, uint32_t &value) { return value = peek_map[id]; }
-    void poke_port(std::string path, uint32_t value);
-    uint32_t& peek_port(std::string path, uint32_t &value);
-    bool expect_port(std::string path, uint32_t expected);
-    bool expect(bool ok, const char *s);
+    inline size_t get_in_id(std::string path) {
+      assert(in_map.find(path) != in_map.end()); 
+      return in_map[path];
+    }
+
+    inline size_t get_out_id(std::string path) {
+      assert(out_map.find(path) != out_map.end()); 
+      return out_map[path];
+    }
+
+    inline void poke_port(size_t id, uint32_t value) { 
+      poke_map[id] = value; 
+    }
+
+    inline uint32_t peek_port(size_t id) {
+      return peek_map[id]; 
+    }
+
+    inline void poke_port(std::string path, uint32_t value) {
+      if (log) fprintf(stdout, "* POKE %s <- %x *\n", path.c_str(), value);
+      poke_port(get_in_id(path), value);
+    }
+
+    inline uint32_t peek_port(std::string path) {
+      uint32_t value = peek_port(get_out_id(path));
+      if (log) fprintf(stdout, "* PEEK %s <- %x *\n", path.c_str(), value);
+      return value;
+    }
+
+    inline void poke_port(size_t id, biguint_t& data) {
+      for (size_t off = 0 ; off < in_chunks[id] ; off++) {
+        poke_map[id+off] = (data >> (off << CHANNEL_OFFSET)).uint();
+      }
+    }
+
+    inline biguint_t& peek_port(size_t id, biguint_t& data) {
+      data = 0;
+      for (size_t off = 0 ; off < out_chunks[id] ; off++) {
+        data |= biguint_t(peek_map[id+off]) << (off << CHANNEL_OFFSET);
+      }
+      return data;
+    }
+
+
+    inline void poke_port(std::string path, biguint_t &value) {
+      if (log) fprintf(stdout, "* POKE %s <- %s *\n", path.c_str(), value.str().c_str());
+      poke_port(get_in_id(path), value);
+    }
+
+    inline biguint_t& peek_port(std::string path, biguint_t &value) {
+      peek_port(get_out_id(path), value); 
+      if (log) fprintf(stdout, "* PEEK %s <- %s *\n", path.c_str(), value.str().c_str());
+      return value;
+    }
+
+    inline bool expect_port(std::string path, uint32_t expected) {
+      uint32_t value = peek_port(path);
+      bool pass = value == expected;
+      std::ostringstream oss;
+      if (log) oss << "EXPECT " << path << " " << value << " == " << expected;
+      return expect(pass, oss.str().c_str());
+    }
+
+    inline bool expect_port(std::string path, biguint_t& expected) {
+      biguint_t value;
+      bool pass = peek_port(path, value) == expected;
+      std::ostringstream oss;
+      if (log) oss << "EXPECT " << path << " " << value << " == " << expected;
+      return expect(pass, oss.str().c_str());
+    }
+
+    bool expect(bool pass, const char *s);
     void step(size_t n);
     virtual void write_mem(size_t addr, biguint_t data);
     virtual biguint_t read_mem(size_t addr);

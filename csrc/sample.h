@@ -88,6 +88,7 @@ public:
     for (size_t i = 0 ; i < cmds.size() ; i++) {
       os << *cmds[i];
     }
+    os << FIN << std::endl;
     return os;
   }
 

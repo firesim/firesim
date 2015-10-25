@@ -1,6 +1,5 @@
 #include "simif.h"
 #include <fstream>
-#include <cassert>
 
 simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): prefix(_prefix), log(_log) 
 {
@@ -41,7 +40,7 @@ simif_t::~simif_t() {
 }
 
 void simif_t::read_map(std::string filename) {
-  enum MAP_TYPE { IO_IN, IO_OUT, IN_TRACE, OUT_TRACE };
+  enum MAP_TYPE { IO_IN, IO_OUT, IN_TR, OUT_TR };
   std::ifstream file(filename.c_str());
   std::string line;
   if (file) {
@@ -59,11 +58,11 @@ void simif_t::read_map(std::string filename) {
           out_map[path] = id;
           out_chunks[id] = chunk;
           break;
-        case IN_TRACE:
+        case IN_TR:
           in_trace_map[path] = id;
           out_chunks[id] = chunk;
           break;
-        case OUT_TRACE:
+        case OUT_TR:
           out_trace_map[path] = id;
           out_chunks[id] = chunk;
           break;
@@ -141,7 +140,7 @@ void simif_t::init() {
   recv_tokens(peek_map, PEEK_SIZE, 0);
   for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
     // flush traces from initialization
-    biguint_t flush = peek_port(it->second);
+    biguint_t flush = peek_id(it->second);
   }
 }
 
@@ -174,40 +173,11 @@ void simif_t::finish() {
   file.close();
 }
 
-size_t simif_t::get_in_id(std::string path) { 
-  assert(in_map.find(path) != in_map.end());
-  return in_map[path];
-}
-
-size_t simif_t::get_out_id(std::string path) {
-  assert(out_map.find(path) != out_map.end());
-  return out_map[path];
-}
-
-void simif_t::poke_port(std::string path, uint32_t value) {
-  if (log) fprintf(stdout, "* POKE %s <- %x *\n", path.c_str(), value);
-  poke_map[get_in_id(path)] = value;
-}
-
-uint32_t& simif_t::peek_port(std::string path, uint32_t& value) {
-  if (log) fprintf(stdout, "* PEEK %s -> %x *\n", path.c_str(), value);
-  return value = peek_map[get_out_id(path)];
-}
-
 bool simif_t::expect(bool pass, const char *s) {
   if (log) fprintf(stdout, "* %s : %s *\n", s, pass ? "PASS" : "FAIL");
   if (ok && !pass) fail_t = t;
   ok &= pass;
   return pass;
-}
-
-bool simif_t::expect_port(std::string path, uint32_t expected) {
-  assert(out_map.find(path) != out_map.end());
-  uint32_t value = peek_map[out_map[path]];
-  bool pass = value == expected;
-  std::ostringstream oss;
-  oss << "EXPECT " << path << " " << value << " == " << expected;
-  return expect(pass, oss.str().c_str());
 }
 
 void simif_t::step(size_t n) {
@@ -269,13 +239,13 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
     // input traces from FPGA
     for (idmap_it_t it = in_trace_map.begin() ; it != in_trace_map.end() ; it++) {
       std::string wire = it->first;
-      sample->add_cmd(new poke_t(wire, peek_port(it->second)));
+      sample->add_cmd(new poke_t(wire, peek_id(it->second)));
     }
     sample->add_cmd(new step_t(1));
     // output traces from FPGA
     for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
       std::string wire = it->first;
-      sample->add_cmd(new expect_t(wire, peek_port(it->second)));
+      sample->add_cmd(new expect_t(wire, peek_id(it->second)));
     }
   }
 
