@@ -29,11 +29,11 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt): Unit
   protected[strober] def peekChannel(addr: Int): BigInt
-  protected[strober] def pokePort(wire: Bits, id: Int, data: BigInt) {
-    (0 until chunk(wire)) foreach (off => pokeChannel(id+off, data >> (off << channelOff)))
+  protected[strober] def pokeId(id: Int, chunk: Int, data: BigInt) {
+    (0 until chunk) foreach (off => pokeChannel(id+off, data >> (off << channelOff)))
   }
-  protected[strober] def peekPort(wire: Bits, id: Int) = {
-    ((0 until chunk(wire)) foldLeft BigInt(0))(
+  protected[strober] def peekId(id: Int, chunk: Int) = {
+    ((0 until chunk) foldLeft BigInt(0))(
       (res, off) => res | (peekChannel(id+off) << (off << channelOff)))
   }
   protected[strober] def _poke(data: Bits, x: BigInt) = super.poke(data, x)
@@ -72,23 +72,18 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
   protected[strober] def traces(sample: Sample) = {
     for (i <- 0 until traceCount) {
       for ((wire, id) <- inTrMap) {
-        sample addCmd PokePort(wire, peekPort(wire, id))
+        sample addCmd PokePort(wire, peekId(id, chunk(wire)))
       }
       sample addCmd Step(1)
       for ((wire, id) <- outTrMap) {
-        sample addCmd ExpectPort(wire, peekPort(wire, id))
+        sample addCmd ExpectPort(wire, peekId(id, chunk(wire)))
       }
     }
     sample
   }
 
-  protected def intToBin(value: BigInt, size: Int) = {
-    var bin = ""
-    for (i <- 0 until size) {
-      bin += (((value >> (size-1-i)) & 0x1) + '0').toChar
-    }
-    bin
-  }
+  protected def intToBin(value: BigInt, size: Int) =
+    ((0 until size) map (i => (((value >> (size-1-i)) & 0x1) + '0').toChar) addString new StringBuilder).result
 
   protected[strober] def readSnapshot: String
 
@@ -100,7 +95,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
           off map (x => s"[${x}]") getOrElse "", expected, value))
       case _ => true   
     }) reduce (_ && _)
-    expect(pass, "* SNAPSHOT")
+    println("* SNAPSHOT: %s".format(if (pass) "PASS" else "FAIL"))
   }
 
   override def step(n: Int) {
@@ -124,11 +119,11 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
       // take a step
       for (((in, id), i) <- inMap.zipWithIndex) {
         val data = pokeMap getOrElse (id, BigInt(0))
-        pokePort(in, id, data)
+        pokeId(id, chunk(in), data)
       }
       peekMap.clear
       for (((out, id), i) <- outMap.zipWithIndex) {
-        val data = peekPort(out, id)
+        val data = peekId(id, chunk(out))
         peekMap(id) = data 
       }
       t += 1
@@ -140,10 +135,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
     // flush output tokens & traces from initialization
     peekMap.clear
     for ((out, id) <- outMap) {
-      peekMap(id) = peekPort(out, id) 
+      peekMap(id) = peekId(id, chunk(out))
     }
-    for ((wire, i) <- outTrMap) {
-      val trace = peekPort(wire, i)
+    for ((wire, id) <- outTrMap) {
+      val trace = peekId(id, chunk(wire))
     }
   }
 
@@ -292,7 +287,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
 
     assert(peekChannel(c.master.respMap(c.mem.resp.bits.tag)) == 0)
     val id = c.master.respMap(c.mem.resp.bits.data)
-    val data = peekPort(c.mem.resp.bits.data, id)
+    val data = peekId(id, chunk(c.mem.resp.bits.data))
     if (isTrace) println("[MEM READ] addr: %x, data: %s".format(addr, data.toString(16)))
     data
   }
@@ -303,7 +298,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
     pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.tag), 0)
     pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.rw), 1)
     val id = c.master.reqMap(c.mem.req_data.bits.data)
-    pokePort(c.mem.req_data.bits.data, id, data)
+    pokeId(id, chunk(c.mem.req_data.bits.data), data)
     do {
       takeStep
     } while (_peek(c.io.snasti.aw.valid) == 0)

@@ -60,15 +60,8 @@ object Sample {
 
 class Sample {
   private val cmds = ArrayBuffer[SampleInst]()
-
-  def addCmd(cmd: SampleInst) {
-    cmds += cmd
-  }
-
-  def map[T](f: SampleInst => T) = {
-    cmds map f
-  }
-
+  def addCmd(cmd: SampleInst) { cmds += cmd }
+  def map[T](f: SampleInst => T) = { cmds map f }
   override def toString = {
     val res = new StringBuilder
     map {
