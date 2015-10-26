@@ -3,6 +3,12 @@ package strober
 import Chisel._
 import scala.collection.mutable.HashMap
 
+case object DaisyWidth extends Field[Int]
+case object DataWidth extends Field[Int]
+case object SRAMSize extends Field[Int]
+
+object ChainType extends Enumeration { val SRAM, Trs, Regs, Cntr = Value }
+
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
   val in = Decoupled(UInt(width=daisywidth)).flip
@@ -22,11 +28,14 @@ class DaisyBundle(daisywidth: Int) extends Bundle {
   val trace = new TraceData(daisywidth)
   val sram  = new SRAMData(daisywidth)
   val cntr  = new CntrData(daisywidth)
+  def apply(t: ChainType.Value) = t match {
+    case ChainType.Regs => regs
+    case ChainType.Trs  => trace
+    case ChainType.SRAM => sram
+    case ChainType.Cntr => cntr
+  }
   override def clone: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
 }
-
-case object DataWidth extends Field[Int]
-case object SRAMSize extends Field[Int]
 
 // Common structures for daisy chains
 abstract trait DaisyChainParams extends UsesParameters {
@@ -121,7 +130,7 @@ class RegChainIO extends Bundle {
   val dataIo = new DataIO
 }
 
-class RegChain extends Module with DaisyChainParams {
+class RegChain extends DaisyChainModule {
   val io = new RegChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new RegChainControl)
@@ -197,7 +206,7 @@ class SRAMChainIO extends RegChainIO {
   val addrIo = new AddrIO
 }
 
-class SRAMChain extends Module with DaisyChainParams {
+class SRAMChain extends DaisyChainModule {
   val io = new SRAMChainIO
   val datapath = Module(new DaisyDatapath)
   val control = Module(new SRAMChainControl)

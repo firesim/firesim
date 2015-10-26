@@ -1,9 +1,8 @@
 #include "simif_zynq.h"
-#include <assert.h>
+#include <cassert>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <fstream>
 
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
@@ -27,23 +26,25 @@ simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bo
   init();
 }
 
-void simif_zynq_t::poke_channel(size_t addr, biguint_t data) {
-  uint64_t mask = (uint64_t(1) << AXI_DATA_WIDTH) - 1;
-  size_t limit = (addr == RESET_ADDR || addr == SRAM_RESTART_ADDR) ? 1 : (in_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
-  for (ssize_t i = limit - 1 ; i >= 0 ; i--) {
-    uint64_t masked_data = ((data >> (i * AXI_DATA_WIDTH)) & mask).uint();
-    write_reg(addr, masked_data);
-    __sync_synchronize();
+void simif_zynq_t::poke_channel(size_t addr, uint64_t data) {
+  write_reg(addr, data);
+  __sync_synchronize();
+}
+
+uint64_t simif_zynq_t::peek_channel(size_t addr) {
+  __sync_synchronize();
+  return read_reg(addr);
+}
+
+void simif_zynq_t::send_tokens(uint32_t* const map, size_t size, size_t off) {
+  for (size_t i = 0 ; i < size ; i++) {
+    write_reg(off+i, map[i]);
   }
 }
 
-biguint_t simif_zynq_t::peek_channel(size_t addr) {
-  biguint_t data = 0;
-  size_t limit = (out_widths[addr] - 1) / AXI_DATA_WIDTH + 1;
-  for (size_t i = 0 ; i < limit ; i++) {
-    __sync_synchronize();
-    data |= biguint_t(read_reg(addr)) << (i * AXI_DATA_WIDTH);
+void simif_zynq_t::recv_tokens(uint32_t* const map, size_t size, size_t off) {
+  __sync_synchronize();
+  for (size_t i = 0 ; i < size ; i++) {
+    map[i] = read_reg(off+i);
   }
-  return data;
 }
-
