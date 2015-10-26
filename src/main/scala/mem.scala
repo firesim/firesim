@@ -1,320 +1,108 @@
 package strober
 
 import Chisel._
+import junctions._
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.ListSet
 
-object MemReqCmd {
-  private val ready_wires = ArrayBuffer[Bool]()
-  private val valid_wires = ArrayBuffer[Bool]()
-  private val addr_wires = ArrayBuffer[Bits]()
-  private val tag_wires = ArrayBuffer[Bits]()
-  private val rw_wires = ArrayBuffer[Bits]()
-
-  def ready(wire: Bool) {
-    assert(wire.dir == INPUT)
-    ready_wires += wire
-  }
-  def valid(wire: Bool) {
-    assert(wire.dir == OUTPUT)
-    valid_wires += wire
-  }
-  def addr(wire: Bits) {
-    assert(wire.dir == OUTPUT)
-    addr_wires += wire
-  }
-  def tag(wire: Bits) {
-    assert(wire.dir == OUTPUT)
-    tag_wires += wire
-  }
-  def rw(wire: Bool) {
-    assert(wire.dir == OUTPUT)
-    rw_wires += wire
-  }
-
-  def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), addr_wires(i), tag_wires(i), rw_wires(i))
-  def ins = ListSet(ready_wires:_*)
-  def outs = ListSet((valid_wires ++ addr_wires ++ tag_wires ++ rw_wires):_*)
-  def size = {
-    assert(ready_wires.size == valid_wires.size)
-    assert(ready_wires.size == addr_wires.size)
-    assert(ready_wires.size == tag_wires.size)
-    assert(ready_wires.size == rw_wires.size)
-    ready_wires.size
-  }
+class SimDecoupledIO[+T <: Data](gen: T) extends Bundle {
+  val ready  = Bool(INPUT)
+  val valid  = Bool(OUTPUT)
+  val target = Decoupled(gen)
+  def fire(dummy: Int = 0): Bool = ready && valid
+  override def cloneType: this.type = new SimDecoupledIO(gen).asInstanceOf[this.type] 
 }
 
-object MemData {
-  private val ready_wires = ArrayBuffer[Bool]()
-  private val valid_wires = ArrayBuffer[Bool]()
-  private val bits_wires = ArrayBuffer[Bits]()
-
-  def ready(wire: Bool) {
-    assert(wire.dir == INPUT)
-    ready_wires += wire
-  }
-  def valid(wire: Bool) {
-    assert(wire.dir == OUTPUT)
-    valid_wires += wire
-  }
-  def bits(wire: Bits) {
-    assert(wire.dir == OUTPUT)
-    bits_wires += wire
-  }
-
-  def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), bits_wires(i))
-  def ins = ListSet(ready_wires:_*)
-  def outs = ListSet((valid_wires ++ bits_wires):_*)
-  def size = {
-    assert(ready_wires.size == valid_wires.size)
-    assert(ready_wires.size == bits_wires.size)
-    ready_wires.size
-  }
+object SimMemIO {
+  private val mems = ArrayBuffer[MemIO]()
+  def apply(mem: MemIO) { mems += mem }
+  def apply(i: Int) = mems(i)
+  def size = mems.size
+  def contains(wire: Bits) = mems exists (_.flatten.unzip._2 contains wire) 
+  def zipWithIndex = mems.toList.zipWithIndex
 }
 
-object MemResp {
-  private val ready_wires = ArrayBuffer[Bool]()
-  private val valid_wires = ArrayBuffer[Bool]()
-  private val data_wires = ArrayBuffer[Bits]()
-  private val tag_wires = ArrayBuffer[Bits]()
+class SimMemIO extends MIFBundle {
+  val req_cmd  = new SimDecoupledIO(new MemReqCmd)
+  val req_data = new SimDecoupledIO(new MemData)
+  val resp     = (new SimDecoupledIO(new MemResp)).flip
 
-  def ready(wire: Bool) {
-    assert(wire.dir == OUTPUT)
-    ready_wires += wire
-  }
-  def valid(wire: Bool) {
-    assert(wire.dir == INPUT)
-    valid_wires += wire
-  }
-  def data(wire: Bits) {
-    assert(wire.dir == INPUT)
-    data_wires += wire
-  }
-  def tag(wire: Bits) {
-    assert(wire.dir == INPUT)
-    tag_wires += wire
-  }
-
-  def apply(i: Int) = Vector(ready_wires(i), valid_wires(i), data_wires(i), tag_wires(i))
-  def ins = ListSet((valid_wires ++ data_wires ++ tag_wires):_*)
-  def outs = ListSet(ready_wires:_*)
-  def size = {
-    assert(ready_wires.size == valid_wires.size)
-    assert(ready_wires.size == data_wires.size)
-    assert(ready_wires.size == tag_wires.size)
-    ready_wires.size
-  }
-}
-
-object MemIO {
-  def ins = MemReqCmd.ins ++ MemData.ins ++ MemResp.ins    
-  def outs = MemReqCmd.outs ++ MemData.outs ++ MemResp.outs
-  def wires = ins ++ outs
-  def count = {
-    assert(MemReqCmd.size == MemData.size)
-    assert(MemReqCmd.size == MemResp.size)
-    MemReqCmd.size
-  }
-}
-
-trait HasMemData extends Bundle {
-  val memWidth = params(MemDataWidth) 
-  val data = UInt(width=memWidth)
-}
-
-trait HasMemAddr extends Bundle {
-  val addrWidth = params(MemAddrWidth)
-  val addr = UInt(width=addrWidth)
-}
-
-trait HasMemTag extends Bundle {
-  val tagWidth = params(MemTagWidth)
-  val tag = UInt(width=tagWidth)
-}
-
-class MemReqCmd extends HasMemAddr with HasMemTag {
-  val rw = Bool()
-}
-class MemResp extends HasMemData with HasMemTag
-class MemData extends HasMemData
-
-class MemIO extends Bundle {
-  val req_cmd  = Decoupled(new MemReqCmd)
-  val req_data = Decoupled(new MemData)
-  val resp     = Decoupled(new MemResp).flip
-}
-
-class ChannelMemIOConverter extends Module {
-  val addrWidth = params(MemAddrWidth)
-  val memWidth = params(MemDataWidth) 
-  val memCount = params(MemDataCount) 
-  val tagWidth = params(MemTagWidth)
-
-  val io = new Bundle {
-    val req_cmd_ready = Decoupled(new Packet(Bool()))
-    val req_cmd_valid = Decoupled(new Packet(Bool())).flip
-    val req_cmd_addr = Decoupled(new Packet(UInt(width=addrWidth))).flip
-    val req_cmd_tag = Decoupled(new Packet(UInt(width=tagWidth))).flip
-    val req_cmd_rw = Decoupled(new Packet(Bool())).flip
-
-    val req_data_ready = Decoupled(new Packet(Bool()))
-    val req_data_valid = Decoupled(new Packet(Bool())).flip
-    val req_data_bits = Decoupled(new Packet(UInt(width=memWidth))).flip
-
-    val resp_ready = Decoupled(new Packet(Bool())).flip
-    val resp_valid = Decoupled(new Packet(Bool()))
-    val resp_data = Decoupled(new Packet(UInt(width=memWidth)))
-    val resp_tag = Decoupled(new Packet(UInt(width=tagWidth)))
+  def <>(mIo: MemIO, wIo: SimWrapperIO) {
+    val ins = wIo.inMap filter (SimMemIO contains _._1) flatMap wIo.getIns
+    // Target Connection
+    def targetConnect[T <: Bits](target: T, wire: T) = wire match {
+      case _: Bool if wire.dir == OUTPUT => target := wIo.getOuts(wire).head.bits
+      case _: Bool if wire.dir == INPUT => wIo.getIns(wire).head.bits := target
+      case _ if wire.dir == OUTPUT => target := Vec(wIo.getOuts(wire) map (_.bits)).toBits
+      case _ if wire.dir == INPUT => wIo.getIns(wire).zipWithIndex foreach {
+        case (in, i) => in.bits := target.toUInt >> UInt(i*wIo.channelWidth) }
+    }
+    targetConnect(req_cmd.target.bits.addr, mIo.req_cmd.bits.addr)
+    targetConnect(req_cmd.target.bits.tag,  mIo.req_cmd.bits.tag)
+    targetConnect(req_cmd.target.bits.rw,   mIo.req_cmd.bits.rw)
+    targetConnect(req_cmd.target.valid,     mIo.req_cmd.valid)
+    targetConnect(req_cmd.target.ready,     mIo.req_cmd.ready)
     
-    val mem = new MemIO
+    targetConnect(req_data.target.bits.data, mIo.req_data.bits.data)
+    targetConnect(req_data.target.valid,     mIo.req_data.valid)
+    targetConnect(req_data.target.ready,     mIo.req_data.ready)
+
+    targetConnect(resp.target.bits.data, mIo.resp.bits.data)
+    targetConnect(resp.target.bits.tag,  mIo.resp.bits.tag)
+    targetConnect(resp.target.valid,     mIo.resp.valid)
+    targetConnect(resp.target.ready,     mIo.resp.ready)
+
+    // Host Connection
+    def hostConnect(res: Bool, arg: (String, Bits), ready: Bool) = arg match { 
+      case (_, wire) if wire.dir == INPUT =>
+        val ins = wIo.getIns(wire)
+        ins foreach (_.valid := ready)
+        (ins foldLeft Bool(true))(_ && _.ready) && res
+      case (_, wire) if wire.dir == OUTPUT =>
+        val outs = wIo.getOuts(wire)
+        outs foreach (_.ready := ready)
+        (outs foldLeft Bool(true))(_ && _.valid) && res
+    }
+    req_cmd.valid  := (mIo.req_cmd.flatten foldLeft Bool(true))(hostConnect(_, _, req_cmd.ready))
+    req_data.valid := (mIo.req_data.flatten foldLeft Bool(true))(hostConnect(_, _, req_data.ready))
+    resp.ready     := (mIo.resp.flatten foldLeft Bool(true))(hostConnect(_, _, resp.valid))
+  }
+}
+
+class ChannelMemIOConverter extends MIFModule {
+  val io = new Bundle {
+    val sim_mem  = (new SimMemIO).flip
+    val host_mem =  new MemIO
   }
 
-  val req_cmd_buf = Module(new Queue(new MemReqCmd, 2))
-  val req_data_buf = Module(new Queue(new MemData, 2*memCount)) 
-  val resp_buf = Module(new Queue(new MemResp, 2*memCount))
-  // req_cmd is valid when 1) input tokens are valid, and 2) output tokens are ready
-  val req_cmd_valid = io.req_cmd_ready.ready && io.req_cmd_valid.valid &&
-    io.req_cmd_addr.valid && io.req_cmd_tag.valid && io.req_cmd_rw.valid
-  // req_data is valid when 1) input tokens are valid, and 2) output tokens are ready
-  val req_data_valid = io.req_data_ready.ready && io.req_data_valid.valid && io.req_data_bits.valid
-  // mem request can fire when req_cmd & read data are valid 
-  val req_fire = req_cmd_valid && req_data_valid && req_cmd_buf.io.enq.ready && req_data_buf.io.enq.ready
-  // mem response can fire when 1) input tokens are valid, and 2) output tokens are ready
-  val resp_fire = io.resp_ready.valid && io.resp_valid.ready && io.resp_data.ready && io.resp_tag.ready
-  req_cmd_buf.io.enq.bits.addr := io.req_cmd_addr.bits.data
-  req_cmd_buf.io.enq.bits.tag := io.req_cmd_tag.bits.data
-  req_cmd_buf.io.enq.bits.rw := io.req_cmd_rw.bits.data
-  // Send memory request only when mem_req can be fired
-  req_cmd_buf.io.enq.valid := req_fire && io.req_cmd_valid.bits.data
-  // Consumes timing tokens 
-  io.req_cmd_valid.ready := req_fire
-  io.req_cmd_addr.ready := req_fire
-  io.req_cmd_tag.ready := req_fire
-  io.req_cmd_rw.ready := req_fire
-  // 
-  io.req_cmd_ready.bits.data := io.req_cmd_valid.bits.data 
-  io.req_cmd_ready.valid := (req_fire && !io.req_cmd_valid.bits.data) || req_fire
-
-  req_data_buf.io.enq.bits.data := io.req_data_bits.bits.data
-  // Send memory data only when valid
-  req_data_buf.io.enq.valid := req_fire && io.req_data_valid.bits.data
-  // Consumes timing tokens 
-  io.req_data_valid.ready := req_fire
-  io.req_data_bits.ready := req_fire
-  // 
-  io.req_data_ready.bits.data := io.req_data_valid.bits.data 
-  io.req_data_ready.valid := (req_fire && !io.req_cmd_valid.bits.data) || req_fire
-
-  resp_buf.io.deq.ready := resp_fire && io.resp_ready.bits.data
-  // Consume resp timing tokens when
-  // 1) resp can fire, and
-  // 2) either of them is true
-  //   i) req can fire, but it is not valid or not read
-  //   ii) resp is valid
-  io.resp_ready.ready := resp_fire &&
-    ((req_fire && (!io.req_cmd_valid.bits.data || io.req_cmd_rw.bits.data)) || resp_buf.io.deq.valid)
-  // 
-  io.resp_valid.bits.data := resp_buf.io.deq.valid
-  io.resp_valid.valid := io.resp_ready.ready 
-  io.resp_data.bits.data := resp_buf.io.deq.bits.data
-  io.resp_data.valid := io.resp_ready.ready 
-  io.resp_tag.bits.data := resp_buf.io.deq.bits.tag
-  io.resp_tag.valid := io.resp_ready.ready
-
-  io.mem.req_cmd <> req_cmd_buf.io.deq
-  io.mem.req_data <> req_data_buf.io.deq
-  resp_buf.io.enq <> io.mem.resp
-}
-
-object MAXI_MemIO_ConverterIO {
-  // rAddrOffset + 0 : req_cmd_addr
-  // rAddrOffset + 1 : {req_cmd_tag, req_cmd_rw}
-  // rAddrOffset + 2 : req_cmd_data
-  // wAddrOffset + 0 : resp_data
-  // wAddrOffset + 1 : resp_tag
-  val inNum = 3
-  val outNum = 2
-}
-
-class MAXI_MemIO_ConverterIO extends Bundle {
-  val axiAddrWidth = params(MAXIAddrWidth)
-  val axiDataWidth = params(MAXIDataWidth)
-  val inNum = MAXI_MemIO_ConverterIO.inNum
-  val outNum = MAXI_MemIO_ConverterIO.outNum
-
-  val ins = Vec.fill(inNum){Decoupled(UInt(width=axiDataWidth)).flip}
-  val in_addr = UInt(INPUT, axiAddrWidth)
-  val outs = Vec.fill(outNum){Decoupled(UInt(width=axiDataWidth))}
-  val out_addr = UInt(INPUT, axiAddrWidth)
-  val mem = new MemIO
-}
-
-class MAXI_MemIOConverter(rAddrOffset: Int, wAddrOffset: Int) extends Module {
-  val addrWidth = params(MemAddrWidth)
-  val memWidth = params(MemDataWidth) 
-  val memCount = params(MemDataCount) 
-  val tagWidth = params(MemTagWidth)
-
-  val io = new MAXI_MemIO_ConverterIO
-  val req_cmd_addr = Module(new MAXI2Input(UInt(width=addrWidth), rAddrOffset))
-  val req_cmd_tag = Module(new MAXI2Input(UInt(width=tagWidth+1), rAddrOffset+1))
-  val req_data = Module(new MAXI2Input(UInt(width=memWidth), rAddrOffset+2))
-  val req_cmd_buf = Module(new Queue(new MemReqCmd, 2))
-  val req_data_buf = Module(new Queue(new MemData, 2*memCount)) 
-  val resp_buf = Module(new Queue(new MemResp, 2*memCount))
-  val resp_data = Module(new Output2MAXI(UInt(width=memWidth), wAddrOffset))
-  val resp_tag = Module(new Output2MAXI(UInt(width=tagWidth), wAddrOffset+1))
-  val resp_data_in_ready = RegInit(Bool(false))
-  val resp_tag_in_ready = RegInit(Bool(false))
-
-  // input to converters
-  req_cmd_addr.io.in <> io.ins(0)
-  req_cmd_addr.io.addr := io.in_addr
-  req_cmd_tag.io.in <> io.ins(1)
-  req_cmd_tag.io.addr := io.in_addr
-  req_data.io.in <> io.ins(2)
-  req_data.io.addr := io.in_addr
-
-  // converters to buffers
-  req_cmd_buf.io.enq.bits.addr := req_cmd_addr.io.out.bits
-  req_cmd_buf.io.enq.bits.tag := req_cmd_tag.io.out.bits >> UInt(1)
-  req_cmd_buf.io.enq.bits.rw := req_cmd_tag.io.out.bits(0)
-  req_cmd_buf.io.enq.valid := req_cmd_addr.io.out.valid && req_cmd_tag.io.out.valid
-  req_cmd_addr.io.out.ready := req_cmd_buf.io.enq.fire()
-  req_cmd_tag.io.out.ready := req_cmd_buf.io.enq.fire()
-  req_data_buf.io.enq.bits.data := req_data.io.out.bits
-  req_data_buf.io.enq.valid := req_data.io.out.valid
-  req_data.io.out.ready := req_data_buf.io.enq.ready
+  val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2))
+  val req_data_buf = Module(new Queue(new MemData, 2))
+  val resp_buf     = Module(new Queue(new MemResp, 2))
   
-  // buffers to mem
-  req_cmd_buf.io.deq <> io.mem.req_cmd
-  req_data_buf.io.deq <> io.mem.req_data
+  io.sim_mem.req_cmd.target.ready := Bool(true)
+  io.sim_mem.req_cmd.ready     := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
+                                  io.sim_mem.req_data.valid && req_data_buf.io.enq.ready
+  req_cmd_buf.io.enq.bits.addr := io.sim_mem.req_cmd.target.bits.addr
+  req_cmd_buf.io.enq.bits.tag  := io.sim_mem.req_cmd.target.bits.tag
+  req_cmd_buf.io.enq.bits.rw   := io.sim_mem.req_cmd.target.bits.rw
+  req_cmd_buf.io.enq.valid     := io.sim_mem.req_cmd.target.valid && io.sim_mem.req_cmd.ready
 
-  // mem to buffer
-  io.mem.resp <> resp_buf.io.enq
+  io.sim_mem.req_data.target.ready := Bool(true)
+  io.sim_mem.req_data.ready     := io.sim_mem.req_cmd.ready
+  req_data_buf.io.enq.bits.data := io.sim_mem.req_data.target.bits.data
+  req_data_buf.io.enq.valid     := io.sim_mem.req_data.target.valid && io.sim_mem.req_data.ready
 
-  // buffer to converters
-  resp_data.io.addr := io.out_addr
-  resp_data.io.in.bits := resp_buf.io.deq.bits.data
-  resp_data.io.in.valid := resp_buf.io.deq.valid
-  resp_tag.io.addr := io.out_addr
-  resp_tag.io.in.bits := resp_buf.io.deq.bits.tag
-  resp_tag.io.in.valid := resp_buf.io.deq.valid
-  resp_buf.io.deq.ready := 
-    (resp_data.io.in.ready || resp_data_in_ready) && (resp_tag.io.in.ready || resp_tag_in_ready)
+  resp_buf.io.deq.ready := io.sim_mem.resp.ready && io.sim_mem.resp.target.ready 
+  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (resp_buf.io.deq.valid || 
+    io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
+  io.sim_mem.resp.target.bits.data := resp_buf.io.deq.bits.data
+  io.sim_mem.resp.target.bits.tag  := resp_buf.io.deq.bits.tag
+  io.sim_mem.resp.target.valid     := resp_buf.io.deq.valid
 
-  when(resp_buf.io.deq.ready) {
-    resp_data_in_ready := Bool(false)
-    resp_tag_in_ready := Bool(false)
-  }.elsewhen(resp_data.io.in.ready) {
-    resp_data_in_ready := Bool(true)
-  }.elsewhen(resp_tag.io.in.ready) {
-    resp_tag_in_ready := Bool(true)
-  }
-
-  // converters to output
-  resp_data.io.out <> io.outs(0)
-  resp_tag.io.out <> io.outs(1)
+  io.host_mem.req_cmd  <> req_cmd_buf.io.deq
+  io.host_mem.req_data <> req_data_buf.io.deq
+  resp_buf.io.enq      <> io.host_mem.resp
 }
 
 class MemArbiter(n: Int) extends Module {
