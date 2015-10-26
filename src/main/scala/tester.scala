@@ -1,14 +1,13 @@
 package strober
 
 import Chisel._
+import Chisel.AdvTester._
 import scala.collection.mutable.{HashMap, Queue => ScalaQueue, ArrayBuffer}
 import scala.io.Source
 
-abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolean) extends Tester(c, false) {
+abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolean) extends AdvTester(c, false) {
   private val pokeMap = HashMap[Int, BigInt]()
   private val peekMap = HashMap[Int, BigInt]()
-  private val inTraces = ArrayBuffer[ScalaQueue[BigInt]]()
-  private val outTraces = ArrayBuffer[ScalaQueue[BigInt]]()
   private var traceCount = 0
 
   protected[strober] def inMap: Map[Bits, Int]
@@ -36,8 +35,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
     ((0 until chunk) foldLeft BigInt(0))(
       (res, off) => res | (peekChannel(id+off) << (off << channelOff)))
   }
-  protected[strober] def _poke(data: Bits, x: BigInt) = super.poke(data, x)
+  protected[strober] def _poke(data: Bits, x: BigInt) = super.wire_poke(data, x)
   protected[strober] def _peek(data: Bits) = super.peek(data)
+
+  override def wire_poke(port: Bits, x: BigInt) = this.poke(port, x)
 
   override def poke(port: Bits, x: BigInt) {
     assert(inMap contains port)
@@ -117,14 +118,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
         }
       } 
       // take a step
-      for (((in, id), i) <- inMap.zipWithIndex) {
-        val data = pokeMap getOrElse (id, BigInt(0))
-        pokeId(id, chunk(in), data)
+      for ((in, id) <- inMap) {
+        pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))
       }
       peekMap.clear
-      for (((out, id), i) <- outMap.zipWithIndex) {
-        val data = peekId(id, chunk(out))
-        peekMap(id) = data 
+      for ((out, id) <- outMap) {
+        peekMap(id) = peekId(id, chunk(out))
       }
       t += 1
       if (traceCount < traceLen) traceCount += 1
