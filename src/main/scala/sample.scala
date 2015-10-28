@@ -22,7 +22,7 @@ object Sample {
     ChainType.SRAM -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.Cntr -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
   )
-  private val chainSize  = transforms.chainSize
+  private val chainLoop  = transforms.chainLoop
   private val daisyWidth = transforms.daisyWidth
 
   def addToChain(t: ChainType.Value, signal: Option[Node], width: Int, off: Option[Int] = None) {
@@ -32,8 +32,8 @@ object Sample {
   def apply(snap: String = "") = {
     val sample = new Sample
 
-    (List(ChainType.SRAM, ChainType.Trs, ChainType.Regs) foldLeft 0){case (base, chainType) =>
-      ((0 until chainSize(chainType)) foldLeft base){case (offset, i) =>
+    (ChainType.values.toList foldLeft 0){case (base, chainType) =>
+      ((0 until chainLoop(chainType)) foldLeft base){case (offset, i) =>
         val next = (chains(chainType) foldLeft offset){case (start, (signal, width, idx)) =>
           val end = math.min(start + width, snap.length)
           val value = BigInt(snap.substring(start, end), 2)
