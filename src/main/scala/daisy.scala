@@ -7,7 +7,7 @@ case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
-object ChainType extends Enumeration { val SRAM, Trs, Regs, Cntr = Value }
+object ChainType extends Enumeration { val Trs, Regs, SRAM, Cntr = Value }
 
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
@@ -147,7 +147,7 @@ abstract trait SRAMChainParams extends UsesParameters {
 }
 
 class AddrIO extends Bundle with SRAMChainParams {
-  val in = UInt(INPUT, width=log2Up(n))
+  val in = UInt(INPUT, width=log2Up(n)) // TODO: it turns out that this is wasteful, but required for tesing...
   val out = Valid(UInt(width=log2Up(n)))
 }
 
@@ -160,7 +160,7 @@ class SRAMChainControl extends DaisyChainModule with SRAMChainParams {
   val io = new SRAMChainControlIO
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = RegInit(s_IDLE)
-  val addrIn = Reg(UInt(width=log2Up(n)))
+  val addrIn = Reg(UInt(width=log2Up(n))) 
   val addrOut = Reg(UInt(width=log2Up(n)))
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
 

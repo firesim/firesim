@@ -16,7 +16,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
   protected[strober] def outTrMap: Map[Bits, Int]
   protected[strober] def chunk(wire: Bits): Int
 
-  protected[strober] lazy val chainSize  = transforms.chainSize
+  protected[strober] lazy val chainLoop  = transforms.chainLoop
   protected[strober] lazy val chainLen   = transforms.chainLen
   protected[strober] lazy val sampleNum  = transforms.sampleNum
   protected[strober] lazy val channelOff = log2Up(transforms.channelWidth)
@@ -57,8 +57,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   override def expect(pass: Boolean, msg: => String) = {
     if (isTrace) println(s"""${msg} : ${if (pass) "PASS" else "FAIL"}""")
-    if (!pass && failureTime < 0) failureTime = t
-    ok &= pass
+    if (!pass) fail
     pass
   }
  
@@ -88,8 +87,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   protected[strober] def readSnapshot: String
 
-  protected[strober] def verifySnapshot(sample: Sample) = {
+  protected[strober] def verifySnapshot(sample: Sample) {
     val pass = (sample map {
+      case Load(signal: MemRead,    value, None) => true 
+      case Load(signal: MemSeqRead, value, None) => true
       case Load(signal, value, off) => 
         val expected = peekNode(signal, off) 
         expect(expected == value, "%s%s -> %x == %x".format(transforms.nameMap(signal),
@@ -193,7 +194,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
     ChainType.values.toList foreach { t =>
-      for (k <- 0 until chainSize(t) ; i <- 0 until chainLen(t)) {
+      for (k <- 0 until chainLoop(t) ; i <- 0 until chainLen(t)) {
         if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 1)
         while(_peek(c.io.daisy(t).out.valid) == 0) {
           takeStep
@@ -404,7 +405,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
     ChainType.values.toList foreach { t =>
-      for (k <- 0 until chainSize(t)) {
+      for (k <- 0 until chainLoop(t)) {
         if (t == ChainType.SRAM) pokeChannel(c.master.sramRestartAddr, 0)
         for (i <- 0 until chainLen(t)) {
           snap append intToBin(peekChannel(c.master.snapOutMap(t)), daisyWidth)
