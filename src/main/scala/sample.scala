@@ -83,7 +83,7 @@ class Sample {
         res append "%d %s %x\n".format(SampleInstType.EXPECT.id, path, value)
       }
     }
-    res append "%d\n".format(SampleInstType.FIN.id)
+    res append "%d fin\n".format(SampleInstType.FIN.id)
     res.result
   }
 }

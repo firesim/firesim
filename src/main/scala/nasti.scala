@@ -27,12 +27,12 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
     val daisy = simIo.daisy.clone.flip
     val reset_t = Bool(OUTPUT)
     val mem = new Bundle {
-      val req_cmd = Vec(memIo.req_cmd.bits.clone.asOutput.flatten map {case (name, wire) =>
-       ("req_cmd_" + name, wire)} flatMap simIo.genPacket)
-      val req_data = Vec(memIo.req_data.bits.clone.asOutput.flatten map {case (name, wire) =>
-       ("req_data_" + name, wire)} flatMap simIo.genPacket)
-      val resp = Vec(memIo.resp.bits.clone.asInput.flatten map {case (name, wire) =>
-       ("resp_" + name, wire)} flatMap simIo.genPacket)
+      val req_cmd = Vec(memIo.req_cmd.bits.clone.asOutput.flatten map {
+        case (name, wire) => (s"req_cmd_${name}", wire)} flatMap simIo.genPacket)
+      val req_data = Vec(memIo.req_data.bits.clone.asOutput.flatten map {
+        case (name, wire) => (s"req_data_${name}", wire)} flatMap simIo.genPacket)
+      val resp = Vec(memIo.resp.bits.clone.asInput.flatten map {
+        case (name, wire) => (s"resp_${name}", wire)} flatMap simIo.genPacket)
     }
   }
   val channelWidth    = params(ChannelWidth)

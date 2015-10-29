@@ -31,7 +31,7 @@ object NASTIParams {
 object SimParams {
   val mask = (key: Any, site: View, here: View, up: View) => key match {
     case SampleNum  => Dump("SAMPLE_NUM",  30)
-    case TraceLen   => Dump("TRACE_LEN",   16)
+    case TraceLen   => Dump("TRACE_LEN",   128)
     case DaisyWidth => Dump("DAISY_WIDTH", 32)
     case ChannelLen   => 2
     case ChannelWidth => Dump("CHANNEL_WIDTH", 32)
