@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import junctions.HellaQueue
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -19,18 +20,17 @@ class Channel(w: Int, doTrace: Boolean = true) extends Module {
   val traceLen   = params(TraceLen)
   val channelLen = params(ChannelLen)
   val io         = new ChannelIO(w)
-  val tokens     = Module(new Queue(UInt(width=w), channelLen))
+  val tokens     = Module(new Queue(UInt(width=w), channelLen, flow=true))
   io.in <> tokens.io.enq
   tokens.io.deq <> io.out
   if (doTrace) {
     // lazy instantiation
-    val trace = Module(new Queue(UInt(width=w), traceLen))
+    val trace = Module(new HellaQueue(traceLen-1)(UInt(width=w)))
     trace setName "trace"
     // trace is written when a token is consumed
     trace.io.enq.bits  := io.out.bits
     trace.io.enq.valid := io.out.fire() && trace.io.enq.ready 
-    trace.io.deq <> io.trace
-    io.trace
+    io.trace <> trace.io.deq
   }
 }
 
@@ -51,15 +51,15 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
 
   val ins   = Vec(t_ins  flatMap genPacket)
   val outs  = Vec(t_outs flatMap genPacket)
-  val inT   = Vec(t_ins  flatMap genPacket map (_.flip))
-  val outT  = Vec(t_outs flatMap genPacket)
+  val inT   = Vec(t_ins  flatMap (genPacket(_)(true) map (_.flip)))
+  val outT  = Vec(t_outs flatMap (genPacket(_)(true)))
   val daisy = new DaisyBundle(daisyWidth)
 
-  def genPacket[T <: Bits](arg: (String, Bits)) = arg match {case (name, port) =>
+  def genPacket[T <: Bits](arg: (String, Bits))(implicit trace: Boolean = false) = arg match {case (name, port) =>
     val packet = (0 until chunk(port)) map {i =>
       val width = scala.math.min(channelWidth, port.needWidth-i*channelWidth)
       val token = Decoupled(UInt(width=width))
-      token nameIt ("io_" + name + "_channel_" + i, true)
+      token nameIt (s"""io_${name}_${if (trace) "trace" else "channel"}_${i}""", true)
       if (port.dir == INPUT) token.flip else token
     }
     packet
@@ -142,7 +142,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   (out_channels zip io.outs) foreach {case (channel, out) => channel.io.out <> out}
   (outs foldLeft 0)(connectOutput(_, _, out_channels))
 
-  (in_channels zip io.inT)   foreach {case (channel, trace) => channel.io.trace <> trace}
+  (in_channels  zip io.inT)  foreach {case (channel, trace) => channel.io.trace <> trace}
   (out_channels zip io.outT) foreach {case (channel, trace) => channel.io.trace <> trace}
   
   // Control
