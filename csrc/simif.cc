@@ -59,11 +59,11 @@ void simif_t::read_map(std::string filename) {
           out_chunks[id] = chunk;
           break;
         case IN_TR:
-          in_trace_map[path] = id;
+          in_tr_map[path] = id;
           out_chunks[id] = chunk;
           break;
         case OUT_TR:
-          out_trace_map[path] = id;
+          out_tr_map[path] = id;
           out_chunks[id] = chunk;
           break;
         default:
@@ -136,12 +136,16 @@ void simif_t::init() {
     if (arg.find("+profile") == 0) profile = true;
   }
 
-  if (profile) sim_start_time = timestamp();
-  recv_tokens(peek_map, PEEK_SIZE, 0);
-  for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
-    // flush traces from initialization
-    biguint_t flush = peek_id(it->second);
+  for (size_t i = 0 ; i < 5 ; i ++) {
+    poke_channel(RESET_ADDR, 0);
+    while(!peek_channel(0));
+    recv_tokens(peek_map, PEEK_SIZE, 1);
+    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
+      // flush traces from initialization
+      biguint_t flush = peek_id(it->second);
+    }
   }
+  if (profile) sim_start_time = timestamp();
 }
 
 void simif_t::finish() {
@@ -182,34 +186,32 @@ bool simif_t::expect(bool pass, const char *s) {
 
 void simif_t::step(size_t n) {
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
-    
-  for (size_t i = 0 ; i < n ; i++) {
-    // reservoir sampling
-    if (t % TRACE_LEN == 0) {
-      uint64_t start_time = 0;
-      size_t record_id = t / TRACE_LEN;
-      size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
-      if (sample_id < SAMPLE_NUM) {
+  // reservoir sampling
+  if (t % TRACE_LEN == 0) {
+    uint64_t start_time = 0;
+    size_t record_id = t / TRACE_LEN;
+    size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
+    if (sample_id < SAMPLE_NUM) {
       if (profile) start_time = timestamp();
-        if (last_sample != NULL) {
-          if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
-          samples[last_sample_id] = trace_ports(last_sample);
-        }
-        std::string snap = read_snapshot();
-        last_sample = new sample_t(snap);
-        last_sample_id = sample_id;
-        trace_count = 0;
-        if (profile) sample_time += (timestamp() - start_time);
-      } 
-    }
-
-    // take a step
-    send_tokens(poke_map, POKE_SIZE, 0);
-    recv_tokens(peek_map, PEEK_SIZE, 0);
-
-    t++;
-    if (trace_count < TRACE_LEN) trace_count++;
+      if (last_sample != NULL) {
+        if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
+        samples[last_sample_id] = trace_ports(last_sample);
+      }
+      std::string snap = read_snapshot();
+      last_sample = new sample_t(snap);
+      last_sample_id = sample_id;
+      trace_count = 0;
+      if (profile) sample_time += (timestamp() - start_time);
+    } 
   }
+
+  // take steps
+  poke_channel(0, n);
+  send_tokens(poke_map, POKE_SIZE, 1);
+  while(!peek_channel(0));
+  recv_tokens(peek_map, PEEK_SIZE, 1);
+  t += n;
+  if (trace_count < TRACE_LEN) trace_count += n;
 }
 
 void simif_t::write_mem(size_t addr, biguint_t data) {
@@ -237,13 +239,13 @@ biguint_t simif_t::read_mem(size_t addr) {
 sample_t* simif_t::trace_ports(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
-    for (idmap_it_t it = in_trace_map.begin() ; it != in_trace_map.end() ; it++) {
+    for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
       std::string wire = it->first;
       sample->add_cmd(new poke_t(wire, peek_id(it->second)));
     }
     sample->add_cmd(new step_t(1));
     // output traces from FPGA
-    for (idmap_it_t it = out_trace_map.begin() ; it != out_trace_map.end() ; it++) {
+    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
       std::string wire = it->first;
       sample->add_cmd(new expect_t(wire, peek_id(it->second)));
     }
@@ -266,7 +268,7 @@ std::string simif_t::read_snapshot() {
   
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
-    for (size_t k = 0 ; k < CHAIN_SIZE[t]; k++) {
+    for (size_t k = 0 ; k < CHAIN_LOOP[t]; k++) {
       if (type == SRAM_CHAIN) poke_channel(SRAM_RESTART_ADDR, 0);
       for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
         snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
