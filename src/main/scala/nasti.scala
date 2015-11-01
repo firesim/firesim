@@ -16,6 +16,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   val io = new Bundle {
     val nasti = (new NASTIIO).flip
     val step  = Decoupled(UInt(width=nastiXDataBits))
+    val len   = Decoupled(UInt(width=nastiXDataBits))
     val fin   = Decoupled(UInt(width=nastiXDataBits)).flip
     val ins   = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap 
                     simIo.getIns map (_.clone))
@@ -48,7 +49,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
-  val ins = Seq(io.step) ++ io.ins ++ io.mem.req_cmd ++ io.mem.req_data
+  val ins = Seq(io.step) ++ io.ins ++ io.mem.req_cmd ++ io.mem.req_data ++ Seq(io.len)
   ins.zipWithIndex foreach {case (in, i) =>
     val off = UInt(i)
     in.bits  := io.nasti.w.bits.data
@@ -134,6 +135,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
     case (wire, id) => wire -> (1 + id) }
   val reqMap = simIo.genIoMap(memIo.req_cmd.bits.flatten ++ memIo.req_data.bits.flatten) map {
     case (wire, id) => wire -> (1 + io.ins.size + id) }
+  val traceLenAddr = 1 + io.ins.size + io.mem.req_cmd.size + io.mem.req_data.size
 
   // 0 : fin
   val outMap = simIo.genIoMap(simIo.t_outs filterNot (SimMemIO contains _._2)) map {
@@ -286,6 +288,7 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   }
   master.io.fin.valid := Bool(true)
   master.io.fin.bits  := !tockCounter.orR
+  master.io.len  <> sim.io.traceLen
   master.io.ins  <> Vec(in_bufs  map (_.io.enq))
   master.io.outs <> Vec(out_bufs map (_.io.deq)) 
   master.io.inT  <> sim.io.inT

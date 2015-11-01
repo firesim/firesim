@@ -18,16 +18,16 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   protected[strober] lazy val chainLoop  = transforms.chainLoop
   protected[strober] lazy val chainLen   = transforms.chainLen
-  protected[strober] lazy val sampleNum  = transforms.sampleNum
-  protected[strober] lazy val channelOff = log2Up(transforms.channelWidth)
-  protected[strober] lazy val daisyWidth = transforms.daisyWidth
 
+  protected[strober] def sampleNum: Int
   protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
   protected[strober] var lastSample: Option[(Sample, Int)] = None
-  lazy val traceLen = transforms.traceLen
+  private var _traceLen = 0
+  def traceLen = _traceLen
 
   implicit def bigintToBoolean(b: BigInt) = if (b == 0) false else true
 
+  protected[strober] def channelOff: Int
   protected[strober] def pokeChannel(addr: Int, data: BigInt): Unit
   protected[strober] def peekChannel(addr: Int): BigInt
   protected[strober] def pokeId(id: Int, chunk: Int, data: BigInt) {
@@ -100,6 +100,10 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   protected[strober] def _tick(n: Int): Unit
 
+  def setTraceLen(len: Int) {
+    _traceLen = len
+  }
+
   override def step(n: Int) {
     if (isTrace) println(s"STEP ${n} -> ${t+n}")
     // reservoir sampling
@@ -154,6 +158,8 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   protected[strober] val inTrMap = c.io.inTrMap
   protected[strober] val outTrMap = c.io.outTrMap
   protected[strober] def chunk(wire: Bits) = c.io.chunk(wire)
+  protected[strober] val sampleNum = c.sampleNum
+  protected[strober] val channelOff = log2Up(c.channelWidth)
 
   private val ins = c.io.ins
   private val outs = c.io.outs ++ c.io.inT ++ c.io.outT
@@ -175,14 +181,6 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     value
   }
 
-  protected[strober] def _tick(n: Int) {
-    for (i <- 0 until n) {
-      inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
-      peekMap.clear
-      outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
-    }
-  }
-
   protected[strober] def readSnapshot = {
     val snap = new StringBuilder
     ChainType.values.toList foreach { t =>
@@ -190,13 +188,30 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
         if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 1)
         while(!_peek(c.io.daisy(t).out.valid)) takeStep
         if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 0)
-        snap append intToBin(_peek(c.io.daisy(t).out.bits), daisyWidth)
+        snap append intToBin(_peek(c.io.daisy(t).out.bits), c.daisyWidth)
         _poke(c.io.daisy(t).out.ready, 1)
         takeStep
         _poke(c.io.daisy(t).out.ready, 0)
       }
     }
     snap.result
+  }
+
+  override def setTraceLen(len: Int) {
+    super.setTraceLen(len)
+    while (!_peek(c.io.traceLen.ready)) takeStep
+    _poke(c.io.traceLen.bits, len)
+    _poke(c.io.traceLen.valid, 1)
+    takeStep
+    _poke(c.io.traceLen.valid, 0)
+  }
+
+  protected[strober] def _tick(n: Int) {
+    for (i <- 0 until n) {
+      inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
+      peekMap.clear
+      outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
+    }
   }
 
   override def reset(n: Int) {
@@ -211,6 +226,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
     t = 0
   }
 
+  super.setTraceLen(c.traceMaxLen)
   flush
 }
 
@@ -220,6 +236,8 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
   protected[strober] val inTrMap = c.master.inTrMap
   protected[strober] val outTrMap = c.master.outTrMap
   protected[strober] def chunk(wire: Bits) = c.sim.io.chunk(wire)
+  protected[strober] val sampleNum = c.sim.sampleNum
+  protected[strober] val channelOff = log2Up(c.sim.channelWidth)
   
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
     do {
@@ -384,11 +402,26 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
       for (k <- 0 until chainLoop(t)) {
         if (t == ChainType.SRAM) pokeChannel(c.master.sramRestartAddr, 0)
         for (i <- 0 until chainLen(t)) {
-          snap append intToBin(peekChannel(c.master.snapOutMap(t)), daisyWidth)
+          snap append intToBin(peekChannel(c.master.snapOutMap(t)), c.sim.daisyWidth)
         }
       }
     }
     snap.result
+  }
+
+  override def setTraceLen(len: Int) { 
+    super.setTraceLen(len)
+    pokeChannel(c.master.traceLenAddr, len)
+  }
+
+  protected[strober] def _tick(n: Int) {
+    pokeChannel(0, n)
+    inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
+    while (!peekChannel(0)) tickMem
+    (0 until 5) foreach (_ => takeStep)
+    tickMem // handle tail requests
+    peekMap.clear
+    outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
   }
 
   override def reset(n: Int) {
@@ -406,16 +439,7 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
     t = 0
   }
 
-  protected[strober] def _tick(n: Int) {
-    pokeChannel(0, n)
-    inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
-    while (!peekChannel(0)) tickMem
-    (0 until 5) foreach (_ => takeStep)
-    tickMem // handle tail requests
-    peekMap.clear
-    outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
-  }
-
+  super.setTraceLen(c.sim.traceMaxLen)
   for (_ <- 0 until 5) {
     super.reset(1)
     pokeChannel(c.master.resetAddr, 0)
