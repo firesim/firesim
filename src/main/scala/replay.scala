@@ -66,6 +66,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
     val startTime = System.nanoTime
     samples.zipWithIndex foreach {case (sample, i) =>
       println(s"START SAMPLE #${i}")
+      reset(5)
       sample map {
         case Step(n) => step(n)
         case Force(node, value) => // Todo 

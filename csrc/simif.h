@@ -45,8 +45,8 @@ class simif_t
     // maps 
     idmap_t in_map;
     idmap_t out_map;
-    idmap_t in_trace_map;
-    idmap_t out_trace_map;
+    idmap_t in_tr_map;
+    idmap_t out_tr_map;
     uint32_t poke_map[POKE_SIZE];
     uint32_t peek_map[PEEK_SIZE];
 
@@ -100,11 +100,11 @@ class simif_t
     }
 
     inline void poke_port(size_t id, uint32_t value) { 
-      poke_map[id] = value; 
+      poke_map[id-1] = value; 
     }
 
     inline uint32_t peek_port(size_t id) {
-      return peek_map[id]; 
+      return peek_map[id-1]; 
     }
 
     inline void poke_port(std::string path, uint32_t value) {
@@ -120,14 +120,14 @@ class simif_t
 
     inline void poke_port(size_t id, biguint_t& data) {
       for (size_t off = 0 ; off < in_chunks[id] ; off++) {
-        poke_map[id+off] = (data >> (off << CHANNEL_OFFSET)).uint();
+        poke_map[id-1+off] = (data >> (off << CHANNEL_OFFSET)).uint();
       }
     }
 
     inline biguint_t& peek_port(size_t id, biguint_t& data) {
       data = 0;
       for (size_t off = 0 ; off < out_chunks[id] ; off++) {
-        data |= biguint_t(peek_map[id+off]) << (off << CHANNEL_OFFSET);
+        data |= biguint_t(peek_map[id-1+off]) << (off << CHANNEL_OFFSET);
       }
       return data;
     }
