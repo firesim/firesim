@@ -9,10 +9,7 @@ case object MemBlockBytes extends Field[Int]
 case object MemAddrSizeBits extends Field[Int]
 
 object NASTIShim {
-  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = (targetParams alter NASTIParams.mask) alter SimParams.mask
-    Module(new NASTIShim(new SimWrapper(c)))(params)
-  }
+  def apply[T <: Module](c: =>T)(params: Parameters) = Module(new NASTIShim(new SimWrapper(c)))(params)
 }
 
 class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule {

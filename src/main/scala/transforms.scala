@@ -2,7 +2,6 @@ package strober
 
 import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
-import scala.util.matching.Regex
 
 object transforms { 
   private val wrappers  = ArrayBuffer[SimWrapper[Module]]()
@@ -349,17 +348,18 @@ object transforms {
     case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
       ChiselError.info("[Strober Transforms] dump constant header")
       def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
+      val sb = new StringBuilder
       val consts = List(
+        "SAMPLE_NUM"        -> w.sim.sampleNum,
+        "TRACE_LEN"         -> w.sim.traceLen,
+        "DAISY_WIDTH"       -> w.sim.daisyWidth,
         "MEM_BLOCK_OFFSET"  -> w.memBlockOffset,
         "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
         "CHANNEL_OFFSET"    -> log2Up(channelWidth),
-
         "POKE_SIZE"         -> w.master.io.ins.size,
         "PEEK_SIZE"         -> w.master.io.outs.size,
-
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
-
         "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
         "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
         "MEM_REQ_RW"        -> w.master.reqMap(w.mem.req_cmd.bits.rw),
@@ -367,19 +367,13 @@ object transforms {
         "MEM_RESP_DATA"     -> w.master.respMap(w.mem.resp.bits.data),
         "MEM_RESP_TAG"      -> w.master.respMap(w.mem.resp.bits.tag)
       )
-      val sb = new StringBuilder
-      val Param = """\(([\w_]+),([\w_]+)\)""".r
-      sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
-      sb append "#define __%s_H\n".format(targetName.toUpperCase)
-      (Dump.getDump split '\n') foreach {
-        case Param(p, v) => sb append dump(p, v.toInt)
-        case _ =>
-      }
-      consts foreach (sb append dump(_))
       val chain_name = ChainType.values.toList map chainName mkString ","
       val chain_addr = ChainType.values.toList map w.master.snapOutMap mkString ","
       val chain_loop = ChainType.values.toList map chainLoop mkString ","
       val chain_len  = ChainType.values.toList map chainLen  mkString ","
+      sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
+      sb append "#define __%s_H\n".format(targetName.toUpperCase)
+      consts foreach (sb append dump(_))
       sb append s"""enum CHAIN_TYPE {${chain_name},CHAIN_NUM};\n"""
       sb append s"""const unsigned CHAIN_ADDR[CHAIN_NUM] = {${chain_addr}};\n"""
       sb append s"""const unsigned CHAIN_LOOP[CHAIN_NUM] = {${chain_loop}};\n"""

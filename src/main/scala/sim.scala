@@ -35,10 +35,7 @@ class Channel(w: Int, doTrace: Boolean = true) extends Module {
 }
 
 object SimWrapper {
-  def apply[T <: Module](c: =>T, targetParams: Parameters = Parameters.empty) = {
-    val params = targetParams alter SimParams.mask
-    Module(new SimWrapper(c))(params)
-  }
+  def apply[T <: Module](c: =>T)(params: Parameters) = Module(new SimWrapper(c))(params)
 }
 
 class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits)]) extends Bundle {
