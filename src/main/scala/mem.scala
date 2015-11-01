@@ -58,11 +58,11 @@ class SimMemIO extends MIFBundle {
       case (_, wire) if wire.dir == INPUT =>
         val ins = wIo.getIns(wire)
         ins foreach (_.valid := ready)
-        (ins foldLeft Bool(true))(_ && _.ready) && res
+        (ins foldLeft res)(_ && _.ready)
       case (_, wire) if wire.dir == OUTPUT =>
         val outs = wIo.getOuts(wire)
         outs foreach (_.ready := ready)
-        (outs foldLeft Bool(true))(_ && _.valid) && res
+        (outs foldLeft res)(_ && _.valid)
     }
     req_cmd.valid  := (mIo.req_cmd.flatten foldLeft Bool(true))(hostConnect(_, _, req_cmd.ready))
     req_data.valid := (mIo.req_data.flatten foldLeft Bool(true))(hostConnect(_, _, req_data.ready))
@@ -76,10 +76,10 @@ class ChannelMemIOConverter extends MIFModule {
     val host_mem =  new MemIO
   }
 
-  val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2))
-  val req_data_buf = Module(new Queue(new MemData, 2))
-  val resp_buf     = Module(new Queue(new MemResp, 2))
-  
+  val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2, flow=true))
+  val req_data_buf = Module(new Queue(new MemData,   2, flow=true))
+  val resp_buf     = Module(new Queue(new MemResp,   2, flow=true))
+
   io.sim_mem.req_cmd.target.ready := Bool(true)
   io.sim_mem.req_cmd.ready     := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
                                   io.sim_mem.req_data.valid && req_data_buf.io.enq.ready
@@ -110,18 +110,20 @@ class MemArbiter(n: Int) extends Module {
     val ins = Vec.fill(n){(new MemIO).flip}
     val out = new MemIO  
   }
-  val s_READY :: s_READ :: Nil = Enum(UInt(), 2)
+  val s_READY :: s_READ :: s_WRITE :: Nil = Enum(UInt(), 3)
   val state = RegInit(s_READY)
   val chosen = RegInit(UInt(n-1))
 
   io.out.req_cmd.bits := io.ins(chosen).req_cmd.bits
   io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
+  io.ins foreach (_.req_cmd.ready := Bool(false))
   io.ins.zipWithIndex foreach { case (in, i) => 
     in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
   }
 
   io.out.req_data.bits := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid && state === s_READY
+  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ 
+  io.ins foreach (_.req_data.ready := Bool(false))
   io.ins.zipWithIndex foreach { case (in, i) => 
     in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) 
   }
@@ -134,13 +136,19 @@ class MemArbiter(n: Int) extends Module {
 
   switch(state) {
     is(s_READY) {
-      state := Mux(io.out.req_cmd.valid && !io.out.req_cmd.bits.rw, s_READ, s_READY)
       when(!io.ins(chosen).req_cmd.valid && !io.ins(chosen).req_data.valid) {
         chosen := Mux(chosen.orR, chosen - UInt(1), UInt(n-1))
+      }.elsewhen(io.ins(chosen).req_cmd.fire() && !io.ins(chosen).req_cmd.bits.rw) {
+        state := s_READ
+      }.elsewhen(io.ins(chosen).req_cmd.fire() && !io.ins(chosen).req_data.fire()) {
+        state := s_WRITE
       }
     }
     is(s_READ) {
-      state := Mux(io.ins(chosen).resp.valid, s_READY, s_READ)
-    } 
+      state := Mux(io.ins(chosen).resp.fire(), s_READY, s_READ)
+    }
+    is(s_WRITE) {
+      state := Mux(io.ins(chosen).req_data.fire(), s_READY, s_WRITE)
+    }
   }
 }
