@@ -19,8 +19,8 @@ class ChannelIO(w: Int)  extends Bundle {
 class Channel(w: Int, doTrace: Boolean = true) extends Module {
   val traceLen   = params(TraceLen)
   val channelLen = params(ChannelLen)
-  val io         = new ChannelIO(w)
-  val tokens     = Module(new Queue(UInt(width=w), channelLen, flow=true))
+  val io     = new ChannelIO(w)
+  val tokens = Module(new Queue(UInt(width=w), channelLen, flow=true))
   io.in <> tokens.io.enq
   tokens.io.deq <> io.out
   if (doTrace) {

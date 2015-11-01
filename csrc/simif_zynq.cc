@@ -21,8 +21,6 @@ simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bo
   dev_vaddr = (uintptr_t*)mmap(0, pgsize, host_prot, flags, fd, dev_paddr);
   assert(dev_vaddr != MAP_FAILED);
 
-  // Reset
-  poke_channel(RESET_ADDR, 0);
   init();
 }
 
