@@ -31,11 +31,6 @@ object transforms {
     ChainType.SRAM -> "SRAM_CHAIN",
     ChainType.Cntr -> "CNTR_CHAIN")
   
-  private[strober] var sampleNum = 0
-  private[strober] var daisyWidth = 0
-  private[strober] var channelWidth = 0
-  private[strober] var traceLen = 0
-
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
@@ -58,10 +53,6 @@ object transforms {
       )
     }
 
-    sampleNum    = w.sampleNum
-    daisyWidth   = w.daisyWidth
-    channelWidth = w.channelWidth
-    traceLen     = w.traceLen
     targetName   = Driver.backend.extractClassName(w.target) 
     w.name       = targetName + "Wrapper"
     wrappers    += w
@@ -117,7 +108,7 @@ object transforms {
       for (m <- compsRev(w)) {
         ChainType.values foreach (chains(_)(m) = ArrayBuffer[Node]())
         if (!(daisyPins contains m)) { 
-          daisyPins(m) = m.addPin(new DaisyBundle(daisyWidth), "io_daisy")
+          daisyPins(m) = m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy")
         }
 
         m bfs { 
@@ -167,7 +158,7 @@ object transforms {
   
     val hasChain = HashSet[Module]()
 
-    def insertRegChain(m: Module) = if (chains(chainType)(m).isEmpty) None else {
+    def insertRegChain(m: Module, daisyWidth: Int) = if (chains(chainType)(m).isEmpty) None else {
       val width = (chains(chainType)(m) foldLeft 0)(_ + _.needWidth)
       val daisy = m.addModule(new RegChain, {case DataWidth => width})
       ((0 until daisy.daisyLen) foldRight (0, 0)){case (i, (index, offset)) =>
@@ -198,7 +189,7 @@ object transforms {
       Some(daisy)
     }
 
-    def insertSRAMChain(m: Module) = {
+    def insertSRAMChain(m: Module, daisyWidth: Int) = {
       val chain = (chains(ChainType.SRAM)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
         val (addr, read) = findSRAMRead(sram)
         val width = sram.needWidth
@@ -236,8 +227,8 @@ object transforms {
 
     for (w <- wrappers ; m <- comps(w)) {
       val daisy = chainType match {
-        case ChainType.SRAM => insertSRAMChain(m)
-        case _              => insertRegChain(m)
+        case ChainType.SRAM => insertSRAMChain(m, w.daisyWidth)
+        case _              => insertRegChain(m, w.daisyWidth)
       }
       // Filter children who have daisy chains
       (m.children filter (hasChain(_)) foldLeft (None: Option[Module])){ case (prev, child) =>
@@ -309,7 +300,7 @@ object transforms {
         val (cw, dw) = (chains(t)(m) foldLeft (0, 0)){case ((chainWidth, dataWidth), state) =>
           val width = state.needWidth
           val dw = dataWidth + width
-          val cw = (Stream.from(0) map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
+          val cw = (Stream.from(0) map (chainWidth + _ * w.daisyWidth) dropWhile (_ < dw)).head
           val (node, off) = state match {
             case sram: Mem[_] if sram.seqRead =>
               (Some(sram), Some(sram.size))
@@ -351,15 +342,16 @@ object transforms {
       val sb = new StringBuilder
       val consts = List(
         "SAMPLE_NUM"        -> w.sim.sampleNum,
-        "TRACE_LEN"         -> w.sim.traceLen,
+        "TRACE_MAX_LEN"     -> w.sim.traceMaxLen,
         "DAISY_WIDTH"       -> w.sim.daisyWidth,
         "MEM_BLOCK_OFFSET"  -> w.memBlockOffset,
         "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
-        "CHANNEL_OFFSET"    -> log2Up(channelWidth),
+        "CHANNEL_OFFSET"    -> log2Up(w.sim.channelWidth),
         "POKE_SIZE"         -> w.master.io.ins.size,
         "PEEK_SIZE"         -> w.master.io.outs.size,
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
+        "TRACE_LEN_ADDR"    -> w.master.traceLenAddr,
         "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
         "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
         "MEM_REQ_RW"        -> w.master.reqMap(w.mem.req_cmd.bits.rw),

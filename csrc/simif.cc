@@ -6,6 +6,8 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   ok = true;
   t = 0;
   fail_t = 0;
+  trace_count = 0;
+  trace_len = TRACE_MAX_LEN;
 
   for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
     samples[i] = NULL;
@@ -187,9 +189,9 @@ bool simif_t::expect(bool pass, const char *s) {
 void simif_t::step(size_t n) {
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   // reservoir sampling
-  if (t % TRACE_LEN == 0) {
+  if (t % trace_len == 0) {
     uint64_t start_time = 0;
-    size_t record_id = t / TRACE_LEN;
+    size_t record_id = t / trace_len;
     size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
     if (sample_id < SAMPLE_NUM) {
       if (profile) start_time = timestamp();
@@ -211,7 +213,7 @@ void simif_t::step(size_t n) {
   while(!peek_channel(0));
   recv_tokens(peek_map, PEEK_SIZE, 1);
   t += n;
-  if (trace_count < TRACE_LEN) trace_count += n;
+  if (trace_count < trace_len) trace_count += n;
 }
 
 void simif_t::write_mem(size_t addr, biguint_t data) {

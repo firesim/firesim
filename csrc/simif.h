@@ -26,8 +26,6 @@ class simif_t
     simif_t(std::vector<std::string> args, std::string prefix, bool _log = false); 
     ~simif_t();
 
-    virtual int run() = 0;
-
   private:
     void read_map(std::string filename);
     void read_chain(std::string filename);
@@ -40,6 +38,7 @@ class simif_t
     uint64_t t;
     uint64_t fail_t;
     size_t trace_count;
+    size_t trace_len;
     time_t seed; 
 
     // maps 
@@ -169,7 +168,12 @@ class simif_t
     
     void init();
     void finish();
-    uint64_t cycles() { return t; }
+    inline uint64_t cycles() { return t; }
+    inline void set_trace_len(size_t len) { 
+      trace_len = len;
+      poke_channel(TRACE_LEN_ADDR, len);
+    }
+    inline size_t get_trace_len() { return trace_len; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
 };
 

@@ -6,31 +6,73 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 case object SampleNum    extends Field[Int]
-case object TraceLen     extends Field[Int]
+case object TraceMaxLen  extends Field[Int]
 case object ChannelLen   extends Field[Int]
 case object ChannelWidth extends Field[Int]
+
+class TraceQueueIO[T <: Data](data: => T, entries: Int) extends QueueIO(data, entries) {
+  val limit = UInt(INPUT, log2Up(entries))
+}
+
+class TraceQueue[T <: Data](data: => T) extends Module {
+  val traceMaxLen = params(TraceMaxLen)
+  val traceLenBits = log2Up(traceMaxLen)
+  val io = new TraceQueueIO(data, traceMaxLen)
+
+  val do_flow = Wire(Bool())
+  val do_enq = io.enq.fire() && !do_flow
+  val do_deq = io.deq.fire() && !do_flow
+
+  val maybe_full = RegInit(Bool(false))
+  val enq_ptr = RegInit(UInt(0, traceLenBits))
+  val deq_ptr = RegInit(UInt(0, traceLenBits))
+  val enq_wrap = enq_ptr === io.limit
+  val deq_wrap = deq_ptr === io.limit
+  when (do_enq) { enq_ptr := Mux(enq_wrap, UInt(0), enq_ptr + UInt(1)) }
+  when (do_deq) { deq_ptr := Mux(deq_wrap, UInt(0), deq_ptr + UInt(1)) }
+  when (do_enq != do_deq) { maybe_full := do_enq }
+
+  val ptr_match = enq_ptr === deq_ptr
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+  val atLeastTwo = full || enq_ptr - deq_ptr >= UInt(2)
+  do_flow := empty && io.deq.ready
+
+  val ram = SeqMem(data, traceMaxLen)
+  when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
+
+  val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
+  val raddr = Mux(io.deq.valid, Mux(deq_wrap, UInt(0), deq_ptr + UInt(1)), deq_ptr)
+  val ram_out_valid = Reg(next = ren)
+
+  io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
+  io.enq.ready := !full
+  io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
+}
 
 class ChannelIO(w: Int)  extends Bundle {
   val in    = Decoupled(UInt(width=w)).flip
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
+  val traceLen = UInt(INPUT, log2Up(params(TraceMaxLen)))
 }
 
 class Channel(w: Int, doTrace: Boolean = true) extends Module {
-  val traceLen   = params(TraceLen)
-  val channelLen = params(ChannelLen)
+  val traceMaxLen = params(TraceMaxLen)
+  val channelLen  = params(ChannelLen)
   val io     = new ChannelIO(w)
   val tokens = Module(new Queue(UInt(width=w), channelLen, flow=true))
   io.in <> tokens.io.enq
   tokens.io.deq <> io.out
   if (doTrace) {
     // lazy instantiation
-    val trace = Module(new HellaQueue(traceLen-1)(UInt(width=w)))
+    val trace = Module(new TraceQueue(UInt(width=w)))
     trace setName "trace"
     // trace is written when a token is consumed
     trace.io.enq.bits  := io.out.bits
-    trace.io.enq.valid := io.out.fire() && trace.io.enq.ready 
-    io.trace <> trace.io.deq
+    trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
+    trace.io.limit := io.traceLen
+    io.trace <> Queue(trace.io.deq, 1, pipe=true)
   }
 }
 
@@ -51,6 +93,7 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
   val inT   = Vec(t_ins  flatMap (genPacket(_)(true) map (_.flip)))
   val outT  = Vec(t_outs flatMap (genPacket(_)(true)))
   val daisy = new DaisyBundle(daisyWidth)
+  val traceLen = Decoupled(UInt(width=log2Up(params(TraceMaxLen)))).flip
 
   def genPacket[T <: Bits](arg: (String, Bits))(implicit trace: Boolean = false) = arg match {case (name, port) =>
     val packet = (0 until chunk(port)) map {i =>
@@ -81,7 +124,7 @@ abstract class SimNetwork extends Module {
   def in_channels: Seq[Channel]
   def out_channels: Seq[Channel]
   val sampleNum    = params(SampleNum)
-  val traceLen     = params(TraceLen)
+  val traceMaxLen  = params(TraceMaxLen)
   val daisyWidth   = params(DaisyWidth)
   val channelWidth = params(ChannelWidth)
 
@@ -128,6 +171,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
 
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
+  val traceLen = RegInit(UInt(params(TraceMaxLen)-2))
 
   val in_channels:  Seq[Channel] = ins flatMap genChannels
   val out_channels: Seq[Channel] = outs flatMap genChannels
@@ -154,6 +198,12 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
    
   // Outputs should be ready after one cycle
   out_channels foreach (_.io.in.valid := fireNext || RegNext(reset))
+
+  // Trace size is runtime configurable
+  io.traceLen.ready := !fire && !fireNext
+  when (io.traceLen.fire()) { traceLen := io.traceLen.bits - UInt(2) }
+  in_channels  foreach { _.io.traceLen := traceLen }
+  out_channels foreach { _.io.traceLen := traceLen }
 
   transforms.init(this, fire)
 }
