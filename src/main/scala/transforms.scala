@@ -352,6 +352,7 @@ object transforms {
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
         "TRACE_LEN_ADDR"    -> w.master.traceLenAddr,
+        "MEM_CYCLE_ADDR"    -> w.master.memCycleAddr,
         "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
         "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
         "MEM_REQ_RW"        -> w.master.reqMap(w.mem.req_cmd.bits.rw),

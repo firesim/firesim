@@ -1,7 +1,6 @@
 package strober
 
 import Chisel._
-import junctions.HellaQueue
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -15,7 +14,7 @@ class TraceQueueIO[T <: Data](data: => T, entries: Int) extends QueueIO(data, en
 }
 
 class TraceQueue[T <: Data](data: => T) extends Module {
-  val traceMaxLen = params(TraceMaxLen)
+  val traceMaxLen  = params(TraceMaxLen)
   val traceLenBits = log2Up(traceMaxLen)
   val io = new TraceQueueIO(data, traceMaxLen)
 

@@ -173,6 +173,9 @@ class simif_t
       trace_len = len;
       poke_channel(TRACE_LEN_ADDR, len);
     }
+    inline void set_mem_cycles(size_t cycles) { 
+      poke_channel(MEM_CYCLE_ADDR, cycles);
+    }
     inline size_t get_trace_len() { return trace_len; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
 };
