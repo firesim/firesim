@@ -6,6 +6,8 @@ import junctions._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.ListSet
 
+case object MemMaxCycles extends Field[Int]
+
 class SimDecoupledIO[+T <: Data](gen: T) extends Bundle {
   val ready  = Bool(INPUT)
   val valid  = Bool(OUTPUT)
@@ -71,18 +73,34 @@ class SimMemIO extends MIFBundle {
 }
 
 class ChannelMemIOConverter extends MIFModule {
+  val maxLatency = params(MemMaxCycles)
+  val maxLatencyWidth = log2Up(maxLatency+1)
   val io = new Bundle {
     val sim_mem  = (new SimMemIO).flip
     val host_mem =  new MemIO
+    val latency  = Decoupled(UInt(width=maxLatencyWidth)).flip
   }
 
   val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2, flow=true))
   val req_data_buf = Module(new Queue(new MemData,   2, flow=true))
   val resp_buf     = Module(new Queue(new MemResp,   2, flow=true))
+  val latency_buf  = Module(new HellaQueue(maxLatency)(Valid(new MemResp)))
+  val latency      = RegInit(UInt(0, maxLatencyWidth)) 
+  val counter      = RegInit(UInt(0, maxLatencyWidth))
+
+  io.latency.ready := latency === counter
+  when (io.latency.fire()) { 
+    latency := io.latency.bits
+    counter := UInt(0)
+  }.elsewhen (latency_buf.io.enq.fire() && counter =/= latency) {
+    counter := counter + UInt(1)
+  }
+  latency_buf.reset := reset || io.latency.fire()
 
   io.sim_mem.req_cmd.target.ready := Bool(true)
   io.sim_mem.req_cmd.ready     := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
-                                  io.sim_mem.req_data.valid && req_data_buf.io.enq.ready
+                                  io.sim_mem.req_data.valid && req_data_buf.io.enq.ready &&
+                                 (latency_buf.io.deq.valid && counter === latency || !latency.orR)
   req_cmd_buf.io.enq.bits.addr := io.sim_mem.req_cmd.target.bits.addr
   req_cmd_buf.io.enq.bits.tag  := io.sim_mem.req_cmd.target.bits.tag
   req_cmd_buf.io.enq.bits.rw   := io.sim_mem.req_cmd.target.bits.rw
@@ -93,12 +111,19 @@ class ChannelMemIOConverter extends MIFModule {
   req_data_buf.io.enq.bits.data := io.sim_mem.req_data.target.bits.data
   req_data_buf.io.enq.valid     := io.sim_mem.req_data.target.valid && io.sim_mem.req_data.ready
 
-  resp_buf.io.deq.ready := io.sim_mem.resp.ready && io.sim_mem.resp.target.ready 
-  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (resp_buf.io.deq.valid || 
+  io.sim_mem.resp.target.bits.data := Mux(latency.orR, latency_buf.io.deq.bits.bits.data, resp_buf.io.deq.bits.data)
+  io.sim_mem.resp.target.bits.tag  := Mux(latency.orR, latency_buf.io.deq.bits.bits.tag, resp_buf.io.deq.bits.tag)
+  io.sim_mem.resp.target.valid     := Mux(latency.orR, latency_buf.io.deq.bits.valid, resp_buf.io.deq.valid)
+  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (
+    resp_buf.io.deq.valid && latency_buf.io.deq.valid || 
     io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
-  io.sim_mem.resp.target.bits.data := resp_buf.io.deq.bits.data
-  io.sim_mem.resp.target.bits.tag  := resp_buf.io.deq.bits.tag
-  io.sim_mem.resp.target.valid     := resp_buf.io.deq.valid
+  latency_buf.io.deq.ready := latency_buf.io.deq.valid && io.sim_mem.resp.valid && latency.orR && counter === latency
+
+  latency_buf.io.enq.bits.bits.data := resp_buf.io.deq.bits.data
+  latency_buf.io.enq.bits.bits.tag  := resp_buf.io.deq.bits.tag
+  latency_buf.io.enq.bits.valid     := resp_buf.io.deq.valid
+  latency_buf.io.enq.valid := io.sim_mem.resp.valid && latency_buf.io.deq.valid && latency.orR || counter =/= latency
+  resp_buf.io.deq.ready    := io.sim_mem.resp.ready && io.sim_mem.resp.target.ready && (!latency.orR || counter === latency)
 
   io.host_mem.req_cmd  <> req_cmd_buf.io.deq
   io.host_mem.req_data <> req_data_buf.io.deq

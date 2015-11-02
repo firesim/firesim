@@ -414,6 +414,10 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
     pokeChannel(c.master.traceLenAddr, len)
   }
 
+  def setMemCycles(cycles: Int) {
+    pokeChannel(c.master.memCycleAddr, cycles)
+  }
+
   protected[strober] def _tick(n: Int) {
     pokeChannel(0, n)
     inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
