@@ -14,7 +14,7 @@ object NASTIShim {
 
 class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule {
   val io = new Bundle {
-    val nasti = (new NASTIIO).flip
+    val nasti = (new NASTIMasterIO).flip
     val step  = Decoupled(UInt(width=nastiXDataBits))
     val len   = Decoupled(UInt(width=nastiXDataBits))
     val lat   = Decoupled(UInt(width=nastiXDataBits))
@@ -152,8 +152,8 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
 
 class NASTISlaveHandler extends MIFModule with NASTIParameters {
   val io = new Bundle {
-    val mem = (new MemIO).flip
-    val nasti = new NASTIIO
+    val mem   = (new MemIO).flip
+    val nasti = (new NASTISlaveIO).flip
   }
   val memBlockBytes  = params(MemBlockBytes)
   val addrSizeBits   = params(MemAddrSizeBits)
@@ -227,8 +227,8 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
 }
 
 class NASTIShimIO extends Bundle {
-  val mnasti = Bundle((new NASTIIO).flip, {case NASTIName => "Master"})
-  val snasti = Bundle( new NASTIIO,       {case NASTIName => "Slave"})
+  val mnasti = Bundle((new NASTIMasterIO).flip, {case NASTIName => "Master"})
+  val snasti = Bundle((new NASTISlaveIO).flip,  {case NASTIName => "Slave"})
   val mAddrBits = mnasti.ar.bits.nastiXAddrBits
   val mDataBits = mnasti.r.bits.nastiXDataBits
 }
