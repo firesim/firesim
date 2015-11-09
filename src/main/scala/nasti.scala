@@ -339,6 +339,4 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   (mem.resp.bits.flatten foldLeft 0)(sim.connectOutput(_, _, respChannels))
   mem.resp.ready := (reqDataChannels foldLeft Bool(true))(_ && _.io.in.ready)
   respChannels foreach (_.io.in.valid := mem.resp.valid)
-
-  transforms.init(this)
 }
