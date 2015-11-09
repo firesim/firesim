@@ -115,12 +115,12 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
           case None =>
           case Some((sample, id)) => samples(id) = traces(sample)
         }
-        val sample = Sample(readSnapshot)
+        val sample = Sample(readSnapshot, t)
         lastSample = Some((sample, sampleId)) 
         if (snapCheck) verifySnapshot(sample)
         traceCount = 0 
       }
-    } 
+    }
     // take steps
     _tick(n)
     t += n
@@ -143,7 +143,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
     val filename = transforms.targetName + ".sample"
     val file = createOutputFile(filename)
     try {
-      file write (samples map (_.toString) mkString "")
+      file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
     } finally {
       file.close
     }

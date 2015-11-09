@@ -16,9 +16,9 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
       val tokens = line split " "
       val cmd = SampleInstType(tokens.head.toInt)
       cmd match {
-        case SampleInstType.FIN => 
-          samples += sample 
-          new Sample
+        case SampleInstType.CYCLE =>
+          if (sample.cycle > 0) samples += sample 
+          new Sample(tokens.last.toLong)
         case SampleInstType.LOAD =>
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
@@ -65,7 +65,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
   def run {
     val startTime = System.nanoTime
     samples.zipWithIndex foreach {case (sample, i) =>
-      println(s"START SAMPLE #${i}")
+      println(s"START SAMPLE #${i}, cycle: ${sample.cycle}")
       reset(5)
       sample map {
         case Step(n) => step(n)
