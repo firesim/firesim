@@ -93,6 +93,7 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
   val outT  = Vec(t_outs flatMap (genPacket(_)(true)))
   val daisy = new DaisyBundle(daisyWidth)
   val traceLen = Decoupled(UInt(width=log2Up(params(TraceMaxLen)))).flip
+  val cycles = UInt(OUTPUT, 64) // for debug
 
   def genPacket[T <: Bits](arg: (String, Bits))(implicit trace: Boolean = false) = arg match {case (name, port) =>
     val packet = (0 until chunk(port)) map {i =>
@@ -171,6 +172,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
   val traceLen = RegInit(UInt(params(TraceMaxLen)-2))
+  val cycles   = RegInit(UInt(0, 64)) // for debug
 
   val in_channels:  Seq[Channel] = ins flatMap genChannels
   val out_channels: Seq[Channel] = outs flatMap genChannels
@@ -203,6 +205,10 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   when (io.traceLen.fire()) { traceLen := io.traceLen.bits - UInt(2) }
   in_channels  foreach { _.io.traceLen := traceLen }
   out_channels foreach { _.io.traceLen := traceLen }
+
+  // Cycles for debug
+  io.cycles := cycles
+  when(fire) { cycles := cycles + UInt(1) }
 
   transforms.init(this, fire)
 }

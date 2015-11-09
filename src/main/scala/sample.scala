@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 // Enum type for replay commands
 object SampleInstType extends Enumeration {
-  val FIN, LOAD, FORCE, POKE, STEP, EXPECT = Value
+  val CYCLE, LOAD, FORCE, POKE, STEP, EXPECT = Value
 }
 
 abstract class SampleInst
@@ -28,8 +28,8 @@ object Sample {
     chains(t) += ((signal, width, off))
   }
 
-  def apply(snap: String = "") = {
-    val sample = new Sample
+  def apply(snap: String = "", cycle: Long = -1L) = {
+    val sample = new Sample(cycle)
 
     (ChainType.values.toList foldLeft 0){case (base, chainType) =>
       ((0 until chainLoop(chainType)) foldLeft base){case (offset, i) =>
@@ -57,12 +57,13 @@ object Sample {
   }
 }
 
-class Sample {
+class Sample(protected[strober] val cycle: Long = -1L) {
   private val cmds = ArrayBuffer[SampleInst]()
   def addCmd(cmd: SampleInst) { cmds += cmd }
   def map[T](f: SampleInst => T) = { cmds map f }
   override def toString = {
     val res = new StringBuilder
+    res append "%d cycle: %d\n".format(SampleInstType.CYCLE.id, cycle)
     map {
       case Step(n) => res append "%d %d\n".format(SampleInstType.STEP.id, n)
       case Load(node, value, off) => {
@@ -82,7 +83,6 @@ class Sample {
         res append "%d %s %x\n".format(SampleInstType.EXPECT.id, path, value)
       }
     }
-    res append "%d fin\n".format(SampleInstType.FIN.id)
     res.result
   }
 }
