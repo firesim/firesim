@@ -5,7 +5,7 @@ import junctions._
 
 case object NASTIName extends Field[String]
 case object NASTIAddrSizeBits extends Field[Int]
-case object MemBlockBytes extends Field[Int]
+case object LineSize extends Field[Int]
 case object MemAddrSizeBits extends Field[Int]
 
 object NASTIShim {
@@ -38,7 +38,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
   }
   val channelWidth    = params(ChannelWidth)
   val addrSizeBits    = params(NASTIAddrSizeBits)
-  val addrOffset      = log2Up(nastiXDataBits/8)
+  val addrOffsetBits  = log2Up(nastiXDataBits/8)
   val resetAddr       = (1 << addrSizeBits) - 1
   val sramRestartAddr = (1 << addrSizeBits) - 2
 
@@ -64,7 +64,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
     is(st_wr_idle) {
       when(io.nasti.aw.valid && io.nasti.w.valid) {
         st_wr   := st_wr_write
-        waddr_r := io.nasti.aw.bits.addr >> UInt(addrOffset)
+        waddr_r := io.nasti.aw.bits.addr >> UInt(addrOffsetBits)
         awid_r  := io.nasti.aw.bits.id
       }
     }
@@ -106,7 +106,7 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
     is(st_rd_idle) {
       when(io.nasti.ar.valid) {
         st_rd   := st_rd_read
-        raddr_r := io.nasti.ar.bits.addr >> UInt(addrOffset)
+        raddr_r := io.nasti.ar.bits.addr >> UInt(addrOffsetBits)
         arid_r  := io.nasti.ar.bits.id
       }
     }
@@ -155,9 +155,9 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
     val mem   = (new MemIO).flip
     val nasti = (new NASTISlaveIO).flip
   }
-  val memBlockBytes  = params(MemBlockBytes)
+  val lineSize       = params(LineSize)
   val addrSizeBits   = params(MemAddrSizeBits)
-  val addrOffsetBits = log2Up(scala.math.max(memBlockBytes, nastiXDataBits/8))
+  val addrOffsetBits = log2Up(scala.math.max(lineSize, nastiXDataBits/8))
   val nastiDataBeats = scala.math.max(1, mifDataBits / nastiXDataBits)
 
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
@@ -174,7 +174,7 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
   // Read Address
   io.nasti.ar.bits.addr := Cat(UInt(1, 4), addr, UInt(0, addrOffsetBits))
   io.nasti.ar.bits.id   := io.mem.req_cmd.bits.tag
-  io.nasti.ar.bits.len  := UInt(nastiDataBeats-1) // burst length (transfers)
+  io.nasti.ar.bits.len  := UInt(nastiDataBeats*mifDataBeats-1) // burst length (transfers)
   io.nasti.ar.bits.size := UInt(log2Up(scala.math.min(mifDataBits/8, nastiXDataBits/8))) // burst size (bits/beat)
   io.nasti.ar.valid     := state_r === st_read 
   // Read Data
@@ -192,13 +192,13 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
   io.nasti.aw.bits.size := io.nasti.ar.bits.size // burst size (bits/beat)
   io.nasti.aw.valid     := state_r === st_start_write
   // Write Data
-  io.mem.req_data.ready := io.nasti.w.bits.last
+  io.mem.req_data.ready := write_wrap_out
   io.nasti.w.valid      := io.mem.req_data.valid && state_r === st_write
-  io.nasti.w.bits.last  := write_wrap_out
+  io.nasti.w.bits.last  := Counter(io.nasti.w.fire(), nastiDataBeats*mifDataBeats)._2
   io.nasti.w.bits.data  := Vec((0 until nastiDataBeats) map (i =>
     io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count)
   // Write Response
-  io.nasti.b.ready      := Bool(true)
+  io.nasti.b.ready := Bool(true)
 
   if (nastiDataBeats > 1) {
     when(io.nasti.r.valid && !read_wrap_out) {
@@ -221,7 +221,7 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
       state_r := Mux(io.nasti.aw.ready, st_write, st_start_write)
     }
     is(st_write) {
-      state_r := Mux(io.nasti.w.fire() && write_wrap_out, st_idle, st_write)
+      state_r := Mux(io.nasti.w.bits.last, st_idle, st_write)
     }
   }
 }
@@ -229,8 +229,6 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
 class NASTIShimIO extends Bundle {
   val mnasti = Bundle((new NASTIMasterIO).flip, {case NASTIName => "Master"})
   val snasti = Bundle((new NASTISlaveIO).flip,  {case NASTIName => "Slave"})
-  val mAddrBits = mnasti.ar.bits.nastiXAddrBits
-  val mDataBits = mnasti.r.bits.nastiXDataBits
 }
 
 class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
@@ -247,11 +245,6 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
     q.io.enq.bits := out.bits ; q }
   in_bufs.zipWithIndex  map {case (buf, i) => buf setName (s"in_buf_${i}")}
   out_bufs.zipWithIndex map {case (buf, i) => buf setName (s"out_buf_${i}")}
-
-  val addrSizeBits   = params(NASTIAddrSizeBits)
-  val addrOffset     = log2Up(io.mAddrBits/8)
-  val memBlockBytes  = params(MemBlockBytes)
-  val memBlockOffset = log2Up(memBlockBytes)
 
   val arb    = Module(new MemArbiter(SimMemIO.size+1))
   val mem    = arb.io.ins(SimMemIO.size)

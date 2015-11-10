@@ -60,7 +60,7 @@ class Channel(w: Int, doTrace: Boolean = true) extends Module {
   val traceMaxLen = params(TraceMaxLen)
   val channelLen  = params(ChannelLen)
   val io     = new ChannelIO(w)
-  val tokens = Module(new Queue(UInt(width=w), channelLen, flow=true))
+  val tokens = Module(new Queue(UInt(width=w), channelLen))
   io.in <> tokens.io.enq
   tokens.io.deq <> io.out
   if (doTrace) {
