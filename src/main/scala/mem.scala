@@ -82,8 +82,8 @@ class ChannelMemIOConverter extends MIFModule {
   }
 
   val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2, flow=true))
-  val req_data_buf = Module(new Queue(new MemData,   2, flow=true))
-  val resp_buf     = Module(new Queue(new MemResp,   2, flow=true))
+  val req_data_buf = Module(new Queue(new MemData, 2*mifDataBeats, flow=true))
+  val resp_buf     = Module(new Queue(new MemResp, 2*mifDataBeats, flow=true))
   val latency_buf  = Module(new HellaQueue(maxLatency)(Valid(new MemResp)))
   val latency      = RegInit(UInt(0, maxLatencyWidth)) 
   val counter      = RegInit(UInt(0, maxLatencyWidth))
@@ -130,7 +130,7 @@ class ChannelMemIOConverter extends MIFModule {
   resp_buf.io.enq      <> io.host_mem.resp
 }
 
-class MemArbiter(n: Int) extends Module {
+class MemArbiter(n: Int) extends MIFModule {
   val io = new Bundle {
     val ins = Vec.fill(n){(new MemIO).flip}
     val out = new MemIO  
@@ -138,6 +138,10 @@ class MemArbiter(n: Int) extends Module {
   val s_READY :: s_READ :: s_WRITE :: Nil = Enum(UInt(), 3)
   val state = RegInit(s_READY)
   val chosen = RegInit(UInt(n-1))
+  val (read_count, read_wrap_out) = 
+    Counter(io.out.resp.fire() && state === s_READ, mifDataBeats)
+  val (write_count, write_wrap_out) = 
+    Counter(io.out.req_data.fire() && state === s_WRITE, mifDataBeats)
 
   io.out.req_cmd.bits := io.ins(chosen).req_cmd.bits
   io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
@@ -147,13 +151,13 @@ class MemArbiter(n: Int) extends Module {
   }
 
   io.out.req_data.bits := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ 
+  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ
   io.ins foreach (_.req_data.ready := Bool(false))
-  io.ins.zipWithIndex foreach { case (in, i) => 
+  io.ins.zipWithIndex foreach {case (in, i) => 
     in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) 
   }
 
-  io.ins.zipWithIndex foreach { case (in, i) => 
+  io.ins.zipWithIndex foreach {case (in, i) => 
     in.resp.bits := io.out.resp.bits 
     in.resp.valid := io.out.resp.valid && chosen === UInt(i) 
   }
@@ -163,17 +167,15 @@ class MemArbiter(n: Int) extends Module {
     is(s_READY) {
       when(!io.ins(chosen).req_cmd.valid && !io.ins(chosen).req_data.valid) {
         chosen := Mux(chosen.orR, chosen - UInt(1), UInt(n-1))
-      }.elsewhen(io.ins(chosen).req_cmd.fire() && !io.ins(chosen).req_cmd.bits.rw) {
-        state := s_READ
-      }.elsewhen(io.ins(chosen).req_cmd.fire() && !io.ins(chosen).req_data.fire()) {
-        state := s_WRITE
+      }.elsewhen(io.ins(chosen).req_cmd.fire()) {
+        state := Mux(io.ins(chosen).req_cmd.bits.rw, s_WRITE, s_READ)
       }
     }
     is(s_READ) {
-      state := Mux(io.ins(chosen).resp.fire(), s_READY, s_READ)
+      state := Mux(read_wrap_out, s_READY, s_READ)
     }
     is(s_WRITE) {
-      state := Mux(io.ins(chosen).req_data.fire(), s_READY, s_WRITE)
+      state := Mux(write_wrap_out, s_READY, s_WRITE)
     }
   }
 }
