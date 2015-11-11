@@ -391,11 +391,11 @@ abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boole
     val lines = Source.fromFile(filename).getLines
     (lines foldLeft (0, 0)){case ((base_idx, base_addr), line) =>
       (((line.length - step) to 0 by -step) foldLeft (base_idx, base_addr)){case ((i, addr), j) =>
-        data(i % c.mifDataBeats) = ((0 until step) foldLeft BigInt(0)){case (res, k) =>
+        data(i) = ((0 until step) foldLeft BigInt(0)){case (res, k) =>
           res | BigInt(parseNibble(line(j+k))) << (4*(step-1-k))}
-        if ((i + 1) % c.mifDataBeats == 0) {
+        if ((i + 1) == c.mifDataBeats) {
           writeMem(addr, data)
-          (i + 1, addr + step*c.mifDataBeats/2)
+          (0, addr + step*c.mifDataBeats/2)
         } else {
           (i + 1, addr)
         }

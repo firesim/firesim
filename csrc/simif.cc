@@ -101,23 +101,27 @@ void simif_t::read_chain(std::string filename) {
 }
 
 void simif_t::load_mem(std::string filename) {
-  const size_t step = 1 << (MEM_BLOCK_OFFSET + 1);
   std::ifstream file(filename.c_str());
   if (file) {
-    int i = 0;
+    const size_t STEP = MEM_DATA_BITS / 4;
+    size_t i = 0;
+    size_t addr = 0;
+    biguint_t data[MEM_DATA_BEATS];
     std::string line;
     while (std::getline(file, line)) {
-      uint32_t base = (i * line.length()) >> 1;
-      size_t offset = 0;
-      for (int j = line.length() - step ; j >= 0 ; j -= step) {
-        biguint_t data = 0;
-        for (size_t k = 0 ; k < step ; k++) {
-          data |= biguint_t(parse_nibble(line[j+k])) << (4*(step-1-k));
+      for (int j = line.length() - STEP ; j >= 0 ; j -= STEP) {
+        data[i] = 0;
+        for (size_t k = 0 ; k < STEP ; k++) {
+          data[i] |= biguint_t(parse_nibble(line[j+k])) << (4*(STEP-1-k));
         }
-        write_mem(base+offset, data);
-        offset += step >> 1; // -> step / 2
+        if (i + 1 == MEM_DATA_BEATS) {
+          write_mem(addr, data);
+          addr += STEP * MEM_DATA_BEATS / 2;
+          i = 0;
+        } else {
+          i += 1;
+        }
       }
-      i += 1;
     }
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
@@ -127,6 +131,19 @@ void simif_t::load_mem(std::string filename) {
 }
 
 void simif_t::init() {
+  for (size_t k = 0 ; k < 5 ; k++) {
+    poke_channel(RESET_ADDR, 0);
+    while(!peek_channel(0));
+    for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
+      peek_map[i] = peek_channel(i+1);
+    }
+    // recv_tokens(peek_map, PEEK_SIZE, 1);
+    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
+      // flush traces from initialization
+      biguint_t flush = peek_id(it->second);
+    }
+  }
+
   for (auto &arg: hargs) {
     if (arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
@@ -138,15 +155,6 @@ void simif_t::init() {
     if (arg.find("+profile") == 0) profile = true;
   }
 
-  for (size_t i = 0 ; i < 5 ; i ++) {
-    poke_channel(RESET_ADDR, 0);
-    while(!peek_channel(0));
-    recv_tokens(peek_map, PEEK_SIZE, 1);
-    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
-      // flush traces from initialization
-      biguint_t flush = peek_id(it->second);
-    }
-  }
   if (profile) sim_start_time = timestamp();
 }
 
@@ -200,7 +208,7 @@ void simif_t::step(size_t n) {
         samples[last_sample_id] = trace_ports(last_sample);
       }
       std::string snap = read_snapshot();
-      last_sample = new sample_t(snap);
+      last_sample = new sample_t(snap, cycles());
       last_sample_id = sample_id;
       trace_count = 0;
       if (profile) sample_time += (timestamp() - start_time);
@@ -209,33 +217,39 @@ void simif_t::step(size_t n) {
 
   // take steps
   poke_channel(0, n);
-  send_tokens(poke_map, POKE_SIZE, 1);
+  for (size_t i = 0 ; i < POKE_SIZE ; i++) {
+    poke_channel(i+1, poke_map[i]);
+  }
   while(!peek_channel(0));
-  recv_tokens(peek_map, PEEK_SIZE, 1);
+  for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
+    peek_map[i] = peek_channel(i+1);
+  }
   t += n;
   if (trace_count < trace_len) trace_count += n;
 }
 
-void simif_t::write_mem(size_t addr, biguint_t data) {
-  poke_channel(MEM_REQ_ADDR, addr >> MEM_BLOCK_OFFSET);
+void simif_t::read_mem(size_t addr, biguint_t data[]) {
+  poke_channel(MEM_REQ_ADDR, addr >> LINE_OFFSET);
   poke_channel(MEM_REQ_TAG,  0);
-  poke_channel(MEM_REQ_RW,   1);
-  for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
-    poke_channel(MEM_REQ_DATA+off, (data >> (off << CHANNEL_OFFSET)).uint());
+  poke_channel(MEM_REQ_RW,   0);
+  for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
+    data[i] = 0;
+    for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
+      assert(peek_channel(MEM_RESP_TAG) == 0);
+      data[i] |= peek_channel(MEM_RESP_DATA+off) << (off << CHANNEL_OFFSET);
+    }
   }
 }
 
-biguint_t simif_t::read_mem(size_t addr) {
-  poke_channel(MEM_REQ_ADDR, addr >> MEM_BLOCK_OFFSET);
+void simif_t::write_mem(size_t addr, biguint_t data[]) {
+  poke_channel(MEM_REQ_ADDR, addr >> LINE_OFFSET);
   poke_channel(MEM_REQ_TAG,  0);
-  poke_channel(MEM_REQ_RW,   0);
-
-  biguint_t data = 0;
-  for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
-    assert(peek_channel(MEM_RESP_TAG) == 0);
-    data |= peek_channel(MEM_RESP_DATA+off) << (off << CHANNEL_OFFSET);
+  poke_channel(MEM_REQ_RW,   1);
+  for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
+    for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
+      poke_channel(MEM_REQ_DATA+off, (data[i] >> (off << CHANNEL_OFFSET)).uint());
+    }
   }
-  return data;
 }
 
 sample_t* simif_t::trace_ports(sample_t *sample) {

@@ -7,7 +7,7 @@
 #include <ostream>
 #include "biguint.h"
 
-enum SAMPLE_INST_TYPE { FIN, LOAD, FORCE, POKE, STEP, EXPECT };
+enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT };
 
 class sample_inst_t { 
 public:
@@ -79,16 +79,16 @@ private:
 
 class sample_t {
 public:
-  sample_t(std::string& snap);
+  sample_t(std::string& snap, uint64_t _cycle);
   ~sample_t();
 
   void add_cmd(sample_inst_t *cmd) { cmds.push_back(cmd); }
 
   std::ostream& dump(std::ostream &os) const {
+    os << CYCLE << " cycle: " << cycle << std::endl;
     for (size_t i = 0 ; i < cmds.size() ; i++) {
       os << *cmds[i];
     }
-    os << FIN << std::endl;
     return os;
   }
 
@@ -100,6 +100,7 @@ public:
   static void add_to_chains(CHAIN_TYPE, std::string&, size_t, int index = -1);
 
 private:
+  const uint64_t cycle;
   std::vector<sample_inst_t*> cmds;
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 

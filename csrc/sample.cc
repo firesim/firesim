@@ -17,7 +17,7 @@ void sample_t::add_to_chains(CHAIN_TYPE type, std::string& signal, size_t width,
   indices[type].push_back(index);
 }
 
-sample_t::sample_t(std::string& snap) {
+sample_t::sample_t(std::string& snap, uint64_t _cycle): cycle(_cycle) {
   size_t start = 0;
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
