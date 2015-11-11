@@ -84,9 +84,6 @@ class simif_t
     virtual void poke_channel(size_t addr, uint64_t data) = 0;
     virtual uint64_t peek_channel(size_t addr) = 0;
 
-    virtual void send_tokens(uint32_t* const map, size_t size, size_t off) = 0;
-    virtual void recv_tokens(uint32_t* const map, size_t size, size_t off) = 0;
-
     // Simulation APIs
     inline size_t get_in_id(std::string path) {
       assert(in_map.find(path) != in_map.end()); 
@@ -161,8 +158,8 @@ class simif_t
 
     bool expect(bool pass, const char *s);
     void step(size_t n);
-    virtual void write_mem(size_t addr, biguint_t data);
-    virtual biguint_t read_mem(size_t addr);
+    virtual void read_mem(size_t addr, biguint_t data[]);
+    virtual void write_mem(size_t addr, biguint_t data[]);
     sample_t* trace_ports(sample_t* s);
     std::string read_snapshot();
     

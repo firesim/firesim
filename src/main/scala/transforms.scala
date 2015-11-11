@@ -62,6 +62,10 @@ object transforms {
     daisyPins(w) = w.io.daisy
   }
 
+  private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
+    w.name = targetName + "NASTIShim"
+  }
+
   private def findSRAMRead(sram: Mem[_]) = {
     require(sram.seqRead)
     val read = sram.readAccesses.last
@@ -352,7 +356,6 @@ object transforms {
         "SAMPLE_NUM"        -> w.sim.sampleNum,
         "TRACE_MAX_LEN"     -> w.sim.traceMaxLen,
         "DAISY_WIDTH"       -> w.sim.daisyWidth,
-        "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
         "CHANNEL_OFFSET"    -> log2Up(w.sim.channelWidth),
         "LINE_OFFSET"       -> log2Up(w.slave.lineSize),
         "POKE_SIZE"         -> w.master.io.ins.size,
@@ -360,6 +363,9 @@ object transforms {
         "RESET_ADDR"        -> w.master.resetAddr,
         "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
         "TRACE_LEN_ADDR"    -> w.master.traceLenAddr,
+        "MEM_DATA_BITS"     -> w.mifDataBits,
+        "MEM_DATA_BEATS"    -> w.mifDataBeats,
+        "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
         "MEM_CYCLE_ADDR"    -> w.master.memCycleAddr,
         "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
         "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
