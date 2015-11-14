@@ -166,23 +166,22 @@ abstract class SimNetwork extends Module {
 class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
   val target = Module(c)
   val (ins, outs) = target.wires partition (_._2.dir == INPUT)
-
-  val io = new SimWrapperIO(ins, outs)
+  val io = new SimWrapperIO(ins, outs filterNot (_._2.inputs.isEmpty))
 
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
   val traceLen = RegInit(UInt(params(TraceMaxLen)-2))
   val cycles   = RegInit(UInt(0, 64)) // for debug
 
-  val in_channels:  Seq[Channel] = ins flatMap genChannels
-  val out_channels: Seq[Channel] = outs flatMap genChannels
+  val in_channels:  Seq[Channel] = io.t_ins flatMap genChannels
+  val out_channels: Seq[Channel] = io.t_outs flatMap genChannels
 
   // Datapath: Channels <> IOs
   (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
-  (ins foldLeft 0)(connectInput(_, _, in_channels, Some(fire))) 
+  (io.t_ins foldLeft 0)(connectInput(_, _, in_channels, Some(fire))) 
 
   (out_channels zip io.outs) foreach {case (channel, out) => channel.io.out <> out}
-  (outs foldLeft 0)(connectOutput(_, _, out_channels))
+  (io.t_outs foldLeft 0)(connectOutput(_, _, out_channels))
 
   (in_channels  zip io.inT)  foreach {case (channel, trace) => channel.io.trace <> trace}
   (out_channels zip io.outT) foreach {case (channel, trace) => channel.io.trace <> trace}
