@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import scala.io.Source
 
 class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = true) extends Tester(c, isTrace) {
@@ -9,15 +9,17 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
   private val signalMap = HashMap[String, Node]()
   private val matchMap = HashMap[String, String]()
   private val samples = ArrayBuffer[Sample]()
+  private val notSRAMs = HashSet[Mem[_]]()
+  private val addrRegs = HashMap[Reg, Mem[_]]()
   private var sampleFile: Option[String] = None
 
   def loadSamples(filename: String) {
-    (scala.io.Source.fromFile(filename).getLines foldLeft new Sample){(sample, line) =>
+    samples += (scala.io.Source.fromFile(filename).getLines foldLeft new Sample){(sample, line) =>
       val tokens = line split " "
       val cmd = SampleInstType(tokens.head.toInt)
       cmd match {
         case SampleInstType.CYCLE =>
-          if (sample.cycle > 0) samples += sample 
+          if (sample.cycle >= 0) samples += sample 
           new Sample(tokens.last.toLong)
         case SampleInstType.LOAD =>
           val value = BigInt(tokens.init.last, 16)
@@ -49,17 +51,19 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
     }
   }
 
-  def loadWires(node: Node, value: BigInt, off: Option[Int]) {
+  def loadWires(path: String, width: Int, value: BigInt, off: Option[Int]) {
     def loadff(path: String, v: BigInt) = (matchMap get path) match {
-      case Some(p) => pokePath(p, v) case None => // skip 
+      case Some(p) => pokePath(p, v) case None => // println(s"No match for ${path}") // skip 
     }
-    if (node.needWidth == 1) {
-      val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") 
-      loadff(path, value)
-    } else (0 until node.needWidth) foreach { idx =>
-      val path = dumpName(node) + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "]"
-      loadff(path, (value >> idx) & 0x1)
+    if (width == 1) {
+      loadff(path + (off map ("[" + _ + "]") getOrElse ""), value)
+    } else (0 until width) foreach { idx =>
+      loadff(path + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "]", (value >> idx) & 0x1)
     }
+  }
+
+  def loadWires(node: Node, value: BigInt, off: Option[Int]) {
+    loadWires(dumpName(node), node.needWidth, value, off)
   } 
 
   def run {
@@ -71,15 +75,30 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
         case Step(n) => step(n)
         case Force(node, value) => // Todo 
         case Load(node, value, off) => node match {
-          case mem: Mem[_] if mem.seqRead && !mem.isInline => off match {
+          case mem: Mem[_] if mem.seqRead && !mem.isInline && !notSRAMs(mem) => off match {
             case None => 
               pokePath(s"${dumpName(mem)}.sram.O1", value)
             case Some(p) if p < mem.n => 
               pokePath(s"${dumpName(mem)}.sram.memory[${p}]", value)
             case _ => // skip
           }
+          case mem: Mem[_] if mem.seqRead && !mem.isInline => off match {
+            case Some(p) if p < mem.n =>
+              val path = s"${dumpName(mem)}.ram"
+              if (matchMap.isEmpty) pokePath(s"${path}[${p}]", value) 
+              else loadWires(path, mem.needWidth, value, off)
+            case _ => // skip
+          }
           case mem: Mem[_] if off == None => // skip
-          case _ => if (matchMap.isEmpty) pokeNode(node, value, off) else loadWires(node, value, off)
+          case reg: Reg if addrRegs contains reg =>
+            val mem = addrRegs(reg)
+            val name = if (mem.readwrites.isEmpty) "reg_R1A" else "reg_RW0A"
+            val path = s"${dumpName(mem)}.${name}"
+            if (matchMap.isEmpty) pokePath(path, value) 
+            else loadWires(path, node.needWidth, value, off)
+          case _ => 
+            if (matchMap.isEmpty) pokeNode(node, value, off) 
+            else loadWires(node, value, off)
         }
         case PokePort(node, value) => poke(node, value)
         case ExpectPort(node, value) => expect(node, value)
@@ -107,6 +126,15 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
   Driver.dfs {
     case node: Delay       => signalMap(dumpName(node)) = node
     case node if node.isIo => signalMap(dumpName(node)) = node
+    case _ =>
+  }
+  Driver.dfs {
+    case mem: Mem[_] if mem.seqRead && !mem.isInline && 
+      peekPath(s"${dumpName(mem)}.sram.O1") == -1 => 
+      notSRAMs += mem
+      addrRegs(mem.readAccesses.head match {
+        case msr: MemSeqRead => msr.addrReg
+      }) = mem
     case _ =>
   }
   loadSamples(sampleFile match {case None => basedir + c.name + ".sample" case Some(f) => f})
