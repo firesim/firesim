@@ -25,7 +25,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
           (signalMap get tokens.tail.head) match {
-            case None =>
+            case None => // println(s"${tokens.tail.head} not found")
             case Some(node) => sample addCmd Load(node, value, if (off < 0) None else Some(off))
           }
           sample
