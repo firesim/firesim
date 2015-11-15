@@ -10,12 +10,12 @@ case object ChannelLen   extends Field[Int]
 case object ChannelWidth extends Field[Int]
 
 class TraceQueueIO[T <: Data](data: => T, entries: Int) extends QueueIO(data, entries) {
-  val limit = UInt(INPUT, log2Up(entries))
+  val limit = UInt(INPUT, log2Up(entries+1))
 }
 
 class TraceQueue[T <: Data](data: => T) extends Module {
   val traceMaxLen  = params(TraceMaxLen)
-  val traceLenBits = log2Up(traceMaxLen)
+  val traceLenBits = log2Up(traceMaxLen+1)
   val io = new TraceQueueIO(data, traceMaxLen)
 
   val do_flow = Wire(Bool())
@@ -49,16 +49,16 @@ class TraceQueue[T <: Data](data: => T) extends Module {
   io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
 }
 
-class ChannelIO(w: Int)  extends Bundle {
+class ChannelIO(w: Int) extends Bundle {
   val in    = Decoupled(UInt(width=w)).flip
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
-  val traceLen = UInt(INPUT, log2Up(params(TraceMaxLen)))
+  val traceLen = UInt(INPUT, log2Up(params(TraceMaxLen)+1))
 }
 
 class Channel(w: Int, doTrace: Boolean = true) extends Module {
-  val traceMaxLen = params(TraceMaxLen)
-  val channelLen  = params(ChannelLen)
+  // val traceMaxLen = params(TraceMaxLen)
+  val channelLen = params(ChannelLen)
   val io     = new ChannelIO(w)
   val tokens = Module(new Queue(UInt(width=w), channelLen))
   io.in <> tokens.io.enq
@@ -92,7 +92,7 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
   val inT   = Vec(t_ins  flatMap (genPacket(_)(true) map (_.flip)))
   val outT  = Vec(t_outs flatMap (genPacket(_)(true)))
   val daisy = new DaisyBundle(daisyWidth)
-  val traceLen = Decoupled(UInt(width=log2Up(params(TraceMaxLen)))).flip
+  val traceLen = Decoupled(UInt(width=log2Up(params(TraceMaxLen)+1))).flip
   val cycles = UInt(OUTPUT, 64) // for debug
 
   def genPacket[T <: Bits](arg: (String, Bits))(implicit trace: Boolean = false) = arg match {case (name, port) =>
@@ -170,7 +170,7 @@ class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
 
   val fire = Wire(Bool())
   val fireNext = RegNext(fire)
-  val traceLen = RegInit(UInt(params(TraceMaxLen)-2))
+  val traceLen = RegInit(UInt(traceMaxLen-2, log2Up(traceMaxLen+1)))
   val cycles   = RegInit(UInt(0, 64)) // for debug
 
   val in_channels:  Seq[Channel] = io.t_ins flatMap genChannels
