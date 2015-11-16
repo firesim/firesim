@@ -1,11 +1,11 @@
 #include <iomanip>
 #include <sstream>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 #include "biguint.h"
 
-#define UINT64_WIDTH 64
-#define HEX_WIDTH 16
+#define UINT_WIDTH 32
+#define HEX_WIDTH 8
 
 biguint_t::biguint_t(const char* v, size_t base) {
   // we only accepts hex or bin
@@ -42,15 +42,13 @@ std::string biguint_t::str() {
   return oss.str();
 }
 
-void biguint_t::init(const uint64_t value) {
+void biguint_t::init(const uint32_t value) {
   init(&value, 1);
 }
 
-void biguint_t::init(const uint64_t* value, const size_t s) {
-  data = new uint64_t[size = s];
-  for (size_t i = 0 ; i < size ; i++) {
-    data[i] = value[i];
-  }
+void biguint_t::init(const uint32_t* value, const size_t s) {
+  data = new uint32_t[size = s];
+  memcpy(data, value, size*sizeof(uint32_t));
 }
 
 inline void pad_num(char *buf, const char* value, size_t padw) {
@@ -63,7 +61,7 @@ inline void pad_num(char *buf, const char* value, size_t padw) {
 void biguint_t::init_hex(const char* value) {
   int len = strlen(value);
   size = (len+HEX_WIDTH-1) / HEX_WIDTH;
-  data = new uint64_t[size];
+  data = new uint32_t[size];
   // padding
   char *buf = new char[size*HEX_WIDTH+1];
   pad_num(buf, value, size*HEX_WIDTH-len);
@@ -79,16 +77,16 @@ void biguint_t::init_hex(const char* value) {
 
 void biguint_t::init_bin(const char* value) {
   int len = strlen(value);
-  size = (len+UINT64_WIDTH-1) / UINT64_WIDTH;
-  data = new uint64_t[size];
+  size = (len+UINT_WIDTH-1) / UINT_WIDTH;
+  data = new uint32_t[size];
   // padding
-  char *buf = new char[size*UINT64_WIDTH+1];
-  pad_num(buf, value, size*UINT64_WIDTH-len);
+  char *buf = new char[size*UINT_WIDTH+1];
+  pad_num(buf, value, size*UINT_WIDTH-len);
   // converting
   for (size_t i = 0 ; i < size ; i++) {
-    char num[UINT64_WIDTH+1];
-    strncpy(num, buf + i*UINT64_WIDTH, UINT64_WIDTH);
-    num[UINT64_WIDTH] = '\0';
+    char num[UINT_WIDTH+1];
+    strncpy(num, buf + i*UINT_WIDTH, UINT_WIDTH);
+    num[UINT_WIDTH] = '\0';
     data[size-1-i] = bin_to_dec(num);
   }
   delete[] buf;
@@ -97,7 +95,7 @@ void biguint_t::init_bin(const char* value) {
 void biguint_t::copy_biguint(const biguint_t &that) {
   if (data) delete[] data;
   if (that.data) {
-    data = new uint64_t[size = that.size];
+    data = new uint32_t[size = that.size];
     for (size_t i = 0 ; i < size ; i++) {
       data[i] = that.data[i];
     }
@@ -107,11 +105,11 @@ void biguint_t::copy_biguint(const biguint_t &that) {
   }
 }
 
-inline void trim_upper_nums(uint64_t **data, size_t* size) {
+inline void trim_upper_nums(uint32_t **data, size_t* size) {
   size_t s = *size;
   while (!(*data)[s-1] && s > 1) s--;
   if (s < *size) {
-    uint64_t *d = new uint64_t[s];
+    uint32_t *d = new uint32_t[s];
     for (size_t i = 0 ; i < s ; i++) {
       d[i] = (*data)[i];
     }
@@ -123,7 +121,7 @@ inline void trim_upper_nums(uint64_t **data, size_t* size) {
 
 void biguint_t::bit_or(const biguint_t &a, const biguint_t &b) {
   size_t size = std::max(a.size, b.size);
-  uint64_t *data = new uint64_t[size];
+  uint32_t *data = new uint32_t[size];
   for (size_t i = 0 ; i < std::min(a.size, b.size) ; i++) {
     data[i] = a.data[i] | b.data[i];
   }
@@ -140,7 +138,7 @@ void biguint_t::bit_or(const biguint_t &a, const biguint_t &b) {
 
 void biguint_t::bit_and(const biguint_t &a, const biguint_t&b) {
   size_t size = std::min(a.size, b.size);
-  uint64_t *data = new uint64_t[size];
+  uint32_t *data = new uint32_t[size];
   for (size_t i = 0 ; i < size ; i++) {
     data[i] = a.data[i] & b.data[i];
   }
@@ -157,13 +155,13 @@ biguint_t biguint_t::operator=(const biguint_t &that) {
 
 biguint_t biguint_t::operator<<(const size_t shamt) {
   biguint_t res;
-  size_t offset = shamt / UINT64_WIDTH;
-  size_t shift = shamt % UINT64_WIDTH;
+  size_t offset = shamt / UINT_WIDTH;
+  size_t shift = shamt % UINT_WIDTH;
   res.size = size + offset;
-  res.data = new uint64_t[res.size];
+  res.data = new uint32_t[res.size];
   for (int i = size - 1 ; i >= 0 ; i--) {
     res.data[i+offset] = data[i] << shift;
-    res.data[i+offset] |= i ? data[i-1] >> (UINT64_WIDTH-shamt) : 0;
+    res.data[i+offset] |= i ? data[i-1] >> (UINT_WIDTH-shamt) : 0;
   }
   for (size_t i = 0 ; i < offset ; i++) {
     res.data[i] = 0;
@@ -174,20 +172,20 @@ biguint_t biguint_t::operator<<(const size_t shamt) {
 
 biguint_t biguint_t::operator>>(const size_t shamt) {
   biguint_t res;
-  if (shamt < size * UINT64_WIDTH) {
-    int offset = shamt / UINT64_WIDTH;
-    int shift = shamt % UINT64_WIDTH;
-    uint64_t mask = (uint64_t(1) << shift) - 1;
+  if (shamt < size * UINT_WIDTH) {
+    int offset = shamt / UINT_WIDTH;
+    int shift = shamt % UINT_WIDTH;
+    uint32_t mask = (1 << shift) - 1;
     res.size = size - offset;
-    res.data = new uint64_t[res.size];
+    res.data = new uint32_t[res.size];
     for (size_t i = 0 ; i < res.size ; i++) {
       res.data[i] = data[i + offset] >> shift;
-      res.data[i] |= (data[i + offset + 1] & mask) << (UINT64_WIDTH-shift);
+      res.data[i] |= (data[i + offset + 1] & mask) << (UINT_WIDTH-shift);
     }
     trim_upper_nums(&res.data, &res.size);
   } else {
     res.size = 1;
-    res.data = new uint64_t[res.size];
+    res.data = new uint32_t[res.size];
     res.data[0] = 0;
   }
   return res;
@@ -231,7 +229,7 @@ std::ostream& operator<<(std::ostream &os, const biguint_t& value) {
   os << std::hex;
   os << value.data[value.size-1];
   for (int i = value.size - 2 ; i >= 0 ; i--) {
-    os << std::setfill('0') << std::setw(16);
+    os << std::setfill('0') << std::setw(HEX_WIDTH);
     os << value.data[i];
   }
   os << std::setfill(' ') << std::setw(0) << std::dec;

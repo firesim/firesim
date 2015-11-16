@@ -137,10 +137,12 @@ void simif_t::init() {
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
       peek_map[i] = peek_channel(i+1);
     }
-    // recv_tokens(peek_map, PEEK_SIZE, 1);
     for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
       // flush traces from initialization
-      biguint_t flush = peek_id(it->second);
+      size_t id = it->second;
+      for (size_t off = 0 ; off < out_chunks[id] ; off++) {
+        peek_channel(id+off);
+      }
     }
   }
 
@@ -207,8 +209,7 @@ void simif_t::step(size_t n) {
         if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
         samples[last_sample_id] = trace_ports(last_sample);
       }
-      std::string snap = read_snapshot();
-      last_sample = new sample_t(snap, cycles());
+      last_sample = read_snapshot();
       last_sample_id = sample_id;
       trace_count = 0;
       if (profile) sample_time += (timestamp() - start_time);
@@ -233,11 +234,12 @@ void simif_t::read_mem(size_t addr, biguint_t data[]) {
   poke_channel(MEM_REQ_TAG,  0);
   poke_channel(MEM_REQ_RW,   0);
   for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
-    data[i] = 0;
+    assert(peek_channel(MEM_RESP_TAG) == 0);
+    uint32_t d[MEM_DATA_CHUNK];
     for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
-      assert(peek_channel(MEM_RESP_TAG) == 0);
-      data[i] |= peek_channel(MEM_RESP_DATA+off) << (off << CHANNEL_OFFSET);
+      d[i] = peek_channel(MEM_RESP_DATA+off);
     }
+    data[i] = biguint_t(d, MEM_DATA_CHUNK);
   }
 }
 
@@ -247,7 +249,7 @@ void simif_t::write_mem(size_t addr, biguint_t data[]) {
   poke_channel(MEM_REQ_RW,   1);
   for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
     for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
-      poke_channel(MEM_REQ_DATA+off, (data[i] >> (off << CHANNEL_OFFSET)).uint());
+      poke_channel(MEM_REQ_DATA+off, data[i][off]);
     }
   }
 }
@@ -257,20 +259,34 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
     // input traces from FPGA
     for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
       std::string wire = it->first;
-      sample->add_cmd(new poke_t(wire, peek_id(it->second)));
+      size_t id = it->second;
+      size_t chunk = out_chunks[id];
+      uint32_t *data = new uint32_t[chunk];
+      for (size_t off = 0 ; off < chunk ; off++) {
+        data[off] = peek_channel(id+off);
+      }
+      sample->add_cmd(new poke_t(wire, biguint_t(data, chunk)));
+      delete[] data;
     }
     sample->add_cmd(new step_t(1));
     // output traces from FPGA
     for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
       std::string wire = it->first;
-      sample->add_cmd(new expect_t(wire, peek_id(it->second)));
+      size_t id = it->second;
+      size_t chunk = out_chunks[id];
+      uint32_t *data = new uint32_t[chunk];
+      for (size_t off = 0 ; off < chunk ; off++) {
+        data[off] = peek_channel(id+off);
+      }
+      sample->add_cmd(new expect_t(wire, biguint_t(data, chunk)));
+      delete[] data;
     }
   }
 
   return sample;
 }
 
-static inline char* int_to_bin(char *bin, uint64_t value, size_t size) {
+static inline char* int_to_bin(char *bin, uint32_t value, size_t size) {
   for (size_t i = 0 ; i < size; i++) {
     bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
   }
@@ -278,7 +294,7 @@ static inline char* int_to_bin(char *bin, uint64_t value, size_t size) {
   return bin;
 }
 
-std::string simif_t::read_snapshot() {
+sample_t* simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
   
@@ -291,5 +307,6 @@ std::string simif_t::read_snapshot() {
       }
     }
   }
-  return snap.str();
+
+  return new sample_t(snap.str().c_str(), cycles());
 }
