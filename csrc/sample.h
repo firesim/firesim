@@ -79,7 +79,7 @@ private:
 
 class sample_t {
 public:
-  sample_t(std::string& snap, uint64_t _cycle);
+  sample_t(const char* snap, uint64_t _cycle);
   ~sample_t();
 
   void add_cmd(sample_inst_t *cmd) { cmds.push_back(cmd); }

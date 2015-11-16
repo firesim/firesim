@@ -24,12 +24,12 @@ simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bo
   init();
 }
 
-void simif_zynq_t::poke_channel(size_t addr, uint64_t data) {
+void simif_zynq_t::poke_channel(size_t addr, uint32_t data) {
   write_reg(addr, data);
   __sync_synchronize();
 }
 
-uint64_t simif_zynq_t::peek_channel(size_t addr) {
+uint32_t simif_zynq_t::peek_channel(size_t addr) {
   __sync_synchronize();
   return read_reg(addr);
 }
