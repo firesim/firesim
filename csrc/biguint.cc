@@ -62,7 +62,7 @@ inline void pad_num(char *buf, const char* value, size_t padw) {
 
 void biguint_t::init_hex(const char* value) {
   int len = strlen(value);
-  size = (len + HEX_WIDTH-1) / HEX_WIDTH;
+  size = (len+HEX_WIDTH-1) / HEX_WIDTH;
   data = new uint64_t[size];
   // padding
   char *buf = new char[size*HEX_WIDTH+1];
@@ -79,7 +79,7 @@ void biguint_t::init_hex(const char* value) {
 
 void biguint_t::init_bin(const char* value) {
   int len = strlen(value);
-  size = (len + UINT64_WIDTH-1) / UINT64_WIDTH;
+  size = (len+UINT64_WIDTH-1) / UINT64_WIDTH;
   data = new uint64_t[size];
   // padding
   char *buf = new char[size*UINT64_WIDTH+1];
@@ -87,7 +87,7 @@ void biguint_t::init_bin(const char* value) {
   // converting
   for (size_t i = 0 ; i < size ; i++) {
     char num[UINT64_WIDTH+1];
-    strncpy(num, value + i*UINT64_WIDTH, UINT64_WIDTH);
+    strncpy(num, buf + i*UINT64_WIDTH, UINT64_WIDTH);
     num[UINT64_WIDTH] = '\0';
     data[size-1-i] = bin_to_dec(num);
   }
