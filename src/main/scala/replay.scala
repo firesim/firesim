@@ -9,6 +9,8 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
   private val signalMap = HashMap[String, Node]()
   private val matchMap = HashMap[String, String]()
   private val samples = ArrayBuffer[Sample]()
+  case class SramInfo(cols: Int, dummy: Int, qwidth: Int)
+  private val sramInfo = HashMap[Mem[_], SramInfo]()
   private val notSRAMs = HashSet[Mem[_]]()
   private val addrRegs = HashMap[Reg, Mem[_]]()
   private var sampleFile: Option[String] = None
@@ -25,7 +27,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
           (signalMap get tokens.tail.head) match {
-            case None => // println(s"${tokens.tail.head} not found")
+            case None => println(s"${tokens.tail.head} not found")
             case Some(node) => sample addCmd Load(node, value, if (off < 0) None else Some(off))
           }
           sample
@@ -53,7 +55,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
 
   def loadWires(path: String, width: Int, value: BigInt, off: Option[Int]) {
     def loadff(path: String, v: BigInt) = (matchMap get path) match {
-      case Some(p) => pokePath(p, v) case None => // println(s"No match for ${path}") // skip 
+      case Some(p) => pokePath(p, v) case None => println(s"No match for ${path}") // skip 
     }
     if (width == 1) {
       loadff(path + (off map ("[" + _ + "]") getOrElse ""), value)
@@ -76,10 +78,20 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
         case Force(node, value) => // Todo 
         case Load(node, value, off) => node match {
           case mem: Mem[_] if mem.seqRead && !mem.isInline && !notSRAMs(mem) => off match {
-            case None => 
-              pokePath(s"${dumpName(mem)}.sram.O1", value)
+            case None =>
+              val info = sramInfo(mem)
+              val u = UInt(value, mem.needWidth)
+              val v = if (info.dummy == 0) value else
+                Cat(((info.cols-1) to 0 by -1) map (i => 
+                Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
+              pokePath(s"${dumpName(mem)}.sram.O1", v)
             case Some(p) if p < mem.n => 
-              pokePath(s"${dumpName(mem)}.sram.memory[${p}]", value)
+              val info = sramInfo(mem)
+              val u = UInt(value, mem.needWidth)
+              val v = if (info.dummy == 0) value else 
+                Cat(((info.cols) to 0 by -1) map (i => 
+                Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
+              pokePath(s"${dumpName(mem)}.sram.memory[${p}]", v)
             case _ => // skip
           }
           case mem: Mem[_] if mem.seqRead && !mem.isInline => off match {
@@ -129,12 +141,18 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
     case _ =>
   }
   Driver.dfs {
-    case mem: Mem[_] if mem.seqRead && !mem.isInline && 
-      peekPath(s"${dumpName(mem)}.sram.O1") == -1 => 
-      notSRAMs += mem
-      addrRegs(mem.readAccesses.head match {
-        case msr: MemSeqRead => msr.addrReg
-      }) = mem
+    case mem: Mem[_] if mem.seqRead && !mem.isInline =>
+      if (peekPath(s"${dumpName(mem)}.sram.O1") != -1) {
+        val cols = mem.dataType match {case v: Vec[_] => v.size case _ => 1}
+        val width = 8 * ((mem.needWidth/cols-1) / 8 + 1)
+        val dummy = (width*cols-mem.needWidth) / cols
+        sramInfo(mem) = new SramInfo(cols, dummy, mem.needWidth/cols)
+      } else {
+        notSRAMs += mem
+        addrRegs(mem.readAccesses.head match {
+          case msr: MemSeqRead => msr.addrReg
+        }) = mem
+      }
     case _ =>
   }
   loadSamples(sampleFile match {case None => basedir + c.name + ".sample" case Some(f) => f})
