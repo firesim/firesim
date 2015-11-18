@@ -49,7 +49,7 @@ abstract class DaisyChainBundle extends Bundle with DaisyChainParams
 class DataIO extends DaisyChainBundle {
   val in  = Decoupled(UInt(INPUT, daisyWidth)).flip
   val out = Decoupled(UInt(INPUT, daisyWidth))
-  val data = Vec.fill(daisyLen) { UInt(INPUT, daisyWidth) }
+  val data = Vec.fill(daisyLen){UInt(INPUT, daisyWidth)}
 }
 
 class CntrIO extends Bundle {
@@ -69,7 +69,7 @@ abstract class DaisyChainModule extends Module with DaisyChainParams
 
 class DaisyDatapath extends DaisyChainModule { 
   val io = new DaisyDatapathIO
-  val regs = Vec.fill(daisyLen) { Reg(UInt(width=daisyWidth)) }
+  val regs = Vec.fill(daisyLen){Reg(UInt(width=daisyWidth))}
 
   io.dataIo.out.bits := regs(daisyLen-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero
