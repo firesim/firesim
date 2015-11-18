@@ -49,6 +49,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
           val value = BigInt(tokens.last, 16)
           sample addCmd ExpectPort(node, value)
           sample
+        case SampleInstType.COUNT => sample // skip
       }
     }
   }

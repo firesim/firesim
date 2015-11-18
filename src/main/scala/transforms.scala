@@ -12,23 +12,23 @@ object transforms {
   private val compsRev  = HashMap[Module, List[Module]]()
 
   private val chains = Map(
-    ChainType.Regs -> HashMap[Module, ArrayBuffer[Node]](),
     ChainType.Trs  -> HashMap[Module, ArrayBuffer[Node]](),
+    ChainType.Regs -> HashMap[Module, ArrayBuffer[Node]](),
     ChainType.SRAM -> HashMap[Module, ArrayBuffer[Node]](),
     ChainType.Cntr -> HashMap[Module, ArrayBuffer[Node]]())
   private[strober] val chainLen = HashMap(
-    ChainType.Regs -> 0,
     ChainType.Trs  -> 0,
+    ChainType.Regs -> 0,
     ChainType.SRAM -> 0,
     ChainType.Cntr -> 0)
   private[strober] val chainLoop = HashMap(
-    ChainType.Regs -> 0,
     ChainType.Trs  -> 0,
+    ChainType.Regs -> 0,
     ChainType.SRAM -> 0,
     ChainType.Cntr -> 0)
   private[strober] val chainName = Map(
-    ChainType.Regs -> "REG_CHAIN",
     ChainType.Trs  -> "TRACE_CHAIN",
+    ChainType.Regs -> "REG_CHAIN",
     ChainType.SRAM -> "SRAM_CHAIN",
     ChainType.Cntr -> "CNTR_CHAIN")
   
@@ -45,9 +45,10 @@ object transforms {
       Driver.backend.transforms ++= Seq(
         Driver.backend.inferAll,
         connectCtrlSignals,
-        addDaisyChains(ChainType.Regs),
         addDaisyChains(ChainType.Trs),
+        addDaisyChains(ChainType.Regs),
         addDaisyChains(ChainType.SRAM),
+        addDaisyChains(ChainType.Cntr),
         dumpMaps,
         dumpChains,
         dumpConsts
@@ -61,6 +62,17 @@ object transforms {
     daisyRst(w)  = w.reset
     daisyPins(w) = w.io.daisy
   }
+
+  // Called from frontend
+  def addCounter(m: Module, cond: Bool, name: String) {
+    val chain = chains(ChainType.Cntr) getOrElseUpdate (m, ArrayBuffer[Node]())
+    val cntr = RegInit(UInt(0, 32))
+    when (cond) { cntr := cntr + UInt(1) }
+    cntr.getNode setName name
+    m.debug(cntr.getNode)
+    chain += cntr.getNode
+    chainLoop(ChainType.Cntr) = 1
+  } 
 
   private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
     w.name = targetName + "NASTIShim"
@@ -110,10 +122,8 @@ object transforms {
       for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
-        ChainType.values foreach (chains(_)(m) = ArrayBuffer[Node]())
-        if (!(daisyPins contains m)) { 
-          daisyPins(m) = m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy")
-        }
+        ChainType.values foreach (chains(_) getOrElseUpdate (m, ArrayBuffer[Node]()))
+        daisyPins getOrElseUpdate (m, m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy"))
 
         m bfs { 
           case mem: Mem[_] if mem.seqRead => 
@@ -130,23 +140,25 @@ object transforms {
         m bfs {
           case reg: RegReset =>
             reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fireOrReset, reg.updateValue, reg)
-            chains(ChainType.Regs)(m) += reg
+            if (chains(ChainType.Cntr)(m).isEmpty) chains(ChainType.Regs)(m) += reg
             nameMap(reg) = getPath(reg)
           case reg: Reg =>
             reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fire, reg.updateValue, reg)
-            chains(ChainType.Regs)(m) += reg
+            if (chains(ChainType.Cntr)(m).isEmpty) chains(ChainType.Regs)(m) += reg
             nameMap(reg) = getPath(reg)
           case mem: Mem[_] =>
             mem.writeAccesses foreach (w => w.cond = Bool(w.cond) && fire)
-            if (mem.seqRead) {
-              val read = findSRAMRead(mem)._2
-              chains(ChainType.Regs)(m) += read
-              chains(ChainType.SRAM)(m) += mem
-              nameMap(read) = getPath(mem)
-            } else (0 until mem.size) map (UInt(_)) foreach {idx =>
-              val read = new MemRead(mem, idx) 
-              chains(ChainType.Regs)(m) += read
-              read.infer
+            if (chains(ChainType.Cntr)(m).isEmpty) {
+              if (mem.seqRead) {
+                val read = findSRAMRead(mem)._2
+                chains(ChainType.Regs)(m) += read
+                chains(ChainType.SRAM)(m) += mem
+                nameMap(read) = getPath(mem)
+              } else (0 until mem.size) map (UInt(_)) foreach {idx =>
+                val read = new MemRead(mem, idx) 
+                chains(ChainType.Regs)(m) += read
+                read.infer
+              }
             }
             nameMap(mem) = getPath(mem)
           case assert: Assert =>

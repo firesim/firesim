@@ -143,6 +143,7 @@ class simif_t
     virtual void write_mem(size_t addr, biguint_t data[]);
     sample_t* trace_ports(sample_t* s);
     sample_t* read_snapshot();
+    sample_t* read_counters();
     
     void init();
     void finish();

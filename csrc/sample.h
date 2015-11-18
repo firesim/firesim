@@ -7,7 +7,7 @@
 #include <ostream>
 #include "biguint.h"
 
-enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT };
+enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 
 class sample_inst_t { 
 public:
@@ -77,11 +77,25 @@ private:
   const biguint_t value;
 };
 
+class count_t: public sample_inst_t {
+public:
+  count_t(std::string& node_, biguint_t value_): 
+    node(node_.c_str()), value(value_) { }
+  std::ostream& dump(std::ostream &os) const {
+    return os << COUNT << " " << node << " " << value.uint() << std::endl;
+  }
+private:
+  const char* node;
+  const biguint_t value;
+};
+
 class sample_t {
 public:
   sample_t(const char* snap, uint64_t _cycle);
+  sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle);
   ~sample_t();
 
+  size_t read_chain(CHAIN_TYPE type, const char* snap, size_t start = 0);
   void add_cmd(sample_inst_t *cmd) { cmds.push_back(cmd); }
 
   std::ostream& dump(std::ostream &os) const {

@@ -292,20 +292,24 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
   master.io.mem.req_data <> Vec(reqDataChannels map (_.io.in))
   master.io.mem.resp     <> Vec(respChannels    map (_.io.out))
   sim.reset := master.io.reset_t
-  master.io.daisy.regs.in  <> sim.io.daisy.regs.in
   master.io.daisy.trace.in <> sim.io.daisy.trace.in
+  master.io.daisy.regs.in  <> sim.io.daisy.regs.in
   master.io.daisy.sram.in  <> sim.io.daisy.sram.in
+  master.io.daisy.cntr.in  <> sim.io.daisy.cntr.in
   // bulk connection not working due to empty outputs for now
-  master.io.daisy.regs.out.bits  := sim.io.daisy.regs.out.bits
-  master.io.daisy.regs.out.valid := sim.io.daisy.regs.out.valid
-  sim.io.daisy.regs.out.ready := master.io.daisy.regs.out.ready
   master.io.daisy.trace.out.bits  := sim.io.daisy.trace.out.bits
   master.io.daisy.trace.out.valid := sim.io.daisy.trace.out.valid
   sim.io.daisy.trace.out.ready := master.io.daisy.trace.out.ready
+  master.io.daisy.regs.out.bits  := sim.io.daisy.regs.out.bits
+  master.io.daisy.regs.out.valid := sim.io.daisy.regs.out.valid
+  sim.io.daisy.regs.out.ready := master.io.daisy.regs.out.ready
   master.io.daisy.sram.out.bits  := sim.io.daisy.sram.out.bits
   master.io.daisy.sram.out.valid := sim.io.daisy.sram.out.valid
   sim.io.daisy.sram.out.ready := master.io.daisy.sram.out.ready
   sim.io.daisy.sram.restart := master.io.daisy.sram.restart
+  master.io.daisy.cntr.out.bits  := sim.io.daisy.cntr.out.bits
+  master.io.daisy.cntr.out.valid := sim.io.daisy.cntr.out.valid
+  sim.io.daisy.cntr.out.ready := master.io.daisy.cntr.out.ready
 
   // Slave Connection
   slave.io.nasti <> io.snasti
