@@ -100,7 +100,6 @@ object transforms {
     reset
   }
 
-  private val memThreshold = 1024 // 1K bits
   private def fame1Transforms(c: Module) {
     ChiselError.info("[Strober Transforms] connect control signals")
     def collect(c: Module): List[Module] = 
@@ -150,7 +149,7 @@ object transforms {
                 chains(ChainType.SRAM)(m) += mem
                 chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
                 nameMap(read) = getPath(mem) 
-              } else if (mem.n * mem.needWidth >= memThreshold) {
+              } else if (mem.size > 16 || mem.needWidth > 32) { 
                 // handle big regfiles like srams
                 chains(ChainType.SRAM)(m) += mem
                 chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)             
@@ -219,10 +218,8 @@ object transforms {
     def insertSRAMChain(m: Module, daisyWidth: Int) = {
       val chain = (chains(ChainType.SRAM)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
         val (addr, read) = if (sram.seqRead) findSRAMRead(sram) else {
-          val read = sram.readAccesses.last
-          val addr = m.addNode(Reg(UInt(width=read.addr.needWidth)))
-          val stall = stalls getOrElseUpdate (m, connectStalls(m))
-          read.addr = Multiplex(stall, addr, read.addr)
+          val addr = m.addNode(Reg(UInt(width=log2Up(sram.size))))
+          val read = m.addNode(new MemRead(sram, addr))
           (addr.getNode match {case r: Reg => r}, read)
         }
         val width = sram.needWidth
