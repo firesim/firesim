@@ -24,7 +24,7 @@ class simif_t
 {
   public:
     simif_t(std::vector<std::string> args, std::string prefix, bool _log = false); 
-    ~simif_t();
+    virtual ~simif_t();
 
   private:
     void read_map(std::string filename);
