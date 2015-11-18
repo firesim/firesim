@@ -72,7 +72,7 @@ object transforms {
     m.debug(cntr.getNode)
     chain += cntr.getNode
     chainLoop(ChainType.Cntr) = 1
-  } 
+  }
 
   private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
     w.name = targetName + "NASTIShim"
@@ -100,6 +100,7 @@ object transforms {
     reset
   }
 
+  private val memThreshold = 1024 // 1K bits
   private def fame1Transforms(c: Module) {
     ChiselError.info("[Strober Transforms] connect control signals")
     def collect(c: Module): List[Module] = 
@@ -148,7 +149,11 @@ object transforms {
                 chains(ChainType.Regs)(m) += read
                 chains(ChainType.SRAM)(m) += mem
                 chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
-                nameMap(read) = getPath(mem)
+                nameMap(read) = getPath(mem) 
+              } else if (mem.n * mem.needWidth >= memThreshold) {
+                // handle big regfiles like srams
+                chains(ChainType.SRAM)(m) += mem
+                chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)             
               } else (0 until mem.size) map (UInt(_)) foreach {idx =>
                 val read = new MemRead(mem, idx) 
                 chains(ChainType.Regs)(m) += read
@@ -213,7 +218,13 @@ object transforms {
 
     def insertSRAMChain(m: Module, daisyWidth: Int) = {
       val chain = (chains(ChainType.SRAM)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
-        val (addr, read) = findSRAMRead(sram)
+        val (addr, read) = if (sram.seqRead) findSRAMRead(sram) else {
+          val read = sram.readAccesses.last
+          val addr = m.addNode(Reg(UInt(width=read.addr.needWidth)))
+          val stall = stalls getOrElseUpdate (m, connectStalls(m))
+          read.addr = Multiplex(stall, addr, read.addr)
+          (addr.getNode match {case r: Reg => r}, read)
+        }
         val width = sram.needWidth
         val daisy = m.addModule(new SRAMChain, {case DataWidth => width case SRAMSize => sram.size})
         ((0 until daisy.daisyLen) foldRight (width-1)){ case (i, high) =>
@@ -234,12 +245,16 @@ object transforms {
         daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
         daisy.io.stall := stalls getOrElseUpdate (m, connectStalls(m))
         daisy.io.restart := daisyPins(m).sram.restart
-        // Connect daisy addr to SRAM addr
         daisy.io.addrIo.in := UInt(addr)
-        // need to keep enable signals...
-        addr.inputs(0) = Multiplex(daisy.io.addrIo.out.valid || Bool(addr.enableSignal),
-                         Multiplex(daisy.io.addrIo.out.valid, daisy.io.addrIo.out.bits, addr.updateValue), addr)
-        assert(addr.isEnable)
+        // Connect daisy addr to SRAM addr
+        if (sram.seqRead) {
+          // need to keep enable signals...
+          addr.inputs(0) = Multiplex(daisy.io.addrIo.out.valid || Bool(addr.enableSignal),
+                           Multiplex(daisy.io.addrIo.out.valid, daisy.io.addrIo.out.bits, addr.updateValue), addr)
+          assert(addr.isEnable)
+        } else {
+          addr.inputs(0) = Multiplex(daisy.io.addrIo.out.valid, daisy.io.addrIo.out.bits, addr)
+        }
         chainLen(chainType) += daisy.daisyLen
         Some(daisy)
         case _ => throwException("[sram chain] This can't happen...")
@@ -325,7 +340,7 @@ object transforms {
           val dw = dataWidth + width
           val cw = (Stream.from(0) map (chainWidth + _ * w.daisyWidth) dropWhile (_ < dw)).head
           val (node, off) = state match {
-            case sram: Mem[_] if sram.seqRead =>
+            case sram: Mem[_] => 
               (Some(sram), Some(sram.size))
             case read: MemRead if !read.mem.seqRead => 
               (Some(read.mem.asInstanceOf[Mem[Data]]), Some(read.addr.litValue(0).toInt))
