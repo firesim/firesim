@@ -5,8 +5,8 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 
 object transforms { 
   private val wrappers  = ArrayBuffer[SimWrapper[Module]]()
-  private val stall     = HashMap[Module, Bool]()
-  private val daisyRst  = HashMap[Module, Bool]()
+  private val stalls    = HashMap[Module, Bool]()
+  private val resets    = HashMap[Module, Bool]() 
   private val daisyPins = HashMap[Module, DaisyBundle]() 
   private val comps     = HashMap[Module, List[Module]]()
   private val compsRev  = HashMap[Module, List[Module]]()
@@ -44,7 +44,7 @@ object transforms {
     if (wrappers.isEmpty) { 
       Driver.backend.transforms ++= Seq(
         Driver.backend.inferAll,
-        connectCtrlSignals,
+        fame1Transforms,
         addDaisyChains(ChainType.Trs),
         addDaisyChains(ChainType.Regs),
         addDaisyChains(ChainType.SRAM),
@@ -58,8 +58,8 @@ object transforms {
     targetName   = Driver.backend.extractClassName(w.target) 
     w.name       = targetName + "Wrapper"
     wrappers    += w
-    stall(w)     = !fire
-    daisyRst(w)  = w.reset
+    stalls(w)    = !fire
+    resets(w)    = w.reset
     daisyPins(w) = w.io.daisy
   }
 
@@ -88,21 +88,24 @@ object transforms {
     (addr, read)
   }
 
-  private def connectCtrlSignals(c: Module) {
+  private def connectStalls(m: Module): Bool = {
+    val stall = m.addPin(Bool(INPUT), "stall__pin")
+    stall := stalls getOrElseUpdate(m.parent, connectStalls(m.parent))
+    stall
+  }
+
+  private def connectResets(m: Module): Bool = {
+    val reset = m.addPin(Bool(INPUT), "daisy__rst")
+    reset := resets getOrElseUpdate(m.parent, connectResets(m.parent))
+    reset
+  }
+
+  private def fame1Transforms(c: Module) {
     ChiselError.info("[Strober Transforms] connect control signals")
     def collect(c: Module): List[Module] = 
       (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
     def collectRev(c: Module): List[Module] = 
       List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
-
-    def connectStallAndDaisyRst(m: Module) {
-      stall(m)    = m.addPin(Bool(INPUT), "stall__pin")
-      daisyRst(m) = m.addPin(Bool(INPUT), "daisy__rst") 
-      val p = m.parent
-      if (!(stall contains p)) connectStallAndDaisyRst(p)
-      stall(m)    := stall(p)
-      daisyRst(m) := daisyRst(p)
-    }
 
     def connectSRAMRestart(m: Module): Unit = m.parent match {
       case p if daisyPins contains p =>
@@ -116,43 +119,35 @@ object transforms {
       val t = w.target
       val tName = Driver.backend.extractClassName(t) 
       val tPath = t.getPathName(".")
-      comps(w) = collect(t)
+      comps(w)    = collect(t)
       compsRev(w) = collectRev(t)
       def getPath(node: Node) = s"${tName}${node.chiselName stripPrefix tPath}"
       for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
+        lazy val fire = !(stalls getOrElseUpdate (m, connectStalls(m)))
         ChainType.values foreach (chains(_) getOrElseUpdate (m, ArrayBuffer[Node]()))
         daisyPins getOrElseUpdate (m, m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy"))
-
-        m bfs { 
-          case mem: Mem[_] if mem.seqRead => 
-            if (!(stall contains m)) connectStallAndDaisyRst(m)
-            chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
-          case _: Delay =>
-            if (!(stall contains m)) connectStallAndDaisyRst(m)
-            chainLoop(ChainType.Regs) = 1 
-          case _ =>
-        }
-
-        lazy val fire = !stall(m)
-        lazy val fireOrReset = fire || m.reset
+        m.reset setName s"host__${m.reset.name}"
         m bfs {
-          case reg: RegReset =>
-            reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fireOrReset, reg.updateValue, reg)
-            if (chains(ChainType.Cntr)(m).isEmpty) chains(ChainType.Regs)(m) += reg
-            nameMap(reg) = getPath(reg)
           case reg: Reg =>
+            reg assignReset m.reset
+            reg assignClock Driver.implicitClock
             reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fire, reg.updateValue, reg)
-            if (chains(ChainType.Cntr)(m).isEmpty) chains(ChainType.Regs)(m) += reg
+            if (chains(ChainType.Cntr)(m).isEmpty) {
+              chains(ChainType.Regs)(m) += reg
+              chainLoop(ChainType.Regs) = 1
+            }
             nameMap(reg) = getPath(reg)
           case mem: Mem[_] =>
+            mem assignClock Driver.implicitClock
             mem.writeAccesses foreach (w => w.cond = Bool(w.cond) && fire)
             if (chains(ChainType.Cntr)(m).isEmpty) {
               if (mem.seqRead) {
                 val read = findSRAMRead(mem)._2
                 chains(ChainType.Regs)(m) += read
                 chains(ChainType.SRAM)(m) += mem
+                chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
                 nameMap(read) = getPath(mem)
               } else (0 until mem.size) map (UInt(_)) foreach {idx =>
                 val read = new MemRead(mem, idx) 
@@ -162,15 +157,19 @@ object transforms {
             }
             nameMap(mem) = getPath(mem)
           case assert: Assert =>
-            assert.cond = Bool(assert.cond) || stall(m)
+            assert assignClock Driver.implicitClock
+            assert.cond = Bool(assert.cond) || (stalls getOrElseUpdate (m, connectStalls(m)))
             m.debug(assert.cond)
           case printf: Printf =>
+            printf assignClock Driver.implicitClock
             printf.cond = Bool(printf.cond) && fire
             m.debug(printf.cond)
+          case delay: Delay =>
+            delay assignClock Driver.implicitClock
           case _ =>
         }
 
-        if (!chains(ChainType.SRAM)(m).isEmpty) connectSRAMRestart(m) 
+        if (!chains(ChainType.SRAM)(m).isEmpty) connectSRAMRestart(m)
       }
     }
   }
@@ -204,8 +203,8 @@ object transforms {
         daisy.io.dataIo.data(i) := Cat(wires)
         (idx, off)
       }
-      daisy.reset := daisyRst(m) 
-      daisy.io.stall := stall(m)
+      daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
+      daisy.io.stall := stalls getOrElseUpdate (m, connectStalls(m))
       daisy.io.dataIo.out <> daisyPins(m)(chainType).out
       hasChain += m
       chainLen(chainType) += daisy.daisyLen
@@ -232,8 +231,8 @@ object transforms {
           case None => daisyPins(m).sram.out <> daisy.io.dataIo.out
           case Some(last) => last.io.dataIo.in <> daisy.io.dataIo.out
         }
-        daisy.reset := daisyRst(m) 
-        daisy.io.stall := stall(m) 
+        daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
+        daisy.io.stall := stalls getOrElseUpdate (m, connectStalls(m))
         daisy.io.restart := daisyPins(m).sram.restart
         // Connect daisy addr to SRAM addr
         daisy.io.addrIo.in := UInt(addr)
