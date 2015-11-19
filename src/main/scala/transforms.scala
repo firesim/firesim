@@ -149,7 +149,7 @@ object transforms {
                 chains(ChainType.SRAM)(m) += mem
                 chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
                 nameMap(read) = getPath(mem) 
-              } else if (mem.size > 16 || mem.needWidth > 32) { 
+              } else if (mem.size > 16 && mem.needWidth > 32) { 
                 // handle big regfiles like srams
                 chains(ChainType.SRAM)(m) += mem
                 chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)             
