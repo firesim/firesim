@@ -32,7 +32,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         char* substr = new char[width+1];
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
-        biguint_t value(substr, 2);
+        biguint_t* value = new biguint_t(substr, 2);
         if (type == TRACE_CHAIN) {
           add_cmd(new force_t(signal, value)); 
         } else if (type == REG_CHAIN) {

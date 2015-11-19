@@ -173,23 +173,29 @@ void simif_t::finish() {
   }
   // dump samples
   std::string filename = prefix + ".sample";
-  std::ofstream file(filename.c_str());
+  // std::ofstream file(filename.c_str());
+  FILE *file = fopen(filename.c_str(), "w");
   for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
     if (sample_split) {
-      file.close();
+      // file.close();
+      fclose(file);
       std::ostringstream oss;
       oss << prefix << "_" << i << ".sample";
-      file.open(oss.str());
+      // file.open(oss.str());
+      file = fopen(oss.str().c_str(), "w");
     }
     if (samples[i] != NULL) { 
-      file << *samples[i];
+      // file << *samples[i];
+      samples[i]->dump(file);
       delete samples[i];
     }
   }
   sample_t* cntr = read_counters();
-  file << *cntr;
+  // file << *cntr;
+  cntr->dump(file);
   delete cntr;
-  file.close();
+  // file.close();
+  fclose(file);
 }
 
 bool simif_t::expect(bool pass, const char *s) {
@@ -268,7 +274,7 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new poke_t(wire, biguint_t(data, chunk)));
+      sample->add_cmd(new poke_t(wire, new biguint_t(data, chunk)));
       delete[] data;
     }
     sample->add_cmd(new step_t(1));
@@ -281,7 +287,7 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new expect_t(wire, biguint_t(data, chunk)));
+      sample->add_cmd(new expect_t(wire, new biguint_t(data, chunk)));
       delete[] data;
     }
   }
