@@ -58,7 +58,7 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
     def loadff(path: String, v: BigInt) = (matchMap get path) match {
       case Some(p) => pokePath(p, v) case None => println(s"No match for ${path}") // skip 
     }
-    if (width == 1) {
+    if (width == 1 && off == None) {
       loadff(path + (off map ("[" + _ + "]") getOrElse ""), value)
     } else (0 until width) foreach { idx =>
       loadff(path + (off map ("[" + _ + "]") getOrElse "") + "[" + idx + "]", (value >> idx) & 0x1)
