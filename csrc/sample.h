@@ -38,7 +38,7 @@ public:
     node(node_.c_str()), value(value_), idx(idx_) { }
   ~load_t() { delete value; }
   void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", LOAD, node, (value->str()).c_str());
+    fprintf(file, "%u %s %s %d\n", LOAD, node, (value->str()).c_str(), idx);
   }
   std::ostream& dump(std::ostream &os) const {
     return os << LOAD << " " << node << " " << *value << " " << idx << std::endl;
@@ -123,7 +123,7 @@ public:
   void add_cmd(sample_inst_t *cmd) { cmds.push_back(cmd); }
 
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u cycle: %llu\n", POKE, cycle);
+    fprintf(file, "%u cycle: %llu\n", CYCLE, cycle);
     for (size_t i = 0 ; i < cmds.size() ; i++) {
       cmds[i]->dump(file);
     }
