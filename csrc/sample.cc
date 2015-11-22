@@ -56,7 +56,7 @@ sample_t::sample_t(const char* snap, uint64_t _cycle): cycle(_cycle) {
   size_t start = 0;
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t); 
-    if (type != CNTR_CHAIN) start = read_chain(type, snap, start);
+    start = read_chain(type, snap, start);
   }
 }
 
