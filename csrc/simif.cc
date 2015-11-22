@@ -190,10 +190,10 @@ void simif_t::finish() {
       delete samples[i];
     }
   }
-  sample_t* cntr = read_counters();
+  sample_t* snap = read_snapshot();
   // file << *cntr;
-  cntr->dump(file);
-  delete cntr;
+  snap->dump(file);
+  delete snap;
   // file.close();
   fclose(file);
 }
