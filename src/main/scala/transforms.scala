@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import cde.Parameters
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 
 object transforms { 
@@ -74,8 +75,8 @@ object transforms {
     chainLoop(ChainType.Cntr) = 1
   }
 
-  private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
-    w.name = targetName + "NASTIShim"
+  private[strober] def init[T <: Module](w: NastiShim[SimNetwork]) {
+    w.name = targetName + "NastiShim"
   }
 
   private def findSRAMRead(sram: Mem[_]) = {
@@ -183,9 +184,9 @@ object transforms {
   
     val hasChain = HashSet[Module]()
 
-    def insertRegChain(m: Module, daisyWidth: Int) = if (chains(chainType)(m).isEmpty) None else {
+    def insertRegChain(m: Module, daisyWidth: Int, p: Parameters) = if (chains(chainType)(m).isEmpty) None else {
       val width = (chains(chainType)(m) foldLeft 0)(_ + _.needWidth)
-      val daisy = m.addModule(new RegChain, {case DataWidth => width})
+      val daisy = m.addModule(new RegChain()(p alter Map(DataWidth -> width)))
       ((0 until daisy.daisyLen) foldRight (0, 0)){case (i, (index, offset)) =>
         def loop(total: Int, index: Int, offset: Int, wires: Seq[UInt]): (Int, Int, Seq[UInt]) = {
           val margin = daisyWidth - total
@@ -215,7 +216,7 @@ object transforms {
       Some(daisy)
     }
 
-    def insertSRAMChain(m: Module, daisyWidth: Int) = {
+    def insertSRAMChain(m: Module, daisyWidth: Int, p: Parameters) = {
       val chain = (chains(ChainType.SRAM)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
         val (addr, read) = if (sram.seqRead) findSRAMRead(sram) else {
           val addr = m.addNode(Reg(UInt(width=log2Up(sram.size))))
@@ -223,8 +224,9 @@ object transforms {
           (addr.getNode match {case r: Reg => r}, read)
         }
         val width = sram.needWidth
-        val daisy = m.addModule(new SRAMChain, {case DataWidth => width case SRAMSize => sram.size})
-        ((0 until daisy.daisyLen) foldRight (width-1)){ case (i, high) =>
+        val daisy = m.addModule(new SRAMChain()(
+          p alter Map(DataWidth -> width, SRAMSize -> sram.size)))
+        ((0 until daisy.daisyLen) foldRight (width-1)){case (i, high) =>
           val low = math.max(high-daisyWidth+1, 0)
           val margin = daisyWidth-(high-low+1)
           val daisyIn = UInt(read)(high, low)
@@ -262,11 +264,11 @@ object transforms {
 
     for (w <- wrappers ; m <- comps(w)) {
       val daisy = chainType match {
-        case ChainType.SRAM => insertSRAMChain(m, w.daisyWidth)
-        case _              => insertRegChain(m, w.daisyWidth)
+        case ChainType.SRAM => insertSRAMChain(m, w.daisyWidth, w.p)
+        case _              => insertRegChain(m, w.daisyWidth, w.p)
       }
       // Filter children who have daisy chains
-      (m.children filter (hasChain(_)) foldLeft (None: Option[Module])){ case (prev, child) =>
+      (m.children filter (hasChain(_)) foldLeft (None: Option[Module])){case (prev, child) =>
         prev match {
           case None => daisy match {
             case None => daisyPins(m)(chainType).out <> daisyPins(child)(chainType).out
@@ -292,7 +294,7 @@ object transforms {
   }
 
   private val dumpMaps: Module => Unit = {
-    case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
+    case w: NastiShim[SimNetwork] if Driver.chiselConfigDump => 
       object MapType extends Enumeration { val IoIn, IoOut, InTr, OutTr = Value }
       ChiselError.info("[Strober Transforms] dump io & mem mapping")
       def dump(map_t: MapType.Value, arg: (Bits, Int)) = arg match { 
@@ -358,7 +360,7 @@ object transforms {
     }
 
     c match { 
-      case _: NASTIShim[SimNetwork] if Driver.chiselConfigDump =>
+      case _: NastiShim[SimNetwork] if Driver.chiselConfigDump =>
         val file = Driver.createOutputFile(targetName + ".chain")
         try {
           file write res.result
@@ -371,7 +373,7 @@ object transforms {
   }
 
   private val dumpConsts: Module => Unit = {
-    case w: NASTIShim[SimNetwork] if Driver.chiselConfigDump => 
+    case w: NastiShim[SimNetwork] if Driver.chiselConfigDump => 
       ChiselError.info("[Strober Transforms] dump constant header")
       def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
       val sb = new StringBuilder
