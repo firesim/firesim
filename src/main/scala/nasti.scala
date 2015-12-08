@@ -1,48 +1,49 @@
 package strober
 
 import Chisel._
+import cde.{Parameters, Field}
 import junctions._
 
-case object NASTIName extends Field[String]
-case object NASTIAddrSizeBits extends Field[Int]
+case object NastiName extends Field[String]
+case object NastiAddrSizeBits extends Field[Int]
 case object LineSize extends Field[Int]
 case object MemAddrSizeBits extends Field[Int]
 
-object NASTIShim {
-  def apply[T <: Module](c: =>T)(params: Parameters) = Module(new NASTIShim(new SimWrapper(c)))(params)
+object NastiShim {
+  def apply[T <: Module](c: =>T)(implicit p: Parameters) = Module(new NastiShim(new SimWrapper(c)))
 }
 
-class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule {
+class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Parameters) extends NastiModule()(p) {
   val io = new Bundle {
-    val nasti = (new NASTIMasterIO).flip
+    val nasti = (new NastiIO).flip
     val step  = Decoupled(UInt(width=nastiXDataBits))
     val len   = Decoupled(UInt(width=nastiXDataBits))
     val lat   = Decoupled(UInt(width=nastiXDataBits))
     val fin   = Decoupled(UInt(width=nastiXDataBits)).flip
     val ins   = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap 
-                    simIo.getIns map (_.clone))
+                    simIo.getIns map (_.cloneType))
     val outs  = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap 
-                    simIo.getOuts map (_.clone.flip))
-    val inT   = Vec(simIo.inMap  flatMap simIo.getIns  map (_.clone.flip))
-    val outT  = Vec(simIo.outMap flatMap simIo.getOuts map (_.clone.flip))
-    val daisy = simIo.daisy.clone.flip
+                    simIo.getOuts map (_.cloneType.flip))
+    val inT   = Vec(simIo.inMap  flatMap simIo.getIns  map (_.cloneType.flip))
+    val outT  = Vec(simIo.outMap flatMap simIo.getOuts map (_.cloneType.flip))
+    val daisy = simIo.daisy.cloneType.flip
     val reset_t = Bool(OUTPUT)
     val mem = new Bundle {
-      val req_cmd = Vec(memIo.req_cmd.bits.clone.asOutput.flatten map {
+      val req_cmd = Vec(memIo.req_cmd.bits.cloneType.asOutput.flatten map {
         case (name, wire) => (s"req_cmd_${name}", wire)} flatMap simIo.genPacket)
-      val req_data = Vec(memIo.req_data.bits.clone.asOutput.flatten map {
+      val req_data = Vec(memIo.req_data.bits.cloneType.asOutput.flatten map {
         case (name, wire) => (s"req_data_${name}", wire)} flatMap simIo.genPacket)
-      val resp = Vec(memIo.resp.bits.clone.asInput.flatten map {
+      val resp = Vec(memIo.resp.bits.cloneType.asInput.flatten map {
         case (name, wire) => (s"resp_${name}", wire)} flatMap simIo.genPacket)
     }
   }
-  val channelWidth    = params(ChannelWidth)
-  val addrSizeBits    = params(NASTIAddrSizeBits)
+  val channelWidth    = p(ChannelWidth)
+  val addrSizeBits    = p(NastiAddrSizeBits)
   val addrOffsetBits  = log2Up(nastiXDataBits/8)
   val resetAddr       = (1 << addrSizeBits) - 1
   val sramRestartAddr = (1 << addrSizeBits) - 2
 
-  require(channelWidth == nastiXDataBits, "Channel width and NASTI data width should be the same")
+  require(channelWidth == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
   /*** INPUTS ***/
   val waddr_r = RegInit(UInt(0, addrSizeBits))
@@ -150,13 +151,13 @@ class NASTIMasterHandler(simIo: SimWrapperIO, memIo: MemIO) extends NASTIModule 
     io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size))).toMap
 }
 
-class NASTISlaveHandler extends MIFModule with NASTIParameters {
+class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasNastiParameters {
   val io = new Bundle {
     val mem   = (new MemIO).flip
-    val nasti = (new NASTISlaveIO).flip
+    val nasti = new NastiIO
   }
-  val lineSize       = params(LineSize)
-  val addrSizeBits   = params(MemAddrSizeBits)
+  val lineSize       = p(LineSize)
+  val addrSizeBits   = p(MemAddrSizeBits)
   val addrOffsetBits = log2Up(scala.math.max(lineSize, nastiXDataBits/8))
   val nastiDataBeats = scala.math.max(1, mifDataBits / nastiXDataBits)
 
@@ -226,13 +227,13 @@ class NASTISlaveHandler extends MIFModule with NASTIParameters {
   }
 }
 
-class NASTIShimIO extends Bundle {
-  val mnasti = Bundle((new NASTIMasterIO).flip, {case NASTIName => "Master"})
-  val snasti = Bundle((new NASTISlaveIO).flip,  {case NASTIName => "Slave"})
+class NastiShimIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
+  val mnasti = (new NastiIO()(p alter Map(NastiName -> "Master"))).flip
+  val snasti =  new NastiIO()(p alter Map(NastiName -> "Slave"))
 }
 
-class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
-  val io = new NASTIShimIO
+class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFModule()(p) {
+  val io = new NastiShimIO
   // Simulation Target
   val sim: T = Module(c)
   val ins  = Vec(sim.io.inMap  filterNot (SimMemIO contains _._1) flatMap sim.io.getIns)
@@ -248,8 +249,8 @@ class NASTIShim[+T <: SimNetwork](c: =>T) extends MIFModule {
 
   val arb    = Module(new MemArbiter(SimMemIO.size+1))
   val mem    = arb.io.ins(SimMemIO.size)
-  val master = Module(new NASTIMasterHandler(sim.io, mem), {case NASTIName => "Master"})
-  val slave  = Module(new NASTISlaveHandler,               {case NASTIName => "Slave"})
+  val master = Module(new NastiMasterHandler(sim.io, mem)(p alter Map(NastiName -> "Master")))
+  val slave  = Module(new NastiSlaveHandler()            (p alter Map(NastiName -> "Slave")))
   val reqCmdChannels = mem.req_cmd.bits.flatten map {case (name, wire) => 
     s"req_cmd_${name}" -> wire} flatMap (sim.genChannels(_)(this, false))
   val reqDataChannels = mem.req_data.bits.flatten map {case (name, wire) =>

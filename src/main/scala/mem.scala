@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import cde.{Parameters, Field}
 import junctions._
 
 import scala.collection.mutable.ArrayBuffer
@@ -8,12 +9,12 @@ import scala.collection.immutable.ListSet
 
 case object MemMaxCycles extends Field[Int]
 
-class SimDecoupledIO[+T <: Data](gen: T) extends Bundle {
+class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
   val ready  = Bool(INPUT)
   val valid  = Bool(OUTPUT)
   val target = Decoupled(gen)
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new SimDecoupledIO(gen).asInstanceOf[this.type] 
+  override def cloneType: this.type = new SimDecoupledIO(gen)(p).asInstanceOf[this.type] 
 }
 
 object SimMemIO {
@@ -25,10 +26,10 @@ object SimMemIO {
   def zipWithIndex = mems.toList.zipWithIndex
 }
 
-class SimMemIO extends MIFBundle {
+class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
   val req_cmd  = new SimDecoupledIO(new MemReqCmd)
   val req_data = new SimDecoupledIO(new MemData)
-  val resp     = (new SimDecoupledIO(new MemResp)).flip
+  val resp     = new SimDecoupledIO(new MemResp).flip
 
   def <>(mIo: MemIO, wIo: SimWrapperIO) {
     val ins = wIo.inMap filter (SimMemIO contains _._1) flatMap wIo.getIns
@@ -72,8 +73,8 @@ class SimMemIO extends MIFBundle {
   }
 }
 
-class ChannelMemIOConverter extends MIFModule {
-  val maxLatency = params(MemMaxCycles)
+class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
+  val maxLatency = p(MemMaxCycles)
   val maxLatencyWidth = log2Up(maxLatency+1)
   val io = new Bundle {
     val sim_mem  = (new SimMemIO).flip
@@ -130,7 +131,7 @@ class ChannelMemIOConverter extends MIFModule {
   resp_buf.io.enq      <> io.host_mem.resp
 }
 
-class MemArbiter(n: Int) extends MIFModule {
+class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
   val io = new Bundle {
     val ins = Vec.fill(n){(new MemIO).flip}
     val out = new MemIO  

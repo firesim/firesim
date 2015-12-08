@@ -232,7 +232,7 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, isTrace: Boolean
   flush
 }
 
-abstract class NASTIShimTester[+T <: NASTIShim[SimNetwork]](c: T, isTrace: Boolean = true, snapCheck: Boolean = true) extends SimTester(c, isTrace, snapCheck) {
+abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T, isTrace: Boolean = true, snapCheck: Boolean = true) extends SimTester(c, isTrace, snapCheck) {
   protected[strober] val inMap = c.master.inMap
   protected[strober] val outMap = c.master.outMap
   protected[strober] val inTrMap = c.master.inTrMap

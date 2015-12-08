@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import cde.{Parameters, Field}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -13,8 +14,8 @@ class TraceQueueIO[T <: Data](data: => T, entries: Int) extends QueueIO(data, en
   val limit = UInt(INPUT, log2Up(entries+1))
 }
 
-class TraceQueue[T <: Data](data: => T) extends Module {
-  val traceMaxLen  = params(TraceMaxLen)
+class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
+  val traceMaxLen  = p(TraceMaxLen)
   val traceLenBits = log2Up(traceMaxLen+1)
   val io = new TraceQueueIO(data, traceMaxLen)
 
@@ -29,7 +30,7 @@ class TraceQueue[T <: Data](data: => T) extends Module {
   val deq_wrap = deq_ptr === io.limit
   when (do_enq) { enq_ptr := Mux(enq_wrap, UInt(0), enq_ptr + UInt(1)) }
   when (do_deq) { deq_ptr := Mux(deq_wrap, UInt(0), deq_ptr + UInt(1)) }
-  when (do_enq != do_deq) { maybe_full := do_enq }
+  when (do_enq =/= do_deq) { maybe_full := do_enq }
 
   val ptr_match = enq_ptr === deq_ptr
   val empty = ptr_match && !maybe_full
@@ -37,7 +38,7 @@ class TraceQueue[T <: Data](data: => T) extends Module {
   val atLeastTwo = full || enq_ptr - deq_ptr >= UInt(2)
   do_flow := empty && io.deq.ready
 
-  val ram = SeqMem(data, traceMaxLen)
+  val ram = SeqMem(traceMaxLen, data)
   when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
 
   val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
@@ -49,16 +50,16 @@ class TraceQueue[T <: Data](data: => T) extends Module {
   io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
 }
 
-class ChannelIO(w: Int) extends Bundle {
+class ChannelIO(w: Int)(implicit p: Parameters) extends junctions.ParameterizedBundle {
   val in    = Decoupled(UInt(width=w)).flip
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
-  val traceLen = UInt(INPUT, log2Up(params(TraceMaxLen)+1))
+  val traceLen = UInt(INPUT, log2Up(p(TraceMaxLen)+1))
 }
 
-class Channel(w: Int, doTrace: Boolean = true) extends Module {
+class Channel(w: Int, doTrace: Boolean = true)(implicit p: Parameters) extends Module {
   // val traceMaxLen = params(TraceMaxLen)
-  val channelLen = params(ChannelLen)
+  val channelLen = p(ChannelLen)
   val io     = new ChannelIO(w)
   val tokens = Module(new Queue(UInt(width=w), channelLen))
   io.in <> tokens.io.enq
@@ -76,12 +77,13 @@ class Channel(w: Int, doTrace: Boolean = true) extends Module {
 }
 
 object SimWrapper {
-  def apply[T <: Module](c: =>T)(params: Parameters) = Module(new SimWrapper(c))(params)
+  def apply[T <: Module](c: =>T)(implicit p: Parameters) = Module(new SimWrapper(c)(p))
 }
 
-class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits)]) extends Bundle {
-  val daisyWidth   = params(DaisyWidth)
-  val channelWidth = params(ChannelWidth)
+class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits)])(
+  implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
+  val daisyWidth   = p(DaisyWidth)
+  val channelWidth = p(ChannelWidth)
   val names = ((t_ins ++ t_outs) map (x => x._2 -> x._1)).toMap
 
   private val chunks = HashMap[Bits, Int]()
@@ -92,7 +94,7 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
   val inT   = Vec(t_ins  flatMap (genPacket(_)(true) map (_.flip)))
   val outT  = Vec(t_outs flatMap (genPacket(_)(true)))
   val daisy = new DaisyBundle(daisyWidth)
-  val traceLen = Decoupled(UInt(width=log2Up(params(TraceMaxLen)+1))).flip
+  val traceLen = Decoupled(UInt(width=log2Up(p(TraceMaxLen)+1))).flip
 
   def genPacket[T <: Bits](arg: (String, Bits))(implicit trace: Boolean = false) = arg match {case (name, port) =>
     val packet = (0 until chunk(port)) map {i =>
@@ -118,14 +120,14 @@ class SimWrapperIO(val t_ins: Seq[(String, Bits)], val t_outs: Seq[(String, Bits
   def getOuts(wire: Bits) = (0 until chunk(wire)) map (off => outs(outMap(wire)+off))
 }
 
-abstract class SimNetwork extends Module {
+abstract class SimNetwork(implicit val p: Parameters) extends Module {
   def io: SimWrapperIO 
   def in_channels: Seq[Channel]
   def out_channels: Seq[Channel]
-  val sampleNum    = params(SampleNum)
-  val traceMaxLen  = params(TraceMaxLen)
-  val daisyWidth   = params(DaisyWidth)
-  val channelWidth = params(ChannelWidth)
+  val sampleNum    = p(SampleNum)
+  val traceMaxLen  = p(TraceMaxLen)
+  val daisyWidth   = p(DaisyWidth)
+  val channelWidth = p(ChannelWidth)
 
   def genChannels[T <: Bits](arg: (String, T))(implicit mod: Module = this, tr: Boolean = true) = 
     arg match {case (name, port) => (0 until io.chunk(port)) map { off => 
@@ -162,7 +164,7 @@ abstract class SimNetwork extends Module {
     }
 }
 
-class SimWrapper[+T <: Module](c: =>T) extends SimNetwork {
+class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwork()(p) {
   val target = Module(c)
   val (ins, outs) = target.wires partition (_._2.dir == INPUT)
   val io = new SimWrapperIO(ins, outs filterNot (_._2.inputs.isEmpty))
