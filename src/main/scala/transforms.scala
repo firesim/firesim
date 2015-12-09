@@ -40,6 +40,25 @@ object transforms {
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
   
+  def init {
+    wrappers.clear
+    stalls.clear
+    daisyPins.clear
+    comps.clear
+    compsRev.clear
+    inMap.clear
+    outMap.clear
+    inTraceMap.clear
+    outTraceMap.clear
+    nameMap.clear
+    targetName = ""
+    for (t <- ChainType.values) {
+      chains(t).clear
+      chainLen(t) = 0
+      chainLoop(t) = 0
+    }
+  }
+
   private[strober] def init[T <: Module](w: SimWrapper[T], fire: Bool) {
     // Add backend passes
     if (wrappers.isEmpty) { 

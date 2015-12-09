@@ -23,7 +23,9 @@ object Sample {
     ChainType.SRAM -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.Cntr -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
   )
-  private lazy val chainLoop  = transforms.chainLoop
+  private def chainLoop = transforms.chainLoop
+  
+  def init = ChainType.values foreach (chains(_).clear)
 
   def addToChain(t: ChainType.Value, signal: Option[Node], width: Int, off: Option[Int] = None) {
     chains(t) += ((signal, width, off))
