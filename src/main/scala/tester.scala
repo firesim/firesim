@@ -142,6 +142,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
       case None =>
       case Some((sample, id)) => samples(id) = traces(sample)
     }
+    lastSample = None
     val filename = transforms.targetName + ".sample"
     val file = createOutputFile(filename)
     try {
