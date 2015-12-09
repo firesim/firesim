@@ -303,19 +303,6 @@ static inline char* int_to_bin(char *bin, uint32_t value, size_t size) {
   return bin;
 }
 
-sample_t* simif_t::read_counters() {
-  std::ostringstream snap;
-  char bin[DAISY_WIDTH+1];
-  
-  size_t t = static_cast<size_t>(CNTR_CHAIN);
-  for (size_t k = 0 ; k < CHAIN_LOOP[t]; k++) {
-    for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
-      snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
-    }
-  }
-  return new sample_t(CNTR_CHAIN, snap.str().c_str(), cycles());
-}
-
 sample_t* simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];

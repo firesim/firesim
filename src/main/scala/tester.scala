@@ -84,9 +84,8 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
 
   protected[strober] def readChain(t: ChainType.Value): String
   protected[strober] def readSnapshot = {
-    (ChainType.values.toList filterNot (_ == ChainType.Cntr) map readChain addString new StringBuilder).result
+    (ChainType.values.toList map readChain addString new StringBuilder).result
   }
-  protected[strober] def readCounters = readChain(ChainType.Cntr)
 
   protected[strober] def verifySnapshot(sample: Sample) {
     val pass = (sample map {
@@ -147,7 +146,7 @@ abstract class SimTester[+T <: Module](c: T, isTrace: Boolean, snapCheck: Boolea
     val file = createOutputFile(filename)
     try {
       file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
-      file write Sample(ChainType.Cntr, readCounters, t).toString
+      file write Sample(readSnapshot, t).toString
     } finally {
       file.close
     }
