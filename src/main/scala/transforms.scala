@@ -127,14 +127,15 @@ object transforms {
       // Connect the stall signal to the register and memory writes for freezing
       for (m <- compsRev(w)) {
         lazy val fire = !(stalls getOrElseUpdate (m, connectStalls(m)))
+        lazy val fireOrReset = fire || m.reset
         ChainType.values foreach (chains(_) getOrElseUpdate (m, ArrayBuffer[Node]()))
         daisyPins getOrElseUpdate (m, m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy"))
-        m.reset setName s"host__${m.reset.name}"
+        m.reset setName s"target__${m.reset.name}"
         m bfs {
           case reg: Reg =>
             reg assignReset m.reset
             reg assignClock Driver.implicitClock
-            reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fire, reg.updateValue, reg)
+            reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fireOrReset, reg.updateValue, reg)
             if (chains(ChainType.Cntr)(m).isEmpty) {
               chains(ChainType.Regs)(m) += reg
               chainLoop(ChainType.Regs) = 1
