@@ -3,9 +3,28 @@ package midas
 
 import Chisel._
 
-object Lib {
+class HostReadyValid extends Bundle {
+  val hostReady = Bool(INPUT)
+  val hostValid = Bool(OUTPUT)
+}
 
-/** A hardware module implementing a Queue
+// Adapted from DecoupledIO in Chisel3
+class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
+{
+  val hostIn = (new HostReadyValid).flip
+  val hostOut = (new HostReadyValid)
+  val hostBits  = gen.cloneType.asOutput
+  override def cloneType: this.type = new HostDecoupledIO(gen).asInstanceOf[this.type]
+}
+
+/** Adds a ready-valid handshaking protocol to any interface.
+  * The standard used is that the consumer uses the flipped interface.
+  */
+object HostDecoupled {
+  def apply[T <: Data](gen: T): HostDecoupledIO[T] = new HostDecoupledIO(gen)
+}
+
+/** A hardware module implementing a Queue (Taken from Chisel3)
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
   * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
@@ -18,6 +37,8 @@ object Lib {
   *    q.io.enq <> producer.io.out
   *    consumer.io.in <> q.io.deq }}}
   */
+// TODO
+//   - Add token insertion upon reset
 class Queue[T <: Data](gen: T, val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false,
@@ -85,4 +106,3 @@ object Queue
   }
 }
 
-}
