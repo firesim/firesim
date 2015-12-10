@@ -4,16 +4,20 @@ import Chisel._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import scala.io.Source
 
-class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = true) extends Tester(c, isTrace) {
+class Replay[+T <: Module](c: T, sampleFile: String, matchFile: Option[String] = None, isTrace: Boolean = true) extends Tester(c, isTrace) {
   private val basedir = Driver.targetDir
   private val signalMap = HashMap[String, Node]()
-  private val matchMap = HashMap[String, String]()
   private val samples = ArrayBuffer[Sample]()
   case class SramInfo(cols: Int, dummy: Int, qwidth: Int)
   private val sramInfo = HashMap[Mem[_], SramInfo]()
   private val notSRAMs = HashSet[Mem[_]]()
   private val addrRegs = HashMap[Reg, Mem[_]]()
-  private var sampleFile: Option[String] = None
+  private val matchMap: Map[String, String] = matchFile match {
+    case None => Map()
+    case Some(file) => (scala.io.Source.fromFile(file).getLines map { line =>
+      val tokens = line split " "
+      tokens.head -> tokens.last }).toMap
+  }
 
   def loadSamples(filename: String) {
     samples += (scala.io.Source.fromFile(filename).getLines foldLeft new Sample){(sample, line) =>
@@ -123,19 +127,6 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
     ChiselError.info("Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed))
   }
 
-  args foreach { arg =>
-    if (arg.slice(0, 7) == "+match=") {
-      val lines = scala.io.Source.fromFile(arg.substring(7)).getLines
-      lines foreach { line =>
-        val tokens = line split " "
-        matchMap(tokens.head) = tokens.last
-      }
-    }
-    if (arg.slice(0, 8) == "+sample=") {
-      sampleFile = Some(arg.substring(8))
-    }
-  }
-
   Driver.dfs {
     case node: Delay       => signalMap(dumpName(node)) = node
     case node if node.isIo => signalMap(dumpName(node)) = node
@@ -156,6 +147,6 @@ class Replay[+T <: Module](c: T, args: Seq[String] = Seq(), isTrace: Boolean = t
       }
     case _ =>
   }
-  loadSamples(sampleFile match {case None => basedir + c.name + ".sample" case Some(f) => f})
+  loadSamples(sampleFile)
   run
 }
