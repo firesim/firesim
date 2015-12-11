@@ -40,7 +40,7 @@ import firrtl.Utils._
  *             * Note that TopIO counts as a "sim module"
  *        iii. Create targetFire as AND of inputs.valid and outputs.ready
  *        iv.  Connect targetFire to targetFire input of target rtl inst
- *        v.   Connect target IO to wrapper IO, except connect target clock to simClock
+ *        v.   Connect target IO to wrapper IO
  *
  * TODO 
  *  - Is it okay to have ready signals for input queues depend on valid signals for those queues? This is generally bad
@@ -54,12 +54,6 @@ import firrtl.Utils._
  *     or something?
  *     * YES, this will be done by requiring the user to instantiate modules that should be split
  *       with something like: val module = new MIDASModule(class... etc.)
- *   - There cannot be nested DecoupledIO or ValidIO
- *   - How do output consumes tie in to MIDAS fire? If all of our outputs are not consumed
- *     in a given cycle, do we block midas$fire on the next cycle? Perhaps there should be 
- *     a register for not having consumed all outputs last cycle
- *   - If our outputs are not consumed we also need to be sure not to consume out inputs,
- *     so the logic for this must depend on the previous cycle being consumed as well
  *   - We also need a way to determine the difference between the MIDAS modules and their
  *     connecting Queues, perhaps they should be MIDAS queues, which then perhaps prints
  *     out a listing of all queues so that they can be properly transformed
