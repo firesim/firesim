@@ -1,7 +1,7 @@
 package strober
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 // Enum type for replay commands
 object SampleInstType extends Enumeration {
@@ -53,6 +53,7 @@ object Sample {
     }
   }
 
+  // Generate sample from a string
   def apply(snap: String = "", cycle: Long = -1L) = {
     val sample = new Sample(cycle)
     (ChainType.values.toList filterNot (_ == ChainType.Cntr) foldLeft 0){
@@ -60,10 +61,56 @@ object Sample {
     sample
   }
 
+  // Generate a specific type of sample from a string
   def apply(chainType: ChainType.Value, snap: String, cycle: Long) = {
     val sample = new Sample(cycle)
     readChain(chainType, sample, snap)
     sample
+  }
+
+  // Read samples from a file
+  def load[T <: Module](filename: String) = {
+    val signalMap = HashMap[String, Node]()
+    Driver.dfs {
+      case node: Delay       => signalMap(node.chiselName) = node
+      case node if node.isIo => signalMap(node.chiselName) = node
+      case _ =>
+    }
+    (scala.io.Source.fromFile(filename).getLines foldLeft List[Sample]()){case (samples, line) =>
+      val tokens = line split " "
+      val cmd = SampleInstType(tokens.head.toInt)
+      cmd match {
+        case SampleInstType.CYCLE =>
+          samples :+ new Sample(tokens.last.toLong)
+        case SampleInstType.LOAD =>
+          val value = BigInt(tokens.init.last, 16)
+          val off = tokens.last.toInt
+          (signalMap get tokens.tail.head) match {
+            case None => println(s"${tokens.tail.head} not found")
+            case Some(node) => samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
+          }
+          samples
+        case SampleInstType.FORCE =>
+          val node = signalMap(tokens.tail.head)
+          val value = BigInt(tokens.last, 16)
+          samples.last addCmd Force(node, value)
+          samples
+        case SampleInstType.POKE =>
+          val node = signalMap(tokens.tail.head) match {case b: Bits => b}
+          val value = BigInt(tokens.last, 16)
+          samples.last addCmd PokePort(node, value)
+          samples
+        case SampleInstType.STEP =>
+          samples.last addCmd Step(tokens.last.toInt)
+          samples
+        case SampleInstType.EXPECT =>
+          val node = signalMap(tokens.tail.head) match {case b: Bits => b}
+          val value = BigInt(tokens.last, 16)
+          samples.last addCmd ExpectPort(node, value)
+          samples
+        case SampleInstType.COUNT => samples // skip
+      }
+    } sortWith (_.cycle < _.cycle)
   }
 }
 
