@@ -69,7 +69,7 @@ object Sample {
   }
 
   // Read samples from a file
-  def load[T <: Module](filename: String) = {
+  def load[T <: Module](filename: String, log: java.io.PrintStream = System.out) = {
     val signalMap = HashMap[String, Node]()
     Driver.dfs {
       case node: Delay       => signalMap(node.chiselName) = node
@@ -86,7 +86,7 @@ object Sample {
           val value = BigInt(tokens.init.last, 16)
           val off = tokens.last.toInt
           (signalMap get tokens.tail.head) match {
-            case None => println(s"${tokens.tail.head} not found")
+            case None => log.println(s"${tokens.tail.head} not found")
             case Some(node) => samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
           }
           samples
