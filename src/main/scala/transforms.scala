@@ -10,6 +10,7 @@ object transforms {
   private val daisyPins = HashMap[Module, DaisyBundle]() 
   private val comps     = HashMap[Module, List[Module]]()
   private val compsRev  = HashMap[Module, List[Module]]()
+  private val noSnap    = HashSet[Module]()
 
   private val chains = Map(
     ChainType.Trs  -> HashMap[Module, ArrayBuffer[Node]](),
@@ -36,9 +37,10 @@ object transforms {
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
   private[strober] val inTraceMap = LinkedHashMap[Bits, Int]()
   private[strober] val outTraceMap = LinkedHashMap[Bits, Int]()
+  private[strober] val retimingMap = LinkedHashMap[Node, Bits]()
   private[strober] val nameMap = HashMap[Node, String]()
   private[strober] var targetName = ""
-  
+ 
   private[strober] def init[T <: Module](w: SimWrapper[T], fire: Bool) {
     // Add backend passes
     if (wrappers.isEmpty) { 
@@ -55,15 +57,45 @@ object transforms {
       )
     }
 
-    targetName   = Driver.backend.extractClassName(w.target) 
-    w.name       = targetName + "Wrapper"
+    targetName = Driver.backend.extractClassName(w.target) 
+    w setName s"${targetName}Wrapper"
     wrappers    += w
     stalls(w)    = !fire
     resets(w)    = w.reset
     daisyPins(w) = w.io.daisy
   }
 
+  private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
+    w setName s"${targetName}NASTIShim"
+  }
+
+
+  private def collect(c: Module): List[Module] = 
+    (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
+  private def collectRev(c: Module): List[Module] = 
+    List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
+
   // Called from frontend
+  def addRetiming(m: Module, latency: Int) {
+    (m.wires ++ Array((m.reset.name, m.reset))) foreach {
+      case (name, io) if io.dir == INPUT =>
+        // Input trace is captured to recover internal state
+        val chain = chains(ChainType.Trs) getOrElseUpdate (m, ArrayBuffer[Node]())
+        val trace = List.fill(latency){Reg(io)}
+        trace.zipWithIndex foreach {case (reg, i) =>
+          reg := (if (i == 0) io else trace(i-1))
+          reg.getNode setName s"${name}_reg_${i}"
+          m.debug(reg.getNode)
+        }
+        chain       ++= trace map (_.getNode)
+        retimingMap ++= trace map (_.getNode -> io)
+      case (name, io) if io.dir == OUTPUT => 
+        // TODO: Should we handle it?
+    }
+    chainLoop(ChainType.Trs) = 1
+    noSnap ++= collect(m)
+  }
+ 
   def addCounter(m: Module, cond: Bool, name: String) {
     val chain = chains(ChainType.Cntr) getOrElseUpdate (m, ArrayBuffer[Node]())
     val cntr = RegInit(UInt(0, 32))
@@ -72,10 +104,7 @@ object transforms {
     m.debug(cntr.getNode)
     chain += cntr.getNode
     chainLoop(ChainType.Cntr) = 1
-  }
-
-  private[strober] def init[T <: Module](w: NASTIShim[SimNetwork]) {
-    w.name = targetName + "NASTIShim"
+    noSnap += m
   }
 
   private def findSRAMRead(sram: Mem[_]) = {
@@ -102,10 +131,6 @@ object transforms {
 
   private def fame1Transforms(c: Module) {
     ChiselError.info("[Strober Transforms] connect control signals")
-    def collect(c: Module): List[Module] = 
-      (c.children foldLeft List[Module]())((res, x) => res ++ collect(x)) ++ List(c)
-    def collectRev(c: Module): List[Module] = 
-      List(c) ++ (c.children foldLeft List[Module]())((res, x) => res ++ collectRev(x))
 
     def connectSRAMRestart(m: Module): Unit = m.parent match {
       case p if daisyPins contains p =>
@@ -115,26 +140,27 @@ object transforms {
       case _ =>
     }
 
-    for (w <- wrappers) {
+    wrappers foreach { w =>
       val t = w.target
       val tName = Driver.backend.extractClassName(t) 
       val tPath = t.getPathName(".")
       comps(w)    = collect(t)
       compsRev(w) = collectRev(t)
       def getPath(node: Node) = s"${tName}${node.chiselName stripPrefix tPath}"
-      for ((_, wire) <- t.wires) { nameMap(wire) = getPath(wire) }
       // Connect the stall signal to the register and memory writes for freezing
-      for (m <- compsRev(w)) {
+      compsRev(w) foreach { m =>
         lazy val fire = !(stalls getOrElseUpdate (m, connectStalls(m)))
         ChainType.values foreach (chains(_) getOrElseUpdate (m, ArrayBuffer[Node]()))
         daisyPins getOrElseUpdate (m, m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy"))
+        nameMap(m.reset) = s"""${tName}${m getPathName "." stripPrefix tPath}.${m.reset.name}"""
         m.reset setName s"host__${m.reset.name}"
+        m.wires foreach {case (_, wire) => nameMap(wire) = getPath(wire)}
         m bfs {
           case reg: Reg =>
             reg assignReset m.reset
             reg assignClock Driver.implicitClock
             reg.inputs(0) = Multiplex(Bool(reg.enableSignal) && fire, reg.updateValue, reg)
-            if (chains(ChainType.Cntr)(m).isEmpty) {
+            if (!noSnap(m)) {
               chains(ChainType.Regs)(m) += reg
               chainLoop(ChainType.Regs) = 1
             }
@@ -142,7 +168,7 @@ object transforms {
           case mem: Mem[_] =>
             mem assignClock Driver.implicitClock
             mem.writeAccesses foreach (w => w.cond = Bool(w.cond) && fire)
-            if (chains(ChainType.Cntr)(m).isEmpty) {
+            if (!noSnap(m)) {
               if (mem.seqRead) {
                 val read = findSRAMRead(mem)._2
                 chains(ChainType.Regs)(m) += read
@@ -317,8 +343,8 @@ object transforms {
   private def dumpChains(c: Module) {
     ChiselError.info("[Strober Transforms] dump chain mapping")
     val res = new StringBuilder
-    def dump(chain_t: ChainType.Value, state: Option[Node], width: Int, off: Option[Int]) = {
-      val path = state match { case Some(p) => nameMap(p) case None => "null" }
+    def dump(chain_t: ChainType.Value, elem: Option[Node], width: Int, off: Option[Int]) = {
+      val path = elem match { case Some(p) => nameMap(p) case None => "null" }
       s"${chain_t.id} ${path} ${width} ${off getOrElse -1}\n" 
     } 
 
@@ -332,20 +358,20 @@ object transforms {
 
     ChainType.values.toList foreach { t =>
       for (w <- wrappers ; m <- compsRev(w)) {
-        val (cw, dw) = (chains(t)(m) foldLeft (0, 0)){case ((chainWidth, dataWidth), state) =>
-          val width = state.needWidth
+        val (cw, dw) = (chains(t)(m) foldLeft (0, 0)){case ((chainWidth, dataWidth), elem) =>
+          val width = elem.needWidth
           val dw = dataWidth + width
           val cw = (Stream.from(0) map (chainWidth + _ * w.daisyWidth) dropWhile (_ < dw)).head
-          val (node, off) = state match {
+          val (node, off) = elem match {
             case sram: Mem[_] => 
               (Some(sram), Some(sram.size))
             case read: MemRead if !read.mem.seqRead => 
               (Some(read.mem.asInstanceOf[Mem[Data]]), Some(read.addr.litValue(0).toInt))
             case _ => 
-              (Some(state), None)
+              (Some(elem), None)
           }
           Sample.addToChain(t, node, width, off) // for tester
-          res   append dump(t, node, width, off)
+          res append dump(t, node map (x => retimingMap getOrElse (x, x)), width, off)
           if (t == ChainType.SRAM) {
             addPad(t, cw, dw)
             (0, 0)
