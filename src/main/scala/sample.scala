@@ -23,20 +23,20 @@ object Sample {
     ChainType.SRAM -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
     ChainType.Cntr -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
   )
-  private lazy val chainLoop  = transforms.chainLoop
+  private lazy val chainLoop = transforms.chainLoop
 
   def addToChain(t: ChainType.Value, signal: Option[Node], width: Int, off: Option[Int] = None) {
     chains(t) += ((signal, width, off))
   }
 
   private def readChain(t: ChainType.Value, sample: Sample, snap: String, base: Int = 0) = {
-    ((0 until chainLoop(t)) foldLeft base){case (offset, i) =>
+    val idx = ((0 until chainLoop(t)) foldLeft base){case (offset, i) =>
       val next = (chains(t) foldLeft offset){case (start, (signal, width, idx)) =>
         val end = math.min(start + width, snap.length)
         val value = BigInt(snap.substring(start, end), 2)
         signal match {
           case Some(p) if t == ChainType.Trs => 
-            sample addCmd Force(p, value)
+            sample addForce Force(p, value)
           case Some(p) if t == ChainType.Regs => 
             sample addCmd Load(p, value, idx)
           case Some(p) if t == ChainType.SRAM && i < idx.get =>
@@ -47,10 +47,11 @@ object Sample {
         }
         end
       }
-      if (t == ChainType.Trs) sample addCmd Step(1)
       // assert(next % daisyWidth == 0)
       next
     }
+    if (t == ChainType.Trs) sample.dumpForces
+    idx
   }
 
   // Generate sample from a string
@@ -91,9 +92,11 @@ object Sample {
           }
           samples
         case SampleInstType.FORCE =>
-          val node = signalMap(tokens.tail.head)
           val value = BigInt(tokens.last, 16)
-          samples.last addCmd Force(node, value)
+          (signalMap get tokens.tail.head) match {
+            case None => log.println(s"${tokens.tail.head} not found")
+            case Some(node) => samples.last addCmd Force(node, value)
+          }
           samples
         case SampleInstType.POKE =>
           val node = signalMap(tokens.tail.head) match {case b: Bits => b}
@@ -115,8 +118,30 @@ object Sample {
 }
 
 class Sample(protected[strober] val cycle: Long = -1L) {
+  private val forceBins = ArrayBuffer[ArrayBuffer[Force]]()
+  private var forceBinIdx = 0
+  private var forcePrevNode: Option[Node] = None
+  def addForce(f: Force) {
+    val node = transforms.retimingMap getOrElse (f.node, f.node)
+    forceBinIdx = forcePrevNode match {
+      case Some(p) if p eq node => forceBinIdx + 1 case _ => 0
+    }
+    if (forceBins.size < forceBinIdx + 1) {
+      forceBins += ArrayBuffer[Force]()
+    }
+    forceBins(forceBinIdx) += f
+    forcePrevNode = Some(node)
+  }
+  def dumpForces {
+    forceBins.reverse foreach { bin =>
+      cmds ++= bin ; cmds += Step(1) ; bin.clear
+    }
+    forcePrevNode = None
+  }
+
   private val cmds = ArrayBuffer[SampleInst]()
   def addCmd(cmd: SampleInst) { cmds += cmd }
+      
   def map[T](f: SampleInst => T) = { cmds map f }
   override def toString = {
     val res = new StringBuilder
@@ -128,7 +153,7 @@ class Sample(protected[strober] val cycle: Long = -1L) {
         res append "%d %s %x %d\n".format(SampleInstType.LOAD.id, path, value, off getOrElse -1)
       }
       case Force(node, value) => {
-        val path = transforms.nameMap(node)
+        val path = transforms.nameMap(transforms.retimingMap getOrElse (node, node))
         res append "%d %s %x\n".format(SampleInstType.FORCE.id, path, value)
       }
       case PokePort(node, value) => {

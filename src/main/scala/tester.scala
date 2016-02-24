@@ -13,7 +13,7 @@ case class StroberTesterArgs(
 )
 
 abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs) 
-    extends AdvTester(c, false, args.testCmd, args.dumpFile) {
+    extends AdvTester(c, false, 16, args.testCmd, args.dumpFile) {
   protected[strober] val pokeMap = HashMap[Int, BigInt]()
   protected[strober] val peekMap = HashMap[Int, BigInt]()
   private var traceCount = 0
@@ -121,6 +121,10 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs)
         val expected = peekNode(signal, off) 
         expect(expected == value, "%s%s -> %x == %x".format(transforms.nameMap(signal),
           off map (x => s"[${x}]") getOrElse "", expected, value))
+      case Force(signal, value) =>
+        val expected = peekNode(signal, None)
+        expect(expected == value, "%s -> %x == %x".format(transforms.nameMap(signal),
+          expected, value))
       case _ => true   
     } foldLeft true)(_ && _)
     addEvent(new ExpectMsgEvent(pass, "* SNAPSHOT : "))
