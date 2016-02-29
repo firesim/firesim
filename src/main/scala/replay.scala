@@ -59,7 +59,7 @@ class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String]
   Driver.dfs {
     // Find sram blocks if the match file is available
     case mem: Mem[_] if mem.seqRead && !mem.isInline && !matchMap.isEmpty =>
-      if (matchMap contains s"${dumpName(mem)}.sram") 
+      if (matchMap contains dumpName(mem))
       addSramInfo(mem) else addCombRAM(mem)
     // Otherwise, query a node to the simulator
     // This can take very long...
