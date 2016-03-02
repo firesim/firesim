@@ -17,6 +17,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   sample_split = false;
 
   profile = false;
+  sample_count = 0;
   sample_time = 0;
 
   seed = time(NULL);
@@ -168,8 +169,8 @@ void simif_t::finish() {
   }
   if (profile) {
     double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
-    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s\n", 
-                    sim_time, (double) sample_time / 1000000.0);
+    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %d\n", 
+                    sim_time, (double) sample_time / 1000000.0, sample_count);
   }
   // dump samples
   std::string filename = prefix + ".sample";
@@ -213,6 +214,7 @@ void simif_t::step(size_t n) {
     size_t record_id = t / trace_len;
     size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
     if (sample_id < SAMPLE_NUM) {
+      sample_count++;
       if (profile) start_time = timestamp();
       if (last_sample != NULL) {
         if (samples[last_sample_id] != NULL) delete samples[last_sample_id];

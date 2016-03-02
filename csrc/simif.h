@@ -57,6 +57,7 @@ class simif_t
 
     // profile information    
     bool profile;
+    size_t sample_count;
     uint64_t sample_time;
     uint64_t sim_start_time;
     std::vector<std::string> hargs;
