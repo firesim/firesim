@@ -60,6 +60,7 @@ public:
   std::ostream& dump(std::ostream &os) const {
     return os << FORCE << " " << node << " " << *value << std::endl;
   }
+  inline const char* name() const { return node; }
 private:
   const char* node;
   biguint_t* const value;
@@ -122,7 +123,10 @@ public:
   size_t read_chain(CHAIN_TYPE type, const char* snap, size_t start = 0);
   void add_cmd(sample_inst_t *cmd) { cmds.push_back(cmd); }
 
-  virtual void dump(FILE *file) const {
+  void add_force(force_t *f);
+  void dump_forces();
+
+  void dump(FILE *file) const {
     fprintf(file, "%u cycle: %llu\n", CYCLE, cycle);
     for (size_t i = 0 ; i < cmds.size() ; i++) {
       cmds[i]->dump(file);
@@ -147,6 +151,9 @@ public:
 private:
   const uint64_t cycle;
   std::vector<sample_inst_t*> cmds;
+  std::vector<std::vector<force_t*>> force_bins;
+  size_t force_bin_idx;
+  const char* force_prev_node; 
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 
   static std::array<std::vector<ssize_t>,     CHAIN_NUM> indices;

@@ -72,7 +72,7 @@ abstract class DaisyChainModule(implicit val p: Parameters) extends Module with 
 
 class DaisyDatapath(implicit p: Parameters) extends DaisyChainModule()(p) { 
   val io = new DaisyDatapathIO
-  val regs = Vec.fill(daisyLen){Reg(UInt(width=daisyWidth))}
+  val regs = Reg(Vec.fill(daisyLen){UInt(width=daisyWidth)})
 
   io.dataIo.out.bits := regs(daisyLen-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero

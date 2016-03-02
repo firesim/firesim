@@ -34,7 +34,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         substr[width] = '\0';
         biguint_t* value = new biguint_t(substr, 2);
         if (type == TRACE_CHAIN) {
-          add_cmd(new force_t(signal, value)); 
+          add_force(new force_t(signal, value)); 
         } else if (type == REG_CHAIN) {
           add_cmd(new load_t(signal, value, index));
         } else if (type == SRAM_CHAIN && ((ssize_t) i) < index) {
@@ -46,13 +46,14 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       }
       start += width;
     }
-    if (type == TRACE_CHAIN) add_cmd(new step_t(1));
     assert(start % DAISY_WIDTH == 0);
   }
+  if (type == TRACE_CHAIN) dump_forces();
   return start;
 }
 
-sample_t::sample_t(const char* snap, uint64_t _cycle): cycle(_cycle) {
+sample_t::sample_t(const char* snap, uint64_t _cycle): 
+    cycle(_cycle), force_prev_node(NULL) {
   size_t start = 0;
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t); 
@@ -60,14 +61,36 @@ sample_t::sample_t(const char* snap, uint64_t _cycle): cycle(_cycle) {
   }
 }
 
-sample_t::sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle): cycle(_cycle) {
+sample_t::sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle): 
+    cycle(_cycle), force_prev_node(NULL) {
   read_chain(type, snap);
 }
-
 
 sample_t::~sample_t() {
   for (size_t i = 0 ; i < cmds.size() ; i++) {
     delete cmds[i];
   }
   cmds.clear();
+}
+
+void sample_t::add_force(force_t* f) {
+  force_bin_idx = force_prev_node && 
+    strcmp(f->name(), force_prev_node) == 0 ? force_bin_idx + 1 : 0;
+  if (force_bins.size() < force_bin_idx + 1) {
+    force_bins.push_back(std::vector<force_t*>());
+  }
+  force_bins[force_bin_idx].push_back(f);
+  force_prev_node = f->name();
+}
+
+void sample_t::dump_forces() {
+  for (ssize_t i = force_bins.size() - 1 ; i >= 0 ; i--) {
+    std::vector<force_t*> force_bin = force_bins[i];
+    for (size_t k = 0 ; k < force_bin.size() ; k++) {
+      cmds.push_back(force_bin[k]);
+    }
+    cmds.push_back(new step_t(1));
+    force_bin.clear();
+  }
+  force_prev_node = NULL;
 }

@@ -163,7 +163,7 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
 
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
   val state_r = RegInit(st_idle)
-  val resp_data_buf = Vec.fill(nastiDataBeats-1){Reg(UInt(width=nastiXDataBits))}
+  val resp_data_buf = Reg(Vec.fill(nastiDataBeats-1){UInt(width=nastiXDataBits)})
   val (read_count,  read_wrap_out)  = Counter(io.nasti.r.fire(), nastiDataBeats)
   val (write_count, write_wrap_out) = Counter(io.nasti.w.fire(), nastiDataBeats)
   val addr = Wire(UInt(width=addrSizeBits-addrOffsetBits))
