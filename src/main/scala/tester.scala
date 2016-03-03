@@ -4,15 +4,16 @@ import Chisel._
 import Chisel.AdvTester._
 import scala.collection.mutable.{HashMap, Queue => ScalaQueue, ArrayBuffer}
 
-case class StroberTesterArgs(
-  isTrace: Boolean = true,
-  snapCheck: Boolean = true,
+case class StroberTestArgs(
   sampleFile: Option[String] = None,
+  dumpFile: Option[String] = None,
+  logFile: Option[String] = None,
   testCmd: Option[String] = Driver.testCommand,
-  dumpFile: Option[String] = None
+  verbose: Boolean = true,
+  snapCheck: Boolean = true
 )
 
-abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs) 
+abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs) 
     extends AdvTester(c, false, 16, args.testCmd, args.dumpFile) {
   protected[strober] val pokeMap = HashMap[Int, BigInt]()
   protected[strober] val peekMap = HashMap[Int, BigInt]()
@@ -51,7 +52,11 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs)
       case _ => super.apply(event)
     }
   }
-  if (args.isTrace) addObserver(new StroberObserver(file=System.out))
+  protected val log = args.logFile match {
+    case None    => System.out 
+    case Some(f) => new java.io.PrintStream(f)
+  }
+  if (args.verbose) addObserver(new StroberObserver(file=log))
 
   protected[strober] def channelOff: Int
   protected[strober] def pokeChannel(addr: Int, data: BigInt): Unit
@@ -70,7 +75,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs)
 
   override def poke(port: Bits, x: BigInt) {
     require(inMap contains port)
-    if (args.isTrace) addEvent(new PokeEvent(port, x))
+    addEvent(new PokeEvent(port, x))
     pokeMap(inMap(port)) = x
   }
  
@@ -171,8 +176,10 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs)
       case None =>
       case Some((sample, id)) => samples(id) = traces(sample)
     }
-    val file = createOutputFile(
-      args.sampleFile getOrElse s"${transforms.targetName}.sample")
+    val file = args.sampleFile match {
+      case None => createOutputFile(s"${transforms.targetName}.sample")
+      case Some(f) => new java.io.FileWriter(f)
+    }
     try {
       file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
       file write Sample(readSnapshot, t).toString
@@ -186,7 +193,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTesterArgs)
 }
 
 abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, 
-    args: StroberTesterArgs) extends SimTester(c, args) {
+    args: StroberTestArgs) extends SimTester(c, args) {
   protected[strober] val inMap = c.io.inMap 
   protected[strober] val outMap = c.io.outMap
   protected[strober] val inTrMap = c.io.inTrMap
@@ -275,7 +282,7 @@ case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
 abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T, 
-    args: StroberTesterArgs, loadmemType: LoadMemType = SlowLoadMem) 
+    args: StroberTestArgs, loadmemType: LoadMemType = SlowLoadMem) 
     extends SimTester(c, args) {
   protected[strober] val inMap = c.master.inMap
   protected[strober] val outMap = c.master.outMap

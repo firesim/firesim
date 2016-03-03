@@ -3,10 +3,21 @@ package strober
 import Chisel._
 import scala.collection.mutable.{HashSet, HashMap}
 
-class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String] = None, 
-    testCmd: Option[String] = Driver.testCommand, dumpFile: Option[String] = None,
-    logFile: Option[String] = None) extends Tester(c, false, 16, testCmd, dumpFile) {
-  private val matchMap = matchFile match {
+case class ReplayArgs(
+  samples: Seq[Sample], 
+  dumpFile: Option[String] = None,
+  logFile: Option[String] = None,
+  matchFile: Option[String] = None, 
+  testCmd: Option[String] = Driver.testCommand, 
+  verbose: Boolean = true
+)
+class Replay[+T <: Module](c: T, args: ReplayArgs) 
+    extends Tester(c, false, 16, args.testCmd, args.dumpFile) {
+  private val log = args.logFile match { 
+    case None    => System.out 
+    case Some(f) => new java.io.PrintStream(f)
+  }
+  private val matchMap = args.matchFile match {
     case None => Map[String, String]()
     case Some(f) => (scala.io.Source.fromFile(f).getLines map { line =>
       val tokens = line split " "
@@ -21,7 +32,6 @@ class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String]
   case class ReplayStartEvent(i: Int, cycle: Long) extends Event
   case class NoMatchEvent(path: String) extends Event
   case class ForceEvent(node: Node, value: BigInt) extends Event
-  case class ReportEvent(time: Double, speed: Double) extends Event
   class ReplayObserver(file: java.io.PrintStream) extends Observer(16, file) {
     override def apply(event: Event): Unit = event match {
       case ReplayStartEvent(i, cycle) =>
@@ -31,18 +41,11 @@ class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String]
         file.println(s"No match for ${path}")
       case ForceEvent(node, value) =>
         file.println(s"  FORCE ${dumpName(node)} <- ${value}")
-      case ReportEvent(time, speed) =>
-        val rpt = "Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed)
-        file.println(rpt)
-        ChiselError.info(rpt)
       case _ => super.apply(event)
     }
   }
 
-  addObserver(new ReplayObserver(logFile match { 
-    case None    => System.out 
-    case Some(f) => new java.io.PrintStream(f)
-  }))
+  if (args.verbose) addObserver(new ReplayObserver(log))
 
   // Sadly, not all seq mems are mapped to srams...
   private def addSramInfo(mem: Mem[_]) {
@@ -86,7 +89,7 @@ class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String]
 
   // Replay samples
   val startTime = System.nanoTime
-  samples.zipWithIndex foreach {case (sample, i) =>
+  args.samples.zipWithIndex foreach {case (sample, i) =>
     addEvent(new ReplayStartEvent(i, sample.cycle))
     reset(5)
     sample map {
@@ -138,5 +141,5 @@ class Replay[+T <: Module](c: T, samples: Seq[Sample], matchFile: Option[String]
   val endTime = System.nanoTime
   val simTime = (endTime - startTime) / 1000000000.0
   val simSpeed = t / simTime
-  addEvent(new ReportEvent(simTime, simSpeed))
+  log.println("Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed))
 }
