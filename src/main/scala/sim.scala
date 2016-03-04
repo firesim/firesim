@@ -210,5 +210,5 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   debug(cycles)
   when(fire) { cycles := cycles + UInt(1) }
 
-  transforms.init(this, fire)
+  transforms.init(this, fire || reset)
 }
