@@ -4,7 +4,10 @@ import Chisel._
 import cde.{Parameters, Field}
 import junctions._
 
-case object NastiName extends Field[String]
+trait NastiSite
+case object NastiMaster extends NastiSite
+case object NastiSlave extends NastiSite
+case object NastiType extends Field[NastiSite]
 case object NastiAddrSizeBits extends Field[Int]
 case object LineSize extends Field[Int]
 case object MemAddrSizeBits extends Field[Int]
@@ -228,8 +231,8 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
 }
 
 class NastiShimIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
-  val mnasti = (new NastiIO()(p alter Map(NastiName -> "Master"))).flip
-  val snasti =  new NastiIO()(p alter Map(NastiName -> "Slave"))
+  val mnasti = (new NastiIO()(p alter Map(NastiType -> NastiMaster))).flip
+  val snasti =  new NastiIO()(p alter Map(NastiType -> NastiSlave))
 }
 
 class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFModule()(p) {
@@ -249,8 +252,8 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
 
   val arb    = Module(new MemArbiter(SimMemIO.size+1))
   val mem    = arb.io.ins(SimMemIO.size)
-  val master = Module(new NastiMasterHandler(sim.io, mem)(p alter Map(NastiName -> "Master")))
-  val slave  = Module(new NastiSlaveHandler()            (p alter Map(NastiName -> "Slave")))
+  val master = Module(new NastiMasterHandler(sim.io, mem)(p alter Map(NastiType -> NastiMaster)))
+  val slave  = Module(new NastiSlaveHandler()            (p alter Map(NastiType -> NastiSlave)))
   val reqCmdChannels = mem.req_cmd.bits.flatten map {case (name, wire) => 
     s"req_cmd_${name}" -> wire} flatMap (sim.genChannels(_)(this, false))
   val reqDataChannels = mem.req_data.bits.flatten map {case (name, wire) =>

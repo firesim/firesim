@@ -6,7 +6,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 
 object transforms { 
   private val wrappers  = ArrayBuffer[SimWrapper[Module]]()
-  private val stalls    = HashMap[Module, Bool]()
+  private val fires     = HashMap[Module, Bool]()
   private val resets    = HashMap[Module, Bool]() 
   private val daisyPins = HashMap[Module, DaisyBundle]() 
   private val comps     = HashMap[Module, List[Module]]()
@@ -58,7 +58,7 @@ object transforms {
     targetName = Driver.backend.extractClassName(w.target) 
     w setName s"${targetName}Wrapper"
     wrappers    += w
-    stalls(w)    = !fire
+    fires(w)     = fire
     resets(w)    = w.reset
     daisyPins(w) = w.io.daisy
   }
@@ -87,7 +87,7 @@ object transforms {
     comps.clear
     compsRev.clear
     wrappers.clear
-    stalls.clear
+    fires.clear
     resets.clear
     noSnap.clear
   }
@@ -134,10 +134,10 @@ object transforms {
     (addr, read)
   }
 
-  private def connectStalls(m: Module): Bool = {
-    val stall = m.addPin(Bool(INPUT), "stall__pin")
-    stall := stalls getOrElseUpdate(m.parent, connectStalls(m.parent))
-    stall
+  private def connectFires(m: Module): Bool = {
+    val fire = m.addPin(Bool(INPUT), "fire_pin")
+    fire := fires getOrElseUpdate(m.parent, connectFires(m.parent))
+    fire
   }
 
   private def connectResets(m: Module): Bool = {
@@ -164,10 +164,9 @@ object transforms {
       comps(w)    = collect(t)
       compsRev(w) = collectRev(t)
       def getPath(node: Node) = s"${tName}${node.chiselName stripPrefix tPath}"
-      // Connect the stall signal to the register and memory writes for freezing
+      // Connect the fire signal to the register and memory writes for freezing
       compsRev(w) foreach { m =>
-        lazy val fire = !(stalls getOrElseUpdate (m, connectStalls(m)))
-        lazy val fireOrReset = fire || m.reset
+        lazy val fire = fires getOrElseUpdate (m, connectFires(m))
         ChainType.values foreach (chains(_) getOrElseUpdate (m, ArrayBuffer[Node]()))
         daisyPins getOrElseUpdate (m, m.addPin(new DaisyBundle(w.daisyWidth), "io_daisy"))
         nameMap(m.reset) = s"""${tName}${m getPathName "." stripPrefix tPath}.${m.reset.name}"""
@@ -206,7 +205,7 @@ object transforms {
             nameMap(mem) = getPath(mem)
           case assert: Assert =>
             assert assignClock Driver.implicitClock
-            assert.cond = Bool(assert.cond) || (stalls getOrElseUpdate (m, connectStalls(m)))
+            assert.cond = Bool(assert.cond) || !fire
             m.debug(assert.cond)
           case printf: Printf =>
             printf assignClock Driver.implicitClock
@@ -252,7 +251,7 @@ object transforms {
         (idx, off)
       }
       daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
-      daisy.io.stall := stalls getOrElseUpdate (m, connectStalls(m))
+      daisy.io.stall := !fires(m)
       daisy.io.dataIo.out <> daisyPins(m)(chainType).out
       hasChain += m
       chainLen(chainType) += daisy.daisyLen
@@ -285,7 +284,7 @@ object transforms {
           case Some(last) => last.io.dataIo.in <> daisy.io.dataIo.out
         }
         daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
-        daisy.io.stall := stalls getOrElseUpdate (m, connectStalls(m))
+        daisy.io.stall := !fires(m)
         daisy.io.restart := daisyPins(m).sram.restart
         daisy.io.addrIo.in := UInt(addr)
         // Connect daisy addr to SRAM addr
