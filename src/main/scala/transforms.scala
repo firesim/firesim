@@ -424,7 +424,7 @@ object transforms {
         "TRACE_MAX_LEN"     -> w.sim.traceMaxLen,
         "DAISY_WIDTH"       -> w.sim.daisyWidth,
         "CHANNEL_OFFSET"    -> log2Up(w.sim.channelWidth),
-        "LINE_OFFSET"       -> log2Up(w.slave.lineSize),
+        "LINE_OFFSET"       -> log2Up(w.slave.cacheBlockSize),
         "POKE_SIZE"         -> w.master.io.ins.size,
         "PEEK_SIZE"         -> w.master.io.outs.size,
         "RESET_ADDR"        -> w.master.resetAddr,

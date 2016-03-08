@@ -8,9 +8,7 @@ trait NastiSite
 case object NastiMaster extends NastiSite
 case object NastiSlave extends NastiSite
 case object NastiType extends Field[NastiSite]
-case object NastiAddrSizeBits extends Field[Int]
-case object LineSize extends Field[Int]
-case object MemAddrSizeBits extends Field[Int]
+case object CacheBlockSize extends Field[Int]
 
 object NastiShim {
   def apply[T <: Module](c: =>T)(implicit p: Parameters) = Module(new NastiShim(new SimWrapper(c)))
@@ -40,17 +38,16 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
         case (name, wire) => (s"resp_${name}", wire)} flatMap simIo.genPacket)
     }
   }
-  val channelWidth    = p(ChannelWidth)
-  val addrSizeBits    = p(NastiAddrSizeBits)
   val addrOffsetBits  = log2Up(nastiXDataBits/8)
+  val addrSizeBits    = 10
   val resetAddr       = (1 << addrSizeBits) - 1
   val sramRestartAddr = (1 << addrSizeBits) - 2
 
-  require(channelWidth == nastiXDataBits, "Channel width and Nasti data width should be the same")
+  require(p(ChannelWidth) == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
   /*** INPUTS ***/
-  val waddr_r = RegInit(UInt(0, addrSizeBits))
-  val awid_r  = RegInit(UInt(0))
+  val waddr_r = Reg(UInt(width=addrSizeBits))
+  val awid_r  = Reg(UInt(width=nastiWIdBits))
   val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
@@ -84,15 +81,14 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
       }
     }
   }
-  io.nasti.aw.ready    := do_write
-  io.nasti.w.ready     := do_write
-  io.nasti.b.valid     := st_wr === st_wr_ack
-  io.nasti.b.bits.id   := awid_r
-  io.nasti.b.bits.resp := Bits(0)
+  io.nasti.aw.ready := do_write
+  io.nasti.w.ready  := do_write
+  io.nasti.b.valid  := st_wr === st_wr_ack
+  io.nasti.b.bits   := NastiWriteResponseChannel(awid_r)
 
   /*** OUTPUTS ***/
-  val raddr_r = RegInit(UInt(0, addrSizeBits))
-  val arid_r  = RegInit(UInt(0))
+  val raddr_r = Reg(UInt(width=addrSizeBits))
+  val arid_r  = Reg(UInt(width=nastiWIdBits))
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read
@@ -120,11 +116,12 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
       }
     }
   }
-  io.nasti.ar.ready    := st_rd === st_rd_idle
-  io.nasti.r.valid     := Vec(outs map (_.valid))(raddr_r) && do_read
-  io.nasti.r.bits.data := Vec(outs map (_.bits))(raddr_r)
-  io.nasti.r.bits.last := io.nasti.r.valid
-  io.nasti.r.bits.id   := arid_r
+  io.nasti.ar.ready := st_rd === st_rd_idle
+  io.nasti.r.bits := NastiReadDataChannel(
+    id = arid_r, 
+    data = Vec(outs map (_.bits))(raddr_r), 
+    last = Vec(outs map (_.valid))(raddr_r) && do_read)
+  io.nasti.r.valid := io.nasti.r.bits.last
   
   // TODO:
   io.daisy.regs.in.bits := UInt(0)
@@ -159,9 +156,8 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
     val mem   = (new MemIO).flip
     val nasti = new NastiIO
   }
-  val lineSize       = p(LineSize)
-  val addrSizeBits   = p(MemAddrSizeBits)
-  val addrOffsetBits = log2Up(scala.math.max(lineSize, nastiXDataBits/8))
+  val cacheBlockSize = p(CacheBlockSize)
+  val addrOffsetBits = log2Up(scala.math.max(cacheBlockSize, nastiXDataBits/8))
   val nastiDataBeats = scala.math.max(1, mifDataBits / nastiXDataBits)
 
   val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
@@ -169,18 +165,18 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
   val resp_data_buf = Reg(Vec.fill(nastiDataBeats-1){UInt(width=nastiXDataBits)})
   val (read_count,  read_wrap_out)  = Counter(io.nasti.r.fire(), nastiDataBeats)
   val (write_count, write_wrap_out) = Counter(io.nasti.w.fire(), nastiDataBeats)
-  val addr = Wire(UInt(width=addrSizeBits-addrOffsetBits))
-  addr := io.mem.req_cmd.bits.addr
   io.mem.req_cmd.ready := 
     (state_r === st_start_write && io.nasti.aw.ready) || (state_r === st_read && io.nasti.ar.ready)
 
   /* Read Signals */
   // Read Address
-  io.nasti.ar.bits.addr := Cat(UInt(1, 4), addr, UInt(0, addrOffsetBits))
-  io.nasti.ar.bits.id   := io.mem.req_cmd.bits.tag
-  io.nasti.ar.bits.len  := UInt(nastiDataBeats*mifDataBeats-1) // burst length (transfers)
-  io.nasti.ar.bits.size := UInt(log2Up(scala.math.min(mifDataBits/8, nastiXDataBits/8))) // burst size (bits/beat)
-  io.nasti.ar.valid     := state_r === st_read 
+  io.nasti.ar.bits := NastiReadAddressChannel(
+    id   = io.mem.req_cmd.bits.tag,
+    addr = io.mem.req_cmd.bits.addr << UInt(addrOffsetBits),
+    len  = UInt(nastiDataBeats*mifDataBeats-1), // burst length (transfers)
+    size = UInt(log2Up(scala.math.min(mifDataBits/8, nastiXDataBits/8))) // burst size (bits/beat)
+  )
+  io.nasti.ar.valid := state_r === st_read
   // Read Data
   io.nasti.r.ready      := io.mem.resp.ready
   io.mem.resp.bits.tag  := io.nasti.r.bits.id
@@ -190,17 +186,16 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
 
   /* Write Signals */
   // Write Address
-  io.nasti.aw.bits.addr := io.nasti.ar.bits.addr
-  io.nasti.aw.bits.id   := UInt(0)
-  io.nasti.aw.bits.len  := io.nasti.ar.bits.len  // burst length (transfers)
-  io.nasti.aw.bits.size := io.nasti.ar.bits.size // burst size (bits/beat)
-  io.nasti.aw.valid     := state_r === st_start_write
+  io.nasti.aw.bits := NastiWriteAddressChannel(UInt(0), 
+    io.nasti.ar.bits.addr, io.nasti.ar.bits.size, io.nasti.ar.bits.len)
+  io.nasti.aw.valid := state_r === st_start_write
   // Write Data
   io.mem.req_data.ready := write_wrap_out
   io.nasti.w.valid      := io.mem.req_data.valid && state_r === st_write
-  io.nasti.w.bits.last  := Counter(io.nasti.w.fire(), nastiDataBeats*mifDataBeats)._2
-  io.nasti.w.bits.data  := Vec((0 until nastiDataBeats) map (i =>
-    io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count)
+  io.nasti.w.bits := NastiWriteDataChannel(
+    last = Counter(io.nasti.w.fire(), nastiDataBeats*mifDataBeats)._2,
+    data = Vec((0 until nastiDataBeats) map (i =>
+      io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count))
   // Write Response
   io.nasti.b.ready := Bool(true)
 
@@ -213,16 +208,15 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
   /* FSM for memory requests */
   switch(state_r) {
     is(st_idle) {
-      state_r := 
-        Mux(io.mem.req_cmd.valid && !io.mem.req_cmd.bits.rw, st_read,
-        Mux(io.mem.req_cmd.valid && io.mem.req_cmd.bits.rw && io.mem.req_data.valid, 
-            st_start_write, st_idle))
+      state_r :=
+        Mux(io.mem.req_cmd.valid && io.mem.req_cmd.bits.rw && io.mem.req_data.valid, st_start_write,
+        Mux(io.mem.req_cmd.valid && !io.mem.req_cmd.bits.rw, st_read, st_idle))
     }
     is(st_read) {
       state_r := Mux(io.nasti.ar.ready, st_idle, st_read)
     }
     is(st_start_write) {
-      state_r := Mux(io.nasti.aw.ready, st_write, st_start_write)
+      state_r := Mux(io.nasti.aw.ready && io.mem.req_data.valid, st_write, st_start_write)
     }
     is(st_write) {
       state_r := Mux(io.nasti.w.bits.last, st_idle, st_write)
@@ -230,9 +224,9 @@ class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasN
   }
 }
 
-class NastiShimIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
-  val mnasti = (new NastiIO()(p alter Map(NastiType -> NastiMaster))).flip
-  val snasti =  new NastiIO()(p alter Map(NastiType -> NastiSlave))
+class NastiShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+  val master = (new NastiIO()(p alter Map(NastiType -> NastiMaster))).flip
+  val slave  =  new NastiIO()(p alter Map(NastiType -> NastiSlave))
 }
 
 class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFModule()(p) {
@@ -277,7 +271,7 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   out_bufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
 
   // Master Connection
-  master.io.nasti <> io.mnasti
+  master.io.nasti <> io.master
   master.io.step.ready := !tickCounter.orR && !tockCounter.orR
   when(master.io.step.fire()) { 
     tickCounter := master.io.step.bits 
@@ -316,7 +310,7 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   sim.io.daisy.cntr.out.ready := master.io.daisy.cntr.out.ready
 
   // Slave Connection
-  slave.io.nasti <> io.snasti
+  slave.io.nasti <> io.slave
   slave.io.mem <> arb.io.out
 
   // Memory Connection
