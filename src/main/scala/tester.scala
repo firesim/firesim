@@ -293,48 +293,48 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   protected[strober] val channelOff = log2Up(c.sim.channelWidth)
  
   private val mem = Array.fill(1<<24){0.toByte} // size = 16MB
-  private val lineOffset = log2Up(c.slave.lineSize)
+  private val lineOffset = log2Up(c.slave.cacheBlockSize)
   private val addrOffset = log2Up(c.master.nastiXAddrBits/8)
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
     addEvent(new MuteEvent())
     do {
-      _poke(c.io.mnasti.aw.bits.addr, addr << addrOffset)
-      _poke(c.io.mnasti.aw.bits.id, 0)
-      _poke(c.io.mnasti.aw.valid, 1)
-      _poke(c.io.mnasti.w.bits.data, data)
-      _poke(c.io.mnasti.w.valid, 1)
+      _poke(c.io.master.aw.bits.addr, addr << addrOffset)
+      _poke(c.io.master.aw.bits.id, 0)
+      _poke(c.io.master.aw.valid, 1)
+      _poke(c.io.master.w.bits.data, data)
+      _poke(c.io.master.w.valid, 1)
       takeStep
-    } while (!_peek(c.io.mnasti.aw.ready) || !_peek(c.io.mnasti.w.ready))
+    } while (!_peek(c.io.master.aw.ready) || !_peek(c.io.master.w.ready))
 
     do {
-      _poke(c.io.mnasti.aw.valid, 0)
-      _poke(c.io.mnasti.w.valid, 0)
+      _poke(c.io.master.aw.valid, 0)
+      _poke(c.io.master.w.valid, 0)
       takeStep
-    } while(!_peek(c.io.mnasti.b.valid))
+    } while(!_peek(c.io.master.b.valid))
 
-    assert(_peek(c.io.mnasti.b.bits.id) == 0)
-    _poke(c.io.mnasti.b.ready, 1)
+    assert(_peek(c.io.master.b.bits.id) == 0)
+    _poke(c.io.master.b.ready, 1)
     addEvent(new UnmuteEvent())
   }
 
   protected[strober] def peekChannel(addr: Int) = {
     addEvent(new MuteEvent())
-    while (!_peek(c.io.mnasti.ar.ready)) takeStep
+    while (!_peek(c.io.master.ar.ready)) takeStep
 
-    _poke(c.io.mnasti.ar.bits.addr, addr << addrOffset)
-    _poke(c.io.mnasti.ar.bits.id, 0)
-    _poke(c.io.mnasti.ar.valid, 1)
+    _poke(c.io.master.ar.bits.addr, addr << addrOffset)
+    _poke(c.io.master.ar.bits.id, 0)
+    _poke(c.io.master.ar.valid, 1)
     takeStep
-    _poke(c.io.mnasti.ar.valid, 0)
+    _poke(c.io.master.ar.valid, 0)
  
-    while (!_peek(c.io.mnasti.r.valid)) takeStep
+    while (!_peek(c.io.master.r.valid)) takeStep
       
-    val data = _peek(c.io.mnasti.r.bits.data)
-    assert(_peek(c.io.mnasti.r.bits.id) == 0)
-    _poke(c.io.mnasti.r.ready, 1)
+    val data = _peek(c.io.master.r.bits.data)
+    assert(_peek(c.io.master.r.bits.id) == 0)
+    _poke(c.io.master.r.ready, 1)
     takeStep
-    _poke(c.io.mnasti.r.ready, 0)
+    _poke(c.io.master.r.ready, 0)
     addEvent(new UnmuteEvent())
     data
   }
@@ -344,7 +344,7 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
     pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.tag), 0)
     pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.rw), 0)
     addEvent(new MuteEvent())
-    do { takeStep } while (!_peek(c.io.snasti.ar.valid))
+    do { takeStep } while (!_peek(c.io.slave.ar.valid))
     addEvent(new UnmuteEvent())
     tickMem
 
@@ -368,13 +368,13 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
       pokeId(id, chunk(c.mem.req_data.bits.data), data(i))
       if (i == 0) {
         addEvent(new MuteEvent())
-        do { takeStep } while (!_peek(c.io.snasti.aw.valid))
+        do { takeStep } while (!_peek(c.io.slave.aw.valid))
         addEvent(new UnmuteEvent())
         tickMem
       }
       for (j <- 0 until c.slave.nastiDataBeats) {
         addEvent(new MuteEvent())
-        do { takeStep } while (!_peek(c.io.snasti.w.valid))
+        do { takeStep } while (!_peek(c.io.slave.w.valid))
         addEvent(new UnmuteEvent())
         tickMem
       }
@@ -386,54 +386,54 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   private def tickMem {
     addEvent(new MuteEvent())
     wr_info match {
-      case Some(MemWriteInfo(aw, len, size, k)) if _peek(c.io.snasti.w.valid) =>
+      case Some(MemWriteInfo(aw, len, size, k)) if _peek(c.io.slave.w.valid) =>
         // handle write data
-        val data = _peek(c.io.snasti.w.bits.data)
+        val data = _peek(c.io.slave.w.bits.data)
         addEvent(new NastiWriteEvent(aw+k*size, data))
         (0 until size) foreach (i => mem(aw+k*size+i) = ((data >> (8*i)) & 0xff).toByte)
-        _poke(c.io.snasti.w.ready, 1)
-        val last = _peek(c.io.snasti.w.bits.last)
+        _poke(c.io.slave.w.ready, 1)
+        val last = _peek(c.io.slave.w.bits.last)
         takeStep
-        _poke(c.io.snasti.w.ready, 0)
+        _poke(c.io.slave.w.ready, 0)
         assert(k < len || last != 0 && k == len)
         wr_info = if (last) None else Some(new MemWriteInfo(aw, len, size, k+1))
-      case None if _peek(c.io.snasti.ar.valid) =>
+      case None if _peek(c.io.slave.aw.valid) =>
+        // handle write address
+        wr_info = Some(new MemWriteInfo(
+          _peek(c.io.slave.ar.bits.addr).toInt & 0xffffff,
+          _peek(c.io.slave.aw.bits.len).toInt,
+          1 << _peek(c.io.slave.aw.bits.size).toInt, 0))
+        _poke(c.io.slave.aw.ready, 1)
+        takeStep
+        _poke(c.io.slave.aw.ready, 0)
+      case None if _peek(c.io.slave.ar.valid) =>
         // handle read address
-        val ar = _peek(c.io.snasti.ar.bits.addr).toInt & 0xffffff
-        val tag = _peek(c.io.snasti.ar.bits.id)
-        val len = _peek(c.io.snasti.ar.bits.len).toInt
-        val size = 1 << _peek(c.io.snasti.ar.bits.size).toInt
-        _poke(c.io.snasti.ar.ready, 1)
-        do { takeStep } while (!_peek(c.io.snasti.r.ready))
-        _poke(c.io.snasti.ar.ready, 0)
+        val ar = _peek(c.io.slave.ar.bits.addr).toInt & 0xffffff
+        val tag = _peek(c.io.slave.ar.bits.id)
+        val len = _peek(c.io.slave.ar.bits.len).toInt
+        val size = 1 << _peek(c.io.slave.ar.bits.size).toInt
+        _poke(c.io.slave.ar.ready, 1)
+        do { takeStep } while (!_peek(c.io.slave.r.ready))
+        _poke(c.io.slave.ar.ready, 0)
         // handle read data
         for (k <- 0 to len) {
           val data = ((0 until size) foldLeft BigInt(0))((res, i) => 
             res | BigInt(mem(ar+k*size+i) & 0xff) << (8*i))
           addEvent(new NastiReadEvent(ar+k*size, data))
-          _poke(c.io.snasti.r.bits.data, data)
-          _poke(c.io.snasti.r.bits.id, tag)
-          _poke(c.io.snasti.r.bits.last, 1)
-          _poke(c.io.snasti.r.valid, 1)
-          do { takeStep } while (!_peek(c.io.snasti.r.ready))
-          _poke(c.io.snasti.r.bits.last, 0)
-          _poke(c.io.snasti.r.valid, 0)
+          _poke(c.io.slave.r.bits.data, data)
+          _poke(c.io.slave.r.bits.id, tag)
+          _poke(c.io.slave.r.bits.last, 1)
+          _poke(c.io.slave.r.valid, 1)
+          do { takeStep } while (!_peek(c.io.slave.r.ready))
+          _poke(c.io.slave.r.bits.last, 0)
+          _poke(c.io.slave.r.valid, 0)
         }
-      case None if _peek(c.io.snasti.aw.valid) =>
-        // handle write address
-        wr_info = Some(new MemWriteInfo(
-          _peek(c.io.snasti.ar.bits.addr).toInt & 0xffffff,
-          _peek(c.io.snasti.aw.bits.len).toInt,
-          1 << _peek(c.io.snasti.aw.bits.size).toInt, 0))
-        _poke(c.io.snasti.aw.ready, 1)
-        takeStep
-        _poke(c.io.snasti.aw.ready, 0)
       case _ =>
-        _poke(c.io.snasti.ar.ready, 0)
-        _poke(c.io.snasti.r.bits.last, 0)
-        _poke(c.io.snasti.r.valid, 0)
-        _poke(c.io.snasti.aw.ready, 0)
-        _poke(c.io.snasti.w.ready, 0)
+        _poke(c.io.slave.ar.ready, 0)
+        _poke(c.io.slave.r.bits.last, 0)
+        _poke(c.io.slave.r.valid, 0)
+        _poke(c.io.slave.aw.ready, 0)
+        _poke(c.io.slave.w.ready, 0)
     }
     addEvent(new UnmuteEvent())
   }

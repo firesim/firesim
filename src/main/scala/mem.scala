@@ -99,9 +99,9 @@ class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
   latency_buf.reset := reset || io.latency.fire()
 
   io.sim_mem.req_cmd.target.ready := Bool(true)
-  io.sim_mem.req_cmd.ready     := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
-                                  io.sim_mem.req_data.valid && req_data_buf.io.enq.ready &&
-                                 (latency_buf.io.deq.valid && counter === latency || !latency.orR)
+  io.sim_mem.req_cmd.ready := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
+                              io.sim_mem.req_data.valid && req_data_buf.io.enq.ready &&
+                             (latency_buf.io.deq.valid && counter === latency || !latency.orR)
   req_cmd_buf.io.enq.bits.addr := io.sim_mem.req_cmd.target.bits.addr
   req_cmd_buf.io.enq.bits.tag  := io.sim_mem.req_cmd.target.bits.tag
   req_cmd_buf.io.enq.bits.rw   := io.sim_mem.req_cmd.target.bits.rw
@@ -115,16 +115,15 @@ class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
   io.sim_mem.resp.target.bits.data := Mux(latency.orR, latency_buf.io.deq.bits.bits.data, resp_buf.io.deq.bits.data)
   io.sim_mem.resp.target.bits.tag  := Mux(latency.orR, latency_buf.io.deq.bits.bits.tag, resp_buf.io.deq.bits.tag)
   io.sim_mem.resp.target.valid     := Mux(latency.orR, latency_buf.io.deq.bits.valid, resp_buf.io.deq.valid)
-  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (
-    resp_buf.io.deq.valid && latency_buf.io.deq.valid || 
-    io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
-  latency_buf.io.deq.ready := latency_buf.io.deq.valid && io.sim_mem.resp.valid && latency.orR && counter === latency
 
+  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (resp_buf.io.enq.fire() || 
+    io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
+  latency_buf.io.deq.ready := io.sim_mem.resp.valid && counter === latency
   latency_buf.io.enq.bits.bits.data := resp_buf.io.deq.bits.data
   latency_buf.io.enq.bits.bits.tag  := resp_buf.io.deq.bits.tag
   latency_buf.io.enq.bits.valid     := resp_buf.io.deq.valid
-  latency_buf.io.enq.valid := io.sim_mem.resp.valid && latency_buf.io.deq.valid && latency.orR || counter =/= latency
-  resp_buf.io.deq.ready    := io.sim_mem.resp.ready && io.sim_mem.resp.target.ready && (!latency.orR || counter === latency)
+  latency_buf.io.enq.valid := latency_buf.io.deq.ready && latency.orR || counter =/= latency
+  resp_buf.io.deq.ready    := latency_buf.io.deq.ready
 
   io.host_mem.req_cmd  <> req_cmd_buf.io.deq
   io.host_mem.req_data <> req_data_buf.io.deq
@@ -139,30 +138,28 @@ class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
   val s_READY :: s_READ :: s_WRITE :: Nil = Enum(UInt(), 3)
   val state = RegInit(s_READY)
   val chosen = RegInit(UInt(n-1))
-  val (read_count, read_wrap_out) = 
-    Counter(io.out.resp.fire() && state === s_READ, mifDataBeats)
-  val (write_count, write_wrap_out) = 
-    Counter(io.out.req_data.fire() && state === s_WRITE, mifDataBeats)
+  val (resp_cnt, resp_wrap) = Counter(io.out.resp.fire(),     mifDataBeats)
+  val (data_cnt, data_wrap) = Counter(io.out.req_data.fire(), mifDataBeats)
 
-  io.out.req_cmd.bits := io.ins(chosen).req_cmd.bits
-  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
+  io.out.req_cmd.bits  := io.ins(chosen).req_cmd.bits
+  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid
   io.ins foreach (_.req_cmd.ready := Bool(false))
   io.ins.zipWithIndex foreach { case (in, i) => 
-    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
+    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i) && state === s_READY
   }
 
-  io.out.req_data.bits := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ
+  io.out.req_data.bits  := io.ins(chosen).req_data.bits
+  io.out.req_data.valid := io.ins(chosen).req_data.valid
   io.ins foreach (_.req_data.ready := Bool(false))
   io.ins.zipWithIndex foreach {case (in, i) => 
-    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) 
+    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) && state === s_WRITE
   }
 
   io.ins.zipWithIndex foreach {case (in, i) => 
-    in.resp.bits := io.out.resp.bits 
-    in.resp.valid := io.out.resp.valid && chosen === UInt(i) 
+    in.resp.bits  := io.out.resp.bits 
+    in.resp.valid := io.out.resp.valid && chosen === UInt(i) && state === s_READ
   }
-  io.out.resp.ready := io.ins(chosen).resp.ready 
+  io.out.resp.ready := io.ins(chosen).resp.ready
 
   switch(state) {
     is(s_READY) {
@@ -173,10 +170,10 @@ class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
       }
     }
     is(s_READ) {
-      state := Mux(read_wrap_out, s_READY, s_READ)
+      state := Mux(resp_wrap, s_READY, s_READ)
     }
     is(s_WRITE) {
-      state := Mux(write_wrap_out, s_READY, s_WRITE)
+      state := Mux(data_wrap, s_READY, s_WRITE)
     }
   }
 }
