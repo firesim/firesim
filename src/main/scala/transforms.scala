@@ -335,8 +335,8 @@ object transforms {
     }
   }
 
-  private val dumpMaps: Module => Unit = {
-    case w: NastiShim[SimNetwork] if Driver.chiselConfigDump => 
+  private def dumpMaps(c: Module) = c match {
+    case w: NastiShim[SimNetwork] => 
       object MapType extends Enumeration { val IoIn, IoOut, InTr, OutTr = Value }
       ChiselError.info("[Strober Transforms] dump io & mem mapping")
       def dump(map_t: MapType.Value, arg: (Bits, Int)) = arg match { 
@@ -348,7 +348,7 @@ object transforms {
       res append (w.master.inTrMap  map {dump(MapType.InTr,  _)} mkString "")
       res append (w.master.outTrMap map {dump(MapType.OutTr, _)} mkString "")
 
-      val file = Driver.createOutputFile(targetName + ".map")
+      val file = Driver.createOutputFile(s"${targetName}.map")
       try {
         file write res.result
       } finally {
@@ -402,8 +402,8 @@ object transforms {
     }
 
     c match { 
-      case _: NastiShim[SimNetwork] if Driver.chiselConfigDump =>
-        val file = Driver.createOutputFile(targetName + ".chain")
+      case _: NastiShim[SimNetwork] =>
+        val file = Driver.createOutputFile(s"${targetName}.chain")
         try {
           file write res.result
         } finally {
@@ -414,8 +414,8 @@ object transforms {
     }
   }
 
-  private val dumpConsts: Module => Unit = {
-    case w: NastiShim[SimNetwork] if Driver.chiselConfigDump => 
+  private def dumpConsts(c: Module) = c match {
+    case w: NastiShim[SimNetwork] =>
       ChiselError.info("[Strober Transforms] dump constant header")
       def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
       val sb = new StringBuilder
@@ -454,7 +454,7 @@ object transforms {
       sb append s"""const unsigned CHAIN_LEN[CHAIN_NUM]  = {${chain_len}};\n"""
       sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
-      val file = Driver.createOutputFile(targetName + "-const.h")
+      val file = Driver.createOutputFile(s"${targetName}-const.h")
       try {
         file.write(sb.result)
       } finally {
