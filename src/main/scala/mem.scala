@@ -115,14 +115,15 @@ class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
   io.sim_mem.resp.target.bits.tag  := Mux(latency.orR, latency_buf.io.deq.bits.bits.tag, resp_buf.io.deq.bits.tag)
   io.sim_mem.resp.target.valid     := Mux(latency.orR, latency_buf.io.deq.bits.valid, resp_buf.io.deq.valid)
 
-  io.sim_mem.resp.valid := io.sim_mem.resp.ready && (resp_buf.io.enq.fire() || 
+  io.sim_mem.resp.valid := io.sim_mem.resp.ready && 
+    (resp_buf.io.enq.fire() || resp_buf.io.deq.valid && io.sim_mem.resp.target.ready ||
     io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
   latency_buf.io.deq.ready := io.sim_mem.resp.valid && counter === latency
   latency_buf.io.enq.bits.bits.data := resp_buf.io.deq.bits.data
   latency_buf.io.enq.bits.bits.tag  := resp_buf.io.deq.bits.tag
   latency_buf.io.enq.bits.valid     := resp_buf.io.deq.valid
-  latency_buf.io.enq.valid := latency_buf.io.deq.ready && latency.orR || counter =/= latency
-  resp_buf.io.deq.ready    := latency_buf.io.deq.ready
+  latency_buf.io.enq.valid := latency_buf.io.deq.fire() && latency.orR || counter =/= latency
+  resp_buf.io.deq.ready    := latency_buf.io.deq.ready && io.sim_mem.resp.target.ready
 
   io.host_mem.req_cmd  <> req_cmd_buf.io.deq
   io.host_mem.req_data <> req_data_buf.io.deq
