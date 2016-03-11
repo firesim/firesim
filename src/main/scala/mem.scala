@@ -32,7 +32,6 @@ class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
   val resp     = new SimDecoupledIO(new MemResp).flip
 
   def <>(mIo: MemIO, wIo: SimWrapperIO) {
-    val ins = wIo.inMap filter (SimMemIO contains _._1) flatMap wIo.getIns
     // Target Connection
     def targetConnect[T <: Bits](target: T, wire: T) = wire match {
       case _: Bool if wire.dir == OUTPUT => target := wIo.getOuts(wire).head.bits
@@ -142,22 +141,22 @@ class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
   val (data_cnt, data_wrap) = Counter(io.out.req_data.fire(), mifDataBeats)
 
   io.out.req_cmd.bits  := io.ins(chosen).req_cmd.bits
-  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid
+  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
   io.ins foreach (_.req_cmd.ready := Bool(false))
   io.ins.zipWithIndex foreach { case (in, i) => 
-    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i) && state === s_READY
+    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
   }
 
   io.out.req_data.bits  := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid
+  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ
   io.ins foreach (_.req_data.ready := Bool(false))
   io.ins.zipWithIndex foreach {case (in, i) => 
-    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i) && state === s_WRITE
+    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i)
   }
 
   io.ins.zipWithIndex foreach {case (in, i) => 
     in.resp.bits  := io.out.resp.bits 
-    in.resp.valid := io.out.resp.valid && chosen === UInt(i) && state === s_READ
+    in.resp.valid := io.out.resp.valid && chosen === UInt(i)
   }
   io.out.resp.ready := io.ins(chosen).resp.ready
 
