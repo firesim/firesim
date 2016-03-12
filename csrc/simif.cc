@@ -312,7 +312,8 @@ sample_t* simif_t::read_snapshot() {
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
     for (size_t k = 0 ; k < CHAIN_LOOP[t]; k++) {
-      if (type == SRAM_CHAIN) poke_channel(SRAM_RESTART_ADDR, 0);
+      if (type == SRAM0_CHAIN) poke_channel(SRAM0_RESTART_ADDR, 0);
+      if (type == SRAM0_CHAIN) poke_channel(SRAM1_RESTART_ADDR, 0);
       for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
         snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
       }

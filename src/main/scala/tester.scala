@@ -230,9 +230,17 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T,
     addEvent(new MuteEvent())
     val chain = new StringBuilder
     for (k <- 0 until chainLoop(t) ; i <- 0 until chainLen(t)) {
-      if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 1)
+      t match {
+        case ChainType.SRAM0 => _poke(c.io.daisy.sram(0).restart, 1)
+        case ChainType.SRAM1 => _poke(c.io.daisy.sram(1).restart, 1)
+        case _ =>
+      }
       while(!_peek(c.io.daisy(t).out.valid)) takeStep
-      if (t == ChainType.SRAM) _poke(c.io.daisy.sram.restart, 0)
+      t match {
+        case ChainType.SRAM0 => _poke(c.io.daisy.sram(0).restart, 0)
+        case ChainType.SRAM1 => _poke(c.io.daisy.sram(1).restart, 0)
+        case _ =>
+      }
       chain append intToBin(_peek(c.io.daisy(t).out.bits), c.daisyWidth)
       _poke(c.io.daisy(t).out.ready, 1)
       takeStep
@@ -479,7 +487,11 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   protected[strober] def readChain(t: ChainType.Value) = {
     val chain = new StringBuilder
     for (k <- 0 until chainLoop(t)) {
-      if (t == ChainType.SRAM) pokeChannel(c.master.sramRestartAddr, 0)
+      t match {
+        case ChainType.SRAM0 => pokeChannel(c.master.sram0RestartAddr, 0)
+        case ChainType.SRAM1 => pokeChannel(c.master.sram1RestartAddr, 0)
+        case _ =>
+      }
       for (i <- 0 until chainLen(t)) {
         chain append intToBin(peekChannel(c.master.snapOutMap(t)), c.sim.daisyWidth)
       }

@@ -18,10 +18,11 @@ case class Count(node: Node, value: BigInt) extends SampleInst
 
 object Sample {
   private val chains = Map(
-    ChainType.Trs  -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
-    ChainType.Regs -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
-    ChainType.SRAM -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
-    ChainType.Cntr -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
+    ChainType.Trace -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
+    ChainType.Regs  -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
+    ChainType.SRAM0 -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
+    ChainType.SRAM1 -> ArrayBuffer[(Option[Node], Int, Option[Int])](),
+    ChainType.Cntr  -> ArrayBuffer[(Option[Node], Int, Option[Int])]()
   )
 
   def clear {
@@ -38,11 +39,13 @@ object Sample {
         val end = math.min(start + width, snap.length)
         val value = BigInt(snap.substring(start, end), 2)
         signal match {
-          case Some(p) if t == ChainType.Trs => 
+          case Some(p) if t == ChainType.Trace => 
             sample addForce Force(p, value)
           case Some(p) if t == ChainType.Regs => 
             sample addCmd Load(p, value, idx)
-          case Some(p) if t == ChainType.SRAM && i < idx.get =>
+          case Some(p) if t == ChainType.SRAM0 && i < idx.get =>
+            sample addCmd Load(p, value, Some(i))
+          case Some(p) if t == ChainType.SRAM1 && i < idx.get =>
             sample addCmd Load(p, value, Some(i))
           case Some(p) if t == ChainType.Cntr =>
             sample addCmd Count(p, value)
@@ -53,7 +56,7 @@ object Sample {
       // assert(next % daisyWidth == 0)
       next
     }
-    if (t == ChainType.Trs) sample.dumpForces
+    if (t == ChainType.Trace) sample.dumpForces
     idx
   }
 
