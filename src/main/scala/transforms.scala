@@ -14,25 +14,29 @@ object transforms {
   private val noSnap    = HashSet[Module]()
 
   private val chains = Map(
-    ChainType.Trs  -> HashMap[Module, ArrayBuffer[Node]](),
-    ChainType.Regs -> HashMap[Module, ArrayBuffer[Node]](),
-    ChainType.SRAM -> HashMap[Module, ArrayBuffer[Node]](),
-    ChainType.Cntr -> HashMap[Module, ArrayBuffer[Node]]())
+    ChainType.Trace -> HashMap[Module, ArrayBuffer[Node]](),
+    ChainType.Regs  -> HashMap[Module, ArrayBuffer[Node]](),
+    ChainType.SRAM0 -> HashMap[Module, ArrayBuffer[Node]](),
+    ChainType.SRAM1 -> HashMap[Module, ArrayBuffer[Node]](),
+    ChainType.Cntr  -> HashMap[Module, ArrayBuffer[Node]]())
   private[strober] val chainLen = HashMap(
-    ChainType.Trs  -> 0,
-    ChainType.Regs -> 0,
-    ChainType.SRAM -> 0,
-    ChainType.Cntr -> 0)
+    ChainType.Trace -> 0,
+    ChainType.Regs  -> 0,
+    ChainType.SRAM0 -> 0,
+    ChainType.SRAM1 -> 0,
+    ChainType.Cntr  -> 0)
   private[strober] val chainLoop = HashMap(
-    ChainType.Trs  -> 0,
-    ChainType.Regs -> 0,
-    ChainType.SRAM -> 0,
-    ChainType.Cntr -> 0)
+    ChainType.Trace -> 0,
+    ChainType.Regs  -> 0,
+    ChainType.SRAM0 -> 0,
+    ChainType.SRAM1 -> 0,
+    ChainType.Cntr  -> 0)
   private[strober] val chainName = Map(
-    ChainType.Trs  -> "TRACE_CHAIN",
-    ChainType.Regs -> "REG_CHAIN",
-    ChainType.SRAM -> "SRAM_CHAIN",
-    ChainType.Cntr -> "CNTR_CHAIN")
+    ChainType.Trace -> "TRACE_CHAIN",
+    ChainType.Regs  -> "REG_CHAIN",
+    ChainType.SRAM0 -> "SRAM0_CHAIN",
+    ChainType.SRAM1 -> "SRAM1_CHAIN",
+    ChainType.Cntr  -> "CNTR_CHAIN")
   
   private[strober] val inMap = LinkedHashMap[Bits, Int]()
   private[strober] val outMap = LinkedHashMap[Bits, Int]()
@@ -45,9 +49,10 @@ object transforms {
       Driver.backend.transforms ++= Seq(
         Driver.backend.inferAll,
         fame1Transforms,
-        addDaisyChains(ChainType.Trs),
+        addDaisyChains(ChainType.Trace),
         addDaisyChains(ChainType.Regs),
-        addDaisyChains(ChainType.SRAM),
+        addDaisyChains(ChainType.SRAM0),
+        addDaisyChains(ChainType.SRAM1),
         addDaisyChains(ChainType.Cntr),
         dumpMaps,
         dumpChains,
@@ -97,7 +102,7 @@ object transforms {
     (m.wires ++ Array((m.reset.name, m.reset))) foreach {
       case (name, io) if io.dir == INPUT =>
         // Input trace is captured to recover internal state
-        val chain = chains(ChainType.Trs) getOrElseUpdate (m, ArrayBuffer[Node]())
+        val chain = chains(ChainType.Trace) getOrElseUpdate (m, ArrayBuffer[Node]())
         val trace = List.fill(latency){Reg(io)}
         trace.zipWithIndex foreach {case (reg, i) =>
           reg := (if (i == 0) io else trace(i-1))
@@ -109,7 +114,7 @@ object transforms {
       case (name, io) if io.dir == OUTPUT => 
         // TODO: Should we handle it?
     }
-    chainLoop(ChainType.Trs) = 1
+    chainLoop(ChainType.Trace) = 1
     noSnap ++= collect(m)
   }
  
@@ -149,12 +154,13 @@ object transforms {
   private def fame1Transforms(c: Module) {
     ChiselError.info("[Strober Transforms] connect control signals")
 
-    def connectSRAMRestart(m: Module): Unit = m.parent match {
-      case p if daisyPins contains p =>
-        if (p != c && daisyPins(p).sram.restart.inputs.isEmpty)
-          connectSRAMRestart(p)
-        daisyPins(m).sram.restart := daisyPins(p).sram.restart
-      case _ =>
+    def connectSRAMRestart(m: Module, i: Int) {
+      val p = m.parent
+      if (daisyPins contains p) {
+        if (p != c && daisyPins(p).sram(i).restart.inputs.isEmpty)
+          connectSRAMRestart(p, i)
+        daisyPins(m).sram(i).restart := daisyPins(p).sram(i).restart
+      }
     }
 
     wrappers foreach { w =>
@@ -188,16 +194,17 @@ object transforms {
             if (!noSnap(m)) {
               if (mem.seqRead) {
                 val read = findSRAMRead(mem)._2
+                val sramType = if (mem.size >= (1 << 9)) ChainType.SRAM1 else ChainType.SRAM0
                 chains(ChainType.Regs)(m) += read
-                chains(ChainType.SRAM)(m) += mem
-                chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)
+                chains(sramType)(m) += mem
+                chainLoop(sramType) = math.max(chainLoop(sramType), mem.size)
                 nameMap(read) = getPath(mem) 
               } else if (mem.size > 16 && mem.needWidth > 32) { 
                 // handle big regfiles like srams
-                chains(ChainType.SRAM)(m) += mem
-                chainLoop(ChainType.SRAM) = math.max(chainLoop(ChainType.SRAM), mem.size)             
+                chains(ChainType.SRAM0)(m) += mem
+                chainLoop(ChainType.SRAM0) = math.max(chainLoop(ChainType.SRAM0), mem.size) 
               } else (0 until mem.size) map (UInt(_)) foreach {idx =>
-                val read = new MemRead(mem, idx) 
+                val read = new MemRead(mem, idx)
                 chains(ChainType.Regs)(m) += read
                 read.infer
               }
@@ -216,7 +223,8 @@ object transforms {
           case _ =>
         }
 
-        if (!chains(ChainType.SRAM)(m).isEmpty) connectSRAMRestart(m)
+        if (!chains(ChainType.SRAM0)(m).isEmpty) connectSRAMRestart(m, 0)
+        if (!chains(ChainType.SRAM1)(m).isEmpty) connectSRAMRestart(m, 1)
       }
     }
   }
@@ -259,7 +267,7 @@ object transforms {
     }
 
     def insertSRAMChain(m: Module, daisyWidth: Int, p: Parameters) = {
-      val chain = (chains(ChainType.SRAM)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
+      val chain = (chains(chainType)(m) foldLeft (None: Option[SRAMChain])){case (lastChain, sram: Mem[_]) =>
         val (addr, read) = if (sram.seqRead) findSRAMRead(sram) else {
           val addr = m.addNode(Reg(UInt(width=log2Up(sram.size))))
           val read = m.addNode(new MemRead(sram, addr))
@@ -280,12 +288,15 @@ object transforms {
           high - daisyWidth
         }
         lastChain match {
-          case None => daisyPins(m).sram.out <> daisy.io.dataIo.out
+          case None => daisyPins(m)(chainType).out <> daisy.io.dataIo.out
           case Some(last) => last.io.dataIo.in <> daisy.io.dataIo.out
         }
         daisy.reset    := resets getOrElseUpdate (m, connectResets(m)) 
         daisy.io.stall := !fires(m)
-        daisy.io.restart := daisyPins(m).sram.restart
+        daisy.io.restart := (chainType match {
+          case ChainType.SRAM0 => daisyPins(m).sram(0).restart
+          case ChainType.SRAM1 => daisyPins(m).sram(1).restart
+        })
         daisy.io.addrIo.in := UInt(addr)
         // Connect daisy addr to SRAM addr
         if (sram.seqRead) {
@@ -306,8 +317,9 @@ object transforms {
 
     for (w <- wrappers ; m <- comps(w)) {
       val daisy = chainType match {
-        case ChainType.SRAM => insertSRAMChain(m, w.daisyWidth, w.p)
-        case _              => insertRegChain(m, w.daisyWidth, w.p)
+        case ChainType.SRAM0 => insertSRAMChain(m, w.daisyWidth, w.p)
+        case ChainType.SRAM1 => insertSRAMChain(m, w.daisyWidth, w.p)
+        case _               => insertRegChain(m, w.daisyWidth, w.p)
       }
       // Filter children who have daisy chains
       (m.children filter (hasChain(_)) foldLeft (None: Option[Module])){case (prev, child) =>
@@ -390,14 +402,14 @@ object transforms {
           }
           Sample.addToChain(t, node, width, off) // for tester
           res append dump(t, node map (x => retimingMap getOrElse (x, x)), width, off)
-          if (t == ChainType.SRAM) {
+          if (t == ChainType.SRAM0 || t == ChainType.SRAM1) {
             addPad(t, cw, dw)
             (0, 0)
           } else {
             (cw, dw)
           }
         }
-        if (t != ChainType.SRAM) addPad(t, cw, dw)
+        if (t != ChainType.SRAM0 && t != ChainType.SRAM1) addPad(t, cw, dw)
       } 
     }
 
@@ -420,26 +432,27 @@ object transforms {
       def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
       val sb = new StringBuilder
       val consts = List(
-        "SAMPLE_NUM"        -> w.sim.sampleNum,
-        "TRACE_MAX_LEN"     -> w.sim.traceMaxLen,
-        "DAISY_WIDTH"       -> w.sim.daisyWidth,
-        "CHANNEL_OFFSET"    -> log2Up(w.sim.channelWidth),
-        "LINE_OFFSET"       -> log2Up(w.slave.cacheBlockSize),
-        "POKE_SIZE"         -> w.master.io.ins.size,
-        "PEEK_SIZE"         -> w.master.io.outs.size,
-        "RESET_ADDR"        -> w.master.resetAddr,
-        "SRAM_RESTART_ADDR" -> w.master.sramRestartAddr,
-        "TRACE_LEN_ADDR"    -> w.master.traceLenAddr,
-        "MEM_DATA_BITS"     -> w.mifDataBits,
-        "MEM_DATA_BEATS"    -> w.mifDataBeats,
-        "MEM_DATA_CHUNK"    -> w.sim.io.chunk(w.mem.resp.bits.data),
-        "MEM_CYCLE_ADDR"    -> w.master.memCycleAddr,
-        "MEM_REQ_ADDR"      -> w.master.reqMap(w.mem.req_cmd.bits.addr),
-        "MEM_REQ_TAG"       -> w.master.reqMap(w.mem.req_cmd.bits.tag),
-        "MEM_REQ_RW"        -> w.master.reqMap(w.mem.req_cmd.bits.rw),
-        "MEM_REQ_DATA"      -> w.master.reqMap(w.mem.req_data.bits.data),
-        "MEM_RESP_DATA"     -> w.master.respMap(w.mem.resp.bits.data),
-        "MEM_RESP_TAG"      -> w.master.respMap(w.mem.resp.bits.tag)
+        "SAMPLE_NUM"         -> w.sim.sampleNum,
+        "TRACE_MAX_LEN"      -> w.sim.traceMaxLen,
+        "DAISY_WIDTH"        -> w.sim.daisyWidth,
+        "CHANNEL_OFFSET"     -> log2Up(w.sim.channelWidth),
+        "LINE_OFFSET"        -> log2Up(w.slave.cacheBlockSize),
+        "POKE_SIZE"          -> w.master.io.ins.size,
+        "PEEK_SIZE"          -> w.master.io.outs.size,
+        "RESET_ADDR"         -> w.master.resetAddr,
+        "SRAM0_RESTART_ADDR" -> w.master.sram0RestartAddr,
+        "SRAM1_RESTART_ADDR" -> w.master.sram1RestartAddr,
+        "TRACE_LEN_ADDR"     -> w.master.traceLenAddr,
+        "MEM_DATA_BITS"      -> w.mifDataBits,
+        "MEM_DATA_BEATS"     -> w.mifDataBeats,
+        "MEM_DATA_CHUNK"     -> w.sim.io.chunk(w.mem.resp.bits.data),
+        "MEM_CYCLE_ADDR"     -> w.master.memCycleAddr,
+        "MEM_REQ_ADDR"       -> w.master.reqMap(w.mem.req_cmd.bits.addr),
+        "MEM_REQ_TAG"        -> w.master.reqMap(w.mem.req_cmd.bits.tag),
+        "MEM_REQ_RW"         -> w.master.reqMap(w.mem.req_cmd.bits.rw),
+        "MEM_REQ_DATA"       -> w.master.reqMap(w.mem.req_data.bits.data),
+        "MEM_RESP_DATA"      -> w.master.respMap(w.mem.resp.bits.data),
+        "MEM_RESP_TAG"       -> w.master.respMap(w.mem.resp.bits.tag)
       )
       val chain_name = ChainType.values.toList map chainName mkString ","
       val chain_addr = ChainType.values.toList map w.master.snapOutMap mkString ","

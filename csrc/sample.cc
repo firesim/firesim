@@ -37,7 +37,9 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
           add_force(new force_t(signal, value)); 
         } else if (type == REG_CHAIN) {
           add_cmd(new load_t(signal, value, index));
-        } else if (type == SRAM_CHAIN && ((ssize_t) i) < index) {
+        } else if (type == SRAM0_CHAIN && ((ssize_t) i) < index) {
+          add_cmd(new load_t(signal, value, i));
+        } else if (type == SRAM1_CHAIN && ((ssize_t) i) < index) {
           add_cmd(new load_t(signal, value, i));
         } else if (type == CNTR_CHAIN) {
           add_cmd(new count_t(signal, value));

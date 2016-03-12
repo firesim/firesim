@@ -38,10 +38,11 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
         case (name, wire) => (s"resp_${name}", wire)} flatMap simIo.genPacket)
     }
   }
-  val addrOffsetBits  = log2Up(nastiXDataBits/8)
-  val addrSizeBits    = 10
-  val resetAddr       = (1 << addrSizeBits) - 1
-  val sramRestartAddr = (1 << addrSizeBits) - 2
+  val addrOffsetBits   = log2Up(nastiXDataBits/8)
+  val addrSizeBits     = 10
+  val resetAddr        = (1 << addrSizeBits) - 1
+  val sram0RestartAddr = (1 << addrSizeBits) - 2
+  val sram1RestartAddr = (1 << addrSizeBits) - 3
 
   require(p(ChannelWidth) == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
@@ -57,8 +58,9 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
     in.bits  := io.nasti.w.bits.data
     in.valid := waddr_r === off && do_write
   }
-  io.reset_t            := do_write && (waddr_r === UInt(resetAddr))
-  io.daisy.sram.restart := do_write && (waddr_r === UInt(sramRestartAddr))
+  io.reset_t               := do_write && (waddr_r === UInt(resetAddr))
+  io.daisy.sram(0).restart := do_write && (waddr_r === UInt(sram0RestartAddr))
+  io.daisy.sram(1).restart := do_write && (waddr_r === UInt(sram1RestartAddr))
 
   // Write FSM
   switch(st_wr) {
@@ -70,8 +72,8 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
       }
     }
     is(st_wr_write) {
-      when(Vec(ins map (_.ready))(waddr_r) || 
-           waddr_r === UInt(resetAddr) || waddr_r === UInt(sramRestartAddr)) {
+      when(Vec(ins map (_.ready))(waddr_r) || waddr_r === UInt(resetAddr) || 
+          waddr_r === UInt(sram0RestartAddr) || waddr_r === UInt(sram1RestartAddr)) {
         st_wr := st_wr_ack
       } 
     }
@@ -128,8 +130,10 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
   io.daisy.regs.in.valid := Bool(false)
   io.daisy.trace.in.bits := UInt(0)
   io.daisy.trace.in.valid := Bool(false)
-  io.daisy.sram.in.bits := UInt(0)
-  io.daisy.sram.in.valid := Bool(false)
+  io.daisy.sram(0).in.bits := UInt(0)
+  io.daisy.sram(0).in.valid := Bool(false)
+  io.daisy.sram(1).in.bits := UInt(0)
+  io.daisy.sram(1).in.valid := Bool(false)
 
   // address assignmnet
   // 0 : step
@@ -292,7 +296,8 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   sim.reset := master.io.reset_t
   master.io.daisy.trace.in <> sim.io.daisy.trace.in
   master.io.daisy.regs.in  <> sim.io.daisy.regs.in
-  master.io.daisy.sram.in  <> sim.io.daisy.sram.in
+  master.io.daisy.sram(0).in <> sim.io.daisy.sram(0).in
+  master.io.daisy.sram(1).in <> sim.io.daisy.sram(1).in
   master.io.daisy.cntr.in  <> sim.io.daisy.cntr.in
   // bulk connection not working due to empty outputs for now
   master.io.daisy.trace.out.bits  := sim.io.daisy.trace.out.bits
@@ -301,10 +306,14 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   master.io.daisy.regs.out.bits  := sim.io.daisy.regs.out.bits
   master.io.daisy.regs.out.valid := sim.io.daisy.regs.out.valid
   sim.io.daisy.regs.out.ready := master.io.daisy.regs.out.ready
-  master.io.daisy.sram.out.bits  := sim.io.daisy.sram.out.bits
-  master.io.daisy.sram.out.valid := sim.io.daisy.sram.out.valid
-  sim.io.daisy.sram.out.ready := master.io.daisy.sram.out.ready
-  sim.io.daisy.sram.restart := master.io.daisy.sram.restart
+  master.io.daisy.sram(0).out.bits  := sim.io.daisy.sram(0).out.bits
+  master.io.daisy.sram(0).out.valid := sim.io.daisy.sram(0).out.valid
+  sim.io.daisy.sram(0).out.ready := master.io.daisy.sram(0).out.ready
+  sim.io.daisy.sram(0).restart := master.io.daisy.sram(0).restart
+  master.io.daisy.sram(1).out.bits  := sim.io.daisy.sram(1).out.bits
+  master.io.daisy.sram(1).out.valid := sim.io.daisy.sram(1).out.valid
+  sim.io.daisy.sram(1).out.ready := master.io.daisy.sram(1).out.ready
+  sim.io.daisy.sram(1).restart := master.io.daisy.sram(1).restart
   master.io.daisy.cntr.out.bits  := sim.io.daisy.cntr.out.bits
   master.io.daisy.cntr.out.valid := sim.io.daisy.cntr.out.valid
   sim.io.daisy.cntr.out.ready := master.io.daisy.cntr.out.ready

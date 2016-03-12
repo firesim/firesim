@@ -8,7 +8,7 @@ case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
 
-object ChainType extends Enumeration { val Trs, Regs, SRAM, Cntr = Value }
+object ChainType extends Enumeration { val Trace, Regs, SRAM0, SRAM1, Cntr = Value }
 
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
@@ -27,13 +27,14 @@ class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 class DaisyBundle(daisywidth: Int) extends Bundle {
   val regs  = new RegData(daisywidth)
   val trace = new TraceData(daisywidth)
-  val sram  = new SRAMData(daisywidth)
+  val sram  = Vec.fill(2)(new SRAMData(daisywidth))
   val cntr  = new CntrData(daisywidth)
   def apply(t: ChainType.Value) = t match {
-    case ChainType.Regs => regs
-    case ChainType.Trs  => trace
-    case ChainType.SRAM => sram
-    case ChainType.Cntr => cntr
+    case ChainType.Regs  => regs
+    case ChainType.Trace => trace
+    case ChainType.SRAM0 => sram(0)
+    case ChainType.SRAM1 => sram(1)
+    case ChainType.Cntr  => cntr
   }
   override def cloneType: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
 }
