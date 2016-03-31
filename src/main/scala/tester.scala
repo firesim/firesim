@@ -45,9 +45,9 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
         file.println("MEM[%x] => %x".format(addr, data))
       case MemWriteEvent(addr, data) if !locked =>
         file.println("MEM[%x] <= %x".format(addr, data))
-      case NastiReadEvent(addr, data) if !locked => 
+      case NastiReadEvent(addr, data) => 
         file.println("NASTI[%x] => %x".format(addr, data))
-      case NastiWriteEvent(addr, data) if !locked => 
+      case NastiWriteEvent(addr, data) => 
         file.println("NASTI[%x] <= %x".format(addr, data))
       case _ => super.apply(event)
     }
@@ -301,7 +301,6 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   protected[strober] val channelOff = log2Up(c.sim.channelWidth)
  
   private val mem = Array.fill(1<<24){0.toByte} // size = 16MB
-  private val lineOffset = log2Up(c.slave.cacheBlockSize)
   private val addrOffset = log2Up(c.master.nastiXAddrBits/8)
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
@@ -348,53 +347,40 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   }
 
   def readMem(addr: BigInt) = {
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.addr), addr >> lineOffset)
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.tag), 0)
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.rw), 0)
+    // Address
+    pokeChannel(c.master.memMap(c.mem.ar.bits.addr), addr)
     addEvent(new MuteEvent())
     do { takeStep } while (!_peek(c.io.slave.ar.valid))
     addEvent(new UnmuteEvent())
     tickMem
-
-    assert(peekChannel(c.master.respMap(c.mem.resp.bits.tag)) == 0)
-    val id = c.master.respMap(c.mem.resp.bits.data)
-    val data = Array.fill(c.mifDataBeats){BigInt(0)}
-    for (i <- 0 until c.mifDataBeats) {
-      data(i) = peekId(id, chunk(c.mem.resp.bits.data))
-      addEvent(new MemReadEvent(addr+(i*c.mifDataBits/8), data(i)))
-    }
+    // Data  
+    val data = peekId(c.master.memMap(c.mem.r.bits.data), chunk(c.mem.r.bits.data))
+    addEvent(new MemReadEvent(addr, data))
     data
   }
 
-  def writeMem(addr: BigInt, data: Array[BigInt]) {
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.addr), addr >> lineOffset)
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.tag), 0)
-    pokeChannel(c.master.reqMap(c.mem.req_cmd.bits.rw), 1)
-    val id = c.master.reqMap(c.mem.req_data.bits.data)
-    for (i <- 0 until c.mifDataBeats) {
-      addEvent(new MemWriteEvent(addr+(i*c.mifDataBits/8), data(i)))
-      pokeId(id, chunk(c.mem.req_data.bits.data), data(i))
-      if (i == 0) {
-        addEvent(new MuteEvent())
-        do { takeStep } while (!_peek(c.io.slave.aw.valid))
-        addEvent(new UnmuteEvent())
-        tickMem
-      }
-      for (j <- 0 until c.slave.nastiDataBeats) {
-        addEvent(new MuteEvent())
-        do { takeStep } while (!_peek(c.io.slave.w.valid))
-        addEvent(new UnmuteEvent())
-        tickMem
-      }
-    }
+  def writeMem(addr: BigInt, data: BigInt) {
+    addEvent(new MemWriteEvent(addr, data))
+    // Address
+    pokeChannel(c.master.memMap(c.mem.aw.bits.addr), addr)
+    addEvent(new MuteEvent())
+    do { takeStep } while (!_peek(c.io.slave.aw.valid))
+    addEvent(new UnmuteEvent())
+    tickMem
+    // Data
+    pokeId(c.master.memMap(c.mem.w.bits.data), chunk(c.mem.w.bits.data), data)
+    addEvent(new MuteEvent())
+    do { takeStep } while (!_peek(c.io.slave.w.valid))
+    addEvent(new UnmuteEvent())
+    tickMem
   } 
 
-  case class MemWriteInfo(aw: Int, len: Int, size: Int, k: Int)
+  case class MemWriteInfo(id: Int, addr: Int, len: Int, size: Int, k: Int)
   private var wr_info: Option[MemWriteInfo] = None
   private def tickMem {
     addEvent(new MuteEvent())
     wr_info match {
-      case Some(MemWriteInfo(aw, len, size, k)) if _peek(c.io.slave.w.valid) =>
+      case Some(MemWriteInfo(id, aw, len, size, k)) if _peek(c.io.slave.w.valid) =>
         // handle write data
         val data = _peek(c.io.slave.w.bits.data)
         addEvent(new NastiWriteEvent(aw+k*size, data))
@@ -402,13 +388,25 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
         _poke(c.io.slave.w.ready, 1)
         val last = _peek(c.io.slave.w.bits.last)
         takeStep
+        assert(k < len || last && k == len)
         _poke(c.io.slave.w.ready, 0)
-        assert(k < len || last != 0 && k == len)
-        wr_info = if (last) None else Some(new MemWriteInfo(aw, len, size, k+1))
+        _poke(c.io.slave.b.bits.id, id)
+        _poke(c.io.slave.b.bits.resp, 0)
+        _poke(c.io.slave.b.bits.user, 0)
+        if (last) {
+          _poke(c.io.slave.b.valid, 1)
+          takeStep
+          _poke(c.io.slave.b.valid, 0)
+          wr_info = None
+        } else {
+          _poke(c.io.slave.b.valid, 0)
+          wr_info = Some(new MemWriteInfo(id, aw, len, size, k+1))
+        }
       case None if _peek(c.io.slave.aw.valid) =>
         // handle write address
         wr_info = Some(new MemWriteInfo(
-          _peek(c.io.slave.ar.bits.addr).toInt & 0xffffff,
+          _peek(c.io.slave.aw.bits.id).toInt,
+          _peek(c.io.slave.aw.bits.addr).toInt & 0xffffff,
           _peek(c.io.slave.aw.bits.len).toInt,
           1 << _peek(c.io.slave.aw.bits.size).toInt, 0))
         _poke(c.io.slave.aw.ready, 1)
@@ -430,7 +428,7 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
           addEvent(new NastiReadEvent(ar+k*size, data))
           _poke(c.io.slave.r.bits.data, data)
           _poke(c.io.slave.r.bits.id, tag)
-          _poke(c.io.slave.r.bits.last, 1)
+          _poke(c.io.slave.r.bits.last, if (k == len) 1 else 0)
           _poke(c.io.slave.r.valid, 1)
           do { takeStep } while (!_peek(c.io.slave.r.ready))
           _poke(c.io.slave.r.bits.last, 0)
@@ -454,10 +452,9 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   }
 
   def fastLoadMem(filename: String) {
-    val lines = scala.io.Source.fromFile(filename).getLines
-    for ((line, i) <- lines.zipWithIndex) {
+    scala.io.Source.fromFile(filename).getLines.zipWithIndex foreach {case (line, i) =>
       val base = (i * line.length) / 2
-      (((line.length - 2) to 0 by -2) foldLeft 0){(offset, k) =>
+      (((line.length - 2) to 0 by -2) foldLeft 0){ (offset, k) =>
         mem(base+offset) = ((parseNibble(line(k)) << 4) | parseNibble(line(k+1))).toByte
         offset + 1
       }
@@ -466,22 +463,18 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
 
   def slowLoadMem(filename: String) {
     addEvent(new DumpEvent(s"[LOADMEM] LOADING ${filename}"))
-    val step = c.mifDataBits / 4
-    val data = Array.fill(c.mifDataBeats){BigInt(0)}
-    val lines = scala.io.Source.fromFile(filename).getLines
-    (lines foldLeft (0, 0)){case ((base_idx, base_addr), line) =>
-      (((line.length - step) to 0 by -step) foldLeft (base_idx, base_addr)){case ((i, addr), j) =>
-        data(i) = ((0 until step) foldLeft BigInt(0)){case (res, k) =>
-          res | BigInt(parseNibble(line(j+k))) << (4*(step-1-k))}
-        if ((i + 1) == c.mifDataBeats) {
-          writeMem(addr, data)
-          (0, addr + step*c.mifDataBeats/2)
-        } else {
-          (i + 1, addr)
-        }
+    val chunk = c.nastiXDataBits / 4
+    scala.io.Source.fromFile(filename).getLines.zipWithIndex foreach {case (line, i) =>
+      val base = (i * line.length) / 2
+      assert(line.length % chunk == 0)
+      (((line.length - chunk) to 0 by -chunk) foldLeft 0){ (offset, j) =>
+        writeMem(base+offset, ((0 until chunk) foldLeft BigInt(0)){ (res, k) =>
+          res | (BigInt(parseNibble(line(j+k))) << (4*(chunk-1-k)))
+        })
+        offset + chunk / 2
       }
     }
-    addEvent(new DumpEvent(s"[LOADMEM] DONE"))
+    addEvent(new DumpEvent(s"[LOADMEM] DONE")) 
   }
 
   protected[strober] def readChain(t: ChainType.Value) = {

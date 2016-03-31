@@ -104,24 +104,18 @@ void simif_t::read_chain(std::string filename) {
 void simif_t::load_mem(std::string filename) {
   std::ifstream file(filename.c_str());
   if (file) {
-    const size_t STEP = MEM_DATA_BITS / 4;
-    size_t i = 0;
+    const size_t chunk = MEM_DATA_BITS / 4;
     size_t addr = 0;
-    biguint_t data[MEM_DATA_BEATS];
     std::string line;
     while (std::getline(file, line)) {
-      for (int j = line.length() - STEP ; j >= 0 ; j -= STEP) {
-        data[i] = 0;
-        for (size_t k = 0 ; k < STEP ; k++) {
-          data[i] |= biguint_t(parse_nibble(line[j+k])) << (4*(STEP-1-k));
+      assert(line.length() % chunk == 0);
+      for (int j = line.length() - chunk ; j >= 0 ; j -= chunk) {
+        biguint_t data = 0;
+        for (size_t k = 0 ; k < chunk ; k++) {
+          data |= biguint_t(parse_nibble(line[j+k])) << (4*(chunk-1-k));
         }
-        if (i + 1 == MEM_DATA_BEATS) {
-          write_mem(addr, data);
-          addr += STEP * MEM_DATA_BEATS / 2;
-          i = 0;
-        } else {
-          i += 1;
-        }
+        write_mem(addr, data);
+        addr += chunk / 2;
       }
     }
   } else {
@@ -240,31 +234,6 @@ void simif_t::step(size_t n) {
   if (trace_count < trace_len) trace_count += n;
 }
 
-void simif_t::read_mem(size_t addr, biguint_t data[]) {
-  poke_channel(MEM_REQ_ADDR, addr >> LINE_OFFSET);
-  poke_channel(MEM_REQ_TAG,  0);
-  poke_channel(MEM_REQ_RW,   0);
-  for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
-    assert(peek_channel(MEM_RESP_TAG) == 0);
-    uint32_t d[MEM_DATA_CHUNK];
-    for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
-      d[i] = peek_channel(MEM_RESP_DATA+off);
-    }
-    data[i] = biguint_t(d, MEM_DATA_CHUNK);
-  }
-}
-
-void simif_t::write_mem(size_t addr, biguint_t data[]) {
-  poke_channel(MEM_REQ_ADDR, addr >> LINE_OFFSET);
-  poke_channel(MEM_REQ_TAG,  0);
-  poke_channel(MEM_REQ_RW,   1);
-  for (size_t i = 0 ; i < MEM_DATA_BEATS ; i++) {
-    for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
-      poke_channel(MEM_REQ_DATA+off, data[i][off]);
-    }
-  }
-}
-
 sample_t* simif_t::trace_ports(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
@@ -313,7 +282,7 @@ sample_t* simif_t::read_snapshot() {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
     for (size_t k = 0 ; k < CHAIN_LOOP[t]; k++) {
       if (type == SRAM0_CHAIN) poke_channel(SRAM0_RESTART_ADDR, 0);
-      if (type == SRAM0_CHAIN) poke_channel(SRAM1_RESTART_ADDR, 0);
+      if (type == SRAM1_CHAIN) poke_channel(SRAM1_RESTART_ADDR, 0);
       for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
         snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
       }

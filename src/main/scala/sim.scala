@@ -57,8 +57,7 @@ class ChannelIO(w: Int)(implicit p: Parameters) extends junctions.ParameterizedB
   val traceLen = UInt(INPUT, log2Up(p(TraceMaxLen)+1))
 }
 
-class Channel(w: Int, doTrace: Boolean = true)(implicit p: Parameters) extends Module {
-  // val traceMaxLen = params(TraceMaxLen)
+class Channel(val w: Int, doTrace: Boolean = true)(implicit p: Parameters) extends Module {
   val channelLen = p(ChannelLen)
   val io     = new ChannelIO(w)
   val tokens = Module(new Queue(UInt(width=w), channelLen))
@@ -137,20 +136,16 @@ abstract class SimNetwork(implicit val p: Parameters) extends Module {
       channel
     }}
 
-  def connectInput[T <: Bits](i: Int, arg: (String, Bits), inChannels: Seq[Channel], fire: Option[Bool] = None) =
+  def connectInput[T <: Bits](i: Int, arg: (String, Bits), inChannels: Seq[Channel], fire: Bool) =
     arg match { case (name, wire) =>
       val channels = inChannels slice (i, i+io.chunk(wire))
       val channelOuts = wire match {
         case _: Bool => channels.head.io.out.bits.toBool
         case _ => Vec(channels map (_.io.out.bits)).toBits
       }
-      fire match {
-        case None => wire := channelOuts
-        case Some(p) =>
-          val buffer = RegEnable(channelOuts, p)
-          buffer setName (name + "_buffer") 
-          wire := Mux(p, channelOuts, buffer)
-      }
+      val buffer = RegEnable(channelOuts, fire)
+      buffer setName (name + "_buffer") 
+      wire := Mux(fire, channelOuts, buffer)
       i + io.chunk(wire)
     }
 
@@ -179,7 +174,7 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
 
   // Datapath: Channels <> IOs
   (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
-  (io.t_ins foldLeft 0)(connectInput(_, _, in_channels, Some(fire))) 
+  (io.t_ins foldLeft 0)(connectInput(_, _, in_channels, fire))
 
   (out_channels zip io.outs) foreach {case (channel, out) => channel.io.out <> out}
   (io.t_outs foldLeft 0)(connectOutput(_, _, out_channels))

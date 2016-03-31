@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include "biguint.h"
 #include "sample.h"
+#include <iostream>
 
 static inline uint64_t timestamp() {
   struct timeval tv;
@@ -140,8 +141,20 @@ class simif_t
 
     bool expect(bool pass, const char *s);
     void step(size_t n);
-    virtual void read_mem(size_t addr, biguint_t data[]);
-    virtual void write_mem(size_t addr, biguint_t data[]);
+    inline biguint_t read_mem(size_t addr) {
+      poke_channel(MEM_AR_ADDR, addr);
+      uint32_t d[MEM_DATA_CHUNK];
+      for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
+        d[off] = peek_channel(MEM_R_ADDR+off);
+      }
+      return biguint_t(d, MEM_DATA_CHUNK);
+    }
+    inline void write_mem(size_t addr, biguint_t& data) {
+      poke_channel(MEM_AW_ADDR, addr);
+      for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
+        poke_channel(MEM_W_ADDR+off, data[off]);
+      }
+    }
     sample_t* trace_ports(sample_t* s);
     sample_t* read_snapshot();
     

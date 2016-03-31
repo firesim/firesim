@@ -436,23 +436,19 @@ object transforms {
         "TRACE_MAX_LEN"      -> w.sim.traceMaxLen,
         "DAISY_WIDTH"        -> w.sim.daisyWidth,
         "CHANNEL_OFFSET"     -> log2Up(w.sim.channelWidth),
-        "LINE_OFFSET"        -> log2Up(w.slave.cacheBlockSize),
         "POKE_SIZE"          -> w.master.io.ins.size,
         "PEEK_SIZE"          -> w.master.io.outs.size,
         "RESET_ADDR"         -> w.master.resetAddr,
         "SRAM0_RESTART_ADDR" -> w.master.sram0RestartAddr,
         "SRAM1_RESTART_ADDR" -> w.master.sram1RestartAddr,
         "TRACE_LEN_ADDR"     -> w.master.traceLenAddr,
-        "MEM_DATA_BITS"      -> w.mifDataBits,
-        "MEM_DATA_BEATS"     -> w.mifDataBeats,
-        "MEM_DATA_CHUNK"     -> w.sim.io.chunk(w.mem.resp.bits.data),
         "MEM_CYCLE_ADDR"     -> w.master.memCycleAddr,
-        "MEM_REQ_ADDR"       -> w.master.reqMap(w.mem.req_cmd.bits.addr),
-        "MEM_REQ_TAG"        -> w.master.reqMap(w.mem.req_cmd.bits.tag),
-        "MEM_REQ_RW"         -> w.master.reqMap(w.mem.req_cmd.bits.rw),
-        "MEM_REQ_DATA"       -> w.master.reqMap(w.mem.req_data.bits.data),
-        "MEM_RESP_DATA"      -> w.master.respMap(w.mem.resp.bits.data),
-        "MEM_RESP_TAG"       -> w.master.respMap(w.mem.resp.bits.tag)
+        "MEM_AW_ADDR"        -> w.master.memMap(w.mem.aw.bits.addr),
+        "MEM_AR_ADDR"        -> w.master.memMap(w.mem.ar.bits.addr),
+        "MEM_W_ADDR"         -> w.master.memMap(w.mem.w.bits.data),
+        "MEM_R_ADDR"         -> w.master.memMap(w.mem.r.bits.data),
+        "MEM_DATA_CHUNK"     -> w.sim.io.chunk(w.mem.r.bits.data),
+        "MEM_DATA_BITS"      -> w.arb.nastiXDataBits
       )
       val chain_name = ChainType.values.toList map chainName mkString ","
       val chain_addr = ChainType.values.toList map w.master.snapOutMap mkString ","

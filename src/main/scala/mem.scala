@@ -18,20 +18,22 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
 }
 
 object SimMemIO {
-  private val mems = ArrayBuffer[MemIO]()
-  def apply(mem: MemIO) { mems += mem }
+  private val mems = ArrayBuffer[NastiIO]()
+  def apply(mem: NastiIO) { mems += mem }
   def apply(i: Int) = mems(i)
   def size = mems.size
   def contains(wire: Bits) = mems exists (_.flatten.unzip._2 contains wire) 
   def zipWithIndex = mems.toList.zipWithIndex
 }
 
-class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
-  val req_cmd  = new SimDecoupledIO(new MemReqCmd)
-  val req_data = new SimDecoupledIO(new MemData)
-  val resp     = new SimDecoupledIO(new MemResp).flip
+class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
+  val aw = new SimDecoupledIO(new NastiWriteAddressChannel)
+  val w  = new SimDecoupledIO(new NastiWriteDataChannel)
+  val b  = new SimDecoupledIO(new NastiWriteResponseChannel).flip
+  val ar = new SimDecoupledIO(new NastiReadAddressChannel)
+  val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
 
-  def <>(mIo: MemIO, wIo: SimWrapperIO) {
+  def <>(mIo: NastiIO, wIo: SimWrapperIO) {
     // Target Connection
     def targetConnect[T <: Bits](target: T, wire: T) = wire match {
       case _: Bool if wire.dir == OUTPUT => target := wIo.getOuts(wire).head.bits
@@ -40,20 +42,53 @@ class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
       case _ if wire.dir == INPUT => wIo.getIns(wire).zipWithIndex foreach {
         case (in, i) => in.bits := target.toUInt >> UInt(i*wIo.channelWidth) }
     }
-    targetConnect(req_cmd.target.bits.addr, mIo.req_cmd.bits.addr)
-    targetConnect(req_cmd.target.bits.tag,  mIo.req_cmd.bits.tag)
-    targetConnect(req_cmd.target.bits.rw,   mIo.req_cmd.bits.rw)
-    targetConnect(req_cmd.target.valid,     mIo.req_cmd.valid)
-    targetConnect(req_cmd.target.ready,     mIo.req_cmd.ready)
+    targetConnect(aw.target.bits.id,     mIo.aw.bits.id)
+    targetConnect(aw.target.bits.addr,   mIo.aw.bits.addr)
+    targetConnect(aw.target.bits.len,    mIo.aw.bits.len)
+    targetConnect(aw.target.bits.size,   mIo.aw.bits.size)
+    targetConnect(aw.target.bits.burst,  mIo.aw.bits.burst)
+    targetConnect(aw.target.bits.lock,   mIo.aw.bits.lock)
+    targetConnect(aw.target.bits.cache,  mIo.aw.bits.cache)
+    targetConnect(aw.target.bits.prot,   mIo.aw.bits.prot)
+    targetConnect(aw.target.bits.qos,    mIo.aw.bits.qos)
+    targetConnect(aw.target.bits.region, mIo.aw.bits.region)
+    targetConnect(aw.target.valid,       mIo.aw.valid)
+    targetConnect(aw.target.ready,       mIo.aw.ready)
     
-    targetConnect(req_data.target.bits.data, mIo.req_data.bits.data)
-    targetConnect(req_data.target.valid,     mIo.req_data.valid)
-    targetConnect(req_data.target.ready,     mIo.req_data.ready)
+    targetConnect(ar.target.bits.id,     mIo.ar.bits.id)
+    targetConnect(ar.target.bits.addr,   mIo.ar.bits.addr)
+    targetConnect(ar.target.bits.len,    mIo.ar.bits.len)
+    targetConnect(ar.target.bits.size,   mIo.ar.bits.size)
+    targetConnect(ar.target.bits.burst,  mIo.ar.bits.burst)
+    targetConnect(ar.target.bits.lock,   mIo.ar.bits.lock)
+    targetConnect(ar.target.bits.cache,  mIo.ar.bits.cache)
+    targetConnect(ar.target.bits.prot,   mIo.ar.bits.prot)
+    targetConnect(ar.target.bits.qos,    mIo.ar.bits.qos)
+    targetConnect(ar.target.bits.region, mIo.ar.bits.region)
+    targetConnect(ar.target.bits.user,   mIo.ar.bits.user)
+    targetConnect(ar.target.valid,       mIo.ar.valid)
+    targetConnect(ar.target.ready,       mIo.ar.ready)
 
-    targetConnect(resp.target.bits.data, mIo.resp.bits.data)
-    targetConnect(resp.target.bits.tag,  mIo.resp.bits.tag)
-    targetConnect(resp.target.valid,     mIo.resp.valid)
-    targetConnect(resp.target.ready,     mIo.resp.ready)
+    targetConnect(w.target.bits.strb,    mIo.w.bits.strb)
+    targetConnect(w.target.bits.data,    mIo.w.bits.data)
+    targetConnect(w.target.bits.last,    mIo.w.bits.last)
+    targetConnect(w.target.bits.user,    mIo.w.bits.user)
+    targetConnect(w.target.valid,        mIo.w.valid)
+    targetConnect(w.target.ready,        mIo.w.ready)
+
+    targetConnect(r.target.bits.id,      mIo.r.bits.id)
+    targetConnect(r.target.bits.data,    mIo.r.bits.data)
+    targetConnect(r.target.bits.last,    mIo.r.bits.last)
+    targetConnect(r.target.bits.resp,    mIo.r.bits.resp)
+    targetConnect(r.target.bits.user,    mIo.r.bits.user)
+    targetConnect(r.target.valid,        mIo.r.valid)
+    targetConnect(r.target.ready,        mIo.r.ready)
+
+    targetConnect(b.target.bits.id,      mIo.b.bits.id)
+    targetConnect(b.target.bits.resp,    mIo.b.bits.resp)
+    targetConnect(b.target.bits.user,    mIo.b.bits.user)
+    targetConnect(b.target.valid,        mIo.b.valid)
+    targetConnect(b.target.ready,        mIo.b.ready)
 
     // Host Connection
     def hostConnect(res: Bool, arg: (String, Bits), ready: Bool) = arg match { 
@@ -66,114 +101,117 @@ class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
         outs foreach (_.ready := ready)
         (outs foldLeft res)(_ && _.valid)
     }
-    req_cmd.valid  := (mIo.req_cmd.flatten foldLeft Bool(true))(hostConnect(_, _, req_cmd.ready))
-    req_data.valid := (mIo.req_data.flatten foldLeft Bool(true))(hostConnect(_, _, req_data.ready))
-    resp.ready     := (mIo.resp.flatten foldLeft Bool(true))(hostConnect(_, _, resp.valid))
+    aw.valid := (mIo.aw.flatten foldLeft Bool(true))(hostConnect(_, _, aw.ready))
+    ar.valid := (mIo.ar.flatten foldLeft Bool(true))(hostConnect(_, _, ar.ready))
+    w.valid  := (mIo.w.flatten  foldLeft Bool(true))(hostConnect(_, _,  w.ready))
+    r.ready  := (mIo.r.flatten  foldLeft Bool(true))(hostConnect(_, _,  r.valid))
+    b.ready  := (mIo.b.flatten  foldLeft Bool(true))(hostConnect(_, _,  b.valid))
   }
 }
 
-class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
+class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   val maxLatency = p(MemMaxCycles)
   val maxLatencyWidth = log2Up(maxLatency+1)
   val io = new Bundle {
     val sim_mem  = (new SimMemIO).flip
-    val host_mem =  new MemIO
+    val host_mem =  new NastiIO
     val latency  = Decoupled(UInt(width=maxLatencyWidth)).flip
   }
+  val aw = new SimDecoupledIO(new NastiWriteAddressChannel)
+  val w  = new SimDecoupledIO(new NastiWriteDataChannel)
+  val b  = new SimDecoupledIO(new NastiWriteResponseChannel).flip
+  val ar = new SimDecoupledIO(new NastiReadAddressChannel)
+  val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
 
-  val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2, flow=true))
-  val req_data_buf = Module(new Queue(new MemData, 2*mifDataBeats, flow=true))
-  val resp_buf     = Module(new Queue(new MemResp, 2*mifDataBeats, flow=true))
-  val latency_buf  = Module(new HellaQueue(maxLatency)(Valid(new MemResp)))
-  val latency      = RegInit(UInt(0, maxLatencyWidth)) 
-  val counter      = RegInit(UInt(0, maxLatencyWidth))
+  val aw_buf  = Module(new Queue(new NastiWriteAddressChannel,  2, flow=true))
+  val ar_buf  = Module(new Queue(new NastiReadAddressChannel,   2, flow=true))
+  val w_buf   = Module(new Queue(new NastiWriteDataChannel,     8, flow=true))
+  val r_buf   = Module(new Queue(new NastiReadDataChannel,      8, flow=true))
+  val b_buf   = Module(new Queue(new NastiWriteResponseChannel, 2, flow=true))
+  val r_pipe  = Module(new HellaQueue(maxLatency)(Valid(new NastiReadDataChannel)))
+  val latency = RegInit(UInt(0, maxLatencyWidth)) 
+  val counter = RegInit(UInt(0, maxLatencyWidth))
 
   io.latency.ready := latency === counter
   when (io.latency.fire()) { 
     latency := io.latency.bits
     counter := UInt(0)
-  }.elsewhen (latency_buf.io.enq.fire() && counter =/= latency) {
+  }.elsewhen (r_pipe.io.enq.fire() && counter =/= latency) {
     counter := counter + UInt(1)
   }
-  latency_buf.reset := reset || io.latency.fire()
+  r_pipe.reset := reset || io.latency.fire()
 
-  io.sim_mem.req_cmd.target.ready := Bool(true)
-  io.sim_mem.req_cmd.ready := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
-                              io.sim_mem.req_data.valid && req_data_buf.io.enq.ready &&
-                             (latency_buf.io.deq.valid && counter === latency || !latency.orR)
-  req_cmd_buf.io.enq.bits.addr := io.sim_mem.req_cmd.target.bits.addr
-  req_cmd_buf.io.enq.bits.tag  := io.sim_mem.req_cmd.target.bits.tag
-  req_cmd_buf.io.enq.bits.rw   := io.sim_mem.req_cmd.target.bits.rw
-  req_cmd_buf.io.enq.valid     := io.sim_mem.req_cmd.target.valid && io.sim_mem.req_cmd.ready
+  val pipe_rdy = r_pipe.io.deq.valid && counter === latency || !latency.orR
+  io.sim_mem.aw.target.ready := Bool(true)
+  io.sim_mem.aw.ready        := io.sim_mem.aw.valid && aw_buf.io.enq.ready && pipe_rdy
+  aw_buf.io.enq.bits.id      := io.sim_mem.aw.target.bits.id
+  aw_buf.io.enq.bits.addr    := io.sim_mem.aw.target.bits.addr
+  aw_buf.io.enq.bits.len     := io.sim_mem.aw.target.bits.len
+  aw_buf.io.enq.bits.size    := io.sim_mem.aw.target.bits.size
+  aw_buf.io.enq.bits.burst   := io.sim_mem.aw.target.bits.burst
+  aw_buf.io.enq.bits.lock    := io.sim_mem.aw.target.bits.lock
+  aw_buf.io.enq.bits.cache   := io.sim_mem.aw.target.bits.cache
+  aw_buf.io.enq.bits.prot    := io.sim_mem.aw.target.bits.prot
+  aw_buf.io.enq.bits.qos     := io.sim_mem.aw.target.bits.qos
+  aw_buf.io.enq.bits.region  := io.sim_mem.aw.target.bits.region
+  aw_buf.io.enq.bits.user    := io.sim_mem.aw.target.bits.user
+  aw_buf.io.enq.valid        := io.sim_mem.aw.target.valid && io.sim_mem.aw.ready
 
-  io.sim_mem.req_data.target.ready := Bool(true)
-  io.sim_mem.req_data.ready     := io.sim_mem.req_cmd.ready
-  req_data_buf.io.enq.bits.data := io.sim_mem.req_data.target.bits.data
-  req_data_buf.io.enq.valid     := io.sim_mem.req_data.target.valid && io.sim_mem.req_data.ready
+  io.sim_mem.ar.target.ready := Bool(true)
+  io.sim_mem.ar.ready        := io.sim_mem.ar.valid && ar_buf.io.enq.ready && pipe_rdy
+  aw_buf.io.enq.bits := io.sim_mem.aw.target.bits
+  ar_buf.io.enq.bits.id      := io.sim_mem.ar.target.bits.id
+  ar_buf.io.enq.bits.addr    := io.sim_mem.ar.target.bits.addr
+  ar_buf.io.enq.bits.len     := io.sim_mem.ar.target.bits.len
+  ar_buf.io.enq.bits.size    := io.sim_mem.ar.target.bits.size
+  ar_buf.io.enq.bits.burst   := io.sim_mem.ar.target.bits.burst
+  ar_buf.io.enq.bits.lock    := io.sim_mem.ar.target.bits.lock
+  ar_buf.io.enq.bits.cache   := io.sim_mem.ar.target.bits.cache
+  ar_buf.io.enq.bits.prot    := io.sim_mem.ar.target.bits.prot
+  ar_buf.io.enq.bits.qos     := io.sim_mem.ar.target.bits.qos
+  ar_buf.io.enq.bits.region  := io.sim_mem.ar.target.bits.region
+  ar_buf.io.enq.bits.user    := io.sim_mem.ar.target.bits.user
+  ar_buf.io.enq.valid        := io.sim_mem.ar.target.valid && io.sim_mem.ar.ready
 
-  io.sim_mem.resp.target.bits.data := Mux(latency.orR, latency_buf.io.deq.bits.bits.data, resp_buf.io.deq.bits.data)
-  io.sim_mem.resp.target.bits.tag  := Mux(latency.orR, latency_buf.io.deq.bits.bits.tag, resp_buf.io.deq.bits.tag)
-  io.sim_mem.resp.target.valid     := Mux(latency.orR, latency_buf.io.deq.bits.valid, resp_buf.io.deq.valid)
+  io.sim_mem.w.target.ready  := Bool(true)
+  io.sim_mem.w.ready         := io.sim_mem.w.valid && w_buf.io.enq.ready && pipe_rdy
+  w_buf.io.enq.bits.strb     := io.sim_mem.w.target.bits.strb
+  w_buf.io.enq.bits.data     := io.sim_mem.w.target.bits.data
+  w_buf.io.enq.bits.last     := io.sim_mem.w.target.bits.last
+  w_buf.io.enq.bits.user     := io.sim_mem.w.target.bits.user
+  w_buf.io.enq.valid         := io.sim_mem.w.target.valid && io.sim_mem.w.ready
 
-  io.sim_mem.resp.valid := io.sim_mem.resp.ready && 
-    (resp_buf.io.enq.fire() || resp_buf.io.deq.valid && io.sim_mem.resp.target.ready ||
-    io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
-  latency_buf.io.deq.ready := io.sim_mem.resp.valid && counter === latency
-  latency_buf.io.enq.bits.bits.data := resp_buf.io.deq.bits.data
-  latency_buf.io.enq.bits.bits.tag  := resp_buf.io.deq.bits.tag
-  latency_buf.io.enq.bits.valid     := resp_buf.io.deq.valid
-  latency_buf.io.enq.valid := latency_buf.io.deq.fire() && latency.orR || counter =/= latency
-  resp_buf.io.deq.ready    := latency_buf.io.deq.ready && io.sim_mem.resp.target.ready
+  io.sim_mem.b.valid := io.sim_mem.b.ready && (b_buf.io.deq.valid || 
+    io.sim_mem.w.ready && !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last))
+  io.sim_mem.b.target.valid     := b_buf.io.deq.valid
+  io.sim_mem.b.target.bits.id   := b_buf.io.deq.bits.id
+  io.sim_mem.b.target.bits.resp := b_buf.io.deq.bits.resp
+  io.sim_mem.b.target.bits.user := b_buf.io.deq.bits.user 
+  b_buf.io.deq.ready := io.sim_mem.b.valid && io.sim_mem.b.target.ready
 
-  io.host_mem.req_cmd  <> req_cmd_buf.io.deq
-  io.host_mem.req_data <> req_data_buf.io.deq
-  resp_buf.io.enq      <> io.host_mem.resp
-}
+  io.sim_mem.r.valid := io.sim_mem.r.ready && (Mux(latency.orR, 
+    r_buf.io.enq.fire() || r_pipe.io.deq.bits.valid && latency === counter, r_buf.io.deq.valid) || 
+    io.sim_mem.ar.ready && !io.sim_mem.ar.target.valid)
+  io.sim_mem.r.target.valid     := Mux(latency.orR, r_pipe.io.deq.bits.valid, r_buf.io.deq.valid)
+  io.sim_mem.r.target.bits.id   := Mux(latency.orR, r_pipe.io.deq.bits.bits.id, r_buf.io.deq.bits.id)
+  io.sim_mem.r.target.bits.data := Mux(latency.orR, r_pipe.io.deq.bits.bits.data, r_buf.io.deq.bits.data)
+  io.sim_mem.r.target.bits.last := Mux(latency.orR, r_pipe.io.deq.bits.bits.last, r_buf.io.deq.bits.last)
+  io.sim_mem.r.target.bits.resp := Mux(latency.orR, r_pipe.io.deq.bits.bits.resp, r_buf.io.deq.bits.resp)
+  io.sim_mem.r.target.bits.user := Mux(latency.orR, r_pipe.io.deq.bits.bits.user, r_buf.io.deq.bits.user)
 
-class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
-  val io = new Bundle {
-    val ins = Vec.fill(n){(new MemIO).flip}
-    val out = new MemIO  
-  }
-  val s_READY :: s_READ :: s_WRITE :: Nil = Enum(UInt(), 3)
-  val state = RegInit(s_READY)
-  val chosen = RegInit(UInt(n-1))
-  val (resp_cnt, resp_wrap) = Counter(io.out.resp.fire(),     mifDataBeats)
-  val (data_cnt, data_wrap) = Counter(io.out.req_data.fire(), mifDataBeats)
+  r_buf.io.deq.ready  := Mux(latency.orR, r_pipe.io.enq.fire(), io.sim_mem.r.valid && io.sim_mem.r.target.ready)
+  r_pipe.io.deq.ready := io.sim_mem.r.valid && (!io.sim_mem.r.target.valid || io.sim_mem.r.target.ready) && latency === counter
+  r_pipe.io.enq.valid := r_pipe.io.deq.fire() || latency =/= counter 
+  r_pipe.io.enq.bits.valid      := r_buf.io.deq.valid
+  r_pipe.io.enq.bits.bits.id    := r_buf.io.deq.bits.id
+  r_pipe.io.enq.bits.bits.data  := r_buf.io.deq.bits.data
+  r_pipe.io.enq.bits.bits.last  := r_buf.io.deq.bits.last
+  r_pipe.io.enq.bits.bits.resp  := r_buf.io.deq.bits.resp
+  r_pipe.io.enq.bits.bits.user  := r_buf.io.deq.bits.user
 
-  io.out.req_cmd.bits  := io.ins(chosen).req_cmd.bits
-  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
-  io.ins foreach (_.req_cmd.ready := Bool(false))
-  io.ins.zipWithIndex foreach { case (in, i) => 
-    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
-  }
-
-  io.out.req_data.bits  := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ
-  io.ins foreach (_.req_data.ready := Bool(false))
-  io.ins.zipWithIndex foreach {case (in, i) => 
-    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i)
-  }
-
-  io.ins.zipWithIndex foreach {case (in, i) => 
-    in.resp.bits  := io.out.resp.bits 
-    in.resp.valid := io.out.resp.valid && chosen === UInt(i)
-  }
-  io.out.resp.ready := io.ins(chosen).resp.ready
-
-  switch(state) {
-    is(s_READY) {
-      when(!io.ins(chosen).req_cmd.valid && !io.ins(chosen).req_data.valid) {
-        chosen := Mux(chosen.orR, chosen - UInt(1), UInt(n-1))
-      }.elsewhen(io.ins(chosen).req_cmd.fire()) {
-        state := Mux(io.ins(chosen).req_cmd.bits.rw, s_WRITE, s_READ)
-      }
-    }
-    is(s_READ) {
-      state := Mux(resp_wrap, s_READY, s_READ)
-    }
-    is(s_WRITE) {
-      state := Mux(data_wrap, s_READY, s_WRITE)
-    }
-  }
+  io.host_mem.aw <> aw_buf.io.deq
+  io.host_mem.ar <> ar_buf.io.deq
+  io.host_mem.w  <> w_buf.io.deq
+  b_buf.io.enq   <> io.host_mem.b
+  r_buf.io.enq   <> io.host_mem.r
 }
