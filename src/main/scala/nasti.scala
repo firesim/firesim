@@ -14,28 +14,28 @@ object NastiShim {
   def apply[T <: Module](c: =>T)(implicit p: Parameters) = Module(new NastiShim(new SimWrapper(c)))
 }
 
-class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Parameters) extends NastiModule()(p) {
+class NastiMasterHandler(simIo: SimWrapperIO, memIo: NastiIO)(implicit p: Parameters) extends NastiModule()(p) {
   val io = new Bundle {
     val nasti = (new NastiIO).flip
-    val step  = Decoupled(UInt(width=nastiXDataBits))
-    val len   = Decoupled(UInt(width=nastiXDataBits))
-    val lat   = Decoupled(UInt(width=nastiXDataBits))
-    val fin   = Decoupled(UInt(width=nastiXDataBits)).flip
-    val ins   = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap 
-                    simIo.getIns map (_.cloneType))
-    val outs  = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap 
-                    simIo.getOuts map (_.cloneType.flip))
-    val inT   = Vec(simIo.inMap  flatMap simIo.getIns  map (_.cloneType.flip))
-    val outT  = Vec(simIo.outMap flatMap simIo.getOuts map (_.cloneType.flip))
+    val fin = Decoupled(UInt(width=nastiXDataBits)).flip
+    val step = Decoupled(UInt(width=nastiXDataBits))
+    val tracelen = Decoupled(UInt(width=nastiXDataBits))
+    val latency = Decoupled(UInt(width=nastiXDataBits))
+    val ins = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap simIo.getIns map (_.cloneType))
+    val outs = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap simIo.getOuts map (_.cloneType.flip))
+    val inT = Vec(simIo.inMap  flatMap simIo.getIns  map (_.cloneType.flip))
+    val outT = Vec(simIo.outMap flatMap simIo.getOuts map (_.cloneType.flip))
     val daisy = simIo.daisy.cloneType.flip
     val reset_t = Bool(OUTPUT)
     val mem = new Bundle {
-      val req_cmd = Vec(memIo.req_cmd.bits.cloneType.asOutput.flatten map {
-        case (name, wire) => (s"req_cmd_${name}", wire)} flatMap simIo.genPacket)
-      val req_data = Vec(memIo.req_data.bits.cloneType.asOutput.flatten map {
-        case (name, wire) => (s"req_data_${name}", wire)} flatMap simIo.genPacket)
-      val resp = Vec(memIo.resp.bits.cloneType.asInput.flatten map {
-        case (name, wire) => (s"resp_${name}", wire)} flatMap simIo.genPacket)
+      val ar = Vec(memIo.ar.bits.addr.cloneType.asOutput.flatten map
+        ("mem_ar" -> _._2) flatMap simIo.genPacket)
+      val aw = Vec(memIo.aw.bits.addr.cloneType.asOutput.flatten map
+        ("mem_aw" -> _._2) flatMap simIo.genPacket)
+      val w  = Vec(memIo.w.bits.data.cloneType.asOutput.flatten map
+        ("mem_w" -> _._2) flatMap simIo.genPacket)
+      val r  = Vec(memIo.r.bits.data.cloneType.asInput.flatten map
+        ("mem_r" -> _._2) flatMap simIo.genPacket)
     }
   }
   val addrOffsetBits   = log2Up(nastiXDataBits/8)
@@ -52,7 +52,7 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
   val st_wr_idle :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 3)
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
-  val ins = Seq(io.step) ++ io.ins ++ io.mem.req_cmd ++ io.mem.req_data ++ Seq(io.len, io.lat)
+  val ins = Seq(io.step) ++ io.ins ++ Seq(io.tracelen, io.latency) ++ io.mem.ar ++ io.mem.aw ++ io.mem.w
   ins.zipWithIndex foreach {case (in, i) =>
     val off = UInt(i)
     in.bits  := io.nasti.w.bits.data
@@ -96,7 +96,7 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
   val do_read = st_rd === st_rd_read
 
   val snapOuts = ChainType.values.toList map (t => io.daisy(t).out)
-  val outs = Seq(io.fin) ++ io.outs ++ io.inT ++ io.outT ++ io.mem.resp ++ snapOuts
+  val outs = Seq(io.fin) ++ io.outs ++ io.inT ++ io.outT ++ snapOuts ++ io.mem.r
 
   outs.zipWithIndex foreach {case (out, i) =>
     val off = UInt(i)
@@ -139,93 +139,25 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: MemIO)(implicit p: Paramete
   // 0 : step
   val inMap = simIo.genIoMap(simIo.t_ins filterNot (SimMemIO contains _._2)) map {
     case (wire, id) => wire -> (1 + id) }
-  val reqMap = simIo.genIoMap(memIo.req_cmd.bits.flatten ++ memIo.req_data.bits.flatten) map {
-    case (wire, id) => wire -> (1 + io.ins.size + id) }
-  val traceLenAddr = 1 + io.ins.size + io.mem.req_cmd.size + io.mem.req_data.size
+  val traceLenAddr = io.ins.size + 1
   val memCycleAddr = traceLenAddr + 1
 
   // 0 : fin
   val outMap = simIo.genIoMap(simIo.t_outs filterNot (SimMemIO contains _._2)) map {
     case (wire, id) => wire -> (1 + id) }
-  val inTrMap  = simIo.inMap  map {case (wire, id) => wire -> (1 + io.outs.size + id)}
-  val outTrMap = simIo.outMap map {case (wire, id) => wire -> (1 + io.outs.size + io.inT.size + id)}
-  val respMap  = simIo.genIoMap(memIo.resp.bits.flatten) map {
-    case (wire, id) => wire -> (1 + io.outs.size + io.inT.size + io.outT.size + id) }
-  val snapOutMap = (ChainType.values.toList map (t => t -> (1 + t.id +
-    io.outs.size + io.inT.size + io.outT.size + io.mem.resp.size))).toMap
-}
+  val inTrMap  = simIo.inMap  map {
+    case (wire, id) => wire -> (1 + io.outs.size + id)}
+  val outTrMap = simIo.outMap map {
+    case (wire, id) => wire -> (1 + io.outs.size + io.inT.size + id)}
+  val snapOutMap = (ChainType.values.toList map (t => 
+    t -> (1 + t.id + io.outs.size + io.inT.size + io.outT.size))).toMap
 
-class NastiSlaveHandler(implicit p: Parameters) extends MIFModule()(p) with HasNastiParameters {
-  val io = new Bundle {
-    val mem   = (new MemIO).flip
-    val nasti = new NastiIO
-  }
-  val cacheBlockSize = p(CacheBlockSize)
-  val addrOffsetBits = log2Up(scala.math.max(cacheBlockSize, nastiXDataBits/8))
-  val nastiDataBeats = scala.math.max(1, mifDataBits / nastiXDataBits)
-
-  val st_idle :: st_read :: st_start_write :: st_write :: Nil = Enum(UInt(), 4)
-  val state_r = RegInit(st_idle)
-  val resp_data_buf = Reg(Vec.fill(nastiDataBeats-1){UInt(width=nastiXDataBits)})
-  val (read_count,  read_wrap_out)  = Counter(io.nasti.r.fire(), nastiDataBeats)
-  val (write_count, write_wrap_out) = Counter(io.nasti.w.fire(), nastiDataBeats)
-  io.mem.req_cmd.ready := 
-    (state_r === st_start_write && io.nasti.aw.ready) || (state_r === st_read && io.nasti.ar.ready)
-
-  /* Read Signals */
-  // Read Address
-  io.nasti.ar.bits := NastiReadAddressChannel(
-    id   = io.mem.req_cmd.bits.tag,
-    addr = io.mem.req_cmd.bits.addr << UInt(addrOffsetBits),
-    len  = UInt(nastiDataBeats*mifDataBeats-1), // burst length (transfers)
-    size = UInt(log2Up(scala.math.min(mifDataBits/8, nastiXDataBits/8))) // burst size (bits/beat)
-  )
-  io.nasti.ar.valid := state_r === st_read
-  // Read Data
-  io.nasti.r.ready      := io.mem.resp.ready
-  io.mem.resp.bits.tag  := io.nasti.r.bits.id
-  io.mem.resp.valid     := read_wrap_out 
-  io.mem.resp.bits.data := 
-    (if (nastiDataBeats > 1) Cat(io.nasti.r.bits.data, resp_data_buf.toBits) else io.nasti.r.bits.data)
-
-  /* Write Signals */
-  // Write Address
-  io.nasti.aw.bits := NastiWriteAddressChannel(UInt(0), 
-    io.nasti.ar.bits.addr, io.nasti.ar.bits.size, io.nasti.ar.bits.len)
-  io.nasti.aw.valid := state_r === st_start_write
-  // Write Data
-  io.mem.req_data.ready := write_wrap_out
-  io.nasti.w.valid      := io.mem.req_data.valid && state_r === st_write
-  io.nasti.w.bits := NastiWriteDataChannel(
-    last = Counter(io.nasti.w.fire(), nastiDataBeats*mifDataBeats)._2,
-    data = Vec((0 until nastiDataBeats) map (i =>
-      io.mem.req_data.bits.data((i+1)*nastiXDataBits-1, i*nastiXDataBits)))(write_count))
-  // Write Response
-  io.nasti.b.ready := Bool(true)
-
-  if (nastiDataBeats > 1) {
-    when(io.nasti.r.valid && !read_wrap_out) {
-      resp_data_buf(read_count) := io.nasti.r.bits.data
-    }
-  }
-
-  /* FSM for memory requests */
-  switch(state_r) {
-    is(st_idle) {
-      state_r :=
-        Mux(io.mem.req_cmd.valid && io.mem.req_cmd.bits.rw && io.mem.req_data.valid, st_start_write,
-        Mux(io.mem.req_cmd.valid && !io.mem.req_cmd.bits.rw, st_read, st_idle))
-    }
-    is(st_read) {
-      state_r := Mux(io.nasti.ar.ready, st_idle, st_read)
-    }
-    is(st_start_write) {
-      state_r := Mux(io.nasti.aw.ready && io.mem.req_data.valid, st_write, st_start_write)
-    }
-    is(st_write) {
-      state_r := Mux(io.nasti.w.bits.last, st_idle, st_write)
-    }
-  }
+  val memMap = ((simIo.genIoMap(memIo.ar.bits.addr.flatten ++
+    memIo.aw.bits.addr.flatten ++ memIo.w.bits.data.flatten) map {
+      case (wire, id) => wire -> (id + 1 + memCycleAddr)}) ++
+    (simIo.genIoMap(memIo.r.bits.data.flatten) map {
+      case (wire, id) => wire -> (id + 1 + io.outs.size + 
+        io.inT.size + io.outT.size + ChainType.values.size)})).toMap
 }
 
 class NastiShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
@@ -233,7 +165,7 @@ class NastiShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  =  new NastiIO()(p alter Map(NastiType -> NastiSlave))
 }
 
-class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFModule()(p) {
+class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends NastiModule()(p) {
   val io = new NastiShimIO
   // Simulation Target
   val sim: T = Module(c)
@@ -248,16 +180,17 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   in_bufs.zipWithIndex  map {case (buf, i) => buf setName (s"in_buf_${i}")}
   out_bufs.zipWithIndex map {case (buf, i) => buf setName (s"out_buf_${i}")}
 
-  val arb    = Module(new MemArbiter(SimMemIO.size+1))
-  val mem    = arb.io.ins(SimMemIO.size)
+  val arb    = Module(new NastiArbiter(SimMemIO.size+1)(p alter Map(NastiType -> NastiSlave)))
+  val mem    = arb.io.master(SimMemIO.size)
   val master = Module(new NastiMasterHandler(sim.io, mem)(p alter Map(NastiType -> NastiMaster)))
-  val slave  = Module(new NastiSlaveHandler()            (p alter Map(NastiType -> NastiSlave)))
-  val reqCmdChannels = mem.req_cmd.bits.flatten map {case (name, wire) => 
-    s"req_cmd_${name}" -> wire} flatMap (sim.genChannels(_)(this, false))
-  val reqDataChannels = mem.req_data.bits.flatten map {case (name, wire) =>
-    s"req_data_${name}" -> wire} flatMap (sim.genChannels(_)(this, false))
-  val respChannels = mem.resp.bits.flatten map {case (name, wire) =>
-    s"resp_${name}" -> wire} flatMap (sim.genChannels(_)(this, false))
+  val ar = mem.ar.bits.addr.cloneType.asOutput.flatten map 
+    ("ar" -> _._2) flatMap (sim.genChannels(_)(this, false))
+  val aw = mem.aw.bits.addr.cloneType.asOutput.flatten map 
+    ("aw" -> _._2) flatMap (sim.genChannels(_)(this, false))
+  val w  = mem.w.bits.data.cloneType.asOutput.flatten map
+    ("w" -> _._2) flatMap (sim.genChannels(_)(this, false))
+  val r  = mem.r.bits.data.cloneType.asInput.flatten map 
+    ("r" -> _._2) flatMap (sim.genChannels(_)(this, false))
 
   // Pass tokens
   val tickCounter = RegInit(UInt(0))
@@ -283,17 +216,18 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   }.elsewhen(master.io.reset_t) {
     tockCounter := UInt(1)
   }
+  sim.reset := master.io.reset_t
   master.io.fin.valid := Bool(true)
   master.io.fin.bits  := !tockCounter.orR
-  master.io.len  <> sim.io.traceLen
+  master.io.tracelen  <> sim.io.traceLen
   master.io.ins  <> Vec(in_bufs  map (_.io.enq))
   master.io.outs <> Vec(out_bufs map (_.io.deq)) 
   master.io.inT  <> sim.io.inT
   master.io.outT <> sim.io.outT
-  master.io.mem.req_cmd  <> Vec(reqCmdChannels  map (_.io.in))
-  master.io.mem.req_data <> Vec(reqDataChannels map (_.io.in))
-  master.io.mem.resp     <> Vec(respChannels    map (_.io.out))
-  sim.reset := master.io.reset_t
+  master.io.mem.aw <> Vec(aw map (_.io.in))
+  master.io.mem.ar <> Vec(ar map (_.io.in))
+  master.io.mem.w  <> Vec(w  map (_.io.in))
+  master.io.mem.r  <> Vec(r  map (_.io.out))
   master.io.daisy.trace.in <> sim.io.daisy.trace.in
   master.io.daisy.regs.in  <> sim.io.daisy.regs.in
   master.io.daisy.sram(0).in <> sim.io.daisy.sram(0).in
@@ -319,30 +253,34 @@ class NastiShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends MIFMod
   sim.io.daisy.cntr.out.ready := master.io.daisy.cntr.out.ready
 
   // Slave Connection
-  slave.io.nasti <> io.slave
-  slave.io.mem <> arb.io.out
+  io.slave <> arb.io.slave
 
   // Memory Connection
   for (i <-0 until SimMemIO.size) {
     val conv = Module(new ChannelMemIOConverter)
     conv setName s"mem_conv_${i}"
     conv.reset := master.io.reset_t
-    conv.io.latency  <> master.io.lat
+    conv.io.latency  <> master.io.latency
     conv.io.sim_mem  <> (SimMemIO(i), sim.io)
-    conv.io.host_mem <> arb.io.ins(i)
+    conv.io.host_mem <> arb.io.master(i)
   }
 
-  (mem.req_cmd.bits.flatten foldLeft 0)(sim.connectInput(_, _, reqCmdChannels))
-  mem.req_cmd.valid := (reqCmdChannels foldLeft Bool(true))(_ && _.io.out.valid)
-  reqCmdChannels foreach (_.io.out.ready := mem.req_cmd.ready)
-
-  (mem.req_data.bits.flatten foldLeft 0)(sim.connectInput(_, _, reqDataChannels))
-  mem.req_data.valid := (reqDataChannels foldLeft Bool(true))(_ && _.io.out.valid)
-  reqDataChannels foreach (_.io.out.ready := mem.req_data.ready)
-
-  (mem.resp.bits.flatten foldLeft 0)(sim.connectOutput(_, _, respChannels))
-  mem.resp.ready := (reqDataChannels foldLeft Bool(true))(_ && _.io.in.ready)
-  respChannels foreach (_.io.in.valid := mem.resp.valid)
+  mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
+    Vec(aw map (_.io.out.bits)).toBits, UInt(log2Up(mem.w.bits.nastiXDataBits/8)))
+  mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
+    Vec(ar map (_.io.out.bits)).toBits, UInt(log2Up(mem.r.bits.nastiXDataBits/8)))
+  mem.w.bits := NastiWriteDataChannel(Vec(w map (_.io.out.bits)).toBits)
+  r.zipWithIndex foreach {case (buf, i) =>
+    buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)}
+  mem.aw.valid := (aw foldLeft Bool(true))(_ && _.io.out.valid)
+  mem.ar.valid := (ar foldLeft Bool(true))(_ && _.io.out.valid)
+  mem.w.valid := (w foldLeft Bool(true))(_ && _.io.out.valid)
+  mem.r.ready := (w foldLeft Bool(true))(_ && _.io.in.ready)
+  aw foreach (_.io.out.ready := mem.aw.ready)
+  ar foreach (_.io.out.ready := mem.ar.ready)
+  w foreach (_.io.out.ready := mem.w.ready)
+  r foreach (_.io.in.valid := mem.r.valid)
+  mem.b.ready := Bool(true)
 
   transforms.init(this)
 }
