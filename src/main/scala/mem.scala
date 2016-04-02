@@ -123,13 +123,13 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   val ar = new SimDecoupledIO(new NastiReadAddressChannel)
   val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
 
-  val aw_buf  = Module(new Queue(new NastiWriteAddressChannel,  2, flow=true))
-  val ar_buf  = Module(new Queue(new NastiReadAddressChannel,   2, flow=true))
-  val w_buf   = Module(new Queue(new NastiWriteDataChannel,     8, flow=true))
-  val r_buf   = Module(new Queue(new NastiReadDataChannel,      8, flow=true))
-  val b_buf   = Module(new Queue(new NastiWriteResponseChannel, 2, flow=true))
+  val aw_buf  = Module(new Queue(new NastiWriteAddressChannel,  4,  flow=true))
+  val ar_buf  = Module(new Queue(new NastiReadAddressChannel,   4,  flow=true))
+  val w_buf   = Module(new Queue(new NastiWriteDataChannel,     32, flow=true))
+  val r_buf   = Module(new Queue(new NastiReadDataChannel,      32, flow=true))
+  val b_buf   = Module(new Queue(new NastiWriteResponseChannel, 4,  flow=true))
   val r_pipe  = Module(new HellaQueue(maxLatency)(Valid(new NastiReadDataChannel)))
-  val latency = RegInit(UInt(0, maxLatencyWidth)) 
+  val latency = RegInit(UInt(0, maxLatencyWidth))
   val counter = RegInit(UInt(0, maxLatencyWidth))
 
   io.latency.ready := latency === counter
@@ -142,8 +142,8 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   r_pipe.reset := reset || io.latency.fire()
 
   val pipe_rdy = r_pipe.io.deq.valid && counter === latency || !latency.orR
-  io.sim_mem.aw.target.ready := Bool(true)
-  io.sim_mem.aw.ready        := io.sim_mem.aw.valid && aw_buf.io.enq.ready && pipe_rdy
+  io.sim_mem.aw.target.ready := aw_buf.io.enq.ready && w_buf.io.enq.ready
+  io.sim_mem.aw.ready        := io.sim_mem.aw.valid && pipe_rdy
   aw_buf.io.enq.bits.id      := io.sim_mem.aw.target.bits.id
   aw_buf.io.enq.bits.addr    := io.sim_mem.aw.target.bits.addr
   aw_buf.io.enq.bits.len     := io.sim_mem.aw.target.bits.len
@@ -155,11 +155,10 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   aw_buf.io.enq.bits.qos     := io.sim_mem.aw.target.bits.qos
   aw_buf.io.enq.bits.region  := io.sim_mem.aw.target.bits.region
   aw_buf.io.enq.bits.user    := io.sim_mem.aw.target.bits.user
-  aw_buf.io.enq.valid        := io.sim_mem.aw.target.valid && io.sim_mem.aw.ready
+  aw_buf.io.enq.valid        := io.sim_mem.aw.target.fire() && io.sim_mem.aw.ready
 
-  io.sim_mem.ar.target.ready := Bool(true)
-  io.sim_mem.ar.ready        := io.sim_mem.ar.valid && ar_buf.io.enq.ready && pipe_rdy
-  aw_buf.io.enq.bits := io.sim_mem.aw.target.bits
+  io.sim_mem.ar.target.ready := ar_buf.io.enq.ready && r_buf.io.enq.ready
+  io.sim_mem.ar.ready        := io.sim_mem.ar.valid && pipe_rdy
   ar_buf.io.enq.bits.id      := io.sim_mem.ar.target.bits.id
   ar_buf.io.enq.bits.addr    := io.sim_mem.ar.target.bits.addr
   ar_buf.io.enq.bits.len     := io.sim_mem.ar.target.bits.len
@@ -171,27 +170,27 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   ar_buf.io.enq.bits.qos     := io.sim_mem.ar.target.bits.qos
   ar_buf.io.enq.bits.region  := io.sim_mem.ar.target.bits.region
   ar_buf.io.enq.bits.user    := io.sim_mem.ar.target.bits.user
-  ar_buf.io.enq.valid        := io.sim_mem.ar.target.valid && io.sim_mem.ar.ready
+  ar_buf.io.enq.valid        := io.sim_mem.ar.target.fire() && io.sim_mem.ar.ready
 
-  io.sim_mem.w.target.ready  := Bool(true)
-  io.sim_mem.w.ready         := io.sim_mem.w.valid && w_buf.io.enq.ready && pipe_rdy
+  io.sim_mem.w.target.ready  := w_buf.io.enq.ready
+  io.sim_mem.w.ready         := io.sim_mem.aw.ready
   w_buf.io.enq.bits.strb     := io.sim_mem.w.target.bits.strb
   w_buf.io.enq.bits.data     := io.sim_mem.w.target.bits.data
   w_buf.io.enq.bits.last     := io.sim_mem.w.target.bits.last
   w_buf.io.enq.bits.user     := io.sim_mem.w.target.bits.user
-  w_buf.io.enq.valid         := io.sim_mem.w.target.valid && io.sim_mem.w.ready
+  w_buf.io.enq.valid         := io.sim_mem.w.target.fire() && io.sim_mem.w.ready
 
-  io.sim_mem.b.valid := io.sim_mem.b.ready && (b_buf.io.deq.valid || 
-    io.sim_mem.w.ready && !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last))
+  io.sim_mem.b.valid := io.sim_mem.b.ready && pipe_rdy && (b_buf.io.deq.valid ||
+    io.sim_mem.w.ready && !(io.sim_mem.w.target.fire() && io.sim_mem.w.target.bits.last))
   io.sim_mem.b.target.valid     := b_buf.io.deq.valid
   io.sim_mem.b.target.bits.id   := b_buf.io.deq.bits.id
   io.sim_mem.b.target.bits.resp := b_buf.io.deq.bits.resp
-  io.sim_mem.b.target.bits.user := b_buf.io.deq.bits.user 
+  io.sim_mem.b.target.bits.user := b_buf.io.deq.bits.user
   b_buf.io.deq.ready := io.sim_mem.b.valid && io.sim_mem.b.target.ready
 
-  io.sim_mem.r.valid := io.sim_mem.r.ready && (Mux(latency.orR, 
-    r_buf.io.enq.fire() || r_pipe.io.deq.bits.valid && latency === counter, r_buf.io.deq.valid) || 
-    io.sim_mem.ar.ready && !io.sim_mem.ar.target.valid)
+  io.sim_mem.r.valid := io.sim_mem.r.ready && pipe_rdy && (
+    io.sim_mem.ar.ready && !io.sim_mem.ar.target.fire() ||
+    Mux(latency.orR, r_buf.io.enq.valid || r_pipe.io.deq.bits.valid, r_buf.io.deq.valid))
   io.sim_mem.r.target.valid     := Mux(latency.orR, r_pipe.io.deq.bits.valid, r_buf.io.deq.valid)
   io.sim_mem.r.target.bits.id   := Mux(latency.orR, r_pipe.io.deq.bits.bits.id, r_buf.io.deq.bits.id)
   io.sim_mem.r.target.bits.data := Mux(latency.orR, r_pipe.io.deq.bits.bits.data, r_buf.io.deq.bits.data)
@@ -199,9 +198,9 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   io.sim_mem.r.target.bits.resp := Mux(latency.orR, r_pipe.io.deq.bits.bits.resp, r_buf.io.deq.bits.resp)
   io.sim_mem.r.target.bits.user := Mux(latency.orR, r_pipe.io.deq.bits.bits.user, r_buf.io.deq.bits.user)
 
-  r_buf.io.deq.ready  := Mux(latency.orR, r_pipe.io.enq.fire(), io.sim_mem.r.valid && io.sim_mem.r.target.ready)
-  r_pipe.io.deq.ready := io.sim_mem.r.valid && (!io.sim_mem.r.target.valid || io.sim_mem.r.target.ready) && latency === counter
-  r_pipe.io.enq.valid := r_pipe.io.deq.fire() || latency =/= counter 
+  r_buf.io.deq.ready  := Mux(latency.orR, r_pipe.io.deq.ready, io.sim_mem.r.valid && io.sim_mem.r.target.ready)
+  r_pipe.io.deq.ready := io.sim_mem.r.valid && (io.sim_mem.r.target.ready || !io.sim_mem.r.target.valid)
+  r_pipe.io.enq.valid := r_pipe.io.deq.ready || latency =/= counter
   r_pipe.io.enq.bits.valid      := r_buf.io.deq.valid
   r_pipe.io.enq.bits.bits.id    := r_buf.io.deq.bits.id
   r_pipe.io.enq.bits.bits.data  := r_buf.io.deq.bits.data
