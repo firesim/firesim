@@ -13,6 +13,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   last_sample_id = 0;
 
   profile = false;
+  sample_num = SAMPLE_NUM;
   sample_count = 0;
   sample_time = 0;
 
@@ -144,6 +145,9 @@ void simif_t::init() {
       load_mem(filename);
       fprintf(stdout, "[loadmem] done\n");
     }
+    if (arg.find("+samplenum=") == 0) {
+      sample_num = strtol(arg.c_str()+11, NULL, 10);
+    }
     if (arg.find("+profile") == 0) profile = true;
   }
 
@@ -168,7 +172,7 @@ void simif_t::finish() {
   std::ostringstream oss;
   oss << prefix << ".sample";
   std::ofstream out(oss.str().c_str());
-  for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
+  for (size_t i = 0 ; i < sample_num ; i++) {
     std::ostringstream oss;
     oss << prefix << "_" << i << ".sample";
     std::ifstream f(oss.str().c_str());
@@ -195,8 +199,8 @@ void simif_t::step(size_t n) {
   if (t % trace_len == 0) {
     uint64_t start_time = 0;
     size_t record_id = t / trace_len;
-    size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
-    if (sample_id < SAMPLE_NUM) {
+    size_t sample_id = record_id < sample_num ? record_id : rand() % (record_id + 1);
+    if (sample_id < sample_num) {
       sample_count++;
       if (profile) start_time = timestamp();
       if (last_sample != NULL) {
