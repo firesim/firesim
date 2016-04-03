@@ -23,7 +23,7 @@ class NastiMasterHandler(simIo: SimWrapperIO, memIo: NastiIO)(implicit p: Parame
     val latency = Decoupled(UInt(width=nastiXDataBits))
     val ins = Vec(simIo.inMap filterNot (SimMemIO contains _._1) flatMap simIo.getIns map (_.cloneType))
     val outs = Vec(simIo.outMap filterNot (SimMemIO contains _._1) flatMap simIo.getOuts map (_.cloneType.flip))
-    val inT = Vec(simIo.inMap  flatMap simIo.getIns  map (_.cloneType.flip))
+    val inT = Vec(simIo.inMap flatMap simIo.getIns map (_.cloneType.flip))
     val outT = Vec(simIo.outMap flatMap simIo.getOuts map (_.cloneType.flip))
     val daisy = simIo.daisy.cloneType.flip
     val reset_t = Bool(OUTPUT)

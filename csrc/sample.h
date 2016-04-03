@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <ostream>
+#include <cassert>
 #include "biguint.h"
 
 enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
@@ -44,7 +45,7 @@ public:
     return os << LOAD << " " << node << " " << *value << " " << idx << std::endl;
   }
 private:
-  const char* node;
+  const char* const node;
   biguint_t* const value;
   const int idx;
 };
@@ -62,40 +63,46 @@ public:
   }
   inline const char* name() const { return node; }
 private:
-  const char* node;
+  const char* const node;
   biguint_t* const value;
 };
 
+
+void dump_f(
+  FILE *file, SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size);
+std::ostream& dump_s(
+  std::ostream &os, SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size);
+
 class poke_t: public sample_inst_t {
 public:
-  poke_t(std::string& node_, biguint_t* value_): 
-    node(node_.c_str()), value(value_) {} 
+  poke_t(const std::string &node_, uint32_t* value_, size_t size_);
   ~poke_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", POKE, node, value->str().c_str());
+    dump_f(file, POKE, node, value, size);
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << POKE << " " << node << " " << *value << std::endl;
+    return dump_s(os, POKE, node, value, size);
   } 
 private:
-  const char* node;
-  biguint_t* const value;
+  const char* const node;
+  const size_t size;
+  uint32_t* value;
 };
 
 class expect_t: public sample_inst_t {
 public:
-  expect_t(std::string& node_, biguint_t* value_): 
-    node(node_.c_str()), value(value_) { }
+  expect_t(const std::string& node_, uint32_t* value_, size_t size_); 
   ~expect_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", EXPECT, node, value->str().c_str());
+    dump_f(file, POKE, node, value, size);
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << EXPECT << " " << node << " " << *value << std::endl;
+    return dump_s(os, POKE, node, value, size);
   }
 private:
-  const char* node;
-  biguint_t* const value;
+  const char* const node;
+  const size_t size;
+  uint32_t* value;
 };
 
 class count_t: public sample_inst_t {
@@ -110,7 +117,7 @@ public:
     return os << COUNT << " " << node << " " << *value << std::endl;
   }
 private:
-  const char* node;
+  const char* const node;
   biguint_t* const value;
 };
 

@@ -14,7 +14,6 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   last_sample = NULL;
   last_sample_id = 0;
-  sample_split = false;
 
   profile = false;
   sample_count = 0;
@@ -148,7 +147,6 @@ void simif_t::init() {
       load_mem(filename);
       fprintf(stdout, "[loadmem] done\n");
     }
-    if (arg.find("+split") == 0) sample_split = true;
     if (arg.find("+profile") == 0) profile = true;
   }
 
@@ -167,11 +165,12 @@ void simif_t::finish() {
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
   // dump samples
-  std::string filename = prefix + ".sample";
-  // std::ofstream file(filename.c_str());
-  FILE *file = fopen(filename.c_str(), "w");
+  std::ostringstream oss;
+  oss << prefix << ".sample";
+  // std::ofstream file(oss.str());
+  FILE *file = fopen(oss.str().c_str(), "w");
   for (size_t i = 0 ; i < SAMPLE_NUM ; i++) {
-    if (sample_split) {
+    if (i != 0 && i % 30 == 0) {
       // file.close();
       fclose(file);
       std::ostringstream oss;
@@ -179,6 +178,7 @@ void simif_t::finish() {
       // file.open(oss.str());
       file = fopen(oss.str().c_str(), "w");
     }
+fprintf(stdout, "#%d printed\n", i);
     if (samples[i] != NULL) { 
       // file << *samples[i];
       samples[i]->dump(file);
@@ -186,7 +186,7 @@ void simif_t::finish() {
     }
   }
   sample_t* snap = read_snapshot();
-  // file << *cntr;
+  // file << *snap;
   snap->dump(file);
   delete snap;
   // file.close();
@@ -208,6 +208,7 @@ void simif_t::step(size_t n) {
     size_t record_id = t / trace_len;
     size_t sample_id = record_id < SAMPLE_NUM ? record_id : rand() % (record_id + 1);
     if (sample_id < SAMPLE_NUM) {
+      fprintf(stdout, "sample count = %d at cycle %llu\n", sample_count, t);
       sample_count++;
       if (profile) start_time = timestamp();
       if (last_sample != NULL) {
@@ -238,27 +239,25 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
     for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
-      std::string wire = it->first;
       size_t id = it->second;
       size_t chunk = out_chunks[id];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new poke_t(wire, new biguint_t(data, chunk)));
+      sample->add_cmd(new poke_t(it->first, data, chunk));
       delete[] data;
     }
     sample->add_cmd(new step_t(1));
     // output traces from FPGA
     for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
-      std::string wire = it->first;
       size_t id = it->second;
       size_t chunk = out_chunks[id];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new expect_t(wire, new biguint_t(data, chunk)));
+      sample->add_cmd(new expect_t(it->first, data, chunk));
       delete[] data;
     }
   }
