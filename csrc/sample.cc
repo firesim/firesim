@@ -96,3 +96,40 @@ void sample_t::dump_forces() {
   }
   force_prev_node = NULL;
 }
+
+poke_t::poke_t(const std::string &node_, uint32_t* value_, size_t size_):
+    node(node_.c_str()), size(size_) {
+  assert(size > 0);
+  value = new uint32_t[size];
+  memcpy(value, value_, size*sizeof(uint32_t));
+}
+
+expect_t::expect_t(const std::string &node_, uint32_t* value_, size_t size_):
+    node(node_.c_str()), size(size_) {
+  assert(size > 0);
+  value = new uint32_t[size];
+  memcpy(value, value_, size*sizeof(uint32_t));
+}
+
+void dump_f(FILE *file, 
+    SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size) {
+  fprintf(file, "%u %s ", type, node);
+  fprintf(file, "%x", value[size-1]);
+  for (int i = size - 2 ; i >= 0 ; i--) {
+    fprintf(file, "%08x", value[i]);
+  }
+  fprintf(file, "\n");
+}
+
+std::ostream& dump_s(std::ostream &os, 
+    SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size) {
+  os << type << " " << node << " ";
+  os << std::hex;
+  os << value[size-1];
+  os << std::setfill('0') << std::setw(HEX_WIDTH);
+  for (int i = size - 2 ; i >= 0 ; i--) {
+    os << value[i];
+  }
+  os << std::setfill(' ') << std::setw(0) << std::dec << std::endl;;
+  return os;
+}

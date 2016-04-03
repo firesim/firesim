@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include <ostream>
+#include <iomanip>
+
+#define UINT_WIDTH 32
+#define HEX_WIDTH 8
 
 class biguint_t {
 public:

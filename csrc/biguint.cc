@@ -1,11 +1,7 @@
-#include <iomanip>
 #include <sstream>
 #include <cstring>
 #include <cassert>
 #include "biguint.h"
-
-#define UINT_WIDTH 32
-#define HEX_WIDTH 8
 
 biguint_t::biguint_t(const char* v, size_t base) {
   // we only accepts hex or bin
@@ -228,8 +224,8 @@ std::ostream& operator<<(std::ostream &os, const biguint_t& value) {
   assert(value.size > 0);
   os << std::hex;
   os << value.data[value.size-1];
+  os << std::setfill('0') << std::setw(HEX_WIDTH);
   for (int i = value.size - 2 ; i >= 0 ; i--) {
-    os << std::setfill('0') << std::setw(HEX_WIDTH);
     os << value.data[i];
   }
   os << std::setfill(' ') << std::setw(0) << std::dec;

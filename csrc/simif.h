@@ -54,7 +54,6 @@ class simif_t
     sample_t* samples[SAMPLE_NUM];
     sample_t* last_sample;
     size_t last_sample_id;
-    bool sample_split;
 
     // profile information    
     bool profile;
