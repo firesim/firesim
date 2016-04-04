@@ -143,7 +143,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
   override def step(n: Int) {
     addEvent(new StepEvent(n, t))
     // reservoir sampling
-    if (cycles % traceLen == 0) {
+    /* if (cycles % traceLen == 0) {
       val recordId = t / traceLen
       val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
       if (sampleId < sampleNum) {
@@ -156,7 +156,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
         if (args.snapCheck) verifySnapshot(sample)
         traceCount = 0 
       }
-    }
+    } */
     // take steps
     _tick(n)
     incTime(n)
@@ -290,7 +290,7 @@ case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
 abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T, 
-    args: StroberTestArgs, loadmemType: LoadMemType = SlowLoadMem) 
+    args: StroberTestArgs, loadmemType: LoadMemType = FastLoadMem) 
     extends SimTester(c, args) {
   protected[strober] val inMap = c.master.inMap
   protected[strober] val outMap = c.master.outMap

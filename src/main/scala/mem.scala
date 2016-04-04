@@ -125,7 +125,7 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
 
   val aw_buf  = Module(new Queue(new NastiWriteAddressChannel,  4,  flow=true))
   val ar_buf  = Module(new Queue(new NastiReadAddressChannel,   4,  flow=true))
-  val w_buf   = Module(new Queue(new NastiWriteDataChannel,     32, flow=true))
+  val w_buf   = Module(new Queue(new NastiWriteDataChannel,     16, flow=true))
   val r_buf   = Module(new Queue(new NastiReadDataChannel,      32, flow=true))
   val b_buf   = Module(new Queue(new NastiWriteResponseChannel, 4,  flow=true))
   val r_pipe  = Module(new HellaQueue(maxLatency)(Valid(new NastiReadDataChannel)))
@@ -141,7 +141,7 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   }
   r_pipe.reset := reset || io.latency.fire()
 
-  val pipe_rdy = r_pipe.io.deq.valid && counter === latency || !latency.orR
+  val pipe_rdy = counter === latency || !latency.orR
   io.sim_mem.aw.target.ready := aw_buf.io.enq.ready && w_buf.io.enq.ready
   io.sim_mem.aw.ready        := io.sim_mem.aw.valid && pipe_rdy
   aw_buf.io.enq.bits.id      := io.sim_mem.aw.target.bits.id
@@ -173,7 +173,7 @@ class ChannelMemIOConverter(implicit p: Parameters) extends NastiModule()(p) {
   ar_buf.io.enq.valid        := io.sim_mem.ar.target.fire() && io.sim_mem.ar.ready
 
   io.sim_mem.w.target.ready  := w_buf.io.enq.ready
-  io.sim_mem.w.ready         := io.sim_mem.aw.ready
+  io.sim_mem.w.ready         := io.sim_mem.w.valid && io.sim_mem.r.valid // don't write memory before read!
   w_buf.io.enq.bits.strb     := io.sim_mem.w.target.bits.strb
   w_buf.io.enq.bits.data     := io.sim_mem.w.target.bits.data
   w_buf.io.enq.bits.last     := io.sim_mem.w.target.bits.last
