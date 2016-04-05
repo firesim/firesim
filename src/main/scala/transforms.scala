@@ -120,7 +120,7 @@ object transforms {
  
   def addCounter(m: Module, cond: Bool, name: String) {
     val chain = chains(ChainType.Cntr) getOrElseUpdate (m, ArrayBuffer[Node]())
-    val cntr = RegInit(UInt(0, 32))
+    val cntr = RegInit(UInt(0, 64))
     when (cond) { cntr := cntr + UInt(1) }
     cntr.getNode setName name
     m.debug(cntr.getNode)
