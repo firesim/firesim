@@ -94,10 +94,10 @@ public:
   expect_t(const std::string& node_, uint32_t* value_, size_t size_); 
   ~expect_t() { delete value; }
   virtual void dump(FILE *file) const {
-    dump_f(file, POKE, node, value, size);
+    dump_f(file, EXPECT, node, value, size);
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, POKE, node, value, size);
+    return dump_s(os, EXPECT, node, value, size);
   }
 private:
   const char* const node;
