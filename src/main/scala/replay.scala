@@ -92,50 +92,64 @@ class Replay[+T <: Module](c: T, args: ReplayArgs)
   args.samples.zipWithIndex foreach {case (sample, i) =>
     addEvent(new ReplayStartEvent(i, sample.cycle))
     reset(5)
-    sample map {
-      case Step(n) => step(n)
-      case Force(node, value) =>
+    (sample fold false){
+      case (f, Step(n)) =>
+        if (f) dumpoff
+        step(n)
+        if (f) dumpon
+        false
+      case (f, Force(node, value)) =>
         addEvent(new ForceEvent(node, value))
         if (matchMap.isEmpty) pokeNode(node, value, force=true)
         else loadWires(node, value, None, true)
-      case Load(node, value, off) => node match {
-        case mem: Mem[_] if mem.seqRead && !mem.isInline && !combRAMs(mem) => off match {
-          case None =>
-            val info = sramInfo(mem)
-            val u = UInt(value, mem.needWidth)
-            val v = if (info.dummy == 0) value else
-              Cat(((info.cols-1) to 0 by -1) map (i => 
-              Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
-            pokePath(s"${info.path}.O1", v)
-          case Some(p) if p < mem.n => 
-            val info = sramInfo(mem)
-            val u = UInt(value, mem.needWidth)
-            val v = if (info.dummy == 0) value else 
-              Cat(((info.cols) to 0 by -1) map (i => 
-              Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
-            pokePath(s"${info.path}.memory[${p}]", v)
-          case _ => // skip
+        true
+      case (f, Load(node, value, off)) =>
+        assert(!f)
+        node match {
+          case mem: Mem[_] if mem.seqRead && !mem.isInline && !combRAMs(mem) => off match {
+            case None =>
+              val info = sramInfo(mem)
+              val u = UInt(value, mem.needWidth)
+              val v = if (info.dummy == 0) value else
+                Cat(((info.cols-1) to 0 by -1) map (i => 
+                Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
+              pokePath(s"${info.path}.O1", v)
+            case Some(p) if p < mem.n => 
+              val info = sramInfo(mem)
+              val u = UInt(value, mem.needWidth)
+              val v = if (info.dummy == 0) value else 
+                Cat(((info.cols) to 0 by -1) map (i => 
+                Cat(UInt(0, info.dummy), u((i+1)*info.qwidth-1, i*info.qwidth)))).litValue()
+              pokePath(s"${info.path}.memory[${p}]", v)
+            case _ => // skip
+          }
+          case mem: Mem[_] if mem.seqRead && !mem.isInline => off match {
+            case Some(p) if p < mem.n =>
+              val path = s"${dumpName(mem)}.ram"
+              if (matchMap.isEmpty) pokePath(s"${path}[${p}]", value) 
+              else loadWires(path, mem.needWidth, value, off, false)
+            case _ => // skip
+          }
+          case mem: Mem[_] if off == None => // skip
+          case reg: Reg if addrRegs contains reg =>
+            val mem = addrRegs(reg)
+            val name = if (mem.readwrites.isEmpty) "reg_R1A" else "reg_RW0A"
+            val path = s"${dumpName(mem)}.${name}"
+            if (matchMap.isEmpty) pokePath(path, value) 
+            else loadWires(path, node.needWidth, value, off, false)
+          case _ => 
+            if (matchMap.isEmpty) pokeNode(node, value, off, false) 
+            else loadWires(node, value, off, false)
         }
-        case mem: Mem[_] if mem.seqRead && !mem.isInline => off match {
-          case Some(p) if p < mem.n =>
-            val path = s"${dumpName(mem)}.ram"
-            if (matchMap.isEmpty) pokePath(s"${path}[${p}]", value) 
-            else loadWires(path, mem.needWidth, value, off, false)
-          case _ => // skip
-        }
-        case mem: Mem[_] if off == None => // skip
-        case reg: Reg if addrRegs contains reg =>
-          val mem = addrRegs(reg)
-          val name = if (mem.readwrites.isEmpty) "reg_R1A" else "reg_RW0A"
-          val path = s"${dumpName(mem)}.${name}"
-          if (matchMap.isEmpty) pokePath(path, value) 
-          else loadWires(path, node.needWidth, value, off, false)
-        case _ => 
-          if (matchMap.isEmpty) pokeNode(node, value, off, false) 
-          else loadWires(node, value, off, false)
-      }
-      case PokePort(node, value) => poke(node, value)
-      case ExpectPort(node, value) => expect(node, value)
+        false
+      case (f, PokePort(node, value)) =>
+        assert(!f)
+        poke(node, value)
+        false
+      case (f, ExpectPort(node, value)) =>
+        assert(!f)
+        expect(node, value)
+        false
     }
   }
   val endTime = System.nanoTime
