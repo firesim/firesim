@@ -149,6 +149,7 @@ class Sample(protected[strober] val cycle: Long = -1L) {
   def addCmd(cmd: SampleInst) { cmds += cmd }
       
   def map[T](f: SampleInst => T) = { cmds map f }
+  def fold[T](r: T)(f: (T, SampleInst) => T) { (cmds foldLeft r)(f) }
   override def toString = {
     val res = new StringBuilder
     res append "%d cycle: %d\n".format(SampleInstType.CYCLE.id, cycle)
