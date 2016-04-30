@@ -79,8 +79,8 @@ object Fame1 extends Pass {
   private val hostReset = Port(NoInfo, "hostReset", INPUT, UIntType(IntWidth(1)))
   private val targetFire = Port(NoInfo, "targetFire", INPUT, UIntType(IntWidth(1)))
 
-  private def wrapName(name: String): String = s"SimWrap_${name}"
-  private def unwrapName(name: String): String = name.stripPrefix("SimWrap_")
+  private def wrapName(name: String): String = s"${name}_FAME1"
+  private def unwrapName(name: String): String = name.stripSuffix("_FAME1")
   private def queueName(src: String, dst: String): String = s"SimQueue_${src}_${dst}"
   private def instName(name: String): String = s"inst_${name}"
   private def unInstName(name: String): String = name.stripPrefix("inst_")
@@ -99,6 +99,11 @@ object Fame1 extends Pass {
     exp match {
       case ref: Ref => ("topIO", ref.name)
       case sub: SubField => 
+        sub.exp match {
+          case ref: Ref => (ref.name, sub.name)
+          case _ => throw unsupportedExp
+        }
+      case sub: WSubField => 
         sub.exp match {
           case ref: Ref => (ref.name, sub.name)
           case _ => throw unsupportedExp
@@ -281,61 +286,65 @@ object Fame1 extends Pass {
     Seq(Port(NoInfo, "io", OUTPUT, BundleType(Seq(Field("hostIn", REVERSE, genHostDecoupled(inputs)),
                                                   Field("hostOut", DEFAULT, genHostDecoupled(outputs))))))
   }
-  private def generateSimTop(wrappers: Seq[Module], simQueues: SimQMap, portMap: PortMap, rtlTop: Module): Module = {
-    val insts = (wrappers map { m => DefInstance(NoInfo, instName(m.name), m.name) }) ++
-                (simQueues.values map { m => DefInstance(NoInfo, instName(m.name), m.name) })
-    val connectClocks = (wrappers ++ simQueues.values) map { m => 
+  private def generateSimTop(wrappers: Seq[Module], portMap: PortMap, rtlTop: Module): Module = {
+    val insts = (wrappers map { m => DefInstance(NoInfo, instName(m.name), m.name) })
+    val connectClocks = (wrappers) map { m => 
       Connect(NoInfo, buildExp(Seq(instName(m.name), hostClock.name)), buildExp(hostClock.name)) 
     }
-    val connectResets = (wrappers ++ simQueues.values) map { m =>
+    val connectResets = (wrappers) map { m =>
       Connect(NoInfo, buildExp(Seq(instName(m.name), hostReset.name)), buildExp(hostReset.name))
     }
     // Connect queues to simulation modules (excludes IO)
-    val connectQueues = (simQueues map { case ((src, dst), queue) =>
-      (if (src == "topIO") Seq()
-       else Seq(BulkConnect(NoInfo, buildExp(Seq(instName(queue.name), "io", "enq")), 
-                                    buildExp(Seq(instName(wrapName(src)), dst, "hostOut"))))
-      ) ++
-      (if (dst == "topIO") Seq()
-       else Seq(BulkConnect(NoInfo, buildExp(Seq(instName(wrapName(dst)), src, "hostIn")),
-                                    buildExp(Seq(instName(queue.name), "io", "deq"))))
-      )
-    }).flatten
-    // Connect IO queues, Src means input, Dst means output (ie. the outside word is the Src or Dst)
-    val ioSrcQueues = (simQueues filter {case ((src, dst), _) => src == "topIO"} map {case (_, queue) => queue}).toSeq
-    val ioDstQueues = (simQueues filter {case ((src, dst), _) => dst == "topIO"} map {case (_, queue) => queue}).toSeq
-    val ioSrcSignals = rtlTop.ports filter (sig => sig.tpe != ClockType() && sig.direction == INPUT) map (_.name)
-    val ioDstSignals = rtlTop.ports filter (sig => sig.tpe != ClockType() && sig.direction == OUTPUT) map (_.name)
+    val connectWrappers = (wrappers map {m => (m.ports map { port =>
+      if (port.direction == OUTPUT) {
+        Connect(NoInfo, buildExp(Seq(port.name)), buildExp(Seq(m.name, port.name)))
+      } else {
+        Connect(NoInfo,buildExp(Seq(m.name, port.name)), buildExp(Seq(port.name)))
+      }})}).flatten
 
-    val ioSrcQueueConnect = if (ioSrcQueues.length > 0) {
-      val readySignals = ioSrcQueues map (queue => buildExp(Seq(instName(queue.name), "io", "enq", hostReady.name)))
-      val validSignals = ioSrcQueues map (queue => buildExp(Seq(instName(queue.name), "io", "enq", hostValid.name)))
+   // val connectQueues = (simQueues map { case ((src, dst), queue) =>
+   //   (if (src == "topIO") Seq()
+   //    else Seq(BulkConnect(NoInfo, buildExp(Seq(instName(queue.name), "io", "enq")), 
+   //                                 buildExp(Seq(instName(wrapName(src)), dst, "hostOut"))))
+   //   ) ++
+   //   (if (dst == "topIO") Seq()
+   //    else Seq(BulkConnect(NoInfo, buildExp(Seq(instName(wrapName(dst)), src, "hostIn")),
+   //                                 buildExp(Seq(instName(queue.name), "io", "deq"))))
+   //   )
+   // }).flatten
+   // // Connect IO queues, Src means input, Dst means output (ie. the outside word is the Src or Dst)
+   // val ioSrcSignals = rtlTop.ports filter (sig => sig.tpe != ClockType() && sig.direction == INPUT) map (_.name)
+   // val ioDstSignals = rtlTop.ports filter (sig => sig.tpe != ClockType() && sig.direction == OUTPUT) map (_.name)
 
-      (ioSrcSignals map { sig => 
-        (portMap(sig) map { dst => 
-          Connect(NoInfo, buildExp(Seq(instName(queueName("topIO", dst)), "io", "enq", "hostBits", sig)),
-                          buildExp(Seq("io", "hostIn", "hostBits", sig)))
-        })
-      }).flatten ++
-      (validSignals map (sig => Connect(NoInfo, buildExp(sig), buildExp(Seq("io", "hostIn", hostValid.name))))) :+
-      Connect(NoInfo, buildExp(Seq("io", "hostIn", hostReady.name)), genPrimopReduce(AND_OP, readySignals))
-    } else Seq(Empty())
+   // val ioSrcQueueConnect = if (ioSrcQueues.length > 0) {
+   //   val readySignals = ioSrcQueues map (queue => buildExp(Seq(instName(queue.name), "io", "enq", hostReady.name)))
+   //   val validSignals = ioSrcQueues map (queue => buildExp(Seq(instName(queue.name), "io", "enq", hostValid.name)))
 
-    val ioDstQueueConnect = if (ioDstQueues.length > 0) {
-      val readySignals = ioDstQueues map (queue => buildExp(Seq(instName(queue.name), "io", "deq", hostReady.name)))
-      val validSignals = ioDstQueues map (queue => buildExp(Seq(instName(queue.name), "io", "deq", hostValid.name)))
+   //   (ioSrcSignals map { sig => 
+   //     (portMap(sig) map { dst => 
+   //       Connect(NoInfo, buildExp(Seq(instName(queueName("topIO", dst)), "io", "enq", "hostBits", sig)),
+   //                       buildExp(Seq("io", "hostIn", "hostBits", sig)))
+   //     })
+   //   }).flatten ++
+   //   (validSignals map (sig => Connect(NoInfo, buildExp(sig), buildExp(Seq("io", "hostIn", hostValid.name))))) :+
+   //   Connect(NoInfo, buildExp(Seq("io", "hostIn", hostReady.name)), genPrimopReduce(AND_OP, readySignals))
+   // } else Seq(Empty())
 
-      (ioDstSignals map { sig => 
-        (portMap(sig) map { src => 
-          Connect(NoInfo, buildExp(Seq("io", "hostOut", "hostBits", sig)),
-                          buildExp(Seq(instName(queueName(src, "topIO")), "io", "deq", "hostBits", sig)))
-        })
-      }).flatten ++
-      (readySignals map (sig => Connect(NoInfo, buildExp(sig), buildExp(Seq("io", "hostOut", hostReady.name))))) :+
-      Connect(NoInfo, buildExp(Seq("io", "hostOut", hostValid.name)), genPrimopReduce(AND_OP, validSignals))
-    } else Seq(Empty())
+   // val ioDstQueueConnect = if (ioDstQueues.length > 0) {
+   //   val readySignals = ioDstQueues map (queue => buildExp(Seq(instName(queue.name), "io", "deq", hostReady.name)))
+   //   val validSignals = ioDstQueues map (queue => buildExp(Seq(instName(queue.name), "io", "deq", hostValid.name)))
 
-    val stmts = Begin(insts ++ connectClocks ++ connectResets ++ connectQueues ++ ioSrcQueueConnect ++ ioDstQueueConnect)
+   //   (ioDstSignals map { sig => 
+   //     (portMap(sig) map { src => 
+   //       Connect(NoInfo, buildExp(Seq("io", "hostOut", "hostBits", sig)),
+   //                       buildExp(Seq(instName(queueName(src, "topIO")), "io", "deq", "hostBits", sig)))
+   //     })
+   //   }).flatten ++
+   //   (readySignals map (sig => Connect(NoInfo, buildExp(sig), buildExp(Seq("io", "hostOut", hostReady.name))))) :+
+   //   Connect(NoInfo, buildExp(Seq("io", "hostOut", hostValid.name)), genPrimopReduce(AND_OP, validSignals))
+   // } else Seq(Empty())
+
+    val stmts = Begin(insts ++ connectClocks ++ connectResets ++ connectWrappers)
     val ports = Seq(hostClock, hostReset) ++ transformTopIO(rtlTop.ports)
     InModule(NoInfo, "SimTop", ports, stmts)
   }
@@ -344,8 +353,22 @@ object Fame1 extends Pass {
   // Perform FAME-1 Transformation for MIDAS
   def run(c: Circuit): Circuit = {
     // We should check that the invariants mentioned above are true
-    val nameToModule = (c.modules map (m => m.name -> m))(collection.breakOut): Map[String, Module] 
-    val top = nameToModule(c.main)
+    val wrappedNameToModule = (c.modules map (m => m.name -> m))(collection.breakOut): Map[String, Module] 
+    val wrappedTop = wrappedNameToModule(c.main)
+    
+    val wrappedTopInst = DefInstance(NoInfo, instName(wrappedTop.name), wrappedTop.name) 
+    val wrappedTopConnects = wrappedTop.ports map { port =>
+      if ( port.direction == OUTPUT )
+        Connect(NoInfo, buildExp(Seq(port.name)), buildExp(Seq(wrappedTopInst.name, port.name)))
+      else 
+        Connect(NoInfo,buildExp(Seq(wrappedTopInst.name, port.name)),buildExp(Seq(port.name)))
+    }
+    val wrappedTopModule = InModule(NoInfo, wrappedTopInst.name, wrappedTop.ports, Begin(Seq(wrappedTopInst) ++ wrappedTopConnects))
+    val wrappedCircuit = Circuit(c.info, Seq(wrappedTopModule) ++ c.modules, wrappedTopInst.name)
+
+
+    val nameToModule = (wrappedCircuit.modules map (m => m.name -> m))(collection.breakOut): Map[String, Module] 
+    val top = nameToModule(wrappedCircuit.main)
 
     val rtlModules = c.modules filter (_.name != top.name) map (transformRTL)
 
@@ -359,15 +382,9 @@ object Fame1 extends Pass {
       genWrapperModule(inst, nameToModule(inst.module), portConn(inst.name))
     }
 
-    val simQueues = generateSimQueues(simWrappers)
+    val modules = rtlModules ++ simWrappers
 
-    // Remove duplicate simWrapper and simQueue modules?
-
-    val simTop = generateSimTop(simWrappers, simQueues, portConn("topIO"), top)
-
-    val modules = rtlModules ++ simWrappers ++ simQueues.values.toSeq ++ Seq(simTop)
-
-    Circuit(c.info, modules, simTop.name)
+    Circuit(wrappedCircuit.info, modules, wrapName(s"${top.name}"))
   }
 
 }
