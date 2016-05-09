@@ -75,8 +75,8 @@ object Fame1 extends Pass {
 
   private val hostReady = Field("hostReady", REVERSE, UIntType(IntWidth(1)))
   private val hostValid = Field("hostValid", DEFAULT, UIntType(IntWidth(1)))
-  private val hostClock = Port(NoInfo, "hostClock", INPUT, ClockType())
-  private val hostReset = Port(NoInfo, "hostReset", INPUT, UIntType(IntWidth(1)))
+  private val hostClock = Port(NoInfo, "clk", INPUT, ClockType())
+  private val hostReset = Port(NoInfo, "reset", INPUT, UIntType(IntWidth(1)))
   private val targetFire = Port(NoInfo, "targetFire", INPUT, UIntType(IntWidth(1)))
 
   private def wrapName(name: String): String = s"${name}_FAME1"
@@ -97,7 +97,7 @@ object Fame1 extends Pass {
   private def processConnectExp(exp: Expression): (String, String) = {
     val unsupportedExp = new Exception("Unsupported Exp for finding port connections: " + exp)
     exp match {
-      case ref: Ref => ("topIO", ref.name)
+      case ref: Ref => ("io", ref.name)
       case sub: SubField => 
         sub.exp match {
           case ref: Ref => (ref.name, sub.name)
@@ -131,7 +131,7 @@ object Fame1 extends Pass {
   }
   private def findPortConn(top: Module, insts: Seq[DefInstance]): ConnMap = top match {
     case m: InModule =>
-      val initConnMap = (insts map ( _.name -> PortMap )).toMap ++ Map("topIO" -> PortMap)
+      val initConnMap = (insts map ( _.name -> PortMap )).toMap ++ Map("io" -> PortMap)
       val topStmts = m.body match {
         case b: Begin => b.stmts
         case s: Stmt => Seq(s) // This honestly shouldn't happen but let's be safe
