@@ -3,6 +3,27 @@ package midas
 
 import Chisel._
 
+object dirExtracter {
+  def dirProduct(context:Direction, field:Direction) : Direction = {
+    if (context == INPUT) field.flip else field
+  }
+
+  def getFields[T <: Data] (gen: T, desiredDir: Direction,
+                            baseName: String, parentDir: Direction = OUTPUT) :
+                            Seq[(String, Data)] = {
+    val currentDir = dirProduct(parentDir, gen.dir)
+    val expandedName = if (baseName != "") baseName + "_" else ""
+    gen match {
+      case a : Bundle => {
+        (a.elements map {e : (String, Data) => {
+          getFields(e._2, desiredDir, s"${baseName}${e._1}", currentDir)}})
+        }.asInstanceOf[Seq[Seq[(String,Data)]]].flatten
+      case sint : SInt => if (currentDir == OUTPUT) Seq((baseName, sint.cloneType)) else Seq()
+      case uint: UInt => if(currentDir == OUTPUT) Seq((baseName, uint.cloneType)) else Seq()
+    }
+  }
+}
+
 // Adapted from DecoupledIO in Chisel3
 class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
@@ -11,6 +32,8 @@ class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
   val hostBits  = gen.cloneType
   override def cloneType: this.type = new HostDecoupledIO(gen).asInstanceOf[this.type]
 }
+
+
 
 /** Adds a ready-valid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
@@ -45,7 +68,7 @@ object HostPort {
 //      or using Scala macros (see quasiquotes)
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-private class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
+class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
   val hostReady = Bool(INPUT)
   val hostValid = Bool(OUTPUT)
@@ -57,7 +80,7 @@ private class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
 /** Adds a hostReady-hostValid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
   */
-private object MidasDecoupled {
+object MidasDecoupled {
   def apply[T <: Data](gen: T): MidasDecoupledIO[T] = new MidasDecoupledIO(gen)
 }
 
@@ -65,7 +88,7 @@ private object MidasDecoupled {
   * Borrowed from chisel3 util/Decoupled.scala
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue */
-private class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
+class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
   val enq   = MidasDecoupled(gen.cloneType).flip()
@@ -89,7 +112,7 @@ private class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   *    q.io.enq <> producer.io.out
   *    consumer.io.in <> q.io.deq }}}
   */
-private class MidasQueue[T <: Data](gen: T, val entries: Int,
+class MidasQueue[T <: Data](gen: T, val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false,
                        _reset: Bool = null) extends Module(_reset=_reset)
@@ -134,16 +157,6 @@ private class MidasQueue[T <: Data](gen: T, val entries: Int,
                     Mux(deq_ptr.value > enq_ptr.value,
                       UInt(entries) + ptr_diff, ptr_diff))
   }
-
-  // Logic for inserting null token at start
-  // TODO check if it's okay if do_enq is asserted while init == True
-  // We might need to add !init to io.enq.hostReady
-  val init = Reg(init=Bool(true))
-  when (init) {
-    ram(enq_ptr.value) := io.enq.hostBits // probably garbage
-    enq_ptr.inc()
-    init := Bool(false)
-  }
 }
 
 private class FooBar extends Bundle {
@@ -154,4 +167,43 @@ private class FooBar extends Bundle {
 private class GenSimQueue extends Module {
   val io = new Bundle { }
   val queue = Module(new MidasQueue((new FooBar).cloneType, 4))
+}
+
+// Selects one of two input host decoupled channels. Drives ready false
+// to the unselected channel.
+object HostMux {
+  def apply[T <: Data](sel: Bool, a : HostDecoupledIO[T], b : HostDecoupledIO[T]) : HostDecoupledIO[T] =
+  {
+    val output = Wire(a.cloneType)
+    output.hostValid := a.hostValid || b.hostValid
+    output.hostBits := Mux(sel, a.hostBits, b.hostBits)
+    a.hostReady := sel && output.hostReady
+    b.hostReady := ~sel && output.hostReady
+    output
+  }
+}
+
+// A simple implementation of a simulation queue that injects a set of
+// simulation tokens into on reset
+class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numInitTokens:Int = 0) 
+  extends Module {
+  require(numInitTokens < entries, s"The capacity of the queue must be >= the number of initialization tokens")
+  val io = new MidasQueueIO(gen.cloneType, entries)
+  val queue = Module(new MidasQueue(gen.cloneType, entries))
+  // This should only need to be 1 larger; but firrtl seems to optimize it away
+  // when entries is set to 1
+  val initTokensCount = Counter(numInitTokens+4)
+
+  val doneInit = initTokensCount.value === UInt(numInitTokens)
+  val initToken = init()
+  val enqFire = queue.io.enq.fire()
+
+  when(~doneInit && enqFire) {
+    initTokensCount.inc()
+  }
+
+  queue.io.enq.hostBits := Mux(~doneInit,initToken,io.enq.hostBits)
+  queue.io.enq.hostValid := ~doneInit || io.enq.hostValid
+  io.enq.hostReady := doneInit && queue.io.enq.hostReady
+  io.deq <> queue.io.deq
 }
