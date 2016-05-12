@@ -46,11 +46,23 @@ object Utils {
       case _ => Seq()
     }
   }
-  def getDefInsts(m: Module): Seq[DefInstance] =
-    m match { case m: InModule => getDefInsts(m.body)
+  def getDefInsts(m: Module): Seq[DefInstance] = {
+    m match { 
+      case m: InModule => getDefInsts(m.body)
       case m: ExModule => Seq()
     }
+  }
 
+  def expToString(e: Expression): String = e match {
+    case Ref(name, _) => name
+    case SubField(exp, name, _) => s"${expToString(exp)}.${name}"
+    case SubIndex(exp, value, _) => s"${expToString(exp)}[$value]"
+    case SubAccess(exp, index, _) => s"${expToString(exp)}[${expToString(index)}]"
+    case Mux(cond, tval, fval, _) => s"mux(${expToString(cond)}, ${expToString(tval)}, ${expToString(fval)})"
+    case ValidIf(cond, value, _) => s"validif(${expToString(cond)}, ${expToString(value)})"
+    case UIntValue(value, width) => s"""UInt<$width>("h${value.toString(16)}")"""
+    case SIntValue(value, width) => s"""SInt<$width>("h${value.toString(16)}")"""
+  }
   // Takes a set of strings or ints and returns equivalent expression node
   //   Strings correspond to subfields/references, ints correspond to indexes
   // eg. Seq(io, port, ready)    => io.port.ready

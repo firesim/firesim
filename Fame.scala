@@ -5,6 +5,7 @@ import Utils._
 import firrtl._
 import firrtl.passes._
 import firrtl.Utils._
+import firrtl.Mappers._
 
 /** FAME-1 Transformation
  *
@@ -151,18 +152,60 @@ object Fame1 extends Pass {
   //   puts targetFire on regEnable for all registers
   // TODO
   //  - Add smem support
-  private def transformRTL(m: Module): Module = m match {
-    case m: InModule =>
-      val ports = m.ports :+ targetFire
-      val instProp = getDefInsts(m) map { inst =>
-        Connect(NoInfo, buildExp(Seq(inst.name, targetFire.name)), buildExp(targetFire.name))
+  private def transformRTL(m: InModule): Module = {
+    val memEn = collection.mutable.HashSet[String]()
+    def collectMemEn(s: Stmt): Stmt = {
+      s map collectMemEn match {
+        case mem: DefMemory => 
+          memEn ++= mem.readers map (r => s"${mem.name}.${r}.en")
+          memEn ++= mem.writers map (w => s"${mem.name}.${w}.en")
+          memEn ++= mem.readwriters map (rw => s"${mem.name}.${rw}.en")
+          mem
+        case s => s
       }
-      val regEn  = getDefRegs(m) map { reg =>
-        Conditionally(NoInfo, DoPrim(NOT_OP, Seq(buildExp(targetFire.name)), Seq(), UnknownType()),
-                     Connect(NoInfo, buildExp(reg.name), buildExp(reg.name)), Empty())
+    }
+
+    val connectMap = collection.mutable.HashMap[Expression, Expression]()
+    def collectMemEnConnects(s: Stmt): Stmt = {
+      s map collectMemEnConnects match {
+        case s: Connect if memEn(expToString(s.loc)) => 
+          connectMap(s.loc) = s.exp
+          s
+        case s => s
       }
-      InModule(m.info, m.name, ports, Begin(m.body +: (instProp ++ regEn)))
-    case m => m
+    }
+
+    def transformStmt(s: Stmt): Stmt = {
+      s map transformStmt match {
+        case inst: DefInstance => 
+          Begin(Seq(
+            inst,
+            Connect(NoInfo, buildExp(Seq(inst.name, targetFire.name)), buildExp(targetFire.name))
+          ))
+        case reg: DefRegister => 
+          Begin(Seq(
+            reg,
+            Conditionally(reg.info, 
+              DoPrim(NOT_OP, Seq(buildExp(targetFire.name)), Seq(), UnknownType()),
+              Connect(NoInfo, buildExp(reg.name), buildExp(reg.name)), 
+              Empty()
+            )
+          ))
+        case Connect(info, loc, exp) if connectMap contains loc =>
+          val nodeName = s"""${expToString(loc) replace (".", "_")}_fire"""
+          Begin(Seq(
+            DefNode(info, nodeName, 
+              DoPrim(AND_OP, Seq(exp, buildExp(targetFire.name)), Seq(), UnknownType())
+            ),
+            Connect(info, loc, buildExp(nodeName))
+          ))
+        case s => s
+      }
+    }
+
+    collectMemEn(m.body)
+    collectMemEnConnects(m.body)
+    InModule(m.info, m.name, m.ports :+ targetFire, transformStmt(m.body)) 
   }
 
   // ********** genWrapperModule **********
@@ -370,7 +413,10 @@ object Fame1 extends Pass {
     val nameToModule = (wrappedCircuit.modules map (m => m.name -> m))(collection.breakOut): Map[String, Module] 
     val top = nameToModule(wrappedCircuit.main)
 
-    val rtlModules = c.modules filter (_.name != top.name) map (transformRTL)
+    val rtlModules = c.modules filter (_.name != top.name) map {
+      case m: ExModule => m
+      case m: InModule => transformRTL(m)
+    }
 
     val insts = getDefInsts(top)
 
