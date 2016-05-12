@@ -175,6 +175,7 @@ object Fame1 extends Pass {
       }
     }
 
+    val whens = collection.mutable.ArrayBuffer[Stmt]()
     def transformStmt(s: Stmt): Stmt = {
       s map transformStmt match {
         case inst: DefInstance => 
@@ -182,15 +183,14 @@ object Fame1 extends Pass {
             inst,
             Connect(NoInfo, buildExp(Seq(inst.name, targetFire.name)), buildExp(targetFire.name))
           ))
-        case reg: DefRegister => 
-          Begin(Seq(
-            reg,
+        case reg: DefRegister =>
+          whens += 
             Conditionally(reg.info, 
               DoPrim(NOT_OP, Seq(buildExp(targetFire.name)), Seq(), UnknownType()),
               Connect(NoInfo, buildExp(reg.name), buildExp(reg.name)), 
               Empty()
             )
-          ))
+          reg
         case Connect(info, loc, exp) if connectMap contains loc =>
           val nodeName = s"""${expToString(loc) replace (".", "_")}_fire"""
           Begin(Seq(
@@ -205,7 +205,7 @@ object Fame1 extends Pass {
 
     collectMemEn(m.body)
     collectMemEnConnects(m.body)
-    InModule(m.info, m.name, m.ports :+ targetFire, transformStmt(m.body)) 
+    InModule(m.info, m.name, m.ports :+ targetFire, Begin(transformStmt(m.body) +: whens)) 
   }
 
   // ********** genWrapperModule **********
