@@ -24,80 +24,6 @@ object dirExtracter {
   }
 }
 
-// Adapted from DecoupledIO in Chisel3
-class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
-{
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-  val hostBits  = gen.cloneType
-  override def cloneType: this.type = new HostDecoupledIO(gen).asInstanceOf[this.type]
-}
-
-
-
-/** Adds a ready-valid handshaking protocol to any interface.
-  * The standard used is that the consumer uses the flipped interface.
-  */
-object HostDecoupled {
-  def apply[T <: Data](gen: T): HostDecoupledIO[T] = new HostDecoupledIO(gen)
-}
-
-
-class HostReadyValid extends Bundle {
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-}
-
-class HostPortIO[+T <: Data](gen: T) extends Bundle
-{
-  val hostIn = (new HostReadyValid).flip
-  val hostOut = new HostReadyValid
-  val hostBits  = gen.cloneType
-  override def cloneType: this.type = new HostPortIO(gen).asInstanceOf[this.type]
-}
-
-object HostPort {
-  def apply[T <: Data](gen: T): HostPortIO[T] = new HostPortIO(gen)
-}
-
-
-// The below is currently used to generate FIRRTL code for buildSimQueue
-// TODO
-//  - Actually use this code in buildSimQueue instead of one off FIRRTL
-//  - This requires either a change to Bundle API (and possible others)
-//      or using Scala macros (see quasiquotes)
-
-/** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
-{
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-  val hostBits  = gen.cloneType.asOutput
-  def fire(dummy: Int = 0): Bool = hostReady && hostValid
-  override def cloneType: this.type = new MidasDecoupledIO(gen).asInstanceOf[this.type]
-}
-
-/** Adds a hostReady-hostValid handshaking protocol to any interface.
-  * The standard used is that the consumer uses the flipped interface.
-  */
-object MidasDecoupled {
-  def apply[T <: Data](gen: T): MidasDecoupledIO[T] = new MidasDecoupledIO(gen)
-}
-
-/** An I/O Bundle for Queues
-  * Borrowed from chisel3 util/Decoupled.scala
-  * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue */
-class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
-{
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = MidasDecoupled(gen.cloneType).flip()
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = MidasDecoupled(gen.cloneType)
-  /** The current amount of data in the queue */
-  val count = UInt(OUTPUT, log2Up(entries + 1))
-}
-
 /** A hardware module implementing a Queue
   * Modified from chisel3 util/Decoupled.scala
   * @param gen The type of data to queue
@@ -189,21 +115,158 @@ class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numI
   extends Module {
   require(numInitTokens < entries, s"The capacity of the queue must be >= the number of initialization tokens")
   val io = new MidasQueueIO(gen.cloneType, entries)
-  val queue = Module(new MidasQueue(gen.cloneType, entries))
+  val queue = Module(new Queue(gen.cloneType, entries))
+  queue.reset := io.ctrl.simReset
+
+  // Tie off the control signals to default values
+  io.ctrl := MidasControl()
+
   // This should only need to be 1 larger; but firrtl seems to optimize it away
   // when entries is set to 1
   val initTokensCount = Counter(numInitTokens+4)
+  val doneInit = Reg(init = Bool(false))
+  val simRunning = Reg(init = Bool(false))
+  io.ctrl.simResetDone := doneInit
 
-  val doneInit = initTokensCount.value === UInt(numInitTokens)
-  val initToken = init()
   val enqFire = queue.io.enq.fire()
 
-  when(~doneInit && enqFire) {
+  // Control register sequencing
+  when(io.ctrl.simReset) {
+    initTokensCount.value := UInt(0)
+    doneInit := Bool(false)
+    simRunning := Bool(false)
+  }.elsewhen(~doneInit) {
     initTokensCount.inc()
+    doneInit := initTokensCount.value === UInt(numInitTokens - 1)
+    assert(io.ctrl.go === Bool(false))
+    assert(queue.io.enq.ready)
+  }.elsewhen(io.ctrl.go) {
+    simRunning := Bool(true)
   }
 
-  queue.io.enq.hostBits := Mux(~doneInit,initToken,io.enq.hostBits)
-  queue.io.enq.hostValid := ~doneInit || io.enq.hostValid
-  io.enq.hostReady := doneInit && queue.io.enq.hostReady
-  io.deq <> queue.io.deq
+  val initToken = init()
+  queue.io.enq.bits := Mux(~simRunning,initToken,io.enq.hostBits)
+  queue.io.enq.valid := ~doneInit || io.enq.hostValid
+  io.enq.hostReady := simRunning && queue.io.enq.ready
+  io.deq.hostBits := queue.io.deq.bits
+  io.deq.hostValid := simRunning && queue.io.deq.valid
+  queue.io.deq.ready := io.deq.hostReady
+}
+
+/** Stores a map between SCR file names and address in the SCR file, which can
+  * later be dumped to a header file for the test bench. */
+class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt) {
+  private val addr2name = HashMap.empty[Int, String]
+  private val name2addr = HashMap.empty[String, Int]
+
+  def allocate(address: Int, name: String): Int = {
+    Predef.assert(!addr2name.contains(address), "address already allocated")
+    Predef.assert(!name2addr.contains(name), "name already allocated")
+    Predef.assert(address < maxAddress, "address too large")
+    addr2name += (address -> name)
+    name2addr += (name -> address)
+    println(prefix + ": %x -> ".format(baseAddress + address) + name)
+    address
+  }
+
+  def allocate(name: String): Int = {
+    val addr = (0 until maxAddress).filter{ addr => !addr2name.contains(addr) }(0)
+    allocate(addr, name)
+  }
+
+  def as_c_header(): String = {
+    addr2name.map{ case(address, name) =>
+      List(
+        "#define " + prefix + "__" + name + "__PADDR  0x%x".format(baseAddress + address),
+        "#define " + prefix + "__" + name + "__OFFSET 0x%x".format(address)
+      )
+    }.flatten.mkString("\n") + "\n"
+  }
+}
+
+class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends Bundle()(p) {
+  val rdata = Vec(nMCR, Bits(INPUT, scrDataBits))
+  val wen = Bool(OUTPUT)
+  val waddr = UInt(OUTPUT, log2Up(nMCR))
+  val wdata = Bits(OUTPUT, scrDataBits)
+
+  def attach(regs: Seq[Data], name_base: String): Seq[Data] = {
+    regs.zipWithIndex.map{ case(reg, i) => attach(reg, name_base + "__" + i) }
+  }
+
+  def attach(reg: Data, name: String): Data = {
+    val addr = map.allocate(name)
+    when (wen && (waddr === UInt(addr))) {
+      reg := wdata
+    }
+    rdata(addr) := reg
+    reg
+  }
+
+  def allocate(address: Int, name: String): Unit = {
+    map.allocate(address, name)
+  }
+}
+
+class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters)
+  extends Module()(p) {
+  val map = new MCRFileMap(prefix, 64, baseAddress)
+  AllMCRFiles += map
+
+class MCRFile extends Module {
+  val io = new Bundle {
+    val nasti = (new NastIO).flip
+    val mcr = new MCRIO
+  }
+
+  val rValid = Reg(init = Bool(false))
+  val awFired = Reg(init = Bool(false))
+  val wFired = Reg(init = Bool(false))
+  val bId = Reg()
+  val rId = Reg()
+  val rData = Reg()
+  val wData = Reg()
+  val wAddr = Reg()
+
+  when(io.nasti.aw.fire()){
+    awFired := Bool(true)
+    wAddr := io.nasti.aw.bits.addr
+    assert(io.nasti.aw.len === UInt(0))
+  }
+
+  when(io.nasti.w.fire()){
+    wFired := Bool(true)
+    wData := io.nasti.w.bits.data
+    assert(io.nasti.aw.bits.last)
+  }
+
+  when(io.nasti.ar.fire()) {
+    rValid := Bool(true)
+    rData := io.mcr.rdata(io.nasti.ar.bits.addr)
+    rId := io.nasti.ar.id
+  }
+
+  when(io.nasti.r.fire()) {
+    rValid := Bool(false)
+  }
+
+  when (io.nasti.b.fire()) {
+    awFired := Bool(false)
+    wFired := Bool(false)
+  }
+
+  io.nasti.r.bits := NastiReadDataChannel(rId, rData)
+  io.nasti.r.valid := rValid
+
+  io.nasti.b.bits := NastiWriteResponseChannel(bId)
+  io.nasti.b.valid := awFire && wFired
+
+  io.nasti.ar.ready := ~rValid
+  io.nasti.aw.ready := ~awFired
+  io.nasti.w.ready := ~wFired
+
+  //Use b fire just because its a convienent way to track one write transaction
+  io.mcr.wen := io.nasti.b.fire()
+  io.mcr.wdata := wData
+  io.mcr.waddr := wAddr
 }
