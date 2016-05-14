@@ -2,6 +2,10 @@
 package midas
 
 import Chisel._
+import cde.{Parameters, Field}
+import junctions._
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
 
 object dirExtracter {
   def dirProduct(context:Direction, field:Direction) : Direction = {
@@ -111,8 +115,7 @@ object HostMux {
 
 // A simple implementation of a simulation queue that injects a set of
 // simulation tokens into on reset
-class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numInitTokens:Int = 0) 
-  extends Module {
+class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numInitTokens:Int = 0) extends Module {
   require(numInitTokens < entries, s"The capacity of the queue must be >= the number of initialization tokens")
   val io = new MidasQueueIO(gen.cloneType, entries)
   val queue = Module(new Queue(gen.cloneType, entries))
@@ -153,6 +156,22 @@ class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numI
   queue.io.deq.ready := io.deq.hostReady
 }
 
+case object MidasKey extends Field[MidasParameters]
+// TODO: better name
+case class MidasParameters(width: Int, offsetBits: Int, mcrDataBits: Int, nMCR: Int = 64)
+
+trait HasMidasParameters {
+  implicit val p: Parameters
+  val nMCR = 4
+  val mcrAddrBits = log2Up(nMCR)
+  val mcrDataBits = 32
+  val mcrDataBytes = mcrDataBits / 8
+  val offsetBits = 0
+}
+
+abstract class MidasModule(implicit val p: Parameters) extends Module with HasMidasParameters
+abstract class MidasBundle(implicit val p: Parameters) extends ParameterizedBundle()(p)
+  with HasMidasParameters
 /** Stores a map between SCR file names and address in the SCR file, which can
   * later be dumped to a header file for the test bench. */
 class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt) {
@@ -184,11 +203,11 @@ class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt) {
   }
 }
 
-class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends Bundle()(p) {
-  val rdata = Vec(nMCR, Bits(INPUT, scrDataBits))
+class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
+  val rdata = Vec(nMCR, Bits(INPUT, mcrDataBits))
   val wen = Bool(OUTPUT)
   val waddr = UInt(OUTPUT, log2Up(nMCR))
-  val wdata = Bits(OUTPUT, scrDataBits)
+  val wdata = Bits(OUTPUT, mcrDataBits)
 
   def attach(regs: Seq[Data], name_base: String): Seq[Data] = {
     regs.zipWithIndex.map{ case(reg, i) => attach(reg, name_base + "__" + i) }
@@ -208,42 +227,41 @@ class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends Bundle()(p) {
   }
 }
 
-class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters)
-  extends Module()(p) {
+class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) extends MidasModule()(p) 
+  with HasNastiParameters{
   val map = new MCRFileMap(prefix, 64, baseAddress)
   AllMCRFiles += map
 
-class MCRFile extends Module {
   val io = new Bundle {
-    val nasti = (new NastIO).flip
-    val mcr = new MCRIO
+    val nasti = (new NastiIO).flip
+    val mcr = new MCRIO(map)
   }
 
   val rValid = Reg(init = Bool(false))
   val awFired = Reg(init = Bool(false))
   val wFired = Reg(init = Bool(false))
-  val bId = Reg()
-  val rId = Reg()
-  val rData = Reg()
-  val wData = Reg()
-  val wAddr = Reg()
+  val bId = Reg(UInt(width = p(NastiKey).idBits))
+  val rId = Reg(UInt(width = p(NastiKey).idBits))
+  val rData = Reg(UInt(width = nastiXDataBits))
+  val wData = Reg(UInt(width = nastiXDataBits))
+  val wAddr = Reg(UInt(width = nastiXAddrBits))
 
   when(io.nasti.aw.fire()){
     awFired := Bool(true)
     wAddr := io.nasti.aw.bits.addr
-    assert(io.nasti.aw.len === UInt(0))
+    assert(io.nasti.aw.bits.len === UInt(0))
   }
 
   when(io.nasti.w.fire()){
     wFired := Bool(true)
     wData := io.nasti.w.bits.data
-    assert(io.nasti.aw.bits.last)
+    assert(io.nasti.w.bits.last)
   }
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
     rData := io.mcr.rdata(io.nasti.ar.bits.addr)
-    rId := io.nasti.ar.id
+    rId := io.nasti.ar.bits.id
   }
 
   when(io.nasti.r.fire()) {
@@ -259,7 +277,7 @@ class MCRFile extends Module {
   io.nasti.r.valid := rValid
 
   io.nasti.b.bits := NastiWriteResponseChannel(bId)
-  io.nasti.b.valid := awFire && wFired
+  io.nasti.b.valid := awFired && wFired
 
   io.nasti.ar.ready := ~rValid
   io.nasti.aw.ready := ~awFired
@@ -269,4 +287,13 @@ class MCRFile extends Module {
   io.mcr.wen := io.nasti.b.fire()
   io.mcr.wdata := wData
   io.mcr.waddr := wAddr
+}
+
+/** Every elaborated SCR file ends up in this global arry so it can be printed
+  * out later. */
+object AllMCRFiles {
+  private var maps = ArrayBuffer.empty[MCRFileMap]
+
+  def +=(map: MCRFileMap): Unit = { maps += map }
+  def foreach( f: (MCRFileMap => Unit) ): Unit = { maps.foreach{ m => f(m) } }
 }
