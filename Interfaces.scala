@@ -91,11 +91,9 @@ class MidasControlIO extends Bundle {
   val done = Bool(OUTPUT)
 
   def fanout(slaves : Seq[MidasControlIO]) = {
-    val trunk = MidasControl()
-    slaves map (trunk <> _)
-    trunk.done := slaves map (_.done) reduce (_ && _)
-    trunk.simResetDone := slaves map (_.simResetDone) reduce (_ && _)
-    trunk
+    slaves map (this <> _)
+    this.done := slaves map (_.done) reduce (_ && _)
+    this.simResetDone := slaves map (_.simResetDone) reduce (_ && _)
   }
 }
 
