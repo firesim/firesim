@@ -164,7 +164,7 @@ trait HasMidasParameters {
   implicit val p: Parameters
   val nMCR = 4
   val mcrAddrBits = log2Up(nMCR)
-  val mcrDataBits = 32
+  val mcrDataBits = 64
   val mcrDataBytes = mcrDataBits / 8
   val offsetBits = 0
 }
@@ -237,6 +237,9 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
     val mcr = new MCRIO(map)
   }
 
+  // To ensure reads index correctly
+  require(isPow2(nMCR))
+
   val rValid = Reg(init = Bool(false))
   val awFired = Reg(init = Bool(false))
   val wFired = Reg(init = Bool(false))
@@ -260,7 +263,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
-    rData := io.mcr.rdata(io.nasti.ar.bits.addr)
+    rData := io.mcr.rdata(io.nasti.ar.bits.addr & UInt(nMCR - 1))
     rId := io.nasti.ar.bits.id
   }
 
@@ -288,6 +291,49 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   io.mcr.wdata := wData
   io.mcr.waddr := wAddr
 }
+
+class MidasSimulationController(implicit p:Parameters) extends MidasModule()(p) {
+  val io = new Bundle {
+    val nasti = (new NastiIO).flip
+    val ctrl = (new MidasControlIO).flip
+  }
+
+  val mcrFile = Module(new MCRFile("SIMULATION_MASTER", 0))
+  val done = Reg(init = UInt(0))
+  val resetDone = Reg(init = UInt(0))
+  val simReset = Reg(init  = UInt(0))
+  val go = Reg(init = UInt(0))
+  mcrFile.io.mcr.attach(simReset, "RESET")
+  mcrFile.io.mcr.attach(resetDone, "RESET_DONE")
+  mcrFile.io.mcr.attach(go, "GO")
+  mcrFile.io.mcr.attach(done, "DONE")
+  mcrFile.io.nasti <> io.nasti
+
+  // TODO: Make these booleans
+  // Single cycle pulse
+  when (go != UInt(0)) {
+    go := UInt(0)
+  }
+
+  when (io.ctrl.simResetDone) {
+    resetDone := UInt(1)
+  }
+
+  when (io.ctrl.done) {
+    done := UInt(1)
+  }
+
+  when (simReset != UInt(0)) {
+    resetDone := UInt(0)
+    go := UInt(0)
+    done := UInt(0)
+    simReset := UInt(0)
+  }
+
+  io.ctrl.simReset := simReset != UInt(0)
+  io.ctrl.go := go != UInt(0)
+}
+
 
 /** Every elaborated SCR file ends up in this global arry so it can be printed
   * out later. */
