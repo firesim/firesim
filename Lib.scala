@@ -7,6 +7,9 @@ import junctions._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
+
+case object MidasBaseAddr extends Field[BigInt]
+
 object dirExtracter {
   def dirProduct(context:Direction, field:Direction) : Direction = {
     if (context == INPUT) field.flip else field
@@ -298,7 +301,7 @@ class MidasSimulationController(implicit p:Parameters) extends MidasModule()(p) 
     val ctrl = (new MidasControlIO).flip
   }
 
-  val mcrFile = Module(new MCRFile("SIMULATION_MASTER", 0))
+  val mcrFile = Module(new MCRFile("SIMULATION_MASTER", p(MidasBaseAddr)))
   val done = Reg(init = UInt(0))
   val resetDone = Reg(init = UInt(0))
   val simReset = Reg(init  = UInt(0))
