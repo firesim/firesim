@@ -144,8 +144,6 @@ class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numI
   }.elsewhen(~doneInit) {
     initTokensCount.inc()
     doneInit := initTokensCount.value === UInt(numInitTokens - 1)
-    assert(io.ctrl.go === Bool(false))
-    assert(queue.io.enq.ready)
   }.elsewhen(io.ctrl.go) {
     simRunning := Bool(true)
   }
@@ -255,13 +253,13 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   when(io.nasti.aw.fire()){
     awFired := Bool(true)
     wAddr := io.nasti.aw.bits.addr
+    bId := io.nasti.aw.bits.id
     assert(io.nasti.aw.bits.len === UInt(0))
   }
 
   when(io.nasti.w.fire()){
     wFired := Bool(true)
     wData := io.nasti.w.bits.data
-    assert(io.nasti.w.bits.last)
   }
 
   when(io.nasti.ar.fire()) {
