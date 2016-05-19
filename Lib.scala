@@ -175,7 +175,7 @@ abstract class MidasBundle(implicit val p: Parameters) extends ParameterizedBund
   with HasMidasParameters
 /** Stores a map between SCR file names and address in the SCR file, which can
   * later be dumped to a header file for the test bench. */
-class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt) {
+class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt, width: Int) {
   private val addr2name = HashMap.empty[Int, String]
   private val name2addr = HashMap.empty[String, Int]
 
@@ -190,7 +190,7 @@ class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt) {
   }
 
   def allocate(name: String): Int = {
-    val addr = (0 until maxAddress).filter{ addr => !addr2name.contains(addr) }(0)
+    val addr = (0 until maxAddress by width).filter{ addr => !addr2name.contains(addr) }(0)
     allocate(addr, name)
   }
 
@@ -216,10 +216,10 @@ class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
 
   def attach(reg: Data, name: String): Data = {
     val addr = map.allocate(name)
-    when (wen && (waddr === UInt(addr))) {
+    when (wen && (waddr === UInt(addr>>log2Up(mcrDataBytes)))) {
       reg := wdata
     }
-    rdata(addr) := reg
+    rdata(addr>>log2Up(mcrDataBytes)) := reg
     reg
   }
 
@@ -227,10 +227,10 @@ class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
     map.allocate(address, name)
   }
 }
-
+// width = width of the axi bus in bytes
 class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) extends MidasModule()(p) 
   with HasNastiParameters{
-  val map = new MCRFileMap(prefix, 64, baseAddress)
+  val map = new MCRFileMap(prefix, 64, baseAddress, mcrDataBytes)
   AllMCRFiles += map
 
   val io = new Bundle {
@@ -252,7 +252,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
 
   when(io.nasti.aw.fire()){
     awFired := Bool(true)
-    wAddr := io.nasti.aw.bits.addr
+    wAddr := io.nasti.aw.bits.addr >> log2Up(mcrDataBytes)
     bId := io.nasti.aw.bits.id
     assert(io.nasti.aw.bits.len === UInt(0))
   }
@@ -264,7 +264,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
-    rData := io.mcr.rdata(io.nasti.ar.bits.addr & UInt(nMCR - 1))
+    rData := io.mcr.rdata((io.nasti.ar.bits.addr >> log2Up(mcrDataBytes))&(UInt(nMCR-1)))
     rId := io.nasti.ar.bits.id
   }
 
