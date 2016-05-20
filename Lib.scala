@@ -165,8 +165,9 @@ trait HasMidasParameters {
   implicit val p: Parameters
   val nMCR = 4
   val mcrAddrBits = log2Up(nMCR)
-  val mcrDataBits = 64
+  val mcrDataBits = p(NastiKey).dataBits
   val mcrDataBytes = mcrDataBits / 8
+  val mcrStrobeBits = mcrDataBytes
   val offsetBits = 0
 }
 
@@ -209,6 +210,7 @@ class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
   val wen = Bool(OUTPUT)
   val waddr = UInt(OUTPUT, log2Up(nMCR))
   val wdata = Bits(OUTPUT, mcrDataBits)
+  val wstrb = Bits(OUTPUT, mcrStrobeBits)
 
   def attach(regs: Seq[Data], name_base: String): Seq[Data] = {
     regs.zipWithIndex.map{ case(reg, i) => attach(reg, name_base + "__" + i) }
@@ -217,7 +219,8 @@ class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
   def attach(reg: Data, name: String): Data = {
     val addr = map.allocate(name)
     when (wen && (waddr === UInt(addr>>log2Up(mcrDataBytes)))) {
-      reg := wdata
+      reg := (Vec.tabulate(mcrStrobeBits)(i => Mux(wstrb(i),
+        wdata.toBits()(8*(i+1)-1, i*8), reg.toBits()(8*(i+1)-1, 8*i)))).toBits().asUInt()
     }
     rdata(addr>>log2Up(mcrDataBytes)) := reg
     reg
@@ -249,6 +252,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   val rData = Reg(UInt(width = nastiXDataBits))
   val wData = Reg(UInt(width = nastiXDataBits))
   val wAddr = Reg(UInt(width = nastiXAddrBits))
+  val wStrb = Reg(UInt(width = nastiWStrobeBits))
 
   when(io.nasti.aw.fire()){
     awFired := Bool(true)
@@ -260,6 +264,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   when(io.nasti.w.fire()){
     wFired := Bool(true)
     wData := io.nasti.w.bits.data
+    wStrb := io.nasti.w.bits.strb
   }
 
   when(io.nasti.ar.fire()) {
@@ -290,6 +295,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   //Use b fire just because its a convienent way to track one write transaction
   io.mcr.wen := io.nasti.b.fire()
   io.mcr.wdata := wData
+  io.mcr.wstrb := wStrb
   io.mcr.waddr := wAddr
 }
 
