@@ -14,10 +14,11 @@ object ChainType extends Enumeration { val Trace, Regs, SRAM0, SRAM1, Cntr = Val
 class DaisyData(daisywidth: Int) extends Bundle {
   val in = Decoupled(UInt(width=daisywidth)).flip
   val out = Decoupled(UInt(width=daisywidth))
+  override def cloneType: this.type =
+    new DaisyData(daisywidth).asInstanceOf[this.type]
 }
 
-class RegData(daisywidth: Int) extends DaisyData(daisywidth) {
-} 
+class RegData(daisywidth: Int) extends DaisyData(daisywidth)
 class TraceData(daisywidth: Int) extends DaisyData(daisywidth)
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
   val restart = Bool(INPUT)
@@ -27,7 +28,7 @@ class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 class DaisyBundle(daisywidth: Int) extends Bundle {
   val regs  = new RegData(daisywidth)
   val trace = new TraceData(daisywidth)
-  val sram  = Vec.fill(2)(new SRAMData(daisywidth))
+  val sram  = Vec(2, new SRAMData(daisywidth))
   val cntr  = new CntrData(daisywidth)
   def apply(t: ChainType.Value) = t match {
     case ChainType.Regs  => regs
@@ -103,7 +104,7 @@ class DaisyControlIO(implicit p: Parameters) extends junctions.ParameterizedBund
 class DaisyCounter(stall: Bool, ctrlIo: CntrIO, daisyLen: Int) {
   val counter = RegInit(UInt(0, log2Up(daisyLen+1)))
   def isNotZero = counter.orR
-  counter nameIt ("counter", false)
+  counter suggestName "counter"
 
   // Daisy chain control logic
   when(!stall) {
