@@ -1,106 +1,119 @@
 package strober
 
 import Chisel._
-import Chisel.AdvTester._
-import scala.collection.mutable.{HashMap, Queue => ScalaQueue, ArrayBuffer}
+import Chisel.iotesters.{AdvTester, Processable}
+import scala.collection.immutable.ListMap
+import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-case class StroberTestArgs(
-  sampleFile: Option[String] = None,
-  dumpFile: Option[String] = None,
-  logFile: Option[String] = None,
-  testCmd: Option[String] = Driver.testCommand,
-  verbose: Boolean = true,
-  snapCheck: Boolean = true
-)
-
-abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs) 
-    extends AdvTester(c, false, 16, args.testCmd, args.dumpFile) {
-  protected[strober] val pokeMap = HashMap[Int, BigInt]()
-  protected[strober] val peekMap = HashMap[Int, BigInt]()
+abstract class SimTester[+T <: Module](c: T, verbose: Boolean) extends AdvTester(c, false) {
+  protected[strober] val _pokeMap = HashMap[Data, BigInt]()
+  protected[strober] val _peekMap = HashMap[Data, BigInt]()
+  protected[strober] def _inputs: Map[Bits, String]
+  protected[strober] def _outputs: Map[Bits, String]
+  protected[strober] def inTrMap: ListMap[Bits, Int]
+  protected[strober] def outTrMap: ListMap[Bits, Int]
+  protected[strober] implicit val channelWidth: Int
   private var traceCount = 0
 
-  protected[strober] def inMap: Map[Bits, Int]
-  protected[strober] def outMap: Map[Bits, Int]
-  protected[strober] def inTrMap: Map[Bits, Int]
-  protected[strober] def outTrMap: Map[Bits, Int]
-  protected[strober] def chunk(wire: Bits): Int
+  // protected[strober] lazy val chainLoop = transforms.chainLoop
+  // protected[strober] lazy val chainLen  = transforms.chainLen
 
-  protected[strober] lazy val chainLoop = transforms.chainLoop
-  protected[strober] lazy val chainLen  = transforms.chainLen
-
-  protected[strober] def sampleNum: Int
-  protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
-  protected[strober] var lastSample: Option[(Sample, Int)] = None
+  // protected[strober] def sampleNum: Int
+  // protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
+  // protected[strober] var lastSample: Option[(Sample, Int)] = None
   private var _traceLen = 0
   def traceLen = _traceLen
-  implicit def bigintToBoolean(b: BigInt) = if (b == 0) false else true
+  implicit def bigintToBoolean(b: BigInt) = b != 0
 
-  case class MemReadEvent(addr: BigInt, data: BigInt) extends Event
-  case class MemWriteEvent(addr: BigInt, data: BigInt) extends Event
-  case class NastiReadEvent(addr: BigInt, data: BigInt) extends Event
-  case class NastiWriteEvent(addr: BigInt, data: BigInt) extends Event
-  class StroberObserver(file: java.io.PrintStream) extends Observer(16, file) {
-    override def apply(event: Event): Unit = event match {
-      case MemReadEvent(addr, data) if !locked =>
-        file.println("MEM[%x] => %x".format(addr, data))
-      case MemWriteEvent(addr, data) if !locked =>
-        file.println("MEM[%x] <= %x".format(addr, data))
-      case NastiReadEvent(addr, data) => 
-        file.println("NASTI[%x] => %x".format(addr, data))
-      case NastiWriteEvent(addr, data) => 
-        file.println("NASTI[%x] <= %x".format(addr, data))
-      case _ => super.apply(event)
+  private val _preprocessors = ArrayBuffer[Processable]()
+  private val _postprocessors = ArrayBuffer[Processable]()
+
+  protected[strober] class ChannelSource[T <: Bits](socket: DecoupledIO[T]) extends Processable {
+    val inputs = new ScalaQueue[BigInt]()
+    private var valid = false
+    def process {
+      if (valid && _peek(socket.ready)) {
+        valid = false
+      }
+      if (!valid && !inputs.isEmpty) {
+        valid = true
+        _poke(socket.bits, inputs.dequeue)
+      }
+      _poke(socket.valid, valid)
     }
+    _preprocessors += this
   }
-  protected val log = args.logFile match {
-    case None    => System.out 
-    case Some(f) => new java.io.PrintStream(f)
-  }
-  if (args.verbose) addObserver(new StroberObserver(file=log))
 
-  protected[strober] def channelOff: Int
+  protected[strober] class ChannelSink[T <: Bits](socket: DecoupledIO[T]) extends Processable {
+    val outputs = new ScalaQueue[BigInt]()
+    def process {
+      if (_peek(socket.valid)) {
+        outputs enqueue _peek(socket.bits)
+      }
+      _poke(socket.ready, true)
+    }
+    _postprocessors += this
+  }
+
   protected[strober] def pokeChannel(addr: Int, data: BigInt): Unit
   protected[strober] def peekChannel(addr: Int): BigInt
-  protected[strober] def pokeId(id: Int, chunk: Int, data: BigInt) {
-    (0 until chunk) foreach (off => pokeChannel(id+off, data >> (off << channelOff)))
+  protected[strober] def pokeChunk(addr: Int, chunks: Int, data: BigInt) {
+    (0 until chunks) foreach (off => pokeChannel(addr + off, data >> (off * channelWidth)))
   }
-  protected[strober] def peekId(id: Int, chunk: Int) = {
-    ((0 until chunk) foldLeft BigInt(0))(
-      (res, off) => res | (peekChannel(id+off) << (off << channelOff)))
+  protected[strober] def peekChunk(addr: Int, chunks: Int) = {
+    ((0 until chunks) foldLeft BigInt(0))(
+      (res, off) => res | (peekChannel(addr + off) << (off * channelWidth)))
   }
   protected[strober] def _poke(data: Bits, x: BigInt) = super.wire_poke(data, x)
   protected[strober] def _peek(data: Bits) = super.peek(data)
+  protected[strober] def _takestep(work: => Unit = {}) {
+    emulator.step(1)
+    _preprocessors foreach (_.process)
+    work
+    _postprocessors foreach (_.process)
+  }
+  protected[strober] def _until(pred: => Boolean, 
+      maxcycles: Long = defaultMaxCycles)(work: => Unit) = {
+    var cycle = 0
+    while (!pred && cycle < maxcycles) {
+      _takestep(work)
+      cycle += 1
+    }
+    pred
+  }
+  protected[strober] def _eventually(pred: => Boolean,
+      maxcycles: Long = defaultMaxCycles) = {
+    _until(pred, maxcycles){}
+  }
 
-  override def wire_poke(port: Bits, x: BigInt) = this.poke(port, x)
+  override def wire_poke(port: Bits, value: BigInt) = this.poke(port, value)
 
-  override def poke(port: Bits, x: BigInt) {
-    require(inMap contains port)
-    addEvent(new PokeEvent(port, x))
-    pokeMap(inMap(port)) = x
+  override def poke(port: Bits, value: BigInt) {
+    require(_inputs contains port)
+    if (verbose) println(s"  POKE ${_inputs(port)} <- %x".format(value))
+    _pokeMap(port) = value
   }
  
   override def peek(port: Bits) = {
-    require(outMap contains port)
-    val value = peekMap get outMap(port)
-    addEvent(new PeekEvent(port, value))
-    value getOrElse BigInt(rnd.nextInt)
+    require(_outputs contains port)
+    val value = _peekMap getOrElse (port, BigInt(rnd.nextInt))
+    if (verbose) println(s"  PEEK ${_outputs(port)} -> %x".format(value))
+    value
   }
 
-  override def expect(pass: Boolean, msg: => String) = {
-    addEvent(new ExpectMsgEvent(pass, msg))
+  override def expect(pass: Boolean, msg: => String): Boolean = {
+    if (verbose) println(s"  EXPECT ${msg}: %s".format(if (pass) "PASS" else "FAIL"))
     if (!pass) fail
     pass
   }
  
-  override def expect(port: Bits, expected: BigInt) = {
-    require(outMap contains port)
-    require(peekMap contains outMap(port))
-    val value = peekMap(outMap(port))
-    addEvent(new ExpectEvent(port, value, expected, ""))
-    value == expected
+  override def expect(port: Bits, expected: BigInt, msg: => String = ""): Boolean = {
+    require(_outputs contains port)
+    val value = _peekMap getOrElse (port, BigInt(rnd.nextInt))
+    expect(value == expected, s"${msg} ${_outputs(port)} -> %x == %x".format(value, expected))
   }
 
-  protected[strober] def traces(sample: Sample) = {
+  /* protected[strober] def traces(sample: Sample) = {
     for (i <- 0 until traceCount) {
       inTrMap foreach {case (wire, id) => sample addCmd PokePort(wire, peekId(id, chunk(wire)))}
       sample addCmd Step(1)
@@ -116,7 +129,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
   protected[strober] def readSnapshot = {
     (ChainType.values.toList map readChain addString new StringBuilder).result
   }
-
+  
   protected[strober] def verifySnapshot(sample: Sample) {
     val pass = (sample map {
       case Load(signal: MemRead,    value, None) => true 
@@ -133,6 +146,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
     } foldLeft true)(_ && _)
     addEvent(new ExpectMsgEvent(pass, "* SNAPSHOT : "))
   }
+  */
 
   protected[strober] def _tick(n: Int): Unit
 
@@ -141,7 +155,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
   }
 
   override def step(n: Int) {
-    addEvent(new StepEvent(n, t))
+    if (verbose) println(s"STEP ${n} -> ${t+n}")
     // reservoir sampling
     /* if (cycles % traceLen == 0) {
       val recordId = t / traceLen
@@ -163,14 +177,7 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
     if (traceCount < traceLen) traceCount += n
   }
 
-  protected[strober] def flush {
-    // flush output tokens & traces from initialization
-    peekMap.clear
-    outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
-    outTrMap foreach {case (wire, id) => val trace = peekId(id, chunk(wire))}
-  }
-
-  override def finish = {
+  /* override def finish = {
     // tail samples
     lastSample match {
       case None =>
@@ -187,46 +194,37 @@ abstract class SimTester[+T <: Module](c: T, args: StroberTestArgs)
       file.close
     }
     super.finish
-  }
-
-  if (!args.snapCheck) ChiselError.info("[Strober Tester] No Snapshot Checking...")
+  } */
 }
 
-abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T, 
-    args: StroberTestArgs) extends SimTester(c, args) {
+abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T,
+    verbose: Boolean = true) extends SimTester(c, verbose) {
+  protected[strober] val _inputs = 
+    (c.io.inputs map {case (x, y) => x -> s"${c.target.name}.$y"}).toMap
+  protected[strober] val _outputs = 
+    (c.io.outputs map {case (x, y) => x -> s"${c.target.name}.$y"}).toMap
   protected[strober] val inMap = c.io.inMap 
   protected[strober] val outMap = c.io.outMap
   protected[strober] val inTrMap = c.io.inTrMap
   protected[strober] val outTrMap = c.io.outTrMap
-  protected[strober] def chunk(wire: Bits) = c.io.chunk(wire)
-  protected[strober] val sampleNum = c.sampleNum
-  protected[strober] val channelOff = log2Up(c.channelWidth)
+  protected[strober] implicit val channelWidth = c.channelWidth
+  // protected[strober] val sampleNum = c.sampleNum
 
-  private val ins = c.io.ins
-  private val outs = c.io.outs ++ c.io.inT ++ c.io.outT
+  private val ins = c.io.ins map (
+    in => new ChannelSource(in))
+  private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (
+    out => new ChannelSink(out))
 
   protected[strober] def pokeChannel(addr: Int, data: BigInt) {
-    addEvent(new MuteEvent())
-    while(!_peek(ins(addr).ready)) takeStep
-    _poke(ins(addr).bits, data)
-    _poke(ins(addr).valid, 1)
-    takeStep
-    _poke(ins(addr).valid, 0)
-    addEvent(new UnmuteEvent())
+    ins(addr).inputs enqueue data
   }
 
   protected[strober] def peekChannel(addr: Int) = {
-    addEvent(new MuteEvent())
-    while(!_peek(outs(addr).valid)) takeStep
-    val value = _peek(outs(addr).bits)
-    _poke(outs(addr).ready, 1)
-    takeStep
-    _poke(outs(addr).ready, 0)
-    addEvent(new UnmuteEvent())
-    value
+    _eventually(!outs(addr).outputs.isEmpty)
+    outs(addr).outputs.dequeue
   }
 
-  protected[strober] def readChain(t: ChainType.Value) = {
+  /* protected[strober] def readChain(t: ChainType.Value) = {
     addEvent(new MuteEvent())
     val chain = new StringBuilder
     for (k <- 0 until chainLoop(t) ; i <- 0 until chainLen(t)) {
@@ -248,8 +246,9 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T,
     }
     addEvent(new UnmuteEvent())
     chain.result
-  }
+  } */
 
+  /*
   override def setTraceLen(len: Int) {
     addEvent(new MuteEvent())
     super.setTraceLen(len)
@@ -260,31 +259,40 @@ abstract class SimWrapperTester[+T <: SimWrapper[Module]](c: T,
     _poke(c.io.traceLen.valid, 0)
     addEvent(new UnmuteEvent())
   }
+  */
 
   protected[strober] def _tick(n: Int) {
     for (i <- 0 until n) {
-      inMap foreach {case (in, id) => pokeId(id, chunk(in), pokeMap getOrElse (id, BigInt(0)))}
-      peekMap.clear
-      outMap foreach {case (out, id) => peekMap(id) = peekId(id, chunk(out))}
+      inMap foreach {case (in, id) => 
+        pokeChunk(id, SimWrapper.getChunk(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
+      }
+    }
+    _peekMap.clear
+    for (i <- 0 until n) {
+      outMap foreach {case (out, id) =>
+        _peekMap(out) = peekChunk(id, SimWrapper.getChunk(out))
+      }
     }
   }
 
   override def reset(n: Int) {
     // tail samples
-    lastSample match {
+    /* lastSample match {
       case None =>
       case Some((sample, id)) => samples(id) = traces(sample)
     }
-    lastSample = None
-    super.reset(n)
-    flush
+    lastSample = None */
+    _pokeMap(c.target.reset) = 1
+    _tick(n)
+    _pokeMap(c.target.reset) = 0
   }
 
   super.setTraceLen(c.traceMaxLen)
-  flush
+  reset(5)
 }
 
 // Data type to specify loadmem alg.
+/*
 trait LoadMemType
 case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
@@ -526,3 +534,4 @@ abstract class NastiShimTester[+T <: NastiShim[SimNetwork]](c: T,
   }
   flush
 }
+*/
