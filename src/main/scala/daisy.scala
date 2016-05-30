@@ -7,8 +7,9 @@ import scala.collection.mutable.HashMap
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
+case object SRAMChainNum extends Field[Int]
 
-object ChainType extends Enumeration { val Trace, Regs, SRAM0, SRAM1, Cntr = Value }
+object ChainType extends Enumeration { val Trace, Regs, SRAM, Cntr = Value }
 
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
@@ -22,19 +23,20 @@ class RegData(daisywidth: Int) extends DaisyData(daisywidth)
 class TraceData(daisywidth: Int) extends DaisyData(daisywidth)
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
   val restart = Bool(INPUT)
+  override def cloneType: this.type =
+    new SRAMData(daisywidth).asInstanceOf[this.type]
 }
 class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
 class DaisyBundle(daisywidth: Int) extends Bundle {
   val regs  = new RegData(daisywidth)
   val trace = new TraceData(daisywidth)
-  val sram  = Vec(2, new SRAMData(daisywidth))
   val cntr  = new CntrData(daisywidth)
-  def apply(t: ChainType.Value) = t match {
+  val sram  = Vec(2, new SRAMData(daisywidth))
+  def apply(t: ChainType.Value, idx: Int = 0) = t match {
     case ChainType.Regs  => regs
     case ChainType.Trace => trace
-    case ChainType.SRAM0 => sram(0)
-    case ChainType.SRAM1 => sram(1)
+    case ChainType.SRAM  => sram(idx)
     case ChainType.Cntr  => cntr
   }
   override def cloneType: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
