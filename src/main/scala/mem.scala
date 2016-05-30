@@ -4,7 +4,7 @@ import Chisel._
 import cde.{Parameters, Field}
 import junctions._
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.collection.immutable.ListSet
 
 case object MemMaxCycles extends Field[Int]
@@ -19,10 +19,16 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
 
 object SimMemIO {
   private val mems = ArrayBuffer[NastiIO]()
-  def apply(mem: NastiIO) { mems += mem }
-  def apply(i: Int) = mems(i)
+  private val wires = HashSet[Bits]()
+  def apply(mem: NastiIO) {
+    val (ins, outs) = SimUtils.parsePorts(mem)
+    wires ++= ins.unzip._1
+    wires ++= outs.unzip._1
+    mems += mem 
+  }
+  def apply(i: Int): NastiIO = mems(i)
+  def apply(wire: Bits) = wires(wire)
   def size = mems.size
-  def contains(wire: Bits) = mems exists (_.flatten.unzip._2 contains wire) 
   def zipWithIndex = mems.toList.zipWithIndex
 }
 
@@ -36,11 +42,12 @@ class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
   def <>(mIo: NastiIO, wIo: SimWrapperIO) {
     // Target Connection
     def targetConnect[T <: Bits](target: T, wire: T) = wire match {
-      case _: Bool if wire.dir == OUTPUT => target := wIo.getOuts(wire).head.bits
+      /* case _: Bool if wire.dir == OUTPUT =>  target := wIo.getOuts(wire).head.bits
       case _: Bool if wire.dir == INPUT => wIo.getIns(wire).head.bits := target
       case _ if wire.dir == OUTPUT => target := Vec(wIo.getOuts(wire) map (_.bits)).toBits
       case _ if wire.dir == INPUT => wIo.getIns(wire).zipWithIndex foreach {
-        case (in, i) => in.bits := target.toUInt >> UInt(i*wIo.channelWidth) }
+        case (in, i) => in.bits := target.toUInt >> UInt(i*wIo.channelWidth) } */
+      case _ =>
     }
     targetConnect(aw.target.bits.id,     mIo.aw.bits.id)
     targetConnect(aw.target.bits.addr,   mIo.aw.bits.addr)
@@ -91,6 +98,7 @@ class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
     targetConnect(b.target.ready,        mIo.b.ready)
 
     // Host Connection
+    /*
     def hostConnect(res: Bool, arg: (String, Bits), ready: Bool) = arg match { 
       case (_, wire) if wire.dir == INPUT =>
         val ins = wIo.getIns(wire)
@@ -105,7 +113,7 @@ class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
     ar.valid := (mIo.ar.flatten foldLeft Bool(true))(hostConnect(_, _, ar.ready))
     w.valid  := (mIo.w.flatten  foldLeft Bool(true))(hostConnect(_, _,  w.ready))
     r.ready  := (mIo.r.flatten  foldLeft Bool(true))(hostConnect(_, _,  r.valid))
-    b.ready  := (mIo.b.flatten  foldLeft Bool(true))(hostConnect(_, _,  b.valid))
+    b.ready  := (mIo.b.flatten  foldLeft Bool(true))(hostConnect(_, _,  b.valid)) */
   }
 }
 

@@ -2,8 +2,6 @@ package strober
 
 import Chisel._
 import cde.{Parameters, Field}
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.ArrayBuffer
 
 case object SampleNum extends Field[Int]
 case object TraceMaxLen extends Field[Int]
@@ -79,63 +77,6 @@ class Channel(val w: Int, doTrace: Boolean = true)
 
 object SimWrapper {
   def apply[T <: Module](c: =>T)(implicit p: Parameters) = new SimWrapper(c)
-
-  def parsePorts(io: Data, reset: Bool) = {
-    val inputs = ArrayBuffer[(Bits, String)](reset -> "reset")
-    val outputs = ArrayBuffer[(Bits, String)]()
-    def loop(name: String, data: Data): Unit = data match {
-      case b: Bundle => b.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
-      case v: Vec[_] => v.zipWithIndex foreach {case (e, i) => loop(s"${name}_${i}", e)}
-      case b: Bits if b.dir == INPUT => inputs += (b -> name)
-      case b: Bits if b.dir == OUTPUT => outputs += (b -> name)
-      case _ => // skip
-    }
-    loop("io", io)
-    (inputs.toList, outputs.toList)
-  }
-
-  def getChunk(b: Bits)(implicit channelWidth: Int) = 
-    (b.getWidth-1)/channelWidth + 1
-  def getChunks(s: Seq[Bits])(implicit channelWidth: Int) =
-    (s foldLeft 0)((res, b) => res + getChunk(b))
-
-  def genIoMap(ports: Seq[(Bits, String)])(implicit channelWidth: Int) = 
-    ((ports foldLeft ((ListMap[Bits, Int](), 0))){
-      case ((map, off), (port, name)) => (map + (port -> off), off + getChunk(port))
-    })._1
-
-  def genChannels[T <: Bits](arg: (T, String))
-      (implicit p: Parameters, trace: Boolean = true) = {
-    implicit val channelWidth = p(ChannelWidth)
-    arg match { case (port, name) => (0 until getChunk(port)) map { off => 
-      val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
-      val channel = Module(new Channel(width, trace)) 
-      channel suggestName s"Channel_${name}_${off}"
-      channel
-    }}
-  }
-
-  def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[Channel], fire: Bool)
-      (implicit channelWidth: Int) = arg match { case (wire, name) =>
-    val channels = inChannels slice (off, off + getChunk(wire))
-    val channelOuts = wire match {
-      case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Vec(channels map (_.io.out.bits)).toBits
-    }
-    val buffer = RegEnable(channelOuts, fire)
-    buffer suggestName (name + "_buffer") 
-    wire := Mux(fire, channelOuts, buffer)
-    off + getChunk(wire)
-  }
-
-  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel])
-      (implicit channelWidth: Int) = arg match { case (wire, name) =>
-    val channels = outChannels slice (off, off + getChunk(wire))
-    channels.zipWithIndex foreach {case (channel, i) =>
-      channel.io.in.bits := wire.asUInt >> UInt(i * channelWidth)
-    }
-    off + getChunk(wire)
-  }
 }
 
 trait HasSimWrapperParams {
@@ -148,9 +89,9 @@ trait HasSimWrapperParams {
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters) 
     extends junctions.ParameterizedBundle()(p) with HasSimWrapperParams {
-  import SimWrapper.{parsePorts, getChunks, genIoMap}
+  import SimUtils.{parsePorts, getChunks, genIoMap}
 
-  val (inputs, outputs) = parsePorts(io, reset)
+  val (inputs, outputs) = parsePorts(io, Some(reset))
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
 
@@ -163,19 +104,22 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
 
   lazy val inMap = genIoMap(inputs)
   lazy val outMap = genIoMap(outputs)
-  lazy val inTrMap = inMap map {case (wire, id) => wire -> (outs.size + id)}
-  lazy val outTrMap = outMap map {case (wire, id) => wire -> (outs.size + inT.size + id)}
-
-  /*
-  def getIns(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => ins(id+off))}
-  def getOuts(arg: (Bits, Int)) = arg match {case (wire, id) => (0 until chunk(wire)) map (off => outs(id+off))}
-  def getIns(wire: Bits) = (0 until chunk(wire)) map (off => ins(inMap(wire)+off))
-  def getOuts(wire: Bits) = (0 until chunk(wire)) map (off => outs(outMap(wire)+off))
-  */
+  lazy val inTrMap = inMap map {
+    case (wire, id) => wire -> (outs.size + id)
+  }
+  lazy val outTrMap = outMap map {
+    case (wire, id) => wire -> (outs.size + inT.size + id)
+  }
+  def getIns(arg: (Bits, Int)) = arg match {
+    case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
+  }
+  def getOuts(arg: (Bits, Int)) = arg match {
+    case (wire, id) => (0 until getChunks(wire)) map (off => outs(id+off))
+  }
 }
 
 abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  def io: SimWrapperIO 
+  def io: SimWrapperIO
   def in_channels: Seq[Channel]
   def out_channels: Seq[Channel]
 }
@@ -189,15 +133,15 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   val cycles = RegInit(UInt(0, 64)) // for debug
   val traceLen = RegInit(UInt(traceMaxLen-2, log2Up(traceMaxLen)))
 
-  val in_channels: Seq[Channel] = io.inputs flatMap SimWrapper.genChannels
-  val out_channels: Seq[Channel] = io.outputs flatMap SimWrapper.genChannels
+  val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
+  val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
 
   // Datapath: Channels <> IOs
   (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
-  (io.inputs foldLeft 0)(SimWrapper.connectInput(_, _, in_channels, fire))
+  (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, in_channels, fire))
 
   (io.outs zip out_channels) foreach {case (out, channel) => out <> channel.io.out}
-  (io.outputs foldLeft 0)(SimWrapper.connectOutput(_, _, out_channels))
+  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, out_channels))
 
   (io.inT zip in_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
   (io.outT zip out_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
@@ -226,6 +170,4 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
 
   // Cycles for debug
   when(fire && !target.reset) { cycles := cycles + UInt(1) }
-
-  StroberCompiler.init(this)
 } 
