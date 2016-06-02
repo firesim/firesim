@@ -27,17 +27,28 @@ class HostReadyValid extends Bundle {
   def fire(dummy: Int = 0): Bool = hostReady && hostValid
 }
 
-class HostPortIO[+T <: Data](gen: T) extends Bundle
+/**
+  * Hack: A note on tokenFlip:
+  * Previously we had difficulties generating hostPortIOs with flipped
+  * aggregates of aggregates. We thus had to manually flip the subfields of the
+  * aggregate in a new class (ex. the FlipNastiIO). tokenFlip captures
+  * whether hostBits should be flipped when it is cloned.
+  *
+  * thus what would ideally be expressed as HostPort((new NastiIO).flip) must
+  * be expressed as HostPort((new NastiIO), tokenFlip = true)
+  */
+
+class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
 {
   val hostIn = (new HostReadyValid).flip
   val hostOut = new HostReadyValid
-  val hostBits  = gen.cloneType
+  val hostBits  = if(tokenFlip) gen.cloneType.flip else gen cloneType
   override def cloneType: this.type =
-    new HostPortIO(gen).asInstanceOf[this.type]
+    new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
 }
 
 object HostPort {
-  def apply[T <: Data](gen: T): HostPortIO[T] = new HostPortIO(gen)
+  def apply[T <: Data](gen: T, tokenFlip : Boolean = false): HostPortIO[T] = new HostPortIO(gen, tokenFlip)
 }
 
 
