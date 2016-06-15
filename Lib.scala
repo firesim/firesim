@@ -10,24 +10,48 @@ import scala.collection.mutable.ArrayBuffer
 
 case object MidasBaseAddr extends Field[BigInt]
 
-object dirExtracter {
-  def dirProduct(context:Direction, field:Direction) : Direction = {
-    if (context == INPUT) field.flip else field
+/** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
+  * Returns a Seq of the leaf nodes with their absolute/final direction.
+  */
+object FlattenData {
+  def dirProduct(context: Direction, field: Direction): Direction = {
+    if(context == INPUT) field.flip else field
   }
 
-  def getFields[T <: Data] (gen: T, desiredDir: Direction,
-                            baseName: String, parentDir: Direction = OUTPUT) :
-                            Seq[(String, Data)] = {
+  def apply[T <: Data](
+      gen: T,
+      parentDir: Direction = OUTPUT): Seq[(Data, Direction)] = {
     val currentDir = dirProduct(parentDir, gen.dir)
-    val expandedName = if (baseName != "") baseName + "_" else ""
     gen match {
-      case a : Bundle => {
-        (a.elements map {e : (String, Data) => {
-          getFields(e._2, desiredDir, s"${baseName}${e._1}", currentDir)}})
-        }.asInstanceOf[Seq[Seq[(String,Data)]]].flatten
-      case sint : SInt => if (currentDir == OUTPUT) Seq((baseName, sint.cloneType)) else Seq()
-      case uint: UInt => if(currentDir == OUTPUT) Seq((baseName, uint.cloneType)) else Seq()
+      case a : Bundle => (a.elements flatMap(e => { this(e._2, currentDir)})).toSeq
+      case v : Vec[_] => v.flatMap(el => this(el, currentDir))
+      case leaf => Seq((leaf, currentDir))
     }
+  }
+}
+/** An object that is useful for measuring the QoR of a module on FPGA
+  * CAD tools; achieves two goals
+  * 1) Registers all inputs/outputs to properly measure intra-module timing
+  * 2) Inserts a scan chain across the elements - this reduces the total module
+  *    I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths
+  */
+object ScanRegister {
+  def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
+    val leaves = FlattenData(data)
+    leaves.foldLeft(scanIn)((in: Bool, leaf: Tuple2[Data,Direction]) => {
+      val r = Reg(Vec(leaf._1.toBits.toBools))
+      if(leaf._2 == OUTPUT){
+        r := leaf._1.toBits.toBools
+      } else {
+        leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
+      }
+
+      val out = Wire(Bool(false))
+      when (scanEnable) {
+        out := r.foldLeft(in)((in: Bool, r: Bool) => {r := in; r })
+      }
+      out
+    })
   }
 }
 
