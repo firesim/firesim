@@ -85,11 +85,11 @@ class MultiQueue[T <: Data](
   val maybe_full = RegInit(Vec.fill(numQueues)(Bool(false)))
   val ptr_matches = Vec.tabulate(numQueues)(i => enqPtrs(i) === deqPtrs(i))
 
-  val empty = ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
+  val empty = Wire(Bool())
   val full = ptr_matches(io.enqAddr) && maybe_full(io.enqAddr)
   val do_enq = Wire(init=io.enq.fire())
   val do_deq = Wire(init=io.deq.fire())
-
+  val deqAddrReg = RegNext(io.deqAddr)
 
   when (do_enq) {
     ram(Cat(io.enqAddr, enqPtrs(io.enqAddr))) := io.enq.bits
@@ -111,13 +111,14 @@ class MultiQueue[T <: Data](
     }
   }
 
-  val deqAddrReg = RegNext(io.deqAddr)
-  val deqPtr = deqPtrs(io.deqAddr)
+  val deqPtr = Wire(UInt())
   when(do_deq && (deqAddrReg === io.deqAddr)) {
     deqPtr := deqPtrs(io.deqAddr) + UInt(1)
     empty := (deqPtrs(io.deqAddr) + UInt(1)) === enqPtrs(io.enqAddr)
+  }.otherwise {
+    deqPtr := deqPtrs(io.deqAddr)
+    empty := ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
   }
-
   val deqValid = RegNext(!empty, Bool(false))
   io.empty := empty
   io.deq.valid := deqValid
