@@ -55,6 +55,76 @@ object ScanRegister {
   }
 }
 
+class MultiQueueIO[T <: Data](gen: T, numQueues: Int, entries: Int) extends
+    QueueIO(gen, entries) {
+  val enqAddr = UInt(INPUT, width = log2Up(numQueues))
+  val deqAddr = UInt(INPUT, width = log2Up(numQueues))
+  val empty = Bool(OUTPUT)
+}
+/** An extension of queue that co locates a set of Queues at a single mem.
+  * Key assumptions:
+  * 1) A writer to a queue dumps a complete transaction into a single queue
+  *    before it proceeds to enq to another queue.
+  * 2) A reader consumes the contents of a queue entirely before reading from another
+  *    This way we require only a single set of read and write pointers
+  */
+class MultiQueue[T <: Data](
+    gen: T,
+    val numQueues: Int,
+    val entries: Int
+    ) extends Module {
+
+  require(isPow2(entries))
+  val io = new MultiQueueIO(gen, numQueues, entries)
+  // Rely on the ROB & freelist to ensure we are always enq-ing to an available
+  // slot
+
+  val ram = SeqMem(entries * numQueues, gen)
+  val enqPtrs = RegInit(Vec.fill(numQueues)(UInt(0, width = log2Up(entries))))
+  val deqPtrs = RegInit(Vec.fill(numQueues)(UInt(0, width = log2Up(entries))))
+  val maybe_full = RegInit(Vec.fill(numQueues)(Bool(false)))
+  val ptr_matches = Vec.tabulate(numQueues)(i => enqPtrs(i) === deqPtrs(i))
+
+  val empty = ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
+  val full = ptr_matches(io.enqAddr) && maybe_full(io.enqAddr)
+  val do_enq = Wire(init=io.enq.fire())
+  val do_deq = Wire(init=io.deq.fire())
+
+
+  when (do_enq) {
+    ram(Cat(io.enqAddr, enqPtrs(io.enqAddr))) := io.enq.bits
+    enqPtrs(io.enqAddr) := enqPtrs(io.enqAddr) + UInt(1)
+  }
+  when (do_deq) {
+    deqPtrs(deqAddrReg) := deqPtrs(deqAddrReg) + UInt(1)
+  }
+  when (io.enqAddr === io.deqAddr) {
+    when(do_enq != do_deq) {
+    maybe_full(io.enqAddr) := do_enq
+    }
+  }.otherwise {
+    when(do_enq) {
+      maybe_full(io.enqAddr) := Bool(true)
+    }
+    when (do_deq) {
+      maybe_full(io.deqAddr) := Bool(false)
+    }
+  }
+
+  val deqAddrReg = RegNext(io.deqAddr)
+  val deqPtr = deqPtrs(io.deqAddr)
+  when(do_deq && (deqAddrReg === io.deqAddr)) {
+    deqPtr := deqPtrs(io.deqAddr) + UInt(1)
+    empty := (deqPtrs(io.deqAddr) + UInt(1)) === enqPtrs(io.enqAddr)
+  }
+
+  val deqValid = RegNext(!empty, Bool(false))
+  io.empty := empty
+  io.deq.valid := deqValid
+  io.enq.ready := !full
+  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), Bool(true))
+}
+
 /** A hardware module implementing a Queue
   * Modified from chisel3 util/Decoupled.scala
   * @param gen The type of data to queue
