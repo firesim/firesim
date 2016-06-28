@@ -55,6 +55,41 @@ object ScanRegister {
   }
 }
 
+class SatUpDownCounterIO(val n: Int) extends Bundle {
+  val inc = Bool(INPUT)
+  val dec = Bool(INPUT)
+  val max = UInt(INPUT, width = (log2Up(n)))
+  val value = UInt(OUTPUT)
+  val full = Bool(OUTPUT)
+  val empty = Bool(OUTPUT)
+}
+/** A saturating up down counter
+  */
+class SatUpDownCounter(val n: Int) extends Module {
+  require(n >= 1)
+  val io = new SatUpDownCounterIO(n)
+  val value =  Reg(init=UInt(0, log2Up(n)))
+  io.value := value
+  io.full := value >= io.max
+  io.empty := value === UInt(0)
+
+  when (io.inc && ~io.dec && ~io.full) {
+    value := value + UInt(1)
+  }.elsewhen(~io.inc && io.dec && ~io.empty){
+    value := value - UInt(1)
+  }
+}
+
+object SatUpDownCounter {
+  def apply(n: Int): SatUpDownCounterIO = {
+    val c = (Module(new SatUpDownCounter(n))).io
+    c.max := UInt(n)
+    c.inc := Bool(false)
+    c.dec := Bool(false)
+    c
+  }
+}
+
 class MultiQueueIO[T <: Data](gen: T, numQueues: Int, entries: Int) extends
     QueueIO(gen, entries) {
   val enqAddr = UInt(INPUT, width = log2Up(numQueues))
@@ -98,7 +133,7 @@ class MultiQueue[T <: Data](
   when (do_deq) {
     deqPtrs(deqAddrReg) := deqPtrs(deqAddrReg) + UInt(1)
   }
-  when (io.enqAddr === io.deqAddr) {
+  when (io.enqAddr === deqAddrReg) {
     when(do_enq != do_deq) {
     maybe_full(io.enqAddr) := do_enq
     }
@@ -107,7 +142,7 @@ class MultiQueue[T <: Data](
       maybe_full(io.enqAddr) := Bool(true)
     }
     when (do_deq) {
-      maybe_full(io.deqAddr) := Bool(false)
+      maybe_full(deqAddrReg) := Bool(false)
     }
   }
 
