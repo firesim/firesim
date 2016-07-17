@@ -1,6 +1,7 @@
 package strober
 
 import Chisel._
+import junctions.NastiIO
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
 
@@ -9,8 +10,13 @@ object SimUtils {
     val inputs = ArrayBuffer[(Bits, String)]()
     val outputs = ArrayBuffer[(Bits, String)]()
     def loop(name: String, data: Data): Unit = data match {
-      case b: Bundle => b.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
-      case v: Vec[_] => v.zipWithIndex foreach {case (e, i) => loop(s"${name}_${i}", e)}
+      case m: NastiIO if reset != None && !SimMemIO(m) =>
+        m.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
+        SimMemIO add m
+      case b: Bundle =>
+        b.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
+      case v: Vec[_] => 
+        v.zipWithIndex foreach {case (e, i) => loop(s"${name}_${i}", e)}
       case b: Bits if b.dir == INPUT => inputs += (b -> name)
       case b: Bits if b.dir == OUTPUT => outputs += (b -> name)
       case _ => // skip
@@ -28,8 +34,8 @@ object SimUtils {
   def getChunks(s: Seq[Bits])(implicit channelWidth: Int): Int =
     (s foldLeft 0)((res, b) => res + getChunks(b))
 
-  def genIoMap(ports: Seq[(Bits, String)])(implicit channelWidth: Int) =
-    ((ports foldLeft ((ListMap[Bits, Int](), 0))){
+  def genIoMap(ports: Seq[(Bits, String)], offset: Int = 0)(implicit channelWidth: Int) =
+    ((ports foldLeft ((ListMap[Bits, Int](), offset))){
       case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
     })._1
 
@@ -66,5 +72,3 @@ object SimUtils {
     off + getChunks(wire)
   }
 }
-
-// vim: set ts=4 sw=4 et:

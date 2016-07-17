@@ -1,11 +1,14 @@
 package strober
 
-import Chisel._
-import Chisel.iotesters.{AdvTester, Processable}
+import chisel3._
+import chisel3.util._
+import chisel3.iotesters.{AdvTester, Processable, Backend}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-abstract class StroberTester[+T <: Module](c: T, verbose: Boolean) extends AdvTester(c, false) {
+abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
+    logFile: Option[String], waveform: Option[String], testCmd: List[String])
+    extends AdvTester(c, false, logFile=logFile, waveform=waveform, testCmd=testCmd, isPropagation=false) {
   protected[strober] val _pokeMap = HashMap[Data, BigInt]()
   protected[strober] val _peekMap = HashMap[Data, BigInt]()
   protected[strober] def _inputs: Map[Bits, String]
@@ -25,8 +28,8 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean) extends AdvTe
   def traceLen = _traceLen
   implicit def bigintToBoolean(b: BigInt) = b != 0
 
-  private val _preprocessors = ArrayBuffer[Processable]()
-  private val _postprocessors = ArrayBuffer[Processable]()
+  protected[strober] val _preprocessors = ArrayBuffer[Processable]()
+  protected[strober] val _postprocessors = ArrayBuffer[Processable]()
 
   protected[strober] class ChannelSource[T <: Data, R](
     socket: DecoupledIO[T], post: (T, R) => Unit) extends Processable {

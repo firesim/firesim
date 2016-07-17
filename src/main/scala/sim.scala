@@ -1,6 +1,7 @@
 package strober
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import cde.{Parameters, Field}
 
 case object SampleNum extends Field[Int]
@@ -8,24 +9,20 @@ case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
 
-class TraceQueueIO[T <: Data](data: => T, entries: Int)
-    extends QueueIO(data, entries) {
-  val limit = UInt(INPUT, log2Up(entries+1))
+class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
+  val limit = UInt(INPUT, log2Up(entries))
 }
 
-class TraceQueue[T <: Data](data: => T)
-    (implicit p: Parameters) extends Module {
-  val traceMaxLen = p(TraceMaxLen)
-  val traceLenBits = log2Up(traceMaxLen+1)
-  val io = new TraceQueueIO(data, traceMaxLen)
+class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
+  val io = new TraceQueueIO(data, p(TraceMaxLen))
 
   val do_flow = Wire(Bool())
   val do_enq = io.enq.fire() && !do_flow
   val do_deq = io.deq.fire() && !do_flow
 
   val maybe_full = RegInit(Bool(false))
-  val enq_ptr = RegInit(UInt(0, traceLenBits))
-  val deq_ptr = RegInit(UInt(0, traceLenBits))
+  val enq_ptr = RegInit(UInt(0, io.entries))
+  val deq_ptr = RegInit(UInt(0, io.entries))
   val enq_wrap = enq_ptr === io.limit
   val deq_wrap = deq_ptr === io.limit
   when (do_enq) { enq_ptr := Mux(enq_wrap, UInt(0), enq_ptr + UInt(1)) }
@@ -38,7 +35,7 @@ class TraceQueue[T <: Data](data: => T)
   val atLeastTwo = full || enq_ptr - deq_ptr >= UInt(2)
   do_flow := empty && io.deq.ready
 
-  val ram = SeqMem(traceMaxLen, data)
+  val ram = SeqMem(p(TraceMaxLen), data)
   when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
 
   val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
@@ -70,8 +67,10 @@ class Channel(val w: Int, doTrace: Boolean = true)
     // trace is written when a token is consumed
     trace.io.enq.bits  := io.out.bits
     trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
-    trace.io.limit := io.traceLen
+    trace.io.limit := io.traceLen - UInt(2)
     io.trace <> Queue(trace.io.deq, 1, pipe=true)
+  } else {
+    io.trace.valid := Bool(false)
   }
 }
 
@@ -100,22 +99,23 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   val inT = Vec(inChannelNum, Decoupled(UInt(width=channelWidth)))
   val outT = Vec(outChannelNum, Decoupled(UInt(width=channelWidth)))
   val daisy = new DaisyBundle(daisyWidth)
-  val traceLen = Decoupled(UInt(width=log2Up(traceMaxLen+1))).flip
+  val traceLen = UInt(INPUT, log2Up(traceMaxLen+1))
 
   lazy val inMap = genIoMap(inputs)
   lazy val outMap = genIoMap(outputs)
-  lazy val inTrMap = inMap map {
-    case (wire, id) => wire -> (outs.size + id)
-  }
-  lazy val outTrMap = outMap map {
-    case (wire, id) => wire -> (outs.size + inT.size + id)
-  }
-  def getIns(arg: (Bits, Int)) = arg match {
+  lazy val inTrMap = genIoMap(inputs, outs.size)
+  lazy val outTrMap = genIoMap(outputs, outs.size + inT.size)
+  lazy val inNotMemIoMap = genIoMap(inputs filterNot (x => SimMemIO(x._1)))
+  lazy val outNotMemIoMap = genIoMap(outputs filterNot (x => SimMemIO(x._1)))
+
+  def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
   }
-  def getOuts(arg: (Bits, Int)) = arg match {
+  def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => outs(id+off))
   }
+  def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> inMap(wire))
+  def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> outMap(wire))
 }
 
 abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSimWrapperParams {
@@ -131,7 +131,6 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
 
   val fire = Wire(Bool())
   val cycles = RegInit(UInt(0, 64)) // for debug
-  val traceLen = RegInit(UInt(traceMaxLen-2, log2Up(traceMaxLen)))
 
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
   val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
@@ -160,13 +159,8 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   out_channels foreach (_.io.in.valid := fire)
 
   // Trace size is runtime configurable
-  io.traceLen.ready := !fire
-  when(io.traceLen.fire()) {
-    traceLen := Mux(io.traceLen.bits < UInt(traceMaxLen), 
-                    io.traceLen.bits, UInt(traceMaxLen)) - UInt(2) 
-  }
-  in_channels foreach (_.io.traceLen := traceLen)
-  out_channels foreach (_.io.traceLen := traceLen)
+  in_channels foreach (_.io.traceLen := io.traceLen)
+  out_channels foreach (_.io.traceLen := io.traceLen)
 
   // Cycles for debug
   when(fire && !target.reset) { cycles := cycles + UInt(1) }
