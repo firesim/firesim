@@ -2,6 +2,7 @@ package strober
 package passes
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Mappers._
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 
@@ -9,11 +10,11 @@ object Fame1Transform extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   import Utils._
 
-  private def transform(m: Module): Module = m match {
-    case m: ExModule => m
-    case m: InModule =>
+  private def transform(m: DefModule): DefModule = m match {
+    case m: ExtModule => m
+    case m: Module =>
       val enables = HashSet[String]()
-      def collectEnables(s: Stmt): Stmt = {
+      def collectEnables(s: Statement): Statement = {
         s map collectEnables match {
           case mem: DefMemory =>
             enables ++= mem.readers map (r => s"${mem.name}.${r}.en")
@@ -25,18 +26,18 @@ object Fame1Transform extends firrtl.passes.Pass {
       }
 
       val connectMap = HashMap[Expression, Expression]()
-      def collectConnects(s: Stmt): Stmt = {
+      def collectConnects(s: Statement): Statement = {
         s map collectConnects match {
           case con: Connect if enables(expToString(con.loc)) =>
-            connectMap(con.loc) = con.exp
+            connectMap(con.loc) = con.expr
             con
           case s => s
         }
       }
 
-      val targetFire = Port(NoInfo, "targetFire", INPUT, UIntType(IntWidth(1)))
-      val whens = ArrayBuffer[Stmt]()
-      def connectTargetFire(s: Stmt): Stmt = {
+      val targetFire = Port(NoInfo, "targetFire", Input, UIntType(IntWidth(1)))
+      val whens = ArrayBuffer[Statement]()
+      def connectTargetFire(s: Statement): Statement = {
         s map connectTargetFire match {
           case inst: DefInstance =>
             Begin(Seq(
@@ -50,14 +51,14 @@ object Fame1Transform extends firrtl.passes.Pass {
             ))
           case reg: DefRegister =>
             whens += Conditionally(reg.info,
-              DoPrim(NOT_OP, Seq(buildExp(targetFire.name)), Seq(), UnknownType()),
-              Connect(NoInfo, buildExp(reg.name), buildExp(reg.name)), Empty())
+              DoPrim(PrimOps.Not, Seq(buildExp(targetFire.name)), Seq(), UnknownType),
+              Connect(NoInfo, buildExp(reg.name), buildExp(reg.name)), EmptyStmt)
             reg
           case Connect(info, loc, exp) if connectMap contains loc =>
             val nodeName = s"""${expToString(loc) replace (".", "_")}_fire"""
             Begin(Seq(
               DefNode(NoInfo, nodeName,
-                DoPrim(AND_OP, Seq(exp, buildExp(targetFire.name)), Seq(), UnknownType())
+                DoPrim(PrimOps.And, Seq(exp, buildExp(targetFire.name)), Seq(), UnknownType)
               ),
               Connect(NoInfo, loc, buildExp(nodeName))
             ))
@@ -65,16 +66,16 @@ object Fame1Transform extends firrtl.passes.Pass {
         }
       }
 
-      InModule(m.info, m.name, m.ports :+ targetFire, Begin(
+      Module(m.info, m.name, m.ports :+ targetFire, Begin(
         (m.body map collectEnables map collectConnects map connectTargetFire) +: whens))
   }
 
   def run(c: Circuit) = {
     val transformedModules = (c.modules filter (x => wrappers(x.name)) flatMap { 
-      case m: InModule =>
+      case m: Module =>
         val targets = HashSet[String]()
-        val connects = ArrayBuffer[Stmt]()
-        def connectTargetFire(s: Stmt): Stmt = {
+        val connects = ArrayBuffer[Statement]()
+        def connectTargetFire(s: Statement): Statement = {
           s map connectTargetFire match {
             case inst: DefInstance if inst.name == "target" =>
               targets += inst.module
@@ -90,8 +91,8 @@ object Fame1Transform extends firrtl.passes.Pass {
         val body = Begin((m.body map connectTargetFire) +: connects)
         val targetModules = c.modules filter (x => targets(x.name))
         (dfs(targetModules, c.modules)(transform) map (x => x.name -> x)) :+
-        (m.name -> InModule(m.info, m.name, m.ports, body))
-      case m: ExModule => Seq(m.name -> m) // should be execption
+        (m.name -> Module(m.info, m.name, m.ports, body))
+      case m: ExtModule => Seq(m.name -> m) // should be execption
     }).toMap
     Circuit(c.info, c.modules map (m => transformedModules getOrElse (m.name, m)), c.main)
   }

@@ -15,8 +15,7 @@ object ZynqShim {
 case class ZynqMasterHandlerArgs(
   sim: SimWrapperIO, inNum: Int, outNum: Int, 
   arNum: Int, awNum: Int, rNum: Int, wNum: Int, ctrlNum: Int)
-class ZynqMasterHandler(val args: ZynqMasterHandlerArgs)(
-    implicit p: Parameters) extends NastiModule()(p) {
+class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) extends NastiModule()(p) {
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
   val io = new Bundle {
     val nasti = (new NastiIO).flip
@@ -140,10 +139,8 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())
-  private val inMap = sim.io.inMap.toList.tail filterNot (x => SimMemIO(x._1)) // exclude reset
-  private val outMap = sim.io.outMap.toList filterNot (x => SimMemIO(x._1))
-  private val ins = inMap flatMap sim.io.getIns
-  private val outs = outMap flatMap sim.io.getOuts
+  val ins = sim.io.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap sim.io.getIns // exclude reset
+  val outs = sim.io.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap sim.io.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
     val q = Module(new Queue(in.bits, 2, flow=true))
     in.bits := q.io.deq.bits ; q suggestName s"in_buf_${i}" ; q }
@@ -158,7 +155,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
              (sim.io.ins foldLeft Bool(true))(_ && _.ready)
   val tock = ((outBufs foldLeft tockCounter.orR)(_ && _.io.enq.ready)) &&
              (sim.io.outs foldLeft Bool(true))(_ && _.valid)
-  // sim.reset           := simReset
+  val idle = !tickCounter.orR && !tockCounter.orR
   sim.io.ins(0).bits  := simReset
   sim.io.ins(0).valid := tick || simReset
   when(simReset) { tockCounter := UInt(1) }
@@ -182,11 +179,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val w  = genChannels(mem.w.bits.data,  "w")
   val r  = genChannels(mem.r.bits.data,  "r")
 
+  io.slave <> arb.io.slave
+
   // Instantiate Master Handler
   val CTRL_NUM = 5
   val master = Module(new ZynqMasterHandler(new ZynqMasterHandlerArgs(
     sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size, CTRL_NUM))(
     p alter Map(NastiKey -> p(MasterNastiKey))))
+
   master.io.nasti <> io.master
 
   // 0: reset
@@ -201,7 +201,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     tickCounter := master.io.ctrlIns(STEP_ADDR).bits 
     tockCounter := master.io.ctrlIns(STEP_ADDR).bits 
   }
-  master.io.ctrlIns(STEP_ADDR).ready := !tickCounter.orR && !tockCounter.orR
+  master.io.ctrlIns(STEP_ADDR).ready := idle
   master.io.ctrlOuts(STEP_ADDR).valid := Bool(false)
 
   // 2: done
@@ -212,56 +212,104 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
 
   // 3: traceLen
   val TRACELEN_ADDR = 3
-  sim.io.traceLen <> master.io.ctrlIns(TRACELEN_ADDR)
+  val tracelen_reg = RegInit(UInt(0, master.nastiXDataBits))
+  sim.io.traceLen := tracelen_reg
+  when(master.io.ctrlIns(TRACELEN_ADDR).fire()) {
+    tracelen_reg := master.io.ctrlIns(TRACELEN_ADDR).bits 
+  }
+  master.io.ctrlIns(TRACELEN_ADDR).ready := idle
   master.io.ctrlOuts(TRACELEN_ADDR).valid := Bool(false)
 
   // 4: latency
   val LATENCY_ADDR = 4
-  val latency = Wire(master.ChannelType)
-  latency <> master.io.ctrlIns(LATENCY_ADDR)
+  val latency_reg = RegInit(UInt(0, master.nastiXDataBits))
+  when(master.io.ctrlIns(LATENCY_ADDR).fire()) {
+    latency_reg := master.io.ctrlIns(LATENCY_ADDR).bits
+  }
+  master.io.ctrlIns(LATENCY_ADDR).ready := idle
   master.io.ctrlOuts(LATENCY_ADDR).valid := Bool(false)
 
   // Target Connection
-  val IN_ADDRS = inMap map {case (in, id) => in -> (CTRL_NUM + master.restarts.size - 1 + id)} 
-  val OUT_ADDRS = outMap map {case (out, id) => out -> (CTRL_NUM + id)}
+  val IN_ADDRS = sim.io.inNotMemIoMap map {case (in, id) => in -> (CTRL_NUM + master.restarts.size - 1 + id)}
+  val OUT_ADDRS = sim.io.outNotMemIoMap map {case (out, id) => out -> (CTRL_NUM + id)}
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
   master.io.inT <> sim.io.inT
   master.io.outT <> sim.io.outT
   master.io.daisy <> sim.io.daisy
   
-  // Host Memory Connection
+  // Memory Connection
   (aw zip master.io.mem.aw) foreach {case (buf, io) => buf.io.in <> io}
   (ar zip master.io.mem.ar) foreach {case (buf, io) => buf.io.in <> io}
   (w zip master.io.mem.w) foreach {case (buf, io) => buf.io.in <> io}
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
-  io.slave <> arb.io.slave
-
-  // Memory Connection
-  /* for (i <-0 until SimMemIO.size) {
-    val conv = Module(new ChannelMemIOConverter)
-    conv setName s"mem_conv_${i}"
-    conv.reset := master.io.simReset
-    conv.io.latency  <> master.io.latency
-    conv.io.sim_mem  <> (SimMemIO(i), sim.io)
-    conv.io.host_mem <> arb.io.master(i)
-  }
-
   mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
-    Vec(aw map (_.io.out.bits)).toBits, UInt(log2Up(mem.w.bits.nastiXDataBits/8)))
+    Vec(aw map (_.io.out.bits)).toBits, UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
+    p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
-    Vec(ar map (_.io.out.bits)).toBits, UInt(log2Up(mem.r.bits.nastiXDataBits/8)))
-  mem.w.bits := NastiWriteDataChannel(Vec(w map (_.io.out.bits)).toBits)
+    Vec(ar map (_.io.out.bits)).toBits, UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
+    p alter Map(NastiKey -> p(SlaveNastiKey)))
+  mem.w.bits := NastiWriteDataChannel(Vec(w map (_.io.out.bits)).toBits)(
+    p alter Map(NastiKey -> p(SlaveNastiKey)))
   r.zipWithIndex foreach {case (buf, i) =>
-    buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)}
+    buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)
+  }
   mem.aw.valid := (aw foldLeft Bool(true))(_ && _.io.out.valid)
   mem.ar.valid := (ar foldLeft Bool(true))(_ && _.io.out.valid)
-  mem.w.valid := (w foldLeft Bool(true))(_ && _.io.out.valid)
-  mem.r.ready := (w foldLeft Bool(true))(_ && _.io.in.ready)
+  mem.w.valid  := (w  foldLeft Bool(true))(_ && _.io.out.valid)
+  mem.r.ready  := (r  foldLeft Bool(true))(_ && _.io.in.ready)
+  mem.b.ready  := Bool(true)
   aw foreach (_.io.out.ready := mem.aw.ready)
   ar foreach (_.io.out.ready := mem.ar.ready)
-  w foreach (_.io.out.ready := mem.w.ready)
-  r foreach (_.io.in.valid := mem.r.valid)
-  mem.b.ready := Bool(true) */
+  w  foreach (_.io.out.ready := mem.w.ready)
+  r  foreach (_.io.in.valid  := mem.r.valid)
+  
+  private def targetConnect[T <: Data](arg: (T, T)): Unit = arg match {
+    case (target: Bundle, wires: Bundle) => 
+      (target.elements.unzip._2 zip wires.elements.unzip._2) foreach targetConnect
+    case (target: Vec[_], wires: Vec[_]) => 
+      (target.toSeq zip wires.toSeq) foreach targetConnect
+    case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
+      target := Vec(sim.io.getOuts(wire) map (_.bits)).toBits
+    case (target: Bits, wire: Bits) if wire.dir == INPUT => 
+      sim.io.getIns(wire).zipWithIndex foreach {case (in, i) => 
+        in.bits := target >> UInt(i * sim.io.channelWidth) 
+      }
+    case _ =>
+  }
+
+  private def hostConnect[T <: Data](valid: Bool, wires: T, ready: Bool): Bool = wires match {
+    case b: Bundle =>
+      (b.elements.unzip._2 foldLeft valid)(hostConnect(_, _, ready))
+    case v: Vec[_] =>
+      (v.toSeq foldLeft valid)(hostConnect(_, _, ready))
+    case b: Bits if b.dir == OUTPUT =>
+      val outs = sim.io.getOuts(b)
+      outs foreach (_.ready := ready)
+      (outs foldLeft valid)(_ && _.valid)
+    case b: Bits if b.dir == INPUT =>
+      val ins = sim.io.getIns(b)
+      ins foreach (_.valid := ready || simReset)
+      (ins foldLeft valid)(_ && _.ready)
+  }
+
+  (0 until SimMemIO.size) foreach { i =>
+    val model = Module(new MemModel()(p alter Map(NastiKey -> p(SlaveNastiKey))))
+    val wires = SimMemIO(i)
+    model.reset := reset || simReset
+    model suggestName s"MemModel_$i"
+    model.io.latency := latency_reg
+    arb.io.master(i) <> model.io.host_mem
+    targetConnect(model.io.sim_mem.aw.target -> wires.aw)
+    targetConnect(model.io.sim_mem.ar.target -> wires.ar)
+    targetConnect(model.io.sim_mem.r.target  -> wires.r)
+    targetConnect(model.io.sim_mem.w.target  -> wires.w)
+    targetConnect(model.io.sim_mem.b.target  -> wires.b)
+    model.io.sim_mem.aw.valid := hostConnect(Bool(true), wires.aw, model.io.sim_mem.aw.ready)
+    model.io.sim_mem.ar.valid := hostConnect(Bool(true), wires.ar, model.io.sim_mem.ar.ready)
+    model.io.sim_mem.w.valid  := hostConnect(Bool(true), wires.w,  model.io.sim_mem.w.ready)
+    model.io.sim_mem.r.ready  := hostConnect(Bool(true), wires.r,  model.io.sim_mem.r.valid)
+    model.io.sim_mem.b.ready  := hostConnect(Bool(true), wires.b,  model.io.sim_mem.b.valid)
+  }
 }

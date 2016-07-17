@@ -1,6 +1,7 @@
 package strober
 
 import firrtl._
+import firrtl.ir._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, HashSet}
 import scala.util.DynamicVariable
 
@@ -35,7 +36,7 @@ object StroberCompiler {
   private val contextVar = new DynamicVariable[Option[TransformContext]](None)
   private[strober] def context = contextVar.value.getOrElse (new TransformContext)
 
-  private def moduleToFirrtl(c: Chisel.internal.firrtl.Circuit, dir: java.io.File) = {
+  private def moduleToFirrtl(c: chisel3.internal.firrtl.Circuit, dir: java.io.File) = {
     val firrtl = s"${dir}/${c.name}.fir"
     Chisel.Driver.dumpFirrtl(c, Some(new java.io.File(firrtl)))
     firrtl
@@ -55,12 +56,11 @@ object StroberCompiler {
 
   def apply[T <: Chisel.Module](args: Array[String], w: => T) = {
     contextVar.withValue(Some(new TransformContext)) {
-      Chisel.Driver.parseArgs(args)
-      lazy val design = w
-      val circuit = Chisel.Driver.elaborate(() => design)
+      chisel3.Driver.parseArgs(args)
+      val circuit = chisel3.Driver.elaborate(() => w)
       val dir = new java.io.File(Chisel.Driver.targetDir) ; dir.mkdirs
       val highFirrtl = moduleToFirrtl(circuit, dir)
-      design match {
+      (circuit.components find (_.name == circuit.name)).get.id match {
         case w: SimWrapper[_] =>
           context.wrappers += w.name
         case w: ZynqShim[_] =>

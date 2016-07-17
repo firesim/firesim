@@ -1,12 +1,12 @@
 package strober
 
-import Chisel._
-import Chisel.iotesters.{AdvTester, Processable}
+import chisel3._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-abstract class SimWrapperTester[+T <: Module](c: SimWrapper[T],
-    verbose: Boolean = true) extends StroberTester(c, verbose) {
+abstract class SimWrapperTester[+T <: Module](c: SimWrapper[T], verbose: Boolean=true,
+    logFile: Option[String]=None, waveform: Option[String]=None, testCmd: List[String]=Nil)
+    extends StroberTester(c, verbose, logFile, waveform, testCmd) {
   protected[strober] val _inputs = 
     (c.io.inputs map {case (x, y) => x -> s"${c.target.name}.$y"}).toMap
   protected[strober] val _outputs = 
@@ -54,19 +54,6 @@ abstract class SimWrapperTester[+T <: Module](c: SimWrapper[T],
     chain.result
   } */
 
-  /*
-  override def setTraceLen(len: Int) {
-    addEvent(new MuteEvent())
-    super.setTraceLen(len)
-    while (!_peek(c.io.traceLen.ready)) takeStep
-    _poke(c.io.traceLen.bits, len)
-    _poke(c.io.traceLen.valid, 1)
-    takeStep
-    _poke(c.io.traceLen.valid, 0)
-    addEvent(new UnmuteEvent())
-  }
-  */
-
   protected[strober] def _tick(n: Int) {
     for (i <- 0 until n) {
       c.io.inMap foreach {case (in, id) => 
@@ -93,6 +80,11 @@ abstract class SimWrapperTester[+T <: Module](c: SimWrapper[T],
     _pokeMap(c.target.reset) = 0
   }
 
-  super.setTraceLen(c.traceMaxLen)
+  override def setTraceLen(len: Int) {
+    super.setTraceLen(len)
+    _poke(c.io.traceLen, len)
+  }
+
   reset(5)
+  super.setTraceLen(c.traceMaxLen)
 }

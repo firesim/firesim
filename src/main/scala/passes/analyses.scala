@@ -2,14 +2,15 @@ package strober
 package passes
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Mappers._
 
 object Analyses extends firrtl.passes.Pass {
   def name = "[strober] Analyze Circuit"
   
-  def collectChildren(m: InModule) {
+  def collectChildren(m: Module) {
     val children = collection.mutable.ArrayBuffer[String]()
-    def visitInstances(s: Stmt): Stmt =
+    def visitInstances(s: Statement): Statement =
       s map visitInstances match {
         case inst: DefInstance =>
           children += inst.module
@@ -25,8 +26,8 @@ object Analyses extends firrtl.passes.Pass {
 
   def run(c: Circuit) = {
     c.modules foreach {
-      case m: ExModule => // should be exception
-      case m: InModule => collectChildren(m)
+      case m: ExtModule => // should be exception
+      case m: Module => collectChildren(m)
     }
     c
   }
