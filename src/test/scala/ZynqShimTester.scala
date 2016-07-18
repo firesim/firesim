@@ -16,7 +16,7 @@ case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
 abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
-    verbose: Boolean = true, loadmemType: LoadMemType = FastLoadMem,
+    verbose: Boolean = true, loadmemType: LoadMemType = SlowLoadMem,
     logFile: Option[String] = None, waveform: Option[String] = None, testCmd: List[String] = Nil)
     extends StroberTester(c, verbose, logFile=logFile, waveform=waveform, testCmd=testCmd) {
   /* protected[strober] val inMap = c.master.inMap
@@ -178,42 +178,22 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
 
   def loadMem(filename: String) = loadmemType match {
     case FastLoadMem => mem loadMem filename
-    case SlowLoadMem => // slowLoadMem(filename)
+    case SlowLoadMem => slowLoadMem(filename)
   }
 
-  /*
   def writeMem(addr: BigInt, data: BigInt) {
-    addEvent(new MemWriteEvent(addr, data))
-    // Address
-    pokeChannel(c.master.memMap(c.mem.aw.bits.addr), addr)
-    addEvent(new MuteEvent())
-    do { takeStep } while (!_peek(c.io.slave.aw.valid))
-    addEvent(new UnmuteEvent())
-    tickMem
-    // Data
-    pokeId(c.master.memMap(c.mem.w.bits.data), chunk(c.mem.w.bits.data), data)
-    addEvent(new MuteEvent())
-    do { takeStep } while (!_peek(c.io.slave.w.valid))
-    addEvent(new UnmuteEvent())
-    tickMem
+    pokeChunks(c.AW_ADDR, SimUtils.getChunks(c.io.slave.aw.bits.addr), addr)
+    pokeChunks(c.W_ADDR,  SimUtils.getChunks(c.io.slave.w.bits.data),  data)
   }
 
   def readMem(addr: BigInt) = {
-    // Address
-    pokeChannel(c.master.memMap(c.mem.ar.bits.addr), addr)
-    addEvent(new MuteEvent())
-    do { takeStep } while (!_peek(c.io.slave.ar.valid))
-    addEvent(new UnmuteEvent())
-    tickMem
-    // Data  
-    val data = peekId(c.master.memMap(c.mem.r.bits.data), chunk(c.mem.r.bits.data))
-    addEvent(new MemReadEvent(addr, data))
-    data
+    pokeChunks(c.AR_ADDR, SimUtils.getChunks(c.io.slave.ar.bits.addr), addr)
+    peekChunks(c.R_ADDR,  SimUtils.getChunks(c.io.slave.r.bits.data))
   }
 
   def slowLoadMem(filename: String) {
-    addEvent(new DumpEvent(s"[LOADMEM] LOADING ${filename}"))
-    val chunk = c.nastiXDataBits / 4
+    println(s"[LOADMEM] LOADING ${filename}")
+    val chunk = c.arb.nastiXDataBits / 4
     scala.io.Source.fromFile(filename).getLines.zipWithIndex foreach {case (line, i) =>
       val base = (i * line.length) / 2
       assert(line.length % chunk == 0)
@@ -224,9 +204,10 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
         offset + chunk / 2
       }
     }
-    addEvent(new DumpEvent(s"[LOADMEM] DONE")) 
+    println(s"[LOADMEM] DONE")
   }
 
+  /*
   protected[strober] def readChain(t: ChainType.Value) = {
     val chain = new StringBuilder
     for (k <- 0 until chainLoop(t)) {
