@@ -230,8 +230,10 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   master.io.ctrlOuts(LATENCY_ADDR).valid := Bool(false)
 
   // Target Connection
-  val IN_ADDRS = sim.io.inNotMemIoMap map {case (in, id) => in -> (CTRL_NUM + master.restarts.size - 1 + id)}
-  val OUT_ADDRS = sim.io.outNotMemIoMap map {case (out, id) => out -> (CTRL_NUM + id)}
+  val IN_ADDRS = SimUtils.genIoMap(sim.io.inputs.tail filterNot (
+    x => SimMemIO(x._1)), CTRL_NUM + master.restarts.size)(sim.channelWidth)
+  val OUT_ADDRS = SimUtils.genIoMap(sim.io.outputs filterNot (
+    x => SimMemIO(x._1)), CTRL_NUM)(sim.channelWidth)
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
   master.io.inT <> sim.io.inT
@@ -239,6 +241,11 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   master.io.daisy <> sim.io.daisy
   
   // Memory Connection
+  val AR_ADDR = CTRL_NUM + master.restarts.size + master.io.ins.size
+  val AW_ADDR = AR_ADDR + master.io.mem.ar.size
+  val W_ADDR  = AW_ADDR + master.io.mem.aw.size
+  val R_ADDR  = CTRL_NUM + master.io.outs.size + master.io.inT.size + master.io.outT.size +
+    3 + master.io.daisy.sram.size
   (aw zip master.io.mem.aw) foreach {case (buf, io) => buf.io.in <> io}
   (ar zip master.io.mem.ar) foreach {case (buf, io) => buf.io.in <> io}
   (w zip master.io.mem.w) foreach {case (buf, io) => buf.io.in <> io}
@@ -260,10 +267,10 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   mem.w.valid  := (w  foldLeft Bool(true))(_ && _.io.out.valid)
   mem.r.ready  := (r  foldLeft Bool(true))(_ && _.io.in.ready)
   mem.b.ready  := Bool(true)
-  aw foreach (_.io.out.ready := mem.aw.ready)
-  ar foreach (_.io.out.ready := mem.ar.ready)
-  w  foreach (_.io.out.ready := mem.w.ready)
-  r  foreach (_.io.in.valid  := mem.r.valid)
+  aw foreach (_.io.out.ready := mem.aw.fire())
+  ar foreach (_.io.out.ready := mem.ar.fire())
+  w  foreach (_.io.out.ready := mem.w.fire())
+  r  foreach (_.io.in.valid  := mem.r.fire())
   
   private def targetConnect[T <: Data](arg: (T, T)): Unit = arg match {
     case (target: Bundle, wires: Bundle) => 
