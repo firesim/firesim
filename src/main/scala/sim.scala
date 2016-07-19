@@ -21,8 +21,8 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   val do_deq = io.deq.fire() && !do_flow
 
   val maybe_full = RegInit(Bool(false))
-  val enq_ptr = RegInit(UInt(0, io.entries))
-  val deq_ptr = RegInit(UInt(0, io.entries))
+  val enq_ptr = RegInit(UInt(0, log2Up(io.entries)))
+  val deq_ptr = RegInit(UInt(0, log2Up(io.entries)))
   val enq_wrap = enq_ptr === io.limit
   val deq_wrap = deq_ptr === io.limit
   when (do_enq) { enq_ptr := Mux(enq_wrap, UInt(0), enq_ptr + UInt(1)) }

@@ -3,7 +3,6 @@ package strober
 import Chisel._
 import junctions._
 import cde.{Parameters, Field}
-import scala.collection.mutable.HashMap
 
 case object MasterNastiKey extends Field[NastiParameters]
 case object SlaveNastiKey  extends Field[NastiParameters]
@@ -46,7 +45,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val st_wr = RegInit(st_wr_idle)
   val do_write = st_wr === st_wr_write
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
-  val inputSeq = (io.ctrlIns ++ restarts ++ io.ins ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
+  val inputSeq = (io.ctrlIns ++ io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
   (inputSeq zip inputs) foreach {case (x, y) => x <> y}
   inputs.zipWithIndex foreach {case (in, i) =>
@@ -143,10 +142,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val outs = sim.io.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap sim.io.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
     val q = Module(new Queue(in.bits, 2, flow=true))
-    in.bits := q.io.deq.bits ; q suggestName s"in_buf_${i}" ; q }
+    in.bits := q.io.deq.bits
+    q.reset := reset || simReset
+    q suggestName s"in_buf_${i}" ; q }
   val outBufs = outs.zipWithIndex map { case (out, i) =>
     val q = Module(new Queue(out.bits, 2, flow=true))
-    q.io.enq.bits := out.bits ; q suggestName s"out_buf_${i}" ; q }
+    q.io.enq.bits := out.bits
+    q.reset := reset || simReset
+    q suggestName s"out_buf_${i}" ; q }
 
   // Pass Tokens
   val tickCounter = RegInit(UInt(0))
@@ -206,7 +209,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
 
   // 2: done
   val DONE_ADDR = 2
-  master.io.ctrlOuts(DONE_ADDR).bits := !tockCounter.orR
+  master.io.ctrlOuts(DONE_ADDR).bits := idle
   master.io.ctrlOuts(DONE_ADDR).valid := Bool(true)
   master.io.ctrlIns(DONE_ADDR).ready := Bool(false)
 
@@ -230,10 +233,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   master.io.ctrlOuts(LATENCY_ADDR).valid := Bool(false)
 
   // Target Connection
-  val IN_ADDRS = SimUtils.genIoMap(sim.io.inputs.tail filterNot (
-    x => SimMemIO(x._1)), CTRL_NUM + master.restarts.size)(sim.channelWidth)
-  val OUT_ADDRS = SimUtils.genIoMap(sim.io.outputs filterNot (
-    x => SimMemIO(x._1)), CTRL_NUM)(sim.channelWidth)
+  implicit val channelWidth = sim.channelWidth
+  val IN_ADDRS = SimUtils.genIoMap(sim.io.inputs.tail filterNot (x => SimMemIO(x._1)), CTRL_NUM)
+  val OUT_ADDRS = SimUtils.genIoMap(sim.io.outputs filterNot (x => SimMemIO(x._1)), CTRL_NUM)
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
   master.io.inT <> sim.io.inT
@@ -241,7 +243,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   master.io.daisy <> sim.io.daisy
   
   // Memory Connection
-  val AR_ADDR = CTRL_NUM + master.restarts.size + master.io.ins.size
+  val AR_ADDR = CTRL_NUM + master.io.ins.size + master.restarts.size
   val AW_ADDR = AR_ADDR + master.io.mem.ar.size
   val W_ADDR  = AW_ADDR + master.io.mem.aw.size
   val R_ADDR  = CTRL_NUM + master.io.outs.size + master.io.inT.size + master.io.outT.size +
