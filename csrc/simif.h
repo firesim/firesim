@@ -2,14 +2,14 @@
 #define __SIMIF_H
 
 #include <cassert>
+#include <cstring>
 #include <sstream>
-#include <string>
 #include <vector>
 #include <map>
 #include <queue>
 #include <sys/time.h>
 #include "biguint.h"
-#include "sample.h"
+// #include "sample.h"
 #include <iostream>
 
 static inline uint64_t timestamp() {
@@ -29,7 +29,7 @@ class simif_t
 
   private:
     void read_map(std::string filename);
-    void read_chain(std::string filename);
+    // void read_chain(std::string filename);
     virtual void load_mem(std::string filename);
 
     // simulation information
@@ -53,7 +53,7 @@ class simif_t
     // sample information
     size_t sample_num;
     size_t last_sample_id;
-    sample_t* last_sample;
+    // sample_t* last_sample;
 
     // profile information    
     bool profile;
@@ -82,56 +82,56 @@ class simif_t
       return out_map[path];
     }
 
-    inline void poke_port(size_t id, uint32_t value) { 
-      poke_map[id-1] = value; 
+    inline void poke(size_t id, uint32_t value) { 
+      poke_map[id] = value; 
     }
 
-    inline uint32_t peek_port(size_t id) {
-      return peek_map[id-1]; 
+    inline uint32_t peek(size_t id) {
+      return peek_map[id]; 
     }
 
-    inline void poke_port(std::string path, uint32_t value) {
+    inline void poke(std::string path, uint32_t value) {
       if (log) fprintf(stdout, "* POKE %s <- %x *\n", path.c_str(), value);
-      poke_port(get_in_id(path), value);
+      poke(get_in_id(path), value);
     }
 
-    inline uint32_t peek_port(std::string path) {
-      uint32_t value = peek_port(get_out_id(path));
+    inline uint32_t peek(std::string path) {
+      uint32_t value = peek(get_out_id(path));
       if (log) fprintf(stdout, "* PEEK %s <- %x *\n", path.c_str(), value);
       return value;
     }
 
-    inline void poke_port(size_t id, biguint_t& data) {
+    inline void poke(size_t id, biguint_t& data) {
       for (size_t off = 0 ; off < in_chunks[id] ; off++) {
-        poke_map[id-1+off] = data[off];
+        poke_map[id+off] = data[off];
       }
     }
 
-    inline void peek_port(size_t id, biguint_t& data) {
-      data = biguint_t(peek_map+id-1, out_chunks[id]);
+    inline void peek(size_t id, biguint_t& data) {
+      data = biguint_t(peek_map+id, out_chunks[id]);
     }
 
-    inline void poke_port(std::string path, biguint_t &value) {
+    inline void poke(std::string path, biguint_t &value) {
       if (log) fprintf(stdout, "* POKE %s <- %s *\n", path.c_str(), value.str().c_str());
-      poke_port(get_in_id(path), value);
+      poke(get_in_id(path), value);
     }
 
-    inline void peek_port(std::string path, biguint_t &value) {
-      peek_port(get_out_id(path), value); 
+    inline void peek(std::string path, biguint_t &value) {
+      peek(get_out_id(path), value); 
       if (log) fprintf(stdout, "* PEEK %s <- %s *\n", path.c_str(), value.str().c_str());
     }
 
-    inline bool expect_port(std::string path, uint32_t expected) {
-      uint32_t value = peek_port(path);
+    inline bool expect(std::string path, uint32_t expected) {
+      uint32_t value = peek(path);
       bool pass = value == expected;
       std::ostringstream oss;
       if (log) oss << "EXPECT " << path << " " << value << " == " << expected;
       return expect(pass, oss.str().c_str());
     }
 
-    inline bool expect_port(std::string path, biguint_t& expected) {
+    inline bool expect(std::string path, biguint_t& expected) {
       biguint_t value;
-      peek_port(path, value); 
+      peek(get_out_id(path), value);
       bool pass = value == expected;
       std::ostringstream oss;
       if (log) oss << "EXPECT " << path << " " << value << " == " << expected;
@@ -154,20 +154,20 @@ class simif_t
         poke_channel(MEM_W_ADDR+off, data[off]);
       }
     }
-    sample_t* trace_ports(sample_t* s);
-    sample_t* read_snapshot();
+    // sample_t* trace_ports(sample_t* s);
+    // sample_t* read_snapshot();
     
     void init();
     void finish();
     inline uint64_t cycles() { return t; }
-    inline void set_trace_len(size_t len) { 
+    inline void set_latency(size_t cycles) { 
+      poke_channel(LATENCY_ADDR, cycles);
+    }
+    inline void set_tracelen(size_t len) { 
       trace_len = len;
-      poke_channel(TRACE_LEN_ADDR, len);
+      poke_channel(TRACELEN_ADDR, len);
     }
-    inline void set_mem_cycles(size_t cycles) { 
-      poke_channel(MEM_CYCLE_ADDR, cycles);
-    }
-    inline size_t get_trace_len() { return trace_len; }
+    inline size_t get_tracelen() { return trace_len; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
 };
 

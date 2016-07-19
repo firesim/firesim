@@ -73,8 +73,9 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
   override def reset(n: Int) {
     for (_ <- 0 until n) {
       pokeChannel(c.RESET_ADDR, 0)
-      // flush output tokens & traces from initialization
+      _eventually(peekChannel(c.DONE_ADDR))
       _peekMap.clear
+      // flush output tokens & traces from initialization
       c.OUT_ADDRS foreach {case (out, addr) =>
         _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
       }
@@ -109,7 +110,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
       arQ: ScalaQueue[NastiReadAddr],  rQ: ScalaQueue[NastiReadData],
       awQ: ScalaQueue[NastiWriteAddr], wQ: ScalaQueue[NastiWriteData],
       bQ: ScalaQueue[NastiWriteResp], latency: Int = 5, word_width: Int = 4,
-      depth: Int = 1 << 20, verbose: Boolean = true) extends chisel3.iotesters.Processable {
+      depth: Int = 1 << 20) extends chisel3.iotesters.Processable {
     import chisel3.util.log2Up
     require(word_width % 4 == 0, "word_width should be divisible by 4")
     private val addrMask = (1 << log2Up(depth))-1
