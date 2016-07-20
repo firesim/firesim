@@ -138,6 +138,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())
+  val simResetNext = RegNext(simReset)
   val ins = sim.io.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap sim.io.getIns // exclude reset
   val outs = sim.io.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap sim.io.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
@@ -159,12 +160,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val tock = ((outBufs foldLeft tockCounter.orR)(_ && _.io.enq.ready)) &&
              (sim.io.outs foldLeft Bool(true))(_ && _.valid)
   val idle = !tickCounter.orR && !tockCounter.orR
-  sim.io.ins(0).bits  := simReset
-  sim.io.ins(0).valid := tick || simReset
-  when(simReset) { tockCounter := UInt(1) }
+  sim.reset := reset || simReset
+  sim.io.ins(0).bits  := simResetNext
+  sim.io.ins(0).valid := tick || simResetNext
   when(tick) { tickCounter := tickCounter - UInt(1) }
   when(tock) { tockCounter := tockCounter - UInt(1) }
-  ins foreach (_.valid := tick || simReset)
+  when(simReset) { tickCounter := UInt(0) }
+  when(simReset) { tockCounter := UInt(1) }
+  ins foreach (_.valid := tick || simResetNext)
   outs foreach (_.ready := tock)
   inBufs foreach (_.io.deq.ready := tick && tickCounter === UInt(1))
   outBufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
@@ -299,7 +302,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
       (outs foldLeft valid)(_ && _.valid)
     case b: Bits if b.dir == INPUT =>
       val ins = sim.io.getIns(b)
-      ins foreach (_.valid := ready || simReset)
+      ins foreach (_.valid := ready || simResetNext)
       (ins foldLeft valid)(_ && _.ready)
   }
 
