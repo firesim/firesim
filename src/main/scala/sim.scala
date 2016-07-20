@@ -105,8 +105,6 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   lazy val outMap = genIoMap(outputs)
   lazy val inTrMap = genIoMap(inputs, outs.size)
   lazy val outTrMap = genIoMap(outputs, outs.size + inT.size)
-  lazy val inNotMemIoMap = genIoMap(inputs filterNot (x => SimMemIO(x._1)))
-  lazy val outNotMemIoMap = genIoMap(outputs filterNot (x => SimMemIO(x._1)))
 
   def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
