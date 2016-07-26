@@ -2,6 +2,8 @@ package strober
 
 import firrtl._
 import firrtl.ir._
+import firrtl.passes._
+import Annotations.AnnotationMap
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.util.DynamicVariable
 
@@ -17,7 +19,7 @@ class StroberTransforms extends Transform with SimpleRun {
     strober.passes.Analyses,
     strober.passes.Fame1Transform
   )
-  def execute(circuit: Circuit, annotations: Seq[CircuitAnnotation]) = 
+  def execute(circuit: Circuit, annotationMap: AnnotationMap) =
     run(circuit, passSeq)
 }
 
@@ -27,6 +29,7 @@ class StroberCompiler extends Compiler {
     new IRToWorkingIR,
     new ResolveAndCheck,
     new HighFirrtlToMiddleFirrtl,
+    new InferReadWrite,
     new StroberTransforms,
     new EmitFirrtl(writer)
   )
@@ -44,7 +47,8 @@ object StroberCompiler {
 
   private def transform(name: String, highFirrtl: String, dir: java.io.File) = {
     val firrtl = s"${dir}/${name}-strober.fir"
-    Driver.compile(highFirrtl, firrtl, new StroberCompiler)
+    val annotations = new AnnotationMap(Seq(new InferReadWriteAnnotation(name)))
+    Driver.compile(highFirrtl, firrtl, new StroberCompiler, annotations=annotations)
     firrtl
   }
 
