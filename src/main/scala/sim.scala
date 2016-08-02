@@ -83,6 +83,7 @@ trait HasSimWrapperParams {
   implicit val channelWidth = p(ChannelWidth)
   val traceMaxLen = p(TraceMaxLen)
   val daisyWidth = p(DaisyWidth)
+  val sramChainNum = p(SRAMChainNum)
   val sampleNum = p(SampleNum)
 }
 
@@ -98,7 +99,7 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   val outs = Vec(outChannelNum, Decoupled(UInt(width=channelWidth)))
   val inT = Vec(inChannelNum, Decoupled(UInt(width=channelWidth)))
   val outT = Vec(outChannelNum, Decoupled(UInt(width=channelWidth)))
-  val daisy = new DaisyBundle(daisyWidth)
+  val daisy = new DaisyBundle(daisyWidth, sramChainNum)
   val traceLen = UInt(INPUT, log2Up(traceMaxLen+1))
 
   lazy val inMap = genIoMap(inputs)

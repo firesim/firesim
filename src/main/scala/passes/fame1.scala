@@ -10,82 +10,54 @@ private[strober] object Fame1Transform extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   import Utils._
 
-  private val ut = UnknownType
-  private val ug = UNKNOWNGENDER
-
   private def transform(m: DefModule): DefModule = m match {
     case m: ExtModule => m
     case m: Module =>
-      val enables = HashSet[String]()
-      val raddrs = HashSet[String]()
-      val raddrIns = HashMap[String, Expression]()
-      val stmts = ArrayBuffer[Statement]()
-
-      def collectEnables(s: Statement): Statement = {
-        s map collectEnables match {
-          case mem: DefMemory =>
-            raddrs ++= mem.readers map (r => s"${mem.name}.${r}.addr")
-            enables ++= mem.readers map (r => s"${mem.name}.${r}.en")
-            enables ++= mem.writers map (w => s"${mem.name}.${w}.en")
-            enables ++= mem.readwriters map (rw => s"${mem.name}.${rw}.en")
-            mem
-          case s => s
-        }
-      }
-
-      def collectConnects(s: Statement): Statement = {
-        s map collectConnects match {
-          case con: Connect if raddrs(con.loc.serialize) =>
-            raddrIns(con.expr.serialize) = con.loc
-            con
-          case s => s
-        }
-      }
-
       val targetFirePort = Port(NoInfo, "targetFire", Input, UIntType(IntWidth(1)))
-      def targetFire = Reference(targetFirePort.name, ut)
+      def targetFire = wref(targetFirePort.name)
       def notTargetFire = DoPrim(PrimOps.Not, Seq(targetFire), Nil, ut)
+      def collectEnables(s: Statement): Seq[String] = s match {
+        case s: DefMemory =>
+          (s.readers map (r => s"${s.name}.${r}.en")) ++
+          (s.writers map (w => s"${s.name}.${w}.en")) ++
+          (s.readwriters map (rw => s"${s.name}.${rw}.en"))
+        case s: Block => s.stmts flatMap collectEnables
+        case _ => Nil
+      }
+      val enables = collectEnables(m.body).toSet
+      val stmts = ArrayBuffer[Statement]()
       def connectTargetFire(s: Statement): Statement = {
         s map connectTargetFire match {
           case inst: WDefInstance =>
-            val pin = WSubField(Reference(inst.name, ut), targetFire.name, ut, ug)
-            Block(Seq(inst, Connect(NoInfo, pin, targetFire)))
+            Block(Seq(inst, Connect(NoInfo, wsub(wref(inst.name), "targetFire"), targetFire)))
           case reg: DefRegister =>
-            def regRef = Reference(reg.name, ut)
-            stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
+            stmts += Conditionally(NoInfo, targetFire, EmptyStmt,
+              Connect(NoInfo, wref(reg.name), wref(reg.name)))
             reg
           case Connect(info, loc, exp) if enables(loc.serialize) =>
             val node = DefNode(NoInfo, s"""${loc.serialize replace (".", "_")}_fire""",
               DoPrim(PrimOps.And, Seq(exp, targetFire), Seq(), ut))
-            Block(Seq(node, Connect(info, loc, Reference(node.name, ut))))
+            Block(Seq(node, Connect(info, loc, wref(node.name))))
           case s => s
         }
       }
 
-      Module(m.info, m.name, m.ports :+ targetFirePort, Block(
-        (m.body map collectEnables map collectConnects map connectTargetFire) +: stmts.toSeq))
+      Module(m.info, m.name, m.ports :+ targetFirePort, Block((m.body map connectTargetFire) +: stmts.toSeq))
   }
 
   def run(c: Circuit) = {
-    val transformedModules = (c.modules filter (x => wrappers(x.name)) flatMap { 
+    val transformedModules = (wrappers(c.modules) flatMap {
       case m: Module =>
-        val targets = HashSet[String]()
-        val connects = ArrayBuffer[Statement]()
-        def connectTargetFire(s: Statement): Statement = {
-          s map connectTargetFire match {
-            case inst: WDefInstance if inst.name == "target" =>
-              val pin = WSubField(Reference(inst.name, ut), "targetFire", ut, ug)
-              targets += inst.module
-              connects += Connect(NoInfo, pin, Reference("fire", ut))
-              inst
-            case s => s
-          }
+        def connectTargetFire(s: Statement): Seq[Connect] = s match {
+          case s: WDefInstance if s.name == "target" =>
+            Seq(Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire")))
+          case s: Block => s.stmts flatMap connectTargetFire
+          case s => Nil
         }
-        val body = Block((m.body map connectTargetFire) +: connects)
-        val targetModules = c.modules filter (x => targets(x.name))
-        (dfs(targetModules, c.modules)(transform) map (x => x.name -> x)) :+
-        (m.name -> Module(m.info, m.name, m.ports, body))
-      case m: ExtModule => Seq(m.name -> m) // should be execption
+        val body = Block(m.body +: connectTargetFire(m.body))
+        (preorder(targets(m, c.modules), c.modules)(transform) map (
+          x => x.name -> x)) :+ (m.name -> Module(m.info, m.name, m.ports, body))
+      case m: ExtModule => Seq(m.name -> m)
     }).toMap
     Circuit(c.info, c.modules map (m => transformedModules getOrElse (m.name, m)), c.main)
   }

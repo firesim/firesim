@@ -28,18 +28,19 @@ class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
 }
 class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
 
-class DaisyBundle(daisywidth: Int) extends Bundle {
-  val regs  = new RegData(daisywidth)
-  val trace = new TraceData(daisywidth)
-  val cntr  = new CntrData(daisywidth)
-  val sram  = Vec(2, new SRAMData(daisywidth))
+class DaisyBundle(daisyWidth: Int, sramChainNum: Int) extends Bundle {
+  val regs  = new RegData(daisyWidth)
+  val trace = new TraceData(daisyWidth)
+  val cntr  = new CntrData(daisyWidth)
+  val sram  = Vec(sramChainNum, new SRAMData(daisyWidth))
   def apply(t: ChainType.Value, idx: Int = 0) = t match {
     case ChainType.Regs  => regs
     case ChainType.Trace => trace
     case ChainType.SRAM  => sram(idx)
     case ChainType.Cntr  => cntr
   }
-  override def cloneType: this.type = new DaisyBundle(daisywidth).asInstanceOf[this.type]
+  override def cloneType: this.type =
+    new DaisyBundle(daisyWidth, sramChainNum).asInstanceOf[this.type]
 }
 
 // Common structures for daisy chains
@@ -51,12 +52,12 @@ trait DaisyChainParams {
 }
 
 abstract class DaisyChainBundle(implicit val p: Parameters) 
-  extends junctions.ParameterizedBundle with DaisyChainParams
+    extends junctions.ParameterizedBundle with DaisyChainParams
 
 class DataIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
   val in  = Decoupled(UInt(INPUT, daisyWidth)).flip
   val out = Decoupled(UInt(INPUT, daisyWidth))
-  val data = Vec.fill(daisyLen){UInt(INPUT, daisyWidth)}
+  val data = Vec(daisyLen, UInt(INPUT, daisyWidth))
 }
 
 class CntrIO extends Bundle {
@@ -76,7 +77,7 @@ abstract class DaisyChainModule(implicit val p: Parameters) extends Module with 
 
 class DaisyDatapath(implicit p: Parameters) extends DaisyChainModule()(p) { 
   val io = new DaisyDatapathIO
-  val regs = Reg(Vec.fill(daisyLen){UInt(width=daisyWidth)})
+  val regs = Reg(Vec(daisyLen, UInt(width=daisyWidth)))
 
   io.dataIo.out.bits := regs(daisyLen-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero
@@ -142,11 +143,10 @@ class RegChain(implicit p: Parameters) extends DaisyChainModule()(p) {
   val datapath = Module(new DaisyDatapath)
   val control = Module(new RegChainControl)
 
-  io.stall <> control.io.stall
+  control.io.stall := io.stall
+  datapath.io.ctrlIo <> control.io.ctrlIo
   io.dataIo <> datapath.io.dataIo
-  control.io.ctrlIo <> datapath.io.ctrlIo
 }
-
 
 // Define sram daisy chains
 class AddrIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
