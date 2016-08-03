@@ -8,17 +8,10 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], meta: St
     verbose: Boolean=true, sampleFile: Option[String] = None, logFile: Option[String]=None,
     waveform: Option[String]=None, testCmd: List[String]=Nil)
     extends StroberTester(c, meta, verbose, sampleFile, logFile, waveform, testCmd) {
-  protected[testers] val _inputs = 
-    (c.io.inputs map {case (x, y) => x -> s"${c.target.name}.$y"}).toMap
-  protected[testers] val _outputs = 
-    (c.io.outputs map {case (x, y) => x -> s"${c.target.name}.$y"}).toMap
-  protected[testers] val inTrMap = c.io.inTrMap
-  protected[testers] val outTrMap = c.io.outTrMap
-
-  private val ins = c.io.ins map (
-    in => ChannelSource(in))
-  private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (
-    out => ChannelSink(out))
+  private val ins = c.io.ins map (in => ChannelSource(in))
+  private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (out => ChannelSink(out))
+  private val inT = c.io.inT map (tr => ChannelSink(tr))
+  private val outT = c.io.outT map (tr => ChannelSink(tr))
   private val chains = (ChainType.values.toSeq map (chainType => chainType ->
     (c.io.daisy(chainType).toSeq map (chain => ChannelSink(chain.out))))).toMap
 
@@ -64,10 +57,11 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], meta: St
   }
 
   override def reset(n: Int) {
-    setLastSample(None)
     _pokeMap(c.target.reset) = 1
     _tick(n)
     _pokeMap(c.target.reset) = 0
+    // flush junk traces
+    super.reset(n)
   }
 
   override def setTraceLen(len: Int) {
@@ -76,5 +70,4 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], meta: St
   }
 
   reset(5)
-  super.setTraceLen(c.traceMaxLen)
 }
