@@ -12,17 +12,17 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
     extends AdvTester(c, false, logFile=logFile, waveform=waveform, testCmd=testCmd, isPropagation=false) {
   protected[testers] val _pokeMap = HashMap[Data, BigInt]()
   protected[testers] val _peekMap = HashMap[Data, BigInt]()
-  protected[testers] def _inputs: Map[Bits, String]
-  protected[testers] def _outputs: Map[Bits, String]
-  // protected[testers] def inTrMap: ListMap[Bits, Int]
-  // protected[testers] def outTrMap: ListMap[Bits, Int]
-  private var traceCount = 0
-
   private val sim = c match {
     case s: SimWrapper[_] => s
     case s: ZynqShim[_] => s.sim match { case s: SimWrapper[_] => s }
   }
-  protected[testers] val targetName = sim.target.name
+  private val targetName = sim.target.name
+  private val _inputs = (sim.io.inputs map {case (x, y) => x -> s"$targetName.$y"}).toMap
+  private val _outputs = (sim.io.outputs map {case (x, y) => x -> s"$targetName.$y"}).toMap
+  private val (inTrMap, outTrMap) = c match {
+    case s: SimWrapper[_] => (s.io.inTrMap, s.io.outTrMap)
+    case s: ZynqShim[_] => (s.IN_TR_ADDRS, s.OUT_TR_ADDRS)
+  }
   protected[testers] val daisyWidth = sim.daisyWidth
   protected[testers] implicit val channelWidth = sim.channelWidth
   protected[testers] val chainLen = meta.chainLen
@@ -32,7 +32,7 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
 
   private val samples = Array.fill(meta.sampleNum){new Sample}
   private var lastSample: Option[(Sample, Int)] = None
-  private var _traceLen = 1
+  private var _traceLen = sim.traceMaxLen
   def traceLen = _traceLen
   implicit def bigintToBoolean(b: BigInt) = b != 0
 
@@ -141,16 +141,20 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
   protected[testers] def readSnapshot = {
     (ChainType.values.toList map readChain addString new StringBuilder).result
   }
-
-  /* protected[testers] def traces(sample: Sample) = {
-    for (i <- 0 until traceCount) {
-      inTrMap foreach {case (wire, id) => sample addCmd PokePort(wire, peekId(id, chunk(wire)))}
+  protected[testers] def readTraces(sample: Sample, n: Int) = {
+    for (i <- 0 until n) {
+      inTrMap foreach {case (in, id) =>
+        sample addCmd PokePort(_inputs(in), peekChunks(id, SimUtils.getChunks(in)))
+      }
       sample addCmd Step(1)
-      outTrMap foreach {case (wire, id) => sample addCmd ExpectPort(wire, peekId(id, chunk(wire)))}
+      outTrMap foreach {case (out, id) =>
+        sample addCmd ExpectPort(_outputs(out), peekChunks(id, SimUtils.getChunks(out)))
+      }
     }
     sample
   }
 
+  /*
   protected[testers] def verifySnapshot(sample: Sample) {
     val pass = (sample map {
       case Load(signal: MemRead,    value, None) => true 
@@ -175,14 +179,17 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
     _traceLen = len
   }
 
-  def setLastSample(s: Option[(Sample, Int)]) {
+  def setLastSample(s: Option[(Sample, Int)], count: Int) {
     lastSample match {
       case None =>
-      case Some((sample, id)) => samples(id) = sample // traces(sample)
+        val _ = readTraces(new Sample, count)
+      case Some((sample, id)) =>
+        samples(id) = readTraces(sample, count)
     }
     lastSample = s
   }
 
+  private var traceCount = 0
   override def step(n: Int) {
     if (verbose) println(s"STEP ${n} -> ${t+n}")
     // reservoir sampling
@@ -191,7 +198,7 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
       val sampleId = if (recordId < meta.sampleNum) recordId else rnd.nextInt(recordId+1)
       if (sampleId < meta.sampleNum) {
         val sample = chainReader(readSnapshot, cycles)
-        setLastSample(Some(sample, sampleId))
+        setLastSample(Some(sample, sampleId), traceCount)
         // if (args.snapCheck) verifySnapshot(sample)
         traceCount = 0 
       }
@@ -202,8 +209,13 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
     if (traceCount < traceLen) traceCount += n
   }
 
+  override def reset(n: Int) {
+    // flush junk traces
+    setLastSample(None, n)
+  }
+
   override def finish = {
-    setLastSample(None)
+    setLastSample(None, traceCount)
     val file = sampleFile match {
       case None => new java.io.FileWriter(
         new java.io.File(meta.chainFile.getParent, s"$targetName.sample"))

@@ -240,6 +240,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val OUT_ADDRS = SimUtils.genIoMap(sim.io.outputs filterNot (x => SimMemIO(x._1)), CTRL_NUM)
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
+
+  val IN_TR_ADDRS = SimUtils.genIoMap(sim.io.inputs, CTRL_NUM + master.io.outs.size)
+  val OUT_TR_ADDRS = SimUtils.genIoMap(sim.io.outputs, CTRL_NUM + master.io.outs.size + master.io.inT.size)
   master.io.inT <> sim.io.inT
   master.io.outT <> sim.io.outT
 

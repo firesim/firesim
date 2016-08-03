@@ -129,8 +129,6 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   override val name = s"${target.name}Wrapper"
 
   val fire = Wire(Bool())
-  val cycles = RegInit(UInt(0, 64)) // for debug
-
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
   val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
 
@@ -162,5 +160,7 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   out_channels foreach (_.io.traceLen := io.traceLen)
 
   // Cycles for debug
-  when(fire && !target.reset) { cycles := cycles + UInt(1) }
+  val cycles = Reg(UInt(width=64))
+  cycles := Mux(target.reset, UInt(0),
+            Mux(fire, cycles + UInt(1), cycles))
 } 

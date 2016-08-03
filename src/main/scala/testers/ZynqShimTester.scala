@@ -26,10 +26,6 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], meta: StroberMet
   protected[testers] def chunk(wire: Bits) = c.sim.io.chunk(wire)
   protected[testers] val sampleNum = c.sim.sampleNum
   protected[testers] val channelOff = log2Up(c.sim.channelWidth) */
-  protected[testers] val _inputs =
-    (c.sim.io.inputs map {case (x, y) => x -> s"${targetName}.$y"}).toMap
-  protected[testers] val _outputs =
-    (c.sim.io.outputs map {case (x, y) => x -> s"${targetName}.$y"}).toMap
 
   private implicit def bigIntToInt(b: BigInt) = b.toInt
 
@@ -73,10 +69,12 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], meta: StroberMet
       pokeChannel(c.RESET_ADDR, 0)
       _eventually(peekChannel(c.DONE_ADDR))
       _peekMap.clear
-      // flush output tokens & traces from initialization
+      // flush junk output tokens
       c.OUT_ADDRS foreach {case (out, addr) =>
         _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
       }
+      // flush junk traces
+      super.reset(1)
     }
   }
 
