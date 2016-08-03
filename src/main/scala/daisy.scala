@@ -19,24 +19,33 @@ class DaisyData(daisywidth: Int) extends Bundle {
     new DaisyData(daisywidth).asInstanceOf[this.type]
 }
 
-class RegData(daisywidth: Int) extends DaisyData(daisywidth)
-class TraceData(daisywidth: Int) extends DaisyData(daisywidth)
+class RegData(daisywidth: Int) extends DaisyData(daisywidth) {
+  override def cloneType: this.type =
+    new RegData(daisywidth).asInstanceOf[this.type]
+}
+class TraceData(daisywidth: Int) extends DaisyData(daisywidth) {
+  override def cloneType: this.type =
+    new TraceData(daisywidth).asInstanceOf[this.type]
+}
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
   val restart = Bool(INPUT)
   override def cloneType: this.type =
     new SRAMData(daisywidth).asInstanceOf[this.type]
 }
-class CntrData(daisywidth: Int) extends DaisyData(daisywidth)
+class CntrData(daisywidth: Int) extends DaisyData(daisywidth) {
+  override def cloneType: this.type =
+    new CntrData(daisywidth).asInstanceOf[this.type]
+}
 
 class DaisyBundle(daisyWidth: Int, sramChainNum: Int) extends Bundle {
-  val regs  = new RegData(daisyWidth)
-  val trace = new TraceData(daisyWidth)
-  val cntr  = new CntrData(daisyWidth)
+  val regs  = Vec(1, new RegData(daisyWidth))
+  val trace = Vec(1, new TraceData(daisyWidth))
+  val cntr  = Vec(1, new CntrData(daisyWidth))
   val sram  = Vec(sramChainNum, new SRAMData(daisyWidth))
-  def apply(t: ChainType.Value, idx: Int = 0) = t match {
+  def apply(t: ChainType.Value) = t match {
     case ChainType.Regs  => regs
     case ChainType.Trace => trace
-    case ChainType.SRAM  => sram(idx)
+    case ChainType.SRAM  => sram
     case ChainType.Cntr  => cntr
   }
   override def cloneType: this.type =

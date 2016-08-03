@@ -69,20 +69,20 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
   private def chainDataIo(pin: String)(implicit chainType: ChainType.Value) =
     wsub(wsub(chainIo, "dataIo"), pin)
 
-  private def daisyPort(pin: String)(implicit chainType: ChainType.Value) =
+  private def daisyPort(pin: String, idx: Int = 0)(implicit chainType: ChainType.Value) =
     chainType match {
-      case ChainType.Trace => wsub(wsub(wref("daisy"), "trace"), pin)
-      case ChainType.Regs  => wsub(wsub(wref("daisy"), "regs"), pin)
-      case ChainType.SRAM  => wsub(wsub(wref("daisy"), "sram"), pin)
-      case ChainType.Cntr  => wsub(wsub(wref("daisy"), "cntr"), pin)
+      case ChainType.Trace => wsub(widx(wsub(wref("daisy"), "trace"), idx), pin)
+      case ChainType.Regs  => wsub(widx(wsub(wref("daisy"), "regs"), idx), pin)
+      case ChainType.SRAM  => wsub(widx(wsub(wref("daisy"), "sram"), idx), pin)
+      case ChainType.Cntr  => wsub(widx(wsub(wref("daisy"), "cntr"), idx), pin)
     }
 
-  private def childDaisyPort(child: String)(pin: String)(implicit chainType: ChainType.Value) =
+  private def childDaisyPort(child: String)(pin: String, idx: Int = 0)(implicit chainType: ChainType.Value) =
     chainType match {
-      case ChainType.Trace => wsub(wsub(wsub(wref(child), "daisy"), "trace"), pin)
-      case ChainType.Regs  => wsub(wsub(wsub(wref(child), "daisy"), "regs"), pin)
-      case ChainType.SRAM  => wsub(wsub(wsub(wref(child), "daisy"), "sram"), pin)
-      case ChainType.Cntr  => wsub(wsub(wsub(wref(child), "daisy"), "cntr"), pin)
+      case ChainType.Trace => wsub(widx(wsub(wsub(wref(child), "daisy"), "trace"), idx), pin)
+      case ChainType.Regs  => wsub(widx(wsub(wsub(wref(child), "daisy"), "regs"), idx), pin)
+      case ChainType.SRAM  => wsub(widx(wsub(wsub(wref(child), "daisy"), "sram"), idx), pin)
+      case ChainType.Cntr  => wsub(widx(wsub(wsub(wref(child), "daisy"), "cntr"), idx), pin)
     }
     
   private def collect(s: Statement)(implicit chainType: ChainType.Value): Seq[Statement] =
@@ -105,7 +105,7 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
 
   private def insertRegChains(m: Module, p: cde.Parameters)(implicit chainType: ChainType.Value) = {
     def daisyConnect(regs: Seq[Expression], daisyLen: Int, daisyWidth: Int) = {
-      (((0 until daisyLen) foldLeft (Seq[Connect](), 0, 0)){case ((cons, index, offset), i) =>
+      (((0 until daisyLen) foldRight (Seq[Connect](), 0, 0)){case (i, (cons, index, offset)) =>
         def loop(total: Int, index: Int, offset: Int, wires: Seq[Expression]): (Int, Int, Seq[Expression]) = {
           (daisyWidth - total) match {
             case 0 => (index, offset, wires)
@@ -140,8 +140,8 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
       val connects = Seq(
         // <daisy_chain>.clk <- clk
         Connect(NoInfo, wsub(chainRef, "clk"), wref("clk")),
-        // <daisy_chain>.reset <- reset
-        Connect(NoInfo, wsub(chainRef, "reset"), wref("reset")),
+        // <daisy_chain>.reset <- daisyReset
+        Connect(NoInfo, wsub(chainRef, "reset"), wref("daisyReset")),
         // <daisy_chain>.io.stall <- not(targetFire)
         Connect(NoInfo, wsub(chainIo, "stall"), not(wref("targetFire"))),
         // <daiy_port>.out <- <daisy_chain>.io.dataIo.out
@@ -149,6 +149,8 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
       )
       regIndex += 1
       hasChain(chainType) += m.name
+      chainLen(chainType) += chain.daisyLen
+      chainLoop(chainType) = 1
       val regs = chains(chainType)(m.name) flatMap {
         case s: DefMemory =>
           readers(m.name)(s.name) = (0 until s.depth) map (i => s"scan_$i")
@@ -232,15 +234,13 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
           case t => throw new PassException(
             s"${io.info}: io should be a bundle type, but has type ${t.serialize}")
         })).head.tpe
-        def connectDaisyPort(s: Statement): Statement = {
-          s map connectDaisyPort match {
-            case inst: WDefInstance if inst.name == "target" =>
-              Block(Seq(inst, Connect(NoInfo,
-                wsub(wref("io"), "daisy"), wsub(wref("target"), "daisy"))))
-            case s => s
-          }
+        def connectDaisyPort(s: Statement): Seq[Connect] = s match {
+          case s: WDefInstance if s.name == "target" => Seq(
+            Connect(NoInfo, wsub(wref("io"), "daisy"), wsub(wref("target"), "daisy")))
+          case s: Block => s.stmts flatMap connectDaisyPort
+          case _ => Nil
         }
-        val body = m.body map connectDaisyPort
+        val body = Block(m.body +: connectDaisyPort(m.body))
         (postorder(targets(m, c.modules), c.modules)(transform(daisyType, param)) map (
           x => x.name -> x)) :+ (m.name -> Module(m.info, m.name, m.ports, body))
       case m: ExtModule => Seq(m.name -> m)

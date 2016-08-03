@@ -84,9 +84,8 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
   val st_rd = RegInit(st_rd_idle)
   val do_read = st_rd === st_rd_read
-  val outputSeq = (io.ctrlOuts ++ io.outs ++ io.inT ++ io.outT ++ 
-    Seq(io.daisy.regs.out, io.daisy.trace.out) ++ (io.daisy.sram map (_.out)) ++ 
-    Seq(io.daisy.cntr.out) ++ io.mem.r).toSeq
+  val daisyOuts = ChainType.values flatMap (io.daisy(_).toSeq) map (_.out)
+  val outputSeq = (io.ctrlOuts ++ io.outs ++ io.inT ++ io.outT ++ daisyOuts ++ io.mem.r).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
   outputs zip outputSeq foreach {case (x, y) => x <> y}
   outputs.zipWithIndex foreach {case (out, i) => out.ready := raddr_r === UInt(i) && do_read}
@@ -108,24 +107,24 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   }
   io.nasti.ar.ready := st_rd === st_rd_idle
   io.nasti.r.bits := NastiReadDataChannel(
-    id = arid_r, 
+    id = arid_r,
     data = outputs(raddr_r).bits,
     last = outputs(raddr_r).valid && do_read)
   io.nasti.r.valid := io.nasti.r.bits.last
 
   // TODO:
-  io.daisy.regs.in.bits := UInt(0)
-  io.daisy.regs.in.valid := Bool(false)
-  io.daisy.trace.in.bits := UInt(0)
-  io.daisy.trace.in.valid := Bool(false)
+  io.daisy.regs foreach (_.in.bits := UInt(0))
+  io.daisy.regs foreach (_.in.valid := Bool(false))
+  io.daisy.trace foreach (_.in.bits := UInt(0))
+  io.daisy.trace foreach (_.in.valid := Bool(false))
+  io.daisy.cntr foreach (_.in.bits := UInt(0))
+  io.daisy.cntr foreach (_.in.valid := Bool(false))
   io.daisy.sram.zipWithIndex foreach {case (sram, i) =>
     sram.in.bits := UInt(0)
     sram.in.valid := Bool(false)
     sram.restart := restarts(i).valid
     restarts(i).ready := Bool(true)
   }
-  io.daisy.cntr.in.bits := UInt(0)
-  io.daisy.cntr.in.valid := Bool(false)
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
@@ -243,14 +242,23 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
   master.io.inT <> sim.io.inT
   master.io.outT <> sim.io.outT
+
+  val SRAM_RESTART_ADDR = CTRL_NUM + master.io.ins.size 
+  val DAISY_ADDRS = {
+    val offset = CTRL_NUM + master.io.outs.size + master.io.inT.size + master.io.outT.size
+    ((ChainType.values foldLeft (Map[ChainType.Value, Int](), offset)){
+      case ((map, offset), chainType) => 
+        (map + (chainType -> offset), offset + master.io.daisy(chainType).size)
+    })._1
+  }
   master.io.daisy <> sim.io.daisy
   
   // Memory Connection
   val AR_ADDR = CTRL_NUM + master.io.ins.size + master.restarts.size
   val AW_ADDR = AR_ADDR + master.io.mem.ar.size
   val W_ADDR  = AW_ADDR + master.io.mem.aw.size
-  val R_ADDR  = CTRL_NUM + master.io.outs.size + master.io.inT.size + master.io.outT.size +
-    3 + master.io.daisy.sram.size
+  val R_ADDR  = CTRL_NUM + master.io.outs.size +
+    master.io.inT.size + master.io.outT.size + master.daisyOuts.size
   (aw zip master.io.mem.aw) foreach {case (buf, io) => buf.io.in <> io}
   (ar zip master.io.mem.ar) foreach {case (buf, io) => buf.io.in <> io}
   (w zip master.io.mem.w) foreach {case (buf, io) => buf.io.in <> io}
