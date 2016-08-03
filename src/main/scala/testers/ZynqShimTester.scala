@@ -1,6 +1,6 @@
 package strober
+package testers
 
-import chisel3._
 import junctions._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
@@ -15,23 +15,21 @@ trait LoadMemType
 case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
-abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
-    verbose: Boolean = true, loadmemType: LoadMemType = SlowLoadMem,
-    logFile: Option[String] = None, waveform: Option[String] = None, testCmd: List[String] = Nil)
-    extends StroberTester(c, verbose, logFile=logFile, waveform=waveform, testCmd=testCmd) {
-  /* protected[strober] val inMap = c.master.inMap
-  protected[strober] val outMap = c.master.outMap
-  protected[strober] val inTrMap = c.master.inTrMap
-  protected[strober] val outTrMap = c.master.outTrMap
-  protected[strober] def chunk(wire: Bits) = c.sim.io.chunk(wire)
-  protected[strober] val sampleNum = c.sim.sampleNum
-  protected[strober] val channelOff = log2Up(c.sim.channelWidth) */
-  private val targetName = c.sim match {case w: SimWrapper[_] => w.target.name}
-  protected[strober] val _inputs =
+abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], meta: StroberMetaData,
+    verbose: Boolean = true, sampleFile: Option[String] = None, logFile: Option[String] = None,
+    waveform: Option[String] = None, testCmd: List[String] = Nil, loadmemType: LoadMemType = SlowLoadMem)
+    extends StroberTester(c, meta, verbose, sampleFile, logFile, waveform, testCmd) {
+  /* protected[testers] val inMap = c.master.inMap
+  protected[testers] val outMap = c.master.outMap
+  protected[testers] val inTrMap = c.master.inTrMap
+  protected[testers] val outTrMap = c.master.outTrMap
+  protected[testers] def chunk(wire: Bits) = c.sim.io.chunk(wire)
+  protected[testers] val sampleNum = c.sim.sampleNum
+  protected[testers] val channelOff = log2Up(c.sim.channelWidth) */
+  protected[testers] val _inputs =
     (c.sim.io.inputs map {case (x, y) => x -> s"${targetName}.$y"}).toMap
-  protected[strober] val _outputs =
+  protected[testers] val _outputs =
     (c.sim.io.outputs map {case (x, y) => x -> s"${targetName}.$y"}).toMap
-  protected[strober] implicit val channelWidth = c.sim.channelWidth
 
   private implicit def bigIntToInt(b: BigInt) = b.toInt
 
@@ -46,16 +44,16 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
   private val MAXI_r = new ChannelSink(c.io.master.r, (r: NastiReadDataChannel) =>
     new NastiReadData(_peek(r.id), _peek(r.data), _peek(r.last)))
  
-  private val addrOffset = util.log2Up(c.master.nastiXAddrBits/8)
+  private val addrOffset = chisel3.util.log2Up(c.master.nastiXAddrBits/8)
 
-  protected[strober] def pokeChannel(addr: Int, data: BigInt) {
+  protected[testers] def pokeChannel(addr: Int, data: BigInt) {
     MAXI_aw.inputs enqueue (new NastiWriteAddr(0, addr << addrOffset))
     MAXI_w.inputs enqueue (new NastiWriteData(data))
     _eventually(!MAXI_b.outputs.isEmpty)
     MAXI_b.outputs.clear
   }
 
-  protected[strober] def peekChannel(addr: Int) = {
+  protected[testers] def peekChannel(addr: Int) = {
     MAXI_ar.inputs enqueue (new NastiReadAddr(0, addr << addrOffset))
     _eventually(!MAXI_r.outputs.isEmpty)
     MAXI_r.outputs.dequeue.data
@@ -208,22 +206,19 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T],
     println(s"[LOADMEM] DONE")
   }
 
-  /*
-  protected[strober] def readChain(t: ChainType.Value) = {
+  protected[testers] def readChain(t: ChainType.Value) = {
     val chain = new StringBuilder
-    for (k <- 0 until chainLoop(t)) {
+    for (_ <- 0 until chainLoop(t) ; i <- 0 until c.master.io.daisy(t).size) {
       t match {
-        case ChainType.SRAM0 => pokeChannel(c.master.sram0RestartAddr, 0)
-        case ChainType.SRAM1 => pokeChannel(c.master.sram1RestartAddr, 0)
+        case ChainType.SRAM => pokeChannel(c.SRAM_RESTART_ADDR + i, 0)
         case _ =>
       }
-      for (i <- 0 until chainLen(t)) {
-        chain append intToBin(peekChannel(c.master.snapOutMap(t)), c.sim.daisyWidth)
+      for (_ <- 0 until chainLen(t)) {
+        chain append intToBin(peekChannel(c.DAISY_ADDRS(t) + i), c.sim.daisyWidth)
       }
     }
     chain.result
   }
-  */
 
   reset(5)
 }

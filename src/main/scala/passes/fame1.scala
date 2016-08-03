@@ -14,7 +14,9 @@ private[strober] object Fame1Transform extends firrtl.passes.Pass {
     case m: ExtModule => m
     case m: Module =>
       val targetFirePort = Port(NoInfo, "targetFire", Input, UIntType(IntWidth(1)))
+      val daisyResetPort = Port(NoInfo, "daisyReset", Input, UIntType(IntWidth(1)))
       def targetFire = wref(targetFirePort.name)
+      def daisyReset = wref(daisyResetPort.name)
       def notTargetFire = DoPrim(PrimOps.Not, Seq(targetFire), Nil, ut)
       def collectEnables(s: Statement): Seq[String] = s match {
         case s: DefMemory =>
@@ -29,7 +31,10 @@ private[strober] object Fame1Transform extends firrtl.passes.Pass {
       def connectTargetFire(s: Statement): Statement = {
         s map connectTargetFire match {
           case inst: WDefInstance =>
-            Block(Seq(inst, Connect(NoInfo, wsub(wref(inst.name), "targetFire"), targetFire)))
+            Block(Seq(inst,
+              Connect(NoInfo, wsub(wref(inst.name), "targetFire"), targetFire),
+              Connect(NoInfo, wsub(wref(inst.name), "daisyReset"), daisyReset)
+            ))
           case reg: DefRegister =>
             stmts += Conditionally(NoInfo, targetFire, EmptyStmt,
               Connect(NoInfo, wref(reg.name), wref(reg.name)))
@@ -42,15 +47,18 @@ private[strober] object Fame1Transform extends firrtl.passes.Pass {
         }
       }
 
-      Module(m.info, m.name, m.ports :+ targetFirePort, Block((m.body map connectTargetFire) +: stmts.toSeq))
+      Module(m.info, m.name, m.ports ++ Seq(targetFirePort, daisyResetPort),
+        Block((m.body map connectTargetFire) +: stmts.toSeq))
   }
 
   def run(c: Circuit) = {
     val transformedModules = (wrappers(c.modules) flatMap {
       case m: Module =>
         def connectTargetFire(s: Statement): Seq[Connect] = s match {
-          case s: WDefInstance if s.name == "target" =>
-            Seq(Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire")))
+          case s: WDefInstance if s.name == "target" => Seq(
+            Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire")),
+            Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset"))
+          )
           case s: Block => s.stmts flatMap connectTargetFire
           case s => Nil
         }

@@ -20,6 +20,16 @@ private class TransformContext {
     ChainType.SRAM  -> HashMap[String, Seq[ir.Statement]](),
     ChainType.Cntr  -> HashMap[String, Seq[ir.Statement]]()
   )
+  val chainLen = HashMap(
+    ChainType.Trace -> 0,
+    ChainType.Regs  -> 0,
+    ChainType.SRAM  -> 0,
+    ChainType.Cntr  -> 0)
+  val chainLoop = HashMap(
+    ChainType.Trace -> 0,
+    ChainType.Regs  -> 0,
+    ChainType.SRAM  -> 0,
+    ChainType.Cntr  -> 0)
 }
 
 class StroberTransforms(chain: java.io.Writer) extends Transform with SimpleRun {
@@ -44,6 +54,14 @@ class StroberCompiler(chain: java.io.Writer) extends Compiler {
     new EmitFirrtl(writer)
   )
 }
+
+// Meta data for testers
+case class StroberMetaData(
+  chainFile: java.io.File,
+  chainLoop: Map[ChainType.Value, Int],
+  chainLen: Map[ChainType.Value, Int],
+  sampleNum: Int = 30
+)
 
 object StroberCompiler {
   private val contextVar = new DynamicVariable[Option[TransformContext]](None)
@@ -139,7 +157,7 @@ object StroberCompiler {
       // Compile Verilog
       val verilog = new java.io.File(dir, s"${circuit.name}.v")
       Driver.compile(firrtl.toString, verilog.toString, new VerilogCompiler)
-      circuit
+      (circuit, StroberMetaData(chain, context.chainLoop.toMap, context.chainLen.toMap))
     }
   }
 }

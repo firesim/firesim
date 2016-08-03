@@ -29,6 +29,8 @@ private[passes] object Utils {
   def childInsts = StroberCompiler.context.childInsts
   def instToMod = StroberCompiler.context.instToMod
   def chains = StroberCompiler.context.chains
+  def chainLen = StroberCompiler.context.chainLen
+  def chainLoop = StroberCompiler.context.chainLoop
 
   def wrappers(modules: Seq[DefModule]) =
     modules filter (x => StroberCompiler.context.wrappers(x.name))

@@ -1,37 +1,45 @@
 package strober
+package testers
 
-import chisel3._
-import chisel3.util._
-import chisel3.iotesters.{AdvTester, Processable, Backend}
+import chisel3.{Data, Bits}
+import chisel3.util.DecoupledIO
+import chisel3.iotesters.{AdvTester, Processable}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
-    logFile: Option[String], waveform: Option[String], testCmd: List[String])
+abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, verbose: Boolean,
+    sampleFile: Option[String], logFile: Option[String], waveform: Option[String], testCmd: List[String])
     extends AdvTester(c, false, logFile=logFile, waveform=waveform, testCmd=testCmd, isPropagation=false) {
-  protected[strober] val _pokeMap = HashMap[Data, BigInt]()
-  protected[strober] val _peekMap = HashMap[Data, BigInt]()
-  protected[strober] def _inputs: Map[Bits, String]
-  protected[strober] def _outputs: Map[Bits, String]
-  // protected[strober] def inTrMap: ListMap[Bits, Int]
-  // protected[strober] def outTrMap: ListMap[Bits, Int]
-  protected[strober] implicit val channelWidth: Int
+  protected[testers] val _pokeMap = HashMap[Data, BigInt]()
+  protected[testers] val _peekMap = HashMap[Data, BigInt]()
+  protected[testers] def _inputs: Map[Bits, String]
+  protected[testers] def _outputs: Map[Bits, String]
+  // protected[testers] def inTrMap: ListMap[Bits, Int]
+  // protected[testers] def outTrMap: ListMap[Bits, Int]
   private var traceCount = 0
 
-  // protected[strober] lazy val chainLoop = transforms.chainLoop
-  // protected[strober] lazy val chainLen  = transforms.chainLen
+  private val sim = c match {
+    case s: SimWrapper[_] => s
+    case s: ZynqShim[_] => s.sim match { case s: SimWrapper[_] => s }
+  }
+  protected[testers] val targetName = sim.target.name
+  protected[testers] val daisyWidth = sim.daisyWidth
+  protected[testers] implicit val channelWidth = sim.channelWidth
+  protected[testers] val chainLen = meta.chainLen
+  protected[testers] val chainLoop = meta.chainLoop
+  protected[testers] val chainReader =
+    new DaisyChainReader(meta.chainFile.toString, chainLoop, daisyWidth)
 
-  // protected[strober] def sampleNum: Int
-  // protected[strober] lazy val samples = Array.fill(sampleNum){new Sample}
-  // protected[strober] var lastSample: Option[(Sample, Int)] = None
-  private var _traceLen = 0
+  private val samples = Array.fill(meta.sampleNum){new Sample}
+  private var lastSample: Option[(Sample, Int)] = None
+  private var _traceLen = 1
   def traceLen = _traceLen
   implicit def bigintToBoolean(b: BigInt) = b != 0
 
-  protected[strober] val _preprocessors = ArrayBuffer[Processable]()
-  protected[strober] val _postprocessors = ArrayBuffer[Processable]()
+  protected[testers] val _preprocessors = ArrayBuffer[Processable]()
+  protected[testers] val _postprocessors = ArrayBuffer[Processable]()
 
-  protected[strober] class ChannelSource[T <: Data, R](
+  protected[testers] class ChannelSource[T <: Data, R](
     socket: DecoupledIO[T], post: (T, R) => Unit) extends Processable {
     val inputs = new ScalaQueue[R]()
     private var valid = false
@@ -47,12 +55,12 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
     }
     _preprocessors += this
   }
-  protected[strober] object ChannelSource {
+  protected[testers] object ChannelSource {
     def apply[T <: Bits](socket: DecoupledIO[T]) =
       new ChannelSource(socket, (bit: T, in: BigInt) => _poke(bit, in))
   }
 
-  protected[strober] class ChannelSink[T <: Data, R](
+  protected[testers] class ChannelSink[T <: Data, R](
     socket: DecoupledIO[T], cvt: T => R) extends Processable {
     val outputs = new ScalaQueue[R]()
     def process {
@@ -63,29 +71,29 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
     }
     _postprocessors += this
   }
-  protected[strober] object ChannelSink {
+  protected[testers] object ChannelSink {
     def apply[T <: Bits](socket: DecoupledIO[T]) =
       new ChannelSink(socket, (bit: T) => _peek(bit))
   }
 
-  protected[strober] def pokeChannel(addr: Int, data: BigInt): Unit
-  protected[strober] def peekChannel(addr: Int): BigInt
-  protected[strober] def pokeChunks(addr: Int, chunks: Int, data: BigInt) {
+  protected[testers] def pokeChannel(addr: Int, data: BigInt): Unit
+  protected[testers] def peekChannel(addr: Int): BigInt
+  protected[testers] def pokeChunks(addr: Int, chunks: Int, data: BigInt) {
     (0 until chunks) foreach (off => pokeChannel(addr + off, data >> (off * channelWidth)))
   }
-  protected[strober] def peekChunks(addr: Int, chunks: Int) = {
+  protected[testers] def peekChunks(addr: Int, chunks: Int) = {
     ((0 until chunks) foldLeft BigInt(0))(
       (res, off) => res | (peekChannel(addr + off) << (off * channelWidth)))
   }
-  protected[strober] def _poke(data: Bits, x: BigInt) = super.wire_poke(data, x)
-  protected[strober] def _peek(data: Bits) = super.peek(data)
-  protected[strober] def _takestep(work: => Unit = {}) {
+  protected[testers] def _poke(data: Bits, x: BigInt) = super.wire_poke(data, x)
+  protected[testers] def _peek(data: Bits) = super.peek(data)
+  protected[testers] def _takestep(work: => Unit = {}) {
     backend.step(1)
     _preprocessors foreach (_.process)
     work
     _postprocessors foreach (_.process)
   }
-  protected[strober] def _until(pred: => Boolean, 
+  protected[testers] def _until(pred: => Boolean, 
       maxcycles: Long = defaultMaxCycles)(work: => Unit) = {
     var cycle = 0
     while (!pred && cycle < maxcycles) {
@@ -94,7 +102,7 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
     }
     pred
   }
-  protected[strober] def _eventually(pred: => Boolean,
+  protected[testers] def _eventually(pred: => Boolean,
       maxcycles: Long = defaultMaxCycles) = {
     _until(pred, maxcycles){}
   }
@@ -126,7 +134,15 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
     expect(value == expected, s"${msg} ${_outputs(port)} -> %x == %x".format(value, expected))
   }
 
-  /* protected[strober] def traces(sample: Sample) = {
+  protected def intToBin(value: BigInt, size: Int) =
+    ((0 until size) map (i => (((value >> (size-1-i)) & 0x1) + '0').toChar) addString new StringBuilder).result
+
+  protected[testers] def readChain(t: ChainType.Value): String
+  protected[testers] def readSnapshot = {
+    (ChainType.values.toList map readChain addString new StringBuilder).result
+  }
+
+  /* protected[testers] def traces(sample: Sample) = {
     for (i <- 0 until traceCount) {
       inTrMap foreach {case (wire, id) => sample addCmd PokePort(wire, peekId(id, chunk(wire)))}
       sample addCmd Step(1)
@@ -135,15 +151,7 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
     sample
   }
 
-  protected def intToBin(value: BigInt, size: Int) =
-    ((0 until size) map (i => (((value >> (size-1-i)) & 0x1) + '0').toChar) addString new StringBuilder).result
-
-  protected[strober] def readChain(t: ChainType.Value): String
-  protected[strober] def readSnapshot = {
-    (ChainType.values.toList map readChain addString new StringBuilder).result
-  }
-  
-  protected[strober] def verifySnapshot(sample: Sample) {
+  protected[testers] def verifySnapshot(sample: Sample) {
     val pass = (sample map {
       case Load(signal: MemRead,    value, None) => true 
       case Load(signal: MemSeqRead, value, None) => true
@@ -161,51 +169,52 @@ abstract class StroberTester[+T <: Module](c: T, verbose: Boolean,
   }
   */
 
-  protected[strober] def _tick(n: Int): Unit
+  protected[testers] def _tick(n: Int): Unit
 
   def setTraceLen(len: Int) {
     _traceLen = len
   }
 
+  def setLastSample(s: Option[(Sample, Int)]) {
+    lastSample match {
+      case None =>
+      case Some((sample, id)) => samples(id) = sample // traces(sample)
+    }
+    lastSample = s
+  }
+
   override def step(n: Int) {
     if (verbose) println(s"STEP ${n} -> ${t+n}")
     // reservoir sampling
-    /* if (cycles % traceLen == 0) {
-      val recordId = t / traceLen
-      val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
-      if (sampleId < sampleNum) {
-        lastSample match {
-          case None =>
-          case Some((sample, id)) => samples(id) = traces(sample)
-        }
-        val sample = Sample(readSnapshot, cycles)
-        lastSample = Some((sample, sampleId)) 
-        if (args.snapCheck) verifySnapshot(sample)
+    if (cycles % traceLen == 0) {
+      val recordId = cycles / traceLen
+      val sampleId = if (recordId < meta.sampleNum) recordId else rnd.nextInt(recordId+1)
+      if (sampleId < meta.sampleNum) {
+        val sample = chainReader(readSnapshot, cycles)
+        setLastSample(Some(sample, sampleId))
+        // if (args.snapCheck) verifySnapshot(sample)
         traceCount = 0 
       }
-    } */
+    }
     // take steps
     _tick(n)
     incTime(n)
     if (traceCount < traceLen) traceCount += n
   }
 
-  /* override def finish = {
-    // tail samples
-    lastSample match {
-      case None =>
-      case Some((sample, id)) => samples(id) = traces(sample)
-    }
-    val file = args.sampleFile match {
-      case None => createOutputFile(s"${transforms.targetName}.sample")
+  override def finish = {
+    setLastSample(None)
+    val file = sampleFile match {
+      case None => new java.io.FileWriter(
+        new java.io.File(meta.chainFile.getParent, s"$targetName.sample"))
       case Some(f) => new java.io.FileWriter(f)
     }
     try {
       file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
-      file write Sample(readSnapshot, t).toString
+      file write chainReader(readSnapshot, cycles).toString
     } finally {
       file.close
     }
     super.finish
-  } */
+  }
 }
