@@ -23,17 +23,17 @@ private[passes] object Utils {
       DoPrim(PrimOps.Cat, Seq(left, right), Nil, ut)
     }
 
-  def shims = StroberCompiler.context.shims
-  def params = StroberCompiler.context.params
-  def childMods = StroberCompiler.context.childMods
-  def childInsts = StroberCompiler.context.childInsts
-  def instToMod = StroberCompiler.context.instToMod
-  def chains = StroberCompiler.context.chains
+  def childMods = StroberTransforms.context.childMods
+  def childInsts = StroberTransforms.context.childInsts
+  def instToMod = StroberTransforms.context.instToMod
+  def chains = StroberTransforms.context.chains
+
   def chainLen = StroberCompiler.context.chainLen
   def chainLoop = StroberCompiler.context.chainLoop
-
+  def params = StroberCompiler.context.params
   def wrappers(modules: Seq[DefModule]) =
     modules filter (x => StroberCompiler.context.wrappers(x.name))
+  def dir = StroberCompiler.context.dir
 
   def targets(m: Module, modules: Seq[DefModule]) = {
     def loop(s: Statement): Seq[String] = s match {
@@ -101,7 +101,7 @@ private[passes] object Utils {
     }
 }
 
-private[strober] object Analyses extends firrtl.passes.Pass {
+private[passes] object Analyses extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Analyze Circuit"
   
@@ -126,21 +126,19 @@ private[strober] object Analyses extends firrtl.passes.Pass {
   }
 }
 
-private[strober] class DumpChains(writer: java.io.Writer) extends firrtl.passes.Pass {
+private[passes] object DumpChains extends firrtl.passes.Pass {
   import Utils._
   import firrtl.Utils.create_exps
   def name = "[strober] Dump Chains"
 
-  val sb = new StringBuilder
-
-  def addPad(cw: Int, dw: Int)(chainType: ChainType.Value) {
+  private def addPad(w: java.io.Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
       case 0 =>
-      case pad => sb append s"${chainType.id} null ${pad} -1\n"
+      case pad => w write s"${chainType.id} null ${pad} -1\n"
     }
   }
 
-  def loop(mod: String, path: String, daisyWidth: Int)(chainType: ChainType.Value) {
+  private def loop(w: java.io.Writer, mod: String, path: String, daisyWidth: Int)(chainType: ChainType.Value) {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
@@ -150,48 +148,49 @@ private[strober] class DumpChains(writer: java.io.Writer) extends firrtl.passes.
           s match {
             case s: DefMemory if s.readLatency > 0 =>
               (0 until s.depth) foreach { id =>
-                sb append s"${chainType.id} ${path}.${s.name} ${width / s.depth} ${id}\n"
+                w write s"${chainType.id} ${path}.${s.name} ${width / s.depth} ${id}\n"
               }
             case s: DefMemory =>
               create_exps(s.name, s.dataType) foreach { mem =>
                 (0 until s.depth) map (widx(mem, _)) foreach { e =>
-                  sb append s"${chainType.id} ${path}.${e.serialize} ${width / s.depth} -1\n"
+                  w write s"${chainType.id} ${path}.${e.serialize} ${width / s.depth} -1\n"
                 }
               }
             case s: DefRegister =>
               create_exps(s.name, s.tpe) foreach { reg =>
-                sb append s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
+                w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
               }
           }
           chainType match {
             case ChainType.SRAM => 
-              addPad(cw, dw)(chainType)
+              addPad(w, cw, dw)(chainType)
               (0, 0)
             case _ => (cw, dw)
           }
         }
         chainType match {
           case ChainType.SRAM => 
-          case _ => addPad(cw, dw)(chainType)
+          case _ => addPad(w, cw, dw)(chainType)
         }
       case _ =>
     }
     childInsts(mod) foreach (child =>
-      loop(instToMod(child), s"${path}.${child}", daisyWidth)(chainType))
+      loop(w, instToMod(child), s"${path}.${child}", daisyWidth)(chainType))
   }
 
   def run(c: Circuit) = {
     wrappers(c.modules) foreach {
       case m: Module =>
         val daisyWidth = params(m.name)(DaisyWidth)
-        targets(m, c.modules) foreach (target =>
-          ChainType.values.toList foreach loop(target.name, target.name, daisyWidth)) 
+        targets(m, c.modules) foreach { target =>
+          val file = new java.io.File(dir, s"${target.name}.chain")
+          if (!file.exists) {
+            val writer = new java.io.FileWriter(file)
+            ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
+            writer.close
+          }
+        }
       case m: ExtModule =>
-    }
-    try {
-      writer write sb.result
-    } finally {
-      writer.close
     }
     c
   }

@@ -4,12 +4,13 @@ package testers
 import chisel3.{Data, Bits}
 import chisel3.util.DecoupledIO
 import chisel3.iotesters.{AdvTester, Processable}
+import java.io.{File, FileWriter}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, verbose: Boolean,
-    sampleFile: Option[String], logFile: Option[String], waveform: Option[String], testCmd: List[String])
-    extends AdvTester(c, false, logFile=logFile, waveform=waveform, testCmd=testCmd, isPropagation=false) {
+abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampleFile: Option[String],
+    logFile: Option[String], waveform: Option[String], testCmd: List[String])
+    extends AdvTester(c, false, 16, logFile, waveform, testCmd, false) {
   protected[testers] val _pokeMap = HashMap[Data, BigInt]()
   protected[testers] val _peekMap = HashMap[Data, BigInt]()
   private val sim = c match {
@@ -25,12 +26,13 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
   }
   protected[testers] val daisyWidth = sim.daisyWidth
   protected[testers] implicit val channelWidth = sim.channelWidth
-  protected[testers] val chainLen = meta.chainLen
-  protected[testers] val chainLoop = meta.chainLoop
-  protected[testers] val chainReader =
-    new DaisyChainReader(meta.chainFile.toString, chainLoop, daisyWidth)
+  protected[testers] val chainLen = StroberCompiler.context.chainLen
+  protected[testers] val chainLoop = StroberCompiler.context.chainLoop.toMap
+  protected[testers] val chainReader = new DaisyChainReader(
+    new File(StroberCompiler.context.dir, s"${targetName}.chain"), chainLoop, daisyWidth)
 
-  private val samples = Array.fill(meta.sampleNum){new Sample}
+  private val sampleNum = StroberCompiler.context.sampleNum
+  private val samples = Array.fill(sampleNum){new Sample}
   private var lastSample: Option[(Sample, Int)] = None
   private var _traceLen = sim.traceMaxLen
   def traceLen = _traceLen
@@ -195,8 +197,8 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
     // reservoir sampling
     if (cycles % traceLen == 0) {
       val recordId = cycles / traceLen
-      val sampleId = if (recordId < meta.sampleNum) recordId else rnd.nextInt(recordId+1)
-      if (sampleId < meta.sampleNum) {
+      val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
+      if (sampleId < sampleNum) {
         val sample = chainReader(readSnapshot, cycles)
         setLastSample(Some(sample, sampleId), traceCount)
         // if (args.snapCheck) verifySnapshot(sample)
@@ -217,9 +219,9 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, meta: StroberMetaData, 
   override def finish = {
     setLastSample(None, traceCount)
     val file = sampleFile match {
-      case None => new java.io.FileWriter(
-        new java.io.File(meta.chainFile.getParent, s"$targetName.sample"))
-      case Some(f) => new java.io.FileWriter(f)
+      case None => new FileWriter(
+        new File(StroberCompiler.context.dir, s"$targetName.sample"))
+      case Some(f) => new FileWriter(f)
     }
     try {
       file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")

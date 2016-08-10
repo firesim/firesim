@@ -18,7 +18,7 @@ case class ExpectPort(node: String, value: BigInt) extends SampleInst
 case class Count(node: String, value: BigInt) extends SampleInst
 
 private[testers] class DaisyChainReader(
-    chainFile: String, chainLoop: Map[ChainType.Value, Int], daisyWidth: Int) {
+    chainFile: java.io.File, chainLoop: Map[ChainType.Value, Int], daisyWidth: Int) {
   /* (Signal, Width, Index) */
   private val chains = Map(
     ChainType.Trace -> ArrayBuffer[(Option[String], Int, Int)](),
@@ -79,53 +79,39 @@ private[testers] class DaisyChainReader(
 
 object Sample {
   // Read samples from a file
-  /*
-  def load[T <: Module](filename: String, log: java.io.PrintStream = System.out) = {
-    val signalMap = HashMap[String, Node]()
-    Driver.dfs {
-      case node: Delay       => signalMap(node.chiselName) = node
-      case node if node.isIo => signalMap(node.chiselName) = node
-      case _ =>
+  def apply[T <: Module](filename: String) = ((scala.io.Source fromFile 
+      filename).getLines foldLeft List[Sample]()){case (samples, line) =>
+    val tokens = line split " "
+    SampleInstType(tokens.head.toInt) match {
+      case SampleInstType.CYCLE =>
+        samples :+ new Sample(tokens.last.toLong)
+      case SampleInstType.LOAD =>
+        val node = tokens.tail.head
+        val value = BigInt(tokens.init.last, 16)
+        val off = tokens.last.toInt
+        samples.last addCmd Load(node, value, off)
+        samples
+      case SampleInstType.FORCE =>
+        val node = tokens.tail.head
+        val value = BigInt(tokens.last, 16)
+        samples.last addCmd Force(node, value)
+        samples
+      case SampleInstType.POKE =>
+        val node = tokens.tail.head
+        val value = BigInt(tokens.last, 16)
+        samples.last addCmd PokePort(node, value)
+        samples
+      case SampleInstType.STEP =>
+        samples.last addCmd Step(tokens.last.toInt)
+        samples
+      case SampleInstType.EXPECT =>
+        val node = tokens.tail.head
+        val value = BigInt(tokens.last, 16)
+        samples.last addCmd ExpectPort(node, value)
+        samples
+      case SampleInstType.COUNT => samples // skip
     }
-    (scala.io.Source.fromFile(filename).getLines foldLeft List[Sample]()){case (samples, line) =>
-      val tokens = line split " "
-      val cmd = SampleInstType(tokens.head.toInt)
-      cmd match {
-        case SampleInstType.CYCLE =>
-          samples :+ new Sample(tokens.last.toLong)
-        case SampleInstType.LOAD =>
-          val value = BigInt(tokens.init.last, 16)
-          val off = tokens.last.toInt
-          (signalMap get tokens.tail.head) match {
-            case None => log.println(s"${tokens.tail.head} not found")
-            case Some(node) => samples.last addCmd Load(node, value, if (off < 0) None else Some(off))
-          }
-          samples
-        case SampleInstType.FORCE =>
-          val value = BigInt(tokens.last, 16)
-          (signalMap get tokens.tail.head) match {
-            case None => log.println(s"${tokens.tail.head} not found")
-            case Some(node) => samples.last addCmd Force(node, value)
-          }
-          samples
-        case SampleInstType.POKE =>
-          val node = signalMap(tokens.tail.head) match {case b: Bits => b}
-          val value = BigInt(tokens.last, 16)
-          samples.last addCmd PokePort(node, value)
-          samples
-        case SampleInstType.STEP =>
-          samples.last addCmd Step(tokens.last.toInt)
-          samples
-        case SampleInstType.EXPECT =>
-          val node = signalMap(tokens.tail.head) match {case b: Bits => b}
-          val value = BigInt(tokens.last, 16)
-          samples.last addCmd ExpectPort(node, value)
-          samples
-        case SampleInstType.COUNT => samples // skip
-      }
-    } sortWith (_.cycle < _.cycle)
-  }
-  */
+  } sortWith (_.cycle < _.cycle)
 }
 
 class Sample(protected[strober] val cycle: Long = -1L) {

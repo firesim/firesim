@@ -6,7 +6,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-private[strober] object Fame1Transform extends firrtl.passes.Pass {
+private[passes] object Fame1Transform extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   import Utils._
 
