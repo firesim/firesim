@@ -15,10 +15,10 @@ trait LoadMemType
 case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
-abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], meta: StroberMetaData,
-    verbose: Boolean = true, sampleFile: Option[String] = None, logFile: Option[String] = None,
-    waveform: Option[String] = None, testCmd: List[String] = Nil, loadmemType: LoadMemType = SlowLoadMem)
-    extends StroberTester(c, meta, verbose, sampleFile, logFile, waveform, testCmd) {
+abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean = true,
+    sampleFile: Option[String] = None, logFile: Option[String] = None, waveform: Option[String] = None,
+    testCmd: List[String] = Nil, loadmemType: LoadMemType = SlowLoadMem)
+    extends StroberTester(c, verbose, sampleFile, logFile, waveform, testCmd) {
   /* protected[testers] val inMap = c.master.inMap
   protected[testers] val outMap = c.master.outMap
   protected[testers] val inTrMap = c.master.inTrMap

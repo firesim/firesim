@@ -5,13 +5,9 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
+import scala.util.DynamicVariable
 
-private[strober] object AddDaisyChains extends firrtl.passes.Pass {
-  def name = "[strober] Add Daisy Chains"
-  import Utils._
-  import firrtl.Utils._
-  import firrtl.passes.PassException
-
+private class DaisyChainContext {
   val chainModules = ArrayBuffer[DefModule]()
   val hasChain = Map(
     ChainType.Trace -> HashSet[String](),
@@ -19,10 +15,24 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
     ChainType.SRAM  -> HashSet[String](),
     ChainType.Cntr  -> HashSet[String]()
   )
+  val readers = HashMap[String, HashMap[String, Seq[String]]]()
   var regIndex = 0
   var sramIndex = 0
-  val readers = HashMap[String, HashMap[String, Seq[String]]]()
+}
 
+private[passes] object AddDaisyChains extends firrtl.passes.Pass {
+  def name = "[strober] Add Daisy Chains"
+  import Utils._
+  import firrtl.Utils._
+  import firrtl.passes.PassException
+  private val contextVar = new DynamicVariable[Option[DaisyChainContext]](None)
+  private def context = contextVar.value.getOrElse (new DaisyChainContext)
+  private def chainModules = context.chainModules
+  private def hasChain = context.hasChain
+  private def readers = context.readers
+  private def regIndex = context.regIndex
+  private def sramIndex = context.sramIndex
+ 
   private class ExtractChainModules(index: Int) extends Transform with SimpleRun {
     def rename(s: Statement): Statement = s map rename match {
       case WDefInstance(info, name, module, tpe) =>
@@ -130,7 +140,7 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
     chains(chainType)(m.name) = collect(m.body)
     if (chains(chainType)(m.name).isEmpty) EmptyStmt else {
       lazy val chain = new RegChain()(p alter Map(DataWidth -> sumWidths(m.body).toInt))
-      val circuit = Parser parse (chisel3.Driver.emit(() => chain) split "\n")
+      val circuit = Parser parse (chisel3.Driver.emit(() => chain))
       val annotation = new Annotations.AnnotationMap(Nil)
       val output = new java.io.StringWriter
       (new ChainCompiler(regIndex)).compile(circuit, annotation, output)
@@ -147,7 +157,7 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
         // <daiy_port>.out <- <daisy_chain>.io.dataIo.out
         Connect(NoInfo, daisyPort("out"), chainDataIo("out"))
       )
-      regIndex += 1
+      context.regIndex += 1
       hasChain(chainType) += m.name
       chainLen(chainType) += chain.daisyLen
       chainLoop(chainType) = 1
@@ -223,9 +233,7 @@ private[strober] object AddDaisyChains extends firrtl.passes.Pass {
         Block(Seq(daisyInvalid, m.body map updateMemories) ++ chains))
   }
 
-  def run(c: Circuit) = {
-    chainModules.clear
-    ChainType.values foreach (hasChain(_).clear)
+  def run(c: Circuit) = (contextVar withValue Some(new DaisyChainContext)){
     val transformedModules = (wrappers(c.modules) flatMap {
       case m: Module =>
         val param = params(m.name)

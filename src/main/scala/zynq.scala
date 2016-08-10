@@ -335,4 +335,6 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     model.io.sim_mem.r.ready  := hostConnect(Bool(true), wires.r,  model.io.sim_mem.r.valid)
     model.io.sim_mem.b.ready  := hostConnect(Bool(true), wires.b,  model.io.sim_mem.b.valid)
   }
+
+  StroberCompiler annotate this
 }
