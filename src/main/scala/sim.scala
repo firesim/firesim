@@ -161,8 +161,9 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
 
   // Cycles for debug
   val cycles = Reg(UInt(width=64))
-  cycles := Mux(target.reset, UInt(0),
-            Mux(fire, cycles + UInt(1), cycles))
+  when (fire) {
+    cycles := Mux(target.reset, UInt(0), cycles + UInt(1))
+  }
 
   StroberCompiler annotate this
 } 
