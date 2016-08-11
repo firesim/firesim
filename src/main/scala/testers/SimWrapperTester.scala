@@ -11,8 +11,6 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], verbose:
   private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (out => ChannelSink(out))
   private val inT = c.io.inT map (tr => ChannelSink(tr))
   private val outT = c.io.outT map (tr => ChannelSink(tr))
-  private val chains = (ChainType.values.toSeq map (chainType => chainType ->
-    (c.io.daisy(chainType).toSeq map (chain => ChannelSink(chain.out))))).toMap
 
   protected[testers] def pokeChannel(addr: Int, data: BigInt) {
     ins(addr).inputs enqueue data
@@ -32,11 +30,15 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], verbose:
           _eventually(_peek(c.io.daisy(t)(i).out.valid))
           _poke(c.io.daisy.sram(i).restart, 0)
         case _ =>
+          _eventually(_peek(c.io.daisy(t)(i).out.valid))
       }
-      _eventually(chains(t)(i).outputs.size >= chainLen(t))
-      while (!chains(t)(i).outputs.isEmpty) {
-        chain append intToBin(chains(t)(i).outputs.dequeue, daisyWidth)
+      for (_ <- 0 until chainLen(t)) {
+        chain append intToBin(_peek(c.io.daisy(t)(i).out.bits), daisyWidth)
+        _poke(c.io.daisy(t)(i).out.ready, 1)
+        backend.step(1)
+        _poke(c.io.daisy(t)(i).out.ready, 0)
       }
+      assert(!_peek(c.io.daisy(t)(i).out.valid))
     }
     chain.result
   }
