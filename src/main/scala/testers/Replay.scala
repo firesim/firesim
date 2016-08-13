@@ -3,34 +3,50 @@ package testers
 
 import chisel3.Module
 import chisel3.iotesters.PeekPokeTester
+import java.io.File
 
-class Replay[+T <: Module](c: T, args: Array[String], logFile: Option[String] = None,
+class RTLReplay[+T <: Module](c: T, sampleFile: File, logFile: Option[String] = None,
     wavefrom: Option[String] = None, testCmd: List[String] = Nil)
-    extends PeekPokeTester(c, true, 16, logFile, wavefrom, testCmd, false) {
-  private sealed trait ReplayOption
-  private case object SampleFile extends ReplayOption
-  private case object MatchFile extends ReplayOption
-  private type OptionMap = Map[ReplayOption, String]
-  private def parseOption(map: OptionMap, args: List[String]): OptionMap = args match {
-    case Nil => map
-    case "--sample" :: value :: tail =>
-      parseOption(map + (SampleFile -> value), tail)
-    case "--match" :: value :: tail =>
-      parseOption(map + (MatchFile -> value), tail)
-    case option :: tail => throw new Exception(s"Unknown option: $option")
+    extends PeekPokeTester(c, true, 16, logFile, wavefrom, testCmd) {
+  private val samples = Sample(sampleFile)
+  // Replay samples
+  val startTime = System.nanoTime
+  val expects = collection.mutable.ArrayBuffer[ExpectPort]()
+  samples.zipWithIndex foreach {case (sample, i) =>
+    println(s"cycle: ${sample.cycle}")
+    reset(5)
+    (sample fold (true, false)){
+      case ((first, _), Step(n)) =>
+        step(n)
+        (first, false)
+      case ((first, _), Force(node, value)) =>
+        backend.poke(node, value)
+        (first, false)
+      case ((first, _), Load(node, value, off)) =>
+        backend.poke(node, value)
+        (first, false)
+      case ((first, expected), PokePort(node, value)) =>
+        if (expected) step(1)
+        backend.poke(node, value)
+        (first && !expected, false)
+      case ((first, _), ExpectPort(node, value)) =>
+        if (!first && !backend.expect(node, value)) fail
+        (first, true)
+    }
   }
-  private val options = parseOption(Map(), args.toList)
-  private val samples = options get SampleFile match {
-    case Some(f) => Sample(f)
-    case None => throw new Exception(s"Sample file should be provided with '--sample'")
-  }
+  val endTime = System.nanoTime
+  val simTime = (endTime - startTime) / 1000000000.0
+  val simSpeed = t / simTime
+  println("Time elapsed = %.1f s, Simulation Speed = %.2f Hz".format(simTime, simSpeed))
+}
 
-  private val matchMap = options get MatchFile match {
-    case None => Map[String, String]()
-    case Some(f) => (scala.io.Source.fromFile(f).getLines map { line =>
-      val tokens = line split " "
-      tokens.head -> tokens.last }).toMap
-  }
+/*** Gate-level simulation has different timing models ***/
+class GateLevelReplay[+T <: Module](c: T, sampleFile: File, // matchFile: File,
+    logFile: Option[String] = None, wavefrom: Option[String] = None, testCmd: List[String] = Nil)
+    extends PeekPokeTester(c, true, 16, logFile, wavefrom, testCmd) {
+  private val samples = Sample(sampleFile)
+  // private val matchMap = ((scala.io.Source fromFile matchFile).getLines map {
+  //  line => val tokens = line split " " ; tokens.head -> tokens.last }).toMap
 
   /* TODO:
   case class SramInfo(path: String, cols: Int, dummy: Int, qwidth: Int)
@@ -67,24 +83,27 @@ class Replay[+T <: Module](c: T, args: Array[String], logFile: Option[String] = 
   // Replay samples
   val startTime = System.nanoTime
   samples.zipWithIndex foreach {case (sample, i) =>
+    println(s"cycle: ${sample.cycle}")
     reset(5)
-    (sample fold 0){
-      case (cycles, Step(n)) =>
+    (sample fold (true, false, false)) {
+      case ((first, _, _), Step(n)) =>
         step(n)
-        cycles + 1
-      case (cycles, Force(node, value)) =>
+        (first, false, false)
+      case ((first, _, _), Force(node, value)) =>
         backend.poke(node, value)
-        cycles
-      case (cycles, Load(node, value, off)) =>
+        (first, false, false)
+      case ((first, _, _), Load(node, value, off)) =>
         backend.poke(node, value)
-        cycles
-      case (cycles, PokePort(node, value)) =>
+        (first, false, false)
+      case ((first, _, expected), PokePort(node, value)) =>
         backend.poke(node, value)
-        cycles
-      case (cycles, ExpectPort(node, expected)) =>
-        if (cycles > 1 && !backend.expect(node, expected)) fail
-        cycles
+        (first && !expected, true, false)
+      case ((first, poked, _), ExpectPort(node, value)) =>
+        if (poked) step(1)
+        if (!first && !backend.expect(node, value)) fail
+        (first, false, true)
     }
+    step(1)
   }
   val endTime = System.nanoTime
   val simTime = (endTime - startTime) / 1000000000.0

@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
 
-case object SampleNum extends Field[Int]
 case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
@@ -84,7 +83,6 @@ trait HasSimWrapperParams {
   val traceMaxLen = p(TraceMaxLen)
   val daisyWidth = p(DaisyWidth)
   val sramChainNum = p(SRAMChainNum)
-  val sampleNum = p(SampleNum)
 }
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters) 
@@ -126,7 +124,6 @@ abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSim
 class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwork()(p) {
   val target = Module(c)
   val io = new SimWrapperIO(target.io, target.reset)
-  override val name = s"${target.name}Wrapper"
 
   val fire = Wire(Bool())
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
