@@ -57,17 +57,18 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean
 
   override def setTraceLen(len: Int) { 
     super.setTraceLen(len)
-    pokeChannel(c.TRACELEN_ADDR, len)
+    pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
   }
 
   def setMemLatency(cycles: Int) {
-    pokeChannel(c.LATENCY_ADDR, cycles)
+    pokeChannel(ZynqCtrlSignals.LATENCY.id, cycles)
   }
 
   override def reset(n: Int) {
     for (_ <- 0 until n) {
-      pokeChannel(c.RESET_ADDR, 0)
-      _eventually(peekChannel(c.DONE_ADDR))
+      pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
+      pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
+      _eventually(peekChannel(ZynqCtrlSignals.DONE.id))
       _peekMap.clear
       // flush junk output tokens
       c.OUT_ADDRS foreach {case (out, addr) =>
@@ -79,11 +80,11 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean
   }
 
   override def _tick(n: Int) {
-    pokeChannel(c.STEP_ADDR, n)
+    pokeChannel(ZynqCtrlSignals.STEP.id, n)
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    _eventually(peekChannel(c.DONE_ADDR))
+    _eventually(peekChannel(ZynqCtrlSignals.DONE.id))
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
     }

@@ -7,13 +7,16 @@ import cde.{Parameters, Field}
 case object MasterNastiKey extends Field[NastiParameters]
 case object SlaveNastiKey  extends Field[NastiParameters]
 
+object ZynqCtrlSignals extends Enumeration {
+  val HOST_RESET, SIM_RESET, STEP, DONE, TRACELEN, LATENCY = Value 
+}
+
 object ZynqShim {
   def apply[T <: Module](c: =>T)(implicit p: Parameters) = new ZynqShim(new SimWrapper(c))
 }
 
 case class ZynqMasterHandlerArgs(
-  sim: SimWrapperIO, inNum: Int, outNum: Int, 
-  arNum: Int, awNum: Int, rNum: Int, wNum: Int, ctrlNum: Int)
+  sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) extends NastiModule()(p) {
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
   val io = new Bundle {
@@ -29,8 +32,8 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
       val r  = Vec(args.rNum,  ChannelType).flip
       val w  = Vec(args.wNum,  ChannelType)
     } 
-    val ctrlIns  = Vec(args.ctrlNum, ChannelType)
-    val ctrlOuts = Vec(args.ctrlNum, ChannelType).flip
+    val ctrlIns  = Vec(ZynqCtrlSignals.values.size, ChannelType)
+    val ctrlOuts = Vec(ZynqCtrlSignals.values.size, ChannelType).flip
   }
 
   val addrOffsetBits = log2Up(nastiXDataBits/8)
@@ -137,18 +140,18 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())
-  val simResetNext = RegNext(simReset)
+  val hostReset = Wire(Bool())
   val ins = sim.io.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap sim.io.getIns // exclude reset
   val outs = sim.io.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap sim.io.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
     val q = Module(new Queue(in.bits, 2, flow=true))
     in.bits := q.io.deq.bits
-    q.reset := reset || simReset
+    q.reset := reset || hostReset
     q suggestName s"in_buf_${i}" ; q }
   val outBufs = outs.zipWithIndex map { case (out, i) =>
     val q = Module(new Queue(out.bits, 2, flow=true))
     q.io.enq.bits := out.bits
-    q.reset := reset || simReset
+    q.reset := reset || hostReset
     q suggestName s"out_buf_${i}" ; q }
 
   // Pass Tokens
@@ -159,14 +162,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val tock = ((outBufs foldLeft tockCounter.orR)(_ && _.io.enq.ready)) &&
              (sim.io.outs foldLeft Bool(true))(_ && _.valid)
   val idle = !tickCounter.orR && !tockCounter.orR
-  sim.reset := reset || simReset
-  sim.io.ins(0).bits  := simResetNext
-  sim.io.ins(0).valid := tick || simResetNext
+  sim.reset := reset || hostReset
+  sim.io.ins(0).bits  := simReset
+  sim.io.ins(0).valid := tick || simReset
   when(tick) { tickCounter := tickCounter - UInt(1) }
   when(tock) { tockCounter := tockCounter - UInt(1) }
   when(simReset) { tickCounter := UInt(0) }
   when(simReset) { tockCounter := UInt(1) }
-  ins foreach (_.valid := tick || simResetNext)
+  ins foreach (_.valid := tick || simReset)
   outs foreach (_.ready := tock)
   inBufs foreach (_.io.deq.ready := tick && tickCounter === UInt(1))
   outBufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
@@ -187,52 +190,48 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   io.slave <> arb.io.slave
 
   // Instantiate Master Handler
-  val CTRL_NUM = 5
+  import ZynqCtrlSignals._
+
+  val CTRL_NUM = ZynqCtrlSignals.values.size
   val master = Module(new ZynqMasterHandler(new ZynqMasterHandlerArgs(
-    sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size, CTRL_NUM))(
+    sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
     p alter Map(NastiKey -> p(MasterNastiKey))))
 
   master.io.nasti <> io.master
 
-  // 0: reset
-  val RESET_ADDR = 0
-  simReset := master.io.ctrlIns(RESET_ADDR).valid
-  master.io.ctrlIns(RESET_ADDR).ready := Bool(true)
-  master.io.ctrlOuts(RESET_ADDR).valid := Bool(false)
-  
-  // 1: steps
-  val STEP_ADDR = 1
-  when(master.io.ctrlIns(STEP_ADDR).fire()) { 
-    tickCounter := master.io.ctrlIns(STEP_ADDR).bits 
-    tockCounter := master.io.ctrlIns(STEP_ADDR).bits 
+  hostReset := master.io.ctrlIns(HOST_RESET.id).valid
+  master.io.ctrlIns(HOST_RESET.id).ready := Bool(true)
+  master.io.ctrlOuts(HOST_RESET.id).valid := Bool(false)
+
+  simReset := master.io.ctrlIns(SIM_RESET.id).valid
+  master.io.ctrlIns(SIM_RESET.id).ready := Bool(true)
+  master.io.ctrlOuts(SIM_RESET.id).valid := Bool(false)
+
+  when(master.io.ctrlIns(STEP.id).fire()) { 
+    tickCounter := master.io.ctrlIns(STEP.id).bits 
+    tockCounter := master.io.ctrlIns(STEP.id).bits 
   }
-  master.io.ctrlIns(STEP_ADDR).ready := idle
-  master.io.ctrlOuts(STEP_ADDR).valid := Bool(false)
+  master.io.ctrlIns(STEP.id).ready := idle
+  master.io.ctrlOuts(STEP.id).valid := Bool(false)
 
-  // 2: done
-  val DONE_ADDR = 2
-  master.io.ctrlOuts(DONE_ADDR).bits := idle
-  master.io.ctrlOuts(DONE_ADDR).valid := Bool(true)
-  master.io.ctrlIns(DONE_ADDR).ready := Bool(false)
+  master.io.ctrlOuts(DONE.id).bits := idle
+  master.io.ctrlOuts(DONE.id).valid := Bool(true)
+  master.io.ctrlIns(DONE.id).ready := Bool(false)
 
-  // 3: traceLen
-  val TRACELEN_ADDR = 3
   val tracelen_reg = RegInit(UInt(0, master.nastiXDataBits))
   sim.io.traceLen := tracelen_reg
-  when(master.io.ctrlIns(TRACELEN_ADDR).fire()) {
-    tracelen_reg := master.io.ctrlIns(TRACELEN_ADDR).bits 
+  when(master.io.ctrlIns(TRACELEN.id).fire()) {
+    tracelen_reg := master.io.ctrlIns(TRACELEN.id).bits 
   }
-  master.io.ctrlIns(TRACELEN_ADDR).ready := idle
-  master.io.ctrlOuts(TRACELEN_ADDR).valid := Bool(false)
+  master.io.ctrlIns(TRACELEN.id).ready := idle
+  master.io.ctrlOuts(TRACELEN.id).valid := Bool(false)
 
-  // 4: latency
-  val LATENCY_ADDR = 4
   val latency_reg = RegInit(UInt(0, master.nastiXDataBits))
-  when(master.io.ctrlIns(LATENCY_ADDR).fire()) {
-    latency_reg := master.io.ctrlIns(LATENCY_ADDR).bits
+  when(master.io.ctrlIns(LATENCY.id).fire()) {
+    latency_reg := master.io.ctrlIns(LATENCY.id).bits
   }
-  master.io.ctrlIns(LATENCY_ADDR).ready := idle
-  master.io.ctrlOuts(LATENCY_ADDR).valid := Bool(false)
+  master.io.ctrlIns(LATENCY.id).ready := idle
+  master.io.ctrlOuts(LATENCY.id).valid := Bool(false)
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth
@@ -313,14 +312,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
       (outs foldLeft valid)(_ && _.valid)
     case b: Bits if b.dir == INPUT =>
       val ins = sim.io.getIns(b)
-      ins foreach (_.valid := ready || simResetNext)
+      ins foreach (_.valid := ready || simReset)
       (ins foldLeft valid)(_ && _.ready)
   }
 
   (0 until SimMemIO.size) foreach { i =>
     val model = Module(new MemModel()(p alter Map(NastiKey -> p(SlaveNastiKey))))
     val wires = SimMemIO(i)
-    model.reset := reset || simReset
+    model.reset := reset || hostReset
     model suggestName s"MemModel_$i"
     model.io.latency := latency_reg
     arb.io.master(i) <> model.io.host_mem

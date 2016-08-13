@@ -66,11 +66,12 @@ object StroberCompiler {
     implicit val channelWidth = sim.channelWidth
     def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
     val consts = List(
-      "RESET_ADDR"         -> c.RESET_ADDR,
-      "STEP_ADDR"          -> c.STEP_ADDR,
-      "DONE_ADDR"          -> c.DONE_ADDR,
-      "TRACELEN_ADDR"      -> c.TRACELEN_ADDR,
-      "LATENCY_ADDR"       -> c.LATENCY_ADDR,
+      "HOST_RESET_ADDR"    -> ZynqCtrlSignals.HOST_RESET.id,
+      "SIM_RESET_ADDR"     -> ZynqCtrlSignals.SIM_RESET.id,
+      "STEP_ADDR"          -> ZynqCtrlSignals.STEP.id,
+      "DONE_ADDR"          -> ZynqCtrlSignals.DONE.id,
+      "TRACELEN_ADDR"      -> ZynqCtrlSignals.TRACELEN.id,
+      "LATENCY_ADDR"       -> ZynqCtrlSignals.LATENCY.id,
       "MEM_AR_ADDR"        -> c.AR_ADDR,
       "MEM_AW_ADDR"        -> c.AW_ADDR,
       "MEM_W_ADDR"         -> c.W_ADDR,
