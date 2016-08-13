@@ -2,14 +2,14 @@ package strober
 package testers
 
 import Chisel._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.ArrayBuffer
 
 // Enum type for replay commands
 object SampleInstType extends Enumeration {
   val CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT = Value
 }
 
-abstract class SampleInst
+sealed abstract class SampleInst
 case class Step(n: Int) extends SampleInst
 case class Load(node: String, value: BigInt, off: Int) extends SampleInst
 case class Force(node: String, value: BigInt) extends SampleInst
@@ -35,7 +35,7 @@ private[testers] class DaisyChainReader(
         signal match {
           case Some(p) if t == ChainType.Trace => 
             // sample addForce Force(p, value)
-          case Some(p) if t == ChainType.Regs => 
+          case Some(p) if t == ChainType.Regs =>
             sample addCmd Load(p, value, idx)
           case Some(p) if t == ChainType.SRAM && i < idx =>
             sample addCmd Load(p, value, i)
@@ -79,8 +79,8 @@ private[testers] class DaisyChainReader(
 
 object Sample {
   // Read samples from a file
-  def apply[T <: Module](filename: String) = ((scala.io.Source fromFile 
-      filename).getLines foldLeft List[Sample]()){case (samples, line) =>
+  def apply[T <: Module](file: java.io.File) = ((scala.io.Source fromFile 
+      file).getLines foldLeft List[Sample]()){case (samples, line) =>
     val tokens = line split " "
     SampleInstType(tokens.head.toInt) match {
       case SampleInstType.CYCLE =>

@@ -10,7 +10,7 @@ import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
 abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampleFile: Option[String],
     logFile: Option[String], waveform: Option[String], testCmd: List[String])
-    extends AdvTester(c, false, 16, logFile, waveform, testCmd, false) {
+    extends AdvTester(c, false, 16, logFile, waveform, testCmd) {
   protected[testers] val _pokeMap = HashMap[Data, BigInt]()
   protected[testers] val _peekMap = HashMap[Data, BigInt]()
   private val sim = c match {
@@ -55,7 +55,7 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
       }
       _poke(socket.valid, valid)
     }
-    _preprocessors += this
+    _postprocessors += this
   }
   protected[testers] object ChannelSource {
     def apply[T <: Bits](socket: DecoupledIO[T]) =
@@ -68,10 +68,12 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
     def process {
       if (_peek(socket.valid)) {
         outputs enqueue cvt(socket.bits)
+        _poke(socket.ready, true)
+      } else {
+        _poke(socket.ready, false)
       }
-      _poke(socket.ready, true)
     }
-    _postprocessors += this
+    _preprocessors += this
   }
   protected[testers] object ChannelSink {
     def apply[T <: Bits](socket: DecoupledIO[T]) =
@@ -147,8 +149,9 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
     for (i <- 0 until n) {
       inTrMap foreach {case (in, id) =>
         sample addCmd PokePort(_inputs(in), peekChunks(id, SimUtils.getChunks(in)))
+
       }
-      sample addCmd Step(1)
+      // sample addCmd Step(1)
       outTrMap foreach {case (out, id) =>
         sample addCmd ExpectPort(_outputs(out), peekChunks(id, SimUtils.getChunks(out)))
       }
@@ -178,6 +181,7 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
   protected[testers] def _tick(n: Int): Unit
 
   def setTraceLen(len: Int) {
+    require(len > 2)
     _traceLen = len
   }
 
@@ -193,7 +197,6 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
 
   private var traceCount = 0
   override def step(n: Int) {
-    if (verbose) println(s"STEP ${n} -> ${t+n}")
     // reservoir sampling
     if (cycles % traceLen == 0) {
       val recordId = cycles / traceLen
@@ -206,6 +209,7 @@ abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampl
       }
     }
     // take steps
+    if (verbose) println(s"STEP ${n} -> ${cycles + n}")
     _tick(n)
     incTime(n)
     if (traceCount < traceLen) traceCount += n

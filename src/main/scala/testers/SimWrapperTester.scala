@@ -9,8 +9,6 @@ abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], verbose:
     testCmd: List[String]=Nil) extends StroberTester(c, verbose, sampleFile, logFile, waveform, testCmd) {
   private val ins = c.io.ins map (in => ChannelSource(in))
   private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (out => ChannelSink(out))
-  private val inT = c.io.inT map (tr => ChannelSink(tr))
-  private val outT = c.io.outT map (tr => ChannelSink(tr))
 
   protected[testers] def pokeChannel(addr: Int, data: BigInt) {
     ins(addr).inputs enqueue data
