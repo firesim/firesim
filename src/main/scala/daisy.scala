@@ -84,7 +84,7 @@ class DaisyDatapathIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
 
 abstract class DaisyChainModule(implicit val p: Parameters) extends Module with DaisyChainParams
 
-class DaisyDatapath(implicit p: Parameters) extends DaisyChainModule()(p) { 
+class RegChainDatapath(implicit p: Parameters) extends DaisyChainModule()(p) {
   val io = new DaisyDatapathIO
   val regs = Reg(Vec(daisyLen, UInt(width=daisyWidth)))
 
@@ -149,7 +149,7 @@ class RegChainIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
 
 class RegChain(implicit p: Parameters) extends DaisyChainModule()(p) {
   val io = new RegChainIO
-  val datapath = Module(new DaisyDatapath)
+  val datapath = Module(new RegChainDatapath)
   val control = Module(new RegChainControl)
 
   control.io.stall := io.stall
@@ -158,6 +158,8 @@ class RegChain(implicit p: Parameters) extends DaisyChainModule()(p) {
 }
 
 // Define sram daisy chains
+class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
+
 class AddrIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
   val n = p(SRAMSize)
   val in = UInt(INPUT, width=log2Up(n)) // TODO: it turns out that this is wasteful, but required for tesing...
@@ -203,14 +205,9 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
       addrOut   := addrOut + UInt(1)
     }
     is(s_DONE) {
-      when(io.restart) {
-        addrState := s_ADDRGEN
-      }
-      when(!io.stall) {
-        addrState := s_IDLE
-      }
+      addrState := Mux(io.restart, s_ADDRGEN,
+                   Mux(!io.stall, s_IDLE, s_DONE))
       io.addrIo.out.bits := addrIn
-      io.addrIo.out.valid := io.stall
     }
   }
 }
@@ -222,12 +219,12 @@ class SRAMChainIO(implicit p: Parameters) extends RegChainIO()(p) {
 
 class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {
   val io = new SRAMChainIO
-  val datapath = Module(new DaisyDatapath)
+  val datapath = Module(new SRAMChainDatapath)
   val control = Module(new SRAMChainControl)
 
-  io.stall <> control.io.stall
-  io.restart <> control.io.restart
+  control.io.restart := io.restart
+  control.io.stall := io.stall
+  datapath.io.ctrlIo <> control.io.ctrlIo
   io.dataIo <> datapath.io.dataIo
   io.addrIo <> control.io.addrIo
-  control.io.ctrlIo <> datapath.io.ctrlIo
 }

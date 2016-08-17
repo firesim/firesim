@@ -16,6 +16,9 @@ private class DaisyChainContext {
     ChainType.Cntr  -> HashSet[String]()
   )
   val readers = HashMap[String, HashMap[String, Seq[String]]]()
+  val enables = HashMap[String, HashMap[WrappedExpression, Expression]]()
+  val wmodes = HashMap[String, HashMap[WrappedExpression, Expression]]()
+  val addrs = HashMap[String, HashMap[WrappedExpression, Expression]]()
   var regIndex = 0
   var sramIndex = 0
 }
@@ -24,12 +27,16 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
   import Utils._
   import firrtl.Utils._
+  import firrtl.WrappedExpression._
   import firrtl.passes.PassException
   private val contextVar = new DynamicVariable[Option[DaisyChainContext]](None)
   private def context = contextVar.value.getOrElse (new DaisyChainContext)
   private def chainModules = context.chainModules
   private def hasChain = context.hasChain
   private def readers = context.readers
+  private def enables = context.enables
+  private def wmodes = context.wmodes
+  private def addrs = context.addrs
   private def regIndex = context.regIndex
   private def sramIndex = context.sramIndex
  
@@ -66,18 +73,18 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     )
   }
  
-  private def chainRef(implicit chainType: ChainType.Value) =
+  private def chainRef(i: Int = 0)(implicit chainType: ChainType.Value) =
     chainType match {
-      case ChainType.Trace => wref("trace_chain")
-      case ChainType.Regs  => wref("reg_chain")
-      case ChainType.SRAM  => wref("sram_chain")
-      case ChainType.Cntr  => wref("cntr_chain")
+      case ChainType.Trace => wref(s"trace_chain_$i")
+      case ChainType.Regs  => wref(s"reg_chain_$i")
+      case ChainType.SRAM  => wref(s"sram_chain_$i")
+      case ChainType.Cntr  => wref(s"cntr_chain_$i")
     }
 
-  private def chainIo(implicit chainType: ChainType.Value) = wsub(chainRef, "io")
+  private def chainIo(i: Int = 0)(implicit chainType: ChainType.Value) = wsub(chainRef(i), "io")
 
-  private def chainDataIo(pin: String)(implicit chainType: ChainType.Value) =
-    wsub(wsub(chainIo, "dataIo"), pin)
+  private def chainDataIo(pin: String, i: Int = 0)(implicit chainType: ChainType.Value) =
+    wsub(wsub(chainIo(i), "dataIo"), pin)
 
   private def daisyPort(pin: String, idx: Int = 0)(implicit chainType: ChainType.Value) =
     chainType match {
@@ -114,7 +121,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     }
 
   private def insertRegChains(m: Module, p: cde.Parameters)(implicit chainType: ChainType.Value) = {
-    def daisyConnect(regs: Seq[Expression], daisyLen: Int, daisyWidth: Int) = {
+    def daisyConnects(regs: Seq[Expression], daisyLen: Int, daisyWidth: Int) = {
       (((0 until daisyLen) foldRight (Seq[Connect](), 0, 0)){case (i, (cons, index, offset)) =>
         def loop(total: Int, index: Int, offset: Int, wires: Seq[Expression]): (Int, Int, Seq[Expression]) = {
           (daisyWidth - total) match {
@@ -143,17 +150,17 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       val circuit = Parser parse (chisel3.Driver.emit(() => chain))
       val annotation = new Annotations.AnnotationMap(Nil)
       val output = new java.io.StringWriter
-      (new ChainCompiler(regIndex)).compile(circuit, annotation, output)
+      (new ChainCompiler(regIndex)) compile (circuit, annotation, output)
 
-      val inst = WDefInstance(NoInfo, chainRef.name, s"RegChain_${regIndex}", ut)
-      val invalid = IsInvalid(NoInfo, chainRef)
-      val connects = Seq(
+      val inst = WDefInstance(NoInfo, chainRef().name, s"RegChain_${regIndex}", ut)
+      val invalid = IsInvalid(NoInfo, chainRef())
+      val portConnects = Seq(
         // <daisy_chain>.clk <- clk
-        Connect(NoInfo, wsub(chainRef, "clk"), wref("clk")),
+        Connect(NoInfo, wsub(chainRef(), "clk"), wref("clk")),
         // <daisy_chain>.reset <- daisyReset
-        Connect(NoInfo, wsub(chainRef, "reset"), wref("daisyReset")),
+        Connect(NoInfo, wsub(chainRef(), "reset"), wref("daisyReset")),
         // <daisy_chain>.io.stall <- not(targetFire)
-        Connect(NoInfo, wsub(chainIo, "stall"), not(wref("targetFire"))),
+        Connect(NoInfo, wsub(chainIo(), "stall"), not(wref("targetFire"))),
         // <daiy_port>.out <- <daisy_chain>.io.dataIo.out
         Connect(NoInfo, daisyPort("out"), chainDataIo("out"))
       )
@@ -171,19 +178,99 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         case s: DefRegister => create_exps(s.name, s.tpe)
         case s => Nil
       }
-      Block(Seq(inst, invalid) ++ connects ++ daisyConnect(regs, chain.daisyLen, chain.daisyWidth))
+      Block(Seq(inst, invalid) ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth))
     }
   }
 
-  private def insertSRAMChains(m: Module) = {
-    EmptyStmt
+  private def insertSRAMChains(m: Module, p: cde.Parameters)(implicit chainType: ChainType.Value) = {
+    def daisyConnects(sram: DefMemory, daisyIdx: Int, daisyLen: Int, daisyWidth: Int) = {
+      val data = if (!sram.readwriters.isEmpty)
+        wsub(wsub(wref(sram.name), sram.readwriters.head), "rdata") else
+        wsub(wsub(wref(sram.name), sram.readers.head), "data")
+      val addr = if (!sram.readwriters.isEmpty)
+        wsub(wsub(wref(sram.name), sram.readwriters.head), "addr") else
+        wsub(wsub(wref(sram.name), sram.readers.head), "addr")
+      val en = if (!sram.readwriters.isEmpty)
+        wsub(wsub(wref(sram.name), sram.readwriters.head), "en") else
+        wsub(wsub(wref(sram.name), sram.readers.head), "en")
+      val wmode = if (!sram.readwriters.isEmpty)
+        wsub(wsub(wref(sram.name), sram.readwriters.head), "wmode") else
+        EmptyExpression
+      val width = sumWidths(sram.dataType).toInt
+      def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
+      def addrConnects(s: Statement): Unit = s match {
+        case Connect(info, loc, expr) if weq(loc, en) =>
+          enables(m.name)(we(loc)) = or(wsub(addrIo, "valid"), expr)
+        case Connect(info, loc, expr) if weq(loc, wmode) =>
+          wmodes(m.name)(we(wmode)) = and(not(wsub(addrIo, "valid")), expr)
+        case Connect(info, loc, expr) if weq(loc, addr) =>
+          addrs(m.name)(we(addr)) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
+        case Block(stmts) => stmts foreach addrConnects
+        case _ =>
+      }
+      def dataConnects = (((0 until daisyLen) foldRight (Seq[Connect](), (width-1))){
+        case (i, (cons, high)) =>
+          val low = math.max(high-daisyWidth+1, 0)
+          val margin = daisyWidth-(high-low+1)
+          val input = bits(data, high, low)
+          (cons :+ ((daisyWidth-(high-low+1)) match {
+            case 0 =>
+              // "<daisy_chain>.io.dataIo.data[i] <- <memory>.data(high, low)"
+              Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), input)
+            case margin =>
+              val pad = UIntLiteral(0, IntWidth(margin))
+              // "<daisy_chain>.io.dataIo.data[i] <- cat(<memory>.data(high, low), pad)"
+              Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), cat(Seq(input, pad)))
+          }), high - daisyWidth)
+      })._1
+      addrConnects(m.body)
+      dataConnects
+    }
+
+    chains(chainType)(m.name) = collect(m.body)
+    if (chains(chainType)(m.name).isEmpty) EmptyStmt else Block(
+      chains(chainType)(m.name).zipWithIndex flatMap {case (sram: DefMemory, i) =>
+        lazy val chain = new SRAMChain()(p alter Map(
+          DataWidth -> sumWidths(sram.dataType).toInt, SRAMSize -> sram.depth))
+        val circuit = Parser parse (chisel3.Driver.emit(() => chain))
+        val annotation = new Annotations.AnnotationMap(Nil)
+        val output = new java.io.StringWriter
+        (new ChainCompiler(sramIndex)) compile (circuit, annotation, output)
+
+        val inst = WDefInstance(NoInfo, chainRef(i).name, s"SRAMChain_${sramIndex}", ut)
+        val invalid = IsInvalid(NoInfo, chainRef(i))
+        val portConnects = Seq(
+          // <daisy_chain>.clk <- clk
+          Connect(NoInfo, wsub(chainRef(i), "clk"), wref("clk")),
+          // <daisy_chain>.reset <- daisyReset
+          Connect(NoInfo, wsub(chainRef(i), "reset"), wref("daisyReset")),
+          // <daisy_chain>.io.stall <- not(targetFire)
+          Connect(NoInfo, wsub(chainIo(i), "stall"), not(wref("targetFire"))),
+          // <daisy_chain>.io.restart <- <daisy_port>.restart
+          Connect(NoInfo, wsub(chainIo(i), "restart"), daisyPort("restart")),
+           // <daiy_port>.out <- <daisy_chain>.io.dataIo.out
+          (if (i == 0) Connect(NoInfo, daisyPort("out"), chainDataIo("out", i))
+           // <last_daisy_chain>.io.dataIo.in <- <daisy_chain>.io.dataIo.out
+           else Connect(NoInfo, chainDataIo("in", i-1), chainDataIo("out", i)))
+        )
+        context.sramIndex += 1
+        hasChain(chainType) += m.name
+        chainLen(chainType) += chain.daisyLen
+        chainLoop(chainType) = math.max(chainLoop(chainType), sram.depth)
+        Seq(inst, invalid) ++ portConnects ++ daisyConnects(sram, i, chain.daisyLen, chain.daisyWidth)
+      }
+    )
   }
 
   private def insertChains(m: Module, p: cde.Parameters)(t: ChainType.Value) = {
     implicit val chainType = t
     val chain = chainType match {
-      case ChainType.SRAM => insertSRAMChains(m)
-      case _              => insertRegChains(m, p)(chainType)
+      case ChainType.SRAM => insertSRAMChains(m, p)
+      case _              => insertRegChains(m, p)
+    }
+    val chainNum = chainType match {
+      case ChainType.SRAM => chains(chainType)(m.name).size
+      case _ => 1
     }
     // Filter children who have daisy chains
     (childInsts(m.name) filter (hasChain(chainType)(_)) foldLeft (None: Option[String], Seq[Connect]())){
@@ -192,7 +279,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         (Some(child), cons :+ Connect(NoInfo, daisyPort("out"), childDaisyPort(child)("out")))
       case ((None, cons), child) =>
         // <daisy_chain>.io.dataIo.in <- <child>.<daisy_port>.out
-        (Some(child), cons :+ Connect(NoInfo, chainDataIo("in"), childDaisyPort(child)("out")))
+        (Some(child), cons :+ Connect(NoInfo, chainDataIo("in", chainNum-1), childDaisyPort(child)("out")))
       case ((Some(p), cons), child) =>
         // <prev_child>.<daisy_port>.io.in <- <child>.<daisy_port>.out
         (Some(child), cons :+ Connect(NoInfo, childDaisyPort(p)("in"), childDaisyPort(child)("out")))
@@ -203,7 +290,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         Block(chain +: (cons :+ Connect(NoInfo, chainDataIo("in"), daisyPort("in"))))
       case (Some(p), cons) =>
         // <prev_child>.<daisy_port>.in <- <daisy_port>.in
-        Block(chain +: (cons :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))))
+        Block(chain +: (cons :+ Connect(NoInfo, childDaisyPort(p)("in", chainNum-1), daisyPort("in"))))
     }
   }
 
@@ -211,9 +298,13 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     case m: ExtModule => m
     case m: Module =>
       readers(m.name) = HashMap[String, Seq[String]]()
+      enables(m.name) = HashMap[WrappedExpression, Expression]()
+      wmodes(m.name) = HashMap[WrappedExpression, Expression]()
+      addrs(m.name) = HashMap[WrappedExpression, Expression]()
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy"))
       val chains = ChainType.values.toList map insertChains(m, p)
+      val updateConnects = ArrayBuffer[Connect]()
       def updateMemories(s: Statement): Statement =
         s map updateMemories match {
           case s: DefMemory if readers(m.name) contains s.name => Block(
@@ -223,14 +314,23 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
               val one = UIntLiteral(1, IntWidth(1))
               val addr = UIntLiteral(i, IntWidth(chisel3.util.log2Up(s.depth)))
               Seq(Connect(NoInfo, wsub(wsub(wref(s.name), reader), "clk"), wref("clk")),
-                Connect(NoInfo, wsub(wsub(wref(s.name), reader), "en"), one),
-                Connect(NoInfo, wsub(wsub(wref(s.name), reader), "addr"), addr))
+                  Connect(NoInfo, wsub(wsub(wref(s.name), reader), "en"), one),
+                  Connect(NoInfo, wsub(wsub(wref(s.name), reader), "addr"), addr))
             })
           )
+          case Connect(info, loc, _) if addrs(m.name) contains loc =>
+            updateConnects += Connect(info, loc, addrs(m.name)(loc))
+            EmptyStmt
+          case Connect(info, loc, _) if enables(m.name) contains loc =>
+            updateConnects += Connect(info, loc, enables(m.name)(loc))
+            EmptyStmt
+          case Connect(info, loc, _) if wmodes(m.name) contains loc =>
+            updateConnects += Connect(info, loc, wmodes(m.name)(loc))
+            EmptyStmt
           case s => s
         }
       Module(m.info, m.name, m.ports :+ daisyPort,
-        Block(Seq(daisyInvalid, m.body map updateMemories) ++ chains))
+        Block(Seq(daisyInvalid, m.body map updateMemories) ++ chains ++ updateConnects))
   }
 
   def run(c: Circuit) = (contextVar withValue Some(new DaisyChainContext)){
