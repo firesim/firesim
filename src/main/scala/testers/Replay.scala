@@ -32,6 +32,8 @@ class RTLReplay[+T <: Module](c: T, sampleFile: File, logFile: Option[String] = 
       case ((first, _), ExpectPort(node, value)) =>
         if (!first && !backend.expect(node, value)) fail
         (first, true)
+      case ((first, expected), Count(_, _)) =>
+        (first, expected)
     }
   }
   val endTime = System.nanoTime
@@ -102,6 +104,8 @@ class GateLevelReplay[+T <: Module](c: T, sampleFile: File, // matchFile: File,
         if (poked) step(1)
         if (!first && !backend.expect(node, value)) fail
         (first, false, true)
+      case ((first, poked, expected), Count(_, _)) =>
+        (first, poked, expected)
     }
     step(1)
   }

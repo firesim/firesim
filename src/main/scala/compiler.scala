@@ -29,7 +29,7 @@ class StroberCompiler extends firrtl.Compiler {
     new firrtl.IRToWorkingIR,
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
-    new firrtl.passes.InferReadWrite(TransID(-1)),
+    // new firrtl.passes.InferReadWrite(TransID(-1)),
     passes.StroberTransforms,
     new firrtl.EmitFirrtl(writer)
   )
@@ -148,7 +148,7 @@ object StroberCompiler {
       parseArgs(args.toList)
       compile(transform(w))
       val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile", "--test", "--noPropgation")
+        "--backend", backend, "--genHarness", "--compile", "--test", "--vpdmem")
       chisel3.iotesters.chiselMainTest(testerArgs, () => w)(tester)
     }
   }
@@ -158,7 +158,7 @@ object StroberCompiler {
       parseArgs(args.toList)
       compile(transform(w))
       val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile", "--test", "--noPropgation")
+        "--backend", backend, "--genHarness", "--compile", "--test")
       chisel3.iotesters.chiselMain(testerArgs, () => w)
     }
   }
@@ -169,7 +169,7 @@ object StroberCompiler {
       parseArgs(args.toList)
       transform(w)
       val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--test", "--noPropgation")
+        "--backend", backend, "--test")
       chisel3.iotesters.chiselMainTest(testerArgs, () => w)(tester)
     }
   }

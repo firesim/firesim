@@ -15,6 +15,8 @@ private[passes] object Utils {
   def wsub(e: Expression, s: String, t: Type = ut) = WSubField(e, s, t, ug)
   def widx(e: Expression, i: Int, t: Type = ut) = WSubIndex(e, i, t, ug)
   def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, ut)
+  def or(e1: Expression, e2: Expression) = DoPrim(PrimOps.Or, Seq(e1, e2), Nil, ut)
+  def and(e1: Expression, e2: Expression) = DoPrim(PrimOps.And, Seq(e1, e2), Nil, ut)
   def bits(e: Expression, high: BigInt, low: BigInt) = DoPrim(PrimOps.Bits, Seq(e), Seq(high, low), ut)
   def cat(es: Seq[Expression]): Expression =
     if (es.tail.isEmpty) es.head else {
@@ -142,25 +144,27 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
-          val width = sumWidths(s)(chainType).toInt
-          val dw = dataWidth + width
-          val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
-          s match {
+          val dw = dataWidth + (s match {
             case s: DefMemory if s.readLatency > 0 =>
-              (0 until s.depth) foreach { id =>
-                w write s"${chainType.id} ${path}.${s.name} ${width / s.depth} ${id}\n"
-              }
+              val width = sumWidths(s.dataType).toInt
+              w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
+              width
             case s: DefMemory =>
+              val width = sumWidths(s.dataType).toInt
               create_exps(s.name, s.dataType) foreach { mem =>
                 (0 until s.depth) map (widx(mem, _)) foreach { e =>
-                  w write s"${chainType.id} ${path}.${e.serialize} ${width / s.depth} -1\n"
+                  w write s"${chainType.id} ${path}.${e.serialize} ${width} -1\n"
                 }
               }
+              width
             case s: DefRegister =>
+              val width = sumWidths(s.tpe).toInt
               create_exps(s.name, s.tpe) foreach { reg =>
                 w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
               }
-          }
+              width
+          })
+          val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           chainType match {
             case ChainType.SRAM => 
               addPad(w, cw, dw)(chainType)
@@ -184,11 +188,9 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
         val daisyWidth = params(m.name)(DaisyWidth)
         targets(m, c.modules) foreach { target =>
           val file = new java.io.File(dir, s"${target.name}.chain")
-          if (!file.exists) {
-            val writer = new java.io.FileWriter(file)
-            ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
-            writer.close
-          }
+          val writer = new java.io.FileWriter(file)
+          ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
+          writer.close
         }
       case m: ExtModule =>
     }
