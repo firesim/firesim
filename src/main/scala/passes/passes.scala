@@ -6,6 +6,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import scala.collection.mutable.{Stack, HashSet, ArrayBuffer} 
 import scala.collection.immutable.ListSet
+import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {
   val ut = UnknownType
@@ -133,19 +134,19 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
   import firrtl.Utils.create_exps
   def name = "[strober] Dump Chains"
 
-  private def addPad(w: java.io.Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
+  private def addPad(w: Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
       case 0 =>
       case pad => w write s"${chainType.id} null ${pad} -1\n"
     }
   }
 
-  private def loop(w: java.io.Writer, mod: String, path: String, daisyWidth: Int)(chainType: ChainType.Value) {
+  private def loop(w: Writer, mod: String, path: String, daisyWidth: Int)(chainType: ChainType.Value) {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
-            case s: DefMemory if s.readLatency > 0 =>
+            case s: DefMemory if chainType == ChainType.SRAM =>
               val width = sumWidths(s.dataType).toInt
               w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
               width
@@ -187,8 +188,8 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
       case m: Module =>
         val daisyWidth = params(m.name)(DaisyWidth)
         targets(m, c.modules) foreach { target =>
-          val file = new java.io.File(dir, s"${target.name}.chain")
-          val writer = new java.io.FileWriter(file)
+          val file = new File(dir, s"${target.name}.chain")
+          val writer = new FileWriter(file)
           ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
           writer.close
         }
