@@ -29,7 +29,7 @@ class StroberCompiler extends firrtl.Compiler {
     new firrtl.IRToWorkingIR,
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
-    // new firrtl.passes.InferReadWrite(TransID(-1)),
+    new firrtl.passes.InferReadWrite(TransID(-1)),
     passes.StroberTransforms,
     new firrtl.EmitFirrtl(writer)
   )
@@ -48,7 +48,7 @@ object StroberCompiler {
     def dump(map_t: MapType.Value, arg: (chisel3.Bits, Int)) = arg match {case (wire, id) =>
       s"${map_t.id} ${targetName}.${nameMap(wire)} ${id} ${SimUtils.getChunks(wire)(sim.channelWidth)}\n"} 
     val sb = new StringBuilder
-    sb append (c.IN_ADDRS map (x => (x._1, x._2 - c.CTRL_NUM))  map {dump(MapType.IoIn,  _)} mkString "")
+    sb append (c.IN_ADDRS  map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoIn,  _)} mkString "")
     sb append (c.OUT_ADDRS map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoOut, _)} mkString "")
 
     val file = new FileWriter(new File(context.dir, s"${targetName}.map"))

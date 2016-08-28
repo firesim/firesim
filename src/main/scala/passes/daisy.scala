@@ -86,21 +86,21 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
   private def chainDataIo(pin: String, i: Int = 0)(implicit chainType: ChainType.Value) =
     wsub(wsub(chainIo(i), "dataIo"), pin)
 
-  private def daisyPort(pin: String, idx: Int = 0)(implicit chainType: ChainType.Value) =
-    chainType match {
-      case ChainType.Trace => wsub(widx(wsub(wref("daisy"), "trace"), idx), pin)
-      case ChainType.Regs  => wsub(widx(wsub(wref("daisy"), "regs"), idx), pin)
-      case ChainType.SRAM  => wsub(widx(wsub(wref("daisy"), "sram"), idx), pin)
-      case ChainType.Cntr  => wsub(widx(wsub(wref("daisy"), "cntr"), idx), pin)
-    }
+  private def daisyPort(pin: String, idx: Int = 0)(
+      implicit chainType: ChainType.Value) = chainType match {
+    case ChainType.Trace => wsub(widx(wsub(wref("daisy"), "trace"), idx), pin)
+    case ChainType.Regs  => wsub(widx(wsub(wref("daisy"), "regs"), idx), pin)
+    case ChainType.SRAM  => wsub(widx(wsub(wref("daisy"), "sram"), idx), pin)
+    case ChainType.Cntr  => wsub(widx(wsub(wref("daisy"), "cntr"), idx), pin)
+  }
 
-  private def childDaisyPort(child: String)(pin: String, idx: Int = 0)(implicit chainType: ChainType.Value) =
-    chainType match {
-      case ChainType.Trace => wsub(widx(wsub(wsub(wref(child), "daisy"), "trace"), idx), pin)
-      case ChainType.Regs  => wsub(widx(wsub(wsub(wref(child), "daisy"), "regs"), idx), pin)
-      case ChainType.SRAM  => wsub(widx(wsub(wsub(wref(child), "daisy"), "sram"), idx), pin)
-      case ChainType.Cntr  => wsub(widx(wsub(wsub(wref(child), "daisy"), "cntr"), idx), pin)
-    }
+  private def childDaisyPort(child: String)(pin: String, idx: Int = 0)(
+      implicit chainType: ChainType.Value) = chainType match {
+    case ChainType.Trace => wsub(widx(wsub(wsub(wref(child), "daisy"), "trace"), idx), pin)
+    case ChainType.Regs  => wsub(widx(wsub(wsub(wref(child), "daisy"), "regs"), idx), pin)
+    case ChainType.SRAM  => wsub(widx(wsub(wsub(wref(child), "daisy"), "sram"), idx), pin)
+    case ChainType.Cntr  => wsub(widx(wsub(wsub(wref(child), "daisy"), "cntr"), idx), pin)
+  }
     
   private def collect(s: Statement)(implicit chainType: ChainType.Value): Seq[Statement] =
     chainType match {
@@ -198,15 +198,17 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         EmptyExpression
       val width = sumWidths(sram.dataType).toInt
       def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
-      def addrConnects(s: Statement): Unit = s match {
-        case Connect(info, loc, expr) if weq(loc, en) =>
-          enables(m.name)(we(loc)) = or(wsub(addrIo, "valid"), expr)
-        case Connect(info, loc, expr) if weq(loc, wmode) =>
-          wmodes(m.name)(we(wmode)) = and(not(wsub(addrIo, "valid")), expr)
-        case Connect(info, loc, expr) if weq(loc, addr) =>
-          addrs(m.name)(we(addr)) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
-        case Block(stmts) => stmts foreach addrConnects
-        case _ =>
+      def addrConnects(s: Statement): Statement = {
+        s match {
+          case Connect(info, loc, expr) if weq(loc, en) =>
+            enables(m.name)(we(loc)) = or(wsub(addrIo, "valid"), expr)
+          case Connect(info, loc, expr) if weq(loc, wmode) =>
+            wmodes(m.name)(we(wmode)) = and(not(wsub(addrIo, "valid")), expr)
+          case Connect(info, loc, expr) if weq(loc, addr) =>
+            addrs(m.name)(we(addr)) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
+          case _ =>
+        }
+        s map addrConnects
       }
       def dataConnects = (((0 until daisyLen) foldRight (Seq[Connect](), (width-1))){
         case (i, (cons, high)) =>
@@ -251,7 +253,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
            // <daiy_port>.out <- <daisy_chain>.io.dataIo.out
           (if (i == 0) Connect(NoInfo, daisyPort("out"), chainDataIo("out", i))
            // <last_daisy_chain>.io.dataIo.in <- <daisy_chain>.io.dataIo.out
-           else Connect(NoInfo, chainDataIo("in", i-1), chainDataIo("out", i)))
+           else Connect(NoInfo, chainDataIo("in", i - 1), chainDataIo("out", i)))
         )
         context.sramIndex += 1
         hasChain(chainType) += m.name
@@ -287,10 +289,10 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       case (None, cons) if !hasChain(chainType)(m.name) => Block(chain +: cons)
       case (None, cons) =>
         // <daisy_chain>.io.dataIo.in <- <daisy_port>.in
-        Block(chain +: (cons :+ Connect(NoInfo, chainDataIo("in"), daisyPort("in"))))
+        Block(chain +: (cons :+ Connect(NoInfo, chainDataIo("in", chainNum-1), daisyPort("in"))))
       case (Some(p), cons) =>
         // <prev_child>.<daisy_port>.in <- <daisy_port>.in
-        Block(chain +: (cons :+ Connect(NoInfo, childDaisyPort(p)("in", chainNum-1), daisyPort("in"))))
+        Block(chain +: (cons :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))))
     }
   }
 
