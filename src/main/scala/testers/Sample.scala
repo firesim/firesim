@@ -1,7 +1,6 @@
 package strober
 package testers
 
-import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
 // Enum type for replay commands
@@ -19,12 +18,13 @@ case class Count(node: String, value: BigInt) extends SampleInst
 
 private[testers] class DaisyChainReader(
     chainFile: java.io.File, chainLoop: Map[ChainType.Value, Int], daisyWidth: Int) {
+  type ChainInfo = ArrayBuffer[(Option[String], Int, Int)]
   /* (Signal, Width, Index) */
   private val chains = Map(
-    ChainType.Trace -> ArrayBuffer[(Option[String], Int, Int)](),
-    ChainType.Regs  -> ArrayBuffer[(Option[String], Int, Int)](),
-    ChainType.SRAM  -> ArrayBuffer[(Option[String], Int, Int)](),
-    ChainType.Cntr  -> ArrayBuffer[(Option[String], Int, Int)]()
+    ChainType.Trace -> new ChainInfo,
+    ChainType.Regs  -> new ChainInfo,
+    ChainType.SRAM  -> new ChainInfo,
+    ChainType.Cntr  -> new ChainInfo
   )
 
   private def readChain(t: ChainType.Value, sample: Sample, snap: String, base: Int = 0) = {
@@ -79,7 +79,7 @@ private[testers] class DaisyChainReader(
 
 object Sample {
   // Read samples from a file
-  def apply[T <: Module](file: java.io.File) = ((scala.io.Source fromFile 
+  def apply[T <: chisel3.Module](file: java.io.File) = ((scala.io.Source fromFile 
       file).getLines foldLeft List[Sample]()){case (samples, line) =>
     val tokens = line split " "
     SampleInstType(tokens.head.toInt) match {

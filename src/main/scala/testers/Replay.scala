@@ -23,7 +23,8 @@ class RTLReplay[+T <: Module](c: T, sampleFile: File, logFile: Option[String] = 
         backend.poke(node, value)
         (first, false)
       case ((first, _), Load(node, value, off)) =>
-        backend.poke(node, value)
+        val path = if (off < 0) node else s"$node[$off]"
+        backend.poke(path, value)
         (first, false)
       case ((first, expected), PokePort(node, value)) =>
         if (expected) step(1)
@@ -95,7 +96,8 @@ class GateLevelReplay[+T <: Module](c: T, sampleFile: File, // matchFile: File,
         backend.poke(node, value)
         (first, false, false)
       case ((first, _, _), Load(node, value, off)) =>
-        backend.poke(node, value)
+        val path = if (off < 0) node else s"$node[$off]"
+        backend.poke(path, value)
         (first, false, false)
       case ((first, _, expected), PokePort(node, value)) =>
         backend.poke(node, value)
