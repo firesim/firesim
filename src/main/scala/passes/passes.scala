@@ -4,15 +4,17 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.Utils.{create_exps, req_num_bits, long_BANG}
 import scala.collection.mutable.{Stack, HashSet, ArrayBuffer} 
 import scala.collection.immutable.ListSet
 import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {
   val ut = UnknownType
+  val uw = UnknownWidth
   val ug = UNKNOWNGENDER
   
-  def wref(s: String, t: Type = ut) = WRef(s, t, ExpKind(), ug)
+  def wref(s: String, t: Type = ut, k: Kind = ExpKind()) = WRef(s, t, k, ug)
   def wsub(e: Expression, s: String, t: Type = ut) = WSubField(e, s, t, ug)
   def widx(e: Expression, i: Int, t: Type = ut) = WSubIndex(e, i, t, ug)
   def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, ut)
@@ -71,33 +73,28 @@ private[passes] object Utils {
     heads flatMap loop
   }
 
-  def sumWidths(w: Width): BigInt = w match {
-    case IntWidth(w) => w
-    case UnknownWidth =>
-      throw new firrtl.passes.PassException("width should be inferred in advance")
-  }
-
-  def sumWidths(t: Type): BigInt = t match {
-    case t: GroundType => sumWidths(t.width)
-    case BundleType(fields) => (fields foldLeft BigInt(0))((r, x) => r + sumWidths(x.tpe))
-    case VectorType(tpe, size) => size * sumWidths(tpe)
-    case UnknownType =>
-      throw new firrtl.passes.PassException("type should be known in advance")
-  }
-
   def sumWidths(s: Statement)(implicit chainType: ChainType.Value): BigInt =
     chainType match {
       case ChainType.SRAM => s match {
         case s: DefMemory if s.readLatency > 0 && s.depth > 16 =>
-          s.depth * Utils.sumWidths(s.dataType)
+          s.depth * long_BANG(s.dataType)
         case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
         case _ => BigInt(0)
       }
       case _ => s match {
         case s: DefRegister =>
-          Utils.sumWidths(s.tpe)
+          long_BANG(s.tpe)
         case s: DefMemory if s.readLatency == 0 && s.depth <= 16 =>
-          s.depth * Utils.sumWidths(s.dataType)
+          s.depth * long_BANG(s.dataType)
+        case s: DefMemory if s.readLatency > 0 =>
+          val ew = 1
+          val mw = 1
+          val aw = req_num_bits(s.depth)
+          val dw = long_BANG(s.dataType).toInt
+          s.readers.size * s.readLatency * (ew + aw + dw) +
+          s.writers.size * (s.writeLatency - 1) * (ew + mw + aw + dw) +
+          s.readwriters.size * (s.readLatency * (ew + aw + dw) +
+            (s.writeLatency - 1) * (ew + mw + dw))
         case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
         case _ => BigInt(0)
       }
@@ -131,7 +128,6 @@ private[passes] object Analyses extends firrtl.passes.Pass {
 
 private[passes] object DumpChains extends firrtl.passes.Pass {
   import Utils._
-  import firrtl.Utils.create_exps
   def name = "[strober] Dump Chains"
 
   private def addPad(w: Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
@@ -147,11 +143,51 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
             case s: DefMemory if chainType == ChainType.SRAM =>
-              val width = sumWidths(s.dataType).toInt
+              val width = long_BANG(s.dataType).toInt
               w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
               width
+            case s: DefMemory if s.readLatency > 0 =>
+              val ew = 1
+              val mw = 1
+              val aw = req_num_bits(s.depth)
+              val dw = long_BANG(s.dataType).toInt
+              ((s.readers foldLeft 0){(sum, reader) =>
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${reader}.en $ew $i\n")
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${reader}.addr $aw $i\n")
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${reader}.data $dw $i\n")
+                sum + s.readLatency * (ew + aw + dw)
+              }) + ((s.writers foldLeft 0){(sum, writer) =>
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${writer}.en $ew $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${writer}.mask $mw $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${writer}.addr $aw $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${writer}.data $dw $i\n")
+                sum + (s.readLatency - 1) * (ew + mw + aw + dw)
+              }) + ((s.readwriters foldLeft 0){(sum, readwriter) =>
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.en $ew $i\n")
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.raddr $aw $i\n")
+                (0 until s.readLatency) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.rdata $dw $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wmode $ew $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wmask $mw $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.waddr $aw $i\n")
+                (0 until (s.writeLatency-1)) foreach (i =>
+                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wdata $dw $i\n")
+                sum + s.readLatency * (ew + aw + dw) + (s.writeLatency - 1) * (ew + mw + aw + dw)
+              })
             case s: DefMemory =>
-              val width = sumWidths(s.dataType).toInt
+              val width = long_BANG(s.dataType).toInt
               create_exps(s.name, s.dataType) foreach { mem =>
                 (0 until s.depth) map (widx(mem, _)) foreach { e =>
                   w write s"${chainType.id} ${path}.${e.serialize} ${width} -1\n"
@@ -159,7 +195,7 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
               }
               width
             case s: DefRegister =>
-              val width = sumWidths(s.tpe).toInt
+              val width = long_BANG(s.tpe).toInt
               create_exps(s.name, s.tpe) foreach { reg =>
                 w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
               }

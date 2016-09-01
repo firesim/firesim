@@ -4,6 +4,7 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.passes.MemPortUtils._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import scala.util.DynamicVariable
 
@@ -101,13 +102,13 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     case ChainType.SRAM  => wsub(widx(wsub(wsub(wref(child), "daisy"), "sram"), idx), pin)
     case ChainType.Cntr  => wsub(widx(wsub(wsub(wref(child), "daisy"), "cntr"), idx), pin)
   }
-    
+
   private def collect(s: Statement)(implicit chainType: ChainType.Value): Seq[Statement] =
     chainType match {
       // TODO: do bfs from inputs
       case ChainType.Regs => s match {
         case s: DefRegister => Seq(s)
-        case s: DefMemory if s.readLatency == 0 && s.depth <= 16 => Seq(s)
+        case s: DefMemory if s.readLatency > 0 || s.depth < 16 => Seq(s)
         case s: Block => s.stmts flatMap collect
         case s => Nil
       }
@@ -128,7 +129,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
             case 0 => (index, offset, wires)
             case margin if index < regs.size =>
               val reg = regs(index)
-              val width = sumWidths(reg.tpe).toInt - offset
+              val width = long_BANG(reg.tpe).toInt - offset
               if (width <= margin) {
                 loop(total + width, index + 1, 0, wires :+ bits(reg, width-1, 0))
               } else {
@@ -168,17 +169,130 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       hasChain(chainType) += m.name
       chainLen(chainType) += chain.daisyLen
       chainLoop(chainType) = 1
+      val namespace = Namespace(m)
+      val stmts = ArrayBuffer[Statement]()
+      val netlist = HashMap[String, Expression]()
+      def buildNetlist(s: Statement): Statement = {
+        s match {
+          case s: Connect =>
+            netlist(s.loc.serialize) = s.expr
+          case s: PartialConnect =>
+            netlist(s.loc.serialize) = s.expr
+          case s: DefNode =>
+            netlist(s.name) = s.value
+          case s =>
+        }
+        s map buildNetlist
+      }
       val regs = chains(chainType)(m.name) flatMap {
+        case s: DefMemory if s.readLatency > 0 =>
+          if (netlist.isEmpty) buildNetlist(m.body)
+          // val mem = wref(s.name, memToBundle(s))
+          def insertBuf(buf: WRef, prev: Expression) {
+            stmts += DefRegister(NoInfo, buf.name, buf.tpe, wref("clk"), wref("reset"), buf)
+            stmts += Conditionally(NoInfo, wref("targetFire"), EmptyStmt, Connect(NoInfo, buf, prev))
+          }
+          (s.readers flatMap {reader =>
+            val en = memPortField(s, reader, "en")
+            val addr = memPortField(s, reader, "addr")
+            val data = memPortField(s, reader, "data")
+            (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${reader}_en_buf_$i"
+              val buf = wref(name, en.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
+              // Capture all buffered addresses for RTL replays
+              val name = namespace newName s"${s.name}_${reader}_addr_buf_$i"
+              val buf = wref(name, addr.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.readLatency-1)) foldLeft Seq[Expression](data)){(exps, i) =>
+              // Capture all buffered data for gate-level replays
+              val name = namespace newName s"${s.name}_${reader}_data_buf_$i"
+              val buf = wref(name, data.tpe)
+              insertBuf(buf, exps.last)
+              exps :+ buf
+            } flatMap (create_exps(_)))
+          }) ++ (s.writers flatMap {writer =>
+            val en = memPortField(s, writer, "en")
+            val mask = memPortField(s, writer, "mask")
+            val addr = memPortField(s, writer, "addr")
+            val data = memPortField(s, writer, "data")
+            (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${writer}_en_buf_$i"
+              val buf = wref(name, en.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${writer}_mask_buf_$i"
+              val buf = wref(name, mask.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(mask.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${writer}_addr_buf_$i"
+              val buf = wref(name, addr.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
+              insertBuf(buf, exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${writer}_data_buf_$i"
+              val buf = wref(name, data.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(data.serialize) else exps.last)
+              exps :+ buf
+            } flatMap (create_exps(_)))
+          }) ++ (s.readwriters flatMap {readwriter =>
+            val en = memPortField(s, readwriter, "en")
+            val addr = memPortField(s, readwriter, "addr")
+            val rdata = memPortField(s, readwriter, "rdata")
+            val wmode = memPortField(s, readwriter, "wmode")
+            val wmask = memPortField(s, readwriter, "wmask")
+            val wdata = memPortField(s, readwriter, "wdata")
+            (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${readwriter}_en_buf_$i"
+              val buf = wref(name, en.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
+              // Capture all buffered addresses for RTL replays
+              val name = namespace newName s"${s.name}_${readwriter}_addr_buf_$i"
+              val buf = wref(name, addr.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.readLatency-1)) foldLeft Seq[Expression](rdata)){(exps, i) =>
+              // Capture all buffered data for gate-level replays
+              val name = namespace newName s"${s.name}_${readwriter}_rdata_buf_$i"
+              val buf = wref(name, rdata.tpe)
+              insertBuf(buf, exps.last)
+              exps :+ buf
+            } flatMap (create_exps(_))) ++ 
+            (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${readwriter}_wmode_buf_$i"
+              val buf = wref(name, wmode.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(wmode.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${readwriter}_wmask_buf_$i"
+              val buf = wref(name, wmask.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(wmask.serialize) else exps.last)
+              exps :+ buf
+            }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
+              val name = namespace newName s"${s.name}_${readwriter}_wdata_buf_$i"
+              val buf = wref(name, wdata.tpe)
+              insertBuf(buf, if (exps.isEmpty) netlist(wdata.serialize) else exps.last)
+              exps :+ buf
+            } flatMap (create_exps(_)))
+          })
         case s: DefMemory =>
           readers(m.name)(s.name) = (0 until s.depth) map (i => s"scan_$i")
           val exps = readers(m.name)(s.name).zipWithIndex map {case (reader, i) =>
-            create_exps(wsub(wsub(wref(s.name), reader), "data", s.dataType))
-          }
+            create_exps(wsub(wsub(wref(s.name), reader), "data", s.dataType))}
           ((0 until exps.head.size) foldLeft Seq[Expression]())((res, i) => res ++ (exps map (_(i))))
         case s: DefRegister => create_exps(s.name, s.tpe)
         case s => Nil
       }
-      Block(Seq(inst, invalid) ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth))
+      Block(stmts ++ Seq(inst, invalid) ++ portConnects ++
+            daisyConnects(regs, chain.daisyLen, chain.daisyWidth))
     }
   }
 
@@ -196,7 +310,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       val wmode = if (!sram.readwriters.isEmpty)
         wsub(wsub(wref(sram.name), sram.readwriters.head), "wmode") else
         EmptyExpression
-      val width = sumWidths(sram.dataType).toInt
+      val width = long_BANG(sram.dataType).toInt
       def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
       def addrConnects(s: Statement): Statement = {
         s match {
@@ -210,20 +324,19 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         }
         s map addrConnects
       }
-      def dataConnects = (((0 until daisyLen) foldRight (Seq[Connect](), (width-1))){
-        case (i, (cons, high)) =>
-          val low = math.max(high-daisyWidth+1, 0)
-          val margin = daisyWidth-(high-low+1)
-          val input = bits(data, high, low)
-          (cons :+ ((daisyWidth-(high-low+1)) match {
-            case 0 =>
-              // "<daisy_chain>.io.dataIo.data[i] <- <memory>.data(high, low)"
-              Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), input)
-            case margin =>
-              val pad = UIntLiteral(0, IntWidth(margin))
-              // "<daisy_chain>.io.dataIo.data[i] <- cat(<memory>.data(high, low), pad)"
-              Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), cat(Seq(input, pad)))
-          }), high - daisyWidth)
+      def dataConnects = (((0 until daisyLen) foldRight (Seq[Connect](), (width-1))){case (i, (cons, high)) =>
+        val low = math.max(high-daisyWidth+1, 0)
+        val margin = daisyWidth-(high-low+1)
+        val input = bits(data, high, low)
+        (cons :+ ((daisyWidth-(high-low+1)) match {
+          case 0 =>
+            // "<daisy_chain>.io.dataIo.data[i] <- <memory>.data(high, low)"
+            Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), input)
+          case margin =>
+            val pad = UIntLiteral(0, IntWidth(margin))
+            // "<daisy_chain>.io.dataIo.data[i] <- cat(<memory>.data(high, low), pad)"
+            Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), cat(Seq(input, pad)))
+        }), high - daisyWidth)
       })._1
       addrConnects(m.body)
       dataConnects
@@ -233,7 +346,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     if (chains(chainType)(m.name).isEmpty) EmptyStmt else Block(
       chains(chainType)(m.name).zipWithIndex flatMap {case (sram: DefMemory, i) =>
         lazy val chain = new SRAMChain()(p alter Map(
-          DataWidth -> sumWidths(sram.dataType).toInt, SRAMSize -> sram.depth))
+          DataWidth -> long_BANG(sram.dataType).toInt, SRAMSize -> sram.depth))
         val circuit = Parser parse (chisel3.Driver.emit(() => chain))
         val annotation = new Annotations.AnnotationMap(Nil)
         val output = new java.io.StringWriter
