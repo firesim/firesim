@@ -4,6 +4,7 @@ import firrtl.Annotations.{AnnotationMap, TransID}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
 import java.io.{File, FileWriter}
+import chisel3.iotesters
 
 private class CompilerContext {
   var dir = new File("test-outs")
@@ -143,34 +144,35 @@ object StroberCompiler {
   }
 
   def apply[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator")(
-      tester: T => testers.StroberTester[T]) {
+      tester: T => testers.StroberTester[T]): T = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
       compile(transform(w))
       val testerArgs = Array("--targetDir", context.dir.toString,
         "--backend", backend, "--genHarness", "--compile", "--test", "--vpdmem")
-      chisel3.iotesters.chiselMainTest(testerArgs, () => w)(tester)
+      iotesters.chiselMainTest(testerArgs, () => w)(tester)
     }
   }
 
-  def compile[T <: chisel3.Module](args: Array[String], w: => T, backend: String) {
+  def compile[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator"): T = {
     (contextVar withValue Some(new CompilerContext)){
       parseArgs(args.toList)
       compile(transform(w))
       val testerArgs = Array("--targetDir", context.dir.toString,
         "--backend", backend, "--genHarness", "--compile", "--test")
-      chisel3.iotesters.chiselMain(testerArgs, () => w)
+      iotesters.chiselMain(testerArgs, () => w)
     }
   }
 
   def test[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator")(
-      tester: T => testers.StroberTester[T]) {
+      tester: T => testers.StroberTester[T]) = {
     (contextVar withValue Some(new CompilerContext)){
       parseArgs(args.toList)
-      transform(w)
-      val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--test")
-      chisel3.iotesters.chiselMainTest(testerArgs, () => w)(tester)
+      val c = transform(w)
+      val cmd = new File(context.dir, backend match {
+        case "verilator" => s"V${c.main}" case _ => c.main
+      })
+      iotesters.Driver.run(() => w, cmd.toString)(tester)
     }
   }
 }
