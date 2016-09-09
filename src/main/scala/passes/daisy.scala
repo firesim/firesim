@@ -4,6 +4,7 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import scala.util.DynamicVariable
@@ -129,7 +130,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
             case 0 => (index, offset, wires)
             case margin if index < regs.size =>
               val reg = regs(index)
-              val width = long_BANG(reg.tpe).toInt - offset
+              val width = bitWidth(reg.tpe).toInt - offset
               if (width <= margin) {
                 loop(total + width, index + 1, 0, wires :+ bits(reg, width-1, 0))
               } else {
@@ -310,7 +311,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       val wmode = if (!sram.readwriters.isEmpty)
         wsub(wsub(wref(sram.name), sram.readwriters.head), "wmode") else
         EmptyExpression
-      val width = long_BANG(sram.dataType).toInt
+      val width = bitWidth(sram.dataType).toInt
       def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
       def addrConnects(s: Statement): Statement = {
         s match {
@@ -346,7 +347,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     if (chains(chainType)(m.name).isEmpty) EmptyStmt else Block(
       chains(chainType)(m.name).zipWithIndex flatMap {case (sram: DefMemory, i) =>
         lazy val chain = new SRAMChain()(p alter Map(
-          DataWidth -> long_BANG(sram.dataType).toInt, SRAMSize -> sram.depth))
+          DataWidth -> bitWidth(sram.dataType).toInt, SRAMSize -> sram.depth))
         val circuit = Parser parse (chisel3.Driver.emit(() => chain))
         val annotation = new Annotations.AnnotationMap(Nil)
         val output = new java.io.StringWriter
