@@ -25,7 +25,7 @@ private[strober] object StroberTransforms extends Transform with SimpleRun {
   val passSeq = Seq(
     Analyses,
     Fame1Transform,
-    AddDaisyChains,
+    // AddDaisyChains,
     DumpChains
   )
   def execute(circuit: ir.Circuit, annotationMap: AnnotationMap) =
