@@ -3,10 +3,13 @@ package testers
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
+import java.io.File
 
-abstract class SimWrapperTester[+T <: chisel3.Module](c: SimWrapper[T], verbose: Boolean=true,
-    sampleFile: Option[String]=None, logFile: Option[String]=None, waveform: Option[String]=None,
-    testCmd: List[String]=Nil) extends StroberTester(c, verbose, sampleFile, logFile, waveform, testCmd) {
+abstract class SimWrapperTester[+T <: chisel3.Module](
+    c: SimWrapper[T],
+    verbose: Boolean = true,
+    sampleFile: Option[File] = None,
+    logFile: Option[File] = None) extends StroberTester(c, verbose, sampleFile, logFile) {
   private val ins = c.io.ins map (in => ChannelSource(in))
   private val outs = (c.io.outs ++ c.io.inT ++ c.io.outT) map (out => ChannelSink(out))
 
