@@ -4,6 +4,7 @@ package testers
 import junctions._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
+import java.io.File
 
 private case class NastiReadAddr(id: Int, addr: Int, size: Int = 0, len: Int = 0)
 private case class NastiReadData(id: Int, data: BigInt, last: Boolean = true)
@@ -15,10 +16,12 @@ trait LoadMemType
 case object FastLoadMem extends LoadMemType
 case object SlowLoadMem extends LoadMemType
 
-abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean = true,
-    sampleFile: Option[String] = None, logFile: Option[String] = None, waveform: Option[String] = None,
-    testCmd: List[String] = Nil, loadmemType: LoadMemType = SlowLoadMem)
-    extends StroberTester(c, verbose, sampleFile, logFile, waveform, testCmd) {
+abstract class ZynqShimTester[+T <: SimNetwork](
+    c: ZynqShim[T],
+    verbose: Boolean = true,
+    sampleFile: Option[File] = None,
+    logFile: Option[File] = None,
+    loadmemType: LoadMemType = SlowLoadMem) extends StroberTester(c, verbose, sampleFile, logFile) {
   /* protected[testers] val inMap = c.master.inMap
   protected[testers] val outMap = c.master.outMap
   protected[testers] val inTrMap = c.master.inTrMap
@@ -124,8 +127,8 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean
       if (verbose) logger println "MEM[%x] <= %x".format(addr & addrMask, data)
       mem(addr & addrMask) = data
     }
-    def loadMem(filename: String) {
-      val lines = io.Source.fromFile(filename).getLines
+    def loadMem(file: File) {
+      val lines = io.Source.fromFile(file).getLines
       for ((line, i) <- lines.zipWithIndex) {
         val base = (i * line.length) / 2
         assert(base % word_width == 0)
@@ -174,9 +177,9 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean
     SAXI_ar.outputs, SAXI_r.inputs, SAXI_aw.outputs, SAXI_w.outputs, SAXI_b.inputs,
     word_width=c.arb.nastiXDataBits/8)
 
-  def loadMem(filename: String) = loadmemType match {
-    case FastLoadMem => mem loadMem filename
-    case SlowLoadMem => slowLoadMem(filename)
+  def loadMem(file: File) = loadmemType match {
+    case FastLoadMem => mem loadMem file
+    case SlowLoadMem => slowLoadMem(file)
   }
 
   def writeMem(addr: BigInt, data: BigInt) {
@@ -189,10 +192,10 @@ abstract class ZynqShimTester[+T <: SimNetwork](c: ZynqShim[T], verbose: Boolean
     peekChunks(c.R_ADDR,  SimUtils.getChunks(c.io.slave.r.bits.data))
   }
 
-  def slowLoadMem(filename: String) {
-    println(s"[LOADMEM] LOADING ${filename}")
+  def slowLoadMem(file: File) {
+    println(s"[LOADMEM] LOADING $file")
     val chunk = c.arb.nastiXDataBits / 4
-    scala.io.Source.fromFile(filename).getLines.zipWithIndex foreach {case (line, i) =>
+    scala.io.Source.fromFile(file).getLines.zipWithIndex foreach {case (line, i) =>
       val base = (i * line.length) / 2
       assert(line.length % chunk == 0)
       (((line.length - chunk) to 0 by -chunk) foldLeft 0){ (offset, j) =>

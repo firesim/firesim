@@ -8,9 +8,11 @@ import java.io.{File, FileWriter}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
-abstract class StroberTester[+T <: chisel3.Module](c: T, verbose: Boolean, sampleFile: Option[String],
-    logFile: Option[String], waveform: Option[String], testCmd: List[String])
-    extends AdvTester(c, false, 16, logFile, waveform, testCmd) {
+abstract class StroberTester[+T <: chisel3.Module](
+    c: T,
+    verbose: Boolean,
+    sampleFile: Option[File],
+    logFile: Option[File]) extends AdvTester(c, false, 16, logFile) {
   protected[testers] val _pokeMap = HashMap[Data, BigInt]()
   protected[testers] val _peekMap = HashMap[Data, BigInt]()
   private val sim = c match {
