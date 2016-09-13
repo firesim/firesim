@@ -143,8 +143,10 @@ object StroberCompiler {
     }
   }
 
-  def apply[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator")(
-      tester: T => testers.StroberTester[T]): T = {
+  def apply[T <: chisel3.Module](args: Array[String],
+                                 w: => T,
+                                 backend: String = "verilator")
+                                (tester: T => testers.StroberTester[T]): T = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
       compile(transform(w))
@@ -154,8 +156,10 @@ object StroberCompiler {
     }
   }
 
-  def compile[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator"): T = {
-    (contextVar withValue Some(new CompilerContext)){
+  def compile[T <: chisel3.Module](args: Array[String],
+                                   w: => T,
+                                   backend: String = "verilator"): T = {
+    (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
       compile(transform(w))
       val testerArgs = Array("--targetDir", context.dir.toString,
@@ -164,15 +168,18 @@ object StroberCompiler {
     }
   }
 
-  def test[T <: chisel3.Module](args: Array[String], w: => T, backend: String = "verilator")(
-      tester: T => testers.StroberTester[T]) = {
-    (contextVar withValue Some(new CompilerContext)){
+  def test[T <: chisel3.Module](args: Array[String],
+                                w: => T,
+                                backend: String = "verilator",
+                                waveform: Option[File] = None)
+                               (tester: T => testers.StroberTester[T]) = {
+    (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
       val c = transform(w)
       val cmd = new File(context.dir, backend match {
         case "verilator" => s"V${c.main}" case _ => c.main
       })
-      iotesters.Driver.run(() => w, cmd.toString)(tester)
+      iotesters.Driver.run(() => w, cmd, waveform)(tester)
     }
   }
 }
