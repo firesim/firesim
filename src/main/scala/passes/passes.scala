@@ -18,10 +18,17 @@ private[passes] object Utils {
   def wref(s: String, t: Type = ut, k: Kind = ExpKind) = WRef(s, t, k, ug)
   def wsub(e: Expression, s: String, t: Type = ut) = WSubField(e, s, t, ug)
   def widx(e: Expression, i: Int, t: Type = ut) = WSubIndex(e, i, t, ug)
-  def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, ut)
-  def or(e1: Expression, e2: Expression) = DoPrim(PrimOps.Or, Seq(e1, e2), Nil, ut)
-  def and(e1: Expression, e2: Expression) = DoPrim(PrimOps.And, Seq(e1, e2), Nil, ut)
-  def bits(e: Expression, high: BigInt, low: BigInt) = DoPrim(PrimOps.Bits, Seq(e), Seq(high, low), ut)
+  def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, e.tpe)
+  private def getType(e1: Expression, e2: Expression) = e2.tpe match {
+    case UnknownType => e1.tpe
+    case _ => e2.tpe
+  }
+  def or(e1: Expression, e2: Expression) =
+    DoPrim(PrimOps.Or, Seq(e1, e2), Nil, getType(e1, e2))
+  def and(e1: Expression, e2: Expression) =
+    DoPrim(PrimOps.And, Seq(e1, e2), Nil, getType(e1, e2))
+  def bits(e: Expression, high: BigInt, low: BigInt) =
+    DoPrim(PrimOps.Bits, Seq(e), Seq(high, low), e.tpe)
   def cat(es: Seq[Expression]): Expression =
     if (es.tail.isEmpty) es.head else {
       val left = cat(es.slice(0, es.length/2))
