@@ -6,8 +6,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
 import firrtl.Utils.create_exps
-import scala.collection.mutable.{Stack, HashSet, ArrayBuffer} 
-import scala.collection.immutable.ListSet
+import scala.collection.mutable.{Stack, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {
@@ -49,7 +48,7 @@ private[passes] object Utils {
   def dir = StroberCompiler.context.dir
 
   def targets(m: DefModule, modules: Seq[DefModule]) = {
-    val targets = collection.mutable.HashSet[String]()
+    val targets = HashSet[String]()
     def loop(s: Statement): Statement = s match {
       case s: WDefInstance if s.name == "target" =>
         targets += s.module
@@ -120,28 +119,26 @@ private[passes] object Utils {
 private[passes] object Analyses extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Analyze Circuit"
-  
-  def collectChildren(m: Module) {
-    def collectChildren(s: Statement): Seq[(String, String)] = s match {
-      case s: WDefInstance => Seq(s.name -> s.module)
-      case s: Block => s.stmts flatMap collectChildren
-      case s => Nil
+
+  def collectChildren(mname: String)(s: Statement): Statement = {
+    s match {
+      case s: WDefInstance =>
+        childInsts(mname) += s.name
+        childMods(mname) += s.module
+        instToMod(s.name -> mname) = s.module
+      case _ =>
     }
-    val (insts, mods) = collectChildren(m.body).unzip
-    childInsts(m.name) = ListSet(insts:_*)
-    childMods(m.name) = ListSet(mods:_*)
-    instToMod ++= insts zip mods map {
-      case (inst, mod) => (inst, m.name) -> mod
-    }
+    s map collectChildren(mname)
   }
 
-  def run(c: Circuit) = {
-    c.modules foreach {
-      case m: Module => collectChildren(m)
-      case m: ExtModule =>
-    }
-    c
+  def collectChildrenMod(m: DefModule) = {
+    childInsts(m.name) = LinkedHashSet[String]()
+    childMods(m.name) = LinkedHashSet[String]()
+    m map collectChildren(m.name)
   }
+
+  def run(c: Circuit) =
+    c copy (modules = c.modules map collectChildrenMod)
 }
 
 private[passes] object DumpChains extends firrtl.passes.Pass {
