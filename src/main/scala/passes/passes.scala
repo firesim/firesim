@@ -48,29 +48,37 @@ private[passes] object Utils {
     modules filter (x => StroberCompiler.context.wrappers(x.name))
   def dir = StroberCompiler.context.dir
 
-  def targets(m: Module, modules: Seq[DefModule]) = {
-    def loop(s: Statement): Seq[String] = s match {
-      case s: WDefInstance if s.name == "target" => Seq(s.module)
-      case s: Block => s.stmts flatMap loop
-      case _ => Nil
+  def targets(m: DefModule, modules: Seq[DefModule]) = {
+    val targets = collection.mutable.HashSet[String]()
+    def loop(s: Statement): Statement = s match {
+      case s: WDefInstance if s.name == "target" =>
+        targets += s.module
+        s
+      case s => s map loop
     }
-    val mods = loop(m.body).toSet
-    modules filter (x => mods(x.name))
+    m map loop
+    modules filter (x => targets(x.name))
   }
 
-  def preorder(heads: Seq[DefModule], modules: Seq[DefModule])(visit: DefModule => DefModule): Seq[DefModule] = {
+  def preorder(heads: Seq[DefModule],
+               modules: Seq[DefModule])
+               (visit: DefModule => DefModule): Seq[DefModule] = {
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
       visited += m.name
-      visit(m) +: (modules filter (x => childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
+      visit(m) +: (modules filter (x =>
+        childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
     }
     heads flatMap loop
   }
 
-  def postorder(heads: Seq[DefModule], modules: Seq[DefModule])(visit: DefModule => DefModule): Seq[DefModule] = {
+  def postorder(heads: Seq[DefModule],
+                modules: Seq[DefModule])
+                (visit: DefModule => DefModule): Seq[DefModule] = {
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
-      val res = (modules filter (x => childMods(m.name)(x.name)) flatMap loop)
+      val res = (modules filter (x =>
+        childMods(m.name)(x.name)) flatMap loop)
       if (visited(m.name)) {
         res 
       } else {
