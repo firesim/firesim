@@ -3,13 +3,12 @@ package passes
 
 import firrtl._
 import firrtl.Annotations.AnnotationMap
-import scala.collection.mutable.HashMap
-import scala.collection.immutable.ListSet
+import scala.collection.mutable.{HashMap, LinkedHashSet}
 import scala.util.DynamicVariable
 
 private class TransformContext {
-  val childInsts = HashMap[String, ListSet[String]]()
-  val childMods = HashMap[String, ListSet[String]]()
+  val childInsts = HashMap[String, LinkedHashSet[String]]()
+  val childMods = HashMap[String, LinkedHashSet[String]]()
   val instToMod = HashMap[(String, String), String]()
   val chains = Map(
     ChainType.Trace -> HashMap[String, Seq[ir.Statement]](),
