@@ -5,7 +5,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
-import firrtl.Utils.{create_exps, req_num_bits}
+import firrtl.Utils.create_exps
 import scala.collection.mutable.{Stack, HashSet, ArrayBuffer} 
 import scala.collection.immutable.ListSet
 import java.io.{File, FileWriter, Writer}
@@ -90,7 +90,7 @@ private[passes] object Utils {
         case s: DefMemory if s.readLatency > 0 =>
           val ew = 1
           val mw = 1
-          val aw = req_num_bits(s.depth)
+          val aw = chisel3.util.log2Up(s.depth)
           val dw = bitWidth(s.dataType).toInt
           s.readers.size * s.readLatency * (ew + aw + dw) +
           s.writers.size * (s.writeLatency - 1) * (ew + mw + aw + dw) +
@@ -150,7 +150,7 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
             case s: DefMemory if s.readLatency > 0 =>
               val ew = 1
               val mw = 1
-              val aw = req_num_bits(s.depth)
+              val aw = chisel3.util.log2Up(s.depth)
               val dw = bitWidth(s.dataType).toInt
               ((s.readers foldLeft 0){(sum, reader) =>
                 (0 until s.readLatency) foreach (i =>
