@@ -126,17 +126,18 @@ object StroberCompiler {
     firrtl.Parser.parse(writer.toString)
   }
 
-  private def compile(circuit: firrtl.ir.Circuit) {
+  private def compile(circuit: firrtl.ir.Circuit): firrtl.ir.Circuit = {
     // Dump meta data
     context.shims foreach dumpIoMap
     context.shims foreach dumpHeader
     // Compile Verilog
     val verilog = new FileWriter(new File(context.dir, s"${circuit.main}.v"))
-    new firrtl.VerilogCompiler compile (circuit, new AnnotationMap(Nil), verilog)
+    val res = new firrtl.VerilogCompiler compile (circuit, new AnnotationMap(Nil), verilog)
     verilog.close
+    res.circuit
   }
 
-  def compile[T <: chisel3.Module](args: Array[String], w: => T) {
+  def compile[T <: chisel3.Module](args: Array[String], w: => T): firrtl.ir.Circuit = {
     (contextVar withValue Some(new CompilerContext)){
       parseArgs(args.toList)
       compile(transform(w))
@@ -149,10 +150,14 @@ object StroberCompiler {
                                 (tester: T => testers.StroberTester[T]): T = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
-      compile(transform(w))
-      val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile", "--test", "--vpdmem")
-      iotesters.chiselMainTest(testerArgs, () => w)(tester)
+      val c = compile(transform(w))
+      val log = new File(context.dir, s"${c.main}.log")
+      val targs = Array(
+        "--targetDir", context.dir.toString,
+        "--logFile", log.toString,
+        "--backend", backend,
+        "--genHarness", "--compile", "--test", "--vpdmem")
+      iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
 
