@@ -10,7 +10,7 @@ import scala.util.DynamicVariable
 private class TransformContext {
   val childInsts = HashMap[String, ListSet[String]]()
   val childMods = HashMap[String, ListSet[String]]()
-  val instToMod = HashMap[String, String]()
+  val instToMod = HashMap[(String, String), String]()
   val chains = Map(
     ChainType.Trace -> HashMap[String, Seq[ir.Statement]](),
     ChainType.Regs  -> HashMap[String, Seq[ir.Statement]](),

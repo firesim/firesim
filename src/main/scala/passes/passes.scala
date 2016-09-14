@@ -130,7 +130,9 @@ private[passes] object Analyses extends firrtl.passes.Pass {
     val (insts, mods) = collectChildren(m.body).unzip
     childInsts(m.name) = ListSet(insts:_*)
     childMods(m.name) = ListSet(mods:_*)
-    instToMod ++= insts zip mods
+    instToMod ++= insts zip mods map {
+      case (inst, mod) => (inst, m.name) -> mod
+    }
   }
 
   def run(c: Circuit) = {
@@ -231,8 +233,8 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
         }
       case _ =>
     }
-    childInsts(mod) foreach (child =>
-      loop(w, instToMod(child), s"${path}.${child}", daisyWidth)(chainType))
+    childInsts(mod) foreach {child =>
+      loop(w, instToMod(child, mod), s"${path}.${child}", daisyWidth)(chainType)}
   }
 
   def run(c: Circuit) = {
