@@ -42,6 +42,10 @@ private[passes] object Fame1Transform extends firrtl.passes.Pass {
       val regRef = wref(s.name, s.tpe)
       stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
       s
+    case s: Print =>
+      s copy (en = and(s.en, targetFire))
+    case s: Stop =>
+      s copy (en = and(s.en, targetFire))
     case s: Connect => s.loc match {
       case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
         s copy (expr = and(s.expr, targetFire))

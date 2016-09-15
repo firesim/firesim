@@ -30,8 +30,10 @@ abstract class StroberTester[+T <: chisel3.Module](
   protected[testers] implicit val channelWidth = sim.channelWidth
   protected[testers] val chainLen = StroberCompiler.context.chainLen
   protected[testers] val chainLoop = StroberCompiler.context.chainLoop.toMap
-  protected[testers] val chainReader = new DaisyChainReader(
-    new File(StroberCompiler.context.dir, s"${targetName}.chain"), chainLoop, daisyWidth)
+  private val chainFile = new File(StroberCompiler.context.dir, s"${targetName}.chain")
+  private val isSnapshotting = chainFile.exists
+  protected[testers] lazy val chainReader = new DaisyChainReader(chainFile, chainLoop, daisyWidth)
+  
 
   private val sampleNum = StroberCompiler.context.sampleNum
   private val samples = Array.fill(sampleNum){new Sample}
@@ -200,7 +202,7 @@ abstract class StroberTester[+T <: chisel3.Module](
   private var traceCount = 0
   override def step(n: Int) {
     // reservoir sampling
-    if (cycles % traceLen == 0) {
+    if (isSnapshotting && (cycles % traceLen == 0)) {
       val recordId = cycles / traceLen
       val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
       if (sampleId < sampleNum) {
@@ -219,19 +221,21 @@ abstract class StroberTester[+T <: chisel3.Module](
 
   override def reset(n: Int) {
     // flush junk traces
-    setLastSample(None, n)
+    if (isSnapshotting) setLastSample(None, n)
   }
 
   override def finish = {
-    setLastSample(None, traceCount)
+    if (isSnapshotting) setLastSample(None, traceCount)
     val file = sampleFile match {
       case None => new FileWriter(
         new File(StroberCompiler.context.dir, s"$targetName.sample"))
       case Some(f) => new FileWriter(f)
     }
     try {
-      file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
-      file write chainReader(readSnapshot, cycles).toString
+      if (isSnapshotting) {
+        file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
+        file write chainReader(readSnapshot, cycles).toString
+      }
     } finally {
       file.close
     }
