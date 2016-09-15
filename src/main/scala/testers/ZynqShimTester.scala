@@ -4,7 +4,7 @@ package testers
 import junctions._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
-import java.io.File
+import java.io.{File, InputStream}
 
 private case class NastiReadAddr(id: Int, addr: Int, size: Int = 0, len: Int = 0)
 private case class NastiReadData(id: Int, data: BigInt, last: Boolean = true)
@@ -22,14 +22,6 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     sampleFile: Option[File] = None,
     logFile: Option[File] = None,
     loadmemType: LoadMemType = SlowLoadMem) extends StroberTester(c, verbose, sampleFile, logFile) {
-  /* protected[testers] val inMap = c.master.inMap
-  protected[testers] val outMap = c.master.outMap
-  protected[testers] val inTrMap = c.master.inTrMap
-  protected[testers] val outTrMap = c.master.outTrMap
-  protected[testers] def chunk(wire: Bits) = c.sim.io.chunk(wire)
-  protected[testers] val sampleNum = c.sim.sampleNum
-  protected[testers] val channelOff = log2Up(c.sim.channelWidth) */
-
   private implicit def bigIntToInt(b: BigInt) = b.toInt
 
   private val MAXI_aw = new ChannelSource(c.io.master.aw, (aw: NastiWriteAddressChannel, in: NastiWriteAddr) =>
@@ -127,8 +119,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
       if (verbose) logger println "MEM[%x] <= %x".format(addr & addrMask, data)
       mem(addr & addrMask) = data
     }
-    def loadMem(file: File) {
-      val lines = io.Source.fromFile(file).getLines
+    private def loadMem(lines: Iterator[String]) {
       for ((line, i) <- lines.zipWithIndex) {
         val base = (i * line.length) / 2
         assert(base % word_width == 0)
@@ -143,6 +134,12 @@ abstract class ZynqShimTester[+T <: SimNetwork](
           }
         }
       }
+    }
+    def loadMem(file: File) {
+      loadMem(io.Source.fromFile(file).getLines)
+    }
+    def loadMem(stream: InputStream) {
+      loadMem(io.Source.fromInputStream(stream).getLines)
     }
 
     private var aw: Option[NastiWriteAddr] = None
@@ -182,6 +179,11 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     case SlowLoadMem => slowLoadMem(file)
   }
 
+  def loadMem(stream: InputStream) = loadmemType match {
+    case FastLoadMem => mem loadMem stream
+    case SlowLoadMem => slowLoadMem(stream)
+  }
+
   def writeMem(addr: BigInt, data: BigInt) {
     pokeChunks(c.AW_ADDR, SimUtils.getChunks(c.io.slave.aw.bits.addr), addr)
     pokeChunks(c.W_ADDR,  SimUtils.getChunks(c.io.slave.w.bits.data),  data)
@@ -192,10 +194,9 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     peekChunks(c.R_ADDR,  SimUtils.getChunks(c.io.slave.r.bits.data))
   }
 
-  def slowLoadMem(file: File) {
-    println(s"[LOADMEM] LOADING $file")
+  private def slowLoadMem(lines: Iterator[String]) {
     val chunk = c.arb.nastiXDataBits / 4
-    scala.io.Source.fromFile(file).getLines.zipWithIndex foreach {case (line, i) =>
+    lines.zipWithIndex foreach {case (line, i) =>
       val base = (i * line.length) / 2
       assert(line.length % chunk == 0)
       (((line.length - chunk) to 0 by -chunk) foldLeft 0){ (offset, j) =>
@@ -205,7 +206,16 @@ abstract class ZynqShimTester[+T <: SimNetwork](
         offset + chunk / 2
       }
     }
+  }
+
+  def slowLoadMem(file: File) {
+    println(s"[LOADMEM] LOADING $file")
+    slowLoadMem(scala.io.Source.fromFile(file).getLines)
     println(s"[LOADMEM] DONE")
+  }
+
+  def slowLoadMem(stream: InputStream) {
+    slowLoadMem(scala.io.Source.fromInputStream(stream).getLines)
   }
 
   protected[testers] def readChain(t: ChainType.Value) = {
