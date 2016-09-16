@@ -1,10 +1,10 @@
 package strober
 
+import chisel3.iotesters
 import firrtl.Annotations.{AnnotationMap, TransID}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
 import java.io.{File, FileWriter}
-import chisel3.iotesters
 
 private class CompilerContext {
   var dir = new File("test-outs")
@@ -22,6 +22,9 @@ private class CompilerContext {
     ChainType.Regs  -> 0,
     ChainType.SRAM  -> 0,
     ChainType.Cntr  -> 0)
+  // Todo: Should be handled in the backend
+  val memPorts = ArrayBuffer[junctions.NastiIO]()
+  val memWires = HashSet[Chisel.Bits]()
 }
 
 class StroberCompiler extends firrtl.Compiler {
@@ -78,22 +81,22 @@ object StroberCompiler {
     implicit val channelWidth = sim.channelWidth
     def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
     val consts = List(
-      "HOST_RESET_ADDR"    -> ZynqCtrlSignals.HOST_RESET.id,
-      "SIM_RESET_ADDR"     -> ZynqCtrlSignals.SIM_RESET.id,
-      "STEP_ADDR"          -> ZynqCtrlSignals.STEP.id,
-      "DONE_ADDR"          -> ZynqCtrlSignals.DONE.id,
-      "TRACELEN_ADDR"      -> ZynqCtrlSignals.TRACELEN.id,
-      "LATENCY_ADDR"       -> ZynqCtrlSignals.LATENCY.id,
-      "MEM_AR_ADDR"        -> c.AR_ADDR,
-      "MEM_AW_ADDR"        -> c.AW_ADDR,
-      "MEM_W_ADDR"         -> c.W_ADDR,
-      "MEM_R_ADDR"         -> c.R_ADDR,
-      "CTRL_NUM"           -> c.CTRL_NUM,
-      "POKE_SIZE"          -> c.ins.size,
-      "PEEK_SIZE"          -> c.outs.size,
-      "MEM_DATA_BITS"      -> c.arb.nastiXDataBits,
-      "TRACE_MAX_LEN"      -> sim.traceMaxLen,
-      "MEM_DATA_CHUNK"     -> SimUtils.getChunks(c.io.slave.w.bits.data)
+      "HOST_RESET_ADDR" -> ZynqCtrlSignals.HOST_RESET.id,
+      "SIM_RESET_ADDR"  -> ZynqCtrlSignals.SIM_RESET.id,
+      "STEP_ADDR"       -> ZynqCtrlSignals.STEP.id,
+      "DONE_ADDR"       -> ZynqCtrlSignals.DONE.id,
+      "TRACELEN_ADDR"   -> ZynqCtrlSignals.TRACELEN.id,
+      "LATENCY_ADDR"    -> ZynqCtrlSignals.LATENCY.id,
+      "MEM_AR_ADDR"     -> c.AR_ADDR,
+      "MEM_AW_ADDR"     -> c.AW_ADDR,
+      "MEM_W_ADDR"      -> c.W_ADDR,
+      "MEM_R_ADDR"      -> c.R_ADDR,
+      "CTRL_NUM"        -> c.CTRL_NUM,
+      "POKE_SIZE"       -> c.ins.size,
+      "PEEK_SIZE"       -> c.outs.size,
+      "MEM_DATA_BITS"   -> c.arb.nastiXDataBits,
+      "TRACE_MAX_LEN"   -> sim.traceMaxLen,
+      "MEM_DATA_CHUNK"  -> SimUtils.getChunks(c.io.slave.w.bits.data)
     )
     val sb = new StringBuilder
     sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
