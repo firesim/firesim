@@ -1,11 +1,8 @@
 package strober
 
 import Chisel._
-import cde.{Parameters, Field}
 import junctions._
-
-import scala.collection.mutable.{ArrayBuffer, HashSet}
-import scala.collection.immutable.ListSet
+import cde.{Parameters, Field}
 
 class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
   val ready  = Bool(INPUT)
@@ -15,20 +12,19 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
   override def cloneType: this.type = new SimDecoupledIO(gen)(p).asInstanceOf[this.type] 
 }
 
+// TODO: Should move to the backend
 object SimMemIO {
-  private val mems = ArrayBuffer[NastiIO]()
-  private val wires = HashSet[Bits]()
   def add(mem: NastiIO) {
     val (ins, outs) = SimUtils.parsePorts(mem)
-    wires ++= ins.unzip._1
-    wires ++= outs.unzip._1
-    mems += mem
+    StroberCompiler.context.memWires ++= ins.unzip._1
+    StroberCompiler.context.memWires ++= outs.unzip._1
+    StroberCompiler.context.memPorts += mem
   }
-  def apply(i: Int): NastiIO = mems(i)
-  def apply(mem: NastiIO) = mems contains mem
-  def apply(wire: Bits) = wires(wire)
-  def size = mems.size
-  def zipWithIndex = mems.toList.zipWithIndex
+  def apply(i: Int): NastiIO = StroberCompiler.context.memPorts(i)
+  def apply(wire: Bits) = StroberCompiler.context.memWires(wire)
+  def apply(mem: NastiIO) = StroberCompiler.context.memPorts contains mem
+  def zipWithIndex = StroberCompiler.context.memPorts.toList.zipWithIndex
+  def size = StroberCompiler.context.memPorts.size
 }
 
 class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
