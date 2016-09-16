@@ -2,7 +2,6 @@ package strober
 package testers
 
 import junctions._
-import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 import java.io.{File, InputStream}
 
