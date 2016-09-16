@@ -5,7 +5,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
-import firrtl.Utils.create_exps
+import firrtl.Utils.{sub_type, field_type, create_exps}
 import scala.collection.mutable.{Stack, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
@@ -15,8 +15,8 @@ private[passes] object Utils {
   val ug = UNKNOWNGENDER
   
   def wref(s: String, t: Type = ut, k: Kind = ExpKind) = WRef(s, t, k, ug)
-  def wsub(e: Expression, s: String, t: Type = ut) = WSubField(e, s, t, ug)
-  def widx(e: Expression, i: Int, t: Type = ut) = WSubIndex(e, i, t, ug)
+  def wsub(e: Expression, s: String) = WSubField(e, s, field_type(e.tpe, s), ug)
+  def widx(e: Expression, i: Int) = WSubIndex(e, i, sub_type(e.tpe), ug)
   def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, e.tpe)
   private def getType(e1: Expression, e2: Expression) = e2.tpe match {
     case UnknownType => e1.tpe

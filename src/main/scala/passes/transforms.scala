@@ -3,19 +3,15 @@ package passes
 
 import firrtl._
 import firrtl.Annotations._
-import scala.collection.mutable.{HashMap, LinkedHashSet}
+import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
 import scala.util.DynamicVariable
 
 private class TransformContext {
+  type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
   val childInsts = HashMap[String, LinkedHashSet[String]]()
   val childMods = HashMap[String, LinkedHashSet[String]]()
   val instToMod = HashMap[(String, String), String]()
-  val chains = Map(
-    ChainType.Trace -> HashMap[String, Seq[ir.Statement]](),
-    ChainType.Regs  -> HashMap[String, Seq[ir.Statement]](),
-    ChainType.SRAM  -> HashMap[String, Seq[ir.Statement]](),
-    ChainType.Cntr  -> HashMap[String, Seq[ir.Statement]]()
-  )
+  val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
 }
 
 case class DaisyChainAnnotation(t: String) extends Annotation with Loose with Unstable {
