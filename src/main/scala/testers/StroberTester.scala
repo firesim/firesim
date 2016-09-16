@@ -5,7 +5,6 @@ import chisel3.{Data, Bits}
 import chisel3.util.DecoupledIO
 import chisel3.iotesters.{AdvTester, Processable}
 import java.io.{File, FileWriter}
-import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 
 abstract class StroberTester[+T <: chisel3.Module](
