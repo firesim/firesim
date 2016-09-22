@@ -39,12 +39,16 @@ class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
   val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
 }
 
-class MemModel(implicit p: Parameters) extends NastiModule()(p) {
-  val io = new Bundle {
-    val sim_mem  = (new SimMemIO).flip
-    val host_mem =  new NastiIO
-    val latency  = UInt(INPUT, p(MasterNastiKey).dataBits)
-  }
+class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
+  val sim_mem  = (new SimMemIO).flip
+  val host_mem =  new NastiIO
+}
+
+abstract class MemModel(implicit p: Parameters) extends Widget()(p) {
+  val io = new MemModelIO
+}
+
+class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val ar_buf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
   val aw_buf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
   val w_buf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
@@ -55,20 +59,22 @@ class MemModel(implicit p: Parameters) extends NastiModule()(p) {
   val cycles = RegInit(UInt(0, 64))
   val r_cycles = Module(new Queue(UInt(width=64), 4))
   val w_cycles = Module(new Queue(UInt(width=64), 4))
-  val r_ready = Mux(!io.latency.orR, !io.sim_mem.ar.target.valid,
+  val latency = RegInit(UInt(16, 64))
+  attach(latency, "LATENCY")
+  val r_ready = Mux(!latency.orR, !io.sim_mem.ar.target.valid,
     !(r_cycles.io.deq.valid && r_cycles.io.deq.bits <= cycles)) || r_buf.io.deq.valid
-  val w_ready = Mux(!io.latency.orR, !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last),
+  val w_ready = Mux(!latency.orR, !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last),
     !(w_cycles.io.deq.valid && w_cycles.io.deq.bits <= cycles)) || b_buf.io.deq.valid
   val reqValid = io.sim_mem.ar.valid && io.sim_mem.aw.valid && io.sim_mem.w.valid
   val respReady = io.sim_mem.r.ready && io.sim_mem.b.ready
   val fire = reqValid && respReady && r_ready && w_ready
   when(fire) { cycles := cycles + UInt(1) }
-  r_cycles.io.enq.bits := cycles + io.latency
-  w_cycles.io.enq.bits := cycles + io.latency
-  r_cycles.io.enq.valid := io.sim_mem.ar.target.fire() && fire && io.latency.orR
-  w_cycles.io.enq.valid := io.sim_mem.w.target.fire()  && io.sim_mem.w.target.bits.last && fire && io.latency.orR
-  r_cycles.io.deq.ready := io.sim_mem.r.target.fire()  && io.sim_mem.r.target.bits.last && fire && io.latency.orR
-  w_cycles.io.deq.ready := io.sim_mem.b.target.fire()  && fire && io.latency.orR
+  r_cycles.io.enq.bits := cycles + latency
+  w_cycles.io.enq.bits := cycles + latency
+  r_cycles.io.enq.valid := io.sim_mem.ar.target.fire() && fire && latency.orR
+  w_cycles.io.enq.valid := io.sim_mem.w.target.fire()  && io.sim_mem.w.target.bits.last && fire && latency.orR
+  r_cycles.io.deq.ready := io.sim_mem.r.target.fire()  && io.sim_mem.r.target.bits.last && fire && latency.orR
+  w_cycles.io.deq.ready := io.sim_mem.b.target.fire()  && fire && latency.orR
 
   // Requests
   io.sim_mem.ar.ready := fire
@@ -98,4 +104,7 @@ class MemModel(implicit p: Parameters) extends NastiModule()(p) {
   b_buf.io.deq.ready := io.sim_mem.b.target.fire() && fire
   r_buf.io.enq <> io.host_mem.r
   b_buf.io.enq <> io.host_mem.b
+
+  // Connect all programmable registers to the control interrconect
+  genCRFile()
 }

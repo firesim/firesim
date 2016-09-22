@@ -63,8 +63,14 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
   }
 
-  def setMemLatency(cycles: Int) {
-    pokeChannel(ZynqCtrlSignals.LATENCY.id, cycles)
+  def writeCR(wName: String, crName: String, value: BigInt){
+    val addr = c.getCRAddr(wName, crName)
+    pokeChannel(addr, value)
+  }
+
+  def readCR(wName: String, crName: String) = {
+    val addr = c.getCRAddr(wName, crName)
+    peekChannel(addr)
   }
 
   override def reset(n: Int) {
