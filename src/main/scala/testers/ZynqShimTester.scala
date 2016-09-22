@@ -111,11 +111,11 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     private def read(addr: Int) = {
       if (addr > (1 << 21)) println(s"read addr: $addr")
       val data = mem(addr & addrMask)
-      if (verbose) logger println "MEM[%x] => %x".format(addr & addrMask, data)
+      logger println "MEM[%x] => %x".format(addr & addrMask, data)
       data
     }
     private def write(addr: Int, data: BigInt) {
-      if (verbose) logger println "MEM[%x] <= %x".format(addr & addrMask, data)
+      logger println "MEM[%x] <= %x".format(addr & addrMask, data)
       mem(addr & addrMask) = data
     }
     private def loadMem(lines: Iterator[String]) {
