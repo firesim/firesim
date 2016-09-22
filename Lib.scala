@@ -287,92 +287,63 @@ class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numI
   queue.io.deq.ready := io.deq.hostReady
 }
 
-case object MidasKey extends Field[MidasParameters]
-// TODO: better name
-case class MidasParameters(width: Int, offsetBits: Int, mcrDataBits: Int, nMCR: Int = 64)
-
-trait HasMidasParameters {
-  implicit val p: Parameters
-  val nMCR = 4
-  val mcrAddrBits = log2Up(nMCR)
-  val mcrDataBits = p(NastiKey).dataBits
-  val mcrDataBytes = mcrDataBits / 8
-  val mcrStrobeBits = mcrDataBytes
-  val offsetBits = 0
-}
-
-abstract class MidasModule(implicit val p: Parameters) extends Module with HasMidasParameters
-abstract class MidasBundle(implicit val p: Parameters) extends ParameterizedBundle()(p)
-  with HasMidasParameters
 /** Stores a map between SCR file names and address in the SCR file, which can
   * later be dumped to a header file for the test bench. */
-class MCRFileMap(prefix: String, maxAddress: Int, baseAddress: BigInt, width: Int) {
-  private val addr2name = HashMap.empty[Int, String]
+class MCRFileMap() {
   private val name2addr = HashMap.empty[String, Int]
+  private val regList = ArrayBuffer.empty[Data]
 
-  def allocate(address: Int, name: String): Int = {
-    Predef.assert(!addr2name.contains(address), "address already allocated")
+  def allocate(reg: Data, name: String): Int = {
     Predef.assert(!name2addr.contains(name), "name already allocated")
-    Predef.assert(address < maxAddress, "address too large")
-    addr2name += (address -> name)
+    val address = name2addr.size
     name2addr += (name -> address)
-    println(prefix + ": %x -> ".format(baseAddress + address) + name)
+    regList.append(reg)
+    println(": %x -> ".format(address) + name)
     address
   }
 
-  def allocate(name: String): Int = {
-    val addr = (0 until maxAddress by width).filter{ addr => !addr2name.contains(addr) }(0)
-    allocate(addr, name)
+  def lookupAddress(name: String): Option[Int] = name2addr.get(name)
+
+  def numRegs(): Int = regList.size
+
+  def bindRegs(mcrIO: MCRIO): Unit = {
+    (regList.toSeq.zipWithIndex) foreach {
+      case(reg: Data, addr: Int) => mcrIO.bindReg(reg, addr)
+    }
   }
 
-  def as_c_header(): String = {
-    addr2name.map{ case(address, name) =>
-      List(
-        "#define " + prefix + "__" + name + "__PADDR  0x%x".format(baseAddress + address),
-        "#define " + prefix + "__" + name + "__OFFSET 0x%x".format(address)
-      )
-    }.flatten.mkString("\n") + "\n"
+  def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+    name2addr foreach {
+      case(regName: String, idx: Int) => {
+        val fullName = s"${prefix}_${regName}"
+        val address = base + idx
+        sb append s"#define ${fullName} ${address}\n"
+      }
+    }
   }
 }
 
-class MCRIO(map: MCRFileMap)(implicit p: Parameters) extends MidasBundle()(p) {
-  val rdata = Vec(nMCR, Bits(INPUT, mcrDataBits))
+class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
+  val rdata = Vec(numCRs, Bits(INPUT, nastiXDataBits))
   val wen = Bool(OUTPUT)
-  val waddr = UInt(OUTPUT, log2Up(nMCR))
-  val wdata = Bits(OUTPUT, mcrDataBits)
-  val wstrb = Bits(OUTPUT, mcrStrobeBits)
+  val waddr = UInt(OUTPUT, log2Up(numCRs))
+  val wdata = Bits(OUTPUT, nastiXDataBits)
+  val wstrb = Bits(OUTPUT, nastiWStrobeBits)
 
-  def attach(regs: Seq[Data], name_base: String): Seq[Data] = {
-    regs.zipWithIndex.map{ case(reg, i) => attach(reg, name_base + "__" + i) }
-  }
-
-  def attach(reg: Data, name: String): Data = {
-    val addr = map.allocate(name)
-    when (wen && (waddr === UInt(addr>>log2Up(mcrDataBytes)))) {
-      reg := (Vec.tabulate(mcrStrobeBits)(i => Mux(wstrb(i),
+  def bindReg(reg: Data, addr: Int): Unit = {
+    when(wen && (waddr === UInt(addr))) {
+      reg := (Vec.tabulate(nastiWStrobeBits)(i => Mux(wstrb(i),
         wdata.toBits()(8*(i+1)-1, i*8), reg.toBits()(8*(i+1)-1, 8*i)))).toBits().asUInt()
     }
-    rdata(addr>>log2Up(mcrDataBytes)) := reg
-    reg
-  }
-
-  def allocate(address: Int, name: String): Unit = {
-    map.allocate(address, name)
+    rdata(addr) := reg
   }
 }
-// width = width of the axi bus in bytes
-class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) extends MidasModule()(p) 
-  with HasNastiParameters{
-  val map = new MCRFileMap(prefix, 64, baseAddress, mcrDataBytes)
-  AllMCRFiles += map
 
+class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   val io = new Bundle {
     val nasti = (new NastiIO).flip
-    val mcr = new MCRIO(map)
+    val mcr = new MCRIO(numRegs)
   }
-
-  // To ensure reads index correctly
-  require(isPow2(nMCR))
 
   val rValid = Reg(init = Bool(false))
   val awFired = Reg(init = Bool(false))
@@ -386,7 +357,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
 
   when(io.nasti.aw.fire()){
     awFired := Bool(true)
-    wAddr := io.nasti.aw.bits.addr >> log2Up(mcrDataBytes)
+    wAddr := io.nasti.aw.bits.addr >> log2Up(nastiWStrobeBits)
     bId := io.nasti.aw.bits.id
     assert(io.nasti.aw.bits.len === UInt(0))
   }
@@ -399,7 +370,7 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
-    rData := io.mcr.rdata((io.nasti.ar.bits.addr >> log2Up(mcrDataBytes))&(UInt(nMCR-1)))
+    rData := io.mcr.rdata(io.nasti.ar.bits.addr >> log2Up(nastiXDataBits/8))(log2Up(numRegs)-1,0)
     rId := io.nasti.ar.bits.id
   }
 
@@ -427,56 +398,4 @@ class MCRFile(prefix: String, baseAddress: BigInt)(implicit p: Parameters) exten
   io.mcr.wdata := wData
   io.mcr.wstrb := wStrb
   io.mcr.waddr := wAddr
-}
-
-class MidasSimulationController(implicit p:Parameters) extends MidasModule()(p) {
-  val io = new Bundle {
-    val nasti = (new NastiIO).flip
-    val ctrl = (new MidasControlIO).flip
-  }
-
-  val mcrFile = Module(new MCRFile("SIMULATION_MASTER", p(MidasBaseAddr)))
-  val done = Reg(init = UInt(0))
-  val resetDone = Reg(init = UInt(0))
-  val simReset = Reg(init  = UInt(0))
-  val go = Reg(init = UInt(0))
-  mcrFile.io.mcr.attach(simReset, "RESET")
-  mcrFile.io.mcr.attach(resetDone, "RESET_DONE")
-  mcrFile.io.mcr.attach(go, "GO")
-  mcrFile.io.mcr.attach(done, "DONE")
-  mcrFile.io.nasti <> io.nasti
-
-  // TODO: Make these booleans
-  // Single cycle pulse
-  when (go != UInt(0)) {
-    go := UInt(0)
-  }
-
-  when (io.ctrl.simResetDone) {
-    resetDone := UInt(1)
-  }
-
-  when (io.ctrl.done) {
-    done := UInt(1)
-  }
-
-  when (simReset != UInt(0)) {
-    resetDone := UInt(0)
-    go := UInt(0)
-    done := UInt(0)
-    simReset := UInt(0)
-  }
-
-  io.ctrl.simReset := simReset != UInt(0)
-  io.ctrl.go := go != UInt(0)
-}
-
-
-/** Every elaborated SCR file ends up in this global arry so it can be printed
-  * out later. */
-object AllMCRFiles {
-  private var maps = ArrayBuffer.empty[MCRFileMap]
-
-  def +=(map: MCRFileMap): Unit = { maps += map }
-  def foreach( f: (MCRFileMap => Unit) ): Unit = { maps.foreach{ m => f(m) } }
 }
