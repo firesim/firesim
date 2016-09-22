@@ -88,6 +88,7 @@ object StroberCompiler {
     sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
     sb append "#define __%s_H\n".format(targetName.toUpperCase)
     consts foreach (sb append dump(_))
+    c.genHeader(sb)
     sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
     val file = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
     try {
