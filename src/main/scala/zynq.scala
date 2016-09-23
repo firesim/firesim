@@ -1,5 +1,6 @@
 package strober
 
+import midas._
 import Chisel._
 import junctions._
 import cde.{Parameters, Field}
@@ -311,19 +312,38 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     case _ =>
   }
 
-  private def hostConnect[T <: Data](valid: Bool, wires: T, ready: Bool): Bool = wires match {
-    case b: Bundle =>
-      (b.elements.unzip._2 foldLeft valid)(hostConnect(_, _, ready))
-    case v: Vec[_] =>
-      (v.toSeq foldLeft valid)(hostConnect(_, _, ready))
-    case b: Bits if b.dir == OUTPUT =>
-      val outs = sim.io.getOuts(b)
-      outs foreach (_.ready := ready)
-      (outs foldLeft valid)(_ && _.valid)
-    case b: Bits if b.dir == INPUT =>
-      val ins = sim.io.getIns(b)
-      ins foreach (_.valid := ready || simReset)
-      (ins foldLeft valid)(_ && _.ready)
+  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
+
+    val (ins, outs) = SimUtils.parsePorts(wires)
+    val inWires = ins map (_._1) // String the names off the tuples
+    val outWires = outs map(_._1)
+    def andReduceChunks(b: Bits): Bool = {
+      b.dir match {
+        case OUTPUT =>
+          val chunks = sim.io.getOuts(b)
+          chunks.foldLeft(Bool(true))(_ && _.valid)
+        case INPUT =>
+          val chunks = sim.io.getIns(b)
+          chunks.foldLeft(Bool(true))(_ && _.ready)
+        case _ => throw new RuntimeException("Wire must have a direction")
+      }
+    }
+
+    // First reduce the chunks for each field; and then the fields themselves
+    port.hostOut.hostValid := outWires map (andReduceChunks(_)) reduce(_ && _)
+    port.hostIn.hostReady := inWires map (andReduceChunks(_)) reduce(_ && _)
+
+    // Pass the hostReady back to the chunks of all target driven fields
+    outWires foreach {(outWire: Bits) => {
+      val chunks = sim.io.getOuts(outWire)
+      chunks foreach (_.ready := port.hostOut.hostReady)
+    }}
+
+    // Pass the hostValid back to the chunks for all target sunk fields
+    inWires foreach {(inWire: Bits) => {
+      val chunks = sim.io.getIns(inWire)
+      chunks foreach (_.valid := port.hostIn.hostValid)
+    }}
   }
 
   (0 until SimMemIO.size) foreach { i =>
@@ -331,16 +351,8 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     val wires = SimMemIO(i)
     model.reset := reset || hostReset
     arb.io.master(i) <> model.io.host_mem
-    targetConnect(model.io.sim_mem.aw.target -> wires.aw)
-    targetConnect(model.io.sim_mem.ar.target -> wires.ar)
-    targetConnect(model.io.sim_mem.r.target  -> wires.r)
-    targetConnect(model.io.sim_mem.w.target  -> wires.w)
-    targetConnect(model.io.sim_mem.b.target  -> wires.b)
-    model.io.sim_mem.aw.valid := hostConnect(Bool(true), wires.aw, model.io.sim_mem.aw.ready)
-    model.io.sim_mem.ar.valid := hostConnect(Bool(true), wires.ar, model.io.sim_mem.ar.ready)
-    model.io.sim_mem.w.valid  := hostConnect(Bool(true), wires.w,  model.io.sim_mem.w.ready)
-    model.io.sim_mem.r.ready  := hostConnect(Bool(true), wires.r,  model.io.sim_mem.r.valid)
-    model.io.sim_mem.b.ready  := hostConnect(Bool(true), wires.b,  model.io.sim_mem.b.valid)
+    targetConnect(model.io.tNasti.hostBits -> wires)
+    channels2Port(model.io.tNasti, wires)
   }
   genCtrlIO(io.master)
   StroberCompiler annotate this

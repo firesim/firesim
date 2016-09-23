@@ -1,5 +1,6 @@
 package strober
 
+import midas._
 import Chisel._
 import cde.{Parameters, Field}
 import junctions._
@@ -31,16 +32,8 @@ object SimMemIO {
   def zipWithIndex = mems.toList.zipWithIndex
 }
 
-class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val aw = new SimDecoupledIO(new NastiWriteAddressChannel)
-  val w  = new SimDecoupledIO(new NastiWriteDataChannel)
-  val b  = new SimDecoupledIO(new NastiWriteResponseChannel).flip
-  val ar = new SimDecoupledIO(new NastiReadAddressChannel)
-  val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
-}
-
 class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
-  val sim_mem  = (new SimMemIO).flip
+  val tNasti = HostPort((new NastiIO), false).flip
   val host_mem =  new NastiIO
 }
 
@@ -61,47 +54,39 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val w_cycles = Module(new Queue(UInt(width=64), 4))
   val latency = RegInit(UInt(16, 64))
   attach(latency, "LATENCY")
-  val r_ready = Mux(!latency.orR, !io.sim_mem.ar.target.valid,
-    !(r_cycles.io.deq.valid && r_cycles.io.deq.bits <= cycles)) || r_buf.io.deq.valid
-  val w_ready = Mux(!latency.orR, !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last),
-    !(w_cycles.io.deq.valid && w_cycles.io.deq.bits <= cycles)) || b_buf.io.deq.valid
-  val reqValid = io.sim_mem.ar.valid && io.sim_mem.aw.valid && io.sim_mem.w.valid
-  val respReady = io.sim_mem.r.ready && io.sim_mem.b.ready
-  val fire = reqValid && respReady && r_ready && w_ready
-  when(fire) { cycles := cycles + UInt(1) }
+
+  val tNasti = io.tNasti.hostBits
+  val tFire = io.tNasti.hostOut.fire() && io.tNasti.hostIn.fire()
+
+  when(tFire) { cycles := cycles + UInt(1) }
   r_cycles.io.enq.bits := cycles + latency
   w_cycles.io.enq.bits := cycles + latency
-  r_cycles.io.enq.valid := io.sim_mem.ar.target.fire() && fire && latency.orR
-  w_cycles.io.enq.valid := io.sim_mem.w.target.fire()  && io.sim_mem.w.target.bits.last && fire && latency.orR
-  r_cycles.io.deq.ready := io.sim_mem.r.target.fire()  && io.sim_mem.r.target.bits.last && fire && latency.orR
-  w_cycles.io.deq.ready := io.sim_mem.b.target.fire()  && fire && latency.orR
+  r_cycles.io.enq.valid := tNasti.ar.fire() && tFire
+  w_cycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire
+  r_cycles.io.deq.ready := tNasti.r.fire()  && tNasti.r.bits.last && tFire
+  w_cycles.io.deq.ready := tNasti.b.fire()  && tFire
 
   // Requests
-  io.sim_mem.ar.ready := fire
-  io.sim_mem.aw.ready := fire
-  io.sim_mem.w.ready  := fire
-  io.sim_mem.ar.target.ready := ar_buf.io.enq.ready && r_cycles.io.enq.ready
-  io.sim_mem.aw.target.ready := aw_buf.io.enq.ready && w_cycles.io.enq.ready
-  io.sim_mem.w.target.ready  := w_buf.io.enq.ready  && w_cycles.io.enq.ready
-  ar_buf.io.enq.valid := io.sim_mem.ar.target.fire() && fire
-  aw_buf.io.enq.valid := io.sim_mem.aw.target.fire() && fire
-  w_buf.io.enq.valid  := io.sim_mem.w.target.fire()  && fire
-  ar_buf.io.enq.bits  := io.sim_mem.ar.target.bits
-  aw_buf.io.enq.bits  := io.sim_mem.aw.target.bits
-  w_buf.io.enq.bits   := io.sim_mem.w.target.bits
+  tNasti.ar.ready := ar_buf.io.enq.ready && r_cycles.io.enq.ready
+  tNasti.aw.ready := aw_buf.io.enq.ready && w_cycles.io.enq.ready
+  tNasti.w.ready  := w_buf.io.enq.ready  && w_cycles.io.enq.ready
+  ar_buf.io.enq.valid := tNasti.ar.valid && tFire
+  aw_buf.io.enq.valid := tNasti.aw.valid && tFire
+  w_buf.io.enq.valid  := tNasti.w.valid  && tFire
+  ar_buf.io.enq.bits  := tNasti.ar.bits
+  aw_buf.io.enq.bits  := tNasti.aw.bits
+  w_buf.io.enq.bits   := tNasti.w.bits
   io.host_mem.aw <> aw_buf.io.deq
   io.host_mem.ar <> ar_buf.io.deq
   io.host_mem.w  <> w_buf.io.deq
 
   // Response
-  io.sim_mem.b.valid := fire
-  io.sim_mem.r.valid := fire
-  io.sim_mem.r.target.bits <> r_buf.io.deq.bits
-  io.sim_mem.b.target.bits <> b_buf.io.deq.bits
-  io.sim_mem.r.target.valid := r_buf.io.deq.valid && r_cycles.io.deq.bits <= cycles && r_cycles.io.deq.valid
-  io.sim_mem.b.target.valid := b_buf.io.deq.valid && w_cycles.io.deq.bits <= cycles && w_cycles.io.deq.valid
-  r_buf.io.deq.ready := io.sim_mem.r.target.fire() && fire 
-  b_buf.io.deq.ready := io.sim_mem.b.target.fire() && fire
+  tNasti.r.bits <> r_buf.io.deq.bits
+  tNasti.b.bits <> b_buf.io.deq.bits
+  tNasti.r.valid := r_buf.io.deq.valid && (r_cycles.io.deq.bits <= cycles) && r_cycles.io.deq.valid
+  tNasti.b.valid := b_buf.io.deq.valid && (w_cycles.io.deq.bits <= cycles) && w_cycles.io.deq.valid
+  r_buf.io.deq.ready := tNasti.r.ready && tFire
+  b_buf.io.deq.ready := tNasti.b.ready && tFire
   r_buf.io.enq <> io.host_mem.r
   b_buf.io.enq <> io.host_mem.b
 
