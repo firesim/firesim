@@ -5,5 +5,6 @@ target
 project/target
 *.out
 *.swp
+*.tmp
 *.key
 DVEfiles

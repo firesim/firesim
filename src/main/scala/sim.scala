@@ -122,10 +122,10 @@ abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSim
 }
 
 class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwork()(p) {
+  val fire = Wire(Bool())
   val target = Module(c)
   val io = new SimWrapperIO(target.io, target.reset)
 
-  val fire = Wire(Bool())
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
   val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
 

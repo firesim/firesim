@@ -5,9 +5,8 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
-import firrtl.Utils.{create_exps, req_num_bits}
-import scala.collection.mutable.{Stack, HashSet, ArrayBuffer} 
-import scala.collection.immutable.ListSet
+import firrtl.Utils.{sub_type, field_type, create_exps}
+import scala.collection.mutable.{Stack, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {
@@ -16,12 +15,19 @@ private[passes] object Utils {
   val ug = UNKNOWNGENDER
   
   def wref(s: String, t: Type = ut, k: Kind = ExpKind) = WRef(s, t, k, ug)
-  def wsub(e: Expression, s: String, t: Type = ut) = WSubField(e, s, t, ug)
-  def widx(e: Expression, i: Int, t: Type = ut) = WSubIndex(e, i, t, ug)
-  def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, ut)
-  def or(e1: Expression, e2: Expression) = DoPrim(PrimOps.Or, Seq(e1, e2), Nil, ut)
-  def and(e1: Expression, e2: Expression) = DoPrim(PrimOps.And, Seq(e1, e2), Nil, ut)
-  def bits(e: Expression, high: BigInt, low: BigInt) = DoPrim(PrimOps.Bits, Seq(e), Seq(high, low), ut)
+  def wsub(e: Expression, s: String) = WSubField(e, s, field_type(e.tpe, s), ug)
+  def widx(e: Expression, i: Int) = WSubIndex(e, i, sub_type(e.tpe), ug)
+  def not(e: Expression) = DoPrim(PrimOps.Not, Seq(e), Nil, e.tpe)
+  private def getType(e1: Expression, e2: Expression) = e2.tpe match {
+    case UnknownType => e1.tpe
+    case _ => e2.tpe
+  }
+  def or(e1: Expression, e2: Expression) =
+    DoPrim(PrimOps.Or, Seq(e1, e2), Nil, getType(e1, e2))
+  def and(e1: Expression, e2: Expression) =
+    DoPrim(PrimOps.And, Seq(e1, e2), Nil, getType(e1, e2))
+  def bits(e: Expression, high: BigInt, low: BigInt) =
+    DoPrim(PrimOps.Bits, Seq(e), Seq(high, low), e.tpe)
   def cat(es: Seq[Expression]): Expression =
     if (es.tail.isEmpty) es.head else {
       val left = cat(es.slice(0, es.length/2))
@@ -41,29 +47,37 @@ private[passes] object Utils {
     modules filter (x => StroberCompiler.context.wrappers(x.name))
   def dir = StroberCompiler.context.dir
 
-  def targets(m: Module, modules: Seq[DefModule]) = {
-    def loop(s: Statement): Seq[String] = s match {
-      case s: WDefInstance if s.name == "target" => Seq(s.module)
-      case s: Block => s.stmts flatMap loop
-      case _ => Nil
+  def targets(m: DefModule, modules: Seq[DefModule]) = {
+    val targets = HashSet[String]()
+    def loop(s: Statement): Statement = s match {
+      case s: WDefInstance if s.name == "target" =>
+        targets += s.module
+        s
+      case s => s map loop
     }
-    val mods = loop(m.body).toSet
-    modules filter (x => mods(x.name))
+    m map loop
+    modules filter (x => targets(x.name))
   }
 
-  def preorder(heads: Seq[DefModule], modules: Seq[DefModule])(visit: DefModule => DefModule): Seq[DefModule] = {
+  def preorder(heads: Seq[DefModule],
+               modules: Seq[DefModule])
+               (visit: DefModule => DefModule): Seq[DefModule] = {
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
       visited += m.name
-      visit(m) +: (modules filter (x => childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
+      visit(m) +: (modules filter (x =>
+        childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
     }
     heads flatMap loop
   }
 
-  def postorder(heads: Seq[DefModule], modules: Seq[DefModule])(visit: DefModule => DefModule): Seq[DefModule] = {
+  def postorder(heads: Seq[DefModule],
+                modules: Seq[DefModule])
+                (visit: DefModule => DefModule): Seq[DefModule] = {
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
-      val res = (modules filter (x => childMods(m.name)(x.name)) flatMap loop)
+      val res = (modules filter (x =>
+        childMods(m.name)(x.name)) flatMap loop)
       if (visited(m.name)) {
         res 
       } else {
@@ -90,7 +104,7 @@ private[passes] object Utils {
         case s: DefMemory if s.readLatency > 0 =>
           val ew = 1
           val mw = 1
-          val aw = req_num_bits(s.depth)
+          val aw = chisel3.util.log2Up(s.depth)
           val dw = bitWidth(s.dataType).toInt
           s.readers.size * s.readLatency * (ew + aw + dw) +
           s.writers.size * (s.writeLatency - 1) * (ew + mw + aw + dw) +
@@ -105,26 +119,26 @@ private[passes] object Utils {
 private[passes] object Analyses extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Analyze Circuit"
-  
-  def collectChildren(m: Module) {
-    def collectChildren(s: Statement): Seq[(String, String)] = s match {
-      case s: WDefInstance => Seq(s.name -> s.module)
-      case s: Block => s.stmts flatMap collectChildren
-      case s => Nil
+
+  def collectChildren(mname: String)(s: Statement): Statement = {
+    s match {
+      case s: WDefInstance =>
+        childInsts(mname) += s.name
+        childMods(mname) += s.module
+        instToMod(s.name -> mname) = s.module
+      case _ =>
     }
-    val (insts, mods) = collectChildren(m.body).unzip
-    childInsts(m.name) = ListSet(insts:_*)
-    childMods(m.name) = ListSet(mods:_*)
-    instToMod ++= insts zip mods
+    s map collectChildren(mname)
   }
 
-  def run(c: Circuit) = {
-    c.modules foreach {
-      case m: Module => collectChildren(m)
-      case m: ExtModule =>
-    }
-    c
+  def collectChildrenMod(m: DefModule) = {
+    childInsts(m.name) = LinkedHashSet[String]()
+    childMods(m.name) = LinkedHashSet[String]()
+    m map collectChildren(m.name)
   }
+
+  def run(c: Circuit) =
+    c copy (modules = c.modules map collectChildrenMod)
 }
 
 private[passes] object DumpChains extends firrtl.passes.Pass {
@@ -150,7 +164,7 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
             case s: DefMemory if s.readLatency > 0 =>
               val ew = 1
               val mw = 1
-              val aw = req_num_bits(s.depth)
+              val aw = chisel3.util.log2Up(s.depth)
               val dw = bitWidth(s.dataType).toInt
               ((s.readers foldLeft 0){(sum, reader) =>
                 (0 until s.readLatency) foreach (i =>
@@ -216,8 +230,8 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
         }
       case _ =>
     }
-    childInsts(mod) foreach (child =>
-      loop(w, instToMod(child), s"${path}.${child}", daisyWidth)(chainType))
+    childInsts(mod) foreach {child =>
+      loop(w, instToMod(child, mod), s"${path}.${child}", daisyWidth)(chainType)}
   }
 
   def run(c: Circuit) = {
