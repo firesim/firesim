@@ -32,17 +32,21 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
     val annotation = new Annotations.AnnotationMap(Nil)
     val output = new java.io.StringWriter
     val result = new ChainCompiler compile (circuit, annotation, output)
-    val (modules, main) = (result.circuit.modules foldLeft
-      (Seq[DefModule](), None: Option[String])){ case ((ms, main), m) =>
+    val (modules, nameMap) = (result.circuit.modules foldLeft
+      (Seq[DefModule](), Map[String, String]())){ case ((ms, map), m) =>
         val newMod = m match {
           // No copy method in DefModule
           case m: Module => m copy (name = namespace newName m.name)
         }
-        ((ms :+ newMod), if (m.name == circuit.main) Some(newMod.name) else main)
+        ((ms :+ newMod), map + (m.name -> newMod.name))
     }
-    chainMods ++= modules
+    def updateModName(s: Statement): Statement = s match {
+      case s: WDefInstance => s copy (module = nameMap(s.module))
+      case s => s map updateModName
+    }
+    chainMods ++= (modules map (_ map updateModName))
     Seq(
-      WDefInstance(NoInfo, chainRef(instIdx).name, main.get, ut),
+      WDefInstance(NoInfo, chainRef(instIdx).name, nameMap(circuit.main), ut),
       IsInvalid(NoInfo, chainRef(instIdx))
     )
   }
