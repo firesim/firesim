@@ -307,7 +307,8 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         IsInvalid(NoInfo, childDaisyPort(c)("in")),
         IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     // Filter children who have daisy chains
-    (childInsts(m.name) filter hasChain foldLeft (None: Option[String], Seq[Connect]())){
+    val childrenWithChains = childInsts(m.name) filter (x => hasChain(instToMod(x, m.name)))
+    val connects = (childrenWithChains foldLeft (None: Option[String], Seq[Connect]())){
       case ((None, stmts), child) if !hasChain(m.name) =>
         // <daisy_port>.out <- <child>.<daisy_port>.out
         (Some(child), stmts :+ Connect(NoInfo, daisyPort("out"), childDaisyPort(child)("out")))
@@ -318,15 +319,16 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         // <prev_child>.<daisy_port>.io.in <- <child>.<daisy_port>.out
         (Some(child), stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), childDaisyPort(child)("out")))
     } match {
-      case (None, stmts) if !hasChain(m.name) =>
-        Block(invalids ++ chainStmts ++ stmts)
+      case (None, stmts) if !hasChain(m.name) => stmts
       case (None, stmts) =>
         // <daisy_chain>.io.dataIo.in <- <daisy_port>.in
-        Block(invalids ++ chainStmts ++ (stmts :+ Connect(NoInfo, chainDataIo("in", chainNum-1), daisyPort("in"))))
+        stmts :+ Connect(NoInfo, chainDataIo("in", chainNum-1), daisyPort("in"))
       case (Some(p), stmts) =>
         // <prev_child>.<daisy_port>.in <- <daisy_port>.in
-        Block(invalids ++ chainStmts ++ (stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))))
+        stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))
     }
+    if (childrenWithChains.nonEmpty) hasChain += m.name
+    Block(invalids ++ chainStmts ++ connects)
   }
 
   def updateStmts(readers: Readers,
