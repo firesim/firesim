@@ -8,12 +8,11 @@ import firrtl.Mappers._
 import firrtl.Utils._
 import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
-import firrtl.passes.PassException
 import WrappedExpression.weq
 
-private[passes] object AddDaisyChains extends firrtl.passes.Pass {
+private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
- 
+  
   private class ChainCompiler extends Compiler {
     def transforms(writer: java.io.Writer) = Seq(
       new Chisel3ToHighFirrtl,
@@ -69,19 +68,29 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
   type Netlist = collection.mutable.HashMap[String, Expression]
   type ChainModSet = collection.mutable.HashSet[String]
 
+  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
+
   private def collect(chainType: ChainType.Value, chains: Statements)(s: Statement): Statement = {
+    def bigRegFile(s: DefMemory) =
+      s.readLatency == 0 && s.depth >= 32 && bitWidth(s.dataType) >= 32
     chainType match {
       // TODO: do bfs from inputs
       case ChainType.Regs => s match {
         case s: DefRegister =>
           chains += s
-        case s: DefMemory if s.readLatency > 0 || s.depth < 16 =>
+        case s: DefMemory if !bigRegFile(s) =>
           chains += s
+        case s: WDefInstance if seqMems contains s.module =>
+          // chains += s
         case _ =>
       }
       case ChainType.SRAM => s match {
-        case s: DefMemory if s.readLatency > 0 || s.depth > 16 =>
+        case s: WDefInstance if seqMems contains s.module =>
           chains += s
+        case s: DefMemory if bigRegFile(s) =>
+          chains += s
+        case s: DefMemory if s.readLatency > 0 =>
+          error("${s.info}: SRAMs should be transformed to Black bloxes")
         case _ =>
       }
       case ChainType.Trace =>
@@ -101,110 +110,6 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       case s =>
     }
     s map buildNetlist(netlist)
-  }
-
-  private def generateMemPipes(namespace: Namespace,
-                               netlist: Netlist,
-                               stmts: Statements)
-                               (s: DefMemory): Seq[Expression] = {
-    def insertBuf(buf: WRef, prev: Expression) {
-      stmts += DefRegister(NoInfo, buf.name, buf.tpe, wref("clk"), wref("reset"), buf)
-      stmts += Conditionally(NoInfo, wref("targetFire"), EmptyStmt, Connect(NoInfo, buf, prev))
-    }
-    val rpipes = (s.readers flatMap { reader =>
-      val en = memPortField(s, reader, "en")
-      val addr = memPortField(s, reader, "addr")
-      val data = memPortField(s, reader, "data")
-      (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${reader}_en_buf_$i"
-        val buf = wref(name, en.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
-        // Capture all buffered addresses for RTL replays
-        val name = namespace newName s"${s.name}_${reader}_addr_buf_$i"
-        val buf = wref(name, addr.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.readLatency-1)) foldLeft Seq[Expression](data)){(exps, i) =>
-        // Capture all buffered data for gate-level replays
-        val name = namespace newName s"${s.name}_${reader}_data_buf_$i"
-        val buf = wref(name, data.tpe)
-        insertBuf(buf, exps.last)
-        exps :+ buf
-      } flatMap (create_exps(_)))
-    })
-    val wpipes = (s.writers flatMap { writer =>
-      val en = memPortField(s, writer, "en")
-      val mask = memPortField(s, writer, "mask")
-      val addr = memPortField(s, writer, "addr")
-      val data = memPortField(s, writer, "data")
-      (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${writer}_en_buf_$i"
-        val buf = wref(name, en.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${writer}_mask_buf_$i"
-        val buf = wref(name, mask.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(mask.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${writer}_addr_buf_$i"
-        val buf = wref(name, addr.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
-        insertBuf(buf, exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${writer}_data_buf_$i"
-        val buf = wref(name, data.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(data.serialize) else exps.last)
-        exps :+ buf
-      } flatMap (create_exps(_)))
-    })
-    val rwpipes = (s.readwriters flatMap {readwriter =>
-      val en = memPortField(s, readwriter, "en")
-      val addr = memPortField(s, readwriter, "addr")
-      val rdata = memPortField(s, readwriter, "rdata")
-      val wmode = memPortField(s, readwriter, "wmode")
-      val wmask = memPortField(s, readwriter, "wmask")
-      val wdata = memPortField(s, readwriter, "wdata")
-      (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${readwriter}_en_buf_$i"
-        val buf = wref(name, en.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(en.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until s.readLatency) foldLeft Seq[Expression]()){(exps, i) =>
-        // Capture all buffered addresses for RTL replays
-        val name = namespace newName s"${s.name}_${readwriter}_addr_buf_$i"
-        val buf = wref(name, addr.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(addr.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.readLatency-1)) foldLeft Seq[Expression](rdata)){(exps, i) =>
-        // Capture all buffered data for gate-level replays
-        val name = namespace newName s"${s.name}_${readwriter}_rdata_buf_$i"
-        val buf = wref(name, rdata.tpe)
-        insertBuf(buf, exps.last)
-        exps :+ buf
-      } flatMap (create_exps(_))) ++ 
-      (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${readwriter}_wmode_buf_$i"
-        val buf = wref(name, wmode.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(wmode.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${readwriter}_wmask_buf_$i"
-        val buf = wref(name, wmask.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(wmask.serialize) else exps.last)
-        exps :+ buf
-      }) ++ (((0 until (s.writeLatency-1)) foldLeft Seq[Expression]()){(exps, i) =>
-        val name = namespace newName s"${s.name}_${readwriter}_wdata_buf_$i"
-        val buf = wref(name, wdata.tpe)
-        insertBuf(buf, if (exps.isEmpty) netlist(wdata.serialize) else exps.last)
-        exps :+ buf
-      } flatMap (create_exps(_)))
-    })
-    rpipes ++ wpipes ++ rwpipes
   }
 
   private def insertRegChains(m: Module,
@@ -245,9 +150,11 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       case true =>
         lazy val chain = new RegChain()(p alter Map(DataWidth -> sumWidths(m.body).toInt))
         val instStmts = generateChain(() => chain, namespace, chainMods)
+        val clocks = m.ports flatMap (p =>
+          create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
         val portConnects = Seq(
-          // <daisy_chain>.clk <- clk
-          Connect(NoInfo, wsub(chainRef(), "clk"), wref("clk")),
+          // <daisy_chain>.clock <- clock
+          Connect(NoInfo, wsub(chainRef(), "clock"), clocks.head),
           // <daisy_chain>.reset <- daisyReset
           Connect(NoInfo, wsub(chainRef(), "reset"), wref("daisyReset")),
           // <daisy_chain>.io.stall <- not(targetFire)
@@ -256,14 +163,8 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
           Connect(NoInfo, daisyPort("out"), chainDataIo("out"))
         )
         hasChain += m.name
-        chainLen(chainType) += chain.daisyLen
-        chainLoop(chainType) = 1
         val stmts = new Statements
-        val netlist = new Netlist
         val regs = chains(chainType)(m.name) flatMap {
-          case s: DefMemory if s.readLatency > 0 =>
-            if (netlist.isEmpty) buildNetlist(netlist)(m.body)
-            generateMemPipes(Namespace(m), netlist, stmts)(s)
           case s: DefMemory =>
             val rs = (0 until s.depth) map (i => s"scan_$i")
             val mem = s copy (readers = s.readers ++ rs)
@@ -285,33 +186,46 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
                                chainMods: DefModules,
                                hasChain: ChainModSet)
                                (implicit chainType: ChainType.Value) = {
-    def daisyConnects(sram: DefMemory, daisyIdx: Int, daisyLen: Int, daisyWidth: Int) = {
-      val data = if (!sram.readwriters.isEmpty)
-        memPortField(sram, sram.readwriters.head, "rdata") else
-        memPortField(sram, sram.readers.head, "data")
-      val addr = if (!sram.readwriters.isEmpty)
-        memPortField(sram, sram.readwriters.head, "addr") else
-        memPortField(sram, sram.readers.head, "addr")
-      val en = if (!sram.readwriters.isEmpty)
-        memPortField(sram, sram.readwriters.head, "en") else
-        memPortField(sram, sram.readers.head, "en")
-      val wmode = if (!sram.readwriters.isEmpty)
-        memPortField(sram, sram.readwriters.head, "wmode") else
-        EmptyExpression
-      val width = bitWidth(sram.dataType).toInt
+    def daisyConnects(sram: Statement, daisyIdx: Int, daisyLen: Int, daisyWidth: Int) = {
+      val (data, addr, en, wmode, width) = sram match {
+        case s: WDefInstance if seqMems(s.module).readwriters.nonEmpty => (
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "RW0"), "rdata"),
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "RW0"), "addr"),
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "RW0"), "en"),
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "RW0"), "wmode"),
+          seqMems(s.module).width.toInt)
+        case s: WDefInstance => (
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "R0"), "data"),
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "R0"), "addr"),
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), "R0"), "en"),
+          EmptyExpression,
+          seqMems(s.module).width.toInt)
+        case s: DefMemory if s.readwriters.nonEmpty => (
+          memPortField(s, s.readwriters.head, "rdata"),
+          memPortField(s, s.readwriters.head, "addr"),
+          memPortField(s, s.readwriters.head, "en"),
+          memPortField(s, s.readwriters.head, "wmode"),
+          bitWidth(s.dataType).toInt)
+        case s: DefMemory => (
+          memPortField(s, s.readers.head, "data"),
+          memPortField(s, s.readers.head, "addr"),
+          memPortField(s, s.readers.head, "en"),
+          EmptyExpression,
+          bitWidth(s.dataType).toInt)
+      }
       def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
       def addrConnects(s: Statement): Statement = {
         s match {
           case Connect(info, loc, expr) => kind(loc) match {
-            case MemKind if weq(loc, en) =>
-              repl(loc.serialize) = or(wsub(addrIo, "valid"), expr)
-            case MemKind if weq(loc, wmode) =>
-              repl(loc.serialize) = and(not(wsub(addrIo, "valid")), expr)
-            case MemKind if weq(loc, addr) =>
-              repl(loc.serialize) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
-            case _ =>
-          }
-          case _ =>
+             case MemKind | InstanceKind if weq(loc, en) =>
+               repl(loc.serialize) = or(wsub(addrIo, "valid"), expr)
+             case MemKind | InstanceKind if weq(loc, wmode) =>
+               repl(loc.serialize) = and(not(wsub(addrIo, "valid")), expr)
+             case MemKind | InstanceKind if weq(loc, addr) =>
+               repl(loc.serialize) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
+             case _ =>
+           }
+           case _ =>
         }
         s map addrConnects
       }
@@ -339,13 +253,21 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
     chains(chainType)(m.name) = chainElems
     chainElems.nonEmpty match {
       case false => Nil
-      case true => chainElems.zipWithIndex flatMap { case (sram: DefMemory, i) =>
-        lazy val chain = new SRAMChain()(p alter Map(
-          DataWidth -> bitWidth(sram.dataType).toInt, SRAMSize -> sram.depth))
+      case true => chainElems.zipWithIndex flatMap { case (sram, i) =>
+        val (depth, width) = sram match {
+          case s: WDefInstance =>
+            val seqMem = seqMems(s.module)
+            (seqMem.depth.toInt, seqMem.width.toInt)
+          case s: DefMemory =>
+            (s.depth, bitWidth(s.dataType).toInt)
+        }
+        lazy val chain = new SRAMChain()(p alter Map(DataWidth -> width, SRAMSize -> depth))
         val instStmts = generateChain(() => chain, namespace, chainMods, i)
+        val clocks = m.ports flatMap (p =>
+          create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
         val portConnects = Seq(
-          // <daisy_chain>.clk <- clk
-          Connect(NoInfo, wsub(chainRef(i), "clk"), wref("clk")),
+          // <daisy_chain>.clock <- clock
+          Connect(NoInfo, wsub(chainRef(i), "clock"), clocks.head),
           // <daisy_chain>.reset <- daisyReset
           Connect(NoInfo, wsub(chainRef(i), "reset"), wref("daisyReset")),
           // <daisy_chain>.io.stall <- not(targetFire)
@@ -358,8 +280,6 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
            else Connect(NoInfo, chainDataIo("in", i - 1), chainDataIo("out", i)))
         )
         hasChain += m.name
-        chainLen(chainType) += chain.daisyLen
-        chainLoop(chainType) = chainLoop(chainType) max sram.depth
         instStmts ++ portConnects ++ daisyConnects(sram, i, chain.daisyLen, chain.daisyWidth)
       }
     }
@@ -383,6 +303,9 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       case ChainType.SRAM => 1 max chains(chainType)(m.name).size
       case _              => 1
     }
+    val invalids = childInsts(m.name) flatMap (c => Seq(
+        IsInvalid(NoInfo, childDaisyPort(c)("in")),
+        IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     // Filter children who have daisy chains
     (childInsts(m.name) filter hasChain foldLeft (None: Option[String], Seq[Connect]())){
       case ((None, stmts), child) if !hasChain(m.name) =>
@@ -396,13 +319,13 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         (Some(child), stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), childDaisyPort(child)("out")))
     } match {
       case (None, stmts) if !hasChain(m.name) =>
-        Block(chainStmts ++ stmts)
+        Block(invalids ++ chainStmts ++ stmts)
       case (None, stmts) =>
         // <daisy_chain>.io.dataIo.in <- <daisy_port>.in
-        Block(chainStmts ++ (stmts :+ Connect(NoInfo, chainDataIo("in", chainNum-1), daisyPort("in"))))
+        Block(invalids ++ chainStmts ++ (stmts :+ Connect(NoInfo, chainDataIo("in", chainNum-1), daisyPort("in"))))
       case (Some(p), stmts) =>
         // <prev_child>.<daisy_port>.in <- <daisy_port>.in
-        Block(chainStmts ++ (stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))))
+        Block(invalids ++ chainStmts ++ (stmts :+ Connect(NoInfo, childDaisyPort(p)("in"), daisyPort("in"))))
     }
   }
 
@@ -410,6 +333,11 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
                   repl: Netlist,
                   stmts: Statements)
                   (s: Statement): Statement = s match {
+    case s: WDefInstance if !(seqMems contains s.module) =>
+      // Connect restart pin
+      Block(Seq(s, Connect(NoInfo,
+        childDaisyPort(s.name)("restart")(ChainType.SRAM),
+        daisyPort("restart")(ChainType.SRAM))))
     case s: DefMemory => readers get s.name match {
       case None => s
       case Some(rs) =>
@@ -422,7 +350,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
         }))
     }
     case s: Connect => kind(s.loc) match {
-      case MemKind => repl get s.loc.serialize match {
+      case MemKind | InstanceKind => repl get s.loc.serialize match {
         case Some(expr) => 
           stmts += s copy (expr = expr)
           EmptyStmt
@@ -470,8 +398,7 @@ private[passes] object AddDaisyChains extends firrtl.passes.Pass {
       val param = params(m.name)
       val daisyType = (m.ports filter (_.name == "io") flatMap (io => io.tpe match {
         case BundleType(fields) => fields filter (_.name == "daisy")
-        case t => throw new PassException(
-          s"${io.info}: io should be a bundle type, but has type ${t.serialize}")
+        case t => error(s"${io.info}: io should be a bundle type, but has type ${t.serialize}")
       })).head.tpe
       val stmts = new Statements
       val newMod = m map connectDaisyPort(stmts) match {

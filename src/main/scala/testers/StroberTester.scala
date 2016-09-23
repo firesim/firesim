@@ -27,13 +27,11 @@ abstract class StroberTester[+T <: chisel3.Module](
   }
   protected[testers] val daisyWidth = sim.daisyWidth
   protected[testers] implicit val channelWidth = sim.channelWidth
-  protected[testers] val chainLen = StroberCompiler.context.chainLen
-  protected[testers] val chainLoop = StroberCompiler.context.chainLoop.toMap
   private val chainFile = new File(StroberCompiler.context.dir, s"${targetName}.chain")
   private val isSnapshotting = chainFile.exists
-  protected[testers] lazy val chainReader = new DaisyChainReader(chainFile, chainLoop, daisyWidth)
+  protected[testers] lazy val (chainReader, chainLoop, chainLen) =
+    DaisyChainReader(chainFile, daisyWidth)
   
-
   private val sampleNum = StroberCompiler.context.sampleNum
   private val samples = Array.fill(sampleNum){new Sample}
   private var lastSample: Option[(Sample, Int)] = None

@@ -6,7 +6,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
 import firrtl.Utils.{sub_type, field_type, create_exps}
-import scala.collection.mutable.{Stack, HashSet, LinkedHashSet}
+import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {
@@ -40,8 +40,6 @@ private[passes] object Utils {
   def instToMod = StroberTransforms.context.instToMod
   def chains = StroberTransforms.context.chains
 
-  def chainLen = StroberCompiler.context.chainLen
-  def chainLoop = StroberCompiler.context.chainLoop
   def params = StroberCompiler.context.params
   def wrappers(modules: Seq[DefModule]) =
     modules filter (x => StroberCompiler.context.wrappers(x.name))
@@ -120,30 +118,34 @@ private[passes] object Analyses extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Analyze Circuit"
 
-  def collectChildren(mname: String)(s: Statement): Statement = {
+  def collectChildren(mname: String, blackboxes: Set[String])(s: Statement): Statement = {
     s match {
-      case s: WDefInstance =>
+      case s: WDefInstance if !blackboxes(s.module) =>
         childInsts(mname) += s.name
         childMods(mname) += s.module
         instToMod(s.name -> mname) = s.module
       case _ =>
     }
-    s map collectChildren(mname)
+    s map collectChildren(mname, blackboxes)
   }
 
-  def collectChildrenMod(m: DefModule) = {
-    childInsts(m.name) = LinkedHashSet[String]()
+  def collectChildrenMod(blackboxes: Set[String])(m: DefModule) = {
+    childInsts(m.name) = ArrayBuffer[String]()
     childMods(m.name) = LinkedHashSet[String]()
-    m map collectChildren(m.name)
+    m map collectChildren(m.name, blackboxes)
   }
 
-  def run(c: Circuit) =
-    c copy (modules = c.modules map collectChildrenMod)
+  def run(c: Circuit) = {
+    val blackboxes = (c.modules collect { case m: ExtModule => m.name }).toSet
+    c copy (modules = c.modules map collectChildrenMod(blackboxes))
+  }
 }
 
-private[passes] object DumpChains extends firrtl.passes.Pass {
+private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Dump Chains"
+
+  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
 
   private def addPad(w: Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
@@ -157,50 +159,15 @@ private[passes] object DumpChains extends firrtl.passes.Pass {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
+            case s: WDefInstance if chainType == ChainType.SRAM =>
+              val seqMem = seqMems(s.module)
+              w write s"${chainType.id} ${path}.${seqMem.name}.ram ${seqMem.width} ${seqMem.depth}\n"
+              seqMem.width.toInt
             case s: DefMemory if chainType == ChainType.SRAM =>
               val width = bitWidth(s.dataType).toInt
               w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
               width
-            case s: DefMemory if s.readLatency > 0 =>
-              val ew = 1
-              val mw = 1
-              val aw = chisel3.util.log2Up(s.depth)
-              val dw = bitWidth(s.dataType).toInt
-              ((s.readers foldLeft 0){(sum, reader) =>
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${reader}.en $ew $i\n")
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${reader}.addr $aw $i\n")
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${reader}.data $dw $i\n")
-                sum + s.readLatency * (ew + aw + dw)
-              }) + ((s.writers foldLeft 0){(sum, writer) =>
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${writer}.en $ew $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${writer}.mask $mw $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${writer}.addr $aw $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${writer}.data $dw $i\n")
-                sum + (s.readLatency - 1) * (ew + mw + aw + dw)
-              }) + ((s.readwriters foldLeft 0){(sum, readwriter) =>
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.en $ew $i\n")
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.raddr $aw $i\n")
-                (0 until s.readLatency) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.rdata $dw $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wmode $ew $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wmask $mw $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.waddr $aw $i\n")
-                (0 until (s.writeLatency-1)) foreach (i =>
-                  w write s"${chainType.id} ${path}.${s.name}.${readwriter}.wdata $dw $i\n")
-                sum + s.readLatency * (ew + aw + dw) + (s.writeLatency - 1) * (ew + mw + aw + dw)
-              })
+            case s: WDefInstance => 0
             case s: DefMemory =>
               val width = bitWidth(s.dataType).toInt
               create_exps(s.name, s.dataType) foreach { mem =>
