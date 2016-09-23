@@ -12,16 +12,6 @@ private class CompilerContext {
   val wrappers = HashSet[String]()
   val params = HashMap[String, cde.Parameters]()
   val shims = ArrayBuffer[ZynqShim[_]]()
-  val chainLen = HashMap(
-    ChainType.Trace -> 0,
-    ChainType.Regs  -> 0,
-    ChainType.SRAM  -> 0,
-    ChainType.Cntr  -> 0)
-  val chainLoop = HashMap(
-    ChainType.Trace -> 0,
-    ChainType.Regs  -> 0,
-    ChainType.SRAM  -> 0,
-    ChainType.Cntr  -> 0)
   // Todo: Should be handled in the backend
   val memPorts = ArrayBuffer[junctions.NastiIO]()
   val memWires = HashSet[Chisel.Bits]()
@@ -34,18 +24,20 @@ class StroberCompiler extends firrtl.Compiler {
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.passes.InferReadWrite(TransID(-1)),
+    new firrtl.passes.ReplSeqMem(TransID(-2)),
     passes.StroberTransforms,
     new firrtl.EmitFirrtl(writer)
   )
 }
 
 // This compiler compiles HighFirrtl To verilog
-class VerilogCompiler extends firrtl.Compiler {
+class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
   def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.MiddleFirrtlToLowFirrtl,
-    new firrtl.EmitVerilogFromLowFirrtl(writer)
+    new firrtl.EmitVerilogFromLowFirrtl(writer),
+    new passes.EmitMemFPGAVerilog(writer, conf)
   )
 }
 
@@ -133,26 +125,28 @@ object StroberCompiler {
 
   private def transform[T <: chisel3.Module](w: => T, snapshot: Boolean) = {
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => w))
-    val annotations = new AnnotationMap(
-      firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)) +:
-      (if (snapshot) Seq(passes.DaisyChainAnnotation(chirrtl.main)) else Nil)
-    )
+    val conf = new File(context.dir, s"${chirrtl.main}.conf")
+    val annotations = new AnnotationMap(Seq(
+      firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
+      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2)),
+      passes.Fame1Annotation(chirrtl.main, conf)) ++ (if (snapshot) Seq(
+      passes.DaisyAnnotation(chirrtl.main, conf)) else Nil))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
     val result = new StroberCompiler compile (chirrtl, annotations, writer)
     // writer.close
     // firrtl.Parser.parse(writer.toString)
-    result.circuit
+    (result.circuit, conf)
   }
 
-  private def compile(circuit: firrtl.ir.Circuit): firrtl.ir.Circuit = {
+  private def compile(circuit: firrtl.ir.Circuit, conf: File): firrtl.ir.Circuit = {
     // Dump meta data
     context.shims foreach dumpIoMap
     context.shims foreach dumpHeader
     // Compile Verilog
     val annotations = new AnnotationMap(Nil)
     val verilog = new FileWriter(new File(context.dir, s"${circuit.main}.v"))
-    val result = new VerilogCompiler compile (circuit, annotations, verilog)
+    val result = new VerilogCompiler(conf) compile (circuit, annotations, verilog)
     verilog.close
     result.circuit
   }
@@ -162,7 +156,8 @@ object StroberCompiler {
                                    snapshot: Boolean): firrtl.ir.Circuit = {
     (contextVar withValue Some(new CompilerContext)){
       parseArgs(args.toList)
-      compile(transform(w, snapshot))
+      val (circuit, conf) = transform(w, snapshot)
+      compile(circuit, conf)
     }
   }
 
@@ -172,7 +167,8 @@ object StroberCompiler {
                                    snapshot: Boolean = true): T = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
-      compile(transform(w, snapshot))
+      val (circuit, conf) = transform(w, snapshot)
+      compile(circuit, conf)
       val testerArgs = Array("--targetDir", context.dir.toString,
         "--backend", backend, "--genHarness", "--compile", "--test")
       iotesters.chiselMain(testerArgs, () => w)
@@ -186,7 +182,8 @@ object StroberCompiler {
                                  (tester: T => testers.StroberTester[T]): T = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
-      val c = compile(transform(w, snapshot))
+      val (circuit, conf) = transform(w, snapshot)
+      val c = compile(circuit, conf)
       val log = new File(context.dir, s"${c.main}.log")
       val targs = Array(
         "--targetDir", context.dir.toString,
@@ -205,7 +202,8 @@ object StroberCompiler {
                                (tester: T => testers.StroberTester[T]) = {
     (contextVar withValue Some(new CompilerContext)) {
       parseArgs(args.toList)
-      val c = transform(w, snapshot)
+      val (circuit, conf) = transform(w, snapshot)
+      val c = compile(circuit, conf)
       val cmd = new File(context.dir, backend match {
         case "verilator" => s"V${c.main}" case _ => c.main
       })

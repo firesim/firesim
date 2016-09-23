@@ -1,7 +1,7 @@
 package strober
 package testers
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 // Enum type for replay commands
 object SampleInstType extends Enumeration {
@@ -16,17 +16,36 @@ case class PokePort(node: String, value: BigInt) extends SampleInst
 case class ExpectPort(node: String, value: BigInt) extends SampleInst
 case class Count(node: String, value: BigInt) extends SampleInst
 
-private[testers] class DaisyChainReader(
-    chainFile: java.io.File, chainLoop: Map[ChainType.Value, Int], daisyWidth: Int) {
-  type ChainInfo = ArrayBuffer[(Option[String], Int, Int)]
-  /* (Signal, Width, Index) */
-  private val chains = Map(
-    ChainType.Trace -> new ChainInfo,
-    ChainType.Regs  -> new ChainInfo,
-    ChainType.SRAM  -> new ChainInfo,
-    ChainType.Cntr  -> new ChainInfo
-  )
+private[testers] object DaisyChainReader {
+  type ChainMap = Map[ChainType.Value, Seq[(Option[String], Int, Int)]]
+  type ChainLoop = Map[ChainType.Value, Int]
+  type ChainLen = Map[ChainType.Value, Int]
+  def apply(chainFile: java.io.File, daisyWidth: Int)  = {
+    type ChainInfo = ArrayBuffer[(Option[String], Int, Int)]
+    val chains = (ChainType.values.toList map (_ -> new ChainInfo)).toMap
+    val chainLoop = HashMap((ChainType.values.toList map (_ -> 0)):_*)
+    val chainLen = HashMap((ChainType.values.toList map (_ -> 0)):_*)
+    (io.Source fromFile chainFile).getLines foreach { line =>
+      val tokens = line split " "
+      assert(tokens.size == 4)
+      val chainType = ChainType(tokens.head.toInt)
+      val signal = tokens(1) match { case "null" => None case p => Some(p) }
+      val width = tokens(2).toInt
+      val depth = tokens(3).toInt
+      chains(chainType) += ((signal, width, depth))
+      chainLen(chainType) += width
+      chainLoop(chainType) =
+        if (chainType == ChainType.SRAM) chainLoop(chainType) max depth else 1
+    }
+    (new DaisyChainReader(chains map { case (k, v) => k -> v.toSeq }, chainLoop.toMap, daisyWidth),
+     chainLoop.toMap, chainLen.toMap map { case (k, v) => k -> (v / daisyWidth) })
+  }
+}
 
+private class DaisyChainReader(
+    chains: DaisyChainReader.ChainMap,
+    chainLoop: DaisyChainReader.ChainLoop,
+    daisyWidth: Int) {
   private def readChain(t: ChainType.Value, sample: Sample, snap: String, base: Int = 0) = {
     val idx = ((0 until chainLoop(t)) foldLeft base){case (offset, i) =>
       val next = (chains(t) foldLeft offset){case (start, (signal, width, idx)) =>
@@ -67,14 +86,6 @@ private[testers] class DaisyChainReader(
     sample
   }
 
-  (io.Source fromFile chainFile).getLines foreach { line =>
-    val tokens = line split " "
-    assert(tokens.size == 4)
-    chains(ChainType(tokens(0).toInt)) += ((tokens(1) match {
-      case "null" => None
-      case signal => Some(signal) 
-    }, tokens(2).toInt, tokens(3).toInt))
-  }
 }
 
 object Sample {

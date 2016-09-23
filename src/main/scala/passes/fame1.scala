@@ -10,11 +10,12 @@ import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-private[passes] object Fame1Transform extends firrtl.passes.Pass {
+private[passes] class Fame1Transform(conf: java.io.File) extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
 
+  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
   private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
@@ -22,6 +23,16 @@ private[passes] object Fame1Transform extends firrtl.passes.Pass {
 
   private def collect(ens: Enables)(s: Statement): Statement = {
     s match {
+      case s: WDefInstance => seqMems get s.module match {
+        case None =>
+        case Some(seqMem) => ens ++= (seqMem.readers.indices map (i =>
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"R$i"), "en").serialize
+        )) ++ (seqMem.writers.indices map (i =>
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"W$i"), "en").serialize
+        )) ++ (seqMem.readwriters.indices map { i =>
+          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "en").serialize
+        })
+      }
       case s: DefMemory => ens ++= (
         (s.readers ++ s.writers ++ s.readwriters)
         map (memPortField(s, _, "en").serialize)
@@ -32,8 +43,10 @@ private[passes] object Fame1Transform extends firrtl.passes.Pass {
   }
 
   private val WrappedBool = wt(BoolType)
-  private def connect(ens: Enables, stmts: Statements)(s: Statement): Statement = s match {
-    case s: WDefInstance =>
+  private def connect(ens: Enables,
+                      stmts: Statements)
+                      (s: Statement): Statement = s match {
+    case s: WDefInstance if !(seqMems contains s.module) =>
       Block(Seq(s,
         Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire),
         Connect(NoInfo, wsub(wref(s.name), "daisyReset"), daisyReset)
