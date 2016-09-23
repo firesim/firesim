@@ -1,72 +1,85 @@
 package strober
 package passes
 
+import Utils._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.Utils.BoolType
+import firrtl.passes.MemPortUtils.memPortField
+import WrappedType.wt
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
 private[passes] object Fame1Transform extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
-  import Utils._
+  type Enables = collection.mutable.HashSet[String]
+  type Statements = collection.mutable.ArrayBuffer[Statement]
 
-  private def transform(m: DefModule): DefModule = m match {
-    case m: ExtModule => m
-    case m: Module =>
-      val targetFirePort = Port(NoInfo, "targetFire", Input, UIntType(IntWidth(1)))
-      val daisyResetPort = Port(NoInfo, "daisyReset", Input, UIntType(IntWidth(1)))
-      def targetFire = wref(targetFirePort.name)
-      def daisyReset = wref(daisyResetPort.name)
-      def notTargetFire = DoPrim(PrimOps.Not, Seq(targetFire), Nil, ut)
-      def collectEnables(s: Statement): Seq[String] = s match {
-        case s: DefMemory =>
-          (s.readers map (r => s"${s.name}.${r}.en")) ++
-          (s.writers map (w => s"${s.name}.${w}.en")) ++
-          (s.readwriters map (rw => s"${s.name}.${rw}.en"))
-        case s: Block => s.stmts flatMap collectEnables
-        case _ => Nil
-      }
-      val enables = collectEnables(m.body).toSet
-      val stmts = ArrayBuffer[Statement]()
-      def connectTargetFire(s: Statement): Statement = {
-        s map connectTargetFire match {
-          case inst: WDefInstance =>
-            Block(Seq(inst,
-              Connect(NoInfo, wsub(wref(inst.name), "targetFire"), targetFire),
-              Connect(NoInfo, wsub(wref(inst.name), "daisyReset"), daisyReset)
-            ))
-          case reg: DefRegister =>
-            stmts += Conditionally(NoInfo, targetFire, EmptyStmt,
-              Connect(NoInfo, wref(reg.name), wref(reg.name)))
-            reg
-          case Connect(info, loc, exp) if enables(loc.serialize) =>
-            val node = DefNode(NoInfo, s"""${loc.serialize replace (".", "_")}_fire""",
-              DoPrim(PrimOps.And, Seq(exp, targetFire), Seq(), ut))
-            Block(Seq(node, Connect(info, loc, wref(node.name))))
-          case s => s
-        }
-      }
+  private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
+  private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
+  private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
+  private val daisyReset = wref(daisyResetPort.name, daisyResetPort.tpe)
 
-      Module(m.info, m.name, m.ports ++ Seq(targetFirePort, daisyResetPort),
-        Block((m.body map connectTargetFire) +: stmts.toSeq))
+  private def collect(ens: Enables)(s: Statement): Statement = {
+    s match {
+      case s: DefMemory => ens ++= (
+        (s.readers ++ s.writers ++ s.readwriters)
+        map (memPortField(s, _, "en").serialize)
+      )
+      case _ =>
+    }
+    s map collect(ens)
   }
 
-  def run(c: Circuit) = {
-    val transformedModules = (wrappers(c.modules) flatMap {
+  private val WrappedBool = wt(BoolType)
+  private def connect(ens: Enables, stmts: Statements)(s: Statement): Statement = s match {
+    case s: WDefInstance =>
+      Block(Seq(s,
+        Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire),
+        Connect(NoInfo, wsub(wref(s.name), "daisyReset"), daisyReset)
+      ))
+    case s: DefRegister =>
+      val regRef = wref(s.name, s.tpe)
+      stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
+      s
+    case s: Print =>
+      s copy (en = and(s.en, targetFire))
+    case s: Stop =>
+      s copy (en = and(s.en, targetFire))
+    case s: Connect => s.loc match {
+      case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
+        s copy (expr = and(s.expr, targetFire))
+      case _ => s
+    }
+    case s => s map connect(ens, stmts)
+  }
+
+  private def transform(m: DefModule): DefModule = {
+    val ens = new Enables
+    val stmts = new Statements
+    m map collect(ens) map connect(ens, stmts) match {
       case m: Module =>
-        def connectTargetFire(s: Statement): Seq[Connect] = s match {
-          case s: WDefInstance if s.name == "target" => Seq(
-            Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire")),
-            Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset"))
-          )
-          case s: Block => s.stmts flatMap connectTargetFire
-          case s => Nil
-        }
-        val body = Block(m.body +: connectTargetFire(m.body))
-        (preorder(targets(m, c.modules), c.modules)(transform) map (
-          x => x.name -> x)) :+ (m.name -> Module(m.info, m.name, m.ports, body))
-      case m: ExtModule => Seq(m.name -> m)
-    }).toMap
-    Circuit(c.info, c.modules map (m => transformedModules getOrElse (m.name, m)), c.main)
+        m copy (ports = m.ports ++ Seq(targetFirePort, daisyResetPort),
+                body = Block(m.body +: stmts))
+      case m: ExtModule => m
+    }
   }
+
+  private def connectTargetFire(s: Statement): Statement = s match {
+    case s: WDefInstance if s.name == "target" => Block(Seq(s,
+      Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire", BoolType)),
+      Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))
+    ))
+    case s => s map connectTargetFire
+  }
+
+  def run(c: Circuit) = c copy (modules = {
+    val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()){ (map, m) =>
+      map ++ (
+        (preorder(targets(m, c.modules), c.modules)(transform) :+
+        (m map connectTargetFire)) map (m => m.name -> m)
+      )
+    }
+    c.modules map (m => modMap getOrElse (m.name, m))
+  })
 }
