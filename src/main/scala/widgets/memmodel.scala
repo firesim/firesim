@@ -55,7 +55,10 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   attach(latency, "LATENCY")
 
   val tNasti = io.tNasti.hostBits
-  val tFire = io.tNasti.hostOut.fire() && io.tNasti.hostIn.fire()
+  val tFire = io.tNasti.hostOut.hostValid && io.tNasti.hostIn.hostReady
+  io.tNasti.hostOut.hostReady := tFire
+  io.tNasti.hostIn.hostValid := tFire
+
 
   when(tFire) { cycles := cycles + UInt(1) }
   r_cycles.io.enq.bits := cycles + latency
@@ -84,8 +87,9 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   tNasti.b.bits <> b_buf.io.deq.bits
   tNasti.r.valid := r_buf.io.deq.valid && (r_cycles.io.deq.bits <= cycles) && r_cycles.io.deq.valid
   tNasti.b.valid := b_buf.io.deq.valid && (w_cycles.io.deq.bits <= cycles) && w_cycles.io.deq.valid
-  r_buf.io.deq.ready := tNasti.r.ready && tFire
-  b_buf.io.deq.ready := tNasti.b.ready && tFire
+  r_buf.io.deq.ready := tNasti.r.ready && tFire && (r_cycles.io.deq.bits <= cycles) && r_cycles.io.deq.valid
+  b_buf.io.deq.ready := tNasti.b.ready && tFire && (w_cycles.io.deq.bits <= cycles) && w_cycles.io.deq.valid
+
   r_buf.io.enq <> io.host_mem.r
   b_buf.io.enq <> io.host_mem.b
 
