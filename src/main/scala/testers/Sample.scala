@@ -25,17 +25,19 @@ private[testers] object DaisyChainReader {
     val chains = (ChainType.values.toList map (_ -> new ChainInfo)).toMap
     val chainLoop = HashMap((ChainType.values.toList map (_ -> 0)):_*)
     val chainLen = HashMap((ChainType.values.toList map (_ -> 0)):_*)
-    (io.Source fromFile chainFile).getLines foreach { line =>
-      val tokens = line split " "
-      assert(tokens.size == 4)
-      val chainType = ChainType(tokens.head.toInt)
-      val signal = tokens(1) match { case "null" => None case p => Some(p) }
-      val width = tokens(2).toInt
-      val depth = tokens(3).toInt
-      chains(chainType) += ((signal, width, depth))
-      chainLen(chainType) += width
-      chainLoop(chainType) =
-        if (chainType == ChainType.SRAM) chainLoop(chainType) max depth else 1
+    if (chainFile.exists) {
+      (io.Source fromFile chainFile).getLines foreach { line =>
+        val tokens = line split " "
+        assert(tokens.size == 4)
+        val chainType = ChainType(tokens.head.toInt)
+        val signal = tokens(1) match { case "null" => None case p => Some(p) }
+        val width = tokens(2).toInt
+        val depth = tokens(3).toInt
+        chains(chainType) += ((signal, width, depth))
+        chainLen(chainType) += width
+        chainLoop(chainType) =
+          if (chainType == ChainType.SRAM) chainLoop(chainType) max depth else 1
+      }
     }
     (new DaisyChainReader(chains map { case (k, v) => k -> v.toSeq }, chainLoop.toMap, daisyWidth),
      chainLoop.toMap, chainLen.toMap map { case (k, v) => k -> (v / daisyWidth) })
