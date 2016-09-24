@@ -58,6 +58,8 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
   }
 }
 
+// TODO: Need to handle names better; try and stick ctrl IO elaboration in here,
+// instead of relying on the widget writer
 object Widget {
   def apply[T <: Widget](m: =>T, wName: String): T = {
     val w = Module(m)
@@ -67,9 +69,6 @@ object Widget {
     w
   }
 }
-
-/** Every elaborated SCR file ends up in this global arry so it can be printed
-  * out later. */
 
 object WidgetRegion {
   def apply(align: BigInt) = {
@@ -123,7 +122,6 @@ trait HasWidgets {
   def printWidgets(){widgets foreach{(w: Widget) => println(w.wName)}}
 
   def getCRAddr(wName: String, crName: String): BigInt = {
-    printWidgets
     val widget = name2inst.get(wName).getOrElse(
       throw new RuntimeException("Could not find Widget: $wName"))
 

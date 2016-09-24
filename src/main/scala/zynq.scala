@@ -297,14 +297,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
   ar foreach (_.io.out.ready := mem.ar.fire())
   w  foreach (_.io.out.ready := mem.w.fire())
   r  foreach (_.io.in.valid  := mem.r.fire())
-  
+ 
   private def targetConnect[T <: Data](arg: (T, T)): Unit = arg match {
     case (target: Bundle, wires: Bundle) => 
       (target.elements.unzip._2 zip wires.elements.unzip._2) foreach targetConnect
     case (target: Vec[_], wires: Vec[_]) => 
       (target.toSeq zip wires.toSeq) foreach targetConnect
     case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
-      target := Vec(sim.io.getOuts(wire) map (_.bits)).toBits
+       target := Cat(sim.io.getOuts(wire).map(_.bits))
     case (target: Bits, wire: Bits) if wire.dir == INPUT => 
       sim.io.getIns(wire).zipWithIndex foreach {case (in, i) => 
         in.bits := target >> UInt(i * sim.io.channelWidth) 
@@ -312,10 +312,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     case _ =>
   }
 
-  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
-
+  private def hostConnect[T <: Data](port: HostPortIO[T], wires: T): Unit = {
     val (ins, outs) = SimUtils.parsePorts(wires)
-    val inWires = ins map (_._1) // String the names off the tuples
+    val inWires = ins map (_._1)
     val outWires = outs map(_._1)
     def andReduceChunks(b: Bits): Bool = {
       b.dir match {
@@ -328,17 +327,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
         case _ => throw new RuntimeException("Wire must have a direction")
       }
     }
-
     // First reduce the chunks for each field; and then the fields themselves
     port.hostOut.hostValid := outWires map (andReduceChunks(_)) reduce(_ && _)
     port.hostIn.hostReady := inWires map (andReduceChunks(_)) reduce(_ && _)
-
     // Pass the hostReady back to the chunks of all target driven fields
     outWires foreach {(outWire: Bits) => {
       val chunks = sim.io.getOuts(outWire)
       chunks foreach (_.ready := port.hostOut.hostReady)
     }}
-
     // Pass the hostValid back to the chunks for all target sunk fields
     inWires foreach {(inWire: Bits) => {
       val chunks = sim.io.getIns(inWire)
@@ -346,13 +342,23 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     }}
   }
 
+  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
+    hostConnect(port, wires)
+    targetConnect(port.hostBits -> wires)
+  }
+
   (0 until SimMemIO.size) foreach { i =>
     val model = addWidget(new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey))), s"MemModel_$i")
-    val wires = SimMemIO(i)
-    model.reset := reset || hostReset
     arb.io.master(i) <> model.io.host_mem
-    targetConnect(model.io.tNasti.hostBits -> wires)
-    channels2Port(model.io.tNasti, wires)
+    model.reset := reset || hostReset
+
+    //Queue HACK: fake two output token by connected hostIn.hostValid = simReset
+    val wires = SimMemIO(i)
+    val simResetReg = RegNext(simReset)
+    val fakeTNasti = Wire(model.io.tNasti.cloneType)
+    model.io.tNasti <> fakeTNasti
+    fakeTNasti.hostIn.hostValid := model.io.tNasti.hostIn.hostValid || simReset || simResetReg
+    channels2Port(fakeTNasti, wires)
   }
   genCtrlIO(io.master)
   StroberCompiler annotate this
