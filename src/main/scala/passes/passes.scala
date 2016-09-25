@@ -159,29 +159,33 @@ private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
-            case s: WDefInstance if chainType == ChainType.SRAM =>
+            case s: WDefInstance =>
               val seqMem = seqMems(s.module)
-              w write s"${chainType.id} ${path}.${seqMem.name}.ram ${seqMem.width} ${seqMem.depth}\n"
-              seqMem.width.toInt
-            case s: DefMemory if chainType == ChainType.SRAM =>
-              val width = bitWidth(s.dataType).toInt
-              w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
-              width
-            case s: WDefInstance => 0
-            case s: DefMemory =>
-              val width = bitWidth(s.dataType).toInt
-              create_exps(s.name, s.dataType) foreach { mem =>
-                (0 until s.depth) map (widx(mem, _)) foreach { e =>
-                  w write s"${chainType.id} ${path}.${e.serialize} ${width} -1\n"
-                }
+              chainType match {
+                case ChainType.SRAM =>
+                  w write s"${chainType.id} ${path}.${seqMem.name}.ram "
+                  w write s"${seqMem.width} ${seqMem.depth}\n"
+                  seqMem.width.toInt
+                case _ => 0 // TODO
               }
-              width
-            case s: DefRegister =>
-              val width = bitWidth(s.tpe).toInt
-              create_exps(s.name, s.tpe) foreach { reg =>
-                w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
+            case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
+              val width = bitWidth(mem.tpe).toInt
+              chainType match {
+                case ChainType.SRAM =>
+                  w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
+                  totalWidth + width
+                case _ =>
+                  (0 until s.depth) map (widx(mem, _)) foreach { e =>
+                    w write s"${chainType.id} ${path}.${e.serialize} ${width} -1\n"
+                  }
+                  totalWidth + s.depth * width
               }
-              width
+            }
+            case s: DefRegister => (create_exps(s.name, s.tpe) foldLeft 0){ (totalWidth, reg) =>
+              val width = bitWidth(reg.tpe).toInt
+              w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
+              totalWidth + width
+            }
           })
           val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           chainType match {
