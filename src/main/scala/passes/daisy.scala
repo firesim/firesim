@@ -8,6 +8,7 @@ import firrtl.Mappers._
 import firrtl.Utils._
 import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
+import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
 
 private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.Pass {
@@ -85,7 +86,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         case s: DefMemory if !bigRegFile(s) =>
           chains += s
         case s: WDefInstance if seqMems contains s.module =>
-          // chains += s
+          chains += s
         case _ =>
       }
       case ChainType.SRAM => s match {
@@ -168,7 +169,18 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         )
         hasChain += m.name
         val stmts = new Statements
+        val netlist = new Netlist
+        lazy val mnamespace = Namespace(m)
+        def insertBuf(name: String, value: Expression) = {
+          val buf = wref(mnamespace newName name, value.tpe, RegKind)
+          stmts ++= Seq(
+            DefRegister(NoInfo, buf.name, buf.tpe, clocks.head, zero, buf),
+            Conditionally(NoInfo, wref("targetFire"), EmptyStmt, Connect(NoInfo, buf, value))
+          )
+          buf
+        }
         val regs = chains(chainType)(m.name) flatMap {
+          case s: DefRegister => create_exps(s.name, s.tpe)
           case s: DefMemory =>
             val rs = (0 until s.depth) map (i => s"scan_$i")
             val mem = s copy (readers = s.readers ++ rs)
@@ -176,8 +188,16 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
             readers(s.name) = rs
             ((0 until exps.head.size) foldLeft Seq[Expression]())(
               (res, i) => res ++ (exps map (_(i))))
-          case s: DefRegister => create_exps(s.name, s.tpe)
-          case s => Nil
+          case s: WDefInstance =>
+            if (netlist.isEmpty) buildNetlist(netlist)(m.body)
+            val seqMem = seqMems(s.module)
+            val mem = wref(s.name, s.tpe, InstanceKind)
+            val addr = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "addr"))) ++
+                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "addr")))
+            val data = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
+                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
+            (addr map (v => insertBuf(s"${loweredName(v)}_buf", netlist(v.serialize)))) /* ++
+            (data map (v => insertBuf(s"${loweredName(v)}_buf", v))) */
         }
         stmts ++ instStmts ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth)
     }
