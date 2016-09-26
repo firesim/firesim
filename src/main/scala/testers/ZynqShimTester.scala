@@ -2,6 +2,7 @@ package strober
 package testers
 
 import junctions._
+import midas_widgets._
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 import java.io.{File, InputStream}
 
@@ -54,13 +55,13 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
   }
 
-  def writeCR(wName: String, crName: String, value: BigInt){
-    val addr = c.getCRAddr(wName, crName)
+  def writeCR(w: Widget, crName: String, value: BigInt){
+    val addr = c.getCRAddr(w, crName)
     pokeChannel(addr, value)
   }
 
-  def readCR(wName: String, crName: String) = {
-    val addr = c.getCRAddr(wName, crName)
+  def readCR(w: Widget, crName: String) = {
+    val addr = c.getCRAddr(w, crName)
     peekChannel(addr)
   }
 
