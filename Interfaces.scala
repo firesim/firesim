@@ -6,9 +6,10 @@ import Chisel._
 // Adapted from DecoupledIO in Chisel3
 class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-  val hostBits  = gen.cloneType
+  val hReady = Bool(INPUT)
+  val hValid = Bool(OUTPUT)
+  val hBits  = gen.cloneType
+  def fire(dummy: Int = 0): Bool = hReady && hValid
   override def cloneType: this.type =
     new HostDecoupledIO(gen).asInstanceOf[this.type]
 }
@@ -22,9 +23,9 @@ object HostDecoupled {
 
 
 class HostReadyValid extends Bundle {
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-  def fire(dummy: Int = 0): Bool = hostReady && hostValid
+  val hReady= Bool(INPUT)
+  val hValid = Bool(OUTPUT)
+  def fire(dummy: Int = 0): Bool = hReady && hValid
 }
 
 /**
@@ -32,7 +33,7 @@ class HostReadyValid extends Bundle {
   * Previously we had difficulties generating hostPortIOs with flipped
   * aggregates of aggregates. We thus had to manually flip the subfields of the
   * aggregate in a new class (ex. the FlipNastiIO). tokenFlip captures
-  * whether hostBits should be flipped when it is cloned.
+  * whether hBits should be flipped when it is cloned.
   *
   * thus what would ideally be expressed as HostPort((new NastiIO).flip) must
   * be expressed as HostPort((new NastiIO), tokenFlip = true)
@@ -40,9 +41,9 @@ class HostReadyValid extends Bundle {
 
 class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
 {
-  val hostIn = (new HostReadyValid).flip
-  val hostOut = new HostReadyValid
-  val hostBits  = if(tokenFlip) gen.cloneType.flip else gen cloneType
+  val fromHost = (new HostReadyValid).flip
+  val toHost = new HostReadyValid
+  val hBits  = if(tokenFlip) gen.cloneType.flip else gen cloneType
   override def cloneType: this.type =
     new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
 }
@@ -63,59 +64,19 @@ object HostPort {
   */
 class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
-  val hostReady = Bool(INPUT)
-  val hostValid = Bool(OUTPUT)
-  val hostBits  = gen.cloneType.asOutput
-  def fire(dummy: Int = 0): Bool = hostReady && hostValid
+  val hReady = Bool(INPUT)
+  val hValid = Bool(OUTPUT)
+  val hBits  = gen.cloneType.asOutput
+  def fire(dummy: Int = 0): Bool = hReady && hValid
   override def cloneType: this.type =
     new MidasDecoupledIO(gen).asInstanceOf[this.type]
 }
 
-/** Adds a hostReady-hostValid handshaking protocol to any interface.
+/** Adds a hReady-hValid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
   */
 object MidasDecoupled {
   def apply[T <: Data](gen: T): MidasDecoupledIO[T] = new MidasDecoupledIO(gen)
-}
-
-
-/** An I/O Bundle for MIDAS modules
-  * WIP - This only supports a subset of the features we discussed in the deep
-  *       dive for the purposes of the demo
-  *
-  * reset - driven by the simulation controller to put the simulator into it's
-  *   initial state. Distinct from the target reset (which is asserted during
-  *   execution) in most cases this can drive the module's implicit reset
-  * resetDone -
-  *   asserted by simulation modules when they've completed their initialization
-  * go - driven by the simulation controller, begins the simulation, by
-  *   permitting the queues to enq and deq simulation tokens
-  * done - driven by a subset of simulation modules, that have sufficient
-  *   knowledge of the target design to decide if the simulation should
-  *   complete. Ultimately the master holds the reigns
-  *
-  */
-class MidasControlIO extends Bundle {
-  val simReset = Bool(INPUT)
-  val simResetDone = Bool(OUTPUT)
-  val go = Bool(INPUT)
-  val done = Bool(OUTPUT)
-
-  def fanout(slaves : Seq[MidasControlIO]) = {
-    slaves map (this <> _)
-    this.done := slaves map (_.done) reduce (_ && _)
-    this.simResetDone := slaves map (_.simResetDone) reduce (_ && _)
-  }
-}
-
-object MidasControl {
-  def apply(doneVal: Bool = Bool(true), resetDoneVal: Bool = Bool(true)) :
-  MidasControlIO = {
-    val mc = Wire(new MidasControlIO())
-    mc.done := doneVal
-    mc.simResetDone := resetDoneVal
-    mc
-  }
 }
 
 /** An I/O Bundle for Queues
@@ -130,6 +91,4 @@ class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   val deq   = MidasDecoupled(gen.cloneType)
   /** The current amount of data in the queue */
   val count = UInt(OUTPUT, log2Up(entries + 1))
-  /** The MIDAS control interface */
-  val ctrl = new MidasControlIO
 }
