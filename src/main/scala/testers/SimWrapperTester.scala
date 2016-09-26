@@ -17,7 +17,7 @@ abstract class SimWrapperTester[+T <: chisel3.Module](
   }
 
   protected[testers] def peekChannel(addr: Int) = {
-    _eventually(!outs(addr).outputs.isEmpty)
+    Predef.assert(_eventually(!outs(addr).outputs.isEmpty), "no peek output")
     outs(addr).outputs.dequeue
   }
 
@@ -27,18 +27,21 @@ abstract class SimWrapperTester[+T <: chisel3.Module](
       t match {
         case ChainType.SRAM =>
           _poke(c.io.daisy.sram(i).restart, 1)
-          _eventually(_peek(c.io.daisy(t)(i).out.valid))
+          Predef.assert(_eventually(_peek(c.io.daisy(t)(i).out.valid)),
+                 "scan chain not available")
           _poke(c.io.daisy.sram(i).restart, 0)
         case _ =>
-          _eventually(_peek(c.io.daisy(t)(i).out.valid))
+          Predef.assert(_eventually(_peek(c.io.daisy(t)(i).out.valid)),
+                 "scan chain not available")
       }
       for (_ <- 0 until chainLen(t)) {
+        Predef.assert(_peek(c.io.daisy(t)(i).out.valid), "scan chain not available")
         chain append intToBin(_peek(c.io.daisy(t)(i).out.bits), daisyWidth)
         _poke(c.io.daisy(t)(i).out.ready, 1)
         backend.step(1)
         _poke(c.io.daisy(t)(i).out.ready, 0)
       }
-      assert(!_peek(c.io.daisy(t)(i).out.valid))
+      Predef.assert(!_peek(c.io.daisy(t)(i).out.valid), "scan chain should be empty")
     }
     chain.result
   }
