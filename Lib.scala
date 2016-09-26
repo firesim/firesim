@@ -7,9 +7,6 @@ import junctions._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-
-case object MidasBaseAddr extends Field[BigInt]
-
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
   * Returns a Seq of the leaf nodes with their absolute/final direction.
   */
@@ -165,10 +162,10 @@ class MultiQueue[T <: Data](
   * Modified from chisel3 util/Decoupled.scala
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
-  * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''hostReady'' signals are
+  * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''hReady'' signals are
   * combinationally coupled.
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
-  * The ''hostValid'' signals are coupled.
+  * The ''hValid'' signals are coupled.
   *
   * Example usage:
   *    {{{ val q = new Queue(UInt(), 16)
@@ -191,12 +188,12 @@ class MidasQueue[T <: Data](gen: T, val entries: Int,
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
   val maybe_flow = Bool(flow) && empty
-  val do_flow = maybe_flow && io.deq.hostReady
+  val do_flow = maybe_flow && io.deq.hReady
 
-  val do_enq = io.enq.hostReady && io.enq.hostValid && !do_flow
-  val do_deq = io.deq.hostReady && io.deq.hostValid && !do_flow
+  val do_enq = io.enq.hReady && io.enq.hValid && !do_flow
+  val do_deq = io.deq.hReady && io.deq.hValid && !do_flow
   when (do_enq) {
-    ram(enq_ptr.value) := io.enq.hostBits
+    ram(enq_ptr.value) := io.enq.hBits
     enq_ptr.inc()
   }
   when (do_deq) {
@@ -206,9 +203,9 @@ class MidasQueue[T <: Data](gen: T, val entries: Int,
     maybe_full := do_enq
   }
 
-  io.deq.hostValid := !empty || Bool(flow) && io.enq.hostValid
-  io.enq.hostReady := !full || Bool(pipe) && io.deq.hostReady
-  io.deq.hostBits := Mux(maybe_flow, io.enq.hostBits, ram(deq_ptr.value))
+  io.deq.hValid := !empty || Bool(flow) && io.enq.hValid
+  io.enq.hReady := !full || Bool(pipe) && io.deq.hReady
+  io.deq.hBits := Mux(maybe_flow, io.enq.hBits, ram(deq_ptr.value))
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
@@ -238,16 +235,17 @@ object HostMux {
   def apply[T <: Data](sel: Bool, a : HostDecoupledIO[T], b : HostDecoupledIO[T]) : HostDecoupledIO[T] =
   {
     val output = Wire(a.cloneType)
-    output.hostValid := a.hostValid || b.hostValid
-    output.hostBits := Mux(sel, a.hostBits, b.hostBits)
-    a.hostReady := sel && output.hostReady
-    b.hostReady := ~sel && output.hostReady
+    output.hValid := a.hValid || b.hValid
+    output.hBits := Mux(sel, a.hBits, b.hBits)
+    a.hReady := sel && output.hReady
+    b.hReady := ~sel && output.hReady
     output
   }
 }
 
 // A simple implementation of a simulation queue that injects a set of
 // simulation tokens into on reset
+/*
 class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numInitTokens:Int = 0) extends Module {
   require(numInitTokens < entries, s"The capacity of the queue must be >= the number of initialization tokens")
   val io = new MidasQueueIO(gen.cloneType, entries)
@@ -279,13 +277,13 @@ class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numI
   }
 
   val initToken = init()
-  queue.io.enq.bits := Mux(~simRunning,initToken,io.enq.hostBits)
-  queue.io.enq.valid := ~doneInit || io.enq.hostValid
-  io.enq.hostReady := simRunning && queue.io.enq.ready
-  io.deq.hostBits := queue.io.deq.bits
-  io.deq.hostValid := simRunning && queue.io.deq.valid
-  queue.io.deq.ready := io.deq.hostReady
-}
+  queue.io.enq.bits := Mux(~simRunning,initToken,io.enq.hBits)
+  queue.io.enq.valid := ~doneInit || io.enq.hValid
+  io.enq.hReady := simRunning && queue.io.enq.ready
+  io.deq.hBits := queue.io.deq.bits
+  io.deq.hValid := simRunning && queue.io.deq.valid
+  queue.io.deq.ready := io.deq.hReady
+} */
 
 /** Stores a map between SCR file names and address in the SCR file, which can
   * later be dumped to a header file for the test bench. */
