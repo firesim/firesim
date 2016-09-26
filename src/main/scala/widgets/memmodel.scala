@@ -1,4 +1,4 @@
-package strober
+package midas_widgets
 
 import midas._
 import Chisel._
@@ -8,6 +8,9 @@ import junctions._
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.collection.immutable.ListSet
 
+abstract class MemModelConfig
+case object MemModelKey extends Field[Option[MemModelConfig]]
+
 class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
   val ready  = Bool(INPUT)
   val valid  = Bool(OUTPUT)
@@ -16,27 +19,12 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
   override def cloneType: this.type = new SimDecoupledIO(gen)(p).asInstanceOf[this.type] 
 }
 
-// TODO: Should move to the backend
-object SimMemIO {
-  def add(mem: NastiIO) {
-    val (ins, outs) = SimUtils.parsePorts(mem)
-    StroberCompiler.context.memWires ++= ins.unzip._1
-    StroberCompiler.context.memWires ++= outs.unzip._1
-    StroberCompiler.context.memPorts += mem
-  }
-  def apply(i: Int): NastiIO = StroberCompiler.context.memPorts(i)
-  def apply(wire: Bits) = StroberCompiler.context.memWires(wire)
-  def apply(mem: NastiIO) = StroberCompiler.context.memPorts contains mem
-  def zipWithIndex = StroberCompiler.context.memPorts.toList.zipWithIndex
-  def size = StroberCompiler.context.memPorts.size
-}
-
 class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
   val tNasti = HostPort((new NastiIO), false).flip
   val host_mem =  new NastiIO
 }
 
-abstract class MemModel(implicit p: Parameters) extends Widget()(p) {
+abstract class MemModel(implicit p: Parameters) extends Widget()(p){
   val io = new MemModelIO
 }
 
@@ -54,10 +42,10 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val latency = RegInit(UInt(16, 64))
   attach(latency, "LATENCY")
 
-  val tNasti = io.tNasti.hostBits
-  val tFire = io.tNasti.hostOut.hostValid && io.tNasti.hostIn.hostReady
-  io.tNasti.hostOut.hostReady := tFire
-  io.tNasti.hostIn.hostValid := tFire
+  val tNasti = io.tNasti.hBits
+  val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady
+  io.tNasti.toHost.hReady := tFire
+  io.tNasti.fromHost.hValid := tFire
 
 
   when(tFire) { cycles := cycles + UInt(1) }

@@ -1,6 +1,8 @@
 package strober
 
 import midas._
+import midas_widgets._
+import dram_midas._
 import Chisel._
 import junctions._
 import cde.{Parameters, Field}
@@ -328,36 +330,41 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
       }
     }
     // First reduce the chunks for each field; and then the fields themselves
-    port.hostOut.hostValid := outWires map (andReduceChunks(_)) reduce(_ && _)
-    port.hostIn.hostReady := inWires map (andReduceChunks(_)) reduce(_ && _)
-    // Pass the hostReady back to the chunks of all target driven fields
+    port.toHost.hValid := outWires map (andReduceChunks(_)) reduce(_ && _)
+    port.fromHost.hReady := inWires map (andReduceChunks(_)) reduce(_ && _)
+    // Pass the hReady back to the chunks of all target driven fields
     outWires foreach {(outWire: Bits) => {
       val chunks = sim.io.getOuts(outWire)
-      chunks foreach (_.ready := port.hostOut.hostReady)
+      chunks foreach (_.ready := port.toHost.hReady)
     }}
-    // Pass the hostValid back to the chunks for all target sunk fields
+    // Pass the hValid back to the chunks for all target sunk fields
     inWires foreach {(inWire: Bits) => {
       val chunks = sim.io.getIns(inWire)
-      chunks foreach (_.valid := port.hostIn.hostValid)
+      chunks foreach (_.valid := port.fromHost.hValid)
     }}
   }
 
   private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
     hostConnect(port, wires)
-    targetConnect(port.hostBits -> wires)
+    targetConnect(port.hBits -> wires)
   }
 
   (0 until SimMemIO.size) foreach { i =>
-    val model = addWidget(new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey))), s"MemModel_$i")
+    val model = addWidget(
+      p(MemModelKey) match {
+        case Some(cfg: BaseConfig) => new MidasMemModel(cfg)(p alter Map(NastiKey -> p(SlaveNastiKey)))
+        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))},
+      s"MemModel_$i")
+
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || hostReset
 
-    //Queue HACK: fake two output token by connected hostIn.hostValid = simReset
+    //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
     val wires = SimMemIO(i)
     val simResetReg = RegNext(simReset)
     val fakeTNasti = Wire(model.io.tNasti.cloneType)
     model.io.tNasti <> fakeTNasti
-    fakeTNasti.hostIn.hostValid := model.io.tNasti.hostIn.hostValid || simReset || simResetReg
+    fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || simReset || simResetReg
     channels2Port(fakeTNasti, wires)
   }
   genCtrlIO(io.master)

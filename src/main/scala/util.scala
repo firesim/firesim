@@ -72,3 +72,18 @@ object SimUtils {
     off + getChunks(wire)
   }
 }
+
+object SimMemIO {
+  def add(mem: NastiIO) {
+    val (ins, outs) = SimUtils.parsePorts(mem)
+    StroberCompiler.context.memWires ++= ins.unzip._1
+    StroberCompiler.context.memWires ++= outs.unzip._1
+    StroberCompiler.context.memPorts += mem
+  }
+  def apply(i: Int): NastiIO = StroberCompiler.context.memPorts(i)
+  def apply(wire: Bits) = StroberCompiler.context.memWires(wire)
+  def apply(mem: NastiIO) = StroberCompiler.context.memPorts contains mem
+  def zipWithIndex = StroberCompiler.context.memPorts.toList.zipWithIndex
+  def size = StroberCompiler.context.memPorts.size
+}
+

@@ -1,4 +1,4 @@
-package strober
+package midas_widgets
 
 import midas._
 import junctions._
@@ -39,6 +39,14 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
     crRegistry.allocate(reg, name)
   }
 
+  def genAndAttachReg(wire: UInt, default: Int, name: String): UInt = {
+    require(wire.dir == INPUT || wire.dir == OUTPUT)
+    val reg = Reg(wire.cloneType, init = UInt(default))
+    if (wire.dir == OUTPUT) reg := wire else wire := reg
+    attach(reg, name)
+    reg
+  }
+
   def genCRFile() {
     val crFile = Module(new MCRFile(numRegs))
     crFile.io.nasti <> io.ctrl
@@ -49,7 +57,7 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
   def getCRAddr(name: String): Int = {
     require(_finalized == true, "Must build Widgets with their companion object")
     crRegistry.lookupAddress(name).getOrElse(
-      throw new RuntimeException(s"Could not find CR:${name} in widget: wName"))
+      throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
   def genHeader(base: BigInt, sb: StringBuilder){
@@ -124,9 +132,12 @@ trait HasWidgets {
   def getCRAddr(wName: String, crName: String): BigInt = {
     val widget = name2inst.get(wName).getOrElse(
       throw new RuntimeException("Could not find Widget: $wName"))
+    getCRAddr(widget, crName)
+  }
 
-    // TODO: Deal with byte vs word addresses
-    val base = (widgetAddrHash(wName).start >> 3)
-    base + widget.getCRAddr(crName)
+  def getCRAddr(w: Widget, crName: String): BigInt = {
+    // TODO: Deal with byte vs word addresses && don't use a name in the hash?
+    val base = (widgetAddrHash(w.getWName).start >> 3)
+    base + w.getCRAddr(crName)
   }
 }
