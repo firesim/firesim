@@ -5,10 +5,15 @@ import chisel3.Module
 import chisel3.iotesters.PeekPokeTester
 import java.io.File
 
-class RTLReplay[+T <: Module](
+abstract class Replay[+T <: Module](
     c: T,
     sampleFile: File,
-    logFile: Option[File] = None) extends PeekPokeTester(c, true, 16, logFile) {
+    logFile: Option[File]) extends PeekPokeTester(c, true, 16, logFile)
+
+class RTLReplay[+T <: Module](
+    c: T,
+    sampleFile: File = ReplayCompiler.context.sample,
+    logFile: Option[File] = None) extends Replay(c, sampleFile, logFile) {
   private val samples = Sample(sampleFile)
   // Replay samples
   val startTime = System.nanoTime
@@ -47,9 +52,9 @@ class RTLReplay[+T <: Module](
 /*** Gate-level simulation has different timing models ***/
 class GateLevelReplay[+T <: Module](
     c: T,
-    sampleFile: File,
+    sampleFile: File = ReplayCompiler.context.sample,
     // matchFile: File,
-    logFile: Option[File] = None) extends PeekPokeTester(c, true, 16, logFile) {
+    logFile: Option[File] = None) extends Replay(c, sampleFile, logFile) {
   private val samples = Sample(sampleFile)
   // private val matchMap = ((scala.io.Source fromFile matchFile).getLines map {
   //  line => val tokens = line split " " ; tokens.head -> tokens.last }).toMap
