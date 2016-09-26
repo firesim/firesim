@@ -296,7 +296,6 @@ class MCRFileMap() {
     val address = name2addr.size
     name2addr += (name -> address)
     regList.append(reg)
-    println(": %x -> ".format(address) + name)
     address
   }
 
