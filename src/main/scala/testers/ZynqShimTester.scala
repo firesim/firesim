@@ -40,13 +40,13 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   protected[testers] def pokeChannel(addr: Int, data: BigInt) {
     MAXI_aw.inputs enqueue (new NastiWriteAddr(0, addr << addrOffset))
     MAXI_w.inputs enqueue (new NastiWriteData(data))
-    _eventually(!MAXI_b.outputs.isEmpty)
+    Predef.assert(_eventually(!MAXI_b.outputs.isEmpty), "no poke response")
     MAXI_b.outputs.clear
   }
 
   protected[testers] def peekChannel(addr: Int) = {
     MAXI_ar.inputs enqueue (new NastiReadAddr(0, addr << addrOffset))
-    _eventually(!MAXI_r.outputs.isEmpty)
+    Predef.assert(_eventually(!MAXI_r.outputs.isEmpty), "no peek value")
     MAXI_r.outputs.dequeue.data
   }
 
@@ -69,7 +69,8 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     for (_ <- 0 until n) {
       pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
       pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
-      _eventually(peekChannel(ZynqCtrlSignals.DONE.id))
+      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+             "simulation is not done in time")
       _peekMap.clear
       // flush junk output tokens
       c.OUT_ADDRS foreach {case (out, addr) =>
@@ -85,7 +86,8 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    _eventually(peekChannel(ZynqCtrlSignals.DONE.id))
+    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+           "simulation is not done in time")
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
     }
@@ -118,17 +120,17 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     private def read(addr: Int) = {
       if (addr > (1 << 21)) println(s"read addr: $addr")
       val data = mem(addr & addrMask)
-      if (verbose) logger println "MEM[%x] => %x".format(addr & addrMask, data)
+      logger println "MEM[%x] => %x".format(addr & addrMask, data)
       data
     }
     private def write(addr: Int, data: BigInt) {
-      if (verbose) logger println "MEM[%x] <= %x".format(addr & addrMask, data)
+      logger println "MEM[%x] <= %x".format(addr & addrMask, data)
       mem(addr & addrMask) = data
     }
     private def loadMem(lines: Iterator[String]) {
       for ((line, i) <- lines.zipWithIndex) {
         val base = (i * line.length) / 2
-        assert(base % word_width == 0)
+        Predef.assert(base % word_width == 0)
         ((0 until line.length by 2) foldRight (BigInt(0), 0)){case (k, (data, offset)) =>
           val shift = 8 * (offset % word_width)
           val byte = ((parseNibble(line(k)) << 4) | parseNibble(line(k+1))).toByte
@@ -154,7 +156,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     def process {
       aw match {
         case Some(p) if wQ.size > p.len =>
-          assert((1 << p.size) == word_width)
+          Predef.assert((1 << p.size) == word_width)
           (0 to p.len) foreach (i =>
             write((p.addr >> off) + i, wQ.dequeue.data))
           bQ enqueue new NastiWriteResp(p.id)
@@ -204,7 +206,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     val chunk = c.arb.nastiXDataBits / 4
     lines.zipWithIndex foreach {case (line, i) =>
       val base = (i * line.length) / 2
-      assert(line.length % chunk == 0)
+      Predef.assert(line.length % chunk == 0)
       (((line.length - chunk) to 0 by -chunk) foldLeft 0){ (offset, j) =>
         writeMem(base+offset, ((0 until chunk) foldLeft BigInt(0)){ (res, k) =>
           res | (BigInt(parseNibble(line(j+k))) << (4*(chunk-1-k)))

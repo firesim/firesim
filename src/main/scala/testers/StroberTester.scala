@@ -27,13 +27,9 @@ abstract class StroberTester[+T <: chisel3.Module](
   }
   protected[testers] val daisyWidth = sim.daisyWidth
   protected[testers] implicit val channelWidth = sim.channelWidth
-  protected[testers] val chainLen = StroberCompiler.context.chainLen
-  protected[testers] val chainLoop = StroberCompiler.context.chainLoop.toMap
   private val chainFile = new File(StroberCompiler.context.dir, s"${targetName}.chain")
-  private val isSnapshotting = chainFile.exists
-  protected[testers] lazy val chainReader = new DaisyChainReader(chainFile, chainLoop, daisyWidth)
+  protected[testers] val (chainReader, chainLoop, chainLen) = DaisyChainReader(chainFile, daisyWidth)
   
-
   private val sampleNum = StroberCompiler.context.sampleNum
   private val samples = Array.fill(sampleNum){new Sample}
   private var lastSample: Option[(Sample, Int)] = None
@@ -201,7 +197,7 @@ abstract class StroberTester[+T <: chisel3.Module](
   private var traceCount = 0
   override def step(n: Int) {
     // reservoir sampling
-    if (isSnapshotting && (cycles % traceLen == 0)) {
+    if (cycles % traceLen == 0) {
       val recordId = cycles / traceLen
       val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
       if (sampleId < sampleNum) {
@@ -220,21 +216,19 @@ abstract class StroberTester[+T <: chisel3.Module](
 
   override def reset(n: Int) {
     // flush junk traces
-    if (isSnapshotting) setLastSample(None, n)
+    setLastSample(None, n)
   }
 
   override def finish = {
-    if (isSnapshotting) setLastSample(None, traceCount)
+    setLastSample(None, traceCount)
     val file = sampleFile match {
       case None => new FileWriter(
         new File(StroberCompiler.context.dir, s"$targetName.sample"))
       case Some(f) => new FileWriter(f)
     }
     try {
-      if (isSnapshotting) {
-        file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
-        file write chainReader(readSnapshot, cycles).toString
-      }
+      file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
+      file write chainReader(readSnapshot, cycles).toString
     } finally {
       file.close
     }
