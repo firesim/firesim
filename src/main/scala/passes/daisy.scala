@@ -177,7 +177,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
           val buf = wref(mnamespace newName name, value.tpe, RegKind)
           stmts ++= Seq(
             DefRegister(NoInfo, buf.name, buf.tpe, clocks.head, zero, buf),
-            Connect(NoInfo, buf, Mux(and(wref("targetFire"), en), value, buf, buf.tpe))
+            Connect(NoInfo, buf, Mux(en, value, buf, buf.tpe))
           )
           buf
         }

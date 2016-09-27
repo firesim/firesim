@@ -21,29 +21,35 @@ private[passes] class Fame1Transform(conf: java.io.File) extends firrtl.passes.P
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
   private val daisyReset = wref(daisyResetPort.name, daisyResetPort.tpe)
 
-  private def collect(ens: Enables)(s: Statement): Statement = {
+  private def collect(ens: Enables, wmodes: Enables)(s: Statement): Statement = {
     s match {
       case s: WDefInstance => seqMems get s.module match {
         case None =>
-        case Some(seqMem) => ens ++= (seqMem.readers.indices map (i =>
-          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"R$i"), "en").serialize
-        )) ++ (seqMem.writers.indices map (i =>
-          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"W$i"), "en").serialize
-        )) ++ (seqMem.readwriters.indices map { i =>
-          wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "en").serialize
-        })
+        case Some(seqMem) =>
+          ens ++= (seqMem.readers.indices map (i =>
+            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"R$i"), "en").serialize
+          )) ++ (seqMem.readwriters.indices map (i =>
+            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "en").serialize
+          ))
+          wmodes ++= (seqMem.writers.indices map (i =>
+            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"W$i"), "en").serialize
+          )) ++ (seqMem.readwriters.indices map (i =>
+            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "wmode").serialize
+          ))
       }
-      case s: DefMemory => ens ++= (
-        (s.readers ++ s.writers ++ s.readwriters)
-        map (memPortField(s, _, "en").serialize)
-      )
+      case s: DefMemory =>
+        ens ++= (s.readers ++ s.readwriters) map (memPortField(s, _, "en").serialize)
+        wmodes ++=
+          (s.writers map (memPortField(s, _, "en").serialize)) ++
+          (s.readwriters map (memPortField(s, _, "wmode").serialize))
       case _ =>
     }
-    s map collect(ens)
+    s map collect(ens, wmodes)
   }
 
   private val WrappedBool = wt(BoolType)
   private def connect(ens: Enables,
+                      wmodes: Enables,
                       stmts: Statements)
                       (s: Statement): Statement = s match {
     case s: WDefInstance if !(seqMems contains s.module) =>
@@ -61,16 +67,19 @@ private[passes] class Fame1Transform(conf: java.io.File) extends firrtl.passes.P
       s copy (en = and(s.en, targetFire))
     case s: Connect => s.loc match {
       case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
+        s copy (expr = or(and(s.expr, targetFire), daisyReset))
+      case e: WSubField if wt(e.tpe) == WrappedBool && wmodes(e.serialize) =>
         s copy (expr = and(s.expr, targetFire))
       case _ => s
     }
-    case s => s map connect(ens, stmts)
+    case s => s map connect(ens, wmodes, stmts)
   }
 
   private def transform(m: DefModule): DefModule = {
     val ens = new Enables
+    val wmodes = new Enables
     val stmts = new Statements
-    m map collect(ens) map connect(ens, stmts) match {
+    m map collect(ens, wmodes) map connect(ens, wmodes, stmts) match {
       case m: Module =>
         m copy (ports = m.ports ++ Seq(targetFirePort, daisyResetPort),
                 body = Block(m.body +: stmts))
