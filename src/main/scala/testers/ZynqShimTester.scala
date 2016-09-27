@@ -27,7 +27,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   private val MAXI_aw = new ChannelSource(c.io.master.aw, (aw: NastiWriteAddressChannel, in: NastiWriteAddr) =>
     { _poke(aw.id, in.id) ; _poke(aw.addr, in.addr) })
   private val MAXI_w = new ChannelSource(c.io.master.w, (w: NastiWriteDataChannel, in: NastiWriteData) =>
-    { _poke(w.data, in.data) })
+    { _poke(w.data, in.data); _poke(w.last, in.last)})
   private val MAXI_b = new ChannelSink(c.io.master.b, (b: NastiWriteResponseChannel) =>
     new NastiWriteResp(_peek(b.id), _peek(b.resp)))
   private val MAXI_ar = new ChannelSource(c.io.master.ar, (ar: NastiReadAddressChannel, in: NastiReadAddr) =>
@@ -69,7 +69,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     for (_ <- 0 until n) {
       pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
       pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
-      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
              "simulation is not done in time")
       _peekMap.clear
       // flush junk output tokens
@@ -86,7 +86,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
            "simulation is not done in time")
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
@@ -240,5 +240,5 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     chain.result
   }
 
-  reset(5)
+  reset(1)
 }
