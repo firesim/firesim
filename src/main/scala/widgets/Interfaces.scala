@@ -1,5 +1,4 @@
-
-package midas
+package midas_widgets
 
 import Chisel._
 
@@ -77,18 +76,4 @@ class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
   */
 object MidasDecoupled {
   def apply[T <: Data](gen: T): MidasDecoupledIO[T] = new MidasDecoupledIO(gen)
-}
-
-/** An I/O Bundle for Queues
-  * Borrowed from chisel3 util/Decoupled.scala
-  * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue */
-class MidasQueueIO[T <: Data](gen: T, entries: Int) extends Bundle
-{
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = MidasDecoupled(gen.cloneType).flip()
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = MidasDecoupled(gen.cloneType)
-  /** The current amount of data in the queue */
-  val count = UInt(OUTPUT, log2Up(entries + 1))
 }
