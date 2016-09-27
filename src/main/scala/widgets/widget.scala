@@ -137,7 +137,7 @@ trait HasWidgets {
 
   def getCRAddr(w: Widget, crName: String): BigInt = {
     // TODO: Deal with byte vs word addresses && don't use a name in the hash?
-    val base = (widgetAddrHash(w.getWName).start >> 3)
+    val base = (widgetAddrHash(w.getWName).start >> 2)
     base + w.getCRAddr(crName)
   }
 }
