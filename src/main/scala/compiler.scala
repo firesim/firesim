@@ -32,7 +32,7 @@ private class StroberCompiler extends firrtl.Compiler {
 }
 
 // This compiler compiles HighFirrtl To verilog
-class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
+private class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
   def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
@@ -286,7 +286,8 @@ object ReplayCompiler {
   def apply[T <: chisel3.Module : ClassTag](
       args: Array[String],
       w: => T,
-      backend: String = "verilator")
+      backend: String = "verilator",
+      waveform: Option[File] = None)
       (tester: T => testers.Replay[T]): T = {
     val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
     (contextVar withValue Some(new ReplayCompilerContext(target))){
@@ -297,7 +298,11 @@ object ReplayCompiler {
         "--targetDir", context.dir.toString,
         "--logFile", log.toString,
         "--backend", backend,
-        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/)
+        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/) ++
+        (waveform match {
+          case None => Array[String]()
+          case Some(f) => Array("--waveform", f.toString)
+        })
       iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
