@@ -4,10 +4,11 @@ import chisel3.iotesters
 import firrtl.Annotations.{AnnotationMap, TransID}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
+import scala.reflect.ClassTag
 import java.io.{File, FileWriter}
 
-private class CompilerContext {
-  var dir = new File("test-outs")
+private class StroberCompilerContext {
+  var dir = chisel3.Driver.createTempDirectory("test-outs")
   var sampleNum = 30
   val wrappers = HashSet[String]()
   val params = HashMap[String, cde.Parameters]()
@@ -17,7 +18,7 @@ private class CompilerContext {
   val memWires = HashSet[Chisel.Bits]()
 }
 
-class StroberCompiler extends firrtl.Compiler {
+private class StroberCompiler extends firrtl.Compiler {
   def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.Chisel3ToHighFirrtl,
     new firrtl.IRToWorkingIR,
@@ -41,9 +42,8 @@ class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
   )
 }
 
-
 object StroberCompiler {
-  private val contextVar = new DynamicVariable[Option[CompilerContext]](None)
+  private val contextVar = new DynamicVariable[Option[StroberCompilerContext]](None)
   private[strober] def context = contextVar.value.getOrElse (
     throw new Exception("StroberCompiler should be properly used"))
 
@@ -155,7 +155,7 @@ object StroberCompiler {
   def compile[T <: chisel3.Module](args: Array[String],
                                    w: => T,
                                    snapshot: Boolean): firrtl.ir.Circuit = {
-    (contextVar withValue Some(new CompilerContext)){
+    (contextVar withValue Some(new StroberCompilerContext)){
       parseArgs(args.toList)
       val (circuit, conf) = transform(w, snapshot)
       compile(circuit, conf)
@@ -166,7 +166,7 @@ object StroberCompiler {
                                    w: => T,
                                    backend: String = "verilator",
                                    snapshot: Boolean = true): T = {
-    (contextVar withValue Some(new CompilerContext)) {
+    (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
       val (circuit, conf) = transform(w, snapshot)
       compile(circuit, conf)
@@ -181,7 +181,7 @@ object StroberCompiler {
                                  backend: String = "verilator",
                                  snapshot: Boolean = true)
                                  (tester: T => testers.StroberTester[T]): T = {
-    (contextVar withValue Some(new CompilerContext)) {
+    (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
       val (circuit, conf) = transform(w, snapshot)
       val c = compile(circuit, conf)
@@ -190,7 +190,7 @@ object StroberCompiler {
         "--targetDir", context.dir.toString,
         "--logFile", log.toString,
         "--backend", backend,
-        "--genHarness", "--compile", "--test", "--vpdmem")
+        "--genHarness", "--compile", "--test" /*, "--vpdmem"*/)
       iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
@@ -201,7 +201,7 @@ object StroberCompiler {
                                 waveform: Option[File] = None,
                                 snapshot: Boolean = true)
                                (tester: T => testers.StroberTester[T]) = {
-    (contextVar withValue Some(new CompilerContext)) {
+    (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
       val (circuit, conf) = transform(w, snapshot)
       val c = compile(circuit, conf)
@@ -212,3 +212,112 @@ object StroberCompiler {
     }
   }
 }
+
+
+private class ReplayCompilerContext(target: String) {
+  var dir = chisel3.Driver.createTempDirectory("test-outs")
+  var sample = new File("${target}.sample")
+}
+
+private class ReplayCompiler(conf: File) extends firrtl.Compiler {
+  def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
+    new firrtl.Chisel3ToHighFirrtl,
+    new firrtl.IRToWorkingIR,
+    new firrtl.ResolveAndCheck,
+    new firrtl.HighFirrtlToMiddleFirrtl,
+    new firrtl.passes.InferReadWrite(TransID(-1)),
+    new firrtl.passes.ReplSeqMem(TransID(-2)),
+    new firrtl.MiddleFirrtlToLowFirrtl,
+    new firrtl.EmitVerilogFromLowFirrtl(writer),
+    new passes.EmitMemFPGAVerilog(writer, conf)
+  )
+}
+
+object ReplayCompiler {
+  private val contextVar = new DynamicVariable[Option[ReplayCompilerContext]](None)
+  private[strober] def context = contextVar.value.getOrElse (
+    throw new Exception("StroberCompiler should be properly used"))
+
+  private def parseArgs(args: List[String]): Unit = args match {
+    case Nil =>
+    case "--targetDir" :: value :: tail =>
+      context.dir = new File(value)
+      context.dir.mkdirs
+    case "--sample" :: value :: tail =>
+      context.sample = new File(value)
+    case head :: tail => parseArgs(tail)
+  }
+
+  private def compile[T <: chisel3.Module](w: => T) = {
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => w))
+    val conf = new File(context.dir, s"${chirrtl.main}.conf")
+    val annotations = new AnnotationMap(Seq(
+      firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
+      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
+    val verilog = new FileWriter(new File(context.dir, s"${chirrtl.main}.v"))
+    val result = new ReplayCompiler(conf) compile (chirrtl, annotations, verilog)
+    verilog.close
+    result.circuit
+  }
+
+  def compile[T <: chisel3.Module : ClassTag](
+      args: Array[String],
+      w: => T): firrtl.ir.Circuit = {
+    val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
+    (contextVar withValue Some(new ReplayCompilerContext(target))){
+      parseArgs(args.toList)
+      compile(w)
+    }
+  }
+
+  def compile[T <: chisel3.Module : ClassTag](
+      args: Array[String],
+      w: => T,
+      backend: String): T = {
+    val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
+    (contextVar withValue Some(new ReplayCompilerContext(target))){
+      parseArgs(args.toList)
+      val c = compile(w)
+      val testerArgs = Array("--targetDir", context.dir.toString,
+        "--backend", backend, "--genHarness", "--compile", "--test")
+      iotesters.chiselMain(testerArgs, () => w)
+    }
+  }
+
+  def apply[T <: chisel3.Module : ClassTag](
+      args: Array[String],
+      w: => T,
+      backend: String = "verilator")
+      (tester: T => testers.Replay[T]): T = {
+    val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
+    (contextVar withValue Some(new ReplayCompilerContext(target))){
+      parseArgs(args.toList)
+      val c = compile(w)
+      val log = new File(context.dir, s"${c.main}.log")
+      val targs = Array(
+        "--targetDir", context.dir.toString,
+        "--logFile", log.toString,
+        "--backend", backend,
+        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/)
+      iotesters.chiselMainTest(targs, () => w)(tester)
+    }
+  }
+
+  def test[T <: chisel3.Module : ClassTag](
+      args: Array[String],
+      w: => T,
+      backend: String = "verilator",
+      waveform: Option[File] = None)
+      (tester: T => testers.Replay[T]) = {
+    val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
+    (contextVar withValue Some(new ReplayCompilerContext(target))){
+      parseArgs(args.toList)
+      val c = compile(w)
+      val cmd = new File(context.dir, backend match {
+        case "verilator" => s"V${c.main}" case _ => c.main
+      })
+      iotesters.Driver.run(() => w, cmd, waveform)(tester)
+    }
+  }
+}
+
