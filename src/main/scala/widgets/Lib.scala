@@ -1,5 +1,4 @@
-
-package midas
+package midas_widgets
 
 import Chisel._
 import cde.{Parameters, Field}
@@ -158,77 +157,6 @@ class MultiQueue[T <: Data](
   io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), Bool(true))
 }
 
-/** A hardware module implementing a Queue
-  * Modified from chisel3 util/Decoupled.scala
-  * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue
-  * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''hReady'' signals are
-  * combinationally coupled.
-  * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
-  * The ''hValid'' signals are coupled.
-  *
-  * Example usage:
-  *    {{{ val q = new Queue(UInt(), 16)
-  *    q.io.enq <> producer.io.out
-  *    consumer.io.in <> q.io.deq }}}
-  */
-class MidasQueue[T <: Data](gen: T, val entries: Int,
-                       pipe: Boolean = false,
-                       flow: Boolean = false,
-                       _reset: Bool = null) extends Module(_reset=_reset)
-{
-  val io = new MidasQueueIO(gen, entries)
-
-  val ram = Mem(entries, gen)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=Bool(false))
-
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val maybe_flow = Bool(flow) && empty
-  val do_flow = maybe_flow && io.deq.hReady
-
-  val do_enq = io.enq.hReady && io.enq.hValid && !do_flow
-  val do_deq = io.deq.hReady && io.deq.hValid && !do_flow
-  when (do_enq) {
-    ram(enq_ptr.value) := io.enq.hBits
-    enq_ptr.inc()
-  }
-  when (do_deq) {
-    deq_ptr.inc()
-  }
-  when (do_enq != do_deq) {
-    maybe_full := do_enq
-  }
-
-  io.deq.hValid := !empty || Bool(flow) && io.enq.hValid
-  io.enq.hReady := !full || Bool(pipe) && io.deq.hReady
-  io.deq.hBits := Mux(maybe_flow, io.enq.hBits, ram(deq_ptr.value))
-
-  val ptr_diff = enq_ptr.value - deq_ptr.value
-  if (isPow2(entries)) {
-    io.count := Cat(maybe_full && ptr_match, ptr_diff)
-  } else {
-    io.count := Mux(ptr_match,
-                    Mux(maybe_full,
-                      UInt(entries), UInt(0)),
-                    Mux(deq_ptr.value > enq_ptr.value,
-                      UInt(entries) + ptr_diff, ptr_diff))
-  }
-}
-
-private class FooBar extends Bundle {
-  val foo = UInt(width = 4)
-  val bar = UInt(width = 4).flip
-}
-
-private class GenSimQueue extends Module {
-  val io = new Bundle { }
-  val queue = Module(new MidasQueue((new FooBar).cloneType, 4))
-}
-
 // Selects one of two input host decoupled channels. Drives ready false
 // to the unselected channel.
 object HostMux {
@@ -243,50 +171,6 @@ object HostMux {
   }
 }
 
-// A simple implementation of a simulation queue that injects a set of
-// simulation tokens into on reset
-/*
-class MidasInitQueue[T <: Data](gen: T,  entries: Int, init:() => T = null, numInitTokens:Int = 0) extends Module {
-  require(numInitTokens < entries, s"The capacity of the queue must be >= the number of initialization tokens")
-  val io = new MidasQueueIO(gen.cloneType, entries)
-  val queue = Module(new Queue(gen.cloneType, entries))
-  queue.reset := io.ctrl.simReset
-
-  // Tie off the control signals to default values
-  io.ctrl := MidasControl()
-
-  // This should only need to be 1 larger; but firrtl seems to optimize it away
-  // when entries is set to 1
-  val initTokensCount = Counter(numInitTokens+4)
-  val doneInit = Reg(init = Bool(false))
-  val simRunning = Reg(init = Bool(false))
-  io.ctrl.simResetDone := doneInit
-
-  val enqFire = queue.io.enq.fire()
-
-  // Control register sequencing
-  when(io.ctrl.simReset) {
-    initTokensCount.value := UInt(0)
-    doneInit := Bool(false)
-    simRunning := Bool(false)
-  }.elsewhen(~doneInit) {
-    initTokensCount.inc()
-    doneInit := initTokensCount.value === UInt(numInitTokens - 1)
-  }.elsewhen(io.ctrl.go) {
-    simRunning := Bool(true)
-  }
-
-  val initToken = init()
-  queue.io.enq.bits := Mux(~simRunning,initToken,io.enq.hBits)
-  queue.io.enq.valid := ~doneInit || io.enq.hValid
-  io.enq.hReady := simRunning && queue.io.enq.ready
-  io.deq.hBits := queue.io.deq.bits
-  io.deq.hValid := simRunning && queue.io.deq.valid
-  queue.io.deq.ready := io.deq.hReady
-} */
-
-/** Stores a map between SCR file names and address in the SCR file, which can
-  * later be dumped to a header file for the test bench. */
 class MCRFileMap() {
   private val name2addr = HashMap.empty[String, Int]
   private val regList = ArrayBuffer.empty[Data]

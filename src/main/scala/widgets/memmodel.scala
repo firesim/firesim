@@ -1,6 +1,5 @@
 package midas_widgets
 
-import midas._
 import Chisel._
 import cde.{Parameters, Field}
 import junctions._

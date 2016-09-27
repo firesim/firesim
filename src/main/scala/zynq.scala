@@ -1,6 +1,5 @@
 package strober
 
-import midas._
 import midas_widgets._
 import dram_midas._
 import Chisel._
