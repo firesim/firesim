@@ -189,7 +189,7 @@ object StroberCompiler {
         "--targetDir", context.dir.toString,
         "--logFile", log.toString,
         "--backend", backend,
-        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/)
+        "--genHarness", "--compile", "--test" /*, "--vpdmem"*/)
       iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
@@ -269,6 +269,20 @@ object ReplayCompiler {
     }
   }
 
+  def compile[T <: chisel3.Module : ClassTag](
+      args: Array[String],
+      w: => T,
+      backend: String): T = {
+    val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
+    (contextVar withValue Some(new ReplayCompilerContext(target))){
+      parseArgs(args.toList)
+      val c = compile(w)
+      val testerArgs = Array("--targetDir", context.dir.toString,
+        "--backend", backend, "--genHarness", "--compile", "--test")
+      iotesters.chiselMain(testerArgs, () => w)
+    }
+  }
+
   def apply[T <: chisel3.Module : ClassTag](
       args: Array[String],
       w: => T,
@@ -283,7 +297,7 @@ object ReplayCompiler {
         "--targetDir", context.dir.toString,
         "--logFile", log.toString,
         "--backend", backend,
-        "--genHarness", "--compile", "--test")
+        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/)
       iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
