@@ -162,7 +162,7 @@ class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
 
 class AddrIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
   val n = p(SRAMSize)
-  val in = UInt(INPUT, width=log2Up(n)) // TODO: it turns out that this is wasteful, but required for tesing...
+  val in = Valid(UInt(width=log2Up(n))).flip
   val out = Valid(UInt(width=log2Up(n)))
 }
 
@@ -183,22 +183,21 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
-  io.addrIo.out.bits := addrIn
-  io.addrIo.out.valid := Bool(false)
+  io.addrIo.out.valid := addrState === s_ADDRGEN || addrState === s_MEMREAD
+  io.addrIo.out.bits := Mux(addrState === s_ADDRGEN, addrOut, addrIn)
+
+  when(io.addrIo.in.valid) {
+    addrIn := io.addrIo.in.bits
+  }
 
   // SRAM control
   switch(addrState) {
     is(s_IDLE) {
-      addrIn := io.addrIo.in
-      addrOut := UInt(0)
-      when(io.stall) {
-        addrState := s_DONE
-      }
+      addrState := Mux(io.stall, s_DONE, s_IDLE)
+      addrOut   := UInt(0)
     }
     is(s_ADDRGEN) {
       addrState := s_MEMREAD
-      io.addrIo.out.bits := addrOut
-      io.addrIo.out.valid := Bool(true)
     }
     is(s_MEMREAD) {
       addrState := s_DONE
@@ -206,8 +205,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
     }
     is(s_DONE) {
       addrState := Mux(io.restart, s_ADDRGEN,
-                   Mux(!io.stall, s_IDLE, s_DONE))
-      io.addrIo.out.bits := addrIn
+                   Mux(io.stall, s_DONE, s_IDLE))
     }
   }
 }

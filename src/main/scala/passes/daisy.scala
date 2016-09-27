@@ -13,7 +13,9 @@ import WrappedExpression.weq
 
 private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
-  
+
+  implicit def expToString(e: Expression): String = e.serialize
+
   private class ChainCompiler extends Compiler {
     def transforms(writer: java.io.Writer) = Seq(
       new Chisel3ToHighFirrtl,
@@ -107,9 +109,9 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
   private def buildNetlist(netlist: Netlist)(s: Statement): Statement = {
     s match {
       case s: Connect =>
-        netlist(s.loc.serialize) = s.expr
+        netlist(s.loc) = s.expr
       case s: PartialConnect =>
-        netlist(s.loc.serialize) = s.expr
+        netlist(s.loc) = s.expr
       case s: DefNode =>
         netlist(s.name) = s.value
       case s =>
@@ -120,6 +122,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
   private def insertRegChains(m: Module,
                               p: cde.Parameters,
                               namespace: Namespace,
+                              netlist: Netlist,
                               readers: Readers,
                               chainMods: DefModules,
                               hasChain: ChainModSet)
@@ -169,13 +172,12 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         )
         hasChain += m.name
         val stmts = new Statements
-        val netlist = new Netlist
         lazy val mnamespace = Namespace(m)
-        def insertBuf(name: String, value: Expression) = {
+        def insertBuf(name: String, value: Expression, en: Expression) = {
           val buf = wref(mnamespace newName name, value.tpe, RegKind)
           stmts ++= Seq(
             DefRegister(NoInfo, buf.name, buf.tpe, clocks.head, zero, buf),
-            Conditionally(NoInfo, wref("targetFire"), EmptyStmt, Connect(NoInfo, buf, value))
+            Connect(NoInfo, buf, Mux(and(wref("targetFire"), en), value, buf, buf.tpe))
           )
           buf
         }
@@ -192,12 +194,18 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
             if (netlist.isEmpty) buildNetlist(netlist)(m.body)
             val seqMem = seqMems(s.module)
             val mem = wref(s.name, s.tpe, InstanceKind)
+            val en = (seqMem.readers.indices map (i => netlist(wsub(wsub(mem, s"R$i"), "en")))) ++
+                     (seqMem.readwriters.indices map (i =>
+                      and(netlist(wsub(wsub(mem, s"RW$i"), "en")),
+                      not(netlist(wsub(wsub(mem, s"RW$i"), "wmode"))))
+                     ))
             val addr = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "addr"))) ++
                    (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "addr")))
             val data = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
                    (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
-            (addr map (v => insertBuf(s"${loweredName(v)}_buf", netlist(v.serialize)))) /* ++
-            (data map (v => insertBuf(s"${loweredName(v)}_buf", v))) */
+            (addr zip en map { case (a, e) =>
+              insertBuf(s"${loweredName(a)}_buf", netlist(a), e)
+            }) /* ++ data */
         }
         stmts ++ instStmts ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth)
     }
@@ -206,6 +214,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
   private def insertSRAMChains(m: Module,
                                p: cde.Parameters,
                                namespace: Namespace,
+                               netlist: Netlist,
                                repl: Netlist,
                                chainMods: DefModules,
                                hasChain: ChainModSet)
@@ -237,39 +246,50 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
           EmptyExpression,
           bitWidth(s.dataType).toInt)
       }
-      def addrIo = wsub(wsub(chainIo(daisyIdx), "addrIo"), "out")
+      val addrIo = wsub(chainIo(daisyIdx), "addrIo")
+      val addrIn = wsub(addrIo, "in")
+      val addrOut = wsub(addrIo, "out")
       def addrConnects(s: Statement): Statement = {
         s match {
           case Connect(info, loc, expr) => kind(loc) match {
-             case MemKind | InstanceKind if weq(loc, en) =>
-               repl(loc.serialize) = or(wsub(addrIo, "valid"), expr)
-             case MemKind | InstanceKind if weq(loc, wmode) =>
-               repl(loc.serialize) = and(not(wsub(addrIo, "valid")), expr)
-             case MemKind | InstanceKind if weq(loc, addr) =>
-               repl(loc.serialize) = Mux(wsub(addrIo, "valid"), wsub(addrIo, "bits"), expr, ut)
-             case _ =>
-           }
-           case _ =>
+            case MemKind | InstanceKind if weq(loc, en) =>
+              repl(loc.serialize) = or(wsub(addrOut, "valid"), expr)
+            case MemKind | InstanceKind if weq(loc, wmode) =>
+              repl(loc.serialize) = and(not(wsub(addrOut, "valid")), expr)
+            case MemKind | InstanceKind if weq(loc, addr) =>
+              repl(loc.serialize) = Mux(wsub(addrOut, "valid"), wsub(addrOut, "bits"), expr, ut)
+            case _ =>
+          }
+          case _ =>
         }
         s map addrConnects
       }
-      def dataConnects = ((0 until daisyLen foldRight (Seq[Connect](), width - 1)){
-        case (i, (stmts, high)) =>
+      def dataConnects =
+        ((0 until daisyLen foldRight (Seq[Connect](), width - 1)){ case (i, (stmts, high)) =>
           val low = (high - daisyWidth + 1) max 0
           val input = bits(data, high, low)
           (stmts :+ (daisyWidth - (high - low + 1) match {
             case 0 =>
-              // "<daisy_chain>.io.dataIo.data[i] <- <memory>.data(high, low)"
+              // <daisy_chain>.io.dataIo.data[i] <- <memory>.data(high, low)
               Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), input)
             case margin =>
               val pad = UIntLiteral(0, IntWidth(margin))
-              // "<daisy_chain>.io.dataIo.data[i] <- cat(<memory>.data(high, low), pad)"
+              // <daisy_chain>.io.dataIo.data[i] <- cat(<memory>.data(high, low), pad)
               Connect(NoInfo, widx(chainDataIo("data", daisyIdx), i), cat(Seq(input, pad)))
           }), high - daisyWidth)
-      })._1
+        })._1
 
+      if (netlist.isEmpty) buildNetlist(netlist)(m.body)
       addrConnects(m.body)
-      dataConnects
+      dataConnects ++ Seq(
+        // <daisy_chain>.io.addr.in.bits <- <memory>.addr
+        Connect(NoInfo, wsub(addrIn, "bits"), netlist(addr)),
+        // <daisy_chain>.io.addr.in.valid <- <memory>.ren
+        Connect(NoInfo, wsub(addrIn, "valid"), wmode match {
+          case EmptyExpression => netlist(en)
+          case _ => and(netlist(en), not(netlist(wmode)))
+        })
+      )
     }
 
     val chainElems = new Statements
@@ -312,6 +332,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
   private def insertChains(m: Module,
                            p: cde.Parameters,
                            namespace: Namespace,
+                           netlist: Netlist,
                            readers: Readers,
                            repl: Netlist,
                            chainMods: DefModules,
@@ -320,8 +341,8 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
     implicit val chainType = t
     val hasChain = hasChainMap(chainType)
     val chainStmts = chainType match {
-      case ChainType.SRAM => insertSRAMChains(m, p, namespace, repl, chainMods, hasChain)
-      case _              => insertRegChains(m, p, namespace, readers, chainMods, hasChain)
+      case ChainType.SRAM => insertSRAMChains(m, p, namespace, netlist, repl, chainMods, hasChain)
+      case _              => insertRegChains(m, p, namespace, netlist, readers, chainMods, hasChain)
     }
     val chainNum = chainType match {
       case ChainType.SRAM => 1 max chains(chainType)(m.name).size
@@ -395,13 +416,14 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
                         (m: DefModule) = m match {
     case m: ExtModule => m
     case m: Module =>
+      val netlist = new Netlist
       val readers = new Readers
       val stmts = new Statements
       val repl = new Netlist
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
-        insertChains(m, p, namespace, readers, repl, chainMods, hasChain))
+        insertChains(m, p, namespace, netlist, readers, repl, chainMods, hasChain))
       val bodyx = updateStmts(readers, repl, stmts)(m.body)
       m copy (ports = m.ports :+ daisyPort,
               body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
