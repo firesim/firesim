@@ -87,8 +87,8 @@ private[passes] class Fame1Transform(conf: java.io.File) extends firrtl.passes.P
   }
 
   def run(c: Circuit) = c copy (modules = {
-    val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()){ (map, m) =>
-      map ++ (
+    val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()){
+      (map, m) => map ++ (
         (preorder(targets(m, c.modules), c.modules)(transform) :+
         (m map connectTargetFire)) map (m => m.name -> m)
       )
