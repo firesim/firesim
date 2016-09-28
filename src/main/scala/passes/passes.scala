@@ -87,33 +87,6 @@ private[passes] object Utils {
     }
     heads flatMap loop
   }
-
-  def sumWidths(s: Statement)(implicit chainType: ChainType.Value): BigInt =
-    chainType match {
-      case ChainType.SRAM => s match {
-        case s: DefMemory if s.readLatency > 0 && s.depth > 16 =>
-          s.depth * bitWidth(s.dataType)
-        case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
-        case _ => BigInt(0)
-      }
-      case _ => s match {
-        case s: DefRegister =>
-          bitWidth(s.tpe)
-        case s: DefMemory if s.readLatency == 0 && s.depth <= 16 =>
-          s.depth * bitWidth(s.dataType)
-        case s: DefMemory if s.readLatency > 0 =>
-          val ew = 1
-          val mw = 1
-          val aw = chisel3.util.log2Up(s.depth)
-          val dw = bitWidth(s.dataType).toInt
-          s.readers.size * s.readLatency * (ew + aw + dw) +
-          s.writers.size * (s.writeLatency - 1) * (ew + mw + aw + dw) +
-          s.readwriters.size * (s.readLatency * (ew + aw + dw) +
-            (s.writeLatency - 1) * (ew + mw + dw))
-        case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
-        case _ => BigInt(0)
-      }
-    }
 }
 
 private[passes] object Analyses extends firrtl.passes.Pass {
