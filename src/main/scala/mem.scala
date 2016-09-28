@@ -1,13 +1,8 @@
 package strober
 
 import Chisel._
-import cde.{Parameters, Field}
 import junctions._
-
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable.ListSet
-
-case object MemMaxCycles extends Field[Int]
+import cde.{Parameters, Field}
 
 class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
   val ready  = Bool(INPUT)
@@ -17,163 +12,86 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
   override def cloneType: this.type = new SimDecoupledIO(gen)(p).asInstanceOf[this.type] 
 }
 
+// TODO: Should move to the backend
 object SimMemIO {
-  private val mems = ArrayBuffer[MemIO]()
-  def apply(mem: MemIO) { mems += mem }
-  def apply(i: Int) = mems(i)
-  def size = mems.size
-  def contains(wire: Bits) = mems exists (_.flatten.unzip._2 contains wire) 
-  def zipWithIndex = mems.toList.zipWithIndex
-}
-
-class SimMemIO(implicit p: Parameters) extends MIFBundle()(p) {
-  val req_cmd  = new SimDecoupledIO(new MemReqCmd)
-  val req_data = new SimDecoupledIO(new MemData)
-  val resp     = new SimDecoupledIO(new MemResp).flip
-
-  def <>(mIo: MemIO, wIo: SimWrapperIO) {
-    // Target Connection
-    def targetConnect[T <: Bits](target: T, wire: T) = wire match {
-      case _: Bool if wire.dir == OUTPUT => target := wIo.getOuts(wire).head.bits
-      case _: Bool if wire.dir == INPUT => wIo.getIns(wire).head.bits := target
-      case _ if wire.dir == OUTPUT => target := Vec(wIo.getOuts(wire) map (_.bits)).toBits
-      case _ if wire.dir == INPUT => wIo.getIns(wire).zipWithIndex foreach {
-        case (in, i) => in.bits := target.toUInt >> UInt(i*wIo.channelWidth) }
-    }
-    targetConnect(req_cmd.target.bits.addr, mIo.req_cmd.bits.addr)
-    targetConnect(req_cmd.target.bits.tag,  mIo.req_cmd.bits.tag)
-    targetConnect(req_cmd.target.bits.rw,   mIo.req_cmd.bits.rw)
-    targetConnect(req_cmd.target.valid,     mIo.req_cmd.valid)
-    targetConnect(req_cmd.target.ready,     mIo.req_cmd.ready)
-    
-    targetConnect(req_data.target.bits.data, mIo.req_data.bits.data)
-    targetConnect(req_data.target.valid,     mIo.req_data.valid)
-    targetConnect(req_data.target.ready,     mIo.req_data.ready)
-
-    targetConnect(resp.target.bits.data, mIo.resp.bits.data)
-    targetConnect(resp.target.bits.tag,  mIo.resp.bits.tag)
-    targetConnect(resp.target.valid,     mIo.resp.valid)
-    targetConnect(resp.target.ready,     mIo.resp.ready)
-
-    // Host Connection
-    def hostConnect(res: Bool, arg: (String, Bits), ready: Bool) = arg match { 
-      case (_, wire) if wire.dir == INPUT =>
-        val ins = wIo.getIns(wire)
-        ins foreach (_.valid := ready)
-        (ins foldLeft res)(_ && _.ready)
-      case (_, wire) if wire.dir == OUTPUT =>
-        val outs = wIo.getOuts(wire)
-        outs foreach (_.ready := ready)
-        (outs foldLeft res)(_ && _.valid)
-    }
-    req_cmd.valid  := (mIo.req_cmd.flatten foldLeft Bool(true))(hostConnect(_, _, req_cmd.ready))
-    req_data.valid := (mIo.req_data.flatten foldLeft Bool(true))(hostConnect(_, _, req_data.ready))
-    resp.ready     := (mIo.resp.flatten foldLeft Bool(true))(hostConnect(_, _, resp.valid))
+  def add(mem: NastiIO) {
+    val (ins, outs) = SimUtils.parsePorts(mem)
+    StroberCompiler.context.memWires ++= ins.unzip._1
+    StroberCompiler.context.memWires ++= outs.unzip._1
+    StroberCompiler.context.memPorts += mem
   }
+  def apply(i: Int): NastiIO = StroberCompiler.context.memPorts(i)
+  def apply(wire: Bits) = StroberCompiler.context.memWires(wire)
+  def apply(mem: NastiIO) = StroberCompiler.context.memPorts contains mem
+  def zipWithIndex = StroberCompiler.context.memPorts.toList.zipWithIndex
+  def size = StroberCompiler.context.memPorts.size
 }
 
-class ChannelMemIOConverter(implicit p: Parameters) extends MIFModule()(p) {
-  val maxLatency = p(MemMaxCycles)
-  val maxLatencyWidth = log2Up(maxLatency+1)
+class SimMemIO(implicit p: Parameters) extends NastiBundle()(p) {
+  val aw = new SimDecoupledIO(new NastiWriteAddressChannel)
+  val w  = new SimDecoupledIO(new NastiWriteDataChannel)
+  val b  = new SimDecoupledIO(new NastiWriteResponseChannel).flip
+  val ar = new SimDecoupledIO(new NastiReadAddressChannel)
+  val r  = new SimDecoupledIO(new NastiReadDataChannel).flip
+}
+
+class MemModel(implicit p: Parameters) extends NastiModule()(p) {
   val io = new Bundle {
     val sim_mem  = (new SimMemIO).flip
-    val host_mem =  new MemIO
-    val latency  = Decoupled(UInt(width=maxLatencyWidth)).flip
+    val host_mem =  new NastiIO
+    val latency  = UInt(INPUT, p(MasterNastiKey).dataBits)
   }
+  val ar_buf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
+  val aw_buf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
+  val w_buf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
+  val r_buf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
+  val b_buf  = Module(new Queue(new NastiWriteResponseChannel, 4, flow=true))
 
-  val req_cmd_buf  = Module(new Queue(new MemReqCmd, 2, flow=true))
-  val req_data_buf = Module(new Queue(new MemData, 2*mifDataBeats, flow=true))
-  val resp_buf     = Module(new Queue(new MemResp, 2*mifDataBeats, flow=true))
-  val latency_buf  = Module(new HellaQueue(maxLatency)(Valid(new MemResp)))
-  val latency      = RegInit(UInt(0, maxLatencyWidth)) 
-  val counter      = RegInit(UInt(0, maxLatencyWidth))
+  // Timing Model
+  val cycles = RegInit(UInt(0, 64))
+  val r_cycles = Module(new Queue(UInt(width=64), 4))
+  val w_cycles = Module(new Queue(UInt(width=64), 4))
+  val r_ready = Mux(!io.latency.orR, !io.sim_mem.ar.target.valid,
+    !(r_cycles.io.deq.valid && r_cycles.io.deq.bits <= cycles)) || r_buf.io.deq.valid
+  val w_ready = Mux(!io.latency.orR, !(io.sim_mem.w.target.valid && io.sim_mem.w.target.bits.last),
+    !(w_cycles.io.deq.valid && w_cycles.io.deq.bits <= cycles)) || b_buf.io.deq.valid
+  val reqValid = io.sim_mem.ar.valid && io.sim_mem.aw.valid && io.sim_mem.w.valid
+  val respReady = io.sim_mem.r.ready && io.sim_mem.b.ready
+  val fire = reqValid && respReady && r_ready && w_ready
+  when(fire) { cycles := cycles + UInt(1) }
+  r_cycles.io.enq.bits := cycles + io.latency
+  w_cycles.io.enq.bits := cycles + io.latency
+  r_cycles.io.enq.valid := io.sim_mem.ar.target.fire() && fire && io.latency.orR
+  w_cycles.io.enq.valid := io.sim_mem.w.target.fire()  && io.sim_mem.w.target.bits.last && fire && io.latency.orR
+  r_cycles.io.deq.ready := io.sim_mem.r.target.fire()  && io.sim_mem.r.target.bits.last && fire && io.latency.orR
+  w_cycles.io.deq.ready := io.sim_mem.b.target.fire()  && fire && io.latency.orR
 
-  io.latency.ready := latency === counter
-  when (io.latency.fire()) { 
-    latency := io.latency.bits
-    counter := UInt(0)
-  }.elsewhen (latency_buf.io.enq.fire() && counter =/= latency) {
-    counter := counter + UInt(1)
-  }
-  latency_buf.reset := reset || io.latency.fire()
+  // Requests
+  io.sim_mem.ar.ready := fire
+  io.sim_mem.aw.ready := fire
+  io.sim_mem.w.ready  := fire
+  io.sim_mem.ar.target.ready := ar_buf.io.enq.ready && r_cycles.io.enq.ready
+  io.sim_mem.aw.target.ready := aw_buf.io.enq.ready && w_cycles.io.enq.ready
+  io.sim_mem.w.target.ready  := w_buf.io.enq.ready  && w_cycles.io.enq.ready
+  ar_buf.io.enq.valid := io.sim_mem.ar.target.fire() && fire
+  aw_buf.io.enq.valid := io.sim_mem.aw.target.fire() && fire
+  w_buf.io.enq.valid  := io.sim_mem.w.target.fire()  && fire
+  ar_buf.io.enq.bits  := io.sim_mem.ar.target.bits
+  aw_buf.io.enq.bits  := io.sim_mem.aw.target.bits
+  w_buf.io.enq.bits   := io.sim_mem.w.target.bits
+  io.host_mem.aw <> aw_buf.io.deq
+  io.host_mem.ar <> ar_buf.io.deq
+  io.host_mem.w  <> w_buf.io.deq
 
-  io.sim_mem.req_cmd.target.ready := Bool(true)
-  io.sim_mem.req_cmd.ready := io.sim_mem.req_cmd.valid && req_cmd_buf.io.enq.ready &&
-                              io.sim_mem.req_data.valid && req_data_buf.io.enq.ready &&
-                             (latency_buf.io.deq.valid && counter === latency || !latency.orR)
-  req_cmd_buf.io.enq.bits.addr := io.sim_mem.req_cmd.target.bits.addr
-  req_cmd_buf.io.enq.bits.tag  := io.sim_mem.req_cmd.target.bits.tag
-  req_cmd_buf.io.enq.bits.rw   := io.sim_mem.req_cmd.target.bits.rw
-  req_cmd_buf.io.enq.valid     := io.sim_mem.req_cmd.target.valid && io.sim_mem.req_cmd.ready
-
-  io.sim_mem.req_data.target.ready := Bool(true)
-  io.sim_mem.req_data.ready     := io.sim_mem.req_cmd.ready
-  req_data_buf.io.enq.bits.data := io.sim_mem.req_data.target.bits.data
-  req_data_buf.io.enq.valid     := io.sim_mem.req_data.target.valid && io.sim_mem.req_data.ready
-
-  io.sim_mem.resp.target.bits.data := Mux(latency.orR, latency_buf.io.deq.bits.bits.data, resp_buf.io.deq.bits.data)
-  io.sim_mem.resp.target.bits.tag  := Mux(latency.orR, latency_buf.io.deq.bits.bits.tag, resp_buf.io.deq.bits.tag)
-  io.sim_mem.resp.target.valid     := Mux(latency.orR, latency_buf.io.deq.bits.valid, resp_buf.io.deq.valid)
-
-  io.sim_mem.resp.valid := io.sim_mem.resp.ready && 
-    (resp_buf.io.enq.fire() || resp_buf.io.deq.valid && io.sim_mem.resp.target.ready ||
-    io.sim_mem.req_cmd.ready && (!io.sim_mem.req_cmd.target.valid || io.sim_mem.req_cmd.target.bits.rw))
-  latency_buf.io.deq.ready := io.sim_mem.resp.valid && counter === latency
-  latency_buf.io.enq.bits.bits.data := resp_buf.io.deq.bits.data
-  latency_buf.io.enq.bits.bits.tag  := resp_buf.io.deq.bits.tag
-  latency_buf.io.enq.bits.valid     := resp_buf.io.deq.valid
-  latency_buf.io.enq.valid := latency_buf.io.deq.fire() && latency.orR || counter =/= latency
-  resp_buf.io.deq.ready    := latency_buf.io.deq.ready && io.sim_mem.resp.target.ready
-
-  io.host_mem.req_cmd  <> req_cmd_buf.io.deq
-  io.host_mem.req_data <> req_data_buf.io.deq
-  resp_buf.io.enq      <> io.host_mem.resp
-}
-
-class MemArbiter(n: Int)(implicit p: Parameters) extends MIFModule()(p) {
-  val io = new Bundle {
-    val ins = Vec.fill(n){(new MemIO).flip}
-    val out = new MemIO  
-  }
-  val s_READY :: s_READ :: s_WRITE :: Nil = Enum(UInt(), 3)
-  val state = RegInit(s_READY)
-  val chosen = RegInit(UInt(n-1))
-  val (resp_cnt, resp_wrap) = Counter(io.out.resp.fire(),     mifDataBeats)
-  val (data_cnt, data_wrap) = Counter(io.out.req_data.fire(), mifDataBeats)
-
-  io.out.req_cmd.bits  := io.ins(chosen).req_cmd.bits
-  io.out.req_cmd.valid := io.ins(chosen).req_cmd.valid && state === s_READY
-  io.ins foreach (_.req_cmd.ready := Bool(false))
-  io.ins.zipWithIndex foreach { case (in, i) => 
-    in.req_cmd.ready := io.out.req_cmd.ready && chosen === UInt(i)
-  }
-
-  io.out.req_data.bits  := io.ins(chosen).req_data.bits
-  io.out.req_data.valid := io.ins(chosen).req_data.valid && state =/= s_READ
-  io.ins foreach (_.req_data.ready := Bool(false))
-  io.ins.zipWithIndex foreach {case (in, i) => 
-    in.req_data.ready := io.out.req_data.ready && chosen === UInt(i)
-  }
-
-  io.ins.zipWithIndex foreach {case (in, i) => 
-    in.resp.bits  := io.out.resp.bits 
-    in.resp.valid := io.out.resp.valid && chosen === UInt(i)
-  }
-  io.out.resp.ready := io.ins(chosen).resp.ready
-
-  switch(state) {
-    is(s_READY) {
-      when(!io.ins(chosen).req_cmd.valid && !io.ins(chosen).req_data.valid) {
-        chosen := Mux(chosen.orR, chosen - UInt(1), UInt(n-1))
-      }.elsewhen(io.ins(chosen).req_cmd.fire()) {
-        state := Mux(io.ins(chosen).req_cmd.bits.rw, s_WRITE, s_READ)
-      }
-    }
-    is(s_READ) {
-      state := Mux(resp_wrap, s_READY, s_READ)
-    }
-    is(s_WRITE) {
-      state := Mux(data_wrap, s_READY, s_WRITE)
-    }
-  }
+  // Response
+  io.sim_mem.b.valid := fire
+  io.sim_mem.r.valid := fire
+  io.sim_mem.r.target.bits <> r_buf.io.deq.bits
+  io.sim_mem.b.target.bits <> b_buf.io.deq.bits
+  io.sim_mem.r.target.valid := r_buf.io.deq.valid && r_cycles.io.deq.bits <= cycles && r_cycles.io.deq.valid
+  io.sim_mem.b.target.valid := b_buf.io.deq.valid && w_cycles.io.deq.bits <= cycles && w_cycles.io.deq.valid
+  r_buf.io.deq.ready := io.sim_mem.r.target.fire() && fire 
+  b_buf.io.deq.ready := io.sim_mem.b.target.fire() && fire
+  r_buf.io.enq <> io.host_mem.r
+  b_buf.io.enq <> io.host_mem.b
 }
