@@ -378,6 +378,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
 
   def updateStmts(readers: Readers,
                   repl: Netlist,
+                  clock: Expression,
                   stmts: Statements)
                   (s: Statement): Statement = s match {
     case s: WDefInstance if !(seqMems contains s.module) =>
@@ -391,7 +392,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         val mem = s copy (readers = s.readers ++ rs)
         Block(mem +: (rs.zipWithIndex flatMap { case (r, i) =>
           val addr = UIntLiteral(i, IntWidth(chisel3.util.log2Up(s.depth)))
-          Seq(Connect(NoInfo, memPortField(mem, r, "clk"), wref("clk")),
+          Seq(Connect(NoInfo, memPortField(mem, r, "clk"), clock),
               Connect(NoInfo, memPortField(mem, r, "en"), one),
               Connect(NoInfo, memPortField(mem, r, "addr"), addr))
         }))
@@ -405,7 +406,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
       }
       case _ => s
     }
-    case s => s map updateStmts(readers, repl, stmts)
+    case s => s map updateStmts(readers, repl, clock, stmts)
   }
 
   private def transform(namespace: Namespace,
@@ -420,11 +421,13 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
       val readers = new Readers
       val stmts = new Statements
       val repl = new Netlist
+      val clocks = m.ports flatMap (p =>
+        create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
         insertChains(m, p, namespace, netlist, readers, repl, chainMods, hasChain))
-      val bodyx = updateStmts(readers, repl, stmts)(m.body)
+      val bodyx = updateStmts(readers, repl, clocks.head, stmts)(m.body)
       m copy (ports = m.ports :+ daisyPort,
               body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
   }
