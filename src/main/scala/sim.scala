@@ -7,6 +7,7 @@ import cde.{Parameters, Field}
 case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
+case object SRAMChainNum extends Field[Int]
 
 class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
   val limit = UInt(INPUT, log2Up(entries))

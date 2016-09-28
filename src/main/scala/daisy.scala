@@ -7,7 +7,7 @@ import scala.collection.mutable.HashMap
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
-case object SRAMChainNum extends Field[Int]
+case object SeqRead extends Field[Boolean]
 
 object ChainType extends Enumeration { val Trace, Regs, SRAM, Cntr = Value }
 
@@ -183,8 +183,8 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
-  io.addrIo.out.valid := addrState === s_ADDRGEN || addrState === s_MEMREAD
-  io.addrIo.out.bits := Mux(addrState === s_ADDRGEN, addrOut, addrIn)
+  io.addrIo.out.bits := UInt(0)
+  io.addrIo.out.valid := Bool(false)
 
   when(io.addrIo.in.valid) {
     addrIn := io.addrIo.in.bits
@@ -198,10 +198,14 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
     }
     is(s_ADDRGEN) {
       addrState := s_MEMREAD
+      io.addrIo.out.bits := addrOut
+      io.addrIo.out.valid := Bool(true)
     }
     is(s_MEMREAD) {
       addrState := s_DONE
       addrOut   := addrOut + UInt(1)
+      io.addrIo.out.bits := (if (p(SeqRead)) addrIn else addrOut)
+      io.addrIo.out.valid := Bool(true)
     }
     is(s_DONE) {
       addrState := Mux(io.restart, s_ADDRGEN,

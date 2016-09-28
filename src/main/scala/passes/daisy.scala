@@ -298,14 +298,14 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
     chainElems.nonEmpty match {
       case false => Nil
       case true => chainElems.zipWithIndex flatMap { case (sram, i) =>
-        val (depth, width) = sram match {
+        val (depth, width, seqRead) = sram match {
           case s: WDefInstance =>
             val seqMem = seqMems(s.module)
-            (seqMem.depth.toInt, seqMem.width.toInt)
+            (seqMem.depth.toInt, seqMem.width.toInt, true)
           case s: DefMemory =>
-            (s.depth, bitWidth(s.dataType).toInt)
+            (s.depth, bitWidth(s.dataType).toInt, false)
         }
-        lazy val chain = new SRAMChain()(p alter Map(DataWidth -> width, SRAMSize -> depth))
+        lazy val chain = new SRAMChain()(p alter Map(DataWidth -> width, SRAMSize -> depth, SeqRead -> seqRead))
         val instStmts = generateChain(() => chain, namespace, chainMods, i)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
