@@ -77,9 +77,10 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
 
   private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
 
+  private def bigRegFile(s: DefMemory) =
+    s.readLatency == 0 && s.depth >= 32 && bitWidth(s.dataType) >= 32
+
   private def collect(chainType: ChainType.Value, chains: Statements)(s: Statement): Statement = {
-    def bigRegFile(s: DefMemory) =
-      s.readLatency == 0 && s.depth >= 32 && bitWidth(s.dataType) >= 32
     chainType match {
       // TODO: do bfs from inputs
       case ChainType.Regs => s match {
@@ -127,6 +128,19 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
                               chainMods: DefModules,
                               hasChain: ChainModSet)
                               (implicit chainType: ChainType.Value) = {
+    def sumWidths(s: Statement): Int = s match {
+      case s: DefRegister => bitWidth(s.tpe).toInt
+      case s: DefMemory if !bigRegFile(s) =>
+        s.depth * bitWidth(s.dataType).toInt
+      case s: WDefInstance => seqMems get s.module match {
+        case None => 0
+        case Some(seqMem) =>
+          val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
+          (seqMem.readers.size + seqMem.readwriters.size) * (addrWidth /*+ seqMem.width.toInt */)
+      }
+      case s: Block => (s.stmts foldLeft 0)(_ + sumWidths(_))
+      case _ => 0
+    }
     def daisyConnects(regs: Seq[Expression], daisyLen: Int, daisyWidth: Int) = {
       (((0 until daisyLen) foldRight (Seq[Connect](), 0, 0)){case (i, (stmts, index, offset)) =>
         def loop(total: Int, index: Int, offset: Int, wires: Seq[Expression]): (Int, Int, Seq[Expression]) = {
@@ -156,7 +170,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
     chainElems.nonEmpty match {
       case false => Nil
       case true =>
-        lazy val chain = new RegChain()(p alter Map(DataWidth -> sumWidths(m.body).toInt))
+        lazy val chain = new RegChain()(p alter Map(DataWidth -> sumWidths(m.body)))
         val instStmts = generateChain(() => chain, namespace, chainMods)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
