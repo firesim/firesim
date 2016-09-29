@@ -170,7 +170,7 @@ object StroberCompiler {
       val (circuit, conf) = transform(w, snapshot)
       compile(circuit, conf)
       val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile", "--test")
+        "--backend", backend, "--genHarness", "--compile")
       iotesters.chiselMain(testerArgs, () => w)
     }
   }
