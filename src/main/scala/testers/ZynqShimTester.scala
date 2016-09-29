@@ -227,7 +227,12 @@ abstract class ZynqShimTester[+T <: SimNetwork](
         case _ =>
       }
       for (_ <- 0 until chainLen(t)) {
-        chain append intToBin(peekChannel(c.DAISY_ADDRS(t) + i), c.sim.daisyWidth)
+        try {
+          chain append intToBin(peekChannel(c.DAISY_ADDRS(t) + i), c.sim.daisyWidth)
+        } catch {
+          case e: java.lang.AssertionError =>
+            assert(false, s"$t chain not available")
+        }
       }
     }
     chain.result
