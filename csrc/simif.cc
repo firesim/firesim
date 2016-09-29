@@ -9,11 +9,11 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   trace_count = 0;
   trace_len = TRACE_MAX_LEN;
 
-  // last_sample = NULL;
+  last_sample = NULL;
   last_sample_id = 0;
 
   profile = false;
-  // sample_num = SAMPLE_NUM;
+  sample_num = 30; // SAMPLE_NUM;
   sample_count = 0;
   sample_time = 0;
 
@@ -30,7 +30,7 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
 
   // Read mapping files
   read_map(prefix+".map");
-  // read_chain(prefix+".chain");
+  sample_t::init_chains(prefix+".chain");
 }
 
 simif_t::~simif_t() { 
@@ -77,29 +77,6 @@ void simif_t::read_map(std::string filename) {
   file.close();
 }
 
-/*
-void simif_t::read_chain(std::string filename) {
-  sample_t::init_chains();
-  std::ifstream file(filename.c_str());
-  if (file) {
-    std::string line;
-    while (std::getline(file, line)) {
-      std::istringstream iss(line);
-      std::string path;
-      size_t type, width;
-      int off;
-      iss >> type >> path >> width >> off;
-      if (path == "null") path = "";
-      sample_t::add_to_chains(static_cast<CHAIN_TYPE>(type), path, width, off);
-    }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
-  }
-  file.close();
-}
-*/
-
 void simif_t::load_mem(std::string filename) {
   std::ifstream file(filename.c_str());
   if (file) {
@@ -126,20 +103,16 @@ void simif_t::load_mem(std::string filename) {
 
 void simif_t::init() {
   for (size_t k = 0 ; k < 5 ; k++) {
-    poke_channel(RESET_ADDR, 0);
+    poke_channel(HOST_RESET_ADDR, 0);
+    poke_channel(SIM_RESET_ADDR, 0);
     while(!peek_channel(DONE_ADDR));
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
       peek_map[i] = peek_channel(CTRL_NUM + i);
     }
-    /*
-    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
-      // flush traces from initialization
-      size_t id = it->second;
-      for (size_t off = 0 ; off < out_chunks[id] ; off++) {
-        peek_channel(id+off);
-      }
-    }
-    */
+    // flush traces from initialization
+    trace_count = 1;
+    read_traces(NULL);
+    trace_count = 0;
   }
 
   for (auto &arg: hargs) {
@@ -155,43 +128,37 @@ void simif_t::init() {
     if (arg.find("+profile") == 0) profile = true;
   }
 
+  samples = new sample_t*[sample_num];
+  for (size_t i = 0 ; i < sample_num ; i++) {
+     samples[i] = NULL;
+  }
   if (profile) sim_start_time = timestamp();
 }
 
 void simif_t::finish() {
   // tail samples
-  /*
   if (last_sample != NULL) {
-    std::ostringstream oss;
-    oss << prefix << "_" << last_sample_id << ".sample";
-    std::ofstream file(oss.str().c_str());
-    file << *trace_ports(last_sample);
-    delete last_sample;
+    if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
+    samples[last_sample_id] = read_traces(last_sample);
   }
-  */
+
   if (profile) {
     double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
     fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %d\n", 
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
-  // merge samples
-  /*
-  std::ostringstream oss;
-  oss << prefix << ".sample";
-  std::ofstream out(oss.str().c_str());
+
+  // dump samples
+  std::string filename = prefix + ".sample";
+  // std::ofstream file(filename.c_str());
+  FILE *file = fopen(filename.c_str(), "w");
   for (size_t i = 0 ; i < sample_num ; i++) {
-    std::ostringstream oss;
-    oss << prefix << "_" << i << ".sample";
-    std::ifstream f(oss.str().c_str());
-    out << f.rdbuf();
-    f.close();
-    std::remove(oss.str().c_str());
+    if (samples[i] != NULL) {
+      // file << *samples[i];
+      samples[i]->dump(file);
+      delete samples[i];
+    }
   }
-  sample_t* snap = read_snapshot();
-  out << *snap;
-  delete snap;
-  out.close();
-  */
 }
 
 bool simif_t::expect(bool pass, const char *s) {
@@ -202,9 +169,7 @@ bool simif_t::expect(bool pass, const char *s) {
 }
 
 void simif_t::step(size_t n) {
-  if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   // reservoir sampling
-/*
   if (t % trace_len == 0) {
     uint64_t start_time = 0;
     size_t record_id = t / trace_len;
@@ -213,11 +178,8 @@ void simif_t::step(size_t n) {
       sample_count++;
       if (profile) start_time = timestamp();
       if (last_sample != NULL) {
-        std::ostringstream oss;
-        oss << prefix << "_" << last_sample_id << ".sample";
-        std::ofstream file(oss.str().c_str());
-        file << *trace_ports(last_sample);
-        delete last_sample;
+        if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
+        samples[last_sample_id] = read_traces(last_sample);
       }
       last_sample = read_snapshot();
       last_sample_id = sample_id;
@@ -225,8 +187,8 @@ void simif_t::step(size_t n) {
       if (profile) sample_time += (timestamp() - start_time);
     }
   }
-*/
   // take steps
+  if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   poke_channel(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     poke_channel(CTRL_NUM + i, poke_map[i]);
@@ -239,8 +201,7 @@ void simif_t::step(size_t n) {
   if (trace_count < trace_len) trace_count += n;
 }
 
-/*
-sample_t* simif_t::trace_ports(sample_t *sample) {
+sample_t* simif_t::read_traces(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
     for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
@@ -250,10 +211,10 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new poke_t(it->first, data, chunk));
+      if (sample) sample->add_cmd(new poke_t(it->first, data, chunk));
       delete[] data;
     }
-    sample->add_cmd(new step_t(1));
+    // sample->add_cmd(new step_t(1));
     // output traces from FPGA
     for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
       size_t id = it->second;
@@ -262,7 +223,7 @@ sample_t* simif_t::trace_ports(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = peek_channel(id+off);
       }
-      sample->add_cmd(new expect_t(it->first, data, chunk));
+      if (sample) sample->add_cmd(new expect_t(it->first, data, chunk));
       delete[] data;
     }
   }
@@ -281,17 +242,18 @@ static inline char* int_to_bin(char *bin, uint32_t value, size_t size) {
 sample_t* simif_t::read_snapshot() {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
-  
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
-    for (size_t k = 0 ; k < CHAIN_LOOP[t]; k++) {
-      if (type == SRAM0_CHAIN) poke_channel(SRAM0_RESTART_ADDR, 0);
-      if (type == SRAM1_CHAIN) poke_channel(SRAM1_RESTART_ADDR, 0);
-      for (size_t i = 0 ; i < CHAIN_LEN[t]; i++) {
-        snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t]), DAISY_WIDTH);
+    const size_t chain_loop = sample_t::get_chain_loop(type);
+    const size_t chain_len = sample_t::get_chain_len(type);
+    for (size_t k = 0 ; k < chain_loop ; k++) {
+      for (size_t i = 0 ; i < CHAIN_SIZE[t] ; i++) {
+        if (type == SRAM_CHAIN) poke_channel(SRAM_RESTART_ADDR + i, 0);
+        for (size_t j = 0 ; j < chain_len ; j++) {
+          snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t] + i), DAISY_WIDTH);
+        }
       }
     }
   }
   return new sample_t(snap.str().c_str(), cycles());
 }
-*/
