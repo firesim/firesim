@@ -152,18 +152,25 @@ public:
     return s.dump(os);
   }
 
-  static void init_chains();
-  static void add_to_chains(CHAIN_TYPE, std::string&, size_t, int index = -1);
+  static void init_chains(std::string filename);
+  static size_t get_chain_loop(CHAIN_TYPE t) {
+    return chain_loop[t];
+  }
+  static size_t get_chain_len(CHAIN_TYPE t) {
+    return chain_len[t];
+  }
 
 private:
   const uint64_t cycle;
   std::vector<sample_inst_t*> cmds;
   std::vector<std::vector<force_t*>> force_bins;
   size_t force_bin_idx;
-  const char* force_prev_node; 
+  const char* force_prev_node;
+  static size_t chain_loop[CHAIN_NUM];
+  static size_t chain_len[CHAIN_NUM];
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 
-  static std::array<std::vector<ssize_t>,     CHAIN_NUM> indices;
+  static std::array<std::vector<ssize_t>,     CHAIN_NUM> depths;
 };
 
 #endif // __SAMPLE_H

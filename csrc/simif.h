@@ -9,7 +9,7 @@
 #include <queue>
 #include <sys/time.h>
 #include "biguint.h"
-// #include "sample.h"
+#include "sample.h"
 #include <iostream>
 
 static inline uint64_t timestamp() {
@@ -29,7 +29,6 @@ class simif_t
 
   private:
     void read_map(std::string filename);
-    // void read_chain(std::string filename);
     virtual void load_mem(std::string filename);
 
     // simulation information
@@ -51,9 +50,10 @@ class simif_t
     uint32_t peek_map[PEEK_SIZE];
 
     // sample information
+    sample_t** samples;
     size_t sample_num;
     size_t last_sample_id;
-    // sample_t* last_sample;
+    sample_t* last_sample;
 
     // profile information    
     bool profile;
@@ -154,8 +154,8 @@ class simif_t
         poke_channel(MEM_W_ADDR+off, data[off]);
       }
     }
-    // sample_t* trace_ports(sample_t* s);
-    // sample_t* read_snapshot();
+    sample_t* read_snapshot();
+    sample_t* read_traces(sample_t* s);
     
     void init();
     void finish();
@@ -163,7 +163,8 @@ class simif_t
     inline void set_latency(size_t cycles) { 
       poke_channel(LATENCY_ADDR, cycles);
     }
-    inline void set_tracelen(size_t len) { 
+    inline void set_tracelen(size_t len) {
+      assert(len > 2);
       trace_len = len;
       poke_channel(TRACELEN_ADDR, len);
     }
