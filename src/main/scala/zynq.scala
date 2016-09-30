@@ -19,22 +19,22 @@ case class ZynqMasterHandlerArgs(
   sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) extends NastiModule()(p) {
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
-  val io = new Bundle {
-    val nasti = (new NastiIO).flip
+  val io = IO(new Bundle {
+    val nasti = Flipped(new NastiIO)
     val ins   = Vec(args.inNum, ChannelType)
-    val outs  = Vec(args.outNum, ChannelType).flip
-    val inT   = Vec(args.sim.inT.size, ChannelType).flip
-    val outT  = Vec(args.sim.outT.size, ChannelType).flip
-    val daisy = args.sim.daisy.cloneType.flip
+    val outs  = Flipped(Vec(args.outNum, ChannelType))
+    val inT   = Flipped(Vec(args.sim.inT.size, ChannelType))
+    val outT  = Flipped(Vec(args.sim.outT.size, ChannelType))
+    val daisy = Flipped(args.sim.daisy.cloneType)
     val mem   = new Bundle {
       val ar = Vec(args.arNum, ChannelType)
       val aw = Vec(args.awNum, ChannelType)
-      val r  = Vec(args.rNum,  ChannelType).flip
+      val r  = Flipped(Vec(args.rNum,  ChannelType))
       val w  = Vec(args.wNum,  ChannelType)
     } 
     val ctrlIns  = Vec(ZynqCtrlSignals.values.size, ChannelType)
-    val ctrlOuts = Vec(ZynqCtrlSignals.values.size, ChannelType).flip
-  }
+    val ctrlOuts = Flipped(Vec(ZynqCtrlSignals.values.size, ChannelType))
+  })
 
   val addrOffsetBits = log2Up(nastiXDataBits/8)
   val addrSizeBits   = 10
@@ -131,12 +131,12 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = (new NastiIO()(p alter Map(NastiKey -> p(MasterNastiKey)))).flip
-  val slave  =  new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+  val master = Flipped(new NastiIO()(p alter Map(NastiKey -> p(MasterNastiKey))))
+  val slave  =         new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
 class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module {
-  val io = new ZynqShimIO
+  val io = IO(new ZynqShimIO)
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())
