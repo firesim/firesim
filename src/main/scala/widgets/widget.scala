@@ -47,7 +47,7 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
   }
 
   def genCRFile() {
-    val crFile = Module(new MCRFile(numRegs))
+    val crFile = Module(new MCRFile(numRegs)(p alter Map(NastiKey -> p(CtrlNastiKey))))
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
   }
