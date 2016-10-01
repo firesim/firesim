@@ -1,10 +1,12 @@
 package strober
 
-import midas_widgets._
-import dram_midas._
-import Chisel._
+import Chisel._ 
+// TODO: import chisel3._
+// TODO: import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
+import midas_widgets._
+import dram_midas._
 
 case object SlaveNastiKey  extends Field[NastiParameters]
 
@@ -19,21 +21,23 @@ object ZynqShim {
 case class ZynqMasterHandlerArgs(
   sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
 
-class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs, channelType: => DecoupledIO[UInt])(implicit p:Parameters) extends WidgetIO()(p){
+class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs,
+                          channelType: => DecoupledIO[UInt])
+                         (implicit p: Parameters) extends WidgetIO()(p){
 
   val ins   = Vec(args.inNum, channelType)
-  val outs  = Vec(args.outNum, channelType).flip
-  val inT   = Vec(args.sim.inT.size, channelType).flip
-  val outT  = Vec(args.sim.outT.size, channelType).flip
-  val daisy = args.sim.daisy.cloneType.flip
+  val outs  = Flipped(Vec(args.outNum, channelType))
+  val inT   = Flipped(Vec(args.sim.inT.size, channelType))
+  val outT  = Flipped(Vec(args.sim.outT.size, channelType))
+  val daisy = Flipped(args.sim.daisy.cloneType)
   val mem   = new Bundle {
     val ar = Vec(args.arNum, channelType)
     val aw = Vec(args.awNum, channelType)
-    val r  = Vec(args.rNum,  channelType).flip
+    val r  = Flipped(Vec(args.rNum,  channelType))
     val w  = Vec(args.wNum,  channelType)
   } 
   val ctrlIns  = Vec(ZynqCtrlSignals.values.size, channelType)
-  val ctrlOuts = Vec(ZynqCtrlSignals.values.size, channelType).flip
+  val ctrlOuts = Flipped(Vec(ZynqCtrlSignals.values.size, channelType))
 }
 
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) extends Widget()(p) {
@@ -55,8 +59,8 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
   val inputSeq = (io.ctrlIns ++ io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
-  (inputSeq zip inputs) foreach {case (x, y) => x <> y}
-  inputs.zipWithIndex foreach {case (in, i) =>
+  (inputSeq zip inputs) foreach { case (x, y) => x <> y }
+  inputs.zipWithIndex foreach { case (in, i) =>
     in.bits  := io.ctrl.w.bits.data
     in.valid := waddr_r === UInt(i) && do_write
   }
@@ -101,8 +105,10 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val daisyOuts = ChainType.values flatMap (io.daisy(_).toSeq) map (_.out)
   val outputSeq = (io.ctrlOuts ++ io.outs ++ io.inT ++ io.outT ++ daisyOuts ++ io.mem.r).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
-  outputs zip outputSeq foreach {case (x, y) => x <> y}
-  outputs.zipWithIndex foreach {case (out, i) => out.ready := raddr_r === UInt(i) && do_read}
+  outputs zip outputSeq foreach { case (x, y) => x <> y }
+  outputs.zipWithIndex foreach { case (out, i) =>
+    out.ready := raddr_r === UInt(i) && do_read
+  }
 
   // Read FSM
   switch(st_rd) {

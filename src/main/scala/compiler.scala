@@ -15,7 +15,7 @@ private class StroberCompilerContext {
   val shims = ArrayBuffer[ZynqShim[_]]()
   // Todo: Should be handled in the backend
   val memPorts = ArrayBuffer[junctions.NastiIO]()
-  val memWires = HashSet[Chisel.Bits]()
+  val memWires = HashSet[chisel3.Bits]()
 }
 
 private class StroberCompiler extends firrtl.Compiler {
