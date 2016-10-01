@@ -32,7 +32,7 @@ private class StroberCompiler extends firrtl.Compiler {
 }
 
 // This compiler compiles HighFirrtl To verilog
-class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
+private class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
   def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
@@ -57,6 +57,8 @@ object StroberCompiler {
     val sb = new StringBuilder
     sb append (c.IN_ADDRS  map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoIn,  _)} mkString "")
     sb append (c.OUT_ADDRS map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoOut, _)} mkString "")
+    sb append (c.IN_TR_ADDRS  map {dump(MapType.InTr,  _)} mkString "")
+    sb append (c.OUT_TR_ADDRS map {dump(MapType.OutTr, _)} mkString "")
 
     val file = new FileWriter(new File(context.dir, s"${targetName}.map"))
     try {
@@ -84,6 +86,8 @@ object StroberCompiler {
       "MEM_W_ADDR"      -> c.W_ADDR,
       "MEM_R_ADDR"      -> c.R_ADDR,
       "CTRL_NUM"        -> c.CTRL_NUM,
+      "SRAM_RESTART_ADDR" -> c.SRAM_RESTART_ADDR,
+      "DAISY_WIDTH"     -> (c.sim match { case sim: SimWrapper[_] => sim.daisyWidth }),
       "POKE_SIZE"       -> c.ins.size,
       "PEEK_SIZE"       -> c.outs.size,
       "MEM_DATA_BITS"   -> c.arb.nastiXDataBits,
@@ -95,6 +99,12 @@ object StroberCompiler {
     sb append "#define __%s_H\n".format(targetName.toUpperCase)
     consts foreach (sb append dump(_))
     c.genHeader(sb)
+    sb append "enum CHAIN_TYPE {%s,CHAIN_NUM};\n".format(
+      ChainType.values.toList map (t => s"${t.toString.toUpperCase}_CHAIN") mkString ",")
+    sb append "const unsigned CHAIN_SIZE[CHAIN_NUM] = {%s};\n".format(
+      ChainType.values.toList map (t => c.master.io.daisy(t).size) mkString ",")
+    sb append "const unsigned CHAIN_ADDR[CHAIN_NUM] = {%s};\n".format(
+      ChainType.values.toList map c.DAISY_ADDRS mkString ",")
     sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
     val file = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
     try {
@@ -171,7 +181,7 @@ object StroberCompiler {
       val (circuit, conf) = transform(w, snapshot)
       compile(circuit, conf)
       val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile", "--test")
+        "--backend", backend, "--genHarness", "--compile")
       iotesters.chiselMain(testerArgs, () => w)
     }
   }
@@ -287,7 +297,8 @@ object ReplayCompiler {
   def apply[T <: chisel3.Module : ClassTag](
       args: Array[String],
       w: => T,
-      backend: String = "verilator")
+      backend: String = "verilator",
+      waveform: Option[File] = None)
       (tester: T => testers.Replay[T]): T = {
     val target = implicitly[ClassTag[T]].runtimeClass.getSimpleName
     (contextVar withValue Some(new ReplayCompilerContext(target))){
@@ -298,7 +309,11 @@ object ReplayCompiler {
         "--targetDir", context.dir.toString,
         "--logFile", log.toString,
         "--backend", backend,
-        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/)
+        "--genHarness", "--compile", "--test"/*, "--vpdmem"*/) ++
+        (waveform match {
+          case None => Array[String]()
+          case Some(f) => Array("--waveform", f.toString)
+        })
       iotesters.chiselMainTest(targs, () => w)(tester)
     }
   }
