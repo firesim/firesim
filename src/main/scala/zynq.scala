@@ -38,7 +38,7 @@ class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs, channelType: => Decoupled
 
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) extends Widget()(p) {
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
-  val io = new ZynqMasterHandlerIO(args, ChannelType)
+  val io = IO(new ZynqMasterHandlerIO(args, ChannelType))
 
   val addrOffsetBits = log2Up(nastiXDataBits/8)
   val addrSizeBits   = 12
@@ -142,13 +142,13 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = (new WidgetMMIO).flip
-  val slave  =  new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+  val master = Flipped(new WidgetMMIO)
+  val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
 class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     with HasWidgets{
-  val io = new ZynqShimIO
+  val io = IO(new ZynqShimIO)
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())

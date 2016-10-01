@@ -28,20 +28,20 @@ abstract class SimWrapperTester[+T <: chisel3.Module](
         case ChainType.SRAM =>
           _poke(c.io.daisy.sram(i).restart, 1)
           Predef.assert(_eventually(_peek(c.io.daisy(t)(i).out.valid)),
-                 "scan chain not available")
+                 s"$t chain not available")
           _poke(c.io.daisy.sram(i).restart, 0)
         case _ =>
           Predef.assert(_eventually(_peek(c.io.daisy(t)(i).out.valid)),
-                 "scan chain not available")
+                 s"$t chain not available")
       }
-      for (_ <- 0 until chainLen(t)) {
-        Predef.assert(_peek(c.io.daisy(t)(i).out.valid), "scan chain not available")
+      for (j <- 0 until chainLen(t)) {
+        Predef.assert(_peek(c.io.daisy(t)(i).out.valid), s"$t scan chain not available")
         chain append intToBin(_peek(c.io.daisy(t)(i).out.bits), daisyWidth)
         _poke(c.io.daisy(t)(i).out.ready, 1)
         backend.step(1)
         _poke(c.io.daisy(t)(i).out.ready, 0)
       }
-      Predef.assert(!_peek(c.io.daisy(t)(i).out.valid), "scan chain should be empty")
+      Predef.assert(!_peek(c.io.daisy(t)(i).out.valid), s"$t scan chain should be empty")
     }
     chain.result
   }
