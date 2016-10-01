@@ -1,8 +1,9 @@
 package midas_widgets
 
+import chisel3._
+import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
-import Chisel._
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
@@ -13,7 +14,7 @@ class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p alter Map(NastiKey 
 
 // All widgets must implement this interface
 abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
-  val ctrl = (new WidgetMMIO).flip
+  val ctrl = Flipped(new WidgetMMIO)
 }
 
 abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {

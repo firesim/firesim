@@ -1,6 +1,7 @@
 package strober
 
-import Chisel._
+import chisel3._
+import chisel3.util.RegEnable
 import junctions.NastiIO
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
