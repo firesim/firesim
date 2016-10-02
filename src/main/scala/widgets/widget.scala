@@ -109,18 +109,21 @@ trait HasWidgets {
 
   private def sortedWidgets = widgets.toSeq.sortWith(_.memRegionSize > _.memRegionSize)
 
-  def genCtrlIO(master: WidgetMMIO, baseAddress: BigInt = 0)(implicit p: Parameters) {
+  def genCtrlIO(master: WidgetMMIO, addrSize: BigInt)(implicit p: Parameters) {
     val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
       nMasters = 1,
       addrMap = addrMap
     )(p alter Map(NastiKey -> p(CtrlNastiKey))))
-
     ctrlInterconnect.io.masters(0) <> master
+    // We should truncate upper bits of master addresses
+    // according to the size of flatform MMIO
+    val addrSizeBits = log2Up(addrSize)
+    ctrlInterconnect.io.masters(0).aw.bits.addr := master.aw.bits.addr(addrSizeBits, 0)
+    ctrlInterconnect.io.masters(0).ar.bits.addr := master.ar.bits.addr(addrSizeBits, 0)
     sortedWidgets.zip(ctrlInterconnect.io.slaves) foreach {
       case (w: Widget, m) => w.io.ctrl <> m
     }
   }
-
   def genHeader(sb: StringBuilder) {
     widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start, sb))
   }
