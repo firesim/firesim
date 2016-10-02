@@ -1,7 +1,7 @@
 package strober
 
 import chisel3._
-import chisel3.util.RegEnable
+import chisel3.util._
 import junctions.NastiIO
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
@@ -56,7 +56,7 @@ object SimUtils {
     val channels = inChannels slice (off, off + getChunks(wire))
     val channelOuts = wire match {
       case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Vec(channels map (_.io.out.bits)).toBits
+      case _ => Cat(channels map (_.io.out.bits))
     }
     val buffer = RegEnable(channelOuts, fire)
     buffer suggestName (name + "_buffer")

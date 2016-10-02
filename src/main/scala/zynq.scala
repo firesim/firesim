@@ -1,8 +1,8 @@
 package strober
 
-import Chisel._ 
-// TODO: import chisel3._
-// TODO: import chisel3.util._
+import chisel3._
+import chisel3.util._
+import chisel3.core.ExplicitCompileOptions.NotStrict
 import junctions._
 import cde.{Parameters, Field}
 import midas_widgets._
@@ -285,13 +285,21 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
   mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
-    Vec(aw map (_.io.out.bits)).toBits, UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
+    Cat(aw map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
-    Vec(ar map (_.io.out.bits)).toBits, UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
+    Cat(ar map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.w.bits := NastiWriteDataChannel(Vec(w map (_.io.out.bits)).toBits)(
+  /* TODO: java.lang.NoSuchMethodError: junctions.NastiWriteDataChannel$.apply$default$2()Lscala/Option;
+  mem.w.bits := NastiWriteDataChannel(Cat(w map (_.io.out.bits)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
+  */
+  mem.w.bits.data := Cat(w map (_.io.out.bits))
+  mem.w.bits.strb := Fill(mem.w.bits.nastiWStrobeBits, UInt(1, 1))
+  mem.w.bits.last := Bool(true)
+  mem.w.bits.id   := UInt(0)
+  mem.w.bits.user := UInt(0)
+
   r.zipWithIndex foreach {case (buf, i) =>
     buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)
   }
@@ -356,7 +364,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
 
   (0 until SimMemIO.size) foreach { i =>
     val model = addWidget(
-      p(MemModelKey) match {
+      (p(MemModelKey): @unchecked) match {
         case Some(cfg: BaseConfig) => new MidasMemModel(cfg)(p alter Map(NastiKey -> p(SlaveNastiKey)))
         case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))},
       s"MemModel_$i")
