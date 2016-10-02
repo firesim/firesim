@@ -8,7 +8,8 @@ import cde.{Parameters, Field}
 import midas_widgets._
 import dram_midas._
 
-case object SlaveNastiKey  extends Field[NastiParameters]
+case object SlaveNastiKey extends Field[NastiParameters]
+case object ZynqMMIOSize extends Field[BigInt]
 
 object ZynqCtrlSignals extends Enumeration {
   val HOST_RESET, SIM_RESET, STEP, DONE, TRACELEN, LATENCY = Value 
@@ -44,9 +45,10 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
   val io = IO(new ZynqMasterHandlerIO(args, ChannelType))
 
+  val addrSize       = p(ZynqMMIOSize)/4
   val addrOffsetBits = log2Up(nastiXDataBits/8)
-  val addrSizeBits   = 12
-  override val customSize = Some(BigInt((1 << (addrSizeBits + addrOffsetBits))))
+  val addrSizeBits   = log2Up(addrSize) - addrOffsetBits
+  override val customSize = Some(addrSize)
 
   require(p(ChannelWidth) == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
@@ -55,14 +57,13 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val waddr_r = Reg(UInt(width=addrSizeBits))
   val st_wr_idle :: st_aw_done :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 4)
   val st_wr = RegInit(st_wr_idle)
-  val do_write = st_wr === st_wr_write
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
   val inputSeq = (io.ctrlIns ++ io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
   (inputSeq zip inputs) foreach { case (x, y) => x <> y }
   inputs.zipWithIndex foreach { case (in, i) =>
     in.bits  := io.ctrl.w.bits.data
-    in.valid := waddr_r === UInt(i) && do_write
+    in.valid := waddr_r === UInt(i) && st_wr === st_wr_write
   }
 
   // Write FSM
@@ -92,7 +93,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   }
   //TODO: this is gross; use the library instead
   io.ctrl.aw.ready := st_wr === st_wr_idle
-  io.ctrl.w.ready  := do_write
+  io.ctrl.w.ready  := st_wr === st_wr_write
   io.ctrl.b.valid  := st_wr === st_wr_ack
   io.ctrl.b.bits   := NastiWriteResponseChannel(awid_r)
 
@@ -152,8 +153,7 @@ class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
-class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
-    with HasWidgets{
+class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module with HasWidgets {
   val io = IO(new ZynqShimIO)
   // Simulation Target
   val sim: T = Module(c)
@@ -380,6 +380,6 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || simReset || simResetReg
     channels2Port(fakeTNasti, wires)
   }
-  genCtrlIO(io.master)
+  genCtrlIO(io.master, p(ZynqMMIOSize))
   StroberCompiler annotate this
 }
