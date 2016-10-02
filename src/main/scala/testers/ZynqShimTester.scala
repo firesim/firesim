@@ -245,5 +245,5 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     chain.result
   }
 
-  reset(1)
+  reset(5)
 }
