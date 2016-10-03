@@ -160,9 +160,6 @@ class simif_t
     void init();
     void finish();
     inline uint64_t cycles() { return t; }
-    inline void set_latency(size_t cycles) { 
-      poke_channel(LATENCY_ADDR, cycles);
-    }
     inline void set_tracelen(size_t len) {
       assert(len > 2);
       trace_len = len;
