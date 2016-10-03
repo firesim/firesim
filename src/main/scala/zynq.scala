@@ -12,7 +12,7 @@ case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
 
 object ZynqCtrlSignals extends Enumeration {
-  val HOST_RESET, SIM_RESET, STEP, DONE, TRACELEN, LATENCY = Value 
+  val HOST_RESET, SIM_RESET, STEP, DONE, TRACELEN = Value
 }
 
 object ZynqShim {
@@ -53,84 +53,84 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   require(p(ChannelWidth) == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
   /*** INPUTS ***/
-  val awid_r  = Reg(UInt(width=nastiWIdBits))
-  val waddr_r = Reg(UInt(width=addrSizeBits))
-  val st_wr_idle :: st_aw_done :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 4)
-  val st_wr = RegInit(st_wr_idle)
+  val awId  = Reg(UInt(width=nastiWIdBits))
+  val wAddr = Reg(UInt(width=addrSizeBits))
+  val wStateIdle :: wStateReady :: wStateWrite :: wStateAck :: Nil = Enum(UInt(), 4)
+  val wState = RegInit(wStateIdle)
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
   val inputSeq = (io.ctrlIns ++ io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
   (inputSeq zip inputs) foreach { case (x, y) => x <> y }
   inputs.zipWithIndex foreach { case (in, i) =>
     in.bits  := io.ctrl.w.bits.data
-    in.valid := waddr_r === UInt(i) && st_wr === st_wr_write
+    in.valid := wAddr === UInt(i) && wState === wStateWrite
   }
 
   // Write FSM
-  switch(st_wr) {
-    is(st_wr_idle) {
+  switch(wState) {
+    is(wStateIdle) {
       when(io.ctrl.aw.valid) {
-        st_wr   := st_aw_done
-        awid_r  := io.ctrl.aw.bits.id
-        waddr_r := io.ctrl.aw.bits.addr >> UInt(addrOffsetBits)
+        wState := wStateReady
+        awId   := io.ctrl.aw.bits.id
+        wAddr  := io.ctrl.aw.bits.addr >> UInt(addrOffsetBits)
       }
     }
-    is(st_aw_done) {
+    is(wStateReady) {
       when(io.ctrl.w.valid) {
-        st_wr := st_wr_write
+        wState := wStateWrite
       }
     }
-    is(st_wr_write) {
-      when(inputs(waddr_r).ready) {
-        st_wr := st_wr_ack
+    is(wStateWrite) {
+      when(inputs(wAddr).ready) {
+        wState := wStateAck
       } 
     }
-    is(st_wr_ack) {
+    is(wStateAck) {
       when(io.ctrl.b.ready) {
-        st_wr := st_wr_idle
+        wState := wStateIdle
       }
     }
   }
   //TODO: this is gross; use the library instead
-  io.ctrl.aw.ready := st_wr === st_wr_idle
-  io.ctrl.w.ready  := st_wr === st_wr_write
-  io.ctrl.b.valid  := st_wr === st_wr_ack
-  io.ctrl.b.bits   := NastiWriteResponseChannel(awid_r)
+  io.ctrl.aw.ready := wState === wStateIdle
+  io.ctrl.w.ready  := wState === wStateWrite
+  io.ctrl.b.valid  := wState === wStateAck
+  io.ctrl.b.bits   := NastiWriteResponseChannel(awId)
 
   /*** OUTPUTS ***/
-  val arid_r  = Reg(UInt(width=nastiWIdBits))
-  val raddr_r = Reg(UInt(width=addrSizeBits))
-  val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
-  val st_rd = RegInit(st_rd_idle)
-  val do_read = st_rd === st_rd_read
+  val arId  = Reg(UInt(width=nastiWIdBits))
+  val rAddr = Reg(UInt(width=addrSizeBits))
+  val rStateIdle :: rStateRead :: Nil = Enum(UInt(), 2)
+  val rState = RegInit(rStateIdle)
+  val doRead = rState === rStateRead
   val daisyOuts = ChainType.values flatMap (io.daisy(_).toSeq) map (_.out)
   val outputSeq = (io.ctrlOuts ++ io.outs ++ io.inT ++ io.outT ++ daisyOuts ++ io.mem.r).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
   outputs zip outputSeq foreach { case (x, y) => x <> y }
   outputs.zipWithIndex foreach { case (out, i) =>
-    out.ready := raddr_r === UInt(i) && do_read
+    out.ready := rAddr === UInt(i) && doRead
   }
 
   // Read FSM
-  switch(st_rd) {
-    is(st_rd_idle) {
+  switch(rState) {
+    is(rStateIdle) {
       when(io.ctrl.ar.valid) {
-        st_rd   := st_rd_read
-        arid_r  := io.ctrl.ar.bits.id
-        raddr_r := io.ctrl.ar.bits.addr >> UInt(addrOffsetBits)
+        rState := rStateRead
+        arId   := io.ctrl.ar.bits.id
+        rAddr  := io.ctrl.ar.bits.addr >> UInt(addrOffsetBits)
       }
     }
-    is(st_rd_read) {
+    is(rStateRead) {
       when(io.ctrl.r.ready) {
-        st_rd   := st_rd_idle
+        rState := rStateIdle
       }
     }
   }
-  io.ctrl.ar.ready := st_rd === st_rd_idle
+  io.ctrl.ar.ready := rState === rStateRead // rStateIdle
   io.ctrl.r.bits := NastiReadDataChannel(
-    id = arid_r,
-    data = outputs(raddr_r).bits,
-    last = outputs(raddr_r).valid && do_read)
+    id = arId,
+    data = outputs(rAddr).bits,
+    last = outputs(rAddr).valid && doRead)
   io.ctrl.r.valid := io.ctrl.r.bits.last
 
   // TODO:
@@ -243,13 +243,6 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   }
   master.io.ctrlIns(TRACELEN.id).ready := idle
   master.io.ctrlOuts(TRACELEN.id).valid := Bool(false)
-
-  val latency_reg = RegInit(UInt(0, master.nastiXDataBits))
-  when(master.io.ctrlIns(LATENCY.id).fire()) {
-    latency_reg := master.io.ctrlIns(LATENCY.id).bits
-  }
-  master.io.ctrlIns(LATENCY.id).ready := idle
-  master.io.ctrlOuts(LATENCY.id).valid := Bool(false)
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth

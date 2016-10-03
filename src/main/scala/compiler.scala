@@ -75,24 +75,24 @@ object StroberCompiler {
     implicit val channelWidth = sim.channelWidth
     def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
     val consts = List(
-      "HOST_RESET_ADDR" -> ZynqCtrlSignals.HOST_RESET.id,
-      "SIM_RESET_ADDR"  -> ZynqCtrlSignals.SIM_RESET.id,
-      "STEP_ADDR"       -> ZynqCtrlSignals.STEP.id,
-      "DONE_ADDR"       -> ZynqCtrlSignals.DONE.id,
-      "TRACELEN_ADDR"   -> ZynqCtrlSignals.TRACELEN.id,
-      "LATENCY_ADDR"    -> ZynqCtrlSignals.LATENCY.id,
-      "MEM_AR_ADDR"     -> c.AR_ADDR,
-      "MEM_AW_ADDR"     -> c.AW_ADDR,
-      "MEM_W_ADDR"      -> c.W_ADDR,
-      "MEM_R_ADDR"      -> c.R_ADDR,
-      "CTRL_NUM"        -> c.CTRL_NUM,
+      "CTRL_NUM"          -> c.CTRL_NUM,
+      "DAISY_WIDTH"       -> (c.sim match { case sim: SimWrapper[_] => sim.daisyWidth }),
+      "POKE_SIZE"         -> c.ins.size,
+      "PEEK_SIZE"         -> c.outs.size,
+      "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
+      "TRACE_MAX_LEN"     -> sim.traceMaxLen,
+      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
+
+      "HOST_RESET_ADDR"   -> ZynqCtrlSignals.HOST_RESET.id,
+      "SIM_RESET_ADDR"    -> ZynqCtrlSignals.SIM_RESET.id,
+      "STEP_ADDR"         -> ZynqCtrlSignals.STEP.id,
+      "DONE_ADDR"         -> ZynqCtrlSignals.DONE.id,
+      "TRACELEN_ADDR"     -> ZynqCtrlSignals.TRACELEN.id,
       "SRAM_RESTART_ADDR" -> c.SRAM_RESTART_ADDR,
-      "DAISY_WIDTH"     -> (c.sim match { case sim: SimWrapper[_] => sim.daisyWidth }),
-      "POKE_SIZE"       -> c.ins.size,
-      "PEEK_SIZE"       -> c.outs.size,
-      "MEM_DATA_BITS"   -> c.arb.nastiXDataBits,
-      "TRACE_MAX_LEN"   -> sim.traceMaxLen,
-      "MEM_DATA_CHUNK"  -> SimUtils.getChunks(c.io.slave.w.bits.data)
+      "MEM_AR_ADDR"       -> c.AR_ADDR,
+      "MEM_AW_ADDR"       -> c.AW_ADDR,
+      "MEM_W_ADDR"        -> c.W_ADDR,
+      "MEM_R_ADDR"        -> c.R_ADDR
     )
     val sb = new StringBuilder
     sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
