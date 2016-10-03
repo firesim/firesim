@@ -39,7 +39,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val cycles = RegInit(UInt(0, 64))
   val r_cycles = Module(new Queue(UInt(width=64), 4))
   val w_cycles = Module(new Queue(UInt(width=64), 4))
-  val latency = RegInit(UInt(16, 64))
+  val latency = RegInit(UInt(16, 32))
   attach(latency, "LATENCY")
 
   val tNasti = io.tNasti.hBits
