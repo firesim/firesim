@@ -2,7 +2,6 @@ package strober
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.ExplicitCompileOptions.NotStrict
 import junctions._
 import cde.{Parameters, Field}
 import midas_widgets._
@@ -60,7 +59,16 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
   val inputSeq = (io.ctrlIns ++ io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
-  (inputSeq zip inputs) foreach { case (x, y) => x <> y }
+  io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
+    sram.restart := restarts(i).valid
+    restarts(i).ready := Bool(true)
+  }
+  (inputSeq zip inputs) foreach { case (x, y) =>
+    // TODO: x <> y
+    x.bits  := y.bits
+    x.valid := y.valid
+    y.ready := x.ready
+  }
   inputs.zipWithIndex foreach { case (in, i) =>
     in.bits  := io.ctrl.w.bits.data
     in.valid := wAddr === UInt(i) && wState === wStateWrite
@@ -106,7 +114,12 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   val daisyOuts = ChainType.values flatMap (io.daisy(_).toSeq) map (_.out)
   val outputSeq = (io.ctrlOuts ++ io.outs ++ io.inT ++ io.outT ++ daisyOuts ++ io.mem.r).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
-  outputs zip outputSeq foreach { case (x, y) => x <> y }
+  outputs zip outputSeq foreach { case (x, y) =>
+    // TODO: x <> y
+    x.bits := y.bits
+    x.valid := y.valid
+    y.ready := x.ready
+  }
   outputs.zipWithIndex foreach { case (out, i) =>
     out.ready := rAddr === UInt(i) && doRead
   }
@@ -134,18 +147,14 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
   io.ctrl.r.valid := io.ctrl.r.bits.last
 
   // TODO:
-  io.daisy.regs foreach (_.in.bits := UInt(0))
-  io.daisy.regs foreach (_.in.valid := Bool(false))
   io.daisy.trace foreach (_.in.bits := UInt(0))
   io.daisy.trace foreach (_.in.valid := Bool(false))
+  io.daisy.regs foreach (_.in.bits := UInt(0))
+  io.daisy.regs foreach (_.in.valid := Bool(false))
+  io.daisy.sram foreach (_.in.bits := UInt(0))
+  io.daisy.sram foreach (_.in.valid := Bool(false))
   io.daisy.cntr foreach (_.in.bits := UInt(0))
   io.daisy.cntr foreach (_.in.valid := Bool(false))
-  io.daisy.sram.zipWithIndex foreach {case (sram, i) =>
-    sram.in.bits := UInt(0)
-    sram.in.valid := Bool(false)
-    sram.restart := restarts(i).valid
-    restarts(i).ready := Bool(true)
-  }
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
