@@ -10,12 +10,11 @@ import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-private[passes] class Fame1Transform(conf: java.io.File) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
 
-  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
   private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)

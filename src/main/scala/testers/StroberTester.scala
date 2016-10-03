@@ -28,7 +28,7 @@ abstract class StroberTester[+T <: chisel3.Module](
   protected[testers] val daisyWidth = sim.daisyWidth
   protected[testers] implicit val channelWidth = sim.channelWidth
   private val chainFile = new File(StroberCompiler.context.dir, s"${targetName}.chain")
-  protected[testers] val (chainReader, chainLoop, chainLen) = DaisyChainReader(chainFile, daisyWidth)
+  protected[testers] val (chainReader, chainLoop, chainLen) = DaisyChainReader(chainFile, sim.enableSnapshot)
   
   private val sampleNum = StroberCompiler.context.sampleNum
   private val samples = Array.fill(sampleNum){new Sample}
@@ -197,7 +197,7 @@ abstract class StroberTester[+T <: chisel3.Module](
   private var traceCount = 0
   override def step(n: Int) {
     // reservoir sampling
-    if (cycles % traceLen == 0) {
+    if (sim.enableSnapshot && cycles % traceLen == 0) {
       val recordId = cycles / traceLen
       val sampleId = if (recordId < sampleNum) recordId else rnd.nextInt(recordId+1)
       if (sampleId < sampleNum) {
@@ -216,21 +216,23 @@ abstract class StroberTester[+T <: chisel3.Module](
 
   override def reset(n: Int) {
     // flush junk traces
-    setLastSample(None, n)
+    if (sim.enableSnapshot) setLastSample(None, n)
   }
 
   override def finish = {
-    setLastSample(None, traceCount)
-    val file = sampleFile match {
-      case None => new FileWriter(
-        new File(StroberCompiler.context.dir, s"$targetName.sample"))
-      case Some(f) => new FileWriter(f)
-    }
-    try {
-      file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
-      file write chainReader(readSnapshot, cycles).toString
-    } finally {
-      file.close
+    if (sim.enableSnapshot) {
+      setLastSample(None, traceCount)
+      val file = sampleFile match {
+        case None => new FileWriter(
+          new File(StroberCompiler.context.dir, s"$targetName.sample"))
+        case Some(f) => new FileWriter(f)
+      }
+      try {
+        file write (samples filter (_.cycle >= 0) map (_.toString) mkString "")
+        file write chainReader(readSnapshot, cycles).toString
+      } finally {
+        file.close
+      }
     }
     super.finish
   }
