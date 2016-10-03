@@ -2,6 +2,7 @@ package strober
 package testers
 
 import junctions._
+import midas_widgets._
 import scala.collection.mutable.{HashMap, ArrayBuffer, Queue => ScalaQueue}
 import java.io.{File, InputStream}
 
@@ -26,7 +27,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   private val MAXI_aw = new ChannelSource(c.io.master.aw, (aw: NastiWriteAddressChannel, in: NastiWriteAddr) =>
     { _poke(aw.id, in.id) ; _poke(aw.addr, in.addr) })
   private val MAXI_w = new ChannelSource(c.io.master.w, (w: NastiWriteDataChannel, in: NastiWriteData) =>
-    { _poke(w.data, in.data) })
+    { _poke(w.data, in.data) ; _poke(w.last, in.last) ; _poke(w.strb, (BigInt(1) << w.nastiWStrobeBits) - 1) })
   private val MAXI_b = new ChannelSink(c.io.master.b, (b: NastiWriteResponseChannel) =>
     new NastiWriteResp(_peek(b.id), _peek(b.resp)))
   private val MAXI_ar = new ChannelSource(c.io.master.ar, (ar: NastiReadAddressChannel, in: NastiReadAddr) =>
@@ -54,15 +55,21 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
   }
 
-  def setMemLatency(cycles: Int) {
-    pokeChannel(ZynqCtrlSignals.LATENCY.id, cycles)
+  def writeCR(w: Widget, crName: String, value: BigInt){
+    val addr = c.getCRAddr(w, crName)
+    pokeChannel(addr, value)
+  }
+
+  def readCR(w: Widget, crName: String) = {
+    val addr = c.getCRAddr(w, crName)
+    peekChannel(addr)
   }
 
   override def reset(n: Int) {
     for (_ <- 0 until n) {
       pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
       pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
-      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
              "simulation is not done in time")
       _peekMap.clear
       // flush junk output tokens
@@ -79,7 +86,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id)),
+    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
            "simulation is not done in time")
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
