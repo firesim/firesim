@@ -76,6 +76,7 @@ object StroberCompiler {
     def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
     val consts = List(
       "CTRL_NUM"          -> c.CTRL_NUM,
+      "ENABLE_SNAPSHOT"   -> (c.sim match { case sim: SimWrapper[_] => if (sim.enableSnapshot) 1 else 0 }),
       "DAISY_WIDTH"       -> (c.sim match { case sim: SimWrapper[_] => sim.daisyWidth }),
       "POKE_SIZE"         -> c.ins.size,
       "PEEK_SIZE"         -> c.outs.size,
@@ -134,14 +135,12 @@ object StroberCompiler {
     case head :: tail => parseArgs(tail)
   }
 
-  private def transform[T <: chisel3.Module](w: => T, snapshot: Boolean) = {
+  private def transform[T <: chisel3.Module](w: => T) = {
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => w))
     val conf = new File(context.dir, s"${chirrtl.main}.conf")
     val annotations = new AnnotationMap(Seq(
       firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2)),
-      passes.Fame1Annotation(chirrtl.main, conf)) ++ (if (snapshot) Seq(
-      passes.DaisyAnnotation(chirrtl.main, conf)) else Nil))
+      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
     val result = new StroberCompiler compile (chirrtl, annotations, writer)
@@ -162,23 +161,20 @@ object StroberCompiler {
     result.circuit
   }
 
-  def compile[T <: chisel3.Module](args: Array[String],
-                                   w: => T,
-                                   snapshot: Boolean): firrtl.ir.Circuit = {
+  def compile[T <: chisel3.Module](args: Array[String], w: => T): firrtl.ir.Circuit = {
     (contextVar withValue Some(new StroberCompilerContext)){
       parseArgs(args.toList)
-      val (circuit, conf) = transform(w, snapshot)
+      val (circuit, conf) = transform(w)
       compile(circuit, conf)
     }
   }
 
   def compile[T <: chisel3.Module](args: Array[String],
                                    w: => T,
-                                   backend: String = "verilator",
-                                   snapshot: Boolean = true): T = {
+                                   backend: String = "verilator"): T = {
     (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
-      val (circuit, conf) = transform(w, snapshot)
+      val (circuit, conf) = transform(w)
       compile(circuit, conf)
       val testerArgs = Array("--targetDir", context.dir.toString,
         "--backend", backend, "--genHarness", "--compile")
@@ -188,12 +184,11 @@ object StroberCompiler {
 
   def apply[T <: chisel3.Module](args: Array[String],
                                  w: => T,
-                                 backend: String = "verilator",
-                                 snapshot: Boolean = true)
+                                 backend: String = "verilator")
                                  (tester: T => testers.StroberTester[T]): T = {
     (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
-      val (circuit, conf) = transform(w, snapshot)
+      val (circuit, conf) = transform(w)
       val c = compile(circuit, conf)
       val log = new File(context.dir, s"${c.main}.log")
       val targs = Array(
@@ -208,12 +203,11 @@ object StroberCompiler {
   def test[T <: chisel3.Module](args: Array[String],
                                 w: => T,
                                 backend: String = "verilator",
-                                waveform: Option[File] = None,
-                                snapshot: Boolean = true)
+                                waveform: Option[File] = None)
                                (tester: T => testers.StroberTester[T]) = {
     (contextVar withValue Some(new StroberCompilerContext)) {
       parseArgs(args.toList)
-      val (circuit, conf) = transform(w, snapshot)
+      val (circuit, conf) = transform(w)
       val c = compile(circuit, conf)
       val cmd = new File(context.dir, backend match {
         case "verilator" => s"V${c.main}" case _ => c.main

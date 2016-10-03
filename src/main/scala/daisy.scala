@@ -38,11 +38,11 @@ class CntrData(daisywidth: Int) extends DaisyData(daisywidth) {
     new CntrData(daisywidth).asInstanceOf[this.type]
 }
 
-class DaisyBundle(daisyWidth: Int, sramChainNum: Int) extends Bundle {
-  val regs  = Vec(1, new RegData(daisyWidth))
-  val trace = Vec(1, new TraceData(daisyWidth))
-  val cntr  = Vec(1, new CntrData(daisyWidth))
-  val sram  = Vec(sramChainNum, new SRAMData(daisyWidth))
+class DaisyBundle(daisyWidth: Int, sramChainNum: Int, enableSnapshot: Boolean) extends Bundle {
+  val regs  = Vec(if (enableSnapshot) 1 else 0, new RegData(daisyWidth))
+  val trace = Vec(if (enableSnapshot) 1 else 0, new TraceData(daisyWidth))
+  val cntr  = Vec(if (enableSnapshot) 1 else 0, new CntrData(daisyWidth))
+  val sram  = Vec(if (enableSnapshot) 1 else sramChainNum, new SRAMData(daisyWidth))
   def apply(t: ChainType.Value) = t match {
     case ChainType.Regs  => regs
     case ChainType.Trace => trace
@@ -50,7 +50,7 @@ class DaisyBundle(daisyWidth: Int, sramChainNum: Int) extends Bundle {
     case ChainType.Cntr  => cntr
   }
   override def cloneType: this.type =
-    new DaisyBundle(daisyWidth, sramChainNum).asInstanceOf[this.type]
+    new DaisyBundle(daisyWidth, sramChainNum, enableSnapshot).asInstanceOf[this.type]
 }
 
 // Common structures for daisy chains

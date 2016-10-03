@@ -116,11 +116,9 @@ private[passes] object Analyses extends firrtl.passes.Pass {
   }
 }
 
-private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
+private[passes] class DumpChains(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Dump Chains"
-
-  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
 
   private def addPad(w: Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
@@ -194,7 +192,7 @@ private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
 
   def run(c: Circuit) = {
     wrappers(c.modules) foreach {
-      case m: Module =>
+      case m: Module if params(m.name)(EnableSnapshot) =>
         val daisyWidth = params(m.name)(DaisyWidth)
         targets(m, c.modules) foreach { target =>
           val file = new File(dir, s"${target.name}.chain")
@@ -202,7 +200,7 @@ private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
           ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
           writer.close
         }
-      case m: ExtModule =>
+      case _ =>
     }
     c
   }

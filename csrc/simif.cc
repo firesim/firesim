@@ -30,7 +30,9 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
 
   // Read mapping files
   read_map(prefix+".map");
+#if ENABLE_SNAPSHOT
   sample_t::init_chains(prefix+".chain");
+#endif
 }
 
 simif_t::~simif_t() { 
@@ -109,10 +111,12 @@ void simif_t::init() {
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
       peek_map[i] = peek_channel(CTRL_NUM + i);
     }
+#if ENABLE_SNAPSHOT
     // flush traces from initialization
     trace_count = 1;
     read_traces(NULL);
     trace_count = 0;
+#endif
   }
 
   for (auto &arg: hargs) {
@@ -128,19 +132,23 @@ void simif_t::init() {
     if (arg.find("+profile") == 0) profile = true;
   }
 
+#if ENABLE_SAMPLE
   samples = new sample_t*[sample_num];
   for (size_t i = 0 ; i < sample_num ; i++) {
      samples[i] = NULL;
   }
+#endif
   if (profile) sim_start_time = timestamp();
 }
 
 void simif_t::finish() {
+#if ENABLE_SNAPSHOT
   // tail samples
   if (last_sample != NULL) {
     if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
     samples[last_sample_id] = read_traces(last_sample);
   }
+#endif
 
   if (profile) {
     double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
@@ -148,6 +156,7 @@ void simif_t::finish() {
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
 
+#if ENALBE_SNAPSHOT
   // dump samples
   std::string filename = prefix + ".sample";
   // std::ofstream file(filename.c_str());
@@ -159,6 +168,7 @@ void simif_t::finish() {
       delete samples[i];
     }
   }
+#endif
 }
 
 bool simif_t::expect(bool pass, const char *s) {
@@ -169,6 +179,7 @@ bool simif_t::expect(bool pass, const char *s) {
 }
 
 void simif_t::step(size_t n) {
+#if ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % trace_len == 0) {
     uint64_t start_time = 0;
@@ -187,6 +198,7 @@ void simif_t::step(size_t n) {
       if (profile) sample_time += (timestamp() - start_time);
     }
   }
+#endif
   // take steps
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
   poke_channel(STEP_ADDR, n);

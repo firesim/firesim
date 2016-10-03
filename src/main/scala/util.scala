@@ -40,12 +40,11 @@ object SimUtils {
       case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
     })._1
 
- def genChannels[T <: Bits](arg: (T, String))
-      (implicit p: cde.Parameters, trace: Boolean = true) = {
+ def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
     implicit val channelWidth = p(ChannelWidth)
     arg match { case (port, name) => (0 until getChunks(port)) map { off =>
       val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
-      val channel = Module(new Channel(width, trace))
+      val channel = Module(new Channel(width))
       channel suggestName s"Channel_${name}_${off}"
       channel
     }}

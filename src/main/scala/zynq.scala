@@ -207,7 +207,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   private def genChannels(data: Data, prefix: String) = {
     val (ins, outs) = SimUtils.parsePorts(data)
     (ins ++ outs) map {case (w, n) => w -> s"${prefix}_${n}"} flatMap (
-      SimUtils.genChannels(_)(p, false))
+      SimUtils.genChannels(_)(p alter Map(EnableSnapshot -> false)))
   }
   val ar = genChannels(mem.ar.bits.addr, "ar")
   val aw = genChannels(mem.aw.bits.addr, "aw")

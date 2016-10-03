@@ -11,7 +11,7 @@ import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
 
-private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.Pass {
+private[passes] class AddDaisyChains(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
@@ -74,8 +74,6 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
   type Readers = collection.mutable.HashMap[String, Seq[String]]
   type Netlist = collection.mutable.HashMap[String, Expression]
   type ChainModSet = collection.mutable.HashSet[String]
-
-  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
 
   private def bigRegFile(s: DefMemory) =
     s.readLatency == 0 && s.depth >= 32 && bitWidth(s.dataType) >= 32
@@ -429,8 +427,7 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
                         chainMods: DefModules,
                         hasChain: Map[ChainType.Value, ChainModSet])
                         (m: DefModule) = m match {
-    case m: ExtModule => m
-    case m: Module =>
+    case m: Module if p(EnableSnapshot) =>
       val netlist = new Netlist
       val readers = new Readers
       val stmts = new Statements
@@ -444,15 +441,16 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
       val bodyx = updateStmts(readers, repl, clocks.head, stmts)(m.body)
       m copy (ports = m.ports :+ daisyPort,
               body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
+    case m => m
   }
 
-  private def connectDaisyPort(stmts: Statements)(s: Statement): Statement = {
+  private def connectDaisyPorts(stmts: Statements)(s: Statement): Statement = {
     s match {
       case s: WDefInstance if s.name == "target" =>
         stmts += Connect(NoInfo, wsub(wref("io"), "daisy"), wsub(wref("target"), "daisy"))
       case _ =>
     }
-    s map connectDaisyPort(stmts)
+    s map connectDaisyPorts(stmts)
   }
 
   def run(c: Circuit) = {
@@ -466,9 +464,10 @@ private[passes] class AddDaisyChains(conf: java.io.File) extends firrtl.passes.P
         case t => error(s"${io.info}: io should be a bundle type, but has type ${t.serialize}")
       })).head.tpe
       val stmts = new Statements
-      val newMod = m map connectDaisyPort(stmts) match {
-        case m: ExtModule => m
-        case m: Module => m copy (body = Block(m.body +: stmts))
+      val newMod = m match {
+        case m: Module if param(EnableSnapshot) =>
+          m copy (body = Block(connectDaisyPorts(stmts)(m.body) +: stmts))
+        case m => m
       }
       map ++ (
         (postorder(targets(m, c.modules), c.modules)(
