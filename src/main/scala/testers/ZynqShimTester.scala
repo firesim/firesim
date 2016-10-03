@@ -27,7 +27,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   private val MAXI_aw = new ChannelSource(c.io.master.aw, (aw: NastiWriteAddressChannel, in: NastiWriteAddr) =>
     { _poke(aw.id, in.id) ; _poke(aw.addr, in.addr) })
   private val MAXI_w = new ChannelSource(c.io.master.w, (w: NastiWriteDataChannel, in: NastiWriteData) =>
-    { _poke(w.data, in.data); _poke(w.last, in.last)})
+    { _poke(w.data, in.data) ; _poke(w.last, in.last) ; _poke(w.strb, (BigInt(1) << w.nastiWStrobeBits) - 1) })
   private val MAXI_b = new ChannelSink(c.io.master.b, (b: NastiWriteResponseChannel) =>
     new NastiWriteResp(_peek(b.id), _peek(b.resp)))
   private val MAXI_ar = new ChannelSource(c.io.master.ar, (ar: NastiReadAddressChannel, in: NastiReadAddr) =>
