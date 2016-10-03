@@ -55,14 +55,14 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
 
   // Returns a word addresses
   def getCRAddr(name: String): Int = {
-    require(_finalized == true, "Must build Widgets with their companion object")
+    require(_finalized, "Must build Widgets with their companion object")
     crRegistry.lookupAddress(name).getOrElse(
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
   def genHeader(base: BigInt, sb: StringBuilder){
-    require(_finalized == true, "Must build Widgets with their companion object")
-    crRegistry.genHeader(wName.getOrElse(name), base, sb)
+    require(_finalized, "Must build Widgets with their companion object")
+    crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 }
 
@@ -124,23 +124,23 @@ trait HasWidgets {
       case (w: Widget, m) => w.io.ctrl <> m
     }
   }
-  def genHeader(sb: StringBuilder) {
-    widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start, sb))
+  def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
+    widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
   }
 
   def printWidgets(){
     widgets foreach ((w: Widget) => println(w.wName))
   }
 
-  def getCRAddr(wName: String, crName: String): BigInt = {
+  def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
     val widget = name2inst.get(wName).getOrElse(
       throw new RuntimeException("Could not find Widget: $wName"))
     getCRAddr(widget, crName)
   }
 
-  def getCRAddr(w: Widget, crName: String): BigInt = {
+  def getCRAddr(w: Widget, crName: String)(implicit channelWidth: Int): BigInt = {
     // TODO: Deal with byte vs word addresses && don't use a name in the hash?
-    val base = (addrMap(w.getWName).start >> 2)
+    val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
     base + w.getCRAddr(crName)
   }
 }
