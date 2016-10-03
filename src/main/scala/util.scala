@@ -1,6 +1,7 @@
 package strober
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import junctions.NastiIO
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
@@ -55,7 +56,7 @@ object SimUtils {
     val channels = inChannels slice (off, off + getChunks(wire))
     val channelOuts = wire match {
       case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Vec(channels map (_.io.out.bits)).toBits
+      case _ => Cat(channels map (_.io.out.bits))
     }
     val buffer = RegEnable(channelOuts, fire)
     buffer suggestName (name + "_buffer")
@@ -72,3 +73,18 @@ object SimUtils {
     off + getChunks(wire)
   }
 }
+
+object SimMemIO {
+  def add(mem: NastiIO) {
+    val (ins, outs) = SimUtils.parsePorts(mem)
+    StroberCompiler.context.memWires ++= ins.unzip._1
+    StroberCompiler.context.memWires ++= outs.unzip._1
+    StroberCompiler.context.memPorts += mem
+  }
+  def apply(i: Int): NastiIO = StroberCompiler.context.memPorts(i)
+  def apply(wire: Bits) = StroberCompiler.context.memWires(wire)
+  def apply(mem: NastiIO) = StroberCompiler.context.memPorts contains mem
+  def zipWithIndex = StroberCompiler.context.memPorts.toList.zipWithIndex
+  def size = StroberCompiler.context.memPorts.size
+}
+
