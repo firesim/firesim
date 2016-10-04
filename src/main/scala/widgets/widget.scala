@@ -9,14 +9,21 @@ import scala.collection.mutable.{HashMap, ArrayBuffer}
 case object CtrlNastiKey extends Field[NastiParameters]
 
 // Just NASTI, but pointing at the right key.
-class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p alter Map(NastiKey -> p(CtrlNastiKey)))
+class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p)
+  with HasNastiParameters
+
+object WidgetMMIO {
+  def apply()(implicit p: Parameters): WidgetMMIO = {
+    new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey)))
+  }
+}
 
 // All widgets must implement this interface
 abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
-  val ctrl = (new WidgetMMIO).flip
+  val ctrl = WidgetMMIO().flip
 }
 
-abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
+abstract class Widget(implicit p: Parameters) extends Module {
   private var _finalized = false
   private val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs()
@@ -25,7 +32,7 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
 
   val customSize: Option[BigInt] = None
   // Default case we set the region to be large enough to hold the CRs
-  lazy val memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(numRegs * (nastiXDataBits/8))))
+  lazy val memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(numRegs * (io.ctrl.nastiXDataBits/8))))
   var wName: Option[String] = None
 
   private def setWidgetName(n: String) {wName = Some(n)}
@@ -33,21 +40,32 @@ abstract class Widget(implicit p: Parameters) extends NastiModule()(p) {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  def attach(reg: Data, name: String) {
-    require(reg.getWidth <= nastiXDataBits)
+  def attach(reg: Bits, name: String) {
     crRegistry.allocate(reg, name)
   }
 
-  def genAndAttachReg(wire: UInt, default: Int, name: String): UInt = {
-    require(wire.dir == INPUT || wire.dir == OUTPUT)
-    val reg = Reg(wire.cloneType, init = UInt(default))
-    if (wire.dir == OUTPUT) reg := wire else wire := reg
+  def genAndAttachDecoupled(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
+    require(channel.bits.dir == OUTPUT)
+    val enq = Wire(channel.cloneType)
+    channel := Queue(enq, entries = 2)
+    crRegistry.allocate(enq, name)
+    channel
+  }
+
+  def genAndAttachReg[T <: Bits](wire: T, default: T, name: String, masterDriven: Boolean = true): T = {
+    require(wire.getWidth <= io.ctrl.nastiXDataBits)
+    // TODO: More elegant way to do this?
+    val reg = RegInit({val init = Wire(wire.cloneType); init := default; init})
+    if (masterDriven) wire := reg else reg := wire
     attach(reg, name)
     reg
   }
 
+  def genWOReg[T <: Bits](wire: T, default: T, name: String): T = genAndAttachReg(wire, default, name)
+  def genROReg[T <: Bits](wire: T, default: T, name: String): T = genAndAttachReg(wire, default, name, false)
+
   def genCRFile() {
-    val crFile = Module(new MCRFile(numRegs))
+    val crFile = Module(new MCRFile(numRegs)(p alter Map(NastiKey -> p(CtrlNastiKey))))
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
   }

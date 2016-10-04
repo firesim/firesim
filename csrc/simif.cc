@@ -129,7 +129,7 @@ void simif_t::init() {
     poke_channel(RESET_ADDR, 0);
     while(!peek_channel(DONE_ADDR));
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-      peek_map[i] = peek_channel(CTRL_NUM + i);
+      peek_map[i] = peek_channel(i);
     }
     /*
     for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
@@ -229,11 +229,11 @@ void simif_t::step(size_t n) {
   // take steps
   poke_channel(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
-    poke_channel(CTRL_NUM + i, poke_map[i]);
+    poke_channel(i, poke_map[i]);
   }
   while(!peek_channel(DONE_ADDR));
   for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-    peek_map[i] = peek_channel(CTRL_NUM + i);
+    peek_map[i] = peek_channel(i);
   }
   t += n;
   if (trace_count < trace_len) trace_count += n;
