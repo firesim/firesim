@@ -190,17 +190,28 @@ private[passes] class DumpChains(seqMems: Map[String, MemConf]) extends firrtl.p
       loop(w, instToMod(child, mod), s"${path}.${child}", daisyWidth)(chainType)}
   }
 
+  object TraceType extends Enumeration {
+    val InTr = Value(ChainType.values.size)
+    val OutTr = Value(ChainType.values.size + 1)
+  }
+
   def run(c: Circuit) = {
-    wrappers(c.modules) foreach {
-      case m: Module if params(m.name)(EnableSnapshot) =>
-        val daisyWidth = params(m.name)(DaisyWidth)
-        targets(m, c.modules) foreach { target =>
-          val file = new File(dir, s"${target.name}.chain")
-          val writer = new FileWriter(file)
-          ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
-          writer.close
-        }
-      case _ =>
+    StroberCompiler.context.shims foreach { shim =>
+      val sim = shim.sim.asInstanceOf[SimWrapper[chisel3.Module]]
+      val target = sim.target.name
+      val nameMap = (sim.io.inputs ++ sim.io.outputs).toMap
+      val daisyWidth = sim.daisyWidth
+      implicit val channelWidth = sim.channelWidth
+      def dumpTraceMap(t: TraceType.Value)(arg: (chisel3.Bits, Int)) = arg match {
+        case (wire, id) => s"${t.id} ${target}.${nameMap(wire)} ${id} ${SimUtils.getChunks(wire)}\n" }
+      val file = new File(dir, s"$target.chain")
+      val writer = new FileWriter(file)
+      val sb = new StringBuilder
+      ChainType.values.toList foreach loop(writer, target, target, daisyWidth)
+      shim.IN_TR_ADDRS map dumpTraceMap(TraceType.InTr) addString sb
+      shim.OUT_TR_ADDRS map dumpTraceMap(TraceType.OutTr) addString sb
+      writer write sb.result
+      writer.close
     }
     c
   }

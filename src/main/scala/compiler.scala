@@ -52,13 +52,11 @@ object StroberCompiler {
     val sim = c.sim match { case sim: SimWrapper[_] => sim }
     val targetName = sim.target.name
     val nameMap = (sim.io.inputs ++ sim.io.outputs).toMap
-    def dump(map_t: MapType.Value, arg: (chisel3.Bits, Int)) = arg match {case (wire, id) =>
+    def dump(map_t: MapType.Value)(arg: (chisel3.Bits, Int)) = arg match {case (wire, id) =>
       s"${map_t.id} ${targetName}.${nameMap(wire)} ${id} ${SimUtils.getChunks(wire)(sim.channelWidth)}\n"} 
     val sb = new StringBuilder
-    sb append (c.IN_ADDRS  map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoIn,  _)} mkString "")
-    sb append (c.OUT_ADDRS map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoOut, _)} mkString "")
-    sb append (c.IN_TR_ADDRS  map {dump(MapType.InTr,  _)} mkString "")
-    sb append (c.OUT_TR_ADDRS map {dump(MapType.OutTr, _)} mkString "")
+    c.IN_TR_ADDRS map dump(MapType.InTr) addString sb
+    c.OUT_TR_ADDRS map dump(MapType.OutTr) addString sb
 
     val file = new FileWriter(new File(context.dir, s"${targetName}.map"))
     try {
@@ -72,8 +70,21 @@ object StroberCompiler {
   private def dumpHeader(c: ZynqShim[_]) {
     val sim = c.sim match { case sim: SimWrapper[_] => sim }
     val targetName = sim.target.name
+    val nameMap = (sim.io.inputs ++ sim.io.outputs).toMap
     implicit val channelWidth = sim.channelWidth
-    def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
+    def dump(arg: (String, Int)): String =
+      s"#define ${arg._1} ${arg._2}\n"
+    def dumpId(arg: (chisel3.Bits, Int)): String =
+      s"#define ${nameMap(arg._1)} ${arg._2 - c.CTRL_NUM}\n"
+    def dumpNames(arg: (chisel3.Bits, Int)): Seq[String] = {
+      val chunks = SimUtils.getChunks(arg._1)
+      (0 until chunks) map (i => if (i == 0) "  \"%s\"".format(nameMap(arg._1)) else "  \"\"")
+    }
+    def dumpChunks(arg: (chisel3.Bits, Int)): Seq[Int] = {
+      val chunks = SimUtils.getChunks(arg._1)
+      (0 until chunks) map (i => if (i == 0) chunks else 0)
+    }
+
     val consts = List(
       "CTRL_NUM"          -> c.CTRL_NUM,
       "ENABLE_SNAPSHOT"   -> (c.sim match { case sim: SimWrapper[_] => if (sim.enableSnapshot) 1 else 0 }),
@@ -98,7 +109,11 @@ object StroberCompiler {
     val sb = new StringBuilder
     sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
     sb append "#define __%s_H\n".format(targetName.toUpperCase)
-    consts foreach (sb append dump(_))
+    sb append "const char* const TARGET_NAME = \"%s\";\n".format(targetName)
+    consts map dump addString sb
+    sb append "// IDs assigned to I/Os\n"
+    c.IN_ADDRS map dumpId addString sb
+    c.OUT_ADDRS map dumpId addString sb
     c.genHeader(sb)
     sb append "enum CHAIN_TYPE {%s,CHAIN_NUM};\n".format(
       ChainType.values.toList map (t => s"${t.toString.toUpperCase}_CHAIN") mkString ",")
@@ -106,6 +121,14 @@ object StroberCompiler {
       ChainType.values.toList map (t => c.master.io.daisy(t).size) mkString ",")
     sb append "const unsigned CHAIN_ADDR[CHAIN_NUM] = {%s};\n".format(
       ChainType.values.toList map c.DAISY_ADDRS mkString ",")
+    sb append "const char* const INPUT_NAMES[POKE_SIZE] = {\n%s\n};\n".format(
+      c.IN_ADDRS flatMap dumpNames mkString ",\n")
+    sb append "const char* const OUTPUT_NAMES[PEEK_SIZE] = {\n%s\n};\n".format(
+      c.OUT_ADDRS flatMap dumpNames mkString ",\n")
+    sb append "const unsigned INPUT_CHUNKS[POKE_SIZE] = {%s};\n".format(
+      c.IN_ADDRS flatMap dumpChunks mkString ",")
+    sb append "const unsigned OUTPUT_CHUNKS[PEEK_SIZE] = {%s};\n".format(
+      c.OUT_ADDRS flatMap dumpChunks mkString ",")
     sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
     val file = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
     try {
@@ -151,7 +174,6 @@ object StroberCompiler {
 
   private def compile(circuit: firrtl.ir.Circuit, conf: File): firrtl.ir.Circuit = {
     // Dump meta data
-    context.shims foreach dumpIoMap
     context.shims foreach dumpHeader
     // Compile Verilog
     val annotations = new AnnotationMap(Nil)
