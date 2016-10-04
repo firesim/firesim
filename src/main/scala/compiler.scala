@@ -55,8 +55,8 @@ object StroberCompiler {
     def dump(map_t: MapType.Value, arg: (chisel3.Bits, Int)) = arg match {case (wire, id) =>
       s"${map_t.id} ${targetName}.${nameMap(wire)} ${id} ${SimUtils.getChunks(wire)(sim.channelWidth)}\n"} 
     val sb = new StringBuilder
-    sb append (c.IN_ADDRS  map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoIn,  _)} mkString "")
-    sb append (c.OUT_ADDRS map (x => (x._1, x._2 - c.CTRL_NUM)) map {dump(MapType.IoOut, _)} mkString "")
+    sb append (c.IN_ADDRS  map (x => (x._1, x._2)) map {dump(MapType.IoIn,  _)} mkString "")
+    sb append (c.OUT_ADDRS map (x => (x._1, x._2)) map {dump(MapType.IoOut, _)} mkString "")
 
     val file = new FileWriter(new File(context.dir, s"${targetName}.map"))
     try {
@@ -73,17 +73,10 @@ object StroberCompiler {
     implicit val channelWidth = sim.channelWidth
     def dump(arg: (String, Int)) = s"#define ${arg._1} ${arg._2}\n"
     val consts = List(
-      "HOST_RESET_ADDR" -> ZynqCtrlSignals.HOST_RESET.id,
-      "SIM_RESET_ADDR"  -> ZynqCtrlSignals.SIM_RESET.id,
-      "STEP_ADDR"       -> ZynqCtrlSignals.STEP.id,
-      "DONE_ADDR"       -> ZynqCtrlSignals.DONE.id,
-      "TRACELEN_ADDR"   -> ZynqCtrlSignals.TRACELEN.id,
-      "LATENCY_ADDR"    -> ZynqCtrlSignals.LATENCY.id,
       "MEM_AR_ADDR"     -> c.AR_ADDR,
       "MEM_AW_ADDR"     -> c.AW_ADDR,
       "MEM_W_ADDR"      -> c.W_ADDR,
       "MEM_R_ADDR"      -> c.R_ADDR,
-      "CTRL_NUM"        -> c.CTRL_NUM,
       "POKE_SIZE"       -> c.ins.size,
       "PEEK_SIZE"       -> c.outs.size,
       "MEM_DATA_BITS"   -> c.arb.nastiXDataBits,

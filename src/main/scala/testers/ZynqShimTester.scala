@@ -52,10 +52,15 @@ abstract class ZynqShimTester[+T <: SimNetwork](
 
   override def setTraceLen(len: Int) { 
     super.setTraceLen(len)
-    pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
+    writeCR("EmulationMaster", "TRACELEN", len)
   }
 
   def writeCR(w: Widget, crName: String, value: BigInt){
+    val addr = c.getCRAddr(w, crName)
+    pokeChannel(addr, value)
+  }
+
+  def writeCR(w: String, crName: String, value: BigInt){
     val addr = c.getCRAddr(w, crName)
     pokeChannel(addr, value)
   }
@@ -65,11 +70,15 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     peekChannel(addr)
   }
 
+  def readCR(w: String, crName: String) = {
+    val addr = c.getCRAddr(w, crName)
+    peekChannel(addr)
+  }
   override def reset(n: Int) {
     for (_ <- 0 until n) {
-      pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
-      pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
-      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
+      writeCR("EmulationMaster", "HOST_RESET", 1)
+      writeCR("EmulationMaster", "SIM_RESET", 1)
+      Predef.assert(_eventually(readCR("EmulationMaster", "DONE") == BigInt(1)),
              "simulation is not done in time")
       _peekMap.clear
       // flush junk output tokens
@@ -82,11 +91,11 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   }
 
   override def _tick(n: Int) {
-    pokeChannel(ZynqCtrlSignals.STEP.id, n)
+    writeCR("EmulationMaster", "STEP", n)
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
+    Predef.assert(_eventually(readCR("EmulationMaster", "DONE") == BigInt(1)),
            "simulation is not done in time")
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
