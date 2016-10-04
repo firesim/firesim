@@ -292,15 +292,8 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
     Cat(ar map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  /* TODO: java.lang.NoSuchMethodError: junctions.NastiWriteDataChannel$.apply$default$2()Lscala/Option;
   mem.w.bits := NastiWriteDataChannel(Cat(w map (_.io.out.bits)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  */
-  mem.w.bits.data := Cat(w map (_.io.out.bits))
-  mem.w.bits.strb := Fill(mem.w.bits.nastiWStrobeBits, UInt(1, 1))
-  mem.w.bits.last := Bool(true)
-  mem.w.bits.id   := UInt(0)
-  mem.w.bits.user := UInt(0)
 
   r.zipWithIndex foreach {case (buf, i) =>
     buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)
