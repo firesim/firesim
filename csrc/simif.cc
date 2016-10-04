@@ -1,7 +1,7 @@
 #include "simif.h"
 #include <fstream>
 
-simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log): prefix(_prefix), log(_log) 
+simif_t::simif_t(std::vector<std::string> args, bool _log): log(_log)
 {
   ok = true;
   t = 0;
@@ -27,56 +27,13 @@ simif_t::simif_t(std::vector<std::string> args, std::string _prefix,  bool _log)
   }
   hargs.insert(hargs.begin(), args.begin(), args.begin() + i);
   targs.insert(targs.begin(), args.begin() + i, args.end());
-
-  // Read mapping files
-  read_map(prefix+".map");
-#if ENABLE_SNAPSHOT
-  sample_t::init_chains(prefix+".chain");
-#endif
 }
 
 simif_t::~simif_t() { 
-  fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", prefix.c_str());
+  fprintf(stdout, "Runs %llu cycles\n", cycles());
+  fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", TARGET_NAME);
   if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
   fprintf(stdout, "\nSEED: %ld\n", seed);
-}
-
-void simif_t::read_map(std::string filename) {
-  enum MAP_TYPE { IO_IN, IO_OUT, IN_TR, OUT_TR };
-  std::ifstream file(filename.c_str());
-  std::string line;
-  if (file) {
-    while (getline(file, line)) {
-      std::istringstream iss(line);
-      std::string path;
-      size_t type, id, chunk;
-      iss >> type >> path >> id >> chunk;
-      switch (static_cast<MAP_TYPE>(type)) {
-        case IO_IN:
-          in_map[path] = id;
-          in_chunks[id] = chunk;
-          break;
-        case IO_OUT:
-          out_map[path] = id;
-          out_chunks[id] = chunk;
-          break;
-        case IN_TR:
-          in_tr_map[path] = id;
-          out_chunks[id] = chunk;
-          break;
-        case OUT_TR:
-          out_tr_map[path] = id;
-          out_chunks[id] = chunk;
-          break;
-        default:
-          break;
-      }
-    }
-  } else {
-    fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
-  }
-  file.close();
 }
 
 void simif_t::load_mem(std::string filename) {
@@ -104,12 +61,18 @@ void simif_t::load_mem(std::string filename) {
 }
 
 void simif_t::init() {
+#if ENABLE_SNAPSHOT
+  // Read mapping files
+  std::string prefix = TARGET_NAME;
+  sample_t::init_chains(prefix + ".chain");
+#endif
+
   for (size_t k = 0 ; k < 5 ; k++) {
-    poke_channel(HOST_RESET_ADDR, 0);
-    poke_channel(SIM_RESET_ADDR, 0);
-    while(!peek_channel(DONE_ADDR));
+    write(HOST_RESET_ADDR, 0);
+    write(SIM_RESET_ADDR, 0);
+    while(!read(DONE_ADDR));
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-      peek_map[i] = peek_channel(CTRL_NUM + i);
+      peek_map[i] = read(CTRL_NUM + i);
     }
 #if ENABLE_SNAPSHOT
     // flush traces from initialization
@@ -132,7 +95,7 @@ void simif_t::init() {
     if (arg.find("+profile") == 0) profile = true;
   }
 
-#if ENABLE_SAMPLE
+#if ENABLE_SNAPSHOT
   samples = new sample_t*[sample_num];
   for (size_t i = 0 ; i < sample_num ; i++) {
      samples[i] = NULL;
@@ -156,8 +119,9 @@ void simif_t::finish() {
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
 
-#if ENALBE_SNAPSHOT
+#if ENABLE_SNAPSHOT
   // dump samples
+  std::string prefix = TARGET_NAME;
   std::string filename = prefix + ".sample";
   // std::ofstream file(filename.c_str());
   FILE *file = fopen(filename.c_str(), "w");
@@ -201,13 +165,13 @@ void simif_t::step(size_t n) {
 #endif
   // take steps
   if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
-  poke_channel(STEP_ADDR, n);
+  write(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
-    poke_channel(CTRL_NUM + i, poke_map[i]);
+    write(CTRL_NUM + i, poke_map[i]);
   }
-  while(!peek_channel(DONE_ADDR));
+  while(!read(DONE_ADDR));
   for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-    peek_map[i] = peek_channel(CTRL_NUM + i);
+    peek_map[i] = read(CTRL_NUM + i);
   }
   t += n;
   if (trace_count < trace_len) trace_count += n;
@@ -216,24 +180,24 @@ void simif_t::step(size_t n) {
 sample_t* simif_t::read_traces(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
-    for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
+    for (idmap_it_t it = sample_t::in_tr_begin() ; it != sample_t::in_tr_end() ; it++) {
       size_t id = it->second;
-      size_t chunk = out_chunks[id];
+      size_t chunk = sample_t::get_chunks(id);
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = peek_channel(id+off);
+        data[off] = read(id+off);
       }
       if (sample) sample->add_cmd(new poke_t(it->first, data, chunk));
       delete[] data;
     }
     // sample->add_cmd(new step_t(1));
     // output traces from FPGA
-    for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
+    for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++) {
       size_t id = it->second;
-      size_t chunk = out_chunks[id];
+      size_t chunk = sample_t::get_chunks(id);
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = peek_channel(id+off);
+        data[off] = read(id+off);
       }
       if (sample) sample->add_cmd(new expect_t(it->first, data, chunk));
       delete[] data;
@@ -260,9 +224,9 @@ sample_t* simif_t::read_snapshot() {
     const size_t chain_len = sample_t::get_chain_len(type);
     for (size_t k = 0 ; k < chain_loop ; k++) {
       for (size_t i = 0 ; i < CHAIN_SIZE[t] ; i++) {
-        if (type == SRAM_CHAIN) poke_channel(SRAM_RESTART_ADDR + i, 0);
+        if (type == SRAM_CHAIN) write(SRAM_RESTART_ADDR + i, 0);
         for (size_t j = 0 ; j < chain_len ; j++) {
-          snap << int_to_bin(bin, peek_channel(CHAIN_ADDR[t] + i), DAISY_WIDTH);
+          snap << int_to_bin(bin, read(CHAIN_ADDR[t] + i), DAISY_WIDTH);
         }
       }
     }

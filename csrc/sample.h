@@ -4,13 +4,18 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <map>
 #include <ostream>
 #include <cassert>
 #include "biguint.h"
 
 enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
+enum { IN_TR = CHAIN_NUM, OUT_TR };
 
-class sample_inst_t { 
+typedef std::map< std::string, size_t > idmap_t;
+typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
+
+class sample_inst_t {
 public:
   virtual ~sample_inst_t() {} 
   virtual void dump(FILE *file) const = 0;  
@@ -159,7 +164,21 @@ public:
   static size_t get_chain_len(CHAIN_TYPE t) {
     return chain_len[t];
   }
-
+  static size_t get_chunks(size_t id) {
+    return tr_chunks[id];
+  }
+  static idmap_it_t in_tr_begin() {
+    return in_tr_map.begin();
+  }
+  static idmap_it_t in_tr_end() {
+    return in_tr_map.end();
+  }
+  static idmap_it_t out_tr_begin() {
+    return out_tr_map.begin();
+  }
+  static idmap_it_t out_tr_end() {
+    return out_tr_map.end();
+  }
 private:
   const uint64_t cycle;
   std::vector<sample_inst_t*> cmds;
@@ -171,6 +190,9 @@ private:
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 
   static std::array<std::vector<ssize_t>,     CHAIN_NUM> depths;
+  static idmap_t in_tr_map;
+  static idmap_t out_tr_map;
+  static std::map<size_t, size_t> tr_chunks;
 };
 
 #endif // __SAMPLE_H
