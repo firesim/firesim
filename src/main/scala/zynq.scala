@@ -153,7 +153,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = Flipped(new WidgetMMIO)
+  val master = Flipped(new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey))))
   val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 

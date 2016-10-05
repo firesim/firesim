@@ -29,7 +29,7 @@ object Pulsify {
 }
 
 class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
-  val io = new EmulationMasterIO
+  val io = IO(new EmulationMasterIO)
   Pulsify(genWOReg(io.hostReset, Bool(false), "HOST_RESET"), pulseLength = 4)
   Pulsify(genWOReg(io.simReset, Bool(false), "SIM_RESET"), pulseLength = 1)
 
