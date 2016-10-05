@@ -259,7 +259,7 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
-    rData := io.mcr.rdata(io.nasti.ar.bits.addr >> log2Up(nastiXDataBits/8))(log2Up(numRegs)-1,0)
+    rData := io.mcr.rdata((io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0))
     rId := io.nasti.ar.bits.id
   }
 
