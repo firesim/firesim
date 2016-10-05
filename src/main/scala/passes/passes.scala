@@ -5,6 +5,8 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.bitWidth
+import firrtl.passes.LowerTypes.loweredName
+import firrtl.passes.VerilogRename.verilogRenameN
 import firrtl.Utils.{sub_type, field_type, create_exps}
 import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
@@ -85,33 +87,6 @@ private[passes] object Utils {
     }
     heads flatMap loop
   }
-
-  def sumWidths(s: Statement)(implicit chainType: ChainType.Value): BigInt =
-    chainType match {
-      case ChainType.SRAM => s match {
-        case s: DefMemory if s.readLatency > 0 && s.depth > 16 =>
-          s.depth * bitWidth(s.dataType)
-        case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
-        case _ => BigInt(0)
-      }
-      case _ => s match {
-        case s: DefRegister =>
-          bitWidth(s.tpe)
-        case s: DefMemory if s.readLatency == 0 && s.depth <= 16 =>
-          s.depth * bitWidth(s.dataType)
-        case s: DefMemory if s.readLatency > 0 =>
-          val ew = 1
-          val mw = 1
-          val aw = chisel3.util.log2Up(s.depth)
-          val dw = bitWidth(s.dataType).toInt
-          s.readers.size * s.readLatency * (ew + aw + dw) +
-          s.writers.size * (s.writeLatency - 1) * (ew + mw + aw + dw) +
-          s.readwriters.size * (s.readLatency * (ew + aw + dw) +
-            (s.writeLatency - 1) * (ew + mw + dw))
-        case s: Block => (s.stmts foldLeft BigInt(0))(_ + sumWidths(_))
-        case _ => BigInt(0)
-      }
-    }
 }
 
 private[passes] object Analyses extends firrtl.passes.Pass {
@@ -141,11 +116,9 @@ private[passes] object Analyses extends firrtl.passes.Pass {
   }
 }
 
-private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
+private[passes] class DumpChains(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   import Utils._
   def name = "[strober] Dump Chains"
-
-  private val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
 
   private def addPad(w: Writer, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
@@ -162,39 +135,40 @@ private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
             case s: WDefInstance =>
               val seqMem = seqMems(s.module)
               val id = chainType.id
-              val prefix = s"${path}.${seqMem.name}"
+              val prefix = s"$path.${seqMem.name}"
               chainType match {
                 case ChainType.SRAM =>
-                  w write s"$id ${prefix}.ram ${seqMem.width} ${seqMem.depth}\n"
+                  w write s"$id $prefix.ram ${seqMem.width} ${seqMem.depth}\n"
                   seqMem.width.toInt
                 case _ =>
                   val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
                   seqMem.readers.indices foreach (i =>
-                    w write s"$id ${prefix}.reg_R${i} ${addrWidth} -1\n")
+                    w write s"$id $prefix.reg_R$i $addrWidth -1\n")
                   seqMem.readwriters.indices foreach (i =>
-                    w write s"$id ${prefix}.reg_RW${i} ${addrWidth} -1\n")
+                    w write s"$id $prefix.reg_RW$i $addrWidth -1\n")
                   /* seqMem.readers.indices foreach (i =>
-                    w write s"$id ${prefix} ${seqMem.width} -1\n")
+                    w write s"$id $prefix ${seqMem.width} -1\n")
                   seqMem.readwriters.indices foreach (i =>
-                    w write s"$id ${prefix} ${seqMem.width} -1\n") */
+                    w write s"$id $prefix ${seqMem.width} -1\n") */
                   (seqMem.readers.size + seqMem.readwriters.size) * (addrWidth /*+ seqMem.width.toInt*/)
               }
             case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
+              val name = verilogRenameN(loweredName(mem))
               val width = bitWidth(mem.tpe).toInt
               chainType match {
                 case ChainType.SRAM =>
-                  w write s"${chainType.id} ${path}.${s.name} ${width} ${s.depth}\n"
+                  w write s"${chainType.id} $path.$name $width ${s.depth}\n"
                   totalWidth + width
-                case _ =>
-                  (0 until s.depth) map (widx(mem, _)) foreach { e =>
-                    w write s"${chainType.id} ${path}.${e.serialize} ${width} -1\n"
-                  }
-                  totalWidth + s.depth * width
+                case _ => totalWidth + (((0 until s.depth) foldLeft 0){ (memWidth, i) =>
+                  w write s"${chainType.id} $path.$name[$i] $width -1\n"
+                  memWidth + width
+                })
               }
             }
             case s: DefRegister => (create_exps(s.name, s.tpe) foldLeft 0){ (totalWidth, reg) =>
+              val name = verilogRenameN(loweredName(reg))
               val width = bitWidth(reg.tpe).toInt
-              w write s"${chainType.id} ${path}.${reg.serialize} ${width} -1\n"
+              w write s"${chainType.id} $path.$name $width -1\n"
               totalWidth + width
             }
           })
@@ -216,17 +190,28 @@ private[passes] class DumpChains(conf: File) extends firrtl.passes.Pass {
       loop(w, instToMod(child, mod), s"${path}.${child}", daisyWidth)(chainType)}
   }
 
+  object TraceType extends Enumeration {
+    val InTr = Value(ChainType.values.size)
+    val OutTr = Value(ChainType.values.size + 1)
+  }
+
   def run(c: Circuit) = {
-    wrappers(c.modules) foreach {
-      case m: Module =>
-        val daisyWidth = params(m.name)(DaisyWidth)
-        targets(m, c.modules) foreach { target =>
-          val file = new File(dir, s"${target.name}.chain")
-          val writer = new FileWriter(file)
-          ChainType.values.toList foreach loop(writer, target.name, target.name, daisyWidth)
-          writer.close
-        }
-      case m: ExtModule =>
+    StroberCompiler.context.shims foreach { shim =>
+      val sim = shim.sim.asInstanceOf[SimWrapper[chisel3.Module]]
+      val target = sim.target.name
+      val nameMap = (sim.io.inputs ++ sim.io.outputs).toMap
+      val daisyWidth = sim.daisyWidth
+      implicit val channelWidth = sim.channelWidth
+      def dumpTraceMap(t: TraceType.Value)(arg: (chisel3.Bits, Int)) = arg match {
+        case (wire, id) => s"${t.id} ${target}.${nameMap(wire)} ${id} ${SimUtils.getChunks(wire)}\n" }
+      val file = new File(dir, s"$target.chain")
+      val writer = new FileWriter(file)
+      val sb = new StringBuilder
+      ChainType.values.toList foreach loop(writer, target, target, daisyWidth)
+      shim.IN_TR_ADDRS map dumpTraceMap(TraceType.InTr) addString sb
+      shim.OUT_TR_ADDRS map dumpTraceMap(TraceType.OutTr) addString sb
+      writer write sb.result
+      writer.close
     }
     c
   }

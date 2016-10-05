@@ -7,13 +7,15 @@ import cde.{Parameters, Field}
 case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
+case object SRAMChainNum extends Field[Int]
+case object EnableSnapshot extends Field[Boolean]
 
 class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
   val limit = UInt(INPUT, log2Up(entries))
 }
 
 class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
-  val io = new TraceQueueIO(data, p(TraceMaxLen))
+  val io = IO(new TraceQueueIO(data, p(TraceMaxLen)))
 
   val do_flow = Wire(Bool())
   val do_enq = io.enq.fire() && !do_flow
@@ -48,19 +50,18 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
 
 class ChannelIO(w: Int)(implicit p: Parameters) 
     extends junctions.ParameterizedBundle()(p) {
-  val in    = Decoupled(UInt(width=w)).flip
+  val in    = Flipped(Decoupled(UInt(width=w)))
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
   val traceLen = UInt(INPUT, log2Up(p(TraceMaxLen)+1))
 }
 
-class Channel(val w: Int, doTrace: Boolean = true)
-    (implicit p: Parameters) extends Module {
-  val io = new ChannelIO(w)
+class Channel(val w: Int)(implicit p: Parameters) extends Module {
+  val io = IO(new ChannelIO(w))
   val tokens = Module(new Queue(UInt(width=w), p(ChannelLen)))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
-  if (doTrace) {
+  if (p(EnableSnapshot)) {
     val trace = Module(new TraceQueue(UInt(width=w)))
     trace suggestName "trace"
     // trace is written when a token is consumed
@@ -83,6 +84,7 @@ trait HasSimWrapperParams {
   val traceMaxLen = p(TraceMaxLen)
   val daisyWidth = p(DaisyWidth)
   val sramChainNum = p(SRAMChainNum)
+  val enableSnapshot = p(EnableSnapshot)
 }
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters) 
@@ -93,12 +95,12 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
 
-  val ins = Vec(inChannelNum, Decoupled(UInt(width=channelWidth))).flip
+  val ins = Flipped(Vec(inChannelNum, Decoupled(UInt(width=channelWidth))))
   val outs = Vec(outChannelNum, Decoupled(UInt(width=channelWidth)))
-  val inT = Vec(inChannelNum, Decoupled(UInt(width=channelWidth)))
-  val outT = Vec(outChannelNum, Decoupled(UInt(width=channelWidth)))
-  val daisy = new DaisyBundle(daisyWidth, sramChainNum)
-  val traceLen = UInt(INPUT, log2Up(traceMaxLen+1))
+  val inT = Vec(if (enableSnapshot) inChannelNum else 0, Decoupled(UInt(width=channelWidth)))
+  val outT = Vec(if (enableSnapshot) outChannelNum else 0, Decoupled(UInt(width=channelWidth)))
+  val daisy = new DaisyBundle(daisyWidth, sramChainNum, enableSnapshot)
+  val traceLen = UInt(INPUT, log2Up(traceMaxLen + 1))
 
   lazy val inMap = genIoMap(inputs)
   lazy val outMap = genIoMap(outputs)
@@ -124,7 +126,7 @@ abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSim
 class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwork()(p) {
   val fire = Wire(Bool())
   val target = Module(c)
-  val io = new SimWrapperIO(target.io, target.reset)
+  val io = IO(new SimWrapperIO(target.io, target.reset))
 
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
   val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
@@ -136,8 +138,10 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   (io.outs zip out_channels) foreach {case (out, channel) => out <> channel.io.out}
   (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, out_channels))
 
-  (io.inT zip in_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
-  (io.outT zip out_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
+  if (enableSnapshot) {
+    (io.inT zip in_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
+    (io.outT zip out_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
+  }
   
   // Control
   // Firing condtion:

@@ -1,8 +1,9 @@
 package midas_widgets
 
+import chisel3._
+import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
-import Chisel._
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
@@ -20,7 +21,7 @@ object WidgetMMIO {
 
 // All widgets must implement this interface
 abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
-  val ctrl = WidgetMMIO().flip
+  val ctrl = Flipped(new WidgetMMIO)
 }
 
 abstract class Widget(implicit p: Parameters) extends Module {
@@ -72,14 +73,14 @@ abstract class Widget(implicit p: Parameters) extends Module {
 
   // Returns a word addresses
   def getCRAddr(name: String): Int = {
-    require(_finalized == true, "Must build Widgets with their companion object")
+    require(_finalized, "Must build Widgets with their companion object")
     crRegistry.lookupAddress(name).getOrElse(
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
   def genHeader(base: BigInt, sb: StringBuilder){
-    require(_finalized == true, "Must build Widgets with their companion object")
-    crRegistry.genHeader(wName.getOrElse(name), base, sb)
+    require(_finalized, "Must build Widgets with their companion object")
+    crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 }
 
@@ -96,9 +97,9 @@ object Widget {
 }
 
 object WidgetRegion {
-  def apply(align: BigInt) = {
-    require(isPow2(align))
-    MemSize(align, align, MemAttr(AddrMapProt.RW))
+  def apply(start: BigInt, size: BigInt) = {
+    require(isPow2(size))
+    MemRange(start, size, MemAttr(AddrMapProt.RW))
   }
 }
 
@@ -106,9 +107,15 @@ trait HasWidgets {
   private var _finalized = false
   val widgets = ArrayBuffer[Widget]()
   val name2inst = HashMap[String, Widget]()
-  private lazy val addrMap = generateAddrMap()
-  private lazy val widgetAddrHash = new AddrHashMap(addrMap)
-
+  private lazy val addrMap = new AddrMap({
+    val (_, entries) = (sortedWidgets foldLeft (BigInt(0), Seq[AddrMapEntry]())){
+      case ((start, es), w) =>
+        val name = w.getWName
+        val size = w.memRegionSize
+        (start + size, es :+ AddrMapEntry(name, WidgetRegion(start, size)))
+    }
+    entries
+  })
 
   def addWidget[T <: Widget](m: =>T, wName: String): T = {
     val w = Widget(m, wName)
@@ -120,41 +127,38 @@ trait HasWidgets {
 
   private def sortedWidgets = widgets.toSeq.sortWith(_.memRegionSize > _.memRegionSize)
 
-  private def generateAddrMap() : AddrMap = {
-    val mapEntries = sortedWidgets map ((w: Widget) => AddrMapEntry(w.getWName, WidgetRegion(w.memRegionSize)))
-    new AddrMap(mapEntries)
-  }
-
-  def genCtrlIO(master: WidgetMMIO, baseAddress: BigInt = 0)(implicit p: Parameters) {
+  def genCtrlIO(master: WidgetMMIO, addrSize: BigInt)(implicit p: Parameters) {
     val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
       nMasters = 1,
-      nSlaves = addrMap.length,
-      addrmap = addrMap,
-      base = baseAddress
+      addrMap = addrMap
     )(p alter Map(NastiKey -> p(CtrlNastiKey))))
-
     ctrlInterconnect.io.masters(0) <> master
+    // We should truncate upper bits of master addresses
+    // according to the size of flatform MMIO
+    val addrSizeBits = log2Up(addrSize)
+    ctrlInterconnect.io.masters(0).aw.bits.addr := master.aw.bits.addr(addrSizeBits, 0)
+    ctrlInterconnect.io.masters(0).ar.bits.addr := master.ar.bits.addr(addrSizeBits, 0)
     sortedWidgets.zip(ctrlInterconnect.io.slaves) foreach {
-      case (w: Widget, m) => {
-        w.io.ctrl <> m}
+      case (w: Widget, m) => w.io.ctrl <> m
     }
   }
-
-  def genHeader(sb: StringBuilder){
-    widgets foreach {(w: Widget) => w.genHeader(widgetAddrHash(w.getWName).start, sb)}
+  def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
+    widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
   }
 
-  def printWidgets(){widgets foreach{(w: Widget) => println(w.wName)}}
+  def printWidgets(){
+    widgets foreach ((w: Widget) => println(w.wName))
+  }
 
-  def getCRAddr(wName: String, crName: String): BigInt = {
+  def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
     val widget = name2inst.get(wName).getOrElse(
       throw new RuntimeException("Could not find Widget: $wName"))
     getCRAddr(widget, crName)
   }
 
-  def getCRAddr(w: Widget, crName: String): BigInt = {
+  def getCRAddr(w: Widget, crName: String)(implicit channelWidth: Int): BigInt = {
     // TODO: Deal with byte vs word addresses && don't use a name in the hash?
-    val base = (widgetAddrHash(w.getWName).start >> 2)
+    val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
     base + w.getCRAddr(crName)
   }
 }

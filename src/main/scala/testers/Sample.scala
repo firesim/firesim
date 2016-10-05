@@ -20,12 +20,12 @@ private[testers] object DaisyChainReader {
   type ChainMap = Map[ChainType.Value, Seq[(Option[String], Int, Int)]]
   type ChainLoop = Map[ChainType.Value, Int]
   type ChainLen = Map[ChainType.Value, Int]
-  def apply(chainFile: java.io.File, daisyWidth: Int)  = {
+  def apply(chainFile: java.io.File, enableSnapshot: Boolean)(implicit daisyWidth: Int) = {
     type ChainInfo = ArrayBuffer[(Option[String], Int, Int)]
     val chains = (ChainType.values.toList map (_ -> new ChainInfo)).toMap
     val chainLoop = HashMap((ChainType.values.toList map (_ -> 0)):_*)
     val chainLen = HashMap((ChainType.values.toList map (_ -> 0)):_*)
-    if (chainFile.exists) {
+    if (enableSnapshot) {
       (io.Source fromFile chainFile).getLines foreach { line =>
         val tokens = line split " "
         assert(tokens.size == 4)
@@ -87,7 +87,6 @@ private class DaisyChainReader(
     readChain(chainType, sample, snap)
     sample
   }
-
 }
 
 object Sample {

@@ -1,8 +1,9 @@
 package midas_widgets
 
-import Chisel._
-import cde.{Parameters, Field}
+import chisel3._
+import chisel3.util._
 import junctions._
+import cde.{Parameters, Field}
 
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.collection.immutable.ListSet
@@ -19,12 +20,12 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
 }
 
 class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
-  val tNasti = HostPort((new NastiIO), false).flip
-  val host_mem =  new NastiIO
+  val tNasti = Flipped(HostPort((new NastiIO), false))
+  val host_mem = new NastiIO
 }
 
 abstract class MemModel(implicit p: Parameters) extends Widget()(p){
-  val io = new MemModelIO
+  val io = IO(new MemModelIO)
 }
 
 class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
@@ -38,7 +39,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val cycles = RegInit(UInt(0, 64))
   val r_cycles = Module(new Queue(UInt(width=64), 4))
   val w_cycles = Module(new Queue(UInt(width=64), 4))
-  val latency = RegInit(UInt(16, 64))
+  val latency = RegInit(UInt(16, 32))
   attach(latency, "LATENCY")
 
   val tNasti = io.tNasti.hBits

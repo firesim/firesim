@@ -27,7 +27,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   private val MAXI_aw = new ChannelSource(c.io.master.aw, (aw: NastiWriteAddressChannel, in: NastiWriteAddr) =>
     { _poke(aw.id, in.id) ; _poke(aw.addr, in.addr) })
   private val MAXI_w = new ChannelSource(c.io.master.w, (w: NastiWriteDataChannel, in: NastiWriteData) =>
-    { _poke(w.data, in.data); _poke(w.last, in.last)})
+    { _poke(w.data, in.data) ; _poke(w.last, in.last) ; _poke(w.strb, (BigInt(1) << w.nastiWStrobeBits) - 1) })
   private val MAXI_b = new ChannelSink(c.io.master.b, (b: NastiWriteResponseChannel) =>
     new NastiWriteResp(_peek(b.id), _peek(b.resp)), alwaysReady = false)
   private val MAXI_ar = new ChannelSource(c.io.master.ar, (ar: NastiReadAddressChannel, in: NastiReadAddr) =>
@@ -246,11 +246,16 @@ abstract class ZynqShimTester[+T <: SimNetwork](
         case _ =>
       }
       for (_ <- 0 until chainLen(t)) {
-        chain append intToBin(peekChannel(c.DAISY_ADDRS(t) + i), c.sim.daisyWidth)
+        try {
+          chain append intToBin(peekChannel(c.DAISY_ADDRS(t) + i), c.sim.daisyWidth)
+        } catch {
+          case e: java.lang.AssertionError =>
+            assert(false, s"$t chain not available")
+        }
       }
     }
     chain.result
   }
 
-  reset(1)
+  reset(5)
 }

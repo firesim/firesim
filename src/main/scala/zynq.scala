@@ -1,12 +1,14 @@
 package strober
 
-import midas_widgets._
-import dram_midas._
-import Chisel._
+import chisel3._
+import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
+import midas_widgets._
+import dram_midas._
 
-case object SlaveNastiKey  extends Field[NastiParameters]
+case object SlaveNastiKey extends Field[NastiParameters]
+case object ZynqMMIOSize extends Field[BigInt]
 
 object ZynqShim {
   def apply[T <: Module](c: =>T)(implicit p: Parameters) = new ZynqShim(new SimWrapper(c))
@@ -15,17 +17,19 @@ object ZynqShim {
 case class ZynqMasterHandlerArgs(
   sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
 
-class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs, channelType: => DecoupledIO[UInt])(implicit p:Parameters) extends WidgetIO()(p){
+class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs,
+                          channelType: => DecoupledIO[UInt])
+                         (implicit p: Parameters) extends WidgetIO()(p){
 
   val ins   = Vec(args.inNum, channelType)
-  val outs  = Vec(args.outNum, channelType).flip
-  val inT   = Vec(args.sim.inT.size, channelType).flip
-  val outT  = Vec(args.sim.outT.size, channelType).flip
-  val daisy = args.sim.daisy.cloneType.flip
+  val outs  = Flipped(Vec(args.outNum, channelType))
+  val inT   = Flipped(Vec(args.sim.inT.size, channelType))
+  val outT  = Flipped(Vec(args.sim.outT.size, channelType))
+  val daisy = Flipped(args.sim.daisy.cloneType)
   val mem   = new Bundle {
     val ar = Vec(args.arNum, channelType)
     val aw = Vec(args.awNum, channelType)
-    val r  = Vec(args.rNum,  channelType).flip
+    val r  = Flipped(Vec(args.rNum,  channelType))
     val w  = Vec(args.wNum,  channelType)
   }
 }
@@ -33,117 +37,128 @@ class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs, channelType: => Decoupled
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters) extends Widget()(p) 
     with HasNastiParameters {
   def ChannelType = Decoupled(UInt(width=nastiXDataBits))
-  val io = new ZynqMasterHandlerIO(args, ChannelType)
+  val io = IO(new ZynqMasterHandlerIO(args, ChannelType))
 
+  val addrSize       = p(ZynqMMIOSize)/4
   val addrOffsetBits = log2Up(nastiXDataBits/8)
-  val addrSizeBits   = 12
-  override val customSize = Some(BigInt((1 << (addrSizeBits + addrOffsetBits))))
+  val addrSizeBits   = log2Up(addrSize) - addrOffsetBits
+  override val customSize = Some(addrSize)
 
   require(p(ChannelWidth) == nastiXDataBits, "Channel width and Nasti data width should be the same")
 
   /*** INPUTS ***/
-  val awid_r  = Reg(UInt(width=nastiWIdBits))
-  val waddr_r = Reg(UInt(width=addrSizeBits))
-  val st_wr_idle :: st_aw_done :: st_wr_write :: st_wr_ack :: Nil = Enum(UInt(), 4)
-  val st_wr = RegInit(st_wr_idle)
-  val do_write = st_wr === st_wr_write
+  val awId  = Reg(UInt(width=nastiWIdBits))
+  val wAddr = Reg(UInt(width=addrSizeBits))
+  val wStateIdle :: wStateReady :: wStateWrite :: wStateAck :: Nil = Enum(UInt(), 4)
+  val wState = RegInit(wStateIdle)
   val restarts = Wire(Vec(io.daisy.sram.size, ChannelType))
   val inputSeq = (io.ins ++ restarts ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
-  (inputSeq zip inputs) foreach {case (x, y) => x <> y}
-  inputs.zipWithIndex foreach {case (in, i) =>
+  io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
+    sram.restart := restarts(i).valid
+    restarts(i).ready := Bool(true)
+  }
+  (inputSeq zip inputs) foreach { case (x, y) =>
+    // TODO: x <> y
+    x.bits  := y.bits
+    x.valid := y.valid
+    y.ready := x.ready
+  }
+  inputs.zipWithIndex foreach { case (in, i) =>
     in.bits  := io.ctrl.w.bits.data
-    in.valid := waddr_r === UInt(i) && do_write
+    in.valid := wAddr === UInt(i) && wState === wStateWrite
   }
 
   // Write FSM
-  switch(st_wr) {
-    is(st_wr_idle) {
+  switch(wState) {
+    is(wStateIdle) {
       when(io.ctrl.aw.valid) {
-        st_wr   := st_aw_done
-        awid_r  := io.ctrl.aw.bits.id
-        waddr_r := io.ctrl.aw.bits.addr >> UInt(addrOffsetBits)
+        wState := wStateReady
+        awId   := io.ctrl.aw.bits.id
+        wAddr  := io.ctrl.aw.bits.addr >> UInt(addrOffsetBits)
       }
     }
-    is(st_aw_done) {
+    is(wStateReady) {
       when(io.ctrl.w.valid) {
-        st_wr := st_wr_write
+        wState := wStateWrite
       }
     }
-    is(st_wr_write) {
-      when(inputs(waddr_r).ready) {
-        st_wr := st_wr_ack
+    is(wStateWrite) {
+      when(inputs(wAddr).ready) {
+        wState := wStateAck
       } 
     }
-    is(st_wr_ack) {
+    is(wStateAck) {
       when(io.ctrl.b.ready) {
-        st_wr := st_wr_idle
+        wState := wStateIdle
       }
     }
   }
   //TODO: this is gross; use the library instead
-  io.ctrl.aw.ready := st_wr === st_wr_idle
-  io.ctrl.w.ready  := do_write
-  io.ctrl.b.valid  := st_wr === st_wr_ack
-  io.ctrl.b.bits   := NastiWriteResponseChannel(awid_r)
+  io.ctrl.aw.ready := wState === wStateIdle
+  io.ctrl.w.ready  := wState === wStateWrite
+  io.ctrl.b.valid  := wState === wStateAck
+  io.ctrl.b.bits   := NastiWriteResponseChannel(awId)
 
   /*** OUTPUTS ***/
-  val arid_r  = Reg(UInt(width=nastiWIdBits))
-  val raddr_r = Reg(UInt(width=addrSizeBits))
-  val st_rd_idle :: st_rd_read :: Nil = Enum(UInt(), 2)
-  val st_rd = RegInit(st_rd_idle)
-  val do_read = st_rd === st_rd_read
+  val arId  = Reg(UInt(width=nastiWIdBits))
+  val rAddr = Reg(UInt(width=addrSizeBits))
+  val rStateIdle :: rStateRead :: Nil = Enum(UInt(), 2)
+  val rState = RegInit(rStateIdle)
+  val doRead = rState === rStateRead
   val daisyOuts = ChainType.values flatMap (io.daisy(_).toSeq) map (_.out)
   val outputSeq = (io.outs ++ io.inT ++ io.outT ++ daisyOuts ++ io.mem.r).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
-  outputs zip outputSeq foreach {case (x, y) => x <> y}
-  outputs.zipWithIndex foreach {case (out, i) => out.ready := raddr_r === UInt(i) && do_read}
+  outputs zip outputSeq foreach { case (x, y) =>
+    // TODO: x <> y
+    x.bits := y.bits
+    x.valid := y.valid
+    y.ready := x.ready
+  }
+  outputs.zipWithIndex foreach { case (out, i) =>
+    out.ready := rAddr === UInt(i) && doRead
+  }
 
   // Read FSM
-  switch(st_rd) {
-    is(st_rd_idle) {
+  switch(rState) {
+    is(rStateIdle) {
       when(io.ctrl.ar.valid) {
-        st_rd   := st_rd_read
-        arid_r  := io.ctrl.ar.bits.id
-        raddr_r := io.ctrl.ar.bits.addr >> UInt(addrOffsetBits)
+        rState := rStateRead
+        arId   := io.ctrl.ar.bits.id
+        rAddr  := io.ctrl.ar.bits.addr >> UInt(addrOffsetBits)
       }
     }
-    is(st_rd_read) {
+    is(rStateRead) {
       when(io.ctrl.r.ready) {
-        st_rd   := st_rd_idle
+        rState := rStateIdle
       }
     }
   }
-  io.ctrl.ar.ready := st_rd === st_rd_idle
+  io.ctrl.ar.ready := rState === rStateRead // rStateIdle
   io.ctrl.r.bits := NastiReadDataChannel(
-    id = arid_r,
-    data = outputs(raddr_r).bits,
-    last = outputs(raddr_r).valid && do_read)
+    id = arId,
+    data = outputs(rAddr).bits,
+    last = outputs(rAddr).valid && doRead)
   io.ctrl.r.valid := io.ctrl.r.bits.last
 
   // TODO:
-  io.daisy.regs foreach (_.in.bits := UInt(0))
-  io.daisy.regs foreach (_.in.valid := Bool(false))
   io.daisy.trace foreach (_.in.bits := UInt(0))
   io.daisy.trace foreach (_.in.valid := Bool(false))
+  io.daisy.regs foreach (_.in.bits := UInt(0))
+  io.daisy.regs foreach (_.in.valid := Bool(false))
+  io.daisy.sram foreach (_.in.bits := UInt(0))
+  io.daisy.sram foreach (_.in.valid := Bool(false))
   io.daisy.cntr foreach (_.in.bits := UInt(0))
   io.daisy.cntr foreach (_.in.valid := Bool(false))
-  io.daisy.sram.zipWithIndex foreach {case (sram, i) =>
-    sram.in.bits := UInt(0)
-    sram.in.valid := Bool(false)
-    sram.restart := restarts(i).valid
-    restarts(i).ready := Bool(true)
-  }
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = WidgetMMIO().flip
-  val slave  =  new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+  val master = Flipped(new WidgetMMIO)
+  val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
-class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
-    with HasWidgets{
-  val io = new ZynqShimIO
+class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module with HasWidgets {
+  val io = IO(new ZynqShimIO)
   // Simulation Target
   val sim: T = Module(c)
   val simReset = Wire(Bool())
@@ -187,7 +202,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
   private def genChannels(data: Data, prefix: String) = {
     val (ins, outs) = SimUtils.parsePorts(data)
     (ins ++ outs) map {case (w, n) => w -> s"${prefix}_${n}"} flatMap (
-      SimUtils.genChannels(_)(p, false))
+      SimUtils.genChannels(_)(p alter Map(EnableSnapshot -> false)))
   }
   val ar = genChannels(mem.ar.bits.addr, "ar")
   val aw = genChannels(mem.aw.bits.addr, "aw")
@@ -249,13 +264,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
   mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
-    Vec(aw map (_.io.out.bits)).toBits, UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
+    Cat(aw map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
-    Vec(ar map (_.io.out.bits)).toBits, UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
+    Cat(ar map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.w.bits := NastiWriteDataChannel(Vec(w map (_.io.out.bits)).toBits)(
+  mem.w.bits := NastiWriteDataChannel(Cat(w map (_.io.out.bits)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
+
   r.zipWithIndex foreach {case (buf, i) =>
     buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)
   }
@@ -320,7 +336,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
 
   (0 until SimMemIO.size) foreach { i =>
     val model = addWidget(
-      p(MemModelKey) match {
+      (p(MemModelKey): @unchecked) match {
         case Some(cfg: BaseConfig) => new MidasMemModel(cfg)(p alter Map(NastiKey -> p(SlaveNastiKey)))
         case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))},
       s"MemModel_$i")
@@ -336,6 +352,6 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module
     fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || simReset || simResetReg
     channels2Port(fakeTNasti, wires)
   }
-  genCtrlIO(io.master)
+  genCtrlIO(io.master, p(ZynqMMIOSize))
   StroberCompiler annotate this
 }
