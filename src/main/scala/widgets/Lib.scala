@@ -173,15 +173,23 @@ object HostMux {
   }
 }
 
+abstract class MCRMapEntry {
+  def name: String
+}
+case class DecoupledSinkEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
+case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
+case class RegisterEntry(node: Bits, name: String) extends MCRMapEntry
+
+
 class MCRFileMap() {
   private val name2addr = HashMap.empty[String, Int]
-  private val regList = ArrayBuffer.empty[Data]
+  private val regList = ArrayBuffer.empty[MCRMapEntry]
 
-  def allocate(reg: Data, name: String): Int = {
-    Predef.assert(!name2addr.contains(name), "name already allocated")
+  def allocate(entry: MCRMapEntry): Int = {
+    Predef.assert(!name2addr.contains(entry.name), "name already allocated")
     val address = name2addr.size
-    name2addr += (name -> address)
-    regList.append(reg)
+    name2addr += (entry.name -> address)
+    regList.append(entry)
     address
   }
 
@@ -190,9 +198,12 @@ class MCRFileMap() {
   def numRegs(): Int = regList.size
 
   def bindRegs(mcrIO: MCRIO): Unit = {
-    (regList.toSeq.zipWithIndex) foreach {
-      case(reg: UInt, addr: Int) => mcrIO.bindReg(reg, addr)
-      case(channel: DecoupledIO[UInt], addr: Int) => mcrIO.bindDecoupled(channel, addr)
+    (regList.toSeq.zipWithIndex) foreach { case(entry, addr) =>
+      entry match {
+        case (e: DecoupledSinkEntry) => mcrIO.bindDecoupledSink(e, addr)
+        case (e: DecoupledSourceEntry) => mcrIO.bindDecoupledSource(e, addr)
+        case (e: RegisterEntry) => mcrIO.bindReg(e, addr)
+      }
     }
   }
 
@@ -212,20 +223,26 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
   val write = Vec(numCRs, Decoupled(UInt(width = nastiXDataBits)))
   val wstrb = Bits(OUTPUT, nastiWStrobeBits)
 
-  def bindReg(reg: Data, addr: Int): Unit = {
+  def bindReg(reg: RegisterEntry, addr: Int): Unit = {
     when(write(addr).valid){
-      reg := write(addr).bits
+      reg.node := write(addr).bits
     }
     write(addr).ready := Bool(true)
-    read(addr).bits := reg
+    read(addr).bits := reg.node
     read(addr).valid := Bool(true)
   }
 
   //These are write only for now
-  def bindDecoupled(channel: DecoupledIO[UInt], addr: Int): Unit = {
-    channel <> write(addr)
-    assert(read(addr).ready === Bool(false), "no read decoupled source support")
+  def bindDecoupledSink(channel: DecoupledSinkEntry, addr: Int): Unit = {
+    channel.node <> write(addr)
+    assert(read(addr).ready === Bool(false), "Can only write to this decoupled sink")
   }
+
+  def bindDecoupledSource(channel: DecoupledSourceEntry, addr: Int): Unit = {
+    read(addr) <> channel.node
+    assert(write(addr).valid =/= Bool(true), "Can only read from this decoupled source")
+  }
+
 }
 
 class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
