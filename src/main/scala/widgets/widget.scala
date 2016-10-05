@@ -21,7 +21,7 @@ object WidgetMMIO {
 
 // All widgets must implement this interface
 abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
-  val ctrl = Flipped(new WidgetMMIO)
+  val ctrl = Flipped(WidgetMMIO())
 }
 
 abstract class Widget(implicit p: Parameters) extends Module {
@@ -41,14 +41,14 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  def attach(reg: Bits, name: String) {
+  def attach(reg: Data, name: String) {
     crRegistry.allocate(reg, name)
   }
 
   def genAndAttachDecoupled(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
     require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
-    channel := Queue(enq, entries = 2)
+    channel <> Queue(enq, entries = 2)
     crRegistry.allocate(enq, name)
     channel
   }

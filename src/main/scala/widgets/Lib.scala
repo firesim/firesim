@@ -223,7 +223,6 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
 
   //These are write only for now
   def bindDecoupled(channel: DecoupledIO[UInt], addr: Int): Unit = {
-    require(channel.valid.dir == OUTPUT)
     assert(channel.ready === Bool(true), "R/W decoupled channels cannot present backpressure.")
     channel.valid := wen && (waddr === UInt(addr))
     channel.bits := wdata
