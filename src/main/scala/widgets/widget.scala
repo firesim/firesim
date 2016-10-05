@@ -45,7 +45,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     crRegistry.allocate(reg, name)
   }
 
-  def genAndAttachDecoupled(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
+  def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
     require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
     channel <> Queue(enq, entries = 2)
