@@ -15,11 +15,15 @@ class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
 object Pulsify {
   def apply(in: Bool, pulseLength: Int): Unit = {
     require(pulseLength > 0)
-    val count = Counter(pulseLength)
-    when(in){count.inc()}
-    when(count.value === UInt(pulseLength-1)) {
-      in := Bool(false)
-      count.value := UInt(0)
+    if (pulseLength > 1) {
+      val count = Counter(pulseLength)
+      when(in){count.inc()}
+      when(count.value === UInt(pulseLength-1)) {
+        in := Bool(false)
+        count.value := UInt(0)
+      }
+    } else {
+      when(in) {in := Bool(false)}
     }
   }
 }
@@ -27,7 +31,7 @@ object Pulsify {
 class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   val io = new EmulationMasterIO
   Pulsify(genWOReg(io.hostReset, Bool(false), "HOST_RESET"), pulseLength = 4)
-  Pulsify(genWOReg(io.simReset, Bool(false), "SIM_RESET"), pulseLength = 4)
+  Pulsify(genWOReg(io.simReset, Bool(false), "SIM_RESET"), pulseLength = 1)
 
   genAndAttachDecoupled(io.step, "STEP")
   genWOReg(io.traceLen, UInt(128), "TRACELEN")
