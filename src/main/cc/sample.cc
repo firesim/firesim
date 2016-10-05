@@ -1,45 +1,85 @@
 #include "sample.h"
 #include <cassert>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 
 std::array<std::vector<std::string>, CHAIN_NUM> sample_t::signals = {};
 std::array<std::vector<size_t>,      CHAIN_NUM> sample_t::widths  = {};
-std::array<std::vector<ssize_t>,     CHAIN_NUM> sample_t::indices = {};
+std::array<std::vector<ssize_t>,     CHAIN_NUM> sample_t::depths = {};
+idmap_t sample_t::in_tr_map = idmap_t();
+idmap_t sample_t::out_tr_map = idmap_t();
+std::map<size_t, size_t> sample_t::tr_chunks = std::map<size_t, size_t>();
+size_t sample_t::chain_len[CHAIN_NUM] = {0};
+size_t sample_t::chain_loop[CHAIN_NUM] = {0};
 
-void sample_t::init_chains() {
+void sample_t::init_chains(std::string filename) {
   std::fill(signals.begin(), signals.end(), std::vector<std::string>());
   std::fill(widths.begin(),  widths.end(),  std::vector<size_t>());
-  std::fill(indices.begin(), indices.end(), std::vector<ssize_t>());
-}
-
-void sample_t::add_to_chains(CHAIN_TYPE type, std::string& signal, size_t width, int index) {
-  signals[type].push_back(signal);
-  widths[type].push_back(width);
-  indices[type].push_back(index);
+  std::fill(depths.begin(), depths.end(), std::vector<ssize_t>());
+  std::ifstream file(filename.c_str());
+  if (file) {
+    std::string line;
+    while (std::getline(file, line)) {
+      std::istringstream iss(line);
+      size_t type;
+      std::string signal;
+      iss >> type >> signal;
+      if (type < CHAIN_NUM) {
+        size_t width;
+        ssize_t depth;
+        iss >> width >> depth;
+        if (signal == "null") signal = "";
+        signals[type].push_back(signal);
+        widths[type].push_back(width);
+        depths[type].push_back(depth);
+        chain_len[type] += width;
+        if (type == SRAM_CHAIN && !signal.empty()) {
+          assert(depth > 0);
+          chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
+        } else {
+          chain_loop[type] = 1;
+        }
+      } else {
+        size_t id, chunk;
+        iss >> id >> chunk;
+        tr_chunks[id] = chunk;
+        if (type == IN_TR) {
+          in_tr_map[signal] = id;
+        } else if (type == OUT_TR) {
+          out_tr_map[signal] = id;
+        }
+      }
+    }
+    for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
+      chain_len[t] /= DAISY_WIDTH;
+    }
+  } else {
+    fprintf(stderr, "Cannot open %s\n", filename.c_str());
+    exit(2);
+  }
 }
 
 size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
   size_t t = static_cast<size_t>(type);
   std::vector<std::string> chain_signals = signals[t];
   std::vector<size_t> chain_widths = widths[t];
-  std::vector<ssize_t> chain_indices = indices[t];
-  for (size_t i = 0 ; i < CHAIN_LOOP[type] ; i++) {
+  std::vector<ssize_t> chain_depths = depths[t];
+  for (size_t i = 0 ; i < chain_loop[type] ; i++) {
     for (size_t s = 0 ; s < chain_signals.size() ; s++) {
       std::string &signal = chain_signals[s];
       size_t width = chain_widths[s];
-      ssize_t index = chain_indices[s];
+      ssize_t depth = chain_depths[s];
       if (!signal.empty()) {
         char* substr = new char[width+1];
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
         biguint_t* value = new biguint_t(substr, 2);
         if (type == TRACE_CHAIN) {
-          add_force(new force_t(signal, value)); 
-        } else if (type == REG_CHAIN) {
-          add_cmd(new load_t(signal, value, index));
-        } else if (type == SRAM0_CHAIN && ((ssize_t) i) < index) {
-          add_cmd(new load_t(signal, value, i));
-        } else if (type == SRAM1_CHAIN && ((ssize_t) i) < index) {
+          // add_force(new force_t(signal, value)); 
+        } else if (type == REGS_CHAIN) {
+          add_cmd(new load_t(signal, value, -1));
+        } else if (type == SRAM_CHAIN && ((ssize_t) i) < depth) {
           add_cmd(new load_t(signal, value, i));
         } else if (type == CNTR_CHAIN) {
           add_cmd(new count_t(signal, value));
@@ -50,7 +90,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
     }
     assert(start % DAISY_WIDTH == 0);
   }
-  if (type == TRACE_CHAIN) dump_forces();
+  // if (type == TRACE_CHAIN) dump_forces();
   return start;
 }
 

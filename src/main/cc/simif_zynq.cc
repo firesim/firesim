@@ -7,8 +7,8 @@
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
-simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bool log)
-  : simif_t(args, prefix, log)
+simif_zynq_t::simif_zynq_t(std::vector<std::string> args, bool log)
+  : simif_t(args, log)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
@@ -24,12 +24,12 @@ simif_zynq_t::simif_zynq_t(std::vector<std::string> args, std::string prefix, bo
   init();
 }
 
-void simif_zynq_t::poke_channel(size_t addr, uint32_t data) {
+void simif_zynq_t::write(size_t addr, uint32_t data) {
   write_reg(addr, data);
   __sync_synchronize();
 }
 
-uint32_t simif_zynq_t::peek_channel(size_t addr) {
+uint32_t simif_zynq_t::read(size_t addr) {
   __sync_synchronize();
   return read_reg(addr);
 }

@@ -208,7 +208,15 @@ void biguint_t::operator&=(const biguint_t &that) {
 }
 
 bool biguint_t::operator==(const biguint_t &that) {
-  bool yes = size == that.size;
+  bool yes = true;
+  for (ssize_t i = 0 ; i < (ssize_t) (size - that.size) ; i++) {
+    yes = data[that.size + i] == 0;
+    if (!yes) break;
+  }
+  for (ssize_t i = 0 ; i < (ssize_t) (that.size - size) ; i++) {
+    yes = that.data[size + i] == 0;
+    if (!yes) break;
+  }
   if (yes) {
     for (size_t i = 0 ; i < size ; i++) {
       yes = data[i] == that.data[i];

@@ -1,8 +1,9 @@
 package midas_widgets
 
-import Chisel._
-import cde.{Parameters, Field}
+import chisel3._
+import chisel3.util._
 import junctions._
+import cde.{Parameters, Field}
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
@@ -10,9 +11,10 @@ import scala.collection.mutable.ArrayBuffer
   * Returns a Seq of the leaf nodes with their absolute/final direction.
   */
 object FlattenData {
-  def dirProduct(context: Direction, field: Direction): Direction = {
-    if(context == INPUT) field.flip else field
-  }
+  // TODO: fix for gsdt
+  import Chisel._
+  def dirProduct(context: Direction, field: Direction): Direction =
+    if (context == INPUT) field.flip else field
 
   def apply[T <: Data](
       gen: T,
@@ -63,7 +65,7 @@ class SatUpDownCounterIO(val n: Int) extends Bundle {
   */
 class SatUpDownCounter(val n: Int) extends Module {
   require(n >= 1)
-  val io = new SatUpDownCounterIO(n)
+  val io = IO(new SatUpDownCounterIO(n))
   val value =  Reg(init=UInt(0, log2Up(n)))
   io.value := value
   io.full := value >= io.max
@@ -106,7 +108,7 @@ class MultiQueue[T <: Data](
     ) extends Module {
 
   require(isPow2(entries))
-  val io = new MultiQueueIO(gen, numQueues, entries)
+  val io = IO(new MultiQueueIO(gen, numQueues, entries))
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
   // slot
 
@@ -229,10 +231,10 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
 }
 
 class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
-  val io = new Bundle {
-    val nasti = (new NastiIO).flip
+  val io = IO(new Bundle {
+    val nasti = Flipped(new NastiIO)
     val mcr = new MCRIO(numRegs)
-  }
+  })
 
   val rValid = Reg(init = Bool(false))
   val awFired = Reg(init = Bool(false))

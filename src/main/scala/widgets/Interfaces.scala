@@ -1,6 +1,6 @@
 package midas_widgets
 
-import Chisel._
+import chisel3._
 
 // Adapted from DecoupledIO in Chisel3
 class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
@@ -34,15 +34,15 @@ class HostReadyValid extends Bundle {
   * aggregate in a new class (ex. the FlipNastiIO). tokenFlip captures
   * whether hBits should be flipped when it is cloned.
   *
-  * thus what would ideally be expressed as HostPort((new NastiIO).flip) must
+  * thus what would ideally be expressed as HostPort(Flipped(new NastiIO)) must
   * be expressed as HostPort((new NastiIO), tokenFlip = true)
   */
 
 class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
 {
-  val fromHost = (new HostReadyValid).flip
+  val fromHost = Flipped(new HostReadyValid)
   val toHost = new HostReadyValid
-  val hBits  = if(tokenFlip) gen.cloneType.flip else gen cloneType
+  val hBits  = if (tokenFlip) Flipped(gen.cloneType) else gen cloneType
   override def cloneType: this.type =
     new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
 }
