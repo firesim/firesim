@@ -208,24 +208,23 @@ class MCRFileMap() {
 }
 
 class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
-  val rdata = Vec(numCRs, Bits(INPUT, nastiXDataBits))
-  val wen = Bool(OUTPUT)
-  val waddr = UInt(OUTPUT, log2Up(numCRs))
-  val wdata = Bits(OUTPUT, nastiXDataBits)
+  val read = Vec(numCRs, Flipped(Decoupled(UInt(width = nastiXDataBits))))
+  val write = Vec(numCRs, Decoupled(UInt(width = nastiXDataBits)))
   val wstrb = Bits(OUTPUT, nastiWStrobeBits)
 
   def bindReg(reg: Data, addr: Int): Unit = {
-    when(wen && (waddr === UInt(addr))){
-      reg := wdata
+    when(write(addr).valid){
+      reg := write(addr).bits
     }
-    rdata(addr) := reg
+    write(addr).ready := Bool(true)
+    read(addr).bits := reg
+    read(addr).valid := Bool(true)
   }
 
   //These are write only for now
   def bindDecoupled(channel: DecoupledIO[UInt], addr: Int): Unit = {
-    assert(channel.ready === Bool(true), "R/W decoupled channels cannot present backpressure.")
-    channel.valid := wen && (waddr === UInt(addr))
-    channel.bits := wdata
+    channel <> write(addr)
+    assert(read(addr).ready === Bool(false), "no read decoupled source support")
   }
 }
 
@@ -235,14 +234,18 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
     val mcr = new MCRIO(numRegs)
   })
 
-  val rValid = Reg(init = Bool(false))
-  val awFired = Reg(init = Bool(false))
-  val wFired = Reg(init = Bool(false))
+  //TODO: Just use a damn state machine.
+  val rValid = RegInit(Bool(false))
+  val arFired = RegInit(Bool(false))
+  val awFired = RegInit(Bool(false))
+  val wFired = RegInit(Bool(false))
+  val wCommited = RegInit(Bool(false))
   val bId = Reg(UInt(width = p(NastiKey).idBits))
   val rId = Reg(UInt(width = p(NastiKey).idBits))
   val rData = Reg(UInt(width = nastiXDataBits))
   val wData = Reg(UInt(width = nastiXDataBits))
-  val wAddr = Reg(UInt(width = nastiXAddrBits))
+  val wAddr = Reg(UInt(width = log2Up(numRegs)))
+  val rAddr = Reg(UInt(width = log2Up(numRegs)))
   val wStrb = Reg(UInt(width = nastiWStrobeBits))
 
   when(io.nasti.aw.fire()){
@@ -259,35 +262,40 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   }
 
   when(io.nasti.ar.fire()) {
-    rValid := Bool(true)
-    rData := io.mcr.rdata((io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0))
+    arFired := Bool(true)
+    rAddr := (io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0)
     rId := io.nasti.ar.bits.id
+    assert(io.nasti.ar.bits.len === UInt(0), "MCRFile only support single beat reads")
   }
 
   when(io.nasti.r.fire()) {
-    rValid := Bool(false)
+    arFired := Bool(false)
   }
 
   when(io.nasti.b.fire()) {
     awFired := Bool(false)
     wFired := Bool(false)
+    wCommited := Bool(false)
   }
 
-  io.nasti.r.bits := NastiReadDataChannel(rId, rData)
-  io.nasti.r.valid := rValid
+  when(io.mcr.write(wAddr).fire()){
+    wCommited := Bool(true)
+  }
+
+  io.mcr.write foreach { w => w.valid := Bool(false); w.bits := wData }
+  io.mcr.read foreach { _.ready := Bool(false) }
+  io.mcr.write(wAddr).valid := awFired && wFired && ~wCommited
+  io.mcr.read(rAddr).ready := arFired && io.nasti.r.ready
+
+  io.nasti.r.bits := NastiReadDataChannel(rId, io.mcr.read(rAddr).bits)
+  io.nasti.r.valid := arFired && io.mcr.read(rAddr).valid
 
   io.nasti.b.bits := NastiWriteResponseChannel(bId)
-  io.nasti.b.valid := awFired && wFired
+  io.nasti.b.valid := awFired && wFired && wCommited
 
-  io.nasti.ar.ready := ~rValid
+  io.nasti.ar.ready := ~arFired
   io.nasti.aw.ready := ~awFired
   io.nasti.w.ready := ~wFired
-
-  //Use b fire just because its a convienent way to track one write transaction
-  io.mcr.wen := io.nasti.b.fire()
-  io.mcr.wdata := wData
-  io.mcr.wstrb := wStrb
-  io.mcr.waddr := wAddr
 }
 
 class CRIO(direction: Direction, width: Int, val default: Int) extends Bundle {
