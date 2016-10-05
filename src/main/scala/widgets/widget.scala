@@ -41,15 +41,15 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  def attach(reg: Data, name: String) {
-    crRegistry.allocate(reg, name)
+  def attach(reg: Bits, name: String) {
+    crRegistry.allocate(RegisterEntry(reg, name))
   }
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
     require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
     channel <> Queue(enq, entries = 2)
-    crRegistry.allocate(enq, name)
+    crRegistry.allocate(DecoupledSinkEntry(enq, name))
     channel
   }
 
