@@ -216,6 +216,10 @@ class MCRFileMap() {
       }
     }
   }
+
+  def printCRs(): Unit = {
+    regList.zipWithIndex foreach { case (entry, i) => println(s"Name: ${entry.name}, Addr: $i") }
+  }
 }
 
 class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
@@ -232,7 +236,6 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
     read(addr).valid := Bool(true)
   }
 
-  //These are write only for now
   def bindDecoupledSink(channel: DecoupledSinkEntry, addr: Int): Unit = {
     channel.node <> write(addr)
     assert(read(addr).ready === Bool(false), "Can only write to this decoupled sink")
