@@ -6,7 +6,7 @@
 class simif_zynq_t : public simif_t
 {
   public:
-    simif_zynq_t(std::vector<std::string> args, bool log = false);
+    simif_zynq_t(int argc, char** argv, bool log = false);
     ~simif_zynq_t() { finish(); }
 
   private:

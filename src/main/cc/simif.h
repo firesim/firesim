@@ -21,7 +21,7 @@ typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
 class simif_t
 {
   public:
-    simif_t(std::vector<std::string> args, bool _log = false);
+    simif_t(int argc, char** argv, bool _log = false);
     virtual ~simif_t();
 
   private:
@@ -52,8 +52,7 @@ class simif_t
     size_t sample_count;
     uint64_t sample_time;
     uint64_t sim_start_time;
-    std::vector<std::string> hargs;
-    std::vector<std::string> targs;
+    std::vector<std::string> args;
 
   protected:
     // channel communication

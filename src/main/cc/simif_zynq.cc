@@ -7,8 +7,8 @@
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
-simif_zynq_t::simif_zynq_t(std::vector<std::string> args, bool log)
-  : simif_t(args, log)
+simif_zynq_t::simif_zynq_t(int argc, char** argv, bool log)
+  : simif_t(argc, argv, log)
 {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
