@@ -1,7 +1,7 @@
 #include "simif.h"
 #include <fstream>
 
-simif_t::simif_t(std::vector<std::string> args, bool _log): log(_log)
+simif_t::simif_t(int argc, char** argv, bool _log): log(_log)
 {
   ok = true;
   t = 0;
@@ -20,13 +20,7 @@ simif_t::simif_t(std::vector<std::string> args, bool _log): log(_log)
   seed = time(NULL);
   srand(seed);
 
-  size_t i;
-  for (i = 0 ; i < args.size() ; i++) {
-    if (args[i].length() && args[i][0] != '-' && args[i][0] != '+')
-      break;
-  }
-  hargs.insert(hargs.begin(), args.begin(), args.begin() + i);
-  targs.insert(targs.begin(), args.begin() + i, args.end());
+  args.assign(argv + 1, argv + argc);
 }
 
 simif_t::~simif_t() { 
@@ -82,7 +76,7 @@ void simif_t::init() {
 #endif
   }
 
-  for (auto &arg: hargs) {
+  for (auto &arg: args) {
     if (arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
       fprintf(stdout, "[loadmem] start loading\n");
