@@ -213,7 +213,7 @@ sample_t* simif_t::read_snapshot() {
     const size_t chain_len = sample_t::get_chain_len(type);
     for (size_t k = 0 ; k < chain_loop ; k++) {
       for (size_t i = 0 ; i < CHAIN_SIZE[t] ; i++) {
-        if (type == SRAM_CHAIN) write(SRAM_RESTART_ADDR + i, 0);
+        if (type == SRAM_CHAIN) write(SRAM_RESTART_ADDR + i, 1);
         for (size_t j = 0 ; j < chain_len ; j++) {
           snap << int_to_bin(bin, read(CHAIN_ADDR[t] + i), DAISY_WIDTH);
         }

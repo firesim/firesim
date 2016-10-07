@@ -41,15 +41,24 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  def attach(reg: Bits, name: String) {
+  //The functions bind 
+  def attach(reg: Bits, name: String): Int = {
     crRegistry.allocate(RegisterEntry(reg, name))
+  }
+
+  def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
+    crRegistry.allocate(DecoupledSinkEntry(channel, name))
+  }
+
+  def attachDecoupledSource(channel: DecoupledIO[UInt], name: String): Int = {
+    crRegistry.allocate(DecoupledSourceEntry(channel, name))
   }
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
     require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
     channel <> Queue(enq, entries = 2)
-    crRegistry.allocate(DecoupledSinkEntry(enq, name))
+    attachDecoupledSink(enq, name)
     channel
   }
 
@@ -82,6 +91,8 @@ abstract class Widget(implicit p: Parameters) extends Module {
     require(_finalized, "Must build Widgets with their companion object")
     crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
+
+  def printCRs(){ crRegistry.printCRs() }
 }
 
 // TODO: Need to handle names better; try and stick ctrl IO elaboration in here,
