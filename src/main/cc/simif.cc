@@ -1,8 +1,7 @@
 #include "simif.h"
 #include <fstream>
 
-simif_t::simif_t(int argc, char** argv, bool _log): log(_log)
-{
+simif_t::simif_t() {
   ok = true;
   t = 0;
   fail_t = 0;
@@ -19,11 +18,15 @@ simif_t::simif_t(int argc, char** argv, bool _log): log(_log)
 
   seed = time(NULL);
   srand(seed);
-
-  args.assign(argv + 1, argv + argc);
 }
 
 simif_t::~simif_t() { 
+  if (profile) {
+    double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
+    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %d\n",
+                    sim_time, (double) sample_time / 1000000.0, sample_count);
+  }
+
   fprintf(stdout, "Runs %llu cycles\n", cycles());
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", TARGET_NAME);
   if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
@@ -54,7 +57,7 @@ void simif_t::load_mem(std::string filename) {
   file.close();
 }
 
-void simif_t::init() {
+void simif_t::init(int argc, char** argv, bool log) {
 #if ENABLE_SNAPSHOT
   // Read mapping files
   std::string prefix = TARGET_NAME;
@@ -76,6 +79,8 @@ void simif_t::init() {
 #endif
   }
 
+  this->log = log;
+  std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
     if (arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
@@ -91,29 +96,19 @@ void simif_t::init() {
 
 #if ENABLE_SNAPSHOT
   samples = new sample_t*[sample_num];
-  for (size_t i = 0 ; i < sample_num ; i++) {
-     samples[i] = NULL;
-  }
+  for (size_t i = 0 ; i < sample_num ; i++) samples[i] = NULL;
 #endif
   if (profile) sim_start_time = timestamp();
 }
 
-void simif_t::finish() {
+int simif_t::finish() {
 #if ENABLE_SNAPSHOT
   // tail samples
   if (last_sample != NULL) {
     if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
     samples[last_sample_id] = read_traces(last_sample);
   }
-#endif
 
-  if (profile) {
-    double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
-    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %d\n", 
-                    sim_time, (double) sample_time / 1000000.0, sample_count);
-  }
-
-#if ENABLE_SNAPSHOT
   // dump samples
   std::string prefix = TARGET_NAME;
   std::string filename = prefix + ".sample";
@@ -127,6 +122,8 @@ void simif_t::finish() {
     }
   }
 #endif
+
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 bool simif_t::expect(bool pass, const char *s) {

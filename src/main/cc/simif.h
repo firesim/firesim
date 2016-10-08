@@ -21,15 +21,14 @@ typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
 class simif_t
 {
   public:
-    simif_t(int argc, char** argv, bool _log = false);
+    simif_t();
     virtual ~simif_t();
-
   private:
     virtual void load_mem(std::string filename);
 
     // simulation information
     const std::string prefix;
-    const bool log; 
+    bool log;
     bool ok;
     uint64_t t;
     uint64_t fail_t;
@@ -59,8 +58,10 @@ class simif_t
     virtual void write(size_t addr, uint32_t data) = 0;
     virtual uint32_t read(size_t addr) = 0;
 
+  public:
     // Simulation APIs
-    inline int exitcode() { return ok ? EXIT_SUCCESS : EXIT_FAILURE; }
+    virtual void init(int argc, char** argv, bool log = false);
+    virtual int finish();
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stdout, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
@@ -121,8 +122,6 @@ class simif_t
     sample_t* read_snapshot();
     sample_t* read_traces(sample_t* s);
     
-    void init();
-    void finish();
     inline uint64_t cycles() { return t; }
     inline void set_tracelen(size_t len) {
       assert(len > 2);
