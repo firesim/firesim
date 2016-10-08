@@ -42,7 +42,7 @@ class DaisyBundle(daisyWidth: Int, sramChainNum: Int, enableSnapshot: Boolean) e
   val regs  = Vec(if (enableSnapshot) 1 else 0, new RegData(daisyWidth))
   val trace = Vec(if (enableSnapshot) 1 else 0, new TraceData(daisyWidth))
   val cntr  = Vec(if (enableSnapshot) 1 else 0, new CntrData(daisyWidth))
-  val sram  = Vec(if (enableSnapshot) 1 else sramChainNum, new SRAMData(daisyWidth))
+  val sram  = Vec(if (enableSnapshot) sramChainNum else 0, new SRAMData(daisyWidth))
   def apply(t: ChainType.Value) = t match {
     case ChainType.Regs  => regs
     case ChainType.Trace => trace
