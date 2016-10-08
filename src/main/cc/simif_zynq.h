@@ -3,11 +3,11 @@
 
 #include "simif.h"
 
-class simif_zynq_t : public simif_t
+class simif_zynq_t: public virtual simif_t
 {
   public:
-    simif_zynq_t(int argc, char** argv, bool log = false);
-    ~simif_zynq_t() { finish(); }
+    simif_zynq_t();
+    virtual ~simif_zynq_t();
 
   private:
     volatile uintptr_t* dev_vaddr;

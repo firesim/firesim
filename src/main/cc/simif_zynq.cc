@@ -7,9 +7,7 @@
 #define read_reg(r) (dev_vaddr[r])
 #define write_reg(r, v) (dev_vaddr[r] = v)
 
-simif_zynq_t::simif_zynq_t(int argc, char** argv, bool log)
-  : simif_t(argc, argv, log)
-{
+simif_zynq_t::simif_zynq_t() {
   int fd = open("/dev/mem", O_RDWR|O_SYNC);
   assert(fd != -1);
 
@@ -20,9 +18,9 @@ simif_zynq_t::simif_zynq_t(int argc, char** argv, bool log)
 
   dev_vaddr = (uintptr_t*)mmap(0, pgsize, host_prot, flags, fd, dev_paddr);
   assert(dev_vaddr != MAP_FAILED);
-
-  init();
 }
+
+simif_zynq_t::~simif_zynq_t() { }
 
 void simif_zynq_t::write(size_t addr, uint32_t data) {
   write_reg(addr, data);
