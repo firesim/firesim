@@ -87,12 +87,15 @@ object StroberCompiler {
 
     val consts = List(
       "CTRL_NUM"          -> c.CTRL_NUM,
-      "ENABLE_SNAPSHOT"   -> (c.sim match { case sim: SimWrapper[_] => if (sim.enableSnapshot) 1 else 0 }),
-      "DAISY_WIDTH"       -> (c.sim match { case sim: SimWrapper[_] => sim.daisyWidth }),
       "POKE_SIZE"         -> c.ins.size,
       "PEEK_SIZE"         -> c.outs.size,
-      "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
+      "CHANNEL_DATA_BITS" -> c.master.nastiXDataBits,
+      "CHANNEL_STRB_BITS" -> c.master.nastiWStrobeBits,
+      "CHANNEL_SIZE"      -> chisel3.util.log2Up(c.master.nastiXDataBits/8),
+      "ENABLE_SNAPSHOT"   -> (if (sim.enableSnapshot) 1 else 0),
       "TRACE_MAX_LEN"     -> sim.traceMaxLen,
+      "DAISY_WIDTH"       -> sim.daisyWidth,
+      "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
       "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
 
       "HOST_RESET_ADDR"   -> ZynqCtrlSignals.HOST_RESET.id,
