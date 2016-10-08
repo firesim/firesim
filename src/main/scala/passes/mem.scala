@@ -77,11 +77,11 @@ class EmitMemFPGAVerilog(writer: java.io.Writer, conf: java.io.File) extends Tra
           Seq(tab, "initial begin"),
           Seq(tab, tab, "#0.002;"),
           Seq(tab, tab, s"for (initvar = 0; initvar < ${conf.depth}; initvar = initvar + 1)"),
-          Seq(tab, tab, tab, "ram[initvar] = {%d {$random}};".format((conf.width - 1) / 32 + 1))) ++
+          Seq(tab, tab, tab, """/* verilator lint_off WIDTH */ ram[initvar] = {%d{$random}};""".format((conf.width - 1) / 32 + 1))) ++
       (conf.readers.indices map (i =>
-          Seq(tab, tab, "reg_R%d = {%d {$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
+          Seq(tab, tab, "/* verilator lint_off WIDTH */ reg_R%d = {%d{$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
       (conf.readwriters.indices map (i =>
-          Seq(tab, tab, "reg_RW%d = {%d {$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
+          Seq(tab, tab, "/* verilator lint_off WIDTH */ reg_RW%d = {%d{$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
       Seq(Seq(tab, "end"),
           Seq("`endif"))
     val assigns =
