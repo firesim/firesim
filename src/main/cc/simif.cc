@@ -52,7 +52,7 @@ void simif_t::load_mem(std::string filename) {
     }
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(0);
+    exit(EXIT_FAILURE);
   } 
   file.close();
 }
