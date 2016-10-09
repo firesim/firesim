@@ -126,13 +126,6 @@ int simif_t::finish() {
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-bool simif_t::expect(bool pass, const char *s) {
-  if (log) fprintf(stdout, "* %s : %s *\n", s, pass ? "PASS" : "FAIL");
-  if (ok && !pass) fail_t = t;
-  ok &= pass;
-  return pass;
-}
-
 void simif_t::step(size_t n) {
 #if ENABLE_SNAPSHOT
   // reservoir sampling
@@ -155,7 +148,7 @@ void simif_t::step(size_t n) {
   }
 #endif
   // take steps
-  if (log) fprintf(stdout, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
+  if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
   write(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     write(CTRL_NUM + i, poke_map[i]);
