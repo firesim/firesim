@@ -31,31 +31,54 @@ simif_verilator_t::~simif_verilator_t() {
   delete top;
 }
 
-void simif_verilator_t::init(int argc, char** argv, bool log) {
-  Verilated::commandArgs(argc, argv); // Remember args
+void simif_verilator_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   top = new VZynqShim;
- 
-#if VM_TRACE                          // If verilator was invoked with --trace
-  Verilated::traceEverOn(true);       // Verilator must compute traced signals
-  VL_PRINTF("Enabling waves...\n");
-  top->trace(tfp, 99);               // Trace 99 levels of hierarchy
-  tfp->open("dump.vcd");             // Open the dump file
-#endif
+  Verilated::commandArgs(argc, argv); // Remember args
 
-  // bool dramsim = false;
-  size_t memsize = 1 << 20;
+  // Parse args
+  std::vector<std::string> args(argv + 1, argv + argc);
+  const char* loadmem = NULL;
+  const char* waveform = "dump.vcd";
+  bool dramsim = false;
+  for (auto &arg: args) {
+    if (arg.find("+loadmem=") == 0) {
+      loadmem = arg.c_str() + 9;
+    }
+    if (arg.find("+waveform=") == 0) {
+      waveform = arg.c_str() + 10;
+    }
+    if (arg.find("+dramsim") == 0) {
+      dramsim = true;
+    }
+  }
+
+  size_t memsize = 1 << 30;
   master = (mmio_t*) new mmio_t;
   slave = (mm_t*) new mm_magic_t;
   // slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
   slave->init(memsize, MEM_DATA_BITS / 8, MEM_DATA_BITS / 8);
   
+#if VM_TRACE                         // If verilator was invoked with --trace
+  Verilated::traceEverOn(true);      // Verilator must compute traced signals
+  VL_PRINTF("Enabling waves...\n");
+  top->trace(tfp, 99);               // Trace 99 levels of hierarchy
+  tfp->open(waveform);               // Open the dump file
+#endif
+
+  if (fast_loadmem && loadmem) {
+    fprintf(stdout, "fast loadmem: %s\n", loadmem);
+    void* mems[1];
+    mems[0] = slave->get_data();
+    ::load_mem(mems, loadmem, MEM_DATA_BITS / 8, 1);
+  }
+
   signal(SIGTERM, handle_sigterm);
 
   top->reset = 1;
   for (size_t i = 0 ; i < 10 ; i++) tick();
   top->reset = 0;
 
-  simif_t::init(argc, argv, log);
+  simif_t::init(argc, argv, log, fast_loadmem);
 }
 
 
