@@ -287,12 +287,12 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
   mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
-    Cat(aw map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
+    Cat(aw.reverse map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
-    Cat(ar map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
+    Cat(ar.reverse map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.w.bits := NastiWriteDataChannel(Cat(w map (_.io.out.bits)))(
+  mem.w.bits := NastiWriteDataChannel(Cat(w.reverse map (_.io.out.bits)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
 
   r.zipWithIndex foreach {case (buf, i) =>
@@ -314,7 +314,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     case (target: Vec[_], wires: Vec[_]) => 
       (target.toSeq zip wires.toSeq) foreach targetConnect
     case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
-       target := Cat(sim.io.getOuts(wire).map(_.bits))
+      target := Cat(sim.io.getOuts(wire).reverse map (_.bits))
     case (target: Bits, wire: Bits) if wire.dir == INPUT => 
       sim.io.getIns(wire).zipWithIndex foreach {case (in, i) => 
         in.bits := target >> UInt(i * sim.io.channelWidth) 
