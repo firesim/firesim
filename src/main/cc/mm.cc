@@ -120,7 +120,7 @@ void load_mem(void** mems, const char* fn, int line_size, int nchannels)
   if (!in)
   {
     std::cerr << "could not open " << fn << std::endl;
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   std::string line;

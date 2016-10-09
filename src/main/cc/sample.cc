@@ -56,7 +56,7 @@ void sample_t::init_chains(std::string filename) {
     }
   } else {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
-    exit(2);
+    exit(EXIT_FAILURE);
   }
 }
 
