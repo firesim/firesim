@@ -23,13 +23,13 @@ simif_t::simif_t() {
 simif_t::~simif_t() { 
   if (profile) {
     double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
-    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %d\n",
+    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %zu\n",
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
 
-  fprintf(stdout, "Runs %llu cycles\n", cycles());
+  fprintf(stdout, "Runs %" PRIu64 " cycles\n", cycles());
   fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", TARGET_NAME);
-  if (!ok) { fprintf(stdout, " at cycle %llu", (long long) fail_t); }
+  if (!ok) { fprintf(stdout, " at cycle %" PRIu64, fail_t); }
   fprintf(stdout, "\nSEED: %ld\n", seed);
 }
 
@@ -155,7 +155,7 @@ void simif_t::step(size_t n) {
   }
 #endif
   // take steps
-  if (log) fprintf(stdout, "* STEP %u -> %llu *\n", n, (long long) (t + n));
+  if (log) fprintf(stdout, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
   write(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     write(CTRL_NUM + i, poke_map[i]);
