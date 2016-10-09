@@ -7,6 +7,7 @@
 #include <map>
 #include <ostream>
 #include <cassert>
+#include <inttypes.h>
 #include "biguint.h"
 
 enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
@@ -27,9 +28,9 @@ public:
 
 class step_t: public sample_inst_t {
 public:
-  step_t(int n_): n(n_) { }
+  step_t(size_t n_): n(n_) { }
   void dump(FILE *file) const {
-    fprintf(file, "%u %u\n", STEP, n);
+    fprintf(file, "%u %zu\n", STEP, n);
   }
   std::ostream& dump(std::ostream &os) const {
     return os << STEP << " " << n << std::endl;
@@ -116,7 +117,7 @@ public:
     node(node_.c_str()), value(value_) { }
   ~count_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %u\n", COUNT, node, value->uint());
+    fprintf(file, "%u %s %" PRIu32 "\n", COUNT, node, value->uint());
   }
   std::ostream& dump(std::ostream &os) const {
     return os << COUNT << " " << node << " " << *value << std::endl;
@@ -139,7 +140,7 @@ public:
   void dump_forces();
 
   void dump(FILE *file) const {
-    fprintf(file, "%u cycle: %llu\n", CYCLE, cycle);
+    fprintf(file, "%u cycle: %" PRIu64 "\n", CYCLE, cycle);
     for (size_t i = 0 ; i < cmds.size() ; i++) {
       cmds[i]->dump(file);
     }
