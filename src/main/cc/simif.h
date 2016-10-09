@@ -62,20 +62,23 @@ class simif_t
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = false);
     virtual int finish();
+    void step(size_t n);
+    sample_t* read_snapshot();
+    sample_t* read_traces(sample_t* s);
 
     inline void poke(size_t id, uint32_t value) { 
-      if (log) fprintf(stdout, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
+      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
       poke_map[id] = value;
     }
 
     inline uint32_t peek(size_t id) {
       uint32_t value = peek_map[id]; 
-      if (log) fprintf(stdout, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, OUTPUT_NAMES[id], value);
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, OUTPUT_NAMES[id], value);
       return value;
     }
 
     inline void poke(size_t id, biguint_t& value) {
-      if (log) fprintf(stdout, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
+      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
       for (size_t off = 0 ; off < INPUT_CHUNKS[id] ; off++) {
         poke_map[id+off] = value[off];
       }
@@ -83,28 +86,33 @@ class simif_t
 
     inline void peek(size_t id, biguint_t& value) {
       value = biguint_t(peek_map+id, OUTPUT_CHUNKS[id]);
-      if (log) fprintf(stdout, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
     }
 
     inline bool expect(size_t id, uint32_t expected) {
       uint32_t value = peek(id);
       bool pass = value == expected;
-      std::ostringstream oss;
-      if (log) oss << "EXPECT " << TARGET_NAME << "." << OUTPUT_NAMES[id] << " " << value << " == " << expected;
-      return expect(pass, oss.str().c_str());
+      if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
+        TARGET_NAME, OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
+      return expect(pass, NULL);
     }
 
     inline bool expect(size_t id, biguint_t& expected) {
       biguint_t value;
       peek(id, value);
       bool pass = value == expected;
-      std::ostringstream oss;
-      if (log) oss << "EXPECT " << TARGET_NAME << "." << OUTPUT_NAMES[id] << " " << value << " == " << expected;
-      return expect(pass, oss.str().c_str());
+      if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
+        TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(), pass ? "PASS" : "FAIL");
+      return expect(pass, NULL);
     }
 
-    bool expect(bool pass, const char *s);
-    void step(size_t n);
+    inline bool expect(bool pass, const char *s) {
+      if (log && s) fprintf(stderr, "* %s : %s *\n", s, pass ? "PASS" : "FAIL");
+      if (ok && !pass) fail_t = t;
+      ok &= pass;
+      return pass;
+    }
+
     inline biguint_t read_mem(size_t addr) {
       write(MEM_AR_ADDR, addr);
       uint32_t d[MEM_DATA_CHUNK];
@@ -113,14 +121,13 @@ class simif_t
       }
       return biguint_t(d, MEM_DATA_CHUNK);
     }
+
     inline void write_mem(size_t addr, biguint_t& data) {
       write(MEM_AW_ADDR, addr);
       for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
         write(MEM_W_ADDR+off, data[off]);
       }
     }
-    sample_t* read_snapshot();
-    sample_t* read_traces(sample_t* s);
     
     inline uint64_t cycles() { return t; }
     inline void set_tracelen(size_t len) {
