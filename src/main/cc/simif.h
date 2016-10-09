@@ -60,7 +60,7 @@ class simif_t
 
   public:
     // Simulation APIs
-    virtual void init(int argc, char** argv, bool log = false);
+    virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = false);
     virtual int finish();
 
     inline void poke(size_t id, uint32_t value) { 

@@ -57,7 +57,7 @@ void simif_t::load_mem(std::string filename) {
   file.close();
 }
 
-void simif_t::init(int argc, char** argv, bool log) {
+void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 #if ENABLE_SNAPSHOT
   // Read mapping files
   std::string prefix = TARGET_NAME;
@@ -82,7 +82,7 @@ void simif_t::init(int argc, char** argv, bool log) {
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
-    if (arg.find("+loadmem=") == 0) {
+    if (!fast_loadmem && arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
       fprintf(stdout, "[loadmem] start loading\n");
       load_mem(filename);
