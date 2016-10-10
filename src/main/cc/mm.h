@@ -28,6 +28,8 @@ class mm_t
 
   virtual void tick
   (
+    bool reset,
+
     bool ar_valid,
     uint64_t ar_addr,
     uint64_t ar_id,
@@ -107,6 +109,8 @@ class mm_magic_t : public mm_t
 
   virtual void tick
   (
+    bool reset,
+
     bool ar_valid,
     uint64_t ar_addr,
     uint64_t ar_id,

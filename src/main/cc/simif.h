@@ -22,7 +22,7 @@ class simif_t
 {
   public:
     simif_t();
-    virtual ~simif_t();
+    virtual ~simif_t() { }
   private:
     virtual void load_mem(std::string filename);
 

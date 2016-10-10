@@ -20,8 +20,6 @@ simif_zynq_t::simif_zynq_t() {
   assert(dev_vaddr != MAP_FAILED);
 }
 
-simif_zynq_t::~simif_zynq_t() { }
-
 void simif_zynq_t::write(size_t addr, uint32_t data) {
   write_reg(addr, data);
   __sync_synchronize();
