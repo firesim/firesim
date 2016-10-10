@@ -84,19 +84,27 @@ object StroberCompiler {
       val chunks = SimUtils.getChunks(arg._1)
       (0 until chunks) map (i => if (i == 0) chunks else 0)
     }
+    def vdump(arg: (String, Int)): String =
+      s"`define ${arg._1} ${arg._2}\n"
 
     val consts = List(
+      "CHANNEL_ID_BITS"   -> c.master.nastiExternal.idBits,
+      "CHANNEL_ADDR_BITS" -> c.master.nastiXAddrBits,
+      "CHANNEL_DATA_BITS" -> c.master.nastiXDataBits,
+      "CHANNEL_STRB_BITS" -> c.master.nastiWStrobeBits,
+      "MEM_ID_BITS"       -> c.arb.nastiExternal.idBits,
+      "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
+      "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
+      "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
+
       "CTRL_NUM"          -> c.CTRL_NUM,
       "POKE_SIZE"         -> c.ins.size,
       "PEEK_SIZE"         -> c.outs.size,
-      "CHANNEL_DATA_BITS" -> c.master.nastiXDataBits,
-      "CHANNEL_STRB_BITS" -> c.master.nastiWStrobeBits,
-      "CHANNEL_SIZE"      -> chisel3.util.log2Up(c.master.nastiXDataBits/8),
-      "ENABLE_SNAPSHOT"   -> (if (sim.enableSnapshot) 1 else 0),
-      "TRACE_MAX_LEN"     -> sim.traceMaxLen,
       "DAISY_WIDTH"       -> sim.daisyWidth,
-      "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
+      "TRACE_MAX_LEN"     -> sim.traceMaxLen,
+      "CHANNEL_SIZE"      -> chisel3.util.log2Up(c.master.nastiXDataBits/8),
       "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
+      "ENABLE_SNAPSHOT"   -> (if (sim.enableSnapshot) 1 else 0),
 
       "HOST_RESET_ADDR"   -> ZynqCtrlSignals.HOST_RESET.id,
       "SIM_RESET_ADDR"    -> ZynqCtrlSignals.SIM_RESET.id,
@@ -109,36 +117,47 @@ object StroberCompiler {
       "MEM_W_ADDR"        -> c.W_ADDR,
       "MEM_R_ADDR"        -> c.R_ADDR
     )
-    val sb = new StringBuilder
-    sb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
-    sb append "#define __%s_H\n".format(targetName.toUpperCase)
-    sb append "const char* const TARGET_NAME = \"%s\";\n".format(targetName)
-    consts map dump addString sb
-    sb append "// IDs assigned to I/Os\n"
-    c.IN_ADDRS map dumpId addString sb
-    c.OUT_ADDRS map dumpId addString sb
-    c.genHeader(sb)
-    sb append "enum CHAIN_TYPE {%s,CHAIN_NUM};\n".format(
+    val csb = new StringBuilder
+    csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
+    csb append "#define __%s_H\n".format(targetName.toUpperCase)
+    csb append "static const char* const TARGET_NAME = \"%s\";\n".format(targetName)
+    consts map dump addString csb
+    csb append "// IDs assigned to I/Os\n"
+    c.IN_ADDRS map dumpId addString csb
+    c.OUT_ADDRS map dumpId addString csb
+    c.genHeader(csb)
+    csb append "enum CHAIN_TYPE {%s,CHAIN_NUM};\n".format(
       ChainType.values.toList map (t => s"${t.toString.toUpperCase}_CHAIN") mkString ",")
-    sb append "const unsigned CHAIN_SIZE[CHAIN_NUM] = {%s};\n".format(
+    csb append "static const unsigned CHAIN_SIZE[CHAIN_NUM] = {%s};\n".format(
       ChainType.values.toList map (t => c.master.io.daisy(t).size) mkString ",")
-    sb append "const unsigned CHAIN_ADDR[CHAIN_NUM] = {%s};\n".format(
+    csb append "static const unsigned CHAIN_ADDR[CHAIN_NUM] = {%s};\n".format(
       ChainType.values.toList map c.DAISY_ADDRS mkString ",")
-    sb append "const char* const INPUT_NAMES[POKE_SIZE] = {\n%s\n};\n".format(
+    csb append "static const char* const INPUT_NAMES[POKE_SIZE] = {\n%s\n};\n".format(
       c.IN_ADDRS flatMap dumpNames mkString ",\n")
-    sb append "const char* const OUTPUT_NAMES[PEEK_SIZE] = {\n%s\n};\n".format(
+    csb append "static const char* const OUTPUT_NAMES[PEEK_SIZE] = {\n%s\n};\n".format(
       c.OUT_ADDRS flatMap dumpNames mkString ",\n")
-    sb append "const unsigned INPUT_CHUNKS[POKE_SIZE] = {%s};\n".format(
+    csb append "static const unsigned INPUT_CHUNKS[POKE_SIZE] = {%s};\n".format(
       c.IN_ADDRS flatMap dumpChunks mkString ",")
-    sb append "const unsigned OUTPUT_CHUNKS[PEEK_SIZE] = {%s};\n".format(
+    csb append "static const unsigned OUTPUT_CHUNKS[PEEK_SIZE] = {%s};\n".format(
       c.OUT_ADDRS flatMap dumpChunks mkString ",")
-    sb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
-    val file = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
+    csb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
+
+    val vsb = new StringBuilder
+    vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
+    vsb append "`define __%s_H\n".format(targetName.toUpperCase)
+    consts map vdump addString vsb
+    vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
+
+    val ch = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
+    val vh = new FileWriter(new File(context.dir, s"${targetName}-const.vh"))
     try {
-      file write sb.result
+      ch write csb.result
+      vh write vsb.result
     } finally {
-      file.close
-      sb.clear
+      ch.close
+      vh.close
+      csb.clear
+      vsb.clear
     }
   }
 

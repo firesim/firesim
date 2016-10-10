@@ -64,8 +64,8 @@ public:
   bool w_last() { return w_valid() ? w.front().last : false; }
   void* w_data() { return w_valid() ? w.front().data : dummy_data; }
 
-  bool r_ready() { return true; }
-  bool b_ready() { return true; }
+  bool r_ready() { return read_inflight; }
+  bool b_ready() { return write_inflight; }
 
   void read_req(uint64_t addr);
   void write_req(uint64_t addr, void* data);
