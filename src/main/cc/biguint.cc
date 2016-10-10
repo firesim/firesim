@@ -218,7 +218,7 @@ bool biguint_t::operator==(const biguint_t &that) {
     if (!yes) break;
   }
   if (yes) {
-    for (size_t i = 0 ; i < size ; i++) {
+    for (size_t i = 0 ; i < std::min(size, that.size) ; i++) {
       yes = data[i] == that.data[i];
       if (!yes) break;
     }
