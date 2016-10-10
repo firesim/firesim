@@ -139,7 +139,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit p: Parameters) ext
       }
     }
   }
-  io.ctrl.ar.ready := rState === rStateRead // rStateIdle
+  io.ctrl.ar.ready := rState === rStateIdle
   io.ctrl.r.bits := NastiReadDataChannel(
     id = arId,
     data = outputs(rAddr).bits,
