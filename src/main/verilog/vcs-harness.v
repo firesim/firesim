@@ -72,25 +72,22 @@ extern "A" void tick
 module vcsHarness;
   reg clock = 1'b0;
   reg reset = 1'b1;
-  reg start = 1'b0;
   reg exit = 1'b0;
   reg [31:0] exitcode = 0;
 
   always #`CLOCK_PERIOD clock = ~clock;
 
   reg [1023:0] vcdplusfile = 0;
-  reg [1023:0] vcdfile = 0;
-  reg          verbose = 0;
-  wire         printf_cond = verbose && !reset;
-  integer      stderr = 32'h80000002;
 
   initial begin
+`ifdef DEBUG
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
       $vcdplusfile(vcdplusfile);
       $vcdpluson(0);
       $vcdplusmemon(0);
     end
+`endif
   end
   
   reg                           master_ar_valid;
@@ -356,7 +353,9 @@ module vcsHarness;
 
   always @(posedge clock) begin
     if (exit) begin
+`ifdef DEBUG
       $vcdplusclose;
+`endif
       if (exitcode == 0)
         $finish;
       else
