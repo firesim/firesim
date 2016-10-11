@@ -9,6 +9,7 @@
 #endif
 #endif
 #include <signal.h>
+#include <iostream>
 
 static const size_t MEM_WIDTH = MEM_DATA_BITS / 8;
 static uint64_t main_time = 0;
@@ -97,11 +98,6 @@ void tick(
 ) {
   main_time++;
   vc_putScalar(reset, main_time <= 5);
-  vc_putScalar(vexit, vcs_fin);
-  vec32 v;
-  v.c = 0;
-  v.d = exitcode;
-  vc_put4stVector(vexitcode, &v);
 
   uint32_t master_r_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
@@ -118,12 +114,6 @@ void tick(
   vc_putScalar(master_w_bits_last, master->w_last());
   vc_putScalar(master_r_ready, master->r_ready());
   vc_putScalar(master_b_ready, master->b_ready());
-  vc_putScalar(slave_aw_ready, slave->aw_ready());
-  vc_putScalar(slave_ar_ready, slave->ar_ready());
-  vc_putScalar(slave_w_ready, slave->w_ready());
-  vc_putScalar(slave_b_valid, slave->b_valid());
-  vc_putScalar(slave_r_valid, slave->r_valid());
-  vc_putScalar(slave_r_bits_last, slave->r_last());
 
   vec32 md[MASTER_DATA_SIZE];
   md[0].c = 0;
@@ -160,6 +150,55 @@ void tick(
   }
   vc_put4stVector(master_w_bits_data, md);
 
+  try {
+    master->tick(
+      main_time <= 5,
+      vc_getScalar(master_ar_ready),
+      vc_getScalar(master_aw_ready),
+      vc_getScalar(master_w_ready),
+      vc_4stVectorRef(master_r_bits_id)->d,
+      master_r_data,
+      vc_getScalar(master_r_bits_last),
+      vc_getScalar(master_r_valid),
+      vc_4stVectorRef(master_b_bits_id)->d,
+      vc_getScalar(master_b_valid)
+    );
+
+    slave->tick(
+      main_time <= 5,
+      vc_getScalar(slave_ar_valid),
+      vc_4stVectorRef(slave_ar_bits_addr)->d,
+      vc_4stVectorRef(slave_ar_bits_id)->d,
+      vc_4stVectorRef(slave_ar_bits_size)->d,
+      vc_4stVectorRef(slave_ar_bits_len)->d,
+
+      vc_getScalar(slave_aw_valid),
+      vc_4stVectorRef(slave_aw_bits_addr)->d,
+      vc_4stVectorRef(slave_aw_bits_id)->d,
+      vc_4stVectorRef(slave_aw_bits_size)->d,
+      vc_4stVectorRef(slave_aw_bits_len)->d,
+
+      vc_getScalar(slave_w_valid),
+      vc_4stVectorRef(slave_w_bits_strb)->d,
+      slave_w_data,
+      vc_getScalar(slave_w_bits_last),
+
+      vc_getScalar(slave_r_ready),
+      vc_getScalar(slave_b_ready)
+    );
+  } catch(std::exception &e) {
+    vcs_fin = true;
+    exitcode = EXIT_FAILURE;
+    fprintf(stderr, "Exception in tick(): %s\n", e.what());
+  }
+
+  vc_putScalar(slave_aw_ready, slave->aw_ready());
+  vc_putScalar(slave_ar_ready, slave->ar_ready());
+  vc_putScalar(slave_w_ready, slave->w_ready());
+  vc_putScalar(slave_b_valid, slave->b_valid());
+  vc_putScalar(slave_r_valid, slave->r_valid());
+  vc_putScalar(slave_r_bits_last, slave->r_last());
+
   vec32 sd[SLAVE_DATA_SIZE];
   sd[0].c = 0;
   sd[0].d = slave->b_id();
@@ -179,41 +218,11 @@ void tick(
   }
   vc_put4stVector(slave_r_bits_data, sd);
 
-  master->tick(
-    main_time <= 5,
-    vc_getScalar(master_ar_ready),
-    vc_getScalar(master_aw_ready),
-    vc_getScalar(master_w_ready),
-    vc_4stVectorRef(master_r_bits_id)->d,
-    master_r_data,
-    vc_getScalar(master_r_bits_last),
-    vc_getScalar(master_r_valid),
-    vc_4stVectorRef(master_b_bits_id)->d,
-    vc_getScalar(master_b_valid)
-  );
-
-  slave->tick(
-    main_time <= 5,
-    vc_getScalar(slave_ar_valid),
-    vc_4stVectorRef(slave_ar_bits_addr)->d,
-    vc_4stVectorRef(slave_ar_bits_id)->d,
-    vc_4stVectorRef(slave_ar_bits_size)->d,
-    vc_4stVectorRef(slave_ar_bits_len)->d,
-
-    vc_getScalar(slave_aw_valid),
-    vc_4stVectorRef(slave_aw_bits_addr)->d,
-    vc_4stVectorRef(slave_aw_bits_id)->d,
-    vc_4stVectorRef(slave_aw_bits_size)->d,
-    vc_4stVectorRef(slave_aw_bits_len)->d,
-
-    vc_getScalar(slave_w_valid),
-    vc_4stVectorRef(slave_w_bits_strb)->d,
-    slave_w_data,
-    vc_getScalar(slave_w_bits_last),
-  
-    vc_getScalar(slave_r_ready),
-    vc_getScalar(slave_b_ready)
-  );
+  vc_putScalar(vexit, vcs_fin);
+  vec32 v;
+  v.c = 0;
+  v.d = exitcode;
+  vc_put4stVector(vexitcode, &v);
 
   if (!vcs_fin) host->switch_to();
 }
@@ -327,7 +336,6 @@ void tick() {
   if (tfp) tfp->dump(main_time);
 #endif // VM_TRACE
   main_time++;
-
 }
 
 #endif
@@ -351,9 +359,7 @@ void handle_sigterm(int sig) {
   finish();
 }
 
-simif_emul_t::~simif_emul_t() {
-  ::finish();
-}
+simif_emul_t::~simif_emul_t() { }
 
 void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   // Parse args
@@ -416,32 +422,49 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 
 int simif_emul_t::finish() {
   exitcode = simif_t::finish();
-#ifdef VCS
-  vcs_fin = true;
-  target->switch_to();
-#endif
+  ::finish();
   return exitcode;
 }
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
-  master->write_req(addr, &data);
-  while(!master->write_resp()) {
+  try {
+    master->write_req(addr, &data);
+    while(!master->write_resp()) {
 #ifdef VCS
+      target->switch_to();
+#else
+      ::tick();
+#endif
+    }
+  } catch(std::exception &e) {
+#ifdef VCS
+    expect(false, e.what());
+    vcs_fin = true;
     target->switch_to();
 #else
-    ::tick();
+    throw e;
 #endif
   }
 }
 
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
-  master->read_req(addr);
-  while(!master->read_resp(&data)) {
+  try {
+    master->read_req(addr);
+    while(!master->read_resp(&data)) {
 #ifdef VCS
+      target->switch_to();
+#else
+      ::tick();
+#endif
+    }
+  } catch(std::exception &e) {
+#ifdef VCS
+    expect(false, e.what());
+    vcs_fin = true;
     target->switch_to();
 #else
-    ::tick();
+    throw e;
 #endif
   }
   return data;

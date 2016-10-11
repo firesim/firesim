@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
-#include <cassert>
+#include <stdexcept>
 
 void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
 {
@@ -30,7 +30,8 @@ std::vector<char> mm_t::read(uint64_t addr)
 
 void mm_t::init(size_t sz, int wsz, int lsz)
 {
-  assert(wsz > 0 && lsz > 0 && (lsz & (lsz-1)) == 0 && lsz % wsz == 0);
+  if (!(wsz > 0 && lsz > 0 && (lsz & (lsz-1)) == 0 && lsz % wsz == 0))
+    throw std::logic_error("precondition error in mm_t::init");
   word_size = wsz;
   line_size = lsz;
   data = new uint8_t[sz];
@@ -100,7 +101,8 @@ void mm_magic_t::tick(
     if (store_count == 0) {
       store_inflight = false;
       bresp.push(store_id);
-      assert(w_last);
+      if (!w_last)
+        throw std::logic_error("store_count and w_last do not match in mm_magic_t::tick");
     }
   }
 
