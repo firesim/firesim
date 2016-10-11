@@ -381,9 +381,8 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 
   size_t memsize = 1 << 30;
   master = (mmio_t*) new mmio_t;
-  slave = (mm_t*) new mm_magic_t;
-  // slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
-  slave->init(memsize, MEM_DATA_BITS / 8, MEM_DATA_BITS / 8);
+  slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
+  slave->init(memsize, MEM_DATA_BITS / 8, 64);
 
   if (fast_loadmem && loadmem) {
     fprintf(stdout, "fast loadmem: %s\n", loadmem);
