@@ -3,6 +3,7 @@
 
 #include "simif.h"
 #include "mm.h"
+#include "mm_dramsim2.h"
 #include "mmio.h"
 
 class simif_emul_t : public virtual simif_t
