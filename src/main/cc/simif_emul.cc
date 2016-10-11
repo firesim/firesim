@@ -402,10 +402,10 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     target->switch_to(); 
 #else
   top = new VZynqShim;
-  tfp = new VerilatedVcdC;
   Verilated::commandArgs(argc, argv); // Remember args
 
 #if VM_TRACE                         // If emul was invoked with --trace
+  tfp = new VerilatedVcdC;
   Verilated::traceEverOn(true);      // Verilator must compute traced signals
   VL_PRINTF("Enabling waves...\n");
   top->trace(tfp, 99);               // Trace 99 levels of hierarchy
