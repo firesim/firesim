@@ -8,7 +8,7 @@ import firrtl.passes.bitWidth
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
 import firrtl.Utils.{sub_type, field_type, create_exps}
-import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, LinkedHashSet}
+import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
 private[passes] object Utils {

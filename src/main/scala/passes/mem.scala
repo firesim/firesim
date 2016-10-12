@@ -1,10 +1,6 @@
 package strober
 package passes
 
-import firrtl._
-import firrtl.Utils.error
-import scala.collection.mutable.ArrayBuffer
-
 case class MemConf(
   name: String, 
   depth: BigInt,
@@ -31,7 +27,7 @@ object MemConfReader {
       case "width" :: value :: tail => parse(map + (Width -> value), tail)
       case "ports" :: value :: tail => parse(map + (Ports -> value), tail)
       case "mask_gran" :: value :: tail => parse(map + (MaskGran -> value), tail)
-      case field :: tail => error("Unknown field " + field)
+      case field :: tail => firrtl.Utils.error(s"Unknown field $field")
     }
     io.Source.fromFile(conf).getLines.toSeq map { line =>
       val map = parse(Map[ConfField, String](), (line split " ").toList)
@@ -45,7 +41,7 @@ object MemConfReader {
   }
 }
 
-class EmitMemFPGAVerilog(writer: java.io.Writer, conf: java.io.File) extends Transform {
+class EmitMemFPGAVerilog(writer: java.io.Writer, conf: java.io.File) extends firrtl.Transform {
   private val tab = " "
   private def emit(conf: MemConf) {
     val addrWidth = chisel3.util.log2Up(conf.depth) max 1
@@ -130,9 +126,9 @@ endmodule""".format(
     )
   }
 
-  def execute(c: ir.Circuit, map: Annotations.AnnotationMap) = {
+  def execute(c: firrtl.ir.Circuit, map: firrtl.Annotations.AnnotationMap) = {
     MemConfReader(conf) foreach emit
-    TransformResult(c)
+    firrtl.TransformResult(c)
   }
 }
 
