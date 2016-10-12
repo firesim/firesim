@@ -112,14 +112,14 @@ int simif_t::finish() {
 
   if (profile) {
     double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
-    fprintf(stdout, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %zu\n",
+    fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %zu\n",
                     sim_time, (double) sample_time / 1000000.0, sample_count);
   }
 
-  fprintf(stdout, "Runs %" PRIu64 " cycles\n", cycles());
-  fprintf(stdout, "[%s] %s Test", ok ? "PASS" : "FAIL", TARGET_NAME);
+  fprintf(stderr, "Runs %" PRIu64 " cycles\n", cycles());
+  fprintf(stderr, "[%s] %s Test", ok ? "PASS" : "FAIL", TARGET_NAME);
   if (!ok) { fprintf(stdout, " at cycle %" PRIu64, fail_t); }
-  fprintf(stdout, "\nSEED: %ld\n", seed);
+  fprintf(stderr, "\nSEED: %ld\n", seed);
 
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
