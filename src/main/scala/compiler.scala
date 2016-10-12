@@ -104,7 +104,6 @@ object StroberCompiler {
       "TRACE_MAX_LEN"     -> sim.traceMaxLen,
       "CHANNEL_SIZE"      -> chisel3.util.log2Up(c.master.nastiXDataBits/8),
       "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
-      "ENABLE_SNAPSHOT"   -> (if (sim.enableSnapshot) 1 else 0),
 
       "HOST_RESET_ADDR"   -> ZynqCtrlSignals.HOST_RESET.id,
       "SIM_RESET_ADDR"    -> ZynqCtrlSignals.SIM_RESET.id,
@@ -121,6 +120,7 @@ object StroberCompiler {
     csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
     csb append "#define __%s_H\n".format(targetName.toUpperCase)
     csb append "static const char* const TARGET_NAME = \"%s\";\n".format(targetName)
+    if (sim.enableSnapshot) csb append "#define ENABLE_SNAPSHOT\n"
     consts map dump addString csb
     csb append "// IDs assigned to I/Os\n"
     c.IN_ADDRS map dumpId addString csb
