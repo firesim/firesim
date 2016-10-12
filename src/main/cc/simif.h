@@ -27,9 +27,8 @@ class simif_t
     virtual void load_mem(std::string filename);
 
     // simulation information
-    const std::string prefix;
     bool log;
-    bool ok;
+    bool pass;
     uint64_t t;
     uint64_t fail_t;
     size_t trace_count;
@@ -39,19 +38,6 @@ class simif_t
     // maps 
     uint32_t poke_map[POKE_SIZE];
     uint32_t peek_map[PEEK_SIZE];
-
-    // sample information
-    sample_t** samples;
-    size_t sample_num;
-    size_t last_sample_id;
-    sample_t* last_sample;
-
-    // profile information    
-    bool profile;
-    size_t sample_count;
-    uint64_t sample_time;
-    uint64_t sim_start_time;
-    std::vector<std::string> args;
 
   protected:
     // channel communication
@@ -63,8 +49,6 @@ class simif_t
     virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = false);
     virtual int finish();
     void step(size_t n);
-    sample_t* read_snapshot();
-    sample_t* read_traces(sample_t* s);
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
@@ -78,7 +62,7 @@ class simif_t
     }
 
     inline void poke(size_t id, biguint_t& value) {
-      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
+      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.c_str());
       for (size_t off = 0 ; off < INPUT_CHUNKS[id] ; off++) {
         poke_map[id+off] = value[off];
       }
@@ -86,7 +70,7 @@ class simif_t
 
     inline void peek(size_t id, biguint_t& value) {
       value = biguint_t(peek_map+id, OUTPUT_CHUNKS[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.c_str());
     }
 
     inline bool expect(size_t id, uint32_t expected) {
@@ -102,14 +86,14 @@ class simif_t
       peek(id, value);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
-        TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(), pass ? "PASS" : "FAIL");
+        TARGET_NAME, OUTPUT_NAMES[id], value.c_str(), expected.c_str(), pass ? "PASS" : "FAIL");
       return expect(pass, NULL);
     }
 
     inline bool expect(bool pass, const char *s) {
       if (log && s) fprintf(stderr, "* %s : %s *\n", s, pass ? "PASS" : "FAIL");
-      if (ok && !pass) fail_t = t;
-      ok &= pass;
+      if (this->pass && !pass) fail_t = t;
+      this->pass &= pass;
       return pass;
     }
 
@@ -136,7 +120,26 @@ class simif_t
       write(TRACELEN_ADDR, len);
     }
     inline size_t get_tracelen() { return trace_len; }
-    uint64_t rand_next(uint64_t limit) { return rand() % limit; } 
+    uint64_t rand_next(uint64_t limit) { return rand() % limit; }
+
+#ifdef ENABLE_SNAPSHOT
+  private:
+    // sample information
+    sample_t** samples;
+    size_t sample_num;
+    size_t last_sample_id;
+    sample_t* last_sample;
+
+    // profile information
+    bool profile;
+    size_t sample_count;
+    uint64_t sample_time;
+    uint64_t sim_start_time;
+
+  protected:
+    sample_t* read_snapshot();
+    sample_t* read_traces(sample_t* s);
+#endif
 };
 
 #endif // __SIMIF_H
