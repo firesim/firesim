@@ -239,3 +239,12 @@ std::ostream& operator<<(std::ostream &os, const biguint_t& value) {
   os << std::setfill(' ') << std::setw(0) << std::dec;
   return os;
 }
+
+std::istream& operator>>(std::istream &is, biguint_t& value) {
+  // assumes hex
+  std::string hex;
+  is >> hex;
+  delete[] value.data;
+  value.init_hex(hex.c_str());
+  return is;
+}
