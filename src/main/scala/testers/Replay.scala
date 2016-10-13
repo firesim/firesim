@@ -12,7 +12,7 @@ abstract class Replay[+T <: Module](
 
 class RTLReplay[+T <: Module](
     c: T,
-    sampleFile: File = ReplayCompiler.context.sample,
+    sampleFile: File,
     logFile: Option[File] = None) extends Replay(c, sampleFile, logFile) {
   private val samples = Sample(sampleFile)
   // Replay samples
@@ -52,7 +52,7 @@ class RTLReplay[+T <: Module](
 /*** Gate-level simulation has different timing models ***/
 class GateLevelReplay[+T <: Module](
     c: T,
-    sampleFile: File = ReplayCompiler.context.sample,
+    sampleFile: File,
     // matchFile: File,
     logFile: Option[File] = None) extends Replay(c, sampleFile, logFile) {
   private val samples = Sample(sampleFile)

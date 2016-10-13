@@ -140,22 +140,25 @@ sample_t::~sample_t() {
 }
 
 
-poke_t::poke_t(const std::string &node_, uint32_t* value_, size_t size_):
-    node(node_.c_str()), size(size_) {
+poke_t::poke_t(const std::string &node_, uint32_t* const value_, size_t size_):
+    node(node_.c_str()), size(size_), value(new uint32_t[size]) {
   assert(size > 0);
-  value = new uint32_t[size];
   memcpy(value, value_, size*sizeof(uint32_t));
 }
 
-expect_t::expect_t(const std::string &node_, uint32_t* value_, size_t size_):
-    node(node_.c_str()), size(size_) {
+expect_t::expect_t(const std::string &node_, uint32_t* const value_, size_t size_):
+    node(node_.c_str()), size(size_), value(new uint32_t[size]) {
   assert(size > 0);
-  value = new uint32_t[size];
   memcpy(value, value_, size*sizeof(uint32_t));
 }
 
-void dump_f(FILE *file, 
-    SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size) {
+void dump_f(
+    FILE *file, 
+    SAMPLE_INST_TYPE type,
+    const char* const node,
+    const uint32_t* const value,
+    size_t size) 
+{
   fprintf(file, "%u %s ", type, node);
   fprintf(file, "%x", value[size-1]);
   for (int i = size - 2 ; i >= 0 ; i--) {
@@ -164,8 +167,13 @@ void dump_f(FILE *file,
   fprintf(file, "\n");
 }
 
-std::ostream& dump_s(std::ostream &os, 
-    SAMPLE_INST_TYPE type, const char* node, uint32_t* value, size_t size) {
+std::ostream& dump_s(
+    std::ostream &os, 
+    SAMPLE_INST_TYPE type,
+    const char* const node,
+    const uint32_t* const value,
+    size_t size)
+{
   os << type << " " << node << " ";
   os << std::hex;
   os << value[size-1];
