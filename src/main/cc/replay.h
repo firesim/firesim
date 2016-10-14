@@ -27,6 +27,7 @@ public:
         log = true;
       }
     }
+    take_steps(5); // reset 5 cycles
   }
  
   virtual int finish() {
@@ -128,14 +129,14 @@ private:
     file.close();
   }
 
-  virtual void take_step(size_t) = 0;
+  virtual void take_steps(size_t) = 0;
   virtual void put_value(T& sig, biguint_t& data, bool force = false) = 0;
   virtual biguint_t get_value(T& sig) = 0;
 
   inline void step(size_t n) {
     cycles += n;
     if (log) std::cerr << " * STEP " << n << " -> " << cycles << " *" << std::endl;
-    take_step(n);
+    take_steps(n);
   }
 
   inline void force(const std::string& node, biguint_t& data) {
