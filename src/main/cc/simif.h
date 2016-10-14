@@ -126,9 +126,10 @@ class simif_t
   private:
     // sample information
     sample_t** samples;
+    sample_t* last_sample;
     size_t sample_num;
     size_t last_sample_id;
-    sample_t* last_sample;
+    std::string sample_file;
 
     // profile information
     bool profile;
