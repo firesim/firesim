@@ -12,6 +12,7 @@ simif_t::simif_t() {
   srand(seed);
 
 #ifdef ENABLE_SNAPSHOT
+  sample_file = std::string(TARGET_NAME) + ".sample";
   sample_num = 30; // SAMPLE_NUM;
   last_sample = NULL;
   last_sample_id = 0;
@@ -47,8 +48,7 @@ void simif_t::load_mem(std::string filename) {
 void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
-  std::string prefix = TARGET_NAME;
-  sample_t::init_chains(prefix + ".chain");
+  sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
 #endif
 
   for (size_t k = 0 ; k < 5 ; k++) {
@@ -76,6 +76,9 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
       fprintf(stdout, "[loadmem] done\n");
     }
 #ifdef ENABLE_SNAPSHOT
+    if (arg.find("+sample=") == 0) {
+      sample_file = arg.c_str()+8;
+    }
     if (arg.find("+samplenum=") == 0) {
       sample_num = strtol(arg.c_str()+11, NULL, 10);
     }
@@ -99,10 +102,8 @@ int simif_t::finish() {
   }
 
   // dump samples
-  std::string prefix = TARGET_NAME;
-  std::string filename = prefix + ".sample";
   // std::ofstream file(filename.c_str());
-  FILE *file = fopen(filename.c_str(), "w");
+  FILE *file = fopen(sample_file.c_str(), "w");
   for (size_t i = 0 ; i < sample_num ; i++) {
     if (samples[i] != NULL) {
       // file << *samples[i];
