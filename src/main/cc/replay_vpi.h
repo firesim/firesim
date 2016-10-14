@@ -26,7 +26,7 @@ private:
   void get_value(vpiHandle& sig, std::string& value);
   virtual void put_value(vpiHandle& sig, biguint_t& data, bool force=false);
   virtual biguint_t get_value(vpiHandle& sig);
-  virtual void take_step(size_t n);
+  virtual void take_steps(size_t n);
 
   inline void add_signal(vpiHandle& sig_handle, std::string& wire) {
     size_t id = replay_data.signals.size();

@@ -117,7 +117,7 @@ biguint_t replay_vpi_t::get_value(vpiHandle& sig) {
   return biguint_t(value.c_str());
 }
 
-void replay_vpi_t::take_step(size_t n) {
+void replay_vpi_t::take_steps(size_t n) {
   for (size_t i = 0 ; i < n ; i++)
     target.switch_to();
 }
