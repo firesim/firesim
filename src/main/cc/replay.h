@@ -5,6 +5,7 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include "sample.h"
 
 template<class T> struct replay_data_t {
@@ -47,16 +48,16 @@ public:
           step(p->n); 
         }
         if (load_t* p = dynamic_cast<load_t*>(cmd)) {
-          biguint_t& value = *(p->value);
-          poke(p->node, value);
+          biguint_t& data = *(p->value);
+          load(p->node, data);
         }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-          biguint_t value(p->value, p->size);
-          poke(p->node, value);
+          biguint_t data(p->value, p->size);
+          poke(p->node, data);
         }
         if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-          biguint_t value(p->value, p->size);
-          pass &= expect(p->node, value);
+          biguint_t expected(p->value, p->size);
+          pass &= expect(p->node, expected);
         }
       }
     }
@@ -133,24 +134,24 @@ private:
 
   inline void step(size_t n) {
     cycles += n;
-    if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, cycles);
+    if (log) std::cerr << " * STEP " << n << " -> " << cycles << " *" << std::endl;
     take_step(n);
   }
 
   inline void force(const std::string& node, biguint_t& data) {
-    if (log) fprintf(stderr, "* FORCE %s <- 0x%s *\n", node.c_str(), data.c_str());
+    if (log) std::cerr << " * FORCE " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, true);
   }
 
   inline void load(const std::string& node, biguint_t& data) {
-    if (log) fprintf(stderr, "* LOAD %s <- 0x%s *\n", node.c_str(), data.c_str());
+    if (log) std::cerr << " * LOAD " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, force);
+    put_value(replay_data.signals[id], data, false);
   }
 
   inline void poke(const std::string& node, biguint_t& data) {
-    if (log) fprintf(stderr, "* POKE %s <- 0x%s *\n", node.c_str(), data.c_str());
+    if (log) std::cerr << " * POKE " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
@@ -159,8 +160,10 @@ private:
     size_t id = replay_data.signal_map[node];
     biguint_t value = get_value(replay_data.signals[id]);
     bool pass = value == expected || cycles <= 1;
-    if (log && cycles > 1) fprintf(stderr, "* EXPECT %s -> 0x%s ?= 0x%s : %s *\n",
-      node.c_str(), value.c_str(), expected.c_str(), pass ? "PASS" : "FAIL");
+    if (log && cycles > 1) {
+      std::cerr << " * EXPECT " << node << " -> 0x" << value << " ?= 0x" << expected;
+      std::cerr << (pass ? " : PASS" : " : FAIL") << " *" << std::endl;
+    }
     return pass;
   }
 };
