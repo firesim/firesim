@@ -44,6 +44,7 @@ public:
     try {
       for (size_t k = 0 ; k < samples.size() ; k++) {
         sample_t *sample = samples[k];
+        std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
         for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
           sample_inst_t* cmd = sample->get_cmds()[i];
           if (step_t* p = dynamic_cast<step_t*>(cmd)) {
