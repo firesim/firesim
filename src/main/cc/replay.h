@@ -41,26 +41,33 @@ public:
   }
 
   virtual void replay() {
-    for (size_t k = 0 ; k < samples.size() ; k++) {
-      sample_t *sample = samples[k];
-      for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
-        sample_inst_t* cmd = sample->get_cmds()[i];
-        if (step_t* p = dynamic_cast<step_t*>(cmd)) {
-          step(p->n); 
-        }
-        if (load_t* p = dynamic_cast<load_t*>(cmd)) {
-          biguint_t& data = *(p->value);
-          load(p->node, data);
-        }
-        if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-          biguint_t data(p->value, p->size);
-          poke(p->node, data);
-        }
-        if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-          biguint_t expected(p->value, p->size);
-          pass &= expect(p->node, expected);
+    try {
+      for (size_t k = 0 ; k < samples.size() ; k++) {
+        sample_t *sample = samples[k];
+        for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
+          sample_inst_t* cmd = sample->get_cmds()[i];
+          if (step_t* p = dynamic_cast<step_t*>(cmd)) {
+            step(p->n);
+          }
+          if (load_t* p = dynamic_cast<load_t*>(cmd)) {
+            biguint_t& data = *(p->value);
+            std::string signal = p->idx < 0 ? p->node :
+              p->node + "[" + std::to_string(p->idx) + "]";
+            load(signal, data);
+          }
+          if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
+            biguint_t data(p->value, p->size);
+            poke(p->node, data);
+          }
+          if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
+            biguint_t expected(p->value, p->size);
+            pass &= expect(p->node, expected);
+          }
         }
       }
+    } catch(std::exception& e) {
+      pass = false;
+      std::cerr << e.what() << std::endl;
     }
     is_exit = true;
   }
@@ -139,25 +146,34 @@ private:
     take_steps(n);
   }
 
+  inline void check_signal(const std::string& signal) {
+    if (replay_data.signal_map.find(signal) == replay_data.signal_map.end())
+      throw std::runtime_error(std::string("Signal map doesn't contain ") + signal);
+  }
+
   inline void force(const std::string& node, biguint_t& data) {
+    check_signal(node);
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, true);
   }
 
   inline void load(const std::string& node, biguint_t& data) {
+    check_signal(node);
     if (log) std::cerr << " * LOAD " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
 
   inline void poke(const std::string& node, biguint_t& data) {
+    check_signal(node);
     if (log) std::cerr << " * POKE " << node << " <- 0x" << data << " *" << std::endl;
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
 
   inline bool expect(const std::string& node, biguint_t& expected) {
+    check_signal(node);
     size_t id = replay_data.signal_map[node];
     biguint_t value = get_value(replay_data.signals[id]);
     bool pass = value == expected || cycles <= 1;
