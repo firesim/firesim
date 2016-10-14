@@ -178,9 +178,8 @@ public:
     return s.dump(os);
   }
 
-  inline const std::vector<sample_inst_t*>& get_cmds() const {
-    return cmds;
-  }
+  inline const uint64_t get_cycle() const { return cycle; }
+  inline const std::vector<sample_inst_t*>& get_cmds() const { return cmds; }
 
 #ifdef ENABLE_SNAPSHOT
   void dump_forces();
