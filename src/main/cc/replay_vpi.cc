@@ -93,9 +93,12 @@ void replay_vpi_t::probe_signals() {
 
 void replay_vpi_t::put_value(vpiHandle& sig, std::string& value, bool force) {
   s_vpi_value value_s;
+  s_vpi_time time_s;
   value_s.format    = vpiHexStrVal;
   value_s.value.str = (PLI_BYTE8*) value.c_str();
-  vpi_put_value(sig, &value_s, NULL, force ? vpiForceFlag : vpiNoDelay);
+  time_s.type       = vpiScaledRealTime;
+  time_s.real       = 0.0;
+  vpi_put_value(sig, &value_s, &time_s, force ? vpiForceFlag : vpiInertialDelay);
   if (force) forces.push(sig);
 }
 
