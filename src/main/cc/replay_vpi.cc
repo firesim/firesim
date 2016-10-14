@@ -151,6 +151,22 @@ PLI_INT32 tick_calltf(PLI_BYTE8 *user_data) {
   return 0;
 }
 
+PLI_INT32 sim_end_cb(p_cb_data cb_data) {
+  replay->tick();
+  return 0;
+}
+
+PLI_INT32 tick_compiletf(PLI_BYTE8 *user_data) {
+  s_cb_data data_s;
+  data_s.reason    = cbEndOfSimulation;
+  data_s.cb_rtn    = sim_end_cb;
+  data_s.obj       = NULL;
+  data_s.time      = NULL;
+  data_s.value     = NULL;
+  data_s.user_data = NULL;
+  vpi_free_object(vpi_register_cb(&data_s));
+}
+
 int main(int argc, char** argv) {
   replay = new replay_vpi_t;
   replay->init(argc, argv);
