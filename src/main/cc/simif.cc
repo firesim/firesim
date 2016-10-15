@@ -185,7 +185,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(id+off);
       }
-      if (sample) sample->add_cmd(new expect_t(it->first, data, chunk));
+      if (sample && i > 0) sample->add_cmd(new expect_t(it->first, data, chunk));
       delete[] data;
     }
   }

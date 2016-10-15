@@ -92,6 +92,7 @@ private:
       exit(EXIT_FAILURE);
     }
     std::string line;
+    size_t steps = 0;
     sample_t* sample = NULL;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
@@ -105,6 +106,7 @@ private:
           iss >> dummy >> cycles;
           sample = new sample_t(cycles);
           samples.push_back(sample);
+          steps = 0;
           break;
         case LOAD:
           pvalue = new biguint_t;
@@ -124,10 +126,11 @@ private:
         case STEP:
           iss >> n;
           sample->add_cmd(new step_t(n));
+          steps += n;
           break;
         case EXPECT:
           iss >> signal >> value;
-          sample->add_cmd(
+          if (steps > 1) sample->add_cmd(
             new expect_t(signal, value.get_data(), value.get_size()));
           break;
         default:
@@ -178,7 +181,7 @@ private:
     size_t id = replay_data.signal_map[node];
     biguint_t value = get_value(replay_data.signals[id]);
     bool pass = value == expected || cycles <= 1;
-    if (log && cycles > 1) {
+    if (log) {
       std::cerr << " * EXPECT " << node << " -> 0x" << value << " ?= 0x" << expected;
       std::cerr << (pass ? " : PASS" : " : FAIL") << " *" << std::endl;
     }
