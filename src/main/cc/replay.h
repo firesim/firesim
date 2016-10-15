@@ -27,7 +27,6 @@ public:
         log = true;
       }
     }
-    take_steps(5); // reset 5 cycles
   }
  
   virtual int finish() {
@@ -40,11 +39,19 @@ public:
     return exitcode();
   }
 
+  void reset(size_t n) {
+    biguint_t one = 1;
+    size_t id = replay_data.signal_map["reset"];
+    put_value(replay_data.signals[id], one, false);
+    take_steps(n);
+  }
+
   virtual void replay() {
     try {
       for (size_t k = 0 ; k < samples.size() ; k++) {
         sample_t *sample = samples[k];
         std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
+        reset(5);
         for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
           sample_inst_t* cmd = sample->get_cmds()[i];
           if (step_t* p = dynamic_cast<step_t*>(cmd)) {
