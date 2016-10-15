@@ -36,7 +36,7 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   val atLeastTwo = full || enq_ptr - deq_ptr >= UInt(2)
   do_flow := empty && io.deq.ready
 
-  val ram = SeqMem(p(TraceMaxLen), data)
+  val ram = SeqMem(io.entries, data)
   when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
 
   val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
@@ -46,6 +46,12 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
   io.enq.ready := !full
   io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
+
+  // for debugging
+  val counts = RegInit(UInt(0, 32))
+  when (do_enq =/= do_deq) {
+    counts := Mux(do_enq, counts + UInt(1), counts - UInt(1))
+  }
 }
 
 class ChannelIO(w: Int)(implicit p: Parameters) 
