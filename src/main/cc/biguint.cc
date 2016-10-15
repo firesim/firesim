@@ -226,17 +226,14 @@ bool biguint_t::operator==(const biguint_t &that) {
   return yes;
 }
 
-
 std::ostream& operator<<(std::ostream &os, const biguint_t& value) {
   // prints hex!
   assert(value.size > 0);
-  os << std::hex;
-  os << value.data[value.size-1];
-  os << std::setfill('0') << std::setw(HEX_WIDTH);
+  os << std::hex << value.data[value.size-1];
   for (int i = value.size - 2 ; i >= 0 ; i--) {
-    os << value.data[i];
+    os << std::hex << std::setfill('0') << std::setw(HEX_WIDTH) << value.data[i];
   }
-  os << std::setfill(' ') << std::setw(0) << std::dec;
+  os << std::dec << std::setfill(' ') << std::setw(0);
   return os;
 }
 
