@@ -10,10 +10,10 @@ biguint_t::biguint_t(const char* v, size_t base) {
   const char* value;
   strncpy(prefix, v, 2);
   prefix[2] = '\0';
-  if (strcmp(prefix, "0x") == 0) {
+  if (strcmp(prefix, "0x") == 0 && (base == 0 || base == 16)) {
     value = &v[2];
     base = 16;
-  } else if(strcmp(prefix, "0b") == 0) {
+  } else if(strcmp(prefix, "0b") == 0 && (base == 0 || base == 2)) {
     value = &v[2];
     base = 2;
   } else {
