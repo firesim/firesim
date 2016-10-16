@@ -75,6 +75,9 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
       load_mem(filename);
       fprintf(stdout, "[loadmem] done\n");
     }
+    if (arg.find("+seed=") == 0) {
+      seed = strtoll(arg.c_str()+6, NULL, 10);
+    }
 #ifdef ENABLE_SNAPSHOT
     if (arg.find("+sample=") == 0) {
       sample_file = arg.c_str()+8;
