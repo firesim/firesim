@@ -21,6 +21,7 @@ static int exitcode;
 // TODO: generalize tick
 #ifdef VCS
 
+static bool is_reset = false;
 static bool vcs_fin = false;
 static context_t *host = NULL;
 static context_t *target = NULL;
@@ -97,9 +98,6 @@ void tick(
   vc_handle slave_b_bits_resp,
   vc_handle slave_b_bits_id
 ) {
-  main_time++;
-  vc_putScalar(reset, main_time <= 5);
-
   uint32_t master_r_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
     master_r_data[i] = vc_4stVectorRef(master_r_bits_data)[i].d;
@@ -153,7 +151,7 @@ void tick(
 
   try {
     master->tick(
-      main_time <= 5,
+      is_reset,
       vc_getScalar(master_ar_ready),
       vc_getScalar(master_aw_ready),
       vc_getScalar(master_w_ready),
@@ -166,7 +164,7 @@ void tick(
     );
 
     slave->tick(
-      main_time <= 5,
+      is_reset,
       vc_getScalar(slave_ar_valid),
       vc_4stVectorRef(slave_ar_bits_addr)->d,
       vc_4stVectorRef(slave_ar_bits_id)->d,
@@ -224,6 +222,9 @@ void tick(
   v.c = 0;
   v.d = exitcode;
   vc_put4stVector(vexitcode, &v);
+
+  main_time++;
+  vc_putScalar(reset, is_reset);
 
   if (!vcs_fin) host->switch_to();
 }
@@ -402,8 +403,10 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   host = context_t::current();
   target = new context_t;
   target->init(vcs_main, argc, argv);
+  is_reset = true;
   for (size_t i = 0 ; i < 10 ; i++)
     target->switch_to(); 
+  is_reset = false;
 #else
   top = new VZynqShim;
   Verilated::commandArgs(argc, argv); // Remember args
