@@ -1,6 +1,5 @@
 package strober
 
-import chisel3.iotesters
 import firrtl.Annotations.{AnnotationMap, TransID}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
@@ -9,7 +8,6 @@ import java.io.{File, FileWriter}
 
 private class StroberCompilerContext {
   var dir = chisel3.Driver.createTempDirectory("test-outs")
-  var sampleNum = 30
   val wrappers = HashSet[String]()
   val params = HashMap[String, cde.Parameters]()
   val shims = ArrayBuffer[ZynqShim[_]]()
@@ -47,7 +45,7 @@ object StroberCompiler {
   private[strober] def context = contextVar.value.getOrElse (
     throw new Exception("StroberCompiler should be properly used"))
 
-  private def dumpHeader(c: ZynqShim[_]) {
+  private def dumpHeader(dir: File)(c: ZynqShim[_]) {
     val sim = c.sim match { case sim: SimWrapper[_] => sim }
     val targetName = sim.target.name
     val nameMap = (sim.io.inputs ++ sim.io.outputs).toMap
@@ -122,8 +120,8 @@ object StroberCompiler {
     consts map vdump addString vsb
     vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
 
-    val ch = new FileWriter(new File(context.dir, s"${targetName}-const.h"))
-    val vh = new FileWriter(new File(context.dir, s"${targetName}-const.vh"))
+    val ch = new FileWriter(new File(dir, s"${targetName}-const.h"))
+    val vh = new FileWriter(new File(dir, s"${targetName}-const.vh"))
     try {
       ch write csb.result
       vh write vsb.result
@@ -144,93 +142,25 @@ object StroberCompiler {
     context.shims += shim
   }
 
-  private def parseArgs(args: List[String]): Unit = args match {
-    case Nil =>
-    case "--targetDir" :: value :: tail =>
-      context.dir = new File(value)
-      context.dir.mkdirs
-    case "--sampleNum" :: value :: tail =>
-      context.sampleNum = value.toInt
-    case head :: tail => parseArgs(tail)
-  }
-
-  private def transform[T <: chisel3.Module](w: => T) = {
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => w))
-    val conf = new File(context.dir, s"${chirrtl.main}.conf")
-    val annotations = new AnnotationMap(Seq(
-      firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
-    // val writer = new FileWriter(new File("debug.ir"))
-    val writer = new java.io.StringWriter
-    val result = new StroberCompiler compile (chirrtl, annotations, writer)
-    // writer.close
-    // firrtl.Parser.parse(writer.toString)
-    (result.circuit, conf)
-  }
-
-  private def compile(circuit: firrtl.ir.Circuit, conf: File): firrtl.ir.Circuit = {
-    // Dump meta data
-    context.shims foreach dumpHeader
-    // Compile Verilog
-    val annotations = new AnnotationMap(Nil)
-    val verilog = new FileWriter(new File(context.dir, s"${circuit.main}.v"))
-    val result = new VerilogCompiler(conf) compile (circuit, annotations, verilog)
-    verilog.close
-    result.circuit
-  }
-
-  def compile[T <: chisel3.Module](args: Array[String], w: => T): firrtl.ir.Circuit = {
+  def apply[T <: chisel3.Module](w: => T, dir: File)(implicit p: cde.Parameters) = {
     (contextVar withValue Some(new StroberCompilerContext)){
-      parseArgs(args.toList)
-      val (circuit, conf) = transform(w)
-      compile(circuit, conf)
-    }
-  }
+      context.dir = dir ; dir.mkdirs
+      val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => ZynqShim(w)))
+      val conf = new File(dir, s"${chirrtl.main}.conf")
+      val annotations = new AnnotationMap(Seq(
+        firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
+        firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
+      // val writer = new FileWriter(new File("debug.ir"))
+      val writer = new java.io.StringWriter
+      val strober = (new StroberCompiler compile (chirrtl, annotations, writer)).circuit
+      // writer.close
+      // firrtl.Parser.parse(writer.toString)
 
-  def compile[T <: chisel3.Module](args: Array[String],
-                                   w: => T,
-                                   backend: String = "verilator"): T = {
-    (contextVar withValue Some(new StroberCompilerContext)) {
-      parseArgs(args.toList)
-      val (circuit, conf) = transform(w)
-      compile(circuit, conf)
-      val testerArgs = Array("--targetDir", context.dir.toString,
-        "--backend", backend, "--genHarness", "--compile")
-      iotesters.chiselMain(testerArgs, () => w)
-    }
-  }
-
-  def apply[T <: chisel3.Module](args: Array[String],
-                                 w: => T,
-                                 backend: String = "verilator")
-                                 (tester: T => testers.StroberTester[T]): T = {
-    (contextVar withValue Some(new StroberCompilerContext)) {
-      parseArgs(args.toList)
-      val (circuit, conf) = transform(w)
-      val c = compile(circuit, conf)
-      val log = new File(context.dir, s"${c.main}.log")
-      val targs = Array(
-        "--targetDir", context.dir.toString,
-        "--logFile", log.toString,
-        "--backend", backend,
-        "--genHarness", "--compile", "--test" /*, "--vpdmem"*/)
-      iotesters.chiselMainTest(targs, () => w)(tester)
-    }
-  }
-
-  def test[T <: chisel3.Module](args: Array[String],
-                                w: => T,
-                                backend: String = "verilator",
-                                waveform: Option[File] = None)
-                               (tester: T => testers.StroberTester[T]) = {
-    (contextVar withValue Some(new StroberCompilerContext)) {
-      parseArgs(args.toList)
-      val (circuit, conf) = transform(w)
-      val c = compile(circuit, conf)
-      val cmd = new File(context.dir, backend match {
-        case "verilator" => s"V${c.main}" case _ => c.main
-      })
-      iotesters.Driver.run(() => w, cmd, waveform)(tester)
+      context.shims foreach dumpHeader(dir)
+      val verilog = new FileWriter(new File(dir, s"${strober.main}.v"))
+      val result = new VerilogCompiler(conf) compile (strober, annotations, verilog)
+      verilog.close
+      result
     }
   }
 }
