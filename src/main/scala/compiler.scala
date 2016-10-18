@@ -55,7 +55,7 @@ object StroberCompiler {
     def dump(arg: (String, Int)): String =
       s"#define ${arg._1} ${arg._2}\n"
     def dumpId(arg: (chisel3.Bits, Int)): String =
-      s"#define ${nameMap(arg._1)} ${arg._2 - c.CTRL_NUM}\n"
+      s"#define ${nameMap(arg._1)} ${arg._2}\n"
     def dumpNames(arg: (chisel3.Bits, Int)): Seq[String] = {
       val chunks = SimUtils.getChunks(arg._1)
       (0 until chunks) map (i => if (i == 0) "  \"%s\"".format(nameMap(arg._1)) else "  \"\"")
@@ -77,7 +77,6 @@ object StroberCompiler {
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
       "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
 
-      "CTRL_NUM"          -> c.CTRL_NUM,
       "POKE_SIZE"         -> c.ins.size,
       "PEEK_SIZE"         -> c.outs.size,
       "DAISY_WIDTH"       -> sim.daisyWidth,
@@ -85,11 +84,6 @@ object StroberCompiler {
       "CHANNEL_SIZE"      -> chisel3.util.log2Up(c.master.nastiXDataBits/8),
       "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
 
-      "HOST_RESET_ADDR"   -> ZynqCtrlSignals.HOST_RESET.id,
-      "SIM_RESET_ADDR"    -> ZynqCtrlSignals.SIM_RESET.id,
-      "STEP_ADDR"         -> ZynqCtrlSignals.STEP.id,
-      "DONE_ADDR"         -> ZynqCtrlSignals.DONE.id,
-      "TRACELEN_ADDR"     -> ZynqCtrlSignals.TRACELEN.id,
       "SRAM_RESTART_ADDR" -> c.SRAM_RESTART_ADDR,
       "MEM_AR_ADDR"       -> c.AR_ADDR,
       "MEM_AW_ADDR"       -> c.AW_ADDR,

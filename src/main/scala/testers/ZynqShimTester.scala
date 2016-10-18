@@ -29,33 +29,40 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   private val MAXI_w = new ChannelSource(c.io.master.w, (w: NastiWriteDataChannel, in: NastiWriteData) =>
     { _poke(w.data, in.data) ; _poke(w.last, in.last) ; _poke(w.strb, (BigInt(1) << w.nastiWStrobeBits) - 1) })
   private val MAXI_b = new ChannelSink(c.io.master.b, (b: NastiWriteResponseChannel) =>
-    new NastiWriteResp(_peek(b.id), _peek(b.resp)))
+    new NastiWriteResp(_peek(b.id), _peek(b.resp)), alwaysReady = false)
   private val MAXI_ar = new ChannelSource(c.io.master.ar, (ar: NastiReadAddressChannel, in: NastiReadAddr) =>
     { _poke(ar.id, in.id) ; _poke(ar.addr, in.addr) })
   private val MAXI_r = new ChannelSink(c.io.master.r, (r: NastiReadDataChannel) =>
-    new NastiReadData(_peek(r.id), _peek(r.data), _peek(r.last)))
+    new NastiReadData(_peek(r.id), _peek(r.data), _peek(r.last)), alwaysReady = false)
  
   private val addrOffset = chisel3.util.log2Up(c.master.nastiXAddrBits/8)
 
   protected[testers] def pokeChannel(addr: Int, data: BigInt) {
     MAXI_aw.inputs enqueue (new NastiWriteAddr(0, addr << addrOffset))
     MAXI_w.inputs enqueue (new NastiWriteData(data))
-    Predef.assert(_eventually(!MAXI_b.outputs.isEmpty), "no poke response")
+    MAXI_b.allocate
+    Predef.assert(_eventually(MAXI_b.noPendingResps), "no poke response")
     MAXI_b.outputs.clear
   }
 
   protected[testers] def peekChannel(addr: Int) = {
     MAXI_ar.inputs enqueue (new NastiReadAddr(0, addr << addrOffset))
-    Predef.assert(_eventually(!MAXI_r.outputs.isEmpty), "no peek value")
+    MAXI_r.allocate
+    Predef.assert(_eventually(MAXI_r.noPendingResps), "no peek value")
     MAXI_r.outputs.dequeue.data
   }
 
   override def setTraceLen(len: Int) { 
     super.setTraceLen(len)
-    pokeChannel(ZynqCtrlSignals.TRACELEN.id, len)
+    writeCR("EmulationMaster", "TRACELEN", len)
   }
 
   def writeCR(w: Widget, crName: String, value: BigInt){
+    val addr = c.getCRAddr(w, crName)
+    pokeChannel(addr, value)
+  }
+
+  def writeCR(w: String, crName: String, value: BigInt){
     val addr = c.getCRAddr(w, crName)
     pokeChannel(addr, value)
   }
@@ -65,11 +72,15 @@ abstract class ZynqShimTester[+T <: SimNetwork](
     peekChannel(addr)
   }
 
+  def readCR(w: String, crName: String) = {
+    val addr = c.getCRAddr(w, crName)
+    peekChannel(addr)
+  }
   override def reset(n: Int) {
     for (_ <- 0 until n) {
-      pokeChannel(ZynqCtrlSignals.HOST_RESET.id, 0)
-      pokeChannel(ZynqCtrlSignals.SIM_RESET.id, 0)
-      Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
+      writeCR("EmulationMaster", "HOST_RESET", 1)
+      writeCR("EmulationMaster", "SIM_RESET", 1)
+      Predef.assert(_eventually(readCR("EmulationMaster", "DONE") == BigInt(1)),
              "simulation is not done in time")
       _peekMap.clear
       // flush junk output tokens
@@ -82,11 +93,11 @@ abstract class ZynqShimTester[+T <: SimNetwork](
   }
 
   override def _tick(n: Int) {
-    pokeChannel(ZynqCtrlSignals.STEP.id, n)
+    writeCR("EmulationMaster", "STEP", n)
     c.IN_ADDRS foreach {case (in, addr) =>
       pokeChunks(addr, SimUtils.getChunks(in), _pokeMap getOrElse (in, BigInt(rnd.nextInt)))
     }
-    Predef.assert(_eventually(peekChannel(ZynqCtrlSignals.DONE.id) == BigInt(1)),
+    Predef.assert(_eventually(readCR("EmulationMaster", "DONE") == BigInt(1)),
            "simulation is not done in time")
     c.OUT_ADDRS foreach {case (out, addr) =>
       _peekMap(out) = peekChunks(addr, SimUtils.getChunks(out))
@@ -214,6 +225,7 @@ abstract class ZynqShimTester[+T <: SimNetwork](
         offset + chunk / 2
       }
     }
+
   }
 
   def slowLoadMem(file: File) {
