@@ -163,22 +163,22 @@ private:
   }
 
   inline void force(const std::string& node, biguint_t& data) {
-    check_signal(node);
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << data << " *" << std::endl;
+    check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, true);
   }
 
   inline void load(const std::string& node, biguint_t& data) {
-    check_signal(node);
     if (log) std::cerr << " * LOAD " << node << " <- 0x" << data << " *" << std::endl;
+    check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
 
   inline void poke(const std::string& node, biguint_t& data) {
-    check_signal(node);
     if (log) std::cerr << " * POKE " << node << " <- 0x" << data << " *" << std::endl;
+    check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }

@@ -23,6 +23,7 @@ private class Compiler(conf: File) extends firrtl.Compiler {
 
 object Compiler {
   def apply[T <: chisel3.Module](w: => T, dir: File): firrtl.ir.Circuit = {
+    dir.mkdirs
     lazy val dut = w
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => dut))
     val conf = new File(dir, s"${chirrtl.main}.conf")

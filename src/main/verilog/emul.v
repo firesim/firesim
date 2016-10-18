@@ -69,7 +69,7 @@ extern "A" void tick
   output reg [`MEM_ID_BITS-1:0]       slave_b_id
 );
 
-module vcsHarness;
+module emul;
   reg clock = 1'b0;
   reg reset = 1'b1;
   reg exit = 1'b0;
