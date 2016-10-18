@@ -224,8 +224,8 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     tickCounter := widgetizedMaster.io.step.bits
     tockCounter := widgetizedMaster.io.step.bits
   }
-  widgetizedMaster.io.step.ready := idle
-  widgetizedMaster.io.done := idle
+  widgetizedMaster.io.step.ready := idle && !hostReset
+  widgetizedMaster.io.done := idle && !hostReset
 
   //TODO: this needs to be generated only if required
   sim.io.traceLen := widgetizedMaster.io.traceLen

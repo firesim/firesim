@@ -6,7 +6,7 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   trace_count = 0;
-  trace_len = TRACE_MAX_LEN;
+  trace_len = 128; // by master widget
 
   seed = time(NULL);
   srand(seed);
@@ -52,9 +52,10 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 #endif
 
   for (size_t k = 0 ; k < 5 ; k++) {
-    write(HOST_RESET_ADDR, 0);
-    write(SIM_RESET_ADDR, 0);
-    while(!read(DONE_ADDR));
+    write(EMULATIONMASTER_HOST_RESET, 1);
+    while(!read(EMULATIONMASTER_DONE));
+    write(EMULATIONMASTER_SIM_RESET, 1);
+    while(!read(EMULATIONMASTER_DONE));
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
       peek_map[i] = read(i);
     }
@@ -153,11 +154,11 @@ void simif_t::step(size_t n) {
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
-  write(STEP_ADDR, n);
+  write(EMULATIONMASTER_STEP, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     write(i, poke_map[i]);
   }
-  while(!read(DONE_ADDR));
+  while(!read(EMULATIONMASTER_DONE));
   for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
     peek_map[i] = read(i);
   }

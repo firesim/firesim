@@ -117,7 +117,7 @@ class simif_t
     inline void set_tracelen(size_t len) {
       assert(len > 2);
       trace_len = len;
-      write(TRACELEN_ADDR, len);
+      write(EMULATIONMASTER_TRACELEN, len);
     }
     inline size_t get_tracelen() { return trace_len; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
