@@ -5,7 +5,6 @@ import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
 import midas_widgets._
-import dram_midas._
 
 case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
@@ -215,7 +214,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
     p alter Map(NastiKey -> p(CtrlNastiKey))), "ZynqMasterHandler")
 
-  val widgetizedMaster = addWidget(new EmulationMaster(p(EnableSnapshot)), "EmulationMaster")
+  val widgetizedMaster = addWidget(new EmulationMaster, "EmulationMaster")
 
   hostReset := widgetizedMaster.io.hostReset
   simReset := widgetizedMaster.io.simReset
@@ -338,9 +337,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   (0 until SimMemIO.size) foreach { i =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
-        case Some(cfg: BaseConfig) => new MidasMemModel(cfg)(p alter Map(NastiKey -> p(SlaveNastiKey)))
-        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))},
-      s"MemModel_$i")
+        case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
+        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+      }, s"MemModel_$i")
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || hostReset
