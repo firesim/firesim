@@ -12,6 +12,7 @@
 #include <iostream>
 
 static const size_t MEM_WIDTH = MEM_DATA_BITS / 8;
+static const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
 static uint64_t main_time = 0;
 static mmio_t* master = NULL;
 static mm_t* slave = NULL;
@@ -367,6 +368,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   const char* loadmem = NULL;
   const char* waveform = "dump.vcd";
   bool dramsim = false;
+  size_t memsize = 1 << 30;
   for (auto &arg: args) {
     if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
@@ -377,10 +379,13 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     if (arg.find("+dramsim") == 0) {
       dramsim = true;
     }
+    if (arg.find("+memsize=") == 0) {
+      memsize = strtol(arg.c_str() + 9, NULL, 10);
+    }
   }
 
-  size_t memsize = 1 << 30;
   master = (mmio_t*) new mmio_t;
+  master->init(CHANNEL_DATA_BITS / 8);
   slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
   slave->init(memsize, MEM_DATA_BITS / 8, 64);
 
@@ -426,8 +431,9 @@ int simif_emul_t::finish() {
 }
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
+  static const size_t CHANNEL_STRB = (1 << CHANNEL_STRB_BITS) - 1;
   try {
-    master->write_req(addr, &data);
+    master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, &data, CHANNEL_STRB);
     while(!master->write_resp()) {
 #ifdef VCS
       target->switch_to();
@@ -449,7 +455,7 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   try {
-    master->read_req(addr);
+    master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE);
     while(!master->read_resp(&data)) {
 #ifdef VCS
       target->switch_to();

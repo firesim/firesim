@@ -1,16 +1,19 @@
 #include "mmio.h"
 #include <cassert>
+#include <cmath>
 
-const size_t CHANNEL_STRB = (1 << CHANNEL_STRB_BITS) - 1;
+void mmio_t::init(size_t word_size) {
+  dummy_data.resize(word_size);
+}
 
-void mmio_t::read_req(uint64_t addr) {
-  mmio_req_addr_t ar(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
+void mmio_t::read_req(uint64_t addr, size_t size) {
+  mmio_req_addr_t ar(0, addr, size, 0);
   this->ar.push(ar);
 }
 
-void mmio_t::write_req(uint64_t addr, void* data) {
-  mmio_req_addr_t aw(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
-  mmio_req_data_t w((char*) data, CHANNEL_STRB, true);
+void mmio_t::write_req(uint64_t addr, size_t size, void* data, size_t strb) {
+  mmio_req_addr_t aw(0, addr, size, 0);
+  mmio_req_data_t w((char*) data, strb, true);
   this->aw.push(aw);
   this->w.push(w);
 }

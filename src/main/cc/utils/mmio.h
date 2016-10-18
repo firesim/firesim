@@ -6,8 +6,6 @@
 #include <vector>
 #include <queue>
 
-const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
-
 struct mmio_req_addr_t
 {
   size_t id;
@@ -46,6 +44,8 @@ public:
     read_inflight = false;
     write_inflight = false;
   }
+
+  void init(size_t data_bits);
   
   bool aw_valid() { return !aw.empty() && !write_inflight; }
   size_t aw_id() { return aw_valid() ? aw.front().id : 0; }
@@ -62,13 +62,13 @@ public:
   bool w_valid() { return !w.empty(); }
   size_t w_strb() { return w_valid() ? w.front().strb : 0; }
   bool w_last() { return w_valid() ? w.front().last : false; }
-  void* w_data() { return w_valid() ? w.front().data : dummy_data; }
+  void* w_data() { return w_valid() ? w.front().data : &dummy_data[0]; }
 
   bool r_ready() { return read_inflight; }
   bool b_ready() { return write_inflight; }
 
-  void read_req(uint64_t addr);
-  void write_req(uint64_t addr, void* data);
+  void read_req(uint64_t addr, size_t size);
+  void write_req(uint64_t addr, size_t size, void* data, size_t strb);
 
   void tick
   (
@@ -96,7 +96,7 @@ private:
 
   bool read_inflight;
   bool write_inflight;
-  char dummy_data[MMIO_WIDTH];
+  std::vector<char> dummy_data;
 };
 
 #endif // __MMIO_H
