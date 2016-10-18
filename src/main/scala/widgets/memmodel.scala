@@ -8,8 +8,8 @@ import cde.{Parameters, Field}
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.collection.immutable.ListSet
 
-abstract class MemModelConfig
-case object MemModelKey extends Field[Option[MemModelConfig]]
+abstract class MemModelConfig // TODO: delete it
+case object MemModelKey extends Field[Option[Parameters => MemModel]]
 
 class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
   val ready  = Bool(INPUT)
