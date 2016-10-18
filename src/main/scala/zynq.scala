@@ -215,7 +215,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
     p alter Map(NastiKey -> p(CtrlNastiKey))), "ZynqMasterHandler")
 
-  val widgetizedMaster = addWidget(new EmulationMaster, "EmulationMaster")
+  val widgetizedMaster = addWidget(new EmulationMaster(p(EnableSnapshot)), "EmulationMaster")
 
   hostReset := widgetizedMaster.io.hostReset
   simReset := widgetizedMaster.io.simReset
@@ -227,8 +227,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   widgetizedMaster.io.step.ready := idle && !hostReset
   widgetizedMaster.io.done := idle && !hostReset
 
-  //TODO: this needs to be generated only if required
-  sim.io.traceLen := widgetizedMaster.io.traceLen
+  if (p(EnableSnapshot)) {
+    sim.io.traceLen := widgetizedMaster.io.traceLen
+  }
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth

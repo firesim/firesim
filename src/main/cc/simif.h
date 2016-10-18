@@ -31,9 +31,8 @@ class simif_t
     bool pass;
     uint64_t t;
     uint64_t fail_t;
-    size_t trace_count;
-    size_t trace_len;
     time_t seed; 
+    size_t trace_len;
 
     // maps 
     uint32_t poke_map[POKE_SIZE];
@@ -114,13 +113,16 @@ class simif_t
     }
     
     inline uint64_t cycles() { return t; }
+    uint64_t rand_next(uint64_t limit) { return rand() % limit; }
+
     inline void set_tracelen(size_t len) {
       assert(len > 2);
       trace_len = len;
+#ifdef ENABLE_SNAPSHOT
       write(EMULATIONMASTER_TRACELEN, len);
+#endif
     }
     inline size_t get_tracelen() { return trace_len; }
-    uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
 #ifdef ENABLE_SNAPSHOT
   private:
@@ -130,6 +132,8 @@ class simif_t
     size_t sample_num;
     size_t last_sample_id;
     std::string sample_file;
+
+    size_t trace_count;
 
     // profile information
     bool profile;

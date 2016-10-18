@@ -5,11 +5,9 @@ simif_t::simif_t() {
   pass = true;
   t = 0;
   fail_t = 0;
-  trace_count = 0;
-  trace_len = 128; // by master widget
-
   seed = time(NULL);
   srand(seed);
+  trace_len = 128; // by master widget
 
 #ifdef ENABLE_SNAPSHOT
   sample_file = std::string(TARGET_NAME) + ".sample";
@@ -19,6 +17,7 @@ simif_t::simif_t() {
   profile = false;
   sample_count = 0;
   sample_time = 0;
+  trace_count = 0;
 #endif
 }
 
@@ -151,6 +150,7 @@ void simif_t::step(size_t n) {
       if (profile) sample_time += (timestamp() - start_time);
     }
   }
+  if (trace_count < trace_len) trace_count += n;
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
@@ -163,7 +163,6 @@ void simif_t::step(size_t n) {
     peek_map[i] = read(i);
   }
   t += n;
-  if (trace_count < trace_len) trace_count += n;
 }
 
 #ifdef ENABLE_SNAPSHOT
