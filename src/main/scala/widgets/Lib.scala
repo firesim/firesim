@@ -191,7 +191,8 @@ class MCRFileMap() {
 
   def bindRegs(mcrIO: MCRIO): Unit = {
     (regList.toSeq.zipWithIndex) foreach {
-      case(reg: Data, addr: Int) => mcrIO.bindReg(reg, addr)
+      case(reg: UInt, addr: Int) => mcrIO.bindReg(reg, addr)
+      case(channel: DecoupledIO[UInt], addr: Int) => mcrIO.bindDecoupled(channel, addr)
     }
   }
 
@@ -214,11 +215,17 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
   val wstrb = Bits(OUTPUT, nastiWStrobeBits)
 
   def bindReg(reg: Data, addr: Int): Unit = {
-    when(wen && (waddr === UInt(addr))) {
-      reg := (Vec.tabulate(nastiWStrobeBits)(i => Mux(wstrb(i),
-        wdata.toBits()(8*(i+1)-1, i*8), reg.toBits()(8*(i+1)-1, 8*i)))).toBits().asUInt()
+    when(wen && (waddr === UInt(addr))){
+      reg := wdata
     }
     rdata(addr) := reg
+  }
+
+  //These are write only for now
+  def bindDecoupled(channel: DecoupledIO[UInt], addr: Int): Unit = {
+    assert(channel.ready === Bool(true), "R/W decoupled channels cannot present backpressure.")
+    channel.valid := wen && (waddr === UInt(addr))
+    channel.bits := wdata
   }
 }
 
@@ -253,7 +260,7 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
 
   when(io.nasti.ar.fire()) {
     rValid := Bool(true)
-    rData := io.mcr.rdata(io.nasti.ar.bits.addr >> log2Up(nastiXDataBits/8))(log2Up(numRegs)-1,0)
+    rData := io.mcr.rdata((io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0))
     rId := io.nasti.ar.bits.id
   }
 
@@ -261,7 +268,7 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
     rValid := Bool(false)
   }
 
-  when (io.nasti.b.fire()) {
+  when(io.nasti.b.fire()) {
     awFired := Bool(false)
     wFired := Bool(false)
   }
@@ -282,3 +289,64 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   io.mcr.wstrb := wStrb
   io.mcr.waddr := wAddr
 }
+
+class CRIO(direction: Direction, width: Int, val default: Int) extends Bundle {
+  val value = UInt(direction, width)
+  def apply(dummy: Int = 0) = value
+}
+
+object CRIO {
+  def apply(direction: Direction, width: Int, default: Int) = new CRIO(direction, width, default)
+}
+
+class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen) {
+  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
+}
+object DecoupledCRIO {
+  def apply[T <: Data](gen: T): DecoupledCRIO[T] = new DecoupledCRIO(gen)
+}
+
+// I need the right name for this
+object D2V {
+  def apply[T <: Data](in: DecoupledIO[T]): ValidIO[T] = {
+    val v = Wire(Valid(in.bits.cloneType))
+    v.bits := in.bits
+    v.valid := in.valid
+    v
+  }
+}
+object V2D {
+  def apply[T <: Data](in: ValidIO[T]): DecoupledIO[T] = {
+    val d = Wire(Decoupled(in.bits.cloneType))
+    d.bits := in.bits
+    d.valid := in.valid
+    d
+  }
+}
+// Holds a ValidIO in a register until it is no longer needed.
+// Not quite indentical to a Decoupled Skid register but similar
+object HoldingRegister {
+  def apply[T <: Data](in: ValidIO[T], done: Bool): (ValidIO[T], ValidIO[T]) = {
+    val reg = RegInit({val i = Wire(in.cloneType); i.valid := Bool(false); i})
+    val out = Mux(~reg.valid || done, in, reg)
+    reg := out
+    (out, reg)
+  }
+}
+
+object SkidRegister {
+  def apply[T <: Data](in: DecoupledIO[T]): DecoupledIO[T] = {
+    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := Bool(false); i})
+    val out = Wire(in.cloneType)
+    in.ready := ~reg.valid || out.ready
+    out.valid := reg.valid || in.valid
+    out.bits := Mux(reg.valid, reg.bits, in.bits)
+    when (out.valid && ~out.ready) {
+      reg.bits := out.bits
+      reg.valid := Bool(true)
+    }
+    out
+  }
+}
+
+

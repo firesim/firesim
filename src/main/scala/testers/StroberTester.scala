@@ -62,21 +62,26 @@ abstract class StroberTester[+T <: chisel3.Module](
   }
 
   protected[testers] class ChannelSink[T <: Data, R](
-    socket: DecoupledIO[T], cvt: T => R) extends Processable {
+    socket: DecoupledIO[T], cvt: T => R, alwaysReady: Boolean = true) extends Processable {
     val outputs = new ScalaQueue[R]()
+    var credits = 0
+    def isReady() = if(alwaysReady) true else credits > 0
+    def noPendingResps() = credits == 0
     def process {
-      if (_peek(socket.valid)) {
+      if (_peek(socket.valid) && isReady) {
         outputs enqueue cvt(socket.bits)
-        _poke(socket.ready, true)
-      } else {
-        _poke(socket.ready, false)
+        if(!alwaysReady) credits-=1
       }
+      // Make sinks always ready for now
+      _poke(socket.ready, isReady)
     }
+
+    def allocate(){credits+=1}
     _preprocessors += this
   }
   protected[testers] object ChannelSink {
-    def apply[T <: Bits](socket: DecoupledIO[T]) =
-      new ChannelSink(socket, (bit: T) => _peek(bit))
+    def apply[T <: Bits](socket: DecoupledIO[T], alwaysReady: Boolean = true) =
+      new ChannelSink(socket, (bit: T) => _peek(bit), alwaysReady)
   }
 
   protected[testers] def pokeChannel(addr: Int, data: BigInt): Unit

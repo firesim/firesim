@@ -56,7 +56,7 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     write(SIM_RESET_ADDR, 0);
     while(!read(DONE_ADDR));
     for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-      peek_map[i] = read(CTRL_NUM + i);
+      peek_map[i] = read(i);
     }
 #ifdef ENABLE_SNAPSHOT
     // flush traces from initialization
@@ -155,11 +155,11 @@ void simif_t::step(size_t n) {
   if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
   write(STEP_ADDR, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
-    write(CTRL_NUM + i, poke_map[i]);
+    write(i, poke_map[i]);
   }
   while(!read(DONE_ADDR));
   for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-    peek_map[i] = read(CTRL_NUM + i);
+    peek_map[i] = read(i);
   }
   t += n;
   if (trace_count < trace_len) trace_count += n;
