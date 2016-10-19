@@ -92,7 +92,7 @@ class EmitMemFPGAVerilog(writer: java.io.Writer, conf: java.io.File) extends fir
             Seq(tab, tab, s"if (W${i}_en)", s"ram[W${i}_addr] <= W${i}_data;"))
           case true => (0 until (conf.width / conf.maskGran).toInt) map { maskIdx =>
             val range = s"${(maskIdx + 1) * conf.maskGran - 1} : ${maskIdx * conf.maskGran}"
-            Seq(tab, tab, s"if (W${i}_en && W${i}_wmode && W${i}_mask[${maskIdx}])",
+            Seq(tab, tab, s"if (W${i}_en && W${i}_mask[${maskIdx}])",
                           s"ram[W${i}_addr][$range] <= W${i}_data[$range];")
           }
         }
