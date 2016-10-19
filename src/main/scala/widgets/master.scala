@@ -1,8 +1,9 @@
 package midas_widgets
 
+import chisel3._
+import chisel3.util.{Decoupled, Counter}
 import junctions._
 import cde.{Parameters, Field}
-import Chisel._
 
 class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
   val hostReset = Bool(OUTPUT)
@@ -34,8 +35,10 @@ class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   Pulsify(genWOReg(io.simReset, Bool(false), "SIM_RESET"), pulseLength = 1)
 
   genAndAttachDecoupled(io.step, "STEP")
-  genWOReg(io.traceLen, UInt(128), "TRACELEN")
   genROReg(io.done, UInt(0), "DONE")
+  if (p(strober.EnableSnapshot)) {
+    genWOReg(io.traceLen, UInt(128), "TRACELEN")
+  }
 
   genCRFile()
 }

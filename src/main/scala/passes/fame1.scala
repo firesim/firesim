@@ -8,7 +8,6 @@ import firrtl.Mappers._
 import firrtl.Utils.BoolType
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
-import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
 private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
