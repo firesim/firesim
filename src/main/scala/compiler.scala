@@ -23,7 +23,7 @@ private class StroberCompiler extends firrtl.Compiler {
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.passes.InferReadWrite(TransID(-1)),
-    new firrtl.passes.ReplSeqMem(TransID(-2)),
+    new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
     passes.StroberTransforms,
     new firrtl.EmitFirrtl(writer)
   )
@@ -149,7 +149,7 @@ object StroberCompiler {
       val conf = new File(dir, s"${chirrtl.main}.conf")
       val annotations = new AnnotationMap(Seq(
         firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-        firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
+        firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
       // val writer = new FileWriter(new File("debug.ir"))
       val writer = new java.io.StringWriter
       val strober = (new StroberCompiler compile (chirrtl, annotations, writer)).circuit

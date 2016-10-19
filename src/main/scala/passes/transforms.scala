@@ -2,7 +2,7 @@ package strober
 package passes
 
 import firrtl._
-import firrtl.passes._
+import firrtl.passes.memlib._
 import firrtl.Annotations.{AnnotationMap, CircuitName, TransID}
 import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
 import scala.util.DynamicVariable
