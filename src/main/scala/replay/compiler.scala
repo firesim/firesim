@@ -14,7 +14,7 @@ private class Compiler(conf: File) extends firrtl.Compiler {
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.passes.InferReadWrite(TransID(-1)),
-    new firrtl.passes.ReplSeqMem(TransID(-2)),
+    new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
     new firrtl.MiddleFirrtlToLowFirrtl,
     new firrtl.EmitVerilogFromLowFirrtl(writer),
     new passes.EmitMemFPGAVerilog(writer, conf)
@@ -29,7 +29,7 @@ object Compiler {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val annotations = new AnnotationMap(Seq(
       firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-      firrtl.passes.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
+      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(conf) compile (chirrtl, annotations, verilog)
     genVerilogFragment(dut, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
