@@ -27,6 +27,9 @@ public:
   uint32_t uint() const { return data[0]; }
   const uint32_t& operator[](size_t idx) const { return data[idx]; }
   std::string str();
+  const char* c_str() { return str().c_str(); }
+  uint32_t* const get_data() const { return data; }
+  const size_t get_size() const { return size; }
   biguint_t operator<<(const size_t shamt);
   biguint_t operator>>(const size_t shamt);
   biguint_t operator=(const biguint_t &that);
@@ -36,6 +39,7 @@ public:
   void operator|=(const biguint_t &that);
   bool operator==(const biguint_t &that);
   friend std::ostream& operator<<(std::ostream &os, const biguint_t& value);
+  friend std::istream& operator>>(std::istream &is, biguint_t& value);
 private:
   void init(const uint32_t value);
   void init(const uint32_t* value, size_t size);

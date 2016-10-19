@@ -5,7 +5,6 @@ import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
 import midas_widgets._
-import dram_midas._
 
 case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
@@ -134,7 +133,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
       }
     }
   }
-  io.ctrl.ar.ready := rState === rStateRead // rStateIdle
+  io.ctrl.ar.ready := rState === rStateIdle
   io.ctrl.r.bits := NastiReadDataChannel(
     id = arId,
     data = outputs(rAddr).bits,
@@ -224,11 +223,12 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     tickCounter := widgetizedMaster.io.step.bits
     tockCounter := widgetizedMaster.io.step.bits
   }
-  widgetizedMaster.io.step.ready := idle
-  widgetizedMaster.io.done := idle
+  widgetizedMaster.io.step.ready := idle && !hostReset
+  widgetizedMaster.io.done := idle && !hostReset
 
-  //TODO: this needs to be generated only if required
-  sim.io.traceLen := widgetizedMaster.io.traceLen
+  if (p(EnableSnapshot)) {
+    sim.io.traceLen := widgetizedMaster.io.traceLen
+  }
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth
@@ -264,12 +264,12 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
   mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
-    Cat(aw map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
+    Cat(aw.reverse map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
-    Cat(ar map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
+    Cat(ar.reverse map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.w.bits := NastiWriteDataChannel(Cat(w map (_.io.out.bits)))(
+  mem.w.bits := NastiWriteDataChannel(Cat(w.reverse map (_.io.out.bits)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
 
   r.zipWithIndex foreach {case (buf, i) =>
@@ -291,7 +291,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     case (target: Vec[_], wires: Vec[_]) => 
       (target.toSeq zip wires.toSeq) foreach targetConnect
     case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
-       target := Cat(sim.io.getOuts(wire).map(_.bits))
+      target := Cat(sim.io.getOuts(wire).reverse map (_.bits))
     case (target: Bits, wire: Bits) if wire.dir == INPUT => 
       sim.io.getIns(wire).zipWithIndex foreach {case (in, i) => 
         in.bits := target >> UInt(i * sim.io.channelWidth) 
@@ -337,9 +337,9 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   (0 until SimMemIO.size) foreach { i =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
-        case Some(cfg: BaseConfig) => new MidasMemModel(cfg)(p alter Map(NastiKey -> p(SlaveNastiKey)))
-        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))},
-      s"MemModel_$i")
+        case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
+        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+      }, s"MemModel_$i")
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || hostReset

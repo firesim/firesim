@@ -55,7 +55,7 @@ object SimUtils {
     val channels = inChannels slice (off, off + getChunks(wire))
     val channelOuts = wire match {
       case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Cat(channels map (_.io.out.bits))
+      case _ => Cat(channels.reverse map (_.io.out.bits))
     }
     val buffer = RegEnable(channelOuts, fire)
     buffer suggestName (name + "_buffer")

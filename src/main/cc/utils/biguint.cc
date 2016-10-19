@@ -10,10 +10,10 @@ biguint_t::biguint_t(const char* v, size_t base) {
   const char* value;
   strncpy(prefix, v, 2);
   prefix[2] = '\0';
-  if (strcmp(prefix, "0x") == 0) {
+  if (strcmp(prefix, "0x") == 0 && (base == 0 || base == 16)) {
     value = &v[2];
     base = 16;
-  } else if(strcmp(prefix, "0b") == 0) {
+  } else if(strcmp(prefix, "0b") == 0 && (base == 0 || base == 2)) {
     value = &v[2];
     base = 2;
   } else {
@@ -218,7 +218,7 @@ bool biguint_t::operator==(const biguint_t &that) {
     if (!yes) break;
   }
   if (yes) {
-    for (size_t i = 0 ; i < size ; i++) {
+    for (size_t i = 0 ; i < std::min(size, that.size) ; i++) {
       yes = data[i] == that.data[i];
       if (!yes) break;
     }
@@ -226,16 +226,22 @@ bool biguint_t::operator==(const biguint_t &that) {
   return yes;
 }
 
-
 std::ostream& operator<<(std::ostream &os, const biguint_t& value) {
   // prints hex!
   assert(value.size > 0);
-  os << std::hex;
-  os << value.data[value.size-1];
-  os << std::setfill('0') << std::setw(HEX_WIDTH);
+  os << std::hex << value.data[value.size-1];
   for (int i = value.size - 2 ; i >= 0 ; i--) {
-    os << value.data[i];
+    os << std::hex << std::setfill('0') << std::setw(HEX_WIDTH) << value.data[i];
   }
-  os << std::setfill(' ') << std::setw(0) << std::dec;
+  os << std::dec << std::setfill(' ') << std::setw(0);
   return os;
+}
+
+std::istream& operator>>(std::istream &is, biguint_t& value) {
+  // assumes hex
+  std::string hex;
+  is >> hex;
+  delete[] value.data;
+  value.init_hex(hex.c_str());
+  return is;
 }
