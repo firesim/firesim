@@ -4,10 +4,9 @@ import firrtl.Annotations.{AnnotationMap, TransID}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
-import java.io.{File, FileWriter}
+import java.io.{File, FileWriter, Writer}
 
 private class StroberCompilerContext {
-  var dir = chisel3.Driver.createTempDirectory("test-outs")
   val wrappers = HashSet[String]()
   val params = HashMap[String, cde.Parameters]()
   val shims = ArrayBuffer[ZynqShim[_]]()
@@ -16,22 +15,22 @@ private class StroberCompilerContext {
   val memWires = HashSet[chisel3.Bits]()
 }
 
-private class StroberCompiler extends firrtl.Compiler {
-  def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
+private class StroberCompiler(dir: File) extends firrtl.Compiler {
+  def transforms(writer: Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.Chisel3ToHighFirrtl,
     new firrtl.IRToWorkingIR,
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.passes.InferReadWrite(TransID(-1)),
     new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
-    passes.StroberTransforms,
+    new passes.StroberTransforms(dir),
     new firrtl.EmitFirrtl(writer)
   )
 }
 
 // This compiler compiles HighFirrtl To verilog
-private class VerilogCompiler(conf: java.io.File) extends firrtl.Compiler {
-  def transforms(writer: java.io.Writer): Seq[firrtl.Transform] = Seq(
+private class VerilogCompiler(conf: File) extends firrtl.Compiler {
+  def transforms(writer: Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.MiddleFirrtlToLowFirrtl,
@@ -144,7 +143,7 @@ object StroberCompiler {
 
   def apply[T <: chisel3.Module](w: => T, dir: File)(implicit p: cde.Parameters) = {
     (contextVar withValue Some(new StroberCompilerContext)){
-      context.dir = dir ; dir.mkdirs
+      dir.mkdirs
       val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => ZynqShim(w)))
       val conf = new File(dir, s"${chirrtl.main}.conf")
       val annotations = new AnnotationMap(Seq(
@@ -152,7 +151,7 @@ object StroberCompiler {
         firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
       // val writer = new FileWriter(new File("debug.ir"))
       val writer = new java.io.StringWriter
-      val strober = (new StroberCompiler compile (chirrtl, annotations, writer)).circuit
+      val strober = (new StroberCompiler(dir) compile (chirrtl, annotations, writer)).circuit
       // writer.close
       // firrtl.Parser.parse(writer.toString)
 

@@ -1,15 +1,18 @@
 package strober
 package passes
 
-import Utils._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils.BoolType
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
+import StroberTransforms._
+import Utils._
 
-private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform(
+    childMods: ChildMods,
+    seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
@@ -96,7 +99,7 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
   def run(c: Circuit) = c copy (modules = {
     val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()){
       (map, m) => map ++ (
-        (preorder(targets(m, c.modules), c.modules)(transform) :+
+        (preorder(targets(m, c.modules), c.modules, childMods)(transform) :+
         (m map connectTargetFire)) map (m => m.name -> m)
       )
     }

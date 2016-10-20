@@ -1,7 +1,6 @@
 package strober
 package passes
 
-import Utils._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -10,8 +9,15 @@ import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
+import StroberTransforms._
+import Utils._
 
-private[passes] class AddDaisyChains(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+private[passes] class AddDaisyChains(
+    childMods: ChildMods,
+    childInsts: ChildInsts,
+    instModMap: InstModMap,
+    chains: Map[ChainType.Value, ChainMap],
+    seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
@@ -364,7 +370,7 @@ private[passes] class AddDaisyChains(seqMems: Map[String, MemConf]) extends firr
         IsInvalid(NoInfo, childDaisyPort(c)("in")),
         IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     // Filter children who have daisy chains
-    val childrenWithChains = childInsts(m.name) filter (x => hasChain(instToMod(x, m.name)))
+    val childrenWithChains = childInsts(m.name) filter (x => hasChain(instModMap(x, m.name)))
     val connects = (childrenWithChains foldLeft (None: Option[String], Seq[Connect]())){
       case ((None, stmts), child) if !hasChain(m.name) =>
         // <daisy_port>.out <- <child>.<daisy_port>.out
@@ -470,7 +476,7 @@ private[passes] class AddDaisyChains(seqMems: Map[String, MemConf]) extends firr
         case m => m
       }
       map ++ (
-        (postorder(targets(m, c.modules), c.modules)(
+        (postorder(targets(m, c.modules), c.modules, childMods)(
          transform(namespace, daisyType, param, chainMods, hasChain)) :+ newMod)
         map (m => m.name -> m)
       )
