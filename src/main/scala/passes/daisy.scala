@@ -11,13 +11,15 @@ import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
 import StroberTransforms._
 import Utils._
+import java.io.StringWriter
 
 private[passes] class AddDaisyChains(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap,
     chains: Map[ChainType.Value, ChainMap],
-    seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+    seqMems: Map[String, MemConf])
+   (implicit param: cde.Parameters) extends firrtl.passes.Pass {
   def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
@@ -37,11 +39,10 @@ private[passes] class AddDaisyChains(
                             chainMods: DefModules,
                             instIdx: Int = 0)
                             (implicit chainType: ChainType.Value) = {
-    val circuit = Parser parse (chisel3.Driver emit chainGen)
+    val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new Annotations.AnnotationMap(Nil)
-    val output = new java.io.StringWriter
-    val result = new ChainCompiler compile (circuit, annotation, output)
-    val (modules, nameMap) = (result.circuit.modules foldLeft
+    val circuit = (new ChainCompiler compile (chirrtl, annotation, new StringWriter)).circuit
+    val (modules, nameMap) = (circuit.modules foldLeft
       (Seq[DefModule](), Map[String, String]())){ case ((ms, map), m) =>
         val newMod = m match {
           // No copy method in DefModule
@@ -125,7 +126,6 @@ private[passes] class AddDaisyChains(
   }
 
   private def insertRegChains(m: Module,
-                              p: cde.Parameters,
                               namespace: Namespace,
                               netlist: Netlist,
                               readers: Readers,
@@ -174,7 +174,7 @@ private[passes] class AddDaisyChains(
     chainElems.nonEmpty match {
       case false => Nil
       case true =>
-        lazy val chain = new RegChain()(p alter Map(DataWidth -> sumWidths(m.body)))
+        lazy val chain = new RegChain()(param alter Map(DataWidth -> sumWidths(m.body)))
         val instStmts = generateChain(() => chain, namespace, chainMods)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
@@ -230,7 +230,6 @@ private[passes] class AddDaisyChains(
   }
 
   private def insertSRAMChains(m: Module,
-                               p: cde.Parameters,
                                namespace: Namespace,
                                netlist: Netlist,
                                repl: Netlist,
@@ -323,7 +322,8 @@ private[passes] class AddDaisyChains(
           case s: DefMemory =>
             (s.depth, bitWidth(s.dataType).toInt, false)
         }
-        lazy val chain = new SRAMChain()(p alter Map(DataWidth -> width, SRAMSize -> depth, SeqRead -> seqRead))
+        lazy val chain = new SRAMChain()(param alter Map(
+          DataWidth -> width, SRAMSize -> depth, SeqRead -> seqRead))
         val instStmts = generateChain(() => chain, namespace, chainMods, i)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
@@ -348,7 +348,6 @@ private[passes] class AddDaisyChains(
   }
 
   private def insertChains(m: Module,
-                           p: cde.Parameters,
                            namespace: Namespace,
                            netlist: Netlist,
                            readers: Readers,
@@ -359,8 +358,8 @@ private[passes] class AddDaisyChains(
     implicit val chainType = t
     val hasChain = hasChainMap(chainType)
     val chainStmts = chainType match {
-      case ChainType.SRAM => insertSRAMChains(m, p, namespace, netlist, repl, chainMods, hasChain)
-      case _              => insertRegChains(m, p, namespace, netlist, readers, chainMods, hasChain)
+      case ChainType.SRAM => insertSRAMChains(m, namespace, netlist, repl, chainMods, hasChain)
+      case _              => insertRegChains(m, namespace, netlist, readers, chainMods, hasChain)
     }
     val chainNum = chainType match {
       case ChainType.SRAM => 1 max chains(chainType)(m.name).size
@@ -429,11 +428,10 @@ private[passes] class AddDaisyChains(
 
   private def transform(namespace: Namespace,
                         daisyType: Type,
-                        p: cde.Parameters,
                         chainMods: DefModules,
                         hasChain: Map[ChainType.Value, ChainModSet])
                         (m: DefModule) = m match {
-    case m: Module if p(EnableSnapshot) =>
+    case m: Module if param(EnableSnapshot) =>
       val netlist = new Netlist
       val readers = new Readers
       val stmts = new Statements
@@ -443,44 +441,22 @@ private[passes] class AddDaisyChains(
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
-        insertChains(m, p, namespace, netlist, readers, repl, chainMods, hasChain))
+        insertChains(m, namespace, netlist, readers, repl, chainMods, hasChain))
       val bodyx = updateStmts(readers, repl, clocks.head, stmts)(m.body)
       m copy (ports = m.ports :+ daisyPort,
               body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
     case m => m
   }
 
-  private def connectDaisyPorts(stmts: Statements)(s: Statement): Statement = {
-    s match {
-      case s: WDefInstance if s.name == "target" =>
-        stmts += Connect(NoInfo, wsub(wref("io"), "daisy"), wsub(wref("target"), "daisy"))
-      case _ =>
-    }
-    s map connectDaisyPorts(stmts)
-  }
-
   def run(c: Circuit) = {
     val namespace = Namespace(c)
     val chainMods = new DefModules
-    val hasChain = ChainType.values.toList map (_ -> new ChainModSet) toMap
-    val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()) { (map, m) =>
-      val param = params(m.name)
-      val daisyType = (m.ports filter (_.name == "io") flatMap (io => io.tpe match {
-        case BundleType(fields) => fields filter (_.name == "daisy")
-        case t => error(s"${io.info}: io should be a bundle type, but has type ${t.serialize}")
-      })).head.tpe
-      val stmts = new Statements
-      val newMod = m match {
-        case m: Module if param(EnableSnapshot) =>
-          m copy (body = Block(connectDaisyPorts(stmts)(m.body) +: stmts))
-        case m => m
-      }
-      map ++ (
-        (postorder(targets(m, c.modules), c.modules, childMods)(
-         transform(namespace, daisyType, param, chainMods, hasChain)) :+ newMod)
-        map (m => m.name -> m)
-      )
-    }
-    c copy (modules = chainMods ++ (c.modules map (m => modMap getOrElse (m.name, m))))
+    val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
+    val chirrtl = Parser parse (chisel3.Driver emit (() => new DaisyBox))
+    val annotations = new Annotations.AnnotationMap(Nil)
+    val daisybox = (new ChainCompiler compile (chirrtl, annotations, new StringWriter)).circuit
+    val daisyType = daisybox.modules.head.ports.head.tpe
+    val targetMods = postorder(c, childMods)(transform(namespace, daisyType, chainMods, hasChain))
+    c copy (modules = chainMods ++ targetMods)
   }
 }

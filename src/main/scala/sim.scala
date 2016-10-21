@@ -80,10 +80,6 @@ class Channel(val w: Int)(implicit p: Parameters) extends Module {
   }
 }
 
-object SimWrapper {
-  def apply[T <: Module](c: =>T)(implicit p: Parameters) = new SimWrapper(c)
-}
-
 trait HasSimWrapperParams {
   implicit val p: Parameters
   implicit val channelWidth = p(ChannelWidth)
@@ -129,13 +125,23 @@ abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSim
   def out_channels: Seq[Channel]
 }
 
-class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwork()(p) {
+class TargetBox(targetIo: Data) extends BlackBox {
+  val io = IO(new Bundle {
+    val clock = Clock(INPUT)
+    val reset = Bool(INPUT)
+    val io = targetIo.cloneType
+  })
+}
+
+class SimWrapper(t: => TargetBox)(implicit p: Parameters) extends SimNetwork()(p) {
+  val target = Module(t)
   val fire = Wire(Bool())
-  val target = Module(c)
-  val io = IO(new SimWrapperIO(target.io, target.reset))
+  val io = IO(new SimWrapperIO(target.io.io, target.io.reset))
 
   val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
   val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
+
+  target.io.clock := clock
 
   // Datapath: Channels <> IOs
   (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
@@ -169,8 +175,6 @@ class SimWrapper[+T <: Module](c: =>T)(implicit p: Parameters) extends SimNetwor
   // Cycles for debug
   val cycles = Reg(UInt(width=64))
   when (fire) {
-    cycles := Mux(target.reset, UInt(0), cycles + UInt(1))
+    cycles := Mux(target.io.reset, UInt(0), cycles + UInt(1))
   }
-
-  StroberCompiler annotate this
 } 

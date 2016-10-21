@@ -10,7 +10,8 @@ case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
 
 object ZynqShim {
-  def apply[T <: Module](c: =>T)(implicit p: Parameters) = new ZynqShim(new SimWrapper(c))
+  def apply[T <: Module](io: Data)(implicit p: Parameters) =
+    new ZynqShim(new SimWrapper(new TargetBox(io)))
 }
 
 case class ZynqMasterHandlerArgs(
@@ -353,5 +354,4 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     channels2Port(fakeTNasti, wires)
   }
   genCtrlIO(io.master, p(ZynqMMIOSize))
-  StroberCompiler annotate this
 }
