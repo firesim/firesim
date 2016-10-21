@@ -431,7 +431,7 @@ private[passes] class AddDaisyChains(
                         chainMods: DefModules,
                         hasChain: Map[ChainType.Value, ChainModSet])
                         (m: DefModule) = m match {
-    case m: Module if param(EnableSnapshot) =>
+    case m: Module =>
       val netlist = new Netlist
       val readers = new Readers
       val stmts = new Statements
@@ -448,7 +448,7 @@ private[passes] class AddDaisyChains(
     case m => m
   }
 
-  def run(c: Circuit) = {
+  def run(c: Circuit) = if (!param(EnableSnapshot)) c else {
     val namespace = Namespace(c)
     val chainMods = new DefModules
     val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
