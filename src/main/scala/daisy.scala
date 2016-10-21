@@ -53,6 +53,12 @@ class DaisyBundle(daisyWidth: Int, sramChainNum: Int, enableSnapshot: Boolean) e
     new DaisyBundle(daisyWidth, sramChainNum, enableSnapshot).asInstanceOf[this.type]
 }
 
+class DaisyBox(implicit p: Parameters) extends BlackBox {
+  val io = IO(new Bundle {
+    val daisy = new DaisyBundle(p(DaisyWidth), p(SRAMChainNum), p(EnableSnapshot))
+  })
+}
+
 // Common structures for daisy chains
 trait DaisyChainParams {
   implicit val p: Parameters

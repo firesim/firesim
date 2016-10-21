@@ -10,9 +10,7 @@ import WrappedType.wt
 import StroberTransforms._
 import Utils._
 
-private[passes] class Fame1Transform(
-    childMods: ChildMods,
-    seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
   def name = "[strober] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
@@ -88,21 +86,5 @@ private[passes] class Fame1Transform(
     }
   }
 
-  private def connectTargetFire(s: Statement): Statement = s match {
-    case s: WDefInstance if s.name == "target" => Block(Seq(s,
-      Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire", BoolType)),
-      Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))
-    ))
-    case s => s map connectTargetFire
-  }
-
-  def run(c: Circuit) = c copy (modules = {
-    val modMap = (wrappers(c.modules) foldLeft Map[String, DefModule]()){
-      (map, m) => map ++ (
-        (preorder(targets(m, c.modules), c.modules, childMods)(transform) :+
-        (m map connectTargetFire)) map (m => m.name -> m)
-      )
-    }
-    c.modules map (m => modMap getOrElse (m.name, m))
-  })
+  def run(c: Circuit) = c copy (modules = c.modules map transform)
 }

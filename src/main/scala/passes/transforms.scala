@@ -48,7 +48,10 @@ private class TransformAnalysis(
 }
 
 
-private[strober] class StroberTransforms(dir: java.io.File) extends Transform with SimpleRun {
+private[strober] class StroberTransforms(
+    dir: java.io.File,
+    io: chisel3.Data)
+   (implicit param: cde.Parameters) extends Transform with SimpleRun {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
@@ -61,10 +64,10 @@ private[strober] class StroberTransforms(dir: java.io.File) extends Transform wi
           val conf = new java.io.File(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
           val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
           run(circuit, Seq(
+            new Fame1Transform(seqMems),
             new TransformAnalysis(childMods, childInsts, instModMap),
-            new Fame1Transform(childMods, seqMems),
             new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-            new DumpChains(childInsts, instModMap, chains, dir, seqMems)
+            new PlatformMapping(dir, io, childInsts, instModMap, chains, seqMems)
           ))
       }
     }

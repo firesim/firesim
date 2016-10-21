@@ -34,42 +34,26 @@ private[passes] object Utils {
       DoPrim(PrimOps.Cat, Seq(left, right), Nil, ut)
     }
 
-  def params = StroberCompiler.context.params
-  def wrappers(modules: Seq[DefModule]) =
-    modules filter (x => StroberCompiler.context.wrappers(x.name))
-
-  def targets(m: DefModule, modules: Seq[DefModule]) = {
-    val targets = HashSet[String]()
-    def loop(s: Statement): Statement = s match {
-      case s: WDefInstance if s.name == "target" =>
-        targets += s.module
-        s
-      case s => s map loop
-    }
-    m map loop
-    modules filter (x => targets(x.name))
-  }
-
-  def preorder(heads: Seq[DefModule],
-               modules: Seq[DefModule],
+  def preorder(c: Circuit,
                childMods: StroberTransforms.ChildMods)
                (visit: DefModule => DefModule): Seq[DefModule] = {
+    val head = (c.modules find (_.name == c.main)).get
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
       visited += m.name
-      visit(m) +: (modules filter (x =>
+      visit(m) +: (c.modules filter (x =>
         childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
     }
-    heads flatMap loop
+    loop(head) ++ (c.modules collect { case m: ExtModule => m })
   }
 
-  def postorder(heads: Seq[DefModule],
-                modules: Seq[DefModule],
+  def postorder(c: Circuit,
                 childMods: StroberTransforms.ChildMods)
                 (visit: DefModule => DefModule): Seq[DefModule] = {
+    val head = (c.modules find (_.name == c.main)).get
     val visited = HashSet[String]()
     def loop(m: DefModule): Seq[DefModule] = {
-      val res = (modules filter (x =>
+      val res = (c.modules filter (x =>
         childMods(m.name)(x.name)) flatMap loop)
       if (visited(m.name)) {
         res 
@@ -78,6 +62,6 @@ private[passes] object Utils {
         res :+ visit(m)
       }
     }
-    heads flatMap loop
+    loop(head) ++ (c.modules collect { case m: ExtModule => m })
   }
 }
