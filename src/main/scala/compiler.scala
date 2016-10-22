@@ -51,11 +51,11 @@ object StroberCompiler {
       val annotations = new AnnotationMap(Seq(
         firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
         firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
-      val writer = new FileWriter(new File("debug.ir"))
-      // val writer = new java.io.StringWriter
+      // val writer = new FileWriter(new File("debug.ir"))
+      val writer = new java.io.StringWriter
       val strober = (new StroberCompiler(dir, target.io)
         compile (chirrtl, annotations, writer)).circuit
-      writer.close
+      // writer.close
       // firrtl.Parser.parse(writer.toString)
       val verilog = new FileWriter(new File(dir, s"${strober.main}.v"))
       val result = new VerilogCompiler(conf) compile (strober, annotations, verilog)
