@@ -41,24 +41,11 @@ private[passes] class AddDaisyChains(
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new Annotations.AnnotationMap(Nil)
-    val circuit = (new ChainCompiler compile (chirrtl, annotation, new StringWriter)).circuit
-    val (modules, nameMap) = (circuit.modules foldLeft
-      (Seq[DefModule](), Map[String, String]())){ case ((ms, map), m) =>
-        val newMod = m match {
-          // No copy method in DefModule
-          case m: Module => m copy (name = namespace newName m.name)
-        }
-        ((ms :+ newMod), map + (m.name -> newMod.name))
-    }
-    def updateModName(s: Statement): Statement = s match {
-      case s: WDefInstance => s copy (module = nameMap(s.module))
-      case s => s map updateModName
-    }
-    chainMods ++= (modules map (_ map updateModName))
-    Seq(
-      WDefInstance(NoInfo, chainRef(instIdx).name, nameMap(circuit.main), ut),
-      IsInvalid(NoInfo, chainRef(instIdx))
-    )
+    val circuit = renameMods((new ChainCompiler compile
+      (chirrtl, annotation, new StringWriter)).circuit, namespace)
+    chainMods ++= circuit.modules
+    Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
+        IsInvalid(NoInfo, chainRef(instIdx)))
   }
  
   private def chainRef(i: Int = 0)(implicit chainType: ChainType.Value) =
