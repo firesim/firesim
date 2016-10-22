@@ -6,6 +6,7 @@ import cde.{Parameters, Field}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
 import junctions.NastiIO
+import SimUtils.{parsePorts, getChunks, genIoMap}
 
 object SimMemIO {
   def add(mem: NastiIO) {
@@ -175,8 +176,6 @@ trait HasSimWrapperParams {
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters) 
     extends junctions.ParameterizedBundle()(p) with HasSimWrapperParams {
-  import SimUtils.{parsePorts, getChunks, genIoMap}
-
   val (inputs, outputs) = parsePorts(io, Some(reset))
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
@@ -201,12 +200,9 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   }
   def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> inMap(wire))
   def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> outMap(wire))
-}
 
-abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  def io: SimWrapperIO
-  def in_channels: Seq[Channel]
-  def out_channels: Seq[Channel]
+  override def cloneType: this.type =
+    new SimWrapperIO(io, reset).asInstanceOf[this.type]
 }
 
 class TargetBox(targetIo: Data) extends BlackBox {
@@ -217,44 +213,65 @@ class TargetBox(targetIo: Data) extends BlackBox {
   })
 }
 
+class SimBox(simIo: SimWrapperIO)
+            (implicit val p: Parameters)
+             extends BlackBox with HasSimWrapperParams {
+  val io = IO(new Bundle {
+    val clock = Clock(INPUT)
+    val reset = Bool(INPUT)
+    val io = simIo.cloneType
+  })
+  val headerConsts = List(
+    "DAISY_WIDTH"   -> daisyWidth,
+    "TRACE_MAX_LEN" -> traceMaxLen,
+    "CHANNEL_SIZE"  -> log2Up(channelWidth/8)
+  )
+}
+
+abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSimWrapperParams {
+  def io: SimWrapperIO
+  def inChannels: Seq[Channel]
+  def outChannels: Seq[Channel]
+}
+
 class SimWrapper(t: => TargetBox)(implicit p: Parameters) extends SimNetwork()(p) {
   val target = Module(t)
   val fire = Wire(Bool())
   val io = IO(new SimWrapperIO(target.io.io, target.io.reset))
 
-  val in_channels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
-  val out_channels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
+  val inChannels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
+  val outChannels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
 
   target.io.clock := clock
 
   // Datapath: Channels <> IOs
-  (in_channels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
-  (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, in_channels, fire))
+  (inChannels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
+  (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, inChannels, fire))
 
-  (io.outs zip out_channels) foreach {case (out, channel) => out <> channel.io.out}
-  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, out_channels))
+  (io.outs zip outChannels) foreach {case (out, channel) => out <> channel.io.out}
+  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels))
 
   if (enableSnapshot) {
-    (io.inT zip in_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
-    (io.outT zip out_channels) foreach {case (trace, channel) => trace <> channel.io.trace}
+    (io.inT zip inChannels) foreach {case (trace, channel) => trace <> channel.io.trace}
+    (io.outT zip outChannels) foreach {case (trace, channel) => trace <> channel.io.trace}
   }
   
   // Control
   // Firing condtion:
   // 1) all input values are valid
   // 2) all output FIFOs are not full
-  fire := (in_channels foldLeft Bool(true))(_ && _.io.out.valid) && 
-          (out_channels foldLeft Bool(true))(_ && _.io.in.ready)
+  fire := (inChannels foldLeft Bool(true))(_ && _.io.out.valid) && 
+          (outChannels foldLeft Bool(true))(_ && _.io.in.ready)
  
   // Inputs are consumed when firing conditions are met
-  in_channels foreach (_.io.out.ready := fire)
+  inChannels foreach (_.io.out.ready := fire)
    
   // Outputs should be ready when firing conditions are met
-  out_channels foreach (_.io.in.valid := fire)
+  outChannels foreach (_.io.in.valid := fire)
 
   // Trace size is runtime configurable
-  in_channels foreach (_.io.traceLen := io.traceLen)
-  out_channels foreach (_.io.traceLen := io.traceLen)
+  inChannels foreach (_.io.traceLen := io.traceLen)
+  outChannels foreach (_.io.traceLen := io.traceLen)
 
   // Cycles for debug
   val cycles = Reg(UInt(width=64))

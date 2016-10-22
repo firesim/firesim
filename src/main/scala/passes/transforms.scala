@@ -6,10 +6,11 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.memlib._
 import firrtl.Annotations.{AnnotationMap, CircuitName, TransID}
-import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
-import scala.util.DynamicVariable
 import Utils._
 import StroberTransforms._
+import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
+import scala.util.DynamicVariable
+import java.io.{File, FileWriter}
 
 private object StroberTransforms {
   type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
@@ -47,27 +48,29 @@ private class TransformAnalysis(
   }
 }
 
-
 private[strober] class StroberTransforms(
-    dir: java.io.File,
+    dir: File,
     io: chisel3.Data)
    (implicit param: cde.Parameters) extends Transform with SimpleRun {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
   val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
+  lazy val sim = new SimWrapper(new TargetBox(io))
 
   def execute(circuit: Circuit, map: AnnotationMap) = {
     ((map get TransID(-2)): @unchecked) match {
       case Some(p) => ((p get CircuitName(circuit.main)): @unchecked) match {
         case Some(ReplSeqMemAnnotation(t, _)) =>
-          val conf = new java.io.File(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
+          val conf = new File(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
           val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
+          val chainFile = new FileWriter(new File(dir, s"${circuit.main}.chain"))
           run(circuit, Seq(
             new Fame1Transform(seqMems),
             new TransformAnalysis(childMods, childInsts, instModMap),
             new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-            new PlatformMapping(dir, io, childInsts, instModMap, chains, seqMems)
+            new SimulationMapping(sim, chainFile, childInsts, instModMap, chains, seqMems),
+            new PlatformMapping(sim.io, circuit.main, dir, chainFile)
           ))
       }
     }

@@ -64,4 +64,26 @@ private[passes] object Utils {
     }
     loop(head) ++ (c.modules collect { case m: ExtModule => m })
   }
+
+  def renameMods(c: Circuit, namespace: Namespace) = {
+    val (modules, nameMap) = (c.modules foldLeft (Seq[DefModule](), Map[String, String]())){
+      case ((ms, map), m: ExtModule) =>
+        val newMod = (map get m.name) match {
+          case None => m copy (name = namespace newName m.name)
+          case Some(name) => m copy (name = name)
+        }
+        ((ms :+ newMod), map + (m.name -> newMod.name))
+      case ((ms, map), m: Module) =>
+        val newMod = (map get m.name) match {
+          case None => m copy (name = namespace newName m.name)
+          case Some(name) => m copy (name = name)
+        }
+        ((ms :+ newMod), map + (m.name -> newMod.name))
+    }
+    def updateModNames(s: Statement): Statement = s match {
+      case s: WDefInstance => s copy (module = nameMap(s.module))
+      case s => s map updateModNames
+    }
+    c copy (modules = modules map (_ map updateModNames), main = nameMap(c.main))
+  }
 }

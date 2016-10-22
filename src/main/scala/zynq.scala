@@ -9,11 +9,6 @@ import midas_widgets._
 case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
 
-object ZynqShim {
-  def apply[T <: Module](io: Data)(implicit p: Parameters) =
-    new ZynqShim(new SimWrapper(new TargetBox(io)))
-}
-
 case class ZynqMasterHandlerArgs(
   sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
 
@@ -21,11 +16,11 @@ class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs,
                           channelType: => DecoupledIO[UInt])
                          (implicit p: Parameters) extends WidgetIO()(p){
 
-  val ins   = Vec(args.inNum, channelType)
-  val outs  = Flipped(Vec(args.outNum, channelType))
-  val inT   = Flipped(Vec(args.sim.inT.size, channelType))
-  val outT  = Flipped(Vec(args.sim.outT.size, channelType))
-  val mem   = new Bundle {
+  val ins  = Vec(args.inNum, channelType)
+  val outs = Flipped(Vec(args.outNum, channelType))
+  val inT  = Flipped(Vec(args.sim.inT.size, channelType))
+  val outT = Flipped(Vec(args.sim.outT.size, channelType))
+  val mem  = new Bundle {
     val ar = Vec(args.arNum, channelType)
     val aw = Vec(args.awNum, channelType)
     val r  = Flipped(Vec(args.rNum,  channelType))
@@ -140,14 +135,15 @@ class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
-class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module with HasWidgets {
+class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidgets {
   val io = IO(new ZynqShimIO)
   // Simulation Target
-  val sim: T = Module(c)
+  val sim = Module(c)
+  val simIo = sim.io.io
   val simReset = Wire(Bool())
   val hostReset = Wire(Bool())
-  val ins = sim.io.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap sim.io.getIns // exclude reset
-  val outs = sim.io.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap sim.io.getOuts
+  val ins = simIo.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap simIo.getIns // exclude reset
+  val outs = simIo.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap simIo.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
     val q = Module(new Queue(in.bits, 2, flow=true))
     in.bits := q.io.deq.bits
@@ -163,13 +159,14 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   val tickCounter = RegInit(UInt(0))
   val tockCounter = RegInit(UInt(0))
   val tick = (inBufs foldLeft tickCounter.orR)(_ && _.io.deq.valid) &&
-             (sim.io.ins foldLeft Bool(true))(_ && _.ready)
+             (simIo.ins foldLeft Bool(true))(_ && _.ready)
   val tock = ((outBufs foldLeft tockCounter.orR)(_ && _.io.enq.ready)) &&
-             (sim.io.outs foldLeft Bool(true))(_ && _.valid)
+             (simIo.outs foldLeft Bool(true))(_ && _.valid)
   val idle = !tickCounter.orR && !tockCounter.orR
-  sim.reset := reset || hostReset
-  sim.io.ins(0).bits  := simReset
-  sim.io.ins(0).valid := tick || simReset
+  sim.io.clock := clock
+  sim.io.reset := reset || hostReset
+  simIo.ins(0).bits  := simReset
+  simIo.ins(0).valid := tick || simReset
   when(tick) { tickCounter := tickCounter - UInt(1) }
   when(tock) { tockCounter := tockCounter - UInt(1) }
   when(simReset) { tickCounter := UInt(0) }
@@ -195,7 +192,7 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   io.slave <> arb.io.slave
 
   val master = addWidget(new ZynqMasterHandler(new ZynqMasterHandlerArgs(
-    sim.io, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
+    simIo, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
     p alter Map(NastiKey -> p(CtrlNastiKey))), "ZynqMasterHandler")
 
   val widgetizedMaster = addWidget(new EmulationMaster, "EmulationMaster")
@@ -211,24 +208,24 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
   widgetizedMaster.io.done := idle && !hostReset
 
   if (p(EnableSnapshot)) {
-    sim.io.traceLen := widgetizedMaster.io.traceLen
+    simIo.traceLen := widgetizedMaster.io.traceLen
   }
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth
-  val IN_ADDRS = SimUtils.genIoMap(sim.io.inputs.tail filterNot (x => SimMemIO(x._1)), 0)
-  val OUT_ADDRS = SimUtils.genIoMap(sim.io.outputs filterNot (x => SimMemIO(x._1)), 0)
+  val IN_ADDRS = SimUtils.genIoMap(simIo.inputs.tail filterNot (x => SimMemIO(x._1)), 0)
+  val OUT_ADDRS = SimUtils.genIoMap(simIo.outputs filterNot (x => SimMemIO(x._1)), 0)
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
 
-  val IN_TR_ADDRS = SimUtils.genIoMap(sim.io.inputs, master.io.outs.size)
-  val OUT_TR_ADDRS = SimUtils.genIoMap(sim.io.outputs, master.io.outs.size + master.io.inT.size)
-  master.io.inT <> sim.io.inT
-  master.io.outT <> sim.io.outT
+  val IN_TR_ADDRS = SimUtils.genIoMap(simIo.inputs, master.io.outs.size)
+  val OUT_TR_ADDRS = SimUtils.genIoMap(simIo.outputs, master.io.outs.size + master.io.inT.size)
+  master.io.inT <> simIo.inT
+  master.io.outT <> simIo.outT
 
   if (p(EnableSnapshot)) {
-    val daisyController = addWidget(new DaisyController(sim.io.daisy), "DaisyChainController")
-    daisyController.io.daisy <> sim.io.daisy
+    val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
+    daisyController.io.daisy <> simIo.daisy
   }
 
   // Memory Connection
@@ -270,10 +267,10 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     case (target: Vec[_], wires: Vec[_]) => 
       (target.toSeq zip wires.toSeq) foreach targetConnect
     case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
-      target := Cat(sim.io.getOuts(wire).reverse map (_.bits))
+      target := Cat(simIo.getOuts(wire).reverse map (_.bits))
     case (target: Bits, wire: Bits) if wire.dir == INPUT => 
-      sim.io.getIns(wire).zipWithIndex foreach {case (in, i) => 
-        in.bits := target >> UInt(i * sim.io.channelWidth) 
+      simIo.getIns(wire).zipWithIndex foreach {case (in, i) =>
+        in.bits := target >> UInt(i * simIo.channelWidth)
       }
     case _ =>
   }
@@ -285,10 +282,10 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     def andReduceChunks(b: Bits): Bool = {
       b.dir match {
         case OUTPUT =>
-          val chunks = sim.io.getOuts(b)
+          val chunks = simIo.getOuts(b)
           chunks.foldLeft(Bool(true))(_ && _.valid)
         case INPUT =>
-          val chunks = sim.io.getIns(b)
+          val chunks = simIo.getIns(b)
           chunks.foldLeft(Bool(true))(_ && _.ready)
         case _ => throw new RuntimeException("Wire must have a direction")
       }
@@ -298,12 +295,12 @@ class ZynqShim[+T <: SimNetwork](c: =>T)(implicit p: Parameters) extends Module 
     port.fromHost.hReady := inWires map (andReduceChunks(_)) reduce(_ && _)
     // Pass the hReady back to the chunks of all target driven fields
     outWires foreach {(outWire: Bits) => {
-      val chunks = sim.io.getOuts(outWire)
+      val chunks = simIo.getOuts(outWire)
       chunks foreach (_.ready := port.toHost.hReady)
     }}
     // Pass the hValid back to the chunks for all target sunk fields
     inWires foreach {(inWire: Bits) => {
-      val chunks = sim.io.getIns(inWire)
+      val chunks = simIo.getIns(inWire)
       chunks foreach (_.valid := port.fromHost.hValid)
     }}
   }
