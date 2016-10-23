@@ -6,7 +6,6 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL);
-  srand(seed);
   trace_len = 128; // by master widget
 
 #ifdef ENABLE_SNAPSHOT
@@ -88,6 +87,7 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     if (arg.find("+profile") == 0) profile = true;
 #endif
   }
+  srand(seed);
 
 #ifdef ENABLE_SNAPSHOT
   samples = new sample_t*[sample_num];
