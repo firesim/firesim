@@ -27,7 +27,6 @@ public:
   uint32_t uint() const { return data[0]; }
   const uint32_t& operator[](size_t idx) const { return data[idx]; }
   std::string str();
-  const char* c_str() { return str().c_str(); }
   uint32_t* const get_data() const { return data; }
   const size_t get_size() const { return size; }
   biguint_t operator<<(const size_t shamt);

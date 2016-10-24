@@ -42,7 +42,7 @@ public:
   void reset(size_t n) {
     biguint_t one = 1;
     size_t id = replay_data.signal_map["reset"];
-    put_value(replay_data.signals[id], one, false);
+    put_value(replay_data.signals[id], &one, false);
     take_steps(n);
   }
 
@@ -58,18 +58,15 @@ public:
             step(p->n);
           }
           if (load_t* p = dynamic_cast<load_t*>(cmd)) {
-            biguint_t& data = *(p->value);
             std::string signal = p->idx < 0 ? p->node :
               p->node + "[" + std::to_string(p->idx) + "]";
-            load(signal, data);
+            load(signal, p->value);
           }
           if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-            biguint_t data(p->value, p->size);
-            poke(p->node, data);
+            poke(p->node, p->value);
           }
           if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-            biguint_t expected(p->value, p->size);
-            pass &= expect(p->node, expected);
+            pass &= expect(p->node, p->value);
           }
         }
       }
@@ -106,7 +103,7 @@ private:
       size_t type, n, idx;
       uint64_t cycles;
       std::string signal, dummy;
-      biguint_t value, *pvalue = NULL;
+      biguint_t *value = NULL;
       iss >> type;
       switch((SAMPLE_INST_TYPE) type) {
         case CYCLE:
@@ -116,19 +113,19 @@ private:
           steps = 0;
           break;
         case LOAD:
-          pvalue = new biguint_t;
-          iss >> signal >> *pvalue >> idx;
-          sample->add_cmd(new load_t(signal, pvalue, idx));
+          value = new biguint_t;
+          iss >> signal >> *value >> idx;
+          sample->add_cmd(new load_t(signal, value, idx));
           break;
         case FORCE:
-          pvalue = new biguint_t;
-          iss >> signal >> *pvalue;
-          sample->add_cmd(new force_t(signal, pvalue));
+          value = new biguint_t;
+          iss >> signal >> *value;
+          sample->add_cmd(new force_t(signal, value));
           break;
         case POKE:
-          iss >> signal >> value;
-          sample->add_cmd(
-            new poke_t(signal, value.get_data(), value.get_size()));
+          value = new biguint_t;
+          iss >> signal >> *value;
+          sample->add_cmd(new poke_t(signal, value));
           break;
         case STEP:
           iss >> n;
@@ -136,9 +133,9 @@ private:
           steps += n;
           break;
         case EXPECT:
-          iss >> signal >> value;
-          if (steps > 1) sample->add_cmd(
-            new expect_t(signal, value.get_data(), value.get_size()));
+          value = new biguint_t;
+          iss >> signal >> *value;
+          if (steps > 1) sample->add_cmd(new expect_t(signal, value));
           break;
         default:
           break;
@@ -148,7 +145,7 @@ private:
   }
 
   virtual void take_steps(size_t) = 0;
-  virtual void put_value(T& sig, biguint_t& data, bool force = false) = 0;
+  virtual void put_value(T& sig, biguint_t* data, bool force = false) = 0;
   virtual biguint_t get_value(T& sig) = 0;
 
   inline void step(size_t n) {
@@ -162,34 +159,34 @@ private:
       throw std::runtime_error(std::string("Signal map doesn't contain ") + signal);
   }
 
-  inline void force(const std::string& node, biguint_t& data) {
-    if (log) std::cerr << " * FORCE " << node << " <- 0x" << data << " *" << std::endl;
+  inline void force(const std::string& node, biguint_t* data) {
+    if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, true);
   }
 
-  inline void load(const std::string& node, biguint_t& data) {
-    if (log) std::cerr << " * LOAD " << node << " <- 0x" << data << " *" << std::endl;
+  inline void load(const std::string& node, biguint_t* data) {
+    if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
 
-  inline void poke(const std::string& node, biguint_t& data) {
-    if (log) std::cerr << " * POKE " << node << " <- 0x" << data << " *" << std::endl;
+  inline void poke(const std::string& node, biguint_t* data) {
+    if (log) std::cerr << " * POKE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, false);
   }
 
-  inline bool expect(const std::string& node, biguint_t& expected) {
+  inline bool expect(const std::string& node, biguint_t* expected) {
     check_signal(node);
     size_t id = replay_data.signal_map[node];
     biguint_t value = get_value(replay_data.signals[id]);
-    bool pass = value == expected || cycles <= 1;
+    bool pass = value == *expected || cycles <= 1;
     if (log) {
-      std::cerr << " * EXPECT " << node << " -> 0x" << value << " ?= 0x" << expected;
+      std::cerr << " * EXPECT " << node << " -> 0x" << value << " ?= 0x" << *expected;
       std::cerr << (pass ? " : PASS" : " : FAIL") << " *" << std::endl;
     }
     return pass;

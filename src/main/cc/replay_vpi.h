@@ -24,7 +24,7 @@ private:
 
   void put_value(vpiHandle& sig, std::string& value, bool force=false);
   void get_value(vpiHandle& sig, std::string& value);
-  virtual void put_value(vpiHandle& sig, biguint_t& data, bool force=false);
+  virtual void put_value(vpiHandle& sig, biguint_t* data, bool force=false);
   virtual biguint_t get_value(vpiHandle& sig);
   virtual void take_steps(size_t n);
 
