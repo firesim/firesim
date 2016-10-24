@@ -3,10 +3,11 @@ package strober
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
+import junctions.NastiIO
+import midas_widgets.ParameterizedBundle
+import SimUtils.{parsePorts, getChunks, genIoMap}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
-import junctions.NastiIO
-import SimUtils.{parsePorts, getChunks, genIoMap}
 
 class SimMemIO {
   private val memPorts = ArrayBuffer[NastiIO]()
@@ -144,8 +145,7 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   }
 }
 
-class ChannelIO(w: Int)(implicit p: Parameters) 
-    extends junctions.ParameterizedBundle()(p) {
+class ChannelIO(w: Int)(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val in    = Flipped(Decoupled(UInt(width=w)))
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
@@ -180,7 +180,7 @@ trait HasSimWrapperParams {
 }
 
 class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p: Parameters) 
-    extends junctions.ParameterizedBundle()(p) with HasSimWrapperParams {
+    extends ParameterizedBundle()(p) with HasSimWrapperParams {
   val (inputs, outputs) = parsePorts(io, Some(reset), mem)
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
