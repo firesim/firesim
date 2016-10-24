@@ -10,7 +10,6 @@ import StroberTransforms._
 import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class PlatformMapping(
-    io: => SimWrapperIO,
     target: String,
     dir: File,
     chainFile: FileWriter)
@@ -28,8 +27,6 @@ private[passes] class PlatformMapping(
     )
   }
 
-  private lazy val ioMap = (io.inputs ++ io.outputs).toMap
-
   private object TraceType extends Enumeration {
     val InTr = Value(ChainType.values.size)
     val OutTr = Value(ChainType.values.size + 1)
@@ -37,6 +34,7 @@ private[passes] class PlatformMapping(
 
   private def dumpTraceMap(c: ZynqShim) {
     implicit val channelWidth = c.sim.channelWidth
+    val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
     val sb = new StringBuilder
     def dump(t: TraceType.Value)(arg: (Bits, Int)) = arg match {
       case (wire, id) => s"${t.id} ${ioMap(wire)} ${id} ${SimUtils.getChunks(wire)}\n"
@@ -53,7 +51,7 @@ private[passes] class PlatformMapping(
 
   private def dumpHeader(c: ZynqShim) {
     implicit val channelWidth = c.sim.channelWidth
-    val ioMap = (c.sim.io.io.inputs ++ c.sim.io.io.outputs).toMap
+    val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
     def dump(arg: (String, Int)): String =
       s"#define ${arg._1} ${arg._2}\n"
     def dumpId(arg: (Bits, Int)): String =
@@ -143,7 +141,8 @@ private[passes] class PlatformMapping(
   }
 
   def run(c: Circuit) = {
-    lazy val shim = new ZynqShim(new SimBox(io))
+    val (sim, mem) = c match { case w: WCircuit => (w.sim, w.mem) }
+    lazy val shim = new ZynqShim(sim, mem)
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
     val annotations = new Annotations.AnnotationMap(Nil)
     val writer = new StringWriter

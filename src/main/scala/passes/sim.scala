@@ -14,7 +14,7 @@ import StroberTransforms._
 import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class SimulationMapping(
-    sim: => SimNetwork,
+    io: chisel3.Data,
     chainFile: FileWriter,
     childInsts: ChildInsts,
     instModMap: InstModMap,
@@ -41,7 +41,7 @@ private[passes] class SimulationMapping(
     }
   }
 
-  private def loop(mod: String, path: String)(chainType: ChainType.Value) {
+  private def loop(mod: String, path: String)(chainType: ChainType.Value)(implicit daisyWidth: Int) {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
@@ -86,7 +86,7 @@ private[passes] class SimulationMapping(
               totalWidth + width
             }
           })
-          val cw = (Stream from 0 map (chainWidth + _ * sim.daisyWidth) dropWhile (_ < dw)).head
+          val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           chainType match {
             case ChainType.SRAM => 
               addPad(cw, dw)(chainType)
@@ -103,7 +103,7 @@ private[passes] class SimulationMapping(
     childInsts(mod) foreach (child => loop(instModMap(child, mod), s"${path}.${child}")(chainType))
   }
 
-  private def dumpChainMap(target: String) {
+  private def dumpChainMap(target: String)(implicit daisyWidth: Int) {
     ChainType.values.toList foreach loop(target, target)
   }
 
@@ -128,15 +128,19 @@ private[passes] class SimulationMapping(
   }
 
   def run(c: Circuit) = {
+    val mem = new SimMemIO
+    lazy val sim = new SimWrapper(io, mem)
     val chirrtl = Parser parse (chisel3.Driver emit (() => sim))
     val annotations = new Annotations.AnnotationMap(Nil)
     val writer = new StringWriter
     // val writer = new FileWriter(new File("SimWrapper.ir"))
     val circuit = renameMods((new SimCompiler compile
       (chirrtl, annotations, writer)).circuit, Namespace(c))
+    val modules = c.modules ++ (circuit.modules flatMap
+      init(c.info, c.main, circuit.main))
     // writer.close
+    implicit val daisyWidth = sim.daisyWidth
     dumpChainMap(c.main)
-    circuit copy (modules = c.modules ++ (
-      circuit.modules flatMap init(c.info, c.main, circuit.main)))
+    new WCircuit(circuit.info, modules, circuit.main, sim.io, mem)
   }
 }
