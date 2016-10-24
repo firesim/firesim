@@ -48,7 +48,7 @@ struct load_t: sample_inst_t {
     node(node_.c_str()), value(value_), idx(idx_) { }
   ~load_t() { delete value; }
   void dump(FILE *file) const {
-    fprintf(file, "%u %s %s %d\n", LOAD, _NODE_, value->c_str(), idx);
+    fprintf(file, "%u %s %s %d\n", LOAD, _NODE_, value->str().c_str(), idx);
   }
   std::ostream& dump(std::ostream &os) const {
     return os << LOAD << " " << node << " " << *value << " " << idx << std::endl;
@@ -67,7 +67,7 @@ struct force_t: sample_inst_t {
     node(node_.c_str()), value(value_) { }
   ~force_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", FORCE, _NODE_, value->c_str());
+    fprintf(file, "%u %s %s\n", FORCE, _NODE_, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
     return os << FORCE << " " << node << " " << *value << std::endl;
@@ -80,54 +80,40 @@ struct force_t: sample_inst_t {
   biguint_t* const value;
 };
 
-
-void dump_f(
-  FILE *file,
-  SAMPLE_INST_TYPE type,
-  const char* const node,
-  const uint32_t* const value,
-  size_t size);
-std::ostream& dump_s(
-  std::ostream &os,
-  SAMPLE_INST_TYPE type,
-  const char* const node,
-  const uint32_t* const value,
-  size_t size);
-
 struct poke_t: sample_inst_t {
-  poke_t(const std::string &node_, uint32_t* const value_, size_t size_);
+  poke_t(const std::string& node_, biguint_t* value_):
+    node(node_.c_str()), value(value_) { }
   ~poke_t() { delete value; }
   virtual void dump(FILE *file) const {
-    dump_f(file, POKE, _NODE_, value, size);
+    fprintf(file, "%u %s %s\n", POKE, _NODE_, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, POKE, _NODE_, value, size);
-  } 
+    return os << POKE << " " << node << " " << *value << std::endl;
+  }
 #ifdef ENABLE_SNAPSHOT
   const char* const node;
 #else
   const std::string node;
 #endif
-  const size_t size;
-  uint32_t* const value;
+  biguint_t* const value;
 };
 
 struct expect_t: sample_inst_t {
-  expect_t(const std::string& node_, uint32_t* const value_, size_t size_); 
+  expect_t(const std::string& node_, biguint_t* value_):
+    node(node_.c_str()), value(value_) { }
   ~expect_t() { delete value; }
   virtual void dump(FILE *file) const {
-    dump_f(file, EXPECT, _NODE_, value, size);
+    fprintf(file, "%u %s %s\n", EXPECT, _NODE_, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, EXPECT, _NODE_, value, size);
+    return os << EXPECT << " " << node << " " << *value << std::endl;
   }
 #ifdef ENABLE_SNAPSHOT
   const char* const node;
 #else
   const std::string node;
 #endif
-  const size_t size;
-  uint32_t* const value;
+  biguint_t* const value;
 };
 
 struct count_t: sample_inst_t {
@@ -135,7 +121,7 @@ struct count_t: sample_inst_t {
     node(node_.c_str()), value(value_) { }
   ~count_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %" PRIu32 "\n", COUNT, _NODE_, value->uint());
+    fprintf(file, "%u %s %s\n", COUNT, _NODE_, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
     return os << COUNT << " " << node << " " << *value << std::endl;

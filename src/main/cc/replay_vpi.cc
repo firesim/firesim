@@ -109,8 +109,8 @@ void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
   value = value_s.value.str;
 }
 
-void replay_vpi_t::put_value(vpiHandle& sig, biguint_t& data, bool force) {
-  std::string value = data.str();
+void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, bool force) {
+  std::string value = data->str();
   put_value(sig, value, force);
 }
 

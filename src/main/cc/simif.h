@@ -61,7 +61,7 @@ class simif_t
     }
 
     inline void poke(size_t id, biguint_t& value) {
-      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.c_str());
+      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
       for (size_t off = 0 ; off < INPUT_CHUNKS[id] ; off++) {
         poke_map[id+off] = value[off];
       }
@@ -69,7 +69,7 @@ class simif_t
 
     inline void peek(size_t id, biguint_t& value) {
       value = biguint_t(peek_map+id, OUTPUT_CHUNKS[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.c_str());
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
     }
 
     inline bool expect(size_t id, uint32_t expected) {
@@ -85,7 +85,7 @@ class simif_t
       peek(id, value);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
-        TARGET_NAME, OUTPUT_NAMES[id], value.c_str(), expected.c_str(), pass ? "PASS" : "FAIL");
+        TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(), pass ? "PASS" : "FAIL");
       return expect(pass, NULL);
     }
 
