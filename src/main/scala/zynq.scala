@@ -135,15 +135,15 @@ class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
 }
 
-class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidgets {
+class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) extends Module with HasWidgets {
   val io = IO(new ZynqShimIO)
   // Simulation Target
-  val sim = Module(c)
+  val sim = Module(new SimBox(_simIo))
   val simIo = sim.io.io
   val simReset = Wire(Bool())
   val hostReset = Wire(Bool())
-  val ins = simIo.inMap.toList.tail filterNot (x => SimMemIO(x._1)) flatMap simIo.getIns // exclude reset
-  val outs = simIo.outMap.toList filterNot (x => SimMemIO(x._1)) flatMap simIo.getOuts
+  val ins = simIo.inMap.toList.tail filterNot (x => memIo(x._1)) flatMap simIo.getIns // exclude reset
+  val outs = simIo.outMap.toList filterNot (x => memIo(x._1)) flatMap simIo.getOuts
   val inBufs = ins.zipWithIndex map { case (in, i) =>
     val q = Module(new Queue(in.bits, 2, flow=true))
     in.bits := q.io.deq.bits
@@ -177,8 +177,8 @@ class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidg
   outBufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
 
   // Host Memory Channels
-  val arb = Module(new NastiArbiter(SimMemIO.size+1)(p alter Map(NastiKey -> p(SlaveNastiKey))))
-  val mem = arb.io.master(SimMemIO.size)
+  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(SlaveNastiKey))))
+  val mem = arb.io.master(memIo.size)
   private def genChannels(data: Data, prefix: String) = {
     val (ins, outs) = SimUtils.parsePorts(data)
     (ins ++ outs) map {case (w, n) => w -> s"${prefix}_${n}"} flatMap (
@@ -213,8 +213,8 @@ class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidg
 
   // Target Connection
   implicit val channelWidth = sim.channelWidth
-  val IN_ADDRS = SimUtils.genIoMap(simIo.inputs.tail filterNot (x => SimMemIO(x._1)), 0)
-  val OUT_ADDRS = SimUtils.genIoMap(simIo.outputs filterNot (x => SimMemIO(x._1)), 0)
+  val IN_ADDRS = SimUtils.genIoMap(simIo.inputs.tail filterNot (x => memIo(x._1)), 0)
+  val OUT_ADDRS = SimUtils.genIoMap(simIo.outputs filterNot (x => memIo(x._1)), 0)
   (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
   (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
 
@@ -239,10 +239,10 @@ class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidg
   (w zip master.io.mem.w) foreach {case (buf, io) => buf.io.in <> io}
   (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
 
-  mem.aw.bits := NastiWriteAddressChannel(UInt(SimMemIO.size), 
+  mem.aw.bits := NastiWriteAddressChannel(UInt(memIo.size),
     Cat(aw.reverse map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.ar.bits := NastiReadAddressChannel(UInt(SimMemIO.size), 
+  mem.ar.bits := NastiReadAddressChannel(UInt(memIo.size),
     Cat(ar.reverse map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
     p alter Map(NastiKey -> p(SlaveNastiKey)))
   mem.w.bits := NastiWriteDataChannel(Cat(w.reverse map (_.io.out.bits)))(
@@ -310,7 +310,7 @@ class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidg
     targetConnect(port.hBits -> wires)
   }
 
-  (0 until SimMemIO.size) foreach { i =>
+  (0 until memIo.size) foreach { i =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
         case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
@@ -321,7 +321,7 @@ class ZynqShim(c: => SimBox)(implicit p: Parameters) extends Module with HasWidg
     model.reset := reset || hostReset
 
     //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
-    val wires = SimMemIO(i)
+    val wires = memIo(i)
     val simResetReg = RegNext(simReset)
     val fakeTNasti = Wire(model.io.tNasti.cloneType)
     model.io.tNasti <> fakeTNasti

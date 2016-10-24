@@ -19,6 +19,13 @@ private object StroberTransforms {
   type InstModMap = HashMap[(String, String), String]
 }
 
+private class WCircuit(
+  info: Info,
+  modules: Seq[DefModule],
+  main: String,
+  val sim: SimWrapperIO,
+  val mem: SimMemIO) extends Circuit(info, modules, main)
+
 private class TransformAnalysis(
     childMods: ChildMods,
     childInsts: ChildInsts,
@@ -56,7 +63,6 @@ private[strober] class StroberTransforms(
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
   val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
-  lazy val sim = new SimWrapper(new TargetBox(io))
 
   def execute(circuit: Circuit, map: AnnotationMap) = {
     ((map get TransID(-2)): @unchecked) match {
@@ -69,8 +75,8 @@ private[strober] class StroberTransforms(
             new Fame1Transform(seqMems),
             new TransformAnalysis(childMods, childInsts, instModMap),
             new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-            new SimulationMapping(sim, chainFile, childInsts, instModMap, chains, seqMems),
-            new PlatformMapping(sim.io, circuit.main, dir, chainFile)
+            new SimulationMapping(io, chainFile, childInsts, instModMap, chains, seqMems),
+            new PlatformMapping(circuit.main, dir, chainFile)
           ))
       }
     }
