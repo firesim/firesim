@@ -3,7 +3,7 @@ util_dir = $(base_dir)/utils
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
 
-CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(base_dir)/dramsim2
+override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(base_dir)/dramsim2
 
 include $(util_dir)/Makefrag
 
@@ -18,8 +18,8 @@ include $(util_dir)/Makefrag
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
 
-CXXFLAGS := $(CXXFLAGS) -I$(base_dir) -I$(util_dir) $(if $(TESTBENCH),-I$(dir $(TESTBENCH)))
-LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++
+override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(if $(TESTBENCH),-I$(dir $(TESTBENCH)))
+override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++
 
 zynq_files := sample simif simif_zynq
 zynq_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(zynq_files)))
@@ -45,8 +45,8 @@ emul_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(emul_files)))
 emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 
 # Compile verilator emulation binary
-VERILATOR := verilator --cc --exe
-VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)"
+VERILATOR ?= verilator --cc --exe
+override VERILATOR_FLAGS := $(VERILATOR_FLAGS) --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
 
 $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
@@ -55,7 +55,7 @@ $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TEST
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module ZynqShim -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
 	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN).csrc/VZynqShim.h" \
-	-LDFLAGS "$(LDFLAGS) -lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
+	-LDFLAGS "-lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f VZynqShim.mk
 
 $(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
@@ -65,17 +65,17 @@ $(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h 
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module ZynqShim -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
 	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/VZynqShim.h" \
-	-LDFLAGS "$(LDFLAGS) -lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
+	-LDFLAGS "-lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f VZynqShim.mk
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 # Compile VCS emulation binary
-VCS := vcs -full64
-VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
-	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -I$(VCS_HOME)/include -DVCS" \
-	+define+CLOCK_PERIOD=$(CLOCK_PERIOD)
+VCS ?= vcs -full64
+override VCS_FLAGS := $(VCS_FLAGS) -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
+	-e vcs_main -cpp $(CXX) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	-CFLAGS "$(CXXFLAGS) -I$(VCS_HOME)/include -DVCS" -LDFLAGS "$(LDFLAGS)"
 
 $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
@@ -86,7 +86,7 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir
 	  rm -rf $(OUT_DIR)/$(DESIGN).daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
-	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "$(LDFLAGS) -lemul -lpthread" \
+	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(TESTBENCH) $(emul_cc) $(word 5, $^)
 
 $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
@@ -98,7 +98,7 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $
 	  rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list -debug_pp +define+DEBUG \
-	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "$(LDFLAGS) -lemul -lpthread" \
+	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(TESTBENCH) $(emul_cc) $(word 5, $^)
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
