@@ -20,7 +20,7 @@ object WidgetMMIO {
 }
 
 // All widgets must implement this interface
-abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
+abstract class WidgetIO(implicit p: Parameters) extends strober.ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 

@@ -2,25 +2,10 @@ package midas_widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.compatibility.throwException
 import junctions._
 import cde.{Parameters, Field}
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
-
-class ParameterizedBundle(implicit p: Parameters) extends Bundle {
-  override def cloneType = {
-    try {
-      this.getClass.getConstructors.head.newInstance(p).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.IllegalArgumentException =>
-        throwException("Unable to use ParamaterizedBundle.cloneType on " +
-                       this.getClass + ", probably because " + this.getClass +
-                       "() takes more than one argument.  Consider overriding " +
-                       "cloneType() on " + this.getClass, e)
-    }
-  }
-}
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
   * Returns a Seq of the leaf nodes with their absolute/final direction.
