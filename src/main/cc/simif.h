@@ -122,6 +122,9 @@ class simif_t
 #endif
     }
     inline size_t get_tracelen() { return trace_len; }
+    inline void assert_test(bool cond, std::string msg = "") {
+      if (!cond) throw std::runtime_error(msg.empty() ? "assert failed" : msg);
+    }
 
 #ifdef ENABLE_SNAPSHOT
   private:
