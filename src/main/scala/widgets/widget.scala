@@ -55,7 +55,6 @@ abstract class Widget(implicit p: Parameters) extends Module {
   }
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
-    require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
     channel <> Queue(enq, entries = 2)
     attachDecoupledSink(enq, name)

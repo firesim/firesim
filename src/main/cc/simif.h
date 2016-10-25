@@ -97,18 +97,18 @@ class simif_t
     }
 
     inline biguint_t read_mem(size_t addr) {
-      write(MEM_AR_ADDR, addr);
+      write(LOADMEM_R_ADDRESS, addr);
       uint32_t d[MEM_DATA_CHUNK];
       for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
-        d[off] = read(MEM_R_ADDR+off);
+        d[off] = read(LOADMEM_R_DATA);
       }
       return biguint_t(d, MEM_DATA_CHUNK);
     }
 
     inline void write_mem(size_t addr, biguint_t& data) {
-      write(MEM_AW_ADDR, addr);
-      for (size_t off = 0 ; off < MEM_DATA_CHUNK ; off++) {
-        write(MEM_W_ADDR+off, data[off]);
+      write(LOADMEM_W_ADDRESS, addr);
+      for (size_t off = 0; off < MEM_DATA_CHUNK; off++) {
+        write(LOADMEM_W_DATA, data[off]);
       }
     }
     
