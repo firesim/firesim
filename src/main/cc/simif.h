@@ -1,7 +1,6 @@
 #ifndef __SIMIF_H
 #define __SIMIF_H
 
-#include <cassert>
 #include <cstring>
 #include <sstream>
 #include <queue>
@@ -116,7 +115,7 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
     inline void set_tracelen(size_t len) {
-      assert(len > 2);
+      if (len <= 2) throw std::logic_error("len should be > 2");
       trace_len = len;
 #ifdef ENABLE_SNAPSHOT
       write(EMULATIONMASTER_TRACELEN, len);
