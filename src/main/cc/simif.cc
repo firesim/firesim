@@ -30,7 +30,8 @@ void simif_t::load_mem(std::string filename) {
   size_t addr = 0;
   std::string line;
   while (std::getline(file, line)) {
-    assert(line.length() % chunk == 0);
+    if (line.length() % chunk != 0)
+      throw std::runtime_error("line.length() %% chunk should be 0");
     for (int j = line.length() - chunk ; j >= 0 ; j -= chunk) {
       biguint_t data = 0;
       for (size_t k = 0 ; k < chunk ; k++) {
