@@ -19,7 +19,7 @@ OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
 
 override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(if $(TESTBENCH),-I$(dir $(TESTBENCH)))
-override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++
+override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++ 
 
 zynq_files := sample simif simif_zynq
 zynq_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(zynq_files)))
