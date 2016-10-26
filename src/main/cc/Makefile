@@ -75,7 +75,9 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 VCS ?= vcs -full64
 override VCS_FLAGS := $(VCS_FLAGS) -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
 	-e vcs_main -cpp $(CXX) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
-	-CFLAGS "$(CXXFLAGS) -I$(VCS_HOME)/include -DVCS" -LDFLAGS "$(LDFLAGS)"
+	-CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include -I$(RISCV)/include" \
+	-LDFLAGS "$(LDFLAGS) -L$(RISCV)/lib -lfesvr -Wl,-rpath,$(RISCV)/lib" \
+	$(RISCV)/lib/libfesvr.so
 
 $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
