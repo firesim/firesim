@@ -18,16 +18,18 @@ include $(util_dir)/Makefrag
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
 
-override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(if $(TESTBENCH),-I$(dir $(TESTBENCH)))
+override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(foreach t, $(TESTBENCH), -I$(dir $(t)))
 override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++ 
+
+testbench_h = $(foreach t, $(TESTBENCH), $(wildcard $(dir $(t))/*.h))
 
 zynq_files := sample simif simif_zynq
 zynq_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(zynq_files)))
 zynq_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(zynq_files)))
 
-$(OUT_DIR)/$(DESIGN)-zynq: $(TESTBENCH) $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(zynq_cc) $(zynq_h)
+$(OUT_DIR)/$(DESIGN)-zynq: $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(TESTBENCH) $(testbench_h) $(zynq_cc) $(zynq_h)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) -include $(word 2, $^) -o $@ $< $(word 3, $^) $(zynq_cc)
+	$(CXX) $(CXXFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $(zynq_cc)
 
 zynq: $(OUT_DIR)/$(DESIGN)-zynq
 
@@ -48,7 +50,7 @@ emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 VERILATOR ?= verilator --cc --exe
 override VERILATOR_FLAGS := $(VERILATOR_FLAGS) --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
 
-$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/V$(DESIGN).csrc ]; then \
 	  rm -rf $(GEN_DIR)/V$(DESIGN).csrc; \
@@ -58,7 +60,7 @@ $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TEST
 	-LDFLAGS "-lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f VZynqShim.mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/V$(DESIGN)-debug.csrc ]; then \
 	  rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc; \
@@ -79,7 +81,7 @@ override VCS_FLAGS := $(VCS_FLAGS) -quiet -timescale=1ns/1ps +v2k +rad +vcs+init
 	-LDFLAGS "$(LDFLAGS) -L$(RISCV)/lib -lfesvr -Wl,-rpath,$(RISCV)/lib" \
 	$(RISCV)/lib/libfesvr.so
 
-$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN).csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN).csrc; \
@@ -89,9 +91,9 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
-	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(TESTBENCH) $(emul_cc) $(word 5, $^)
+	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(TESTBENCH) $(util_dir)/libemul.a $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN)-debug.csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc; \
@@ -101,7 +103,7 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list -debug_pp +define+DEBUG \
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
-	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(TESTBENCH) $(emul_cc) $(word 5, $^)
+	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
