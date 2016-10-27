@@ -383,7 +383,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   const char* loadmem = NULL;
   const char* waveform = "dump.vcd";
   bool dramsim = false;
-  size_t memsize = 1 << 30;
+  uint64_t memsize = 0xc0000000L;
   for (auto &arg: args) {
     if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
@@ -395,7 +395,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
       dramsim = true;
     }
     if (arg.find("+memsize=") == 0) {
-      memsize = strtol(arg.c_str() + 9, NULL, 10);
+      memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
   }
 
