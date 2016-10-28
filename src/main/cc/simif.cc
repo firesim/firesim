@@ -44,7 +44,7 @@ void simif_t::load_mem(std::string filename) {
   file.close();
 }
 
-void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
+void simif_t::init(int argc, char** argv, bool log) {
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
@@ -69,7 +69,7 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
-    if (!fast_loadmem && arg.find("+loadmem=") == 0) {
+    if (arg.find("+fastloadmem") != 0 && arg.find("+loadmem=") == 0) {
       std::string filename = arg.c_str()+9;
       fprintf(stdout, "[loadmem] start loading\n");
       load_mem(filename);

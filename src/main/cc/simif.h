@@ -44,7 +44,7 @@ class simif_t
 
   public:
     // Simulation APIs
-    virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = false);
+    virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
     void step(size_t n);
 
