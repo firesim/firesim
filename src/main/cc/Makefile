@@ -48,7 +48,7 @@ emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 
 # Compile verilator emulation binary
 VERILATOR ?= verilator --cc --exe
-override VERILATOR_FLAGS := $(VERILATOR_FLAGS) --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
+override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)" $(VERILATOR_FLAGS)
 
 $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
@@ -75,11 +75,9 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 
 # Compile VCS emulation binary
 VCS ?= vcs -full64
-override VCS_FLAGS := $(VCS_FLAGS) -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
-	-e vcs_main -cpp $(CXX) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
-	-CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include -I$(RISCV)/include" \
-	-LDFLAGS "$(LDFLAGS) -L$(RISCV)/lib -lfesvr -Wl,-rpath,$(RISCV)/lib" \
-	$(RISCV)/lib/libfesvr.so
+override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
+	-debug_pp -e vcs_main -cpp $(CXX) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	-CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS)" $(VCS_FLAGS)
 
 $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
@@ -101,7 +99,7 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $
 	if [ -a $(OUT_DIR)/$(DESIGN)-debug.daidir ]; then \
 	  rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir; \
 	fi
-	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list -debug_pp +define+DEBUG \
+	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list +define+DEBUG \
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
@@ -123,7 +121,7 @@ $(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(util_dir
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc \
 	+define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
-	-debug_pp +vpi -P $(r_dir)/vpi.tab -LDFLAGS "$(LDFLAGS) -lreplay" \
+	+vpi -P $(r_dir)/vpi.tab -LDFLAGS "$(LDFLAGS) -lreplay" \
 	-o $@ $< $(word 2, $^) $(replay_cc) $(word 3, $^)
 
 vcs-replay: $(OUT_DIR)/$(DESIGN)-replay
