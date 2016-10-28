@@ -376,7 +376,7 @@ void handle_sigterm(int sig) {
 
 simif_emul_t::~simif_emul_t() { }
 
-void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
+void simif_emul_t::init(int argc, char** argv, bool log) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
   const char* loadmem = NULL;
@@ -384,7 +384,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   bool dramsim = false;
   uint64_t memsize = 0xc0000000L;
   for (auto &arg: args) {
-    if (arg.find("+loadmem=") == 0) {
+    if (arg.find("+fastloadmem") == 0 && arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
     }
     if (arg.find("+waveform=") == 0) {
@@ -404,7 +404,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
   slave->init(memsize, MEM_DATA_BITS / 8, 64);
 
-  if (fast_loadmem && loadmem) {
+  if (loadmem) {
     fprintf(stdout, "fast loadmem: %s\n", loadmem);
     void* mems[1];
     mems[0] = slave->get_data();
@@ -438,7 +438,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   top->reset = 0;
 #endif
 
-  simif_t::init(argc, argv, log, fast_loadmem);
+  simif_t::init(argc, argv, log);
 }
 
 int simif_emul_t::finish() {

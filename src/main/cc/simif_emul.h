@@ -11,7 +11,7 @@ class simif_emul_t : public virtual simif_t
   public:
     simif_emul_t() { }
     virtual ~simif_emul_t();
-    virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = true);
+    virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
 
   protected:
