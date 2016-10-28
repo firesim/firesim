@@ -4,7 +4,7 @@ $(DRAMSIM_OBJS): %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -DNO_STORAGE -DNO_OUTPUT -Dmain=nomain -c -o $@ $<
 
 # Compile utility code
-emul_files := biguint mmio mm mm_dramsim2
+emul_files := biguint context mmio mm mm_dramsim2
 replay_files := biguint context
 
 UTIL_OBJS = $(patsubst %.cc, %.o, $(wildcard $(utils_dir)/*.cc))

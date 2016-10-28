@@ -1,6 +1,7 @@
 #include "simif_emul.h"
 #ifdef VCS
 #include <DirectC.h>
+#include "context.h"
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -8,18 +9,19 @@
 #endif
 #endif
 #include <signal.h>
-#include <iostream>
+#include <memory>
 
 static const size_t MEM_WIDTH = MEM_DATA_BITS / 8;
 static const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
 static uint64_t main_time = 0;
-static mmio_t* master = NULL;
-static mm_t* slave = NULL;
+static std::unique_ptr<mmio_t> master;
+static std::unique_ptr<mm_t> slave;
 static int exitcode;
 
 // TODO: generalize tick
 #ifdef VCS
-static context_t* host = NULL;
+static context_t* host;
+static context_t target;
 static bool is_reset = false;
 static bool vcs_fin = false;
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
@@ -36,12 +38,12 @@ extern "C" {
 extern int vcs_main(int argc, char** argv);
 }
 
-void simif_emul_t::target_thread(void *arg) {
-  target_args_t* targs = static_cast<target_args_t*>(arg);
+int target_thread(void *arg) {
+  target_args_t* targs = reinterpret_cast<target_args_t*>(arg);
   int argc = targs->argc;
   char** argv = targs->argv;
   delete targs;
-  vcs_main(argc, argv);
+  return vcs_main(argc, argv);
 }
 
 extern "C" {
@@ -359,10 +361,7 @@ void tick() {
 #endif
 
 void finish() {
-  delete master;
-  delete slave;
-#ifdef VCS
-#else
+#ifndef VCS
 #if VM_TRACE
   if (tfp) tfp->close();
   delete tfp;
@@ -399,9 +398,10 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
     }
   }
 
-  master = (mmio_t*) new mmio_t;
+  master = std::move(std::unique_ptr<mmio_t>(new mmio_t));
   master->init(CHANNEL_DATA_BITS / 8);
-  slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
+  slave = std::move(std::unique_ptr<mm_t>(
+    dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
   slave->init(memsize, MEM_DATA_BITS / 8, 64);
 
   if (fast_loadmem && loadmem) {

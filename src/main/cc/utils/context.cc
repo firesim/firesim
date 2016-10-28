@@ -5,7 +5,7 @@
 static __thread context_t* cur = NULL;
 
 context_t::context_t()
-  : creator(NULL), func(NULL), argc(0), argv(NULL),
+  : creator(NULL), func(NULL), arg(NULL),
     mutex(PTHREAD_MUTEX_INITIALIZER),
     cond(PTHREAD_COND_INITIALIZER), flag(0)
 {
@@ -28,15 +28,14 @@ void* context_t::wrapper(void* a)
   cur = ctx;
   ctx->creator->switch_to();
 
-  ctx->func(ctx->argc, ctx->argv);
+  ctx->func(ctx->arg);
   return NULL;
 }
 
-void context_t::init(int (*f)(int, char**), int c, char** v)
+void context_t::init(int (*f)(void*), void* a)
 {
   func = f;
-  argc = c;
-  argv = v;
+  arg = a;
   creator = current();
 
   if (flag != 0)

@@ -6,10 +6,6 @@
 #include "mm_dramsim2.h"
 #include "mmio.h"
 
-#ifdef VCS
-#include <fesvr/context.h>
-#endif
-
 class simif_emul_t : public virtual simif_t
 {
   public:
@@ -21,12 +17,6 @@ class simif_emul_t : public virtual simif_t
   protected:
     virtual void write(size_t addr, uint32_t data);
     virtual uint32_t read(size_t addr);
-
-#ifdef VCS
-  private:
-    context_t target;
-    static void target_thread(void *arg);
-#endif
 };
 
 #endif // __SIMIF_VERILATOR_H
