@@ -46,7 +46,7 @@ class simif_t
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
-    void step(size_t n);
+    void step(int n);
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);

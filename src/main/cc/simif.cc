@@ -131,7 +131,8 @@ int simif_t::finish() {
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-void simif_t::step(size_t n) {
+void simif_t::step(int n) {
+  if (n <= 0) throw std::invalid_argument("steps shoule be > 0");
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % trace_len == 0) {
@@ -154,7 +155,7 @@ void simif_t::step(size_t n) {
   if (trace_count < trace_len) trace_count += n;
 #endif
   // take steps
-  if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
+  if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
   write(EMULATIONMASTER_STEP, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     write(i, poke_map[i]);
