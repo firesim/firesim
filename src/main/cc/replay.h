@@ -8,6 +8,8 @@
 #include <iostream>
 #include "sample.h"
 
+enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_FORCE };
+
 template<class T> struct replay_data_t {
   std::vector<T> signals;
   std::map<std::string, size_t> signal_map;
@@ -42,11 +44,12 @@ public:
   void reset(size_t n) {
     biguint_t one = 1;
     size_t id = replay_data.signal_map["reset"];
-    put_value(replay_data.signals[id], &one, false);
+    put_value(replay_data.signals[id], &one, PUT_POKE);
     take_steps(n);
   }
 
   virtual void replay() {
+    reset(5);
     try {
       for (size_t k = 0 ; k < samples.size() ; k++) {
         sample_t *sample = samples[k];
@@ -145,7 +148,7 @@ private:
   }
 
   virtual void take_steps(size_t) = 0;
-  virtual void put_value(T& sig, biguint_t* data, bool force = false) = 0;
+  virtual void put_value(T& sig, biguint_t* data, PUT_VALUE_TYPE type) = 0;
   virtual biguint_t get_value(T& sig) = 0;
 
   inline void step(size_t n) {
@@ -163,21 +166,21 @@ private:
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, true);
+    put_value(replay_data.signals[id], data, PUT_FORCE);
   }
 
   inline void load(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, false);
+    put_value(replay_data.signals[id], data, PUT_LOAD);
   }
 
   inline void poke(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * POKE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     size_t id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, false);
+    put_value(replay_data.signals[id], data, PUT_POKE);
   }
 
   inline bool expect(const std::string& node, biguint_t* expected) {
