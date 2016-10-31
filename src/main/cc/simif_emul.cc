@@ -2,6 +2,7 @@
 #ifdef VCS
 #include <DirectC.h>
 #include "context.h"
+#include "vcs_main.h"
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -26,25 +27,6 @@ static bool is_reset = false;
 static bool vcs_fin = false;
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
-
-struct target_args_t {
-  target_args_t(int c, char** v):
-    argc(c), argv(v) { }
-  int argc;
-  char** argv;
-};
-
-extern "C" {
-extern int vcs_main(int argc, char** argv);
-}
-
-int target_thread(void *arg) {
-  target_args_t* targs = reinterpret_cast<target_args_t*>(arg);
-  int argc = targs->argc;
-  char** argv = targs->argv;
-  delete targs;
-  return vcs_main(argc, argv);
-}
 
 extern "C" {
 void tick(

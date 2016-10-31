@@ -1,12 +1,10 @@
 #include "replay_vpi.h"
-
-extern "C" {
-extern int vcs_main(int argc, char** argv);
-}
+#include "vcs_main.h"
 
 void replay_vpi_t::init(int argc, char** argv) {
   host = context_t::current();
-  target.init(vcs_main, argc, argv);
+  target_args_t *targs = new target_args_t(argc, argv);
+  target.init(target_thread, targs);
   replay_t::init(argc, argv);
   target.switch_to();
 }
