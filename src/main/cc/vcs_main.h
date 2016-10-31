@@ -1,3 +1,6 @@
+#ifndef __VCS_MAIN
+#define __VCS_MAIN
+
 extern "C" {
 extern int vcs_main(int argc, char** argv);
 }
@@ -16,3 +19,5 @@ int target_thread(void *arg) {
   delete targs;
   return vcs_main(argc, argv);
 }
+
+#endif // __VCS_MAIN
