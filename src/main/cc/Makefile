@@ -75,9 +75,14 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 
 # Compile VCS emulation binary
 VCS ?= vcs -full64
-override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
-	-debug_pp -e vcs_main -cpp $(CXX) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
-	-CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS)" $(VCS_FLAGS)
+override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp \
+	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS)" \
+	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+	+define+RANDOMIZE_GARBAGE_ASSIGN \
+	+define+RANDOMIZE_INVALID_ASSIGN \
+	$(VCS_FLAGS)
 
 $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
