@@ -6,7 +6,7 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL);
-  trace_len = 128; // by master widget
+  tracelen = 128; // by master widget
 
 #ifdef ENABLE_SNAPSHOT
   sample_file = std::string(TARGET_NAME) + ".sample";
@@ -78,6 +78,9 @@ void simif_t::init(int argc, char** argv, bool log) {
     if (arg.find("+seed=") == 0) {
       seed = strtoll(arg.c_str()+6, NULL, 10);
     }
+    if (arg.find("+tracelen=") == 0) {
+      tracelen = strtol(arg.c_str()+10, NULL, 10);
+    }
 #ifdef ENABLE_SNAPSHOT
     if (arg.find("+sample=") == 0) {
       sample_file = arg.c_str()+8;
@@ -135,9 +138,9 @@ void simif_t::step(int n) {
   if (n <= 0) throw std::invalid_argument("steps shoule be > 0");
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
-  if (t % trace_len == 0) {
+  if (t % tracelen == 0) {
     uint64_t start_time = 0;
-    size_t record_id = t / trace_len;
+    size_t record_id = t / tracelen;
     size_t sample_id = record_id < sample_num ? record_id : rand() % (record_id + 1);
     if (sample_id < sample_num) {
       sample_count++;
@@ -152,7 +155,7 @@ void simif_t::step(int n) {
       if (profile) sample_time += (timestamp() - start_time);
     }
   }
-  if (trace_count < trace_len) trace_count += n;
+  if (trace_count < tracelen) trace_count += n;
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
