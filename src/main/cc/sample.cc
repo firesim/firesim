@@ -37,11 +37,15 @@ void sample_t::init_chains(std::string filename) {
       widths[type].push_back(width);
       depths[type].push_back(depth);
       chain_len[type] += width;
-      if (type == SRAM_CHAIN && !signal.empty()) {
-        if (depth <= 0) throw std::runtime_error("depth should be > 0");
-        chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
-      } else {
-        chain_loop[type] = 1;
+      switch ((CHAIN_TYPE) type) {
+        case SRAM_CHAIN:
+          if (!signal.empty() && depth > 0) {
+            chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
+          }
+          break;
+        default:
+          chain_loop[type] = 1;
+          break;
       }
     } else {
       size_t id, chunk;
