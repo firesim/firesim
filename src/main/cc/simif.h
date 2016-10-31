@@ -31,7 +31,7 @@ class simif_t
     uint64_t t;
     uint64_t fail_t;
     time_t seed; 
-    size_t trace_len;
+    size_t tracelen;
 
     // maps 
     uint32_t poke_map[POKE_SIZE];
@@ -116,12 +116,12 @@ class simif_t
 
     inline void set_tracelen(size_t len) {
       if (len <= 2) throw std::logic_error("len should be > 2");
-      trace_len = len;
+      tracelen = len;
 #ifdef ENABLE_SNAPSHOT
       write(EMULATIONMASTER_TRACELEN, len);
 #endif
     }
-    inline size_t get_tracelen() { return trace_len; }
+    inline size_t get_tracelen() { return tracelen; }
     inline void assert_test(bool cond, std::string msg = "") {
       if (!cond) throw std::runtime_error(msg.empty() ? "assert failed" : msg);
     }
