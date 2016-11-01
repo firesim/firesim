@@ -26,7 +26,7 @@ abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p)
 
 abstract class Widget(implicit p: Parameters) extends Module {
   private var _finalized = false
-  private val crRegistry = new MCRFileMap()
+  protected val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs()
 
   override def io: WidgetIO
