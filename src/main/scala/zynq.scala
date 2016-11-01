@@ -133,57 +133,45 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   // Simulation Target
   val sim = Module(new SimBox(_simIo))
   val simIo = sim.io.io
+  // This reset is used to return the emulation to time 0.
   val simReset = Wire(Bool())
-  val hostReset = Wire(Bool())
-  val ins = simIo.inMap.toList.tail filterNot (x => memIo(x._1)) flatMap simIo.getIns // exclude reset
-  val outs = simIo.outMap.toList filterNot (x => memIo(x._1)) flatMap simIo.getOuts
-  val inBufs = ins.zipWithIndex map { case (in, i) =>
-    val q = Module(new Queue(in.bits, 2, flow=true))
-    in.bits := q.io.deq.bits
-    q.reset := reset || hostReset
-    q suggestName s"in_buf_${i}" ; q }
-  val outBufs = outs.zipWithIndex map { case (out, i) =>
-    val q = Module(new Queue(out.bits, 2, flow=true))
-    q.io.enq.bits := out.bits
-    q.reset := reset || hostReset
-    q suggestName s"out_buf_${i}" ; q }
 
-  // Pass Tokens
-  val tickCounter = RegInit(UInt(0))
-  val tockCounter = RegInit(UInt(0))
-  val tick = (inBufs foldLeft tickCounter.orR)(_ && _.io.deq.valid) &&
-             (simIo.ins foldLeft Bool(true))(_ && _.ready)
-  val tock = ((outBufs foldLeft tockCounter.orR)(_ && _.io.enq.ready)) &&
-             (simIo.outs foldLeft Bool(true))(_ && _.valid)
-  val idle = !tickCounter.orR && !tockCounter.orR
+  implicit val channelWidth = sim.channelWidth
   sim.io.clock := clock
-  sim.io.reset := reset || hostReset
-  simIo.ins(0).bits  := simReset
-  simIo.ins(0).valid := tick || simReset
-  when(tick) { tickCounter := tickCounter - UInt(1) }
-  when(tock) { tockCounter := tockCounter - UInt(1) }
-  when(simReset) { tickCounter := UInt(0) }
-  when(simReset) { tockCounter := UInt(1) }
-  ins foreach (_.valid := tick || simReset)
-  outs foreach (_.ready := tock)
-  inBufs foreach (_.io.deq.ready := tick && tickCounter === UInt(1))
-  outBufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
+  sim.io.reset := reset || simReset
 
+  // Exclude only NastiIO for now
+  val pokedIns = simIo.inputs filterNot (x => memIo(x._1))
+  val peekedOuts = simIo.outputs filterNot (x => memIo(x._1))
+  
 
   val master = addWidget(new ZynqMasterHandler(new ZynqMasterHandlerArgs(
-    simIo, ins.size, outs.size))(
+    simIo, pokedIns.size, peekedOuts.size))(
     p alter Map(NastiKey -> p(CtrlNastiKey))), "ZynqMasterHandler")
 
   val widgetizedMaster = addWidget(new EmulationMaster, "EmulationMaster")
-  hostReset := widgetizedMaster.io.hostReset
   simReset := widgetizedMaster.io.simReset
 
-  when(widgetizedMaster.io.step.fire()) { 
-    tickCounter := widgetizedMaster.io.step.bits
-    tockCounter := widgetizedMaster.io.step.bits
-  }
-  widgetizedMaster.io.step.ready := idle && !hostReset
-  widgetizedMaster.io.done := idle && !hostReset
+  val inputsWithWidth = pokedIns map { case (wire, name) => (name -> SimUtils.getChunks(wire)) }
+  val outputsWithWidth = peekedOuts map { case (wire, name) => (name -> SimUtils.getChunks(wire)) }
+
+  val defaultIOWidget = addWidget(
+    new PeekPokeIOWidget(inputsWithWidth, outputsWithWidth),
+    "DefaultIOWidget")
+  defaultIOWidget.io.step <> widgetizedMaster.io.step
+  widgetizedMaster.io.done := defaultIOWidget.io.idle
+  defaultIOWidget.reset := reset || simReset
+
+
+  // Get only the channels driven by the PeekPoke widget
+  val inputChannels = pokedIns.unzip._1.flatMap(simIo.getIns(_))
+  val outputChannels = peekedOuts.unzip._1.flatMap(simIo.getOuts(_))
+
+  def connectChannels(sinks: Seq[DecoupledIO[UInt]], srcs: Seq[DecoupledIO[UInt]]): Unit =
+    sinks.zip(srcs) foreach { case (src, sink) =>  sink <> src }
+
+  connectChannels(inputChannels, defaultIOWidget.io.ins)
+  connectChannels(defaultIOWidget.io.outs, outputChannels)
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
@@ -197,11 +185,8 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   }
 
   // Target Connection
-  implicit val channelWidth = sim.channelWidth
   val IN_ADDRS = SimUtils.genIoMap(simIo.inputs.tail filterNot (x => memIo(x._1)), 0)
   val OUT_ADDRS = SimUtils.genIoMap(simIo.outputs filterNot (x => memIo(x._1)), 0)
-  (inBufs zip master.io.ins) foreach {case (buf, in) => buf.io.enq <> in}
-  (master.io.outs zip outBufs) foreach {case (out, buf) => out <> buf.io.deq}
 
   val IN_TR_ADDRS = SimUtils.genIoMap(simIo.inputs, master.io.outs.size)
   val OUT_TR_ADDRS = SimUtils.genIoMap(simIo.outputs, master.io.outs.size + master.io.inT.size)
@@ -270,7 +255,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
       }, s"MemModel_$i")
 
     arb.io.master(i) <> model.io.host_mem
-    model.reset := reset || hostReset
+    model.reset := reset || simReset
 
     //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
     val wires = memIo(i)

@@ -99,8 +99,11 @@ abstract class Widget(implicit p: Parameters) extends Module {
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
+  def headerComment(sb: StringBuilder): Unit = sb.append("\n// Widget: %s\n".format(getWName))
+
   def genHeader(base: BigInt, sb: StringBuilder){
     require(_finalized, "Must build Widgets with their companion object")
+    headerComment(sb)
     crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 

@@ -76,10 +76,7 @@ private[passes] class PlatformMapping(
       "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
       "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
-      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
-
-      "POKE_SIZE"         -> c.ins.size,
-      "PEEK_SIZE"         -> c.outs.size
+      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data)
     ) ++ c.sim.headerConsts
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)
@@ -87,18 +84,7 @@ private[passes] class PlatformMapping(
     csb append "static const char* const TARGET_NAME = \"%s\";\n".format(target)
     if (c.sim.enableSnapshot) csb append "#define ENABLE_SNAPSHOT\n"
     consts map dump addString csb
-    csb append "// IDs assigned to I/Os\n"
-    c.IN_ADDRS map dumpId addString csb
-    c.OUT_ADDRS map dumpId addString csb
     c.genHeader(csb)
-    csb append "static const char* const INPUT_NAMES[POKE_SIZE] = {\n%s\n};\n".format(
-      c.IN_ADDRS flatMap dumpNames mkString ",\n")
-    csb append "static const char* const OUTPUT_NAMES[PEEK_SIZE] = {\n%s\n};\n".format(
-      c.OUT_ADDRS flatMap dumpNames mkString ",\n")
-    csb append "static const unsigned INPUT_CHUNKS[POKE_SIZE] = {%s};\n".format(
-      c.IN_ADDRS flatMap dumpChunks mkString ",")
-    csb append "static const unsigned OUTPUT_CHUNKS[PEEK_SIZE] = {%s};\n".format(
-      c.OUT_ADDRS flatMap dumpChunks mkString ",")
     csb append "#endif  // __%s_H\n".format(target.toUpperCase)
 
     val vsb = new StringBuilder
