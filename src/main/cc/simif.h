@@ -33,10 +33,6 @@ class simif_t
     time_t seed; 
     size_t tracelen;
 
-    // maps 
-    uint32_t poke_map[POKE_SIZE];
-    uint32_t peek_map[PEEK_SIZE];
-
   protected:
     // channel communication
     virtual void write(size_t addr, uint32_t data) = 0;
@@ -50,11 +46,11 @@ class simif_t
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
-      poke_map[id] = value;
+      write(INPUT_ADDRS[id], value);
     }
 
     inline uint32_t peek(size_t id) {
-      uint32_t value = peek_map[id]; 
+      uint32_t value = read(OUTPUT_ADDRS[id]); 
       if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, OUTPUT_NAMES[id], value);
       return value;
     }
@@ -62,12 +58,16 @@ class simif_t
     inline void poke(size_t id, biguint_t& value) {
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
       for (size_t off = 0 ; off < INPUT_CHUNKS[id] ; off++) {
-        poke_map[id+off] = value[off];
+        write(INPUT_ADDRS[id]+off, value[off]);
       }
     }
 
     inline void peek(size_t id, biguint_t& value) {
-      value = biguint_t(peek_map+id, OUTPUT_CHUNKS[id]);
+      uint32_t buf[16];
+      for (size_t off = 0; off < OUTPUT_CHUNKS[id]; off++) {
+        buf[off] = read(OUTPUT_ADDRS[id] + off);
+      }
+      value = biguint_t(buf, OUTPUT_CHUNKS[id]);
       if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
     }
 
@@ -94,6 +94,9 @@ class simif_t
       this->pass &= pass;
       return pass;
     }
+
+    // A default reset scheme that pulses the global chisel reset
+    void target_reset(int pulselength = 5);
 
     inline biguint_t read_mem(size_t addr) {
       write(LOADMEM_R_ADDRESS, addr);

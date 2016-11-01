@@ -50,21 +50,8 @@ void simif_t::init(int argc, char** argv, bool log) {
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
 #endif
 
-  for (size_t k = 0 ; k < 5 ; k++) {
-    write(EMULATIONMASTER_HOST_RESET, 1);
-    while(!read(EMULATIONMASTER_DONE));
-    write(EMULATIONMASTER_SIM_RESET, 1);
-    while(!read(EMULATIONMASTER_DONE));
-    for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-      peek_map[i] = read(i);
-    }
-#ifdef ENABLE_SNAPSHOT
-    // flush traces from initialization
-    trace_count = 1;
-    read_traces(NULL);
-    trace_count = 0;
-#endif
-  }
+  write(EMULATIONMASTER_SIM_RESET, 1);
+  while(!read(EMULATIONMASTER_DONE));
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -107,6 +94,14 @@ void simif_t::init(int argc, char** argv, bool log) {
   for (size_t i = 0 ; i < sample_num ; i++) samples[i] = NULL;
   if (profile) sim_start_time = timestamp();
 #endif
+}
+
+void simif_t::target_reset(int pulselength) {
+  poke(reset, 0);
+  step(1);
+  poke(reset, 1);
+  step(5);
+  poke(reset, 0);
 }
 
 int simif_t::finish() {
@@ -169,13 +164,7 @@ void simif_t::step(int n) {
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
   write(EMULATIONMASTER_STEP, n);
-  for (size_t i = 0 ; i < POKE_SIZE ; i++) {
-    write(i, poke_map[i]);
-  }
   while(!read(EMULATIONMASTER_DONE));
-  for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-    peek_map[i] = read(i);
-  }
   t += n;
 }
 
