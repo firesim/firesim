@@ -31,13 +31,13 @@ object Pulsify {
 
 class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new EmulationMasterIO)
-  Pulsify(genWOReg(io.hostReset, Bool(false), "HOST_RESET"), pulseLength = 4)
-  Pulsify(genWOReg(io.simReset, Bool(false), "SIM_RESET"), pulseLength = 1)
+  Pulsify(genWORegInit(io.hostReset,"HOST_RESET", Bool(false)), pulseLength = 4)
+  Pulsify(genWORegInit(io.simReset, "SIM_RESET", Bool(false)), pulseLength = 1)
 
   genAndAttachQueue(io.step, "STEP")
-  genROReg(io.done, UInt(0), "DONE")
+  genRORegInit(io.done, "DONE", UInt(0))
   if (p(strober.EnableSnapshot)) {
-    genWOReg(io.traceLen, UInt(128), "TRACELEN")
+    genWORegInit(io.traceLen, "TRACELEN", UInt(128))
   }
 
   genCRFile()
