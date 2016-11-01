@@ -271,7 +271,7 @@ class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widg
 
   // Handle SRAM restarts
   io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
-    Pulsify(genWOReg(sram.restart, Bool(false), s"SRAM_RESTART_$i"), pulseLength = 1)
+    Pulsify(genWORegInit(sram.restart, s"SRAM_RESTART_$i", Bool(false)), pulseLength = 1)
   }
   ChainType.values foreach { cType => bindDaisyChain(io.daisy(cType), cType.toString.toUpperCase) }
 
