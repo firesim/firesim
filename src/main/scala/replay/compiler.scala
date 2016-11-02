@@ -3,6 +3,7 @@ package replay
 
 import firrtl.ir.Circuit
 import firrtl.Annotations.{AnnotationMap, TransID}
+import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
@@ -14,7 +15,7 @@ private class Compiler(conf: File) extends firrtl.Compiler {
     new firrtl.IRToWorkingIR,
     new firrtl.ResolveAndCheck,
     new firrtl.HighFirrtlToMiddleFirrtl,
-    new firrtl.passes.InferReadWrite(TransID(-1)),
+    new firrtl.passes.memlib.InferReadWrite(TransID(-1)),
     new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
     new firrtl.MiddleFirrtlToLowFirrtl,
     new firrtl.EmitVerilogFromLowFirrtl(writer),
@@ -27,8 +28,8 @@ object Compiler {
     dir.mkdirs
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val annotations = new AnnotationMap(Seq(
-      firrtl.passes.InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
+      InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
+      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(conf) compile (chirrtl, annotations, verilog)
     genVerilogFragment(chirrtl.main, io, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
