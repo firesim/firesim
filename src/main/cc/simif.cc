@@ -68,30 +68,39 @@ void simif_t::init(int argc, char** argv, bool log) {
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
+  bool fastloadmem = false;
+  const char* loadmem = NULL;
   for (auto &arg: args) {
-    if (arg.find("+fastloadmem") != 0 && arg.find("+loadmem=") == 0) {
-      std::string filename = arg.c_str()+9;
-      fprintf(stdout, "[loadmem] start loading\n");
-      load_mem(filename);
-      fprintf(stdout, "[loadmem] done\n");
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
+    }
+    if (arg.find("+loadmem=") == 0) {
+      loadmem = arg.c_str() + 9;
     }
     if (arg.find("+seed=") == 0) {
-      seed = strtoll(arg.c_str()+6, NULL, 10);
+      seed = strtoll(arg.c_str() + 6, NULL, 10);
     }
     if (arg.find("+tracelen=") == 0) {
-      tracelen = strtol(arg.c_str()+10, NULL, 10);
+      tracelen = strtol(arg.c_str() + 10, NULL, 10);
     }
 #ifdef ENABLE_SNAPSHOT
     if (arg.find("+sample=") == 0) {
-      sample_file = arg.c_str()+8;
+      sample_file = arg.c_str() + 8;
     }
     if (arg.find("+samplenum=") == 0) {
-      sample_num = strtol(arg.c_str()+11, NULL, 10);
+      sample_num = strtol(arg.c_str() + 11, NULL, 10);
     }
-    if (arg.find("+profile") == 0) profile = true;
+    if (arg.find("+profile") == 0) {
+      profile = true;
+    }
 #endif
   }
   srand(seed);
+  if (!fastloadmem && loadmem) {
+    fprintf(stdout, "[loadmem] start loading\n");
+    load_mem(loadmem);
+    fprintf(stdout, "[loadmem] done\n");
+  }
 
 #ifdef ENABLE_SNAPSHOT
   samples = new sample_t*[sample_num];
