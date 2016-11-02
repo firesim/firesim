@@ -76,14 +76,10 @@ private[passes] class PlatformMapping(
       "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
       "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
+      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
 
       "POKE_SIZE"         -> c.ins.size,
-      "PEEK_SIZE"         -> c.outs.size,
-      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
-      "MEM_AR_ADDR"       -> c.AR_ADDR,
-      "MEM_AW_ADDR"       -> c.AW_ADDR,
-      "MEM_W_ADDR"        -> c.W_ADDR,
-      "MEM_R_ADDR"        -> c.R_ADDR
+      "PEEK_SIZE"         -> c.outs.size
     ) ++ c.sim.headerConsts
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)
