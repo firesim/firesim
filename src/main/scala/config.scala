@@ -23,3 +23,9 @@ class ZynqConfig extends Config(new SimConfig ++ new Config(
     case ZynqMMIOSize => BigInt(1) << 12 // 4 KB
   })
 )
+
+class ZynqConfigWithSnapshot extends Config(new Config(
+  (key, site, here) => key match {
+    case EnableSnapshot => true
+  }) ++ new ZynqConfig
+)
