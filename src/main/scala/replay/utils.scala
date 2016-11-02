@@ -19,10 +19,9 @@ private[replay] object getPorts {
 }
 
 private[replay] object genVerilogFragment {
-  // Generate synthesizable verilog harness
-  def apply(dut: chisel3.Module, writer: java.io.Writer) {
-    val dutName = dut.name
-    val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
+  // Generate verilog harness fragment
+  def apply(dutName: String, io: Data, writer: java.io.Writer) {
+    val (inputs, outputs) = getDataNames("io", io) partition (_._1.dir == chisel3.INPUT)
 
     writer write s"  `define TOP_TYPE $dutName\n"
     inputs foreach { case (node, name) =>
