@@ -6,7 +6,7 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL);
-  trace_len = 128; // by master widget
+  tracelen = 128; // by master widget
 
 #ifdef ENABLE_SNAPSHOT
   sample_file = std::string(TARGET_NAME) + ".sample";
@@ -30,7 +30,8 @@ void simif_t::load_mem(std::string filename) {
   size_t addr = 0;
   std::string line;
   while (std::getline(file, line)) {
-    assert(line.length() % chunk == 0);
+    if (line.length() % chunk != 0)
+      throw std::runtime_error("line.length() %% chunk should be 0");
     for (int j = line.length() - chunk ; j >= 0 ; j -= chunk) {
       biguint_t data = 0;
       for (size_t k = 0 ; k < chunk ; k++) {
@@ -43,7 +44,7 @@ void simif_t::load_mem(std::string filename) {
   file.close();
 }
 
-void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
+void simif_t::init(int argc, char** argv, bool log) {
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
@@ -67,27 +68,39 @@ void simif_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
+  bool fastloadmem = false;
+  const char* loadmem = NULL;
   for (auto &arg: args) {
-    if (!fast_loadmem && arg.find("+loadmem=") == 0) {
-      std::string filename = arg.c_str()+9;
-      fprintf(stdout, "[loadmem] start loading\n");
-      load_mem(filename);
-      fprintf(stdout, "[loadmem] done\n");
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
+    }
+    if (arg.find("+loadmem=") == 0) {
+      loadmem = arg.c_str() + 9;
     }
     if (arg.find("+seed=") == 0) {
-      seed = strtoll(arg.c_str()+6, NULL, 10);
+      seed = strtoll(arg.c_str() + 6, NULL, 10);
+    }
+    if (arg.find("+tracelen=") == 0) {
+      tracelen = strtol(arg.c_str() + 10, NULL, 10);
     }
 #ifdef ENABLE_SNAPSHOT
     if (arg.find("+sample=") == 0) {
-      sample_file = arg.c_str()+8;
+      sample_file = arg.c_str() + 8;
     }
     if (arg.find("+samplenum=") == 0) {
-      sample_num = strtol(arg.c_str()+11, NULL, 10);
+      sample_num = strtol(arg.c_str() + 11, NULL, 10);
     }
-    if (arg.find("+profile") == 0) profile = true;
+    if (arg.find("+profile") == 0) {
+      profile = true;
+    }
 #endif
   }
   srand(seed);
+  if (!fastloadmem && loadmem) {
+    fprintf(stdout, "[loadmem] start loading\n");
+    load_mem(loadmem);
+    fprintf(stdout, "[loadmem] done\n");
+  }
 
 #ifdef ENABLE_SNAPSHOT
   samples = new sample_t*[sample_num];
@@ -130,12 +143,13 @@ int simif_t::finish() {
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-void simif_t::step(size_t n) {
+void simif_t::step(int n) {
+  if (n <= 0) throw std::invalid_argument("steps shoule be > 0");
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
-  if (t % trace_len == 0) {
+  if (t % tracelen == 0) {
     uint64_t start_time = 0;
-    size_t record_id = t / trace_len;
+    size_t record_id = t / tracelen;
     size_t sample_id = record_id < sample_num ? record_id : rand() % (record_id + 1);
     if (sample_id < sample_num) {
       sample_count++;
@@ -150,10 +164,10 @@ void simif_t::step(size_t n) {
       if (profile) sample_time += (timestamp() - start_time);
     }
   }
-  if (trace_count < trace_len) trace_count += n;
+  if (trace_count < tracelen) trace_count += n;
 #endif
   // take steps
-  if (log) fprintf(stderr, "* STEP %zu -> %" PRIu64 " *\n", n, (t + n));
+  if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
   write(EMULATIONMASTER_STEP, n);
   for (size_t i = 0 ; i < POKE_SIZE ; i++) {
     write(i, poke_map[i]);

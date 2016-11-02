@@ -1,7 +1,8 @@
 #include "simif_emul.h"
 #ifdef VCS
-#include "context.h"
 #include <DirectC.h>
+#include "context.h"
+#include "vcs_main.h"
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -9,26 +10,25 @@
 #endif
 #endif
 #include <signal.h>
-#include <iostream>
+#include <memory>
 
 static const size_t MEM_WIDTH = MEM_DATA_BITS / 8;
 static const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
 static uint64_t main_time = 0;
-static mmio_t* master = NULL;
-static mm_t* slave = NULL;
+static std::unique_ptr<mmio_t> master;
+static std::unique_ptr<mm_t> slave;
 static int exitcode;
 
 // TODO: generalize tick
 #ifdef VCS
-
+static context_t* host;
+static context_t target;
 static bool is_reset = false;
 static bool vcs_fin = false;
-static context_t *host = NULL;
-static context_t *target = NULL;
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
+
 extern "C" {
-extern int vcs_main(int argc, char** argv);
 void tick(
   vc_handle reset,
   vc_handle vexit,
@@ -343,12 +343,7 @@ void tick() {
 #endif
 
 void finish() {
-  delete master;
-  delete slave;
-#ifdef VCS
-  // delete host;
-  // delete target;
-#else
+#ifndef VCS
 #if VM_TRACE
   if (tfp) tfp->close();
   delete tfp;
@@ -363,35 +358,40 @@ void handle_sigterm(int sig) {
 
 simif_emul_t::~simif_emul_t() { }
 
-void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
+void simif_emul_t::init(int argc, char** argv, bool log) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
   const char* loadmem = NULL;
   const char* waveform = "dump.vcd";
+  bool fastloadmem = false;
   bool dramsim = false;
-  size_t memsize = 1 << 30;
+  uint64_t memsize = 1L << 32;
   for (auto &arg: args) {
     if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
     }
-    if (arg.find("+waveform=") == 0) {
-      waveform = arg.c_str() + 10;
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
     }
     if (arg.find("+dramsim") == 0) {
       dramsim = true;
     }
+    if (arg.find("+waveform=") == 0) {
+      waveform = arg.c_str() + 10;
+    }
     if (arg.find("+memsize=") == 0) {
-      memsize = strtol(arg.c_str() + 9, NULL, 10);
+      memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
   }
 
-  master = (mmio_t*) new mmio_t;
+  master = std::move(std::unique_ptr<mmio_t>(new mmio_t));
   master->init(CHANNEL_DATA_BITS / 8);
-  slave = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
+  slave = std::move(std::unique_ptr<mm_t>(
+    dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
   slave->init(memsize, MEM_DATA_BITS / 8, 64);
 
-  if (fast_loadmem && loadmem) {
-    fprintf(stdout, "fast loadmem: %s\n", loadmem);
+  if (fastloadmem && loadmem) {
+    fprintf(stdout, "[fast loadmem] %s\n", loadmem);
     void* mems[1];
     mems[0] = slave->get_data();
     ::load_mem(mems, loadmem, MEM_DATA_BITS / 8, 1);
@@ -401,11 +401,11 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
 
 #ifdef VCS
   host = context_t::current();
-  target = new context_t;
-  target->init(vcs_main, argc, argv);
+  target_args_t *targs = new target_args_t(argc, argv);
+  target.init(target_thread, targs);
   is_reset = true;
   for (size_t i = 0 ; i < 10 ; i++)
-    target->switch_to(); 
+    target.switch_to();
   is_reset = false;
 #else
   top = new VZynqShim;
@@ -424,7 +424,7 @@ void simif_emul_t::init(int argc, char** argv, bool log, bool fast_loadmem) {
   top->reset = 0;
 #endif
 
-  simif_t::init(argc, argv, log, fast_loadmem);
+  simif_t::init(argc, argv, log);
 }
 
 int simif_emul_t::finish() {
@@ -439,7 +439,7 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
     master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, &data, CHANNEL_STRB);
     while(!master->write_resp()) {
 #ifdef VCS
-      target->switch_to();
+      target.switch_to();
 #else
       ::tick();
 #endif
@@ -448,7 +448,7 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
 #ifdef VCS
     expect(false, e.what());
     vcs_fin = true;
-    target->switch_to();
+    target.switch_to();
 #else
     throw e;
 #endif
@@ -461,7 +461,7 @@ uint32_t simif_emul_t::read(size_t addr) {
     master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE);
     while(!master->read_resp(&data)) {
 #ifdef VCS
-      target->switch_to();
+      target.switch_to();
 #else
       ::tick();
 #endif
@@ -470,7 +470,7 @@ uint32_t simif_emul_t::read(size_t addr) {
 #ifdef VCS
     expect(false, e.what());
     vcs_fin = true;
-    target->switch_to();
+    target.switch_to();
 #else
     throw e;
 #endif

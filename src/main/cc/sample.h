@@ -6,7 +6,6 @@
 #include <vector>
 #include <map>
 #include <ostream>
-#include <cassert>
 #include <inttypes.h>
 #include "biguint.h"
 

@@ -69,7 +69,7 @@ trait DaisyChainParams {
 }
 
 abstract class DaisyChainBundle(implicit val p: Parameters) 
-    extends junctions.ParameterizedBundle with DaisyChainParams
+    extends ParameterizedBundle with DaisyChainParams
 
 class DataIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
   val in = Flipped(Decoupled(UInt(INPUT, daisyWidth)))
@@ -116,7 +116,7 @@ class RegChainDatapath(implicit p: Parameters) extends DaisyChainModule()(p) {
   }
 }
 
-class DaisyControlIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
+class DaisyControlIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val stall = Bool(INPUT)
   val ctrlIo = new CntrIO
 }
@@ -168,7 +168,7 @@ class RegChain(implicit p: Parameters) extends DaisyChainModule()(p) {
 // Define sram daisy chains
 class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
 
-class AddrIO(implicit p: Parameters) extends junctions.ParameterizedBundle()(p) {
+class AddrIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val n = p(SRAMSize)
   val in = Flipped(Valid(UInt(width=log2Up(n))))
   val out = Valid(UInt(width=log2Up(n)))
