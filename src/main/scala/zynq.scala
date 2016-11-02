@@ -9,8 +9,7 @@ import midas_widgets._
 case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]
 
-case class ZynqMasterHandlerArgs(
-  sim: SimWrapperIO, inNum: Int, outNum: Int, arNum: Int, awNum: Int, rNum: Int, wNum: Int)
+case class ZynqMasterHandlerArgs(sim: SimWrapperIO, inNum: Int, outNum: Int)
 
 class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs,
                           channelType: => DecoupledIO[UInt])
@@ -20,12 +19,6 @@ class ZynqMasterHandlerIO(args: ZynqMasterHandlerArgs,
   val outs = Flipped(Vec(args.outNum, channelType))
   val inT  = Flipped(Vec(args.sim.inT.size, channelType))
   val outT = Flipped(Vec(args.sim.outT.size, channelType))
-  val mem  = new Bundle {
-    val ar = Vec(args.arNum, channelType)
-    val aw = Vec(args.awNum, channelType)
-    val r  = Flipped(Vec(args.rNum,  channelType))
-    val w  = Vec(args.wNum,  channelType)
-  }
 }
 
 class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters) extends Widget()(p) 
@@ -45,7 +38,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
   val wAddr = Reg(UInt(width=addrSizeBits))
   val wStateIdle :: wStateReady :: wStateWrite :: wStateAck :: Nil = Enum(UInt(), 4)
   val wState = RegInit(wStateIdle)
-  val inputSeq = (io.ins ++ io.mem.ar ++ io.mem.aw ++ io.mem.w).toSeq
+  val inputSeq = (io.ins).toSeq
   val inputs = Wire(Vec(inputSeq.size, ChannelType))
   (inputSeq zip inputs) foreach { case (x, y) =>
     // TODO: x <> y
@@ -95,7 +88,7 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
   val rStateIdle :: rStateRead :: Nil = Enum(UInt(), 2)
   val rState = RegInit(rStateIdle)
   val doRead = rState === rStateRead
-  val outputSeq = (io.outs ++ io.inT ++ io.outT ++ io.mem.r).toSeq
+  val outputSeq = (io.outs ++ io.inT ++ io.outT).toSeq
   val outputs = Wire(Vec(outputSeq.size, ChannelType))
   outputs zip outputSeq foreach { case (x, y) =>
     // TODO: x <> y
@@ -176,27 +169,12 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   inBufs foreach (_.io.deq.ready := tick && tickCounter === UInt(1))
   outBufs foreach (_.io.enq.valid := tock && tockCounter === UInt(1))
 
-  // Host Memory Channels
-  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(SlaveNastiKey))))
-  val mem = arb.io.master(memIo.size)
-  private def genChannels(data: Data, prefix: String) = {
-    val (ins, outs) = SimUtils.parsePorts(data)
-    (ins ++ outs) map {case (w, n) => w -> s"${prefix}_${n}"} flatMap (
-      SimUtils.genChannels(_)(p alter Map(EnableSnapshot -> false)))
-  }
-  val ar = genChannels(mem.ar.bits.addr, "ar")
-  val aw = genChannels(mem.aw.bits.addr, "aw")
-  val w  = genChannels(mem.w.bits.data,  "w")
-  val r  = genChannels(mem.r.bits.data,  "r")
-
-  io.slave <> arb.io.slave
 
   val master = addWidget(new ZynqMasterHandler(new ZynqMasterHandlerArgs(
-    simIo, ins.size, outs.size, ar.size, aw.size, r.size, w.size))(
+    simIo, ins.size, outs.size))(
     p alter Map(NastiKey -> p(CtrlNastiKey))), "ZynqMasterHandler")
 
   val widgetizedMaster = addWidget(new EmulationMaster, "EmulationMaster")
-
   hostReset := widgetizedMaster.io.hostReset
   simReset := widgetizedMaster.io.simReset
 
@@ -206,6 +184,13 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   }
   widgetizedMaster.io.step.ready := idle && !hostReset
   widgetizedMaster.io.done := idle && !hostReset
+
+  // Host Memory Channels
+  // Masters = Target memory channels + loadMemWidget
+  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(SlaveNastiKey))))
+  val loadMem = addWidget(new LoadMemWidget(SlaveNastiKey), "LOADMEM")
+  arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
+  io.slave <> arb.io.slave
 
   if (p(EnableSnapshot)) {
     simIo.traceLen := widgetizedMaster.io.traceLen
@@ -228,39 +213,6 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     daisyController.io.daisy <> simIo.daisy
   }
 
-  // Memory Connection
-  val AR_ADDR = master.io.ins.size
-  val AW_ADDR = AR_ADDR + master.io.mem.ar.size
-  val W_ADDR  = AW_ADDR + master.io.mem.aw.size
-  val R_ADDR  = master.io.outs.size +
-    master.io.inT.size + master.io.outT.size
-  (aw zip master.io.mem.aw) foreach {case (buf, io) => buf.io.in <> io}
-  (ar zip master.io.mem.ar) foreach {case (buf, io) => buf.io.in <> io}
-  (w zip master.io.mem.w) foreach {case (buf, io) => buf.io.in <> io}
-  (master.io.mem.r zip r) foreach {case (io, buf) => io <> buf.io.out}
-
-  mem.aw.bits := NastiWriteAddressChannel(UInt(memIo.size),
-    Cat(aw.reverse map (_.io.out.bits)), UInt(log2Up(mem.w.bits.nastiXDataBits/8)))(
-    p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.ar.bits := NastiReadAddressChannel(UInt(memIo.size),
-    Cat(ar.reverse map (_.io.out.bits)), UInt(log2Up(mem.r.bits.nastiXDataBits/8)))(
-    p alter Map(NastiKey -> p(SlaveNastiKey)))
-  mem.w.bits := NastiWriteDataChannel(Cat(w.reverse map (_.io.out.bits)))(
-    p alter Map(NastiKey -> p(SlaveNastiKey)))
-
-  r.zipWithIndex foreach {case (buf, i) =>
-    buf.io.in.bits := mem.r.bits.data >> UInt(i*sim.channelWidth)
-  }
-  mem.aw.valid := (aw foldLeft Bool(true))(_ && _.io.out.valid)
-  mem.ar.valid := (ar foldLeft Bool(true))(_ && _.io.out.valid)
-  mem.w.valid  := (w  foldLeft Bool(true))(_ && _.io.out.valid)
-  mem.r.ready  := (r  foldLeft Bool(true))(_ && _.io.in.ready)
-  mem.b.ready  := Bool(true)
-  aw foreach (_.io.out.ready := mem.aw.fire())
-  ar foreach (_.io.out.ready := mem.ar.fire())
-  w  foreach (_.io.out.ready := mem.w.fire())
-  r  foreach (_.io.in.valid  := mem.r.fire())
- 
   private def targetConnect[T <: Data](arg: (T, T)): Unit = arg match {
     case (target: Bundle, wires: Bundle) => 
       (target.elements.unzip._2 zip wires.elements.unzip._2) foreach targetConnect

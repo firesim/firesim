@@ -217,6 +217,9 @@ class MCRFileMap() {
     }
   }
 
+  // Returns a copy of the current register map
+  def getRegMap = name2addr.toMap
+
   def printCRs(): Unit = {
     regList.zipWithIndex foreach { case (entry, i) => println(s"Name: ${entry.name}, Addr: $i") }
   }

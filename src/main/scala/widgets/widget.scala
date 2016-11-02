@@ -26,7 +26,7 @@ abstract class WidgetIO(implicit p: Parameters) extends strober.ParameterizedBun
 
 abstract class Widget(implicit p: Parameters) extends Module {
   private var _finalized = false
-  private val crRegistry = new MCRFileMap()
+  protected val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs()
 
   override def io: WidgetIO
@@ -55,24 +55,36 @@ abstract class Widget(implicit p: Parameters) extends Module {
   }
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
-    require(channel.bits.dir == OUTPUT)
     val enq = Wire(channel.cloneType)
     channel <> Queue(enq, entries = 2)
     attachDecoupledSink(enq, name)
     channel
   }
 
-  def genAndAttachReg[T <: Bits](wire: T, default: T, name: String, masterDriven: Boolean = true): T = {
+  def genAndAttachReg[T <: Bits](
+      wire: T,
+      name: String,
+      default: Option[T] = None,
+      masterDriven: Boolean = true): T = {
     require(wire.getWidth <= io.ctrl.nastiXDataBits)
     // TODO: More elegant way to do this?
-    val reg = RegInit({val init = Wire(wire.cloneType); init := default; init})
+    val reg = if (default.isDefined) {
+      RegInit({val init = Wire(wire.cloneType); init := default.get; init})
+    } else {
+      Reg(wire.cloneType)
+    }
     if (masterDriven) wire := reg else reg := wire
     attach(reg, name)
     reg
   }
 
-  def genWOReg[T <: Bits](wire: T, default: T, name: String): T = genAndAttachReg(wire, default, name)
-  def genROReg[T <: Bits](wire: T, default: T, name: String): T = genAndAttachReg(wire, default, name, false)
+  def genWOReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name)
+  def genROReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
+
+  def genWORegInit[T <: Bits](wire: T, name: String, default: T): T =
+    genAndAttachReg(wire, name, Some(default))
+  def genRORegInit[T <: Bits](wire: T, name: String, default: T): T =
+    genAndAttachReg(wire, name, Some(default), false)
 
   def genCRFile() {
     val crFile = Module(new MCRFile(numRegs)(p alter Map(NastiKey -> p(CtrlNastiKey))))
