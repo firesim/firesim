@@ -1,12 +1,10 @@
 #include "replay_vpi.h"
-
-extern "C" {
-extern int vcs_main(int argc, char** argv);
-}
+#include "vcs_main.h"
 
 void replay_vpi_t::init(int argc, char** argv) {
   host = context_t::current();
-  target.init(vcs_main, argc, argv);
+  target_args_t *targs = new target_args_t(argc, argv);
+  target.init(target_thread, targs);
   replay_t::init(argc, argv);
   target.switch_to();
 }
@@ -91,15 +89,14 @@ void replay_vpi_t::probe_signals() {
   }
 }
 
-void replay_vpi_t::put_value(vpiHandle& sig, std::string& value, bool force) {
+void replay_vpi_t::put_value(vpiHandle& sig, std::string& value, PLI_INT32 flag) {
   s_vpi_value value_s;
   s_vpi_time time_s;
   value_s.format    = vpiHexStrVal;
   value_s.value.str = (PLI_BYTE8*) value.c_str();
   time_s.type       = vpiScaledRealTime;
-  time_s.real       = 0.0;
-  vpi_put_value(sig, &value_s, &time_s, force ? vpiForceFlag : vpiInertialDelay);
-  if (force) forces.push(sig);
+  time_s.real       = flag == vpiTransportDelay ? 0.1 : 0.0;
+  vpi_put_value(sig, &value_s, &time_s, flag);
 }
 
 void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
@@ -109,9 +106,15 @@ void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
   value = value_s.value.str;
 }
 
-void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, bool force) {
+void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, PUT_VALUE_TYPE type) {
   std::string value = data->str();
-  put_value(sig, value, force);
+  PLI_INT32 flag;
+  switch(type) {
+    case PUT_POKE: flag = vpiInertialDelay; break;
+    case PUT_LOAD: flag = vpiTransportDelay; break;
+    case PUT_FORCE: flag = vpiForceFlag; forces.push(sig); break;
+  }
+  put_value(sig, value, flag);
 }
 
 biguint_t replay_vpi_t::get_value(vpiHandle& sig) {

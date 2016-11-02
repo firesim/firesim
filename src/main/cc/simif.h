@@ -1,7 +1,6 @@
 #ifndef __SIMIF_H
 #define __SIMIF_H
 
-#include <cassert>
 #include <cstring>
 #include <sstream>
 #include <queue>
@@ -32,7 +31,7 @@ class simif_t
     uint64_t t;
     uint64_t fail_t;
     time_t seed; 
-    size_t trace_len;
+    size_t tracelen;
 
     // maps 
     uint32_t poke_map[POKE_SIZE];
@@ -45,9 +44,9 @@ class simif_t
 
   public:
     // Simulation APIs
-    virtual void init(int argc, char** argv, bool log = false, bool fast_loadmem = false);
+    virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
-    void step(size_t n);
+    void step(int n);
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
@@ -116,13 +115,16 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
     inline void set_tracelen(size_t len) {
-      assert(len > 2);
-      trace_len = len;
+      if (len <= 2) throw std::logic_error("len should be > 2");
+      tracelen = len;
 #ifdef ENABLE_SNAPSHOT
       write(EMULATIONMASTER_TRACELEN, len);
 #endif
     }
-    inline size_t get_tracelen() { return trace_len; }
+    inline size_t get_tracelen() { return tracelen; }
+    inline void assert_test(bool cond, std::string msg = "") {
+      if (!cond) throw std::runtime_error(msg.empty() ? "assert failed" : msg);
+    }
 
 #ifdef ENABLE_SNAPSHOT
   private:

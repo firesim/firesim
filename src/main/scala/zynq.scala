@@ -2,8 +2,8 @@ package strober
 
 import chisel3._
 import chisel3.util._
-import junctions._
 import cde.{Parameters, Field}
+import junctions._
 import midas_widgets._
 
 case object SlaveNastiKey extends Field[NastiParameters]

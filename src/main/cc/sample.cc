@@ -1,5 +1,4 @@
 #include "sample.h"
-#include <cassert>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -38,11 +37,15 @@ void sample_t::init_chains(std::string filename) {
       widths[type].push_back(width);
       depths[type].push_back(depth);
       chain_len[type] += width;
-      if (type == SRAM_CHAIN && !signal.empty()) {
-        assert(depth > 0);
-        chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
-      } else {
-        chain_loop[type] = 1;
+      switch ((CHAIN_TYPE) type) {
+        case SRAM_CHAIN:
+          if (!signal.empty() && depth > 0) {
+            chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
+          }
+          break;
+        default:
+          chain_loop[type] = 1;
+          break;
       }
     } else {
       size_t id, chunk;
@@ -89,7 +92,8 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       }
       start += width;
     }
-    assert(start % DAISY_WIDTH == 0);
+    if (start % DAISY_WIDTH > 0)
+      throw std::runtime_error("start %% DAISY_WIDTH should be 0");
   }
   // if (type == TRACE_CHAIN) dump_forces();
   return start;
