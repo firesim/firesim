@@ -1,8 +1,8 @@
 extern "A" void tick
 (
   output reg                          reset,
-  output reg                          exit,
-  output reg [31:0]                   exitcode,
+  output reg                          fin,
+  output reg                          err,
 
   output reg                          master_ar_valid,
   input  reg                          master_ar_ready,
@@ -72,8 +72,8 @@ extern "A" void tick
 module emul;
   reg clock = 1'b0;
   reg reset = 1'b1;
-  reg exit = 1'b0;
-  reg [31:0] exitcode = 0;
+  reg fin = 1'b0;
+  reg err = 1'b0;
 
   always #`CLOCK_PERIOD clock = ~clock;
 
@@ -352,18 +352,16 @@ module emul;
   );
 
   always @(posedge clock) begin
-    if (exit) begin
+    if (fin) begin
 `ifdef DEBUG
       $vcdplusclose;
 `endif
-      if (exitcode == 0)
-        $finish;
-      else
-        $fatal;
-    end else tick(
+      if (err) $fatal;
+    end
+    tick(
       reset,
-      exit,
-      exitcode,
+      fin,
+      err,
 
       master_ar_valid,
       master_ar_ready,
