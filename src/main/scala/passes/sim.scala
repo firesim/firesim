@@ -44,11 +44,11 @@ private[passes] class SimulationMapping(
   private def loop(mod: String, path: String)(chainType: ChainType.Value)(implicit daisyWidth: Int) {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
+        val id = chainType.id
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
             case s: WDefInstance =>
               val seqMem = seqMems(s.module)
-              val id = chainType.id
               val prefix = s"$path.${seqMem.name}"
               chainType match {
                 case ChainType.SRAM =>
@@ -56,25 +56,25 @@ private[passes] class SimulationMapping(
                   seqMem.width.toInt
                 case _ =>
                   val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
-                  seqMem.readers.indices foreach (i =>
+                  /* seqMem.readers.indices foreach (i =>
                     chainFile write s"$id $prefix.reg_R$i $addrWidth -1\n")
                   seqMem.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.reg_RW$i $addrWidth -1\n")
-                  /* seqMem.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix ${seqMem.width} -1\n")
+                    chainFile write s"$id $prefix.reg_RW$i $addrWidth -1\n") */
+                  seqMem.readers.indices foreach (i =>
+                    chainFile write s"$id $prefix.R${i}_data ${seqMem.width} -1\n")
                   seqMem.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix ${seqMem.width} -1\n") */
-                  (seqMem.readers.size + seqMem.readwriters.size) * (addrWidth /*+ seqMem.width.toInt*/)
+                    chainFile write s"$id $prefix.RW${i}_rdata ${seqMem.width} -1\n")
+                  (seqMem.readers.size + seqMem.readwriters.size) * (/* addrWidth + */seqMem.width.toInt)
               }
             case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
               val name = verilogRenameN(loweredName(mem))
               val width = bitWidth(mem.tpe).toInt
               chainType match {
                 case ChainType.SRAM =>
-                  chainFile write s"${chainType.id} $path.$name $width ${s.depth}\n"
+                  chainFile write s"$id $path.$name $width ${s.depth}\n"
                   totalWidth + width
                 case _ => totalWidth + (((0 until s.depth) foldLeft 0){ (memWidth, i) =>
-                  chainFile write s"${chainType.id} $path.$name[$i] $width -1\n"
+                  chainFile write s"$id $path.$name[$i] $width -1\n"
                   memWidth + width
                 })
               }
@@ -82,7 +82,7 @@ private[passes] class SimulationMapping(
             case s: DefRegister => (create_exps(s.name, s.tpe) foldLeft 0){ (totalWidth, reg) =>
               val name = verilogRenameN(loweredName(reg))
               val width = bitWidth(reg.tpe).toInt
-              chainFile write s"${chainType.id} $path.$name $width -1\n"
+              chainFile write s"$id $path.$name $width -1\n"
               totalWidth + width
             }
           })

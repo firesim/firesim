@@ -66,7 +66,7 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
       s copy (en = and(s.en, targetFire))
     case s: Connect => s.loc match {
       case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
-        s copy (expr = or(and(s.expr, targetFire), daisyReset))
+        s copy (expr = and(s.expr, targetFire))
       case e: WSubField if wt(e.tpe) == WrappedBool && wmodes(e.serialize) =>
         s copy (expr = and(s.expr, targetFire))
       case _ => s

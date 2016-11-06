@@ -170,32 +170,51 @@ class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
 
 class AddrIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val n = p(SRAMSize)
-  val in = Flipped(Valid(UInt(width=log2Up(n))))
   val out = Valid(UInt(width=log2Up(n)))
+}
+
+class ReadIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
+  val in = Flipped(Valid(UInt(width=dataWidth)))
+  val out = Valid(UInt(width=dataWidth))
 }
 
 class SRAMChainControlIO(implicit p: Parameters) extends DaisyControlIO()(p) {
   val restart = Bool(INPUT)
   val addrIo = new AddrIO
+  val readIo = new ReadIO
 }
 
 class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
-  val io = IO(new SRAMChainControlIO)
   val n = p(SRAMSize)
+  val io = IO(new SRAMChainControlIO)
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = RegInit(s_IDLE)
-  val addrIn = Reg(UInt(width=log2Up(n))) 
   val addrOut = Reg(UInt(width=log2Up(n)))
+  // Read port output register values are destoyed with SRAM snapshotting
+  // Thus, capture their values here
+  val read = Reg(io.readIo.out.cloneType)
+  val readEnable = Reg(Bool())
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
 
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
-  io.addrIo.out.bits := UInt(0)
-  io.addrIo.out.valid := Bool(false)
-
-  when(io.addrIo.in.valid) {
-    addrIn := io.addrIo.in.bits
+  io.addrIo.out.bits := addrOut
+  io.addrIo.out.valid := addrState === (if (p(SeqRead)) s_ADDRGEN else s_MEMREAD)
+  if (p(SeqRead)) {
+    io.readIo.out := read
+    // With sram reads, turn off io.read.out and keep their values
+    when(reset || io.readIo.in.valid) {
+      read.valid := Bool(false)
+      readEnable := Bool(true)
+    }
+    when(RegNext(reset || io.readIo.in.valid)) {
+      read.bits := io.readIo.in.bits
+    }
+    // Turn on io.read.out only when there's snapshotting
+    when(io.stall && io.restart) {
+      read.valid := readEnable
+    }
   }
 
   // SRAM control
@@ -206,14 +225,10 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
     }
     is(s_ADDRGEN) {
       addrState := s_MEMREAD
-      io.addrIo.out.bits := addrOut
-      io.addrIo.out.valid := Bool(true)
     }
     is(s_MEMREAD) {
       addrState := s_DONE
       addrOut   := addrOut + UInt(1)
-      io.addrIo.out.bits := (if (p(SeqRead)) addrIn else addrOut)
-      io.addrIo.out.valid := Bool(true)
     }
     is(s_DONE) {
       addrState := Mux(io.restart, s_ADDRGEN,
@@ -225,6 +240,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
 class SRAMChainIO(implicit p: Parameters) extends RegChainIO()(p) {
   val restart = Bool(INPUT)
   val addrIo = new AddrIO
+  val readIo = new ReadIO
 }
 
 class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {
@@ -237,6 +253,7 @@ class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {
   datapath.io.ctrlIo <> control.io.ctrlIo
   io.dataIo <> datapath.io.dataIo
   io.addrIo <> control.io.addrIo
+  io.readIo <> control.io.readIo
 }
 
 class DaisyControllerIO(daisyIO: DaisyBundle)(implicit p: Parameters) extends WidgetIO()(p){
