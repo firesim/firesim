@@ -89,21 +89,18 @@ object SimUtils {
   def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[Channel], fire: Bool)
       (implicit channelWidth: Int) = arg match { case (wire, name) =>
     val channels = inChannels slice (off, off + getChunks(wire))
-    val channelOuts = wire match {
-      case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Cat(channels.reverse map (_.io.out.bits))
-    }
+    val channelOuts = Cat(channels.reverse map (_.io.out.bits))
     val buffer = RegEnable(channelOuts, fire)
     buffer suggestName (name + "_buffer")
     wire := Mux(fire, channelOuts, buffer)
     off + getChunks(wire)
   }
 
-  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel])
+  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel], reset: Bool)
       (implicit channelWidth: Int) = arg match { case (wire, name) =>
     val channels = outChannels slice (off, off + getChunks(wire))
     channels.zipWithIndex foreach {case (channel, i) =>
-      channel.io.in.bits := wire.asUInt >> UInt(i * channelWidth)
+      channel.io.in.bits := Mux(reset, UInt(0), wire.asUInt >> UInt(i * channelWidth))
     }
     off + getChunks(wire)
   }
@@ -268,7 +265,7 @@ class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extend
   (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, inChannels, fire))
 
   (io.outs zip outChannels) foreach {case (out, channel) => out <> channel.io.out}
-  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels))
+  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels, target.io.reset))
 
   if (enableSnapshot) {
     (io.inT zip inChannels) foreach {case (trace, channel) => trace <> channel.io.trace}
