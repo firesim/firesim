@@ -120,6 +120,7 @@ int simif_t::finish() {
   // dump samples
   std::ofstream file(sample_file.c_str());
   // FILE *file = fopen(sample_file.c_str(), "w");
+  sample_t::dump_chains(file);
   for (size_t i = 0 ; i < sample_num ; i++) {
     if (samples[i] != NULL) {
       file << *samples[i];
@@ -183,28 +184,30 @@ void simif_t::step(int n) {
 sample_t* simif_t::read_traces(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
-    for (idmap_it_t it = sample_t::in_tr_begin() ; it != sample_t::in_tr_end() ; it++) {
-      size_t id = it->second;
-      size_t chunk = sample_t::get_chunks(id);
+    size_t id = 0;
+    for (idmap_it_t it = sample_t::in_tr_begin() ; it != sample_t::in_tr_end() ; it++, id++) {
+      size_t addr = it->second;
+      size_t chunk = sample_t::get_chunks(addr);
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = read(id+off);
+        data[off] = read(addr+off);
       }
       if (sample) sample->add_cmd(
-        new poke_t(it->first, new biguint_t(data, chunk)));
+        new poke_t(IN_TR, id, new biguint_t(data, chunk)));
       delete[] data;
     }
     if (sample) sample->add_cmd(new step_t(1));
     // output traces from FPGA
-    for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++) {
-      size_t id = it->second;
-      size_t chunk = sample_t::get_chunks(id);
+    id= 0;
+    for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++, id++) {
+      size_t addr = it->second;
+      size_t chunk = sample_t::get_chunks(addr);
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = read(id+off);
+        data[off] = read(addr+off);
       }
       if (sample && i > 0) sample->add_cmd(
-        new expect_t(it->first, new biguint_t(data, chunk)));
+        new expect_t(OUT_TR, id, new biguint_t(data, chunk)));
       delete[] data;
     }
   }

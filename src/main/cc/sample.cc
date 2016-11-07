@@ -64,11 +64,43 @@ void sample_t::init_chains(std::string filename) {
   file.close();
 }
 
+void sample_t::dump_chains(FILE* file) {
+  for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
+    std::vector<std::string> &chain_signals = signals[t];
+    for (size_t id = 0 ; id < chain_signals.size() ; id++) {
+      std::string &signal = chain_signals[id];
+      fprintf(file, "%u %zu %s\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str());
+    }
+  }
+  for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
+    fprintf(file, "%u %u %s\n", SIGNALS, IN_TR, (it->first).c_str());
+  }
+  for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
+    fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, (it -> first).c_str());
+  }
+}
+
+void sample_t::dump_chains(std::ostream& os) {
+  for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
+    std::vector<std::string> &chain_signals = signals[t];
+    for (size_t id = 0 ; id < chain_signals.size() ; id++) {
+      std::string &signal = chain_signals[id];
+      os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << std::endl;
+    }
+  }
+  for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
+    os << SIGNALS << " " << IN_TR << " " << it->first << std::endl;
+  }
+  for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
+    os << SIGNALS << " " << OUT_TR << " " << it->first << std::endl;
+  }
+}
+
 size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
   size_t t = static_cast<size_t>(type);
-  std::vector<std::string> chain_signals = signals[t];
-  std::vector<size_t> chain_widths = widths[t];
-  std::vector<ssize_t> chain_depths = depths[t];
+  std::vector<std::string> &chain_signals = signals[t];
+  std::vector<size_t> &chain_widths = widths[t];
+  std::vector<ssize_t> &chain_depths = depths[t];
   for (size_t i = 0 ; i < chain_loop[type] ; i++) {
     for (size_t s = 0 ; s < chain_signals.size() ; s++) {
       std::string &signal = chain_signals[s];
@@ -79,14 +111,22 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
         biguint_t* value = new biguint_t(substr, 2);
-        if (type == TRACE_CHAIN) {
-          // add_force(new force_t(signal, value)); 
-        } else if (type == REGS_CHAIN) {
-          add_cmd(new load_t(signal, value, -1));
-        } else if (type == SRAM_CHAIN && ((ssize_t) i) < depth) {
-          add_cmd(new load_t(signal, value, i));
-        } else if (type == CNTR_CHAIN) {
-          add_cmd(new count_t(signal, value));
+        switch(type) {
+          case TRACE_CHAIN:
+            // add_force(new force_t(s, value));
+            break;
+          case REGS_CHAIN:
+            add_cmd(new load_t(type, s, value, -1));
+            break;
+          case SRAM_CHAIN:
+            if (static_cast<ssize_t>(i) < depth)
+              add_cmd(new load_t(type, s, value, i));
+            break;
+          case CNTR_CHAIN:
+            add_cmd(new count_t(type, s, value));
+            break;
+          default:
+            break;
         }
         delete[] substr;
       }
@@ -100,13 +140,12 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
 }
 
 void sample_t::add_force(force_t* f) {
-  force_bin_idx = force_prev_node && 
-    strcmp(f->node, force_prev_node) == 0 ? force_bin_idx + 1 : 0;
+  force_bin_idx = f->id == force_prev_id ? force_bin_idx + 1 : 0;
   if (force_bins.size() < force_bin_idx + 1) {
     force_bins.push_back(std::vector<force_t*>());
   }
   force_bins[force_bin_idx].push_back(f);
-  force_prev_node = f->node;
+  force_prev_id = f->id;
 }
 
 void sample_t::dump_forces() {
@@ -118,11 +157,11 @@ void sample_t::dump_forces() {
     cmds.push_back(new step_t(1));
     force_bin.clear();
   }
-  force_prev_node = NULL;
+  force_prev_id = -1;
 }
 
 sample_t::sample_t(const char* snap, uint64_t _cycle):
-    cycle(_cycle), force_prev_node(NULL) {
+    cycle(_cycle), force_prev_id(-1) {
   size_t start = 0;
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
     CHAIN_TYPE type = static_cast<CHAIN_TYPE>(t);
@@ -131,7 +170,7 @@ sample_t::sample_t(const char* snap, uint64_t _cycle):
 }
 
 sample_t::sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle):
-    cycle(_cycle), force_prev_node(NULL) {
+    cycle(_cycle), force_prev_id(-1) {
   read_chain(type, snap);
 }
 #endif

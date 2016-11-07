@@ -9,7 +9,7 @@
 #include <inttypes.h>
 #include "biguint.h"
 
-enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
+enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 #ifdef ENABLE_SNAPSHOT
 enum { IN_TR = CHAIN_NUM, OUT_TR };
 typedef std::map< std::string, size_t > idmap_t;
@@ -36,100 +36,79 @@ struct step_t: sample_inst_t {
   const size_t n;
 };
 
-#ifdef ENABLE_SNAPSHOT
-#define _NODE_ node
-#else
-#define _NODE_ node.c_str()
-#endif
-
 struct load_t: sample_inst_t {
-  load_t(std::string& node_, biguint_t* value_, int idx_ = -1): 
-    node(node_.c_str()), value(value_), idx(idx_) { }
+  load_t(const size_t type_, const size_t id_, biguint_t* value_, const int idx_ = -1):
+    type(type_), id(id_), value(value_), idx(idx_) { }
   ~load_t() { delete value; }
   void dump(FILE *file) const {
-    fprintf(file, "%u %s %s %d\n", LOAD, _NODE_, value->str().c_str(), idx);
+    fprintf(file, "%u %zu %zu %s %d\n", LOAD, type, id, value->str().c_str(), idx);
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << LOAD << " " << node << " " << *value << " " << idx << std::endl;
+    return os << LOAD << " " << type << " " << id << " " << *value << " " << idx << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
-  const std::string node;
-#endif
+  const size_t type;
+  const size_t id;
   biguint_t* const value;
   const int idx;
 };
 
 struct force_t: sample_inst_t {
-  force_t(std::string& node_, biguint_t* value_):
-    node(node_.c_str()), value(value_) { }
+  force_t(const size_t type_, const size_t id_, biguint_t* value_):
+    type(type_), id(id_), value(value_) { }
   ~force_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", FORCE, _NODE_, value->str().c_str());
+    fprintf(file, "%u %zu %zu %s\n", FORCE, type, id, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << FORCE << " " << node << " " << *value << std::endl;
+    return os << FORCE << " " << type << " " << id << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
-  const std::string node;
-#endif
+  const size_t type;
+  const size_t id;
   biguint_t* const value;
 };
 
 struct poke_t: sample_inst_t {
-  poke_t(const std::string& node_, biguint_t* value_):
-    node(node_.c_str()), value(value_) { }
+  poke_t(const size_t type_, const size_t id, biguint_t* value_):
+    type(type_), id(id), value(value_) { }
   ~poke_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", POKE, _NODE_, value->str().c_str());
+    fprintf(file, "%u %zu %zu %s\n", POKE, type, id, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << POKE << " " << node << " " << *value << std::endl;
+    return os << POKE << " " << type << " " << id << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
-  const std::string node;
-#endif
+  const size_t type;
+  const size_t id;
   biguint_t* const value;
 };
 
 struct expect_t: sample_inst_t {
-  expect_t(const std::string& node_, biguint_t* value_):
-    node(node_.c_str()), value(value_) { }
+  expect_t(const size_t type_, const size_t id_, biguint_t* value_):
+    type(type_), id(id_), value(value_) { }
   ~expect_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", EXPECT, _NODE_, value->str().c_str());
+    fprintf(file, "%u %zu %zu %s\n", EXPECT, type, id, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << EXPECT << " " << node << " " << *value << std::endl;
+    return os << EXPECT << " " << type << " " << id << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
-  const std::string node;
-#endif
+  const size_t type;
+  const size_t id;
   biguint_t* const value;
 };
 
 struct count_t: sample_inst_t {
-  count_t(std::string& node_, biguint_t* value_): 
-    node(node_.c_str()), value(value_) { }
+  count_t(const size_t type_, const size_t id_, biguint_t* value_):
+    type(type_), id(id_), value(value_) { }
   ~count_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", COUNT, _NODE_, value->str().c_str());
+    fprintf(file, "%u %zu %zu %s\n", COUNT, type, id, value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << COUNT << " " << node << " " << *value << std::endl;
+    return os << COUNT << " " << type << " " << id << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
-  const std::string node;
-#endif
+  const size_t type;
+  const size_t id;
   biguint_t* const value;
 };
 
@@ -172,6 +151,8 @@ public:
   size_t read_chain(CHAIN_TYPE type, const char* snap, size_t start = 0);
 
   static void init_chains(std::string filename);
+  static void dump_chains(FILE *file);
+  static void dump_chains(std::ostream &os);
   static size_t get_chain_loop(CHAIN_TYPE t) {
     return chain_loop[t];
   }
@@ -200,7 +181,7 @@ private:
 #ifdef ENABLE_SNAPSHOT
   std::vector<std::vector<force_t*>> force_bins;
   size_t force_bin_idx;
-  const char* force_prev_node;
+  size_t force_prev_id;
   static size_t chain_loop[CHAIN_NUM];
   static size_t chain_len[CHAIN_NUM];
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
