@@ -13,6 +13,40 @@ std::map<size_t, size_t> sample_t::tr_chunks = std::map<size_t, size_t>();
 size_t sample_t::chain_len[CHAIN_NUM] = {0};
 size_t sample_t::chain_loop[CHAIN_NUM] = {0};
 
+void dump_f(FILE *file,
+           SAMPLE_INST_TYPE type,
+           const size_t t,
+           const size_t id,
+           uint32_t* const value,
+           const size_t size,
+           const int* const idx) {
+  fprintf(file, "%u %zu %zu ", type, t, id);
+  fprintf(file, "%x", value[size-1]);
+  for (int i = size - 2 ; i >= 0 ; i--) {
+    fprintf(file, "%08x", value[i]);
+  }
+  if (idx) fprintf(file, " %d", *idx);
+  fprintf(file, "\n");
+}
+
+std::ostream& dump_s(std::ostream &os,
+                     SAMPLE_INST_TYPE type,
+                     const size_t t,
+                     const size_t id,
+                     uint32_t* const value,
+                     const size_t size,
+                     const int* const idx) {
+  os << type << " " << t << " " << id << " ";
+  os << std::hex << value[size-1];
+  for (int i = size - 2 ; i >= 0 ; i--) {
+    os << std::setfill('0') << std::setw(HEX_WIDTH) << value[i];
+  }
+  os << std::setfill(' ') << std::setw(0) << std::dec;
+  if (idx) os << *idx;
+  os << std::endl;
+  return os;
+}
+
 void sample_t::init_chains(std::string filename) {
   std::fill(signals.begin(), signals.end(), std::vector<std::string>());
   std::fill(widths.begin(),  widths.end(),  std::vector<size_t>());
@@ -110,20 +144,23 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         char* substr = new char[width+1];
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
-        biguint_t* value = new biguint_t(substr, 2);
+        biguint_t value(substr, 2);
+        uint32_t* data = new uint32_t[value.get_size()];
+        // memcpy(data, value.get_data(), value.get_size() * sizeof(uint32_t));
+        std::copy(value.get_data(), value.get_data() + value.get_size(), data);
         switch(type) {
           case TRACE_CHAIN:
-            // add_force(new force_t(s, value));
+            // add_force(new force_t(s, data, value.get_size()));
             break;
           case REGS_CHAIN:
-            add_cmd(new load_t(type, s, value, -1));
+            add_cmd(new load_t(type, s, data, value.get_size(), -1));
             break;
           case SRAM_CHAIN:
             if (static_cast<ssize_t>(i) < depth)
-              add_cmd(new load_t(type, s, value, i));
+              add_cmd(new load_t(type, s, data, value.get_size(), i));
             break;
           case CNTR_CHAIN:
-            add_cmd(new count_t(type, s, value));
+            add_cmd(new count_t(type, s, data, value.get_size()));
             break;
           default:
             break;

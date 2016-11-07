@@ -118,13 +118,13 @@ int simif_t::finish() {
   }
 
   // dump samples
-  std::ofstream file(sample_file.c_str());
-  // FILE *file = fopen(sample_file.c_str(), "w");
+  // std::ofstream file(sample_file.c_str());
+  FILE *file = fopen(sample_file.c_str(), "w");
   sample_t::dump_chains(file);
   for (size_t i = 0 ; i < sample_num ; i++) {
     if (samples[i] != NULL) {
-      file << *samples[i];
-      // samples[i]->dump(file);
+      // file << *samples[i];
+      samples[i]->dump(file);
       delete samples[i];
     }
   }
@@ -192,9 +192,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
-      if (sample) sample->add_cmd(
-        new poke_t(IN_TR, id, new biguint_t(data, chunk)));
-      delete[] data;
+      if (sample) sample->add_cmd(new poke_t(IN_TR, id, data, chunk));
     }
     if (sample) sample->add_cmd(new step_t(1));
     // output traces from FPGA
@@ -206,9 +204,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
-      if (sample && i > 0) sample->add_cmd(
-        new expect_t(OUT_TR, id, new biguint_t(data, chunk)));
-      delete[] data;
+      if (sample && i > 0) sample->add_cmd(new expect_t(OUT_TR, id, data, chunk));
     }
   }
 
