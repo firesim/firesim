@@ -29,7 +29,7 @@ zynq_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(zynq_files)))
 
 $(OUT_DIR)/$(DESIGN)-zynq: $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(TESTBENCH) $(testbench_h) $(zynq_cc) $(zynq_h)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $(zynq_cc)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $(zynq_cc)
 
 zynq: $(OUT_DIR)/$(DESIGN)-zynq
 
