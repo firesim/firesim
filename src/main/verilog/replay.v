@@ -30,6 +30,7 @@ module replay;
     $tick(exit);
     if (exit) begin
       $vcdplusclose;
+      $finish;
     end
   end
 
