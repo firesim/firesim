@@ -61,15 +61,18 @@ public:
             step(p->n);
           }
           if (load_t* p = dynamic_cast<load_t*>(cmd)) {
-            std::string signal = p->idx < 0 ? p->node :
-              p->node + "[" + std::to_string(p->idx) + "]";
-            load(signal, p->value);
+            if (p->idx < 0) {
+              load(chains[p->type][p->id], p->value);
+            } else {
+              std::string signal = chains[p->type][p->id] + "[" + std::to_string(p->idx) + "]";
+              load(signal, p->value);
+            }
           }
           if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-            poke(p->node, p->value);
+            poke(chains[p->type][p->id], p->value);
           }
           if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-            pass &= expect(p->node, p->value);
+            pass &= expect(chains[p->type][p->id], p->value);
           }
         }
       }
@@ -92,6 +95,8 @@ private:
   bool pass;
   bool is_exit;
   std::vector<sample_t*> samples;
+  std::vector<std::vector<std::string>> chains;
+
   void load_samples(const char* filename) {
     std::ifstream file(filename);
     if (!file) {
@@ -103,12 +108,20 @@ private:
     sample_t* sample = NULL;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
-      size_t type, n, idx;
+      size_t type, t, id, n;
+      ssize_t idx;
       uint64_t cycles;
       std::string signal, dummy;
       biguint_t *value = NULL;
       iss >> type;
-      switch((SAMPLE_INST_TYPE) type) {
+      switch(static_cast<SAMPLE_INST_TYPE>(type)) {
+        case SIGNALS:
+          iss >> t >> signal;
+          while(chains.size() <= t) {
+            chains.push_back(std::vector<std::string>());
+          }
+          chains[t].push_back(signal);
+          break;
         case CYCLE:
           iss >> dummy >> cycles;
           sample = new sample_t(cycles);
@@ -117,18 +130,18 @@ private:
           break;
         case LOAD:
           value = new biguint_t;
-          iss >> signal >> *value >> idx;
-          sample->add_cmd(new load_t(signal, value, idx));
+          iss >> t >> id >> *value >> idx;
+          sample->add_cmd(new load_t(t, id, value, idx));
           break;
         case FORCE:
           value = new biguint_t;
-          iss >> signal >> *value;
-          sample->add_cmd(new force_t(signal, value));
+          iss >> t >> id >> *value;
+          sample->add_cmd(new force_t(t, id, value));
           break;
         case POKE:
           value = new biguint_t;
-          iss >> signal >> *value;
-          sample->add_cmd(new poke_t(signal, value));
+          iss >> t >> id >> *value;
+          sample->add_cmd(new poke_t(t, id, value));
           break;
         case STEP:
           iss >> n;
@@ -137,8 +150,8 @@ private:
           break;
         case EXPECT:
           value = new biguint_t;
-          iss >> signal >> *value;
-          if (steps > 1) sample->add_cmd(new expect_t(signal, value));
+          iss >> t >> id >> *value;
+          if (steps > 1) sample->add_cmd(new expect_t(t, id, value));
           break;
         default:
           break;
