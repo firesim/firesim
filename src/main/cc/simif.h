@@ -96,7 +96,7 @@ class simif_t
     }
 
     // A default reset scheme that pulses the global chisel reset
-    void target_reset(int pulselength = 5);
+    void target_reset(int pulse_start = 1, int pulselength = 5);
 
     inline biguint_t read_mem(size_t addr) {
       write(LOADMEM_R_ADDRESS, addr);
