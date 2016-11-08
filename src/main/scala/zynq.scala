@@ -1,5 +1,7 @@
 package strober
 
+// This util is defined in rocketchip
+import util.DecoupledHelper
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
@@ -121,17 +123,6 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
     data = outputs(rAddr).bits,
     last = outputs(rAddr).valid && doRead)
   io.ctrl.r.valid := io.ctrl.r.bits.last
-}
-
-// TODO: Import from rocketchip
-object DecoupledHelper {
-  def apply(rvs: Bool*) = new DecoupledHelper(rvs)
-}
-
-class DecoupledHelper(val rvs: Seq[Bool]) {
-  def fire(exclude: Bool, includes: Bool*) = {
-    (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
 }
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
