@@ -96,9 +96,9 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
-void simif_t::target_reset(int pulselength) {
+void simif_t::target_reset(int pulse_start, int pulselength) {
   poke(reset, 0);
-  step(1);
+  step(pulse_start);
   poke(reset, 1);
   step(pulselength);
   poke(reset, 0);
@@ -139,7 +139,8 @@ int simif_t::finish() {
 }
 
 void simif_t::step(int n) {
-  if (n <= 0) throw std::invalid_argument("steps shoule be > 0");
+  if (n == 0) return;
+  if (n < 0) throw std::invalid_argument("steps shoule be >= 0");
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % tracelen == 0) {
