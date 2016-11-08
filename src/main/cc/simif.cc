@@ -100,7 +100,7 @@ void simif_t::target_reset(int pulselength) {
   poke(reset, 0);
   step(1);
   poke(reset, 1);
-  step(5);
+  step(pulselength);
   poke(reset, 0);
 }
 
