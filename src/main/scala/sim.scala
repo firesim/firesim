@@ -214,11 +214,21 @@ class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p:
   def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
   }
+
   def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => outs(id+off))
   }
   def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> inMap(wire))
+  def getIns(name: String): Seq[DecoupledIO[UInt]] = {
+    val (wire, matchedName) = inputs.filter(_._2 == name).head
+    getIns(wire)
+  }
+
   def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> outMap(wire))
+  def getOuts(name: String): Seq[DecoupledIO[UInt]] = {
+    val (wire, matchedName) = outputs.filter(_._2 == name).head
+    getOuts(wire)
+  }
 
   override def cloneType: this.type =
     new SimWrapperIO(io, reset, None).asInstanceOf[this.type]

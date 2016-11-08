@@ -123,6 +123,17 @@ class ZynqMasterHandler(args: ZynqMasterHandlerArgs)(implicit val p: Parameters)
   io.ctrl.r.valid := io.ctrl.r.bits.last
 }
 
+// TODO: Import from rocketchip
+object DecoupledHelper {
+  def apply(rvs: Bool*) = new DecoupledHelper(rvs)
+}
+
+class DecoupledHelper(val rvs: Seq[Bool]) {
+  def fire(exclude: Bool, includes: Bool*) = {
+    (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
+  }
+}
+
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey))))
   val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
@@ -163,13 +174,15 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   defaultIOWidget.reset := reset || simReset
 
 
-  // Get only the channels driven by the PeekPoke widget
-  val inputChannels = pokedIns.unzip._1.flatMap(simIo.getIns(_))
-  val outputChannels = peekedOuts.unzip._1.flatMap(simIo.getOuts(_))
+  // Get only the channels driven by the PeekPoke widget and exclude reset
+  val inputChannels = pokedIns.flatMap { case (wire, name) => simIo.getIns(wire) }
+    val outputChannels = peekedOuts.flatMap { case (wire, name) => simIo.getOuts(wire) }
 
   def connectChannels(sinks: Seq[DecoupledIO[UInt]], srcs: Seq[DecoupledIO[UInt]]): Unit =
     sinks.zip(srcs) foreach { case (src, sink) =>  sink <> src }
 
+  // Note we are connecting up target reset here; we override part of this
+  // assignment below when connecting the memory models to this same reset
   connectChannels(inputChannels, defaultIOWidget.io.ins)
   connectChannels(defaultIOWidget.io.outs, outputChannels)
 
@@ -247,7 +260,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     targetConnect(port.hBits -> wires)
   }
 
-  (0 until memIo.size) foreach { i =>
+  val modelTargetResets: Seq[DecoupledIO[Bool]] = Seq.tabulate(memIo.size)( i => {
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
         case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
@@ -257,13 +270,56 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset
 
+    // Instantiate the target reset token queue
+    // TODO: Queue generation that coverts from HostDecoupled -> Decoupled
+    val tResetQ = Module(new Queue(Bool(), 2))
+    tResetQ suggestName s"tResetQ_MemModel_$i"
+    tResetQ.reset := reset || simReset
+    model.io.tReset <> tResetQ.io.deq
+
     //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
     val wires = memIo(i)
-    val simResetReg = RegNext(simReset)
+    val fakeReqToken = RegInit(Bool(true))
+    val fakeRespToken = RegInit(Bool(true))
+
     val fakeTNasti = Wire(model.io.tNasti.cloneType)
     model.io.tNasti <> fakeTNasti
-    fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || simReset || simResetReg
+    //Inject one token into the response queues
+    fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || fakeRespToken
+    //Fake the presence of one input token after sim reset
+    model.io.tNasti.toHost.hValid := fakeTNasti.toHost.hValid || fakeReqToken
+    fakeTNasti.toHost.hReady := model.io.tNasti.toHost.hReady && ~fakeReqToken
+    when(simReset) {
+      fakeReqToken := Bool(true)
+    }.elsewhen(model.io.tNasti.toHost.fire()) {
+      fakeReqToken := Bool(false)
+    }
+    when(simReset) {
+      fakeRespToken := Bool(true)
+    }.elsewhen (fakeTNasti.fromHost.fire()) {
+      fakeRespToken := Bool(false)
+    }
+
     channels2Port(fakeTNasti, wires)
+    tResetQ.io.enq
+  })
+
+  // Connect all consumers of target reset tokens to the PeekPoke widget
+  val resetSource = defaultIOWidget.io.ins(defaultIOWidget.getResetIdx)
+  val targetResetChannel = simIo.getIns("reset").head
+
+  val resetHelper = new DecoupledHelper(
+    modelTargetResets.map(_.ready) ++
+    Seq(targetResetChannel.ready) ++
+    Seq(resetSource.valid)
+  )
+
+  modelTargetResets foreach { channel =>
+    channel.valid := resetHelper.fire(channel.ready)
+    channel.bits := resetSource.bits(0)
   }
+  targetResetChannel.valid := resetHelper.fire(targetResetChannel.ready)
+  resetSource.ready := resetHelper.fire(resetSource.valid)
+
   genCtrlIO(io.master, p(ZynqMMIOSize))
 }
