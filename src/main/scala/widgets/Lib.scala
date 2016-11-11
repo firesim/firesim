@@ -321,7 +321,7 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   io.nasti.w.ready := ~wFired
 }
 
-class CRIO(direction: Direction, width: Int, val default: Int) extends Bundle {
+class CRIO(val direction: Direction, width: Int, val default: Int) extends Bundle {
   val value = UInt(direction, width)
   def apply(dummy: Int = 0) = value
 }
