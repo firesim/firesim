@@ -1,7 +1,5 @@
 package strober
 
-// This util is defined in rocketchip
-import util.DecoupledHelper
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
@@ -167,7 +165,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
 
   // Get only the channels driven by the PeekPoke widget and exclude reset
   val inputChannels = pokedIns.flatMap { case (wire, name) => simIo.getIns(wire) }
-    val outputChannels = peekedOuts.flatMap { case (wire, name) => simIo.getOuts(wire) }
+  val outputChannels = peekedOuts.flatMap { case (wire, name) => simIo.getOuts(wire) }
 
   def connectChannels(sinks: Seq[DecoupledIO[UInt]], srcs: Seq[DecoupledIO[UInt]]): Unit =
     sinks.zip(srcs) foreach { case (src, sink) =>  sink <> src }
@@ -251,7 +249,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     targetConnect(port.hBits -> wires)
   }
 
-  val modelTargetResets: Seq[DecoupledIO[Bool]] = Seq.tabulate(memIo.size)( i => {
+  (0 until memIo.size) foreach { i =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
         case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
@@ -260,13 +258,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset
-
-    // Instantiate the target reset token queue
-    // TODO: Queue generation that coverts from HostDecoupled -> Decoupled
-    val tResetQ = Module(new Queue(Bool(), 2))
-    tResetQ suggestName s"tResetQ_MemModel_$i"
-    tResetQ.reset := reset || simReset
-    model.io.tReset <> tResetQ.io.deq
+    model.io.tReset := defaultIOWidget.io.tReset
 
     //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
     val wires = memIo(i)
@@ -292,25 +284,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     }
 
     channels2Port(fakeTNasti, wires)
-    tResetQ.io.enq
-  })
-
-  // Connect all consumers of target reset tokens to the PeekPoke widget
-  val resetSource = defaultIOWidget.io.ins(defaultIOWidget.getResetIdx)
-  val targetResetChannel = simIo.getIns("reset").head
-
-  val resetHelper = new DecoupledHelper(
-    modelTargetResets.map(_.ready) ++
-    Seq(targetResetChannel.ready) ++
-    Seq(resetSource.valid)
-  )
-
-  modelTargetResets foreach { channel =>
-    channel.valid := resetHelper.fire(channel.ready)
-    channel.bits := resetSource.bits(0)
   }
-  targetResetChannel.valid := resetHelper.fire(targetResetChannel.ready)
-  resetSource.ready := resetHelper.fire(resetSource.valid)
 
   genCtrlIO(io.master, p(ZynqMMIOSize))
 }

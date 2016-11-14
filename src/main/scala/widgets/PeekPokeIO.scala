@@ -11,6 +11,7 @@ class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
 
   val step = Flipped(Decoupled(UInt(width = ctrl.nastiXDataBits)))
   val idle = Bool(OUTPUT)
+  val tReset = Bool(OUTPUT)
 }
 
 // The interface to this widget is temporary, and matches the Vec of channels
@@ -84,6 +85,8 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   // it has gone idle
   io.step.ready := io.idle
 
+  io.tReset := io.ins(0).bits
+
   genCRFile()
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
@@ -107,8 +110,4 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     sb.append(genArray("OUTPUT_NAMES", outputs.unzip._1.map(CStrLit(_))))
     sb.append(genArray("OUTPUT_CHUNKS", outputs.unzip._2.map(UInt32(_))))
   }
-
-  def getResetIdx(): Int = (inputs.unzip._1.zipWithIndex).filter(
-    _._1 == "reset").map(_._2).head
-
 }
