@@ -259,31 +259,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset
     model.io.tReset := defaultIOWidget.io.tReset
-
-    //Queue HACK: fake two output tokens by connected fromHost.hValid = simReset
-    val wires = memIo(i)
-    val fakeReqToken = RegInit(Bool(true))
-    val fakeRespToken = RegInit(Bool(true))
-
-    val fakeTNasti = Wire(model.io.tNasti.cloneType)
-    model.io.tNasti <> fakeTNasti
-    //Inject one token into the response queues
-    fakeTNasti.fromHost.hValid := model.io.tNasti.fromHost.hValid || fakeRespToken
-    //Fake the presence of one input token after sim reset
-    model.io.tNasti.toHost.hValid := fakeTNasti.toHost.hValid || fakeReqToken
-    fakeTNasti.toHost.hReady := model.io.tNasti.toHost.hReady && ~fakeReqToken
-    when(simReset) {
-      fakeReqToken := Bool(true)
-    }.elsewhen(model.io.tNasti.toHost.fire()) {
-      fakeReqToken := Bool(false)
-    }
-    when(simReset) {
-      fakeRespToken := Bool(true)
-    }.elsewhen (fakeTNasti.fromHost.fire()) {
-      fakeRespToken := Bool(false)
-    }
-
-    channels2Port(fakeTNasti, wires)
+    channels2Port(model.io.tNasti, memIo(i))
   }
 
   genCtrlIO(io.master, p(ZynqMMIOSize))
