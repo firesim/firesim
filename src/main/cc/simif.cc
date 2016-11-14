@@ -52,10 +52,11 @@ void simif_t::init(int argc, char** argv, bool log) {
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
   // flush output traces by sim reset
-  for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++) {
-    size_t id = it->second;
-    size_t chunk = sample_t::get_chunks(id);
-    for (size_t off = 0 ; off < chunk ; off++) read(id+off);
+  for (size_t k = 0 ; k < OUT_TR_SIZE ; k++) {
+    size_t addr = OUT_TR_ADDRS[k];
+    size_t chunk = OUT_TR_CHUNKS[k];
+    for (size_t off = 0 ; off < chunk ; off++)
+      read(addr+off);
   }
 #endif
 
@@ -184,28 +185,28 @@ void simif_t::step(int n) {
 sample_t* simif_t::read_traces(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
-    for (idmap_it_t it = sample_t::in_tr_begin() ; it != sample_t::in_tr_end() ; it++) {
-      size_t id = it->second;
-      size_t chunk = sample_t::get_chunks(id);
+    for (size_t k = 0 ; k < IN_TR_SIZE ; k++) {
+      size_t addr = IN_TR_ADDRS[k];
+      size_t chunk = IN_TR_CHUNKS[k];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = read(id+off);
+        data[off] = read(addr+off);
       }
       if (sample) sample->add_cmd(
-        new poke_t(it->first, new biguint_t(data, chunk)));
+        new poke_t(IN_TR_NAMES[k], new biguint_t(data, chunk)));
       delete[] data;
     }
     if (sample) sample->add_cmd(new step_t(1));
     // output traces from FPGA
-    for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++) {
-      size_t id = it->second;
-      size_t chunk = sample_t::get_chunks(id);
+    for (size_t k = 0 ; k < OUT_TR_SIZE ; k++) {
+      size_t addr = OUT_TR_ADDRS[k];
+      size_t chunk = OUT_TR_CHUNKS[k];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
-        data[off] = read(id+off);
+        data[off] = read(addr+off);
       }
       if (sample && i > 0) sample->add_cmd(
-        new expect_t(it->first, new biguint_t(data, chunk)));
+        new expect_t(OUT_TR_NAMES[k], new biguint_t(data, chunk)));
       delete[] data;
     }
   }

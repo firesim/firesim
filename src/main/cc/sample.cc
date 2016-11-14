@@ -7,9 +7,6 @@
 std::array<std::vector<std::string>, CHAIN_NUM> sample_t::signals = {};
 std::array<std::vector<size_t>,      CHAIN_NUM> sample_t::widths  = {};
 std::array<std::vector<ssize_t>,     CHAIN_NUM> sample_t::depths = {};
-idmap_t sample_t::in_tr_map = idmap_t();
-idmap_t sample_t::out_tr_map = idmap_t();
-std::map<size_t, size_t> sample_t::tr_chunks = std::map<size_t, size_t>();
 size_t sample_t::chain_len[CHAIN_NUM] = {0};
 size_t sample_t::chain_loop[CHAIN_NUM] = {0};
 
@@ -28,34 +25,23 @@ void sample_t::init_chains(std::string filename) {
     size_t type;
     std::string signal;
     iss >> type >> signal;
-    if (type < CHAIN_NUM) {
-      size_t width;
-      ssize_t depth;
-      iss >> width >> depth;
-      if (signal == "null") signal = "";
-      signals[type].push_back(signal);
-      widths[type].push_back(width);
-      depths[type].push_back(depth);
-      chain_len[type] += width;
-      switch ((CHAIN_TYPE) type) {
-        case SRAM_CHAIN:
-          if (!signal.empty() && depth > 0) {
-            chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
-          }
-          break;
-        default:
-          chain_loop[type] = 1;
-          break;
-      }
-    } else {
-      size_t id, chunk;
-      iss >> id >> chunk;
-      tr_chunks[id] = chunk;
-      if (type == IN_TR) {
-        in_tr_map[signal] = id;
-      } else if (type == OUT_TR) {
-        out_tr_map[signal] = id;
-      }
+    size_t width;
+    ssize_t depth;
+    iss >> width >> depth;
+    if (signal == "null") signal = "";
+    signals[type].push_back(signal);
+    widths[type].push_back(width);
+    depths[type].push_back(depth);
+    chain_len[type] += width;
+    switch ((CHAIN_TYPE) type) {
+      case SRAM_CHAIN:
+        if (!signal.empty() && depth > 0) {
+          chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
+        }
+        break;
+      default:
+        chain_loop[type] = 1;
+        break;
     }
   }
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {

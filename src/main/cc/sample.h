@@ -10,11 +10,6 @@
 #include "biguint.h"
 
 enum SAMPLE_INST_TYPE { CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
-#ifdef ENABLE_SNAPSHOT
-enum { IN_TR = CHAIN_NUM, OUT_TR };
-typedef std::map< std::string, size_t > idmap_t;
-typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
-#endif
 
 struct sample_inst_t {
   virtual ~sample_inst_t() {} 
@@ -84,16 +79,12 @@ struct poke_t: sample_inst_t {
     node(node_.c_str()), value(value_) { }
   ~poke_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", POKE, _NODE_, value->str().c_str());
+    fprintf(file, "%u %s %s\n", POKE, node.c_str(), value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
     return os << POKE << " " << node << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
   const std::string node;
-#endif
   biguint_t* const value;
 };
 
@@ -102,16 +93,12 @@ struct expect_t: sample_inst_t {
     node(node_.c_str()), value(value_) { }
   ~expect_t() { delete value; }
   virtual void dump(FILE *file) const {
-    fprintf(file, "%u %s %s\n", EXPECT, _NODE_, value->str().c_str());
+    fprintf(file, "%u %s %s\n", EXPECT, node.c_str(), value->str().c_str());
   }
   std::ostream& dump(std::ostream &os) const {
     return os << EXPECT << " " << node << " " << *value << std::endl;
   }
-#ifdef ENABLE_SNAPSHOT
-  const char* const node;
-#else
   const std::string node;
-#endif
   biguint_t* const value;
 };
 
@@ -178,21 +165,6 @@ public:
   static size_t get_chain_len(CHAIN_TYPE t) {
     return chain_len[t];
   }
-  static size_t get_chunks(size_t id) {
-    return tr_chunks[id];
-  }
-  static idmap_it_t in_tr_begin() {
-    return in_tr_map.begin();
-  }
-  static idmap_it_t in_tr_end() {
-    return in_tr_map.end();
-  }
-  static idmap_it_t out_tr_begin() {
-    return out_tr_map.begin();
-  }
-  static idmap_it_t out_tr_end() {
-    return out_tr_map.end();
-  }
 #endif
 private:
   const uint64_t cycle;
@@ -206,9 +178,6 @@ private:
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 
   static std::array<std::vector<ssize_t>,     CHAIN_NUM> depths;
-  static idmap_t in_tr_map;
-  static idmap_t out_tr_map;
-  static std::map<size_t, size_t> tr_chunks;
 #endif
 };
 
