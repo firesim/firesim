@@ -45,13 +45,19 @@ void simif_t::load_mem(std::string filename) {
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
+  // Simulation reset
+  write(EMULATIONMASTER_SIM_RESET, 1);
+  while(!read(EMULATIONMASTER_DONE));
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
+  // flush output traces by sim reset
+  for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++) {
+    size_t id = it->second;
+    size_t chunk = sample_t::get_chunks(id);
+    for (size_t off = 0 ; off < chunk ; off++) read(id+off);
+  }
 #endif
-
-  write(EMULATIONMASTER_SIM_RESET, 1);
-  while(!read(EMULATIONMASTER_DONE));
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -102,6 +108,12 @@ void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 1);
   take_steps(pulse_length);
   poke(reset, 0);
+#ifdef ENABLE_SNAPSHOT
+  // flush I/O traces by target resets
+  trace_count = pulse_start + pulse_length;
+  read_traces(NULL);
+  trace_count = 0;
+#endif
 }
 
 int simif_t::finish() {
