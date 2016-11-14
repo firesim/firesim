@@ -96,11 +96,11 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
-void simif_t::target_reset(int pulse_start, int pulselength) {
+void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
-  step(pulse_start);
+  take_steps(pulse_start);
   poke(reset, 1);
-  step(pulselength);
+  take_steps(pulse_length);
   poke(reset, 0);
 }
 
@@ -164,8 +164,7 @@ void simif_t::step(int n) {
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
-  write(EMULATIONMASTER_STEP, n);
-  while(!read(EMULATIONMASTER_DONE));
+  take_steps(n);
   t += n;
 }
 
