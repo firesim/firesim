@@ -21,7 +21,7 @@ class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bun
 
 class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
   val tNasti = Flipped(HostPort((new NastiIO), false))
-  val tReset = Flipped(Decoupled(Bool()))
+  val tReset = Bool(INPUT)
   val host_mem = new NastiIO
 }
 
@@ -31,8 +31,7 @@ abstract class MemModel(implicit p: Parameters) extends Widget()(p){
 
 class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val tNasti = io.tNasti.hBits
-  val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady &&
-              io.tReset.valid
+  val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady
 
   val ar_buf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
   val aw_buf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
@@ -43,7 +42,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   // Bad assumption: We have no outstanding read or write requests to host
   // during target reset. This will be handled properly in the fully fledged
   // memory model; i'm too lazy to properly handle this here.
-  val targetReset = tFire && io.tReset.bits
+  val targetReset = tFire && io.tReset
   ar_buf.reset := reset || targetReset
   aw_buf.reset := reset || targetReset
   r_buf.reset := reset || targetReset
@@ -58,16 +57,14 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val latency = RegInit(UInt(16, 32))
   attach(latency, "LATENCY")
 
-  io.tNasti.toHost.hReady := io.tReset.valid && io.tNasti.fromHost.hReady
-  io.tNasti.fromHost.hValid := io.tReset.valid && io.tNasti.toHost.hValid
-  io.tReset.ready := io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady
-
+  io.tNasti.toHost.hReady := tFire
+  io.tNasti.fromHost.hValid := tFire
 
   when(tFire) { cycles := cycles + UInt(1) }
   r_cycles.io.enq.bits := cycles + latency
   w_cycles.io.enq.bits := cycles + latency
-  r_cycles.io.enq.valid := tNasti.ar.fire() && tFire && ~io.tReset.bits
-  w_cycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire && ~io.tReset.bits
+  r_cycles.io.enq.valid := tNasti.ar.fire() && tFire && ~io.tReset
+  w_cycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire && ~io.tReset
   r_cycles.io.deq.ready := tNasti.r.fire()  && tNasti.r.bits.last && tFire
   w_cycles.io.deq.ready := tNasti.b.fire()  && tFire
 
