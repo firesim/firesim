@@ -9,7 +9,6 @@ class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
   val simReset = Bool(OUTPUT)
   val done = Bool(INPUT)
   val step = Decoupled(UInt(width = p(CtrlNastiKey).dataBits))
-  val traceLen = UInt(OUTPUT, width = p(CtrlNastiKey).dataBits)
 }
 
 object Pulsify {
@@ -33,10 +32,6 @@ class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   Pulsify(genWORegInit(io.simReset, "SIM_RESET", Bool(false)), pulseLength = 4)
   genAndAttachQueue(io.step, "STEP")
   genRORegInit(io.done && ~io.simReset, "DONE", UInt(0))
-
-  if (p(strober.EnableSnapshot)) {
-    genWORegInit(io.traceLen, "TRACELEN", UInt(128))
-  }
 
   genCRFile()
 }

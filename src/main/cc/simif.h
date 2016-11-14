@@ -124,7 +124,7 @@ class simif_t
       if (len <= 2) throw std::logic_error("len should be > 2");
       tracelen = len;
 #ifdef ENABLE_SNAPSHOT
-      write(EMULATIONMASTER_TRACELEN, len);
+      write(TRACELEN_ADDR, len);
 #endif
     }
     inline size_t get_tracelen() { return tracelen; }
