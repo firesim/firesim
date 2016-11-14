@@ -296,7 +296,7 @@ class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extend
   inChannels foreach (_.io.out.ready := fire)
    
   // Outputs should be ready when firing conditions are met
-  outChannels foreach (_.io.in.valid := fire)
+  outChannels foreach (_.io.in.valid := fire || RegNext(reset))
 
   // Trace size is runtime configurable
   inChannels foreach (_.io.traceLen := io.traceLen)

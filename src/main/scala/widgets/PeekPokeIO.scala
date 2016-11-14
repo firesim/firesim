@@ -25,7 +25,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
 
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
-  val oTokensPending = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
+  val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
 
   io.idle := iTokensAvailable === UInt(0) && oTokensPending === UInt(0)
 
