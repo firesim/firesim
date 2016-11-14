@@ -89,6 +89,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     case _ =>
   }
 
+  val simResetNext = RegNext(simReset)
   private def hostConnect[T <: Data](port: HostPortIO[T], wires: T): Unit = {
     val (ins, outs) = SimUtils.parsePorts(wires)
     val inWires = ins map (_._1)
@@ -115,7 +116,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     // Pass the hValid back to the chunks for all target sunk fields
     inWires foreach {(inWire: Bits) => {
       val chunks = simIo.getIns(inWire)
-      chunks foreach (_.valid := port.fromHost.hValid)
+      chunks foreach (_.valid := port.fromHost.hValid || simResetNext)
     }}
   }
 
