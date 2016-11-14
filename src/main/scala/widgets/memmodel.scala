@@ -58,7 +58,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   attach(latency, "LATENCY")
 
   io.tNasti.toHost.hReady := tFire
-  io.tNasti.fromHost.hValid := tFire || RegNext(reset)
+  io.tNasti.fromHost.hValid := tFire
 
   when(tFire) { cycles := cycles + UInt(1) }
   r_cycles.io.enq.bits := cycles + latency
