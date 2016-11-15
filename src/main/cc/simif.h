@@ -121,7 +121,7 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
     inline void set_tracelen(size_t len) {
-      if (len <= 2) throw std::logic_error("len should be > 2");
+      if (len <= 2) throw std::invalid_argument("len should be > 2");
       tracelen = len;
 #ifdef ENABLE_SNAPSHOT
       write(TRACELEN_ADDR, len);
