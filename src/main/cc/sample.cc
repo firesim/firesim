@@ -127,7 +127,8 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       size_t width = chain_widths[s];
       ssize_t depth = chain_depths[s];
       if (!signal.empty()) {
-        char* substr = new char[width+1];
+        char substr[1025];
+        if (width > 1024) throw std::out_of_range("width should be <= 1024");
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
         biguint_t value(substr, 2);
@@ -151,7 +152,6 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
           default:
             break;
         }
-        delete[] substr;
       }
       start += width;
     }
