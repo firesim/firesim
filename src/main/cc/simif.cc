@@ -45,26 +45,20 @@ void simif_t::load_mem(std::string filename) {
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
+  // Simulation reset
+  write(EMULATIONMASTER_SIM_RESET, 1);
+  while(!read(EMULATIONMASTER_DONE));
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
-#endif
-
-  for (size_t k = 0 ; k < 5 ; k++) {
-    write(EMULATIONMASTER_HOST_RESET, 1);
-    while(!read(EMULATIONMASTER_DONE));
-    write(EMULATIONMASTER_SIM_RESET, 1);
-    while(!read(EMULATIONMASTER_DONE));
-    for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-      peek_map[i] = read(i);
-    }
-#ifdef ENABLE_SNAPSHOT
-    // flush traces from initialization
-    trace_count = 1;
-    read_traces(NULL);
-    trace_count = 0;
-#endif
+  // flush output traces by sim reset
+  for (size_t k = 0 ; k < OUT_TR_SIZE ; k++) {
+    size_t addr = OUT_TR_ADDRS[k];
+    size_t chunk = OUT_TR_CHUNKS[k];
+    for (size_t off = 0 ; off < chunk ; off++)
+      read(addr+off);
   }
+#endif
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -109,6 +103,20 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
+void simif_t::target_reset(int pulse_start, int pulse_length) {
+  poke(reset, 0);
+  take_steps(pulse_start);
+  poke(reset, 1);
+  take_steps(pulse_length);
+  poke(reset, 0);
+#ifdef ENABLE_SNAPSHOT
+  // flush I/O traces by target resets
+  trace_count = pulse_start + pulse_length;
+  read_traces(NULL);
+  trace_count = 0;
+#endif
+}
+
 int simif_t::finish() {
 #ifdef ENABLE_SNAPSHOT
   // tail samples
@@ -145,7 +153,8 @@ int simif_t::finish() {
 }
 
 void simif_t::step(int n) {
-  if (n <= 0) throw std::invalid_argument("steps shoule be > 0");
+  if (n == 0) return;
+  if (n < 0) throw std::invalid_argument("steps shoule be >= 0");
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % tracelen == 0) {
@@ -169,14 +178,7 @@ void simif_t::step(int n) {
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
-  write(EMULATIONMASTER_STEP, n);
-  for (size_t i = 0 ; i < POKE_SIZE ; i++) {
-    write(i, poke_map[i]);
-  }
-  while(!read(EMULATIONMASTER_DONE));
-  for (size_t i = 0 ; i < PEEK_SIZE ; i++) {
-    peek_map[i] = read(i);
-  }
+  take_steps(n);
   t += n;
 }
 
@@ -184,10 +186,9 @@ void simif_t::step(int n) {
 sample_t* simif_t::read_traces(sample_t *sample) {
   for (size_t i = 0 ; i < trace_count ; i++) {
     // input traces from FPGA
-    size_t id = 0;
-    for (idmap_it_t it = sample_t::in_tr_begin() ; it != sample_t::in_tr_end() ; it++, id++) {
-      size_t addr = it->second;
-      size_t chunk = sample_t::get_chunks(addr);
+    for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
+      size_t addr = IN_TR_ADDRS[id];
+      size_t chunk = IN_TR_CHUNKS[id];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
@@ -196,10 +197,9 @@ sample_t* simif_t::read_traces(sample_t *sample) {
     }
     if (sample) sample->add_cmd(new step_t(1));
     // output traces from FPGA
-    id= 0;
-    for (idmap_it_t it = sample_t::out_tr_begin() ; it != sample_t::out_tr_end() ; it++, id++) {
-      size_t addr = it->second;
-      size_t chunk = sample_t::get_chunks(addr);
+    for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
+      size_t addr = OUT_TR_ADDRS[id];
+      size_t chunk = OUT_TR_CHUNKS[id];
       uint32_t *data = new uint32_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);

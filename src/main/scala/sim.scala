@@ -148,12 +148,6 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
   io.enq.ready := !full
   io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
-
-  // for debugging
-  val counts = RegInit(UInt(0, 32))
-  when (do_enq =/= do_deq) {
-    counts := Mux(do_enq, counts + UInt(1), counts - UInt(1))
-  }
 }
 
 class ChannelIO(w: Int)(implicit p: Parameters) extends ParameterizedBundle()(p) {
@@ -176,6 +170,12 @@ class Channel(val w: Int)(implicit p: Parameters) extends Module {
     trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
     trace.io.limit := io.traceLen - UInt(2)
     io.trace <> Queue(trace.io.deq, 1, pipe=true)
+    // for debugging
+    val trace_count = RegInit(UInt(0, 32))
+    trace_count suggestName "trace_count"
+    when (io.trace.fire() =/= trace.io.enq.fire()) {
+      trace_count := Mux(io.trace.fire(), trace_count - UInt(1), trace_count + UInt(1))
+    }
   } else {
     io.trace.valid := Bool(false)
   }
@@ -211,11 +211,21 @@ class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p:
   def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
   }
+
   def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => outs(id+off))
   }
   def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> inMap(wire))
+  def getIns(name: String): Seq[DecoupledIO[UInt]] = {
+    val (wire, matchedName) = inputs.filter(_._2 == name).head
+    getIns(wire)
+  }
+
   def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> outMap(wire))
+  def getOuts(name: String): Seq[DecoupledIO[UInt]] = {
+    val (wire, matchedName) = outputs.filter(_._2 == name).head
+    getOuts(wire)
+  }
 
   override def cloneType: this.type =
     new SimWrapperIO(io, reset, None).asInstanceOf[this.type]
@@ -283,7 +293,7 @@ class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extend
   inChannels foreach (_.io.out.ready := fire)
    
   // Outputs should be ready when firing conditions are met
-  outChannels foreach (_.io.in.valid := fire)
+  outChannels foreach (_.io.in.valid := fire || RegNext(reset))
 
   // Trace size is runtime configurable
   inChannels foreach (_.io.traceLen := io.traceLen)

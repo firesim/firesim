@@ -7,9 +7,6 @@
 std::array<std::vector<std::string>, CHAIN_NUM> sample_t::signals = {};
 std::array<std::vector<size_t>,      CHAIN_NUM> sample_t::widths  = {};
 std::array<std::vector<ssize_t>,     CHAIN_NUM> sample_t::depths = {};
-idmap_t sample_t::in_tr_map = idmap_t();
-idmap_t sample_t::out_tr_map = idmap_t();
-std::map<size_t, size_t> sample_t::tr_chunks = std::map<size_t, size_t>();
 size_t sample_t::chain_len[CHAIN_NUM] = {0};
 size_t sample_t::chain_loop[CHAIN_NUM] = {0};
 
@@ -62,34 +59,23 @@ void sample_t::init_chains(std::string filename) {
     size_t type;
     std::string signal;
     iss >> type >> signal;
-    if (type < CHAIN_NUM) {
-      size_t width;
-      ssize_t depth;
-      iss >> width >> depth;
-      if (signal == "null") signal = "";
-      signals[type].push_back(signal);
-      widths[type].push_back(width);
-      depths[type].push_back(depth);
-      chain_len[type] += width;
-      switch ((CHAIN_TYPE) type) {
-        case SRAM_CHAIN:
-          if (!signal.empty() && depth > 0) {
-            chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
-          }
-          break;
-        default:
-          chain_loop[type] = 1;
-          break;
-      }
-    } else {
-      size_t id, chunk;
-      iss >> id >> chunk;
-      tr_chunks[id] = chunk;
-      if (type == IN_TR) {
-        in_tr_map[signal] = id;
-      } else if (type == OUT_TR) {
-        out_tr_map[signal] = id;
-      }
+    size_t width;
+    ssize_t depth;
+    iss >> width >> depth;
+    if (signal == "null") signal = "";
+    signals[type].push_back(signal);
+    widths[type].push_back(width);
+    depths[type].push_back(depth);
+    chain_len[type] += width;
+    switch ((CHAIN_TYPE) type) {
+      case SRAM_CHAIN:
+        if (!signal.empty() && depth > 0) {
+          chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
+        }
+        break;
+      default:
+        chain_loop[type] = 1;
+        break;
     }
   }
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
@@ -106,11 +92,11 @@ void sample_t::dump_chains(FILE* file) {
       fprintf(file, "%u %zu %s\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str());
     }
   }
-  for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
-    fprintf(file, "%u %u %s\n", SIGNALS, IN_TR, (it->first).c_str());
+  for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
+    fprintf(file, "%u %u %s\n", SIGNALS, IN_TR, IN_TR_NAMES[id]);
   }
-  for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
-    fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, (it -> first).c_str());
+  for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
+    fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, OUT_TR_NAMES[id]);
   }
 }
 
@@ -122,11 +108,11 @@ void sample_t::dump_chains(std::ostream& os) {
       os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << std::endl;
     }
   }
-  for (idmap_it_t it = in_tr_map.begin() ; it != in_tr_map.end() ; it++) {
-    os << SIGNALS << " " << IN_TR << " " << it->first << std::endl;
+  for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
+    os << SIGNALS << " " << IN_TR << " " << IN_TR_NAMES[id] << std::endl;
   }
-  for (idmap_it_t it = out_tr_map.begin() ; it != out_tr_map.end() ; it++) {
-    os << SIGNALS << " " << OUT_TR << " " << it->first << std::endl;
+  for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
+    os << SIGNALS << " " << OUT_TR << " " << OUT_TR_NAMES[id] << std::endl;
   }
 }
 

@@ -15,7 +15,7 @@ import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class SimulationMapping(
     io: chisel3.Data,
-    chainFile: FileWriter,
+    dir: File,
     childInsts: ChildInsts,
     instModMap: InstModMap,
     chains: Map[ChainType.Value, ChainMap],
@@ -34,14 +34,18 @@ private[passes] class SimulationMapping(
     )
   }
 
-  private def addPad(cw: Int, dw: Int)(chainType: ChainType.Value) {
+  private def addPad(chainFile: FileWriter, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
       case 0 =>
       case pad => chainFile write s"${chainType.id} null ${pad} -1\n"
     }
   }
 
-  private def loop(mod: String, path: String)(chainType: ChainType.Value)(implicit daisyWidth: Int) {
+  private def loop(chainFile: FileWriter,
+                   mod: String,
+                   path: String)
+                  (chainType: ChainType.Value)
+                  (implicit daisyWidth: Int) {
     chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val id = chainType.id
@@ -89,22 +93,25 @@ private[passes] class SimulationMapping(
           val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           chainType match {
             case ChainType.SRAM => 
-              addPad(cw, dw)(chainType)
+              addPad(chainFile, cw, dw)(chainType)
               (0, 0)
             case _ => (cw, dw)
           }
         }
         chainType match {
           case ChainType.SRAM => 
-          case _ => addPad(cw, dw)(chainType)
+          case _ => addPad(chainFile, cw, dw)(chainType)
         }
       case _ =>
     }
-    childInsts(mod) foreach (child => loop(instModMap(child, mod), s"${path}.${child}")(chainType))
+    childInsts(mod) foreach (child => loop(
+      chainFile, instModMap(child, mod), s"${path}.${child}")(chainType))
   }
 
   private def dumpChainMap(target: String)(implicit daisyWidth: Int) {
-    ChainType.values.toList foreach loop(target, target)
+    val chainFile = new FileWriter(new File(dir, s"$target.chain"))
+    ChainType.values.toList foreach loop(chainFile, target, target)
+    chainFile.close
   }
 
   private def initStmt(target: String)(s: Statement): Statement =
