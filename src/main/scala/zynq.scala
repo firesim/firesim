@@ -134,7 +134,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset
-    model.io.tReset := defaultIOWidget.io.tReset
+    model.io.tReset <> defaultIOWidget.io.tReset
     channels2Port(model.io.tNasti, memIo(i))
   }
 
