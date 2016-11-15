@@ -11,8 +11,7 @@ import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class PlatformMapping(
     target: String,
-    dir: File,
-    chainFile: FileWriter)
+    dir: File)
     (implicit param: cde.Parameters) extends firrtl.passes.Pass {
 
   def name = "[strober] Platform Mapping"
@@ -30,23 +29,6 @@ private[passes] class PlatformMapping(
   private object TraceType extends Enumeration {
     val InTr = Value(ChainType.values.size)
     val OutTr = Value(ChainType.values.size + 1)
-  }
-
-  private def dumpTraceMap(c: ZynqShim) {
-    implicit val channelWidth = c.sim.channelWidth
-    val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
-    val sb = new StringBuilder
-    def dump(t: TraceType.Value)(arg: (Bits, Int)) = arg match {
-      case (wire, id) => s"${t.id} ${ioMap(wire)} ${id} ${SimUtils.getChunks(wire)}\n"
-    }
-    c.IN_TR_ADDRS map dump(TraceType.InTr) addString sb
-    c.OUT_TR_ADDRS map dump(TraceType.OutTr) addString sb
-    try {
-      chainFile write sb.result
-    } finally {
-      chainFile.close
-      sb.clear
-    }
   }
 
   private def dumpHeader(c: ZynqShim) {
@@ -68,18 +50,15 @@ private[passes] class PlatformMapping(
       s"`define ${arg._1} ${arg._2}\n"
 
     val consts = List(
-      "CHANNEL_ID_BITS"   -> c.master.nastiExternal.idBits,
-      "CHANNEL_ADDR_BITS" -> c.master.nastiXAddrBits,
-      "CHANNEL_DATA_BITS" -> c.master.nastiXDataBits,
-      "CHANNEL_STRB_BITS" -> c.master.nastiWStrobeBits,
+      "CHANNEL_ID_BITS"   -> c.master.io.ctrl.nastiExternal.idBits,
+      "CHANNEL_ADDR_BITS" -> c.master.io.ctrl.nastiXAddrBits,
+      "CHANNEL_DATA_BITS" -> c.master.io.ctrl.nastiXDataBits,
+      "CHANNEL_STRB_BITS" -> c.master.io.ctrl.nastiWStrobeBits,
       "MEM_ID_BITS"       -> c.arb.nastiExternal.idBits,
       "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
       "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
-      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data),
-
-      "POKE_SIZE"         -> c.ins.size,
-      "PEEK_SIZE"         -> c.outs.size
+      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data)
     ) ++ c.sim.headerConsts
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)
@@ -87,18 +66,7 @@ private[passes] class PlatformMapping(
     csb append "static const char* const TARGET_NAME = \"%s\";\n".format(target)
     if (c.sim.enableSnapshot) csb append "#define ENABLE_SNAPSHOT\n"
     consts map dump addString csb
-    csb append "// IDs assigned to I/Os\n"
-    c.IN_ADDRS map dumpId addString csb
-    c.OUT_ADDRS map dumpId addString csb
     c.genHeader(csb)
-    csb append "static const char* const INPUT_NAMES[POKE_SIZE] = {\n%s\n};\n".format(
-      c.IN_ADDRS flatMap dumpNames mkString ",\n")
-    csb append "static const char* const OUTPUT_NAMES[PEEK_SIZE] = {\n%s\n};\n".format(
-      c.OUT_ADDRS flatMap dumpNames mkString ",\n")
-    csb append "static const unsigned INPUT_CHUNKS[POKE_SIZE] = {%s};\n".format(
-      c.IN_ADDRS flatMap dumpChunks mkString ",")
-    csb append "static const unsigned OUTPUT_CHUNKS[PEEK_SIZE] = {%s};\n".format(
-      c.OUT_ADDRS flatMap dumpChunks mkString ",")
     csb append "#endif  // __%s_H\n".format(target.toUpperCase)
 
     val vsb = new StringBuilder
@@ -146,7 +114,6 @@ private[passes] class PlatformMapping(
     val circuit = renameMods((new PlatformCompiler compile
       (chirrtl, annotations, writer)).circuit, Namespace(c))
     // writer.close
-    dumpTraceMap(shim)
     dumpHeader(shim)
     circuit copy (modules = c.modules ++ (
       circuit.modules flatMap init(c.info, c.main, circuit.main)))
