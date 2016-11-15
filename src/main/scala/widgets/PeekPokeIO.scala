@@ -90,9 +90,10 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
 
   // Target reset connection
   io.tReset <> resetQueue.io.deq
-  resetQueue.io.enq.bits := io.ins(0).bits
-  // Generate an initial token
-  resetQueue.io.enq.valid := io.ins(0).valid || RegNext(reset)
+  // Hack: insert high to resetQueue as initial tokens
+  val resetNext = RegNext(reset)
+  resetQueue.io.enq.bits := resetNext || io.ins(0).bits(0)
+  resetQueue.io.enq.valid := resetNext || io.ins(0).valid
 
   genCRFile()
 
