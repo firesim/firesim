@@ -31,7 +31,7 @@ class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
 
   val step = Flipped(Decoupled(UInt(width = ctrl.nastiXDataBits)))
   val idle = Bool(OUTPUT)
-  val tReset = Bool(OUTPUT)
+  val tReset = Decoupled(Bool())
 }
 
 // The interface to this widget is temporary, and matches the Vec of channels
@@ -43,6 +43,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val numOutputChannels = outputs.unzip._2.reduce(_ + _)
   val io = IO(new PeekPokeIOWidgetIO(numInputChannels, numOutputChannels))
 
+  val resetQueue = Module(new Queue(Bool(), 4))
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
   val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
@@ -69,7 +70,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
 
-  val fromHostReady = io.ins.foldLeft(Bool(true))(_ && _.ready)
+  val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
   val toHostValid = io.outs.foldLeft(Bool(true))(_ && _.valid)
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
@@ -87,7 +88,11 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   // it has gone idle
   io.step.ready := io.idle
 
-  io.tReset := io.ins(0).bits
+  // Target reset connection
+  io.tReset <> resetQueue.io.deq
+  resetQueue.io.enq.bits := io.ins(0).bits
+  // Generate an initial token
+  resetQueue.io.enq.valid := io.ins(0).valid || RegNext(reset)
 
   genCRFile()
 
