@@ -1,6 +1,7 @@
 package midas
 package core
 
+import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
