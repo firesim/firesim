@@ -1,6 +1,7 @@
 package midas
 package core
 
+import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import chisel3.compatibility.throwException
@@ -9,20 +10,6 @@ import junctions.NastiIO
 import SimUtils.{parsePorts, getChunks, genIoMap}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
-
-class ParameterizedBundle(implicit p: Parameters) extends Bundle {
-  override def cloneType = {
-    try {
-      this.getClass.getConstructors.head.newInstance(p).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.IllegalArgumentException =>
-        throwException("Unable to use ParamaterizedBundle.cloneType on " +
-                       this.getClass + ", probably because " + this.getClass +
-                       "() takes more than one argument.  Consider overriding " +
-                       "cloneType() on " + this.getClass, e)
-    }
-  }
-}
 
 class SimMemIO {
   private val memPorts = ArrayBuffer[NastiIO]()
