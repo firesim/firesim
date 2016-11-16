@@ -1,4 +1,4 @@
-package strober
+package midas
 
 import chisel3.{Data, Bits}
 import firrtl.ir.Circuit
@@ -8,7 +8,7 @@ import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import java.io.{File, FileWriter, Writer}
 
-private class StroberCompiler(dir: File, io: Data)(implicit param: cde.Parameters) extends firrtl.Compiler {
+private class MidasCompiler(dir: File, io: Data)(implicit param: cde.Parameters) extends firrtl.Compiler {
   def transforms(writer: Writer): Seq[firrtl.Transform] = Seq(
     new firrtl.Chisel3ToHighFirrtl,
     new firrtl.IRToWorkingIR,
@@ -16,7 +16,7 @@ private class StroberCompiler(dir: File, io: Data)(implicit param: cde.Parameter
     new firrtl.HighFirrtlToMiddleFirrtl,
     new firrtl.passes.memlib.InferReadWrite(TransID(-1)),
     new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
-    new passes.StroberTransforms(dir, io),
+    new passes.MidasTransforms(dir, io),
     new firrtl.EmitFirrtl(writer)
   )
 }
@@ -32,7 +32,7 @@ private class VerilogCompiler(conf: File) extends firrtl.Compiler {
   )
 }
 
-object StroberCompiler {
+object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: cde.Parameters): Circuit = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val annotations = new AnnotationMap(Seq(
@@ -41,11 +41,11 @@ object StroberCompiler {
     ))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
-    val strober = (new StroberCompiler(dir, io) compile (chirrtl, annotations, writer)).circuit
+    val midas = (new MidasCompiler(dir, io) compile (chirrtl, annotations, writer)).circuit
     // writer.close
     // firrtl.Parser.parse(writer.toString)
-    val verilog = new FileWriter(new File(dir, s"${strober.main}.v"))
-    val result = new VerilogCompiler(conf) compile (strober, annotations, verilog)
+    val verilog = new FileWriter(new File(dir, s"${midas.main}.v"))
+    val result = new VerilogCompiler(conf) compile (midas, annotations, verilog)
     verilog.close
     result.circuit
   }

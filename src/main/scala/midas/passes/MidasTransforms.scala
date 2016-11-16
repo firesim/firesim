@@ -1,18 +1,19 @@
-package strober
+package midas
 package passes
 
+import midas.core._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.memlib._
 import firrtl.Annotations.{AnnotationMap, CircuitName, TransID}
 import Utils._
-import StroberTransforms._
+import MidasTransforms._
 import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
 import scala.util.DynamicVariable
 import java.io.{File, FileWriter}
 
-private object StroberTransforms {
+private object MidasTransforms {
   type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
   type ChildMods = HashMap[String, LinkedHashSet[String]]
   type ChildInsts = HashMap[String, ArrayBuffer[String]]
@@ -30,7 +31,7 @@ private class TransformAnalysis(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap) extends firrtl.passes.Pass {
-  def name = "[strober] Analyze Circuit"
+  def name = "[midas] Analyze Circuit"
 
   def collectChildren(mname: String, blackboxes: Set[String])(s: Statement): Statement = {
     s match {
@@ -55,7 +56,7 @@ private class TransformAnalysis(
   }
 }
 
-private[strober] class StroberTransforms(
+private[midas] class MidasTransforms(
     dir: File,
     io: chisel3.Data)
    (implicit param: cde.Parameters) extends Transform with SimpleRun {

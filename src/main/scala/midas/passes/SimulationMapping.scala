@@ -1,6 +1,7 @@
-package strober
+package midas
 package passes
 
+import midas.core.{SimWrapper, SimMemIO, ChainType}
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -10,7 +11,7 @@ import firrtl.Utils.{BoolType, create_exps}
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
 import Utils._
-import StroberTransforms._ 
+import MidasTransforms._
 import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class SimulationMapping(
@@ -22,7 +23,7 @@ private[passes] class SimulationMapping(
     seqMems: Map[String, MemConf])
    (implicit param: cde.Parameters) extends firrtl.passes.Pass {
   
-  def name = "[strober] Simulation Mapping"
+  def name = "[midas] Simulation Mapping"
 
   private class SimCompiler extends firrtl.Compiler {
     def transforms(writer: Writer) = Seq(

@@ -1,4 +1,5 @@
-package strober
+package midas
+package core
 
 import chisel3._
 import chisel3.util._
@@ -110,7 +111,6 @@ case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
 case object SRAMChainNum extends Field[Int]
-case object EnableSnapshot extends Field[Boolean]
 
 class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
   val limit = UInt(INPUT, log2Up(entries))
