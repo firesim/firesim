@@ -1,4 +1,5 @@
-package midas_widgets
+package midas
+package widgets
 
 import Chisel._
 import cde.Parameters

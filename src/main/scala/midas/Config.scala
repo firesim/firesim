@@ -1,8 +1,11 @@
-package strober
+package midas
 
-import cde.{Parameters, Config}
+import core._
+import widgets._
+import cde.{Parameters, Config, Field}
 import junctions.NastiParameters
-import midas_widgets._
+
+case object EnableSnapshot extends Field[Boolean]
 
 class SimConfig extends Config(
   (key, site, here) => key match {

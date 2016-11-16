@@ -1,4 +1,4 @@
-package strober
+package midas
 package passes
 
 case class MemConf(

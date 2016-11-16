@@ -1,8 +1,9 @@
-package midas_widgets
+package midas
+package widgets
 
+import Chisel._
 import junctions._
 import cde.{Parameters, Field}
-import Chisel._
 
 class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends WidgetIO()(p){
   // TODO: Slave nasti key should be passed in explicitly
@@ -62,4 +63,11 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   rDataQ.io.in.valid := io.toSlaveMem.r.valid
 
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    super.genHeader(base, sb)
+    import CppGenerationUtils._
+    sb.append(genMacro("MEM_DATA_CHUNK", UInt64(
+      (p(hKey).dataBits - 1) / p(midas.core.ChannelWidth) + 1)))
+  }
 }
