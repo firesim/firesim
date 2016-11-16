@@ -70,13 +70,12 @@ private[strober] class StroberTransforms(
         case Some(ReplSeqMemAnnotation(t, _)) =>
           val conf = new File(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
           val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
-          val chainFile = new FileWriter(new File(dir, s"${circuit.main}.chain"))
           run(circuit, Seq(
             new Fame1Transform(seqMems),
             new TransformAnalysis(childMods, childInsts, instModMap),
             new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-            new SimulationMapping(io, chainFile, childInsts, instModMap, chains, seqMems),
-            new PlatformMapping(circuit.main, dir, chainFile)
+            new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
+            new PlatformMapping(circuit.main, dir)
           ))
       }
     }

@@ -11,8 +11,7 @@ import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class PlatformMapping(
     target: String,
-    dir: File,
-    chainFile: FileWriter)
+    dir: File)
     (implicit param: cde.Parameters) extends firrtl.passes.Pass {
 
   def name = "[strober] Platform Mapping"
@@ -30,23 +29,6 @@ private[passes] class PlatformMapping(
   private object TraceType extends Enumeration {
     val InTr = Value(ChainType.values.size)
     val OutTr = Value(ChainType.values.size + 1)
-  }
-
-  private def dumpTraceMap(c: ZynqShim) {
-    implicit val channelWidth = c.sim.channelWidth
-    val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
-    val sb = new StringBuilder
-    def dump(t: TraceType.Value)(arg: (Bits, Int)) = arg match {
-      case (wire, id) => s"${t.id} ${ioMap(wire)} ${id} ${SimUtils.getChunks(wire)}\n"
-    }
-    c.IN_TR_ADDRS map dump(TraceType.InTr) addString sb
-    c.OUT_TR_ADDRS map dump(TraceType.OutTr) addString sb
-    try {
-      chainFile write sb.result
-    } finally {
-      chainFile.close
-      sb.clear
-    }
   }
 
   private def dumpHeader(c: ZynqShim) {
@@ -68,10 +50,10 @@ private[passes] class PlatformMapping(
       s"`define ${arg._1} ${arg._2}\n"
 
     val consts = List(
-      "CHANNEL_ID_BITS"   -> c.master.nastiExternal.idBits,
-      "CHANNEL_ADDR_BITS" -> c.master.nastiXAddrBits,
-      "CHANNEL_DATA_BITS" -> c.master.nastiXDataBits,
-      "CHANNEL_STRB_BITS" -> c.master.nastiWStrobeBits,
+      "CHANNEL_ID_BITS"   -> c.master.io.ctrl.nastiExternal.idBits,
+      "CHANNEL_ADDR_BITS" -> c.master.io.ctrl.nastiXAddrBits,
+      "CHANNEL_DATA_BITS" -> c.master.io.ctrl.nastiXDataBits,
+      "CHANNEL_STRB_BITS" -> c.master.io.ctrl.nastiWStrobeBits,
       "MEM_ID_BITS"       -> c.arb.nastiExternal.idBits,
       "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
@@ -132,7 +114,6 @@ private[passes] class PlatformMapping(
     val circuit = renameMods((new PlatformCompiler compile
       (chirrtl, annotations, writer)).circuit, Namespace(c))
     // writer.close
-    dumpTraceMap(shim)
     dumpHeader(shim)
     circuit copy (modules = c.modules ++ (
       circuit.modules flatMap init(c.info, c.main, circuit.main)))

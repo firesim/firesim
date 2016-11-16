@@ -67,11 +67,9 @@ abstract class Widget(implicit p: Parameters) extends Module {
       default: Option[T] = None,
       masterDriven: Boolean = true): T = {
     require(wire.getWidth <= io.ctrl.nastiXDataBits)
-    // TODO: More elegant way to do this?
-    val reg = if (default.isDefined) {
-      RegInit({val init = Wire(wire.cloneType); init := default.get; init})
-    } else {
-      Reg(wire.cloneType)
+    val reg = default match {
+      case None => Reg(wire.cloneType)
+      case Some(init) => RegInit(init)
     }
     if (masterDriven) wire := reg else reg := wire
     attach(reg, name)

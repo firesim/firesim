@@ -3,6 +3,26 @@ package midas_widgets
 import Chisel._
 import cde.Parameters
 
+trait HasChannels {
+  // A higher order funciton that takes a hardware elaborator for each channel.
+  // Based on the number of chunks in each signal binds the appropriate
+  // number of programmable registers to them
+  def bindChannels(bindSignal: (String, Int) => Int)(
+      signals: Seq[(String, Int)], offset: Int): Seq[Int] = signals match {
+    case Nil => Nil
+    case (name: String, width: Int) :: sigs => {
+      val address = width match {
+        case 1 =>  bindSignal(name, offset)
+        case _ =>
+          // Need to append an offset to the name for each chunk
+          (0 to width).toSeq.map(chunk => bindSignal(s"${name}_$chunk", offset + chunk)).head
+      }
+      // Bind the next signal; moving further down
+      address +: bindChannels(bindSignal)(sigs, offset + width)
+    }
+  }
+}
+
 class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
     extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
@@ -11,42 +31,26 @@ class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
 
   val step = Flipped(Decoupled(UInt(width = ctrl.nastiXDataBits)))
   val idle = Bool(OUTPUT)
+  val tReset = Decoupled(Bool())
 }
 
 // The interface to this widget is temporary, and matches the Vec of channels
 // the sim wrapper produces. Ultimately, the wrapper should have more coarsely
 // tokenized IOs.
 class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
-    (implicit p: Parameters) extends Widget()(p) {
+    (implicit p: Parameters) extends Widget()(p) with HasChannels {
   val numInputChannels = inputs.unzip._2.reduce(_ + _)
   val numOutputChannels = outputs.unzip._2.reduce(_ + _)
   val io = IO(new PeekPokeIOWidgetIO(numInputChannels, numOutputChannels))
 
+  val resetQueue = Module(new Queue(Bool(), 4))
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
-  val oTokensPending = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
+  val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
 
   io.idle := iTokensAvailable === UInt(0) && oTokensPending === UInt(0)
 
-  // A higher order funciton that takes a hardware elaborator for each channel.
-  // Based on the number of chunks in each signal binds the appropriate
-  // number of programmable registers to them
-  def bindChannels(bindSignal: (String, Int) => Int)(
-      signals: Seq[(String, Int)], offset: Int): Seq[Int] = signals match {
-    case Nil => Nil
-    case (name: String, width: Int) :: sigs => {
-      val address = if (width == 1) {
-        bindSignal(name, offset)
-      } else {
-        // Need to append an offset to the name for each chunk
-         (0 to width).toSeq.map({chunk => bindSignal(s"${name}_$chunk", offset + chunk)}).head
-      }
-      // Bind the next signal; moving further down 
-      address +: bindChannels(bindSignal)(sigs, offset + width)
-    }
-  }
-
-  def bindInputs = bindChannels( (name, offset) => {
+  def bindInputs = bindChannels((name, offset) => {
     val channel = io.ins(offset)
     val reg = Reg(channel.bits)
     reg suggestName ("target_" + name)
@@ -66,7 +70,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
 
-  val fromHostReady = io.ins.foldLeft(Bool(true))(_ && _.ready)
+  val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
   val toHostValid = io.outs.foldLeft(Bool(true))(_ && _.valid)
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
@@ -84,6 +88,13 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   // it has gone idle
   io.step.ready := io.idle
 
+  // Target reset connection
+  io.tReset <> resetQueue.io.deq
+  // Hack: insert high to resetQueue as initial tokens
+  val resetNext = RegNext(reset)
+  resetQueue.io.enq.bits := resetNext || io.ins(0).bits(0)
+  resetQueue.io.enq.valid := resetNext || io.ins(0).valid
+
   genCRFile()
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
@@ -96,19 +107,15 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     sb.append(genComment("Pokeable target inputs"))
     sb.append(genMacro("POKE_SIZE", UInt64(inputs.size)))
     genOffsets(inputs.unzip._1)
-    sb.append(genArray("INPUT_ADDRS", inputAddrs map(off => UInt32(base + off))))
-    sb.append(genArray("INPUT_NAMES", inputs.unzip._1.map(CStrLit(_))))
-    sb.append(genArray("INPUT_CHUNKS", inputs.unzip._2.map(UInt32(_))))
+    sb.append(genArray("INPUT_ADDRS", inputAddrs map (off => UInt32(base + off))))
+    sb.append(genArray("INPUT_NAMES", inputs.unzip._1 map CStrLit))
+    sb.append(genArray("INPUT_CHUNKS", inputs.unzip._2 map (UInt32(_))))
 
     sb.append(genComment("Peekable target outputs"))
     sb.append(genMacro("PEEK_SIZE", UInt64(outputs.size)))
     genOffsets(outputs.unzip._1)
-    sb.append(genArray("OUTPUT_ADDRS", outputAddrs map(off => UInt32(base + off))))
-    sb.append(genArray("OUTPUT_NAMES", outputs.unzip._1.map(CStrLit(_))))
-    sb.append(genArray("OUTPUT_CHUNKS", outputs.unzip._2.map(UInt32(_))))
+    sb.append(genArray("OUTPUT_ADDRS", outputAddrs map (off => UInt32(base + off))))
+    sb.append(genArray("OUTPUT_NAMES", outputs.unzip._1 map CStrLit))
+    sb.append(genArray("OUTPUT_CHUNKS", outputs.unzip._2 map (UInt32(_))))
   }
-
-  def getResetIdx(): Int = (inputs.unzip._1.zipWithIndex).filter(
-    _._1 == "reset").map(_._2).head
-
 }

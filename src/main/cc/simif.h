@@ -23,8 +23,6 @@ class simif_t
     simif_t();
     virtual ~simif_t() { }
   private:
-    virtual void load_mem(std::string filename);
-
     // simulation information
     bool log;
     bool pass;
@@ -32,6 +30,11 @@ class simif_t
     uint64_t fail_t;
     time_t seed; 
     size_t tracelen;
+    virtual void load_mem(std::string filename);
+    inline void take_steps(size_t n) {
+      write(EMULATIONMASTER_STEP, n);
+      while(!read(EMULATIONMASTER_DONE));
+    }
 
   protected:
     // channel communication
@@ -96,7 +99,7 @@ class simif_t
     }
 
     // A default reset scheme that pulses the global chisel reset
-    void target_reset(int pulse_start = 1, int pulselength = 5);
+    void target_reset(int pulse_start = 1, int pulse_length = 5);
 
     inline biguint_t read_mem(size_t addr) {
       write(LOADMEM_R_ADDRESS, addr);
@@ -118,10 +121,10 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
     inline void set_tracelen(size_t len) {
-      if (len <= 2) throw std::logic_error("len should be > 2");
+      if (len <= 2) throw std::invalid_argument("len should be > 2");
       tracelen = len;
 #ifdef ENABLE_SNAPSHOT
-      write(EMULATIONMASTER_TRACELEN, len);
+      write(TRACELEN_ADDR, len);
 #endif
     }
     inline size_t get_tracelen() { return tracelen; }

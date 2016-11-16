@@ -59,14 +59,14 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
     case s: DefRegister =>
       val regRef = wref(s.name, s.tpe)
       stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
-      s
+      s copy (reset = and(s.reset, targetFire))
     case s: Print =>
       s copy (en = and(s.en, targetFire))
     case s: Stop =>
       s copy (en = and(s.en, targetFire))
     case s: Connect => s.loc match {
       case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
-        s copy (expr = or(and(s.expr, targetFire), daisyReset))
+        s copy (expr = and(s.expr, targetFire))
       case e: WSubField if wt(e.tpe) == WrappedBool && wmodes(e.serialize) =>
         s copy (expr = and(s.expr, targetFire))
       case _ => s

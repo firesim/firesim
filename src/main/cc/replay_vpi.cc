@@ -10,9 +10,8 @@ void replay_vpi_t::init(int argc, char** argv) {
 }
 
 int replay_vpi_t::finish() {
-  int exitcode = replay_t::finish();
   target.switch_to();
-  return exitcode;
+  return replay_t::finish();
 }
 
 void replay_vpi_t::probe_signals() {
@@ -133,14 +132,10 @@ void replay_vpi_t::tick() {
   vpiHandle syscall_handle = vpi_handle(vpiSysTfCall, NULL);
   vpiHandle arg_iter = vpi_iterate(vpiArgument, syscall_handle);
   vpiHandle exit_handle = vpi_scan(arg_iter);
-  vpiHandle exitcode_handle = vpi_scan(arg_iter);
-  s_vpi_value vexit, vexitcode;
+  s_vpi_value vexit;
   vexit.format = vpiIntVal;
   vexit.value.integer = done();
-  vexitcode.format = vpiIntVal;
-  vexitcode.value.integer = exitcode();
   vpi_put_value(exit_handle, &vexit, NULL, vpiNoDelay);
-  vpi_put_value(exitcode_handle, &vexitcode, NULL, vpiNoDelay);
 }
 
 static replay_vpi_t* replay = NULL;

@@ -89,21 +89,18 @@ object SimUtils {
   def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[Channel], fire: Bool)
       (implicit channelWidth: Int) = arg match { case (wire, name) =>
     val channels = inChannels slice (off, off + getChunks(wire))
-    val channelOuts = wire match {
-      case _: Bool => channels.head.io.out.bits.toBool
-      case _ => Cat(channels.reverse map (_.io.out.bits))
-    }
+    val channelOuts = Cat(channels.reverse map (_.io.out.bits))
     val buffer = RegEnable(channelOuts, fire)
     buffer suggestName (name + "_buffer")
     wire := Mux(fire, channelOuts, buffer)
     off + getChunks(wire)
   }
 
-  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel])
+  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel], reset: Bool)
       (implicit channelWidth: Int) = arg match { case (wire, name) =>
     val channels = outChannels slice (off, off + getChunks(wire))
     channels.zipWithIndex foreach {case (channel, i) =>
-      channel.io.in.bits := wire.asUInt >> UInt(i * channelWidth)
+      channel.io.in.bits := Mux(reset, UInt(0), wire.asUInt >> UInt(i * channelWidth))
     }
     off + getChunks(wire)
   }
@@ -151,12 +148,6 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
   io.enq.ready := !full
   io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
-
-  // for debugging
-  val counts = RegInit(UInt(0, 32))
-  when (do_enq =/= do_deq) {
-    counts := Mux(do_enq, counts + UInt(1), counts - UInt(1))
-  }
 }
 
 class ChannelIO(w: Int)(implicit p: Parameters) extends ParameterizedBundle()(p) {
@@ -179,6 +170,12 @@ class Channel(val w: Int)(implicit p: Parameters) extends Module {
     trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
     trace.io.limit := io.traceLen - UInt(2)
     io.trace <> Queue(trace.io.deq, 1, pipe=true)
+    // for debugging
+    val trace_count = RegInit(UInt(0, 32))
+    trace_count suggestName "trace_count"
+    when (io.trace.fire() =/= trace.io.enq.fire()) {
+      trace_count := Mux(io.trace.fire(), trace_count - UInt(1), trace_count + UInt(1))
+    }
   } else {
     io.trace.valid := Bool(false)
   }
@@ -278,7 +275,7 @@ class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extend
   (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, inChannels, fire))
 
   (io.outs zip outChannels) foreach {case (out, channel) => out <> channel.io.out}
-  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels))
+  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels, target.io.reset))
 
   if (enableSnapshot) {
     (io.inT zip inChannels) foreach {case (trace, channel) => trace <> channel.io.trace}
@@ -296,7 +293,7 @@ class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extend
   inChannels foreach (_.io.out.ready := fire)
    
   // Outputs should be ready when firing conditions are met
-  outChannels foreach (_.io.in.valid := fire)
+  outChannels foreach (_.io.in.valid := fire || RegNext(reset))
 
   // Trace size is runtime configurable
   inChannels foreach (_.io.traceLen := io.traceLen)
