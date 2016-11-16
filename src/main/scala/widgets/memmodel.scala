@@ -31,8 +31,7 @@ abstract class MemModel(implicit p: Parameters) extends Widget()(p){
 
 class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val tNasti = io.tNasti.hBits
-  val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady &&
-              io.tReset.valid
+  val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid
 
   val ar_buf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
   val aw_buf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
@@ -56,18 +55,19 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val r_cycles = Module(new Queue(UInt(width=64), 4))
   val w_cycles = Module(new Queue(UInt(width=64), 4))
   val latency = RegInit(UInt(16, 32))
+  r_cycles.reset := reset || targetReset
+  w_cycles.reset := reset || targetReset
   attach(latency, "LATENCY")
 
-  io.tNasti.toHost.hReady := io.tReset.valid && io.tNasti.fromHost.hReady
-  io.tNasti.fromHost.hValid := io.tReset.valid && io.tNasti.toHost.hValid
-  io.tReset.ready := io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady
-
+  io.tNasti.toHost.hReady := tFire
+  io.tNasti.fromHost.hValid := tFire
+  io.tReset.ready := tFire
 
   when(tFire) { cycles := cycles + UInt(1) }
   r_cycles.io.enq.bits := cycles + latency
   w_cycles.io.enq.bits := cycles + latency
-  r_cycles.io.enq.valid := tNasti.ar.fire() && tFire && ~io.tReset.bits
-  w_cycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire && ~io.tReset.bits
+  r_cycles.io.enq.valid := tNasti.ar.fire() && tFire
+  w_cycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire
   r_cycles.io.deq.ready := tNasti.r.fire()  && tNasti.r.bits.last && tFire
   w_cycles.io.deq.ready := tNasti.b.fire()  && tFire
 
@@ -75,18 +75,15 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   tNasti.ar.ready := ar_buf.io.enq.ready && r_cycles.io.enq.ready
   tNasti.aw.ready := aw_buf.io.enq.ready && w_cycles.io.enq.ready
   tNasti.w.ready  := w_buf.io.enq.ready  && w_cycles.io.enq.ready
-  ar_buf.io.enq.valid := tNasti.ar.valid && tFire
-  aw_buf.io.enq.valid := tNasti.aw.valid && tFire
-  w_buf.io.enq.valid  := tNasti.w.valid  && tFire
+  ar_buf.io.enq.valid := tNasti.ar.valid && tFire && !io.tReset.bits
+  aw_buf.io.enq.valid := tNasti.aw.valid && tFire && !io.tReset.bits
+  w_buf.io.enq.valid  := tNasti.w.valid  && tFire && !io.tReset.bits
   ar_buf.io.enq.bits  := tNasti.ar.bits
   aw_buf.io.enq.bits  := tNasti.aw.bits
   w_buf.io.enq.bits   := tNasti.w.bits
   io.host_mem.aw <> aw_buf.io.deq
-  io.host_mem.aw.valid := aw_buf.io.deq.valid && ~targetReset
   io.host_mem.ar <> ar_buf.io.deq
-  io.host_mem.ar.valid := ar_buf.io.deq.valid && ~targetReset
   io.host_mem.w  <> w_buf.io.deq
-  io.host_mem.w.valid := w_buf.io.deq.valid && ~targetReset
 
   // Response
   tNasti.r.bits <> r_buf.io.deq.bits

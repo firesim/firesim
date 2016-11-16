@@ -17,7 +17,6 @@ static const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
 static uint64_t main_time = 0;
 static std::unique_ptr<mmio_t> master;
 static std::unique_ptr<mm_t> slave;
-static int exitcode;
 
 // TODO: generalize tick
 #ifdef VCS
@@ -25,14 +24,15 @@ static context_t* host;
 static context_t target;
 static bool is_reset = false;
 static bool vcs_fin = false;
+static bool vcs_err = false;
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 
 extern "C" {
 void tick(
   vc_handle reset,
-  vc_handle vexit,
-  vc_handle vexitcode,
+  vc_handle fin,
+  vc_handle err,
 
   vc_handle master_ar_valid,
   vc_handle master_ar_ready,
@@ -187,7 +187,7 @@ void tick(
     );
   } catch(std::exception &e) {
     vcs_fin = true;
-    exitcode = EXIT_FAILURE;
+    vcs_err = true;
     fprintf(stderr, "Exception in tick(): %s\n", e.what());
   }
 
@@ -217,16 +217,14 @@ void tick(
   }
   vc_put4stVector(slave_r_bits_data, sd);
 
-  vc_putScalar(vexit, vcs_fin);
-  vec32 v;
-  v.c = 0;
-  v.d = exitcode;
-  vc_put4stVector(vexitcode, &v);
+  vc_putScalar(reset, is_reset);
+  vc_putScalar(fin, vcs_fin);
+  vc_putScalar(err, vcs_err);
 
   main_time++;
-  vc_putScalar(reset, is_reset);
 
   if (!vcs_fin) host->switch_to();
+  else vcs_fin = false;
 }
 }
 
@@ -343,7 +341,10 @@ void tick() {
 #endif
 
 void finish() {
-#ifndef VCS
+#ifdef VCS
+  vcs_fin = true;
+  target.switch_to();
+#else
 #if VM_TRACE
   if (tfp) tfp->close();
   delete tfp;
@@ -428,7 +429,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 }
 
 int simif_emul_t::finish() {
-  exitcode = simif_t::finish();
+  int exitcode = simif_t::finish();
   ::finish();
   return exitcode;
 }

@@ -54,6 +54,7 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
       addr = rAddrQ.bits,
       size = size)(p alter Map(NastiKey -> p(hKey)))
   io.toSlaveMem.ar.valid := rAddrQ.valid
+  rAddrQ.ready := io.toSlaveMem.ar.ready
 
   val rDataQ = Module(new MultiWidthFifo(hWidth, cWidth, 2))
   attachDecoupledSource(rDataQ.io.out, "R_DATA")

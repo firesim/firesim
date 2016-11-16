@@ -2,7 +2,6 @@ module replay;
   reg clock = 1'b0;
   reg reset = 1'b1;
   reg exit = 1'b0;
-  reg [31:0] exitcode = 0;
   reg [64:0] cycles = 0;
 
 `ifdef VCS 
@@ -28,13 +27,10 @@ module replay;
 
   always @(posedge clock) begin
     if (!reset) cycles <= cycles + 1;
-    $tick(exit, exitcode);
+    $tick(exit);
     if (exit) begin
       $vcdplusclose;
-      if (exitcode == 0)
-        $finish;
-      else
-        $fatal;
+      $finish;
     end
   end
 
