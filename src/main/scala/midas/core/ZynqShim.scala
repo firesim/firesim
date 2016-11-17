@@ -1,10 +1,12 @@
-package strober
+package midas
+package core
 
+import util.ParameterizedBundle // from rocketchip
+import widgets._
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
 import junctions._
-import midas_widgets._
 
 case object SlaveNastiKey extends Field[NastiParameters]
 case object ZynqMMIOSize extends Field[BigInt]

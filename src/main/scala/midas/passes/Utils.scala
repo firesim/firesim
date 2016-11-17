@@ -1,4 +1,4 @@
-package strober
+package midas
 package passes
 
 import firrtl._
@@ -35,7 +35,7 @@ private[passes] object Utils {
     }
 
   def preorder(c: Circuit,
-               childMods: StroberTransforms.ChildMods)
+               childMods: MidasTransforms.ChildMods)
                (visit: DefModule => DefModule): Seq[DefModule] = {
     val head = (c.modules find (_.name == c.main)).get
     val visited = HashSet[String]()
@@ -48,7 +48,7 @@ private[passes] object Utils {
   }
 
   def postorder(c: Circuit,
-                childMods: StroberTransforms.ChildMods)
+                childMods: MidasTransforms.ChildMods)
                 (visit: DefModule => DefModule): Seq[DefModule] = {
     val head = (c.modules find (_.name == c.main)).get
     val visited = HashSet[String]()

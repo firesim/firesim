@@ -1,4 +1,5 @@
-package midas_widgets
+package midas
+package widgets
 
 trait CPPLiteral {
   def typeString: String

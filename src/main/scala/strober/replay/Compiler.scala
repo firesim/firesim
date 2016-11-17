@@ -19,7 +19,7 @@ private class Compiler(conf: File) extends firrtl.Compiler {
     new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
     new firrtl.MiddleFirrtlToLowFirrtl,
     new firrtl.EmitVerilogFromLowFirrtl(writer),
-    new passes.EmitMemFPGAVerilog(writer, conf)
+    new midas.passes.EmitMemFPGAVerilog(writer, conf)
   )
 }
 

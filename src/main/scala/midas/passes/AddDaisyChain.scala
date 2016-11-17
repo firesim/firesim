@@ -1,6 +1,7 @@
-package strober
+package midas
 package passes
 
+import midas.core._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -9,7 +10,7 @@ import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
-import StroberTransforms._
+import MidasTransforms._
 import Utils._
 import java.io.StringWriter
 
@@ -20,7 +21,7 @@ private[passes] class AddDaisyChains(
     chains: Map[ChainType.Value, ChainMap],
     seqMems: Map[String, MemConf])
    (implicit param: cde.Parameters) extends firrtl.passes.Pass {
-  def name = "[strober] Add Daisy Chains"
+  def name = "[midas] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
 
