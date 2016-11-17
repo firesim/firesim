@@ -1,12 +1,13 @@
-package strober
+package midas
 package passes
 
+import midas.core.ZynqShim
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import chisel3.Bits
 import Utils._
-import StroberTransforms._
+import MidasTransforms._
 import java.io.{File, FileWriter, Writer, StringWriter}
 
 private[passes] class PlatformMapping(
@@ -14,7 +15,7 @@ private[passes] class PlatformMapping(
     dir: File)
     (implicit param: cde.Parameters) extends firrtl.passes.Pass {
 
-  def name = "[strober] Platform Mapping"
+  def name = "[midas] Platform Mapping"
 
   private class PlatformCompiler extends firrtl.Compiler {
     def transforms(writer: Writer) = Seq(
@@ -26,28 +27,11 @@ private[passes] class PlatformMapping(
     )
   }
 
-  private object TraceType extends Enumeration {
-    val InTr = Value(ChainType.values.size)
-    val OutTr = Value(ChainType.values.size + 1)
-  }
-
   private def dumpHeader(c: ZynqShim) {
     implicit val channelWidth = c.sim.channelWidth
     val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
-    def dump(arg: (String, Int)): String =
-      s"#define ${arg._1} ${arg._2}\n"
-    def dumpId(arg: (Bits, Int)): String =
-      s"#define ${ioMap(arg._1)} ${arg._2}\n"
-    def dumpNames(arg: (Bits, Int)): Seq[String] = {
-      val chunks = SimUtils.getChunks(arg._1)
-      (0 until chunks) map (i => if (i == 0) "  \"%s\"".format(ioMap(arg._1)) else "  \"\"")
-    }
-    def dumpChunks(arg: (Bits, Int)): Seq[Int] = {
-      val chunks = SimUtils.getChunks(arg._1)
-      (0 until chunks) map (i => if (i == 0) chunks else 0)
-    }
-    def vdump(arg: (String, Int)): String =
-      s"`define ${arg._1} ${arg._2}\n"
+    def dump(arg: (String, Int)): String = s"#define ${arg._1} ${arg._2}\n"
+    def vdump(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"
 
     val consts = List(
       "CHANNEL_ID_BITS"   -> c.master.io.ctrl.nastiExternal.idBits,
@@ -57,8 +41,7 @@ private[passes] class PlatformMapping(
       "MEM_ID_BITS"       -> c.arb.nastiExternal.idBits,
       "MEM_ADDR_BITS"     -> c.arb.nastiXAddrBits,
       "MEM_DATA_BITS"     -> c.arb.nastiXDataBits,
-      "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits,
-      "MEM_DATA_CHUNK"    -> SimUtils.getChunks(c.io.slave.w.bits.data)
+      "MEM_STRB_BITS"     -> c.arb.nastiWStrobeBits
     ) ++ c.sim.headerConsts
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)

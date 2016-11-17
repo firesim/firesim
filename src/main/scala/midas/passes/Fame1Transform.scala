@@ -1,4 +1,4 @@
-package strober
+package midas
 package passes
 
 import firrtl._
@@ -7,11 +7,11 @@ import firrtl.Mappers._
 import firrtl.Utils.BoolType
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
-import StroberTransforms._
+import MidasTransforms._
 import Utils._
 
 private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
-  def name = "[strober] Fame1 Transforms"
+  def name = "[midas] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
 
