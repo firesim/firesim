@@ -127,7 +127,7 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     targetConnect(port.hBits -> wires)
   }
 
-  (0 until memIo.size) foreach { i =>
+  defaultIOWidget.io.tReset.ready := ((0 until memIo.size) foldLeft Bool(true)){(ready, i) =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
         case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
@@ -136,8 +136,10 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset
-    model.io.tReset <> defaultIOWidget.io.tReset
+    model.io.tReset.bits := defaultIOWidget.io.tReset.bits
+    model.io.tReset.valid := defaultIOWidget.io.tReset.valid
     channels2Port(model.io.tNasti, memIo(i))
+    ready && model.io.tReset.ready
   }
 
   genCtrlIO(io.master, p(ZynqMMIOSize))
