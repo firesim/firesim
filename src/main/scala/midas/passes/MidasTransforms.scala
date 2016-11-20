@@ -5,8 +5,7 @@ import midas.core._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.passes.memlib._
-import firrtl.Annotations.{AnnotationMap, CircuitName, TransID}
+import firrtl.Annotations._
 import Utils._
 import MidasTransforms._
 import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
@@ -56,6 +55,13 @@ private class TransformAnalysis(
   }
 }
 
+private[midas] case class MidasAnnotation(t: String, conf: File)
+    extends Annotation with Loose with Unstable {
+  val target = CircuitName(t)
+  def duplicate(n: Named) = this.copy(t=n.name)
+  def transform = classOf[MidasTransforms]
+}
+
 private[midas] class MidasTransforms(
     dir: File,
     io: chisel3.Data)
@@ -65,20 +71,17 @@ private[midas] class MidasTransforms(
   val instModMap = new InstModMap
   val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
 
-  def execute(circuit: Circuit, map: AnnotationMap) = {
-    ((map get TransID(-2)): @unchecked) match {
-      case Some(p) => ((p get CircuitName(circuit.main)): @unchecked) match {
-        case Some(ReplSeqMemAnnotation(t, _)) =>
-          val conf = new File(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
-          val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
-          run(circuit, Seq(
-            new Fame1Transform(seqMems),
-            new TransformAnalysis(childMods, childInsts, instModMap),
-            new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-            new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
-            new PlatformMapping(circuit.main, dir)
-          ))
-      }
-    }
+  def inputForm = MidForm
+  def outputForm = MidForm
+  def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
+    case Seq(MidasAnnotation(t, conf)) if t == state.circuit.main =>
+      val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
+      CircuitState(runPasses(state.circuit, Seq(
+        new Fame1Transform(seqMems),
+        new TransformAnalysis(childMods, childInsts, instModMap),
+        new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
+        new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
+        new PlatformMapping(state.circuit.main, dir)
+      )), outputForm)
   }
 }

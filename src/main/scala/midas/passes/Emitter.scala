@@ -41,9 +41,9 @@ object MemConfReader {
   }
 }
 
-class EmitMemFPGAVerilog(writer: java.io.Writer, conf: java.io.File) extends firrtl.Transform {
-  private val tab = " "
-  private def emit(conf: MemConf) {
+class MidasVerilogEmitter(conf: java.io.File) extends firrtl.VerilogEmitter {
+  // private val tab = " "
+  private def emit(writer: java.io.Writer)(conf: MemConf) {
     def maskWidth = (conf.width / conf.maskGran).toInt
     val addrWidth = chisel3.util.log2Up(conf.depth) max 1
     val portdefs = (conf.readers.indices flatMap (i => Seq(
@@ -126,9 +126,9 @@ endmodule""".format(
     )
   }
 
-  def execute(c: firrtl.ir.Circuit, map: firrtl.Annotations.AnnotationMap) = {
-    MemConfReader(conf) foreach emit
-    firrtl.TransformResult(c)
+  override def emit(state: firrtl.CircuitState, writer: java.io.Writer) {
+    super.emit(state, writer)
+    MemConfReader(conf) foreach emit(writer)
   }
 }
 

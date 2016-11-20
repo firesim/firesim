@@ -25,16 +25,6 @@ private[passes] class AddDaisyChains(
 
   implicit def expToString(e: Expression): String = e.serialize
 
-  private class ChainCompiler extends Compiler {
-    def transforms(writer: java.io.Writer) = Seq(
-      new Chisel3ToHighFirrtl,
-      new IRToWorkingIR,
-      new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new EmitFirrtl(writer) // debugging
-    )
-  }
-
   private def generateChain(chainGen: () => chisel3.Module,
                             namespace: Namespace,
                             chainMods: DefModules,
@@ -42,8 +32,8 @@ private[passes] class AddDaisyChains(
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new Annotations.AnnotationMap(Nil)
-    val circuit = renameMods((new ChainCompiler compile
-      (chirrtl, annotation, new StringWriter)).circuit, namespace)
+    val circuit = renameMods((new InlineCompiler compile (
+      CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
     chainMods ++= circuit.modules
     Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
         IsInvalid(NoInfo, chainRef(instIdx)))
@@ -479,8 +469,8 @@ private[passes] class AddDaisyChains(
     val chainMods = new DefModules
     val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
     val chirrtl = Parser parse (chisel3.Driver emit (() => new DaisyBox))
-    val annotations = new Annotations.AnnotationMap(Nil)
-    val daisybox = (new ChainCompiler compile (chirrtl, annotations, new StringWriter)).circuit
+    val daisybox = (new InlineCompiler compile (
+      CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
     val daisyType = daisybox.modules.head.ports.head.tpe
     val targetMods = postorder(c, childMods)(transform(namespace, daisyType, chainMods, hasChain))
     c.copy(modules = chainMods ++ targetMods)

@@ -25,16 +25,6 @@ private[passes] class SimulationMapping(
   
   def name = "[midas] Simulation Mapping"
 
-  private class SimCompiler extends firrtl.Compiler {
-    def transforms(writer: Writer) = Seq(
-      new Chisel3ToHighFirrtl,
-      new IRToWorkingIR,
-      new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new EmitFirrtl(writer) // debugging
-    )
-  }
-
   private def addPad(chainFile: FileWriter, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {
       case 0 =>
@@ -142,13 +132,11 @@ private[passes] class SimulationMapping(
     val annotations = new Annotations.AnnotationMap(Nil)
     val writer = new StringWriter
     // val writer = new FileWriter(new File("SimWrapper.ir"))
-    val circuit = renameMods((new SimCompiler compile
-      (chirrtl, annotations, writer)).circuit, Namespace(c))
-    val modules = c.modules ++ (circuit.modules flatMap
-      init(c.info, c.main, circuit.main))
+    val circuit = renameMods((new InlineCompiler compile (
+      CircuitState(chirrtl, ChirrtlForm), writer)).circuit, Namespace(c))
+    val modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main, circuit.main))
     // writer.close
-    implicit val daisyWidth = sim.daisyWidth
-    dumpChainMap(c.main)
+    dumpChainMap(c.main)(sim.daisyWidth)
     new WCircuit(circuit.info, modules, circuit.main, sim.io, mem)
   }
 }
