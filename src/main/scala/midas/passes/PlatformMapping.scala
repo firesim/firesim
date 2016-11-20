@@ -17,16 +17,6 @@ private[passes] class PlatformMapping(
 
   def name = "[midas] Platform Mapping"
 
-  private class PlatformCompiler extends firrtl.Compiler {
-    def transforms(writer: Writer) = Seq(
-      new Chisel3ToHighFirrtl,
-      new IRToWorkingIR,
-      new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new EmitFirrtl(writer) // debugging
-    )
-  }
-
   private def dumpHeader(c: ZynqShim) {
     implicit val channelWidth = c.sim.channelWidth
     val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
@@ -91,11 +81,10 @@ private[passes] class PlatformMapping(
     val (sim, mem) = c match { case w: WCircuit => (w.sim, w.mem) }
     lazy val shim = new ZynqShim(sim, mem)
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
-    val annotations = new Annotations.AnnotationMap(Nil)
     val writer = new StringWriter
     // val writer = new FileWriter(new File("ZynqShim.ir"))
-    val circuit = renameMods((new PlatformCompiler compile
-      (chirrtl, annotations, writer)).circuit, Namespace(c))
+    val circuit = renameMods((new InlineCompiler compile (
+      CircuitState(chirrtl, ChirrtlForm), writer)).circuit, Namespace(c))
     // writer.close
     dumpHeader(shim)
     circuit copy (modules = c.modules ++ (

@@ -2,50 +2,51 @@ package midas
 
 import chisel3.{Data, Bits}
 import firrtl.ir.Circuit
-import firrtl.Annotations.{AnnotationMap, TransID}
-import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
+import firrtl.CompilerUtils.getLoweringTransforms
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import java.io.{File, FileWriter, Writer}
 
+// Compiler in Midas Passes
+private class InlineCompiler extends firrtl.Compiler {
+  def emitter = new firrtl.FirrtlEmitter
+  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm)
+}
+
+// Compiler for Midas Transforms
 private class MidasCompiler(dir: File, io: Data)(implicit param: cde.Parameters) extends firrtl.Compiler {
-  def transforms(writer: Writer): Seq[firrtl.Transform] = Seq(
-    new firrtl.Chisel3ToHighFirrtl,
-    new firrtl.IRToWorkingIR,
-    new firrtl.ResolveAndCheck,
-    new firrtl.HighFirrtlToMiddleFirrtl,
-    new firrtl.passes.memlib.InferReadWrite(TransID(-1)),
-    new firrtl.passes.memlib.ReplSeqMem(TransID(-2)),
-    new passes.MidasTransforms(dir, io),
-    new firrtl.EmitFirrtl(writer)
+  def emitter = new firrtl.FirrtlEmitter
+  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
+    new firrtl.passes.memlib.InferReadWrite,
+    new firrtl.passes.memlib.ReplSeqMem,
+    new passes.MidasTransforms(dir, io)
   )
 }
 
-// This compiler compiles HighFirrtl To verilog
+// Compilers to emit proper verilog
 private class VerilogCompiler(conf: File) extends firrtl.Compiler {
-  def transforms(writer: Writer): Seq[firrtl.Transform] = Seq(
-    new firrtl.ResolveAndCheck,
-    new firrtl.HighFirrtlToMiddleFirrtl,
-    new firrtl.MiddleFirrtlToLowFirrtl,
-    new firrtl.EmitVerilogFromLowFirrtl(writer),
-    new passes.EmitMemFPGAVerilog(writer, conf)
-  )
+  def emitter = new passes.MidasVerilogEmitter(conf)
+  def transforms = getLoweringTransforms(firrtl.HighForm, firrtl.LowForm) :+ (
+    new firrtl.LowFirrtlOptimization)
 }
 
 object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: cde.Parameters): Circuit = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
-    val annotations = new AnnotationMap(Seq(
-      InferReadWriteAnnotation(chirrtl.main, TransID(-1)),
-      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf", TransID(-2))
+    val annotations = new firrtl.Annotations.AnnotationMap(Seq(
+      firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
+      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
+      passes.MidasAnnotation(chirrtl.main, conf)
     ))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
-    val midas = (new MidasCompiler(dir, io) compile (chirrtl, annotations, writer)).circuit
+    val midas = new MidasCompiler(dir, io) compile (
+      firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)), writer)
     // writer.close
     // firrtl.Parser.parse(writer.toString)
-    val verilog = new FileWriter(new File(dir, s"${midas.main}.v"))
-    val result = new VerilogCompiler(conf) compile (midas, annotations, verilog)
+    val verilog = new FileWriter(new File(dir, s"${midas.circuit.main}.v"))
+    val result = new VerilogCompiler(conf) compile (
+      firrtl.CircuitState(midas.circuit, firrtl.HighForm), verilog)
     verilog.close
     result.circuit
   }
