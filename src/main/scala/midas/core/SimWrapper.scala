@@ -7,7 +7,7 @@ import chisel3.util._
 import chisel3.compatibility.throwException
 import cde.{Parameters, Field}
 import junctions.NastiIO
-import SimUtils.{parsePorts, getChunks, genIoMap}
+import SimUtils.{parsePorts, getChunks}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
@@ -58,40 +58,6 @@ object SimUtils {
     (b.getWidth-1)/channelWidth + 1
   def getChunks(s: Seq[Bits])(implicit channelWidth: Int): Int =
     (s foldLeft 0)((res, b) => res + getChunks(b))
-
-  def genIoMap(ports: Seq[(Bits, String)], offset: Int = 0)(implicit channelWidth: Int) =
-    ((ports foldLeft ((ListMap[Bits, Int](), offset))){
-      case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
-    })._1
-
- def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
-    implicit val channelWidth = p(ChannelWidth)
-    arg match { case (port, name) => (0 until getChunks(port)) map { off =>
-      val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
-      val channel = Module(new Channel(width))
-      channel suggestName s"Channel_${name}_${off}"
-      channel
-    }}
-  }
-
-  def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[Channel], fire: Bool)
-      (implicit channelWidth: Int) = arg match { case (wire, name) =>
-    val channels = inChannels slice (off, off + getChunks(wire))
-    val channelOuts = Cat(channels.reverse map (_.io.out.bits))
-    val buffer = RegEnable(channelOuts, fire)
-    buffer suggestName (name + "_buffer")
-    wire := Mux(fire, channelOuts, buffer)
-    off + getChunks(wire)
-  }
-
-  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel], reset: Bool)
-      (implicit channelWidth: Int) = arg match { case (wire, name) =>
-    val channels = outChannels slice (off, off + getChunks(wire))
-    channels.zipWithIndex foreach {case (channel, i) =>
-      channel.io.in.bits := Mux(reset, UInt(0), wire.asUInt >> UInt(i * channelWidth))
-    }
-    off + getChunks(wire)
-  }
 }
 
 case object TraceMaxLen extends Field[Int]
@@ -195,6 +161,11 @@ class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p:
   lazy val inTrMap = genIoMap(inputs, outs.size)
   lazy val outTrMap = genIoMap(outputs, outs.size + inT.size)
 
+  def genIoMap(ports: Seq[(Bits, String)], offset: Int = 0)(implicit channelWidth: Int) =
+    ((ports foldLeft ((ListMap[Bits, Int](), offset))){
+      case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
+    })._1
+
   def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
   }
@@ -241,28 +212,53 @@ class SimBox(simIo: SimWrapperIO)
   )
 }
 
-abstract class SimNetwork(implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  def io: SimWrapperIO
-  def inChannels: Seq[Channel]
-  def outChannels: Seq[Channel]
-}
-
-class SimWrapper(targetIo: Data, memIo: SimMemIO)(implicit p: Parameters) extends SimNetwork()(p) {
+class SimWrapper(targetIo: Data,
+                 memIo: SimMemIO)
+                (implicit val p: Parameters) extends Module with HasSimWrapperParams {
   val target = Module(new TargetBox(targetIo))
   val fire = Wire(Bool())
   val io = IO(new SimWrapperIO(target.io.io, target.io.reset, Some(memIo)))
 
-  val inChannels: Seq[Channel] = io.inputs flatMap SimUtils.genChannels
-  val outChannels: Seq[Channel] = io.outputs flatMap SimUtils.genChannels
+  def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
+    implicit val channelWidth = p(ChannelWidth)
+    arg match { case (port, name) => (0 until getChunks(port)) map { off =>
+      val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
+      val channel = Module(new Channel(width))
+      channel suggestName s"Channel_${name}_${off}"
+      channel
+    }}
+  }
+
+  def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[Channel], fire: Bool)
+      (implicit channelWidth: Int) = arg match { case (wire, name) =>
+    val channels = inChannels slice (off, off + getChunks(wire))
+    val channelOuts = Cat(channels.reverse map (_.io.out.bits))
+    val buffer = RegEnable(channelOuts, fire)
+    buffer suggestName (name + "_buffer")
+    wire := Mux(fire, channelOuts, buffer)
+    off + getChunks(wire)
+  }
+
+  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[Channel], reset: Bool)
+      (implicit channelWidth: Int) = arg match { case (wire, name) =>
+    val channels = outChannels slice (off, off + getChunks(wire))
+    channels.zipWithIndex foreach {case (channel, i) =>
+      channel.io.in.bits := Mux(reset, UInt(0), wire.asUInt >> UInt(i * channelWidth))
+    }
+    off + getChunks(wire)
+  }
+
+  val inChannels: Seq[Channel] = io.inputs flatMap genChannels
+  val outChannels: Seq[Channel] = io.outputs flatMap genChannels
 
   target.io.clock := clock
 
   // Datapath: Channels <> IOs
   (inChannels zip io.ins) foreach {case (channel, in) => channel.io.in <> in}
-  (io.inputs foldLeft 0)(SimUtils.connectInput(_, _, inChannels, fire))
+  (io.inputs foldLeft 0)(connectInput(_, _, inChannels, fire))
 
   (io.outs zip outChannels) foreach {case (out, channel) => out <> channel.io.out}
-  (io.outputs foldLeft 0)(SimUtils.connectOutput(_, _, outChannels, target.io.reset))
+  (io.outputs foldLeft 0)(connectOutput(_, _, outChannels, target.io.reset))
 
   if (enableSnapshot) {
     (io.inT zip inChannels) foreach {case (trace, channel) => trace <> channel.io.trace}
