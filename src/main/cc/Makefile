@@ -93,6 +93,7 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir
 	  rm -rf $(OUT_DIR)/$(DESIGN).daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
+	+define+STOP_COND=!emul.reset \
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
@@ -104,7 +105,8 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $
 	if [ -a $(OUT_DIR)/$(DESIGN)-debug.daidir ]; then \
 	  rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir; \
 	fi
-	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list +define+DEBUG \
+	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list \
+	+define+STOP_COND=!emul.reset +define+DEBUG \
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
@@ -125,7 +127,7 @@ $(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(util_dir
 	  rm -rf $(OUT_DIR)/$(DESIGN)-replay.daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc \
-	+define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
+	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
 	+vpi -P $(r_dir)/vpi.tab -LDFLAGS "$(LDFLAGS) -lreplay" \
 	-o $@ $< $(word 2, $^) $(replay_cc) $(word 3, $^)
 
