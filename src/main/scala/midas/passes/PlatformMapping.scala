@@ -1,7 +1,6 @@
 package midas
 package passes
 
-import midas.core.ZynqShim
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -17,7 +16,7 @@ private[passes] class PlatformMapping(
 
   def name = "[midas] Platform Mapping"
 
-  private def dumpHeader(c: ZynqShim) {
+  private def dumpHeader(c: core.FPGATop) {
     implicit val channelWidth = c.sim.channelWidth
     val ioMap = (c.simIo.inputs ++ c.simIo.outputs).toMap
     def dump(arg: (String, Int)): String = s"#define ${arg._1} ${arg._2}\n"
@@ -65,29 +64,26 @@ private[passes] class PlatformMapping(
   def initStmt(sim: String)(s: Statement): Statement =
     s match {
       case s: WDefInstance if s.name == "sim" && s.module == "SimBox" =>
-        s copy (module = sim) // replace TargetBox with the actual sim module
+        s.copy(module = sim) // replace TargetBox with the actual sim module
       case s => s map initStmt(sim)
     }
 
-  def init(info: Info, sim: String, main: String)(m: DefModule) = m match {
-    case m: Module if m.name == main =>
+  def init(info: Info, sim: String)(m: DefModule) = m match {
+    case m: Module if m.name == "FPGATop" =>
       val body = initStmt(sim)(m.body)
-      Some(m copy (info = info, body = body))
+      Some(m.copy(info = info, body = body))
     case m: Module => Some(m)
     case m: ExtModule => None
   }
 
   def run(c: Circuit) = {
     val (sim, mem) = c match { case w: WCircuit => (w.sim, w.mem) }
-    lazy val shim = new ZynqShim(sim, mem)
+    lazy val shim = new platform.ZynqShim(sim, mem)
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
-    val writer = new StringWriter
-    // val writer = new FileWriter(new File("ZynqShim.ir"))
     val circuit = renameMods((new InlineCompiler compile (
-      CircuitState(chirrtl, ChirrtlForm), writer)).circuit, Namespace(c))
+      CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, Namespace(c))
     // writer.close
-    dumpHeader(shim)
-    circuit copy (modules = c.modules ++ (
-      circuit.modules flatMap init(c.info, c.main, circuit.main)))
+    dumpHeader(shim.top)
+    circuit.copy(modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main)))
   }
 }

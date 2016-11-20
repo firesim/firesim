@@ -2,22 +2,24 @@ package midas
 package core
 
 import util.ParameterizedBundle // from rocketchip
+import junctions._
 import widgets._
 import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
-import junctions._
 
-case object SlaveNastiKey extends Field[NastiParameters]
-case object ZynqMMIOSize extends Field[BigInt]
+case object MemNastiKey extends Field[NastiParameters]
+case object FpgaMMIOSize extends Field[BigInt]
 
-class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = Flipped(new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey))))
-  val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+class FPGATopIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+  val ctrl = Flipped(new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey))))
+  val mem  = new NastiIO()(p alter Map(NastiKey -> p(MemNastiKey)))
 }
 
-class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) extends Module with HasWidgets {
-  val io = IO(new ZynqShimIO)
+// Platform agnostic wrapper of the simulation models for FPGA 
+// TODO: Tilelink2 Port
+class FPGATop(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) extends Module with HasWidgets {
+  val io = IO(new FPGATopIO)
   // Simulation Target
   val sim = Module(new SimBox(_simIo))
   val simIo = sim.io.io
@@ -60,10 +62,10 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(SlaveNastiKey))))
-  val loadMem = addWidget(new LoadMemWidget(SlaveNastiKey), "LOADMEM")
+  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(MemNastiKey))))
+  val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
   arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
-  io.slave <> arb.io.slave
+  io.mem <> arb.io.slave
 
   if (p(EnableSnapshot)) {
     val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
@@ -130,8 +132,8 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
   defaultIOWidget.io.tReset.ready := ((0 until memIo.size) foldLeft Bool(true)){(ready, i) =>
     val model = addWidget(
       (p(MemModelKey): @unchecked) match {
-        case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(SlaveNastiKey)))
-        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+        case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(MemNastiKey)))
+        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(MemNastiKey)))
       }, s"MemModel_$i")
 
     arb.io.master(i) <> model.io.host_mem
@@ -142,5 +144,5 @@ class ZynqShim(_simIo: SimWrapperIO, memIo: SimMemIO)(implicit p: Parameters) ex
     ready && model.io.tReset.ready
   }
 
-  genCtrlIO(io.master, p(ZynqMMIOSize))
+  genCtrlIO(io.ctrl, p(FpgaMMIOSize))
 }
