@@ -33,14 +33,12 @@ static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 extern context_t* host;
 
 extern bool vcs_fin;
-extern bool vcs_err;
 extern bool vcs_rst;
 
 extern "C" {
 void tick(
   vc_handle reset,
   vc_handle fin,
-  vc_handle err,
 
   vc_handle master_ar_valid,
   vc_handle master_ar_ready,
@@ -197,7 +195,6 @@ void tick(
     );
   } catch(std::exception &e) {
     vcs_fin = true;
-    vcs_err = true;
     fprintf(stderr, "Exception in tick(): %s\n", e.what());
   }
 
@@ -229,7 +226,6 @@ void tick(
 
   vc_putScalar(reset, vcs_rst);
   vc_putScalar(fin, vcs_fin);
-  vc_putScalar(err, vcs_err);
 
   main_time++;
 

@@ -2,7 +2,6 @@ extern "A" void tick
 (
   output reg                       reset,
   output reg                       fin,
-  output reg                       err,
 
   output reg                       master_ar_valid,
   input  reg                       master_ar_ready,
@@ -73,7 +72,6 @@ module emul;
   reg clock = 1'b0;
   reg reset = 1'b1;
   reg fin = 1'b0;
-  reg err = 1'b0;
 
   always #`CLOCK_PERIOD clock = ~clock;
 
@@ -356,12 +354,10 @@ module emul;
 `ifdef DEBUG
       $vcdplusclose;
 `endif
-      if (err) $fatal;
     end
     tick(
       reset,
       fin,
-      err,
 
       master_ar_valid,
       master_ar_ready,

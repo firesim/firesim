@@ -21,7 +21,6 @@ context_t* host;
 context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
-bool vcs_err = false;
 #else
 PLATFORM_TYPE* top = NULL;
 #if VM_TRACE
