@@ -8,30 +8,32 @@ override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(base_dir)/dramsim2
 include $(util_dir)/Makefrag
 
 ########################################################################
-# Parameters: 
-# 1) DESIGN: Target design of strober
-# 2) GEN_DIR: Directory for generated source code
-# 3) OUT_DIR: Directory for binary files (by default GEN_DIR)
-# 4) TESTBENCH: C++ testbench written by user (not necessary for replay)
-# 5) CLOCK_PERIOD(optional): clock period of tests
+# Parameters:
+# 1) PLATFORM: FPGA platform board(by default zynq)
+# 2) DESIGN: Target design of strober
+# 3) GEN_DIR: Directory for generated source code
+# 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
+# 5) TESTBENCH: C++ testbench written by user (not necessary for replay)
+# 6) CLOCK_PERIOD(optional): clock period of tests
 ########################################################################
+PLATFORM ?= zynq
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
 
-override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(foreach t, $(TESTBENCH), -I$(dir $(t)))
+override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(foreach t, $(TESTBENCH), -I$(dir $(t))) -DPLATFORM=$(PLATFORM)
 override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++ 
 
 testbench_h = $(foreach t, $(TESTBENCH), $(wildcard $(dir $(t))/*.h))
 
-zynq_files := sample simif simif_zynq
-zynq_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(zynq_files)))
-zynq_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(zynq_files)))
+$(PLATFORM)_files := sample simif simif_$(PLATFORM)
+$(PLATFORM)_h := $(addprefix $(base_dir)/, $(addsuffix .h, $($(PLATFORM)_files)))
+$(PLATFORM)_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $($(PLATFORM)_files)))
 
-$(OUT_DIR)/$(DESIGN)-zynq: $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(TESTBENCH) $(testbench_h) $(zynq_cc) $(zynq_h)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(TESTBENCH) $(testbench_h) $($(PLATFORM)_cc) $($(PLATFORM)_h)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $(zynq_cc)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $($(PLATFORM)_cc)
 
-zynq: $(OUT_DIR)/$(DESIGN)-zynq
+$(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM)
 
 
 $(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
@@ -45,6 +47,7 @@ $(OUT_DIR)/$(DESIGN).chain:
 emul_files := sample simif simif_emul
 emul_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(emul_files)))
 emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
+emul_v := $(v_dir)/emul_$(PLATFORM).v
 
 # Compile verilator emulation binary
 VERILATOR ?= verilator --cc --exe
@@ -84,7 +87,7 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+RANDOMIZE_INVALID_ASSIGN \
 	$(VCS_FLAGS)
 
-$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN).csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN).csrc; \
@@ -97,7 +100,7 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir
 	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(v_dir)/emul.v $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN)-debug.csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc; \
@@ -136,4 +139,4 @@ vcs-replay: $(OUT_DIR)/$(DESIGN)-replay
 clean:
 	rm -rf $(util_dir)/*.o $(util_dir)/*.a
 
-.PHONY: zynq verilator verilator-debug vcs vcs-debug vcs-replay clean
+.PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug vcs-replay clean

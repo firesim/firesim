@@ -70,6 +70,7 @@ public:
   void read_req(uint64_t addr, size_t size);
   void write_req(uint64_t addr, size_t size, void* data, size_t strb);
 
+#if PLATFORM == zynq
   void tick
   (
     bool reset,
@@ -83,6 +84,9 @@ public:
     size_t b_id,
     bool b_valid
   );
+#else
+// TODO: error
+#endif
 
   bool read_resp(void *data);
   bool write_resp();
