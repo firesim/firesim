@@ -18,6 +18,7 @@ void mmio_t::write_req(uint64_t addr, size_t size, void* data, size_t strb) {
   this->w.push(w);
 }
 
+#if PLATFORM == zynq
 void mmio_t::tick(
   bool reset,
   bool ar_ready,
@@ -47,6 +48,9 @@ void mmio_t::tick(
     this->b.push(b_id);
   }
 }
+#else
+// TODO: error
+#endif
 
 bool mmio_t::read_resp(void* data) {
   if (ar.empty() || r.empty()) {
