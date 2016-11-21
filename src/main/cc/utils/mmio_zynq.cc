@@ -1,25 +1,20 @@
-#include "mmio.h"
+#include "mmio_zynq.h"
 #include <cassert>
 #include <cmath>
 
-void mmio_t::init(size_t word_size) {
-  dummy_data.resize(word_size);
-}
-
-void mmio_t::read_req(uint64_t addr, size_t size) {
+void mmio_zynq_t::read_req(uint64_t addr) {
   mmio_req_addr_t ar(0, addr, size, 0);
   this->ar.push(ar);
 }
 
-void mmio_t::write_req(uint64_t addr, size_t size, void* data, size_t strb) {
+void mmio_zynq_t::write_req(uint64_t addr, void* data) {
   mmio_req_addr_t aw(0, addr, size, 0);
   mmio_req_data_t w((char*) data, strb, true);
   this->aw.push(aw);
   this->w.push(w);
 }
 
-#if PLATFORM == zynq
-void mmio_t::tick(
+void mmio_zynq_t::tick(
   bool reset,
   bool ar_ready,
   bool aw_ready,
@@ -48,11 +43,8 @@ void mmio_t::tick(
     this->b.push(b_id);
   }
 }
-#else
-// TODO: error
-#endif
 
-bool mmio_t::read_resp(void* data) {
+bool mmio_zynq_t::read_resp(void* data) {
   if (ar.empty() || r.empty()) {
     return false;
   } else {
@@ -70,7 +62,7 @@ bool mmio_t::read_resp(void* data) {
   }
 }
 
-bool mmio_t::write_resp() {
+bool mmio_zynq_t::write_resp() {
   if (aw.empty() || b.empty()) {
     return false;
   } else {

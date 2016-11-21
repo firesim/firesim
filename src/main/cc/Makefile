@@ -44,7 +44,7 @@ $(OUT_DIR)/$(DESIGN).chain:
 	  cp -u $(GEN_DIR)/$(DESIGN).chain $@; \
 	fi
 
-emul_files := sample simif simif_emul
+emul_files := sample simif simif_emul tick_$(PLATFORM)
 emul_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(emul_files)))
 emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 emul_v := $(v_dir)/emul_$(PLATFORM).v
@@ -59,7 +59,8 @@ $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(util
 	  rm -rf $(GEN_DIR)/V$(DESIGN).csrc; \
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module ZynqShim -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
-	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN).csrc/VZynqShim.h" \
+	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
+	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN).csrc/VZynqShim.h" \
 	-LDFLAGS "-lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f VZynqShim.mk
 
@@ -69,7 +70,8 @@ $(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h 
 	  rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc; \
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module ZynqShim -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
-	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/VZynqShim.h" \
+	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
+	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN)-debug.csrc/VZynqShim.h" \
 	-LDFLAGS "-lemul -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f VZynqShim.mk
 
@@ -96,8 +98,8 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(emul_
 	  rm -rf $(OUT_DIR)/$(DESIGN).daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
-	+define+STOP_COND=!emul.reset \
-	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
+	+define+STOP_COND=!emul.reset -LDFLAGS "-lemul -lpthread" \
+	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
 $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(util_dir)/libemul.a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
@@ -110,7 +112,8 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/ZynqShim.v $(GEN_DIR)/$(DESIGN)-const.h $
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list \
 	+define+STOP_COND=!emul.reset +define+DEBUG \
-	-CFLAGS "-include $(word 2, $^)" -LDFLAGS "-lemul -lpthread" \
+	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
+	-LDFLAGS "-lemul -lpthread" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini

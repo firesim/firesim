@@ -1,72 +1,72 @@
 extern "A" void tick
 (
-  output reg                          reset,
-  output reg                          fin,
-  output reg                          err,
+  output reg                       reset,
+  output reg                       fin,
+  output reg                       err,
 
-  output reg                          master_ar_valid,
-  input  reg                          master_ar_ready,
-  output reg [`CHANNEL_ADDR_BITS-1:0] master_ar_addr,
-  output reg [`CHANNEL_ID_BITS-1:0]   master_ar_id,
-  output reg [2:0]                    master_ar_size,
-  output reg [7:0]                    master_ar_len,
+  output reg                       master_ar_valid,
+  input  reg                       master_ar_ready,
+  output reg [`CTRL_ADDR_BITS-1:0] master_ar_addr,
+  output reg [`CTRL_ID_BITS-1:0]   master_ar_id,
+  output reg [2:0]                 master_ar_size,
+  output reg [7:0]                 master_ar_len,
 
-  output reg                          master_aw_valid,
-  input  reg                          master_aw_ready,
-  output reg [`CHANNEL_ADDR_BITS-1:0] master_aw_addr,
-  output reg [`CHANNEL_ID_BITS-1:0]   master_aw_id,
-  output reg [2:0]                    master_aw_size,
-  output reg [7:0]                    master_aw_len,
+  output reg                       master_aw_valid,
+  input  reg                       master_aw_ready,
+  output reg [`CTRL_ADDR_BITS-1:0] master_aw_addr,
+  output reg [`CTRL_ID_BITS-1:0]   master_aw_id,
+  output reg [2:0]                 master_aw_size,
+  output reg [7:0]                 master_aw_len,
 
-  output reg                          master_w_valid,
-  input  reg                          master_w_ready,
-  output reg [`CHANNEL_STRB_BITS-1:0] master_w_strb,
-  output reg [`CHANNEL_DATA_BITS-1:0] master_w_data,
-  output reg                          master_w_last,
+  output reg                       master_w_valid,
+  input  reg                       master_w_ready,
+  output reg [`CTRL_STRB_BITS-1:0] master_w_strb,
+  output reg [`CTRL_DATA_BITS-1:0] master_w_data,
+  output reg                       master_w_last,
 
-  input  reg                          master_r_valid,
-  output reg                          master_r_ready,
-  input  reg [1:0]                    master_r_resp,
-  input  reg [`CHANNEL_ID_BITS-1:0]   master_r_id,
-  input  reg [`CHANNEL_DATA_BITS-1:0] master_r_data,
-  input  reg                          master_r_last,
+  input  reg                       master_r_valid,
+  output reg                       master_r_ready,
+  input  reg [1:0]                 master_r_resp,
+  input  reg [`CTRL_ID_BITS-1:0]   master_r_id,
+  input  reg [`CTRL_DATA_BITS-1:0] master_r_data,
+  input  reg                       master_r_last,
 
-  input  reg                          master_b_valid,
-  output reg                          master_b_ready,
-  input  reg [1:0]                    master_b_resp,
-  input  reg [`CHANNEL_ID_BITS-1:0]   master_b_id,
+  input  reg                       master_b_valid,
+  output reg                       master_b_ready,
+  input  reg [1:0]                 master_b_resp,
+  input  reg [`CTRL_ID_BITS-1:0]   master_b_id,
 
-  input  reg                          slave_ar_valid,
-  output reg                          slave_ar_ready,
-  input  reg [`MEM_ADDR_BITS-1:0]     slave_ar_addr,
-  input  reg [`MEM_ID_BITS-1:0]       slave_ar_id,
-  input  reg [2:0]                    slave_ar_size,
-  input  reg [7:0]                    slave_ar_len,
+  input  reg                       slave_ar_valid,
+  output reg                       slave_ar_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_ar_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_ar_id,
+  input  reg [2:0]                 slave_ar_size,
+  input  reg [7:0]                 slave_ar_len,
 
-  input  reg                          slave_aw_valid,
-  output reg                          slave_aw_ready,
-  input  reg [`MEM_ADDR_BITS-1:0]     slave_aw_addr,
-  input  reg [`MEM_ID_BITS-1:0]       slave_aw_id,
-  input  reg [2:0]                    slave_aw_size,
-  input  reg [7:0]                    slave_aw_len,
+  input  reg                       slave_aw_valid,
+  output reg                       slave_aw_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_aw_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_aw_id,
+  input  reg [2:0]                 slave_aw_size,
+  input  reg [7:0]                 slave_aw_len,
 
-  input  reg                          slave_w_valid,
-  output reg                          slave_w_ready,
-  input  reg [`MEM_STRB_BITS-1:0]     slave_w_strb,
-  input  reg [`MEM_DATA_BITS-1:0]     slave_w_data,
-  input  reg                          slave_w_last,
+  input  reg                       slave_w_valid,
+  output reg                       slave_w_ready,
+  input  reg [`MEM_STRB_BITS-1:0]  slave_w_strb,
+  input  reg [`MEM_DATA_BITS-1:0]  slave_w_data,
+  input  reg                       slave_w_last,
 
-  output reg                          slave_r_valid,
-  input  reg                          slave_r_ready,
-  output reg [1:0]                    slave_r_resp,
-  output reg [`MEM_ID_BITS-1:0]       slave_r_id,
-  output reg [`MEM_DATA_BITS-1:0]     slave_r_data,
-  output reg                          slave_r_last,
+  output reg                       slave_r_valid,
+  input  reg                       slave_r_ready,
+  output reg [1:0]                 slave_r_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_r_id,
+  output reg [`MEM_DATA_BITS-1:0]  slave_r_data,
+  output reg                       slave_r_last,
 
-  output reg                          slave_b_valid,
-  input  reg                          slave_b_ready,
-  output reg [1:0]                    slave_b_resp,
-  output reg [`MEM_ID_BITS-1:0]       slave_b_id
+  output reg                       slave_b_valid,
+  input  reg                       slave_b_ready,
+  output reg [1:0]                 slave_b_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_b_id
 );
 
 module emul;
@@ -90,133 +90,133 @@ module emul;
 `endif
   end
   
-  reg                           master_ar_valid;
-  wire                          master_ar_ready;
-  reg  [`CHANNEL_ADDR_BITS-1:0] master_ar_addr;
-  reg  [`CHANNEL_ID_BITS-1:0]   master_ar_id;
-  reg  [2:0]                    master_ar_size;
-  reg  [7:0]                    master_ar_len;
+  reg                        master_ar_valid;
+  wire                       master_ar_ready;
+  reg  [`CTRL_ADDR_BITS-1:0] master_ar_addr;
+  reg  [`CTRL_ID_BITS-1:0]   master_ar_id;
+  reg  [2:0]                 master_ar_size;
+  reg  [7:0]                 master_ar_len;
 
-  reg                           master_aw_valid;
-  wire                          master_aw_ready;
-  reg  [`CHANNEL_ADDR_BITS-1:0] master_aw_addr;
-  reg  [`CHANNEL_ID_BITS-1:0]   master_aw_id;
-  reg  [2:0]                    master_aw_size;
-  reg  [7:0]                    master_aw_len;
+  reg                        master_aw_valid;
+  wire                       master_aw_ready;
+  reg  [`CTRL_ADDR_BITS-1:0] master_aw_addr;
+  reg  [`CTRL_ID_BITS-1:0]   master_aw_id;
+  reg  [2:0]                 master_aw_size;
+  reg  [7:0]                 master_aw_len;
 
-  reg                           master_w_valid;
-  wire                          master_w_ready;
-  reg  [`CHANNEL_STRB_BITS-1:0] master_w_strb;
-  reg  [`CHANNEL_DATA_BITS-1:0] master_w_data;
-  reg                           master_w_last;
+  reg                        master_w_valid;
+  wire                       master_w_ready;
+  reg  [`CTRL_STRB_BITS-1:0] master_w_strb;
+  reg  [`CTRL_DATA_BITS-1:0] master_w_data;
+  reg                        master_w_last;
 
-  wire                          master_r_valid;
-  reg                           master_r_ready;
-  wire [1:0]                    master_r_resp;
-  wire [`CHANNEL_ID_BITS-1:0]   master_r_id;
-  wire [`CHANNEL_DATA_BITS-1:0] master_r_data;
-  wire                          master_r_last;
+  wire                       master_r_valid;
+  reg                        master_r_ready;
+  wire [1:0]                 master_r_resp;
+  wire [`CTRL_ID_BITS-1:0]   master_r_id;
+  wire [`CTRL_DATA_BITS-1:0] master_r_data;
+  wire                       master_r_last;
 
-  wire                          master_b_valid;
-  reg                           master_b_ready;
-  wire [1:0]                    master_b_resp;
-  wire [`CHANNEL_ID_BITS-1:0]   master_b_id;
+  wire                       master_b_valid;
+  reg                        master_b_ready;
+  wire [1:0]                 master_b_resp;
+  wire [`CTRL_ID_BITS-1:0]   master_b_id;
 
-  wire                          slave_ar_valid;
-  reg                           slave_ar_ready;
-  wire [`MEM_ADDR_BITS-1:0]     slave_ar_addr;
-  wire [`MEM_ID_BITS-1:0]       slave_ar_id;
-  wire [2:0]                    slave_ar_size;
-  wire [7:0]                    slave_ar_len;
+  wire                       slave_ar_valid;
+  reg                        slave_ar_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_ar_id;
+  wire [2:0]                 slave_ar_size;
+  wire [7:0]                 slave_ar_len;
 
-  wire                          slave_aw_valid;
-  reg                           slave_aw_ready;
-  wire [`MEM_ADDR_BITS-1:0]     slave_aw_addr;
-  wire [`MEM_ID_BITS-1:0]       slave_aw_id;
-  wire [2:0]                    slave_aw_size;
-  wire [7:0]                    slave_aw_len;
+  wire                       slave_aw_valid;
+  reg                        slave_aw_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_aw_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_aw_id;
+  wire [2:0]                 slave_aw_size;
+  wire [7:0]                 slave_aw_len;
 
-  wire                          slave_w_valid;
-  reg                           slave_w_ready;
-  wire [`MEM_STRB_BITS-1:0]     slave_w_strb;
-  wire [`MEM_DATA_BITS-1:0]     slave_w_data;
-  wire                          slave_w_last;
+  wire                       slave_w_valid;
+  reg                        slave_w_ready;
+  wire [`MEM_STRB_BITS-1:0]  slave_w_strb;
+  wire [`MEM_DATA_BITS-1:0]  slave_w_data;
+  wire                       slave_w_last;
 
-  reg                           slave_r_valid;
-  wire                          slave_r_ready;
-  reg  [1:0]                    slave_r_resp;
-  reg  [`MEM_ID_BITS-1:0]       slave_r_id;
-  reg  [`MEM_DATA_BITS-1:0]     slave_r_data;
-  reg                           slave_r_last;
+  reg                        slave_r_valid;
+  wire                       slave_r_ready;
+  reg  [1:0]                 slave_r_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_r_id;
+  reg  [`MEM_DATA_BITS-1:0]  slave_r_data;
+  reg                        slave_r_last;
 
-  reg                           slave_b_valid;
-  wire                          slave_b_ready;
-  reg  [1:0]                    slave_b_resp;
-  reg  [`MEM_ID_BITS-1:0]       slave_b_id;
+  reg                        slave_b_valid;
+  wire                       slave_b_ready;
+  reg  [1:0]                 slave_b_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_b_id;
 
-  wire                          master_ar_valid_delay;
-  wire                          master_ar_ready_delay;
-  wire [`CHANNEL_ADDR_BITS-1:0] master_ar_addr_delay;
-  wire [`CHANNEL_ID_BITS-1:0]   master_ar_id_delay;
-  wire [2:0]                    master_ar_size_delay;
-  wire [7:0]                    master_ar_len_delay;
+  wire                       master_ar_valid_delay;
+  wire                       master_ar_ready_delay;
+  wire [`CTRL_ADDR_BITS-1:0] master_ar_addr_delay;
+  wire [`CTRL_ID_BITS-1:0]   master_ar_id_delay;
+  wire [2:0]                 master_ar_size_delay;
+  wire [7:0]                 master_ar_len_delay;
 
-  wire                          master_aw_valid_delay;
-  wire                          master_aw_ready_delay;
-  wire [`CHANNEL_ADDR_BITS-1:0] master_aw_addr_delay;
-  wire [`CHANNEL_ID_BITS-1:0]   master_aw_id_delay;
-  wire [2:0]                    master_aw_size_delay;
-  wire [7:0]                    master_aw_len_delay;
+  wire                       master_aw_valid_delay;
+  wire                       master_aw_ready_delay;
+  wire [`CTRL_ADDR_BITS-1:0] master_aw_addr_delay;
+  wire [`CTRL_ID_BITS-1:0]   master_aw_id_delay;
+  wire [2:0]                 master_aw_size_delay;
+  wire [7:0]                 master_aw_len_delay;
 
-  wire                          master_w_valid_delay;
-  wire                          master_w_ready_delay;
-  wire [`CHANNEL_STRB_BITS-1:0] master_w_strb_delay;
-  wire [`CHANNEL_DATA_BITS-1:0] master_w_data_delay;
-  wire                          master_w_last_delay;
+  wire                       master_w_valid_delay;
+  wire                       master_w_ready_delay;
+  wire [`CTRL_STRB_BITS-1:0] master_w_strb_delay;
+  wire [`CTRL_DATA_BITS-1:0] master_w_data_delay;
+  wire                       master_w_last_delay;
 
-  wire                          master_r_valid_delay;
-  wire                          master_r_ready_delay;
-  wire [1:0]                    master_r_resp_delay;
-  wire [`CHANNEL_ID_BITS-1:0]   master_r_id_delay;
-  wire [`CHANNEL_DATA_BITS-1:0] master_r_data_delay;
-  wire                          master_r_last_delay;
+  wire                       master_r_valid_delay;
+  wire                       master_r_ready_delay;
+  wire [1:0]                 master_r_resp_delay;
+  wire [`CTRL_ID_BITS-1:0]   master_r_id_delay;
+  wire [`CTRL_DATA_BITS-1:0] master_r_data_delay;
+  wire                       master_r_last_delay;
 
-  wire                          master_b_valid_delay;
-  wire                          master_b_ready_delay;
-  wire [1:0]                    master_b_resp_delay;
-  wire [`CHANNEL_ID_BITS-1:0]   master_b_id_delay;
+  wire                       master_b_valid_delay;
+  wire                       master_b_ready_delay;
+  wire [1:0]                 master_b_resp_delay;
+  wire [`CTRL_ID_BITS-1:0]   master_b_id_delay;
 
-  wire                          slave_ar_valid_delay;
-  wire                          slave_ar_ready_delay;
-  wire [`MEM_ADDR_BITS-1:0]     slave_ar_addr_delay;
-  wire [`MEM_ID_BITS-1:0]       slave_ar_id_delay;
-  wire [2:0]                    slave_ar_size_delay;
-  wire [7:0]                    slave_ar_len_delay;
+  wire                       slave_ar_valid_delay;
+  wire                       slave_ar_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_ar_id_delay;
+  wire [2:0]                 slave_ar_size_delay;
+  wire [7:0]                 slave_ar_len_delay;
 
-  wire                          slave_aw_valid_delay;
-  wire                          slave_aw_ready_delay;
-  wire [`MEM_ADDR_BITS-1:0]     slave_aw_addr_delay;
-  wire [`MEM_ID_BITS-1:0]       slave_aw_id_delay;
-  wire [2:0]                    slave_aw_size_delay;
-  wire [7:0]                    slave_aw_len_delay;
+  wire                       slave_aw_valid_delay;
+  wire                       slave_aw_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_aw_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_aw_id_delay;
+  wire [2:0]                 slave_aw_size_delay;
+  wire [7:0]                 slave_aw_len_delay;
 
-  wire                          slave_w_valid_delay;
-  wire                          slave_w_ready_delay;
-  wire [`MEM_STRB_BITS-1:0]     slave_w_strb_delay;
-  wire [`MEM_DATA_BITS-1:0]     slave_w_data_delay;
-  wire                          slave_w_last_delay;
+  wire                       slave_w_valid_delay;
+  wire                       slave_w_ready_delay;
+  wire [`MEM_STRB_BITS-1:0]  slave_w_strb_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_w_data_delay;
+  wire                       slave_w_last_delay;
 
-  wire                          slave_r_valid_delay;
-  wire                          slave_r_ready_delay;
-  wire [1:0]                    slave_r_resp_delay;
-  wire [`MEM_ID_BITS-1:0]       slave_r_id_delay;
-  wire [`MEM_DATA_BITS-1:0]     slave_r_data_delay;
-  wire                          slave_r_last_delay;
+  wire                       slave_r_valid_delay;
+  wire                       slave_r_ready_delay;
+  wire [1:0]                 slave_r_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_r_id_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_r_data_delay;
+  wire                       slave_r_last_delay;
 
-  wire                          slave_b_valid_delay;
-  wire                          slave_b_ready_delay;
-  wire [1:0]                    slave_b_resp_delay;
-  wire [`MEM_ID_BITS-1:0]       slave_b_id_delay;
+  wire                       slave_b_valid_delay;
+  wire                       slave_b_ready_delay;
+  wire [1:0]                 slave_b_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_b_id_delay;
 
   assign #0.1 master_ar_valid_delay = master_ar_valid;
   assign #0.1 master_ar_ready = master_ar_ready_delay;
