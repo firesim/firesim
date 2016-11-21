@@ -1,6 +1,5 @@
 #include "simif_emul.h"
 #ifdef VCS
-#include <DirectC.h>
 #include "context.h"
 #include "vcs_main.h"
 #else
@@ -12,41 +11,27 @@
 #include <signal.h>
 #include <memory>
 
-static const size_t MEM_WIDTH = MEM_DATA_BITS / 8;
-static const size_t MMIO_WIDTH = CHANNEL_DATA_BITS / 8;
-static uint64_t main_time = 0;
-static std::unique_ptr<mmio_t> master;
-static std::unique_ptr<mm_t> slave;
-
-#if PLATFORM == zynq
-#define PLATFORM_TYPE VZynqShim
-#else
-// TODO: error...
-#endif
+uint64_t main_time = 0;
+std::unique_ptr<mmio_t> master;
+std::unique_ptr<mm_t> slave;
+extern void init(uint64_t memsize, bool dramsim);
 
 #ifdef VCS
-static context_t* host;
-static context_t target;
-static bool is_reset = false;
-static bool vcs_fin = false;
-static bool vcs_err = false;
-static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
-static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
+context_t* host;
+context_t target;
+bool vcs_rst = false;
+bool vcs_fin = false;
+bool vcs_err = false;
 #else
-static PLATFORM_TYPE* top = NULL;
+PLATFORM_TYPE* top = NULL;
 #if VM_TRACE
-static VerilatedVcdC* tfp = NULL;
-#endif
+VerilatedVcdC* tfp = NULL;
+#endif // VM_TRACE
 double sc_time_stamp() {
   return (double) main_time;
 }
-#endif
-
-#if PLATFORM == zynq
-#include "tick_zynq.cc"
-#else
-// TODO: error...
-#endif // PLATFORM
+extern void tick();
+#endif // VCS
 
 void finish() {
 #ifdef VCS
@@ -56,9 +41,8 @@ void finish() {
 #if VM_TRACE
   if (tfp) tfp->close();
   delete tfp;
-#endif
-  delete top;
-#endif
+#endif // VM_TRACE
+#endif // VCS
 }
 
 void handle_sigterm(int sig) {
@@ -93,11 +77,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
     }
   }
 
-  master = std::move(std::unique_ptr<mmio_t>(new mmio_t));
-  master->init(CHANNEL_DATA_BITS / 8);
-  slave = std::move(std::unique_ptr<mm_t>(
-    dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
-  slave->init(memsize, MEM_DATA_BITS / 8, 64);
+  ::init(memsize, dramsim);
 
   if (fastloadmem && loadmem) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem);
@@ -112,19 +92,19 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
   host = context_t::current();
   target_args_t *targs = new target_args_t(argc, argv);
   target.init(target_thread, targs);
-  is_reset = true;
+  vcs_rst = true;
   for (size_t i = 0 ; i < 10 ; i++)
     target.switch_to();
-  is_reset = false;
+  vcs_rst = false;
 #else
-  top = new PLATFORM_TYPE;
   Verilated::commandArgs(argc, argv); // Remember args
 
+  top = new PLATFORM_TYPE;
 #if VM_TRACE                         // If emul was invoked with --trace
   tfp = new VerilatedVcdC;
   Verilated::traceEverOn(true);      // Verilator must compute traced signals
   VL_PRINTF("Enabling waves...\n");
-  top->trace(tfp, 99);               // Trace 99 levels of hierarchy
+  top->trace(tfp, 99);                // Trace 99 levels of hierarchy
   tfp->open(waveform);               // Open the dump file
 #endif // VM_TRACE
 
@@ -143,9 +123,8 @@ int simif_emul_t::finish() {
 }
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
-  static const size_t CHANNEL_STRB = (1 << CHANNEL_STRB_BITS) - 1;
   try {
-    master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, &data, CHANNEL_STRB);
+    master->write_req(addr << CHANNEL_SIZE, &data);
     while(!master->write_resp()) {
 #ifdef VCS
       target.switch_to();
@@ -167,7 +146,7 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   try {
-    master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE);
+    master->read_req(addr << CHANNEL_SIZE);
     while(!master->read_resp(&data)) {
 #ifdef VCS
       target.switch_to();
