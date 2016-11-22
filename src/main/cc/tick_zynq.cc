@@ -1,7 +1,7 @@
 #include "tick_zynq.h"
+#include "mmio_zynq.h"
 #include "mm.h"
 #include "mm_dramsim2.h"
-#include "mmio_zynq.h"
 #include <memory>
 #ifdef VCS
 #include <DirectC.h>

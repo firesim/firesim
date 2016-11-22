@@ -4,8 +4,12 @@ import core._
 import widgets._
 import platform._
 import cde.{Parameters, Config, Field}
-import junctions.NastiParameters
+import junctions.{NastiKey, NastiParameters}
 
+trait PlatformType
+case object Zynq extends PlatformType
+case object Catapult extends PlatformType
+case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
 
 class SimConfig extends Config(
@@ -25,6 +29,7 @@ class SimConfig extends Config(
 
 class ZynqConfig extends Config(new SimConfig ++ new Config(
   (key, site, here) => key match {
+    case Platform       => Zynq
     case MasterNastiKey => site(CtrlNastiKey)
     case SlaveNastiKey  => site(MemNastiKey)
   }
@@ -34,4 +39,18 @@ class ZynqConfigWithSnapshot extends Config(new Config(
   (key, site, here) => key match {
     case EnableSnapshot => true
   }) ++ new ZynqConfig
+)
+
+class CatapultConfig extends Config(new SimConfig ++ new Config(
+  (key, site, here) => key match {
+    case Platform  => Catapult
+    case PCIeWidth => 640
+    case NastiKey  => site(CtrlNastiKey)
+  }
+))
+
+class CatapultConfigWithSnapshot extends Config(new Config(
+  (key, site, here) => key match {
+    case EnableSnapshot => true
+  }) ++ new CatapultConfig
 )
