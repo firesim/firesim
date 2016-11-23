@@ -28,12 +28,15 @@ void init(uint64_t memsize, bool dramsim) {
 }
 
 #ifdef VCS
-extern context_t* host;
-
-extern "C" {
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 
+extern context_t* host;
+
+extern bool vcs_fin;
+extern bool vcs_rst;
+
+extern "C" {
 void tick(
   vc_handle reset,
   vc_handle fin,
@@ -44,35 +47,38 @@ void tick(
 
   vc_handle pcie_out_bits,
   vc_handle pcie_out_valid,
-  vc_handle pcie_out_ready,
+  vc_handle pcie_out_ready
 ) {
   mmio_catapult_t* const m = dynamic_cast<mmio_catapult_t*>(master.get());
   if (!m) throw std::runtime_error("wrong master type");
   uint32_t master_resp_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
-    master_resp_data[i] = vc_4stVectorRef(pcie_out_data)[i].d;
+    master_resp_data[i] = vc_4stVectorRef(pcie_out_bits)[i].d;
   }
-
-  vec32 md[MASTER_DATA_SIZE];
-  for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
-    md[i].c = 0;
-    md[i].d = ((uint32_t*) master->req_data())[i];
-  }
-  vc_put4stVector(pcie_in_data, md);
-  vc_putScalar(pcie_in_valid, m->req_valid());
-  vc_putScalar(pcie_out_ready, m->resp_ready());
 
   try {
-    master->tick(
+    m->tick(
       vcs_rst,
       vc_getScalar(pcie_in_ready),
       vc_getScalar(pcie_out_valid),
-      master_resp_data,
+      master_resp_data
     );
   } catch(std::exception &e) {
     vcs_fin = true;
     fprintf(stderr, "Exception in tick(): %s\n", e.what());
   }
+
+  vec32 md[MASTER_DATA_SIZE];
+  for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
+    md[i].c = 0;
+    md[i].d = ((uint32_t*) m->req_data())[i];
+  }
+  vc_put4stVector(pcie_in_bits, md);
+  vc_putScalar(pcie_in_valid, m->req_valid());
+  vc_putScalar(pcie_out_ready, m->resp_ready());
+
+  vc_putScalar(reset, vcs_rst);
+  vc_putScalar(fin, vcs_fin);
 
   main_time++;
 
