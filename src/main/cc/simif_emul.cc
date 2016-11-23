@@ -53,12 +53,16 @@ simif_emul_t::~simif_emul_t() { }
 void simif_emul_t::init(int argc, char** argv, bool log) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
-  const char* loadmem = NULL;
   const char* waveform = "dump.vcd";
+  const char* loadmem = NULL;
   bool fastloadmem = false;
   bool dramsim = false;
   uint64_t memsize = 1L << 32;
-  for (auto &arg: args) {
+  for (auto arg: args) {
+    if (arg.find("+waveform=") == 0) {
+      waveform = arg.c_str() + 10;
+    }
+#ifdef ENABLE_MEMMODEL
     if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
     }
@@ -68,22 +72,22 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
     if (arg.find("+dramsim") == 0) {
       dramsim = true;
     }
-    if (arg.find("+waveform=") == 0) {
-      waveform = arg.c_str() + 10;
-    }
     if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
+#endif // ENABLE_MEMMODEL
   }
 
   ::init(memsize, dramsim);
 
+#ifdef ENABLE_MEMMODEL
   if (fastloadmem && loadmem) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem);
     void* mems[1];
     mems[0] = slave->get_data();
     ::load_mem(mems, loadmem, MEM_DATA_BITS / 8, 1);
   }
+#endif // ENABLE_MEMMODEL
 
   signal(SIGTERM, handle_sigterm);
 

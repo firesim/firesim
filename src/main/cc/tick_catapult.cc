@@ -129,6 +129,10 @@ void tick() {
 #else
     &top->io_pcie_out_bits
 #endif
+
+#ifdef ENABLE_MEMMODEL
+// TODO:
+#endif
   );
 }
 

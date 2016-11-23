@@ -141,6 +141,7 @@ trait HasSimWrapperParams {
   val daisyWidth = p(DaisyWidth)
   val sramChainNum = p(SRAMChainNum)
   val enableSnapshot = p(EnableSnapshot)
+  val enableMemModel = p(EnableMemModel)
 }
 
 class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p: Parameters) 
@@ -169,10 +170,10 @@ class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p:
   def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => ins(id+off))
   }
-
   def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
     case (wire, id) => (0 until getChunks(wire)) map (off => outs(id+off))
   }
+
   def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> inMap(wire))
   def getIns(name: String): Seq[DecoupledIO[UInt]] = {
     val (wire, matchedName) = inputs.filter(_._2 == name).head
@@ -216,8 +217,8 @@ class SimWrapper(targetIo: Data,
                  memIo: SimMemIO)
                 (implicit val p: Parameters) extends Module with HasSimWrapperParams {
   val target = Module(new TargetBox(targetIo))
+  val io = IO(new SimWrapperIO(target.io.io, target.io.reset, if (enableMemModel) Some(memIo) else None))
   val fire = Wire(Bool())
-  val io = IO(new SimWrapperIO(target.io.io, target.io.reset, Some(memIo)))
 
   def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
     implicit val channelWidth = p(ChannelWidth)
