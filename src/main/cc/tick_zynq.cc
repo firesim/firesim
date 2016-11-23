@@ -21,9 +21,11 @@ void init(uint64_t memsize, bool dramsim) {
   const size_t CTRL_STRB = (1 << CTRL_STRB_BITS) - 1;
   master = std::move(std::unique_ptr<mmio_t>(
     new mmio_zynq_t(CHANNEL_SIZE, CTRL_STRB, MMIO_WIDTH)));
+#ifdef ENABLE_MEMMODEL
   slave = std::move(std::unique_ptr<mm_t>(
     dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
   slave->init(memsize, MEM_WIDTH, 64);
+#endif // ENABLE_MEMMODEL
 }
 
 #ifdef VCS
@@ -170,7 +172,7 @@ void tick(
       vc_4stVectorRef(master_b_bits_id)->d,
       vc_getScalar(master_b_valid)
     );
-
+#ifdef ENABLE_MEMMODEL
     slave->tick(
       vcs_rst,
       vc_getScalar(slave_ar_valid),
@@ -193,11 +195,12 @@ void tick(
       vc_getScalar(slave_r_ready),
       vc_getScalar(slave_b_ready)
     );
+#endif // ENABLE_MEMMODEL
   } catch(std::exception &e) {
     vcs_fin = true;
     fprintf(stderr, "Exception in tick(): %s\n", e.what());
   }
-
+#ifdef ENABLE_MEMMODEL
   vc_putScalar(slave_aw_ready, slave->aw_ready());
   vc_putScalar(slave_ar_ready, slave->ar_ready());
   vc_putScalar(slave_w_ready, slave->w_ready());
@@ -223,7 +226,7 @@ void tick(
     sd[i].d = ((uint32_t*) slave->r_data())[i];
   }
   vc_put4stVector(slave_r_bits_data, sd);
-
+#endif // ENABLE_MEMMODEL
   vc_putScalar(reset, vcs_rst);
   vc_putScalar(fin, vcs_fin);
 
@@ -275,22 +278,6 @@ void tick() {
   memcpy(&top->io_master_w_bits_data, m->w_data(), MMIO_WIDTH);
 #endif
 
-  top->io_slave_aw_ready = slave->aw_ready();
-  top->io_slave_ar_ready = slave->ar_ready();
-  top->io_slave_w_ready = slave->w_ready();
-  top->io_slave_b_valid = slave->b_valid();
-  top->io_slave_b_bits_id = slave->b_id();
-  top->io_slave_b_bits_resp = slave->b_resp();
-  top->io_slave_r_valid = slave->r_valid();
-  top->io_slave_r_bits_id = slave->r_id();
-  top->io_slave_r_bits_resp = slave->r_resp();
-  top->io_slave_r_bits_last = slave->r_last();
-#if MEM_DATA_BITS > 64
-  memcpy(top->io_slave_r_bits_data, slave->r_data(), MEM_WIDTH);
-#else
-  memcpy(&top->io_slave_r_bits_data, slave->r_data(), MEM_WIDTH);
-#endif
-
   m->tick(
     top->reset,
     top->io_master_ar_ready,
@@ -307,6 +294,23 @@ void tick() {
     top->io_master_b_bits_id,
     top->io_master_b_valid
   );
+
+#ifdef ENABLE_MEMMODEL
+  top->io_slave_aw_ready = slave->aw_ready();
+  top->io_slave_ar_ready = slave->ar_ready();
+  top->io_slave_w_ready = slave->w_ready();
+  top->io_slave_b_valid = slave->b_valid();
+  top->io_slave_b_bits_id = slave->b_id();
+  top->io_slave_b_bits_resp = slave->b_resp();
+  top->io_slave_r_valid = slave->r_valid();
+  top->io_slave_r_bits_id = slave->r_id();
+  top->io_slave_r_bits_resp = slave->r_resp();
+  top->io_slave_r_bits_last = slave->r_last();
+#if MEM_DATA_BITS > 64
+  memcpy(top->io_slave_r_bits_data, slave->r_data(), MEM_WIDTH);
+#else
+  memcpy(&top->io_slave_r_bits_data, slave->r_data(), MEM_WIDTH);
+#endif
 
   slave->tick(
     top->reset,
@@ -334,6 +338,7 @@ void tick() {
     top->io_slave_r_ready,
     top->io_slave_b_ready
   );
+#endif // ENABLE_MEMMODEL
 
   top->clock = 0;
   top->eval();

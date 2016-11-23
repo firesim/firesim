@@ -13,6 +13,7 @@ abstract class PlatformShim extends Module {
   def genHeader(sb: StringBuilder, target: String) {
     sb append "static const char* const TARGET_NAME = \"%s\";\n".format(target)
     if (top.sim.enableSnapshot) sb append "#define ENABLE_SNAPSHOT\n"
+    if (top.sim.enableMemModel) sb append "#define ENABLE_MEMMODEL\n"
     top.genHeader(sb)(top.sim.channelWidth)
   }
 }
