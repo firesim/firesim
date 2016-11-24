@@ -16,12 +16,8 @@ struct mmio_data_t
 class mmio_catapult_t: public mmio_t
 {
 public:
-  mmio_catapult_t(size_t mmio_size_,
-                  size_t addr_size_,
-                  size_t data_size_):
-    mmio_size(mmio_size_), addr_size(addr_size_), data_size(data_size_)
-  {
-    dummy_data.resize(mmio_size);
+  mmio_catapult_t() {
+    dummy_data.resize(MMIO_WIDTH);
   }
 
   void* req_data() { return req_valid() ? req.front().data : &dummy_data[0]; }
@@ -42,9 +38,6 @@ public:
   virtual bool write_resp();
 
 private:
-  const size_t mmio_size;
-  const size_t addr_size;
-  const size_t data_size;
   std::queue<mmio_data_t> req;
   std::queue<mmio_data_t> resp;
   std::vector<char> dummy_data;

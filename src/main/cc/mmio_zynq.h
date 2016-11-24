@@ -40,12 +40,8 @@ struct mmio_resp_data_t
 class mmio_zynq_t: public mmio_t
 {
 public:
-  mmio_zynq_t(size_t size_, size_t strb_, size_t word_size):
-    size(size_), strb(strb_)
-  {
-    dummy_data.resize(word_size);
-    read_inflight = false;
-    write_inflight = false;
+  mmio_zynq_t() {
+    dummy_data.resize(MMIO_WIDTH);
   }
 
   bool aw_valid() { return !aw.empty() && !write_inflight; }
@@ -94,8 +90,6 @@ private:
   std::queue<mmio_resp_data_t> r;
   std::queue<size_t> b;
 
-  const size_t size;
-  const size_t strb;
   bool read_inflight;
   bool write_inflight;
   std::vector<char> dummy_data;
