@@ -20,20 +20,24 @@ CLOCK_PERIOD ?= 0.5
 shim := $(shell echo $(PLATFORM) | cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM) | cut -c 2-)Shim
 
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(base_dir)/dramsim2
-include $(util_dir)/Makefrag
+include $(util_dir)/utils.mk
 
 override CXXFLAGS += -I$(base_dir) -I$(util_dir) $(foreach t, $(TESTBENCH), -I$(dir $(t)))
-override LDFLAGS := $(LDFLAGS) -L$(util_dir) -lstdc++ 
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread
 
 testbench_h = $(foreach t, $(TESTBENCH), $(wildcard $(dir $(t))/*.h))
 
-$(PLATFORM)_files := sample simif simif_$(PLATFORM)
-$(PLATFORM)_h := $(addprefix $(base_dir)/, $(addsuffix .h, $($(PLATFORM)_files)))
-$(PLATFORM)_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $($(PLATFORM)_files)))
+platform_files := sample simif simif_$(PLATFORM)
+platform_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(platform_files)))
+platform_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(platform_files)))
+platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/biguint.cc $(util_dir)/biguint.h $(TESTBENCH) $(testbench_h) $($(PLATFORM)_cc) $($(PLATFORM)_h)
+$(platform_o): $(GEN_DIR)/%.o: $(base_dir)/%.cc $(base_dir)/%.h $(GEN_DIR)/$(DESIGN)-const.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 3, $^)
+
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(TESTBENCH) $(testbench_h) $(platform_o) $(lib_o) $(dramsim_o)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(word 2, $^) $(TESTBENCH) $($(PLATFORM)_cc)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(TESTBENCH) $(platform_o) $(lib_o) $(dramsim_o)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM)
 
@@ -46,35 +50,33 @@ $(OUT_DIR)/$(DESIGN).chain:
 	  cp -u $(GEN_DIR)/$(DESIGN).chain $@; \
 	fi
 
-emul_files := sample simif simif_emul tick_$(PLATFORM)
+emul_files := sample simif simif_emul mmio_$(PLATFORM)
 emul_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(emul_files)))
 emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 emul_v := $(v_dir)/emul_$(PLATFORM).v
 
 # Compile verilator emulation binary
 VERILATOR ?= verilator --cc --exe
-override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)" $(VERILATOR_FLAGS)
+override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS) -lmidas" $(VERILATOR_FLAGS)
 
-$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/libemul_$(PLATFORM).a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/V$(DESIGN).csrc ]; then \
 	  rm -rf $(GEN_DIR)/V$(DESIGN).csrc; \
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
-	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
-	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN).csrc/V$(shim).h" \
-	-LDFLAGS "-lemul_$(PLATFORM) -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
+	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN).csrc/V$(shim).h" \
+	-o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(shim).mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(util_dir)/libemul_$(PLATFORM).a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/V$(DESIGN)-debug.csrc ]; then \
 	  rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc; \
 	fi
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
-	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
-	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(shim).h" \
-	-LDFLAGS "-lemul_$(PLATFORM) -lpthread" -o $@ $< $(TESTBENCH) $(emul_cc)
+	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(shim).h" \
+	-o $@ $< $(TESTBENCH) $(emul_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(shim).mk
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
@@ -83,7 +85,7 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 # Compile VCS emulation binary
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp \
-	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS)" \
+	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS) -lmidas" \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_MEM_INIT \
 	+define+RANDOMIZE_REG_INIT \
@@ -91,7 +93,7 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+RANDOMIZE_INVALID_ASSIGN \
 	$(VCS_FLAGS)
 
-$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(util_dir)/libemul_$(PLATFORM).a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(lib) $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN).csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN).csrc; \
@@ -100,11 +102,10 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v
 	  rm -rf $(OUT_DIR)/$(DESIGN).daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
-	+define+STOP_COND=!emul.reset -LDFLAGS "-lemul_$(PLATFORM) -lpthread" \
-	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
-	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
+	+define+STOP_COND=!emul.reset -CFLAGS "-include $(word 2, $^)" \
+	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(TESTBENCH) $(emul_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(util_dir)/libemul_$(PLATFORM).a $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(lib) $(TESTBENCH) $(testbench_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN)-debug.csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc; \
@@ -113,10 +114,8 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(
 	  rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir; \
 	fi
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list \
-	+define+STOP_COND=!emul.reset +define+DEBUG \
-	-CFLAGS "-include $(word 2, $^) -include $(base_dir)/tick_$(PLATFORM).h" \
-	-LDFLAGS "-lemul_$(PLATFORM) -lpthread" \
-	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(word 3, $^) $(word 4, $^) $(TESTBENCH) $(emul_cc)
+	+define+STOP_COND=!emul.reset +define+DEBUG -CFLAGS "-include $(word 2, $^)" \
+	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(TESTBENCH) $(emul_cc)
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
@@ -126,7 +125,7 @@ replay_files := sample replay_vpi
 replay_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(replay_files) replay))
 replay_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(replay_files)))
 
-$(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(util_dir)/libreplay.a $(replay_cc) $(replay_h)
+$(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(lib) $(replay_cc) $(replay_h)
 	mkdir -p $(OUT_DIR)
 	if [ -a $(GEN_DIR)/$(DESIGN)-replay.csrc ]; then \
 	  rm -rf $(GEN_DIR)/$(DESIGN)-replay.csrc; \
@@ -134,10 +133,9 @@ $(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(util_dir
 	if [ -a $(OUT_DIR)/$(DESIGN)-replay.daidir ]; then \
 	  rm -rf $(OUT_DIR)/$(DESIGN)-replay.daidir; \
 	fi
-	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc \
+	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc +vpi -P $(r_dir)/vpi.tab \
 	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
-	+vpi -P $(r_dir)/vpi.tab -LDFLAGS "$(LDFLAGS) -lreplay" \
-	-o $@ $< $(word 2, $^) $(replay_cc) $(word 3, $^)
+	-o $@ $< $(word 2, $^) $(lib) $(replay_cc)
 
 vcs-replay: $(OUT_DIR)/$(DESIGN)-replay
 

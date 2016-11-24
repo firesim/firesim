@@ -14,7 +14,6 @@
 uint64_t main_time = 0;
 std::unique_ptr<mmio_t> master;
 std::unique_ptr<mm_t> slave;
-extern void init(uint64_t memsize, bool dramsim);
 
 #ifdef VCS
 context_t* host;
