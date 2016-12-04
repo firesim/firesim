@@ -126,8 +126,7 @@ private[passes] class SimulationMapping(
   }
 
   def run(c: Circuit) = {
-    val mem = new SimMemIO
-    lazy val sim = new SimWrapper(io, mem)
+    lazy val sim = new SimWrapper(io)
     val chirrtl = Parser parse (chisel3.Driver emit (() => sim))
     val annotations = new Annotations.AnnotationMap(Nil)
     val writer = new StringWriter
@@ -137,6 +136,6 @@ private[passes] class SimulationMapping(
     val modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main, circuit.main))
     // writer.close
     dumpChainMap(c.main)(sim.daisyWidth)
-    new WCircuit(circuit.info, modules, circuit.main, sim.io, mem)
+    new WCircuit(circuit.info, modules, circuit.main, sim.io)
   }
 }

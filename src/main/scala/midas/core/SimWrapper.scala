@@ -7,37 +7,32 @@ import chisel3.util._
 import chisel3.compatibility.throwException
 import cde.{Parameters, Field}
 import junctions.NastiIO
-import SimUtils.{parsePorts, getChunks}
+import SimUtils._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
-class SimMemIO {
-  private val memPorts = ArrayBuffer[NastiIO]()
-  private val memWires = HashSet[Bits]()
-  def add(mem: NastiIO) {
-    val (ins, outs) = SimUtils.parsePorts(mem)
-    memWires ++= ins.unzip._1
-    memWires ++= outs.unzip._1
-    memPorts += mem
+trait SpecialIO[T <: Data] {
+  protected val channels = ArrayBuffer[T]()
+  protected val wires = HashSet[Bits]()
+  def size = channels.size
+  def zipWithIndex = channels.toList.zipWithIndex
+  def apply(wire: Bits) = wires(wire)
+  def apply(channel: T) = channels contains channel
+  def apply(i: Int): T = channels(i)
+  def add(channel: T) {
+    val (ins, outs) = SimUtils.parsePorts(channel)
+    wires ++= ins.unzip._1
+    wires ++= outs.unzip._1
+    channels += channel
   }
-  def apply(i: Int): NastiIO = memPorts(i)
-  def apply(wire: Bits) = memWires(wire)
-  def apply(mem: NastiIO) = memPorts contains mem
-  def zipWithIndex = memPorts.toList.zipWithIndex
-  def size = memPorts.size
 }
+class SimMemIO extends SpecialIO[NastiIO]
 
 object SimUtils {
-  def parsePorts(io: Data, reset: Option[Bool] = None, mem: Option[SimMemIO] = None) = {
+  def parsePorts(io: Data, reset: Option[Bool] = None) = {
     val inputs = ArrayBuffer[(Bits, String)]()
     val outputs = ArrayBuffer[(Bits, String)]()
     def loop(name: String, data: Data): Unit = data match {
-      case m: NastiIO =>
-        m.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
-        mem match {
-          case Some(p) if !p(m) => p add m
-          case _ =>
-        }
       case b: Bundle =>
         b.elements foreach {case (n, e) => loop(s"${name}_${n}", e)}
       case v: Vec[_] =>
@@ -58,6 +53,8 @@ object SimUtils {
     (b.getWidth-1)/channelWidth + 1
   def getChunks(s: Seq[Bits])(implicit channelWidth: Int): Int =
     (s foldLeft 0)((res, b) => res + getChunks(b))
+  def getChunks(args: (Bits, String))(implicit channelWidth: Int): (String, Int) =
+    args match { case (wire, name) => name -> SimUtils.getChunks(wire) }
 }
 
 case object TraceMaxLen extends Field[Int]
@@ -144,9 +141,9 @@ trait HasSimWrapperParams {
   val enableMemModel = p(EnableMemModel)
 }
 
-class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p: Parameters) 
+class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
     extends ParameterizedBundle()(p) with HasSimWrapperParams {
-  val (inputs, outputs) = parsePorts(io, Some(reset), mem)
+  val (inputs, outputs) = parsePorts(io, Some(reset))
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
 
@@ -186,8 +183,20 @@ class SimWrapperIO(io: Data, reset: Bool, mem: Option[SimMemIO])(implicit val p:
     getOuts(wire)
   }
 
+  val mem = new SimMemIO
+  private def findSpecialIO(data: Data): Unit = data match {
+    case m: NastiIO if enableMemModel => mem add m
+    case b: Bundle => b.elements.unzip._2 foreach findSpecialIO
+    case v: Vec[_] => v.toSeq foreach findSpecialIO
+    case _ =>
+  }
+  findSpecialIO(io)
+
+  val pokedIns = inputs filterNot (x => Seq(mem) exists (_(x._1)))
+  val peekedOuts = outputs filterNot (x => Seq(mem) exists (_(x._1)))
+
   override def cloneType: this.type =
-    new SimWrapperIO(io, reset, None).asInstanceOf[this.type]
+    new SimWrapperIO(io, reset).asInstanceOf[this.type]
 }
 
 class TargetBox(targetIo: Data) extends BlackBox {
@@ -213,11 +222,10 @@ class SimBox(simIo: SimWrapperIO)
   )
 }
 
-class SimWrapper(targetIo: Data,
-                 memIo: SimMemIO)
+class SimWrapper(targetIo: Data)
                 (implicit val p: Parameters) extends Module with HasSimWrapperParams {
   val target = Module(new TargetBox(targetIo))
-  val io = IO(new SimWrapperIO(target.io.io, target.io.reset, if (enableMemModel) Some(memIo) else None))
+  val io = IO(new SimWrapperIO(target.io.io, target.io.reset))
   val fire = Wire(Bool())
 
   def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
