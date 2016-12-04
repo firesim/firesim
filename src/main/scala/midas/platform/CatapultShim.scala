@@ -25,12 +25,11 @@ class CatapultShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   // TODO: UMI
 }
 
-class CatapultShim(simIo: midas.core.SimWrapperIO,
-                   memIo: midas.core.SimMemIO)
+class CatapultShim(simIo: midas.core.SimWrapperIO)
                   (implicit p: Parameters) extends PlatformShim {
   val ctrlKey = p(widgets.CtrlNastiKey)
   val io = IO(new CatapultShimIO)
-  val top = Module(new midas.core.FPGATop(simIo, memIo))
+  val top = Module(new midas.core.FPGATop(simIo))
   val vtype = "VCatapultShim"
   val headerConsts = List(
     "PCIE_WIDTH"      -> p(PCIeWidth),

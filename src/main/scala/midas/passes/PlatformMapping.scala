@@ -63,10 +63,10 @@ private[passes] class PlatformMapping(
   }
 
   def run(c: Circuit) = {
-    val (sim, mem) = c match { case w: WCircuit => (w.sim, w.mem) }
+    val sim = c match { case w: WCircuit => w.sim }
     lazy val shim = param(Platform) match {
-      case Zynq     => new platform.ZynqShim(sim, mem)
-      case Catapult => new platform.CatapultShim(sim, mem)
+      case Zynq     => new platform.ZynqShim(sim)
+      case Catapult => new platform.CatapultShim(sim)
     }
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
     val circuit = renameMods((new InlineCompiler compile (
