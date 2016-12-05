@@ -71,8 +71,9 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
 
+  // needs back pressure from reset queues
   val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
-  val toHostValid = io.outs.foldLeft(Bool(true))(_ && _.valid)
+  val toHostValid = io.outs.foldLeft(resetQueue.io.enq.ready)(_ && _.valid)
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
     iTokensAvailable := iTokensAvailable - UInt(1)
