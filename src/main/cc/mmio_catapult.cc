@@ -71,9 +71,7 @@ extern std::unique_ptr<mm_t> slave;
 
 void init(uint64_t memsize, bool dramsim) {
   master = std::move(std::unique_ptr<mmio_t>(new mmio_catapult_t));
-#ifdef ENABLE_MEMMODEL
   // TODO: slave = ?
-#endif // ENABLE_MEMMODEL
 }
 
 #ifdef VCS
@@ -176,9 +174,7 @@ void tick() {
     &top->io_pcie_out_bits
 #endif
 
-#ifdef ENABLE_MEMMODEL
-// TODO:
-#endif
+// TODO: slave
   );
 }
 

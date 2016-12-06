@@ -11,7 +11,7 @@ case object Zynq extends PlatformType
 case object Catapult extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
-case object EnableMemModel extends Field[Boolean]
+case object MemModelKey extends Field[Option[Parameters => MemModel]]
 
 class SimConfig extends Config(
   (key, site, here) => key match {
@@ -21,10 +21,9 @@ class SimConfig extends Config(
     case ChannelLen     => 16
     case ChannelWidth   => 32
     case EnableSnapshot => false
-    case EnableMemModel => true
     case CtrlNastiKey   => NastiParameters(32, 32, 12)
     case MemNastiKey    => NastiParameters(64, 32, 6)
-    case MemModelKey    => None
+    case MemModelKey    => Some((p: Parameters) => new SimpleLatencyPipe()(p))
     case FpgaMMIOSize   => BigInt(1) << 12 // 4 KB
   }
 )
@@ -48,7 +47,7 @@ class CatapultConfig extends Config(new Config(
     case Platform       => Catapult
     case PCIeWidth      => 640
     case NastiKey       => site(CtrlNastiKey)
-    case EnableMemModel => false
+    case MemModelKey    => None
   }) ++ new SimConfig
 )
 

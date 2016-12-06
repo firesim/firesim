@@ -31,21 +31,22 @@ class simif_t
     time_t seed; 
     size_t tracelen;
     virtual void load_mem(std::string filename);
-    inline void take_steps(size_t n) {
-      write(EMULATIONMASTER_STEP, n);
-      while(!read(EMULATIONMASTER_DONE));
+    inline void take_steps(size_t n, bool blocking) {
+      write(MASTER(STEP), n);
+      if (blocking) while(!done());
     }
-
-  protected:
-    // channel communication
-    virtual void write(size_t addr, uint32_t data) = 0;
-    virtual uint32_t read(size_t addr) = 0;
 
   public:
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
-    virtual void step(int n);
+    virtual void step(int n, bool blocking = false);
+    inline bool done() { return read(MASTER(DONE)); }
+
+    // Widget communication
+    virtual void write(size_t addr, uint32_t data) = 0;
+    virtual uint32_t read(size_t addr) = 0;
+
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);

@@ -46,8 +46,8 @@ void simif_t::load_mem(std::string filename) {
 
 void simif_t::init(int argc, char** argv, bool log) {
   // Simulation reset
-  write(EMULATIONMASTER_SIM_RESET, 1);
-  while(!read(EMULATIONMASTER_DONE));
+  write(MASTER(SIM_RESET), 1);
+  while(!done());
 #ifdef ENABLE_SNAPSHOT
   // Read mapping files
   sample_t::init_chains(std::string(TARGET_NAME) + ".chain");
@@ -105,9 +105,9 @@ void simif_t::init(int argc, char** argv, bool log) {
 
 void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
-  take_steps(pulse_start);
+  take_steps(pulse_start, true);
   poke(reset, 1);
-  take_steps(pulse_length);
+  take_steps(pulse_length, true);
   poke(reset, 0);
 #ifdef ENABLE_SNAPSHOT
   // flush I/O traces by target resets
@@ -152,7 +152,7 @@ int simif_t::finish() {
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-void simif_t::step(int n) {
+void simif_t::step(int n, bool blocking) {
   if (n == 0) return;
   if (n < 0) throw std::invalid_argument("steps shoule be >= 0");
 #ifdef ENABLE_SNAPSHOT
@@ -178,7 +178,7 @@ void simif_t::step(int n) {
 #endif
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
-  take_steps(n);
+  take_steps(n, blocking);
   t += n;
 }
 

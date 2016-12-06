@@ -1,12 +1,14 @@
 package midas
 package core
 
-import util.ParameterizedBundle // from rocketchip
+// from rocketchip
+import util.ParameterizedBundle
+import junctions.NastiIO
+
 import chisel3._
 import chisel3.util._
 import chisel3.compatibility.throwException
 import cde.{Parameters, Field}
-import junctions.NastiIO
 import SimUtils._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
@@ -138,7 +140,6 @@ trait HasSimWrapperParams {
   val daisyWidth = p(DaisyWidth)
   val sramChainNum = p(SRAMChainNum)
   val enableSnapshot = p(EnableSnapshot)
-  val enableMemModel = p(EnableMemModel)
 }
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
@@ -185,7 +186,7 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
 
   val mem = new SimMemIO
   private def findSpecialIO(data: Data): Unit = data match {
-    case m: NastiIO if enableMemModel => mem add m
+    case m: NastiIO => mem add m
     case b: Bundle => b.elements.unzip._2 foreach findSpecialIO
     case v: Vec[_] => v.toSeq foreach findSpecialIO
     case _ =>
