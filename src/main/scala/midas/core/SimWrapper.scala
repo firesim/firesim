@@ -216,11 +216,6 @@ class SimBox(simIo: SimWrapperIO)
     val reset = Bool(INPUT)
     val io = simIo.cloneType
   })
-  val headerConsts = List(
-    "DAISY_WIDTH"   -> daisyWidth,
-    "TRACE_MAX_LEN" -> traceMaxLen,
-    "CHANNEL_SIZE"  -> log2Up(channelWidth/8)
-  )
 }
 
 class SimWrapper(targetIo: Data)
