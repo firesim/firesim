@@ -31,7 +31,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   sim.io.clock := clock
   sim.io.reset := reset || simReset
 
-  val master = addWidget(new EmulationMaster, "EmulationMaster")
+  val master = addWidget(new EmulationMaster, "Master")
   simReset := master.io.simReset
 
   val defaultIOWidget = addWidget(new PeekPokeIOWidget(
@@ -123,11 +123,11 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   defaultIOWidget.io.tReset.ready := ((0 until memIo.size) foldLeft Bool(true)){(ready, i) =>
-    val model = addWidget(
-      (p(MemModelKey): @unchecked) match {
-        case Some(modelGen) => modelGen(p alter Map(NastiKey -> p(MemNastiKey)))
-        case None => new SimpleLatencyPipe()(p alter Map(NastiKey -> p(MemNastiKey)))
-      }, s"MemModel_$i")
+    val param = p alter Map(NastiKey -> p(MemNastiKey))
+    val model = (p(MemModelKey): @unchecked) match {
+      case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
+      case None => addWidget(new NastiWidget()(param), s"NastiWidget_$i")
+    }
 
     arb.io.master(i) <> model.io.host_mem
     model.reset := reset || simReset

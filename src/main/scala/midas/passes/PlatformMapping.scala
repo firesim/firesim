@@ -17,20 +17,18 @@ private[passes] class PlatformMapping(
   def name = "[midas] Platform Mapping"
 
   private def dumpHeader(c: platform.PlatformShim) {
-    def cdump(arg: (String, Int)): String = s"#define ${arg._1} ${arg._2}\n"
-    def vdump(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"
+    def vMacro(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"
 
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)
     csb append "#define __%s_H\n".format(target.toUpperCase)
     c.genHeader(csb, target)
-    c.headerConsts map cdump addString csb
     csb append "#endif  // __%s_H\n".format(target.toUpperCase)
 
     val vsb = new StringBuilder
     vsb append "`ifndef __%s_H\n".format(target.toUpperCase)
     vsb append "`define __%s_H\n".format(target.toUpperCase)
-    c.headerConsts map vdump addString vsb
+    c.headerConsts map vMacro addString vsb
     vsb append "`endif  // __%s_H\n".format(target.toUpperCase)
 
     val ch = new FileWriter(new File(dir, s"${target}-const.h"))

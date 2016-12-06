@@ -6,37 +6,7 @@ import chisel3.util._
 import junctions._
 import cde.{Parameters, Field}
 
-import scala.collection.mutable.{ArrayBuffer, HashSet}
-import scala.collection.immutable.ListSet
-
-abstract class MemModelConfig // TODO: delete it
-case object MemModelKey extends Field[Option[Parameters => MemModel]]
-
-class SimDecoupledIO[+T <: Data](gen: T)(implicit val p: Parameters) extends Bundle {
-  val ready  = Bool(INPUT)
-  val valid  = Bool(OUTPUT)
-  val target = Decoupled(gen)
-  def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new SimDecoupledIO(gen)(p).asInstanceOf[this.type] 
-}
-
-class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
-  val tNasti = Flipped(HostPort(new NastiIO, false))
-  val tReset = Flipped(Decoupled(Bool()))
-  val host_mem = new NastiIO
-}
-
-abstract class MemModel(implicit p: Parameters) extends Widget()(p){
-  val io = IO(new MemModelIO)
-}
-
-class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
-  val arBuf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
-  val awBuf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
-  val wBuf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
-  val rBuf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
-  val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 4, flow=true))
-
+class SimpleLatencyPipe(implicit p: Parameters) extends NastiWidgetBase()(p) {
   // Timing Model
   val cycles = RegInit(UInt(0, 64))
   val rCycles = Module(new Queue(UInt(width=64), 4))
@@ -48,9 +18,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   val tStall = (rCycleFire && !rBuf.io.deq.valid) || (wCycleFire && !bBuf.io.deq.valid)
   val tNasti = io.tNasti.hBits
   val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid && !tStall
-  io.tNasti.toHost.hReady := tFire
-  io.tNasti.fromHost.hValid := tFire
-  io.tReset.ready := tFire
+  connect(tFire)
 
   when(tFire) { cycles := cycles + UInt(1) }
   rCycles.io.enq.bits := cycles + latency
@@ -59,18 +27,6 @@ class SimpleLatencyPipe(implicit p: Parameters) extends MemModel {
   wCycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire
   rCycles.io.deq.ready := tNasti.r.fire()  && tNasti.r.bits.last && tFire
   wCycles.io.deq.ready := tNasti.b.fire()  && tFire
-
-  // Bad assumption: We have no outstanding read or write requests to host
-  // during target reset. This will be handled properly in the fully fledged
-  // memory model; i'm too lazy to properly handle this here.
-  val targetReset = tFire && io.tReset.bits
-  arBuf.reset := reset || targetReset
-  awBuf.reset := reset || targetReset
-  rBuf.reset := reset || targetReset
-  bBuf.reset := reset || targetReset
-  wBuf.reset := reset || targetReset
-  rCycles.reset := reset || targetReset
-  wCycles.reset := reset || targetReset
 
   // Requests
   tNasti.ar.ready := arBuf.io.enq.ready && rCycles.io.enq.ready

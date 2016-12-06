@@ -30,7 +30,6 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
   val ctrlKey = p(widgets.CtrlNastiKey)
   val io = IO(new CatapultShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
-  val vtype = "VCatapultShim"
   val headerConsts = List(
     "PCIE_WIDTH"      -> p(PCIeWidth),
     "MMIO_WIDTH"      -> p(PCIeWidth) / 8,

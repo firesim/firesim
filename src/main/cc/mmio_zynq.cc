@@ -93,11 +93,11 @@ extern std::unique_ptr<mm_t> slave;
 
 void init(uint64_t memsize, bool dramsim) {
   master = std::move(std::unique_ptr<mmio_t>(new mmio_zynq_t));
-#ifdef ENABLE_MEMMODEL
+#ifdef MEMMODEL_0
   slave = std::move(std::unique_ptr<mm_t>(
     dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
   slave->init(memsize, MEM_WIDTH, 64);
-#endif // ENABLE_MEMMODEL
+#endif // MEMMODEL_0
 }
 
 #ifdef VCS
@@ -241,7 +241,7 @@ void tick(
       vc_4stVectorRef(master_b_bits_id)->d,
       vc_getScalar(master_b_valid)
     );
-#ifdef ENABLE_MEMMODEL
+#ifdef MEMMODEL_0
     slave->tick(
       vcs_rst,
       vc_getScalar(slave_ar_valid),
@@ -264,12 +264,12 @@ void tick(
       vc_getScalar(slave_r_ready),
       vc_getScalar(slave_b_ready)
     );
-#endif // ENABLE_MEMMODEL
+#endif // MEMMODEL_0
   } catch(std::exception &e) {
     vcs_fin = true;
     fprintf(stderr, "Exception in tick(): %s\n", e.what());
   }
-#ifdef ENABLE_MEMMODEL
+#ifdef MEMMODEL_0
   vc_putScalar(slave_aw_ready, slave->aw_ready());
   vc_putScalar(slave_ar_ready, slave->ar_ready());
   vc_putScalar(slave_w_ready, slave->w_ready());
@@ -295,7 +295,7 @@ void tick(
     sd[i].d = ((uint32_t*) slave->r_data())[i];
   }
   vc_put4stVector(slave_r_bits_data, sd);
-#endif // ENABLE_MEMMODEL
+#endif // MEMMODEL_0
   vc_putScalar(reset, vcs_rst);
   vc_putScalar(fin, vcs_fin);
 
@@ -364,7 +364,6 @@ void tick() {
     top->io_master_b_valid
   );
 
-#ifdef ENABLE_MEMMODEL
   top->io_slave_aw_ready = slave->aw_ready();
   top->io_slave_ar_ready = slave->ar_ready();
   top->io_slave_w_ready = slave->w_ready();
@@ -407,7 +406,6 @@ void tick() {
     top->io_slave_r_ready,
     top->io_slave_b_ready
   );
-#endif // ENABLE_MEMMODEL
 
   top->clock = 0;
   top->eval();

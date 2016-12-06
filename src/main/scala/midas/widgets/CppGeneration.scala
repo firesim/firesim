@@ -49,6 +49,9 @@ object CppGenerationUtils {
     }
   }
 
+  def genStatic[T <: CPPLiteral](name: String, value: T): String =
+    "static %s %s = %s;\n".format(value.typeString, name, value.toC)
+
   def genConstStatic[T <: CPPLiteral](name: String, value: T): String =
     "const static %s %s = %s;\n".format(value.typeString, name, value.toC)
 
