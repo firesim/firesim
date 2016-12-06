@@ -58,7 +58,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
     val enq = Wire(channel.cloneType)
-    channel <> Queue(enq, entries = 2)
+    channel <> Queue(enq, entries = depth)
     attachDecoupledSink(enq, name)
     channel
   }
@@ -75,6 +75,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     }
     if (masterDriven) wire := reg else reg := wire
     attach(reg, name)
+    reg suggestName name
     reg
   }
 
@@ -99,7 +100,11 @@ abstract class Widget(implicit p: Parameters) extends Module {
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
-  def headerComment(sb: StringBuilder): Unit = sb.append("\n// Widget: %s\n".format(getWName))
+  def headerComment(sb: StringBuilder) {
+    val name = getWName.toUpperCase
+    sb.append("\n// Widget: %s\n".format(getWName))
+    sb.append(CppGenerationUtils.genMacro(s"${name}(x)", s"${name}_ ## x"))
+  }
 
   def genHeader(base: BigInt, sb: StringBuilder){
     require(_finalized, "Must build Widgets with their companion object")
