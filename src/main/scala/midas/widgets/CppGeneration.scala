@@ -52,6 +52,8 @@ object CppGenerationUtils {
   def genConstStatic[T <: CPPLiteral](name: String, value: T): String =
     "const static %s %s = %s;\n".format(value.typeString, name, value.toC)
 
+  def genMacro(name: String, value: String = ""): String = s"#define $name $value\n"
+
   def genMacro[T <: CPPLiteral](name: String, value: T): String =
     "#define %s %s\n".format(name, value.toC)
 
