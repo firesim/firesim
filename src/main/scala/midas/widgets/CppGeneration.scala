@@ -37,17 +37,16 @@ case class CStrLit(val value: String) extends CPPLiteral {
 object CppGenerationUtils {
   val indent = "  "
 
-  def genArray[T <: CPPLiteral](name: String, values: Seq[T]): String = {
-    if ( values.size > 0 ) {
-      val prefix = "static %s %s[%d] = {\n".format(values.head.typeString, name, values.size)
-      val body = values.tail.foldLeft(indent + values.head.toC)(
-       (body: String, value: T) => body + ",\n%s%s".format(indent, value.toC))
+  def genEnum(name: String, values: Seq[String]): String =
+    if (values.isEmpty) "" else s"enum $name {%s};\n".format(values mkString ",")
+
+  def genArray[T <: CPPLiteral](name: String, values: Seq[T]): String =
+    if (values.isEmpty) "" else {
+      val prefix = s"static ${values.head.typeString} $name [${values.size}] = {\n"
+      val body = values map (indent + _.toC) mkString ",\n"
       val suffix = "\n};\n"
       prefix + body + suffix
-    } else {
-      ""
     }
-  }
 
   def genStatic[T <: CPPLiteral](name: String, value: T): String =
     "static %s %s = %s;\n".format(value.typeString, name, value.toC)

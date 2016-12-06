@@ -1,9 +1,11 @@
 package midas
 package widgets
 
-import chisel3._
-import chisel3.util.{Decoupled, Counter}
+// from rocketchip
 import junctions._
+
+import chisel3._
+import chisel3.util.{Decoupled, Counter, log2Up}
 import cde.{Parameters, Field}
 
 class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
@@ -35,4 +37,10 @@ class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   genRORegInit(io.done && ~io.simReset, "DONE", UInt(0))
 
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    super.genHeader(base, sb)
+    sb.append(genMacro("CHANNEL_SIZE", UInt32(log2Up(p(midas.core.ChannelWidth)/8))))
+  }
 }

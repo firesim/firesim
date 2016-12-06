@@ -40,7 +40,7 @@ class CntrData(daisywidth: Int) extends DaisyData(daisywidth) {
     new CntrData(daisywidth).asInstanceOf[this.type]
 }
 
-class DaisyBundle(daisyWidth: Int, sramChainNum: Int) extends Bundle {
+class DaisyBundle(val daisyWidth: Int, sramChainNum: Int) extends Bundle {
   val regs  = Vec(1, new RegData(daisyWidth))
   val trace = Vec(1, new TraceData(daisyWidth))
   val cntr  = Vec(1, new CntrData(daisyWidth))
