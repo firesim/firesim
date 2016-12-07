@@ -40,7 +40,7 @@ class simif_t
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
-    virtual void step(int n, bool blocking = false);
+    virtual void step(int n, bool blocking = true);
     inline bool done() { return read(MASTER(DONE)); }
 
     // Widget communication
