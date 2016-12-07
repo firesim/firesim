@@ -27,7 +27,7 @@ override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread
 
 testbench_h = $(foreach t, $(TESTBENCH), $(wildcard $(dir $(t))/*.h))
 
-platform_files := sample simif simif_$(PLATFORM)
+platform_files := sample simif simif_$(PLATFORM) sim_mem
 platform_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(platform_files)))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
@@ -50,7 +50,7 @@ $(OUT_DIR)/$(DESIGN).chain:
 	  cp -u $(GEN_DIR)/$(DESIGN).chain $@; \
 	fi
 
-emul_files := sample simif simif_emul mmio_$(PLATFORM)
+emul_files := sample simif simif_emul mmio_$(PLATFORM) sim_mem
 emul_h := $(addprefix $(base_dir)/, $(addsuffix .h, $(emul_files)))
 emul_cc := $(addprefix $(base_dir)/, $(addsuffix .cc, $(emul_files)))
 emul_v := $(v_dir)/emul_$(PLATFORM).v
