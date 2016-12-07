@@ -18,7 +18,7 @@ class SimpleLatencyPipe(implicit p: Parameters) extends NastiWidgetBase()(p) {
   val tStall = (rCycleFire && !rBuf.io.deq.valid) || (wCycleFire && !bBuf.io.deq.valid)
   val tNasti = io.tNasti.hBits
   val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid && !tStall
-  connect(tFire)
+  val tReset = connect(tFire)
 
   when(tFire) { cycles := cycles + UInt(1) }
   rCycles.io.enq.bits := cycles + latency
