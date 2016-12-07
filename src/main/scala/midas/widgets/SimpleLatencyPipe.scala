@@ -27,6 +27,8 @@ class SimpleLatencyPipe(implicit p: Parameters) extends NastiWidgetBase()(p) {
   wCycles.io.enq.valid := tNasti.w.fire()  && tNasti.w.bits.last && tFire
   rCycles.io.deq.ready := tNasti.r.fire()  && tNasti.r.bits.last && tFire
   wCycles.io.deq.ready := tNasti.b.fire()  && tFire
+  rCycles.reset := reset || tReset
+  wCycles.reset := reset || tReset
 
   // Requests
   tNasti.ar.ready := arBuf.io.enq.ready && rCycles.io.enq.ready
