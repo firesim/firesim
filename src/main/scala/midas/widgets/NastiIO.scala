@@ -32,7 +32,7 @@ class NastiWidgetBase(implicit p: Parameters) extends MemModel()(p) {
   val rBuf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
   val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 4, flow=true))
   
-  def connect(tFire: Bool) {
+  def connect(tFire: Bool) = {
     io.tNasti.toHost.hReady := tFire
     io.tNasti.fromHost.hValid := tFire
     io.tReset.ready := tFire
@@ -46,35 +46,42 @@ class NastiWidgetBase(implicit p: Parameters) extends MemModel()(p) {
     rBuf.reset := reset || targetReset
     bBuf.reset := reset || targetReset
     wBuf.reset := reset || targetReset
+    targetReset
   }
 }
 
 // Widget to handle NastiIO efficiently when mem models are not available
 // TODO: share code with SimpleLatencyPipe?
 class NastiWidget(implicit p: Parameters) extends NastiWidgetBase()(p) {
-  val count = RegInit(UInt(0, 32))
+  val count = Reg(UInt(width=32))
   val steps = Module(new Queue(count, 2))
   val tNasti = io.tNasti.hBits
-  val readInflight = RegInit(Bool(false))
-  val writeInflight = RegInit(Bool(false))
+  val readInflight = Reg(Bool())
+  val writeInflight = Reg(Bool())
   val tStall = !count.orR && (readInflight || writeInflight)
   val tFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && !tStall
-  connect(tFire)
+  val tReset = connect(tFire)
 
   steps.io.deq.ready := tStall
-  when(steps.io.deq.valid && tStall) {
+  when(reset || tReset) {
+    count := UInt(0)
+  }.elsewhen(steps.io.deq.valid && tStall) {
     count := steps.io.deq.bits
   }.elsewhen(tFire && count.orR) {
     count := count - UInt(1)
   }
 
-  when(tNasti.ar.fire() && tFire) {
+  when(reset || tReset) {
+    readInflight := Bool(false)
+  }.elsewhen(tNasti.ar.fire() && tFire) {
     readInflight := Bool(true)
   }.elsewhen(rBuf.io.enq.fire() && rBuf.io.enq.bits.last) {
     readInflight := Bool(false)
   }
 
-  when(tNasti.w.fire() && tNasti.w.bits.last && tFire) {
+  when(reset || tReset) {
+    writeInflight := Bool(false)
+  }.elsewhen(tNasti.w.fire() && tNasti.w.bits.last && tFire) {
     writeInflight := Bool(true)
   }.elsewhen(bBuf.io.enq.fire()) {
     writeInflight := Bool(false)
