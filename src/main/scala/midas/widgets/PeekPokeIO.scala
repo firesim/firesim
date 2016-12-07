@@ -49,6 +49,10 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
   val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
 
+  // needs back pressure from reset queues
+  val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
+  val toHostValid = io.outs.foldLeft(resetQueue.io.enq.ready)(_ && _.valid)
+
   io.idle := iTokensAvailable === UInt(0) && oTokensPending === UInt(0)
 
   def bindInputs = bindChannels((name, offset) => {
@@ -56,7 +60,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val reg = Reg(channel.bits)
     reg suggestName ("target_" + name)
     channel.bits := reg
-    channel.valid := iTokensAvailable =/= UInt(0)
+    channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
     attach(reg, name)
   }) _
 
@@ -64,16 +68,12 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val channel = io.outs(offset)
     val reg = RegEnable(channel.bits, channel.fire)
     reg suggestName ("target_" + name)
-    channel.ready := oTokensPending =/= UInt(0)
+    channel.ready := oTokensPending =/= UInt(0) && toHostValid
     attach(reg, name)
   }) _
 
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
-
-  // needs back pressure from reset queues
-  val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
-  val toHostValid = io.outs.foldLeft(resetQueue.io.enq.ready)(_ && _.valid)
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
     iTokensAvailable := iTokensAvailable - UInt(1)
