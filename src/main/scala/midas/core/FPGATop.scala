@@ -54,13 +54,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   connectChannels(inputChannels, defaultIOWidget.io.ins)
   connectChannels(defaultIOWidget.io.outs, outputChannels)
 
-  // Host Memory Channels
-  // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(MemNastiKey))))
-  val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-  arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
-  io.mem <> arb.io.slave
-
   if (p(EnableSnapshot)) {
     val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
     daisyController.io.daisy <> simIo.daisy
@@ -120,6 +113,15 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
     hostConnect(port, wires)
     targetConnect(port.hBits -> wires)
+  }
+
+  // Host Memory Channels
+  // Masters = Target memory channels + loadMemWidget
+  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(MemNastiKey))))
+  io.mem <> arb.io.slave
+  if (p(MemModelKey) != None) {
+    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
+    arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
   }
 
   defaultIOWidget.io.tReset.ready := ((0 until memIo.size) foldLeft Bool(true)){(ready, i) =>
