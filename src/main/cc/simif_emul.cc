@@ -77,7 +77,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 
   ::init(memsize, dramsim);
 
-  if (slave.get() && fastloadmem && loadmem) {
+  if (slave && fastloadmem && loadmem) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem);
     void* mems[1];
     mems[0] = slave->get_data();
