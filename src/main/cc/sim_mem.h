@@ -13,6 +13,25 @@ public:
   sim_mem_t(simif_t* s, int argc, char** argv);
   void init();
   void tick();
+  inline void step(size_t t) {
+#ifdef NASTIWIDGET_0
+    sim->write(NASTIWIDGET_0(steps), t);
+#endif
+  }
+  inline bool stall() {
+#ifdef NASTIWIDGET_0
+    return sim->read(NASTIWIDGET_0(stall));
+#else
+    return false;
+#endif
+  }
+  inline bool target_fire() {
+#ifdef NASTIWIDGET_0
+    return sim->read(NASTIWIDGET_0(tfire));
+#else
+    return false;
+#endif
+  }
 
 private:
   simif_t* sim;

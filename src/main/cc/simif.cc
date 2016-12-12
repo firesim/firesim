@@ -21,6 +21,8 @@ simif_t::simif_t() {
 }
 
 void simif_t::load_mem(std::string filename) {
+#ifdef LOADMEM
+  fprintf(stdout, "[loadmem] start loading\n");
   std::ifstream file(filename.c_str());
   if (!file) {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
@@ -42,6 +44,8 @@ void simif_t::load_mem(std::string filename) {
     }
   }
   file.close();
+  fprintf(stdout, "[loadmem] done\n");
+#endif // LOADMEM
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
@@ -91,9 +95,7 @@ void simif_t::init(int argc, char** argv, bool log) {
   }
   srand(seed);
   if (!fastloadmem && loadmem) {
-    fprintf(stdout, "[loadmem] start loading\n");
     load_mem(loadmem);
-    fprintf(stdout, "[loadmem] done\n");
   }
 
 #ifdef ENABLE_SNAPSHOT
