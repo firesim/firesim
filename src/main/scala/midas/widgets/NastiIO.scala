@@ -163,7 +163,7 @@ class NastiWidget(implicit p: Parameters) extends NastiWidgetBase()(p) {
   genWOReg(bBuf.io.enq.bits.resp, "b_resp")
   genROReg(bBuf.io.enq.ready, "b_ready")
 
-  genROReg(targetFire, "tfire")
+  genROReg(!targetFire, "done")
   genROReg(memStall, "stall")
   attachDecoupledSink(steps.io.enq, "steps")
 

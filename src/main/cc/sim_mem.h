@@ -25,11 +25,11 @@ public:
     return false;
 #endif
   }
-  inline bool target_fire() {
+  inline bool done() {
 #ifdef NASTIWIDGET_0
-    return sim->read(NASTIWIDGET_0(tfire));
+    return sim->read(NASTIWIDGET_0(done));
 #else
-    return false;
+    return true;
 #endif
   }
 
