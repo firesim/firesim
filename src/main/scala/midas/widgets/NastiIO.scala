@@ -25,22 +25,32 @@ abstract class MemModel(implicit p: Parameters) extends Widget()(p){
   }
 }
 
-class NastiWidgetBase(implicit p: Parameters) extends MemModel()(p) {
+abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
+  val tNasti = io.tNasti.hBits
+  val tReset = io.tReset.bits
+  val targetFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid
+
   val arBuf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
   val awBuf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
   val wBuf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
   val rBuf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
   val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 4, flow=true))
-  
-  def connect(memFire: Bool) = {
-    io.tNasti.toHost.hReady := memFire
-    io.tNasti.fromHost.hValid := memFire
-    io.tReset.ready := memFire
+
+  def elaborate(stall: Bool,
+                rCycleValid: Bool = Bool(true),
+                wCycleValid: Bool = Bool(true),
+                rCycleReady: Bool = Bool(true),
+                wCycleReady: Bool = Bool(true)) = {
+    val fire = targetFire && !stall
+    fire suggestName "fire"
+    io.tNasti.toHost.hReady := fire
+    io.tNasti.fromHost.hValid := fire
+    io.tReset.ready := fire
 
     // Bad assumption: We have no outstanding read or write requests to host
     // during target reset. This will be handled properly in the fully fledged
     // memory model; i'm too lazy to properly handle this here.
-    val targetReset = memFire && io.tReset.bits
+    val targetReset = fire && tReset
     targetReset suggestName "targetReset"
     arBuf.reset := reset || targetReset
     awBuf.reset := reset || targetReset
@@ -48,40 +58,56 @@ class NastiWidgetBase(implicit p: Parameters) extends MemModel()(p) {
     bBuf.reset := reset || targetReset
     wBuf.reset := reset || targetReset
 
+    // Request
+    tNasti.ar.ready    := arBuf.io.enq.ready && rCycleReady
+    tNasti.aw.ready    := awBuf.io.enq.ready && wCycleReady
+    tNasti.w.ready     := wBuf.io.enq.ready  && wCycleReady
+    arBuf.io.enq.valid := tNasti.ar.valid && fire && !tReset
+    awBuf.io.enq.valid := tNasti.aw.valid && fire && !tReset
+    wBuf.io.enq.valid  := tNasti.w.valid  && fire && !tReset
+    arBuf.io.enq.bits  := tNasti.ar.bits
+    awBuf.io.enq.bits  := tNasti.aw.bits
+    wBuf.io.enq.bits   := tNasti.w.bits
+
+    // Response
+    tNasti.r.bits     := rBuf.io.deq.bits
+    tNasti.b.bits     := bBuf.io.deq.bits
+    tNasti.r.valid    := rBuf.io.deq.valid && rCycleValid
+    tNasti.b.valid    := bBuf.io.deq.valid && wCycleValid
+    rBuf.io.deq.ready := tNasti.r.ready && fire && rCycleValid
+    bBuf.io.deq.ready := tNasti.b.ready && fire && wCycleValid
+
     val cycles = Reg(UInt(width=64))
     cycles suggestName "cycles"
-    when (memFire) {
+    when (fire) {
       cycles := Mux(targetReset, UInt(0), cycles + UInt(1))
     }
 
-    (targetReset, cycles)
+    (fire, cycles, targetReset)
   }
 }
 
 // Widget to handle NastiIO efficiently when mem models are not available
-class NastiWidget(implicit p: Parameters) extends NastiWidgetBase()(p) {
-  val tNasti = io.tNasti.hBits
+class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   val steps = Module(new Queue(UInt(width=32), 2))
   val stepCount = Reg(UInt(width=32))
   val readCount = Reg(UInt(width=32))
   val writeCount = Reg(UInt(width=32))
-  val targetFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid
-  val memStall = !stepCount.orR && (readCount.orR || writeCount.orR)
-  val memFire = targetFire && !memStall
-  val (targetReset, cycles) = connect(memFire)
+  val stall = !stepCount.orR && (readCount.orR || writeCount.orR)
+  val (fire, cycles, targetReset) = elaborate(stall)
 
-  steps.io.deq.ready := memStall
+  steps.io.deq.ready := stall
   when(reset || targetReset) {
     stepCount := UInt(0)
-  }.elsewhen(steps.io.deq.valid && memStall) {
+  }.elsewhen(steps.io.deq.valid && stall) {
     stepCount := steps.io.deq.bits
-  }.elsewhen(memFire && stepCount.orR) {
+  }.elsewhen(fire && stepCount.orR) {
     stepCount := stepCount - UInt(1)
   }
 
   when(reset || targetReset) {
     readCount := UInt(0)
-  }.elsewhen(tNasti.ar.fire() && memFire) {
+  }.elsewhen(tNasti.ar.fire() && fire) {
     readCount := readCount + UInt(1)
   }.elsewhen(rBuf.io.enq.fire() && rBuf.io.enq.bits.last) {
     readCount := readCount - UInt(1)
@@ -89,30 +115,11 @@ class NastiWidget(implicit p: Parameters) extends NastiWidgetBase()(p) {
 
   when(reset || targetReset) {
     writeCount := UInt(0)
-  }.elsewhen(tNasti.w.fire() && tNasti.w.bits.last && memFire) {
+  }.elsewhen(tNasti.w.fire() && tNasti.w.bits.last && fire) {
     writeCount := writeCount + UInt(1)
   }.elsewhen(bBuf.io.enq.fire()) {
     writeCount := writeCount - UInt(1)
   }
-
-  // Requests
-  tNasti.ar.ready := arBuf.io.enq.ready
-  tNasti.aw.ready := awBuf.io.enq.ready
-  tNasti.w.ready := wBuf.io.enq.ready
-  arBuf.io.enq.valid := tNasti.ar.valid && memFire
-  awBuf.io.enq.valid := tNasti.aw.valid && memFire
-  wBuf.io.enq.valid := tNasti.w.valid && memFire
-  arBuf.io.enq.bits := tNasti.ar.bits
-  awBuf.io.enq.bits := tNasti.aw.bits
-  wBuf.io.enq.bits := tNasti.w.bits
-
-  // Response
-  tNasti.r.bits := rBuf.io.deq.bits
-  tNasti.b.bits := bBuf.io.deq.bits
-  tNasti.r.valid := rBuf.io.deq.valid
-  tNasti.b.valid := bBuf.io.deq.valid
-  rBuf.io.deq.ready := tNasti.r.ready && memFire
-  bBuf.io.deq.ready := tNasti.b.ready && memFire
 
   // Disable host_mem
   io.host_mem.ar.valid := Bool(false)
@@ -164,7 +171,7 @@ class NastiWidget(implicit p: Parameters) extends NastiWidgetBase()(p) {
   genROReg(bBuf.io.enq.ready, "b_ready")
 
   genROReg(!targetFire, "done")
-  genROReg(memStall, "stall")
+  genROReg(stall, "stall")
   attachDecoupledSink(steps.io.enq, "steps")
 
   genCRFile()
