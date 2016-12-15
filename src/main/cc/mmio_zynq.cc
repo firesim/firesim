@@ -313,7 +313,7 @@ void tick() {
   top->clock = 1;
   top->eval();
 #if VM_TRACE
-  if (tfp) tfp->dump(main_time);
+  if (tfp) tfp->dump((double) main_time);
 #endif // VM_TRACE
   main_time++;
 
@@ -404,7 +404,7 @@ void tick() {
   top->clock = 0;
   top->eval();
 #if VM_TRACE
-  if (tfp) tfp->dump(main_time);
+  if (tfp) tfp->dump((double) main_time);
 #endif // VM_TRACE
   main_time++;
 }
