@@ -15,11 +15,18 @@
 static inline uint64_t timestamp() {
 #ifndef _WIN32
   struct timeval tv;
-  gettimeofday(&tv,NULL);
+  gettimeofday(&tv, NULL);
   return 1000000L * tv.tv_sec + tv.tv_usec;
 #else
-  // TODO
-  return 0L;
+  return (uint64_t) time(NULL);
+#endif
+}
+
+static inline double diff_secs(uint64_t end, uint64_t start) {
+#ifndef _WIN32
+  return ((double)(end - start)) / 1000000.0;
+#else
+  return difftime((time_t)end, (time_t)start);
 #endif
 }
 

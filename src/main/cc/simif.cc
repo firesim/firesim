@@ -140,9 +140,9 @@ int simif_t::finish() {
   }
 
   if (profile) {
-    double sim_time = (double) (timestamp() - sim_start_time) / 1000000.0;
+    double sim_time = diff_secs(timestamp(), sim_start_time);
     fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %zu\n",
-                    sim_time, (double) sample_time / 1000000.0, sample_count);
+                    sim_time, diff_secs(sample_time, 0), sample_count);
   }
 #endif
 
