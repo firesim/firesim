@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
 {
@@ -118,7 +119,7 @@ void mm_magic_t::tick(
 void load_mem(void** mems, const char* fn, int line_size, int nchannels)
 {
   char* m;
-  ssize_t start = 0;
+  int start = 0;
   std::ifstream in(fn);
   if (!in)
   {
@@ -130,9 +131,9 @@ void load_mem(void** mems, const char* fn, int line_size, int nchannels)
   while (std::getline(in, line))
   {
     #define parse_nibble(c) ((c) >= 'a' ? (c)-'a'+10 : (c)-'0')
-    for (ssize_t i = line.length()-2, j = 0; i >= 0; i -= 2, j++) {
+    for (int i = line.length()-2, j = 0; i >= 0; i -= 2, j++) {
       char data = (parse_nibble(line[i]) << 4) | parse_nibble(line[i+1]);
-      ssize_t addr = start + j;
+      int addr = start + j;
       int channel = (addr / line_size) % nchannels;
       m = (char *) mems[channel];
       addr = (addr / line_size / nchannels) * line_size + (addr % line_size);

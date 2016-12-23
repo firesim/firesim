@@ -4,14 +4,23 @@
 #include <cstring>
 #include <sstream>
 #include <queue>
+#ifndef _WIN32
 #include <sys/time.h>
+#else
+#include <time.h>
+#endif
 #include "biguint.h"
 #include "sample.h"
 
 static inline uint64_t timestamp() {
+#ifndef _WIN32
   struct timeval tv;
   gettimeofday(&tv,NULL);
   return 1000000L * tv.tv_sec + tv.tv_usec;
+#else
+  // TODO
+  return 0L;
+#endif
 }
 
 typedef std::map< std::string, size_t > idmap_t;
