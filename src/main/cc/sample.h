@@ -245,7 +245,7 @@ private:
   static size_t chain_len[CHAIN_NUM];
   static std::array<std::vector<std::string>, CHAIN_NUM> signals; 
   static std::array<std::vector<size_t>,      CHAIN_NUM> widths; 
-  static std::array<std::vector<ssize_t>,     CHAIN_NUM> depths;
+  static std::array<std::vector<int>,         CHAIN_NUM> depths;
 #endif
 };
 
