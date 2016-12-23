@@ -4,7 +4,7 @@
 #define _MM_EMULATOR_DRAMSIM2_H
 
 #include "mm.h"
-#include <DRAMSim.h>
+#include "MultiChannelMemorySystem.h" // DRAMSim
 #include <map>
 #include <queue>
 #include <stdint.h>
