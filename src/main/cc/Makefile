@@ -63,7 +63,7 @@ $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) 
 	$(foreach f, $(DRIVER) $(platform_o) $(lib), $(call path,$(f)))
 endif
 
-$(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM)
+$(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 
 $(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
