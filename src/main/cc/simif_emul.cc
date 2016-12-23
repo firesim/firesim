@@ -122,7 +122,7 @@ int simif_emul_t::finish() {
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
   try {
-    master->write_req(addr << CHANNEL_SIZE, &data);
+    master->write_req(addr, &data);
     while(!master->write_resp()) {
 #ifdef VCS
       target.switch_to();
@@ -144,7 +144,7 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   try {
-    master->read_req(addr << CHANNEL_SIZE);
+    master->read_req(addr);
     while(!master->read_resp(&data)) {
 #ifdef VCS
       target.switch_to();

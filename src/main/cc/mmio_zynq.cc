@@ -15,13 +15,13 @@
 #endif
 
 void mmio_zynq_t::read_req(uint64_t addr) {
-  mmio_req_addr_t ar(0, addr, CHANNEL_SIZE, 0);
+  mmio_req_addr_t ar(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
   this->ar.push(ar);
 }
 
 void mmio_zynq_t::write_req(uint64_t addr, void* data) {
   static const size_t CTRL_STRB = (1 << CTRL_STRB_BITS) - 1;
-  mmio_req_addr_t aw(0, addr, CHANNEL_SIZE, 0);
+  mmio_req_addr_t aw(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
   mmio_req_data_t w((char*) data, CTRL_STRB, true);
   this->aw.push(aw);
   this->w.push(w);

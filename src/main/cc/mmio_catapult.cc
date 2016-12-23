@@ -13,20 +13,18 @@
 #endif
 
 void mmio_catapult_t::read_req(uint64_t addr) {
-  char* d = new char[MMIO_WIDTH];
-  d[0] = false;
-  memcpy(d + 1, &addr, MMIO_ADDR_WIDTH);
-  mmio_data_t dd(d);
-  this->req.push(dd);
+  catapult_req_t r;
+  r.addr = addr;
+  r.wr = false;
+  this->req.push(r);
 }
 
 void mmio_catapult_t::write_req(uint64_t addr, void* data) {
-  char* d = new char[MMIO_WIDTH];
-  d[0] = true;
-  memcpy(d + 1, &addr, MMIO_ADDR_WIDTH);
-  memcpy(d + 1 + MMIO_ADDR_WIDTH, data, MMIO_DATA_WIDTH);
-  mmio_data_t dd(d);
-  this->req.push(dd);
+  catapult_req_t r;
+  r.addr = addr;
+  r.wr = true;
+  memcpy(r.wdata, data, MMIO_WIDTH);
+  this->req.push(r);
 }
 
 void mmio_catapult_t::tick(
@@ -43,10 +41,9 @@ void mmio_catapult_t::tick(
   }
 
   if (resp_fire) {
-    char* d = new char[MMIO_WIDTH];
-    memcpy(d, resp_data, MMIO_WIDTH);
-    mmio_data_t dd(d);
-    this->resp.push(dd);
+    catapult_resp_t r;
+    memcpy(r.rdata, resp_data, MMIO_WIDTH);
+    this->resp.push(r);
   }
 }
 
@@ -54,15 +51,15 @@ bool mmio_catapult_t::read_resp(void* data) {
   if (resp.empty()) {
     return false;
   } else {
-    mmio_data_t& dd = this->resp.front();
-    memcpy(data, dd.data, MMIO_DATA_WIDTH);
+    catapult_resp_t& r = this->resp.front();
+    memcpy(data, r.rdata, MMIO_WIDTH);
     this->resp.pop();
     return true;
   }
 }
 
 bool mmio_catapult_t::write_resp() {
-  return req.empty();
+  return true;
 }
 
 extern uint64_t main_time;
@@ -149,12 +146,14 @@ void tick() {
 #endif // VM_TRACE
   main_time++;
 
-  top->io_pcie_out_ready = m->resp_ready();
-  top->io_pcie_in_valid = m->req_valid();
+  top->io_softreg_resp_ready = m->resp_ready();
+  top->io_softreg_req_valid = m->req_valid();
+  top->io_softreg_req_bits_addr = m->req_addr();
+  top->io_softreg_req_bits_wr = m->req_wr();
 #if MMIO_WIDTH > 64
-  memcpy(top->io_pcie_in_bits, m->req_data(), MMIO_WIDTH);
+  memcpy(top->io_softreg_req_bits_wdata, m->req_wdata(), MMIO_WIDTH);
 #else
-  memcpy(&top->io_pcie_in_bits, m->req_data(), MMIO_WIDTH);
+  memcpy(&top->io_softreg_req_bits_wdata, m->req_wdata(), MMIO_WIDTH);
 #endif
 
   top->clock = 0;
@@ -166,12 +165,12 @@ void tick() {
 
   m->tick(
     top->reset,
-    top->io_pcie_in_ready,
-    top->io_pcie_out_valid,
+    top->io_softreg_req_ready,
+    top->io_softreg_resp_valid,
 #if MMIO_WIDTH > 64
-    top->io_pcie_out_bits
+    top->io_softreg_resp_bits_rdata
 #else
-    &top->io_pcie_out_bits
+    &top->io_softreg_resp_bits_rdata
 #endif
 
 // TODO: slave
