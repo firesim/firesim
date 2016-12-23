@@ -6,11 +6,16 @@
 #include <vector>
 #include <queue>
 
-struct mmio_data_t
+struct catapult_req_t
 {
-  char* const data;
-  mmio_data_t(char* const data_): data(data_) { }
-  // ~mmio_data_t() { delete data; }
+  uint64_t addr;
+  char wdata[MMIO_WIDTH];
+  bool wr;
+};
+
+struct catapult_resp_t
+{
+  char rdata[MMIO_WIDTH];
 };
 
 class mmio_catapult_t: public mmio_t
@@ -20,7 +25,9 @@ public:
     dummy_data.resize(MMIO_WIDTH);
   }
 
-  void* req_data() { return req_valid() ? req.front().data : &dummy_data[0]; }
+  uint32_t req_addr() { return req_valid() ? req.front().addr : 0; }
+  void* req_wdata() { return req_valid() ? req.front().wdata : &dummy_data[0]; }
+  bool req_wr() { return req_valid() ? req.front().wr : false; }
   bool req_valid() { return !req.empty(); }
   bool resp_ready() { return true; }
 
@@ -38,8 +45,8 @@ public:
   virtual bool write_resp();
 
 private:
-  std::queue<mmio_data_t> req;
-  std::queue<mmio_data_t> resp;
+  std::queue<catapult_req_t> req;
+  std::queue<catapult_resp_t> resp;
   std::vector<char> dummy_data;
 };
 

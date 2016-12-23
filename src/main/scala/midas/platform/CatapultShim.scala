@@ -9,19 +9,27 @@ import cde.{Parameters, Field}
 import junctions._
 
 case object PCIeWidth extends Field[Int]
+case object SoftRegKey extends Field[SoftRegParam]
+case class SoftRegParam(addrBits: Int, dataBits: Int)
 
-class PCIeBundle(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val ctrlKey = p(widgets.CtrlNastiKey)
-  val data = UInt(width=ctrlKey.dataBits)
-  val addr = UInt(width=ctrlKey.addrBits)
-  val isWr = UInt(width=8)
+class SoftRegReq(implicit p: Parameters) extends ParameterizedBundle()(p) {
+  val addr = UInt(width=p(SoftRegKey).addrBits)
+  val wdata = UInt(width=p(SoftRegKey).dataBits)
+  val wr = Bool()
+}
+
+class SoftRegResp(implicit p: Parameters) extends ParameterizedBundle()(p) {
+  val rdata = UInt(width=p(SoftRegKey).dataBits)
+}
+
+class SoftRegBundle(implicit p: Parameters) extends ParameterizedBundle()(p) {
+  val req = Flipped(Decoupled(new SoftRegReq))
+  val resp = Decoupled(new SoftRegResp)
 }
 
 class CatapultShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val pcie = new Bundle {
-    val in = Flipped(Decoupled(UInt(width=p(PCIeWidth))))
-    val out = Decoupled(UInt(width=p(PCIeWidth)))
-  }
+  val pcie = new SerialIO(p(PCIeWidth))
+  val softreg = new SoftRegBundle
   // TODO: UMI
 }
 
@@ -31,31 +39,40 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
   val io = IO(new CatapultShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
   val headerConsts = List(
-    "PCIE_WIDTH"      -> p(PCIeWidth),
-    "MMIO_WIDTH"      -> p(PCIeWidth) / 8,
-    "MMIO_ADDR_WIDTH" -> ctrlKey.addrBits / 8,
-    "MMIO_DATA_WIDTH" -> ctrlKey.dataBits / 8,
+    // "PCIE_WIDTH"      -> p(PCIeWidth),
+    "MMIO_WIDTH"      -> p(SoftRegKey).dataBits / 8,
     "MEM_WIDTH"       -> 0 // Todo
   ) ++ top.headerConsts
 
-  // PCIe Input  
-  val pcieIn = (new PCIeBundle).fromBits(io.pcie.in.bits)
-  val sIdle :: sWrite :: sWrAck :: Nil = Enum(UInt(), 3)
+  val sIdle :: sRead :: sWrite :: sWrAck:: Nil = Enum(UInt(), 4)
   val state = RegInit(sIdle)
+  val dataSizeBits = UInt(log2Up(ctrlKey.dataBits/8))
   top.io.ctrl.aw.bits := NastiWriteAddressChannel(
-    UInt(0), pcieIn.addr, UInt(log2Up(ctrlKey.dataBits/8)))
-  top.io.ctrl.aw.valid := io.pcie.in.valid && pcieIn.isWr(0) && state === sIdle
-  top.io.ctrl.w.bits := NastiWriteDataChannel(pcieIn.data)
-  top.io.ctrl.w.valid := state === sWrite
+    UInt(0), io.softreg.req.bits.addr << dataSizeBits, dataSizeBits)
+  top.io.ctrl.aw.valid := io.softreg.req.valid && io.softreg.req.bits.wr && state === sIdle
   top.io.ctrl.ar.bits := NastiReadAddressChannel(
-    UInt(0), pcieIn.addr, UInt(log2Up(ctrlKey.dataBits/8)))
-  top.io.ctrl.ar.valid := io.pcie.in.valid && !pcieIn.isWr(0) && state === sIdle
+    UInt(0), io.softreg.req.bits.addr << dataSizeBits, dataSizeBits)
+  top.io.ctrl.ar.valid := io.softreg.req.valid && !io.softreg.req.bits.wr && state === sIdle
+  top.io.ctrl.w.bits := NastiWriteDataChannel(io.softreg.req.bits.wdata)
+  top.io.ctrl.w.valid := state === sWrite
+  io.softreg.req.ready := top.io.ctrl.ar.fire() || top.io.ctrl.w.fire()
+
+  io.softreg.resp.bits.rdata := top.io.ctrl.r.bits.data
+  io.softreg.resp.valid := top.io.ctrl.r.valid
+  top.io.ctrl.r.ready := state === sRead && io.softreg.resp.ready
   top.io.ctrl.b.ready := state === sWrAck
-  io.pcie.in.ready := top.io.ctrl.ar.fire() || top.io.ctrl.b.fire()
+
   switch(state) {
     is(sIdle) {
-      when(top.io.ctrl.aw.fire()) {
+      when(top.io.ctrl.ar.fire()) {
+        state := sRead
+      }.elsewhen(top.io.ctrl.aw.fire()) {
         state := sWrite
+      }
+    }
+    is(sRead) {
+      when(top.io.ctrl.r.fire()) {
+        state := sIdle
       }
     }
     is(sWrite) {
@@ -70,10 +87,9 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
     }
   }
 
-  // PCIe Output
-  io.pcie.out.bits := top.io.ctrl.r.bits.data
-  io.pcie.out.valid := top.io.ctrl.r.valid
-  top.io.ctrl.r.ready := io.pcie.out.ready
+  // Turn off PCIe
+  io.pcie.in.ready := Bool(false)
+  io.pcie.out.valid := Bool(false)
 
   // TODO: connect top.io.mem to UMI
 }

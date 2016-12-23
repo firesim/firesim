@@ -46,6 +46,7 @@ class CatapultConfig extends Config(new Config(
   (key, site, here) => key match {
     case Platform       => Catapult
     case PCIeWidth      => 640
+    case SoftRegKey     => SoftRegParam(32, 64)
     case NastiKey       => site(CtrlNastiKey)
     case MemModelKey    => None
   }) ++ new SimConfig
