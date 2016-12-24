@@ -22,17 +22,29 @@ shim := $(shell echo $(PLATFORM) | cut -c 1 | tr [:lower:] [:upper:])$(shell ech
 ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
 else
+ifneq ($(SHELL),sh.exe)
 PATH_CONVERTER ?= cygpath -w
-path = $(shell $(PATH_CONVERTER) $(1))
+path = $(patsubst %\,%,$(shell $(PATH_CONVERTER) $(1)))
+else
+path = $(1)
+endif
 override CXXFLAGS := $(CXXFLAGS) /EHsc /I$(call path,$(midas_dir)/dramsim2)
 endif
+
 include $(util_dir)/utils.mk
+
+$(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
+	ln -sf $< $@
+
+$(OUT_DIR)/$(DESIGN).chain:
+	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
 ifneq ($(CXX),cl)
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) $(foreach f, $(DRIVER), -I$(dir $(f)))
 override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread
 else
 override CXXFLAGS += /I$(call path,$(midas_dir)) /I$(call path,$(util_dir))
+override CXXFLAGS += $(foreach f, $(DRIVER), /I$(call path,$(dir $(f))))
 endif
 
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
@@ -58,21 +70,13 @@ $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(DRIVER) $(drive
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o)
 else
 $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o)
-	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) /FI$(call path,$<) -Fe$(call path,$@) \
-	$(foreach f, $(DRIVER) $(platform_o) $(lib), $(call path,$(f)))
+	mkdir.exe -p $(patsubst C:%,%,$(OUT_DIR))
+	$(CXX) $(CXXFLAGS) /FI$(call path,$<) -Fe$(call path,$@) \
+	$(foreach f, $(DRIVER) $(platform_o) $(lib), $(call path,$(f))) \
+	/link $(LDFLAGS)
 endif
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
-
-
-$(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
-	ln -sf $< $@
-
-$(OUT_DIR)/$(DESIGN).chain:
-	if [ -a $(GEN_DIR)/$(DESIGN).chain ]; then \
-	  cp -u $(GEN_DIR)/$(DESIGN).chain $@; \
-	fi
 
 ifneq ($(CXX),cl) # no emulation, replay with visual studio
 emul_files := sample simif simif_emul mmio_$(PLATFORM) sim_mem
@@ -86,9 +90,7 @@ override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDF
 
 $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	if [ -a $(GEN_DIR)/V$(DESIGN).csrc ]; then \
-	  rm -rf $(GEN_DIR)/V$(DESIGN).csrc; \
-	fi
+	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
 	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN).csrc/V$(shim).h" \
 	-o $@ $< $(DRIVER) $(emul_cc)
@@ -96,9 +98,7 @@ $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(lib) 
 
 $(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	if [ -a $(GEN_DIR)/V$(DESIGN)-debug.csrc ]; then \
-	  rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc; \
-	fi
+	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
 	-CFLAGS "-include $(word 2, $^) -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(shim).h" \
 	-o $@ $< $(DRIVER) $(emul_cc)
@@ -120,24 +120,16 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 
 $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	if [ -a $(GEN_DIR)/$(DESIGN).csrc ]; then \
-	  rm -rf $(GEN_DIR)/$(DESIGN).csrc; \
-	fi
-	if [ -a $(OUT_DIR)/$(DESIGN).daidir ]; then \
-	  rm -rf $(OUT_DIR)/$(DESIGN).daidir; \
-	fi
+	rm -rf $(GEN_DIR)/$(DESIGN).csrc
+	rm -rf $(OUT_DIR)/$(DESIGN).daidir
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
 	+define+STOP_COND=!emul.reset -CFLAGS "-include $(word 2, $^)" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(DRIVER) $(emul_cc)
 
 $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	if [ -a $(GEN_DIR)/$(DESIGN)-debug.csrc ]; then \
-	  rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc; \
-	fi
-	if [ -a $(OUT_DIR)/$(DESIGN)-debug.daidir ]; then \
-	  rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir; \
-	fi
+	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
+	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list \
 	+define+STOP_COND=!emul.reset +define+DEBUG -CFLAGS "-include $(word 2, $^)" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(DRIVER) $(emul_cc)
@@ -152,12 +144,8 @@ replay_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(replay_files)))
 
 $(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(lib) $(replay_cc) $(replay_h)
 	mkdir -p $(OUT_DIR)
-	if [ -a $(GEN_DIR)/$(DESIGN)-replay.csrc ]; then \
-	  rm -rf $(GEN_DIR)/$(DESIGN)-replay.csrc; \
-	fi
-	if [ -a $(OUT_DIR)/$(DESIGN)-replay.daidir ]; then \
-	  rm -rf $(OUT_DIR)/$(DESIGN)-replay.daidir; \
-	fi
+	rm -rf $(GEN_DIR)/$(DESIGN)-replay.csrc
+	rm -rf $(OUT_DIR)/$(DESIGN)-replay.daidir
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc +vpi -P $(r_dir)/vpi.tab \
 	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
 	-o $@ $< $(word 2, $^) $(lib) $(replay_cc)
