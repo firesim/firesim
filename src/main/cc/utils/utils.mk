@@ -22,7 +22,7 @@ lib_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(lib_files)))
 $(lib_o): $(GEN_DIR)/%.o: $(util_dir)/%.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-lib := $(GEN_DIR)/libmidas.a
+lib       := $(GEN_DIR)/libmidas.a
 $(lib): $(lib_o) $(dramsim_o)
 	$(AR) rcs $@ $^
 else
@@ -31,7 +31,7 @@ lib_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .obj, $(lib_files)))
 $(lib_o): $(GEN_DIR)/%.obj: $(util_dir)/%.cc
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<)
 
-lib := $(GEN_DIR)/midas.lib
+lib       := $(GEN_DIR)/midas.lib
 $(lib): $(lib_o) $(dramsim_o)
 	$(AR) -OUT:$(call path,$@) $(foreach f, $^, $(call path,$f))
 endif
