@@ -119,7 +119,7 @@ int simif_emul_t::finish() {
   return exitcode;
 }
 
-void simif_emul_t::write(size_t addr, uint32_t data) {
+void simif_emul_t::write(size_t addr, data_t data) {
   master->write_req(addr, &data);
   while(!master->write_resp()) {
 #ifdef VCS
@@ -130,8 +130,8 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
   }
 }
 
-uint32_t simif_emul_t::read(size_t addr) {
-  uint32_t data;
+data_t simif_emul_t::read(size_t addr) {
+  data_t data;
   master->read_req(addr);
   while(!master->read_resp(&data)) {
 #ifdef VCS

@@ -206,12 +206,10 @@ class MCRFileMap() {
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-    name2addr foreach {
-      case(regName: String, idx: Int) => {
-        val fullName = s"${prefix}_${regName}"
-        val address = base + idx
-        sb append s"#define ${fullName} ${address}\n"
-      }
+    name2addr.toList foreach { case (regName, idx) =>
+      val fullName = s"${prefix}_${regName}"
+      val address = base + idx
+      sb append s"#define ${fullName} ${address}\n"
     }
   }
 

@@ -16,10 +16,10 @@ case object MemModelKey extends Field[Option[Parameters => MemModel]]
 class SimConfig extends Config(
   (key, site, here) => key match {
     case TraceMaxLen    => 1024
-    case DaisyWidth     => 32
     case SRAMChainNum   => 1
     case ChannelLen     => 16
     case ChannelWidth   => 32
+    case DaisyWidth     => 32
     case EnableSnapshot => false
     case CtrlNastiKey   => NastiParameters(32, 32, 12)
     case MemNastiKey    => NastiParameters(64, 32, 6)
@@ -46,7 +46,10 @@ class CatapultConfig extends Config(new Config(
   (key, site, here) => key match {
     case Platform       => Catapult
     case PCIeWidth      => 640
+    case ChannelWidth   => 64
+    case DaisyWidth     => 64
     case SoftRegKey     => SoftRegParam(32, 64)
+    case CtrlNastiKey   => NastiParameters(64, 32, 12)
     case NastiKey       => site(CtrlNastiKey)
     case MemModelKey    => None
   }) ++ new SimConfig

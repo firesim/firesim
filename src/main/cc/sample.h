@@ -18,7 +18,7 @@ void dump_f(
   const SAMPLE_INST_TYPE type,
   const size_t t,
   const size_t id,
-  uint32_t* const value,
+  data_t* const value,
   const size_t size,
   const int* const idx = NULL);
 
@@ -27,7 +27,7 @@ std::ostream& dump_s(
   const SAMPLE_INST_TYPE type,
   const size_t t,
   const size_t id,
-  uint32_t* const value,
+  data_t* const value,
   const size_t size,
   const int* const idx = NULL);
 #endif
@@ -50,7 +50,7 @@ struct step_t: sample_inst_t {
     fprintf(file, "%u %zu\n", STEP, n);
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << " " << STEP << " " << n << std::endl;
+    return os << STEP << " " << n << std::endl;
   }
 #endif
   const size_t n;
@@ -58,7 +58,7 @@ struct step_t: sample_inst_t {
 
 struct load_t: sample_inst_t {
 #ifdef ENABLE_SNAPSHOT
-  load_t(const size_t type_, const size_t id_, uint32_t* value_, const size_t size_, const int idx_ = -1):
+  load_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_, const int idx_ = -1):
     type(type_), id(id_), value(value_), size(size_), idx(idx_) { }
   void dump(FILE *file) const {
     dump_f(file, LOAD, type, id, value, size, &idx);
@@ -75,7 +75,7 @@ struct load_t: sample_inst_t {
   const size_t type;
   const size_t id;
 #ifdef ENABLE_SNAPSHOT
-  uint32_t* const value;
+  data_t* const value;
   const size_t size;
 #else
   biguint_t* const value;
@@ -85,7 +85,7 @@ struct load_t: sample_inst_t {
 
 struct force_t: sample_inst_t {
 #ifdef ENABLE_SNAPSHOT
-  force_t(const size_t type_, const size_t id_, uint32_t* value_, const size_t size_):
+  force_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
     type(type_), id(id_), value(value_), size(size_) { }
   virtual void dump(FILE *file) const {
     dump_f(file, FORCE, type, id, value, size);
@@ -102,7 +102,7 @@ struct force_t: sample_inst_t {
   const size_t type;
   const size_t id;
 #ifdef ENABLE_SNAPSHOT
-  uint32_t* const value;
+  data_t* const value;
   const size_t size;
 #else
   biguint_t* const value;
@@ -111,8 +111,8 @@ struct force_t: sample_inst_t {
 
 struct poke_t: sample_inst_t {
 #ifdef ENABLE_SNAPSHOT
-  poke_t(const size_t type_, const size_t id, uint32_t* value_, const size_t size_):
-    type(type_), id(id), value(value_), size(size_) { }
+  poke_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
+    type(type_), id(id_), value(value_), size(size_) { }
   virtual void dump(FILE *file) const {
     dump_f(file, POKE, type, id, value, size);
   }
@@ -128,7 +128,7 @@ struct poke_t: sample_inst_t {
   const size_t type;
   const size_t id;
 #ifdef ENABLE_SNAPSHOT
-  uint32_t* const value;
+  data_t* const value;
   const size_t size;
 #else
   biguint_t* const value;
@@ -137,7 +137,7 @@ struct poke_t: sample_inst_t {
 
 struct expect_t: sample_inst_t {
 #ifdef ENABLE_SNAPSHOT
-  expect_t(const size_t type_, const size_t id_, uint32_t* value_, const size_t size_):
+  expect_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
     type(type_), id(id_), value(value_), size(size_) { }
   virtual void dump(FILE *file) const {
     dump_f(file, EXPECT, type, id, value, size);
@@ -154,7 +154,7 @@ struct expect_t: sample_inst_t {
   const size_t type;
   const size_t id;
 #ifdef ENABLE_SNAPSHOT
-  uint32_t* const value;
+  data_t* const value;
   const size_t size;
 #else
   biguint_t* const value;
@@ -163,7 +163,7 @@ struct expect_t: sample_inst_t {
 
 struct count_t: sample_inst_t {
 #ifdef ENABLE_SNAPSHOT
-  count_t(const size_t type_, const size_t id_, uint32_t* value_, const size_t size_):
+  count_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
     type(type_), id(id_), value(value_), size(size_) { }
   virtual void dump(FILE *file) const {
     dump_f(file, COUNT, type, id, value, size);
@@ -180,7 +180,7 @@ struct count_t: sample_inst_t {
   const size_t type;
   const size_t id;
 #ifdef ENABLE_SNAPSHOT
-  uint32_t* const value;
+  data_t* const value;
   const size_t size;
 #else
   biguint_t* const value;

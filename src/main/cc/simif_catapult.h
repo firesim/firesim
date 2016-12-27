@@ -9,8 +9,8 @@ class simif_catapult_t: public virtual simif_t
   public:
     simif_catapult_t();
     virtual ~simif_catapult_t();
-    virtual void write(size_t addr, uint32_t data);
-    virtual uint32_t read(size_t addr);
+    virtual void write(size_t addr, uint64_t data);
+    virtual uint64_t read(size_t addr);
   private:
     char in_buf[MMIO_WIDTH];
     char out_buf[MMIO_WIDTH];

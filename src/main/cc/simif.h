@@ -61,9 +61,8 @@ class simif_t
     inline bool done() { return read(MASTER(DONE)); }
 
     // Widget communication
-    virtual void write(size_t addr, uint32_t data) = 0;
-    virtual uint32_t read(size_t addr) = 0;
-
+    virtual void write(size_t addr, data_t data) = 0;
+    virtual data_t read(size_t addr) = 0;
 
     inline void poke(size_t id, uint32_t value) { 
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
@@ -76,36 +75,11 @@ class simif_t
       return value;
     }
 
-    inline void poke(size_t id, biguint_t& value) {
-      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
-      for (size_t off = 0 ; off < INPUT_CHUNKS[id] ; off++) {
-        write(INPUT_ADDRS[id]+off, value[off]);
-      }
-    }
-
-    inline void peek(size_t id, biguint_t& value) {
-      uint32_t buf[16];
-      for (size_t off = 0; off < OUTPUT_CHUNKS[id]; off++) {
-        buf[off] = read(OUTPUT_ADDRS[id] + off);
-      }
-      value = biguint_t(buf, OUTPUT_CHUNKS[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
-    }
-
     inline bool expect(size_t id, uint32_t expected) {
       uint32_t value = peek(id);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
         TARGET_NAME, OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
-      return expect(pass, NULL);
-    }
-
-    inline bool expect(size_t id, biguint_t& expected) {
-      biguint_t value;
-      peek(id, value);
-      bool pass = value == expected;
-      if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
-        TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(), pass ? "PASS" : "FAIL");
       return expect(pass, NULL);
     }
 
@@ -116,29 +90,15 @@ class simif_t
       return pass;
     }
 
+    void poke(size_t id, biguint_t& value);
+    void peek(size_t id, biguint_t& value);
+    bool expect(size_t id, biguint_t& expected);
+    void read_mem(size_t addr, biguint_t& value);
+    void write_mem(size_t addr, biguint_t& value);
+
     // A default reset scheme that pulses the global chisel reset
     void target_reset(int pulse_start = 1, int pulse_length = 5);
 
-    inline void read_mem(size_t addr, biguint_t& data) {
-#ifdef LOADMEM
-      write(LOADMEM_R_ADDRESS, addr);
-      uint32_t d[MEM_DATA_CHUNK];
-      for (size_t off = 0 ; off < MEM_DATA_CHUNK; off++) {
-        d[off] = read(LOADMEM_R_DATA);
-      }
-      data = biguint_t(d, MEM_DATA_CHUNK);
-#endif
-    }
-
-    inline void write_mem(size_t addr, biguint_t& data) {
-#ifdef LOADMEM
-      write(LOADMEM_W_ADDRESS, addr);
-      for (size_t off = 0; off < MEM_DATA_CHUNK; off++) {
-        write(LOADMEM_W_DATA, data[off]);
-      }
-#endif
-    }
-    
     inline uint64_t cycles() { return t; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
