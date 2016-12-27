@@ -1,6 +1,6 @@
 #include "context.h"
 #include <stdlib.h>
-#include <stdexcept>
+#include <cassert>
 
 static __thread context_t* cur = NULL;
 
@@ -38,8 +38,7 @@ void context_t::init(int (*f)(void*), void* a)
   arg = a;
   creator = current();
 
-  if (flag != 0)
-    throw std::logic_error("flag != 0 in context_t::init");
+  assert(flag == 0);
 
   pthread_mutex_lock(&creator->mutex);
   creator->flag = 0;
@@ -53,14 +52,12 @@ void context_t::init(int (*f)(void*), void* a)
 
 context_t::~context_t()
 {
-  if (this == cur)
-    throw std::logic_error("this == cur in context_t::~context_t()");
+  assert(this != cur);
 }
 
 void context_t::switch_to()
 {
-  if (this == cur)
-    throw std::logic_error("this == cur in context_t::~context_t()");
+  assert(this != cur);
   cur->flag = 0;
   this->flag = 1;
   pthread_mutex_lock(&this->mutex);

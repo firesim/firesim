@@ -92,9 +92,8 @@ extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mm_t> slave;
 
 void init(uint64_t memsize, bool dramsim) {
-  master = std::move(std::unique_ptr<mmio_t>(new mmio_zynq_t));
-  slave = std::move(std::unique_ptr<mm_t>(
-    dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t));
+  master.reset(new mmio_zynq_t);
+  slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t);
   slave->init(memsize, MEM_WIDTH, 64);
 }
 
@@ -173,8 +172,8 @@ void tick(
   vc_handle slave_b_bits_resp,
   vc_handle slave_b_bits_id
 ) {
-  mmio_zynq_t* const m = dynamic_cast<mmio_zynq_t*>(master.get());
-  if (!m) throw std::runtime_error("wrong master type");
+  mmio_zynq_t* m;
+  assert(m = dynamic_cast<mmio_zynq_t*>(master.get()));
   uint32_t master_r_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
     master_r_data[i] = vc_4stVectorRef(master_r_bits_data)[i].d;
@@ -226,45 +225,41 @@ void tick(
   }
   vc_put4stVector(master_w_bits_data, md);
 
-  try {
-    m->tick(
-      vcs_rst,
-      vc_getScalar(master_ar_ready),
-      vc_getScalar(master_aw_ready),
-      vc_getScalar(master_w_ready),
-      vc_4stVectorRef(master_r_bits_id)->d,
-      master_r_data,
-      vc_getScalar(master_r_bits_last),
-      vc_getScalar(master_r_valid),
-      vc_4stVectorRef(master_b_bits_id)->d,
-      vc_getScalar(master_b_valid)
-    );
-    slave->tick(
-      vcs_rst,
-      vc_getScalar(slave_ar_valid),
-      vc_4stVectorRef(slave_ar_bits_addr)->d,
-      vc_4stVectorRef(slave_ar_bits_id)->d,
-      vc_4stVectorRef(slave_ar_bits_size)->d,
-      vc_4stVectorRef(slave_ar_bits_len)->d,
+  m->tick(
+    vcs_rst,
+    vc_getScalar(master_ar_ready),
+    vc_getScalar(master_aw_ready),
+    vc_getScalar(master_w_ready),
+    vc_4stVectorRef(master_r_bits_id)->d,
+    master_r_data,
+    vc_getScalar(master_r_bits_last),
+    vc_getScalar(master_r_valid),
+    vc_4stVectorRef(master_b_bits_id)->d,
+    vc_getScalar(master_b_valid)
+  );
+  slave->tick(
+    vcs_rst,
+    vc_getScalar(slave_ar_valid),
+    vc_4stVectorRef(slave_ar_bits_addr)->d,
+    vc_4stVectorRef(slave_ar_bits_id)->d,
+    vc_4stVectorRef(slave_ar_bits_size)->d,
+    vc_4stVectorRef(slave_ar_bits_len)->d,
 
-      vc_getScalar(slave_aw_valid),
-      vc_4stVectorRef(slave_aw_bits_addr)->d,
-      vc_4stVectorRef(slave_aw_bits_id)->d,
-      vc_4stVectorRef(slave_aw_bits_size)->d,
-      vc_4stVectorRef(slave_aw_bits_len)->d,
+    vc_getScalar(slave_aw_valid),
+    vc_4stVectorRef(slave_aw_bits_addr)->d,
+    vc_4stVectorRef(slave_aw_bits_id)->d,
+    vc_4stVectorRef(slave_aw_bits_size)->d,
+    vc_4stVectorRef(slave_aw_bits_len)->d,
 
-      vc_getScalar(slave_w_valid),
-      vc_4stVectorRef(slave_w_bits_strb)->d,
-      slave_w_data,
-      vc_getScalar(slave_w_bits_last),
+    vc_getScalar(slave_w_valid),
+    vc_4stVectorRef(slave_w_bits_strb)->d,
+    slave_w_data,
+    vc_getScalar(slave_w_bits_last),
 
-      vc_getScalar(slave_r_ready),
-      vc_getScalar(slave_b_ready)
-    );
-  } catch(std::exception &e) {
-    vcs_fin = true;
-    fprintf(stderr, "Exception in tick(): %s\n", e.what());
-  }
+    vc_getScalar(slave_r_ready),
+    vc_getScalar(slave_b_ready)
+  );
+
   vc_putScalar(slave_aw_ready, slave->aw_ready());
   vc_putScalar(slave_ar_ready, slave->ar_ready());
   vc_putScalar(slave_w_ready, slave->w_ready());
@@ -308,8 +303,8 @@ extern VerilatedVcdC* tfp;
 #endif // VM_TRACE
 
 void tick() {
-  mmio_zynq_t* const m = dynamic_cast<mmio_zynq_t*>(master.get());
-  if (!m) throw std::runtime_error("wrong master type");
+  mmio_zynq_t* m;
+  assert(m = dynamic_cast<mmio_zynq_t*>(master.get()));
   top->clock = 1;
   top->eval();
 #if VM_TRACE

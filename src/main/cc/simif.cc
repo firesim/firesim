@@ -32,8 +32,7 @@ void simif_t::load_mem(std::string filename) {
   size_t addr = 0;
   std::string line;
   while (std::getline(file, line)) {
-    if (line.length() % chunk != 0)
-      throw std::runtime_error("line.length() %% chunk should be 0");
+    assert(line.length() % chunk == 0);
     for (int j = line.length() - chunk ; j >= 0 ; j -= chunk) {
       biguint_t data = 0;
       for (size_t k = 0 ; k < chunk ; k++) {
@@ -156,7 +155,7 @@ int simif_t::finish() {
 
 void simif_t::step(int n, bool blocking) {
   if (n == 0) return;
-  if (n < 0) throw std::invalid_argument("steps shoule be >= 0");
+  assert(n > 0);
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % tracelen == 0) {

@@ -1,4 +1,5 @@
 #include "sample.h"
+#include <cassert>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -128,7 +129,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       int depth = chain_depths[s];
       if (!signal.empty()) {
         char substr[1025];
-        if (width > 1024) throw std::out_of_range("width should be <= 1024");
+        assert(width <= 1024);
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
         biguint_t value(substr, 2);
@@ -155,8 +156,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       }
       start += width;
     }
-    if (start % DAISY_WIDTH > 0)
-      throw std::runtime_error("start %% DAISY_WIDTH should be 0");
+    assert(start % DAISY_WIDTH == 0);
   }
   // if (type == TRACE_CHAIN) dump_forces();
   return start;

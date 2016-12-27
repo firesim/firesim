@@ -85,7 +85,6 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
   }
 
   signal(SIGTERM, handle_sigterm);
-
 #ifdef VCS
   host = context_t::current();
   target_args_t *targs = new target_args_t(argc, argv);
@@ -121,44 +120,24 @@ int simif_emul_t::finish() {
 }
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
-  try {
-    master->write_req(addr, &data);
-    while(!master->write_resp()) {
+  master->write_req(addr, &data);
+  while(!master->write_resp()) {
 #ifdef VCS
-      target.switch_to();
-#else
-      ::tick();
-#endif
-    }
-  } catch(std::exception &e) {
-#ifdef VCS
-    expect(false, e.what());
-    vcs_fin = true;
     target.switch_to();
 #else
-    throw e;
+    ::tick();
 #endif
   }
 }
 
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
-  try {
-    master->read_req(addr);
-    while(!master->read_resp(&data)) {
+  master->read_req(addr);
+  while(!master->read_resp(&data)) {
 #ifdef VCS
-      target.switch_to();
-#else
-      ::tick();
-#endif
-    }
-  } catch(std::exception &e) {
-#ifdef VCS
-    expect(false, e.what());
-    vcs_fin = true;
     target.switch_to();
 #else
-    throw e;
+    ::tick();
 #endif
   }
   return data;
