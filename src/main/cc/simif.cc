@@ -127,12 +127,14 @@ int simif_t::finish() {
   }
 
   // dump samples
-  // std::ofstream file(sample_file.c_str());
+#if DAISY_WIDTH > 32
+  std::ofstream file(sample_file.c_str());
+#else
   FILE *file = fopen(sample_file.c_str(), "w");
+#endif
   sample_t::dump_chains(file);
   for (size_t i = 0 ; i < sample_num ; i++) {
     if (samples[i] != NULL) {
-      // file << *samples[i];
       samples[i]->dump(file);
       delete samples[i];
     }
@@ -151,6 +153,77 @@ int simif_t::finish() {
   fprintf(stderr, "\nSEED: %ld\n", seed);
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+static const size_t data_t_chunks = sizeof(data_t) / sizeof(uint32_t);
+
+void simif_t::poke(size_t id, biguint_t& value) {
+  if (log) fprintf(stderr, "* POKE %s.%s <- 0x%s *\n",
+    TARGET_NAME, INPUT_NAMES[id], value.str().c_str());
+  for (size_t i = 0 ; i < INPUT_CHUNKS[id] ; i++) {
+    data_t data = 0;
+    for (size_t j = 0 ; j < data_t_chunks ; j++) {
+      size_t idx = i * data_t_chunks + j;
+      if (idx < value.get_size())
+        data |= ((data_t) value[idx]) << (32 * j);
+    }
+    write(INPUT_ADDRS[id]+i, data);
+  }
+}
+
+void simif_t::peek(size_t id, biguint_t& value) {
+  uint32_t buf[16] = {0};
+  assert(OUTPUT_CHUNKS[id] <= 16);
+  for (size_t i = 0 ; i < OUTPUT_CHUNKS[id] ; i++) {
+    data_t data = read(OUTPUT_ADDRS[id] + i);
+    for (size_t j = 0 ; j < data_t_chunks ; j++) {
+      size_t idx = i * data_t_chunks + j;
+      buf[idx] = data >> (32 * j);
+    }
+  }
+  value = biguint_t(buf, OUTPUT_CHUNKS[id] * data_t_chunks);
+  if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n",
+    TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
+}
+
+bool simif_t::expect(size_t id, biguint_t& expected) {
+  biguint_t value;
+  peek(id, value);
+  bool pass = value == expected;
+  if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
+    TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(),
+    pass ? "PASS" : "FAIL");
+  return expect(pass, NULL);
+}
+
+void simif_t::read_mem(size_t addr, biguint_t& value) {
+#ifdef LOADMEM
+    write(LOADMEM_R_ADDRESS, addr);
+    uint32_t buf[MEM_DATA_CHUNK * data_t_chunks];
+    for (size_t i = 0 ; i < MEM_DATA_CHUNK; i++) {
+      data_t data = read(LOADMEM_R_DATA);
+      for (size_t j = 0 ; j < data_t_chunks ; j++) {
+        size_t idx = i * data_t_chunks + j;
+        buf[idx] = data >> 32 * j;
+      }
+    }
+    value = biguint_t(buf, MEM_DATA_CHUNK * data_t_chunks);
+#endif
+}
+
+void simif_t::write_mem(size_t addr, biguint_t& value) {
+#ifdef LOADMEM
+  write(LOADMEM_W_ADDRESS, addr);
+  for (size_t i = 0; i < MEM_DATA_CHUNK; i++) {
+    data_t data = 0;
+    for (size_t j = 0 ; j < data_t_chunks ; j++) {
+      size_t idx = i * data_t_chunks + j;
+      if (idx < value.get_size())
+        data |= ((data_t) value[idx]) << (32 * j);
+    }
+    write(LOADMEM_W_DATA, data);
+  }
+#endif
 }
 
 void simif_t::step(int n, bool blocking) {
@@ -190,7 +263,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
     for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
       size_t addr = IN_TR_ADDRS[id];
       size_t chunk = IN_TR_CHUNKS[id];
-      uint32_t *data = new uint32_t[chunk];
+      data_t *data = new data_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
@@ -201,7 +274,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
     for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
       size_t addr = OUT_TR_ADDRS[id];
       size_t chunk = OUT_TR_CHUNKS[id];
-      uint32_t *data = new uint32_t[chunk];
+      data_t *data = new data_t[chunk];
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
@@ -212,7 +285,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
   return sample;
 }
 
-static inline char* int_to_bin(char *bin, uint32_t value, size_t size) {
+static inline char* int_to_bin(char *bin, data_t value, size_t size) {
   for (size_t i = 0 ; i < size; i++) {
     bin[i] = ((value >> (size-1-i)) & 0x1) + '0';
   }

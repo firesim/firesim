@@ -16,6 +16,7 @@ abstract class PlatformShim extends Module {
     sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
     sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
     if (top.sim.enableSnapshot) sb append(genMacro("ENABLE_SNAPSHOT"))
+    sb.append(genMacro("data_t", "uint%d_t".format(top.sim.channelWidth)))
     top.genHeader(sb)(top.sim.channelWidth)
     sb.append("\n// Simulation Constants\n")
     headerConsts map { case (name, value) =>

@@ -45,16 +45,15 @@ void sim_mem_t::init() {
 }
 
 void sim_mem_t::tick() {
-  static const size_t MEM_CHUNKS = MEM_DATA_BITS / (8 * sizeof(uint32_t));
+  static const size_t MEM_CHUNKS = MEM_DATA_BITS / (8 * sizeof(data_t));
 #ifdef NASTIWIDGET_0
   static size_t num_reads = 0;
   static size_t num_writes = 0;
   if (num_reads || num_writes || this->stall()) {
-    uint32_t w_data_buf[16];
+    data_t w_data[MEM_CHUNKS];
     for (size_t i = 0 ; i < MEM_CHUNKS ; i++) {
-      w_data_buf[i] = sim->read(NASTIWIDGET_0(w_data[i]));
+      w_data[i] = sim->read(NASTIWIDGET_0(w_data[i]));
     }
-    biguint_t w_data(w_data_buf, MEM_CHUNKS);
 
     bool ar_ready = mem->ar_ready();
     bool aw_ready = mem->aw_ready();
@@ -83,7 +82,7 @@ void sim_mem_t::tick() {
 
       sim->read(NASTIWIDGET_0(w_valid)),
       sim->read(NASTIWIDGET_0(w_strb)),
-      w_data.get_data(),
+      w_data,
       sim->read(NASTIWIDGET_0(w_last)),
 
       r_ready,
@@ -101,7 +100,7 @@ void sim_mem_t::tick() {
     sim->write(NASTIWIDGET_0(r_id),     mem->r_id());
     sim->write(NASTIWIDGET_0(r_resp),   mem->r_resp());
     sim->write(NASTIWIDGET_0(r_last),   mem->r_last());
-    biguint_t r_data((const uint32_t*)  mem->r_data(), MEM_CHUNKS);
+    data_t* r_data = (data_t*) mem->r_data();
     for (size_t i = 0 ; i < MEM_CHUNKS ; i++) {
       sim->write(NASTIWIDGET_0(r_data[i]), r_data[i]);
     }
