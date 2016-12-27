@@ -91,7 +91,7 @@ void mm_dramsim2_t::tick(
 
   if (ar_fire) {
     uint64_t start_addr = (ar_addr / word_size) * word_size;
-    for (int i = 0; i <= ar_len; i++) {
+    for (size_t i = 0; i <= ar_len; i++) {
       auto dat = read(start_addr + i * word_size);
       rreq[ar_addr].push(mm_rresp_t(ar_id, dat, (i == ar_len)));
     }

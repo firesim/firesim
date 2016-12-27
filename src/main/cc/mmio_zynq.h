@@ -2,7 +2,7 @@
 #define __MMIO_ZYNQ_H
 
 #include "mmio.h"
-#include <string.h>
+#include <cstring>
 #include <vector>
 #include <queue>
 

@@ -1,6 +1,7 @@
 #ifndef __SIMIF_H
 #define __SIMIF_H
 
+#include <cassert>
 #include <cstring>
 #include <sstream>
 #include <queue>
@@ -142,16 +143,13 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
     inline void set_tracelen(size_t len) {
-      if (len <= 2) throw std::invalid_argument("len should be > 2");
+      assert(len > 2);
       tracelen = len;
 #ifdef ENABLE_SNAPSHOT
       write(TRACELEN_ADDR, len);
 #endif
     }
     inline size_t get_tracelen() { return tracelen; }
-    inline void assert_test(bool cond, std::string msg = "") {
-      if (!cond) throw std::runtime_error(msg.empty() ? "assert failed" : msg);
-    }
 
 #ifdef ENABLE_SNAPSHOT
   private:

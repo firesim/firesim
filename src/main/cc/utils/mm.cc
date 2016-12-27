@@ -5,8 +5,8 @@
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
-#include <stdexcept>
 #include <string>
+#include <cassert>
 
 void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
 {
@@ -31,8 +31,7 @@ std::vector<char> mm_t::read(uint64_t addr)
 
 void mm_t::init(size_t sz, int wsz, int lsz)
 {
-  if (!(wsz > 0 && lsz > 0 && (lsz & (lsz-1)) == 0 && lsz % wsz == 0))
-    throw std::logic_error("precondition error in mm_t::init");
+  assert(wsz > 0 && lsz > 0 && (lsz & (lsz-1)) == 0 && lsz % wsz == 0);
   word_size = wsz;
   line_size = lsz;
   data = new uint8_t[sz];
@@ -80,7 +79,7 @@ void mm_magic_t::tick(
 
   if (ar_fire) {
     uint64_t start_addr = (ar_addr / word_size) * word_size;
-    for (int i = 0; i <= ar_len; i++) {
+    for (size_t i = 0; i <= ar_len; i++) {
       auto dat = read(start_addr + i * word_size);
       rresp.push(mm_rresp_t(ar_id, dat, i == ar_len));
     }
@@ -102,8 +101,7 @@ void mm_magic_t::tick(
     if (store_count == 0) {
       store_inflight = false;
       bresp.push(store_id);
-      if (!w_last)
-        throw std::logic_error("store_count and w_last do not match in mm_magic_t::tick");
+      assert(w_last);
     }
   }
 
