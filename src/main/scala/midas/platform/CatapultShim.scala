@@ -39,9 +39,12 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
   val io = IO(new CatapultShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
   val headerConsts = List(
-    // "PCIE_WIDTH"      -> p(PCIeWidth),
-    "MMIO_WIDTH"      -> p(SoftRegKey).dataBits / 8,
-    "MEM_WIDTH"       -> 0 // Todo
+    "PCIE_WIDTH"         -> p(PCIeWidth),
+    "SOFTREG_ADDR_WIDTH" -> p(SoftRegKey).addrBits,
+    "SOFTREG_DATA_WIDTH" -> p(SoftRegKey).dataBits,
+    "SERIAL_WIDTH"       -> p(PCIeWidth) / 8,
+    "MMIO_WIDTH"         -> p(SoftRegKey).dataBits / 8,
+    "MEM_WIDTH"          -> 0 // Todo
   ) ++ top.headerConsts
 
   val sIdle :: sRead :: sWrite :: sWrAck:: Nil = Enum(UInt(), 4)
