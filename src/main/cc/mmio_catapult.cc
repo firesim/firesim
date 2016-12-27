@@ -1,6 +1,7 @@
 #include "mmio_catapult.h"
 #include "mm.h"
 #include "mm_dramsim2.h"
+#include <cassert>
 #include <memory>
 #ifdef VCS
 #include <DirectC.h>
@@ -67,11 +68,12 @@ extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mm_t> slave;
 
 void init(uint64_t memsize, bool dramsim) {
-  master = std::move(std::unique_ptr<mmio_t>(new mmio_catapult_t));
+  master.reset(new mmio_catapult_t);
   // TODO: slave = ?
 }
 
 #ifdef VCS
+static const size_t SERIAL_DATA_SIZE = SERIAL_WIDTH / sizeof(uint32_t);
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 extern context_t* host;
@@ -88,35 +90,53 @@ void tick(
 
   vc_handle pcie_out_bits,
   vc_handle pcie_out_valid,
-  vc_handle pcie_out_ready
+  vc_handle pcie_out_ready,
+
+  vc_handle softreg_req_bits_addr,
+  vc_handle softreg_req_bits_wdata,
+  vc_handle softreg_req_bits_wr,
+  vc_handle softreg_req_valid,
+  vc_handle softreg_req_ready,
+
+  vc_handle softreg_resp_bits_rdata,
+  vc_handle softreg_resp_valid,
+  vc_handle softreg_resp_ready
 ) {
-  mmio_catapult_t* const m = dynamic_cast<mmio_catapult_t*>(master.get());
-  if (!m) throw std::runtime_error("wrong master type");
+  mmio_catapult_t* m;
+  assert(m = dynamic_cast<mmio_catapult_t*>(master.get()));
   uint32_t master_resp_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
-    master_resp_data[i] = vc_4stVectorRef(pcie_out_bits)[i].d;
+    master_resp_data[i] = vc_4stVectorRef(softreg_resp_bits_rdata)[i].d;
   }
 
-  try {
-    m->tick(
-      vcs_rst,
-      vc_getScalar(pcie_in_ready),
-      vc_getScalar(pcie_out_valid),
-      master_resp_data
-    );
-  } catch(std::exception &e) {
-    vcs_fin = true;
-    fprintf(stderr, "Exception in tick(): %s\n", e.what());
+  m->tick(
+    vcs_rst,
+    vc_getScalar(softreg_req_ready),
+    vc_getScalar(softreg_resp_valid),
+    master_resp_data
+  );
+
+  vec32 d[SERIAL_DATA_SIZE];
+  for (size_t i = 0 ; i < SERIAL_DATA_SIZE ; i++) {
+    d[i].c = 0;
+    d[i].d = 0;
   }
+  vc_put4stVector(pcie_in_bits, d);
+  vc_putScalar(pcie_in_valid, false);
+  vc_putScalar(pcie_out_ready, false);
 
   vec32 md[MASTER_DATA_SIZE];
+  md[0].c = 0;
+  md[0].d = m->req_addr();
+  vc_put4stVector(softreg_req_bits_addr, md);
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
     md[i].c = 0;
-    md[i].d = ((uint32_t*) m->req_data())[i];
+    md[i].d = ((uint32_t*) m->req_wdata())[i];
   }
-  vc_put4stVector(pcie_in_bits, md);
-  vc_putScalar(pcie_in_valid, m->req_valid());
-  vc_putScalar(pcie_out_ready, m->resp_ready());
+  vc_put4stVector(softreg_req_bits_wdata, md);
+  vc_putScalar(softreg_req_bits_wr, m->req_wr());
+  vc_putScalar(softreg_req_valid,   m->req_valid());
+  vc_putScalar(softreg_resp_ready,  m->resp_ready());
 
   vc_putScalar(reset, vcs_rst);
   vc_putScalar(fin, vcs_fin);
@@ -136,8 +156,8 @@ extern VerilatedVcdC* tfp;
 #endif // VM_TRACE
 
 void tick() {
-  mmio_catapult_t* const m = dynamic_cast<mmio_catapult_t*>(master.get());
-  if (!m) throw std::runtime_error("wrong master type");
+  mmio_catapult_t* m;
+  assert(m = dynamic_cast<mmio_catapult_t*>(master.get()));
 
   top->clock = 1;
   top->eval();
