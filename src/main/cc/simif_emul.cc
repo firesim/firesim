@@ -1,6 +1,6 @@
 #include "simif_emul.h"
 #ifdef VCS
-#include "context.h"
+#include "midas_context.h"
 #include "vcs_main.h"
 #else
 #include <verilated.h>
@@ -16,8 +16,8 @@ std::unique_ptr<mmio_t> master;
 std::unique_ptr<mm_t> slave;
 
 #ifdef VCS
-context_t* host;
-context_t target;
+midas_context_t* host;
+midas_context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
 #else
@@ -86,7 +86,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 
   signal(SIGTERM, handle_sigterm);
 #ifdef VCS
-  host = context_t::current();
+  host = midas_context_t::current();
   target_args_t *targs = new target_args_t(argc, argv);
   target.init(target_thread, targs);
   vcs_rst = true;

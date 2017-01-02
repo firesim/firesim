@@ -2,7 +2,7 @@
 #include "vcs_main.h"
 
 void replay_vpi_t::init(int argc, char** argv) {
-  host = context_t::current();
+  host = midas_context_t::current();
   target_args_t *targs = new target_args_t(argc, argv);
   target.init(target_thread, targs);
   replay_t::init(argc, argv);

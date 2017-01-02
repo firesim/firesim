@@ -5,7 +5,7 @@
 #include <memory>
 #ifdef VCS
 #include <DirectC.h>
-#include "context.h"
+#include "midas_context.h"
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -76,7 +76,7 @@ void init(uint64_t memsize, bool dramsim) {
 static const size_t SERIAL_DATA_SIZE = SERIAL_WIDTH / sizeof(uint32_t);
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
-extern context_t* host;
+extern midas_context_t* host;
 extern bool vcs_fin;
 extern bool vcs_rst;
 extern "C" {
