@@ -3,16 +3,16 @@
 
 #include <pthread.h>
 
-class context_t
+class midas_context_t
 {
 public:
-  context_t();
-  ~context_t();
+  midas_context_t();
+  ~midas_context_t();
   void init(int (*func)(void*), void* arg);
   void switch_to();
-  static context_t* current();
+  static midas_context_t* current();
 private:
-  context_t* creator;
+  midas_context_t* creator;
   int (*func)(void*);
   void* arg;
 

@@ -14,7 +14,7 @@ $(dramsim_o): $(GEN_DIR)/%.obj: $(midas_dir)/dramsim2/%.cpp
 endif
 
 # Compile utility code
-lib_files := biguint mm mm_dramsim2 $(if $(filter $(CXX),cl),,context)
+lib_files := biguint mm mm_dramsim2 $(if $(filter $(CXX),cl),,midas_context)
 lib_cc    := $(addprefix $(util_dir)/, $(addsuffix .cc, $(lib_files)))
 ifneq ($(CXX),cl)
 lib_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(lib_files)))
