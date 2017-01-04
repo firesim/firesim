@@ -64,19 +64,19 @@ class simif_t
     virtual void write(size_t addr, data_t data) = 0;
     virtual data_t read(size_t addr) = 0;
 
-    inline void poke(size_t id, uint32_t value) { 
+    inline void poke(size_t id, data_t value) {
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
       write(INPUT_ADDRS[id], value);
     }
 
-    inline uint32_t peek(size_t id) {
-      uint32_t value = read(OUTPUT_ADDRS[id]); 
+    inline data_t peek(size_t id) {
+      data_t value = read(OUTPUT_ADDRS[id]);
       if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, OUTPUT_NAMES[id], value);
       return value;
     }
 
-    inline bool expect(size_t id, uint32_t expected) {
-      uint32_t value = peek(id);
+    inline bool expect(size_t id, data_t expected) {
+      data_t value = peek(id);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
         TARGET_NAME, OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");

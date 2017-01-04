@@ -124,19 +124,29 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
   }
 
-  defaultIOWidget.io.tReset.ready := ((0 until memIo.size) foldLeft Bool(true)){(ready, i) =>
-    val param = p alter Map(NastiKey -> p(MemNastiKey))
-    val model = (p(MemModelKey): @unchecked) match {
-      case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
-      case None => addWidget(new NastiWidget()(param), s"NastiWidget_$i")
+  // Instantiate endpoint widgets
+  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
+    ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
+      val widget = endpoint match {
+        case _: SimMemIO =>
+          val param = p alter Map(NastiKey -> p(MemNastiKey))
+          val model = (p(MemModelKey): @unchecked) match {
+            case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
+            case None => addWidget(new NastiWidget()(param), s"NastiWidget_$i")
+          }
+          arb.io.master(i) <> model.io.host_mem
+          model
+      }
+      widget.reset := reset || simReset
+      channels2Port(widget.io.hPort, endpoint(i))
+      // each widget should have its own reset queue
+      val resetQueue = Module(new Queue(Bool(), 4))
+      resetQueue.reset := reset || simReset
+      widget.io.tReset <> resetQueue.io.deq
+      resetQueue.io.enq.bits := defaultIOWidget.io.tReset.bits
+      resetQueue.io.enq.valid := defaultIOWidget.io.tReset.valid
+      ready && resetQueue.io.enq.ready
     }
-
-    arb.io.master(i) <> model.io.host_mem
-    model.reset := reset || simReset
-    model.io.tReset.bits := defaultIOWidget.io.tReset.bits
-    model.io.tReset.valid := defaultIOWidget.io.tReset.valid
-    channels2Port(model.io.tNasti, memIo(i))
-    ready && model.io.tReset.ready
   }
 
   genCtrlIO(io.ctrl, p(FpgaMMIOSize))

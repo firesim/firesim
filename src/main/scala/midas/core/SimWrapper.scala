@@ -13,7 +13,7 @@ import SimUtils._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
-trait SpecialIO[T <: Data] {
+trait Endpoint[T <: Data] {
   protected val channels = ArrayBuffer[T]()
   protected val wires = HashSet[Bits]()
   def size = channels.size
@@ -28,7 +28,7 @@ trait SpecialIO[T <: Data] {
     channels += channel
   }
 }
-class SimMemIO extends SpecialIO[NastiIO]
+class SimMemIO extends Endpoint[NastiIO]
 
 object SimUtils {
   def parsePorts(io: Data, reset: Option[Bool] = None) = {
@@ -185,16 +185,17 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
   }
 
   val mem = new SimMemIO
-  private def findSpecialIO(data: Data): Unit = data match {
+  val endpoints = Seq(mem)
+  private def findEndpoint(data: Data): Unit = data match {
     case m: NastiIO => mem add m
-    case b: Bundle => b.elements.unzip._2 foreach findSpecialIO
-    case v: Vec[_] => v.toSeq foreach findSpecialIO
+    case b: Bundle => b.elements.unzip._2 foreach findEndpoint
+    case v: Vec[_] => v.toSeq foreach findEndpoint
     case _ =>
   }
-  findSpecialIO(io)
+  findEndpoint(io)
 
-  val pokedIns = inputs filterNot (x => Seq(mem) exists (_(x._1)))
-  val peekedOuts = outputs filterNot (x => Seq(mem) exists (_(x._1)))
+  val pokedIns = inputs filterNot (x => endpoints exists (_(x._1)))
+  val peekedOuts = outputs filterNot (x => endpoints exists (_(x._1)))
 
   override def cloneType: this.type =
     new SimWrapperIO(io, reset).asInstanceOf[this.type]
