@@ -21,6 +21,7 @@ shim := $(shell echo $(PLATFORM) | cut -c 1 | tr [:lower:] [:upper:])$(shell ech
 
 ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
+o = o
 else
 ifneq ($(SHELL),sh.exe)
 PATH_CONVERTER ?= cygpath -w
@@ -29,6 +30,7 @@ else
 path = $(1)
 endif
 override CXXFLAGS := $(CXXFLAGS) /EHsc /I$(call path,$(midas_dir)/dramsim2)
+o = obj
 endif
 
 include $(util_dir)/utils.mk
@@ -52,36 +54,31 @@ driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_dir = $(midas_dir)/endpoints
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
+endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.$(o), $(endpoint_cc))
+$(endpoint_o): $(GEN_DIR)/%.$(o): $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
 ifndef ($(CXX),cl)
-endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.o, $(endpoint_cc))
-
-$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 else
-#TODO
+	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
 
 platform_files := sample simif simif_$(PLATFORM)
 platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
+platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .$(o), $(platform_files)))
+
+$(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
 ifneq ($(CXX),cl)
-platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
-
-$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(midas_dir)/%.h $(GEN_DIR)/$(DESIGN)-const.h
-	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 3, $^)
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 else
-platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .obj, $(platform_files)))
-
-$(platform_o): $(GEN_DIR)/%.obj: $(midas_dir)/%.cc $(midas_dir)/%.h $(GEN_DIR)/$(DESIGN)-const.h
-	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 3, $^))
+	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
 
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
 ifneq ($(CXX),cl)
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(DRIVER) $(driver_h) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o)
 else
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
 	mkdir.exe -p $(patsubst C:%,%,$(OUT_DIR))
 	$(CXX) $(CXXFLAGS) /FI$(call path,$<) -Fe$(call path,$@) \
 	$(foreach f, $(DRIVER) $(platform_o) $(endpoint_o) $(lib), $(call path,$(f))) \
@@ -166,8 +163,5 @@ $(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(lib) $(r
 
 vcs-replay: $(OUT_DIR)/$(DESIGN)-replay
 endif
-
-clean:
-	rm -rf $(util_dir)/*.o $(util_dir)/*.a
 
 .PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug vcs-replay clean
