@@ -8,15 +8,24 @@ import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
 
-abstract class MemModelConfig // TODO: delete it
-
-class MemModelIO(implicit p: Parameters) extends WidgetIO()(p){
-  val tNasti = Flipped(HostPort(new NastiIO, false))
+abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
+  def hPort: HostPortIO[Data]
   val tReset = Flipped(Decoupled(Bool()))
-  val host_mem = new NastiIO
 }
 
-abstract class MemModel(implicit p: Parameters) extends Widget()(p){
+abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
+  override def io: EndpointWidgetIO
+}
+
+abstract class MemModelConfig // TODO: delete it
+
+class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
+  val tNasti = Flipped(HostPort(new NastiIO, false))
+  val host_mem = new NastiIO
+  def hPort = tNasti
+}
+
+abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
   val io = IO(new MemModelIO)
   override def genHeader(base: BigInt, sb: StringBuilder) {
     super.genHeader(base, sb)
@@ -89,20 +98,20 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
 
 // Widget to handle NastiIO efficiently when mem models are not available
 class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
-  val steps = Module(new Queue(UInt(width=32), 2))
-  val stepCount = Reg(UInt(width=32))
+  val deltaBuf = Module(new Queue(UInt(width=32), 2))
+  val delta = Reg(UInt(width=32))
   val readCount = Reg(UInt(width=32))
   val writeCount = Reg(UInt(width=32))
-  val stall = !stepCount.orR && (readCount.orR || writeCount.orR)
+  val stall = !delta.orR && (readCount.orR || writeCount.orR)
   val (fire, cycles, targetReset) = elaborate(stall)
 
-  steps.io.deq.ready := stall
+  deltaBuf.io.deq.ready := stall
   when(reset || targetReset) {
-    stepCount := UInt(0)
-  }.elsewhen(steps.io.deq.valid && stall) {
-    stepCount := steps.io.deq.bits
-  }.elsewhen(fire && stepCount.orR) {
-    stepCount := stepCount - UInt(1)
+    delta := UInt(0)
+  }.elsewhen(deltaBuf.io.deq.valid && stall) {
+    delta := deltaBuf.io.deq.bits
+  }.elsewhen(fire && delta.orR) {
+    delta := delta - UInt(1)
   }
 
   when(reset || targetReset) {
@@ -172,7 +181,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
 
   genROReg(!targetFire, "done")
   genROReg(stall, "stall")
-  attachDecoupledSink(steps.io.enq, "steps")
+  attachDecoupledSink(deltaBuf.io.enq, "delta")
 
   genCRFile()
 
