@@ -156,9 +156,12 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
-    "MEM_ID_BITS"    -> arb.nastiExternal.idBits,
     "MEM_ADDR_BITS"  -> arb.nastiXAddrBits,
     "MEM_DATA_BITS"  -> arb.nastiXDataBits,
+    "MEM_ID_BITS"    -> arb.nastiXIdBits,
+    "MEM_SIZE_BITS"  -> arb.nastiXSizeBits,
+    "MEM_LEN_BITS"   -> arb.nastiXLenBits,
+    "MEM_RESP_BITS"  -> arb.nastiXRespBits,
     "MEM_STRB_BITS"  -> arb.nastiWStrobeBits
   )
 }

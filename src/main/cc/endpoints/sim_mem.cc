@@ -56,7 +56,7 @@ bool sim_mem_t::done() {
   return true;
 #endif
 }
-  
+
 void sim_mem_t::init() {
 #ifdef MidasMemModel
   write(MEMMODEL_0(readMaxReqs), 8);
@@ -69,28 +69,50 @@ void sim_mem_t::init() {
 #endif // SimpleLatencyPipe
 }
 
+static const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
+static const data_t id_mask = (1 << MEM_ID_BITS) - 1;
+static const data_t size_mask = (1 << MEM_SIZE_BITS) - 1;
+static const data_t len_mask = (1 << MEM_LEN_BITS) - 1;
+static const data_t strb_mask = (1 << MEM_STRB_BITS) - 1;
+
 void sim_mem_t::recv(sim_mem_data_t& data) {
 #ifdef NASTIWIDGET_0
-  data.ar.valid = read(NASTIWIDGET_0(ar_valid));
-  data.aw.valid = read(NASTIWIDGET_0(aw_valid));
-  data.w.valid = read(NASTIWIDGET_0(w_valid));
-  data.r.ready = read(NASTIWIDGET_0(r_ready));
-  data.b.ready = read(NASTIWIDGET_0(b_ready));
+  data_t valid = read(NASTIWIDGET_0(valid));
+  data.ar.valid = (valid >> 4) & 0x1;
+  data.aw.valid = (valid >> 3) & 0x1;
+  data.w.valid = (valid >> 2) & 0x1;
+  data.r.ready = (valid >> 1) & 0x1;
+  data.b.ready = valid & 0x1;
+
   if (data.ar.fire()) {
+#ifdef NASTIWIDGET_0_ar_bits
+    data_t bits = read(NASTIWIDGET_0(ar_bits));
+    data.ar.addr = (bits >> (MEM_ID_BITS + MEM_SIZE_BITS + MEM_LEN_BITS)) & addr_mask;
+#else
+    data_t bits = read(NASTIWIDGET_0(ar_meta));
     data.ar.addr = read(NASTIWIDGET_0(ar_addr));
-    data.ar.id = read(NASTIWIDGET_0(ar_id));
-    data.ar.size = read(NASTIWIDGET_0(ar_size));
-    data.ar.len = read(NASTIWIDGET_0(ar_len));
+#endif
+    data.ar.id = (bits >> (MEM_SIZE_BITS + MEM_LEN_BITS)) & id_mask;
+    data.ar.size = (bits >> MEM_LEN_BITS) & size_mask;
+    data.ar.len = bits & len_mask;
   }
+
   if (data.aw.fire()) {
+#ifdef NASTIWIDGET_0_aw_bits
+    data_t bits = read(NASTIWIDGET_0(aw_bits));
+    data.aw.addr = (bits >> (MEM_ID_BITS + MEM_SIZE_BITS + MEM_LEN_BITS)) & addr_mask;
+#else
+    data_t bits = read(NASTIWIDGET_0(aw_meta));
     data.aw.addr = read(NASTIWIDGET_0(aw_addr));
-    data.aw.id = read(NASTIWIDGET_0(aw_id));
-    data.aw.size = read(NASTIWIDGET_0(aw_size));
-    data.aw.len = read(NASTIWIDGET_0(aw_len));
+#endif
+    data.aw.id = (bits >> (MEM_SIZE_BITS + MEM_LEN_BITS)) & id_mask;
+    data.aw.size = (bits >> MEM_LEN_BITS) & size_mask;
+    data.aw.len = bits & len_mask;
   }
   if (data.w.fire()) {
-    data.w.strb = read(NASTIWIDGET_0(w_strb));
-    data.w.last = read(NASTIWIDGET_0(w_last));
+    data_t meta = read(NASTIWIDGET_0(w_meta));
+    data.w.strb = (meta >> 1) & strb_mask;
+    data.w.last = meta & 0x1;
     for (size_t i = 0 ; i < MEM_CHUNKS ; i++) {
       data.w.data[i] = read(NASTIWIDGET_0(w_data[i]));
     }
@@ -100,24 +122,30 @@ void sim_mem_t::recv(sim_mem_data_t& data) {
 
 void sim_mem_t::send(sim_mem_data_t& data) {
 #ifdef NASTIWIDGET_0
-  if (data.b.fire()) {
-    write(NASTIWIDGET_0(b_id),   data.b.id);
-    write(NASTIWIDGET_0(b_resp), data.b.resp);
-  }
   if (data.r.fire()) {
-    write(NASTIWIDGET_0(r_id),   data.r.id);
-    write(NASTIWIDGET_0(r_resp), data.r.resp);
-    write(NASTIWIDGET_0(r_last), data.r.last);
+    data_t meta = 0x0;
+    meta |= ((data_t)data.r.id) << (MEM_RESP_BITS + 1);
+    meta |= ((data_t)data.r.resp) << 1;
+    meta |= ((data_t)data.r.last);
+    write(NASTIWIDGET_0(r_meta), meta);
     for (size_t i = 0 ; i < MEM_CHUNKS ; i++) {
       write(NASTIWIDGET_0(r_data[i]), data.r.data[i]);
     }
   }
+  if (data.b.fire()) {
+    data_t meta = 0x0;
+    meta |= ((data_t)data.b.id) << MEM_RESP_BITS;
+    meta |= ((data_t)data.b.resp);
+    write(NASTIWIDGET_0(b_meta), meta);
+  }
 
-  write(NASTIWIDGET_0(aw_ready), data.aw.ready);
-  write(NASTIWIDGET_0(ar_ready), data.ar.ready);
-  write(NASTIWIDGET_0(w_ready),  data.w.ready);
-  write(NASTIWIDGET_0(b_valid),  data.b.valid);
-  write(NASTIWIDGET_0(r_valid),  data.r.valid);
+  data_t ready = 0x0;
+  ready |= ((data_t)data.ar.ready) << 4;
+  ready |= ((data_t)data.aw.ready) << 3;
+  ready |= ((data_t)data.w.ready) << 2;
+  ready |= ((data_t)data.r.valid) << 1;
+  ready |= ((data_t)data.b.valid);
+  write(NASTIWIDGET_0(ready), ready);
 #endif
 }
 
