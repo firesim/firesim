@@ -138,46 +138,72 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   io.host_mem.b.ready := Bool(false)
 
   // Generate control register file
-  val wdataChunks = (tNasti.w.bits.nastiXDataBits - 1) / io.ctrl.r.bits.nastiXDataBits + 1
-  val rdataChunks = (tNasti.r.bits.nastiXDataBits - 1) / io.ctrl.w.bits.nastiXDataBits + 1
-  genROReg(arBuf.io.deq.valid, "ar_valid")
-  genROReg(arBuf.io.deq.bits.addr, "ar_addr")
-  genROReg(arBuf.io.deq.bits.id, "ar_id")
-  genROReg(arBuf.io.deq.bits.size, "ar_size")
-  genROReg(arBuf.io.deq.bits.len, "ar_len")
-  Pulsify(genWORegInit(arBuf.io.deq.ready, "ar_ready", Bool(false)), 1)
+  val arMeta = Seq(arBuf.io.deq.bits.id, arBuf.io.deq.bits.size, arBuf.io.deq.bits.len)
+  val arMetaWidth = (arMeta foldLeft 0)(_ + _.getWidth)
+  assert(arMetaWidth <= io.ctrl.nastiXDataBits)
+  if (tNasti.ar.bits.addr.getWidth + arMetaWidth <= io.ctrl.nastiXDataBits) {
+    genROReg(Cat(arBuf.io.deq.bits.addr +: arMeta), "ar_bits")
+  } else {
+    genROReg(arBuf.io.deq.bits.addr, "ar_addr")
+    genROReg(Cat(arMeta), "ar_meta")
+  }
 
-  genROReg(awBuf.io.deq.valid, "aw_valid")
-  genROReg(awBuf.io.deq.bits.addr, "aw_addr")
-  genROReg(awBuf.io.deq.bits.id, "aw_id")
-  genROReg(awBuf.io.deq.bits.len, "aw_len")
-  genROReg(awBuf.io.deq.bits.size, "aw_size")
-  Pulsify(genWORegInit(awBuf.io.deq.ready, "aw_ready", Bool(false)), 1)
+  val awMeta = Seq(awBuf.io.deq.bits.id, awBuf.io.deq.bits.size, awBuf.io.deq.bits.len)
+  val awMetaWidth = (awMeta foldLeft 0)(_ + _.getWidth)
+  assert(awMetaWidth <= io.ctrl.nastiXDataBits)
+  if (tNasti.aw.bits.addr.getWidth + awMetaWidth <= io.ctrl.nastiXDataBits) {
+    genROReg(Cat(awBuf.io.deq.bits.addr +: awMeta), "aw_bits")
+  } else {
+    genROReg(awBuf.io.deq.bits.addr, "aw_addr")
+    genROReg(Cat(awMeta), "aw_meta")
+  }
 
-  genROReg(wBuf.io.deq.valid, "w_valid")
-  genROReg(wBuf.io.deq.bits.strb, "w_strb")
-  genROReg(wBuf.io.deq.bits.last, "w_last")
-  Pulsify(genWORegInit(wBuf.io.deq.ready, "w_ready", Bool(false)), 1)
+  val wMeta = Seq(wBuf.io.deq.bits.strb, wBuf.io.deq.bits.last)
+  val wMetaWidth = (wMeta foldLeft 0)(_ + _.getWidth)
+  assert(wMetaWidth <= io.ctrl.nastiXDataBits)
+  genROReg(Cat(wMeta), "w_meta")
+  val wdataChunks = (tNasti.w.bits.nastiXDataBits - 1) / io.ctrl.nastiXDataBits + 1
   val wdataRegs = Seq.fill(wdataChunks)(Reg(UInt()))
   val wdataAddrs = wdataRegs.zipWithIndex map {case (reg, i) =>
-    reg := wBuf.io.deq.bits.data(io.ctrl.r.bits.nastiXDataBits*(i+1)-1,
-                                 io.ctrl.r.bits.nastiXDataBits*i)
+    reg := wBuf.io.deq.bits.data >> UInt(io.ctrl.nastiXDataBits*i)
     attach(reg, s"w_data_$i")
   }
 
-  Pulsify(genWORegInit(rBuf.io.enq.valid, "r_valid", Bool(false)), 1)
-  genWOReg(rBuf.io.enq.bits.id, "r_id")
-  genWOReg(rBuf.io.enq.bits.resp, "r_resp")
-  genWOReg(rBuf.io.enq.bits.last, "r_last")
-  genROReg(rBuf.io.enq.ready, "r_ready")
+  val rMeta = Seq(rBuf.io.deq.bits.id, rBuf.io.deq.bits.resp, rBuf.io.deq.bits.last)
+  val rMetaWidth = (rMeta foldLeft 0)(_ + _.getWidth)
+  val rMetaReg = Reg(UInt(width=rMetaWidth))
+  assert(rMetaWidth <= io.ctrl.nastiXDataBits)
+  attach(rMetaReg, "r_meta")
+  rBuf.io.enq.bits.id := rMetaReg >> UInt(tNasti.r.bits.resp.getWidth + 1)
+  rBuf.io.enq.bits.resp := rMetaReg >> UInt(1)
+  rBuf.io.enq.bits.last := rMetaReg(0)
+  val rdataChunks = (tNasti.r.bits.nastiXDataBits - 1) / io.ctrl.nastiXDataBits + 1
   val rdataRegs = Seq.fill(rdataChunks)(Reg(UInt()))
   val rdataAddrs = rdataRegs.zipWithIndex map {case (reg, i) => attach(reg, s"r_data_$i")}
   rBuf.io.enq.bits.data := Cat(rdataRegs.reverse)
 
-  Pulsify(genWORegInit(bBuf.io.enq.valid, "b_valid", Bool(false)), 1)
-  genWOReg(bBuf.io.enq.bits.id, "b_id")
-  genWOReg(bBuf.io.enq.bits.resp, "b_resp")
-  genROReg(bBuf.io.enq.ready, "b_ready")
+  val bMeta = Seq(bBuf.io.deq.bits.id, bBuf.io.deq.bits.resp)
+  val bMetaWidth = (bMeta foldLeft 0)(_ + _.getWidth)
+  val bMetaReg = Reg(UInt(width=bMetaWidth))
+  assert(bMetaWidth <= io.ctrl.nastiXDataBits)
+  attach(bMetaReg, "b_meta")
+  bBuf.io.enq.bits.id := bMetaReg >> UInt(tNasti.b.bits.resp.getWidth)
+  bBuf.io.enq.bits.resp := bMetaReg
+
+  genROReg(Cat(
+    arBuf.io.deq.valid,
+    awBuf.io.deq.valid,
+    wBuf.io.deq.valid,
+    rBuf.io.enq.ready,
+    bBuf.io.enq.ready), "valid")
+  val readyReg = RegInit(UInt(0, 5))
+  arBuf.io.deq.ready := readyReg(4)
+  awBuf.io.deq.ready := readyReg(3)
+  wBuf.io.deq.ready := readyReg(2)
+  rBuf.io.enq.valid := readyReg(1)
+  bBuf.io.enq.valid := readyReg(0)
+  attach(readyReg, "ready")
+  when(readyReg.orR) { readyReg := UInt(0) }
 
   genROReg(!targetFire, "done")
   genROReg(stall, "stall")
