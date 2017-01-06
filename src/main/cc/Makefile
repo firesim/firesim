@@ -56,7 +56,7 @@ endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
 endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.$(o), $(endpoint_cc))
 $(endpoint_o): $(GEN_DIR)/%.$(o): $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
-ifndef ($(CXX),cl)
+ifneq ($(CXX),cl)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 else
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
