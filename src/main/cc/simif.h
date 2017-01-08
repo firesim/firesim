@@ -5,30 +5,30 @@
 #include <cstring>
 #include <sstream>
 #include <queue>
-#ifndef _WIN32
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
 #include "biguint.h"
 #include "sample.h"
+#ifndef _WIN32
+#include <sys/time.h>
+#define midas_time_t uint64_t
+#define TIME_DIV_CONST 1000000.0;
+#else
+#include <time.h>
+#define midas_time_t clock_t
+#define TIME_DIV_CONST CLOCKS_PER_SEC
+#endif
 
-static inline uint64_t timestamp() {
+static inline midas_time_t timestamp() {
 #ifndef _WIN32
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return 1000000L * tv.tv_sec + tv.tv_usec;
 #else
-  return (uint64_t) time(NULL);
+  return clock();
 #endif
 }
 
-static inline double diff_secs(uint64_t end, uint64_t start) {
-#ifndef _WIN32
-  return ((double)(end - start)) / 1000000.0;
-#else
-  return difftime((time_t)end, (time_t)start);
-#endif
+static inline double diff_secs(midas_time_t end, midas_time_t start) {
+  return ((double)(end - start)) / TIME_DIV_CONST;
 }
 
 typedef std::map< std::string, size_t > idmap_t;
@@ -125,8 +125,8 @@ class simif_t
     // profile information
     bool profile;
     size_t sample_count;
-    uint64_t sample_time;
-    uint64_t sim_start_time;
+    midas_time_t sample_time;
+    midas_time_t sim_start_time;
 
   protected:
     sample_t* read_snapshot();

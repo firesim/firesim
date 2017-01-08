@@ -232,7 +232,7 @@ void simif_t::step(int n, bool blocking) {
 #ifdef ENABLE_SNAPSHOT
   // reservoir sampling
   if (t % tracelen == 0) {
-    uint64_t start_time = 0;
+    midas_time_t start_time = 0;
     size_t record_id = t / tracelen;
     size_t sample_id = record_id < sample_num ? record_id : rand() % (record_id + 1);
     if (sample_id < sample_num) {
