@@ -17,7 +17,7 @@ OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
 
 # TODO: better way?
-shim := $(shell echo $(PLATFORM) | cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM) | cut -c 2-)Shim
+shim := $(shell echo $(PLATFORM)| cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM)| cut -c 2-)Shim
 
 ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
