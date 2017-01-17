@@ -158,6 +158,7 @@ void sim_mem_t::tick() {
     data.ar.ready = mem->ar_ready();
     data.aw.ready = mem->aw_ready();
     data.w.ready = mem->w_ready();
+
     this->recv(data);
 
     if (data.ar.fire()) num_reads++;
@@ -203,7 +204,7 @@ void sim_mem_t::tick() {
 
     this->send(data);
 
-    if (num_reads || num_writes) this->delta(1);
+    this->delta(1);
     if (data.r.fire() && data.r.last) num_reads--;
     if (data.b.fire()) num_writes--;
   }
