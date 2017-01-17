@@ -206,7 +206,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   when(readyReg.orR) { readyReg := UInt(0) }
 
   genROReg(!targetFire, "done")
-  genROReg(stall, "stall")
+  genROReg(stall && !deltaBuf.io.deq.valid, "stall")
   attachDecoupledSink(deltaBuf.io.enq, "delta")
 
   genCRFile()
