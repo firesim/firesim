@@ -25,6 +25,7 @@ public:
   biguint_t(const biguint_t& that);
   ~biguint_t() { if (size > 0) delete[] data; }
   uint32_t uint() const { return data[0]; }
+  uint64_t uint64() const { return ((uint64_t)data[1] << 32) | data[0]; }
   const uint32_t& operator[](size_t idx) const { return data[idx]; }
   std::string str();
   uint32_t* const get_data() const { return data; }
