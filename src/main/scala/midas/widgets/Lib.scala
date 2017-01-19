@@ -58,17 +58,19 @@ object ScanRegister {
 class SatUpDownCounterIO(val n: Int) extends Bundle {
   val inc = Input(Bool())
   val dec = Input(Bool())
-  val max = Input(UInt(log2Up(n).W))
+  val max = Input(UInt(log2Up(n+1).W))
   val value = Output(UInt())
   val full = Output(Bool())
   val empty = Output(Bool())
 }
-/** A saturating up down counter
+/** A saturating up down counter.
+  *
+  *  @param n The maximum value at which the counter will saturate.
   */
 class SatUpDownCounter(val n: Int) extends Module {
   require(n >= 1)
   val io = IO(new SatUpDownCounterIO(n))
-  val value =  Reg(init=UInt(0, log2Up(n)))
+  val value =  Reg(init=UInt(0, log2Up(n + 1)))
   io.value := value
   io.full := value >= io.max
   io.empty := value === 0.U
