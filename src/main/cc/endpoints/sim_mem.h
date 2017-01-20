@@ -56,6 +56,8 @@ public:
   virtual bool done();
   virtual bool stall();
 
+  void write_mem(uint64_t addr, void* data);
+
 private:
   mm_t* mem;
   size_t latency;

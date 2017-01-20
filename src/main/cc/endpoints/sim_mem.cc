@@ -210,3 +210,9 @@ void sim_mem_t::tick() {
   }
 #endif // NASTIWIDGET_0
 }
+
+void sim_mem_t::write_mem(uint64_t addr, void* data) {
+#ifdef NASTIWIDGET_0
+  mem->write(addr, (uint8_t*)data, -1, mem->get_word_size());
+#endif
+}
