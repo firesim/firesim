@@ -23,8 +23,7 @@ private class WCircuit(
   info: Info,
   modules: Seq[DefModule],
   main: String,
-  val sim: SimWrapperIO,
-  val mem: SimMemIO) extends Circuit(info, modules, main)
+  val sim: SimWrapperIO) extends Circuit(info, modules, main)
 
 private class TransformAnalysis(
     childMods: ChildMods,

@@ -1,6 +1,7 @@
 #include <sstream>
 #include <cstring>
 #include <cassert>
+#include <algorithm>
 #include "biguint.h"
 
 biguint_t::biguint_t(const char* v, size_t base) {
@@ -209,11 +210,11 @@ void biguint_t::operator&=(const biguint_t &that) {
 
 bool biguint_t::operator==(const biguint_t &that) {
   bool yes = true;
-  for (ssize_t i = 0 ; i < (ssize_t) (size - that.size) ; i++) {
+  for (int i = 0 ; i < (int) (size - that.size) ; i++) {
     yes = data[that.size + i] == 0;
     if (!yes) break;
   }
-  for (ssize_t i = 0 ; i < (ssize_t) (that.size - size) ; i++) {
+  for (int i = 0 ; i < (int) (that.size - size) ; i++) {
     yes = that.data[size + i] == 0;
     if (!yes) break;
   }

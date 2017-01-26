@@ -67,7 +67,7 @@ class MidasVerilogEmitter(conf: java.io.File) extends firrtl.VerilogEmitter {
       (if (rw.head == 'm') Seq(Seq(tab, s"input[${maskWidth-1}:0]", s"RW${i}_wmask")) else Nil)
     })
     val declares = Seq(Seq(tab, s"reg[${conf.width-1}:0] ram[${conf.depth-1}:0];")) ++
-      Seq(Seq("`ifndef SYNTHESIS"),
+      Seq(Seq("`ifdef RANDOMIZE_MEM_INIT"),
           Seq(tab, "integer initvar;"),
           Seq(tab, "initial begin"),
           Seq(tab, tab, "#0.002;"),

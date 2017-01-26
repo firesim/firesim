@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cassert>
 #include "sample.h"
 
 enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_FORCE };
@@ -50,35 +51,30 @@ public:
 
   virtual void replay() {
     reset(5);
-    try {
-      for (size_t k = 0 ; k < samples.size() ; k++) {
-        sample_t *sample = samples[k];
-        std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
-        reset(5);
-        for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
-          sample_inst_t* cmd = sample->get_cmds()[i];
-          if (step_t* p = dynamic_cast<step_t*>(cmd)) {
-            step(p->n);
-          }
-          if (load_t* p = dynamic_cast<load_t*>(cmd)) {
-            if (p->idx < 0) {
-              load(chains[p->type][p->id], p->value);
-            } else {
-              std::string signal = chains[p->type][p->id] + "[" + std::to_string(p->idx) + "]";
-              load(signal, p->value);
-            }
-          }
-          if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-            poke(chains[p->type][p->id], p->value);
-          }
-          if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-            pass &= expect(chains[p->type][p->id], p->value);
+    for (size_t k = 0 ; k < samples.size() ; k++) {
+      sample_t *sample = samples[k];
+      std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
+      reset(5);
+      for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
+        sample_inst_t* cmd = sample->get_cmds()[i];
+        if (step_t* p = dynamic_cast<step_t*>(cmd)) {
+          step(p->n);
+        }
+        if (load_t* p = dynamic_cast<load_t*>(cmd)) {
+          if (p->idx < 0) {
+            load(chains[p->type][p->id], p->value);
+          } else {
+            std::string signal = chains[p->type][p->id] + "[" + std::to_string(p->idx) + "]";
+            load(signal, p->value);
           }
         }
+        if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
+          poke(chains[p->type][p->id], p->value);
+        }
+        if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
+          pass &= expect(chains[p->type][p->id], p->value);
+        }
       }
-    } catch(std::exception& e) {
-      pass = false;
-      std::cerr << e.what() << std::endl;
     }
     is_exit = true;
   }
@@ -171,8 +167,7 @@ private:
   }
 
   inline void check_signal(const std::string& signal) {
-    if (replay_data.signal_map.find(signal) == replay_data.signal_map.end())
-      throw std::runtime_error(std::string("Signal map doesn't contain ") + signal);
+    assert(replay_data.signal_map.find(signal) != replay_data.signal_map.end());
   }
 
   inline void force(const std::string& node, biguint_t* data) {

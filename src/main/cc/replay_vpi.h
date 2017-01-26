@@ -3,7 +3,7 @@
 
 #include "vpi_user.h"
 #include "replay.h"
-#include "context.h"
+#include "midas_context.h"
 #include <queue>
 
 class replay_vpi_t: public replay_t<vpiHandle> {
@@ -19,8 +19,8 @@ public:
 private:
   std::queue<vpiHandle> forces;
 
-  context_t *host;
-  context_t target;
+  midas_context_t *host;
+  midas_context_t target;
 
   void put_value(vpiHandle& sig, std::string& value, PLI_INT32 flag);
   void get_value(vpiHandle& sig, std::string& value);

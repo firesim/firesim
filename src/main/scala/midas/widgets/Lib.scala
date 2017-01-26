@@ -1,12 +1,13 @@
 package midas
 package widgets
 
+// from rokcetchip
+import junctions._
+
 import chisel3._
 import chisel3.util._
-import junctions._
 import cde.{Parameters, Field}
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
   * Returns a Seq of the leaf nodes with their absolute/final direction.
@@ -183,8 +184,8 @@ case class RegisterEntry(node: Bits, name: String) extends MCRMapEntry
 
 
 class MCRFileMap() {
-  private val name2addr = HashMap.empty[String, Int]
-  private val regList = ArrayBuffer.empty[MCRMapEntry]
+  private val name2addr = LinkedHashMap[String, Int]()
+  private val regList = ArrayBuffer[MCRMapEntry]()
 
   def allocate(entry: MCRMapEntry): Int = {
     Predef.assert(!name2addr.contains(entry.name), "name already allocated")
@@ -198,23 +199,17 @@ class MCRFileMap() {
 
   def numRegs(): Int = regList.size
 
-  def bindRegs(mcrIO: MCRIO): Unit = {
-    (regList.toSeq.zipWithIndex) foreach { case(entry, addr) =>
-      entry match {
-        case (e: DecoupledSinkEntry) => mcrIO.bindDecoupledSink(e, addr)
-        case (e: DecoupledSourceEntry) => mcrIO.bindDecoupledSource(e, addr)
-        case (e: RegisterEntry) => mcrIO.bindReg(e, addr)
-      }
-    }
+  def bindRegs(mcrIO: MCRIO): Unit = regList.zipWithIndex foreach {
+    case (e: DecoupledSinkEntry, addr) => mcrIO.bindDecoupledSink(e, addr)
+    case (e: DecoupledSourceEntry, addr) => mcrIO.bindDecoupledSource(e, addr)
+    case (e: RegisterEntry, addr) => mcrIO.bindReg(e, addr)
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-    name2addr foreach {
-      case(regName: String, idx: Int) => {
-        val fullName = s"${prefix}_${regName}"
-        val address = base + idx
-        sb append s"#define ${fullName} ${address}\n"
-      }
+    name2addr.toList foreach { case (regName, idx) =>
+      val fullName = s"${prefix}_${regName}"
+      val address = base + idx
+      sb append s"#define ${fullName} ${address}\n"
     }
   }
 

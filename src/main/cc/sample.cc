@@ -1,4 +1,5 @@
 #include "sample.h"
+#include <cassert>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -6,15 +7,14 @@
 #ifdef ENABLE_SNAPSHOT
 std::array<std::vector<std::string>, CHAIN_NUM> sample_t::signals = {};
 std::array<std::vector<size_t>,      CHAIN_NUM> sample_t::widths  = {};
-std::array<std::vector<ssize_t>,     CHAIN_NUM> sample_t::depths = {};
+std::array<std::vector<int>,         CHAIN_NUM> sample_t::depths = {};
 size_t sample_t::chain_len[CHAIN_NUM] = {0};
 size_t sample_t::chain_loop[CHAIN_NUM] = {0};
-
 void dump_f(FILE *file,
            SAMPLE_INST_TYPE type,
            const size_t t,
            const size_t id,
-           uint32_t* const value,
+           data_t* const value,
            const size_t size,
            const int* const idx) {
   fprintf(file, "%u %zu %zu ", type, t, id);
@@ -30,16 +30,16 @@ std::ostream& dump_s(std::ostream &os,
                      SAMPLE_INST_TYPE type,
                      const size_t t,
                      const size_t id,
-                     uint32_t* const value,
+                     data_t* const value,
                      const size_t size,
                      const int* const idx) {
   os << type << " " << t << " " << id << " ";
   os << std::hex << value[size-1];
   for (int i = size - 2 ; i >= 0 ; i--) {
-    os << std::setfill('0') << std::setw(HEX_WIDTH) << value[i];
+    os << std::setfill('0') << std::setw(2*sizeof(data_t)) << value[i];
   }
   os << std::setfill(' ') << std::setw(0) << std::dec;
-  if (idx) os << *idx;
+  if (idx) os << " " << *idx;
   os << std::endl;
   return os;
 }
@@ -47,7 +47,7 @@ std::ostream& dump_s(std::ostream &os,
 void sample_t::init_chains(std::string filename) {
   std::fill(signals.begin(), signals.end(), std::vector<std::string>());
   std::fill(widths.begin(),  widths.end(),  std::vector<size_t>());
-  std::fill(depths.begin(), depths.end(), std::vector<ssize_t>());
+  std::fill(depths.begin(), depths.end(), std::vector<int>());
   std::ifstream file(filename.c_str());
   if (!file) {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
@@ -60,7 +60,7 @@ void sample_t::init_chains(std::string filename) {
     std::string signal;
     iss >> type >> signal;
     size_t width;
-    ssize_t depth;
+    int depth;
     iss >> width >> depth;
     if (signal == "null") signal = "";
     signals[type].push_back(signal);
@@ -120,34 +120,46 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
   size_t t = static_cast<size_t>(type);
   std::vector<std::string> &chain_signals = signals[t];
   std::vector<size_t> &chain_widths = widths[t];
-  std::vector<ssize_t> &chain_depths = depths[t];
+  std::vector<int> &chain_depths = depths[t];
   for (size_t i = 0 ; i < chain_loop[type] ; i++) {
     for (size_t s = 0 ; s < chain_signals.size() ; s++) {
       std::string &signal = chain_signals[s];
       size_t width = chain_widths[s];
-      ssize_t depth = chain_depths[s];
+      int depth = chain_depths[s];
       if (!signal.empty()) {
         char substr[1025];
-        if (width > 1024) throw std::out_of_range("width should be <= 1024");
+        assert(width <= 1024);
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
         biguint_t value(substr, 2);
-        uint32_t* data = new uint32_t[value.get_size()];
-        // memcpy(data, value.get_data(), value.get_size() * sizeof(uint32_t));
+#if DAISY_WIDTH > 32
+        const size_t ratio = sizeof(data_t) / sizeof(uint32_t);
+        const size_t size = (value.get_size() - 1) / ratio + 1;
+        data_t* data = new data_t[size](); // zero-out
+        // TODO: better way to copy?
+        for (size_t i = 0 ; i < size ; i++) {
+          for (size_t j = 0 ; j < ratio ; j++) {
+            data[i] |= ((data_t)value[i * ratio + j]) << 32 * j;
+          }
+        }
+#else
+	const size_t size = value.get_size();
+        data_t* data = new data_t[size];
         std::copy(value.get_data(), value.get_data() + value.get_size(), data);
+#endif
         switch(type) {
           case TRACE_CHAIN:
-            // add_force(new force_t(s, data, value.get_size()));
+            // add_force(new force_t(s, data, size));
             break;
           case REGS_CHAIN:
-            add_cmd(new load_t(type, s, data, value.get_size(), -1));
+            add_cmd(new load_t(type, s, data, size, -1));
             break;
           case SRAM_CHAIN:
-            if (static_cast<ssize_t>(i) < depth)
-              add_cmd(new load_t(type, s, data, value.get_size(), i));
+            if (static_cast<int>(i) < depth)
+              add_cmd(new load_t(type, s, data, size, i));
             break;
           case CNTR_CHAIN:
-            add_cmd(new count_t(type, s, data, value.get_size()));
+            add_cmd(new count_t(type, s, data, size));
             break;
           default:
             break;
@@ -155,8 +167,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
       }
       start += width;
     }
-    if (start % DAISY_WIDTH > 0)
-      throw std::runtime_error("start %% DAISY_WIDTH should be 0");
+    assert(start % DAISY_WIDTH == 0);
   }
   // if (type == TRACE_CHAIN) dump_forces();
   return start;
@@ -172,7 +183,7 @@ void sample_t::add_force(force_t* f) {
 }
 
 void sample_t::dump_forces() {
-  for (ssize_t i = force_bins.size() - 1 ; i >= 0 ; i--) {
+  for (int i = force_bins.size() - 1 ; i >= 0 ; i--) {
     std::vector<force_t*> force_bin = force_bins[i];
     for (size_t k = 0 ; k < force_bin.size() ; k++) {
       cmds.push_back(force_bin[k]);
