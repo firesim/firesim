@@ -13,34 +13,33 @@ class DaisyControllerIO(daisyIO: DaisyBundle)(implicit p: Parameters) extends Wi
 class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new DaisyControllerIO(daisyIF))
 
-  def daisyAddresses(): Map[ChainType.Value, Int] = ChainType.values.toList map {t => (t -> getCRAddr(s"${t.toString}_0"))} toMap
-
-  override def genHeader(base: BigInt, sb: StringBuilder) {
-    sb append "#define SRAM_RESTART_ADDR %d\n".format(base)
-    sb append "enum CHAIN_TYPE {%s,CHAIN_NUM};\n".format(
-      ChainType.values.toList map (t => s"${t.toString.toUpperCase}_CHAIN") mkString ",")
-    sb append "static const unsigned CHAIN_SIZE[CHAIN_NUM] = {%s};\n".format(
-      ChainType.values.toList map (t => io.daisy(t).size) mkString ",")
-    sb append "static const unsigned CHAIN_ADDR[CHAIN_NUM] = {%s};\n".format(
-      ChainType.values.toList map (t => base + getCRAddr(s"${t.toString.toUpperCase}_0")) mkString ",")
-  }
-
-  def bindDaisyChain[T <: DaisyData](daisy: Vec[T], name: String): Unit = {
-    val inputs = daisy.toSeq map (_.in)
-    inputs.zipWithIndex foreach { case (channel, idx) =>
-      attachDecoupledSink(channel, s"${name}_IN_$idx")
-    }
-    val outputs = daisy.toSeq map (_.out)
-    outputs.zipWithIndex foreach { case (channel, idx) =>
-      attachDecoupledSource(channel, s"${name}_$idx")
-    }
-  }
-
   // Handle SRAM restarts
   io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
     Pulsify(genWORegInit(sram.restart, s"SRAM_RESTART_$i", Bool(false)), pulseLength = 1)
   }
-  ChainType.values foreach { cType => bindDaisyChain(io.daisy(cType), cType.toString.toUpperCase) }
+
+  def bindDaisyChain[T <: DaisyData](daisy: Vec[T], name: String) = {
+    val inAddrs = (daisy.toSeq map (_.in)).zipWithIndex map {
+      case (channel, idx) => attachDecoupledSink(channel, s"${name}_IN_$idx")
+    }
+    val outAddrs = (daisy.toSeq map (_.out)).zipWithIndex map {
+      case (channel, idx) => attachDecoupledSource(channel, s"${name}_OUT_$idx")
+    }
+    (inAddrs, outAddrs)
+  }
+  val chains = ChainType.values.toList
+  val names = (chains map { t => t -> t.toString.toUpperCase }).toMap
+  val addrs = (chains map { t => t -> bindDaisyChain(io.daisy(t), names(t)) }).toMap
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    headerComment(sb)
+    sb.append(genMacro("DAISY_WIDTH", UInt32(daisyIF.daisyWidth)))
+    sb.append(genMacro("SRAM_RESTART_ADDR", UInt32(base)))
+    sb.append(genEnum("CHAIN_TYPE", (chains map (t => s"${names(t)}_CHAIN")) :+ "CHAIN_NUM"))
+    sb.append(genArray("CHAIN_SIZE", chains map (t => UInt32(io.daisy(t).size))))
+    sb.append(genArray("CHAIN_ADDR", chains map (t => UInt32(base + addrs(t)._2.head))))
+  }
 
   genCRFile()
 }

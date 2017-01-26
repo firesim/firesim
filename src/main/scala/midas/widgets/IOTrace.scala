@@ -36,18 +36,19 @@ class IOTraceWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     import CppGenerationUtils._
 
     sb.append(genComment("Input Traces"))
-    sb.append(genMacro("IN_TR_SIZE", UInt64(inputs.size)))
+    sb.append(genMacro("IN_TR_SIZE", UInt32(inputs.size)))
     sb.append(genArray("IN_TR_ADDRS", inputAddrs map (off => UInt32(base + off))))
     sb.append(genArray("IN_TR_NAMES", inputs.unzip._1 map CStrLit))
     sb.append(genArray("IN_TR_CHUNKS", inputs.unzip._2 map (UInt32(_))))
 
     sb.append(genComment("Output Traces"))
-    sb.append(genMacro("OUT_TR_SIZE", UInt64(outputs.size)))
+    sb.append(genMacro("OUT_TR_SIZE", UInt32(outputs.size)))
     sb.append(genArray("OUT_TR_ADDRS", outputAddrs map (off => UInt32(base + off))))
     sb.append(genArray("OUT_TR_NAMES", outputs.unzip._1 map CStrLit))
     sb.append(genArray("OUT_TR_CHUNKS", outputs.unzip._2 map (UInt32(_))))
 
-    sb.append(genMacro("TRACELEN_ADDR", UInt64(base+traceLenAddr)))
+    sb.append(genMacro("TRACELEN_ADDR", UInt32(base+traceLenAddr)))
+    sb.append(genMacro("TRACE_MAX_LEN", UInt32(BigInt(p(midas.core.TraceMaxLen)))))
   }
 
   genCRFile()

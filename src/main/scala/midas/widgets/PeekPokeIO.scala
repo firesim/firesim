@@ -44,10 +44,13 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val numOutputChannels = outputs.unzip._2.reduce(_ + _)
   val io = IO(new PeekPokeIOWidgetIO(numInputChannels, numOutputChannels))
 
-  val resetQueue = Module(new Queue(Bool(), 4))
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
   val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
+
+  // needs back pressure from reset queues
+  val fromHostReady = io.ins.foldLeft(io.tReset.ready)(_ && _.ready)
+  val toHostValid = io.outs.foldLeft(io.tReset.ready)(_ && _.valid)
 
   io.idle := iTokensAvailable === UInt(0) && oTokensPending === UInt(0)
 
@@ -56,7 +59,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val reg = Reg(channel.bits)
     reg suggestName ("target_" + name)
     channel.bits := reg
-    channel.valid := iTokensAvailable =/= UInt(0)
+    channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
     attach(reg, name)
   }) _
 
@@ -64,15 +67,12 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val channel = io.outs(offset)
     val reg = RegEnable(channel.bits, channel.fire)
     reg suggestName ("target_" + name)
-    channel.ready := oTokensPending =/= UInt(0)
+    channel.ready := oTokensPending =/= UInt(0) && toHostValid
     attach(reg, name)
   }) _
 
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
-
-  val fromHostReady = io.ins.foldLeft(resetQueue.io.enq.ready)(_ && _.ready)
-  val toHostValid = io.outs.foldLeft(Bool(true))(_ && _.valid)
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
     iTokensAvailable := iTokensAvailable - UInt(1)
@@ -90,11 +90,10 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   io.step.ready := io.idle
 
   // Target reset connection
-  io.tReset <> resetQueue.io.deq
   // Hack: insert high to resetQueue as initial tokens
   val resetNext = RegNext(reset)
-  resetQueue.io.enq.bits := resetNext || io.ins(0).bits(0)
-  resetQueue.io.enq.valid := resetNext || io.ins(0).valid
+  io.tReset.bits := resetNext || io.ins(0).bits(0)
+  io.tReset.valid := resetNext || io.ins(0).valid
 
   genCRFile()
 

@@ -2,7 +2,6 @@
 
 #include "mm_dramsim2.h"
 #include "mm.h"
-#include <DRAMSim.h>
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -45,7 +44,12 @@ void mm_dramsim2_t::init(size_t sz, int wsz, int lsz)
   dummy_data.resize(word_size);
 
   assert(size % (1024*1024) == 0);
-  mem = getMemorySystemInstance("DDR3_micron_64M_8B_x4_sg15.ini", "system.ini", "dramsim2_ini", "results", size/(1024*1024));
+#ifndef _WIN32
+  std::string pwd = "dramsim2_ini";
+#else
+  std::string pwd = "";
+#endif
+  mem = new MultiChannelMemorySystem("DDR3_micron_64M_8B_x4_sg15.ini", "system.ini", pwd, "results", size/(1024*1024));
 
   TransactionCompleteCB *read_cb = new Callback<mm_dramsim2_t, void, unsigned, uint64_t, uint64_t>(this, &mm_dramsim2_t::read_complete);
   TransactionCompleteCB *write_cb = new Callback<mm_dramsim2_t, void, unsigned, uint64_t, uint64_t>(this, &mm_dramsim2_t::write_complete);
@@ -87,7 +91,7 @@ void mm_dramsim2_t::tick(
 
   if (ar_fire) {
     uint64_t start_addr = (ar_addr / word_size) * word_size;
-    for (int i = 0; i <= ar_len; i++) {
+    for (size_t i = 0; i <= ar_len; i++) {
       auto dat = read(start_addr + i * word_size);
       rreq[ar_addr].push(mm_rresp_t(ar_id, dat, (i == ar_len)));
     }

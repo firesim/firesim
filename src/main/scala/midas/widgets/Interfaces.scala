@@ -43,7 +43,7 @@ class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
 {
   val fromHost = Flipped(new HostReadyValid)
   val toHost = new HostReadyValid
-  val hBits  = if (tokenFlip) Flipped(gen.cloneType) else gen cloneType
+  val hBits  = if (tokenFlip) Flipped(gen.cloneType) else gen.cloneType
   override def cloneType: this.type =
     new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
 }

@@ -1,8 +1,8 @@
-#ifndef __MMIO_H
-#define __MMIO_H
+#ifndef __MMIO_ZYNQ_H
+#define __MMIO_ZYNQ_H
 
-#include <string.h>
-#include <stdint.h>
+#include "mmio.h"
+#include <cstring>
 #include <vector>
 #include <queue>
 
@@ -37,16 +37,13 @@ struct mmio_resp_data_t
     id(id_), data(data_), last(last_) { }
 };
 
-class mmio_t
+class mmio_zynq_t: public mmio_t
 {
 public:
-  mmio_t() {
-    read_inflight = false;
-    write_inflight = false;
+  mmio_zynq_t() {
+    dummy_data.resize(MMIO_WIDTH);
   }
 
-  void init(size_t data_bits);
-  
   bool aw_valid() { return !aw.empty() && !write_inflight; }
   size_t aw_id() { return aw_valid() ? aw.front().id : 0; }
   uint64_t aw_addr() { return aw_valid() ? aw.front().addr : 0; }
@@ -67,9 +64,6 @@ public:
   bool r_ready() { return read_inflight; }
   bool b_ready() { return write_inflight; }
 
-  void read_req(uint64_t addr, size_t size);
-  void write_req(uint64_t addr, size_t size, void* data, size_t strb);
-
   void tick
   (
     bool reset,
@@ -84,8 +78,10 @@ public:
     bool b_valid
   );
 
-  bool read_resp(void *data);
-  bool write_resp();
+  virtual void read_req(uint64_t addr);
+  virtual void write_req(uint64_t addr, void* data);
+  virtual bool read_resp(void *data);
+  virtual bool write_resp();
 
 private:
   std::queue<mmio_req_addr_t> ar;
@@ -99,4 +95,4 @@ private:
   std::vector<char> dummy_data;
 };
 
-#endif // __MMIO_H
+#endif // __MMIO_ZYNQ_H
