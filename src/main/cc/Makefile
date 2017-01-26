@@ -121,8 +121,6 @@ VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp \
 	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS) -lmidas" \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
-	+define+PRINTF_COND=!emul.reset \
-	+define+STOP_COND=!emul.reset \
 	+define+RANDOMIZE_MEM_INIT \
 	+define+RANDOMIZE_REG_INIT \
 	+define+RANDOMIZE_GARBAGE_ASSIGN \
@@ -134,7 +132,8 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v
 	rm -rf $(GEN_DIR)/$(DESIGN).csrc
 	rm -rf $(OUT_DIR)/$(DESIGN).daidir
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN).csrc +vc+list \
-	+define+STOP_COND=!emul.reset -CFLAGS "-include $(word 2, $^)" \
+	+define+STOP_COND=!emul.reset +define+PRINTF_COND=!emul.reset \
+	-CFLAGS "-include $(word 2, $^)" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(DRIVER) $(emul_cc) $(endpoint_cc)
 
 $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
@@ -142,7 +141,8 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(
 	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
 	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc +vc+list \
-	+define+STOP_COND=!emul.reset +define+DEBUG -CFLAGS "-include $(word 2, $^)" \
+	+define+STOP_COND=!emul.reset +define+PRINTF_COND=!emul.reset +define+DEBUG \
+	-CFLAGS "-include $(word 2, $^)" \
 	-o $@ $< $(GEN_DIR)/$(DESIGN)-const.vh $(emul_v) $(lib) $(DRIVER) $(emul_cc) $(endpoint_cc)
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
