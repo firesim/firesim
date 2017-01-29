@@ -10,7 +10,9 @@ r_dir = $(abspath ../resources)
 # 3) GEN_DIR: Directory for generated source code
 # 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
 # 5) DRIVER: software driver written by user (not necessary for replay)
-# 6) CLOCK_PERIOD(optional): clock period of tests
+# 6) TARGET_VERILOG: verilog file to be replay (by default $(GEN_DIR)/$(DESISN).v)
+# 7) REPLAY_BINARY: binary file for replay (by default $(OUT_DIR)/$(DESIGN)-reply)
+# 8) CLOCK_PERIOD(optional): clock period of tests
 ########################################################################
 PLATFORM ?= zynq
 OUT_DIR ?= $(GEN_DIR)
@@ -149,19 +151,21 @@ vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 # Compile VCS replay binary
+TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v
+REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
 replay_files := sample replay_vpi
 replay_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(replay_files) replay))
 replay_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(replay_files)))
 
-$(OUT_DIR)/$(DESIGN)-replay: $(GEN_DIR)/$(DESIGN).v $(v_dir)/replay.v $(lib) $(replay_cc) $(replay_h)
+$(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(lib) $(replay_cc) $(replay_h)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/$(DESIGN)-replay.csrc
-	rm -rf $(OUT_DIR)/$(DESIGN)-replay.daidir
-	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(DESIGN)-replay.csrc +vpi -P $(r_dir)/vpi.tab \
+	rm -rf $(GEN_DIR)/$(notdir $@).csrc
+	rm -rf $(OUT_DIR)/$(notdir $@).daidir
+	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(notdir $@).csrc +vpi -P $(r_dir)/vpi.tab \
 	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
-	-o $@ $< $(word 2, $^) $(lib) $(replay_cc)
+	-o $@ $< $(TARGET_VERILOG) $(lib) $(replay_cc)
 
-vcs-replay: $(OUT_DIR)/$(DESIGN)-replay
+vcs-replay: $(REPLAY_BINARY)
 endif
 
 .PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug vcs-replay clean
