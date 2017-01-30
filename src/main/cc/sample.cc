@@ -86,10 +86,12 @@ void sample_t::init_chains(std::string filename) {
 
 void sample_t::dump_chains(FILE* file) {
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
-    std::vector<std::string> &chain_signals = signals[t];
+    auto chain_signals = signals[t];
+    auto chain_widths = widths[t];
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
-      std::string &signal = chain_signals[id];
-      fprintf(file, "%u %zu %s\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str());
+      auto signal = chain_signals[id];
+      auto width = chain_widths[id];
+      fprintf(file, "%u %zu %s %zu\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str(), width);
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -102,10 +104,12 @@ void sample_t::dump_chains(FILE* file) {
 
 void sample_t::dump_chains(std::ostream& os) {
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
-    std::vector<std::string> &chain_signals = signals[t];
+    auto chain_signals = signals[t];
+    auto chain_widths = widths[t];
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
-      std::string &signal = chain_signals[id];
-      os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << std::endl;
+      auto signal = chain_signals[id];
+      auto width = chain_widths[id];
+      os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << width << std::endl;
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -118,14 +122,14 @@ void sample_t::dump_chains(std::ostream& os) {
 
 size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
   size_t t = static_cast<size_t>(type);
-  std::vector<std::string> &chain_signals = signals[t];
-  std::vector<size_t> &chain_widths = widths[t];
-  std::vector<int> &chain_depths = depths[t];
+  auto chain_signals = signals[t];
+  auto chain_widths = widths[t];
+  auto chain_depths = depths[t];
   for (size_t i = 0 ; i < chain_loop[type] ; i++) {
     for (size_t s = 0 ; s < chain_signals.size() ; s++) {
-      std::string &signal = chain_signals[s];
-      size_t width = chain_widths[s];
-      int depth = chain_depths[s];
+      auto signal = chain_signals[s];
+      auto width = chain_widths[s];
+      auto depth = chain_depths[s];
       if (!signal.empty()) {
         char substr[1025];
         assert(width <= 1024);
@@ -184,7 +188,7 @@ void sample_t::add_force(force_t* f) {
 
 void sample_t::dump_forces() {
   for (int i = force_bins.size() - 1 ; i >= 0 ; i--) {
-    std::vector<force_t*> force_bin = force_bins[i];
+    auto force_bin = force_bins[i];
     for (size_t k = 0 ; k < force_bin.size() ; k++) {
       cmds.push_back(force_bin[k]);
     }
