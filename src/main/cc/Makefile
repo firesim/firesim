@@ -1,5 +1,6 @@
 midas_dir = $(abspath .)
 util_dir = $(midas_dir)/utils
+replay_dir = $(midas_dir)/replay
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
 
@@ -169,27 +170,8 @@ $(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN)-const.h $(
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
-# Compile VCS replay binary
-TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v
-REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
-replay_files := sample replay_vpi
-replay_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(replay_files) replay))
-replay_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(replay_files)))
+include $(replay_dir)/replay.mk
 
-ifneq ($(filter $(MAKECMDGOALS),vcs-replay $(REPLAY_BINARY)),)
-$(info verilog files: $(TARGET_VERILOG))
-$(info replay binary: $(REPLAY_BINARY))
 endif
 
-$(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(lib) $(replay_cc) $(replay_h)
-	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/$(notdir $@).csrc
-	rm -rf $(OUT_DIR)/$(notdir $@).daidir
-	$(VCS) $(VCS_FLAGS) -Mdir=$(GEN_DIR)/$(notdir $@).csrc +vpi -P $(r_dir)/vpi.tab \
-	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
-	-o $@ $< $(TARGET_VERILOG) $(lib) $(replay_cc)
-
-vcs-replay: $(REPLAY_BINARY)
-endif
-
-.PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug vcs-replay clean
+.PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug
