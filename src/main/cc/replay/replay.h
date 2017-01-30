@@ -11,11 +11,6 @@
 
 enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_FORCE };
 
-template<class T> struct replay_data_t {
-  std::vector<T> signals;
-  std::map<std::string, size_t> signal_map;
-};
-
 template <class T> class replay_t {
 public:
   replay_t(): cycles(0L), log(false), pass(true), is_exit(false) { }
@@ -32,16 +27,6 @@ public:
     }
   }
  
-  virtual int finish() {
-    fprintf(stderr, "[%s] Runs %" PRIu64 " cycles\n",
-      pass ? "PASS" : "FAIL", cycles);
-    for (size_t i = 0 ; i < samples.size() ; i++) {
-      delete samples[i];
-    }
-    samples.clear();
-    return exitcode();
-  }
-
   void reset(size_t n) {
     biguint_t one = 1;
     size_t id = replay_data.signal_map["reset"];
@@ -79,11 +64,24 @@ public:
     is_exit = true;
   }
 
-protected:
-  replay_data_t<T> replay_data;
+  virtual int finish() {
+    fprintf(stderr, "[%s] Runs %" PRIu64 " cycles\n",
+      pass ? "PASS" : "FAIL", cycles);
+    for (size_t i = 0 ; i < samples.size() ; i++) {
+      delete samples[i];
+    }
+    samples.clear();
+    return exitcode();
+  }
 
-  bool done() { return is_exit; }
-  int exitcode() { return pass ? EXIT_SUCCESS : EXIT_FAILURE; }
+protected:
+  struct {
+    std::vector<T> signals;
+    std::map<std::string, size_t> signal_map;
+  } replay_data;
+
+  inline bool done() { return is_exit; }
+  inline int exitcode() { return pass ? EXIT_SUCCESS : EXIT_FAILURE; }
 
 private:
   uint64_t cycles;
