@@ -14,9 +14,28 @@ r_dir = $(abspath ../resources)
 # 7) REPLAY_BINARY: binary file for replay (by default $(OUT_DIR)/$(DESIGN)-reply)
 # 8) CLOCK_PERIOD(optional): clock period of tests
 ########################################################################
+ifeq ($(strip $(DESIGN)),)
+$(error Define DESIGN, the target design)
+endif
+ifeq ($(strip $(GEN_DIR)),)
+$(error Define GEN_DIR, where all midas generated code reside)
+endif
+ifeq ($(filter $(MAKECMDGOALS),vcs-replay $(REPLAY_BINARY)),)
+ifeq ($(strip $(DRIVER)),)
+$(error Define DRIVER, the source code of the simulation driver)
+endif
+endif
+
 PLATFORM ?= zynq
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 0.5
+
+$(info platform: $(PLATFORM))
+$(info target design: $(DESIGN))
+$(info generated source directory: $(GEN_DIR))
+$(info output directory: $(OUT_DIR))
+$(info driver source files: $(DRIVER))
+$(info clock period: $(CLOCK_PERIOD) x 2)
 
 # TODO: better way?
 shim := $(shell echo $(PLATFORM)| cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM)| cut -c 2-)Shim
@@ -156,6 +175,11 @@ REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
 replay_files := sample replay_vpi
 replay_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(replay_files) replay))
 replay_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(replay_files)))
+
+ifneq ($(filter $(MAKECMDGOALS),vcs-replay $(REPLAY_BINARY)),)
+$(info verilog files: $(TARGET_VERILOG))
+$(info replay binary: $(REPLAY_BINARY))
+endif
 
 $(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(lib) $(replay_cc) $(replay_h)
 	mkdir -p $(OUT_DIR)
