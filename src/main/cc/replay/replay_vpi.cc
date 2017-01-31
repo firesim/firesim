@@ -111,6 +111,7 @@ void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, PUT_VALUE_TYPE typ
   switch(type) {
     case PUT_POKE: flag = vpiInertialDelay; break;
     case PUT_LOAD: flag = vpiTransportDelay; break;
+    case PUT_SEQ: flag = vpiNoDelay; break;
     case PUT_FORCE: flag = vpiForceFlag; forces.push(sig); break;
   }
   put_value(sig, value, flag);
