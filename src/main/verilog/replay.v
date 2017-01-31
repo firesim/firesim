@@ -29,7 +29,9 @@ module replay;
     if (!reset) cycles <= cycles + 1;
     $tick(exit);
     if (exit) begin
+`ifdef VCS
       $vcdplusclose;
+`endif
       $finish;
     end
   end

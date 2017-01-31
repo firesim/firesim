@@ -11,9 +11,7 @@ r_dir = $(abspath ../resources)
 # 3) GEN_DIR: Directory for generated source code
 # 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
 # 5) DRIVER: software driver written by user (not necessary for replay)
-# 6) TARGET_VERILOG: verilog file to be replay (by default $(GEN_DIR)/$(DESISN).v)
-# 7) REPLAY_BINARY: binary file for replay (by default $(OUT_DIR)/$(DESIGN)-reply)
-# 8) CLOCK_PERIOD(optional): clock period of tests
+# 6) CLOCK_PERIOD(optional): clock period of tests
 ########################################################################
 ifeq ($(strip $(DESIGN)),)
 $(error Define DESIGN, the target design)

@@ -9,7 +9,7 @@
 #include <cassert>
 #include "sample.h"
 
-enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_FORCE };
+enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_SEQ, PUT_FORCE };
 
 template <class T> class replay_t {
 public:
@@ -20,6 +20,9 @@ public:
     for (auto &arg: args) {
       if (arg.find("+sample=") == 0) {
         load_samples(arg.c_str() + 8);
+      }
+      if (arg.find("+match=") == 0) {
+        load_match_points(arg.c_str() + 7);
       }
       if (arg.find("+verbose") == 0) {
         log = true;
@@ -35,29 +38,29 @@ public:
   }
 
   virtual void replay() {
-    reset(5);
     for (size_t k = 0 ; k < samples.size() ; k++) {
       sample_t *sample = samples[k];
-      std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
       reset(5);
+      std::cerr << " * REPLAY AT CYCLE " << sample->get_cycle() << " * " << std::endl;
       for (size_t i = 0 ; i < sample->get_cmds().size() ; i++) {
         sample_inst_t* cmd = sample->get_cmds()[i];
         if (step_t* p = dynamic_cast<step_t*>(cmd)) {
           step(p->n);
         }
         if (load_t* p = dynamic_cast<load_t*>(cmd)) {
+          auto signal = signals[p->type][p->id];
+          auto width = widths[p->type][p->id];
           if (p->idx < 0) {
-            load(chains[p->type][p->id], p->value);
+            load(signal, width, p->value);
           } else {
-            std::string signal = chains[p->type][p->id] + "[" + std::to_string(p->idx) + "]";
-            load(signal, p->value);
+            load(signal + "[" + std::to_string(p->idx) + "]", width, p->value);
           }
         }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
-          poke(chains[p->type][p->id], p->value);
+          poke(signals[p->type][p->id], p->value);
         }
         if (expect_t* p = dynamic_cast<expect_t*>(cmd)) {
-          pass &= expect(chains[p->type][p->id], p->value);
+          pass &= expect(signals[p->type][p->id], p->value);
         }
       }
     }
@@ -89,7 +92,9 @@ private:
   bool pass;
   bool is_exit;
   std::vector<sample_t*> samples;
-  std::vector<std::vector<std::string>> chains;
+  std::vector<std::vector<std::string>> signals;
+  std::vector<std::vector<size_t>> widths;
+  std::map<std::string, std::string> match_map;
 
   void load_samples(const char* filename) {
     std::ifstream file(filename);
@@ -102,7 +107,7 @@ private:
     sample_t* sample = NULL;
     while (std::getline(file, line)) {
       std::istringstream iss(line);
-      size_t type, t, id, n;
+      size_t type, t, width, id, n;
       ssize_t idx;
       uint64_t cycles;
       std::string signal, dummy;
@@ -110,11 +115,11 @@ private:
       iss >> type;
       switch(static_cast<SAMPLE_INST_TYPE>(type)) {
         case SIGNALS:
-          iss >> t >> signal;
-          while(chains.size() <= t) {
-            chains.push_back(std::vector<std::string>());
-          }
-          chains[t].push_back(signal);
+          iss >> t >> signal >> width;
+          while(signals.size() <= t) signals.push_back(std::vector<std::string>());
+          while(widths.size() <= t) widths.push_back(std::vector<size_t>());
+          signals[t].push_back(signal);
+          widths[t].push_back(width);
           break;
         case CYCLE:
           iss >> dummy >> cycles;
@@ -154,44 +159,74 @@ private:
     file.close();
   }
 
+  void load_match_points(const char* filename) {
+    std::ifstream file(filename);
+    if (!file) {
+      fprintf(stderr, "Cannot open %s\n", filename);
+      exit(EXIT_FAILURE);
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+      std::istringstream iss(line);
+      std::string ref, impl;
+      iss >> ref >> impl;
+      match_map[ref] = impl;
+    }
+  }
+
   virtual void take_steps(size_t) = 0;
   virtual void put_value(T& sig, biguint_t* data, PUT_VALUE_TYPE type) = 0;
   virtual biguint_t get_value(T& sig) = 0;
 
-  inline void step(size_t n) {
+  void step(size_t n) {
     cycles += n;
     if (log) std::cerr << " * STEP " << n << " -> " << cycles << " *" << std::endl;
     take_steps(n);
   }
 
-  inline void check_signal(const std::string& signal) {
+  void check_signal(const std::string& signal) {
     assert(replay_data.signal_map.find(signal) != replay_data.signal_map.end());
   }
 
-  inline void force(const std::string& node, biguint_t* data) {
+  void force(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
-    size_t id = replay_data.signal_map[node];
+    auto id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, PUT_FORCE);
   }
 
-  inline void load(const std::string& node, biguint_t* data) {
+  void load(const std::string& node, size_t width, biguint_t* data) {
     if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
-    check_signal(node);
-    size_t id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, PUT_LOAD);
+    if (match_map.empty()) {
+      check_signal(node);
+      auto id = replay_data.signal_map[node];
+      put_value(replay_data.signals[id], data, PUT_LOAD);
+    } else if (width == 1) {
+      auto impl = match_map[node];
+      check_signal(impl);
+      auto id = replay_data.signal_map[impl];
+      put_value(replay_data.signals[id], data, PUT_SEQ);
+    } else {
+      for (size_t i = 0 ; i < width ; i++) {
+        auto impl = match_map[node + "[" + std::to_string(i) + "]"];
+        check_signal(impl);
+        auto id = replay_data.signal_map[impl];
+        biguint_t bit = (*data >> i) & 0x1;
+        put_value(replay_data.signals[id], &bit, PUT_SEQ);
+      }
+    }
   }
 
-  inline void poke(const std::string& node, biguint_t* data) {
+  void poke(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * POKE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
-    size_t id = replay_data.signal_map[node];
+    auto id = replay_data.signal_map[node];
     put_value(replay_data.signals[id], data, PUT_POKE);
   }
 
-  inline bool expect(const std::string& node, biguint_t* expected) {
+  bool expect(const std::string& node, biguint_t* expected) {
     check_signal(node);
-    size_t id = replay_data.signal_map[node];
+    auto id = replay_data.signal_map[node];
     biguint_t value = get_value(replay_data.signals[id]);
     bool pass = value == *expected || cycles <= 1;
     if (log) {

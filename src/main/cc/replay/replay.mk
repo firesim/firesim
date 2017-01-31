@@ -1,4 +1,8 @@
-# Compile VCS replay binary
+##################################################################################
+# Replay Parameters
+# 1) TARGET_VERILOG: verilog file to be replay (by default $(GEN_DIR)/$(DESISN).v)
+# 2) REPLAY_BINARY: binary file for replay (by default $(OUT_DIR)/$(DESIGN)-reply)
+##################################################################################
 
 TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v
 REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
@@ -10,6 +14,7 @@ $(info verilog files: $(TARGET_VERILOG))
 $(info replay binary: $(REPLAY_BINARY))
 endif
 
+# Compile VCS replay binary
 $(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(lib) $(replay_cc) $(replay_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(notdir $@).csrc
