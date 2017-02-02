@@ -27,14 +27,14 @@ endif
 
 PLATFORM ?= zynq
 OUT_DIR ?= $(GEN_DIR)
-CLOCK_PERIOD ?= 0.5
+CLOCK_PERIOD ?= 1.0
 
 $(info platform: $(PLATFORM))
 $(info target design: $(DESIGN))
 $(info generated source directory: $(GEN_DIR))
 $(info output directory: $(OUT_DIR))
 $(info driver source files: $(DRIVER))
-$(info clock period: $(CLOCK_PERIOD) x 2)
+$(info clock period: $(CLOCK_PERIOD))
 
 # TODO: better way?
 shim := $(shell echo $(PLATFORM)| cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM)| cut -c 2-)Shim

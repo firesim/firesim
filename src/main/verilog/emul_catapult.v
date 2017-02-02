@@ -29,7 +29,7 @@ module emul;
   reg reset = 1'b1;
   reg fin = 1'b0;
 
-  always #`CLOCK_PERIOD clock = ~clock;
+  always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
   reg [1023:0] vcdplusfile = 0;
 
