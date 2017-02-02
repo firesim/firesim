@@ -138,7 +138,7 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 
 # Compile VCS emulation binary
 VCS ?= vcs -full64
-override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp \
+override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp +no_notifier \
 	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS) -lmidas" \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_MEM_INIT \
