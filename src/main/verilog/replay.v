@@ -25,8 +25,11 @@ module replay;
     $init_sigs(`TOP_TYPE);
   end
 
-  always @(negedge clock) begin
+  always @(posedge clock) begin
     if (!reset) cycles <= cycles + 1;
+  end
+
+  always @(negedge clock) begin
     $tick(exit);
     if (exit) begin
 `ifdef VCS
