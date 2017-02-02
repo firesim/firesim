@@ -185,7 +185,10 @@ private:
   }
 
   void check_signal(const std::string& signal) {
-    assert(replay_data.signal_map.find(signal) != replay_data.signal_map.end());
+    if (replay_data.signal_map.find(signal) == replay_data.signal_map.end()) {
+      std::cerr << "Cannot find " << signal << " in the design" << std::endl;
+      assert(!match_map.empty()); // only error for RTL replays
+    }
   }
 
   void force(const std::string& node, biguint_t* data) {
