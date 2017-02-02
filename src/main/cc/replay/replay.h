@@ -9,7 +9,7 @@
 #include <cassert>
 #include "sample.h"
 
-enum PUT_VALUE_TYPE { PUT_POKE, PUT_LOAD, PUT_SEQ, PUT_FORCE };
+enum PUT_VALUE_TYPE { PUT_DEPOSIT, PUT_FORCE };
 
 template <class T> class replay_t {
 public:
@@ -33,7 +33,7 @@ public:
   void reset(size_t n) {
     biguint_t one = 1;
     size_t id = replay_data.signal_map["reset"];
-    put_value(replay_data.signals[id], &one, PUT_POKE);
+    put_value(replay_data.signals[id], &one, PUT_DEPOSIT);
     take_steps(n);
   }
 
@@ -200,19 +200,19 @@ private:
     if (match_map.empty()) {
       check_signal(node);
       auto id = replay_data.signal_map[node];
-      put_value(replay_data.signals[id], data, PUT_LOAD);
+      put_value(replay_data.signals[id], data, PUT_DEPOSIT);
     } else if (width == 1) {
       auto impl = match_map[node];
       check_signal(impl);
       auto id = replay_data.signal_map[impl];
-      put_value(replay_data.signals[id], data, PUT_SEQ);
+      put_value(replay_data.signals[id], data, PUT_DEPOSIT);
     } else {
       for (size_t i = 0 ; i < width ; i++) {
         auto impl = match_map[node + "[" + std::to_string(i) + "]"];
         check_signal(impl);
         auto id = replay_data.signal_map[impl];
         biguint_t bit = (*data >> i) & 0x1;
-        put_value(replay_data.signals[id], &bit, PUT_SEQ);
+        put_value(replay_data.signals[id], &bit, PUT_DEPOSIT);
       }
     }
   }
@@ -221,7 +221,7 @@ private:
     if (log) std::cerr << " * POKE " << node << " <- 0x" << *data << " *" << std::endl;
     check_signal(node);
     auto id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, PUT_POKE);
+    put_value(replay_data.signals[id], data, PUT_DEPOSIT);
   }
 
   bool expect(const std::string& node, biguint_t* expected) {

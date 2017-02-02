@@ -25,7 +25,7 @@ module replay;
     $init_sigs(`TOP_TYPE);
   end
 
-  always @(posedge clock) begin
+  always @(negedge clock) begin
     if (!reset) cycles <= cycles + 1;
     $tick(exit);
     if (exit) begin
