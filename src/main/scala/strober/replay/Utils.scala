@@ -25,7 +25,7 @@ private[replay] object genVerilogFragment {
 
     writer write s"  `define TOP_TYPE $dutName\n"
     inputs foreach { case (node, name) =>
-      writer write s"  reg[${node.getWidth-1}:0] $name = 0;\n"
+      writer write s"  reg[${node.getWidth-1}:0] $name;\n"
       writer write s"  wire[${node.getWidth-1}:0] #0.01 ${name}_delay = $name;\n"
     }
     outputs foreach { case (node, name) =>
