@@ -4,7 +4,7 @@
 # 2) REPLAY_BINARY: binary file for replay (by default $(OUT_DIR)/$(DESIGN)-reply)
 ##################################################################################
 
-TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v
+TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v $(GEN_DIR)/$(DESIGN).macros.v
 REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
 replay_h := $(midas_dir)/sample.h $(replay_dir)/replay_vpi.h $(replay_dir)/replay.h
 replay_cc := $(midas_dir)/sample.cc $(replay_dir)/replay_vpi.cc
@@ -15,14 +15,14 @@ $(info replay binary: $(REPLAY_BINARY))
 endif
 
 # Compile VCS replay binary
-$(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(lib) $(replay_cc) $(replay_h)
+$(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(replay_cc) $(replay_h) $(lib)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(notdir $@).csrc
 	rm -rf $(OUT_DIR)/$(notdir $@).daidir
 	$(VCS) $(VCS_FLAGS) -CFLAGS -I$(replay_dir) \
 	-Mdir=$(GEN_DIR)/$(notdir $@).csrc +vpi -P $(r_dir)/vpi.tab \
 	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
-	-o $@ $< $(TARGET_VERILOG) $(lib) $(replay_cc)
+	-o $@ $< $(TARGET_VERILOG) $(replay_cc) $(lib)
 
 vcs-replay: $(REPLAY_BINARY)
 
