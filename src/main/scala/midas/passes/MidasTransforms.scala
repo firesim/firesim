@@ -12,7 +12,7 @@ import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
 import scala.util.DynamicVariable
 import java.io.{File, FileWriter}
 
-private object MidasTransforms {
+object MidasTransforms {
   type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
   type ChildMods = HashMap[String, LinkedHashSet[String]]
   type ChildInsts = HashMap[String, ArrayBuffer[String]]
@@ -25,7 +25,7 @@ private class WCircuit(
   main: String,
   val sim: SimWrapperIO) extends Circuit(info, modules, main)
 
-private class TransformAnalysis(
+class TransformAnalysis(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap) extends firrtl.passes.Pass {

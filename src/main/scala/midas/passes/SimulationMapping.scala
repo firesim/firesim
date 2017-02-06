@@ -42,7 +42,7 @@ private[passes] class SimulationMapping(
           val dw = dataWidth + (s match {
             case s: WDefInstance =>
               val seqMem = seqMems(s.module)
-              val prefix = s"$path.${seqMem.name}"
+              val prefix = s"$path.${s.name}"
               chainType match {
                 case ChainType.SRAM =>
                   chainFile write s"$id $prefix.ram ${seqMem.width} ${seqMem.depth}\n"
