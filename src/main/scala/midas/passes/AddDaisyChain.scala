@@ -70,8 +70,6 @@ private[passes] class AddDaisyChains(
           chains += s
         case s: DefMemory if !bigRegFile(s) =>
           chains += s
-        case s: WDefInstance if seqMems contains s.module =>
-          chains += s
         case _ =>
       }
       case ChainType.SRAM => s match {
@@ -83,7 +81,11 @@ private[passes] class AddDaisyChains(
           error("${s.info}: SRAMs should be transformed to Black bloxes")
         case _ =>
       }
-      case ChainType.Trace =>
+      case ChainType.Trace => s match {
+        case s: WDefInstance if seqMems contains s.module =>
+          chains += s
+         case _ =>
+      }
       case ChainType.Cntr =>
     }
     s map collect(chainType, chains)
@@ -190,18 +192,8 @@ private[passes] class AddDaisyChains(
             if (netlist.isEmpty) buildNetlist(netlist)(m.body)
             val seqMem = seqMems(s.module)
             val mem = wref(s.name, s.tpe, InstanceKind)
-            val en = (seqMem.readers.indices map (i => netlist(wsub(wsub(mem, s"R$i"), "en")))) ++
-                     (seqMem.readwriters.indices map (i =>
-                      and(netlist(wsub(wsub(mem, s"RW$i"), "en")),
-                      not(netlist(wsub(wsub(mem, s"RW$i"), "wmode"))))
-                     ))
-            val addr = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "addr"))) ++
-                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "addr")))
-            val data = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
-                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
-            /* (addr zip en map { case (a, e) =>
-              insertBuf(s"${loweredName(a)}_buf", netlist(a), e)
-            }) ++ */ data
+            (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
+            (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
         }
         stmts ++ instStmts ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth)
     }
