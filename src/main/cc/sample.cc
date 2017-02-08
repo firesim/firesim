@@ -153,7 +153,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
 #endif
         switch(type) {
           case TRACE_CHAIN:
-            // add_force(new force_t(s, data, size));
+            add_cmd(new force_t(type, s, data, size));
             break;
           case REGS_CHAIN:
             add_cmd(new load_t(type, s, data, size, -1));
@@ -173,29 +173,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
     }
     assert(start % DAISY_WIDTH == 0);
   }
-  // if (type == TRACE_CHAIN) dump_forces();
   return start;
-}
-
-void sample_t::add_force(force_t* f) {
-  force_bin_idx = f->id == force_prev_id ? force_bin_idx + 1 : 0;
-  if (force_bins.size() < force_bin_idx + 1) {
-    force_bins.push_back(std::vector<force_t*>());
-  }
-  force_bins[force_bin_idx].push_back(f);
-  force_prev_id = f->id;
-}
-
-void sample_t::dump_forces() {
-  for (int i = force_bins.size() - 1 ; i >= 0 ; i--) {
-    auto force_bin = force_bins[i];
-    for (size_t k = 0 ; k < force_bin.size() ; k++) {
-      cmds.push_back(force_bin[k]);
-    }
-    cmds.push_back(new step_t(1));
-    force_bin.clear();
-  }
-  force_prev_id = -1;
 }
 
 sample_t::sample_t(const char* snap, uint64_t _cycle):
