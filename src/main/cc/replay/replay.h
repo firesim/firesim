@@ -83,6 +83,7 @@ protected:
     std::map<std::string, size_t> signal_map;
   } replay_data;
 
+  inline bool gate_level() { return !match_map.empty(); }
   inline bool done() { return is_exit; }
   inline int exitcode() { return pass ? EXIT_SUCCESS : EXIT_FAILURE; }
 
