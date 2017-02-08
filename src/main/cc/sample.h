@@ -220,8 +220,6 @@ public:
   inline const std::vector<sample_inst_t*>& get_cmds() const { return cmds; }
 
 #ifdef ENABLE_SNAPSHOT
-  void dump_forces();
-  void add_force(force_t *f);
   size_t read_chain(CHAIN_TYPE type, const char* snap, size_t start = 0);
 
   static void init_chains(std::string filename);

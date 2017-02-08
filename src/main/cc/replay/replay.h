@@ -56,6 +56,9 @@ public:
             load(signal + "[" + std::to_string(p->idx) + "]", width, p->value);
           }
         }
+        if (force_t* p = dynamic_cast<force_t*>(cmd)) {
+          force(signals[p->type][p->id], p->value);
+        }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
           poke(signals[p->type][p->id], p->value);
         }
@@ -185,53 +188,53 @@ private:
     take_steps(n);
   }
 
-  void check_signal(const std::string& signal) {
-    if (replay_data.signal_map.find(signal) == replay_data.signal_map.end()) {
-      std::cerr << "Cannot find " << signal << " in the design" << std::endl;
-      assert(!match_map.empty()); // only error for RTL replays
+  T& get_signal(const std::string& node) {
+    auto it = replay_data.signal_map.find(node);
+    if (it == replay_data.signal_map.end()) {
+      std::cerr << "Cannot find " << node << " in the design" << std::endl;
+      assert(false);
     }
+    return replay_data.signals[it->second];
   }
 
   void force(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
-    check_signal(node);
-    auto id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, PUT_FORCE);
+    // FIXME: This is ugly... should be fixed when pcad is ported to firrtl
+    bool not_force = !gate_level() && (
+      node.find(".R") != -1 && node.find("_data") != -1 /* read port output */ ||
+      node.find(".RW") != -1 && node.find("_rdata") != -1 /* rw port output */);
+    put_value(get_signal(node), data, not_force ? PUT_DEPOSIT : PUT_FORCE);
+  }
+
+  void load_bit(const std::string& ref, biguint_t* bit) {
+    auto it = match_map.find(ref);
+    if (it != match_map.end()) {
+      put_value(get_signal(it->second), bit, PUT_DEPOSIT);
+    }
   }
 
   void load(const std::string& node, size_t width, biguint_t* data) {
     if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
-    if (match_map.empty()) {
-      check_signal(node);
-      auto id = replay_data.signal_map[node];
-      put_value(replay_data.signals[id], data, PUT_DEPOSIT);
+    if (!gate_level()) {
+      put_value(get_signal(node), data, PUT_DEPOSIT);
     } else if (width == 1) {
-      auto impl = match_map[node];
-      check_signal(impl);
-      auto id = replay_data.signal_map[impl];
-      put_value(replay_data.signals[id], data, PUT_DEPOSIT);
+      load_bit(node, data);
     } else {
       for (size_t i = 0 ; i < width ; i++) {
-        auto impl = match_map[node + "[" + std::to_string(i) + "]"];
-        check_signal(impl);
-        auto id = replay_data.signal_map[impl];
+        std::string name = node + "[" + std::to_string(i) + "]";
         biguint_t bit = (*data >> i) & 0x1;
-        put_value(replay_data.signals[id], &bit, PUT_DEPOSIT);
+        load_bit(name, &bit);
       }
     }
   }
 
   void poke(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * POKE " << node << " <- 0x" << *data << " *" << std::endl;
-    check_signal(node);
-    auto id = replay_data.signal_map[node];
-    put_value(replay_data.signals[id], data, PUT_DEPOSIT);
+    put_value(get_signal(node), data, PUT_DEPOSIT);
   }
 
   bool expect(const std::string& node, biguint_t* expected) {
-    check_signal(node);
-    auto id = replay_data.signal_map[node];
-    biguint_t value = get_value(replay_data.signals[id]);
+    biguint_t value = get_value(get_signal(node));
     bool pass = value == *expected || cycles <= 1;
     if (log) {
       std::cerr << " * EXPECT " << node << " -> 0x" << value << " ?= 0x" << *expected;
