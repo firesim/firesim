@@ -20,6 +20,22 @@ void replay_vpi_t::add_signal(vpiHandle& sig_handle, std::string& wire) {
   replay_data.signal_map[wire] = id;
 }
 
+void replay_vpi_t::probe_bits(vpiHandle& sig_handle, std::string& sigpath, std::string& modname) {
+  if (gate_level()) {
+    if (vpi_get(vpiSize, sig_handle) == 1) {
+      std::string bitpath = sigpath + "[0]";
+      add_signal(sig_handle, bitpath);
+    } else {
+      vpiHandle bit_iter = vpi_iterate(vpiBit, sig_handle);
+      while (vpiHandle bit_handle = vpi_scan(bit_iter)) {
+        std::string bitname = vpi_get_str(vpiName, bit_handle);
+        std::string bitpath = modname + "." + bitname;
+        add_signal(bit_handle, bitpath);
+      }
+    }
+  }
+}
+
 void replay_vpi_t::probe_signals() {
   // traverse testbench first
   vpiHandle replay_handle = vpi_scan(vpi_iterate(vpiModule, NULL));
@@ -50,13 +66,15 @@ void replay_vpi_t::probe_signals() {
     modules.pop();
 
     std::string modname = std::string(vpi_get_str(vpiFullName, mod_handle)).substr(offset);
-    // Iterate its nets
-    vpiHandle net_iter = vpi_iterate(vpiNet, mod_handle);
-    while (vpiHandle net_handle = vpi_scan(net_iter)) {
-      std::string netname = vpi_get_str(vpiName, net_handle);
-      if (netname.find("io_") == 0) {
+
+    if (!vpi_scan(vpi_iterate(vpiPrimitive, mod_handle))) { // Not a gate?
+      // Iterate its ports
+      vpiHandle net_iter = vpi_iterate(vpiNet, mod_handle);
+      while (vpiHandle net_handle = vpi_scan(net_iter)) {
+        std::string netname = vpi_get_str(vpiName, net_handle);
         std::string netpath = modname + "." + netname;
         add_signal(net_handle, netpath);
+        probe_bits(net_handle, netpath, modname);
       }
     }
 
@@ -66,6 +84,7 @@ void replay_vpi_t::probe_signals() {
       std::string regname = vpi_get_str(vpiName, reg_handle);
       std::string regpath = modname + "." + regname;
       add_signal(reg_handle, regpath);
+      probe_bits(reg_handle, regpath, modname);
     }
 
     // Iterate its mems
@@ -76,6 +95,7 @@ void replay_vpi_t::probe_signals() {
         std::string elmname = vpi_get_str(vpiName, elm_handle);
         std::string elmpath = modname + "." + elmname;
         add_signal(elm_handle, elmpath);
+        probe_bits(elm_handle, elmpath, modname);
       }
     }
 
