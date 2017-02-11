@@ -36,6 +36,7 @@ object FlattenData {
   *    I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths
   */
 object ScanRegister {
+  import Chisel._
   def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
     val leaves = FlattenData(data)
     leaves.foldLeft(scanIn)((in: Bool, leaf: Tuple2[Data,Direction]) => {
