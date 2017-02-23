@@ -6,8 +6,8 @@ import chisel3._
 // Adapted from DecoupledIO in Chisel3
 class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
-  val hReady = Bool(INPUT)
-  val hValid = Bool(OUTPUT)
+  val hReady = Input(Bool())
+  val hValid = Output(Bool())
   val hBits  = gen.cloneType
   def fire(dummy: Int = 0): Bool = hReady && hValid
   override def cloneType: this.type =
@@ -23,8 +23,8 @@ object HostDecoupled {
 
 
 class HostReadyValid extends Bundle {
-  val hReady= Bool(INPUT)
-  val hValid = Bool(OUTPUT)
+  val hReady= Input(Bool())
+  val hValid = Output(Bool())
   def fire(dummy: Int = 0): Bool = hReady && hValid
 }
 
@@ -64,8 +64,8 @@ object HostPort {
   */
 class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
 {
-  val hReady = Bool(INPUT)
-  val hValid = Bool(OUTPUT)
+  val hReady = Input(Bool())
+  val hValid = Output(Bool())
   val hBits  = gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = hReady && hValid
   override def cloneType: this.type =

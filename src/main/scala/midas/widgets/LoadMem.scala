@@ -30,7 +30,7 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   require(hWidth >= cWidth)
   require(p(hKey).addrBits <= cWidth)
 
-  val wAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(width = p(hKey).addrBits))), "W_ADDRESS")
+  val wAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "W_ADDRESS")
   io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
       id = UInt(0),
       addr = wAddrQ.bits,
@@ -49,7 +49,7 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   // TODO: Handle write responses better?
   io.toSlaveMem.b.ready := Bool(true)
 
-  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(width = p(hKey).addrBits))), "R_ADDRESS")
+  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS")
   io.toSlaveMem.ar.bits := NastiReadAddressChannel(
       id = UInt(0),
       addr = rAddrQ.bits,

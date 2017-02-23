@@ -2,6 +2,7 @@ package strober
 package replay
 
 import firrtl.ir.Circuit
+import firrtl.passes.memlib._
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
@@ -15,14 +16,14 @@ object Compiler {
   def apply(chirrtl: Circuit, io: chisel3.Data, dir: File): Circuit = {
     dir.mkdirs
     val conf = new File(dir, s"${chirrtl.main}.conf")
-    val annotations = new firrtl.Annotations.AnnotationMap(Seq(
-      firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
-      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf")))
+    val annotations = new firrtl.AnnotationMap(Seq(
+      InferReadWriteAnnotation(chirrtl.main),
+      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf")))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(conf) compile (
       firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
-      verilog, Seq(new firrtl.passes.memlib.InferReadWrite,
-                   new firrtl.passes.memlib.ReplSeqMem))
+      verilog, Seq(new InferReadWrite,
+                   new ReplSeqMem))
     genVerilogFragment(chirrtl.main, io, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
     verilog.close
     result.circuit

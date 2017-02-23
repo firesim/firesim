@@ -5,8 +5,6 @@ import midas.core.{SimWrapper, ChainType}
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Utils.BoolType
-import firrtl.passes.bitWidth
 import firrtl.Utils.{BoolType, create_exps}
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
@@ -128,7 +126,7 @@ private[passes] class SimulationMapping(
   def run(c: Circuit) = {
     lazy val sim = new SimWrapper(io)
     val chirrtl = Parser parse (chisel3.Driver emit (() => sim))
-    val annotations = new Annotations.AnnotationMap(Nil)
+    val annotations = new AnnotationMap(Nil)
     val writer = new StringWriter
     // val writer = new FileWriter(new File("SimWrapper.ir"))
     val circuit = renameMods((new InlineCompiler compile (
