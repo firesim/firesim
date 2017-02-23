@@ -3,6 +3,7 @@ package midas
 import chisel3.{Data, Bits}
 import firrtl.ir.Circuit
 import firrtl.CompilerUtils.getLoweringTransforms
+import firrtl.passes.memlib._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import java.io.{File, FileWriter, Writer}
@@ -17,8 +18,8 @@ private class InlineCompiler extends firrtl.Compiler {
 private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
   def emitter = new firrtl.FirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
-    new firrtl.passes.memlib.InferReadWrite,
-    new firrtl.passes.memlib.ReplSeqMem,
+    new InferReadWrite,
+    new ReplSeqMem,
     new passes.MidasTransforms(dir, io)
   )
 }
@@ -33,9 +34,9 @@ private class VerilogCompiler(conf: File) extends firrtl.Compiler {
 object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: config.Parameters): Circuit = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
-    val annotations = new firrtl.Annotations.AnnotationMap(Seq(
-      firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
-      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
+    val annotations = new firrtl.AnnotationMap(Seq(
+      InferReadWriteAnnotation(chirrtl.main),
+      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf)
     ))
     // val writer = new FileWriter(new File("debug.ir"))

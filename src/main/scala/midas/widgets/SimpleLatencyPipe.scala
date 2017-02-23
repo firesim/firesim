@@ -8,11 +8,11 @@ import config.{Parameters, Field}
 
 class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   // Timing Model
-  val rCycles = Module(new Queue(UInt(width=64), 4))
-  val wCycles = Module(new Queue(UInt(width=64), 4))
+  val rCycles = Module(new Queue(UInt(64.W), 4))
+  val wCycles = Module(new Queue(UInt(64.W), 4))
   val rCycleValid = Wire(Bool())
   val wCycleValid = Wire(Bool())
-  val latency = RegInit(UInt(16, 32))
+  val latency = RegInit(16.U(32.W))
 
   val stall = (rCycleValid && !rBuf.io.deq.valid) || (wCycleValid && !bBuf.io.deq.valid)
   val (fire, cycles, targetReset) = elaborate(

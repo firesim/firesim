@@ -16,8 +16,8 @@ object ChainType extends Enumeration { val Trace, Regs, SRAM, Cntr = Value }
 
 // Declare daisy pins
 class DaisyData(daisywidth: Int) extends Bundle {
-  val in = Flipped(Decoupled(UInt(width=daisywidth)))
-  val out = Decoupled(UInt(width=daisywidth))
+  val in = Flipped(Decoupled(UInt(daisywidth.W)))
+  val out = Decoupled(UInt(daisywidth.W))
   override def cloneType: this.type =
     new DaisyData(daisywidth).asInstanceOf[this.type]
 }
@@ -31,7 +31,7 @@ class TraceData(daisywidth: Int) extends DaisyData(daisywidth) {
     new TraceData(daisywidth).asInstanceOf[this.type]
 }
 class SRAMData(daisywidth: Int) extends DaisyData(daisywidth) {
-  val restart = Bool(INPUT)
+  val restart = Input(Bool())
   override def cloneType: this.type =
     new SRAMData(daisywidth).asInstanceOf[this.type]
 }
@@ -73,17 +73,17 @@ abstract class DaisyChainBundle(implicit val p: Parameters)
     extends ParameterizedBundle with DaisyChainParams
 
 class DataIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
-  val in = Flipped(Decoupled(UInt(INPUT, daisyWidth)))
-  val out = Decoupled(UInt(INPUT, daisyWidth))
-  val data = Vec(daisyLen, UInt(INPUT, daisyWidth))
+  val in = Flipped(Decoupled(Input(UInt(daisyWidth.W))))
+  val out = Decoupled(Input(UInt(daisyWidth.W)))
+  val data = Vec(daisyLen, Input(UInt(daisyWidth.W)))
 }
 
 class CntrIO extends Bundle {
-  val copyCond = Bool(OUTPUT)
-  val readCond = Bool(OUTPUT)
-  val cntrNotZero = Bool(OUTPUT)
-  val outFire = Bool(INPUT)
-  val inValid = Bool(INPUT)
+  val copyCond = Output(Bool())
+  val readCond = Output(Bool())
+  val cntrNotZero = Output(Bool())
+  val outFire = Input(Bool())
+  val inValid = Input(Bool())
 }
 
 class DaisyDatapathIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
@@ -95,7 +95,7 @@ abstract class DaisyChainModule(implicit val p: Parameters) extends Module with 
 
 class RegChainDatapath(implicit p: Parameters) extends DaisyChainModule()(p) {
   val io = IO(new DaisyDatapathIO)
-  val regs = Reg(Vec(daisyLen, UInt(width=daisyWidth)))
+  val regs = Reg(Vec(daisyLen, UInt(daisyWidth.W)))
 
   io.dataIo.out.bits := regs(daisyLen-1)
   io.dataIo.out.valid := io.ctrlIo.cntrNotZero
@@ -118,22 +118,22 @@ class RegChainDatapath(implicit p: Parameters) extends DaisyChainModule()(p) {
 }
 
 class DaisyControlIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val stall = Bool(INPUT)
+  val stall = Input(Bool())
   val ctrlIo = new CntrIO
 }
 
 class DaisyCounter(stall: Bool, ctrlIo: CntrIO, daisyLen: Int) {
-  val counter = RegInit(UInt(0, log2Up(daisyLen+1)))
+  val counter = RegInit(0.U(log2Up(daisyLen+1).W))
   def isNotZero = counter.orR
   counter suggestName "counter"
 
   // Daisy chain control logic
   when(!stall) {
-    counter:= UInt(0)
+    counter:= 0.U
   }.elsewhen(ctrlIo.copyCond) {
-    counter := UInt(daisyLen)
+    counter := daisyLen.U
   }.elsewhen(ctrlIo.readCond && ctrlIo.outFire && !ctrlIo.inValid) {
-    counter := counter - UInt(1)
+    counter := counter - 1.U
   }
 }
 
@@ -152,7 +152,7 @@ class RegChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
 }
 
 class RegChainIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
-  val stall = Bool(INPUT)
+  val stall = Input(Bool())
   val dataIo = new DataIO
 }
 
@@ -171,16 +171,16 @@ class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
 
 class AddrIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val n = p(SRAMSize)
-  val out = Valid(UInt(width=log2Up(n)))
+  val out = Valid(UInt(log2Up(n).W))
 }
 
 class ReadIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
-  val in = Flipped(Valid(UInt(width=dataWidth)))
-  val out = Valid(UInt(width=dataWidth))
+  val in = Flipped(Valid(UInt(dataWidth.W)))
+  val out = Valid(UInt(dataWidth.W))
 }
 
 class SRAMChainControlIO(implicit p: Parameters) extends DaisyControlIO()(p) {
-  val restart = Bool(INPUT)
+  val restart = Input(Bool())
   val addrIo = new AddrIO
   val readIo = new ReadIO
 }
@@ -190,7 +190,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   val io = IO(new SRAMChainControlIO)
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = RegInit(s_IDLE)
-  val addrOut = Reg(UInt(width=log2Up(n)))
+  val addrOut = Reg(UInt(log2Up(n).W))
   // Read port output register values are destoyed with SRAM snapshotting
   // Thus, capture their values here
   val read = Reg(io.readIo.out.cloneType)
@@ -222,14 +222,14 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   switch(addrState) {
     is(s_IDLE) {
       addrState := Mux(io.stall, s_DONE, s_IDLE)
-      addrOut   := UInt(0)
+      addrOut   := 0.U
     }
     is(s_ADDRGEN) {
       addrState := s_MEMREAD
     }
     is(s_MEMREAD) {
       addrState := s_DONE
-      addrOut   := addrOut + UInt(1)
+      addrOut   := addrOut + 1.U
     }
     is(s_DONE) {
       addrState := Mux(io.restart, s_ADDRGEN,
@@ -239,7 +239,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
 }
 
 class SRAMChainIO(implicit p: Parameters) extends RegChainIO()(p) {
-  val restart = Bool(INPUT)
+  val restart = Input(Bool())
   val addrIo = new AddrIO
   val readIo = new ReadIO
 }

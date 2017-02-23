@@ -46,7 +46,7 @@ object ScanRegister {
         leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
       }
 
-      val out = Wire(Bool(false))
+      val out = Wire(false.B)
       when (scanEnable) {
         out := r.foldLeft(in)((in: Bool, r: Bool) => {r := in; r })
       }
@@ -56,12 +56,12 @@ object ScanRegister {
 }
 
 class SatUpDownCounterIO(val n: Int) extends Bundle {
-  val inc = Bool(INPUT)
-  val dec = Bool(INPUT)
-  val max = UInt(INPUT, width = (log2Up(n)))
-  val value = UInt(OUTPUT)
-  val full = Bool(OUTPUT)
-  val empty = Bool(OUTPUT)
+  val inc = Input(Bool())
+  val dec = Input(Bool())
+  val max = Input(UInt(log2Up(n).W))
+  val value = Output(UInt())
+  val full = Output(Bool())
+  val empty = Output(Bool())
 }
 /** A saturating up down counter
   */
@@ -71,12 +71,12 @@ class SatUpDownCounter(val n: Int) extends Module {
   val value =  Reg(init=UInt(0, log2Up(n)))
   io.value := value
   io.full := value >= io.max
-  io.empty := value === UInt(0)
+  io.empty := value === 0.U
 
   when (io.inc && ~io.dec && ~io.full) {
-    value := value + UInt(1)
+    value := value + 1.U
   }.elsewhen(~io.inc && io.dec && ~io.empty){
-    value := value - UInt(1)
+    value := value - 1.U
   }
 }
 
@@ -84,17 +84,17 @@ object SatUpDownCounter {
   def apply(n: Int): SatUpDownCounterIO = {
     val c = (Module(new SatUpDownCounter(n))).io
     c.max := UInt(n)
-    c.inc := Bool(false)
-    c.dec := Bool(false)
+    c.inc := false.B
+    c.dec := false.B
     c
   }
 }
 
 class MultiQueueIO[T <: Data](gen: T, numQueues: Int, entries: Int) extends
     QueueIO(gen, entries) {
-  val enqAddr = UInt(INPUT, width = log2Up(numQueues))
-  val deqAddr = UInt(INPUT, width = log2Up(numQueues))
-  val empty = Bool(OUTPUT)
+  val enqAddr = Input(UInt(log2Up(numQueues).W))
+  val deqAddr = Input(UInt(log2Up(numQueues).W))
+  val empty = Output(Bool())
 }
 /** An extension of queue that co locates a set of Queues at a single mem.
   * Key assumptions:
@@ -115,9 +115,9 @@ class MultiQueue[T <: Data](
   // slot
 
   val ram = SeqMem(entries * numQueues, gen)
-  val enqPtrs = RegInit(Vec.fill(numQueues)(UInt(0, width = log2Up(entries))))
-  val deqPtrs = RegInit(Vec.fill(numQueues)(UInt(0, width = log2Up(entries))))
-  val maybe_full = RegInit(Vec.fill(numQueues)(Bool(false)))
+  val enqPtrs = RegInit(Vec.fill(numQueues)(0.U(log2Up(entries).W)))
+  val deqPtrs = RegInit(Vec.fill(numQueues)(0.U(log2Up(entries).W)))
+  val maybe_full = RegInit(Vec.fill(numQueues)(false.B))
   val ptr_matches = Vec.tabulate(numQueues)(i => enqPtrs(i) === deqPtrs(i))
 
   val empty = Wire(Bool())
@@ -128,10 +128,10 @@ class MultiQueue[T <: Data](
 
   when (do_enq) {
     ram(Cat(io.enqAddr, enqPtrs(io.enqAddr))) := io.enq.bits
-    enqPtrs(io.enqAddr) := enqPtrs(io.enqAddr) + UInt(1)
+    enqPtrs(io.enqAddr) := enqPtrs(io.enqAddr) + 1.U
   }
   when (do_deq) {
-    deqPtrs(deqAddrReg) := deqPtrs(deqAddrReg) + UInt(1)
+    deqPtrs(deqAddrReg) := deqPtrs(deqAddrReg) + 1.U
   }
   when (io.enqAddr === deqAddrReg) {
     when(do_enq != do_deq) {
@@ -139,26 +139,26 @@ class MultiQueue[T <: Data](
     }
   }.otherwise {
     when(do_enq) {
-      maybe_full(io.enqAddr) := Bool(true)
+      maybe_full(io.enqAddr) := true.B
     }
     when (do_deq) {
-      maybe_full(deqAddrReg) := Bool(false)
+      maybe_full(deqAddrReg) := false.B
     }
   }
 
   val deqPtr = Wire(UInt())
   when(do_deq && (deqAddrReg === io.deqAddr)) {
-    deqPtr := deqPtrs(io.deqAddr) + UInt(1)
-    empty := (deqPtrs(io.deqAddr) + UInt(1)) === enqPtrs(io.enqAddr)
+    deqPtr := deqPtrs(io.deqAddr) + 1.U
+    empty := (deqPtrs(io.deqAddr) + 1.U) === enqPtrs(io.enqAddr)
   }.otherwise {
     deqPtr := deqPtrs(io.deqAddr)
     empty := ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
   }
-  val deqValid = RegNext(!empty, Bool(false))
+  val deqValid = RegNext(!empty, false.B)
   io.empty := empty
   io.deq.valid := deqValid
   io.enq.ready := !full
-  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), Bool(true))
+  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), true.B)
 }
 
 // Selects one of two input host decoupled channels. Drives ready false
@@ -222,27 +222,27 @@ class MCRFileMap() {
 }
 
 class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
-  val read = Vec(numCRs, Flipped(Decoupled(UInt(width = nastiXDataBits))))
-  val write = Vec(numCRs, Decoupled(UInt(width = nastiXDataBits)))
-  val wstrb = Bits(OUTPUT, nastiWStrobeBits)
+  val read = Vec(numCRs, Flipped(Decoupled(UInt(nastiXDataBits.W))))
+  val write = Vec(numCRs, Decoupled(UInt(nastiXDataBits.W)))
+  val wstrb = Output(UInt(nastiWStrobeBits.W))
 
   def bindReg(reg: RegisterEntry, addr: Int): Unit = {
     when(write(addr).valid){
       reg.node := write(addr).bits
     }
-    write(addr).ready := Bool(true)
+    write(addr).ready := true.B
     read(addr).bits := reg.node
-    read(addr).valid := Bool(true)
+    read(addr).valid := true.B
   }
 
   def bindDecoupledSink(channel: DecoupledSinkEntry, addr: Int): Unit = {
     channel.node <> write(addr)
-    assert(read(addr).ready === Bool(false), "Can only write to this decoupled sink")
+    assert(read(addr).ready === false.B, "Can only write to this decoupled sink")
   }
 
   def bindDecoupledSource(channel: DecoupledSourceEntry, addr: Int): Unit = {
     read(addr) <> channel.node
-    assert(write(addr).valid =/= Bool(true), "Can only read from this decoupled source")
+    assert(write(addr).valid =/= true.B, "Can only read from this decoupled source")
   }
 
 }
@@ -254,55 +254,55 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   })
 
   //TODO: Just use a damn state machine.
-  val rValid = RegInit(Bool(false))
-  val arFired = RegInit(Bool(false))
-  val awFired = RegInit(Bool(false))
-  val wFired = RegInit(Bool(false))
-  val wCommited = RegInit(Bool(false))
-  val bId = Reg(UInt(width = p(NastiKey).idBits))
-  val rId = Reg(UInt(width = p(NastiKey).idBits))
-  val rData = Reg(UInt(width = nastiXDataBits))
-  val wData = Reg(UInt(width = nastiXDataBits))
-  val wAddr = Reg(UInt(width = log2Up(numRegs)))
-  val rAddr = Reg(UInt(width = log2Up(numRegs)))
-  val wStrb = Reg(UInt(width = nastiWStrobeBits))
+  val rValid = RegInit(false.B)
+  val arFired = RegInit(false.B)
+  val awFired = RegInit(false.B)
+  val wFired = RegInit(false.B)
+  val wCommited = RegInit(false.B)
+  val bId = Reg(UInt(p(NastiKey).idBits.W))
+  val rId = Reg(UInt(p(NastiKey).idBits.W))
+  val rData = Reg(UInt(nastiXDataBits.W))
+  val wData = Reg(UInt(nastiXDataBits.W))
+  val wAddr = Reg(UInt(log2Up(numRegs).W))
+  val rAddr = Reg(UInt(log2Up(numRegs).W))
+  val wStrb = Reg(UInt(nastiWStrobeBits.W))
 
   when(io.nasti.aw.fire()){
-    awFired := Bool(true)
+    awFired := true.B
     wAddr := io.nasti.aw.bits.addr >> log2Up(nastiWStrobeBits)
     bId := io.nasti.aw.bits.id
-    assert(io.nasti.aw.bits.len === UInt(0))
+    assert(io.nasti.aw.bits.len === 0.U)
   }
 
   when(io.nasti.w.fire()){
-    wFired := Bool(true)
+    wFired := true.B
     wData := io.nasti.w.bits.data
     wStrb := io.nasti.w.bits.strb
   }
 
   when(io.nasti.ar.fire()) {
-    arFired := Bool(true)
+    arFired := true.B
     rAddr := (io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0)
     rId := io.nasti.ar.bits.id
-    assert(io.nasti.ar.bits.len === UInt(0), "MCRFile only support single beat reads")
+    assert(io.nasti.ar.bits.len === 0.U, "MCRFile only support single beat reads")
   }
 
   when(io.nasti.r.fire()) {
-    arFired := Bool(false)
+    arFired := false.B
   }
 
   when(io.nasti.b.fire()) {
-    awFired := Bool(false)
-    wFired := Bool(false)
-    wCommited := Bool(false)
+    awFired := false.B
+    wFired := false.B
+    wCommited := false.B
   }
 
   when(io.mcr.write(wAddr).fire()){
-    wCommited := Bool(true)
+    wCommited := true.B
   }
 
-  io.mcr.write foreach { w => w.valid := Bool(false); w.bits := wData }
-  io.mcr.read foreach { _.ready := Bool(false) }
+  io.mcr.write foreach { w => w.valid := false.B; w.bits := wData }
+  io.mcr.read foreach { _.ready := false.B }
   io.mcr.write(wAddr).valid := awFired && wFired && ~wCommited
   io.mcr.read(rAddr).ready := arFired && io.nasti.r.ready
 
@@ -318,12 +318,13 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
 }
 
 class CRIO(val direction: Direction, width: Int, val default: Int) extends Bundle {
-  val value = UInt(direction, width)
+  val value = UInt(Some(direction), width)
   def apply(dummy: Int = 0) = value
 }
 
 object CRIO {
-  def apply(direction: Direction, width: Int, default: Int) = new CRIO(direction, width, default)
+  def apply(direction: Direction, width: Int, default: Int) =
+    new CRIO(direction, width, default)
 }
 
 class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen) {
@@ -354,7 +355,7 @@ object V2D {
 // Not quite indentical to a Decoupled Skid register but similar
 object HoldingRegister {
   def apply[T <: Data](in: ValidIO[T], done: Bool): (ValidIO[T], ValidIO[T]) = {
-    val reg = RegInit({val i = Wire(in.cloneType); i.valid := Bool(false); i})
+    val reg = RegInit({val i = Wire(in.cloneType); i.valid := false.B; i})
     val out = Mux(~reg.valid || done, in, reg)
     reg := out
     (out, reg)
@@ -363,14 +364,14 @@ object HoldingRegister {
 
 object SkidRegister {
   def apply[T <: Data](in: DecoupledIO[T]): DecoupledIO[T] = {
-    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := Bool(false); i})
+    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := false.B; i})
     val out = Wire(in.cloneType)
     in.ready := ~reg.valid || out.ready
     out.valid := reg.valid || in.valid
     out.bits := Mux(reg.valid, reg.bits, in.bits)
     when (out.valid && ~out.ready) {
       reg.bits := out.bits
-      reg.valid := Bool(true)
+      reg.valid := true.B
     }
     out
   }

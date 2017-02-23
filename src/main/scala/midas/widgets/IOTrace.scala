@@ -7,9 +7,9 @@ import config.Parameters
 
 class IOTraceWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
     extends WidgetIO()(p) {
-  val traceLen = UInt(OUTPUT, width=ctrl.nastiXDataBits)
-  val ins = Flipped(Vec(inNum, Decoupled(UInt(width=ctrl.nastiXDataBits))))
-  val outs = Flipped(Vec(outNum, Decoupled(UInt(width=ctrl.nastiXDataBits))))
+  val traceLen = Output(UInt(ctrl.nastiXDataBits.W))
+  val ins = Flipped(Vec(inNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
+  val outs = Flipped(Vec(outNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
 }
 
 class IOTraceWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])

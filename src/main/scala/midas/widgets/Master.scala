@@ -9,9 +9,9 @@ import chisel3.util.{Decoupled, Counter, log2Up}
 import config.{Parameters, Field}
 
 class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
-  val simReset = Bool(OUTPUT)
-  val done = Bool(INPUT)
-  val step = Decoupled(UInt(width = p(CtrlNastiKey).dataBits))
+  val simReset = Output(Bool())
+  val done = Input(Bool())
+  val step = Decoupled(UInt(p(CtrlNastiKey).dataBits.W))
 }
 
 object Pulsify {

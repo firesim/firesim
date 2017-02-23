@@ -10,7 +10,7 @@ class ChannelIO(w: Int)(implicit p: Parameters) extends _root_.util.Parameterize
   val in    = Flipped(Decoupled(UInt(width=w)))
   val out   = Decoupled(UInt(width=w))
   val trace = Decoupled(UInt(width=w))
-  val traceLen = UInt(INPUT, log2Up(p(TraceMaxLen)+1))
+  val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
 }
 
 class Channel(val w: Int)(implicit p: Parameters) extends Module {
