@@ -84,6 +84,6 @@ private[midas] class MidasTransforms(
         new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
         new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
         new PlatformMapping(state.circuit.main, dir)
-      )), outputForm)
+      )), outputForm, state.annotations)
   }
 }
