@@ -66,44 +66,6 @@ case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
 case object SRAMChainNum extends Field[Int]
 
-class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
-  val limit = UInt(INPUT, log2Up(entries))
-}
-
-class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
-  val io = IO(new TraceQueueIO(data, p(TraceMaxLen)))
-
-  val do_flow = Wire(Bool())
-  val do_enq = io.enq.fire() && !do_flow
-  val do_deq = io.deq.fire() && !do_flow
-
-  val maybe_full = RegInit(Bool(false))
-  val enq_ptr = RegInit(UInt(0, log2Up(io.entries)))
-  val deq_ptr = RegInit(UInt(0, log2Up(io.entries)))
-  val enq_wrap = enq_ptr === io.limit
-  val deq_wrap = deq_ptr === io.limit
-  when (do_enq) { enq_ptr := Mux(enq_wrap, UInt(0), enq_ptr + UInt(1)) }
-  when (do_deq) { deq_ptr := Mux(deq_wrap, UInt(0), deq_ptr + UInt(1)) }
-  when (do_enq =/= do_deq) { maybe_full := do_enq }
-
-  val ptr_match = enq_ptr === deq_ptr
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val atLeastTwo = full || enq_ptr - deq_ptr >= UInt(2)
-  do_flow := empty && io.deq.ready
-
-  val ram = SeqMem(io.entries, data)
-  when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
-
-  val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
-  val raddr = Mux(io.deq.valid, Mux(deq_wrap, UInt(0), deq_ptr + UInt(1)), deq_ptr)
-  val ram_out_valid = Reg(next = ren)
-
-  io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
-  io.enq.ready := !full
-  io.deq.bits := Mux(empty, io.enq.bits, ram.read(raddr, ren))
-}
-
 class ChannelIO(w: Int)(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val in    = Flipped(Decoupled(UInt(width=w)))
   val out   = Decoupled(UInt(width=w))
@@ -117,19 +79,7 @@ class Channel(val w: Int)(implicit p: Parameters) extends Module {
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
   if (p(EnableSnapshot)) {
-    val trace = Module(new TraceQueue(UInt(width=w)))
-    trace suggestName "trace"
-    // trace is written when a token is consumed
-    trace.io.enq.bits  := io.out.bits
-    trace.io.enq.valid := io.out.fire() && trace.io.enq.ready
-    trace.io.limit := io.traceLen - UInt(2)
-    io.trace <> Queue(trace.io.deq, 1, pipe=true)
-    // for debugging
-    val trace_count = RegInit(UInt(0, 32))
-    trace_count suggestName "trace_count"
-    when (io.trace.fire() =/= trace.io.enq.fire()) {
-      trace_count := Mux(io.trace.fire(), trace_count - UInt(1), trace_count + UInt(1))
-    }
+    io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
     io.trace.valid := Bool(false)
   }
