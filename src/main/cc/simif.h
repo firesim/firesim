@@ -17,19 +17,9 @@
 #define TIME_DIV_CONST CLOCKS_PER_SEC
 #endif
 
-static inline midas_time_t timestamp() {
-#ifndef _WIN32
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return 1000000L * tv.tv_sec + tv.tv_usec;
-#else
-  return clock();
-#endif
-}
+midas_time_t timestamp();
 
-static inline double diff_secs(midas_time_t end, midas_time_t start) {
-  return ((double)(end - start)) / TIME_DIV_CONST;
-}
+double diff_secs(midas_time_t end, midas_time_t start);
 
 typedef std::map< std::string, size_t > idmap_t;
 typedef std::map< std::string, size_t >::const_iterator idmap_it_t;

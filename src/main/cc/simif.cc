@@ -1,6 +1,20 @@
 #include "simif.h"
 #include <fstream>
 
+midas_time_t timestamp(){
+#ifndef _WIN32
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return 1000000L * tv.tv_sec + tv.tv_usec;
+#else
+  return clock();
+#endif
+}
+
+double diff_secs(midas_time_t end, midas_time_t start) {
+  return ((double)(end - start)) / TIME_DIV_CONST;
+}
+
 simif_t::simif_t() {
   pass = true;
   t = 0;
