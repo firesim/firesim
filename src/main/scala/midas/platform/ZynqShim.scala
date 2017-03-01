@@ -6,7 +6,7 @@ import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import junctions._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 abstract class PlatformShim extends Module {
   def top: midas.core.FPGATop
@@ -28,8 +28,8 @@ case object MasterNastiKey extends Field[NastiParameters]
 case object SlaveNastiKey extends Field[NastiParameters]
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = Flipped(new NastiIO()(p alter Map(NastiKey -> p(MasterNastiKey))))
-  val slave  = new NastiIO()(p alter Map(NastiKey -> p(SlaveNastiKey)))
+  val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
+  val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) }))
 }
 
 class ZynqShim(simIo: midas.core.SimWrapperIO)

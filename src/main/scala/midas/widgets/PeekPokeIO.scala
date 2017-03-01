@@ -2,7 +2,7 @@ package midas
 package widgets
 
 import Chisel._
-import cde.Parameters
+import config.Parameters
 
 trait HasChannels {
   // A higher order funciton that takes a hardware elaborator for each channel.

@@ -3,7 +3,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import cde.Parameters
+import config.Parameters
 
 class IOTraceWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
     extends WidgetIO()(p) {

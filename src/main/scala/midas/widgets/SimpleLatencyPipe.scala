@@ -4,7 +4,7 @@ package widgets
 import chisel3._
 import chisel3.util._
 import junctions._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   // Timing Model

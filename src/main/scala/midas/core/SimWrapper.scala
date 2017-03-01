@@ -8,7 +8,7 @@ import junctions.NastiIO
 import chisel3._
 import chisel3.util._
 import chisel3.compatibility.throwException
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 import SimUtils._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
@@ -225,7 +225,7 @@ class SimWrapper(targetIo: Data)
   val io = IO(new SimWrapperIO(target.io.io, target.io.reset))
   val fire = Wire(Bool())
 
-  def genChannels[T <: Bits](arg: (T, String))(implicit p: cde.Parameters) = {
+  def genChannels[T <: Bits](arg: (T, String))(implicit p: config.Parameters) = {
     implicit val channelWidth = p(ChannelWidth)
     arg match { case (port, name) => (0 until getChunks(port)) map { off =>
       val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)

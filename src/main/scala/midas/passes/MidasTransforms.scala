@@ -64,7 +64,7 @@ private[midas] case class MidasAnnotation(t: String, conf: File)
 private[midas] class MidasTransforms(
     dir: File,
     io: chisel3.Data)
-   (implicit param: cde.Parameters) extends Transform with SimpleRun {
+   (implicit param: config.Parameters) extends Transform with SimpleRun {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap

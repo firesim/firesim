@@ -5,7 +5,7 @@ import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import junctions._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
@@ -17,7 +17,7 @@ class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p)
 
 object WidgetMMIO {
   def apply()(implicit p: Parameters): WidgetMMIO = {
-    new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey)))
+    new WidgetMMIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) }))
   }
 }
 
@@ -88,7 +88,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     genAndAttachReg(wire, name, Some(default), false)
 
   def genCRFile() {
-    val crFile = Module(new MCRFile(numRegs)(p alter Map(NastiKey -> p(CtrlNastiKey))))
+    val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
   }
@@ -162,7 +162,7 @@ trait HasWidgets {
     val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
       nMasters = 1,
       addrMap = addrMap
-    )(p alter Map(NastiKey -> p(CtrlNastiKey))))
+    )(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     ctrlInterconnect.io.masters(0) <> master
     // We should truncate upper bits of master addresses
     // according to the size of flatform MMIO
