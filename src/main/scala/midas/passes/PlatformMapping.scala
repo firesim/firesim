@@ -12,7 +12,7 @@ import java.io.{File, FileWriter, Writer, StringWriter}
 private[passes] class PlatformMapping(
     target: String,
     dir: File)
-    (implicit param: cde.Parameters) extends firrtl.passes.Pass {
+    (implicit param: config.Parameters) extends firrtl.passes.Pass {
 
   def name = "[midas] Platform Mapping"
 

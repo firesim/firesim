@@ -6,7 +6,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).

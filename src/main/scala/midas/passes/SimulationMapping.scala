@@ -21,7 +21,7 @@ private[passes] class SimulationMapping(
     instModMap: InstModMap,
     chains: Map[ChainType.Value, ChainMap],
     seqMems: Map[String, MemConf])
-   (implicit param: cde.Parameters) extends firrtl.passes.Pass {
+   (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
   def name = "[midas] Simulation Mapping"
 

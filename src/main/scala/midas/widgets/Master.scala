@@ -6,7 +6,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util.{Decoupled, Counter, log2Up}
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
   val simReset = Bool(OUTPUT)

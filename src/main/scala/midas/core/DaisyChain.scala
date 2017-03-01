@@ -4,7 +4,7 @@ package core
 import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 import scala.collection.mutable.HashMap
 
 case object DaisyWidth extends Field[Int]

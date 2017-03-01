@@ -6,14 +6,14 @@ import junctions._
 import widgets._
 import chisel3._
 import chisel3.util._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 case object MemNastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
 class FPGATopIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val ctrl = Flipped(new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey))))
-  val mem  = new NastiIO()(p alter Map(NastiKey -> p(MemNastiKey)))
+  val ctrl = Flipped(new WidgetMMIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
+  val mem  = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -117,7 +117,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIo.size+1)(p alter Map(NastiKey -> p(MemNastiKey))))
+  val arb = Module(new NastiArbiter(memIo.size+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
   io.mem <> arb.io.slave
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
@@ -129,7 +129,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
       val widget = endpoint match {
         case _: SimMemIO =>
-          val param = p alter Map(NastiKey -> p(MemNastiKey))
+          val param = p alterPartial ({ case NastiKey => p(MemNastiKey) })
           val model = (p(MemModelKey): @unchecked) match {
             case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
             case None => addWidget(new NastiWidget()(param), s"NastiWidget_$i")

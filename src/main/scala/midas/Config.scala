@@ -3,7 +3,7 @@ package midas
 import core._
 import widgets._
 import platform._
-import cde.{Parameters, Config, Field}
+import config.{Parameters, Config, Field}
 import junctions.{NastiKey, NastiParameters}
 
 trait PlatformType

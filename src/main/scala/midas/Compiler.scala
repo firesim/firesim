@@ -14,7 +14,7 @@ private class InlineCompiler extends firrtl.Compiler {
 }
 
 // Compiler for Midas Transforms
-private class MidasCompiler(dir: File, io: Data)(implicit param: cde.Parameters) extends firrtl.Compiler {
+private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
   def emitter = new firrtl.FirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
     new firrtl.passes.memlib.InferReadWrite,
@@ -31,7 +31,7 @@ private class VerilogCompiler(conf: File) extends firrtl.Compiler {
 }
 
 object MidasCompiler {
-  def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: cde.Parameters): Circuit = {
+  def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: config.Parameters): Circuit = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val annotations = new firrtl.Annotations.AnnotationMap(Seq(
       firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
@@ -51,7 +51,7 @@ object MidasCompiler {
     result.circuit
   }
 
-  def apply[T <: chisel3.Module](w: => T, dir: File)(implicit p: cde.Parameters): Circuit = {
+  def apply[T <: chisel3.Module](w: => T, dir: File)(implicit p: config.Parameters): Circuit = {
     dir.mkdirs
     lazy val target = w
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => target))
