@@ -16,7 +16,7 @@ trait HasChannels {
         case 1 =>  bindSignal(name, offset)
         case _ =>
           // Need to append an offset to the name for each chunk
-          (0 to width).toSeq.map(chunk => bindSignal(s"${name}_$chunk", offset + chunk)).head
+          (0 until width).toSeq.map(chunk => bindSignal(s"${name}_$chunk", offset + chunk)).head
       }
       // Bind the next signal; moving further down
       address +: bindChannels(bindSignal)(sigs, offset + width)
