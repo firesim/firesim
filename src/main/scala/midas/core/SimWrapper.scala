@@ -4,6 +4,7 @@ package core
 // from rocketchip
 import util.ParameterizedBundle
 import junctions.NastiIO
+import uncore.axi4.AXI4Bundle
 
 import chisel3._
 import chisel3.util._
@@ -28,7 +29,8 @@ trait Endpoint[T <: Data] {
     channels += channel
   }
 }
-class SimMemIO extends Endpoint[NastiIO]
+class SimNastiMemIO extends Endpoint[NastiIO]
+class SimAXI4MemIO extends Endpoint[AXI4Bundle]
 
 object SimUtils {
   def parsePorts(io: Data, reset: Option[Bool] = None) = {
@@ -184,10 +186,14 @@ class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
     getOuts(wire)
   }
 
-  val mem = new SimMemIO
-  val endpoints = Seq(mem)
+  val nasti = new SimNastiMemIO
+  val axi4 = new SimAXI4MemIO
+  val endpoints = Seq(nasti, axi4)
   private def findEndpoint(data: Data): Unit = data match {
-    case m: NastiIO => mem add m
+    case m: NastiIO if m.w.valid.dir == OUTPUT =>
+      nasti add m
+    case m: AXI4Bundle if m.w.valid.dir == OUTPUT =>
+      axi4 add m
     case b: Bundle => b.elements.unzip._2 foreach findEndpoint
     case v: Vec[_] => v.toSeq foreach findEndpoint
     case _ =>

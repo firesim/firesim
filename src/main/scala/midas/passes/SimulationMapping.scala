@@ -1,7 +1,7 @@
 package midas
 package passes
 
-import midas.core.{SimWrapper, SimMemIO, ChainType}
+import midas.core.{SimWrapper, ChainType}
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
