@@ -23,7 +23,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Simulation Target
   val sim = Module(new SimBox(simIoType))
   val simIo = sim.io.io
-  val memIo = sim.io.io.mem
+  val memIoSize = (Seq(sim.io.io.nasti, sim.io.io.axi4) foldLeft 0)(_ + _.size)
   // This reset is used to return the emulation to time 0.
   val simReset = Wire(Bool())
 
@@ -68,17 +68,19 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   private def targetConnect[T <: Data](arg: (T, T)): Unit = arg match {
-    case (target: Bundle, wires: Bundle) => 
-      (target.elements.unzip._2 zip wires.elements.unzip._2) foreach targetConnect
-    case (target: Vec[_], wires: Vec[_]) => 
+    case (target: Bundle, wires: Bundle) =>
+      wires.elements.toList foreach { case (name, wire) =>
+        targetConnect(target.elements(name), wire)
+      }
+    case (target: Vec[_], wires: Vec[_]) =>
+      assert(target.size == wires.size)
       (target.toSeq zip wires.toSeq) foreach targetConnect
     case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
       target := Cat(simIo.getOuts(wire).reverse map (_.bits))
     case (target: Bits, wire: Bits) if wire.dir == INPUT => 
-      simIo.getIns(wire).zipWithIndex foreach {case (in, i) =>
+      simIo.getIns(wire).zipWithIndex foreach { case (in, i) =>
         in.bits := target >> UInt(i * simIo.channelWidth)
       }
-    case _ =>
   }
 
   val simResetNext = RegNext(simReset)
@@ -117,18 +119,18 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIo.size+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
+  val arb = Module(new NastiArbiter(memIoSize+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
   io.mem <> arb.io.slave
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-    arb.io.master(memIo.size) <> loadMem.io.toSlaveMem
+    arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
   }
 
   // Instantiate endpoint widgets
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
       val widget = endpoint match {
-        case _: SimMemIO =>
+        case _: SimNastiMemIO | _: SimAXI4MemIO =>
           val param = p alterPartial ({ case NastiKey => p(MemNastiKey) })
           val model = (p(MemModelKey): @unchecked) match {
             case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
