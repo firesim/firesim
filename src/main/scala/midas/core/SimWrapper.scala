@@ -2,13 +2,11 @@ package midas
 package core
 
 // from rocketchip
-import util.ParameterizedBundle
 import junctions.NastiIO
 import uncore.axi4.AXI4Bundle
 
 import chisel3._
 import chisel3.util._
-import chisel3.compatibility.throwException
 import config.{Parameters, Field}
 import SimUtils._
 import scala.collection.immutable.ListMap
@@ -66,25 +64,6 @@ case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
 case object SRAMChainNum extends Field[Int]
 
-class ChannelIO(w: Int)(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val in    = Flipped(Decoupled(UInt(width=w)))
-  val out   = Decoupled(UInt(width=w))
-  val trace = Decoupled(UInt(width=w))
-  val traceLen = UInt(INPUT, log2Up(p(TraceMaxLen)+1))
-}
-
-class Channel(val w: Int)(implicit p: Parameters) extends Module {
-  val io = IO(new ChannelIO(w))
-  val tokens = Module(new Queue(UInt(width=w), p(ChannelLen)))
-  tokens.io.enq <> io.in
-  io.out <> tokens.io.deq
-  if (p(EnableSnapshot)) {
-    io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
-  } else {
-    io.trace.valid := Bool(false)
-  }
-}
-
 trait HasSimWrapperParams {
   implicit val p: Parameters
   implicit val channelWidth = p(ChannelWidth)
@@ -95,7 +74,7 @@ trait HasSimWrapperParams {
 }
 
 class SimWrapperIO(io: Data, reset: Bool)(implicit val p: Parameters)
-    extends ParameterizedBundle()(p) with HasSimWrapperParams {
+    extends _root_.util.ParameterizedBundle()(p) with HasSimWrapperParams {
   val (inputs, outputs) = parsePorts(io, Some(reset))
   val inChannelNum = getChunks(inputs.unzip._1)
   val outChannelNum = getChunks(outputs.unzip._1)
