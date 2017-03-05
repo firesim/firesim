@@ -2,20 +2,22 @@ package midas
 package core
 
 import config.Parameters
+import util.ParameterizedBundle
 
 import chisel3._
 import chisel3.util._
 
-class ChannelIO(w: Int)(implicit p: Parameters) extends _root_.util.ParameterizedBundle()(p) {
-  val in    = Flipped(Decoupled(UInt(width=w)))
-  val out   = Decoupled(UInt(width=w))
-  val trace = Decoupled(UInt(width=w))
+class WireChannelIO(w: Int)(implicit p: Parameters) extends Bundle {
+  val in    = Flipped(Decoupled(UInt(w.W)))
+  val out   = Decoupled(UInt(w.W))
+  val trace = Decoupled(UInt(w.W))
   val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
+  override def cloneType = new WireChannelIO(w)(p).asInstanceOf[this.type]
 }
 
-class Channel(val w: Int)(implicit p: Parameters) extends Module {
-  val io = IO(new ChannelIO(w))
-  val tokens = Module(new Queue(UInt(width=w), p(ChannelLen)))
+class WireChannel(val w: Int)(implicit p: Parameters) extends Module {
+  val io = IO(new WireChannelIO(w))
+  val tokens = Module(new Queue(UInt(w.W), p(ChannelLen)))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
   if (p(EnableSnapshot)) {
@@ -23,4 +25,41 @@ class Channel(val w: Int)(implicit p: Parameters) extends Module {
   } else {
     io.trace.valid := Bool(false)
   }
+}
+
+class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
+  val target = EnqIO(gen)
+  val host = new widgets.HostReadyValid
+  override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
+}
+
+object SimReadyValid {
+  def apply[T <: Data](gen: T) = new SimReadyValidIO(gen)
+}
+
+class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
+  val enq = Flipped(SimReadyValid(gen))
+  val deq = SimReadyValid(gen)
+  val targetReset = Input(Bool())
+  override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
+}
+
+class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Module {
+  val io = IO(new ReadyValidChannelIO(gen))
+  val target = Module(new Queue(gen, 2)) // needs more?
+  val tokens = Module(new Queue(Bool(), p(ChannelLen)))
+
+  target.reset := io.targetReset
+
+  target.io.enq.bits := io.enq.target.bits
+  target.io.enq.valid := io.enq.target.valid && io.enq.host.hValid
+  io.enq.target.ready := target.io.enq.ready
+  io.enq.host.hReady := tokens.io.enq.ready
+  tokens.io.enq.valid := io.enq.host.hValid
+
+  io.deq.target.bits := target.io.deq.bits
+  io.deq.target.valid := target.io.deq.valid
+  target.io.deq.ready := io.deq.target.ready && io.deq.host.hReady
+  io.deq.host.hValid := tokens.io.deq.valid
+  tokens.io.deq.ready := io.deq.host.hReady
 }
