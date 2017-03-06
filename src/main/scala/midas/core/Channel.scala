@@ -47,7 +47,7 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
   val target = Module(new Queue(gen, 2)) // needs more?
-  val tokens = Module(new Queue(Bool(), p(ChannelLen)))
+  val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
 
   target.reset := io.targetReset
 
@@ -55,11 +55,23 @@ class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Modul
   target.io.enq.valid := io.enq.target.valid && io.enq.host.hValid
   io.enq.target.ready := target.io.enq.ready
   io.enq.host.hReady := tokens.io.enq.ready
+  tokens.io.enq.bits := target.io.enq.fire()
   tokens.io.enq.valid := io.enq.host.hValid
 
+  val deqCnts = RegInit(0.U(8.W))
+  val deqValid = tokens.io.deq.bits || deqCnts.orR
   io.deq.target.bits := target.io.deq.bits
-  io.deq.target.valid := target.io.deq.valid
-  target.io.deq.ready := io.deq.target.ready && io.deq.host.hReady
+  io.deq.target.valid := target.io.deq.valid && deqValid
+  target.io.deq.ready := io.deq.target.ready && io.deq.host.hReady && deqValid
   io.deq.host.hValid := tokens.io.deq.valid
   tokens.io.deq.ready := io.deq.host.hReady
+
+  when(tokens.io.deq.fire()) {
+    // target value is valid, but not ready
+    when(tokens.io.deq.bits && !io.deq.target.ready) {
+      deqCnts := deqCnts + 1.U
+    }.elsewhen(!tokens.io.deq.bits && io.deq.target.ready && deqCnts.orR) {
+      deqCnts := deqCnts - 1.U
+    }
+  }
 }
