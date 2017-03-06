@@ -72,7 +72,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           case INPUT  =>
             import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
             channel.target <> target
-            channel.host.hValid := (port.fromHost.hValid /*|| simResetNext*/)
+            channel.host.hValid := port.fromHost.hValid || simResetNext
             ready += channel.host.hReady
           case OUTPUT =>
             import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
