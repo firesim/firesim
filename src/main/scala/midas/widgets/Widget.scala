@@ -44,7 +44,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
   }
 
   //The functions bind 
-  def attach(reg: Bits, name: String): Int = {
+  def attach(reg: Data, name: String): Int = {
     crRegistry.allocate(RegisterEntry(reg, name))
   }
 
@@ -63,7 +63,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     channel
   }
 
-  def genAndAttachReg[T <: Bits](
+  def genAndAttachReg[T <: Data](
       wire: T,
       name: String,
       default: Option[T] = None,
@@ -79,12 +79,12 @@ abstract class Widget(implicit p: Parameters) extends Module {
     reg
   }
 
-  def genWOReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name)
-  def genROReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
+  def genWOReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name)
+  def genROReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
 
-  def genWORegInit[T <: Bits](wire: T, name: String, default: T): T =
+  def genWORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default))
-  def genRORegInit[T <: Bits](wire: T, name: String, default: T): T =
+  def genRORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default), false)
 
   def genCRFile() {
