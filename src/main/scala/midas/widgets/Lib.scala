@@ -183,7 +183,7 @@ abstract class MCRMapEntry {
 }
 case class DecoupledSinkEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
 case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
-case class RegisterEntry(node: Bits, name: String) extends MCRMapEntry
+case class RegisterEntry(node: Data, name: String) extends MCRMapEntry
 
 
 class MCRFileMap() {
