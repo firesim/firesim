@@ -40,7 +40,7 @@ object SimReadyValid {
 class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
-  val targetReset = Input(Bool())
+  val targetReset = Flipped(Decoupled(Bool()))
   override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
@@ -49,7 +49,8 @@ class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Modul
   val target = Module(new Queue(gen, 2)) // needs more?
   val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
 
-  target.reset := io.targetReset
+  target.reset := io.targetReset.bits && io.targetReset.valid
+  io.targetReset.ready := true.B // TODO: is it ok?
 
   target.io.enq.bits := io.enq.target.bits
   target.io.enq.valid := io.enq.target.valid && io.enq.host.hValid
