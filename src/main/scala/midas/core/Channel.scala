@@ -29,7 +29,7 @@ class WireChannel(val w: Int)(implicit p: Parameters) extends Module {
 
 class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
-  val host = new widgets.HostReadyValid
+  val host = new HostReadyValid
   override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
 }
 
