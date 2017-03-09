@@ -1,6 +1,7 @@
 package midas
 package widgets
 
+import core.HostDecoupledIO
 // from rokcetchip
 import junctions._
 
