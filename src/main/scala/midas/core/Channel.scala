@@ -44,9 +44,9 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
   override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
-class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Module {
+class ReadyValidChannel[T <: Data](gen: T, n: Int = 2)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
-  val target = Module(new Queue(gen, 2)) // needs more?
+  val target = Module(new Queue(gen, n))
   val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
 
   target.reset := io.targetReset.bits && io.targetReset.valid
