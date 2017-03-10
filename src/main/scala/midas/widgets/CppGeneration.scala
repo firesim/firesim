@@ -11,22 +11,20 @@ trait IntLikeLiteral extends CPPLiteral {
   def literalSuffix: String
   def value: BigInt
   def toC = value.toString + literalSuffix
+
+  require(bitWidth >= value.bitLength)
 }
 
 case class UInt32(value: BigInt) extends IntLikeLiteral {
   def typeString = "unsigned int"
   def bitWidth = 32
   def literalSuffix = ""
-
-  require(bitWidth >= value.bitLength)
 }
 
 case class UInt64(value: BigInt) extends IntLikeLiteral {
   def typeString = "uint64_t"
   def bitWidth = 64
   def literalSuffix = "L"
-
-  require(bitWidth >= value.bitLength)
 }
 
 case class CStrLit(val value: String) extends CPPLiteral {
@@ -53,6 +51,9 @@ object CppGenerationUtils {
 
   def genConstStatic[T <: CPPLiteral](name: String, value: T): String =
     "const static %s %s = %s;\n".format(value.typeString, name, value.toC)
+
+  def genConst[T <: CPPLiteral](name: String, value: T): String =
+    "const %s %s = %s;\n".format(value.typeString, name, value.toC)
 
   def genMacro(name: String, value: String = ""): String = s"#define $name $value\n"
 
