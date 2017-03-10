@@ -221,7 +221,8 @@ class SimWrapper(targetIo: Data)
         case INPUT  => io <> channel.io.deq.target
         case OUTPUT => channel.io.enq.target <> io
       }
-      channel.io.targetReset := target.io.reset
+      channel.io.targetReset.bits := target.io.reset
+      channel.io.targetReset.valid := fire
       channel
     }
   
