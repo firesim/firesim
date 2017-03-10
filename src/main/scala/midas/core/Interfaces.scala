@@ -1,5 +1,5 @@
 package midas
-package widgets
+package core
 
 import chisel3._
 
