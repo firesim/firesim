@@ -38,4 +38,9 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   // Connect all programmable registers to the control interrconect
   attach(latency, "LATENCY")
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    super.genHeader(base, sb)
+    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+  }
 }

@@ -9,6 +9,7 @@ import chisel3.util._
 import config.{Parameters, Field}
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
+import CppGenerationUtils._
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
   * Returns a Seq of the leaf nodes with their absolute/final direction.
   */
@@ -214,6 +215,13 @@ class MCRFileMap() {
       val address = base + idx
       sb append s"#define ${fullName} ${address}\n"
     }
+  }
+  // A variation of above which dumps the register map as a series of arrays
+  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+    val KVPs = getRegMap.map({case(k, v) => (CStrLit(k) -> UInt32(base + v))})
+    sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(numRegs)))
+    sb.append(genArray(s"${prefix}_names", KVPs.keys.toSeq))
+    sb.append(genArray(s"${prefix}_addrs", KVPs.values.toSeq ))
   }
 
   // Returns a copy of the current register map
