@@ -1,6 +1,8 @@
-#include "sim_mem.h"
 #include <algorithm>
+#include <exception>
+#include <stdio.h>
 
+#include "sim_mem.h"
 // TODO: support multi channels
 
 sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
@@ -8,19 +10,22 @@ sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
   bool dramsim = false;
   uint64_t memsize = 1L << 26; // 64 KB
   const char* loadmem = NULL;
-  latency = 10;
   for (auto &arg: args) {
-    if (arg.find("+latency=") == 0) {
-      latency = atoi(arg.c_str() + 9);
-    }
     if (arg.find("+dramsim") == 0) {
       dramsim = true;
     }
-    if (arg.find("+memsize=") == 0) {
+    else if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
-    if (arg.find("+loadmem=") == 0) {
+    else if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
+    }
+    else if(arg.find("+mm_") == 0) {
+      auto sub_arg = std::string(arg.c_str() + 4);
+      size_t delimit_idx = sub_arg.find_first_of("=");
+      std::string key = sub_arg.substr(0, delimit_idx).c_str();
+      int value = stoi(sub_arg.substr(delimit_idx+1).c_str());
+      model_configuration[key] = value;
     }
   }
 #ifdef NASTIWIDGET_0
@@ -58,22 +63,25 @@ bool sim_mem_t::done() {
 }
 
 void sim_mem_t::init() {
-#ifdef MidasMemModel
-  write(MEMMODEL_0(readMaxReqs), 8);
-  write(MEMMODEL_0(writeMaxReqs), 8);
-  write(MEMMODEL_0(readLatency), latency);
-  write(MEMMODEL_0(writeLatency), latency);
-#endif // MidasMemModel
-#ifdef SimpleLatencyPipe
-  write(MEMMODEL_0(LATENCY), latency);
-#endif // SimpleLatencyPipe
+#ifndef NASTIWIDGET_0
+  for (size_t i = 0; i < MEMMODEL_0_num_registers; i++) {
+    auto value_it = model_configuration.find(std::string(MEMMODEL_0_names[i]));
+    if (value_it != model_configuration.end()) {
+      write(MEMMODEL_0_addrs[i], value_it->second);
+    } else {
+      char buf[100];
+      sprintf(buf, "No value provided for configuration register: %s", MEMMODEL_0_names[i]);
+      throw std::runtime_error(buf);
+    }
+  }
+#endif // NASTIWIDGET_0
 }
 
-static const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
-static const data_t id_mask = (1 << MEM_ID_BITS) - 1;
-static const data_t size_mask = (1 << MEM_SIZE_BITS) - 1;
-static const data_t len_mask = (1 << MEM_LEN_BITS) - 1;
-static const data_t strb_mask = (1 << MEM_STRB_BITS) - 1;
+const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
+const data_t id_mask = (1 << MEM_ID_BITS) - 1;
+const data_t size_mask = (1 << MEM_SIZE_BITS) - 1;
+const data_t len_mask = (1 << MEM_LEN_BITS) - 1;
+const data_t strb_mask = (1 << MEM_STRB_BITS) - 1;
 
 void sim_mem_t::recv(sim_mem_data_t& data) {
 #ifdef NASTIWIDGET_0
@@ -113,7 +121,7 @@ void sim_mem_t::recv(sim_mem_data_t& data) {
     data_t meta = read(NASTIWIDGET_0(w_meta));
     data.w.strb = (meta >> 1) & strb_mask;
     data.w.last = meta & 0x1;
-    for (size_t i = 0 ; i < MEM_CHUNKS ; i++) {
+    for (size_t i = 0; i < MEM_CHUNKS; i++) {
       data.w.data[i] = read(NASTIWIDGET_0(w_data[i]));
     }
   }

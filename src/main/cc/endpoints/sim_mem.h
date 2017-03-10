@@ -1,9 +1,12 @@
 #ifndef __SIM_MEM_H
 #define __SIM_MEM_H
 
+#include <unordered_map>
+
 #include "endpoint.h"
 #include "mm.h"
 #include "mm_dramsim2.h"
+
 
 static const size_t MEM_CHUNKS = MEM_DATA_BITS / (8 * sizeof(data_t));
 
@@ -60,7 +63,7 @@ public:
 
 private:
   mm_t* mem;
-  size_t latency;
+  std::unordered_map<std::string, uint32_t> model_configuration;
 };
 
 #endif // __SIM_MEM_H
