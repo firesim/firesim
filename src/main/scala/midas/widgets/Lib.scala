@@ -183,9 +183,16 @@ object HostMux {
 abstract class MCRMapEntry {
   def name: String
 }
+
+case class Permissions(readable: Boolean, writeable: Boolean)
+object ReadOnly extends Permissions(true, false)
+object WriteOnly extends Permissions(false, true)
+object ReadWrite extends Permissions(true, true)
+
+
 case class DecoupledSinkEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
 case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
-case class RegisterEntry(node: Data, name: String) extends MCRMapEntry
+case class RegisterEntry(node: Data, name: String, permissions: Permissions) extends MCRMapEntry
 
 
 class MCRFileMap() {
@@ -239,12 +246,22 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
   val wstrb = Output(UInt(nastiWStrobeBits.W))
 
   def bindReg(reg: RegisterEntry, addr: Int): Unit = {
-    when(write(addr).valid){
-      reg.node := write(addr).bits
+    if (reg.permissions.writeable) {
+      when(write(addr).valid){
+        reg.node := write(addr).bits
+      }
+    } else {
+      assert(write(addr).valid != true.B, s"Register ${reg.name} is read only")
     }
-    write(addr).ready := true.B
-    read(addr).bits := reg.node
+
+    if (reg.permissions.readable) {
+      read(addr).bits := reg.node
+    } else {
+      assert(read(addr).ready === false.B, "Register ${reg.name} is write only")
+    }
+
     read(addr).valid := true.B
+    write(addr).ready := true.B
   }
 
   def bindDecoupledSink(channel: DecoupledSinkEntry, addr: Int): Unit = {

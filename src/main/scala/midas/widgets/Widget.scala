@@ -43,9 +43,31 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  //The functions bind 
-  def attach(reg: Data, name: String): Int = {
-    crRegistry.allocate(RegisterEntry(reg, name))
+  def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
+    crRegistry.allocate(RegisterEntry(reg, name, permissions))
+  }
+
+  // Recursively binds the IO of a module:
+  //   For inputs, generates a registers and binds that to the map
+  //   For outputs, direct binds the wire to the map
+  def attachIO(io: Record, prefix: String = ""): Unit = {
+    def innerAttachIO(node: Data, name: String): Unit = node match {
+      case (b: Bits) => {
+        if (b.dir == OUTPUT) {
+          attach(b, s"${name}", ReadOnly)
+        } else {
+          genWOReg(b, name)
+        }
+      }
+      case (v: Vec[_]) => {
+        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, s"${name}_$idx")})
+      }
+      case (r: Record) => {
+        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, s"${name}_${subName}")})
+      }
+      case _ => new RuntimeException("Cannot bind to this sort of node...")
+    }
+    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, s"${prefix}${name}")})
   }
 
   def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
