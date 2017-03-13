@@ -3,7 +3,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import cde.Parameters
+import config.Parameters
 import midas.core.{DaisyBundle, DaisyData, ChainType}
 
 class DaisyControllerIO(daisyIO: DaisyBundle)(implicit p: Parameters) extends WidgetIO()(p){

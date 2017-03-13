@@ -5,7 +5,7 @@ import midas.core._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Annotations._
+import firrtl.annotations._
 import Utils._
 import MidasTransforms._
 import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
@@ -54,17 +54,20 @@ private class TransformAnalysis(
   }
 }
 
-private[midas] case class MidasAnnotation(t: String, conf: File)
-    extends Annotation with Loose with Unstable {
-  val target = CircuitName(t)
-  def duplicate(n: Named) = this.copy(t=n.name)
-  def transform = classOf[MidasTransforms]
+object MidasAnnotation {
+  def apply(t: String, conf: File) =
+    Annotation(CircuitName(t), classOf[MidasTransforms], conf.toString)
+  def unapply(a: Annotation) = a match {
+    case Annotation(CircuitName(t), transform, conf) if transform == classOf[MidasTransforms] =>
+      Some(CircuitName(t), new File(conf))
+    case _ => None
+  }
 }
 
 private[midas] class MidasTransforms(
     dir: File,
     io: chisel3.Data)
-   (implicit param: cde.Parameters) extends Transform with SimpleRun {
+   (implicit param: config.Parameters) extends Transform with SimpleRun {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
@@ -73,7 +76,7 @@ private[midas] class MidasTransforms(
   def inputForm = MidForm
   def outputForm = MidForm
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
-    case Seq(MidasAnnotation(t, conf)) if t == state.circuit.main =>
+    case Seq(MidasAnnotation(CircuitName(state.circuit.main), conf)) =>
       val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
       CircuitState(runPasses(state.circuit, Seq(
         new Fame1Transform(seqMems),

@@ -3,13 +3,13 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import cde.Parameters
+import config.Parameters
 
 class IOTraceWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
     extends WidgetIO()(p) {
-  val traceLen = UInt(OUTPUT, width=ctrl.nastiXDataBits)
-  val ins = Flipped(Vec(inNum, Decoupled(UInt(width=ctrl.nastiXDataBits))))
-  val outs = Flipped(Vec(outNum, Decoupled(UInt(width=ctrl.nastiXDataBits))))
+  val traceLen = Output(UInt(ctrl.nastiXDataBits.W))
+  val wireIns = Flipped(Vec(inNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
+  val wireOuts = Flipped(Vec(outNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
 }
 
 class IOTraceWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
@@ -19,16 +19,16 @@ class IOTraceWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val io = IO(new IOTraceWidgetIO(numInputChannels, numOutputChannels))
 
   def bindInputs = bindChannels((name, offset) => {
-    attachDecoupledSource(io.ins(offset), s"${name}_trace")
+    attachDecoupledSource(io.wireIns(offset), s"${name}_trace")
   }) _
 
   def bindOutputs = bindChannels((name, offset) => {
-    attachDecoupledSource(io.outs(offset), s"${name}_trace")
+    attachDecoupledSource(io.wireOuts(offset), s"${name}_trace")
   }) _
 
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
-  val traceLen = RegInit(UInt(128))
+  val traceLen = RegInit(128.U)
   val traceLenAddr = attach(traceLen, "TRACELEN")
   io.traceLen := traceLen
 

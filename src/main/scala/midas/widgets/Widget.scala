@@ -5,7 +5,7 @@ import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import junctions._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
@@ -17,7 +17,7 @@ class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p)
 
 object WidgetMMIO {
   def apply()(implicit p: Parameters): WidgetMMIO = {
-    new WidgetMMIO()(p alter Map(NastiKey -> p(CtrlNastiKey)))
+    new WidgetMMIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) }))
   }
 }
 
@@ -43,9 +43,31 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
-  //The functions bind 
-  def attach(reg: Bits, name: String): Int = {
-    crRegistry.allocate(RegisterEntry(reg, name))
+  def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
+    crRegistry.allocate(RegisterEntry(reg, name, permissions))
+  }
+
+  // Recursively binds the IO of a module:
+  //   For inputs, generates a registers and binds that to the map
+  //   For outputs, direct binds the wire to the map
+  def attachIO(io: Record, prefix: String = ""): Unit = {
+    def innerAttachIO(node: Data, name: String): Unit = node match {
+      case (b: Bits) => {
+        if (b.dir == OUTPUT) {
+          attach(b, s"${name}", ReadOnly)
+        } else {
+          genWOReg(b, name)
+        }
+      }
+      case (v: Vec[_]) => {
+        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, s"${name}_$idx")})
+      }
+      case (r: Record) => {
+        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, s"${name}_${subName}")})
+      }
+      case _ => new RuntimeException("Cannot bind to this sort of node...")
+    }
+    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, s"${prefix}${name}")})
   }
 
   def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
@@ -63,7 +85,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     channel
   }
 
-  def genAndAttachReg[T <: Bits](
+  def genAndAttachReg[T <: Data](
       wire: T,
       name: String,
       default: Option[T] = None,
@@ -79,16 +101,16 @@ abstract class Widget(implicit p: Parameters) extends Module {
     reg
   }
 
-  def genWOReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name)
-  def genROReg[T <: Bits](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
+  def genWOReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name)
+  def genROReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
 
-  def genWORegInit[T <: Bits](wire: T, name: String, default: T): T =
+  def genWORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default))
-  def genRORegInit[T <: Bits](wire: T, name: String, default: T): T =
+  def genRORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default), false)
 
   def genCRFile() {
-    val crFile = Module(new MCRFile(numRegs)(p alter Map(NastiKey -> p(CtrlNastiKey))))
+    val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
   }
@@ -162,7 +184,7 @@ trait HasWidgets {
     val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
       nMasters = 1,
       addrMap = addrMap
-    )(p alter Map(NastiKey -> p(CtrlNastiKey))))
+    )(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     ctrlInterconnect.io.masters(0) <> master
     // We should truncate upper bits of master addresses
     // according to the size of flatform MMIO

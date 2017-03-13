@@ -1,12 +1,13 @@
 package midas
 package widgets
 
+import core.{HostPort, HostPortIO}
 // from rocketchip
 import junctions._
 
 import chisel3._
 import chisel3.util._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data]
@@ -86,10 +87,10 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
     rBuf.io.deq.ready := tNasti.r.ready && fire && rCycleValid
     bBuf.io.deq.ready := tNasti.b.ready && fire && wCycleValid
 
-    val cycles = Reg(UInt(width=64))
+    val cycles = Reg(UInt(64.W))
     cycles suggestName "cycles"
     when (fire) {
-      cycles := Mux(targetReset, UInt(0), cycles + UInt(1))
+      cycles := Mux(targetReset, 0.U, cycles + 1.U)
     }
 
     (fire, cycles, targetReset)
@@ -98,44 +99,44 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
 
 // Widget to handle NastiIO efficiently when mem models are not available
 class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
-  val deltaBuf = Module(new Queue(UInt(width=32), 2))
-  val delta = Reg(UInt(width=32))
-  val readCount = Reg(UInt(width=32))
-  val writeCount = Reg(UInt(width=32))
+  val deltaBuf = Module(new Queue(UInt(32.W), 2))
+  val delta = Reg(UInt(32.W))
+  val readCount = Reg(UInt(32.W))
+  val writeCount = Reg(UInt(32.W))
   val stall = !delta.orR && (readCount.orR || writeCount.orR)
   val (fire, cycles, targetReset) = elaborate(stall)
 
   deltaBuf.io.deq.ready := stall
   when(reset || targetReset) {
-    delta := UInt(0)
+    delta := 0.U
   }.elsewhen(deltaBuf.io.deq.valid && stall) {
     delta := deltaBuf.io.deq.bits
   }.elsewhen(fire && delta.orR) {
-    delta := delta - UInt(1)
+    delta := delta - 1.U
   }
 
   when(reset || targetReset) {
-    readCount := UInt(0)
+    readCount := 0.U
   }.elsewhen(tNasti.ar.fire() && fire) {
-    readCount := readCount + UInt(1)
+    readCount := readCount + 1.U
   }.elsewhen(rBuf.io.enq.fire() && rBuf.io.enq.bits.last) {
-    readCount := readCount - UInt(1)
+    readCount := readCount - 1.U
   }
 
   when(reset || targetReset) {
-    writeCount := UInt(0)
+    writeCount := 0.U
   }.elsewhen(tNasti.w.fire() && tNasti.w.bits.last && fire) {
-    writeCount := writeCount + UInt(1)
+    writeCount := writeCount + 1.U
   }.elsewhen(bBuf.io.enq.fire()) {
-    writeCount := writeCount - UInt(1)
+    writeCount := writeCount - 1.U
   }
 
   // Disable host_mem
-  io.host_mem.ar.valid := Bool(false)
-  io.host_mem.aw.valid := Bool(false)
-  io.host_mem.w.valid := Bool(false)
-  io.host_mem.r.ready := Bool(false)
-  io.host_mem.b.ready := Bool(false)
+  io.host_mem.ar.valid := false.B
+  io.host_mem.aw.valid := false.B
+  io.host_mem.w.valid := false.B
+  io.host_mem.r.ready := false.B
+  io.host_mem.b.ready := false.B
 
   // Generate control register file
   val arMeta = Seq(arBuf.io.deq.bits.id, arBuf.io.deq.bits.size, arBuf.io.deq.bits.len)
@@ -165,17 +166,17 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   val wdataChunks = (tNasti.w.bits.nastiXDataBits - 1) / io.ctrl.nastiXDataBits + 1
   val wdataRegs = Seq.fill(wdataChunks)(Reg(UInt()))
   val wdataAddrs = wdataRegs.zipWithIndex map {case (reg, i) =>
-    reg := wBuf.io.deq.bits.data >> UInt(io.ctrl.nastiXDataBits*i)
+    reg := wBuf.io.deq.bits.data >> (io.ctrl.nastiXDataBits*i).U
     attach(reg, s"w_data_$i")
   }
 
   val rMeta = Seq(rBuf.io.deq.bits.id, rBuf.io.deq.bits.resp, rBuf.io.deq.bits.last)
   val rMetaWidth = (rMeta foldLeft 0)(_ + _.getWidth)
-  val rMetaReg = Reg(UInt(width=rMetaWidth))
+  val rMetaReg = Reg(UInt(rMetaWidth.W))
   assert(rMetaWidth <= io.ctrl.nastiXDataBits)
   attach(rMetaReg, "r_meta")
-  rBuf.io.enq.bits.id := rMetaReg >> UInt(tNasti.r.bits.resp.getWidth + 1)
-  rBuf.io.enq.bits.resp := rMetaReg >> UInt(1)
+  rBuf.io.enq.bits.id := rMetaReg >> (tNasti.r.bits.resp.getWidth + 1).U
+  rBuf.io.enq.bits.resp := rMetaReg >> 1.U
   rBuf.io.enq.bits.last := rMetaReg(0)
   val rdataChunks = (tNasti.r.bits.nastiXDataBits - 1) / io.ctrl.nastiXDataBits + 1
   val rdataRegs = Seq.fill(rdataChunks)(Reg(UInt()))
@@ -184,10 +185,10 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
 
   val bMeta = Seq(bBuf.io.deq.bits.id, bBuf.io.deq.bits.resp)
   val bMetaWidth = (bMeta foldLeft 0)(_ + _.getWidth)
-  val bMetaReg = Reg(UInt(width=bMetaWidth))
+  val bMetaReg = Reg(UInt(bMetaWidth.W))
   assert(bMetaWidth <= io.ctrl.nastiXDataBits)
   attach(bMetaReg, "b_meta")
-  bBuf.io.enq.bits.id := bMetaReg >> UInt(tNasti.b.bits.resp.getWidth)
+  bBuf.io.enq.bits.id := bMetaReg >> (tNasti.b.bits.resp.getWidth).U
   bBuf.io.enq.bits.resp := bMetaReg
 
   genROReg(Cat(
@@ -196,14 +197,14 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
     wBuf.io.deq.valid,
     rBuf.io.enq.ready,
     bBuf.io.enq.ready), "valid")
-  val readyReg = RegInit(UInt(0, 5))
+  val readyReg = RegInit(0.U(5.W))
   arBuf.io.deq.ready := readyReg(4)
   awBuf.io.deq.ready := readyReg(3)
   wBuf.io.deq.ready := readyReg(2)
   rBuf.io.enq.valid := readyReg(1)
   bBuf.io.enq.valid := readyReg(0)
   attach(readyReg, "ready")
-  when(readyReg.orR) { readyReg := UInt(0) }
+  when(readyReg.orR) { readyReg := 0.U }
 
   genROReg(!targetFire, "done")
   genROReg(stall && !deltaBuf.io.deq.valid, "stall")

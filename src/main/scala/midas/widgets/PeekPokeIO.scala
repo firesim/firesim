@@ -2,7 +2,7 @@ package midas
 package widgets
 
 import Chisel._
-import cde.Parameters
+import config.Parameters
 
 trait HasChannels {
   // A higher order funciton that takes a hardware elaborator for each channel.
@@ -16,7 +16,7 @@ trait HasChannels {
         case 1 =>  bindSignal(name, offset)
         case _ =>
           // Need to append an offset to the name for each chunk
-          (0 to width).toSeq.map(chunk => bindSignal(s"${name}_$chunk", offset + chunk)).head
+          (0 until width).toSeq.map(chunk => bindSignal(s"${name}_$chunk", offset + chunk)).head
       }
       // Bind the next signal; moving further down
       address +: bindChannels(bindSignal)(sigs, offset + width)
@@ -27,10 +27,10 @@ trait HasChannels {
 class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
     extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
-  val ins  = Vec(inNum, Decoupled(UInt(width = ctrl.nastiXDataBits)))
-  val outs = Flipped(Vec(outNum, Decoupled(UInt(width = ctrl.nastiXDataBits))))
+  val ins  = Vec(inNum, Decoupled(UInt(ctrl.nastiXDataBits.W)))
+  val outs = Flipped(Vec(outNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
 
-  val step = Flipped(Decoupled(UInt(width = ctrl.nastiXDataBits)))
+  val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val idle = Bool(OUTPUT)
   val tReset = Decoupled(Bool())
 }
@@ -45,14 +45,14 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val io = IO(new PeekPokeIOWidgetIO(numInputChannels, numOutputChannels))
 
   // i = input, o = output tokens (as seen from the target)
-  val iTokensAvailable = RegInit(UInt(0, width = io.ctrl.nastiXDataBits))
-  val oTokensPending = RegInit(UInt(1, width = io.ctrl.nastiXDataBits))
+  val iTokensAvailable = RegInit(0.U(io.ctrl.nastiXDataBits.W))
+  val oTokensPending = RegInit(1.U(io.ctrl.nastiXDataBits.W))
 
   // needs back pressure from reset queues
   val fromHostReady = io.ins.foldLeft(io.tReset.ready)(_ && _.ready)
   val toHostValid = io.outs.foldLeft(io.tReset.ready)(_ && _.valid)
 
-  io.idle := iTokensAvailable === UInt(0) && oTokensPending === UInt(0)
+  io.idle := iTokensAvailable === 0.U && oTokensPending === 0.U
 
   def bindInputs = bindChannels((name, offset) => {
     val channel = io.ins(offset)
