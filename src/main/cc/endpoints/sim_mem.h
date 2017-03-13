@@ -52,6 +52,7 @@ public:
   sim_mem_t(simif_t* s, int argc, char** argv);
   void init();
   void tick();
+  void profile();
 
   virtual void send(sim_mem_data_t& data);
   virtual void recv(sim_mem_data_t& data);
@@ -64,6 +65,7 @@ public:
 private:
   mm_t* mem;
   std::unordered_map<std::string, uint32_t> model_configuration;
+  std::ofstream stats_file;
 };
 
 #endif // __SIM_MEM_H

@@ -57,25 +57,38 @@ bool sim_mem_t::stall() {
 bool sim_mem_t::done() {
 #ifdef NASTIWIDGET_0
   return read(NASTIWIDGET_0(done));
-#else
-  return true;
 #endif
 }
 
+void sim_mem_t::profile() {
+#ifndef NASTIWIDGET_0
+  for (size_t i = 0; i < MEMMODEL_0_R_num_registers; i++) {
+    auto result =  read(MEMMODEL_0_R_addrs[i]);
+    std::cout << "Register: " << MEMMODEL_0_R_names[i] << " Value: " << result
+              << std::endl;
+  }
+#endif
+}
 void sim_mem_t::init() {
 #ifndef NASTIWIDGET_0
-  for (size_t i = 0; i < MEMMODEL_0_num_registers; i++) {
-    auto value_it = model_configuration.find(std::string(MEMMODEL_0_names[i]));
+  for (size_t i = 0; i < MEMMODEL_0_W_num_registers; i++) {
+    auto value_it = model_configuration.find(std::string(MEMMODEL_0_W_names[i]));
     if (value_it != model_configuration.end()) {
-      write(MEMMODEL_0_addrs[i], value_it->second);
+      write(MEMMODEL_0_W_addrs[i], value_it->second);
     } else {
       char buf[100];
-      sprintf(buf, "No value provided for configuration register: %s", MEMMODEL_0_names[i]);
+      sprintf(buf, "No value provided for configuration register: %s", MEMMODEL_0_W_names[i]);
       throw std::runtime_error(buf);
     }
   }
+
+//  stats_file.open(output_file, std::ofstream::out);
+//  if(!stats_file.is_open()) {
+//    throw std::runtime_error("Could not open output file: " + output_file);
+//  }
 #endif // NASTIWIDGET_0
 }
+
 
 const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
 const data_t id_mask = (1 << MEM_ID_BITS) - 1;
