@@ -180,18 +180,23 @@ object HostMux {
   }
 }
 
-abstract class MCRMapEntry {
-  def name: String
-}
-
 case class Permissions(readable: Boolean, writeable: Boolean)
 object ReadOnly extends Permissions(true, false)
 object WriteOnly extends Permissions(false, true)
 object ReadWrite extends Permissions(true, true)
 
+abstract class MCRMapEntry {
+  def name: String
+  def permissions: Permissions
+}
 
-case class DecoupledSinkEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
-case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry
+
+case class DecoupledSinkEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry {
+  val permissions = WriteOnly
+}
+case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends MCRMapEntry {
+  val permissions = ReadOnly
+}
 case class RegisterEntry(node: Data, name: String, permissions: Permissions) extends MCRMapEntry
 
 
@@ -226,10 +231,16 @@ class MCRFileMap() {
   }
   // A variation of above which dumps the register map as a series of arrays
   def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-    val KVPs = getRegMap.map({case(k, v) => (CStrLit(k) -> UInt32(base + v))})
-    sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(numRegs)))
-    sb.append(genArray(s"${prefix}_names", KVPs.keys.toSeq))
-    sb.append(genArray(s"${prefix}_addrs", KVPs.values.toSeq ))
+    def emitArrays(regs: Seq[MCRMapEntry], prefix: String) {
+      sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
+      sb.append(genArray(s"${prefix}_names", regs map { reg => CStrLit(reg.name)}))
+      sb.append(genArray(s"${prefix}_addrs", regs map { reg => UInt32(lookupAddress(reg.name).get)}))
+    }
+
+    val readRegs = regList filter { _.permissions.readable }
+    val writeRegs = regList filter { _.permissions.writeable }
+    emitArrays(readRegs, prefix + "_R");
+    emitArrays(writeRegs, prefix + "_W");
   }
 
   // Returns a copy of the current register map
