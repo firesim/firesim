@@ -5,7 +5,7 @@ import util.ParameterizedBundle // from rocketchip
 import widgets._
 import chisel3._
 import chisel3.util._
-import cde.{Parameters, Field}
+import config.{Parameters, Field}
 import junctions._
 
 case object PCIeWidth extends Field[Int]

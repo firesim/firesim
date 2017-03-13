@@ -6,7 +6,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils._
-import firrtl.passes.bitWidth
 import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
@@ -20,7 +19,7 @@ private[passes] class AddDaisyChains(
     instModMap: InstModMap,
     chains: Map[ChainType.Value, ChainMap],
     seqMems: Map[String, MemConf])
-   (implicit param: cde.Parameters) extends firrtl.passes.Pass {
+   (implicit param: config.Parameters) extends firrtl.passes.Pass {
   def name = "[midas] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
@@ -31,7 +30,7 @@ private[passes] class AddDaisyChains(
                             instIdx: Int = 0)
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
-    val annotation = new Annotations.AnnotationMap(Nil)
+    val annotation = new AnnotationMap(Nil)
     val circuit = renameMods((new InlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
     chainMods ++= circuit.modules
@@ -152,7 +151,8 @@ private[passes] class AddDaisyChains(
     chainElems.nonEmpty match {
       case false => Nil
       case true =>
-        lazy val chain = new RegChain()(param alter Map(DataWidth -> sumWidths(m.body)))
+        lazy val chain = new RegChain()(param alterPartial ({
+          case DataWidth => sumWidths(m.body) }))
         val instStmts = generateChain(() => chain, namespace, chainMods)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
@@ -304,8 +304,8 @@ private[passes] class AddDaisyChains(
           case s: DefMemory =>
             (s.depth, bitWidth(s.dataType).toInt, false)
         }
-        lazy val chain = new SRAMChain()(param alter Map(
-          DataWidth -> width, SRAMSize -> depth, SeqRead -> seqRead))
+        lazy val chain = new SRAMChain()(param alterPartial ({
+          case DataWidth => width case SRAMSize => depth case SeqRead => seqRead }))
         val instStmts = generateChain(() => chain, namespace, chainMods, i)
         val clocks = m.ports flatMap (p =>
           create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
