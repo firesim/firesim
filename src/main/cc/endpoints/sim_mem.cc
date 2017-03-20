@@ -57,6 +57,8 @@ bool sim_mem_t::stall() {
 bool sim_mem_t::done() {
 #ifdef NASTIWIDGET_0
   return read(NASTIWIDGET_0(done));
+#else
+  return true;
 #endif
 }
 
@@ -69,6 +71,7 @@ void sim_mem_t::profile() {
   }
 #endif
 }
+
 void sim_mem_t::init() {
 #ifndef NASTIWIDGET_0
   for (size_t i = 0; i < MEMMODEL_0_W_num_registers; i++) {
