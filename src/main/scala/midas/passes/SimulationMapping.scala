@@ -21,7 +21,7 @@ private[passes] class SimulationMapping(
     seqMems: Map[String, MemConf])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
-  def name = "[midas] Simulation Mapping"
+  override def name = "[midas] Simulation Mapping"
 
   private def addPad(chainFile: FileWriter, cw: Int, dw: Int)(chainType: ChainType.Value) {
     (cw - dw) match {

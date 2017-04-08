@@ -11,7 +11,7 @@ import MidasTransforms._
 import Utils._
 
 private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
-  def name = "[midas] Fame1 Transforms"
+  override def name = "[midas] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
 

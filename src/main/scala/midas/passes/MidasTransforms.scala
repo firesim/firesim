@@ -29,7 +29,7 @@ class TransformAnalysis(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap) extends firrtl.passes.Pass {
-  def name = "[midas] Analyze Circuit"
+  override def name = "[midas] Analyze Circuit"
 
   def collectChildren(mname: String, blackboxes: Set[String])(s: Statement): Statement = {
     s match {
@@ -67,7 +67,7 @@ object MidasAnnotation {
 private[midas] class MidasTransforms(
     dir: File,
     io: chisel3.Data)
-   (implicit param: config.Parameters) extends Transform with SimpleRun {
+   (implicit param: config.Parameters) extends Transform {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
@@ -78,12 +78,13 @@ private[midas] class MidasTransforms(
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
     case Seq(MidasAnnotation(CircuitName(state.circuit.main), conf)) =>
       val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
-      CircuitState(runPasses(state.circuit, Seq(
+      val transforms = Seq(
         new Fame1Transform(seqMems),
         new TransformAnalysis(childMods, childInsts, instModMap),
         new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
         new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
         new PlatformMapping(state.circuit.main, dir)
-      )), outputForm, state.annotations)
+      )
+      (transforms foldLeft state)((in, xform) => xform runTransform in) copy (form=outputForm)
   }
 }
