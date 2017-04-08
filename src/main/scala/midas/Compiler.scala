@@ -10,13 +10,13 @@ import java.io.{File, FileWriter, Writer}
 
 // Compiler in Midas Passes
 private class InlineCompiler extends firrtl.Compiler {
-  def emitter = new firrtl.FirrtlEmitter
+  def emitter = new firrtl.MiddleFirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm)
 }
 
 // Compiler for Midas Transforms
 private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
-  def emitter = new firrtl.FirrtlEmitter
+  def emitter = new firrtl.MiddleFirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
     new InferReadWrite,
     new ReplSeqMem,
@@ -35,7 +35,7 @@ object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: config.Parameters): Circuit = {
     val confFile = new File(dir, s"${chirrtl.main}.conf")
     val macroFile = new File(dir, s"${chirrtl.main}.macros.v")
-    val annotations = new firrtl.Annotations.AnnotationMap(Seq(
+    val annotations = new firrtl.AnnotationMap(Seq(
       firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
       firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
       passes.MidasAnnotation(chirrtl.main, confFile)

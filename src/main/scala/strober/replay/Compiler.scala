@@ -17,7 +17,7 @@ object Compiler {
     dir.mkdirs
     val confFile = new File(dir, s"${chirrtl.main}.conf")
     val macroFile = new File(dir, s"${chirrtl.main}.macros.v")
-    val annotations = new firrtl.Annotations.AnnotationMap(Seq(
+    val annotations = new firrtl.AnnotationMap(Seq(
       firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
       firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
       StroberAnnotation(chirrtl.main, confFile)))

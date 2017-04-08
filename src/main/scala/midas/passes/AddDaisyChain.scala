@@ -20,7 +20,7 @@ private[passes] class AddDaisyChains(
     chains: Map[ChainType.Value, ChainMap],
     seqMems: Map[String, MemConf])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
-  def name = "[midas] Add Daisy Chains"
+  override def name = "[midas] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
 
