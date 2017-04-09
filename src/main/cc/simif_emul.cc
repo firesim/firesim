@@ -52,8 +52,8 @@ simif_emul_t::~simif_emul_t() { }
 void simif_emul_t::init(int argc, char** argv, bool log) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
-  const char* waveform = "dump.vcd";
-  const char* loadmem = NULL;
+  std::string waveform = "dump.vcd";
+  std::string loadmem;
   bool fastloadmem = false;
   bool dramsim = false;
   uint64_t memsize = 1L << 32;
@@ -77,11 +77,11 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 
   ::init(memsize, dramsim);
 
-  if (slave && fastloadmem && loadmem) {
-    fprintf(stdout, "[fast loadmem] %s\n", loadmem);
+  if (slave && fastloadmem && !loadmem.empty()) {
+    fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
     void* mems[1];
     mems[0] = slave->get_data();
-    ::load_mem(mems, loadmem, MEM_DATA_BITS / 8, 1);
+    ::load_mem(mems, loadmem.c_str(), MEM_DATA_BITS / 8, 1);
   }
 
   signal(SIGTERM, handle_sigterm);
@@ -100,9 +100,9 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 #if VM_TRACE                         // If emul was invoked with --trace
   tfp = new VerilatedVcdC;
   Verilated::traceEverOn(true);      // Verilator must compute traced signals
-  VL_PRINTF("Enabling waves...\n");
+  VL_PRINTF("Enabling waves: %s\n", waveform.c_str());
   top->trace(tfp, 99);                // Trace 99 levels of hierarchy
-  tfp->open(waveform);               // Open the dump file
+  tfp->open(waveform.c_str());        // Open the dump file
 #endif // VM_TRACE
 
   top->reset = 1;
