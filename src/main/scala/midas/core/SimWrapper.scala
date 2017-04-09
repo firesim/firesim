@@ -178,6 +178,9 @@ class SimWrapper(targetIo: Data)
   (io.wireOuts zip wireOutChannels) foreach { case (out, channel) => out <> channel.io.out }
   (io.wireOutputs foldLeft 0)(connectOutput(_, _, wireOutChannels))
 
+  (io.wireInTraces zip wireInChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
+  (io.wireOutTraces zip wireOutChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
+
   def genWireChannels[T <: Bits](arg: (T, String)) =
     arg match { case (port, name) =>
       (0 until getChunks(port)) map { off =>
