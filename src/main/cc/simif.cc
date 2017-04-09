@@ -80,8 +80,8 @@ void simif_t::init(int argc, char** argv, bool log) {
 
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
+  std::string loadmem;
   bool fastloadmem = false;
-  const char* loadmem = NULL;
   for (auto &arg: args) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
@@ -108,8 +108,8 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
   }
   srand(seed);
-  if (!fastloadmem && loadmem) {
-    load_mem(loadmem);
+  if (!fastloadmem && !loadmem.empty()) {
+    load_mem(loadmem.c_str());
   }
 
 #ifdef ENABLE_SNAPSHOT
