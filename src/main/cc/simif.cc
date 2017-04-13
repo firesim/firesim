@@ -154,16 +154,16 @@ bool simif_t::expect(size_t id, biguint_t& expected) {
 
 void simif_t::read_mem(size_t addr, biguint_t& value) {
 #ifdef LOADMEM
-    write(LOADMEM_R_ADDRESS, addr);
-    uint32_t buf[MEM_DATA_CHUNK * data_t_chunks];
-    for (size_t i = 0 ; i < MEM_DATA_CHUNK; i++) {
-      data_t data = read(LOADMEM_R_DATA);
-      for (size_t j = 0 ; j < data_t_chunks ; j++) {
-        size_t idx = i * data_t_chunks + j;
-        buf[idx] = data >> 32 * j;
-      }
+  write(LOADMEM_R_ADDRESS, addr);
+  uint32_t buf[MEM_DATA_CHUNK * data_t_chunks];
+  for (size_t i = 0 ; i < MEM_DATA_CHUNK; i++) {
+    data_t data = read(LOADMEM_R_DATA);
+    for (size_t j = 0 ; j < data_t_chunks ; j++) {
+      size_t idx = i * data_t_chunks + j;
+      buf[idx] = data >> 32 * j;
     }
-    value = biguint_t(buf, MEM_DATA_CHUNK * data_t_chunks);
+  }
+  value = biguint_t(buf, MEM_DATA_CHUNK * data_t_chunks);
 #endif
 }
 
