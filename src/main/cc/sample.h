@@ -11,7 +11,14 @@
 
 enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 #ifdef ENABLE_SNAPSHOT
-enum { IN_TR = CHAIN_NUM, OUT_TR };
+enum { IN_TR = CHAIN_NUM,
+       OUT_TR,
+       IN_TR_VALID,
+       IN_TR_READY,
+       IN_TR_BITS,
+       OUT_TR_VALID,
+       OUT_TR_READY,
+       OUT_TR_BITS };
 
 void dump_f(
   FILE *file,

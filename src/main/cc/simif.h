@@ -118,6 +118,17 @@ class simif_t
     midas_time_t sample_time;
     midas_time_t sim_start_time;
 
+    void init_sampling(int argc, char** argv);
+    void finish_sampling();
+    void reservoir_sampling(size_t n);
+    size_t trace_ready_valid_bits(
+      sample_t* sample,
+      bool poke,
+      size_t bits_id,
+      size_t bits_addr,
+      size_t bits_chunk,
+      size_t num_fields);
+
   protected:
     sample_t* read_snapshot();
     sample_t* read_traces(sample_t* s);

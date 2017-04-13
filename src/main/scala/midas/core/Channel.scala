@@ -37,14 +37,27 @@ object SimReadyValid {
   def apply[T <: Data](gen: T) = new SimReadyValidIO(gen)
 }
 
+class ReadyValidTraceIO[T <: Data](gen: T) extends Bundle {
+  val bits = Decoupled(gen)
+  val valid = Decoupled(Bool())
+  val ready = Decoupled(Bool())
+  override def cloneType = new ReadyValidTraceIO(gen).asInstanceOf[this.type]
+}
+
+object ReadyValidTrace {
+  def apply[T <: Data](gen: T) = new ReadyValidTraceIO(gen)
+}
+
 class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
+  val trace = ReadyValidTrace(gen)
+  val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
   val targetReset = Flipped(Decoupled(Bool()))
   override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
-class ReadyValidChannel[T <: Data](gen: T, n: Int = 2)(implicit p: Parameters) extends Module {
+class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
   val target = Module(new Queue(gen, n))
   val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
@@ -74,5 +87,28 @@ class ReadyValidChannel[T <: Data](gen: T, n: Int = 2)(implicit p: Parameters) e
     }.elsewhen(!tokens.io.deq.bits && io.deq.target.ready && deqCnts.orR) {
       deqCnts := deqCnts - 1.U
     }
+  }
+
+  if (p(EnableSnapshot)) {
+    val wires = Wire(ReadyValidTrace(gen))
+    val targetFace = if (flipped) io.deq.target else io.enq.target
+    val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
+    wires.bits.bits  := targetFace.bits
+    wires.bits.valid := tokensFace.valid && targetFace.valid &&
+      wires.valid.ready && wires.ready.ready // when valid & ready traces are not full
+    wires.bits.ready := tokensFace.ready
+    io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
+    wires.valid.bits  := targetFace.valid
+    wires.valid.valid := tokensFace.valid
+    wires.valid.ready := tokensFace.ready
+    io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace")
+    wires.ready.bits  := targetFace.ready
+    wires.ready.valid := tokensFace.valid
+    wires.ready.ready := tokensFace.ready
+    io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace")
+  } else {
+    io.trace.bits.valid  := Bool(false)
+    io.trace.valid.valid := Bool(false)
+    io.trace.ready.valid := Bool(false)
   }
 }
