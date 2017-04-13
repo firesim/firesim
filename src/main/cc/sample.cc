@@ -91,7 +91,8 @@ void sample_t::dump_chains(FILE* file) {
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
       auto signal = chain_signals[id];
       auto width = chain_widths[id];
-      fprintf(file, "%u %zu %s %zu\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str(), width);
+      fprintf(file, "%u %zu %s %zu\n", SIGNALS, t,
+        signal.empty() ? "null" : signal.c_str(), width);
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -101,17 +102,23 @@ void sample_t::dump_chains(FILE* file) {
     fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, OUT_TR_NAMES[id]);
   }
   for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
-    fprintf(file, "%u %u %s_valid\n", SIGNALS, IN_TR_VALID, IN_TR_READY_VALID_NAMES[id]);
-    fprintf(file, "%u %u %s_ready\n", SIGNALS, IN_TR_READY, IN_TR_READY_VALID_NAMES[id]);
-    for (size_t k = 0 ; k < IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      fprintf(file, "%u %u %s\n", SIGNALS, IN_TR_BITS, IN_TR_BITS_FIELD_NAMES[bits_id]);
+    fprintf(file, "%u %u %s_valid\n", SIGNALS, IN_TR_VALID,
+      (const char*)IN_TR_READY_VALID_NAMES[id]);
+    fprintf(file, "%u %u %s_ready\n", SIGNALS, IN_TR_READY,
+      (const char*)IN_TR_READY_VALID_NAMES[id]);
+    for (size_t k = 0 ; k < (size_t)IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      fprintf(file, "%u %u %s\n", SIGNALS, IN_TR_BITS,
+        (const char*)IN_TR_BITS_FIELD_NAMES[bits_id]);
     }
   }
   for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-    fprintf(file, "%u %u %s_valid\n", SIGNALS, OUT_TR_VALID, OUT_TR_READY_VALID_NAMES[id]);
-    fprintf(file, "%u %u %s_ready\n", SIGNALS, OUT_TR_READY, OUT_TR_READY_VALID_NAMES[id]);
-    for (size_t k = 0 ; k < OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR_BITS, OUT_TR_BITS_FIELD_NAMES[bits_id]);
+    fprintf(file, "%u %u %s_valid\n", SIGNALS, OUT_TR_VALID,
+      (const char*)OUT_TR_READY_VALID_NAMES[id]);
+    fprintf(file, "%u %u %s_ready\n", SIGNALS, OUT_TR_READY,
+      (const char*)OUT_TR_READY_VALID_NAMES[id]);
+    for (size_t k = 0 ; k < (size_t)OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR_BITS,
+        (const char*)OUT_TR_BITS_FIELD_NAMES[bits_id]);
     }
   }
 }
@@ -123,7 +130,8 @@ void sample_t::dump_chains(std::ostream& os) {
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
       auto signal = chain_signals[id];
       auto width = chain_widths[id];
-      os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << width << std::endl;
+      os << SIGNALS << " " << t << " " <<
+        (signal.empty() ? "null" : signal) << " " << width << std::endl;
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -133,17 +141,23 @@ void sample_t::dump_chains(std::ostream& os) {
     os << SIGNALS << " " << OUT_TR << " " << OUT_TR_NAMES[id] << std::endl;
   }
   for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
-    os << SIGNALS << " " << IN_TR_VALID << " " << IN_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
-    os << SIGNALS << " " << IN_TR_READY << " " << IN_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
-    for (size_t k = 0 ; k < IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      os << SIGNALS << " " << IN_TR_BITS << " " << IN_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
+    os << SIGNALS << " " << IN_TR_VALID << " " <<
+      (const char*)IN_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
+    os << SIGNALS << " " << IN_TR_READY << " " <<
+      (const char*)IN_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
+    for (size_t k = 0 ; k < (size_t)IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      os << SIGNALS << " " << IN_TR_BITS << " " <<
+        (const char*)IN_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
     }
   }
   for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-    os << SIGNALS << " " << OUT_TR_VALID << " " << OUT_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
-    os << SIGNALS << " " << OUT_TR_READY << " " << OUT_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
-    for (size_t k = 0 ; k < OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      os << SIGNALS << " " << OUT_TR_BITS << " " << OUT_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
+    os << SIGNALS << " " << OUT_TR_VALID << " " <<
+      (const char*)OUT_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
+    os << SIGNALS << " " << OUT_TR_READY << " " <<
+      (const char*)OUT_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
+    for (size_t k = 0 ; k < (size_t)OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      os << SIGNALS << " " << OUT_TR_BITS << " " <<
+        (const char*)OUT_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
     }
   }
 }
