@@ -233,15 +233,16 @@ void simif_t::init_sampling(int argc, char** argv) {
       read(addr+off);
   }
   for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-    read(OUT_TR_READY_ADDRS[id]);
-    bits_id = !read(OUT_TR_VALID_ADDRS[id]) ? bits_id + OUT_TR_BITS_FIELD_NUMS[id] :
+    read((size_t)OUT_TR_READY_ADDRS[id]);
+    bits_id = !read((size_t)OUT_TR_VALID_ADDRS[id]) ?
+      bits_id + (size_t)OUT_TR_BITS_FIELD_NUMS[id] :
       trace_ready_valid_bits(
         NULL,
         false,
         bits_id,
-        OUT_TR_BITS_ADDRS[id],
-        OUT_TR_BITS_CHUNKS[id],
-        OUT_TR_BITS_FIELD_NUMS[id]);
+        (size_t)OUT_TR_BITS_ADDRS[id],
+        (size_t)OUT_TR_BITS_CHUNKS[id],
+        (size_t)OUT_TR_BITS_FIELD_NUMS[id]);
   }
 
   if (profile) sim_start_time = timestamp();
@@ -289,14 +290,15 @@ size_t simif_t::trace_ready_valid_bits(
   if (sample) {
     biguint_t data((uint32_t*)bits_data, bits_chunk * data_t_chunks);
     for (size_t k = 0, off = 0 ; k < num_fields ; k++, bits_id++) {
-      size_t field_width = (poke ? IN_TR_BITS_FIELD_WIDTHS : OUT_TR_BITS_FIELD_WIDTHS)[bits_id];
+      size_t field_width = ((unsigned int*)(
+        poke ? IN_TR_BITS_FIELD_WIDTHS : OUT_TR_BITS_FIELD_WIDTHS))[bits_id];
       size_t field_chunk = ((field_width - 1) / DAISY_WIDTH) + 1;
       biguint_t value = data >> off;
 #if DAISY_WIDTH > 32
       data_t* field_data = new data_t[field_chunk](); // zero-out
       for (size_t i = 0 ; i < field_chunk ; i++) {
         for (size_t j = 0 ; j < data_t_chunks ; j++) {
-          data[i] |= ((data_t)value[i * data_t_chunks + j]) << 32 * j;
+          field_data[i] |= ((data_t)value[i * data_t_chunks + j]) << 32 * j;
         }
       }
 #else
@@ -333,20 +335,22 @@ sample_t* simif_t::read_traces(sample_t *sample) {
 
     // ready valid input traces from FPGA
     for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
-      size_t valid_addr = IN_TR_VALID_ADDRS[id];
+      size_t valid_addr = (size_t)IN_TR_VALID_ADDRS[id];
       data_t* valid_data = new data_t[1];
       valid_data[0] = read(valid_addr);
       if (sample) sample->add_cmd(new poke_t(IN_TR_VALID, id, valid_data, 1));
-      bits_id = !valid_data[0] ? bits_id + IN_TR_BITS_FIELD_NUMS[id] :
-        trace_ready_valid_bits(sample,
-                   true,
-                   bits_id,
-                   IN_TR_BITS_ADDRS[id],
-                   IN_TR_BITS_CHUNKS[id],
-                   IN_TR_BITS_FIELD_NUMS[id]);
+      bits_id = !valid_data[0] ?
+        bits_id + (size_t)IN_TR_BITS_FIELD_NUMS[id] :
+        trace_ready_valid_bits(
+          sample,
+          true,
+          bits_id,
+          (size_t)IN_TR_BITS_ADDRS[id],
+          (size_t)IN_TR_BITS_CHUNKS[id],
+          (size_t)IN_TR_BITS_FIELD_NUMS[id]);
     }
     for (size_t id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-      size_t ready_addr = OUT_TR_READY_ADDRS[id];
+      size_t ready_addr = (size_t)OUT_TR_READY_ADDRS[id];
       data_t* ready_data = new data_t[1];
       ready_data[0] = read(ready_addr);
       if (sample) sample->add_cmd(new poke_t(OUT_TR_READY, id, ready_data, 1));
@@ -367,21 +371,22 @@ sample_t* simif_t::read_traces(sample_t *sample) {
 
     // ready valid output traces from FPGA
     for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-      size_t valid_addr = OUT_TR_VALID_ADDRS[id];
+      size_t valid_addr = (size_t)OUT_TR_VALID_ADDRS[id];
       data_t* valid_data = new data_t[1];
       valid_data[0] = read(valid_addr);
       if (sample) sample->add_cmd(new expect_t(OUT_TR_VALID, id, valid_data, 1));
-      bits_id = !valid_data[0] ? bits_id + OUT_TR_BITS_FIELD_NUMS[id] :
+      bits_id = !valid_data[0] ?
+        bits_id + (size_t)OUT_TR_BITS_FIELD_NUMS[id] :
         trace_ready_valid_bits(
           sample,
           false,
           bits_id,
-          OUT_TR_BITS_ADDRS[id],
-          OUT_TR_BITS_CHUNKS[id],
-          OUT_TR_BITS_FIELD_NUMS[id]);
+          (size_t)OUT_TR_BITS_ADDRS[id],
+          (size_t)OUT_TR_BITS_CHUNKS[id],
+          (size_t)OUT_TR_BITS_FIELD_NUMS[id]);
     }
     for (size_t id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
-      size_t ready_addr = IN_TR_READY_ADDRS[id];
+      size_t ready_addr = (size_t)IN_TR_READY_ADDRS[id];
       data_t* ready_data = new data_t[1];
       ready_data[0] = read(ready_addr);
       if (sample) sample->add_cmd(new expect_t(IN_TR_READY, id, ready_data, 1));
