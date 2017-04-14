@@ -44,13 +44,22 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
 }
 
 object TraceQueue {
-  def apply[T <: Data](token: DecoupledIO[T], len: UInt, name: String = "trace")(implicit p: Parameters) = {
+  def apply[T <: Data](
+      token: DecoupledIO[T],
+      len: UInt,
+      name: String = "trace",
+      full: Option[Bool] = None)
+     (implicit p: Parameters) = {
     val queue = Module(new TraceQueue(token.bits))
     queue suggestName name
     // queue is written when a token is consumed
     queue.io.enq.bits  := token.bits
     queue.io.enq.valid := token.fire()
     queue.io.limit := len
+    full match {
+      case None =>
+      case Some(p) => p := !queue.io.enq.ready
+    }
 
     val trace = Queue(queue.io.deq, 1, pipe=true)
 
