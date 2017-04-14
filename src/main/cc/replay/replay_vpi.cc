@@ -132,19 +132,41 @@ void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
 }
 
 void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, PUT_VALUE_TYPE type) {
-  std::string value = data->str();
   PLI_INT32 flag;
   switch(type) {
     case PUT_DEPOSIT: flag = vpiNoDelay; break;
     case PUT_FORCE: flag = vpiForceFlag; forces.push(sig); break;
   }
-  put_value(sig, value, flag);
+  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+  s_vpi_value  value_s;
+  s_vpi_vecval vecval_s[size];
+  value_s.format       = vpiVectorVal;
+  value_s.value.vector = vecval_s;
+  for (size_t i = 0 ; i < data->get_size() ; i++) {
+    value_s.value.vector[i].aval = (*data)[i];
+    value_s.value.vector[i].bval = 0;
+  }
+  for (size_t i = data->get_size() ; i < size ; i++) {
+    value_s.value.vector[i].aval = 0;
+    value_s.value.vector[i].bval = 0;
+  }
+  vpi_put_value(sig, &value_s, NULL, flag);
 }
 
 biguint_t replay_vpi_t::get_value(vpiHandle& sig) {
-  std::string value;
-  get_value(sig, value);
-  return biguint_t(value.c_str());
+  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+  s_vpi_value  value_s;
+  s_vpi_vecval vecval_s[size];
+  value_s.format       = vpiVectorVal;
+  value_s.value.vector = vecval_s;
+  vpi_get_value(sig, &value_s);
+  uint32_t* value = new uint32_t[size];
+  for (size_t i = 0 ; i < size ; i++) {
+    value[i] = value_s.value.vector[i].aval;
+  }
+  biguint_t data(value, size);
+  delete[] value;
+  return data;
 }
 
 void replay_vpi_t::take_steps(size_t n) {
