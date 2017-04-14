@@ -294,17 +294,15 @@ size_t simif_t::trace_ready_valid_bits(
         poke ? IN_TR_BITS_FIELD_WIDTHS : OUT_TR_BITS_FIELD_WIDTHS))[bits_id];
       size_t field_chunk = ((field_width - 1) / DAISY_WIDTH) + 1;
       biguint_t value = data >> off;
-#if DAISY_WIDTH > 32
       data_t* field_data = new data_t[field_chunk](); // zero-out
       for (size_t i = 0 ; i < field_chunk ; i++) {
         for (size_t j = 0 ; j < data_t_chunks ; j++) {
-          field_data[i] |= ((data_t)value[i * data_t_chunks + j]) << 32 * j;
+          size_t idx = i * data_t_chunks + j;
+          if (idx < value.get_size()) {
+            field_data[i] |= ((data_t)value[idx]) << 32 * j;
+          }
         }
       }
-#else
-      data_t* field_data = new data_t[field_chunk];
-      std::copy(value.get_data(), value.get_data() + field_chunk, field_data);
-#endif
       data_t mask = (1L << (field_width % DAISY_WIDTH)) - 1;
       if (mask) {
         field_data[field_chunk-1] = field_data[field_chunk-1] & mask;
