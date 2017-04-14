@@ -49,6 +49,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   if (p(EnableSnapshot)) {
     val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
+    daisyController.reset := reset || simReset
     daisyController.io.daisy <> simIo.daisy
 
     // TODO: ReadyValidIO Traces
@@ -58,6 +59,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       simIo.readyValidInputs,
       simIo.readyValidOutputs),
       "IOTraces")
+    traceWidget.reset := reset || simReset
     traceWidget.io.wireIns <> simIo.wireInTraces
     traceWidget.io.wireOuts <> simIo.wireOutTraces
     traceWidget.io.readyValidIns <> simIo.readyValidInTraces
@@ -104,6 +106,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   io.mem <> arb.io.slave
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
+    loadMem.reset := reset || simReset
     arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
   }
 
