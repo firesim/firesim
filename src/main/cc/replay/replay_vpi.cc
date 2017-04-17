@@ -1,5 +1,5 @@
 #include "replay_vpi.h"
-#include "vcs_main.h"
+#include "emul/vcs_main.h"
 
 void replay_vpi_t::init(int argc, char** argv) {
   host = midas_context_t::current();

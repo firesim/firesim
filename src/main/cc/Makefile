@@ -1,5 +1,6 @@
 midas_dir = $(abspath .)
 util_dir = $(midas_dir)/utils
+endpoint_dir = $(midas_dir)/endpoints
 replay_dir = $(midas_dir)/replay
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
@@ -71,7 +72,6 @@ endif
 
 design_v = $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN).macros.v
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
-endpoint_dir = $(midas_dir)/endpoints
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
 endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.$(o), $(endpoint_cc))
@@ -82,9 +82,9 @@ else
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
 
-platform_files := sample simif simif_$(PLATFORM)
+platform_files := simif simif_$(PLATFORM) sample/sample
 platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
-platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
+platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files) sample/simif_sample))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .$(o), $(platform_files)))
 
 $(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
@@ -108,9 +108,9 @@ endif
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 ifneq ($(CXX),cl) # no emulation, replay with visual studio
-emul_files := sample simif simif_emul mmio_$(PLATFORM)
-emul_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files)))
-emul_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files)))
+emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
+emul_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio))
+emul_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample))
 emul_v := $(v_dir)/emul_$(PLATFORM).v
 
 # Compile verilator emulation binary

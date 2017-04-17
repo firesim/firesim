@@ -6,8 +6,8 @@
 
 TARGET_VERILOG ?= $(GEN_DIR)/$(DESIGN).v $(GEN_DIR)/$(DESIGN).macros.v
 REPLAY_BINARY ?= $(OUT_DIR)/$(DESIGN)-replay
-replay_h := $(midas_dir)/sample.h $(replay_dir)/replay_vpi.h $(replay_dir)/replay.h
-replay_cc := $(midas_dir)/sample.cc $(replay_dir)/replay_vpi.cc
+replay_h := $(midas_dir)/sample/sample.h $(replay_dir)/replay_vpi.h $(replay_dir)/replay.h
+replay_cc := $(midas_dir)/sample/sample.cc $(replay_dir)/replay_vpi.cc
 
 ifneq ($(filter $(MAKECMDGOALS),vcs-replay $(REPLAY_BINARY)),)
 $(info verilog files: $(TARGET_VERILOG))
