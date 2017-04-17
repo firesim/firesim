@@ -1,7 +1,7 @@
 #include "simif_emul.h"
 #ifdef VCS
 #include "midas_context.h"
-#include "vcs_main.h"
+#include "emul/vcs_main.h"
 #else
 #include <verilated.h>
 #if VM_TRACE

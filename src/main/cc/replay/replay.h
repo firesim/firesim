@@ -7,7 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <cassert>
-#include "sample.h"
+#include "sample/sample.h"
 
 enum PUT_VALUE_TYPE { PUT_DEPOSIT, PUT_FORCE };
 
