@@ -1,6 +1,8 @@
 package midas
 package passes
 
+import java.io.{File, FileWriter, Writer}
+
 case class MemConf(
   name: String, 
   depth: BigInt,
@@ -41,9 +43,9 @@ object MemConfReader {
   }
 }
 
-class MidasVerilogEmitter(conf: java.io.File) extends firrtl.VerilogEmitter {
-  // private val tab = " "
-  private def emit(writer: java.io.Writer)(conf: MemConf) {
+object MidasMacroEmitter {
+  def apply(writer: Writer)(conf: MemConf) {
+    val tab = " "
     def maskWidth = (conf.width / conf.maskGran).toInt
     val addrWidth = chisel3.util.log2Up(conf.depth) max 1
     val portdefs = (conf.readers.indices flatMap (i => Seq(
@@ -125,11 +127,13 @@ endmodule""".format(
      } mkString "\n"
     )
   }
-
-  override def emit(state: firrtl.CircuitState, writer: java.io.Writer) {
-    super.emit(state, writer)
-    MemConfReader(conf) foreach emit(writer)
-  }
 }
 
-// TODO: ASIC Verilog Emitter
+class MidasVerilogEmitter(confFile: File, macroFile: File) extends firrtl.VerilogEmitter {
+  override def emit(state: firrtl.CircuitState, writer: Writer) {
+    super.emit(state, writer)
+    val macroWriter = new FileWriter(macroFile)
+    MemConfReader(confFile) foreach MidasMacroEmitter(macroWriter)
+    macroWriter.close
+  }
+}

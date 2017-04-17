@@ -86,10 +86,13 @@ void sample_t::init_chains(std::string filename) {
 
 void sample_t::dump_chains(FILE* file) {
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
-    std::vector<std::string> &chain_signals = signals[t];
+    auto chain_signals = signals[t];
+    auto chain_widths = widths[t];
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
-      std::string &signal = chain_signals[id];
-      fprintf(file, "%u %zu %s\n", SIGNALS, t, signal.empty() ? "null" : signal.c_str());
+      auto signal = chain_signals[id];
+      auto width = chain_widths[id];
+      fprintf(file, "%u %zu %s %zu\n", SIGNALS, t,
+        signal.empty() ? "null" : signal.c_str(), width);
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -98,14 +101,37 @@ void sample_t::dump_chains(FILE* file) {
   for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
     fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, OUT_TR_NAMES[id]);
   }
+  for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
+    fprintf(file, "%u %u %s_valid\n", SIGNALS, IN_TR_VALID,
+      (const char*)IN_TR_READY_VALID_NAMES[id]);
+    fprintf(file, "%u %u %s_ready\n", SIGNALS, IN_TR_READY,
+      (const char*)IN_TR_READY_VALID_NAMES[id]);
+    for (size_t k = 0 ; k < (size_t)IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      fprintf(file, "%u %u %s\n", SIGNALS, IN_TR_BITS,
+        (const char*)IN_TR_BITS_FIELD_NAMES[bits_id]);
+    }
+  }
+  for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
+    fprintf(file, "%u %u %s_valid\n", SIGNALS, OUT_TR_VALID,
+      (const char*)OUT_TR_READY_VALID_NAMES[id]);
+    fprintf(file, "%u %u %s_ready\n", SIGNALS, OUT_TR_READY,
+      (const char*)OUT_TR_READY_VALID_NAMES[id]);
+    for (size_t k = 0 ; k < (size_t)OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR_BITS,
+        (const char*)OUT_TR_BITS_FIELD_NAMES[bits_id]);
+    }
+  }
 }
 
 void sample_t::dump_chains(std::ostream& os) {
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
-    std::vector<std::string> &chain_signals = signals[t];
+    auto chain_signals = signals[t];
+    auto chain_widths = widths[t];
     for (size_t id = 0 ; id < chain_signals.size() ; id++) {
-      std::string &signal = chain_signals[id];
-      os << SIGNALS << " " << t << " " << (signal.empty() ? "null" : signal) << std::endl;
+      auto signal = chain_signals[id];
+      auto width = chain_widths[id];
+      os << SIGNALS << " " << t << " " <<
+        (signal.empty() ? "null" : signal) << " " << width << std::endl;
     }
   }
   for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
@@ -114,18 +140,38 @@ void sample_t::dump_chains(std::ostream& os) {
   for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
     os << SIGNALS << " " << OUT_TR << " " << OUT_TR_NAMES[id] << std::endl;
   }
+  for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
+    os << SIGNALS << " " << IN_TR_VALID << " " <<
+      (const char*)IN_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
+    os << SIGNALS << " " << IN_TR_READY << " " <<
+      (const char*)IN_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
+    for (size_t k = 0 ; k < (size_t)IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      os << SIGNALS << " " << IN_TR_BITS << " " <<
+        (const char*)IN_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
+    }
+  }
+  for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
+    os << SIGNALS << " " << OUT_TR_VALID << " " <<
+      (const char*)OUT_TR_READY_VALID_NAMES[id] << "_valid" << std::endl;
+    os << SIGNALS << " " << OUT_TR_READY << " " <<
+      (const char*)OUT_TR_READY_VALID_NAMES[id] << "_ready" << std::endl;
+    for (size_t k = 0 ; k < (size_t)OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
+      os << SIGNALS << " " << OUT_TR_BITS << " " <<
+        (const char*)OUT_TR_BITS_FIELD_NAMES[bits_id] << std::endl;
+    }
+  }
 }
 
 size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
   size_t t = static_cast<size_t>(type);
-  std::vector<std::string> &chain_signals = signals[t];
-  std::vector<size_t> &chain_widths = widths[t];
-  std::vector<int> &chain_depths = depths[t];
+  auto chain_signals = signals[t];
+  auto chain_widths = widths[t];
+  auto chain_depths = depths[t];
   for (size_t i = 0 ; i < chain_loop[type] ; i++) {
     for (size_t s = 0 ; s < chain_signals.size() ; s++) {
-      std::string &signal = chain_signals[s];
-      size_t width = chain_widths[s];
-      int depth = chain_depths[s];
+      auto signal = chain_signals[s];
+      auto width = chain_widths[s];
+      auto depth = chain_depths[s];
       if (!signal.empty()) {
         char substr[1025];
         assert(width <= 1024);
@@ -149,7 +195,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
 #endif
         switch(type) {
           case TRACE_CHAIN:
-            // add_force(new force_t(s, data, size));
+            add_cmd(new force_t(type, s, data, size));
             break;
           case REGS_CHAIN:
             add_cmd(new load_t(type, s, data, size, -1));
@@ -169,29 +215,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
     }
     assert(start % DAISY_WIDTH == 0);
   }
-  // if (type == TRACE_CHAIN) dump_forces();
   return start;
-}
-
-void sample_t::add_force(force_t* f) {
-  force_bin_idx = f->id == force_prev_id ? force_bin_idx + 1 : 0;
-  if (force_bins.size() < force_bin_idx + 1) {
-    force_bins.push_back(std::vector<force_t*>());
-  }
-  force_bins[force_bin_idx].push_back(f);
-  force_prev_id = f->id;
-}
-
-void sample_t::dump_forces() {
-  for (int i = force_bins.size() - 1 ; i >= 0 ; i--) {
-    std::vector<force_t*> force_bin = force_bins[i];
-    for (size_t k = 0 ; k < force_bin.size() ; k++) {
-      cmds.push_back(force_bin[k]);
-    }
-    cmds.push_back(new step_t(1));
-    force_bin.clear();
-  }
-  force_prev_id = -1;
 }
 
 sample_t::sample_t(const char* snap, uint64_t _cycle):

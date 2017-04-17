@@ -48,16 +48,22 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   (defaultIOWidget.io.outs zip simIo.wireOuts) foreach { case (x, y) => x <> y }
 
   if (p(EnableSnapshot)) {
-    val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
+    val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
+    daisyController.reset := reset || simReset
     daisyController.io.daisy <> simIo.daisy
 
     // TODO: ReadyValidIO Traces
-    val traceWidget = addWidget(new IOTraceWidget(
+    val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
       simIo.wireInputs map SimUtils.getChunks,
-      simIo.wireOutputs map SimUtils.getChunks),
+      simIo.wireOutputs map SimUtils.getChunks,
+      simIo.readyValidInputs,
+      simIo.readyValidOutputs),
       "IOTraces")
+    traceWidget.reset := reset || simReset
     traceWidget.io.wireIns <> simIo.wireInTraces
     traceWidget.io.wireOuts <> simIo.wireOutTraces
+    traceWidget.io.readyValidIns <> simIo.readyValidInTraces
+    traceWidget.io.readyValidOuts <> simIo.readyValidOutTraces
     simIo.traceLen := traceWidget.io.traceLen
   }
 
@@ -100,6 +106,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   io.mem <> arb.io.slave
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
+    loadMem.reset := reset || simReset
     arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
   }
 
@@ -117,7 +124,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           model
       }
       widget.reset := reset || simReset
-      channels2Port(widget.io.hPort, endpoint(i))
+      channels2Port(widget.io.hPort, endpoint(i)._2)
       // each widget should have its own reset queue
       val resetQueue = Module(new Queue(Bool(), 4))
       resetQueue.reset := reset || simReset

@@ -25,13 +25,17 @@ private[replay] object genVerilogFragment {
 
     writer write s"  `define TOP_TYPE $dutName\n"
     inputs foreach { case (node, name) =>
-      writer write s"  reg[${node.getWidth-1}:0] $name = 0;\n"
-      writer write s"  wire[${node.getWidth-1}:0] #0.1 ${name}_delay = $name;\n"
+      writer write s"  reg[${node.getWidth-1}:0] $name;\n"
+      writer write s"  wire[${node.getWidth-1}:0] #0.01 ${name}_delay = $name;\n"
     }
     outputs foreach { case (node, name) =>
+      writer write s"  reg[${node.getWidth-1}:0] $name;\n"
       writer write s"  wire[${node.getWidth-1}:0] ${name}_delay;\n"
-      writer write s"  wire[${node.getWidth-1}:0] #0.1 $name = ${name}_delay;\n"
     }
+
+    writer write "  always @(posedge clock) begin\n"
+    writer write (outputs.unzip._2 map (name => s"    $name <= ${name}_delay;") mkString "\n")
+    writer write "\n  end\n"
 
     writer write "\n  /*** DUT instantiation ***/\n"
     writer write s"  ${dutName} ${dutName}(\n"

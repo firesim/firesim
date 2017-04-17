@@ -8,22 +8,26 @@ import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import java.io.{File, FileWriter}
 
-private class Compiler(conf: File) extends firrtl.VerilogCompiler {
-  override def emitter = new midas.passes.MidasVerilogEmitter(conf)
+private class Compiler(confFile: File, macroFile: File) extends firrtl.VerilogCompiler {
+  override def emitter = new midas.passes.MidasVerilogEmitter(confFile, macroFile)
 }
 
 object Compiler {
   def apply(chirrtl: Circuit, io: chisel3.Data, dir: File): Circuit = {
     dir.mkdirs
-    val conf = new File(dir, s"${chirrtl.main}.conf")
+    val confFile = new File(dir, s"${chirrtl.main}.conf")
+    val macroFile = new File(dir, s"${chirrtl.main}.macros.v")
     val annotations = new firrtl.AnnotationMap(Seq(
-      InferReadWriteAnnotation(chirrtl.main),
-      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf")))
+      firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
+      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
+      StroberAnnotation(chirrtl.main, confFile)))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
-    val result = new Compiler(conf) compile (
+    val result = new Compiler(confFile, macroFile) compile (
       firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
-      verilog, Seq(new InferReadWrite,
-                   new ReplSeqMem))
+      verilog, Seq(
+        new firrtl.passes.memlib.InferReadWrite,
+        new firrtl.passes.memlib.ReplSeqMem,
+        new StroberAnalyses(dir)))
     genVerilogFragment(chirrtl.main, io, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
     verilog.close
     result.circuit

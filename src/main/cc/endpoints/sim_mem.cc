@@ -63,7 +63,7 @@ bool sim_mem_t::done() {
 }
 
 void sim_mem_t::profile() {
-#ifndef NASTIWIDGET_0
+#ifdef MEMMODEL_0_R_num_registers
   for (size_t i = 0; i < MEMMODEL_0_R_num_registers; i++) {
     auto result =  read(MEMMODEL_0_R_addrs[i]);
     std::cout << "Register: " << MEMMODEL_0_R_names[i] << " Value: " << result
@@ -73,7 +73,7 @@ void sim_mem_t::profile() {
 }
 
 void sim_mem_t::init() {
-#ifndef NASTIWIDGET_0
+#ifdef MEMMODEL_0_W_num_registers
   for (size_t i = 0; i < MEMMODEL_0_W_num_registers; i++) {
     auto value_it = model_configuration.find(std::string(MEMMODEL_0_W_names[i]));
     if (value_it != model_configuration.end()) {
@@ -89,7 +89,7 @@ void sim_mem_t::init() {
 //  if(!stats_file.is_open()) {
 //    throw std::runtime_error("Could not open output file: " + output_file);
 //  }
-#endif // NASTIWIDGET_0
+#endif // MEMMODEL_0_W_num_registers
 }
 
 

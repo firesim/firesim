@@ -40,7 +40,7 @@ struct mmio_resp_data_t
 class mmio_zynq_t: public mmio_t
 {
 public:
-  mmio_zynq_t() {
+  mmio_zynq_t(): read_inflight(false), write_inflight(false) {
     dummy_data.resize(MMIO_WIDTH);
   }
 

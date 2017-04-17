@@ -6,7 +6,9 @@
 #include <sstream>
 #include <queue>
 #include "biguint.h"
-#include "sample.h"
+#ifdef ENABLE_SNAPSHOT
+#include "sample/sample.h"
+#endif
 #ifndef _WIN32
 #include <sys/time.h>
 #define midas_time_t uint64_t
@@ -36,7 +38,6 @@ class simif_t
     uint64_t t;
     uint64_t fail_t;
     time_t seed; 
-    size_t tracelen;
     virtual void load_mem(std::string filename);
     inline void take_steps(size_t n, bool blocking) {
       write(MASTER(STEP), n);
@@ -92,16 +93,15 @@ class simif_t
     inline uint64_t cycles() { return t; }
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
+#ifdef ENABLE_SNAPSHOT
+  public:
     inline void set_tracelen(size_t len) {
       assert(len > 2);
       tracelen = len;
-#ifdef ENABLE_SNAPSHOT
       write(TRACELEN_ADDR, len);
-#endif
     }
     inline size_t get_tracelen() { return tracelen; }
 
-#ifdef ENABLE_SNAPSHOT
   private:
     // sample information
     sample_t** samples;
@@ -110,6 +110,7 @@ class simif_t
     size_t last_sample_id;
     std::string sample_file;
 
+    size_t tracelen;
     size_t trace_count;
 
     // profile information
@@ -117,6 +118,17 @@ class simif_t
     size_t sample_count;
     midas_time_t sample_time;
     midas_time_t sim_start_time;
+
+    void init_sampling(int argc, char** argv);
+    void finish_sampling();
+    void reservoir_sampling(size_t n);
+    size_t trace_ready_valid_bits(
+      sample_t* sample,
+      bool poke,
+      size_t bits_id,
+      size_t bits_addr,
+      size_t bits_chunk,
+      size_t num_fields);
 
   protected:
     sample_t* read_snapshot();

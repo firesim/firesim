@@ -1,9 +1,11 @@
-package midas
+package strober
 package core
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import config.{Parameters, Field}
+
+case object TraceMaxLen extends Field[Int]
 
 class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
   val limit = Input(UInt(width=log2Up(entries)))
@@ -44,19 +46,28 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
 }
 
 object TraceQueue {
-  def apply[T <: Data](token: DecoupledIO[T], len: UInt)(implicit p: Parameters) = {
+  def apply[T <: Data](
+      token: DecoupledIO[T],
+      len: UInt,
+      name: String = "trace",
+      full: Option[Bool] = None)
+     (implicit p: Parameters) = {
     val queue = Module(new TraceQueue(token.bits))
-    queue suggestName "trace"
+    queue suggestName name
     // queue is written when a token is consumed
     queue.io.enq.bits  := token.bits
-    queue.io.enq.valid := token.fire() && token.ready
+    queue.io.enq.valid := token.fire()
     queue.io.limit := len
+    full match {
+      case None =>
+      case Some(p) => p := !queue.io.enq.ready
+    }
 
     val trace = Queue(queue.io.deq, 1, pipe=true)
 
     // for debugging
     val count = RegInit(UInt(0, 32))
-    count suggestName "trace_count"
+    count suggestName s"${name}_count"
     when (trace.fire() =/= queue.io.enq.fire()) {
       count := Mux(trace.fire(), count - 1.U, count + 1.U)
     }
