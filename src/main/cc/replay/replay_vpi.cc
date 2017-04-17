@@ -1,5 +1,5 @@
 #include "replay_vpi.h"
-#include "vcs_main.h"
+#include "emul/vcs_main.h"
 
 void replay_vpi_t::init(int argc, char** argv) {
   host = midas_context_t::current();
@@ -12,6 +12,28 @@ void replay_vpi_t::init(int argc, char** argv) {
 int replay_vpi_t::finish() {
   target.switch_to();
   return replay_t::finish();
+}
+
+void replay_vpi_t::add_signal(vpiHandle& sig_handle, std::string& wire) {
+  size_t id = replay_data.signals.size();
+  replay_data.signals.push_back(sig_handle);
+  replay_data.signal_map[wire] = id;
+}
+
+void replay_vpi_t::probe_bits(vpiHandle& sig_handle, std::string& sigpath, std::string& modname) {
+  if (gate_level()) {
+    if (vpi_get(vpiSize, sig_handle) == 1) {
+      std::string bitpath = sigpath + "[0]";
+      add_signal(sig_handle, bitpath);
+    } else {
+      vpiHandle bit_iter = vpi_iterate(vpiBit, sig_handle);
+      while (vpiHandle bit_handle = vpi_scan(bit_iter)) {
+        std::string bitname = vpi_get_str(vpiName, bit_handle);
+        std::string bitpath = modname + "." + bitname;
+        add_signal(bit_handle, bitpath);
+      }
+    }
+  }
 }
 
 void replay_vpi_t::probe_signals() {
@@ -44,13 +66,15 @@ void replay_vpi_t::probe_signals() {
     modules.pop();
 
     std::string modname = std::string(vpi_get_str(vpiFullName, mod_handle)).substr(offset);
-    // Iterate its nets
-    vpiHandle net_iter = vpi_iterate(vpiNet, mod_handle);
-    while (vpiHandle net_handle = vpi_scan(net_iter)) {
-      std::string netname = vpi_get_str(vpiName, net_handle);
-      if (netname.find("io_") == 0) {
+
+    if (!vpi_scan(vpi_iterate(vpiPrimitive, mod_handle))) { // Not a gate?
+      // Iterate its ports
+      vpiHandle net_iter = vpi_iterate(vpiNet, mod_handle);
+      while (vpiHandle net_handle = vpi_scan(net_iter)) {
+        std::string netname = vpi_get_str(vpiName, net_handle);
         std::string netpath = modname + "." + netname;
         add_signal(net_handle, netpath);
+        probe_bits(net_handle, netpath, modname);
       }
     }
 
@@ -60,6 +84,7 @@ void replay_vpi_t::probe_signals() {
       std::string regname = vpi_get_str(vpiName, reg_handle);
       std::string regpath = modname + "." + regname;
       add_signal(reg_handle, regpath);
+      probe_bits(reg_handle, regpath, modname);
     }
 
     // Iterate its mems
@@ -70,6 +95,7 @@ void replay_vpi_t::probe_signals() {
         std::string elmname = vpi_get_str(vpiName, elm_handle);
         std::string elmpath = modname + "." + elmname;
         add_signal(elm_handle, elmpath);
+        probe_bits(elm_handle, elmpath, modname);
       }
     }
 
@@ -90,12 +116,12 @@ void replay_vpi_t::probe_signals() {
 
 void replay_vpi_t::put_value(vpiHandle& sig, std::string& value, PLI_INT32 flag) {
   s_vpi_value value_s;
-  s_vpi_time time_s;
+  // s_vpi_time time_s;
   value_s.format    = vpiHexStrVal;
   value_s.value.str = (PLI_BYTE8*) value.c_str();
-  time_s.type       = vpiScaledRealTime;
-  time_s.real       = flag == vpiTransportDelay ? 0.1 : 0.0;
-  vpi_put_value(sig, &value_s, &time_s, flag);
+  // time_s.type       = vpiScaledRealTime;
+  // time_s.real       = 0.0;
+  vpi_put_value(sig, &value_s, /*&time_s*/ NULL, flag);
 }
 
 void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
@@ -106,20 +132,41 @@ void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
 }
 
 void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, PUT_VALUE_TYPE type) {
-  std::string value = data->str();
   PLI_INT32 flag;
   switch(type) {
-    case PUT_POKE: flag = vpiInertialDelay; break;
-    case PUT_LOAD: flag = vpiTransportDelay; break;
+    case PUT_DEPOSIT: flag = vpiNoDelay; break;
     case PUT_FORCE: flag = vpiForceFlag; forces.push(sig); break;
   }
-  put_value(sig, value, flag);
+  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+  s_vpi_value  value_s;
+  s_vpi_vecval vecval_s[size];
+  value_s.format       = vpiVectorVal;
+  value_s.value.vector = vecval_s;
+  for (size_t i = 0 ; i < data->get_size() ; i++) {
+    value_s.value.vector[i].aval = (*data)[i];
+    value_s.value.vector[i].bval = 0;
+  }
+  for (size_t i = data->get_size() ; i < size ; i++) {
+    value_s.value.vector[i].aval = 0;
+    value_s.value.vector[i].bval = 0;
+  }
+  vpi_put_value(sig, &value_s, NULL, flag);
 }
 
 biguint_t replay_vpi_t::get_value(vpiHandle& sig) {
-  std::string value;
-  get_value(sig, value);
-  return biguint_t(value.c_str());
+  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+  s_vpi_value  value_s;
+  s_vpi_vecval vecval_s[size];
+  value_s.format       = vpiVectorVal;
+  value_s.value.vector = vecval_s;
+  vpi_get_value(sig, &value_s);
+  uint32_t* value = new uint32_t[size];
+  for (size_t i = 0 ; i < size ; i++) {
+    value[i] = value_s.value.vector[i].aval;
+  }
+  biguint_t data(value, size);
+  delete[] value;
+  return data;
 }
 
 void replay_vpi_t::take_steps(size_t n) {
@@ -128,6 +175,10 @@ void replay_vpi_t::take_steps(size_t n) {
 }
 
 void replay_vpi_t::tick() {
+  while(!forces.empty()) {
+    vpi_put_value(forces.front(), NULL, NULL, vpiReleaseFlag);
+    forces.pop();
+  }
   host->switch_to();
   vpiHandle syscall_handle = vpi_handle(vpiSysTfCall, NULL);
   vpiHandle arg_iter = vpi_iterate(vpiArgument, syscall_handle);

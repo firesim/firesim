@@ -14,7 +14,7 @@ private[passes] class PlatformMapping(
     dir: File)
     (implicit param: config.Parameters) extends firrtl.passes.Pass {
 
-  def name = "[midas] Platform Mapping"
+  override def name = "[midas] Platform Mapping"
 
   private def dumpHeader(c: platform.PlatformShim) {
     def vMacro(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"

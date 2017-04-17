@@ -5,7 +5,7 @@ module replay;
   reg [64:0] cycles = 0;
 
 `ifdef VCS 
-  always #`CLOCK_PERIOD clock = ~clock;
+  always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
   reg [1023:0] vcdplusfile = 0;
 `endif
@@ -27,9 +27,14 @@ module replay;
 
   always @(posedge clock) begin
     if (!reset) cycles <= cycles + 1;
+  end
+
+  always @(negedge clock) begin
     $tick(exit);
     if (exit) begin
+`ifdef VCS
       $vcdplusclose;
+`endif
       $finish;
     end
   end

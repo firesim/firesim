@@ -11,7 +11,14 @@
 
 enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 #ifdef ENABLE_SNAPSHOT
-enum { IN_TR = CHAIN_NUM, OUT_TR };
+enum { IN_TR = CHAIN_NUM,
+       OUT_TR,
+       IN_TR_VALID,
+       IN_TR_READY,
+       IN_TR_BITS,
+       OUT_TR_VALID,
+       OUT_TR_READY,
+       OUT_TR_BITS };
 
 void dump_f(
   FILE *file,
@@ -220,8 +227,6 @@ public:
   inline const std::vector<sample_inst_t*>& get_cmds() const { return cmds; }
 
 #ifdef ENABLE_SNAPSHOT
-  void dump_forces();
-  void add_force(force_t *f);
   size_t read_chain(CHAIN_TYPE type, const char* snap, size_t start = 0);
 
   static void init_chains(std::string filename);

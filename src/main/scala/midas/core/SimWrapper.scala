@@ -13,29 +13,22 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 trait Endpoint[T <: Data] {
-  protected val channels = ArrayBuffer[T]()
+  protected val channels = ArrayBuffer[(String, T)]()
   protected val wires = HashSet[Bits]()
   def size = channels.size
-  def zipWithIndex = channels.toList.zipWithIndex
   def apply(wire: Bits) = wires(wire)
-  def apply(channel: T) = channels contains channel
-  def apply(i: Int): T = channels(i)
-  def add(channel: T) {
+  def apply(i: Int): (String, T) = channels(i)
+  def add(name: String, channel: T) {
     val (ins, outs) = SimUtils.parsePorts(channel)
-    wires ++= ins.unzip._1
-    wires ++= outs.unzip._1
-    channels += channel
+    wires ++= (ins ++ outs).unzip._1
+    channels += (name -> channel)
   }
 }
-class SimNastiMemIO extends Endpoint[NastiIO] {
-  override def toString = "nasti"
-}
-class SimAXI4MemIO extends Endpoint[AXI4Bundle] {
-  override def toString = "axi4"
-}
+class SimNastiMemIO extends Endpoint[NastiIO]
+class SimAXI4MemIO extends Endpoint[AXI4Bundle]
 
 object SimUtils {
-  def parsePorts(io: Data, reset: Option[Bool] = None) = {
+  def parsePorts(io: Data, reset: Option[Bool] = None, prefix: String = "io") = {
     val inputs = ArrayBuffer[(Bits, String)]()
     val outputs = ArrayBuffer[(Bits, String)]()
     def loop(name: String, data: Data): Unit = data match {
@@ -51,7 +44,7 @@ object SimUtils {
       case None =>
       case Some(r) => inputs += (r -> "reset")
     }
-    loop("io", io)
+    loop(prefix, io)
     (inputs.toList, outputs.toList)
   }
 
@@ -63,38 +56,54 @@ object SimUtils {
     args match { case (wire, name) => name -> SimUtils.getChunks(wire) }
 }
 
-case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
-case object SRAMChainNum extends Field[Int]
 
 trait HasSimWrapperParams {
   implicit val p: Parameters
   implicit val channelWidth = p(ChannelWidth)
-  val traceMaxLen = p(TraceMaxLen)
-  val daisyWidth = p(DaisyWidth)
-  val sramChainNum = p(SRAMChainNum)
+  val traceMaxLen = p(strober.core.TraceMaxLen)
+  val daisyWidth = p(strober.core.DaisyWidth)
+  val sramChainNum = p(strober.core.SRAMChainNum)
   val enableSnapshot = p(EnableSnapshot)
 }
 
-class SimWrapperIO(io: Data, reset: Bool)
-                  (implicit val p: Parameters) extends Bundle with HasSimWrapperParams {
+class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
+  val elements = ListMap((es map {
+    case (name, rv) if rv.valid.dir == INPUT => name -> Flipped(SimReadyValid(rv.bits))
+    case (name, rv) if rv.valid.dir == OUTPUT => name -> SimReadyValid(rv.bits)
+  }):_*)
+  def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
+}
+
+class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
+  val elements = ListMap((es map {
+    case (name, rv) => name -> ReadyValidTrace(rv.bits)
+  }):_*)
+  def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
+}
+
+class SimWrapperIO(
+    io: Data, reset: Bool)
+   (implicit val p: Parameters) extends Bundle with HasSimWrapperParams {
   /*** Endpoints ***/
   val nasti = new SimNastiMemIO
   val axi4 = new SimAXI4MemIO
   val endpoints = Seq(nasti, axi4)
-  private def findEndpoint(data: Data): Unit = data match {
+  private def findEndpoint(name: String, data: Data): Unit = data match {
     case m: NastiIO if m.w.valid.dir == OUTPUT =>
-      nasti add m
+      nasti add (name, m)
     case m: AXI4Bundle if m.w.valid.dir == OUTPUT =>
-      axi4 add m
-    case b: Bundle =>
-      b.elements.unzip._2 foreach findEndpoint
-    case v: Vec[_] =>
-      v.toSeq foreach findEndpoint
+      axi4 add (name, m)
+    case b: Bundle => b.elements foreach {
+      case (n, e) => findEndpoint(s"${name}_${n}", e)
+    }
+    case v: Vec[_] => v.zipWithIndex foreach {
+      case (e, i) => findEndpoint(s"${name}_${i}", e)
+    }
     case _ =>
   }
-  findEndpoint(io)
+  findEndpoint("io", io)
 
   val (inputs, outputs) = parsePorts(io, Some(reset))
 
@@ -107,36 +116,37 @@ class SimWrapperIO(io: Data, reset: Bool)
   val wireOuts = Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W)))
 
   /*** ReadyValid Channels ***/
-  val readyValidInputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-    ep(i).elements.toSeq collect { case (name, rv: ReadyValidIO[_]) if rv.valid.dir == INPUT =>
-      s"${ep}_${i}_${name}" -> rv
+  val readyValidInputs = endpoints flatMap (ep =>
+    (0 until ep.size) flatMap { i =>
+      val (prefix, data) = ep(i)
+      data.elements.toSeq collect {
+        case (name, rv: ReadyValidIO[_]) if rv.valid.dir == INPUT =>
+          s"${prefix}_${name}" -> rv
+      }
     }
-  })
-  val readyValidOutputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-    ep(i).elements.toSeq collect { case (name, rv: ReadyValidIO[_]) if rv.valid.dir == OUTPUT =>
-      s"${ep}_${i}_${name}" -> rv
+  )
+  val readyValidOutputs = endpoints flatMap (ep =>
+    (0 until ep.size) flatMap { i =>
+      val (prefix, data) = ep(i)
+      data.elements.toSeq collect {
+        case (name, rv: ReadyValidIO[_]) if rv.valid.dir == OUTPUT =>
+          s"${prefix}_${name}" -> rv
+      }
     }
-  })
-
-  class ReadyValidRecord(elems: Seq[(String, ReadyValidIO[Data])]) extends Record {
-    val elements = ListMap((elems map {
-      case (name, rv) if rv.valid.dir == INPUT => name -> Flipped(SimReadyValid(rv.bits))
-      case (name, rv) if rv.valid.dir == OUTPUT => name -> SimReadyValid(rv.bits)
-    }):_*)
-    def cloneType = new ReadyValidRecord(elems).asInstanceOf[this.type]
-  }
-  val readyValidIns = new ReadyValidRecord(readyValidInputs)
-  val readyValidOuts = new ReadyValidRecord(readyValidOutputs)
+  )
+  val readyValidIns = new SimReadyValidRecord(readyValidInputs)
+  val readyValidOuts = new SimReadyValidRecord(readyValidOutputs)
   val readyValidInMap = (readyValidInputs.unzip._2 zip readyValidIns.elements).toMap
   val readyValidOutMap = (readyValidOutputs.unzip._2 zip readyValidOuts.elements).toMap
   val readyValidMap = readyValidInMap ++ readyValidOutMap
 
   /*** Instrumentation ***/
-  val daisy = new DaisyBundle(daisyWidth, sramChainNum)
+  val daisy = new strober.core.DaisyBundle(daisyWidth, sramChainNum)
   val traceLen = Input(UInt(log2Up(traceMaxLen + 1).W))
   val wireInTraces = Vec(if (enableSnapshot) inWireChannelNum else 0, Decoupled(UInt(channelWidth.W)))
   val wireOutTraces = Vec(if (enableSnapshot) outWireChannelNum else 0, Decoupled(UInt(channelWidth.W)))
-  // TODO: ReadyValidIO Traces
+  val readyValidInTraces = new ReadyValidTraceRecord(if (enableSnapshot) readyValidInputs else Nil)
+  val readyValidOutTraces = new ReadyValidTraceRecord(if (enableSnapshot) readyValidOutputs else Nil)
 
   override def cloneType: this.type =
     new SimWrapperIO(io, reset).asInstanceOf[this.type]
@@ -178,6 +188,11 @@ class SimWrapper(targetIo: Data)
   (io.wireOuts zip wireOutChannels) foreach { case (out, channel) => out <> channel.io.out }
   (io.wireOutputs foldLeft 0)(connectOutput(_, _, wireOutChannels))
 
+  if (enableSnapshot) {
+    (io.wireInTraces zip wireInChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
+    (io.wireOutTraces zip wireOutChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
+  }
+
   def genWireChannels[T <: Bits](arg: (T, String)) =
     arg match { case (port, name) =>
       (0 until getChunks(port)) map { off =>
@@ -213,9 +228,16 @@ class SimWrapper(targetIo: Data)
   (io.readyValidOuts.elements.unzip._2 zip readyValidOutChannels) foreach {
     case (out, channel) => out <> channel.io.deq }
 
+  if (enableSnapshot) {
+    (io.readyValidInTraces.elements.unzip._2 zip readyValidInChannels) foreach {
+      case (tr, channel) => tr <> channel.io.trace }
+    (io.readyValidOutTraces.elements.unzip._2 zip readyValidOutChannels) foreach {
+      case (tr, channel) => tr <> channel.io.trace }
+  }
+
   def genReadyValidChannel[T <: Data](arg: (String, ReadyValidIO[T])) =
     arg match { case (name, io) =>
-      val channel = Module(new ReadyValidChannel(io.bits))
+      val channel = Module(new ReadyValidChannel(io.bits, io.valid.dir == INPUT))
       channel suggestName s"ReadyValidChannel_$name"
       (io.valid.dir: @unchecked) match {
         case INPUT  => io <> channel.io.deq.target
@@ -225,7 +247,7 @@ class SimWrapper(targetIo: Data)
       channel.io.targetReset.valid := fire
       channel
     }
-  
+
   // Control
   // Firing condtion:
   // 1) all input values are valid
@@ -247,6 +269,8 @@ class SimWrapper(targetIo: Data)
   // Trace size is runtime configurable
   wireInChannels foreach (_.io.traceLen := io.traceLen)
   wireOutChannels foreach (_.io.traceLen := io.traceLen)
+  readyValidInChannels foreach (_.io.traceLen := io.traceLen)
+  readyValidOutChannels foreach (_.io.traceLen := io.traceLen)
 
   // Cycles for debug
   val cycles = Reg(UInt(64.W))

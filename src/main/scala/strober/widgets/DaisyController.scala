@@ -1,10 +1,11 @@
-package midas
+package strober
 package widgets
 
 import chisel3._
 import chisel3.util._
 import config.Parameters
-import midas.core.{DaisyBundle, DaisyData, ChainType}
+import midas.widgets._
+import strober.core.{DaisyBundle, DaisyData, ChainType}
 
 class DaisyControllerIO(daisyIO: DaisyBundle)(implicit p: Parameters) extends WidgetIO()(p){
   val daisy = Flipped(daisyIO.cloneType)

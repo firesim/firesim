@@ -1,7 +1,6 @@
-package midas
+package strober
 package passes
 
-import midas.core._
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -9,18 +8,19 @@ import firrtl.Utils._
 import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
-import MidasTransforms._
-import Utils._
+import midas.passes.MidasTransforms._
+import midas.passes.Utils._
+import strober.core._
 import java.io.StringWriter
 
-private[passes] class AddDaisyChains(
+class AddDaisyChains(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap,
     chains: Map[ChainType.Value, ChainMap],
-    seqMems: Map[String, MemConf])
+    seqMems: Map[String, midas.passes.MemConf])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
-  def name = "[midas] Add Daisy Chains"
+  override def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
 
@@ -31,7 +31,7 @@ private[passes] class AddDaisyChains(
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new AnnotationMap(Nil)
-    val circuit = renameMods((new InlineCompiler compile (
+    val circuit = renameMods((new midas.InlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
     chainMods ++= circuit.modules
     Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
@@ -70,8 +70,6 @@ private[passes] class AddDaisyChains(
           chains += s
         case s: DefMemory if !bigRegFile(s) =>
           chains += s
-        case s: WDefInstance if seqMems contains s.module =>
-          chains += s
         case _ =>
       }
       case ChainType.SRAM => s match {
@@ -83,7 +81,11 @@ private[passes] class AddDaisyChains(
           error("${s.info}: SRAMs should be transformed to Black bloxes")
         case _ =>
       }
-      case ChainType.Trace =>
+      case ChainType.Trace => s match {
+        case s: WDefInstance if seqMems contains s.module =>
+          chains += s
+         case _ =>
+      }
       case ChainType.Cntr =>
     }
     s map collect(chainType, chains)
@@ -190,18 +192,8 @@ private[passes] class AddDaisyChains(
             if (netlist.isEmpty) buildNetlist(netlist)(m.body)
             val seqMem = seqMems(s.module)
             val mem = wref(s.name, s.tpe, InstanceKind)
-            val en = (seqMem.readers.indices map (i => netlist(wsub(wsub(mem, s"R$i"), "en")))) ++
-                     (seqMem.readwriters.indices map (i =>
-                      and(netlist(wsub(wsub(mem, s"RW$i"), "en")),
-                      not(netlist(wsub(wsub(mem, s"RW$i"), "wmode"))))
-                     ))
-            val addr = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "addr"))) ++
-                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "addr")))
-            val data = (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
-                   (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
-            /* (addr zip en map { case (a, e) =>
-              insertBuf(s"${loweredName(a)}_buf", netlist(a), e)
-            }) ++ */ data
+            (seqMem.readers.indices map (i => wsub(wsub(mem, s"R$i"), "data"))) ++
+            (seqMem.readwriters.indices map (i => wsub(wsub(mem, s"RW$i"), "rdata")))
         }
         stmts ++ instStmts ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth)
     }
@@ -464,12 +456,12 @@ private[passes] class AddDaisyChains(
     case m => m
   }
 
-  def run(c: Circuit) = if (!param(EnableSnapshot)) c else {
+  def run(c: Circuit) = {
     val namespace = Namespace(c)
     val chainMods = new DefModules
     val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
-    val chirrtl = Parser parse (chisel3.Driver emit (() => new DaisyBox))
-    val daisybox = (new InlineCompiler compile (
+    val chirrtl = Parser parse (chisel3.Driver emit (() => new core.DaisyBox))
+    val daisybox = (new midas.InlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
     val daisyType = daisybox.modules.head.ports.head.tpe
     val targetMods = postorder(c, childMods)(transform(namespace, daisyType, chainMods, hasChain))

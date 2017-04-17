@@ -8,7 +8,7 @@ import firrtl.Utils.{sub_type, field_type}
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashSet}
 import java.io.{File, FileWriter, Writer}
 
-private[passes] object Utils {
+object Utils {
   val ut = UnknownType
   val uw = UnknownWidth
   val ug = UNKNOWNGENDER
