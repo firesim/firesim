@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 import java.io.{File, FileWriter, Writer}
 
 // Compiler in Midas Passes
-private class InlineCompiler extends firrtl.Compiler {
+class InlineCompiler extends firrtl.Compiler {
   def emitter = new firrtl.MiddleFirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm)
 }

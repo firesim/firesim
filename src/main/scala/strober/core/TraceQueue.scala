@@ -1,9 +1,11 @@
-package midas
+package strober
 package core
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import config.{Parameters, Field}
+
+case object TraceMaxLen extends Field[Int]
 
 class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
   val limit = Input(UInt(width=log2Up(entries)))

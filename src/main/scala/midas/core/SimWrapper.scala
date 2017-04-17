@@ -56,17 +56,15 @@ object SimUtils {
     args match { case (wire, name) => name -> SimUtils.getChunks(wire) }
 }
 
-case object TraceMaxLen extends Field[Int]
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
-case object SRAMChainNum extends Field[Int]
 
 trait HasSimWrapperParams {
   implicit val p: Parameters
   implicit val channelWidth = p(ChannelWidth)
-  val traceMaxLen = p(TraceMaxLen)
-  val daisyWidth = p(DaisyWidth)
-  val sramChainNum = p(SRAMChainNum)
+  val traceMaxLen = p(strober.core.TraceMaxLen)
+  val daisyWidth = p(strober.core.DaisyWidth)
+  val sramChainNum = p(strober.core.SRAMChainNum)
   val enableSnapshot = p(EnableSnapshot)
 }
 
@@ -143,7 +141,7 @@ class SimWrapperIO(
   val readyValidMap = readyValidInMap ++ readyValidOutMap
 
   /*** Instrumentation ***/
-  val daisy = new DaisyBundle(daisyWidth, sramChainNum)
+  val daisy = new strober.core.DaisyBundle(daisyWidth, sramChainNum)
   val traceLen = Input(UInt(log2Up(traceMaxLen + 1).W))
   val wireInTraces = Vec(if (enableSnapshot) inWireChannelNum else 0, Decoupled(UInt(channelWidth.W)))
   val wireOutTraces = Vec(if (enableSnapshot) outWireChannelNum else 0, Decoupled(UInt(channelWidth.W)))

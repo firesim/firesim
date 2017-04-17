@@ -1,6 +1,7 @@
 package midas
 package core
 
+import strober.core.{TraceQueue, TraceMaxLen}
 import config.Parameters
 import util.ParameterizedBundle
 
