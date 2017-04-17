@@ -48,12 +48,12 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   (defaultIOWidget.io.outs zip simIo.wireOuts) foreach { case (x, y) => x <> y }
 
   if (p(EnableSnapshot)) {
-    val daisyController = addWidget(new DaisyController(simIo.daisy), "DaisyChainController")
+    val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
     daisyController.reset := reset || simReset
     daisyController.io.daisy <> simIo.daisy
 
     // TODO: ReadyValidIO Traces
-    val traceWidget = addWidget(new IOTraceWidget(
+    val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
       simIo.wireInputs map SimUtils.getChunks,
       simIo.wireOutputs map SimUtils.getChunks,
       simIo.readyValidInputs,

@@ -71,7 +71,7 @@ private[midas] class MidasTransforms(
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
-  val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
+  val chains = (strober.core.ChainType.values.toList map (_ -> new ChainMap)).toMap
 
   def inputForm = MidForm
   def outputForm = MidForm
@@ -80,9 +80,12 @@ private[midas] class MidasTransforms(
       val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
       val transforms = Seq(
         new Fame1Transform(seqMems),
-        new TransformAnalysis(childMods, childInsts, instModMap),
-        new AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
-        new SimulationMapping(io, dir, childInsts, instModMap, chains, seqMems),
+        new TransformAnalysis(childMods, childInsts, instModMap)) ++
+      (if (param(EnableSnapshot)) Seq(
+        new strober.passes.AddDaisyChains(childMods, childInsts, instModMap, chains, seqMems),
+        new strober.passes.DumpChains(dir, childInsts, instModMap, chains, seqMems)
+      ) else Nil) ++ Seq(
+        new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir)
       )
       (transforms foldLeft state)((in, xform) => xform runTransform in) copy (form=outputForm)

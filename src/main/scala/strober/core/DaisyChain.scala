@@ -1,4 +1,4 @@
-package midas
+package strober
 package core
 
 import util.ParameterizedBundle // from rocketchip
@@ -10,6 +10,7 @@ import scala.collection.mutable.HashMap
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
 case object SRAMSize extends Field[Int]
+case object SRAMChainNum extends Field[Int]
 case object SeqRead extends Field[Boolean]
 
 object ChainType extends Enumeration { val Trace, Regs, SRAM, Cntr = Value }

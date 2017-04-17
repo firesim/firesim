@@ -1,6 +1,8 @@
-package midas
+package strober
 package widgets
 
+import midas.widgets._
+import midas.core._
 import chisel3._
 import chisel3.util._
 import config.Parameters
@@ -14,8 +16,8 @@ class IOTraceWidgetIO(
   val traceLen = Output(UInt(ctrl.nastiXDataBits.W))
   val wireIns = Flipped(Vec(wireInNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
   val wireOuts = Flipped(Vec(wireOutNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
-  val readyValidIns = Flipped(new midas.core.ReadyValidTraceRecord(readyValidInputs))
-  val readyValidOuts = Flipped(new midas.core.ReadyValidTraceRecord(readyValidOutputs))
+  val readyValidIns = Flipped(new ReadyValidTraceRecord(readyValidInputs))
+  val readyValidOuts = Flipped(new ReadyValidTraceRecord(readyValidOutputs))
 }
 
 class IOTraceWidget(
@@ -68,7 +70,7 @@ class IOTraceWidget(
 
   def getFields[T <: Data](arg: (String, ReadyValidIO[T])) = {
     val (name, rv) = arg
-    val (ins, outs) = midas.core.SimUtils.parsePorts(rv.bits, prefix = s"${name}_bits")
+    val (ins, outs) = SimUtils.parsePorts(rv.bits, prefix = s"${name}_bits")
     ins ++ outs
   }
 
@@ -80,7 +82,7 @@ class IOTraceWidget(
   val bitsOutChunks = readyValidOuts map { case (name, rv) =>
     name -> ((rv.bits.getWidth - 1) / io.ctrl.nastiXDataBits + 1) }
 
-  def genBitsBuffers[T <: Data](arg: ((String, Int), midas.core.ReadyValidTraceIO[T])) = {
+  def genBitsBuffers[T <: Data](arg: ((String, Int), ReadyValidTraceIO[T])) = {
     val ((name, chunks), rv) = arg
     val buffers = Seq.fill(chunks)(Module(new Queue(UInt(io.ctrl.nastiXDataBits.W), 2)))
     rv.bits.ready := (buffers.zipWithIndex foldLeft true.B){ case (ready, (buffer, i)) =>
@@ -150,7 +152,7 @@ class IOTraceWidget(
     sb.append(genArray("OUT_TR_BITS_FIELD_NAMES", bitsOutFields.flatten.unzip._2 map CStrLit))
 
     sb.append(genMacro("TRACELEN_ADDR", UInt32(base+traceLenAddr)))
-    sb.append(genMacro("TRACE_MAX_LEN", UInt32(BigInt(p(midas.core.TraceMaxLen)))))
+    sb.append(genMacro("TRACE_MAX_LEN", UInt32(BigInt(p(strober.core.TraceMaxLen)))))
   }
 
   genCRFile()
