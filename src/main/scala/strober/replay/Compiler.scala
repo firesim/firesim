@@ -20,14 +20,14 @@ object Compiler {
     val annotations = new firrtl.AnnotationMap(Seq(
       firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
       firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
-      StroberAnnotation(chirrtl.main, confFile)))
+      SeqMemPathAnnotation(chirrtl.main, confFile)))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(confFile, macroFile) compile (
       firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
       verilog, Seq(
         new firrtl.passes.memlib.InferReadWrite,
         new firrtl.passes.memlib.ReplSeqMem,
-        new StroberAnalyses(dir)))
+        new SeqMemPathAnalysis(dir)))
     genVerilogFragment(chirrtl.main, io, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
     verilog.close
     result.circuit
