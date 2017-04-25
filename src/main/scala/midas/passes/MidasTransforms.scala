@@ -25,7 +25,7 @@ private class WCircuit(
   main: String,
   val sim: SimWrapperIO) extends Circuit(info, modules, main)
 
-class TransformAnalysis(
+private class TransformAnalysis(
     childMods: ChildMods,
     childInsts: ChildInsts,
     instModMap: InstModMap) extends firrtl.passes.Pass {
@@ -54,7 +54,7 @@ class TransformAnalysis(
   }
 }
 
-object MidasAnnotation {
+private[midas] object MidasAnnotation {
   def apply(t: String, conf: File) =
     Annotation(CircuitName(t), classOf[MidasTransforms], conf.toString)
   def unapply(a: Annotation) = a match {
