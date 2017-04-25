@@ -9,8 +9,6 @@ import firrtl.annotations._
 import Utils._
 import MidasTransforms._
 import scala.collection.mutable.{HashMap, LinkedHashSet, ArrayBuffer}
-import scala.util.DynamicVariable
-import java.io.{File, FileWriter}
 
 object MidasTransforms {
   type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
@@ -55,17 +53,17 @@ private class TransformAnalysis(
 }
 
 private[midas] object MidasAnnotation {
-  def apply(t: String, conf: File) =
+  def apply(t: String, conf: java.io.File) =
     Annotation(CircuitName(t), classOf[MidasTransforms], conf.toString)
   def unapply(a: Annotation) = a match {
     case Annotation(CircuitName(t), transform, conf) if transform == classOf[MidasTransforms] =>
-      Some(CircuitName(t), new File(conf))
+      Some(CircuitName(t), new java.io.File(conf))
     case _ => None
   }
 }
 
 private[midas] class MidasTransforms(
-    dir: File,
+    dir: java.io.File,
     io: chisel3.Data)
    (implicit param: config.Parameters) extends Transform {
   val childMods = new ChildMods
