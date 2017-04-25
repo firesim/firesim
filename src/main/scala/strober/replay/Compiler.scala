@@ -3,9 +3,6 @@ package replay
 
 import firrtl.ir.Circuit
 import firrtl.passes.memlib._
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
-import scala.util.DynamicVariable
-import scala.reflect.ClassTag
 import java.io.{File, FileWriter}
 
 private class Compiler(confFile: File, macroFile: File) extends firrtl.VerilogCompiler {

@@ -4,7 +4,7 @@ package replay
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
-import java.io.{File, FileWriter, Writer}
+import java.io.{File, FileWriter}
 
 object SeqMemPathAnnotation {
   def apply(t: String, conf: File) =

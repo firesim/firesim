@@ -4,10 +4,9 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import chisel3.Bits
 import Utils._
 import MidasTransforms._
-import java.io.{File, FileWriter, Writer, StringWriter}
+import java.io.{File, FileWriter, StringWriter}
 
 private[passes] class PlatformMapping(
     target: String,
