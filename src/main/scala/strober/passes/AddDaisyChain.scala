@@ -8,16 +8,12 @@ import firrtl.Utils._
 import firrtl.passes.MemPortUtils._
 import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
-import midas.passes.MidasTransforms._
 import midas.passes.Utils._
 import strober.core._
 import java.io.StringWriter
 
 class AddDaisyChains(
-    childMods: ChildMods,
-    childInsts: ChildInsts,
-    instModMap: InstModMap,
-    chains: Map[ChainType.Value, ChainMap],
+    meta: StroberMetaData,
     seqMems: Map[String, midas.passes.MemConf])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   override def name = "[strober] Add Daisy Chains"
@@ -149,7 +145,7 @@ class AddDaisyChains(
 
     val chainElems = new Statements
     collect(chainType, chainElems)(m.body)
-    chains(chainType)(m.name) = chainElems
+    meta.chains(chainType)(m.name) = chainElems
     chainElems.nonEmpty match {
       case false => Nil
       case true =>
@@ -179,7 +175,7 @@ class AddDaisyChains(
           )
           buf
         }
-        val regs = chains(chainType)(m.name) flatMap {
+        val regs = meta.chains(chainType)(m.name) flatMap {
           case s: DefRegister => create_exps(s.name, s.tpe)
           case s: DefMemory =>
             val rs = (0 until s.depth) map (i => s"scan_$i")
@@ -285,7 +281,7 @@ class AddDaisyChains(
 
     val chainElems = new Statements
     collect(chainType, chainElems)(m.body)
-    chains(chainType)(m.name) = chainElems
+    meta.chains(chainType)(m.name) = chainElems
     chainElems.nonEmpty match {
       case false => Nil
       case true => chainElems.zipWithIndex flatMap { case (sram, i) =>
@@ -336,14 +332,14 @@ class AddDaisyChains(
       case _              => insertRegChains(m, namespace, netlist, readers, chainMods, hasChain)
     }
     val chainNum = chainType match {
-      case ChainType.SRAM => 1 max chains(chainType)(m.name).size
+      case ChainType.SRAM => 1 max meta.chains(chainType)(m.name).size
       case _              => 1
     }
-    val invalids = childInsts(m.name) flatMap (c => Seq(
+    val invalids = meta.childInsts(m.name) flatMap (c => Seq(
         IsInvalid(NoInfo, childDaisyPort(c)("in")),
         IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     // Filter children who have daisy chains
-    val childrenWithChains = childInsts(m.name) filter (x => hasChain(instModMap(x, m.name)))
+    val childrenWithChains = meta.childInsts(m.name) filter (x => hasChain(meta.instModMap(x, m.name)))
     val connects = (childrenWithChains foldLeft (None: Option[String], Seq[Connect]())){
       case ((None, stmts), child) if !hasChain(m.name) =>
         // <daisy_port>.out <- <child>.<daisy_port>.out
@@ -464,7 +460,7 @@ class AddDaisyChains(
     val daisybox = (new midas.InlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
     val daisyType = daisybox.modules.head.ports.head.tpe
-    val targetMods = postorder(c, childMods)(transform(namespace, daisyType, chainMods, hasChain))
+    val targetMods = postorder(c, meta)(transform(namespace, daisyType, chainMods, hasChain))
     c.copy(modules = chainMods ++ targetMods)
   }
 }

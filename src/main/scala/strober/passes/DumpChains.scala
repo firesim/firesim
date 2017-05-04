@@ -6,16 +6,12 @@ import firrtl.ir._
 import firrtl.Utils.create_exps
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
-import midas.passes.Utils._
-import midas.passes.MidasTransforms._
 import strober.core.ChainType
 import java.io.{File, FileWriter}
 
 class DumpChains(
     dir: File,
-    childInsts: ChildInsts,
-    instModMap: InstModMap,
-    chains: Map[core.ChainType.Value, ChainMap],
+    meta: StroberMetaData,
     seqMems: Map[String, midas.passes.MemConf])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
@@ -33,7 +29,7 @@ class DumpChains(
                    path: String)
                   (chainType: ChainType.Value)
                   (implicit daisyWidth: Int) {
-    chains(chainType) get mod match {
+    meta.chains(chainType) get mod match {
       case Some(chain) if !chain.isEmpty =>
         val id = chainType.id
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
@@ -91,8 +87,8 @@ class DumpChains(
         }
       case _ =>
     }
-    childInsts(mod) foreach (child => loop(
-      chainFile, instModMap(child, mod), s"${path}.${child}")(chainType))
+    meta.childInsts(mod) foreach (child => loop(
+      chainFile, meta.instModMap(child, mod), s"${path}.${child}")(chainType))
   }
 
   def run(c: Circuit) = {

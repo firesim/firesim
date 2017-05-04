@@ -5,7 +5,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import Utils._
-import MidasTransforms._
 import java.io.{File, FileWriter, StringWriter}
 
 private[passes] class PlatformMapping(
