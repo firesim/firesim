@@ -21,7 +21,6 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL);
-  tracelen = 128; // by master widget
 }
 
 void simif_t::load_mem(std::string filename) {
@@ -69,9 +68,6 @@ void simif_t::init(int argc, char** argv, bool log) {
     }
     if (arg.find("+seed=") == 0) {
       seed = strtoll(arg.c_str() + 6, NULL, 10);
-    }
-    if (arg.find("+tracelen=") == 0) {
-      tracelen = strtol(arg.c_str() + 10, NULL, 10);
     }
   }
   srand(seed);
