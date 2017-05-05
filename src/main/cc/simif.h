@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstring>
 #include <sstream>
+#include <map>
 #include <queue>
 #include "biguint.h"
 #ifdef ENABLE_SNAPSHOT
