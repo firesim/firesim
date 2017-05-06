@@ -7,7 +7,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import CppGenerationUtils._
@@ -214,7 +214,7 @@ class MCRFileMap() {
 
   def lookupAddress(name: String): Option[Int] = name2addr.get(name)
 
-  def numRegs(): Int = regList.size
+  def numRegs: Int = regList.size
 
   def bindRegs(mcrIO: MCRIO): Unit = regList.zipWithIndex foreach {
     case (e: DecoupledSinkEntry, addr) => mcrIO.bindDecoupledSink(e, addr)
@@ -246,7 +246,7 @@ class MCRFileMap() {
   // Returns a copy of the current register map
   def getRegMap = name2addr.toMap
 
-  def printCRs(): Unit = {
+  def printCRs {
     regList.zipWithIndex foreach { case (entry, i) => println(s"Name: ${entry.name}, Addr: $i") }
   }
 }

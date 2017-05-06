@@ -62,8 +62,8 @@ class simif_t
     }
 
     inline data_t peek(size_t id) {
-      data_t value = read(OUTPUT_ADDRS[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, OUTPUT_NAMES[id], value);
+      data_t value = read(((unsigned int*)OUTPUT_ADDRS)[id]);
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, (const char*)OUTPUT_NAMES[id], value);
       return value;
     }
 
@@ -71,7 +71,7 @@ class simif_t
       data_t value = peek(id);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
-        TARGET_NAME, OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
+        TARGET_NAME, (const char*)OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
       return expect(pass, NULL);
     }
 

@@ -4,28 +4,13 @@ package core
 // from rocketchip
 import junctions.NastiIO
 import uncore.axi4.AXI4Bundle
+import config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
 import SimUtils._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
-
-trait Endpoint[T <: Data] {
-  protected val channels = ArrayBuffer[(String, T)]()
-  protected val wires = HashSet[Bits]()
-  def size = channels.size
-  def apply(wire: Bits) = wires(wire)
-  def apply(i: Int): (String, T) = channels(i)
-  def add(name: String, channel: T) {
-    val (ins, outs) = SimUtils.parsePorts(channel)
-    wires ++= (ins ++ outs).unzip._1
-    channels += (name -> channel)
-  }
-}
-class SimNastiMemIO extends Endpoint[NastiIO]
-class SimAXI4MemIO extends Endpoint[AXI4Bundle]
 
 object SimUtils {
   def parsePorts(io: Data, reset: Option[Bool] = None, prefix: String = "io") = {
@@ -87,21 +72,22 @@ class SimWrapperIO(
     io: Data, reset: Bool)
    (implicit val p: Parameters) extends Bundle with HasSimWrapperParams {
   /*** Endpoints ***/
-  val nasti = new SimNastiMemIO
-  val axi4 = new SimAXI4MemIO
-  val endpoints = Seq(nasti, axi4)
-  private def findEndpoint(name: String, data: Data): Unit = data match {
-    case m: NastiIO if m.w.valid.dir == OUTPUT =>
-      nasti add (name, m)
-    case m: AXI4Bundle if m.w.valid.dir == OUTPUT =>
-      axi4 add (name, m)
-    case b: Bundle => b.elements foreach {
-      case (n, e) => findEndpoint(s"${name}_${n}", e)
+  val endpointMap = p(EndpointKey)
+  val endpoints = endpointMap.endpoints
+  private def findEndpoint(name: String, data: Data) {
+    endpointMap get data match {
+      case Some(endpoint) =>
+        endpoint add (name, data)
+      case None => data match {
+        case b: Bundle => b.elements foreach {
+          case (n, e) => findEndpoint(s"${name}_${n}", e)
+        }
+        case v: Vec[_] => v.zipWithIndex foreach {
+          case (e, i) => findEndpoint(s"${name}_${i}", e)
+        }
+        case _ =>
+      }
     }
-    case v: Vec[_] => v.zipWithIndex foreach {
-      case (e, i) => findEndpoint(s"${name}_${i}", e)
-    }
-    case _ =>
   }
   findEndpoint("io", io)
 
