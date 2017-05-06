@@ -40,8 +40,8 @@ class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
 // tokenized IOs.
 class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     (implicit p: Parameters) extends Widget()(p) with HasChannels {
-  val numInputChannels = inputs.unzip._2.reduce(_ + _)
-  val numOutputChannels = outputs.unzip._2.reduce(_ + _)
+  val numInputChannels = (inputs.unzip._2 foldLeft 0)(_ + _)
+  val numOutputChannels = (outputs.unzip._2 foldLeft 0)(_ + _)
   val io = IO(new PeekPokeIOWidgetIO(numInputChannels, numOutputChannels))
 
   // i = input, o = output tokens (as seen from the target)

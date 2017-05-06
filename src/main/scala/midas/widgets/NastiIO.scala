@@ -7,7 +7,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import config.Parameters
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data]
@@ -36,9 +36,9 @@ abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
 }
 
 abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
-  val tNasti = io.tNasti.hBits
+  val tNasti = io.hPort.hBits
   val tReset = io.tReset.bits
-  val targetFire = io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady && io.tReset.valid
+  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
 
   val arBuf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
   val awBuf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
@@ -51,7 +51,7 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
                 wCycleValid: Bool = Bool(true),
                 rCycleReady: Bool = Bool(true),
                 wCycleReady: Bool = Bool(true)) = {
-    val fire = targetFire && !stall
+    val fire = tFire && !stall
     fire suggestName "fire"
     io.tNasti.toHost.hReady := fire
     io.tNasti.fromHost.hValid := fire
@@ -206,7 +206,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   attach(readyReg, "ready")
   when(readyReg.orR) { readyReg := 0.U }
 
-  genROReg(!targetFire, "done")
+  genROReg(!tFire, "done")
   genROReg(stall && !deltaBuf.io.deq.valid, "stall")
   attachDecoupledSink(deltaBuf.io.enq, "delta")
 

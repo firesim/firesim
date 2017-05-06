@@ -23,7 +23,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Simulation Target
   val sim = Module(new SimBox(simIoType))
   val simIo = sim.io.io
-  val memIoSize = (Seq(sim.io.io.nasti, sim.io.io.axi4) foldLeft 0)(_ + _.size)
+  val memIoSize = (simIo.endpoints collect { case x: SimMemIO => x } foldLeft 0)(_ + _.size)
   // This reset is used to return the emulation to time 0.
   val simReset = Wire(Bool())
 
@@ -113,17 +113,17 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Instantiate endpoint widgets
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
-      val widget = endpoint match {
-        case _: SimNastiMemIO | _: SimAXI4MemIO =>
-          val param = p alterPartial ({ case NastiKey => p(MemNastiKey) })
-          val model = (p(MemModelKey): @unchecked) match {
-            case Some(modelGen) => addWidget(modelGen(param), s"MemModel_$i")
-            case None => addWidget(new NastiWidget()(param), s"NastiWidget_$i")
-          }
-          arb.io.master(i) <> model.io.host_mem
-          model
+      val widgetName = (endpoint, p(MemModelKey)) match {
+        case (_: SimMemIO, Some(_)) => s"MemModel_$i"
+        case (_: SimMemIO, None) => s"NastiWidget_$i"
+        case _ => s"${endpoint.widgetName}_$i"
       }
+      val widget = addWidget(endpoint.widget(p), widgetName)
       widget.reset := reset || simReset
+      widget match {
+        case model: MemModel => arb.io.master(i) <> model.io.host_mem
+        case _ =>
+      }
       channels2Port(widget.io.hPort, endpoint(i)._2)
       // each widget should have its own reset queue
       val resetQueue = Module(new Queue(Bool(), 4))

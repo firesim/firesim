@@ -29,17 +29,20 @@ abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p)
 abstract class Widget(implicit p: Parameters) extends Module {
   private var _finalized = false
   protected val crRegistry = new MCRFileMap()
-  def numRegs = crRegistry.numRegs()
+  def numRegs = crRegistry.numRegs
 
   override def io: WidgetIO
 
   val customSize: Option[BigInt] = None
   // Default case we set the region to be large enough to hold the CRs
-  lazy val memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(numRegs * (io.ctrl.nastiXDataBits/8))))
-  var wName: Option[String] = None
+  lazy val memRegionSize = customSize.getOrElse(
+    BigInt(1 << log2Up(numRegs * (io.ctrl.nastiXDataBits/8))))
 
-  private def setWidgetName(n: String) {wName = Some(n)}
-  def getWName(): String = {
+  protected var wName: Option[String] = None
+  private def setWidgetName(n: String) {
+    wName = Some(n)
+  }
+  def getWName: String = {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
@@ -134,7 +137,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
-  def printCRs(){ crRegistry.printCRs() }
+  def printCRs = crRegistry.printCRs
 }
 
 // TODO: Need to handle names better; try and stick ctrl IO elaboration in here,
@@ -158,8 +161,8 @@ object WidgetRegion {
 
 trait HasWidgets {
   private var _finalized = false
-  val widgets = ArrayBuffer[Widget]()
-  val name2inst = HashMap[String, Widget]()
+  private val widgets = ArrayBuffer[Widget]()
+  private val name2inst = HashMap[String, Widget]()
   private lazy val addrMap = new AddrMap({
     val (_, entries) = (sortedWidgets foldLeft (BigInt(0), Seq[AddrMapEntry]())){
       case ((start, es), w) =>
@@ -170,7 +173,7 @@ trait HasWidgets {
     entries
   })
 
-  def addWidget[T <: Widget](m: =>T, wName: String): T = {
+  def addWidget[T <: Widget](m: => T, wName: String): T = {
     val w = Widget(m, wName)
     assert(!name2inst.contains(wName), "Widget name: $wName already allocated")
     widgets += w
@@ -195,12 +198,13 @@ trait HasWidgets {
       case (w: Widget, m) => w.io.ctrl <> m
     }
   }
+
   def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
     widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
   }
 
-  def printWidgets(){
-    widgets foreach ((w: Widget) => println(w.wName))
+  def printWidgets {
+    widgets foreach ((w: Widget) => println(w.getWName))
   }
 
   def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {

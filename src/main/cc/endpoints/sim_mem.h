@@ -46,17 +46,17 @@ struct sim_mem_data_t {
   } b;
 };
 
-class sim_mem_t: public endpoint_t<sim_mem_data_t>
+class sim_mem_t: public endpoint_t
 {
 public:
   sim_mem_t(simif_t* s, int argc, char** argv);
   void init();
-  void tick();
+  void delta(size_t t);
+  void send(sim_mem_data_t& data);
+  void recv(sim_mem_data_t& data);
   void profile();
 
-  virtual void send(sim_mem_data_t& data);
-  virtual void recv(sim_mem_data_t& data);
-  virtual void delta(size_t t);
+  virtual void tick();
   virtual bool done();
   virtual bool stall();
 

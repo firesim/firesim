@@ -4,7 +4,7 @@ package widgets
 import chisel3._
 import chisel3.util._
 import junctions._
-import config.{Parameters, Field}
+import config.Parameters
 
 class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   // Timing Model
@@ -41,6 +41,6 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     super.genHeader(base, sb)
-    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    crRegistry.genArrayHeader(getWName.toUpperCase, base, sb)
   }
 }

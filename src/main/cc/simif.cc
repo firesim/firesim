@@ -99,9 +99,9 @@ int simif_t::finish() {
   finish_sampling();
 #endif
 
-  fprintf(stderr, "Runs %" PRIu64 " cycles\n", cycles());
+  fprintf(stderr, "Runs %llu cycles\n", cycles());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
-  if (!pass) { fprintf(stdout, " at cycle %" PRIu64, fail_t); }
+  if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "\nSEED: %ld\n", seed);
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -125,17 +125,17 @@ void simif_t::poke(size_t id, biguint_t& value) {
 
 void simif_t::peek(size_t id, biguint_t& value) {
   uint32_t buf[16] = {0};
-  assert(OUTPUT_CHUNKS[id] <= 16);
-  for (size_t i = 0 ; i < OUTPUT_CHUNKS[id] ; i++) {
-    data_t data = read(OUTPUT_ADDRS[id] + i);
+  assert(((unsigned int*)OUTPUT_CHUNKS)[id] <= 16);
+  for (size_t i = 0 ; i < ((unsigned int*)OUTPUT_CHUNKS)[id] ; i++) {
+    data_t data = read(((unsigned int*)OUTPUT_ADDRS)[id] + i);
     for (size_t j = 0 ; j < data_t_chunks ; j++) {
       size_t idx = i * data_t_chunks + j;
       buf[idx] = data >> (32 * j);
     }
   }
-  value = biguint_t(buf, OUTPUT_CHUNKS[id] * data_t_chunks);
+  value = biguint_t(buf, ((unsigned int*)OUTPUT_CHUNKS)[id] * data_t_chunks);
   if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n",
-    TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str());
+    TARGET_NAME, (const char*)OUTPUT_NAMES[id], value.str().c_str());
 }
 
 bool simif_t::expect(size_t id, biguint_t& expected) {
@@ -143,7 +143,7 @@ bool simif_t::expect(size_t id, biguint_t& expected) {
   peek(id, value);
   bool pass = value == expected;
   if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
-    TARGET_NAME, OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(),
+    TARGET_NAME, (const char*)OUTPUT_NAMES[id], value.str().c_str(), expected.str().c_str(),
     pass ? "PASS" : "FAIL");
   return expect(pass, NULL);
 }
@@ -185,7 +185,7 @@ void simif_t::step(int n, bool blocking) {
   reservoir_sampling(n);
 #endif
   // take steps
-  if (log) fprintf(stderr, "* STEP %d -> %" PRIu64 " *\n", n, (t + n));
+  if (log) fprintf(stderr, "* STEP %d -> %llu *\n", n, (t + n));
   take_steps(n, blocking);
   t += n;
 }
