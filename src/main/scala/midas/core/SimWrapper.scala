@@ -39,6 +39,11 @@ object SimUtils {
     (s foldLeft 0)((res, b) => res + getChunks(b))
   def getChunks(args: (Bits, String))(implicit channelWidth: Int): (String, Int) =
     args match { case (wire, name) => name -> SimUtils.getChunks(wire) }
+
+  def genIoMap(ports: Seq[(Bits, String)], offset: Int = 0)(implicit channelWidth: Int) =
+    ((ports foldLeft ((ListMap[Bits, Int](), offset))){
+      case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
+    })._1
 }
 
 case object ChannelLen extends Field[Int]
@@ -94,32 +99,51 @@ class SimWrapperIO(
   val (inputs, outputs) = parsePorts(io, Some(reset))
 
   /*** Wire Channels ***/
-  val wireInputs = inputs filterNot (x => endpoints exists (_(x._1)))
-  val wireOutputs = outputs filterNot (x => endpoints exists (_(x._1)))
+  val endpointWires = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
+    val (prefix, data) = ep(i)
+    data.elements.toSeq flatMap {
+      case (name, rv: ReadyValidIO[_]) => Nil
+      case (name, wires) =>
+        val (ins, outs) = SimUtils.parsePorts(wires)
+        (ins ++ outs).unzip._1
+    }
+  })).toSet
+  val wireInputs = inputs filterNot { case (wire, name) =>
+    (endpoints exists (_(wire))) && !endpointWires(wire) }
+  val wireOutputs = outputs filterNot { case (wire, name) =>
+    (endpoints exists (_(wire))) && !endpointWires(wire) }
+  val pokedInputs = wireInputs filterNot (x => endpointWires(x._1))
+  val peekedOutputs = wireOutputs filterNot (x => endpointWires(x._1))
   val inWireChannelNum = getChunks(wireInputs.unzip._1)
   val outWireChannelNum = getChunks(wireOutputs.unzip._1)
   val wireIns = Flipped(Vec(inWireChannelNum, Decoupled(UInt(channelWidth.W))))
   val wireOuts = Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W)))
+  val wireInMap = genIoMap(wireInputs)
+  val wireOutMap = genIoMap(wireOutputs)
+  def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
+    case (wire, id) => (0 until getChunks(wire)) map (off => wireIns(id+off))
+  }
+  def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
+    case (wire, id) => (0 until getChunks(wire)) map (off => wireOuts(id+off))
+  }
+  def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> wireInMap(wire))
+  def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> wireOutMap(wire))
 
   /*** ReadyValid Channels ***/
-  val readyValidInputs = endpoints flatMap (ep =>
-    (0 until ep.size) flatMap { i =>
-      val (prefix, data) = ep(i)
-      data.elements.toSeq collect {
-        case (name, rv: ReadyValidIO[_]) if rv.valid.dir == INPUT =>
-          s"${prefix}_${name}" -> rv
-      }
+  val readyValidInputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
+    val (prefix, data) = ep(i)
+    data.elements.toSeq collect {
+      case (name, rv: ReadyValidIO[_]) if rv.valid.dir == INPUT =>
+        s"${prefix}_${name}" -> rv
     }
-  )
-  val readyValidOutputs = endpoints flatMap (ep =>
-    (0 until ep.size) flatMap { i =>
-      val (prefix, data) = ep(i)
-      data.elements.toSeq collect {
-        case (name, rv: ReadyValidIO[_]) if rv.valid.dir == OUTPUT =>
-          s"${prefix}_${name}" -> rv
-      }
+  })
+  val readyValidOutputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
+    val (prefix, data) = ep(i)
+    data.elements.toSeq collect {
+      case (name, rv: ReadyValidIO[_]) if rv.valid.dir == OUTPUT =>
+        s"${prefix}_${name}" -> rv
     }
-  )
+  })
   val readyValidIns = new SimReadyValidRecord(readyValidInputs)
   val readyValidOuts = new SimReadyValidRecord(readyValidOutputs)
   val readyValidInMap = (readyValidInputs.unzip._2 zip readyValidIns.elements).toMap

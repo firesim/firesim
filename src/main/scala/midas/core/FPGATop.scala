@@ -35,8 +35,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   simReset := master.io.simReset
 
   val defaultIOWidget = addWidget(new PeekPokeIOWidget(
-    simIo.wireInputs map SimUtils.getChunks,
-    simIo.wireOutputs map SimUtils.getChunks),
+    simIo.pokedInputs map SimUtils.getChunks,
+    simIo.peekedOutputs map SimUtils.getChunks),
     "DefaultIOWidget")
   defaultIOWidget.io.step <> master.io.step
   master.io.done := defaultIOWidget.io.idle
@@ -44,15 +44,16 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   // Note we are connecting up target reset here; we override part of this
   // assignment below when connecting the memory models to this same reset
-  (simIo.wireIns zip defaultIOWidget.io.ins) foreach { case (x, y) => x <> y }
-  (defaultIOWidget.io.outs zip simIo.wireOuts) foreach { case (x, y) => x <> y }
+  val inputChannels = simIo.pokedInputs flatMap { case (wire, name) => simIo.getIns(wire) }
+  val outputChannels = simIo.peekedOutputs flatMap { case (wire, name) => simIo.getOuts(wire) }
+  (inputChannels zip defaultIOWidget.io.ins) foreach { case (x, y) => x <> y }
+  (defaultIOWidget.io.outs zip outputChannels) foreach { case (x, y) => x <> y }
 
   if (p(EnableSnapshot)) {
     val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
     daisyController.reset := reset || simReset
     daisyController.io.daisy <> simIo.daisy
 
-    // TODO: ReadyValidIO Traces
     val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
       simIo.wireInputs map SimUtils.getChunks,
       simIo.wireOutputs map SimUtils.getChunks,
@@ -93,6 +94,18 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       case (target: Vec[_], v: Vec[_]) =>
         assert(target.size == v.size)
         (target.toSeq zip v.toSeq) foreach loop
+      case (target: Bits, wire: Bits) if wire.dir == INPUT =>
+        val channels = simIo.getIns(wire)
+        channels.zipWithIndex foreach { case (in, i) =>
+          in.bits  := target >> UInt(i * simIo.channelWidth)
+          in.valid := port.fromHost.hValid || simResetNext
+        }
+        ready ++= channels map (_.ready)
+      case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
+        val channels = simIo.getOuts(wire)
+        target := Cat(channels.reverse map (_.bits))
+        channels foreach (_.ready := port.toHost.hReady)
+        valid ++= channels map (_.valid)
     }
 
     loop(port.hBits -> wires)
