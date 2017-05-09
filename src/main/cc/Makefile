@@ -89,8 +89,10 @@ platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .$(o), $(platform_files)))
 
 $(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
 ifneq ($(CXX),cl)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 else
+	mkdir.exe -p $(dir $@)
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
 
