@@ -39,7 +39,10 @@ class DumpChains(
               val prefix = s"$path.${s.name}"
               chainType match {
                 case ChainType.SRAM =>
-                  chainFile write s"$id $prefix.ram ${seqMem.width} ${seqMem.depth}\n"
+                  val maskWidth = (seqMem.width / seqMem.maskGran).toInt
+                  (0 until maskWidth).reverse foreach { i =>
+                    chainFile write s"$id ${prefix}.ram_${i} ${seqMem.maskGran} ${seqMem.depth}\n"
+                  }
                   seqMem.width.toInt
                 case _ =>
                   val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
