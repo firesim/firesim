@@ -7,8 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils.BoolType
 import Utils._
-import MidasTransforms._
-import java.io.{File, FileWriter, Writer, StringWriter}
+import java.io.{File, FileWriter, StringWriter}
 
 private[passes] class SimulationMapping(
     io: chisel3.Data)

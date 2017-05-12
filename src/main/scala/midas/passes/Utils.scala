@@ -34,37 +34,6 @@ object Utils {
       DoPrim(PrimOps.Cat, Seq(left, right), Nil, ut)
     }
 
-  def preorder(c: Circuit,
-               childMods: MidasTransforms.ChildMods)
-               (visit: DefModule => DefModule): Seq[DefModule] = {
-    val head = (c.modules find (_.name == c.main)).get
-    val visited = HashSet[String]()
-    def loop(m: DefModule): Seq[DefModule] = {
-      visited += m.name
-      visit(m) +: (c.modules filter (x =>
-        childMods(m.name)(x.name) && !visited(x.name)) flatMap loop)
-    }
-    loop(head) ++ (c.modules collect { case m: ExtModule => m })
-  }
-
-  def postorder(c: Circuit,
-                childMods: MidasTransforms.ChildMods)
-                (visit: DefModule => DefModule): Seq[DefModule] = {
-    val head = (c.modules find (_.name == c.main)).get
-    val visited = HashSet[String]()
-    def loop(m: DefModule): Seq[DefModule] = {
-      val res = (c.modules filter (x =>
-        childMods(m.name)(x.name)) flatMap loop)
-      if (visited(m.name)) {
-        res 
-      } else {
-        visited += m.name
-        res :+ visit(m)
-      }
-    }
-    loop(head) ++ (c.modules collect { case m: ExtModule => m })
-  }
-
   def renameMods(c: Circuit, namespace: Namespace) = {
     val (modules, nameMap) = (c.modules foldLeft (Seq[DefModule](), Map[String, String]())){
       case ((ms, map), m: ExtModule) =>
