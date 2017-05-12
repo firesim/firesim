@@ -1,11 +1,9 @@
 package midas
 
-import chisel3.{Data, Bits}
+import chisel3.Data
 import firrtl.ir.Circuit
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
-import scala.util.DynamicVariable
-import scala.reflect.ClassTag
 import java.io.{File, FileWriter, Writer}
 
 // Compiler in Midas Passes

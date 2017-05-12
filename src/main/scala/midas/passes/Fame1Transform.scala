@@ -7,7 +7,6 @@ import firrtl.Mappers._
 import firrtl.Utils.BoolType
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
-import MidasTransforms._
 import Utils._
 
 private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {

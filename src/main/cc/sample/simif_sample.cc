@@ -15,6 +15,7 @@ void simif_t::init_sampling(int argc, char** argv) {
   profile = false;
   sample_count = 0;
   sample_time = 0;
+  tracelen = 128; // by master widget
   trace_count = 0;
 
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -24,6 +25,9 @@ void simif_t::init_sampling(int argc, char** argv) {
     }
     if (arg.find("+samplenum=") == 0) {
       sample_num = strtol(arg.c_str() + 11, NULL, 10);
+    }
+    if (arg.find("+tracelen=") == 0) {
+      tracelen = strtol(arg.c_str() + 10, NULL, 10);
     }
     if (arg.find("+profile") == 0) {
       profile = true;
