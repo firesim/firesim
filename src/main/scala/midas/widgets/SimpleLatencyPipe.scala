@@ -11,11 +11,14 @@ case object MidasL2Key extends Field[Option[MidasL2Parameters]]
 
 class MidasL2Cache(key: MidasL2Parameters)(implicit p: Parameters) extends NastiModule {
   val io = IO(new Bundle {
-    val ar = Flipped(Valid(new NastiReadAddressChannel))
-    val aw = Flipped(Valid(new NastiWriteAddressChannel))
-    val fire = Input(Bool())
-    val hit = Valid(Bool())
-    val ready = Output(Bool())
+    val raddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
+    val waddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
+    val wlast = Flipped(Decoupled(Bool()))
+    val resp = Valid(new Bundle {
+      val hit = Bool()
+      val wr = Bool()
+    })
+    val idle = Output(Bool())
   })
   println("[Midas L2 Cache] # Ways: %d, # Sets: %d, Block Size: %d B => Cache Size: %d KiB".format(
           key.nWays, key.nSets, key.blockBytes, (key.nWays * key.nSets * key.blockBytes) / 1024))
@@ -23,32 +26,42 @@ class MidasL2Cache(key: MidasL2Parameters)(implicit p: Parameters) extends Nasti
   val sIdle :: sRead :: sRefill :: sReady :: Nil = Enum(UInt(), 4)
   val state = RegInit(sIdle)
 
+  val raddrQueue = Queue(io.raddr)
+  val waddrQueue = Queue(io.waddr)
+  val wlastQueue = Queue(io.wlast)
+
   val wayBits = log2Ceil(key.nWays)
   val setBits = log2Ceil(key.nSets)
   val blockBits = log2Ceil(key.blockBytes)
   val tagBits = nastiXAddrBits - (setBits + blockBits)
 
-  val addr = Mux(io.aw.valid, io.aw.bits.addr, io.ar.bits.addr)
+  val is_wr = waddrQueue.valid && wlastQueue.valid
+  val has_addr = is_wr || raddrQueue.valid
+  val addr = Mux(is_wr, waddrQueue.bits, raddrQueue.bits)
   val idx = addr(setBits + blockBits - 1, blockBits)
-  val idx_reg = RegEnable(idx, state === sIdle)
-  val tag = RegEnable(addr >> (setBits + blockBits), state === sIdle)
+  val tag = addr >> (setBits + blockBits)
 
-  val ren = (io.aw.valid || io.ar.valid) && io.fire && state === sIdle
+  val is_wr_reg = RegEnable(is_wr, state === sIdle)
+  val idx_reg = RegEnable(idx, state === sIdle)
+  val tag_reg = RegEnable(tag, state === sIdle)
+
+  val ren = has_addr && state === sIdle
   val v = Seq.fill(key.nWays)(RegInit(0.U(key.nSets.W)))
   val tags = Seq.fill(key.nWays)(SeqMem(key.nSets, UInt(tagBits.W)))
   val tag_reads = tags map (_.read(idx, ren))
-  val tag_matches = tag_reads map (_ === tag)
+  val tag_matches = tag_reads map (_ === tag_reg)
   val match_way = Vec(tag_matches) indexWhere ((x: Bool) => x)
 
-  io.hit.bits := Vec(v)(match_way)(idx) && (tag_matches reduce (_ || _))
-  io.hit.valid := state === sRead
-  io.ready := state === sReady || (state === sIdle && !io.aw.valid && !io.ar.valid)
+  io.resp.bits.hit := Vec(v)(match_way)(idx) && (tag_matches reduce (_ || _))
+  io.resp.bits.wr := is_wr_reg
+  io.resp.valid := state === sRead
+  io.idle := state === sIdle && !has_addr
 
   // TODO: LRU?
-  val wen = !ren && state === sRead && !io.hit.bits
+  val wen = !ren && state === sRead && !io.resp.bits.hit
   val valid_all = v map (_(idx_reg)) reduce (_ && _)
   val invalid_way = Vec(v map (_(idx_reg))) indexWhere ((x: Bool) => !x)
-  val lsfr = LFSR16(io.fire && state === sIdle) // is it right?
+  val lsfr = LFSR16(has_addr && state === sIdle) // is it right?
   val repl_way = if (key.nWays == 1) 0.U else
     Mux(valid_all, lsfr(wayBits - 1, 0), invalid_way)
 
@@ -56,19 +69,22 @@ class MidasL2Cache(key: MidasL2Parameters)(implicit p: Parameters) extends Nasti
     (0 until key.nWays) foreach { i =>
       when(i.U === repl_way) {
         v(i) := v(i).bitSet(idx_reg, true.B)
-        tags(i).write(idx_reg, tag)
+        tags(i).write(idx_reg, tag_reg)
       }
     }
   }
 
+  raddrQueue.ready := state === sReady && !is_wr_reg
+  waddrQueue.ready := state === sReady && is_wr_reg
+  wlastQueue.ready := state === sReady && is_wr_reg
   switch(state) {
     is(sIdle) {
-      when((io.aw.valid || io.ar.valid) && io.fire) {
+      when(has_addr) {
         state := sRead
       }
     }
     is(sRead) {
-      state := Mux(io.hit.bits, sReady, sRefill)
+      state := Mux(io.resp.bits.hit, sReady, sRefill)
     }
     is(sRefill) {
       state := sReady
@@ -85,31 +101,39 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   val wCycles = Module(new Queue(UInt(64.W), 8))
   val rCycleValid = Wire(Bool())
   val wCycleValid = Wire(Bool())
+  val rCycleReady = Wire(Bool())
+  val wCycleReady = Wire(Bool())
   val memLatency = RegInit(32.U(32.W))
   val l2Latency = RegInit(8.U(32.W))
-  val l2Ready = Wire(Bool())
+  val l2Idle = Wire(Bool())
 
-  val stall = (rCycleValid && !rBuf.io.deq.valid) || (wCycleValid && !bBuf.io.deq.valid) || !l2Ready
+  val stall = (rCycleValid && !rBuf.io.deq.valid) ||
+              (wCycleValid && !bBuf.io.deq.valid) || !l2Idle
   val (fire, cycles, targetReset) = elaborate(
-    stall, rCycleValid, wCycleValid, rCycles.io.enq.ready, wCycles.io.enq.ready)
+    stall, rCycleValid, wCycleValid, rCycleReady, wCycleReady)
 
   val latency = p(MidasL2Key) match {
     case None =>
+      rCycleReady := rCycles.io.enq.ready
+      wCycleReady := wCycles.io.enq.ready
       rCycles.io.enq.valid := tNasti.ar.fire() && fire
       wCycles.io.enq.valid := tNasti.w.fire() && tNasti.w.bits.last && fire
-      l2Ready := true.B
+      l2Idle := true.B
       memLatency
     case Some(key: MidasL2Parameters) =>
       val l2 = Module(new MidasL2Cache(key))
-      l2.io.ar.bits := tNasti.ar.bits
-      l2.io.ar.valid := tNasti.ar.fire()
-      l2.io.aw.bits := tNasti.aw.bits
-      l2.io.aw.valid := tNasti.aw.fire()
-      l2.io.fire := tFire
-      rCycles.io.enq.valid := l2.io.ar.valid && l2.io.hit.valid
-      wCycles.io.enq.valid := l2.io.aw.valid && l2.io.hit.valid
-      l2Ready := l2.io.ready
-      Mux(l2.io.hit.bits, l2Latency, memLatency)
+      l2.io.raddr.bits  := tNasti.ar.bits.addr
+      l2.io.raddr.valid := tNasti.ar.valid && fire
+      l2.io.waddr.bits  := tNasti.aw.bits.addr
+      l2.io.waddr.valid := tNasti.aw.valid && fire
+      l2.io.wlast.bits  := Bool(true)
+      l2.io.wlast.valid := tNasti.w.valid && tNasti.w.bits.last && fire
+      l2Idle := l2.io.idle
+      rCycleReady := rCycles.io.enq.ready && l2.io.raddr.ready
+      wCycleReady := wCycles.io.enq.ready && l2.io.waddr.ready && l2.io.wlast.ready
+      rCycles.io.enq.valid := l2.io.resp.valid && !l2.io.resp.bits.wr
+      wCycles.io.enq.valid := l2.io.resp.valid && l2.io.resp.bits.wr
+      Mux(l2.io.resp.bits.hit, l2Latency, memLatency)
   }
 
   rCycles.reset := reset || targetReset
@@ -128,8 +152,8 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   bBuf.io.enq <> io.host_mem.b
 
   // Connect all programmable registers to the control interrconect
-  attach(memLatency, "MEM_LATENCY")
-  attach(l2Latency,  "L2_LATENCY")
+  attach(memLatency, "MEM_LATENCY", WriteOnly)
+  attach(l2Latency,  "L2_LATENCY", WriteOnly)
   genCRFile()
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
