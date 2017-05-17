@@ -230,17 +230,18 @@ class MCRFileMap() {
     }
   }
   // A variation of above which dumps the register map as a series of arrays
-  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-    def emitArrays(regs: Seq[MCRMapEntry], prefix: String) {
+  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
+    def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String) {
       sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
-      sb.append(genArray(s"${prefix}_names", regs map { reg => CStrLit(reg.name)}))
-      sb.append(genArray(s"${prefix}_addrs", regs map { reg => UInt32(lookupAddress(reg.name).get)}))
+      sb.append(genArray(s"${prefix}_names", regs.unzip._1 map (reg => CStrLit(reg.name))))
+      sb.append(genArray(s"${prefix}_addrs", regs.unzip._2 map (addr => UInt32(addr))))
     }
 
-    val readRegs = regList filter { _.permissions.readable }
-    val writeRegs = regList filter { _.permissions.writeable }
-    emitArrays(readRegs, prefix + "_R");
-    emitArrays(writeRegs, prefix + "_W");
+    val regAddrs = regList map (reg => reg -> (base + lookupAddress(reg.name).get))
+    val readRegs = regAddrs filter (_._1.permissions.readable)
+    val writeRegs = regAddrs filter (_._1.permissions.writeable)
+    emitArrays(readRegs, prefix + "_R")
+    emitArrays(writeRegs, prefix + "_W")
   }
 
   // Returns a copy of the current register map

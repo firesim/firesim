@@ -63,24 +63,24 @@ bool sim_mem_t::done() {
 }
 
 void sim_mem_t::profile() {
-#ifdef MEMMODEL_0_R_num_registers
-  for (size_t i = 0; i < MEMMODEL_0_R_num_registers; i++) {
-    auto result =  read(MEMMODEL_0_R_addrs[i]);
-    std::cout << "Register: " << MEMMODEL_0_R_names[i] << " Value: " << result
+#ifdef MEMMODEL_0
+  for (size_t i = 0; i < MEMMODEL_0(R_num_registers); i++) {
+    auto result = read((size_t)MEMMODEL_0(R_addrs[i]));
+    std::cout << "Register: " << (char*)MEMMODEL_0(R_names[i]) << " Value: " << result
               << std::endl;
   }
 #endif
 }
 
 void sim_mem_t::init() {
-#ifdef MEMMODEL_0_W_num_registers
-  for (size_t i = 0; i < MEMMODEL_0_W_num_registers; i++) {
-    auto value_it = model_configuration.find(std::string(MEMMODEL_0_W_names[i]));
+#ifdef MEMMODEL_0
+  for (size_t i = 0; i < MEMMODEL_0(W_num_registers); i++) {
+    auto value_it = model_configuration.find(std::string((char*)MEMMODEL_0(W_names[i])));
     if (value_it != model_configuration.end()) {
-      write(MEMMODEL_0_W_addrs[i], value_it->second);
+      write((size_t)MEMMODEL_0(W_addrs[i]), value_it->second);
     } else {
       char buf[100];
-      sprintf(buf, "No value provided for configuration register: %s", MEMMODEL_0_W_names[i]);
+      sprintf(buf, "No value provided for configuration register: %s", (char*)MEMMODEL_0(W_names[i]));
       throw std::runtime_error(buf);
     }
   }
