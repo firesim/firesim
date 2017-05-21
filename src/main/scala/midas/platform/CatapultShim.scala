@@ -322,7 +322,7 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
   val nastiumi = Module(new NastiUMIAdapter()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) })))
   nastiumi.io.nastimem <> top.io.mem
 
-  val SIMULATED = true
+  val SIMULATED = false
   // connect to simumimem for software simulation
   if (SIMULATED) {
     val simumimem = Module(new SimUMIMem)
