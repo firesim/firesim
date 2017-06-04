@@ -44,12 +44,8 @@ ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
 o = o
 else
-ifneq ($(SHELL),sh.exe)
 PATH_CONVERTER ?= cygpath -w
 path = $(patsubst %\,%,$(shell $(PATH_CONVERTER) $(1)))
-else
-path = $(1)
-endif
 override CXXFLAGS := $(CXXFLAGS) /EHsc /I$(call path,$(midas_dir)/dramsim2)
 o = obj
 endif
@@ -107,7 +103,7 @@ else
 	/link $(LDFLAGS)
 endif
 
-$(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
+$(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
 ifneq ($(CXX),cl) # no emulation, replay with visual studio
 emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
