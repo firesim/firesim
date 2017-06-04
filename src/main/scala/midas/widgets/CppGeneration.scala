@@ -40,7 +40,7 @@ object CppGenerationUtils {
 
   def genArray[T <: CPPLiteral](name: String, values: Seq[T]): String = {
     val tpe = if (values.nonEmpty) values.head.typeString else "const void* const"
-    val prefix = s"static $tpe $name [${values.size}] = {\n"
+    val prefix = s"static $tpe $name [${math.max(values.size, 1)}] = {\n"
     val body = values map (indent + _.toC) mkString ",\n"
     val suffix = "\n};\n"
     prefix + body + suffix
