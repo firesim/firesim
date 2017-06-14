@@ -20,7 +20,7 @@ sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
     else if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
     }
-    else if(arg.find("+mm_") == 0) {
+    else if (arg.find("+mm_") == 0) {
       auto sub_arg = std::string(arg.c_str() + 4);
       size_t delimit_idx = sub_arg.find_first_of("=");
       std::string key = sub_arg.substr(0, delimit_idx).c_str();
@@ -175,10 +175,11 @@ void sim_mem_t::send(sim_mem_data_t& data) {
 
 void sim_mem_t::tick() {
 #ifdef NASTIWIDGET_0
+  bool _stall = this->stall();
   static size_t num_reads = 0;
   static size_t num_writes = 0;
   static sim_mem_data_t data;
-  if (num_reads || num_writes || this->stall()) {
+  if (_stall || num_reads || num_writes) {
     data.ar.ready = mem->ar_ready();
     data.aw.ready = mem->aw_ready();
     data.w.ready = mem->w_ready();
@@ -228,7 +229,7 @@ void sim_mem_t::tick() {
 
     this->send(data);
 
-    this->delta(1);
+    if (_stall) this->delta(1);
     if (data.r.fire() && data.r.last) num_reads--;
     if (data.b.fire()) num_writes--;
   }
