@@ -234,7 +234,7 @@ class MCRFileMap() {
     def emitArrays(regs: Seq[MCRMapEntry], prefix: String) {
       sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
       sb.append(genArray(s"${prefix}_names", regs map { reg => CStrLit(reg.name)}))
-      sb.append(genArray(s"${prefix}_addrs", regs map { reg => UInt32(lookupAddress(reg.name).get)}))
+      sb.append(genArray(s"${prefix}_addrs", regs map { reg => UInt32(base + lookupAddress(reg.name).get)}))
     }
 
     val readRegs = regList filter { _.permissions.readable }
