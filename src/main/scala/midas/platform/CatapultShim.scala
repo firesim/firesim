@@ -147,9 +147,8 @@ class NastiWriteRequestSplitter(implicit p: Parameters) extends Module {
 class NastiUMIAdapter(implicit p: Parameters) extends Module {
   val io = IO(new Bundle {
     val nastimem = Flipped(new NastiIO)
-		
-		val umireq = Decoupled(new CatapultMemReq)
-		val umiresp = Flipped(Decoupled(new CatapultMemResp))
+    val umireq = Decoupled(new CatapultMemReq)
+    val umiresp = Flipped(Decoupled(new CatapultMemResp))
   })
 
   // hide everything behind queues
@@ -306,7 +305,7 @@ class NastiUMIAdapter(implicit p: Parameters) extends Module {
 }
 
 class CatapultShim(simIo: midas.core.SimWrapperIO)
-                  (implicit p: Parameters) extends PlatformShim {
+                  (implicit p: Parameters) extends PlatformShim with CatapultIFParams {
   val ctrlKey = p(widgets.CtrlNastiKey)
   val io = IO(new CatapultShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
@@ -315,8 +314,10 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
     "SOFTREG_ADDR_WIDTH" -> p(SoftRegKey).addrBits,
     "SOFTREG_DATA_WIDTH" -> p(SoftRegKey).dataBits,
     "SERIAL_WIDTH"       -> p(PCIeWidth) / 8,
+    "UMI_ADDR_WIDTH"     -> UMI_ADDR_WIDTH,
+    "UMI_DATA_WIDTH"     -> UMI_DATA_WIDTH,
     "MMIO_WIDTH"         -> p(SoftRegKey).dataBits / 8,
-    "MEM_WIDTH"          -> p(SlaveNastiKey).dataBits / 8
+    "MEM_WIDTH"          -> 512 / 8
   ) ++ top.headerConsts
 
   val nastiumi = Module(new NastiUMIAdapter()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) })))
@@ -382,6 +383,4 @@ class CatapultShim(simIo: midas.core.SimWrapperIO)
   // Turn off PCIe
   io.pcie.in.ready := Bool(false)
   io.pcie.out.valid := Bool(false)
-
-  // TODO: connect top.io.mem to UMI
 }
