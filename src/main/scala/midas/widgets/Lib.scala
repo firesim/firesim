@@ -233,8 +233,8 @@ class MCRFileMap() {
   def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
     def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String) {
       sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
-      sb.append(genArray(s"${prefix}_names", regs map { reg => CStrLit(reg.name)}))
-      sb.append(genArray(s"${prefix}_addrs", regs map { reg => UInt32(base + lookupAddress(reg.name).get)}))
+      sb.append(genArray(s"${prefix}_names", regs.unzip._1 map { reg => CStrLit(reg.name)}))
+      sb.append(genArray(s"${prefix}_addrs", regs.unzip._2 map { addr => UInt32(addr)}))
     }
 
     val regAddrs = regList map (reg => reg -> (base + lookupAddress(reg.name).get))
