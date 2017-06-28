@@ -31,7 +31,7 @@ class SimConfig extends Config((site, here, up) => {
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => Zynq
-  case MidasL2Key     => None
+  case MidasLLCKey     => None
   case MasterNastiKey => site(CtrlNastiKey)
   case SlaveNastiKey  => site(MemNastiKey)
 }) ++ new SimConfig)

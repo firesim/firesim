@@ -6,19 +6,19 @@ import chisel3.util._
 import junctions._
 import config.{Parameters, Field}
 
-case class MidasL2Parameters(nWays: Int, nSets: Int, blockBytes: Int)
-case object MidasL2Key extends Field[Option[MidasL2Parameters]]
+case class MidasLLCParameters(nWays: Int, nSets: Int, blockBytes: Int)
+case object MidasLLCKey extends Field[Option[MidasLLCParameters]]
 
-class MidasL2CacheConfigBundle(key: MidasL2Parameters) extends Bundle {
+class MidasLLCConfigBundle(key: MidasLLCParameters) extends Bundle {
   val wayBits = UInt(log2Ceil(key.nWays).W)
   val setBits = UInt(log2Ceil(key.nSets).W)
   val blockBits = UInt(log2Ceil(key.blockBytes).W)
-  override def cloneType = new MidasL2CacheConfigBundle(key).asInstanceOf[this.type]
+  override def cloneType = new MidasLLCConfigBundle(key).asInstanceOf[this.type]
 }
 
-class MidasL2Cache(key: MidasL2Parameters)(implicit p: Parameters) extends NastiModule {
+class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiModule {
   val io = IO(new Bundle {
-    val config = Input(new MidasL2CacheConfigBundle(key))
+    val config = Input(new MidasLLCConfigBundle(key))
     val raddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
     val waddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
     val wlast = Flipped(Decoupled(Bool()))
@@ -28,7 +28,7 @@ class MidasL2Cache(key: MidasL2Parameters)(implicit p: Parameters) extends Nasti
     })
     val idle = Output(Bool())
   })
-  println("[Midas L2 Cache] # Ways <= %d, # Sets <= %d, Block Size <= %d B => Cache Size <= %d KiB".format(
+  println("[Midas Last Level Cache] # Ways <= %d, # Sets <= %d, Block Size <= %d B => Cache Size <= %d KiB".format(
           key.nWays, key.nSets, key.blockBytes, (key.nWays * key.nSets * key.blockBytes) / 1024))
 
   val sIdle :: sRead :: sRefill :: sReady :: Nil = Enum(UInt(), 4)
@@ -120,7 +120,7 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   // Control Registers
   val memLatency = RegInit(32.U(32.W))
   val l2Latency = RegInit(8.U(32.W))
-  // L2 Cache Size: 256KiB by default
+  // LLC Size: 256KiB by default
   val wayBits = RegInit(2.U(32.W)) // # Ways = 4
   val setBits = RegInit(10.U(32.W)) // # Sets = 1024
   val blockBits = RegInit(6.U(32.W)) // # blockSize = 64 Bytes
@@ -130,7 +130,7 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   val (fire, cycles, targetReset) = elaborate(
     stall, rCycleValid, wCycleValid, rCycleReady, wCycleReady)
 
-  val latency = p(MidasL2Key) match {
+  val latency = p(MidasLLCKey) match {
     case None =>
       rCycleReady := rCycles.io.enq.ready
       wCycleReady := wCycles.io.enq.ready
@@ -138,8 +138,8 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
       wCycles.io.enq.valid := tNasti.w.fire() && tNasti.w.bits.last && fire
       l2Idle := true.B
       memLatency
-    case Some(key: MidasL2Parameters) =>
-      val l2 = Module(new MidasL2Cache(key))
+    case Some(key: MidasLLCParameters) =>
+      val l2 = Module(new MidasLLC(key))
       l2.io.config.wayBits := wayBits
       l2.io.config.setBits := setBits
       l2.io.config.blockBits := blockBits
@@ -174,11 +174,11 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
 
   // Connect all programmable registers to the control interrconect
   attach(memLatency, "MEM_LATENCY", WriteOnly)
-  if (p(MidasL2Key).isDefined) {
-    attach(l2Latency, "L2_LATENCY", WriteOnly)
-    attach(wayBits, "L2_WAY_BITS", WriteOnly)
-    attach(setBits, "L2_SET_BITS", WriteOnly)
-    attach(blockBits, "L2_BLOCK_BITS", WriteOnly)
+  if (p(MidasLLCKey).isDefined) {
+    attach(l2Latency, "LLC_LATENCY", WriteOnly)
+    attach(wayBits, "LLC_WAY_BITS", WriteOnly)
+    attach(setBits, "LLC_SET_BITS", WriteOnly)
+    attach(blockBits, "LLC_BLOCK_BITS", WriteOnly)
   }
   genCRFile()
 
