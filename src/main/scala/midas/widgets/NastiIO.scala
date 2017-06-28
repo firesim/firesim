@@ -40,11 +40,11 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   val tReset = io.tReset.bits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
 
-  val arBuf = Module(new Queue(new NastiReadAddressChannel,   4, flow=true))
-  val awBuf = Module(new Queue(new NastiWriteAddressChannel,  4, flow=true))
+  val arBuf = Module(new Queue(new NastiReadAddressChannel,   8, flow=true))
+  val awBuf = Module(new Queue(new NastiWriteAddressChannel,  8, flow=true))
   val wBuf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
   val rBuf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
-  val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 4, flow=true))
+  val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 8, flow=true))
 
   def elaborate(stall: Bool,
                 rCycleValid: Bool = Bool(true),
