@@ -1,8 +1,6 @@
 #ifndef __SIM_MEM_H
 #define __SIM_MEM_H
 
-#include <unordered_map>
-
 #include "endpoint.h"
 #include "mm.h"
 #include "mm_dramsim2.h"
@@ -50,11 +48,9 @@ class sim_mem_t: public endpoint_t
 {
 public:
   sim_mem_t(simif_t* s, int argc, char** argv);
-  void init();
   void delta(size_t t);
   void send(sim_mem_data_t& data);
   void recv(sim_mem_data_t& data);
-  void profile();
 
   virtual void tick();
   virtual bool done();
@@ -64,8 +60,6 @@ public:
 
 private:
   mm_t* mem;
-  std::unordered_map<std::string, uint32_t> model_configuration;
-  std::ofstream stats_file;
 };
 
 #endif // __SIM_MEM_H
