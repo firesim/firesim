@@ -1,11 +1,11 @@
 #include <algorithm>
-#include <exception>
 #include <stdio.h>
 
 #include "sim_mem.h"
 // TODO: support multi channels
 
 sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
+#ifdef NASTIWIDGET_0
   std::vector<std::string> args(argv + 1, argv + argc);
   bool dramsim = false;
   uint64_t memsize = 1L << 26; // 64 KB
@@ -28,7 +28,6 @@ sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
       model_configuration[key] = value;
     }
   }
-#ifdef NASTIWIDGET_0
   mem = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
   mem->init(memsize, MEM_DATA_BITS / 8, 64);
   if (loadmem) {
@@ -37,7 +36,7 @@ sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
     mems[0] = mem->get_data();
     ::load_mem(mems, loadmem, MEM_DATA_BITS / 8, 1);
   }
-#endif // NASTIWIDGET_0
+#endif
 }
 
 void sim_mem_t::delta(size_t t) {
@@ -61,37 +60,6 @@ bool sim_mem_t::done() {
   return true;
 #endif
 }
-
-void sim_mem_t::profile() {
-#ifdef MEMMODEL_0_R_num_registers
-  for (size_t i = 0; i < MEMMODEL_0_R_num_registers; i++) {
-    auto result =  read(MEMMODEL_0_R_addrs[i]);
-    std::cout << "Register: " << MEMMODEL_0_R_names[i] << " Value: " << result
-              << std::endl;
-  }
-#endif
-}
-
-void sim_mem_t::init() {
-#ifdef MEMMODEL_0_W_num_registers
-  for (size_t i = 0; i < MEMMODEL_0_W_num_registers; i++) {
-    auto value_it = model_configuration.find(std::string(MEMMODEL_0_W_names[i]));
-    if (value_it != model_configuration.end()) {
-      write(MEMMODEL_0_W_addrs[i], value_it->second);
-    } else {
-      char buf[100];
-      sprintf(buf, "No value provided for configuration register: %s", MEMMODEL_0_W_names[i]);
-      throw std::runtime_error(buf);
-    }
-  }
-
-//  stats_file.open(output_file, std::ofstream::out);
-//  if(!stats_file.is_open()) {
-//    throw std::runtime_error("Could not open output file: " + output_file);
-//  }
-#endif // MEMMODEL_0_W_num_registers
-}
-
 
 const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
 const data_t id_mask = (1 << MEM_ID_BITS) - 1;
@@ -233,7 +201,7 @@ void sim_mem_t::tick() {
     if (data.r.fire() && data.r.last) num_reads--;
     if (data.b.fire()) num_writes--;
   }
-#endif // NASTIWIDGET_0
+#endif
 }
 
 void sim_mem_t::write_mem(uint64_t addr, void* data) {
