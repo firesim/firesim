@@ -89,12 +89,13 @@ bool mmio_zynq_t::write_resp() {
 
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
-extern std::unique_ptr<mm_t> slave;
+std::unique_ptr<mm_t> slave;
 
-void init(uint64_t memsize, bool dramsim) {
+void* init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_zynq_t);
   slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t);
   slave->init(memsize, MEM_WIDTH, 64);
+  return slave->get_data();
 }
 
 #ifdef VCS
@@ -237,6 +238,7 @@ void tick(
     vc_4stVectorRef(master_b_bits_id)->d,
     vc_getScalar(master_b_valid)
   );
+
   slave->tick(
     vcs_rst,
     vc_getScalar(slave_ar_valid),

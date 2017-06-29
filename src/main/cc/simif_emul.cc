@@ -13,7 +13,6 @@
 
 uint64_t main_time = 0;
 std::unique_ptr<mmio_t> master;
-std::unique_ptr<mm_t> slave;
 
 #ifdef VCS
 midas_context_t* host;
@@ -75,12 +74,10 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
     }
   }
 
-  ::init(memsize, dramsim);
-
-  if (slave && fastloadmem && !loadmem.empty()) {
+  void* mems[1];
+  mems[0] = ::init(memsize, dramsim);
+  if (mems[0] && fastloadmem && !loadmem.empty()) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
-    void* mems[1];
-    mems[0] = slave->get_data();
     ::load_mem(mems, loadmem.c_str(), MEM_DATA_BITS / 8, 1);
   }
 

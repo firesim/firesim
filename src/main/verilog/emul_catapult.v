@@ -19,9 +19,17 @@ extern "A" void tick
 
   input  reg [`SOFTREG_DATA_WIDTH-1:0] softreg_resp_bits_rdata,
   input  reg                           softreg_resp_valid,
-  output reg                           softreg_resp_ready
+  output reg                           softreg_resp_ready,
 
-  // TODO: UMI
+  input  reg [`UMI_ADDR_WIDTH-1:0]     umireq_bits_addr,
+  input  reg [`UMI_DATA_WIDTH-1:0]     umireq_bits_data,
+  input  reg                           umireq_bits_isWrite,
+  input  reg                           umireq_valid,
+  output reg                           umireq_ready,
+
+  output reg [`UMI_DATA_WIDTH-1:0]     umiresp_bits_data,
+  output reg                           umiresp_valid,
+  input  reg                           umiresp_ready
 );
 
 module emul;
@@ -58,9 +66,19 @@ module emul;
   reg  [`SOFTREG_DATA_WIDTH-1:0]  softreg_req_bits_wdata;
   reg                             softreg_req_bits_wr;
 
-  wire [`SOFTREG_DATA_WIDTH-1:0]  softreg_resp_bits_rdata;
   wire                            softreg_resp_valid;
   reg                             softreg_resp_ready;
+  wire [`SOFTREG_DATA_WIDTH-1:0]  softreg_resp_bits_rdata;
+
+  wire                            umireq_valid;
+  reg                             umireq_ready;
+  wire [`UMI_ADDR_WIDTH-1:0]      umireq_bits_addr;
+  wire [`UMI_DATA_WIDTH-1:0]      umireq_bits_data;
+  wire                            umireq_bits_isWrite;
+
+  reg                             umiresp_valid;
+  wire                            umiresp_ready;
+  reg  [`UMI_DATA_WIDTH-1:0]      umiresp_bits_data;
 
   wire                            pcie_in_valid_delay;
   wire                            pcie_in_ready_delay;
@@ -80,6 +98,16 @@ module emul;
   wire                            softreg_resp_valid_delay;
   wire                            softreg_resp_ready_delay;
 
+  wire [`UMI_ADDR_WIDTH-1:0]      umireq_bits_addr_delay;
+  wire [`UMI_DATA_WIDTH-1:0]      umireq_bits_data_delay;
+  wire                            umireq_bits_isWrite_delay;
+  wire                            umireq_valid_delay;
+  wire                            umireq_ready_delay;
+
+  wire                            umiresp_valid_delay;
+  wire                            umiresp_ready_delay;
+  wire [`UMI_DATA_WIDTH-1:0]      umiresp_bits_data_delay;
+
   assign #0.1 pcie_in_valid_delay = pcie_in_valid;
   assign #0.1 pcie_in_ready = pcie_in_ready_delay;
   assign #0.1 pcie_in_bits_delay = pcie_in_bits;
@@ -97,6 +125,16 @@ module emul;
   assign #0.1 softreg_resp_valid = softreg_resp_valid_delay;
   assign #0.1 softreg_resp_ready_delay = softreg_resp_ready;
   assign #0.1 softreg_resp_bits_rdata = softreg_resp_bits_rdata_delay;
+
+  assign #0.1 umireq_valid = umireq_valid_delay;
+  assign #0.1 umireq_ready_delay = umireq_ready;
+  assign #0.1 umireq_bits_addr = umireq_bits_addr_delay;
+  assign #0.1 umireq_bits_data = umireq_bits_data_delay;
+  assign #0.1 umireq_bits_isWrite = umireq_bits_isWrite_delay;
+
+  assign #0.1 umiresp_valid_delay = umiresp_valid;
+  assign #0.1 umiresp_ready = umiresp_ready_delay;
+  assign #0.1 umiresp_bits_data_delay = umiresp_bits_data;
 
   CatapultShim CatapultShim(
     .clock(clock),
@@ -118,8 +156,17 @@ module emul;
 
     .io_softreg_resp_valid(softreg_resp_valid_delay),
     .io_softreg_resp_ready(softreg_resp_ready_delay),
-    .io_softreg_resp_bits_rdata(softreg_resp_bits_rdata_delay)
-    // TODO: UMI
+    .io_softreg_resp_bits_rdata(softreg_resp_bits_rdata_delay),
+
+    .io_umireq_valid(umireq_valid_delay),
+    .io_umireq_ready(umireq_ready_delay),
+    .io_umireq_bits_addr(umireq_bits_addr_delay),
+    .io_umireq_bits_data(umireq_bits_data_delay),
+    .io_umireq_bits_isWrite(umireq_bits_isWrite_delay),
+
+    .io_umiresp_valid(umiresp_valid_delay),
+    .io_umiresp_ready(umiresp_ready_delay),
+    .io_umiresp_bits_data(umiresp_bits_data_delay)
   );
 
   always @(posedge clock) begin
@@ -148,7 +195,17 @@ module emul;
 
       softreg_resp_bits_rdata,
       softreg_resp_valid,
-      softreg_resp_ready
+      softreg_resp_ready,
+
+      umireq_bits_addr,
+      umireq_bits_data,
+      umireq_bits_isWrite,
+      umireq_valid,
+      umireq_ready,
+
+      umiresp_bits_data,
+      umiresp_valid,
+      umiresp_ready
     );
   end
 endmodule;

@@ -1,6 +1,6 @@
 #include "mmio_catapult.h"
-#include "mm.h"
-#include "mm_dramsim2.h"
+#include "umi.h"
+#include "umi_dramsim2.h"
 #include <cassert>
 #include <memory>
 #ifdef VCS
@@ -65,11 +65,13 @@ bool mmio_catapult_t::write_resp() {
 
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
-extern std::unique_ptr<mm_t> slave;
+std::unique_ptr<umi_t> slave;
 
-void init(uint64_t memsize, bool dramsim) {
+void* init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_catapult_t);
-  // TODO: slave = ?
+  slave.reset(dramsim ? (umi_t*) new umi_dramsim2_t : (umi_t*) new umi_magic_t);
+  slave->init(memsize, MEM_WIDTH, 64);
+  return slave->get_data();
 }
 
 #ifdef VCS
@@ -100,7 +102,17 @@ void tick(
 
   vc_handle softreg_resp_bits_rdata,
   vc_handle softreg_resp_valid,
-  vc_handle softreg_resp_ready
+  vc_handle softreg_resp_ready,
+
+  vc_handle umireq_bits_addr,
+  vc_handle umireq_bits_data,
+  vc_handle umireq_bits_isWrite,
+  vc_handle umireq_valid,
+  vc_handle umireq_ready,
+
+  vc_handle umiresp_bits_data,
+  vc_handle umiresp_valid,
+  vc_handle umiresp_ready
 ) {
   mmio_catapult_t* m;
   assert(m = dynamic_cast<mmio_catapult_t*>(master.get()));
@@ -109,11 +121,34 @@ void tick(
     master_resp_data[i] = vc_4stVectorRef(softreg_resp_bits_rdata)[i].d;
   }
 
+  bool slave_resp_ready = vc_getScalar(umiresp_ready);
+  bool slave_req_valid = vc_getScalar(umireq_valid);
+  bool slave_req_wr = vc_getScalar(umireq_bits_isWrite);
+  uint64_t slave_req_addr = 0;
+  for (size_t i = 0 ; i < 2 ; i++) {
+    slave_req_addr |= ((uint64_t)(vc_4stVectorRef(umireq_bits_addr)[i].d)) << (32 * i);
+  }
+  uint32_t slave_req_data[SLAVE_DATA_SIZE];
+  for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
+    slave_req_data[i] = vc_4stVectorRef(umireq_bits_data)[i].d;
+  }
+
   m->tick(
     vcs_rst,
     vc_getScalar(softreg_req_ready),
     vc_getScalar(softreg_resp_valid),
     master_resp_data
+  );
+
+  vc_putScalar(umireq_ready, slave->req_ready());
+
+  slave->tick(
+    vcs_rst,
+    slave_req_valid,
+    slave_req_wr,
+    slave_req_addr,
+    slave_req_data,
+    slave_resp_ready
   );
 
   vec32 d[SERIAL_DATA_SIZE];
@@ -137,6 +172,14 @@ void tick(
   vc_putScalar(softreg_req_bits_wr, m->req_wr());
   vc_putScalar(softreg_req_valid,   m->req_valid());
   vc_putScalar(softreg_resp_ready,  m->resp_ready());
+
+  vec32 sd[SLAVE_DATA_SIZE];
+  for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
+    sd[i].c = 0;
+    sd[i].d = ((uint32_t*) slave->resp_data())[i];
+  }
+  vc_put4stVector(umiresp_bits_data, sd);
+  vc_putScalar(umiresp_valid, slave->resp_valid());
 
   vc_putScalar(reset, vcs_rst);
   vc_putScalar(fin, vcs_fin);
@@ -176,6 +219,10 @@ void tick() {
   memcpy(&top->io_softreg_req_bits_wdata, m->req_wdata(), MMIO_WIDTH);
 #endif
 
+  top->io_umireq_ready = slave->req_ready();
+  top->io_umiresp_valid = slave->resp_valid();
+  memcpy(top->io_umiresp_bits_data, slave->resp_data(), MEM_WIDTH);
+
   top->clock = 0;
   top->eval();
 #if VM_TRACE
@@ -192,8 +239,15 @@ void tick() {
 #else
     &top->io_softreg_resp_bits_rdata
 #endif
+  );
 
-// TODO: slave
+  slave->tick(
+    top->reset,
+    top->io_umireq_valid,
+    top->io_umireq_bits_isWrite,
+    top->io_umireq_bits_addr,
+    top->io_umireq_bits_data,
+    top->io_umiresp_ready
   );
 }
 

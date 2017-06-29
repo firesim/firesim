@@ -107,7 +107,7 @@ void mm_dramsim2_t::tick(
   }
 
   if (w_fire) {
-    write(store_addr, (uint8_t *) w_data, w_strb, store_size);
+    write(store_addr, (uint8_t*)w_data, w_strb, store_size);
     store_addr += store_size;
     store_count--;
 
@@ -127,4 +127,10 @@ void mm_dramsim2_t::tick(
 
   mem->update();
   cycle++;
+
+  if (reset) {
+    while (!bresp.empty()) bresp.pop();
+    while (!rresp.empty()) rresp.pop();
+    cycle = 0;
+  }
 }

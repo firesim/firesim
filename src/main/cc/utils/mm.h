@@ -7,13 +7,33 @@
 #include <cstring>
 #include <queue>
 
-class mm_t
+class mm_base_t
 {
  public:
-  mm_t() : data(0), size(0) {}
-
+  mm_base_t(): data(0), size(0) {}
   virtual void init(size_t sz, int word_size, int line_size);
+  virtual void* get_data() { return data; }
+  virtual size_t get_size() { return size; }
+  virtual size_t get_word_size() { return word_size; }
+  virtual size_t get_line_size() { return line_size; }
 
+  void write(uint64_t addr, uint8_t *data);
+  void write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size);
+  std::vector<char> read(uint64_t addr);
+
+  virtual ~mm_base_t();
+
+ protected:
+  uint8_t* data;
+  size_t size;
+  int word_size;
+  int line_size;
+};
+
+
+class mm_t: public mm_base_t
+{
+ public:
   virtual bool ar_ready() = 0;
   virtual bool aw_ready() = 0;
   virtual bool w_ready() = 0;
@@ -50,22 +70,6 @@ class mm_t
     bool r_ready,
     bool b_ready
   ) = 0;
-
-  virtual void* get_data() { return data; }
-  virtual size_t get_size() { return size; }
-  virtual size_t get_word_size() { return word_size; }
-  virtual size_t get_line_size() { return line_size; }
-
-  void write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size);
-  std::vector<char> read(uint64_t addr);
-
-  virtual ~mm_t();
-
- protected:
-  uint8_t* data;
-  size_t size;
-  int word_size;
-  int line_size;
 };
 
 struct mm_rresp_t
