@@ -8,9 +8,16 @@
 #include <string>
 #include <cassert>
 
-void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
+void mm_base_t::write(uint64_t addr, uint8_t *data) {
+  addr %= this->size;
+
+  uint8_t* base = this->data + addr;
+  memcpy(base, data, word_size);
+}
+
+void mm_base_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
 {
-  strb &= ((1 << size) - 1) << (addr % word_size);
+  strb &= ((1L << size) - 1) << (addr % word_size);
   addr %= this->size;
 
   uint8_t *base = this->data + (addr / word_size) * word_size;
@@ -21,7 +28,7 @@ void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
   }
 }
 
-std::vector<char> mm_t::read(uint64_t addr)
+std::vector<char> mm_base_t::read(uint64_t addr)
 {
   addr %= this->size;
 
@@ -29,7 +36,7 @@ std::vector<char> mm_t::read(uint64_t addr)
   return std::vector<char>(base, base + word_size);
 }
 
-void mm_t::init(size_t sz, int wsz, int lsz)
+void mm_base_t::init(size_t sz, int wsz, int lsz)
 {
   assert(wsz > 0 && lsz > 0 && (lsz & (lsz-1)) == 0 && lsz % wsz == 0);
   word_size = wsz;
@@ -38,7 +45,7 @@ void mm_t::init(size_t sz, int wsz, int lsz)
   size = sz;
 }
 
-mm_t::~mm_t()
+mm_base_t::~mm_base_t()
 {
   delete [] data;
 }
@@ -94,7 +101,7 @@ void mm_magic_t::tick(
   }
 
   if (w_fire) {
-    write(store_addr, (uint8_t *) w_data, w_strb, store_size);
+    write(store_addr, (uint8_t*)w_data, w_strb, store_size);
     store_addr += store_size;
     store_count--;
 
@@ -112,6 +119,12 @@ void mm_magic_t::tick(
     rresp.pop();
 
   cycle++;
+
+  if (reset) {
+    while (!bresp.empty()) bresp.pop();
+    while (!rresp.empty()) rresp.pop();
+    cycle = 0;
+  }
 }
 
 void load_mem(void** mems, const char* fn, int line_size, int nchannels)
