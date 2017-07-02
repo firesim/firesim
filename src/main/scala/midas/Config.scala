@@ -10,6 +10,7 @@ import junctions.{NastiKey, NastiParameters}
 trait PlatformType
 case object Zynq extends PlatformType
 case object Catapult extends PlatformType
+case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
 case object MemModelKey extends Field[Option[Parameters => MemModel]]
@@ -54,3 +55,15 @@ class CatapultConfig extends Config(new Config((site, here, up) => {
 class CatapultConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new CatapultConfig)
+
+class F1Config extends Config(new Config((site, here, up) => {
+  case Platform       => F1
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case MemNastiKey    => NastiParameters(64, 32, 16)
+  case MasterNastiKey => site(CtrlNastiKey)
+  case SlaveNastiKey => site(MemNastiKey)
+}) ++ new SimConfig)
+
+class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
+  case EnableSnapshot => true
+}) ++ new F1Config)
