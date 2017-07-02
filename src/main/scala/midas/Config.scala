@@ -27,11 +27,11 @@ class SimConfig extends Config((site, here, up) => {
   case EndpointKey    => EndpointMap(Seq(new SimNastiMemIO, new SimAXI4MemIO))
   case MemModelKey    => Some((p: Parameters) => new SimpleLatencyPipe()(p))
   case FpgaMMIOSize   => BigInt(1) << 12 // 4 KB
+  case MidasLLCKey    => None
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => Zynq
-  case MidasLLCKey     => None
   case MasterNastiKey => site(CtrlNastiKey)
   case SlaveNastiKey  => site(MemNastiKey)
 }) ++ new SimConfig)
