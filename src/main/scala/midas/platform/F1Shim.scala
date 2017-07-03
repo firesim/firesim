@@ -161,44 +161,10 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
       )
   }
 
-  // report b resp to master and to our tracker
-  val b_resps_queue = Module(new Queue(Bool(), 10))
-  top.io.ctrl.aw <> Queue(io.master.aw, 10)
-  top.io.ctrl.w <> Queue(io.master.w, 10)
-  val write_b_frommidas = Queue(top.io.ctrl.b, 10)
-  io.master.b.bits := write_b_frommidas.bits
-  b_resps_queue.io.enq.bits := Bool(true)
-  io.master.b.valid := write_b_frommidas.valid && b_resps_queue.io.enq.ready
-  b_resps_queue.io.enq.valid := write_b_frommidas.valid && io.master.b.ready
-  write_b_frommidas.ready := io.master.b.ready && b_resps_queue.io.enq.ready
+  top.io.ctrl <> io.master
+  io.slave <> top.io.mem
 
-  // reads appear to be serialized, so a lot of this is probably unnecessary
-  val from_cpu_arq = Queue(io.master.ar, 10)
-  val write_status_request_queue = Module(new Queue(Bool(), 4))
-  val is_write_req = from_cpu_arq.bits.addr(2)
-  write_status_request_queue.io.enq.bits := is_write_req
-  from_cpu_arq.ready := (top.io.ctrl.ar.ready && !is_write_req) || (write_status_request_queue.io.enq.ready && is_write_req)
-  top.io.ctrl.ar.bits := from_cpu_arq.bits
-  top.io.ctrl.ar.bits.addr := (from_cpu_arq.bits.addr >> UInt(3)) << UInt(2)
-  top.io.ctrl.ar.valid := from_cpu_arq.valid && !is_write_req
-  write_status_request_queue.io.enq.valid := from_cpu_arq.valid && is_write_req
-
-  val from_midas_rq = Queue(top.io.ctrl.r, 10)
-  io.master.r.valid := from_midas_rq.valid || write_status_request_queue.io.deq.valid
-  write_status_request_queue.io.deq.ready := io.master.r.ready // write status request always gets priority
-  b_resps_queue.io.deq.ready := io.master.r.ready && write_status_request_queue.io.deq.valid
-  from_midas_rq.ready := io.master.r.ready && !write_status_request_queue.io.deq.valid
-  io.master.r.bits.resp := Mux(write_status_request_queue.io.deq.valid, UInt(0), from_midas_rq.bits.resp)
-  io.master.r.bits.data := Mux(write_status_request_queue.io.deq.valid, b_resps_queue.io.deq.valid && b_resps_queue.io.deq.bits, from_midas_rq.bits.data)
-  io.master.r.bits.last := Mux(write_status_request_queue.io.deq.valid, UInt(1), from_midas_rq.bits.last)
-  io.master.r.bits.id := Mux(write_status_request_queue.io.deq.valid, UInt(0), from_midas_rq.bits.id)
-  io.master.r.bits.user := Mux(write_status_request_queue.io.deq.valid, UInt(0), from_midas_rq.bits.user)
-
-  io.slave.aw <> Queue(top.io.mem.aw, 10)
-  io.slave.w <> Queue(top.io.mem.w, 10)
-  top.io.mem.b <> Queue(io.slave.b, 10)
-
-  io.slave.ar <> Queue(top.io.mem.ar, 10)
-  top.io.mem.r <> Queue(io.slave.r, 10)
+  val (counterValue, counterWrap) = Counter(io.master.aw.fire(), 4097)
+  top.io.ctrl.aw.bits.id := counterValue
 
 }

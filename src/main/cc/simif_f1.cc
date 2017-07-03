@@ -117,16 +117,14 @@ void simif_f1_t::write(size_t addr, uint32_t data) {
     uint64_t cmd = (((uint64_t)(0x80000000 | addr)) << 32) | (uint64_t)data;
     char * buf = (char*)&cmd;
     ::write(driver_to_xsim_fd, buf, 8);
-    while (!is_write_ready());
 #else
     int rc = fpga_pci_poke(pci_bar_handle, addr, data);
-    while (!is_write_ready());
     check_rc(rc, NULL);
 #endif
 }
 
 uint32_t simif_f1_t::read(size_t addr) {
-    addr <<= 3;
+    addr <<= 2;
 #ifdef SIMULATION_XSIM
     uint64_t cmd = addr;
     char * buf = (char*)&cmd;
