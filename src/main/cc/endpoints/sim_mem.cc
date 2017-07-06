@@ -20,13 +20,6 @@ sim_mem_t::sim_mem_t(simif_t* sim, int argc, char** argv): endpoint_t(sim) {
     else if (arg.find("+loadmem=") == 0) {
       loadmem = arg.c_str() + 9;
     }
-    else if (arg.find("+mm_") == 0) {
-      auto sub_arg = std::string(arg.c_str() + 4);
-      size_t delimit_idx = sub_arg.find_first_of("=");
-      std::string key = sub_arg.substr(0, delimit_idx).c_str();
-      int value = stoi(sub_arg.substr(delimit_idx+1).c_str());
-      model_configuration[key] = value;
-    }
   }
   mem = dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t;
   mem->init(memsize, MEM_DATA_BITS / 8, 64);
