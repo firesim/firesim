@@ -65,7 +65,6 @@ bool mmio_f1_t::read_resp(void* data) {
     size_t word_size = 1 << ar.size;
     for (size_t i = 0 ; i <= ar.len ; i++) {
       mmio_resp_data_t& r = this->r.front();
-      assert(ar.id == r.id && (i < ar.len || r.last));
       memcpy(((char*) data) + i * word_size, r.data, word_size);
       this->r.pop();
     }
@@ -79,7 +78,6 @@ bool mmio_f1_t::write_resp() {
   if (aw.empty() || b.empty()) {
     return false;
   } else {
-    assert(aw.front().id == b.front());
     aw.pop();
     b.pop();
     write_inflight = false;
