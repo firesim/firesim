@@ -38,7 +38,7 @@ object MemConfReader {
         ports filter (_ == "read"),
         ports filter (p => p == "write" || p == "mwrite"),
         ports filter (p => p == "rw" || p == "mrw"),
-        map get MaskGran map (BigInt(_)) getOrElse (BigInt(map(Width))))
+        map get MaskGran map (BigInt(_)) getOrElse (BigInt(0)))
     }
   }
 }
@@ -46,73 +46,69 @@ object MemConfReader {
 object MidasMacroEmitter {
   def apply(writer: Writer)(conf: MemConf) {
     val tab = " "
-    val dataWidth = conf.width.toInt
-    val maskGran = conf.maskGran.toInt
-    val maskWidth = (dataWidth / maskGran).toInt
+    def maskWidth = (conf.width / conf.maskGran).toInt
     val addrWidth = chisel3.util.log2Up(conf.depth) max 1
     val portdefs = (conf.readers.indices flatMap (i => Seq(
       Seq(tab, "input", s"R${i}_clk"),
       Seq(tab, s"input[${addrWidth-1}:0]", s"R${i}_addr"),
       Seq(tab, "input", s"R${i}_en"),
-      Seq(tab, s"output reg [${dataWidth-1}:0]", s"R${i}_data"))
+      Seq(tab, s"output reg [${conf.width-1}:0]", s"R${i}_data"))
     )) ++ (conf.writers.zipWithIndex flatMap { case (w, i) => Seq(
       Seq(tab, "input", s"W${i}_clk"),
       Seq(tab, s"input[${addrWidth-1}:0]", s"W${i}_addr"),
       Seq(tab, "input", s"W${i}_en"),
-      Seq(tab, s"input[${dataWidth-1}:0]", s"W${i}_data")) ++
+      Seq(tab, s"input[${conf.width-1}:0]", s"W${i}_data")) ++
       (if (w.head == 'm') Seq(Seq(tab, s"input[${maskWidth-1}:0]", s"W${i}_mask")) else Nil)
     }) ++ (conf.readwriters.zipWithIndex flatMap { case (rw, i) => Seq(
       Seq(tab, "input", s"RW${i}_clk"),
       Seq(tab, s"input[${addrWidth-1}:0]", s"RW${i}_addr"),
       Seq(tab, "input", s"RW${i}_en"),
       Seq(tab, "input", s"RW${i}_wmode"),
-      Seq(tab, s"input[${dataWidth-1}:0]", s"RW${i}_wdata"),
-      Seq(tab, s"output reg [${dataWidth-1}:0]", s"RW${i}_rdata")) ++
+      Seq(tab, s"input[${conf.width-1}:0]", s"RW${i}_wdata"),
+      Seq(tab, s"output reg [${conf.width-1}:0]", s"RW${i}_rdata")) ++
       (if (rw.head == 'm') Seq(Seq(tab, s"input[${maskWidth-1}:0]", s"RW${i}_wmask")) else Nil)
     })
-    val declares = ((0 until maskWidth) map (i =>
-          Seq(tab, s"reg[${maskGran-1}:0] ram_$i[0:${conf.depth-1}];"))) ++
+    val declares = Seq(Seq(tab, s"reg[${conf.width-1}:0] ram[${conf.depth-1}:0];")) ++
       Seq(Seq("`ifdef RANDOMIZE_MEM_INIT"),
           Seq(tab, "integer initvar;"),
           Seq(tab, "initial begin"),
           Seq(tab, tab, "#0.002;"),
-          Seq(tab, tab, s"for (initvar = 0; initvar < ${conf.depth}; initvar = initvar + 1) begin")) ++
-      ((0 until maskWidth) map (i =>
-          Seq(tab, tab, tab, """/* verilator lint_off WIDTH */ ram_%d[initvar] = {%d{$random}};""".format(
-              i, (maskGran - 1) / 32 + 1))
-      )) ++ Seq(
-          Seq(tab, tab, "end")) ++
+          Seq(tab, tab, s"for (initvar = 0; initvar < ${conf.depth}; initvar = initvar + 1)"),
+          Seq(tab, tab, tab, """/* verilator lint_off WIDTH */ ram[initvar] = {%d{$random}};""".format((conf.width - 1) / 32 + 1))) ++
       (conf.readers.indices map (i =>
           Seq(tab, tab, "/* verilator lint_off WIDTH */ R%d_data = {%d{$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
       (conf.readwriters.indices map (i =>
           Seq(tab, tab, "/* verilator lint_off WIDTH */ RW%d_rdata = {%d{$random}};".format(i, (addrWidth - 1) / 32 + 1)))) ++
       Seq(Seq(tab, "end"),
           Seq("`endif"))
-    val always = (conf.readers.indices map (i => s"R${i}_clk" -> (
-      (0 until maskWidth) map { k =>
-        val range = s"${(k + 1) * maskGran - 1} : ${k * maskGran}"
-        Seq(tab, tab, s"if (R${i}_en)", s"R${i}_data[${range}] <= ram_${k}[R${i}_addr];")
-      }
-    ))) ++ (conf.writers.zipWithIndex map { case (w, i) => s"W${i}_clk" -> (
-      (0 until maskWidth) map { k =>
-        val wmode = w.head == 'm' match {
-          case false => s"W${i}_en"
-          case true  => s"W${i}_en && W${i}_mask[$k]"
+    val always = (conf.readers.indices map (i => s"R${i}_clk" ->
+      Seq(Seq(tab, tab, s"if (R${i}_en)", s"R${i}_data <= ram[R${i}_addr];"))
+    )) ++ (conf.writers.zipWithIndex map { case (w, i) => s"W${i}_clk" -> (
+      w.head == 'm' match {
+        case false => Seq(Seq(tab, tab, s"if (W${i}_en)", s"ram[W${i}_addr] <= W${i}_data;"))
+        case true => (0 until maskWidth) map { k =>
+          val range = s"${(k + 1) * conf.maskGran - 1} : ${k * conf.maskGran}"
+          Seq(tab, tab, s"if (W${i}_en && W${i}_mask[$k])",
+                        s"ram[W${i}_addr][$range] <= W${i}_data[$range];")
         }
-        val range = s"${(k + 1) * maskGran - 1} : ${k * maskGran}"
-        Seq(tab, tab, s"if (${wmode})", s"ram_${k}[W${i}_addr] <= W${i}_data[$range];")
       }
     )}) ++ (conf.readwriters.zipWithIndex map { case (w, i) => s"RW${i}_clk" -> (
-      (0 until maskWidth) flatMap { k =>
-        val wmode = w.head == 'm' match {
-          case false => s"RW${i}_wmode"
-          case true  => s"RW${i}_wmode && RW${i}_wmask[$k]"
-        }
-        val range = s"${(k + 1) * maskGran - 1} : ${k * maskGran}"
-        Seq(Seq(tab, tab, s"if (RW${i}_en) begin"),
-            Seq(tab, tab, tab, s"if (${wmode})", s"ram_${k}[RW${i}_addr] <= RW${i}_wdata[$range];"),
-            Seq(tab, tab, tab, s"else RW${i}_rdata[$range] <= ram_${k}[RW${i}_addr];"),
-            Seq(tab, tab, "end"))
+      w.head == 'm' match {
+        case false => Seq(
+          Seq(tab, tab, s"if (RW${i}_en) begin"),
+          Seq(tab, tab, tab, s"RW${i}_rdata <= ram[RW${i}_addr];"),
+          Seq(tab, tab, tab, s"if (RW${i}_wmode)", s"ram[RW${i}_addr] <= RW${i}_wdata;"),
+          Seq(tab, tab, "end"))
+        case true => Seq(
+          Seq(tab, tab, s"if (RW${i}_en) begin"),
+          Seq(tab, tab, tab, s"RW${i}_rdata <= ram[RW${i}_addr];")
+        ) ++ ((0 until maskWidth) map { k =>
+          val range = s"${(k + 1) * conf.maskGran - 1} : ${k * conf.maskGran}"
+          Seq(tab, tab, tab, s"if (RW${i}_wmode && RW${i}_wmask[${k}])",
+                             s"ram[RW${i}_addr][$range] <= RW${i}_wdata[$range];")
+        }) ++ Seq(
+          Seq(tab, tab, "end")
+        )
       }
     )})
     writer write s"""
