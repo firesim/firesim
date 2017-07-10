@@ -9,7 +9,7 @@ import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import Utils._
 
-private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform extends firrtl.passes.Pass {
   override def name = "[midas] Fame1 Transforms"
   type Enables = collection.mutable.HashSet[String]
   type Statements = collection.mutable.ArrayBuffer[Statement]
@@ -21,20 +21,6 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
 
   private def collect(ens: Enables, wmodes: Enables)(s: Statement): Statement = {
     s match {
-      case s: WDefInstance => seqMems get s.module match {
-        case None =>
-        case Some(seqMem) =>
-          ens ++= (seqMem.readers.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"R$i"), "en").serialize
-          )) ++ (seqMem.readwriters.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "en").serialize
-          ))
-          wmodes ++= (seqMem.writers.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"W$i"), "en").serialize
-          )) ++ (seqMem.readwriters.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "wmode").serialize
-          ))
-      }
       case s: DefMemory =>
         ens ++= (s.readers ++ s.readwriters) map (memPortField(s, _, "en").serialize)
         wmodes ++=
@@ -50,7 +36,7 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
                       wmodes: Enables,
                       stmts: Statements)
                       (s: Statement): Statement = s match {
-    case s: WDefInstance if !(seqMems contains s.module) =>
+    case s: WDefInstance =>
       Block(Seq(s,
         Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire),
         Connect(NoInfo, wsub(wref(s.name), "daisyReset"), daisyReset)

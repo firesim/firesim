@@ -4,6 +4,7 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.annotations._
 import core.ChainType
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, LinkedHashSet}
 
@@ -88,17 +89,20 @@ private object postorder {
 }
 
 class StroberTransforms(
-    dir: java.io.File,
-    seqMems: Map[String, midas.passes.MemConf])
+    dir: java.io.File)
    (implicit param: config.Parameters) extends Transform {
   def inputForm = MidForm
   def outputForm = MidForm
   def execute(state: CircuitState) = {
-    val meta = StroberMetaData(state.circuit)
-    val transforms = Seq(
-      new AddDaisyChains(meta, seqMems),
-      new DumpChains(dir, meta, seqMems)
-    )
-    (transforms foldLeft state)((in, xform) => xform runTransform in).copy(form=outputForm)
+    if (param(midas.EnableSnapshot)) {
+      val meta = StroberMetaData(state.circuit)
+      val xforms = Seq(
+        new AddDaisyChains(meta),
+        new DumpChains(dir, meta))
+      (xforms foldLeft state)((in, xform) =>
+        xform runTransform in).copy(form=outputForm)
+    } else {
+      state
+    }
   }
 }

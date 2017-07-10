@@ -11,8 +11,7 @@ import java.io.{File, FileWriter}
 
 class DumpChains(
     dir: File,
-    meta: StroberMetaData,
-    seqMems: Map[String, midas.passes.MemConf])
+    meta: StroberMetaData)
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
   override def name = "[strober] Dump Daisy Chains"
@@ -34,24 +33,24 @@ class DumpChains(
         val id = chainType.id
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
-            case s: WDefInstance =>
-              val seqMem = seqMems(s.module)
+            case s: DefMemory if s.readLatency == 1 =>
               val prefix = s"$path.${s.name}"
-              chainType match {
+              val width = bitWidth(s.dataType)
+              (chainType: @unchecked) match {
                 case ChainType.SRAM =>
-                  chainFile write s"$id $prefix.ram ${seqMem.width} ${seqMem.depth}\n"
-                  seqMem.width.toInt
-                case _ =>
-                  val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
-                  /* seqMem.readers.indices foreach (i =>
+                  chainFile write s"$id $prefix.ram ${width} ${s.depth}\n"
+                  width.toInt
+                case ChainType.Trace =>
+                  val addrWidth = chisel3.util.log2Up(s.depth.toInt)
+                  /* s.readers.indices foreach (i =>
                     chainFile write s"$id $prefix.reg_R$i $addrWidth -1\n")
-                  seqMem.readwriters.indices foreach (i =>
+                  s.readwriters.indices foreach (i =>
                     chainFile write s"$id $prefix.reg_RW$i $addrWidth -1\n") */
-                  seqMem.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix.R${i}_data ${seqMem.width} -1\n")
-                  seqMem.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.RW${i}_rdata ${seqMem.width} -1\n")
-                  (seqMem.readers.size + seqMem.readwriters.size) * (/* addrWidth + */seqMem.width.toInt)
+                  s.readers.indices foreach (i =>
+                    chainFile write s"$id $prefix.R${i}_data ${width} -1\n")
+                  s.readwriters.indices foreach (i =>
+                    chainFile write s"$id $prefix.RW${i}_rdata ${width} -1\n")
+                  (s.readers.size + s.readwriters.size) * (/* addrWidth + */width.toInt)
               }
             case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
               val name = verilogRenameN(loweredName(mem))
