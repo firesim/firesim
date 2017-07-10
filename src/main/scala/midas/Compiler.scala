@@ -23,21 +23,20 @@ private class MidasCompiler(dir: File, io: Data)(implicit param: config.Paramete
 }
 
 // Compilers to emit proper verilog
-private class VerilogCompiler(confFile: File, macroFile: File) extends firrtl.Compiler {
-  def emitter = new passes.MidasVerilogEmitter(confFile, macroFile)
+private class VerilogCompiler extends firrtl.Compiler {
+  def emitter = new firrtl.VerilogEmitter
   def transforms = getLoweringTransforms(firrtl.HighForm, firrtl.LowForm) :+ (
     new firrtl.LowFirrtlOptimization)
 }
 
+
 object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: config.Parameters): Circuit = {
-    val confFile = new File(dir, s"${chirrtl.main}.conf")
-    val macroFile = new File(dir, s"${chirrtl.main}.macros.v")
+    val conf = new File(dir, s"${chirrtl.main}.conf")
     val annotations = new firrtl.AnnotationMap(Seq(
-      firrtl.passes.memlib.InferReadWriteAnnotation(chirrtl.main),
-      firrtl.passes.memlib.ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
-      passes.MidasAnnotation(chirrtl.main, confFile)
-    ))
+      InferReadWriteAnnotation(chirrtl.main),
+      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
+      passes.MidasAnnotation(chirrtl.main, conf)))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
     val midas = new MidasCompiler(dir, io) compile (
@@ -45,7 +44,7 @@ object MidasCompiler {
     // writer.close
     // firrtl.Parser.parse(writer.toString)
     val verilog = new FileWriter(new File(dir, s"${midas.circuit.main}.v"))
-    val result = new VerilogCompiler(confFile, macroFile) compile (
+    val result = new VerilogCompiler compile (
       firrtl.CircuitState(midas.circuit, firrtl.HighForm), verilog)
     verilog.close
     result.circuit

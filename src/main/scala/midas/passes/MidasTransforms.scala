@@ -19,7 +19,7 @@ object MidasAnnotation {
     Annotation(CircuitName(t), classOf[MidasTransforms], conf.toString)
   def unapply(a: Annotation) = a match {
     case Annotation(CircuitName(t), transform, conf) if transform == classOf[MidasTransforms] =>
-      Some(CircuitName(t), new java.io.File(conf))
+      Some(t, new java.io.File(conf))
     case _ => None
   }
 }
@@ -31,18 +31,16 @@ private[midas] class MidasTransforms(
   def inputForm = MidForm
   def outputForm = MidForm
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
-    case Seq(MidasAnnotation(CircuitName(state.circuit.main), conf)) =>
-      val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
-      val stroberPasses = param(EnableSnapshot) match {
-        case true => Seq(new strober.passes.StroberTransforms(dir, seqMems))
-        case false => Nil
-      }
-      val transforms = Seq(
-        new Fame1Transform(seqMems)) ++
-        stroberPasses ++ Seq(
+    case Seq(MidasAnnotation(state.circuit.main, conf)) =>
+      val xforms = Seq(
+        new ToSeqMems(conf),
+        firrtl.passes.ResolveKinds,
+        new Fame1Transform,
+        new strober.passes.StroberTransforms(dir),
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir)
       )
-      (transforms foldLeft state)((in, xform) => xform runTransform in).copy(form=outputForm)
+      (xforms foldLeft state)((in, xform) =>
+        xform runTransform in).copy(form=outputForm)
   }
 }
