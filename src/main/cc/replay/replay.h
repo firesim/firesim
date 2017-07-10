@@ -199,11 +199,7 @@ private:
 
   void force(const std::string& node, biguint_t* data) {
     if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
-    // FIXME: This is ugly... should be fixed when pcad is ported to firrtl
-    bool not_force = !gate_level() && (
-      node.find(".R") != -1 && node.find("_data") != -1 /* read port output */ ||
-      node.find(".RW") != -1 && node.find("_rdata") != -1 /* rw port output */);
-    put_value(get_signal(node), data, not_force ? PUT_DEPOSIT : PUT_FORCE);
+    put_value(get_signal(node), data, PUT_FORCE);
   }
 
   void load_bit(const std::string& ref, biguint_t* bit) {
