@@ -7,6 +7,8 @@ module replay;
 `ifdef VCS 
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
+  reg vcdon = 1'b0;
+  reg [1023:0] vcdfile = 0;
   reg [1023:0] vcdplusfile = 0;
 `endif
 
@@ -15,6 +17,12 @@ module replay;
 
   initial begin
 `ifdef VCS
+    if ($value$plusargs("vcdfile=%s", vcdfile))
+    begin
+      $dumpfile(vcdfile);
+      $dumpvars(0, `TOP_TYPE);
+      $dumpoff;
+    end
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
       $vcdplusfile(vcdplusfile);
@@ -26,14 +34,31 @@ module replay;
   end
 
   always @(posedge clock) begin
-    if (!reset) cycles <= cycles + 1;
+    if (!reset) begin
+      cycles <= cycles + 1;
+      if (vcdfile && !vcdon) begin
+        $dumpon;
+        vcdon <= 1;
+      end
+    end
   end
 
   always @(negedge clock) begin
     $tick(exit);
     if (exit) begin
+      if (vcdfile && vcdon) begin
 `ifdef VCS
-      $vcdplusclose;
+        // FIXME: Why not $dumpoff?
+        // (vcs K-2015.09-SP2-1, L-2016.06-1)
+        $dumpon;
+`else
+        $dumpoff;
+`endif
+      end
+`ifdef VCS
+      if (vcdplusfile) begin
+        $vcdplusclose;
+      end
 `endif
       $finish;
     end
