@@ -28,18 +28,18 @@ private[midas] class MidasTransforms(
     dir: java.io.File,
     io: chisel3.Data)
    (implicit param: config.Parameters) extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+  def inputForm = LowForm
+  def outputForm = LowForm
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
     case Seq(MidasAnnotation(state.circuit.main, conf)) =>
       val xforms = Seq(
+        firrtl.passes.RemoveValidIf,
         new ToSeqMems(conf),
         firrtl.passes.ResolveKinds,
         new Fame1Transform,
         new strober.passes.StroberTransforms(dir),
         new SimulationMapping(io),
-        new PlatformMapping(state.circuit.main, dir)
-      )
+        new PlatformMapping(state.circuit.main, dir))
       (xforms foldLeft state)((in, xform) =>
         xform runTransform in).copy(form=outputForm)
   }

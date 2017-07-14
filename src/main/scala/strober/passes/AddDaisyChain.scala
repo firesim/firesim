@@ -6,7 +6,6 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils._
 import firrtl.passes.MemPortUtils._
-import firrtl.passes.LowerTypes.loweredName
 import WrappedExpression.weq
 import midas.passes.Utils._
 import strober.core._
@@ -26,7 +25,7 @@ class AddDaisyChains(
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new AnnotationMap(Nil)
-    val circuit = renameMods((new midas.InlineCompiler compile (
+    val circuit = renameMods((new midas.MidFirrtlInlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
     chainMods ++= circuit.modules
     Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
@@ -432,7 +431,7 @@ class AddDaisyChains(
     val chainMods = new DefModules
     val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
     val chirrtl = Parser parse (chisel3.Driver emit (() => new core.DaisyBox))
-    val daisybox = (new midas.InlineCompiler compile (
+    val daisybox = (new midas.MidFirrtlInlineCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
     val daisyType = daisybox.modules.head.ports.head.tpe
     val targetMods = postorder(c, meta)(transform(namespace, daisyType, chainMods, hasChain))

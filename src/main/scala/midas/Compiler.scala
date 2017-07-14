@@ -7,19 +7,25 @@ import firrtl.passes.memlib._
 import java.io.{File, FileWriter, Writer}
 
 // Compiler in Midas Passes
-class InlineCompiler extends firrtl.Compiler {
+class LowFirrtlInlineCompiler extends firrtl.Compiler {
+  def emitter = new firrtl.LowFirrtlEmitter
+  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.LowForm)
+}
+
+class MidFirrtlInlineCompiler extends firrtl.Compiler {
   def emitter = new firrtl.MiddleFirrtlEmitter
   def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm)
 }
 
 // Compiler for Midas Transforms
 private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
-  def emitter = new firrtl.MiddleFirrtlEmitter
-  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
+  def emitter = new firrtl.LowFirrtlEmitter
+  def transforms =
+    getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
     new InferReadWrite,
-    new ReplSeqMem,
-    new passes.MidasTransforms(dir, io)
-  )
+    new ReplSeqMem) ++
+    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm) ++ Seq(
+    new passes.MidasTransforms(dir, io))
 }
 
 // Compilers to emit proper verilog
@@ -28,7 +34,6 @@ private class VerilogCompiler extends firrtl.Compiler {
   def transforms = getLoweringTransforms(firrtl.HighForm, firrtl.LowForm) :+ (
     new firrtl.LowFirrtlOptimization)
 }
-
 
 object MidasCompiler {
   def apply(chirrtl: Circuit, io: Data, dir: File)(implicit p: config.Parameters): Circuit = {
