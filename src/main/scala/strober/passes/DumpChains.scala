@@ -52,25 +52,23 @@ class DumpChains(
                     chainFile write s"$id $prefix.RW${i}_rdata ${width} -1\n")
                   (s.readers.size + s.readwriters.size) * (/* addrWidth + */width.toInt)
               }
-            case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
-              val name = verilogRenameN(loweredName(mem))
-              val width = bitWidth(mem.tpe).toInt
+            case s: DefMemory =>
+              val name = verilogRenameN(s.name)
+              val width = bitWidth(s.dataType).toInt
               chainType match {
                 case ChainType.SRAM =>
                   chainFile write s"$id $path.$name $width ${s.depth}\n"
-                  totalWidth + width
-                case _ => totalWidth + (((0 until s.depth) foldLeft 0){ (memWidth, i) =>
+                  width
+                case _ => (((0 until s.depth) foldLeft 0){ (sum, i) =>
                   chainFile write s"$id $path.$name[$i] $width -1\n"
-                  memWidth + width
+                  sum + width
                 })
               }
-            }
-            case s: DefRegister => (create_exps(s.name, s.tpe) foldLeft 0){ (totalWidth, reg) =>
-              val name = verilogRenameN(loweredName(reg))
-              val width = bitWidth(reg.tpe).toInt
+            case s: DefRegister =>
+              val name = verilogRenameN(s.name)
+              val width = bitWidth(s.tpe).toInt
               chainFile write s"$id $path.$name $width -1\n"
-              totalWidth + width
-            }
+              width
           })
           val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
           chainType match {

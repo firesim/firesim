@@ -6,7 +6,8 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.createMask
 import firrtl.passes.MemPortUtils.memPortField
-import firrtl.Utils.{one, kind, create_exps}
+import firrtl.passes.LowerTypes.loweredName
+import firrtl.Utils.{one, kind, create_exps, splitRef}
 import midas.passes.Utils._
 
 case class MemConf(
@@ -70,55 +71,85 @@ private[passes] class ToSeqMems(conf: java.io.File) extends firrtl.passes.Pass {
 
   type Netlist = collection.mutable.HashMap[String, Expression]
 
-  def portMap(mem: SeqMem, ports: Seq[Port]): Seq[(String, Expression)] =
-    (mem.readers flatMap { r =>
-      val tpe = (ports find (_.name == r)).get.tpe
-      (create_exps(wsub(wref(r, tpe), "data")) zip
-       create_exps(memPortField(mem, r, "data")))
-    }) ++ (mem.writers flatMap { w =>
-      val tpe = (ports find (_.name == w)).get.tpe
-      Seq(memPortField(mem, w, "data") -> wsub(wref(w, tpe), "data"),
-          memPortField(mem, w, "mask") -> wsub(wref(w, tpe), "mask"))
-    }) ++ (mem.readwriters flatMap { rw =>
-      val tpe = (ports find (_.name == rw)).get.tpe
-      (create_exps(wsub(wref(rw, tpe), "rdata")) zip
-       create_exps(memPortField(mem, rw, "rdata"))) ++
-      Seq(memPortField(mem, rw, "wdata") -> wsub(wref(rw, tpe), "wdata"),
-          memPortField(mem, rw, "wmask") -> wsub(wref(rw, tpe), "wmask"))
-    }) map { case (x, y) => x.serialize -> y }
+  def createMap(e: Expression, isIo: Boolean): (String, Expression) = {
+    val (ref, subfield) = splitRef(e)
+    val name = loweredName(subfield)
+    (if (isIo) name else s"${ref.name}.$name") -> e
+  }
+
+  def mapPorts(mem: SeqMem, locs: Netlist, exprs: Netlist, repl: Netlist) {
+    mem.readers foreach { r =>
+      locs ++= Seq("clk", "addr", "en") map (f => createMap(memPortField(mem, r, f), false))
+      (mem.dataType: @unchecked) match {
+        case _: UIntType =>
+          repl += createMap(memPortField(mem, r, "data"), false)
+        case _: VectorType =>
+          exprs ++= create_exps(memPortField(mem, r, "data")) map (e => createMap(e, true))
+      }
+    }
+    mem.writers foreach { w =>
+      locs ++= Seq("clk", "addr", "en") map (f => createMap(memPortField(mem, w, f), false))
+      (mem.dataType: @unchecked) match {
+        case _: UIntType =>
+          repl ++= Seq("data", "mask") map (f => createMap(memPortField(mem, w, f), false))
+        case _: VectorType =>
+          locs ++= Seq("data", "mask") map (f => createMap(memPortField(mem, w, f), false))
+      }
+    }
+    mem.readwriters foreach { rw =>
+      locs ++= Seq("clk", "addr", "en", "wmode") map (f => createMap(memPortField(mem, rw, f), false))
+      (mem.dataType: @unchecked) match {
+        case _: UIntType =>
+          repl ++= Seq("wdata", "wmask", "rdata") map (f => createMap(memPortField(mem, rw, f), false))
+        case _: VectorType =>
+          locs ++= Seq("wdata", "wmask") map (f => createMap(memPortField(mem, rw, f), false))
+          exprs ++= create_exps(memPortField(mem, rw, "rdata")) map (e => createMap(e, true))
+      }
+    }
+  }
 
   def setMask(mem: SeqMem) = {
     (mem.writers map (p => Connect(NoInfo, memPortField(mem, p, "mask"), one))) ++
     (mem.readwriters map (p => Connect(NoInfo, memPortField(mem, p, "wmask"), one)))
   }
 
-  def replaceInsts(netlist: Netlist, ports: Seq[Port])(s: Statement): Statement =
-    s map replaceInsts(netlist, ports) match {
+  def replaceInsts(locs: Netlist, exprs: Netlist, repl: Netlist)(s: Statement): Statement =
+    s map replaceInsts(locs, exprs, repl) match {
       case s: WDefInstance => seqMems get s.name match {
         case None => s
         case Some(bb) =>
           val mem = new SeqMem(s.info, bb)
-          if (mem.hasMaskPort) {
-            netlist ++= portMap(mem, ports)
-            mem
-          } else Block(mem +: setMask(mem))
+          mapPorts(mem, locs, exprs, repl)
+          if (mem.hasMaskPort) mem else Block(mem +: setMask(mem))
       }
       case s => s
     }
 
-  def replaceExps(netlist: Netlist)(s: Statement): Statement =
-    s map replaceExps(netlist) match {
-      case s: Connect => netlist get s.loc.serialize match {
-        case None => s
-        case Some(e) => s.copy(expr=e)
+  def updateExpr(repl: Netlist)(e: Expression): Expression =
+    repl get e.serialize match {
+      case Some(ex) => ex
+      case None => e map updateExpr(repl)
+    }
+
+  def replaceExps(locs: Netlist, exprs: Netlist, repl: Netlist)(s: Statement): Statement =
+    s map replaceExps(locs, exprs, repl) match {
+      case s: Connect => locs get s.loc.serialize match {
+        case Some(e) => Block(create_exps(e) map (ex =>
+          Connect(s.info, ex, WRef(loweredName(splitRef(ex)._2)))
+        ))
+        case None => exprs get s.loc.serialize match {
+          case Some(e) => s.copy(expr=e)
+          case None => s map updateExpr(repl)
+        }
       }
       case s => s
     }
 
   def onMod(m: DefModule): DefModule = {
-    val netlist = new Netlist
-    val mx = m map replaceInsts(netlist, m.ports)
-    if (netlist.isEmpty) mx else mx map replaceExps(netlist)
+    val (locs, exprs, repl) = (new Netlist, new Netlist, new Netlist)
+    val mx = m map replaceInsts(locs, exprs, repl)
+    if (locs.isEmpty && exprs.isEmpty && repl.isEmpty) mx
+    else mx map replaceExps(locs, exprs, repl)
   }
 
   def run(c: Circuit) = c.copy(modules =
