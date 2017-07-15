@@ -66,7 +66,7 @@ override CXXFLAGS += /I$(call path,$(midas_dir)) /I$(call path,$(util_dir))
 override CXXFLAGS += $(foreach f, $(DRIVER), /I$(call path,$(dir $(f))))
 endif
 
-design_v = $(GEN_DIR)/$(shim).v $(GEN_DIR)/$(DESIGN).macros.v
+design_v = $(GEN_DIR)/$(shim).v
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
