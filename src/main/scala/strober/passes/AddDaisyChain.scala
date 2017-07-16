@@ -103,6 +103,8 @@ class AddDaisyChains(
                               (implicit chainType: ChainType.Value) = {
     def sumWidths(s: Statement): Int = s match {
       case s: DefRegister => bitWidth(s.tpe).toInt
+      case s: DefMemory if s.readLatency == 1 =>
+        bitWidth(s.dataType).toInt
       case s: DefMemory if s.readLatency == 0 && !bigRegFile(s) =>
         s.depth * bitWidth(s.dataType).toInt
       case s: Block => (s.stmts foldLeft 0)(_ + sumWidths(_))
