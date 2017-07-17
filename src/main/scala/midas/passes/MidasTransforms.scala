@@ -34,8 +34,13 @@ private[midas] class MidasTransforms(
     case Seq(MidasAnnotation(state.circuit.main, conf)) =>
       val xforms = Seq(
         firrtl.passes.RemoveValidIf,
+        new firrtl.transforms.ConstantPropagation,
+        firrtl.passes.SplitExpressions,
+        firrtl.passes.CommonSubexpressionElimination,
+        new firrtl.transforms.DeadCodeElimination,
         new ToSeqMems(conf),
         firrtl.passes.ResolveKinds,
+        firrtl.passes.RemoveEmpty,
         new Fame1Transform,
         new strober.passes.StroberTransforms(dir),
         new SimulationMapping(io),
