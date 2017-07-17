@@ -141,11 +141,11 @@ class AddDaisyChains(
       lazy val chain = new RegChain()(param alterPartial ({
         case DataWidth => sumWidths(m.body) }))
       val instStmts = generateChain(() => chain, namespace, chainMods)
-      val clocks = m.ports flatMap (p =>
-        create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
+      val clock = m.ports flatMap (p =>
+        create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
       val portConnects = Seq(
         // <daisy_chain>.clock <- clock
-        Connect(NoInfo, wsub(chainRef(), "clock"), clocks.head),
+        Connect(NoInfo, wsub(chainRef(), "clock"), clock.get),
         // <daisy_chain>.reset <- daisyReset
         Connect(NoInfo, wsub(chainRef(), "reset"), wref("daisyReset")),
         // <daisy_chain>.io.stall <- not(targetFire)
@@ -155,15 +155,6 @@ class AddDaisyChains(
       )
       hasChain += m.name
       val stmts = new Statements
-      lazy val mnamespace = Namespace(m)
-      def insertBuf(name: String, value: Expression, en: Expression) = {
-        val buf = wref(mnamespace newName name, value.tpe, RegKind)
-        stmts ++= Seq(
-          DefRegister(NoInfo, buf.name, buf.tpe, clocks.head, zero, buf),
-          Connect(NoInfo, buf, Mux(en, value, buf, buf.tpe))
-        )
-        buf
-      }
       val regs = meta.chains(chainType)(m.name) flatMap {
         case s: DefRegister => create_exps(s.name, s.tpe)
         case s: DefMemory => chainType match {
@@ -271,11 +262,11 @@ class AddDaisyChains(
         case SeqRead   => sram.readLatency > 0
       }))
       val instStmts = generateChain(() => chain, namespace, chainMods, i)
-      val clocks = m.ports flatMap (p =>
-        create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
+      val clock = m.ports flatMap (p =>
+        create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
       val portConnects = Seq(
         // <daisy_chain>.clock <- clock
-        Connect(NoInfo, wsub(chainRef(i), "clock"), clocks.head),
+        Connect(NoInfo, wsub(chainRef(i), "clock"), clock.get),
         // <daisy_chain>.reset <- daisyReset
         Connect(NoInfo, wsub(chainRef(i), "reset"), wref("daisyReset")),
         // <daisy_chain>.io.stall <- not(targetFire)
@@ -368,7 +359,7 @@ class AddDaisyChains(
 
   def updateStmts(readers: Readers,
                   repl: Netlist,
-                  clock: Expression,
+                  clock: Option[Expression],
                   stmts: Statements)
                   (s: Statement): Statement = s match {
     case s: WDefInstance =>
@@ -382,7 +373,7 @@ class AddDaisyChains(
         val mem = s.copy(readers = s.readers ++ rs)
         Block(mem +: (rs.zipWithIndex flatMap { case (r, i) =>
           val addr = UIntLiteral(i, IntWidth(chisel3.util.log2Up(s.depth)))
-          Seq(Connect(NoInfo, memPortField(mem, r, "clk"), clock),
+          Seq(Connect(NoInfo, memPortField(mem, r, "clk"), clock.get),
               Connect(NoInfo, memPortField(mem, r, "en"), one),
               Connect(NoInfo, memPortField(mem, r, "addr"), addr))
         }))
@@ -415,13 +406,13 @@ class AddDaisyChains(
       val readers = new Readers
       val stmts = new Statements
       val repl = new Netlist
-      val clocks = m.ports flatMap (p =>
-        create_exps(wref(p.name, p.tpe)) filter (_.tpe ==  ClockType))
+      val clock = m.ports flatMap (p =>
+        create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
         insertChains(m, namespace, netlist, readers, repl, chainMods, hasChain))
-      val bodyx = updateStmts(readers, repl, clocks.head, stmts)(m.body)
+      val bodyx = updateStmts(readers, repl, clock, stmts)(m.body)
       val bodyxx = updateReadPorts(repl, stmts)(Block(bodyx +: chainStmts))
       m.copy(ports = m.ports :+ daisyPort,
              body = Block(Seq(daisyInvalid, bodyxx) ++ stmts))
