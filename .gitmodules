@@ -1,0 +1,9 @@
+[submodule "riscv-linux"]
+	path = riscv-linux
+	url = git@github.com:riscv/riscv-linux
+[submodule "buildroot"]
+	path = buildroot
+	url = git@github.com:sifive/buildroot
+[submodule "riscv-pk"]
+	path = riscv-pk
+	url = git@github.com:riscv/riscv-pk
