@@ -14,7 +14,7 @@ Builds a linux distro for firesim target nodes. Assumes priv 1.10.
 ## Starting up simplenic (once you're running linux on firesim):
 
     ip link set eth0 up
-    ip addr add 192.168.2.2/24 dev eth0
+    ip addr add 192.168.1.2/24 dev eth0
 
 ## Setting up the tap device for simplenic to talk to on your host machine:
 
