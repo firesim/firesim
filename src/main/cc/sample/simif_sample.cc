@@ -15,7 +15,7 @@ void simif_t::init_sampling(int argc, char** argv) {
   profile = false;
   sample_count = 0;
   sample_time = 0;
-  tracelen = 128; // by master widget
+  tracelen = TRACE_MAX_LEN;
   trace_count = 0;
 
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -33,6 +33,9 @@ void simif_t::init_sampling(int argc, char** argv) {
       profile = true;
     }
   }
+
+  assert(tracelen > 2);
+  write(TRACELEN_ADDR, tracelen);
 
   samples = new sample_t*[sample_num];
   for (size_t i = 0 ; i < sample_num ; i++) samples[i] = NULL;
@@ -133,7 +136,7 @@ size_t simif_t::trace_ready_valid_bits(
 }
 
 sample_t* simif_t::read_traces(sample_t *sample) {
-  for (size_t i = 0 ; i < trace_count ; i++) {
+  for (size_t i = 0 ; i < std::min(trace_count, tracelen) ; i++) {
     // wire input traces from FPGA
     for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
       size_t addr = IN_TR_ADDRS[id];

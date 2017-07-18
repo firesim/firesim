@@ -95,14 +95,6 @@ class simif_t
     uint64_t rand_next(uint64_t limit) { return rand() % limit; }
 
 #ifdef ENABLE_SNAPSHOT
-  public:
-    inline void set_tracelen(size_t len) {
-      assert(len > 2);
-      tracelen = len;
-      write(TRACELEN_ADDR, len);
-    }
-    inline size_t get_tracelen() { return tracelen; }
-
   private:
     // sample information
     sample_t** samples;
