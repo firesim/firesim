@@ -10,6 +10,7 @@
 #include "sample/sample.h"
 
 enum PUT_VALUE_TYPE { PUT_DEPOSIT, PUT_FORCE };
+static const char* PUT_VALUE_TYPE_STRING[2] = { "LOAD", "FORCE" };
 
 template <class T> class replay_t {
 public:
@@ -51,13 +52,15 @@ public:
           auto signal = signals[p->type][p->id];
           auto width = widths[p->type][p->id];
           if (p->idx < 0) {
-            load(signal, width, p->value);
+            load(signal, width, p->value, PUT_DEPOSIT);
           } else {
-            load(signal + "[" + std::to_string(p->idx) + "]", width, p->value);
+            load(signal + "[" + std::to_string(p->idx) + "]", width, p->value, PUT_DEPOSIT);
           }
         }
         if (force_t* p = dynamic_cast<force_t*>(cmd)) {
-          force(signals[p->type][p->id], p->value);
+          auto signal = signals[p->type][p->id];
+          auto width = widths[p->type][p->id];
+          load(signal, width, p->value, PUT_FORCE);
         }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
           poke(signals[p->type][p->id], p->value);
@@ -197,29 +200,27 @@ private:
     return replay_data.signals[it->second];
   }
 
-  void force(const std::string& node, biguint_t* data) {
-    if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
-    put_value(get_signal(node), data, PUT_FORCE);
-  }
-
-  void load_bit(const std::string& ref, biguint_t* bit) {
+  void load_bit(const std::string& ref, biguint_t* bit, PUT_VALUE_TYPE tpe) {
     auto it = match_map.find(ref);
     if (it != match_map.end()) {
-      put_value(get_signal(it->second), bit, PUT_DEPOSIT);
+      put_value(get_signal(it->second), bit, tpe);
     }
   }
 
-  void load(const std::string& node, size_t width, biguint_t* data) {
-    if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
+  void load(const std::string& node, size_t width, biguint_t* data, PUT_VALUE_TYPE tpe) {
+    if (log) {
+      std::cerr << " * " << PUT_VALUE_TYPE_STRING[tpe] << " ";
+      std::cerr << node << " <- 0x" << *data << " *" << std::endl;
+    }
     if (!gate_level()) {
-      put_value(get_signal(node), data, PUT_DEPOSIT);
+      put_value(get_signal(node), data, tpe);
     } else if (width == 1) {
-      load_bit(node, data);
+      load_bit(node, data, tpe);
     } else {
       for (size_t i = 0 ; i < width ; i++) {
         std::string name = node + "[" + std::to_string(i) + "]";
         biguint_t bit = (*data >> i) & 0x1;
-        load_bit(name, &bit);
+        load_bit(name, &bit, tpe);
       }
     }
   }
