@@ -6,6 +6,7 @@ cp buildroot-config buildroot/.config
 cd buildroot
 make -j16
 cd ..
+cp buildroot/output/images/rootfs.ext4 .
 
 cp linux-config riscv-linux/.config
 cd riscv-linux
