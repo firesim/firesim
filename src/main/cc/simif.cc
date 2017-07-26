@@ -20,7 +20,7 @@ simif_t::simif_t() {
   pass = true;
   t = 0;
   fail_t = 0;
-  seed = time(NULL);
+  seed = time(NULL); // FIXME: better initail seed?
 }
 
 void simif_t::load_mem(std::string filename) {
@@ -70,7 +70,8 @@ void simif_t::init(int argc, char** argv, bool log) {
       seed = strtoll(arg.c_str() + 6, NULL, 10);
     }
   }
-  srand(seed);
+  gen.seed(seed);
+  fprintf(stderr, "random min: 0x%llx, random max: 0x%llx\n", gen.min(), gen.max());
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
