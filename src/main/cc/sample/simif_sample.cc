@@ -84,10 +84,13 @@ void simif_t::finish_sampling() {
     }
   }
 
+  if (sample_count) {
+    fprintf(stderr, "Sample Count: %zu\n", sample_count);
+  }
   if (profile) {
     double sim_time = diff_secs(timestamp(), sim_start_time);
-    fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s, Sample Count: %zu\n",
-                    sim_time, diff_secs(sample_time, 0), sample_count);
+    fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s\n", 
+                    sim_time, diff_secs(sample_time, 0));
   }
 }
 
@@ -241,8 +244,8 @@ sample_t* simif_t::read_snapshot() {
 void simif_t::reservoir_sampling(size_t n) {
   if (t % tracelen == 0) {
     midas_time_t start_time = 0;
-    size_t record_id = t / tracelen;
-    size_t sample_id = record_id < sample_num ? record_id : rand() % (record_id + 1);
+    uint64_t record_id = t / tracelen;
+    uint64_t sample_id = record_id < sample_num ? record_id : gen() % (record_id + 1);
     if (sample_id < sample_num) {
       sample_count++;
       if (profile) start_time = timestamp();
