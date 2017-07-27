@@ -53,7 +53,7 @@ private[passes] class SimulationMapping(
     val writer = new StringWriter
     val targetType = module_type((c.modules find (_.name == c.main)).get)
     // val writer = new FileWriter(new File("SimWrapper.ir"))
-    val circuit = renameMods((new LowFirrtlInlineCompiler compile (
+    val circuit = renameMods((new LowFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), writer)).circuit, Namespace(c))
     val modules = c.modules ++ (circuit.modules flatMap
       init(c.info, c.main, circuit.main, targetType))

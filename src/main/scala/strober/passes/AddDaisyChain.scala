@@ -27,7 +27,7 @@ class AddDaisyChains(
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
     val annotation = new AnnotationMap(Nil)
-    val circuit = renameMods((new midas.MidFirrtlInlineCompiler compile (
+    val circuit = renameMods((new MiddleFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
     chainMods ++= circuit.modules
     Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
@@ -493,7 +493,7 @@ class AddDaisyChains(
     val chainMods = new DefModules
     val hasChain = (ChainType.values.toList map (_ -> new ChainModSet)).toMap
     val chirrtl = Parser parse (chisel3.Driver emit (() => new core.DaisyBox))
-    val daisybox = (new midas.MidFirrtlInlineCompiler compile (
+    val daisybox = (new MiddleFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
     val daisyType = daisybox.modules.head.ports.head.tpe
     val targetMods = postorder(c, meta)(transform(namespace, daisyType, chainMods, hasChain))
