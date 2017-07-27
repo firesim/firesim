@@ -37,8 +37,7 @@ $(info output directory: $(OUT_DIR))
 $(info driver source files: $(DRIVER))
 $(info clock period: $(CLOCK_PERIOD))
 
-# TODO: better way?
-shim := $(shell echo $(PLATFORM)| cut -c 1 | tr [:lower:] [:upper:])$(shell echo $(PLATFORM)| cut -c 2-)Shim
+shim := FPGATop
 
 ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
