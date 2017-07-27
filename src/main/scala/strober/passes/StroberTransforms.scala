@@ -6,6 +6,8 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import core.ChainType
+import mdf.macrolib.SRAMMacro
+import mdf.macrolib.Utils.readMDFFromString
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, LinkedHashSet}
 
 private object StroberMetaData {
@@ -89,16 +91,22 @@ private object postorder {
 }
 
 class StroberTransforms(
-    dir: java.io.File)
+    dir: java.io.File,
+    json: java.io.File)
    (implicit param: config.Parameters) extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+  def inputForm = LowForm
+  def outputForm = LowForm
   def execute(state: CircuitState) = {
     if (param(midas.EnableSnapshot)) {
+      lazy val srams = {
+        val str = io.Source.fromFile(json).mkString
+        val srams = readMDFFromString(str).get collect { case x: SRAMMacro => x }
+        (srams map (sram => sram.name -> sram)).toMap
+      }
       val meta = StroberMetaData(state.circuit)
       val xforms = Seq(
-        new AddDaisyChains(meta),
-        new DumpChains(dir, meta))
+        new AddDaisyChains(meta, srams),
+        new DumpChains(dir, meta, srams))
       (xforms foldLeft state)((in, xform) =>
         xform runTransform in).copy(form=outputForm)
     } else {
