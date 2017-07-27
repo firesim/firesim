@@ -38,13 +38,13 @@ object MidasCompiler {
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       barstools.macros.MacroCompilerAnnotation(chirrtl.main, json, lib, true)))
-    val writer = new FileWriter(new File("debug.ir"))
-    // val writer = new java.io.StringWriter
+    // val writer = new FileWriter(new File("debug.ir"))
+    val writer = new java.io.StringWriter
     val midas = new MidasCompiler(dir, io) compile (
       firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)), writer)
-    writer.close
-    // firrtl.Parser.parse(writer.toString)
-    val verilog = new FileWriter(new File(dir, s"${midas.circuit.main}.v"))
+    // writer.close
+    // firrtl.Parser.parse(writer.serialize)
+    val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
     val result = new VerilogCompiler compile (
       firrtl.CircuitState(midas.circuit, firrtl.HighForm), verilog)
     verilog.close
