@@ -7,11 +7,13 @@ import firrtl.Utils.create_exps
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
 import strober.core.ChainType
+import mdf.macrolib.SRAMMacro
 import java.io.{File, FileWriter}
 
 class DumpChains(
     dir: File,
-    meta: StroberMetaData)
+    meta: StroberMetaData,
+    srams: Map[String, SRAMMacro])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
   override def name = "[strober] Dump Daisy Chains"
@@ -33,24 +35,31 @@ class DumpChains(
         val id = chainType.id
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
+            case s: WDefInstance =>
+              val sram = srams(s.module)
+              (chainType: @unchecked) match {
+                case ChainType.SRAM =>
+                  chainFile write s"$id ${path}.${s.name}.ram ${sram.width} ${sram.depth}\n"
+                  sram.width
+                case ChainType.Trace =>
+                  val ports = sram.ports filter (_.output.nonEmpty)
+                  (ports foldLeft 0){ (sum, p) =>
+                    chainFile write s"$id ${path}.${s.name}.${p.output.get.name} ${p.width} -1\n"
+                    sum + p.width
+                  }
+              }
             case s: DefMemory if s.readLatency == 1 =>
-              val prefix = s"$path.${s.name}"
               val width = bitWidth(s.dataType)
               (chainType: @unchecked) match {
                 case ChainType.SRAM =>
-                  chainFile write s"$id $prefix.ram ${width} ${s.depth}\n"
+                  chainFile write s"$id ${path}.${s.name} ${width} ${s.depth}\n"
                   width.toInt
                 case ChainType.Trace =>
-                  val addrWidth = chisel3.util.log2Up(s.depth.toInt)
-                  /* s.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix.reg_R$i $addrWidth -1\n")
-                  s.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.reg_RW$i $addrWidth -1\n") */
                   s.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix.R${i}_data ${width} -1\n")
+                    chainFile write s"$id ${path}.${s.name}.R${i}_data ${width} -1\n")
                   s.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.RW${i}_rdata ${width} -1\n")
-                  (s.readers.size + s.readwriters.size) * (/* addrWidth + */width.toInt)
+                    chainFile write s"$id ${path}.${s.name}.RW${i}_rdata ${width} -1\n")
+                  (s.readers.size + s.readwriters.size) * width.toInt
               }
             case s: DefMemory =>
               val name = verilogRenameN(s.name)

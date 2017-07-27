@@ -10,9 +10,11 @@ import WrappedExpression.weq
 import midas.passes.Utils._
 import strober.core._
 import java.io.StringWriter
+import mdf.macrolib.SRAMMacro
 
 class AddDaisyChains(
-    meta: StroberMetaData)
+    meta: StroberMetaData,
+    srams: Map[String, SRAMMacro])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   override def name = "[strober] Add Daisy Chains"
 
@@ -33,7 +35,7 @@ class AddDaisyChains(
   }
  
   private def chainRef(i: Int = 0)(implicit chainType: ChainType.Value) =
-    wref(s"${chainType.toString.toLowerCase}_$i")
+    wref(s"${chainType.toString.toLowerCase}_$i", ut, InstanceKind)
 
   private def chainIo(i: Int = 0)(implicit chainType: ChainType.Value) =
     wsub(chainRef(i), "io")
@@ -67,6 +69,8 @@ class AddDaisyChains(
         case _ =>
       }
       case ChainType.SRAM => s match {
+        case s: WDefInstance if srams contains s.module =>
+          chains += s
         case s: DefMemory if s.readLatency == 1 || bigRegFile(s) =>
           chains += s
         case s: DefMemory if s.readLatency > 0 =>
@@ -74,9 +78,11 @@ class AddDaisyChains(
         case _ =>
       }
       case ChainType.Trace => s match {
+        case s: WDefInstance if srams contains s.module =>
+          chains += s
         case s: DefMemory if s.readLatency == 1 =>
           chains += s
-         case _ =>
+        case _ =>
       }
       case ChainType.Cntr =>
     }
@@ -102,11 +108,17 @@ class AddDaisyChains(
                               hasChain: ChainModSet)
                               (implicit chainType: ChainType.Value) = {
     def sumWidths(s: Statement): Int = s match {
-      case s: DefRegister => bitWidth(s.tpe).toInt
-      case s: DefMemory if s.readLatency == 1 =>
-        bitWidth(s.dataType).toInt
+      case s: DefRegister =>
+        bitWidth(s.tpe).toInt
       case s: DefMemory if s.readLatency == 0 && !bigRegFile(s) =>
         s.depth * bitWidth(s.dataType).toInt
+      case s: DefMemory if s.readLatency == 1 =>
+        (s.readers.size + s.readwriters.size) * bitWidth(s.dataType).toInt
+      case s: WDefInstance => srams get s.module match {
+        case Some(sram) => 
+          (sram.ports filter (_.output.nonEmpty)).size * sram.width
+        case None => 0
+      }
       case s: Block => (s.stmts foldLeft 0)(_ + sumWidths(_))
       case _ => 0
     }
@@ -160,7 +172,7 @@ class AddDaisyChains(
         case s: DefMemory => chainType match {
           case ChainType.Regs =>
             val rs = (0 until s.depth) map (i => s"scan_$i")
-            val mem = s copy (readers = s.readers ++ rs)
+            val mem = s.copy(readers = s.readers ++ rs)
             val exps = rs map (r => create_exps(memPortField(mem, r, "data")))
             readers(s.name) = rs
             ((0 until exps.head.size) foldLeft Seq[Expression]())(
@@ -171,6 +183,10 @@ class AddDaisyChains(
             (s.readwriters flatMap (rw =>
               create_exps(memPortField(s, rw, "rdata")).reverse))
         }
+        case s: WDefInstance =>
+          val memref = wref(s.name, s.tpe, InstanceKind)
+          val ports = srams(s.module).ports filter (_.output.nonEmpty)
+          ports map (p => wsub(memref, p.output.get.name))
       }
       stmts ++ instStmts ++ portConnects ++ daisyConnects(regs, chain.daisyLen, chain.daisyWidth)
     }
@@ -183,20 +199,46 @@ class AddDaisyChains(
                                chainMods: DefModules,
                                hasChain: ChainModSet)
                                (implicit chainType: ChainType.Value) = {
-    def daisyConnects(sram: DefMemory, daisyIdx: Int, daisyLen: Int, daisyWidth: Int) = {
-      val width = bitWidth(sram.dataType).toInt
-      val (data, addr, en, wmode) =
-        if (sram.readwriters.nonEmpty) (
-          memPortField(sram, sram.readwriters.head, "rdata"),
-          memPortField(sram, sram.readwriters.head, "addr"),
-          memPortField(sram, sram.readwriters.head, "en"),
-          memPortField(sram, sram.readwriters.head, "wmode")
-        ) else (
-          memPortField(sram, sram.readers.head, "data"),
-          memPortField(sram, sram.readers.head, "addr"),
-          memPortField(sram, sram.readers.head, "en"),
-          EmptyExpression
+    def daisyConnects(sram: Statement, daisyIdx: Int, daisyLen: Int, daisyWidth: Int) = {
+      val (data, addr, ce, re, we, width, seqRead) = (sram: @unchecked) match {
+        case s: WDefInstance =>
+          val memref = wref(s.name, s.tpe, InstanceKind)
+          val port = (srams(s.module).ports filter (_.output.nonEmpty)).head
+          (wsub(memref, port.output.get.name),
+           wsub(memref, port.address.name),
+           port.chipEnable match {
+             case Some(ce) => wsub(memref, ce.name) -> inv(ce.polarity)
+             case None => EmptyExpression -> false
+           },
+           port.readEnable match {
+             case Some(re) => wsub(memref, re.name) -> inv(re.polarity)
+             case None => EmptyExpression -> false
+           },
+           port.writeEnable match {
+             case Some(we) => wsub(memref, we.name) -> inv(we.polarity)
+             case None => EmptyExpression -> false
+           },
+           port.width,
+           true)
+        case s: DefMemory if s.readers.nonEmpty => (
+          memPortField(s, s.readers.head, "data"),
+          memPortField(s, s.readers.head, "addr"),
+          memPortField(s, s.readers.head, "en") -> false,
+          EmptyExpression -> false,
+          EmptyExpression -> false,
+          bitWidth(s.dataType).toInt,
+          s.readLatency > 0
         )
+        case s: DefMemory => (
+          memPortField(s, s.readwriters.head, "rdata"),
+          memPortField(s, s.readwriters.head, "addr"),
+          EmptyExpression -> false,
+          memPortField(s, s.readwriters.head, "en") -> false,
+          memPortField(s, s.readwriters.head, "wmode") -> false,
+          bitWidth(s.dataType).toInt,
+          s.readLatency > 0
+        )
+      }
       val dataCat = cat(create_exps(data).reverse)
       val addrIo = wsub(chainIo(daisyIdx), "addrIo")
       val addrOut = wsub(addrIo, "out")
@@ -206,11 +248,19 @@ class AddDaisyChains(
       def addrConnects(s: Statement): Statement = {
         s match {
           case Connect(info, loc, expr) => kind(loc) match {
-            case MemKind if weq(loc, en) =>
-              repl(loc.serialize) = or(wsub(addrOut, "valid"), expr)
-            case MemKind if weq(loc, wmode) =>
-              repl(loc.serialize) = and(not(wsub(addrOut, "valid")), expr)
-            case MemKind if weq(loc, addr) =>
+            case MemKind | InstanceKind if weq(loc, ce._1) =>
+              repl(loc.serialize) = (
+                if (ce._2) and(not(wsub(addrOut, "valid")), expr) // inverted port
+                else or(wsub(addrOut, "valid"), expr))
+            case MemKind | InstanceKind if weq(loc, re._1) =>
+              repl(loc.serialize) = (
+                if (re._2) and(not(wsub(addrOut, "valid")), expr) // inverted port
+                else or(wsub(addrOut, "valid"), expr))
+            case MemKind | InstanceKind if weq(loc, we._1) =>
+              repl(loc.serialize) = (
+                if (we._2) or(wsub(addrOut, "valid"), expr) // inverted port
+                else and(not(wsub(addrOut, "valid")), expr))
+            case MemKind | InstanceKind if weq(loc, addr) =>
               repl(loc.serialize) = Mux(wsub(addrOut, "valid"), wsub(addrOut, "bits"), expr, ut)
             case _ =>
           }
@@ -235,7 +285,7 @@ class AddDaisyChains(
       }
 
       if (netlist.isEmpty) buildNetlist(netlist)(m.body)
-      if (sram.readLatency > 0) {
+      if (seqRead) {
         create_exps(data).zipWithIndex foreach { case (e, i) =>
           val width = bitWidth(e.tpe)
           val value = bits(wsub(readOut, "bits"), (i + 1) * width - 1, i * width)
@@ -247,7 +297,16 @@ class AddDaisyChains(
         // <daisy_chain>.io.read.in.bits <- <memory>.data
         Connect(NoInfo, wsub(readIn, "bits"), dataCat),
         // <daisy_chain>.io.read.in.valid <- <memory>.en
-        Connect(NoInfo, wsub(readIn, "valid"), netlist(en))
+        Connect(NoInfo, wsub(readIn, "valid"),
+          (ce._1, re._1) match {
+            case (EmptyExpression, ex) =>
+              if (re._2) not(netlist(ex)) else netlist(ex)
+            case (ex, EmptyExpression) =>
+              if (ce._2) not(netlist(ex)) else netlist(ex)
+            case (ex1, ex2) =>
+              and(if (ce._2) not(netlist(ex1)) else netlist(ex1),
+                  if (re._2) not(netlist(ex1)) else netlist(ex1))
+          })
       )
     }
 
@@ -255,11 +314,18 @@ class AddDaisyChains(
     collect(chainType, chainElems)(m.body)
     meta.chains(chainType)(m.name) = chainElems
     if (chainElems.isEmpty) Nil
-    else chainElems.zipWithIndex flatMap { case (sram: DefMemory, i) =>
+    else chainElems.zipWithIndex flatMap { case (sram, i) =>
+      val (depth, width, seqRead) = sram match {
+        case s: DefMemory =>
+          (s.depth, bitWidth(s.dataType).toInt, s.readLatency > 0)
+        case s: WDefInstance =>
+          val sram = srams(s.module)
+          (sram.depth, sram.width, true)
+      }
       lazy val chain = new SRAMChain()(param alterPartial ({
-        case DataWidth => bitWidth(sram.dataType).toInt
-        case SRAMSize  => sram.depth
-        case SeqRead   => sram.readLatency > 0
+        case DataWidth => width
+        case SRAMSize  => depth
+        case SeqRead   => seqRead
       }))
       val instStmts = generateChain(() => chain, namespace, chainMods, i)
       val clock = m.ports flatMap (p =>
@@ -301,11 +367,12 @@ class AddDaisyChains(
       case ChainType.SRAM => 1 max meta.chains(chainType)(m.name).size
       case _              => 1
     }
-    val invalids = meta.childInsts(m.name) flatMap (c => Seq(
-        IsInvalid(NoInfo, childDaisyPort(c)("in")),
-        IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     // Filter children who have daisy chains
-    val childrenWithChains = meta.childInsts(m.name) filter (x => hasChain(meta.instModMap(x, m.name)))
+    val childrenWithChains = meta.childInsts(m.name) filter (
+      x => hasChain(meta.instModMap(x, m.name)))
+    val invalids = childrenWithChains flatMap (c => Seq(
+      IsInvalid(NoInfo, childDaisyPort(c)("in")),
+      IsInvalid(NoInfo, childDaisyPort(c)("out"))))
     val connects = (childrenWithChains foldLeft (None: Option[String], Seq[Connect]())){
       case ((None, stmts), child) if !hasChain(m.name) =>
         // <daisy_port>.out <- <child>.<daisy_port>.out
@@ -332,8 +399,8 @@ class AddDaisyChains(
   def updateExpr(repl: Netlist)(e: Expression) = {
     var updated = false
     def loop(e: Expression): Expression = e map loop match {
-      case e: WSubField => kind(e) match {
-        case MemKind => repl get e.serialize match {
+      case e @ (_: WSubField | _: WSubIndex) => kind(e) match {
+        case MemKind | InstanceKind => repl get e.serialize match {
           case Some(ex) =>
             updated = true
             ex
@@ -346,6 +413,7 @@ class AddDaisyChains(
     (loop(e), updated)
   }
 
+  // Read ports should be replaced after all other expressions are updated.
   def updateReadPorts(repl: Netlist, stmts: Statements)(s: Statement): Statement =
     s map updateReadPorts(repl, stmts) match {
       case s: Connect if !(splitRef(s.loc)._1.name startsWith "sram") =>
@@ -353,6 +421,12 @@ class AddDaisyChains(
         if (updated) {
           stmts += s.copy(expr = ex)
           EmptyStmt
+        } else s
+      case s: DefNode =>
+        val (ex, updated) = updateExpr(repl)(s.value)
+        if (updated) {
+          stmts += Connect(s.info, wref(s.name, s.value.tpe), ex)
+          DefWire(s.info, s.name, s.value.tpe)
         } else s
       case s => s
     }
@@ -362,7 +436,7 @@ class AddDaisyChains(
                   clock: Option[Expression],
                   stmts: Statements)
                   (s: Statement): Statement = s match {
-    case s: WDefInstance =>
+    case s: WDefInstance if !(srams contains s.module) =>
       // Connect restart pin
       Block(Seq(s, Connect(NoInfo,
         childDaisyPort(s.name)("restart")(ChainType.SRAM),
@@ -379,13 +453,8 @@ class AddDaisyChains(
         }))
     }
     case s: Connect => kind(s.loc) match {
-      case MemKind => repl get s.loc.serialize match {
-        case Some(expr) => 
-          stmts += s.copy(expr = expr)
-          EmptyStmt
-        case None => s
-      }
-      case PortKind => repl get s.expr.serialize match {
+      // Replace sram inputs
+      case MemKind | InstanceKind => repl get s.loc.serialize match {
         case Some(expr) => 
           stmts += s.copy(expr = expr)
           EmptyStmt
@@ -401,7 +470,7 @@ class AddDaisyChains(
                         chainMods: DefModules,
                         hasChain: Map[ChainType.Value, ChainModSet])
                         (m: DefModule) = m match {
-    case m: Module =>
+    case m: Module if !(srams contains m.name) =>
       val netlist = new Netlist
       val readers = new Readers
       val stmts = new Statements
