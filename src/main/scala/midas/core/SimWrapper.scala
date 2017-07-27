@@ -286,5 +286,6 @@ class SimWrapper(targetIo: Data)
   val cycles = Reg(UInt(64.W))
   when (fire) {
     cycles := Mux(target.io.reset, UInt(0), cycles + UInt(1))
+    when(false.B) { printf("%d", cycles) }
   }
 } 

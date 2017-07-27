@@ -6,17 +6,6 @@ import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
 import java.io.{File, FileWriter, Writer}
 
-// Compiler in Midas Passes
-class LowFirrtlInlineCompiler extends firrtl.Compiler {
-  def emitter = new firrtl.LowFirrtlEmitter
-  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.LowForm)
-}
-
-class MidFirrtlInlineCompiler extends firrtl.Compiler {
-  def emitter = new firrtl.MiddleFirrtlEmitter
-  def transforms = getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm)
-}
-
 // Compiler for Midas Transforms
 private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
