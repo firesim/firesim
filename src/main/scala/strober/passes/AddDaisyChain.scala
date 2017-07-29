@@ -107,20 +107,16 @@ class AddDaisyChains(
                               chainMods: DefModules,
                               hasChain: ChainModSet)
                               (implicit chainType: ChainType.Value) = {
-    def sumWidths(s: Statement): Int = s match {
-      case s: DefRegister =>
-        bitWidth(s.tpe).toInt
-      case s: DefMemory if s.readLatency == 0 && !bigRegFile(s) =>
-        s.depth * bitWidth(s.dataType).toInt
-      case s: DefMemory if s.readLatency == 1 =>
-        (s.readers.size + s.readwriters.size) * bitWidth(s.dataType).toInt
-      case s: WDefInstance => srams get s.module match {
-        case Some(sram) => 
-          (sram.ports filter (_.output.nonEmpty)).size * sram.width
-        case None => 0
-      }
-      case s: Block => (s.stmts foldLeft 0)(_ + sumWidths(_))
-      case _ => 0
+    def sumWidths(stmts: Statements): Int = (stmts foldLeft 0){
+      case (sum, s: DefRegister) =>
+        sum + bitWidth(s.tpe).toInt
+      case (sum, s: DefMemory) if s.readLatency == 0 && !bigRegFile(s) =>
+        sum + bitWidth(s.dataType).toInt * s.depth
+      case (sum, s: DefMemory) if s.readLatency == 1 =>
+        sum + bitWidth(s.dataType).toInt * (s.readers.size + s.readwriters.size)
+      case (sum, s: WDefInstance) =>
+        val sram = srams(s.module)
+        sum + sram.width * (sram.ports filter (_.output.nonEmpty)).size
     }
     def daisyConnects(regs: Seq[Expression], daisyLen: Int, daisyWidth: Int) = {
       (((0 until daisyLen) foldRight (Seq[Connect](), 0, 0)){case (i, (stmts, index, offset)) =>
@@ -151,7 +147,7 @@ class AddDaisyChains(
     if (chainElems.isEmpty) Nil
     else {
       lazy val chain = new RegChain()(param alterPartial ({
-        case DataWidth => sumWidths(m.body) }))
+        case DataWidth => sumWidths(chainElems) }))
       val instStmts = generateChain(() => chain, namespace, chainMods)
       val clock = m.ports flatMap (p =>
         create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
