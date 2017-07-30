@@ -69,6 +69,7 @@ void sample_t::init_chains(std::string filename) {
     chain_len[type] += width;
     switch ((CHAIN_TYPE) type) {
       case SRAM_CHAIN:
+      case REGFILE_CHAIN:
         if (!signal.empty() && depth > 0) {
           chain_loop[type] = std::max(chain_loop[type], (size_t) depth);
         }
@@ -201,6 +202,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
             add_cmd(new load_t(type, s, data, size, -1));
             break;
           case SRAM_CHAIN:
+          case REGFILE_CHAIN:
             if (static_cast<int>(i) < depth)
               add_cmd(new load_t(type, s, data, size, i));
             break;

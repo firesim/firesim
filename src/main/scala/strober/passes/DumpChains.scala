@@ -48,7 +48,7 @@ class DumpChains(
                     sum + p.width
                   }
               }
-            case s: DefMemory if s.readLatency == 1 =>
+            case s: DefMemory if s.readLatency > 0 =>
               val width = bitWidth(s.dataType)
               (chainType: @unchecked) match {
                 case ChainType.SRAM =>
@@ -65,10 +65,10 @@ class DumpChains(
               val name = verilogRenameN(s.name)
               val width = bitWidth(s.dataType).toInt
               chainType match {
-                case ChainType.SRAM =>
+                case ChainType.RegFile =>
                   chainFile write s"$id $path.$name $width ${s.depth}\n"
                   width
-                case _ => (((0 until s.depth) foldLeft 0){ (sum, i) =>
+                case ChainType.Regs => (((0 until s.depth) foldLeft 0){ (sum, i) =>
                   chainFile write s"$id $path.$name[$i] $width -1\n"
                   sum + width
                 })
@@ -80,17 +80,9 @@ class DumpChains(
               width
           })
           val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
-          chainType match {
-            case ChainType.SRAM => 
-              addPad(chainFile, cw, dw)(chainType)
-              (0, 0)
-            case _ => (cw, dw)
-          }
+          (cw, dw)
         }
-        chainType match {
-          case ChainType.SRAM => 
-          case _ => addPad(chainFile, cw, dw)(chainType)
-        }
+        addPad(chainFile, cw, dw)(chainType)
       case _ =>
     }
     meta.childInsts(mod) foreach (child => loop(
