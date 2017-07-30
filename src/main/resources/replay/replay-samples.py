@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import os.path
-from subprocess import Popen
 import argparse
-import subprocess
+from subprocess import Popen
 
 parser = argparse.ArgumentParser(
   description = 'Replay each sample in a separate simulation instance')

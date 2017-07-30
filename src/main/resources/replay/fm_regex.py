@@ -23,11 +23,3 @@ ff_regex = re.compile(r"([\w.]*)_reg")
 reg_regex = re.compile(r"([\w.]*)_reg[_\[](\d+)[_\]]")
 mem_regex = re.compile(r"([\w.]*)_reg[_\[](\d+)[_\]][_\[](\d+)[_\]]")
 bus_regex = re.compile(r"([\w.]*)[_\[](\d+)[_\]]")
-
-change_names_regex = re.compile(r"""
-  guide_change_names\s+            # Command
-  -design\s+\{\s(\w+)\s\}\s+       # Module name
-  \{
-  ([\w\s\[\]\{\}/]*)               # Name change info
-  \}
-  """, re.VERBOSE)
