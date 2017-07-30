@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import fm_regex
+import read_svf
 import sys
 import argparse
 
@@ -20,50 +21,7 @@ def initialize_arguments(args):
 
   return res.report, res.svf, res.match
 
-def construct_name_changes(name_changes, design, tokens):
-  rtl_name = ""
-  count = 0
-  for t in tokens:
-    if t == '{' or t == '}':
-      pass
-    elif count == 0:
-      count += 1
-    elif count == 1:
-      rtl_name = design + "." + t.replace('/', '.')
-      count += 1
-    elif count == 2:
-      gl_name = design + "." + t.replace('/', '.')
-      name_changes[gl_name] = rtl_name
-      count = 0
-    else:
-      assert False
-
-  return
-
-def read_svf_file(svf_file):
-  name_changes = dict()
-
-  with open(svf_file, 'r') as f:
-    full_line = ""
-    for line in f:
-      tokens = line.split()
-      if len(tokens) == 0:
-        pass
-      elif tokens[-1] == '\\':
-        full_line += ' '.join(tokens[0:-1]) + ' '
-      else:
-        full_line += ' '.join(tokens) + ' '
-        change_names_matched = fm_regex.change_names_regex.search(full_line)
-        if change_names_matched:
-          construct_name_changes(
-            name_changes,
-            change_names_matched.group(1),
-            change_names_matched.group(2).split())
-        full_line = ""
-
-  return name_changes
-
-def read_name_map(report_file, name_changes):
+def read_name_map(report_file, instance_map, change_names):
   name_map = list()
 
   with open(report_file, 'r') as f:
@@ -80,10 +38,21 @@ def read_name_map(report_file, name_changes):
         ref_matched = fm_regex.ref_regex.search(line)
         if ref_matched:
           gate_type = ref_matched.group(1)
-          ref_name = ref_matched.group(2)
-          ref_name = ref_name.replace("/", ".")
-          if ref_name in name_changes:
-            ref_name = name_changes[ref_name]
+          ref_name_tokens = ref_matched.group(2).split("/")
+          ref_name = ref_name_tokens[0]
+          design = ref_name
+          for i, token in enumerate(ref_name_tokens[1:]):
+            if design in change_names:
+              map = change_names[design]
+              rtl_name = map[token] if token in map else token
+            else:
+              rtl_name = token
+            ref_name = ref_name + "." + rtl_name
+            if design in instance_map and i < len(ref_name_tokens[1:]) - 1:
+              design = instance_map[design][rtl_name]
+            else:
+              design = ""
+
           if gate_type == "DFF":
             """ D Flip Flops """
             ff_matched = fm_regex.ff_regex.match(ref_name)
@@ -128,10 +97,10 @@ if __name__ == '__main__':
   report_file, svf_file, match_file = initialize_arguments(sys.argv[1:])
 
   """ read svf file for guidance used in formality """
-  name_changes = read_svf_file(svf_file)
+  instance_map, change_names = read_svf.read_svf_file(svf_file)
 
   """ read gate-level names from the formality report file """
-  name_map = read_name_map(report_file, name_changes)
+  name_map = read_name_map(report_file, instance_map, change_names)
 
   """ write the output file """
   write_match_file(match_file, name_map)
