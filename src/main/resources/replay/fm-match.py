@@ -66,6 +66,7 @@ def read_name_map(report_file, instance_map, change_names):
             elif ff_matched:
               ref_name = ff_matched.group(1)
             else:
+              print ref_name
               assert False 
 
           elif gate_type == "BBox":
