@@ -6,7 +6,7 @@ ref_regex = re.compile(r"""
   (DFF|BlPin|Port|BBox|BBPin)\w*\s+  # Type
   (?:[\w\(\)]*)\s                    # Matched by (e.g. name)
   r:/WORK/                           # name prefix
-  ([\w/\[\]]*)                       # RTL(chisel) name 
+  ([\w/\[\]\$]*)                     # RTL(chisel) name
  """, re.VERBOSE)
 
 """ define implemntation(gate-level designs) name regular expression """
@@ -19,7 +19,7 @@ impl_regex = re.compile(r"""
   ([\w/\[\]]*)                          # gate-level name
  """, re.VERBOSE)
 
-ff_regex = re.compile(r"([\w.]*)_reg")
-reg_regex = re.compile(r"([\w.]*)_reg[_\[](\d+)[_\]]")
-mem_regex = re.compile(r"([\w.]*)_reg[_\[](\d+)[_\]][_\[](\d+)[_\]]")
-bus_regex = re.compile(r"([\w.]*)[_\[](\d+)[_\]]")
+ff_regex = re.compile(r"([\w.\$]*)_reg")
+reg_regex = re.compile(r"([\w.\$]*)_reg[_\[](\d+)[_\]]")
+mem_regex = re.compile(r"([\w.\$]*)_reg[_\[](\d+)[_\]][_\[](\d+)[_\]]")
+bus_regex = re.compile(r"([\w.\$]*)[_\[](\d+)[_\]]")
