@@ -418,12 +418,22 @@ class AddDaisyChains(
   // Read ports should be replaced after all other expressions are updated.
   def updateReadPorts(repl: Netlist, stmts: Statements)(s: Statement): Statement =
     s map updateReadPorts(repl, stmts) match {
-      case s: Connect if !(splitRef(s.loc)._1.name startsWith "sram") =>
-        val (ex, updated) = updateExpr(repl)(s.expr)
-        if (updated) {
-          stmts += s.copy(expr = ex)
-          EmptyStmt
-        } else s
+      case s: Connect => splitRef(s.loc) match {
+        // Skip scan chain inputs
+        case (root, tail) if tail != EmptyExpression && {
+            val rootName = root.name
+            (rootName startsWith "sram_") ||  (rootName startsWith "trace_")
+          } && {
+            val tailName = tail.serialize
+            (tailName startsWith "io.dataIo.data") || (tailName startsWith "io.readIo")
+          } => s
+        case _ =>
+          val (ex, updated) = updateExpr(repl)(s.expr)
+          if (updated) {
+            stmts += s.copy(expr = ex)
+            EmptyStmt
+          } else s
+      }
       case s: DefNode =>
         val (ex, updated) = updateExpr(repl)(s.value)
         if (updated) {
