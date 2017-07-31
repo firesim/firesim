@@ -83,6 +83,7 @@ void simif_t::finish_sampling() {
       delete samples[i];
     }
   }
+  delete[] samples;
 
   if (sample_count) {
     fprintf(stderr, "Sample Count: %zu\n", sample_count);
@@ -149,6 +150,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
         data[off] = read(addr+off);
       }
       if (sample) sample->add_cmd(new poke_t(IN_TR, id, data, chunk));
+      else delete[] data;
     }
 
     // ready valid input traces from FPGA
@@ -166,12 +168,14 @@ sample_t* simif_t::read_traces(sample_t *sample) {
           (size_t)IN_TR_BITS_ADDRS[id],
           (size_t)IN_TR_BITS_CHUNKS[id],
           (size_t)IN_TR_BITS_FIELD_NUMS[id]);
+      if (!sample) delete[] valid_data;
     }
     for (size_t id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
       size_t ready_addr = (size_t)OUT_TR_READY_ADDRS[id];
       data_t* ready_data = new data_t[1];
       ready_data[0] = read(ready_addr);
       if (sample) sample->add_cmd(new poke_t(OUT_TR_READY, id, ready_data, 1));
+      else delete[] ready_data;
     }
 
     if (sample) sample->add_cmd(new step_t(1));
@@ -185,6 +189,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
         data[off] = read(addr+off);
       }
       if (sample && i > 0) sample->add_cmd(new expect_t(OUT_TR, id, data, chunk));
+      else delete[] data;
     }
 
     // ready valid output traces from FPGA
@@ -202,12 +207,14 @@ sample_t* simif_t::read_traces(sample_t *sample) {
           (size_t)OUT_TR_BITS_ADDRS[id],
           (size_t)OUT_TR_BITS_CHUNKS[id],
           (size_t)OUT_TR_BITS_FIELD_NUMS[id]);
+      if (!sample) delete[] valid_data;
     }
     for (size_t id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
       size_t ready_addr = (size_t)IN_TR_READY_ADDRS[id];
       data_t* ready_data = new data_t[1];
       ready_data[0] = read(ready_addr);
       if (sample) sample->add_cmd(new expect_t(IN_TR_READY, id, ready_data, 1));
+      else delete[] ready_data;
     }
   }
 
