@@ -177,7 +177,9 @@ biguint_t biguint_t::operator>>(const size_t shamt) {
     res.data = new uint32_t[res.size];
     for (size_t i = 0 ; i < res.size ; i++) {
       res.data[i] = data[i + offset] >> shift;
-      res.data[i] |= (data[i + offset + 1] & mask) << (UINT_WIDTH-shift);
+      if (i + offset + 1 < size) {
+        res.data[i] |= (data[i + offset + 1] & mask) << (UINT_WIDTH-shift);
+      }
     }
     trim_upper_nums(&res.data, &res.size);
   } else {
