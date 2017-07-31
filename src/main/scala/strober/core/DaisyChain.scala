@@ -8,8 +8,9 @@ import config.{Parameters, Field}
 
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
+case object MemWidth extends Field[Int]
 case object MemDepth extends Field[Int]
-case object SRAMNum extends Field[Int]
+case object MemNum extends Field[Int]
 case object SRAMChainNum extends Field[Int]
 
 object ChainType extends Enumeration { val Trace, Regs, SRAM, RegFile, Cntr = Value }
@@ -170,14 +171,14 @@ class AddrIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
 }
 
 class ReadIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
-  val in = Flipped(Valid(UInt(dataWidth.W)))
-  val out = Valid(UInt(dataWidth.W))
+  val in = Flipped(Valid(UInt(p(MemWidth).W)))
+  val out = Valid(UInt(p(MemWidth).W))
 }
 
 class SRAMChainControlIO(implicit p: Parameters) extends DaisyControlIO()(p) {
   val restart = Input(Bool())
   val addrIo = new AddrIO
-  val readIo = Vec(p(SRAMNum), new ReadIO)
+  val readIo = Vec(p(MemNum), new ReadIO)
 }
 
 class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
@@ -192,7 +193,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
   io.addrIo.out.bits := addrOut
-  io.addrIo.out.valid := addrState === (if (p(SRAMNum) > 0) s_ADDRGEN else s_MEMREAD)
+  io.addrIo.out.valid := addrState === (if (p(MemNum) > 0) s_ADDRGEN else s_MEMREAD)
   io.readIo.zipWithIndex foreach { case (readIo, i) =>
     // Read port output values are destoyed with SRAM snapshotting
     // Thus, capture their values here
@@ -238,7 +239,7 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
 class SRAMChainIO(implicit p: Parameters) extends RegChainIO()(p) {
   val restart = Input(Bool())
   val addrIo = new AddrIO
-  val readIo = Vec(p(SRAMNum), new ReadIO)
+  val readIo = Vec(p(MemNum), new ReadIO)
 }
 
 class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {

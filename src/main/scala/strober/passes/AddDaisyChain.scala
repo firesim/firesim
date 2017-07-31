@@ -200,12 +200,13 @@ class AddDaisyChains(
                                chainMods: DefModules,
                                hasChain: ChainModSet)
                                (implicit chainType: ChainType.Value) = {
-    def sumWidths(stmts: Statements): (Int, Int) = (stmts foldLeft (0, 0)){
-      case ((sum, depth), s: DefMemory) =>
-        (sum + bitWidth(s.dataType).toInt, depth max s.depth)
-      case ((sum, depth), s: WDefInstance) =>
+    def sumWidths(stmts: Statements) = (stmts foldLeft (0, 0, 0)){
+      case ((sum, max, depth), s: DefMemory) =>
+        val width = bitWidth(s.dataType).toInt
+        (sum + width, max max width, depth max s.depth)
+      case ((sum, max, depth), s: WDefInstance) =>
         val sram = srams(s.module)
-        (sum + sram.width, depth max sram.depth)
+        (sum + sram.width, max max sram.width, depth max sram.depth)
     }
     def daisyConnect(stmts: Statements)(elem: (Statement, Int)): Expression = {
       val (data, addr, ce, re, we) = (elem._1: @unchecked) match {
@@ -321,11 +322,12 @@ class AddDaisyChains(
     meta.chains(chainType)(m.name) = chainElems
     if (chainElems.isEmpty) Nil
     else {
-      val (width, depth) = sumWidths(chainElems)
+      val (sum, max, depth) = sumWidths(chainElems)
       lazy val chain = new SRAMChain()(param alterPartial ({
-        case DataWidth => width
+        case DataWidth => sum
+        case MemWidth  => max
         case MemDepth  => depth
-        case SRAMNum   => chainType match {
+        case MemNum    => chainType match {
           case ChainType.SRAM => chainElems.size
           case ChainType.RegFile => 0
         }
@@ -346,7 +348,7 @@ class AddDaisyChains(
         Connect(NoInfo, daisyPort("out"), chainDataIo("out"))
       )
       hasChain += m.name
-      instStmts ++ portConnects ++ daisyConnects(chainElems, width, chain.daisyLen, chain.daisyWidth)
+      instStmts ++ portConnects ++ daisyConnects(chainElems, sum, chain.daisyLen, chain.daisyWidth)
     }
   }
 
