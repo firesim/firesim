@@ -209,7 +209,7 @@ class AddDaisyChains(
         (sum + sram.width, max max sram.width, depth max sram.depth)
     }
     def daisyConnect(stmts: Statements)(elem: (Statement, Int)): Expression = {
-      val (data, addr, ce, re, we) = (elem._1: @unchecked) match {
+      val (data, addr, ce, re) = (elem._1: @unchecked) match {
         case s: WDefInstance =>
           val memref = wref(s.name, s.tpe, InstanceKind)
           val port = (srams(s.module).ports filter (_.output.nonEmpty)).head
@@ -222,29 +222,22 @@ class AddDaisyChains(
            port.readEnable match {
              case Some(re) => wsub(memref, re.name) -> inv(re.polarity)
              case None => EmptyExpression -> false
-           },
-           port.writeEnable match {
-             case Some(we) => wsub(memref, we.name) -> inv(we.polarity)
-             case None => EmptyExpression -> false
            })
         case s: DefMemory if s.readers.nonEmpty => (
           memPortField(s, s.readers.head, "data"),
           memPortField(s, s.readers.head, "addr"),
           memPortField(s, s.readers.head, "en") -> false,
-          EmptyExpression -> false,
           EmptyExpression -> false
         )
         case s: DefMemory => (
           memPortField(s, s.readwriters.head, "rdata"),
           memPortField(s, s.readwriters.head, "addr"),
-          EmptyExpression -> false,
           memPortField(s, s.readwriters.head, "en") -> false,
-          memPortField(s, s.readwriters.head, "wmode") -> false
+          not(memPortField(s, s.readwriters.head, "wmode")) -> false
         )
       }
-      val addrOut = wsub(wsub(chainIo(), "addrIo"), "out")
-      val readIn = wsub(widx(wsub(chainIo(), "readIo"), elem._2), "in")
-      val readOut = wsub(widx(wsub(chainIo(), "readIo"), elem._2), "out")
+      val addrIn = wsub(widx(wsub(chainIo(), "addrIo"), elem._2), "in")
+      val addrOut = wsub(widx(wsub(chainIo(), "addrIo"), elem._2), "out")
       def memPortConnects(s: Statement): Statement = {
         s match {
           case Connect(info, loc, expr) => kind(loc) match {
@@ -256,10 +249,6 @@ class AddDaisyChains(
               repl(loc.serialize) = (
                 if (re._2) and(not(wsub(addrOut, "valid")), expr) // inverted port
                 else or(wsub(addrOut, "valid"), expr))
-            case MemKind | InstanceKind if weq(loc, we._1) =>
-              repl(loc.serialize) = (
-                if (we._2) or(wsub(addrOut, "valid"), expr) // inverted port
-                else and(not(wsub(addrOut, "valid")), expr))
             case MemKind | InstanceKind if weq(loc, addr) =>
               repl(loc.serialize) = Mux(wsub(addrOut, "valid"), wsub(addrOut, "bits"), expr, ut)
             case _ =>
@@ -268,31 +257,22 @@ class AddDaisyChains(
         }
         s map memPortConnects
       }
-      val dataExps = create_exps(data)
-      val dataCat = cat(dataExps.reverse)
       memPortConnects(m.body)
-      if (chainType == ChainType.SRAM) {
-        dataExps.zipWithIndex foreach { case (e, i) =>
-          val width = bitWidth(e.tpe)
-          val value = bits(wsub(readOut, "bits"), (i + 1) * width - 1, i * width)
-          repl(e.serialize) = Mux(wsub(readOut, "valid"), value, e, e.tpe)
-        }
-        stmts ++= Seq(
-          // <daisy_chain>.io.read.in.bits <- <memory>.data
-          Connect(NoInfo, wsub(readIn, "bits"), dataCat),
-          // <daisy_chain>.io.read.in.valid <- <memory>.en
-          Connect(NoInfo, wsub(readIn, "valid"), (ce._1, re._1) match {
-            case (EmptyExpression, ex) =>
-              if (re._2) not(netlist(ex)) else netlist(ex)
-            case (ex, EmptyExpression) =>
-              if (ce._2) not(netlist(ex)) else netlist(ex)
-            case (ex1, ex2) => and(
-              if (ce._2) not(netlist(ex1)) else netlist(ex1),
-              if (re._2) not(netlist(ex1)) else netlist(ex1))
-          })
-        )
-      }
-      dataCat
+      if (chainType == ChainType.SRAM) stmts ++= Seq(
+        // <daisy_chain>.io.addr[i].in.bits <- <memory>.data
+        Connect(NoInfo, wsub(addrIn, "bits"), netlist(addr)),
+        // <daisy_chain>.io.addr[i].in.valid <- <memory>.en
+        Connect(NoInfo, wsub(addrIn, "valid"), (ce._1, re._1) match {
+          case (EmptyExpression, ex) =>
+            if (re._2) not(netlist(ex)) else netlist(ex)
+          case (ex, EmptyExpression) =>
+            if (ce._2) not(netlist(ex)) else netlist(ex)
+          case (ex1, ex2) => and(
+            if (ce._2) not(netlist(ex1)) else netlist(ex1),
+            if (re._2) not(netlist(ex1)) else netlist(ex1))
+        })
+      )
+      cat(create_exps(data).reverse)
     }
 
     def daisyConnects(elems: Statements, width: Int, daisyLen: Int, daisyWidth: Int): Seq[Statement] = {
@@ -327,10 +307,8 @@ class AddDaisyChains(
         case DataWidth => sum
         case MemWidth  => max
         case MemDepth  => depth
-        case MemNum    => chainType match {
-          case ChainType.SRAM => chainElems.size
-          case ChainType.RegFile => 0
-        }
+        case MemNum    => chainElems.size
+        case SeqRead   => chainType == ChainType.SRAM
       }))
       val instStmts = generateChain(() => chain, namespace, chainMods)
       val clock = m.ports flatMap (p =>
@@ -398,51 +376,6 @@ class AddDaisyChains(
     Block(invalids ++ chainStmts ++ connects)
   }
 
-  def updateExpr(repl: Netlist)(e: Expression) = {
-    var updated = false
-    def loop(e: Expression): Expression = e map loop match {
-      case e @ (_: WSubField | _: WSubIndex) => kind(e) match {
-        case MemKind | InstanceKind => repl get e.serialize match {
-          case Some(ex) =>
-            updated = true
-            ex
-          case None => e
-        }
-        case _ => e
-      }
-      case e => e
-    }
-    (loop(e), updated)
-  }
-
-  // Read ports should be replaced after all other expressions are updated.
-  def updateReadPorts(repl: Netlist, stmts: Statements)(s: Statement): Statement =
-    s map updateReadPorts(repl, stmts) match {
-      case s: Connect => splitRef(s.loc) match {
-        // Skip scan chain inputs
-        case (root, tail) if tail != EmptyExpression && {
-            val rootName = root.name
-            (rootName startsWith "sram_") ||  (rootName startsWith "trace_")
-          } && {
-            val tailName = tail.serialize
-            (tailName startsWith "io.dataIo.data") || (tailName startsWith "io.readIo")
-          } => s
-        case _ =>
-          val (ex, updated) = updateExpr(repl)(s.expr)
-          if (updated) {
-            stmts += s.copy(expr = ex)
-            EmptyStmt
-          } else s
-      }
-      case s: DefNode =>
-        val (ex, updated) = updateExpr(repl)(s.value)
-        if (updated) {
-          stmts += Connect(s.info, wref(s.name, s.value.tpe), ex)
-          DefWire(s.info, s.name, s.value.tpe)
-        } else s
-      case s => s
-    }
-
   def updateStmts(readers: Readers,
                   repl: Netlist,
                   clock: Option[Expression],
@@ -494,9 +427,8 @@ class AddDaisyChains(
       val chainStmts = (ChainType.values.toList map
         insertChains(m, namespace, netlist, readers, repl, chainMods, hasChain))
       val bodyx = updateStmts(readers, repl, clock, stmts)(m.body)
-      val bodyxx = updateReadPorts(repl, stmts)(Block(bodyx +: chainStmts))
       m.copy(ports = m.ports :+ daisyPort,
-             body = Block(Seq(daisyInvalid, bodyxx) ++ stmts))
+             body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
     case m => m
   }
 

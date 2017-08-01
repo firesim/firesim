@@ -11,6 +11,7 @@ case object DataWidth extends Field[Int]
 case object MemWidth extends Field[Int]
 case object MemDepth extends Field[Int]
 case object MemNum extends Field[Int]
+case object SeqRead extends Field[Boolean]
 case object SRAMChainNum extends Field[Int]
 
 object ChainType extends Enumeration { val Trace, Regs, SRAM, RegFile, Cntr = Value }
@@ -163,56 +164,48 @@ class RegChain(implicit p: Parameters) extends DaisyChainModule()(p) {
 }
 
 // Define sram daisy chains
+trait SRAMChainParameters {
+  implicit val p: Parameters
+  val seqRead = p(SeqRead)
+  val n = p(MemNum)
+  val w = log2Ceil(p(MemDepth)) max 1
+}
+
 class SRAMChainDatapath(implicit p: Parameters) extends RegChainDatapath()(p)
 
-class AddrIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val n = p(MemDepth)
-  val out = Valid(UInt(log2Up(n).W))
+class AddrIO(implicit override val p: Parameters)
+    extends ParameterizedBundle()(p) with SRAMChainParameters {
+  val in = Flipped(Valid(UInt(w.W)))
+  val out = Valid(UInt(w.W))
 }
 
-class ReadIO(implicit p: Parameters) extends DaisyChainBundle()(p) {
-  val in = Flipped(Valid(UInt(p(MemWidth).W)))
-  val out = Valid(UInt(p(MemWidth).W))
-}
-
-class SRAMChainControlIO(implicit p: Parameters) extends DaisyControlIO()(p) {
+class SRAMChainControlIO(implicit override val p: Parameters)
+    extends DaisyControlIO()(p) with SRAMChainParameters {
   val restart = Input(Bool())
-  val addrIo = new AddrIO
-  val readIo = Vec(p(MemNum), new ReadIO)
+  val addrIo = Vec(n, new AddrIO)
 }
 
-class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
-  val n = p(MemDepth)
+class SRAMChainControl(implicit override val p: Parameters)
+    extends DaisyChainModule()(p) with SRAMChainParameters {
   val io = IO(new SRAMChainControlIO)
   val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
   val addrState = RegInit(s_IDLE)
-  val addrOut = Reg(UInt(log2Up(n).W))
+  val addrIns = Seq.fill(n)(Reg(UInt(w.W)))
+  val addrOut = Reg(UInt(w.W))
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
-
+  val addrValid =
+    if (seqRead) addrState === s_ADDRGEN || addrState === s_MEMREAD
+    else         addrState === s_MEMREAD
   io.ctrlIo.cntrNotZero := counter.isNotZero
   io.ctrlIo.copyCond := addrState === s_MEMREAD 
   io.ctrlIo.readCond := addrState === s_DONE && counter.isNotZero
-  io.addrIo.out.bits := addrOut
-  io.addrIo.out.valid := addrState === (if (p(MemNum) > 0) s_ADDRGEN else s_MEMREAD)
-  io.readIo.zipWithIndex foreach { case (readIo, i) =>
-    // Read port output values are destoyed with SRAM snapshotting
-    // Thus, capture their values here
-    val read = Reg(readIo.out.cloneType)
-    val readEnable = Reg(Bool())
-    read suggestName s"read_${i}"
-    readEnable suggestName s"readEnable_${i}"
-    readIo.out := read
-    // With sram reads, turn off io.read.out and keep their values
-    when(reset || readIo.in.valid) {
-      read.valid := Bool(false)
-      readEnable := Bool(true)
-    }
-    when(RegNext(reset || readIo.in.valid)) {
-      read.bits := readIo.in.bits
-    }
-    // Turn on io.read.out only when there's snapshotting
-    when(io.stall && io.restart) {
-      read.valid := readEnable
+  (io.addrIo zip addrIns) foreach { case (addrIo, addrIn) =>
+    addrIo.out.valid := addrValid
+    if (seqRead) {
+      addrIo.out.bits := Mux(addrState === s_ADDRGEN, addrOut, addrIn)
+      when(addrIo.in.valid) { addrIn := addrIo.in.bits }
+    } else {
+      addrIo.out.bits := addrOut
     }
   }
 
@@ -236,10 +229,10 @@ class SRAMChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   }
 }
 
-class SRAMChainIO(implicit p: Parameters) extends RegChainIO()(p) {
+class SRAMChainIO(implicit override val p: Parameters)
+    extends RegChainIO()(p) with SRAMChainParameters {
   val restart = Input(Bool())
-  val addrIo = new AddrIO
-  val readIo = Vec(p(MemNum), new ReadIO)
+  val addrIo = Vec(n, new AddrIO)
 }
 
 class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {
@@ -251,6 +244,5 @@ class SRAMChain(implicit p: Parameters) extends DaisyChainModule()(p) {
   control.io.stall := io.stall
   datapath.io.ctrlIo <> control.io.ctrlIo
   io.dataIo <> datapath.io.dataIo
-  io.addrIo <> control.io.addrIo
-  (io.readIo zip control.io.readIo) foreach { case (x, y) => x <> y }
+  (io.addrIo zip control.io.addrIo) foreach { case (x, y) => x <> y }
 }
