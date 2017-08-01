@@ -1,2 +1,2 @@
 bbl-vmlinux
-rootfs.ext4
+rootfs*.ext4
