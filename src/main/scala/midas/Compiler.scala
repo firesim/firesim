@@ -4,6 +4,7 @@ import chisel3.Data
 import firrtl.ir.Circuit
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
+import barstools.macros._
 import java.io.{File, FileWriter, Writer}
 
 // Compiler for Midas Transforms
@@ -37,7 +38,8 @@ object MidasCompiler {
       InferReadWriteAnnotation(chirrtl.main),
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
-      barstools.macros.MacroCompilerAnnotation(chirrtl.main, json, lib, true)))
+      MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
+        json.toString, lib map (_.toString), CostMetric.default, true))))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
     val midas = new MidasCompiler(dir, io) compile (
