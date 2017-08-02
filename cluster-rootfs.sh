@@ -4,6 +4,7 @@
 
 producerootfs () {
     sed -i "s/address 192.168.1.*/address 192.168.1.1$1/" buildroot-overlay/etc/network/interfaces
+    sed -i "s/ifconfig eth0 hw ether 00:12:6D:00:00:0[0-9]/ifconfig eth0 hw ether 00:12:6D:00:00:0$1/" buildroot-overlay/etc/init.d/S40network
     cd buildroot
     make -j16
     cd ..
