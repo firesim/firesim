@@ -105,7 +105,7 @@ case class MemConf(
       depth = depth.toInt,
       width = width.toInt
     )}
-    SRAMMacro(SRAM, name, width.toInt, depth.toInt, "",
+    SRAMMacro(name, width.toInt, depth.toInt, "",
               readPorts ++ writePorts ++ readwritePorts, Nil)
   }
 }
