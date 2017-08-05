@@ -1,5 +1,6 @@
 #include "simif.h"
 #include <fstream>
+#include <iostream>
 #include <algorithm>
 
 #ifdef ENABLE_SNAPSHOT
@@ -37,8 +38,10 @@ void simif_t::init_sampling(int argc, char** argv) {
   assert(tracelen > 2);
   write(TRACELEN_ADDR, tracelen);
 
+#ifdef KEEP_SAMPLES_IN_MEM
   samples = new sample_t*[sample_num];
   for (size_t i = 0 ; i < sample_num ; i++) samples[i] = NULL;
+#endif
 
   // flush output traces by sim reset
   for (size_t k = 0 ; k < OUT_TR_SIZE ; k++) {
@@ -65,18 +68,16 @@ void simif_t::init_sampling(int argc, char** argv) {
 
 void simif_t::finish_sampling() {
   // tail samples
-  if (last_sample != NULL) {
-    if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
-    samples[last_sample_id] = read_traces(last_sample);
-  }
+  save_sample();
 
   // dump samples
 #if DAISY_WIDTH > 32
-  std::ofstream file(sample_file.c_str());
+  std::ofstream file(sample_file.c_str(), std::ios_base::out | std::ios_base::trunc);
 #else
   FILE *file = fopen(sample_file.c_str(), "w");
 #endif
   sample_t::dump_chains(file);
+#ifdef KEEP_SAMPLES_IN_MEM
   for (size_t i = 0 ; i < sample_num ; i++) {
     if (samples[i] != NULL) {
       samples[i]->dump(file);
@@ -84,10 +85,37 @@ void simif_t::finish_sampling() {
     }
   }
   delete[] samples;
-
-  if (sample_count) {
-    fprintf(stderr, "Sample Count: %zu\n", sample_count);
+#else
+  for (size_t i = 0 ; i < std::min(sample_num, sample_count) ; i++) {
+    std::string fname = sample_file + "_" + std::to_string(last_sample_id);
+    std::ifstream f;
+    size_t open_count = 0;
+    do {
+      if (open_count > 1e6) {
+        std::cerr << fname << " is lost!" << std::endl;;
+        exit(EXIT_FAILURE);
+      }
+      f.open(fname.c_str());
+      open_count++;
+    } while (!f);
+    std::string line;
+    while (std::getline(f, line)) {
+#if DAISY_WIDTH > 32
+      file << line << std::endl;
+#else
+      fprintf(file, "%s\n", line.c_str());
+#endif
+    }
   }
+#endif
+#if DAISY_WIDTH > 32
+  file.close();
+#else
+  fclose(file);
+#endif
+
+
+  fprintf(stderr, "Sample Count: %zu\n", sample_count);
   if (profile) {
     double sim_time = diff_secs(timestamp(), sim_start_time);
     fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s\n", 
@@ -257,6 +285,23 @@ sample_t* simif_t::read_snapshot() {
   return new sample_t(snap.str().c_str(), cycles());
 }
 
+void simif_t::save_sample() {
+  if (last_sample != NULL) {
+    sample_t* sample = read_traces(last_sample);
+#ifdef KEEP_SAMPLES_IN_MEM
+    if (samples[last_sample_id] != NULL)
+      delete samples[last_sample_id];
+    samples[last_sample_id] = sample;
+#else
+    std::string filename = sample_file + "_" + std::to_string(last_sample_id);
+    std::ofstream file(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+    sample->dump(file);
+    delete sample;
+    file.close();
+#endif
+  }
+}
+
 void simif_t::reservoir_sampling(size_t n) {
   if (t % tracelen == 0) {
     midas_time_t start_time = 0;
@@ -265,10 +310,7 @@ void simif_t::reservoir_sampling(size_t n) {
     if (sample_id < sample_num) {
       sample_count++;
       if (profile) start_time = timestamp();
-      if (last_sample != NULL) {
-        if (samples[last_sample_id] != NULL) delete samples[last_sample_id];
-        samples[last_sample_id] = read_traces(last_sample);
-      }
+      save_sample();
       last_sample = read_snapshot();
       last_sample_id = sample_id;
       trace_count = 0;
