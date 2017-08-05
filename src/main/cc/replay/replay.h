@@ -51,16 +51,12 @@ public:
         if (load_t* p = dynamic_cast<load_t*>(cmd)) {
           auto signal = signals[p->type][p->id];
           auto width = widths[p->type][p->id];
-          if (p->idx < 0) {
-            load(signal, width, p->value, PUT_DEPOSIT);
-          } else {
-            load(signal + "[" + std::to_string(p->idx) + "]", width, p->value, PUT_DEPOSIT);
-          }
+          load(signal, width, p->value, PUT_DEPOSIT, p->idx);
         }
         if (force_t* p = dynamic_cast<force_t*>(cmd)) {
           auto signal = signals[p->type][p->id];
           auto width = widths[p->type][p->id];
-          load(signal, width, p->value, PUT_FORCE);
+          load(signal, width, p->value, PUT_FORCE, -1);
         }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
           poke(signals[p->type][p->id], p->value);
@@ -207,20 +203,20 @@ private:
     }
   }
 
-  void load(const std::string& node, size_t width, biguint_t* data, PUT_VALUE_TYPE tpe) {
+  void load(const std::string& node, size_t width, biguint_t* data, PUT_VALUE_TYPE tpe, int idx) {
+    std::string name = idx < 0 ? node : node + "[" + std::to_string(idx) + "]";
     if (log) {
       std::cerr << " * " << PUT_VALUE_TYPE_STRING[tpe] << " ";
-      std::cerr << node << " <- 0x" << *data << " *" << std::endl;
+      std::cerr << name << " <- 0x" << *data << " *" << std::endl;
     }
     if (!gate_level()) {
-      put_value(get_signal(node), data, tpe);
-    } else if (width == 1) {
-      load_bit(node, data, tpe);
+      put_value(get_signal(name), data, tpe);
+    } else if (width == 1 && idx < 0) {
+      load_bit(name, data, tpe);
     } else {
       for (size_t i = 0 ; i < width ; i++) {
-        std::string name = node + "[" + std::to_string(i) + "]";
         biguint_t bit = (*data >> i) & 0x1;
-        load_bit(name, &bit, tpe);
+        load_bit(name + "[" + std::to_string(i) + "]", &bit, tpe);
       }
     }
   }
