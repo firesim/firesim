@@ -101,7 +101,9 @@ class simif_t
 #ifdef ENABLE_SNAPSHOT
   private:
     // sample information
+#ifdef KEEP_SAMPLES_IN_MEM
     sample_t** samples;
+#endif
     sample_t* last_sample;
     size_t sample_num;
     size_t last_sample_id;
@@ -126,7 +128,7 @@ class simif_t
       size_t bits_addr,
       size_t bits_chunk,
       size_t num_fields);
-
+    inline void save_sample();
   protected:
     sample_t* read_snapshot();
     sample_t* read_traces(sample_t* s);

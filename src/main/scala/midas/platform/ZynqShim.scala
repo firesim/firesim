@@ -8,14 +8,17 @@ import chisel3.util._
 import junctions._
 import config.{Parameters, Field}
 
-abstract class PlatformShim extends Module {
+abstract class PlatformShim(implicit p: Parameters) extends Module {
   def top: midas.core.FPGATop
   def headerConsts: Seq[(String, Int)]
   def genHeader(sb: StringBuilder, target: String) {
     import widgets.CppGenerationUtils._
     sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
     sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
-    if (top.sim.enableSnapshot) sb append(genMacro("ENABLE_SNAPSHOT"))
+    if (p(EnableSnapshot)) {
+      sb append(genMacro("ENABLE_SNAPSHOT"))
+      if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
+    }
     sb.append(genMacro("data_t", "uint%d_t".format(top.sim.channelWidth)))
     top.genHeader(sb)(top.sim.channelWidth)
     sb.append("\n// Simulation Constants\n")
