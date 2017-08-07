@@ -87,7 +87,7 @@ void simif_t::finish_sampling() {
   delete[] samples;
 #else
   for (size_t i = 0 ; i < std::min(sample_num, sample_count) ; i++) {
-    std::string fname = sample_file + "_" + std::to_string(last_sample_id);
+    std::string fname = sample_file + "_" + std::to_string(i);
     std::ifstream f;
     size_t open_count = 0;
     do {
