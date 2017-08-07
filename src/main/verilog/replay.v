@@ -26,8 +26,6 @@ module replay;
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
       $vcdplusfile(vcdplusfile);
-      $vcdpluson(0);
-      $vcdplusmemon(0);
     end
 `endif
     $init_sigs(`TOP_TYPE);
@@ -38,6 +36,10 @@ module replay;
       cycles <= cycles + 1;
       if (vcdfile && !vcdon) begin
         $dumpon;
+`ifdef VCS
+        $vcdpluson(0);
+        $vcdplusmemon(0);
+`endif
         vcdon <= 1;
       end
     end
