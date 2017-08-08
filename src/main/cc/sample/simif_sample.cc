@@ -88,16 +88,7 @@ void simif_t::finish_sampling() {
 #else
   for (size_t i = 0 ; i < std::min(sample_num, sample_count) ; i++) {
     std::string fname = sample_file + "_" + std::to_string(i);
-    std::ifstream f;
-    size_t open_count = 0;
-    do {
-      if (open_count > 1e6) {
-        std::cerr << fname << " is lost!" << std::endl;;
-        exit(EXIT_FAILURE);
-      }
-      f.open(fname.c_str());
-      open_count++;
-    } while (!f);
+    std::ifstream f(fname.c_str());
     std::string line;
     while (std::getline(f, line)) {
 #if DAISY_WIDTH > 32
@@ -106,6 +97,9 @@ void simif_t::finish_sampling() {
       fprintf(file, "%s\n", line.c_str());
 #endif
     }
+#ifndef _WIN32
+    remove(fname.c_str());
+#endif
   }
 #endif
 #if DAISY_WIDTH > 32
@@ -113,7 +107,6 @@ void simif_t::finish_sampling() {
 #else
   fclose(file);
 #endif
-
 
   fprintf(stderr, "Sample Count: %zu\n", sample_count);
   if (profile) {
