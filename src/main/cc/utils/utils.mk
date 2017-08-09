@@ -1,4 +1,4 @@
-# compile DRAMSim2
+# Compile DRAMSim2
 dramsim_o := $(foreach f, \
                 $(patsubst %.cpp, %.$(o), $(wildcard $(midas_dir)/dramsim2/*.cpp)), \
                 $(GEN_DIR)/$(notdir $(f)))
@@ -7,6 +7,40 @@ ifneq ($(CXX),cl)
 	$(CXX) $(CXXFLAGS) -DNO_STORAGE -DNO_OUTPUT -Dmain=nomain -c -o $@ $<
 else
 	$(CXX) $(CXXFLAGS) /DNO_STORAGE /DNO_OUTPUT /Dmain=nomain /c /Fo$(call path,$@) $(call path,$<)
+endif
+
+# Compile gmp
+ifneq ($(CXX),cl)
+GMP_VERSION ?= 6.1.2
+gmp_src_dir := $(midas_dir)/gmp-$(GMP_VERSION)
+emul_gmp_build_dir := $(gmp_src_dir)/build-emul
+emul_gmp_install_dir := $(gmp_src_dir)/install-emul
+emul_gmp := $(emul_gmp_install_dir)/lib/libgmp.so
+platform_gmp_build_dir := $(gmp_src_dir)/build-$(PLATFORM)
+platform_gmp_install_dir := $(gmp_src_dir)/install-$(PLATFORM)
+platform_gmp := $(platform_gmp_install_dir)/lib/libgmp.a
+
+$(midas_dir)/gmp-$(GMP_VERSION).tar.bz2:
+	wget https://gmplib.org/download/gmp/gmp-$(GMP_VERSION).tar.bz2
+
+$(gmp_src_dir): $(midas_dir)/gmp-$(GMP_VERSION).tar.bz2
+	tar -xf $<
+
+$(emul_gmp): $(gmp_src_dir)
+	mkdir -p $(emul_gmp_build_dir)
+	cd $(emul_gmp_build_dir) && \
+	../configure --prefix=$(emul_gmp_install_dir) && \
+	$(MAKE) && $(MAKE) install
+
+ifeq ($(PLATFORM),zynq)
+host = arm-xilinx-linux-gnueabi
+endif
+
+$(platform_gmp): $(gmp_src_dir)
+	mkdir -p $(platform_gmp_build_dir)
+	cd $(platform_gmp_build_dir) && \
+	../configure --prefix=$(platform_gmp_install_dir) --host=$(host) && \
+	$(MAKE) && $(MAKE) install
 endif
 
 # Compile utility code

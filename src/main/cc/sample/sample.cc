@@ -10,39 +10,6 @@ std::array<std::vector<size_t>,      CHAIN_NUM> sample_t::widths  = {};
 std::array<std::vector<int>,         CHAIN_NUM> sample_t::depths = {};
 size_t sample_t::chain_len[CHAIN_NUM] = {0};
 size_t sample_t::chain_loop[CHAIN_NUM] = {0};
-void dump_f(FILE *file,
-           SAMPLE_INST_TYPE type,
-           const size_t t,
-           const size_t id,
-           data_t* const value,
-           const size_t size,
-           const int* const idx) {
-  fprintf(file, "%u %zu %zu ", type, t, id);
-  fprintf(file, "%x", value[size-1]);
-  for (int i = size - 2 ; i >= 0 ; i--) {
-    fprintf(file, "%08x", value[i]);
-  }
-  if (idx) fprintf(file, " %d", *idx);
-  fprintf(file, "\n");
-}
-
-std::ostream& dump_s(std::ostream &os,
-                     SAMPLE_INST_TYPE type,
-                     const size_t t,
-                     const size_t id,
-                     data_t* const value,
-                     const size_t size,
-                     const int* const idx) {
-  os << type << " " << t << " " << id << " ";
-  os << std::hex << value[size-1];
-  for (int i = size - 2 ; i >= 0 ; i--) {
-    os << std::setfill('0') << std::setw(2*sizeof(data_t)) << value[i];
-  }
-  os << std::setfill(' ') << std::setw(0) << std::dec;
-  if (idx) os << " " << *idx;
-  os << std::endl;
-  return os;
-}
 
 void sample_t::init_chains(std::string filename) {
   std::fill(signals.begin(), signals.end(), std::vector<std::string>());
@@ -83,45 +50,6 @@ void sample_t::init_chains(std::string filename) {
     chain_len[t] /= DAISY_WIDTH;
   }
   file.close();
-}
-
-void sample_t::dump_chains(FILE* file) {
-  for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
-    auto chain_signals = signals[t];
-    auto chain_widths = widths[t];
-    for (size_t id = 0 ; id < chain_signals.size() ; id++) {
-      auto signal = chain_signals[id];
-      auto width = chain_widths[id];
-      fprintf(file, "%u %zu %s %zu\n", SIGNALS, t,
-        signal.empty() ? "null" : signal.c_str(), width);
-    }
-  }
-  for (size_t id = 0 ; id < IN_TR_SIZE ; id++) {
-    fprintf(file, "%u %u %s\n", SIGNALS, IN_TR, IN_TR_NAMES[id]);
-  }
-  for (size_t id = 0 ; id < OUT_TR_SIZE ; id++) {
-    fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR, OUT_TR_NAMES[id]);
-  }
-  for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
-    fprintf(file, "%u %u %s_valid\n", SIGNALS, IN_TR_VALID,
-      (const char*)IN_TR_READY_VALID_NAMES[id]);
-    fprintf(file, "%u %u %s_ready\n", SIGNALS, IN_TR_READY,
-      (const char*)IN_TR_READY_VALID_NAMES[id]);
-    for (size_t k = 0 ; k < (size_t)IN_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      fprintf(file, "%u %u %s\n", SIGNALS, IN_TR_BITS,
-        (const char*)IN_TR_BITS_FIELD_NAMES[bits_id]);
-    }
-  }
-  for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
-    fprintf(file, "%u %u %s_valid\n", SIGNALS, OUT_TR_VALID,
-      (const char*)OUT_TR_READY_VALID_NAMES[id]);
-    fprintf(file, "%u %u %s_ready\n", SIGNALS, OUT_TR_READY,
-      (const char*)OUT_TR_READY_VALID_NAMES[id]);
-    for (size_t k = 0 ; k < (size_t)OUT_TR_BITS_FIELD_NUMS[id] ; k++, bits_id++) {
-      fprintf(file, "%u %u %s\n", SIGNALS, OUT_TR_BITS,
-        (const char*)OUT_TR_BITS_FIELD_NAMES[bits_id]);
-    }
-  }
 }
 
 void sample_t::dump_chains(std::ostream& os) {
@@ -178,36 +106,28 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         assert(width <= 1024);
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
-        biguint_t value(substr, 2);
-#if DAISY_WIDTH > 32
-        const size_t ratio = sizeof(data_t) / sizeof(uint32_t);
-        const size_t size = (value.get_size() - 1) / ratio + 1;
-        data_t* data = new data_t[size](); // zero-out
-        // TODO: better way to copy?
-        for (size_t i = 0 ; i < size ; i++) {
-          for (size_t j = 0 ; j < ratio ; j++) {
-            data[i] |= ((data_t)value[i * ratio + j]) << 32 * j;
-          }
-        }
+#ifdef ENABLE_SNAPSHOT
+// #ifndef _WIN32
+        mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_set_str(*value, substr, 2);
 #else
-	const size_t size = value.get_size();
-        data_t* data = new data_t[size];
-        std::copy(value.get_data(), value.get_data() + value.get_size(), data);
+        biguint_t* value = new biguint_t(substr, 2);
 #endif
         switch(type) {
           case TRACE_CHAIN:
-            add_cmd(new force_t(type, s, data, size));
+            add_cmd(new force_t(type, s, value));
             break;
           case REGS_CHAIN:
-            add_cmd(new load_t(type, s, data, size, -1));
+            add_cmd(new load_t(type, s, value));
             break;
           case SRAM_CHAIN:
           case REGFILE_CHAIN:
             if (static_cast<int>(i) < depth)
-              add_cmd(new load_t(type, s, data, size, i));
+              add_cmd(new load_t(type, s, value, i));
             break;
           case CNTR_CHAIN:
-            add_cmd(new count_t(type, s, data, size));
+            add_cmd(new count_t(type, s, value));
             break;
           default:
             break;
@@ -236,8 +156,6 @@ sample_t::sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle):
 #endif
 
 sample_t::~sample_t() {
-  for (size_t i = 0 ; i < cmds.size() ; i++) {
-    delete cmds[i];
-  }
+  for (auto& cmd: cmds) delete cmd;
   cmds.clear();
 }
