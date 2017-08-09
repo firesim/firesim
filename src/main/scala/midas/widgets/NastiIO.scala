@@ -72,9 +72,9 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
     tNasti.ar.ready    := arBuf.io.enq.ready && rCycleReady
     tNasti.aw.ready    := awBuf.io.enq.ready && wCycleReady
     tNasti.w.ready     := wBuf.io.enq.ready  && wCycleReady
-    arBuf.io.enq.valid := tNasti.ar.valid && fire && !tReset
-    awBuf.io.enq.valid := tNasti.aw.valid && fire && !tReset
-    wBuf.io.enq.valid  := tNasti.w.valid  && fire && !tReset
+    arBuf.io.enq.valid := tNasti.ar.valid && rCycleReady && fire && !tReset
+    awBuf.io.enq.valid := tNasti.aw.valid && wCycleReady && fire && !tReset
+    wBuf.io.enq.valid  := tNasti.w.valid  && wCycleReady && fire && !tReset
     arBuf.io.enq.bits  := tNasti.ar.bits
     awBuf.io.enq.bits  := tNasti.aw.bits
     wBuf.io.enq.bits   := tNasti.w.bits
