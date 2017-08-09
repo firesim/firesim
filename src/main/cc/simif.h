@@ -61,13 +61,15 @@ class simif_t
     virtual data_t read(size_t addr) = 0;
 
     inline void poke(size_t id, data_t value) {
-      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
+      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n",
+        TARGET_NAME, INPUT_NAMES[id], value);
       write(INPUT_ADDRS[id], value);
     }
 
     inline data_t peek(size_t id) {
       data_t value = read(((unsigned int*)OUTPUT_ADDRS)[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, (const char*)OUTPUT_NAMES[id], value);
+      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n",
+        TARGET_NAME, (const char*)OUTPUT_NAMES[id], value);
       return value;
     }
 
@@ -121,12 +123,7 @@ class simif_t
     void finish_sampling();
     void reservoir_sampling(size_t n);
     size_t trace_ready_valid_bits(
-      sample_t* sample,
-      bool poke,
-      size_t bits_id,
-      size_t bits_addr,
-      size_t bits_chunk,
-      size_t num_fields);
+      sample_t* sample, bool poke, size_t id, size_t bits_id);
     inline void save_sample();
 
   protected:
