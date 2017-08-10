@@ -118,21 +118,31 @@ override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
 	-LDFLAGS "$(LDFLAGS) -L$(emul_gmp_install_dir)/lib -lgmp -lmidas" \
 	$(VERILATOR_FLAGS)
 
+ifeq ($(PLATFORM),zynq)
+top_module = ZynqShim
+endif
+ifeq ($(PLATFORM),catapult)
+top_module = CatapultShim
+endif
+ifeq ($(PLATFORM),f1)
+top_module = F1Shim
+endif
+
 $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
-	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN).csrc/V$(shim).h" \
+	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
+	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN).csrc/V$(top_module).h" \
 	-o $@ $(design_v) $(DRIVER) $(emul_cc) $(endpoint_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(shim).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
 
 $(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
-	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(shim).h" \
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
+	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(top_module).h" \
 	-o $@ $(design_v) $(DRIVER) $(emul_cc) $(endpoint_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(shim).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(top_module).mk
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
