@@ -7,18 +7,19 @@
 #include <map>
 #include <queue>
 #include <random>
-#include "biguint.h"
 #ifdef ENABLE_SNAPSHOT
 #include "sample/sample.h"
 #endif
 #ifndef _WIN32
 #include <sys/time.h>
-#define midas_time_t uint64_t
 #define TIME_DIV_CONST 1000000.0;
+typedef uint64_t midas_time_t;
+typedef mpz_t biguint_t;
 #else
+#include "biguint.h"
 #include <time.h>
-#define midas_time_t clock_t
 #define TIME_DIV_CONST CLOCKS_PER_SEC
+typedef clock_t midas_time_t;
 #endif
 
 midas_time_t timestamp();
@@ -39,15 +40,17 @@ class simif_t
     bool pass;
     uint64_t t;
     uint64_t fail_t;
-    virtual void load_mem(std::string filename);
+    // random numbers
+    uint64_t seed;
+    std::mt19937_64 gen;
+
     inline void take_steps(size_t n, bool blocking) {
       write(MASTER(STEP), n);
       if (blocking) while(!done());
     }
-
-    // random numbers
-    uint64_t seed;
-    std::mt19937_64 gen;
+#ifdef LOADMEM
+    virtual void load_mem(std::string filename);
+#endif
 
   public:
     // Simulation APIs
@@ -91,8 +94,11 @@ class simif_t
     void poke(size_t id, biguint_t& value);
     void peek(size_t id, biguint_t& value);
     bool expect(size_t id, biguint_t& expected);
+
+#ifdef LOADMEM
     void read_mem(size_t addr, biguint_t& value);
     void write_mem(size_t addr, biguint_t& value);
+#endif
 
     // A default reset scheme that pulses the global chisel reset
     void target_reset(int pulse_start = 1, int pulse_length = 5);
