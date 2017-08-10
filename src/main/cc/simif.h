@@ -11,6 +11,7 @@
 #include "sample/sample.h"
 #endif
 #ifndef _WIN32
+#include <gmp.h>
 #include <sys/time.h>
 #define TIME_DIV_CONST 1000000.0;
 typedef uint64_t midas_time_t;
