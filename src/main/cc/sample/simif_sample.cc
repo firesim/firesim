@@ -109,7 +109,7 @@ size_t simif_t::trace_ready_valid_bits(sample_t* sample, bool poke, size_t id, s
     bits_data[off] = read(bits_addr + off);
   }
   if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_t data;
     mpz_init(data);
     mpz_import(data, bits_chunk, -1, sizeof(data_t), 0, 0, bits_data);
@@ -119,7 +119,7 @@ size_t simif_t::trace_ready_valid_bits(sample_t* sample, bool poke, size_t id, s
     for (size_t k = 0, off = 0 ; k < num_fields ; k++, bits_id++) {
       size_t field_width = ((unsigned int*)(
         poke ? IN_TR_BITS_FIELD_WIDTHS : OUT_TR_BITS_FIELD_WIDTHS))[bits_id];
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
       mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t)), mask;
       mpz_inits(*value, mask, NULL);
       // value = data >> off
@@ -148,7 +148,7 @@ size_t simif_t::trace_ready_valid_bits(sample_t* sample, bool poke, size_t id, s
         (sample_inst_t*) new expect_t(OUT_TR_BITS, bits_id, value));
       off += field_width;
     }
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(data);
 #endif
   }
@@ -168,7 +168,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
         data[off] = read(addr+off);
       }
       if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_import(*value, chunk, -1, sizeof(data_t), 0, 0, data);
@@ -185,7 +185,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       size_t valid_addr = (size_t)IN_TR_VALID_ADDRS[id];
       data_t valid_data = read(valid_addr);
       if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_set_ui(*value, valid_data);
@@ -202,7 +202,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       size_t ready_addr = (size_t)OUT_TR_READY_ADDRS[id];
       data_t ready_data = read(ready_addr);
       if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_set_ui(*value, ready_data);
@@ -224,7 +224,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
         data[off] = read(addr+off);
       }
       if (sample && i > 0) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_import(*value, chunk, -1, sizeof(data_t), 0, 0, data);
@@ -241,7 +241,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       size_t valid_addr = (size_t)OUT_TR_VALID_ADDRS[id];
       data_t valid_data = read(valid_addr);
       if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_set_ui(*value, valid_data);
@@ -258,7 +258,7 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       size_t ready_addr = (size_t)IN_TR_READY_ADDRS[id];
       data_t ready_data = read(ready_addr);
       if (sample) {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
         mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_set_ui(*value, ready_data);

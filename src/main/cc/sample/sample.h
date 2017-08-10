@@ -7,13 +7,12 @@
 #include <map>
 #include <ostream>
 #include <inttypes.h>
-#include "biguint.h"
-#ifdef ENABLE_SNAPSHOT
-// #ifndef _WIN32
+#ifndef _WIN32
 #include <gmp.h>
 typedef mpz_t value_t;
 #define value_to_hex(value) mpz_get_str(NULL, 16, *value)
 #else
+#include "biguint.h"
 typedef biguint_t value_t;
 #define value_to_hex(value) value->str().c_str()
 #endif
@@ -50,7 +49,7 @@ struct load_t: sample_inst_t {
   load_t(const size_t type, const size_t id, value_t* value, const int idx = -1):
     type(type), id(id), value(value), idx(idx) { }
   ~load_t() {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(*value);
     free(value);
 #else
@@ -72,7 +71,7 @@ struct force_t: sample_inst_t {
   force_t(const size_t type, const size_t id, value_t* value):
     type(type), id(id), value(value) { }
   ~force_t() {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(*value);
     free(value);
 #else
@@ -93,7 +92,7 @@ struct poke_t: sample_inst_t {
   poke_t(const size_t type, const size_t id, value_t* value):
     type(type), id(id), value(value) { }
   ~poke_t() {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(*value);
     free(value);
 #else
@@ -114,7 +113,7 @@ struct expect_t: sample_inst_t {
   expect_t(const size_t type, const size_t id, value_t* value):
     type(type), id(id), value(value) { }
   ~expect_t() {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(*value);
     free(value);
 #else
@@ -135,7 +134,7 @@ struct count_t: sample_inst_t {
   count_t(const size_t type, const size_t id, value_t* value):
     type(type), id(id), value(value) { }
   ~count_t() {
-#ifdef ENABLE_SNAPSHOT
+#ifndef _WIN32
     mpz_clear(*value);
     free(value);
 #else

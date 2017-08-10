@@ -106,8 +106,7 @@ size_t sample_t::read_chain(CHAIN_TYPE type, const char* snap, size_t start) {
         assert(width <= 1024);
         strncpy(substr, snap+start, width);
         substr[width] = '\0';
-#ifdef ENABLE_SNAPSHOT
-// #ifndef _WIN32
+#ifndef _WIN32
         mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
         mpz_init(*value);
         mpz_set_str(*value, substr, 2);

@@ -131,42 +131,39 @@ void replay_vpi_t::get_value(vpiHandle& sig, std::string& value) {
   value = value_s.value.str;
 }
 
-void replay_vpi_t::put_value(vpiHandle& sig, biguint_t* data, PUT_VALUE_TYPE type) {
+void replay_vpi_t::put_value(vpiHandle& sig, mpz_t& data, PUT_VALUE_TYPE type) {
   PLI_INT32 flag;
   switch(type) {
     case PUT_DEPOSIT: flag = vpiNoDelay; break;
     case PUT_FORCE: flag = vpiForceFlag; forces.push(sig); break;
   }
-  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+  size_t value_size;
+  uint32_t* value = (uint32_t*)mpz_export(NULL, &value_size, -1, sizeof(uint32_t), 0, 0, data);
+  size_t signal_size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
   s_vpi_value  value_s;
-  s_vpi_vecval vecval_s[size];
+  s_vpi_vecval vecval_s[signal_size];
   value_s.format       = vpiVectorVal;
   value_s.value.vector = vecval_s;
-  for (size_t i = 0 ; i < data->get_size() ; i++) {
-    value_s.value.vector[i].aval = (*data)[i];
-    value_s.value.vector[i].bval = 0;
-  }
-  for (size_t i = data->get_size() ; i < size ; i++) {
-    value_s.value.vector[i].aval = 0;
+  for (size_t i = 0 ; i < signal_size ; i++) {
+    value_s.value.vector[i].aval = i < value_size ? value[i] : 0;
     value_s.value.vector[i].bval = 0;
   }
   vpi_put_value(sig, &value_s, NULL, flag);
 }
 
-biguint_t replay_vpi_t::get_value(vpiHandle& sig) {
-  size_t size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
+void replay_vpi_t::get_value(vpiHandle& sig, mpz_t& data) {
+  size_t signal_size = ((vpi_get(vpiSize, sig) - 1) / 32) + 1;
   s_vpi_value  value_s;
-  s_vpi_vecval vecval_s[size];
+  s_vpi_vecval vecval_s[signal_size];
   value_s.format       = vpiVectorVal;
   value_s.value.vector = vecval_s;
   vpi_get_value(sig, &value_s);
-  uint32_t* value = new uint32_t[size];
-  for (size_t i = 0 ; i < size ; i++) {
+
+  uint32_t value[signal_size];
+  for (size_t i = 0 ; i < signal_size ; i++) {
     value[i] = value_s.value.vector[i].aval;
   }
-  biguint_t data(value, size);
-  delete[] value;
-  return data;
+  mpz_import(data, signal_size, -1, sizeof(uint32_t), 0, 0, value);
 }
 
 void replay_vpi_t::take_steps(size_t n) {
