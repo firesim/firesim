@@ -59,7 +59,7 @@ $(OUT_DIR)/$(DESIGN).chain:
 
 ifneq ($(CXX),cl)
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) $(foreach f, $(DRIVER), -I$(dir $(f)))
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread 
 else
 override CXXFLAGS += /I$(call path,$(midas_dir)) /I$(call path,$(util_dir))
 override CXXFLAGS += $(foreach f, $(DRIVER), /I$(call path,$(dir $(f))))
