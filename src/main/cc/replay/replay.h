@@ -219,8 +219,10 @@ private:
   void load(const std::string& node, size_t width, mpz_t& data, PUT_VALUE_TYPE tpe, int idx) {
     std::string name = idx < 0 ? node : node + "[" + std::to_string(idx) + "]";
     if (log) {
+      char* data_str = mpz_get_str(NULL, 16, data);
       std::cerr << " * " << PUT_VALUE_TYPE_STRING[tpe] << " " << name
-                << " <- 0x" << mpz_get_str(NULL, 16, data) << " *" << std::endl;
+                << " <- 0x" << data_str << " *" << std::endl;
+      free(data_str);
     }
     if (!gate_level()) {
       put_value(get_signal(name), data, tpe);
@@ -241,8 +243,9 @@ private:
 
   void poke(const std::string& node, mpz_t& data) {
     if (log) {
-      std::cerr << " * POKE " << node
-                << " <- 0x" << mpz_get_str(NULL, 16, data) << " *" << std::endl;
+      char* data_str = mpz_get_str(NULL, 16, data);
+      std::cerr << " * POKE " << node << " <- 0x" << data_str << " *" << std::endl;
+      free(data_str);
     }
     put_value(get_signal(node), data, PUT_DEPOSIT);
   }
@@ -253,10 +256,13 @@ private:
     get_value(get_signal(node), value);
     bool pass = mpz_cmp(value, expected) == 0 || cycles <= 1;
     if (log) {
+      char* value_str = mpz_get_str(NULL, 16, value);
+      char* expected_str = mpz_get_str(NULL, 16, expected);
       std::cerr << " * EXPECT " << node
-                << " -> 0x" << mpz_get_str(NULL, 16, value)
-                << " ?= 0x" << mpz_get_str(NULL, 16, expected)
+                << " -> 0x" << value_str << " ?= 0x" << expected_str
                 << (pass ? " : PASS" : " : FAIL") << " *" << std::endl;
+      free(value_str);
+      free(expected_str);
     }
     return pass;
   }

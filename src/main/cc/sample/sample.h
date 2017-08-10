@@ -10,11 +10,9 @@
 #ifndef _WIN32
 #include <gmp.h>
 typedef mpz_t value_t;
-#define value_to_hex(value) mpz_get_str(NULL, 16, *value)
 #else
 #include "biguint.h"
 typedef biguint_t value_t;
-#define value_to_hex(value) value->str().c_str()
 #endif
 
 enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
@@ -57,8 +55,14 @@ struct load_t: sample_inst_t {
 #endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << LOAD << " " << type << " " << id << " "
-              << value_to_hex(value) << " " << idx << std::endl;
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << LOAD << " " << type << " " << id << " " << value_str << " " << idx << std::endl;
+    free(value_str);
+    return os;
+#else
+    return os << LOAD << " " << type << " " << id << " " << value->str() << " " << idx << std::endl;
+#endif
   }
 
   const size_t type;
@@ -79,8 +83,14 @@ struct force_t: sample_inst_t {
 #endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << FORCE << " " << type << " " << id << " "
-              << value_to_hex(value) << std::endl;
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << FORCE << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
+#else
+    return os << FORCE << " " << type << " " << id << " " << value->str() << std::endl;
+#endif
   }
 
   const size_t type;
@@ -100,8 +110,14 @@ struct poke_t: sample_inst_t {
 #endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << POKE << " " << type << " " << id << " "
-              << value_to_hex(value) << std::endl;
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << POKE << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
+#else
+    return os << POKE << " " << type << " " << id << " " << value->str() << std::endl;
+#endif
   }
 
   const size_t type;
@@ -121,8 +137,14 @@ struct expect_t: sample_inst_t {
 #endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << EXPECT << " " << type << " " << id << " "
-              << value_to_hex(value) << std::endl;
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << EXPECT << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
+#else
+    return os << EXPECT << " " << type << " " << id << " " << value->str() << std::endl;
+#endif
   }
 
   const size_t type;
@@ -142,8 +164,14 @@ struct count_t: sample_inst_t {
 #endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return os << COUNT << " " << type << " " << id << " "
-              << value_to_hex(value) << std::endl;
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << COUNT << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
+#else
+    return os << COUNT << " " << type << " " << id << " " << value->str() << std::endl;
+#endif
   }
 
   const size_t type;
