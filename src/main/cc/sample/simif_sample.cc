@@ -54,13 +54,7 @@ void simif_t::init_sampling(int argc, char** argv) {
     read((size_t)OUT_TR_READY_ADDRS[id]);
     bits_id = !read((size_t)OUT_TR_VALID_ADDRS[id]) ?
       bits_id + (size_t)OUT_TR_BITS_FIELD_NUMS[id] :
-      trace_ready_valid_bits(
-        NULL,
-        false,
-        bits_id,
-        (size_t)OUT_TR_BITS_ADDRS[id],
-        (size_t)OUT_TR_BITS_CHUNKS[id],
-        (size_t)OUT_TR_BITS_FIELD_NUMS[id]);
+      trace_ready_valid_bits(NULL, false, id, bits_id);
   }
 
   if (profile) sim_start_time = timestamp();
@@ -71,11 +65,7 @@ void simif_t::finish_sampling() {
   save_sample();
 
   // dump samples
-#if DAISY_WIDTH > 32
   std::ofstream file(sample_file.c_str(), std::ios_base::out | std::ios_base::trunc);
-#else
-  FILE *file = fopen(sample_file.c_str(), "w");
-#endif
   sample_t::dump_chains(file);
 #ifdef KEEP_SAMPLES_IN_MEM
   for (size_t i = 0 ; i < sample_num ; i++) {
@@ -91,22 +81,14 @@ void simif_t::finish_sampling() {
     std::ifstream f(fname.c_str());
     std::string line;
     while (std::getline(f, line)) {
-#if DAISY_WIDTH > 32
       file << line << std::endl;
-#else
-      fprintf(file, "%s\n", line.c_str());
-#endif
     }
 #ifndef _WIN32
     remove(fname.c_str());
 #endif
   }
 #endif
-#if DAISY_WIDTH > 32
   file.close();
-#else
-  fclose(file);
-#endif
 
   fprintf(stderr, "Sample Count: %zu\n", sample_count);
   if (profile) {
@@ -118,42 +100,57 @@ void simif_t::finish_sampling() {
 
 static const size_t data_t_chunks = sizeof(data_t) / sizeof(uint32_t);
 
-size_t simif_t::trace_ready_valid_bits(
-    sample_t* sample,
-    bool poke,
-    size_t bits_id,
-    size_t bits_addr,
-    size_t bits_chunk,
-    size_t num_fields) {
+size_t simif_t::trace_ready_valid_bits(sample_t* sample, bool poke, size_t id, size_t bits_id) {
+  size_t bits_addr = poke ? (size_t)IN_TR_BITS_ADDRS[id] : (size_t)OUT_TR_BITS_ADDRS[id];
+  size_t bits_chunk = poke ? (size_t)IN_TR_BITS_CHUNKS[id] : (size_t)OUT_TR_BITS_CHUNKS[id];
+  size_t num_fields = poke ? (size_t)IN_TR_BITS_FIELD_NUMS[id] : (size_t)OUT_TR_BITS_FIELD_NUMS[id];
   data_t *bits_data = new data_t[bits_chunk];
   for (size_t off = 0 ; off < bits_chunk ; off++) {
     bits_data[off] = read(bits_addr + off);
   }
   if (sample) {
+#ifndef _WIN32
+    mpz_t data;
+    mpz_init(data);
+    mpz_import(data, bits_chunk, -1, sizeof(data_t), 0, 0, bits_data);
+#else
     biguint_t data((uint32_t*)bits_data, bits_chunk * data_t_chunks);
+#endif
     for (size_t k = 0, off = 0 ; k < num_fields ; k++, bits_id++) {
       size_t field_width = ((unsigned int*)(
         poke ? IN_TR_BITS_FIELD_WIDTHS : OUT_TR_BITS_FIELD_WIDTHS))[bits_id];
-      size_t field_chunk = ((field_width - 1) / DAISY_WIDTH) + 1;
-      biguint_t value = data >> off;
-      data_t* field_data = new data_t[field_chunk](); // zero-out
-      for (size_t i = 0 ; i < field_chunk ; i++) {
-        for (size_t j = 0 ; j < data_t_chunks ; j++) {
-          size_t idx = i * data_t_chunks + j;
-          if (idx < value.get_size()) {
-            field_data[i] |= ((data_t)value[idx]) << 32 * j;
-          }
-        }
+#ifndef _WIN32
+      mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t)), mask;
+      mpz_inits(*value, mask, NULL);
+      // value = data >> off
+      mpz_fdiv_q_2exp(*value, data, off);
+      // mask = (1 << field_width) - 1
+      mpz_set_ui(mask, 1);
+      mpz_mul_2exp(mask, mask, field_width);
+      mpz_sub_ui(mask, mask, 1);
+      // *value = *value & mask
+      mpz_and(*value, *value, mask);
+      mpz_clear(mask);
+#else
+      const size_t field_size = (field_width - 1) / (8 * sizeof(uint32_t)) + 1;
+      const uint32_t field_mask = (1L << (field_width % (8 * sizeof(uint32_t)))) - 1;
+      biguint_t temp = data >> off;
+      uint32_t* field_data = new uint32_t[field_size];
+      for (size_t i = 0 ; i < field_size ; i++) {
+        field_data[i] = temp[i];
       }
-      data_t mask = (1L << (field_width % DAISY_WIDTH)) - 1;
-      if (mask) {
-        field_data[field_chunk-1] = field_data[field_chunk-1] & mask;
-      }
+      if (field_mask) field_data[field_size-1] &= field_mask;
+      biguint_t *value = new biguint_t(field_data, field_size);
+      delete[] field_data;
+#endif
       sample->add_cmd(poke ?
-        (sample_inst_t*) new poke_t(IN_TR_BITS, bits_id, field_data, field_chunk):
-        (sample_inst_t*) new expect_t(OUT_TR_BITS, bits_id, field_data, field_chunk));
+        (sample_inst_t*) new poke_t(IN_TR_BITS, bits_id, value):
+        (sample_inst_t*) new expect_t(OUT_TR_BITS, bits_id, value));
       off += field_width;
     }
+#ifndef _WIN32
+    mpz_clear(data);
+#endif
   }
 
   delete[] bits_data;
@@ -170,33 +167,50 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
-      if (sample) sample->add_cmd(new poke_t(IN_TR, id, data, chunk));
-      else delete[] data;
+      if (sample) {
+#ifndef _WIN32
+        mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_import(*value, chunk, -1, sizeof(data_t), 0, 0, data);
+#else
+        biguint_t *value = new biguint_t((uint32_t*)data, chunk * data_t_chunks);
+#endif
+        sample->add_cmd(new poke_t(IN_TR, id, value));
+      }
+      delete[] data;
     }
 
     // ready valid input traces from FPGA
     for (size_t id = 0, bits_id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
       size_t valid_addr = (size_t)IN_TR_VALID_ADDRS[id];
-      data_t* valid_data = new data_t[1];
-      valid_data[0] = read(valid_addr);
-      if (sample) sample->add_cmd(new poke_t(IN_TR_VALID, id, valid_data, 1));
-      bits_id = !valid_data[0] ?
+      data_t valid_data = read(valid_addr);
+      if (sample) {
+#ifndef _WIN32
+        mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_set_ui(*value, valid_data);
+#else
+        biguint_t* value = new biguint_t(valid_data);
+#endif
+        sample->add_cmd(new poke_t(IN_TR_VALID, id, value));
+      }
+      bits_id = !valid_data ?
         bits_id + (size_t)IN_TR_BITS_FIELD_NUMS[id] :
-        trace_ready_valid_bits(
-          sample,
-          true,
-          bits_id,
-          (size_t)IN_TR_BITS_ADDRS[id],
-          (size_t)IN_TR_BITS_CHUNKS[id],
-          (size_t)IN_TR_BITS_FIELD_NUMS[id]);
-      if (!sample) delete[] valid_data;
+        trace_ready_valid_bits(sample, true, id, bits_id);
     }
     for (size_t id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
       size_t ready_addr = (size_t)OUT_TR_READY_ADDRS[id];
-      data_t* ready_data = new data_t[1];
-      ready_data[0] = read(ready_addr);
-      if (sample) sample->add_cmd(new poke_t(OUT_TR_READY, id, ready_data, 1));
-      else delete[] ready_data;
+      data_t ready_data = read(ready_addr);
+      if (sample) {
+#ifndef _WIN32
+        mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_set_ui(*value, ready_data);
+#else
+        biguint_t* value = new biguint_t(ready_data);
+#endif
+        sample->add_cmd(new poke_t(OUT_TR_READY, id, value));
+      }
     }
 
     if (sample) sample->add_cmd(new step_t(1));
@@ -209,33 +223,50 @@ sample_t* simif_t::read_traces(sample_t *sample) {
       for (size_t off = 0 ; off < chunk ; off++) {
         data[off] = read(addr+off);
       }
-      if (sample && i > 0) sample->add_cmd(new expect_t(OUT_TR, id, data, chunk));
-      else delete[] data;
+      if (sample && i > 0) {
+#ifndef _WIN32
+        mpz_t *value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_import(*value, chunk, -1, sizeof(data_t), 0, 0, data);
+#else
+        biguint_t *value = new biguint_t((uint32_t*)data, chunk * data_t_chunks);
+#endif
+        sample->add_cmd(new expect_t(OUT_TR, id, value));
+      }
+      delete[] data;
     }
 
     // ready valid output traces from FPGA
     for (size_t id = 0, bits_id = 0 ; id < OUT_TR_READY_VALID_SIZE ; id++) {
       size_t valid_addr = (size_t)OUT_TR_VALID_ADDRS[id];
-      data_t* valid_data = new data_t[1];
-      valid_data[0] = read(valid_addr);
-      if (sample) sample->add_cmd(new expect_t(OUT_TR_VALID, id, valid_data, 1));
-      bits_id = !valid_data[0] ?
+      data_t valid_data = read(valid_addr);
+      if (sample) {
+#ifndef _WIN32
+        mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_set_ui(*value, valid_data);
+#else
+        biguint_t* value = new biguint_t(valid_data);
+#endif
+        sample->add_cmd(new expect_t(OUT_TR_VALID, id, value));
+      }
+      bits_id = !valid_data ?
         bits_id + (size_t)OUT_TR_BITS_FIELD_NUMS[id] :
-        trace_ready_valid_bits(
-          sample,
-          false,
-          bits_id,
-          (size_t)OUT_TR_BITS_ADDRS[id],
-          (size_t)OUT_TR_BITS_CHUNKS[id],
-          (size_t)OUT_TR_BITS_FIELD_NUMS[id]);
-      if (!sample) delete[] valid_data;
+        trace_ready_valid_bits(sample, false, id, bits_id);
     }
     for (size_t id = 0 ; id < IN_TR_READY_VALID_SIZE ; id++) {
       size_t ready_addr = (size_t)IN_TR_READY_ADDRS[id];
-      data_t* ready_data = new data_t[1];
-      ready_data[0] = read(ready_addr);
-      if (sample) sample->add_cmd(new expect_t(IN_TR_READY, id, ready_data, 1));
-      else delete[] ready_data;
+      data_t ready_data = read(ready_addr);
+      if (sample) {
+#ifndef _WIN32
+        mpz_t* value = (mpz_t*)malloc(sizeof(mpz_t));
+        mpz_init(*value);
+        mpz_set_ui(*value, ready_data);
+#else
+        biguint_t* value = new biguint_t(ready_data);
+#endif
+        sample->add_cmd(new expect_t(IN_TR_READY, id, value));
+      }
     }
   }
 
