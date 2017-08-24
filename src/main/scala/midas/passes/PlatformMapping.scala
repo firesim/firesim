@@ -62,7 +62,6 @@ private[passes] class PlatformMapping(
     val sim = c match { case w: WCircuit => w.sim }
     lazy val shim = param(Platform) match {
       case Zynq     => new platform.ZynqShim(sim)
-      case Catapult => new platform.CatapultShim(sim)
       case F1       => new platform.F1Shim(sim)
     }
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))

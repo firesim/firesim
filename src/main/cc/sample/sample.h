@@ -7,13 +7,7 @@
 #include <map>
 #include <ostream>
 #include <inttypes.h>
-#ifndef _WIN32
 #include <gmp.h>
-typedef mpz_t value_t;
-#else
-#include "biguint.h"
-typedef biguint_t value_t;
-#endif
 
 enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 #ifdef ENABLE_SNAPSHOT
@@ -44,139 +38,99 @@ struct step_t: sample_inst_t {
 };
 
 struct load_t: sample_inst_t {
-  load_t(const size_t type, const size_t id, value_t* value, const int idx = -1):
+  load_t(const size_t type, const size_t id, mpz_t* value, const int idx = -1):
     type(type), id(id), value(value), idx(idx) { }
   ~load_t() {
-#ifndef _WIN32
     mpz_clear(*value);
     free(value);
-#else
-    delete value;
-#endif
   }
   std::ostream& dump(std::ostream &os) const {
-#ifndef _WIN32
     char* value_str = mpz_get_str(NULL, 16, *value);
     os << LOAD << " " << type << " " << id << " " << value_str << " " << idx << std::endl;
     free(value_str);
     return os;
-#else
-    return os << LOAD << " " << type << " " << id << " " << value->str() << " " << idx << std::endl;
-#endif
   }
 
   const size_t type;
   const size_t id;
-  value_t* const value;
+  mpz_t* const value;
   const int idx;
 };
 
 struct force_t: sample_inst_t {
-  force_t(const size_t type, const size_t id, value_t* value):
+  force_t(const size_t type, const size_t id, mpz_t* value):
     type(type), id(id), value(value) { }
   ~force_t() {
-#ifndef _WIN32
     mpz_clear(*value);
     free(value);
-#else
-    delete value;
-#endif
   }
   std::ostream& dump(std::ostream &os) const {
-#ifndef _WIN32
     char* value_str = mpz_get_str(NULL, 16, *value);
     os << FORCE << " " << type << " " << id << " " << value_str << std::endl;
     free(value_str);
     return os;
-#else
-    return os << FORCE << " " << type << " " << id << " " << value->str() << std::endl;
-#endif
   }
 
   const size_t type;
   const size_t id;
-  value_t* const value;
+  mpz_t* const value;
 };
 
 struct poke_t: sample_inst_t {
-  poke_t(const size_t type, const size_t id, value_t* value):
+  poke_t(const size_t type, const size_t id, mpz_t* value):
     type(type), id(id), value(value) { }
   ~poke_t() {
-#ifndef _WIN32
     mpz_clear(*value);
     free(value);
-#else
-    delete value;
-#endif
   }
   std::ostream& dump(std::ostream &os) const {
-#ifndef _WIN32
     char* value_str = mpz_get_str(NULL, 16, *value);
     os << POKE << " " << type << " " << id << " " << value_str << std::endl;
     free(value_str);
     return os;
-#else
-    return os << POKE << " " << type << " " << id << " " << value->str() << std::endl;
-#endif
   }
 
   const size_t type;
   const size_t id;
-  value_t* const value;
+  mpz_t* const value;
 };
 
 struct expect_t: sample_inst_t {
-  expect_t(const size_t type, const size_t id, value_t* value):
+  expect_t(const size_t type, const size_t id, mpz_t* value):
     type(type), id(id), value(value) { }
   ~expect_t() {
-#ifndef _WIN32
     mpz_clear(*value);
     free(value);
-#else
-    delete value;
-#endif
   }
   std::ostream& dump(std::ostream &os) const {
-#ifndef _WIN32
     char* value_str = mpz_get_str(NULL, 16, *value);
     os << EXPECT << " " << type << " " << id << " " << value_str << std::endl;
     free(value_str);
     return os;
-#else
-    return os << EXPECT << " " << type << " " << id << " " << value->str() << std::endl;
-#endif
   }
 
   const size_t type;
   const size_t id;
-  value_t* const value;
+  mpz_t* const value;
 };
 
 struct count_t: sample_inst_t {
-  count_t(const size_t type, const size_t id, value_t* value):
+  count_t(const size_t type, const size_t id, mpz_t* value):
     type(type), id(id), value(value) { }
   ~count_t() {
-#ifndef _WIN32
     mpz_clear(*value);
     free(value);
-#else
-    delete value;
-#endif
   }
   std::ostream& dump(std::ostream &os) const {
-#ifndef _WIN32
     char* value_str = mpz_get_str(NULL, 16, *value);
     os << COUNT << " " << type << " " << id << " " << value_str << std::endl;
     free(value_str);
     return os;
-#else
-    return os << COUNT << " " << type << " " << id << " " << value->str() << std::endl;
-#endif
   }
 
   const size_t type;
   const size_t id;
-  value_t* const value;
+  mpz_t* const value;
 };
 
 class sample_t {
