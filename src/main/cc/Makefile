@@ -70,9 +70,9 @@ driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
 endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.$(o), $(endpoint_cc))
-$(endpoint_o): $(GEN_DIR)/%.$(o): $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
+$(endpoint_o): $(GEN_DIR)/%.$(o): $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h) $(platform_gmp)
 ifneq ($(CXX),cl)
-	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
+	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
 else
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
@@ -82,19 +82,20 @@ platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files) sample/simif_sample))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .$(o), $(platform_files) sample/simif_sample))
 
-$(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
+$(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h) $(platform_gmp)
 ifneq ($(CXX),cl)
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
+	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
 else
 	mkdir.exe -p $(dir $@)
 	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
 endif
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o) $(platform_gmp)
 ifneq ($(CXX),cl)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< -o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -I$(platform_gmp_install_dir)/include -include $< \
+	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(platform_gmp)
 else
 	mkdir.exe -p $(patsubst C:%,%,$(OUT_DIR))
 	$(CXX) $(CXXFLAGS) /FI$(call path,$<) -Fe$(call path,$@) \
@@ -112,31 +113,46 @@ emul_v := $(v_dir)/emul_$(PLATFORM).v
 
 # Compile verilator emulation binary
 VERILATOR ?= verilator --cc --exe
-override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS) -lmidas" $(VERILATOR_FLAGS)
+override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
+	-CFLAGS "$(CXXFLAGS) -I$(emul_gmp_install_dir)/include" \
+	-LDFLAGS "$(LDFLAGS) -L$(emul_gmp_install_dir)/lib -lgmp -lmidas" \
+	$(VERILATOR_FLAGS)
 
-$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+ifeq ($(PLATFORM),zynq)
+top_module = ZynqShim
+endif
+ifeq ($(PLATFORM),catapult)
+top_module = CatapultShim
+endif
+ifeq ($(PLATFORM),f1)
+top_module = F1Shim
+endif
+
+$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
-	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN).csrc/V$(shim).h" \
+	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
+	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN).csrc/V$(top_module).h" \
 	-o $@ $(design_v) $(DRIVER) $(emul_cc) $(endpoint_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(shim).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(shim) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
-	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(shim).h" \
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
+	-CFLAGS "-include $< -include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(top_module).h" \
 	-o $@ $(design_v) $(DRIVER) $(emul_cc) $(endpoint_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(shim).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(top_module).mk
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 # Compile VCS emulation binary
 VCS ?= vcs -full64
-override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait -debug_pp +no_notifier \
-	-e vcs_main -cpp $(CXX) -CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" -LDFLAGS "$(LDFLAGS) -lmidas" \
+override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
+	-debug_pp +no_notifier -e vcs_main -cpp $(CXX) \
+	-CFLAGS "$(CXXFLAGS) -I$(emul_gmp_install_dir)/include -DVCS -I$(VCS_HOME)/include" \
+	-LDFLAGS "$(LDFLAGS) -L$(emul_gmp_install_dir)/lib -lgmp -lmidas" \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_MEM_INIT \
 	+define+RANDOMIZE_REG_INIT \
@@ -144,7 +160,7 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+RANDOMIZE_INVALID_ASSIGN \
 	$(VCS_FLAGS)
 
-$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN).csrc
 	rm -rf $(OUT_DIR)/$(DESIGN).daidir
@@ -153,7 +169,7 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) 
 	-CFLAGS "-include $<" \
 	-o $@ $(GEN_DIR)/$(DESIGN)-const.vh $(design_v) $(emul_v) $(lib) $(DRIVER) $(emul_cc) $(endpoint_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir

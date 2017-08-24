@@ -7,7 +7,13 @@
 #include <map>
 #include <ostream>
 #include <inttypes.h>
+#ifndef _WIN32
+#include <gmp.h>
+typedef mpz_t value_t;
+#else
 #include "biguint.h"
+typedef biguint_t value_t;
+#endif
 
 enum SAMPLE_INST_TYPE { SIGNALS, CYCLE, LOAD, FORCE, POKE, STEP, EXPECT, COUNT };
 #ifdef ENABLE_SNAPSHOT
@@ -19,184 +25,158 @@ enum { IN_TR = CHAIN_NUM,
        OUT_TR_VALID,
        OUT_TR_READY,
        OUT_TR_BITS };
-
-void dump_f(
-  FILE *file,
-  const SAMPLE_INST_TYPE type,
-  const size_t t,
-  const size_t id,
-  data_t* const value,
-  const size_t size,
-  const int* const idx = NULL);
-
-std::ostream& dump_s(
-  std::ostream &os,
-  const SAMPLE_INST_TYPE type,
-  const size_t t,
-  const size_t id,
-  data_t* const value,
-  const size_t size,
-  const int* const idx = NULL);
 #endif
 
 struct sample_inst_t {
   virtual ~sample_inst_t() {}
-#ifdef ENABLE_SNAPSHOT
-  virtual void dump(FILE *file) const = 0;
   virtual std::ostream& dump(std::ostream &os) const = 0;
   friend std::ostream& operator<<(std::ostream &os, const sample_inst_t& cmd) {
     return cmd.dump(os);
   }
-#endif
 };
 
 struct step_t: sample_inst_t {
   step_t(size_t n_): n(n_) { }
-#ifdef ENABLE_SNAPSHOT
-  void dump(FILE *file) const {
-    fprintf(file, "%u %zu\n", STEP, n);
-  }
   std::ostream& dump(std::ostream &os) const {
     return os << STEP << " " << n << std::endl;
   }
-#endif
   const size_t n;
 };
 
 struct load_t: sample_inst_t {
-#ifdef ENABLE_SNAPSHOT
-  load_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_, const int idx_ = -1):
-    type(type_), id(id_), value(value_), size(size_), idx(idx_) { }
-  ~load_t() { delete[] value; }
-  void dump(FILE *file) const {
-    dump_f(file, LOAD, type, id, value, size, &idx);
+  load_t(const size_t type, const size_t id, value_t* value, const int idx = -1):
+    type(type), id(id), value(value), idx(idx) { }
+  ~load_t() {
+#ifndef _WIN32
+    mpz_clear(*value);
+    free(value);
+#else
+    delete value;
+#endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, LOAD, type, id, value, size, &idx);
-  }
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << LOAD << " " << type << " " << id << " " << value_str << " " << idx << std::endl;
+    free(value_str);
+    return os;
 #else
-  load_t(const size_t type_, const size_t id_, biguint_t* value_, const int idx_ = -1):
-    type(type_), id(id_), value(value_), idx(idx_) { }
-  ~load_t() { delete value; }
+    return os << LOAD << " " << type << " " << id << " " << value->str() << " " << idx << std::endl;
 #endif
+  }
 
   const size_t type;
   const size_t id;
-#ifdef ENABLE_SNAPSHOT
-  data_t* const value;
-  const size_t size;
-#else
-  biguint_t* const value;
-#endif
+  value_t* const value;
   const int idx;
 };
 
 struct force_t: sample_inst_t {
-#ifdef ENABLE_SNAPSHOT
-  force_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
-    type(type_), id(id_), value(value_), size(size_) { }
-  ~force_t() { delete[] value; }
-  virtual void dump(FILE *file) const {
-    dump_f(file, FORCE, type, id, value, size);
+  force_t(const size_t type, const size_t id, value_t* value):
+    type(type), id(id), value(value) { }
+  ~force_t() {
+#ifndef _WIN32
+    mpz_clear(*value);
+    free(value);
+#else
+    delete value;
+#endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, FORCE, type, id, value, size);
-  }
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << FORCE << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
 #else
-  force_t(const size_t type_, const size_t id_, biguint_t* value_):
-    type(type_), id(id_), value(value_) { }
-  ~force_t() { delete value; }
+    return os << FORCE << " " << type << " " << id << " " << value->str() << std::endl;
 #endif
+  }
 
   const size_t type;
   const size_t id;
-#ifdef ENABLE_SNAPSHOT
-  data_t* const value;
-  const size_t size;
-#else
-  biguint_t* const value;
-#endif
+  value_t* const value;
 };
 
 struct poke_t: sample_inst_t {
-#ifdef ENABLE_SNAPSHOT
-  poke_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
-    type(type_), id(id_), value(value_), size(size_) { }
-  ~poke_t() { delete[] value; }
-  virtual void dump(FILE *file) const {
-    dump_f(file, POKE, type, id, value, size);
+  poke_t(const size_t type, const size_t id, value_t* value):
+    type(type), id(id), value(value) { }
+  ~poke_t() {
+#ifndef _WIN32
+    mpz_clear(*value);
+    free(value);
+#else
+    delete value;
+#endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, POKE, type, id, value, size);
-  }
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << POKE << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
 #else
-  poke_t(const size_t type_, const size_t id, biguint_t* value_):
-    type(type_), id(id), value(value_) { }
-  ~poke_t() { delete value; }
+    return os << POKE << " " << type << " " << id << " " << value->str() << std::endl;
 #endif
+  }
 
   const size_t type;
   const size_t id;
-#ifdef ENABLE_SNAPSHOT
-  data_t* const value;
-  const size_t size;
-#else
-  biguint_t* const value;
-#endif
+  value_t* const value;
 };
 
 struct expect_t: sample_inst_t {
-#ifdef ENABLE_SNAPSHOT
-  expect_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
-    type(type_), id(id_), value(value_), size(size_) { }
-  ~expect_t() { delete[] value; }
-  virtual void dump(FILE *file) const {
-    dump_f(file, EXPECT, type, id, value, size);
+  expect_t(const size_t type, const size_t id, value_t* value):
+    type(type), id(id), value(value) { }
+  ~expect_t() {
+#ifndef _WIN32
+    mpz_clear(*value);
+    free(value);
+#else
+    delete value;
+#endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, EXPECT, type, id, value, size);
-  }
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << EXPECT << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
 #else
-  expect_t(const size_t type_, const size_t id_, biguint_t* value_):
-    type(type_), id(id_), value(value_) { }
-  ~expect_t() { delete value; }
+    return os << EXPECT << " " << type << " " << id << " " << value->str() << std::endl;
 #endif
+  }
 
   const size_t type;
   const size_t id;
-#ifdef ENABLE_SNAPSHOT
-  data_t* const value;
-  const size_t size;
-#else
-  biguint_t* const value;
-#endif
+  value_t* const value;
 };
 
 struct count_t: sample_inst_t {
-#ifdef ENABLE_SNAPSHOT
-  count_t(const size_t type_, const size_t id_, data_t* value_, const size_t size_):
-    type(type_), id(id_), value(value_), size(size_) { }
-  ~count_t() { delete[] value; }
-  virtual void dump(FILE *file) const {
-    dump_f(file, COUNT, type, id, value, size);
+  count_t(const size_t type, const size_t id, value_t* value):
+    type(type), id(id), value(value) { }
+  ~count_t() {
+#ifndef _WIN32
+    mpz_clear(*value);
+    free(value);
+#else
+    delete value;
+#endif
   }
   std::ostream& dump(std::ostream &os) const {
-    return dump_s(os, COUNT, type, id, value, size);
-  }
+#ifndef _WIN32
+    char* value_str = mpz_get_str(NULL, 16, *value);
+    os << COUNT << " " << type << " " << id << " " << value_str << std::endl;
+    free(value_str);
+    return os;
 #else
-  count_t(const size_t type_, const size_t id_, biguint_t* value_):
-    type(type_), id(id_), value(value_) { }
-  ~count_t() { delete value; }
+    return os << COUNT << " " << type << " " << id << " " << value->str() << std::endl;
 #endif
+  }
 
   const size_t type;
   const size_t id;
-#ifdef ENABLE_SNAPSHOT
-  data_t* const value;
-  const size_t size;
-#else
-  biguint_t* const value;
-#endif
+  value_t* const value;
 };
 
 class sample_t {
@@ -205,12 +185,6 @@ public:
 #ifdef ENABLE_SNAPSHOT
   sample_t(const char* snap, uint64_t _cycle);
   sample_t(CHAIN_TYPE type, const char* snap, uint64_t _cycle);
-  void dump(FILE *file) const {
-    fprintf(file, "%u cycle: %" PRIu64 "\n", CYCLE, cycle);
-    for (size_t i = 0 ; i < cmds.size() ; i++) {
-      cmds[i]->dump(file);
-    }
-  }
 
   std::ostream& dump(std::ostream &os) const {
     os << CYCLE << " cycle: " << cycle << std::endl;
