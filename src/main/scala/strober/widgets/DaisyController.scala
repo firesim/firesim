@@ -18,6 +18,9 @@ class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widg
   io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
     Pulsify(genWORegInit(sram.restart, s"SRAM_RESTART_$i", Bool(false)), pulseLength = 1)
   }
+  io.daisy.regfile.zipWithIndex foreach { case (regfile, i) =>
+    Pulsify(genWORegInit(regfile.restart, s"REGFILE_RESTART_$i", Bool(false)), pulseLength = 1)
+  }
 
   def bindDaisyChain[T <: DaisyData](daisy: Vec[T], name: String) = {
     val inAddrs = (daisy.toSeq map (_.in)).zipWithIndex map {
@@ -37,6 +40,7 @@ class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widg
     headerComment(sb)
     sb.append(genMacro("DAISY_WIDTH", UInt32(daisyIF.daisyWidth)))
     sb.append(genMacro("SRAM_RESTART_ADDR", UInt32(base)))
+    sb.append(genMacro("REGFILE_RESTART_ADDR", UInt32(base + 1)))
     sb.append(genEnum("CHAIN_TYPE", (chains map (t => s"${names(t)}_CHAIN")) :+ "CHAIN_NUM"))
     sb.append(genArray("CHAIN_SIZE", chains map (t => UInt32(io.daisy(t).size))))
     sb.append(genArray("CHAIN_ADDR", chains map (t => UInt32(base + addrs(t)._2.head))))

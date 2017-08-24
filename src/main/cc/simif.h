@@ -6,6 +6,7 @@
 #include <sstream>
 #include <map>
 #include <queue>
+#include <random>
 #include "biguint.h"
 #ifdef ENABLE_SNAPSHOT
 #include "sample/sample.h"
@@ -38,12 +39,15 @@ class simif_t
     bool pass;
     uint64_t t;
     uint64_t fail_t;
-    time_t seed; 
     virtual void load_mem(std::string filename);
     inline void take_steps(size_t n, bool blocking) {
       write(MASTER(STEP), n);
       if (blocking) while(!done());
     }
+
+    // random numbers
+    uint64_t seed;
+    std::mt19937_64 gen;
 
   public:
     // Simulation APIs
@@ -92,26 +96,19 @@ class simif_t
     void target_reset(int pulse_start = 1, int pulse_length = 5);
 
     inline uint64_t cycles() { return t; }
-    uint64_t rand_next(uint64_t limit) { return rand() % limit; }
+    uint64_t rand_next(uint64_t limit) { return gen() % limit; }
 
 #ifdef ENABLE_SNAPSHOT
-  public:
-    inline void set_tracelen(size_t len) {
-      assert(len > 2);
-      tracelen = len;
-      write(TRACELEN_ADDR, len);
-    }
-    inline size_t get_tracelen() { return tracelen; }
-
   private:
     // sample information
+#ifdef KEEP_SAMPLES_IN_MEM
     sample_t** samples;
+#endif
     sample_t* last_sample;
     size_t sample_num;
     size_t last_sample_id;
     std::string sample_file;
 
-    size_t tracelen;
     size_t trace_count;
 
     // profile information
@@ -130,8 +127,10 @@ class simif_t
       size_t bits_addr,
       size_t bits_chunk,
       size_t num_fields);
+    inline void save_sample();
 
   protected:
+    size_t tracelen;
     sample_t* read_snapshot();
     sample_t* read_traces(sample_t* s);
 #endif

@@ -8,49 +8,46 @@ import firrtl.Utils.BoolType
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import Utils._
+import mdf.macrolib.SRAMMacro
+import mdf.macrolib.Utils.readMDFFromString
 
-private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform(json: java.io.File) extends firrtl.passes.Pass {
   override def name = "[midas] Fame1 Transforms"
-  type Enables = collection.mutable.HashSet[String]
+  type Enables = collection.mutable.HashMap[String, Boolean]
   type Statements = collection.mutable.ArrayBuffer[Statement]
+  private lazy val srams = {
+    val str = io.Source.fromFile(json).mkString
+    val srams = readMDFFromString(str).get collect { case x: SRAMMacro => x }
+    (srams map (sram => sram.name -> sram)).toMap
+  }
 
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
   private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
   private val daisyReset = wref(daisyResetPort.name, daisyResetPort.tpe)
 
-  private def collect(ens: Enables, wmodes: Enables)(s: Statement): Statement = {
+  private def collect(ens: Enables)(s: Statement): Statement = {
     s match {
-      case s: WDefInstance => seqMems get s.module match {
-        case None =>
-        case Some(seqMem) =>
-          ens ++= (seqMem.readers.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"R$i"), "en").serialize
-          )) ++ (seqMem.readwriters.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "en").serialize
-          ))
-          wmodes ++= (seqMem.writers.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"W$i"), "en").serialize
-          )) ++ (seqMem.readwriters.indices map (i =>
-            wsub(wsub(wref(s.name, s.tpe, InstanceKind), s"RW$i"), "wmode").serialize
-          ))
-      }
       case s: DefMemory =>
-        ens ++= (s.readers ++ s.readwriters) map (memPortField(s, _, "en").serialize)
-        wmodes ++=
-          (s.writers map (memPortField(s, _, "en").serialize)) ++
-          (s.readwriters map (memPortField(s, _, "wmode").serialize))
+        ens ++= (s.readers ++ s.writers ++ s.readwriters) map (
+          memPortField(s, _, "en").serialize -> false)
+        ens ++= s.readwriters map (
+          memPortField(s, _, "wmode").serialize -> false)
+      case s: WDefInstance => srams get s.module match {
+        case Some(sram) => ens ++= sram.ports flatMap (port =>
+          (port.writeEnable ++ port.readEnable ++ port.chipEnable) map (en =>
+            wsub(wref(s.name), en.name).serialize -> inv(en.polarity)))
+        case _ =>
+      }
       case _ =>
     }
-    s map collect(ens, wmodes)
+    s map collect(ens)
   }
 
-  private val WrappedBool = wt(BoolType)
   private def connect(ens: Enables,
-                      wmodes: Enables,
                       stmts: Statements)
                       (s: Statement): Statement = s match {
-    case s: WDefInstance if !(seqMems contains s.module) =>
+    case s: WDefInstance if !(srams contains s.module) =>
       Block(Seq(s,
         Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire),
         Connect(NoInfo, wsub(wref(s.name), "daisyReset"), daisyReset)
@@ -58,29 +55,32 @@ private[passes] class Fame1Transform(seqMems: Map[String, MemConf]) extends firr
     case s: DefRegister =>
       val regRef = wref(s.name, s.tpe)
       stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
-      s copy (reset = and(s.reset, targetFire))
+      s.copy(reset = and(s.reset, targetFire))
     case s: Print =>
-      s copy (en = and(s.en, targetFire))
+      s.copy(en = and(s.en, targetFire))
     case s: Stop =>
-      s copy (en = and(s.en, targetFire))
+      s.copy(en = and(s.en, targetFire))
     case s: Connect => s.loc match {
-      case e: WSubField if wt(e.tpe) == WrappedBool && ens(e.serialize) =>
-        s copy (expr = and(s.expr, targetFire))
-      case e: WSubField if wt(e.tpe) == WrappedBool && wmodes(e.serialize) =>
-        s copy (expr = and(s.expr, targetFire))
+      case e: WSubField => ens get e.serialize match {
+        case None => s
+        case Some(false) =>
+          s.copy(expr = and(s.expr, targetFire))
+        case Some(true) => // inverted port
+          s.copy(expr = or(s.expr, not(targetFire)))
+      }
       case _ => s
     }
-    case s => s map connect(ens, wmodes, stmts)
+    case s => s map connect(ens, stmts)
   }
 
   private def transform(m: DefModule): DefModule = {
     val ens = new Enables
-    val wmodes = new Enables
     val stmts = new Statements
-    m map collect(ens, wmodes) map connect(ens, wmodes, stmts) match {
+    if (srams contains m.name) m
+    else m map collect(ens) map connect(ens, stmts) match {
       case m: Module =>
-        m copy (ports = m.ports ++ Seq(targetFirePort, daisyResetPort),
-                body = Block(m.body +: stmts))
+        m.copy(ports = m.ports ++ Seq(targetFirePort, daisyResetPort),
+               body = Block(m.body +: stmts))
       case m: ExtModule => m
     }
   }

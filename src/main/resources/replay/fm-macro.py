@@ -5,16 +5,15 @@ import os
 import tempfile
 import subprocess
 import argparse
+import json
 import fm_regex
 
 def initialize_arguments(args):
   """ initilize translator arguments """
   parser = argparse.ArgumentParser(
     description = 'run formality for macros')
-  parser.add_argument('--conf', type=file, required=True,
-    help="""macro conf file from FIRRTL (e.g. <design>.conf)""")
   parser.add_argument('--paths', type=file, required=True,
-    help="""macro path analaysis file from Strober's compiler (d.g. <design>.macro.paths) """)
+    help="""macro path analaysis file from Strober's compiler (d.g. <design>.macros.path) """)
   parser.add_argument('--ref', nargs='+',
     help="""reference verilog file""")
   parser.add_argument('--impl', nargs='+',
@@ -25,20 +24,7 @@ def initialize_arguments(args):
   """ parse the arguments """
   res = parser.parse_args(args)
 
-  return res.conf, res.paths, res.match, res.ref, res.impl
-
-def read_conf_file(f):
-  mems = list()
-  try:
-    for line in f:
-      tokens = line.split()
-      assert tokens[0] == 'name'
-      mems.append(tokens[1])
-
-  finally:
-    f.close()
-
-  return mems
+  return res.paths, res.match, res.ref, res.impl
 
 def read_path_file(f):
   paths = dict()
@@ -67,6 +53,9 @@ def read_match_file(match_file):
 
 def write_tcl(tcl_file, report_file, mem_name, ref_v_files, impl_v_files):
   with open(tcl_file, 'w') as f:
+     """ Don't match name substrings """
+     f.write("set_app_var name_match_allow_subset_match none\n")
+
      """ No errors from unresolved modules """
      f.write("set_app_var hdlin_unresolved_modules black_box\n")
 
@@ -148,26 +137,18 @@ def append_match_file(report_file, match_file, mem, paths, gate_names):
     for path in paths:
       for ref_name, impl_name in macro_map:
         ref_full_name = path + "." + ref_name
-        impl_tokens = impl_name.split(".")
-        if len(impl_tokens) == 1:
-          """ Top-level ports """
-          impl_full_name = path + "." + impl_tokens[0]
+        if path in gate_names:
+          impl_mod_path = gate_names[path]
         else:
-          """ Memory elements """
-          impl_mod_path = path + "." + impl_tokens[0]
-          if impl_mod_path in gate_names:
-            impl_mod_path = gate_names[impl_mod_path]
-          impl_full_name = impl_mod_path + "." + ".".join(impl_tokens[1:])
+          impl_mod_path = path
+        impl_full_name = impl_mod_path + "." + impl_name
         f.write("%s %s\n" % (ref_full_name, impl_full_name))
 
   return
 
 if __name__ == '__main__':
   """ parse the arguments """
-  conf_file, path_file, match_file, ref_files, impl_files = initialize_arguments(sys.argv[1:])
-
-  """ read conf file """
-  mems = read_conf_file(conf_file)
+  path_file, match_file, ref_files, impl_files = initialize_arguments(sys.argv[1:])
 
   """ read path file """
   paths = read_path_file(path_file)
@@ -178,7 +159,7 @@ if __name__ == '__main__':
   """ create temp dir """
   dir_path = tempfile.mkdtemp()
 
-  for mem in mems:
+  for mem in paths:
     """ TCL file path """
     tcl_file = os.path.join(dir_path, mem + ".tcl")
 

@@ -7,12 +7,13 @@ import firrtl.Utils.create_exps
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.passes.VerilogRename.verilogRenameN
 import strober.core.ChainType
+import mdf.macrolib.SRAMMacro
 import java.io.{File, FileWriter}
 
 class DumpChains(
     dir: File,
     meta: StroberMetaData,
-    seqMems: Map[String, midas.passes.MemConf])
+    srams: Map[String, SRAMMacro])
    (implicit param: config.Parameters) extends firrtl.passes.Pass {
   
   override def name = "[strober] Dump Daisy Chains"
@@ -35,59 +36,53 @@ class DumpChains(
         val (cw, dw) = (chain foldLeft (0, 0)){case ((chainWidth, dataWidth), s) =>
           val dw = dataWidth + (s match {
             case s: WDefInstance =>
-              val seqMem = seqMems(s.module)
-              val prefix = s"$path.${s.name}"
-              chainType match {
+              val sram = srams(s.module)
+              (chainType: @unchecked) match {
                 case ChainType.SRAM =>
-                  val maskWidth = (seqMem.width / seqMem.maskGran).toInt
-                  (0 until maskWidth).reverse foreach { i =>
-                    chainFile write s"$id ${prefix}.ram_${i} ${seqMem.maskGran} ${seqMem.depth}\n"
+                  chainFile write s"$id ${path}.${s.name}.ram ${sram.width} ${sram.depth}\n"
+                  sram.width
+                case ChainType.Trace =>
+                  val ports = sram.ports filter (_.output.nonEmpty)
+                  (ports foldLeft 0){ (sum, p) =>
+                    chainFile write s"$id ${path}.${s.name}.${p.output.get.name} ${p.width} -1\n"
+                    sum + p.width
                   }
-                  seqMem.width.toInt
-                case _ =>
-                  val addrWidth = chisel3.util.log2Up(seqMem.depth.toInt)
-                  /* seqMem.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix.reg_R$i $addrWidth -1\n")
-                  seqMem.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.reg_RW$i $addrWidth -1\n") */
-                  seqMem.readers.indices foreach (i =>
-                    chainFile write s"$id $prefix.R${i}_data ${seqMem.width} -1\n")
-                  seqMem.readwriters.indices foreach (i =>
-                    chainFile write s"$id $prefix.RW${i}_rdata ${seqMem.width} -1\n")
-                  (seqMem.readers.size + seqMem.readwriters.size) * (/* addrWidth + */seqMem.width.toInt)
               }
-            case s: DefMemory => (create_exps(s.name, s.dataType) foldLeft 0){ (totalWidth, mem) =>
-              val name = verilogRenameN(loweredName(mem))
-              val width = bitWidth(mem.tpe).toInt
-              chainType match {
+            case s: DefMemory if s.readLatency > 0 =>
+              val width = bitWidth(s.dataType)
+              (chainType: @unchecked) match {
                 case ChainType.SRAM =>
+                  chainFile write s"$id ${path}.${s.name} ${width} ${s.depth}\n"
+                  width.toInt
+                case ChainType.Trace =>
+                  s.readers.indices foreach (i =>
+                    chainFile write s"$id ${path}.${s.name}.R${i}_data ${width} -1\n")
+                  s.readwriters.indices foreach (i =>
+                    chainFile write s"$id ${path}.${s.name}.RW${i}_rdata ${width} -1\n")
+                  (s.readers.size + s.readwriters.size) * width.toInt
+              }
+            case s: DefMemory =>
+              val name = verilogRenameN(s.name)
+              val width = bitWidth(s.dataType).toInt
+              chainType match {
+                case ChainType.RegFile =>
                   chainFile write s"$id $path.$name $width ${s.depth}\n"
-                  totalWidth + width
-                case _ => totalWidth + (((0 until s.depth) foldLeft 0){ (memWidth, i) =>
+                  width
+                case ChainType.Regs => (((0 until s.depth) foldLeft 0){ (sum, i) =>
                   chainFile write s"$id $path.$name[$i] $width -1\n"
-                  memWidth + width
+                  sum + width
                 })
               }
-            }
-            case s: DefRegister => (create_exps(s.name, s.tpe) foldLeft 0){ (totalWidth, reg) =>
-              val name = verilogRenameN(loweredName(reg))
-              val width = bitWidth(reg.tpe).toInt
+            case s: DefRegister =>
+              val name = verilogRenameN(s.name)
+              val width = bitWidth(s.tpe).toInt
               chainFile write s"$id $path.$name $width -1\n"
-              totalWidth + width
-            }
+              width
           })
           val cw = (Stream from 0 map (chainWidth + _ * daisyWidth) dropWhile (_ < dw)).head
-          chainType match {
-            case ChainType.SRAM => 
-              addPad(chainFile, cw, dw)(chainType)
-              (0, 0)
-            case _ => (cw, dw)
-          }
+          (cw, dw)
         }
-        chainType match {
-          case ChainType.SRAM => 
-          case _ => addPad(chainFile, cw, dw)(chainType)
-        }
+        addPad(chainFile, cw, dw)(chainType)
       case _ =>
     }
     meta.childInsts(mod) foreach (child => loop(
