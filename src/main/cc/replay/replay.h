@@ -10,6 +10,7 @@
 #include "sample/sample.h"
 
 enum PUT_VALUE_TYPE { PUT_DEPOSIT, PUT_FORCE };
+static const char* PUT_VALUE_TYPE_STRING[2] = { "LOAD", "FORCE" };
 
 template <class T> class replay_t {
 public:
@@ -50,14 +51,12 @@ public:
         if (load_t* p = dynamic_cast<load_t*>(cmd)) {
           auto signal = signals[p->type][p->id];
           auto width = widths[p->type][p->id];
-          if (p->idx < 0) {
-            load(signal, width, p->value);
-          } else {
-            load(signal + "[" + std::to_string(p->idx) + "]", width, p->value);
-          }
+          load(signal, width, p->value, PUT_DEPOSIT, p->idx);
         }
         if (force_t* p = dynamic_cast<force_t*>(cmd)) {
-          force(signals[p->type][p->id], p->value);
+          auto signal = signals[p->type][p->id];
+          auto width = widths[p->type][p->id];
+          load(signal, width, p->value, PUT_FORCE, -1);
         }
         if (poke_t* p = dynamic_cast<poke_t*>(cmd)) {
           poke(signals[p->type][p->id], p->value);
@@ -197,33 +196,27 @@ private:
     return replay_data.signals[it->second];
   }
 
-  void force(const std::string& node, biguint_t* data) {
-    if (log) std::cerr << " * FORCE " << node << " <- 0x" << *data << " *" << std::endl;
-    // FIXME: This is ugly... should be fixed when pcad is ported to firrtl
-    bool not_force = !gate_level() && (
-      node.find(".R") != -1 && node.find("_data") != -1 /* read port output */ ||
-      node.find(".RW") != -1 && node.find("_rdata") != -1 /* rw port output */);
-    put_value(get_signal(node), data, not_force ? PUT_DEPOSIT : PUT_FORCE);
-  }
-
-  void load_bit(const std::string& ref, biguint_t* bit) {
+  void load_bit(const std::string& ref, biguint_t* bit, PUT_VALUE_TYPE tpe) {
     auto it = match_map.find(ref);
     if (it != match_map.end()) {
-      put_value(get_signal(it->second), bit, PUT_DEPOSIT);
+      put_value(get_signal(it->second), bit, tpe);
     }
   }
 
-  void load(const std::string& node, size_t width, biguint_t* data) {
-    if (log) std::cerr << " * LOAD " << node << " <- 0x" << *data << " *" << std::endl;
+  void load(const std::string& node, size_t width, biguint_t* data, PUT_VALUE_TYPE tpe, int idx) {
+    std::string name = idx < 0 ? node : node + "[" + std::to_string(idx) + "]";
+    if (log) {
+      std::cerr << " * " << PUT_VALUE_TYPE_STRING[tpe] << " ";
+      std::cerr << name << " <- 0x" << *data << " *" << std::endl;
+    }
     if (!gate_level()) {
-      put_value(get_signal(node), data, PUT_DEPOSIT);
-    } else if (width == 1) {
-      load_bit(node, data);
+      put_value(get_signal(name), data, tpe);
+    } else if (width == 1 && idx < 0) {
+      load_bit(name, data, tpe);
     } else {
       for (size_t i = 0 ; i < width ; i++) {
-        std::string name = node + "[" + std::to_string(i) + "]";
         biguint_t bit = (*data >> i) & 0x1;
-        load_bit(name, &bit);
+        load_bit(name + "[" + std::to_string(i) + "]", &bit, tpe);
       }
     }
   }

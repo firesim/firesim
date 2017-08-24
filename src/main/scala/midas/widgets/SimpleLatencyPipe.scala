@@ -57,13 +57,13 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
   val tag_reg = RegEnable(tag, state === sIdle)
 
   val ren = has_addr && state === sIdle
-  val v = Seq.fill(key.nWays)(RegInit(0.U(key.nSets.W)))
+  val v = Seq.fill(key.nWays)(Mem(key.nSets, Bool()))
   val tags = Seq.fill(key.nWays)(SeqMem(key.nSets, UInt((nastiXAddrBits-8).W)))
   val tag_reads = tags map (_.read(idx, ren) & tagMask)
   val tag_matches = tag_reads map (_ === tag_reg)
   val match_way = Vec(tag_matches) indexWhere ((x: Bool) => x)
 
-  io.resp.bits.hit := Vec(v)(match_way)(idx) && (tag_matches reduce (_ || _))
+  io.resp.bits.hit := Vec(v map (_(idx)))(match_way) && (tag_matches reduce (_ || _))
   io.resp.bits.wr := is_wr_reg
   io.resp.valid := state === sRead
   io.idle := state === sIdle && !has_addr
@@ -80,7 +80,7 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
   when(wen) {
     (0 until key.nWays) foreach { i =>
       when(i.U === repl_way) {
-        v(i) := v(i).bitSet(idx_reg, true.B)
+        v(i)(idx_reg) := true.B
         tags(i).write(idx_reg, tag_reg)
       }
     }

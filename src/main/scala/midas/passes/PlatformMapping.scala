@@ -66,7 +66,7 @@ private[passes] class PlatformMapping(
       case F1       => new platform.F1Shim(sim)
     }
     val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
-    val circuit = renameMods((new InlineCompiler compile (
+    val circuit = renameMods((new LowFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, Namespace(c))
     dumpHeader(shim)
     circuit.copy(modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main)))

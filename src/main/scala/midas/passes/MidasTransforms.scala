@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import Utils._
+import java.io.{File, FileWriter}
 
 private class WCircuit(
   info: Info,
@@ -15,34 +16,41 @@ private class WCircuit(
   val sim: SimWrapperIO) extends Circuit(info, modules, main)
 
 object MidasAnnotation {
-  def apply(t: String, conf: java.io.File) =
-    Annotation(CircuitName(t), classOf[MidasTransforms], conf.toString)
+  def apply(t: String, conf: File, json: File, lib: Option[File]) =
+    Annotation(CircuitName(t), classOf[MidasTransforms],
+               s"$conf $json %s".format(lib map (_.toString) getOrElse ""))
+  private val matcher = "([^ ]+) ([^ ]+) ([^ ]*)".r
   def unapply(a: Annotation) = a match {
-    case Annotation(CircuitName(t), transform, conf) if transform == classOf[MidasTransforms] =>
-      Some(CircuitName(t), new java.io.File(conf))
+    case Annotation(CircuitName(c), t, matcher(conf, json, lib))
+      if t == classOf[MidasTransforms] =>
+        Some(c, new File(conf), new File(json), if (lib.isEmpty) None else Some(new File(lib)))
     case _ => None
   }
 }
 
 private[midas] class MidasTransforms(
-    dir: java.io.File,
+    dir: File,
     io: chisel3.Data)
    (implicit param: config.Parameters) extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+  def inputForm = LowForm
+  def outputForm = LowForm
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
-    case Seq(MidasAnnotation(CircuitName(state.circuit.main), conf)) =>
-      val seqMems = (MemConfReader(conf) map (m => m.name -> m)).toMap
-      val stroberPasses = param(EnableSnapshot) match {
-        case true => Seq(new strober.passes.StroberTransforms(dir, seqMems))
-        case false => Nil
-      }
-      val transforms = Seq(
-        new Fame1Transform(seqMems)) ++
-        stroberPasses ++ Seq(
+    case Seq(MidasAnnotation(state.circuit.main, conf, json, lib)) =>
+      val xforms = Seq(
+        firrtl.passes.RemoveValidIf,
+        new firrtl.transforms.ConstantPropagation,
+        firrtl.passes.SplitExpressions,
+        firrtl.passes.CommonSubexpressionElimination,
+        new firrtl.transforms.DeadCodeElimination,
+        new ConfToJSON(conf, json),
+        new barstools.macros.MacroCompilerTransform,
+        firrtl.passes.ResolveKinds,
+        firrtl.passes.RemoveEmpty,
+        new Fame1Transform(lib getOrElse json),
+        new strober.passes.StroberTransforms(dir, lib getOrElse json),
         new SimulationMapping(io),
-        new PlatformMapping(state.circuit.main, dir)
-      )
-      (transforms foldLeft state)((in, xform) => xform runTransform in).copy(form=outputForm)
+        new PlatformMapping(state.circuit.main, dir))
+      (xforms foldLeft state)((in, xform) =>
+        xform runTransform in).copy(form=outputForm)
   }
 }
