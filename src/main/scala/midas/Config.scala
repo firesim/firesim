@@ -9,7 +9,6 @@ import junctions.{NastiKey, NastiParameters}
 
 trait PlatformType
 case object Zynq extends PlatformType
-case object Catapult extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
@@ -42,21 +41,6 @@ class ZynqConfig extends Config(new Config((site, here, up) => {
 class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new ZynqConfig)
-
-class CatapultConfig extends Config(new Config((site, here, up) => {
-  case Platform       => Catapult
-  case PCIeWidth      => 640
-  case ChannelWidth   => 64
-  case DaisyWidth     => 64
-  case SoftRegKey     => SoftRegParam(32, 64)
-  case CtrlNastiKey   => NastiParameters(64, 32, 12)
-  case NastiKey       => site(CtrlNastiKey)
-  case SlaveNastiKey  => site(MemNastiKey)
-}) ++ new SimConfig)
-
-class CatapultConfigWithSnapshot extends Config(new Config((site, here, up) => {
-  case EnableSnapshot => true
-}) ++ new CatapultConfig)
 
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1

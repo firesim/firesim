@@ -39,15 +39,7 @@ $(info clock period: $(CLOCK_PERIOD))
 
 shim := FPGATop
 
-ifneq ($(CXX),cl)
 override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
-o = o
-else
-PATH_CONVERTER ?= cygpath -w
-path = $(patsubst %\,%,$(shell $(PATH_CONVERTER) $(1)))
-override CXXFLAGS := $(CXXFLAGS) /EHsc /I$(call path,$(midas_dir)/dramsim2)
-o = obj
-endif
 
 include $(util_dir)/utils.mk
 
@@ -57,55 +49,33 @@ $(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
 $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
-ifneq ($(CXX),cl)
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) $(foreach f, $(DRIVER), -I$(dir $(f)))
 override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread 
-else
-override CXXFLAGS += /I$(call path,$(midas_dir)) /I$(call path,$(util_dir))
-override CXXFLAGS += $(foreach f, $(DRIVER), /I$(call path,$(dir $(f))))
-endif
 
 design_v = $(GEN_DIR)/$(shim).v
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
-endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.$(o), $(endpoint_cc))
-$(endpoint_o): $(GEN_DIR)/%.$(o): $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h) $(platform_gmp)
-ifneq ($(CXX),cl)
+endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.o, $(endpoint_cc))
+$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h) $(platform_gmp)
 	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
-else
-	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
-endif
 
 platform_files := simif simif_$(PLATFORM) sample/sample
 platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files) sample/simif_sample))
-platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .$(o), $(platform_files) sample/simif_sample))
+platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files) sample/simif_sample))
 
-$(platform_o): $(GEN_DIR)/%.$(o): $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h) $(platform_gmp)
-ifneq ($(CXX),cl)
+$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h) $(platform_gmp)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
-else
-	mkdir.exe -p $(dir $@)
-	$(CXX) $(CXXFLAGS) /c /Fo$(call path,$@) $(call path,$<) /FI$(call path,$(word 2, $^))
-endif
 
 $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o) $(platform_gmp)
-ifneq ($(CXX),cl)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -I$(platform_gmp_install_dir)/include -include $< \
 	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(platform_gmp)
-else
-	mkdir.exe -p $(patsubst C:%,%,$(OUT_DIR))
-	$(CXX) $(CXXFLAGS) /FI$(call path,$<) -Fe$(call path,$@) \
-	$(foreach f, $(DRIVER) $(platform_o) $(endpoint_o) $(lib), $(call path,$(f))) \
-	/link $(LDFLAGS)
-endif
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
-ifneq ($(CXX),cl) # no emulation, replay with visual studio
 emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
 emul_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio))
 emul_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample))
@@ -120,9 +90,6 @@ override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
 
 ifeq ($(PLATFORM),zynq)
 top_module = ZynqShim
-endif
-ifeq ($(PLATFORM),catapult)
-top_module = CatapultShim
 endif
 ifeq ($(PLATFORM),f1)
 top_module = F1Shim
@@ -182,7 +149,5 @@ vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 include $(replay_dir)/replay.mk
-
-endif
 
 .PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug

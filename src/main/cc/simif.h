@@ -10,18 +10,10 @@
 #ifdef ENABLE_SNAPSHOT
 #include "sample/sample.h"
 #endif
-#ifndef _WIN32
 #include <gmp.h>
 #include <sys/time.h>
 #define TIME_DIV_CONST 1000000.0;
 typedef uint64_t midas_time_t;
-typedef mpz_t biguint_t;
-#else
-#include "biguint.h"
-#include <time.h>
-#define TIME_DIV_CONST CLOCKS_PER_SEC
-typedef clock_t midas_time_t;
-#endif
 
 midas_time_t timestamp();
 
@@ -92,13 +84,13 @@ class simif_t
       return pass;
     }
 
-    void poke(size_t id, biguint_t& value);
-    void peek(size_t id, biguint_t& value);
-    bool expect(size_t id, biguint_t& expected);
+    void poke(size_t id, mpz_t& value);
+    void peek(size_t id, mpz_t& value);
+    bool expect(size_t id, mpz_t& expected);
 
 #ifdef LOADMEM
-    void read_mem(size_t addr, biguint_t& value);
-    void write_mem(size_t addr, biguint_t& value);
+    void read_mem(size_t addr, mpz_t& value);
+    void write_mem(size_t addr, mpz_t& value);
 #endif
 
     // A default reset scheme that pulses the global chisel reset
