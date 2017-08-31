@@ -66,9 +66,13 @@ private[passes] class PlatformMapping(
       case Zynq     => new platform.ZynqShim(sim)
       case F1       => new platform.F1Shim(sim)
     }
-    val chirrtl = Parser parse (chisel3.Driver emit (() => shim))
-    val circuit = renameMods((new LowFirrtlCompiler compile (
-      CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, Namespace(c))
+    val c3circuit = chisel3.Driver.elaborate(() => shim)
+    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
+    val annos = new firrtl.AnnotationMap(c3circuit.annotations.toList)
+    val circuit = renameMods((new LowFirrtlCompiler().compile(
+                                CircuitState(chirrtl, ChirrtlForm, Some(annos)),
+                                new StringWriter, Seq(new Fame1Instances))
+                              ).circuit, Namespace(c))
     dumpHeader(shim)
     circuit.copy(modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main)))
   }

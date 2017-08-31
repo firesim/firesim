@@ -4,24 +4,32 @@ package midas
 package passes
 
 import firrtl._
+import firrtl.annotations._
+import firrtl.analyses.InstanceGraph
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils.BoolType
+import firrtl.transforms.{DedupModules}
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import Utils._
 import mdf.macrolib.SRAMMacro
 import mdf.macrolib.Utils.readMDFFromString
 
-private[passes] class Fame1Transform(json: java.io.File) extends firrtl.passes.Pass {
+import chisel3.experimental.ChiselAnnotation
+
+// Datastructures
+import scala.collection.mutable
+
+private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.passes.Pass {
   override def name = "[midas] Fame1 Transforms"
   type Enables = collection.mutable.HashMap[String, Boolean]
   type Statements = collection.mutable.ArrayBuffer[Statement]
-  private lazy val srams = {
-    val str = io.Source.fromFile(json).mkString
+  private lazy val srams = json.foldLeft(Map.empty[String, SRAMMacro])({ case (sramMap, file) =>
+    val str = io.Source.fromFile(file).mkString
     val srams = readMDFFromString(str).get collect { case x: SRAMMacro => x }
-    (srams map (sram => sram.name -> sram)).toMap
-  }
+    sramMap ++ (srams map (sram => sram.name -> sram)).toMap
+  })
 
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
   private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
@@ -75,7 +83,7 @@ private[passes] class Fame1Transform(json: java.io.File) extends firrtl.passes.P
     case s => s map connect(ens, stmts)
   }
 
-  private def transform(m: DefModule): DefModule = {
+  protected def transform(m: DefModule): DefModule = {
     val ens = new Enables
     val stmts = new Statements
     if (srams contains m.name) m
@@ -88,4 +96,89 @@ private[passes] class Fame1Transform(json: java.io.File) extends firrtl.passes.P
   }
 
   def run(c: Circuit) = c copy (modules = c.modules map transform)
+}
+
+// This variety of fame1 transform is apply to subtrees of the instance hiearchy
+// It is used to tranform RTL used as a timing model within handwritten models
+// where it may be easier to simply write target RTL
+class ModelFame1Transform(f1Modules: Map[String, String], f1ModuleSuffix: String = "_f1")
+    extends Fame1Transform(None) {
+
+  private val duplicateModuleSuffix = "_f1"
+
+  class F1ExtModException extends Exception("Unexpected Black Box in FAME1 hierarchy") 
+
+  // Maps all instances within a FAME1 module to point to new F1 duplicates
+  private def renameInstancesS(s: Statement): Statement = s match {
+    case s: WDefInstance => WDefInstance(s.name, s.module + duplicateModuleSuffix)
+    case s => s map renameInstancesS
+  }
+
+  private def renameInstances(m: DefModule): DefModule = m match {
+    case m: Module => m.copy(body = m.body map renameInstancesS)
+    case m: ExtModule => throw new F1ExtModException
+  }
+
+  // Appends a suffix to modules that will be transformed
+  private def renameModules(suffix: String)(m: DefModule): DefModule = m match {
+    case m: Module => m.copy(name = m.name + suffix)
+    case ex: ExtModule => throw new F1ExtModException
+  }
+
+  private def bindTargetFires(m: DefModule): DefModule = {
+    // Find all FAME1 modules and generate a connect for their targetFires
+    def collectTargetFires(stmts: Statements)(s: Statement): Statement = s match {
+      case s: WDefInstance if f1Modules.keys.toSeq.contains(s.module) =>
+        val targetFireName = f1Modules(s.module)
+        stmts += Connect(NoInfo, wsub(wref(s.name), "targetFire"), wref(targetFireName, UnknownType))
+        s
+      case s => s map collectTargetFires(stmts)
+    }
+
+    m match {
+      case s: Module  =>
+        val targetFireConnects = new Statements
+        s map collectTargetFires(targetFireConnects)
+        s.copy(body = Block(s.body +: targetFireConnects))
+      case s => s
+    }
+  }
+
+  override def run(c: Circuit): Circuit = {
+    val moduleMap = c.modules.map(m => m.name -> m).toMap
+    val modsToDup = mutable.HashSet[Module]()
+    val modsToKeep = mutable.HashSet[DefModule]()
+
+    def getF1Modules(inF1Context: Boolean, s: Statement): Unit = s match {
+      case s: WDefInstance =>
+        moduleMap(s.module) match {
+          case m: Module  =>
+            val isF1Root = f1Modules.keys.toSeq.contains(m.name)
+            if (inF1Context) {
+              modsToDup += m
+            } else if (!isF1Root) {
+              modsToKeep += m
+            }
+            getF1Modules(inF1Context || isF1Root, m.body)
+          case m: ExtModule if inF1Context => throw new F1ExtModException
+          case m: ExtModule =>
+            modsToKeep += m
+        }
+      case s: Block => s.stmts.foreach(getF1Modules(inF1Context, _))
+      case _ => Nil
+    }
+
+    moduleMap(c.main) match {
+      case m: Module if f1Modules.keys.toSeq.contains(c.main) =>
+        c.copy(modules = c.modules map transform)
+      case m: Module =>
+        getF1Modules(false, m.body)
+        val fame1ChildModules = modsToDup.toSeq map renameModules(f1ModuleSuffix) map renameInstances
+        val fame1RootModules = f1Modules.keys map moduleMap map renameInstances
+        val fame0Modules = modsToKeep.toSeq map bindTargetFires
+        val fame1TransformedModules = (fame1ChildModules ++ fame1RootModules) map transform
+        c.copy(modules = Seq(m.copy()) ++ fame0Modules ++ fame1TransformedModules)
+      case _ => throw new RuntimeException("Should not have an ExtModule as top.")
+    }
+  }
 }
