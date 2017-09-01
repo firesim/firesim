@@ -156,7 +156,7 @@ class MultiQueue[T <: Data](
   val deqPtr = Wire(UInt())
   when(do_deq && (deqAddrReg === io.deqAddr)) {
     deqPtr := deqPtrs(io.deqAddr) + 1.U
-    empty := (deqPtrs(io.deqAddr) + 1.U) === enqPtrs(io.enqAddr)
+    empty := (deqPtrs(io.deqAddr) + 1.U) === enqPtrs(io.deqAddr)
   }.otherwise {
     deqPtr := deqPtrs(io.deqAddr)
     empty := ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
