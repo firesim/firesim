@@ -73,13 +73,19 @@ trait DontTouchAnnotator { // scalastyle:ignore object.name
   }
 }
 
-object Fame1Annotator {
-  def apply(module: chisel3.Module, targetFire: String): Unit = {
-    module.annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
-    module.annotate(ChiselAnnotation(module, classOf[Fame1Instances], targetFire))
+// Mixed into modules that contain instances that will be Fame1 tranformed
+trait Fame1Annotator {
+  this: chisel3.Module =>
+
+  // Transforms a single instance; targetFire should be set to the name of a Bool
+  // that will be used to tick the module
+  def fame1transform(module: chisel3.Module, targetFire: String): Unit = {
+    annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
+    annotate(ChiselAnnotation(module, classOf[Fame1Instances], targetFire))
   }
 
-  def apply(modules: chisel3.Module*): Unit = modules.foreach(apply(_, "targetFire"))
+  // Takes a series of modules; uses a bool named "targetFire" in enclosing context
+  def fame1transform(modules: chisel3.Module*): Unit = modules.foreach(fame1transform(_, "targetFire"))
 }
 
 object Fame1Annotation {
