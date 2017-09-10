@@ -21,7 +21,8 @@ $(REPLAY_BINARY): $(v_dir)/replay.v $(TARGET_VERILOG) $(replay_cc) $(replay_h) $
 	rm -rf $(OUT_DIR)/$(notdir $@).daidir
 	$(VCS) $(VCS_FLAGS) -CFLAGS -I$(replay_dir) \
 	-Mdir=$(GEN_DIR)/$(notdir $@).csrc +vpi -P $(r_dir)/vpi.tab \
-	+define+STOP_COND=!replay.reset +define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
+	+define+STOP_COND=!replay.reset +define+PRINTF_COND=!replay.reset \
+	+define+VFRAG=\"$(GEN_DIR)/$(DESIGN).vfrag\" \
 	-o $@ $< $(TARGET_VERILOG) $(replay_cc) $(lib)
 
 vcs-replay: $(REPLAY_BINARY)

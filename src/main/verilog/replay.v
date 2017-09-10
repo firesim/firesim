@@ -34,11 +34,15 @@ module replay;
   always @(posedge clock) begin
     if (!reset) begin
       cycles <= cycles + 1;
-      if (vcdfile && !vcdon) begin
-        $dumpon;
+      if ((vcdfile || vcdplusfile) && !vcdon) begin
+        if (vcdfile) begin
+          $dumpon;
+        end
 `ifdef VCS
-        $vcdpluson(0);
-        $vcdplusmemon(0);
+        if (vcdplusfile) begin
+          $vcdpluson(0);
+          $vcdplusmemon(0);
+        end
 `endif
         vcdon <= 1;
       end
