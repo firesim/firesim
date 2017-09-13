@@ -91,9 +91,6 @@ override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
 ifeq ($(PLATFORM),zynq)
 top_module = ZynqShim
 endif
-ifeq ($(PLATFORM),f1)
-top_module = F1Shim
-endif
 
 $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
