@@ -7,7 +7,7 @@ cp buildroot-config buildroot/.config
 cd buildroot
 make -j16
 cd ..
-cp buildroot/output/images/rootfs.ext4 rootfs0.ext4
+cp buildroot/output/images/rootfs.ext2 rootfs0.ext2
 
 # overwrite linux's config with ours, then build vmlinux image
 cp linux-config riscv-linux/.config
@@ -27,5 +27,5 @@ cp bbl ../../bbl-vmlinux
 cd ../../
 for i in {1..7}
 do
-    cp rootfs0.ext4 rootfs$i.ext4
+    cp rootfs0.ext2 rootfs$i.ext2
 done
