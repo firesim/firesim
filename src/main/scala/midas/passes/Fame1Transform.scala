@@ -146,7 +146,7 @@ class ModelFame1Transform(f1Modules: Map[String, String], f1ModuleSuffix: String
 
   override def run(c: Circuit): Circuit = {
     val moduleMap = c.modules.map(m => m.name -> m).toMap
-    val modsToDup = mutable.HashSet[Module]()
+    val modsToDup = mutable.HashSet[DefModule]()
     val modsToKeep = mutable.HashSet[DefModule]()
 
     def getF1Modules(inF1Context: Boolean, s: Statement): Unit = s match {
@@ -173,10 +173,11 @@ class ModelFame1Transform(f1Modules: Map[String, String], f1ModuleSuffix: String
         c.copy(modules = c.modules map transform)
       case m: Module =>
         getF1Modules(false, m.body)
-        val fame1ChildModules = modsToDup.toSeq map renameModules(f1ModuleSuffix) map renameInstances
+        val fame1ChildModules = c.modules filter modsToDup.contains map
+          renameModules(f1ModuleSuffix) map renameInstances
         val fame1RootModules = f1Modules.keys map moduleMap map renameInstances
-        val fame0Modules = modsToKeep.toSeq map bindTargetFires
-        val fame1TransformedModules = (fame1ChildModules ++ fame1RootModules) map transform
+        val fame0Modules = c.modules filter modsToKeep.contains map bindTargetFires
+        val fame1TransformedModules = (fame1ChildModules ++ fame1RootModules).toList map transform
         c.copy(modules = Seq(m.copy()) ++ fame0Modules ++ fame1TransformedModules)
       case _ => throw new RuntimeException("Should not have an ExtModule as top.")
     }
