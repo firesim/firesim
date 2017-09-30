@@ -11,6 +11,8 @@ import config.Parameters
 import sifive.blocks.devices.uart.UARTPortIO
 
 class SimUART extends Endpoint {
+  // This endpoint will connect "UARTPortIO"
+  // UART is used for console IO
   def matchType(data: Data) = data match {
     case channel: UARTPortIO => channel.txd.dir == OUTPUT
     case _ => false
@@ -26,21 +28,33 @@ class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
 class UARTWidget(div: Int = 542)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new UARTWidgetIO)
 
+  // Buffer for stdout
   val txfifo = Module(new Queue(UInt(8.W), 16))
+  // Buffer for stdin
   val rxfifo = Module(new Queue(UInt(8.W), 16))
 
   val target = io.hPort.hBits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
   val stall = !txfifo.io.enq.ready
+  // firing condition
+  // 1. tokens from the target are presented (io.hPort.toHost.hValid)
+  // 2. the target is ready to accept tokens (io.hPort.fromHost.hReady)
+  // 3. target reset tokens are presented (io.tReset.valid)
+  // 4. TX buffers does not overflow (!txfifo.io.enq.ready)
   val fire = tFire && !stall
   val targetReset = fire & io.tReset.bits
+  // Reset buffers with target reset
   rxfifo.reset  := reset || targetReset
   txfifo.reset := reset || targetReset
 
+  // tokens from the target are consumed with firing condition
   io.hPort.toHost.hReady := fire
+  // tokens toward the target are generated with firing condition
   io.hPort.fromHost.hValid := fire
+  // target reset tokens are consumed with firing condition
   io.tReset.ready := fire
 
+  // Connect "io.hPort.hBits.txd" to the stdout buffer
   val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(UInt(), 4)
   val txState = RegInit(sTxIdle)
   val txData = Reg(UInt(8.W))
@@ -82,6 +96,7 @@ class UARTWidget(div: Int = 542)(implicit p: Parameters) extends EndpointWidget(
   txfifo.io.enq.bits  := txData
   txfifo.io.enq.valid := txDataWrap
 
+  // Connect the stdin buffer to "io.hPort.hBits.rxd"
   val sRxIdle :: sRxStart :: sRxData :: Nil = Enum(UInt(), 3)
   val rxState = RegInit(sRxIdle)
   // iterate using div to convert clock rate to baud
@@ -112,6 +127,7 @@ class UARTWidget(div: Int = 542)(implicit p: Parameters) extends EndpointWidget(
   }
   rxfifo.io.deq.ready := (rxState === sRxData) && rxDataWrap && rxBaudWrap && fire
 
+  // Generate memory mapped registers for buffers
   genROReg(txfifo.io.deq.bits, "out_bits")
   genROReg(txfifo.io.deq.valid, "out_valid")
   Pulsify(genWORegInit(txfifo.io.deq.ready, "out_ready", false.B), pulseLength = 1)
@@ -120,6 +136,8 @@ class UARTWidget(div: Int = 542)(implicit p: Parameters) extends EndpointWidget(
   Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
   genROReg(rxfifo.io.enq.ready, "in_ready")
 
+  // generate memory mapped registers for control signals
+  // The endpoint is "done" when tokens from the target are not available any more
   genROReg(!tFire, "done")
   genROReg(stall, "stall")
 
