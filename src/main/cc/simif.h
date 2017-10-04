@@ -110,6 +110,7 @@ class simif_t
     size_t last_sample_id;
     std::string sample_file;
 
+    size_t tracelen;
     size_t trace_count;
 
     // profile information
@@ -126,7 +127,7 @@ class simif_t
     inline void save_sample();
 
   protected:
-    size_t tracelen;
+    size_t get_tracelen() const { return tracelen; }
     sample_t* read_snapshot();
     sample_t* read_traces(sample_t* s);
 #endif
