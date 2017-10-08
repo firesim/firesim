@@ -39,7 +39,7 @@ object MidasCompiler {
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        json.toString, lib map (_.toString), CostMetric.default, true))))
+        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops))))
     // val writer = new FileWriter(new File("debug.ir"))
     val writer = new java.io.StringWriter
     val midas = new MidasCompiler(dir, io) compile (

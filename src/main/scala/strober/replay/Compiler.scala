@@ -31,7 +31,7 @@ object Compiler {
       InferReadWriteAnnotation(chirrtl.main),
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        jsonFile.toString, lib map (_.toString), CostMetric.default, false))))
+        jsonFile.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Default))))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(confFile, jsonFile, lib getOrElse jsonFile, macroFile, pathFile) compile (
       CircuitState(chirrtl, ChirrtlForm, Some(annotations)), verilog)

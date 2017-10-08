@@ -40,12 +40,17 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   val tReset = io.tReset.bits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
 
+  // Buffers for NASTI(AXI) channels
   val arBuf = Module(new Queue(new NastiReadAddressChannel,   8, flow=true))
   val awBuf = Module(new Queue(new NastiWriteAddressChannel,  8, flow=true))
   val wBuf  = Module(new Queue(new NastiWriteDataChannel,    16, flow=true))
   val rBuf  = Module(new Queue(new NastiReadDataChannel,     16, flow=true))
   val bBuf  = Module(new Queue(new NastiWriteResponseChannel, 8, flow=true))
 
+  // 1. define firing condition with "stall"
+  // 2. handle target reset
+  // 3. connect target channels to buffers.
+  //   - Transactions are generated / consumed according to timing conditions
   def elaborate(stall: Bool,
                 rCycleValid: Bool = Bool(true),
                 wCycleValid: Bool = Bool(true),
@@ -97,12 +102,18 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   }
 }
 
-// Widget to handle NastiIO efficiently when mem models are not available
+// Widget to handle NastiIO efficiently when software memory timing models are used
 class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
+  /*** Timing information ***/
+  // deltas from the simulation driver are kept in "deltaBuf"
   val deltaBuf = Module(new Queue(UInt(32.W), 2))
+  // counters
   val delta = Reg(UInt(32.W))
   val readCount = Reg(UInt(32.W))
   val writeCount = Reg(UInt(32.W))
+  // The widget stalls when
+  // 1. there are any outstanding reads/writes
+  // 2. delta == 0
   val stall = !delta.orR && (readCount.orR || writeCount.orR)
   val (fire, cycles, targetReset) = elaborate(stall)
 
@@ -110,11 +121,14 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   when(reset || targetReset) {
     delta := 0.U
   }.elsewhen(deltaBuf.io.deq.valid && stall) {
+    // consume "deltaBuf" with stall
     delta := deltaBuf.io.deq.bits
   }.elsewhen(fire && delta.orR) {
+    // decrement delta with firing condition
     delta := delta - 1.U
   }
 
+  // Set outstanding read counts
   when(reset || targetReset) {
     readCount := 0.U
   }.elsewhen(tNasti.ar.fire() && fire) {
@@ -123,6 +137,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
     readCount := readCount - 1.U
   }
 
+  // Set outstanding write counts
   when(reset || targetReset) {
     writeCount := 0.U
   }.elsewhen(tNasti.w.fire() && tNasti.w.bits.last && fire) {
@@ -138,7 +153,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   io.host_mem.r.ready := false.B
   io.host_mem.b.ready := false.B
 
-  // Generate control register file
+  // Generate memory-mapped registers for the read address channel
   val arMeta = Seq(arBuf.io.deq.bits.id, arBuf.io.deq.bits.size, arBuf.io.deq.bits.len)
   val arMetaWidth = (arMeta foldLeft 0)(_ + _.getWidth)
   assert(arMetaWidth <= io.ctrl.nastiXDataBits)
@@ -149,6 +164,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
     genROReg(Cat(arMeta), "ar_meta")
   }
 
+  // Generate memory-mapped registers for the write address channel
   val awMeta = Seq(awBuf.io.deq.bits.id, awBuf.io.deq.bits.size, awBuf.io.deq.bits.len)
   val awMetaWidth = (awMeta foldLeft 0)(_ + _.getWidth)
   assert(awMetaWidth <= io.ctrl.nastiXDataBits)
@@ -159,6 +175,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
     genROReg(Cat(awMeta), "aw_meta")
   }
 
+  // Generate memory-mapped registers for the write data channel
   val wMeta = Seq(wBuf.io.deq.bits.strb, wBuf.io.deq.bits.last)
   val wMetaWidth = (wMeta foldLeft 0)(_ + _.getWidth)
   assert(wMetaWidth <= io.ctrl.nastiXDataBits)
@@ -170,6 +187,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
     attach(reg, s"w_data_$i")
   }
 
+  // Generate memory-mapped registers for the read data channel
   val rMeta = Seq(rBuf.io.deq.bits.id, rBuf.io.deq.bits.resp, rBuf.io.deq.bits.last)
   val rMetaWidth = (rMeta foldLeft 0)(_ + _.getWidth)
   val rMetaReg = Reg(UInt(rMetaWidth.W))
@@ -183,6 +201,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   val rdataAddrs = rdataRegs.zipWithIndex map {case (reg, i) => attach(reg, s"r_data_$i")}
   rBuf.io.enq.bits.data := Cat(rdataRegs.reverse)
 
+  // Generate memory-mapped registers for the write response channel
   val bMeta = Seq(bBuf.io.deq.bits.id, bBuf.io.deq.bits.resp)
   val bMetaWidth = (bMeta foldLeft 0)(_ + _.getWidth)
   val bMetaReg = Reg(UInt(bMetaWidth.W))
@@ -191,6 +210,7 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   bBuf.io.enq.bits.id := bMetaReg >> (tNasti.b.bits.resp.getWidth).U
   bBuf.io.enq.bits.resp := bMetaReg
 
+  // Generate memory-mapped registers for ready/valid
   genROReg(Cat(
     arBuf.io.deq.valid,
     awBuf.io.deq.valid,
@@ -206,8 +226,11 @@ class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
   attach(readyReg, "ready")
   when(readyReg.orR) { readyReg := 0.U }
 
+  // Generate memory-mapped registers for control signals
   genROReg(!tFire, "done")
   genROReg(stall && !deltaBuf.io.deq.valid, "stall")
+  // Connect "deltaBuf" to the control register file
+  // Timing information is provided through this
   attachDecoupledSink(deltaBuf.io.enq, "delta")
 
   genCRFile()
