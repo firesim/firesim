@@ -371,6 +371,10 @@ void tick() {
   memcpy(&top->io_slave_r_bits_data, slave->r_data(), MEM_WIDTH);
 #endif
 
+  top->clock = 0;
+  top->eval();
+
+  // Slave should be ticked in clock low for comb paths
   slave->tick(
     top->reset,
     top->io_slave_ar_valid,
@@ -398,8 +402,6 @@ void tick() {
     top->io_slave_b_ready
   );
 
-  top->clock = 0;
-  top->eval();
 #if VM_TRACE
   if (tfp) tfp->dump((double) main_time);
 #endif // VM_TRACE
