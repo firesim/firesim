@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "simif_emul.h"
 #ifdef VCS
 #include "midas_context.h"

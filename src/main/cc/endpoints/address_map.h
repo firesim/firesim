@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __ADDRESS_MAP_H
 #define __ADDRESS_MAP_H
 

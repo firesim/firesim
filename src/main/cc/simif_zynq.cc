@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "simif_zynq.h"
 #include <cassert>
 #include <fcntl.h>

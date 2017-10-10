@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __MIDAS_TSI_H
 #define __MIDAS_TSI_H
 

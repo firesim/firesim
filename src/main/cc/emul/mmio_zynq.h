@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __MMIO_ZYNQ_H
 #define __MMIO_ZYNQ_H
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# See LICENSE for license details.
+
 import os
 import os.path
 from subprocess import Popen

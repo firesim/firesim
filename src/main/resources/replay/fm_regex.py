@@ -1,5 +1,7 @@
 import re
 
+# See LICENSE for license details.
+
 """ define reference(RTL) name regular expression """
 ref_regex = re.compile(r"""
   Ref\s+                             # is reference(RTL)?

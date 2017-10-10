@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __VCS_MAIN
 #define __VCS_MAIN
 

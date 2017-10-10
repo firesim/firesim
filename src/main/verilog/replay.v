@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 module replay;
   reg clock = 1'b0;
   reg reset = 1'b1;

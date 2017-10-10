@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "midas_fesvr.h"
 #include <fesvr/configstring.h>
 

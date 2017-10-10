@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "simif.h"
 #include <fstream>
 #include <algorithm>

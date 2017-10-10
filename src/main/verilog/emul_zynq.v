@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 extern "A" void tick
 (
   output reg                       reset,
