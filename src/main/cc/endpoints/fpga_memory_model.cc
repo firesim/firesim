@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <iostream>
 #include <algorithm>
 #include <exception>

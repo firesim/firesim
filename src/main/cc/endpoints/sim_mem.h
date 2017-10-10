@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __SIM_MEM_H
 #define __SIM_MEM_H
 

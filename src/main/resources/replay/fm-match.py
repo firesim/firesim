@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# See LICENSE for license details.
+
 import fm_regex
 import read_svf
 import sys

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "uart.h"
 #ifndef _WIN32
 #include <unistd.h>

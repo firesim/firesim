@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __REPLAY_H
 #define __REPLAY_H
 

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __FPGA_MEMORY_MODEL_H
 #define __FPGA_MEMORY_MODEL_H
 

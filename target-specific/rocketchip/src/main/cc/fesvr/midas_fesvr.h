@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __MIDAS_FESVR_H
 #define __MIDAS_FESVR_H
 

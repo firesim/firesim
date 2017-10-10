@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __FESVR_PROXY_H
 #define __FESVR_PROXY_H
 

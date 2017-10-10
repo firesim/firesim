@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# See LICENSE for license details.
+
 import os.path
 import argparse
 from subprocess import Popen

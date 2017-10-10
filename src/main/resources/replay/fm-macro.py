@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# See LICENSE for license details.
+
 import sys
 import os
 import tempfile

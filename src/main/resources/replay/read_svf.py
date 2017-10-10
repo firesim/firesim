@@ -1,5 +1,7 @@
 import sys
 import argparse
+# See LICENSE for license details.
+
 
 def construct_instance_map(instance_map, tokens):
   is_design = False

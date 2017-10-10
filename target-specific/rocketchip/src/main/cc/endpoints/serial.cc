@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "serial.h"
 
 serial_t::serial_t(simif_t* sim, fesvr_proxy_t* fesvr):

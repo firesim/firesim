@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "sample.h"
 #include <cassert>
 #include <cstring>

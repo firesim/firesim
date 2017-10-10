@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package midas
 
 import chisel3.Data

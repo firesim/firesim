@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __CONTEXT_H
 #define __CONTEXT_H
 

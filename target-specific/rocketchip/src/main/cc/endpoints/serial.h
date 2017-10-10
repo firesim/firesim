@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __SERIAL_H
 #define __SERIAL_H
 

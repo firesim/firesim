@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __ENDPOINT_H
 #define __ENDPOINT_H
 

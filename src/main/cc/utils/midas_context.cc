@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "midas_context.h"
 #include <stdlib.h>
 #include <cassert>

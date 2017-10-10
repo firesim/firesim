@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "midas_tsi.h"
 
 int midas_tsi_t::host_thread(void *arg)

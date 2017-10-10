@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __ROCKETCHIP_H
 #define __ROCKETCHIP_H
 

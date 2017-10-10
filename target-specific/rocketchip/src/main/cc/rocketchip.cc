@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "rocketchip.h"
 #include "endpoints/serial.h"
 #include "endpoints/uart.h"

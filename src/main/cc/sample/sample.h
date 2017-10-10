@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __SAMPLE_H
 #define __SAMPLE_H
 

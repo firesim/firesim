@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef __SIMIF_ZYNQ_H
 #define __SIMIF_ZYNQ_H
 

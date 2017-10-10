@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "address_map.h"
 
 AddressMap::AddressMap(

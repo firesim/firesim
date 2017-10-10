@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "replay_vpi.h"
 #include "emul/vcs_main.h"
 
