@@ -11,6 +11,7 @@ import junctions.{NastiKey, NastiParameters}
 
 trait PlatformType
 case object Zynq extends PlatformType
+case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -42,3 +43,15 @@ class ZynqConfig extends Config(new Config((site, here, up) => {
 class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new ZynqConfig)
+
+class F1Config extends Config(new Config((site, here, up) => {
+  case Platform       => F1
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case MemNastiKey    => NastiParameters(64, 32, 16)
+  case MasterNastiKey => site(CtrlNastiKey)
+  case SlaveNastiKey => site(MemNastiKey)
+}) ++ new SimConfig)
+
+class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
+  case EnableSnapshot => true
+}) ++ new F1Config)
