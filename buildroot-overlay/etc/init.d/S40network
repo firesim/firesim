@@ -16,10 +16,6 @@ case "$1" in
     machigh=$(echo $mac | cut -c 13-14 -)
     maclow=$(echo $mac | cut -c 16-17 -)
     ip addr add 192.168.$((16#$machigh)).$((16#$maclow))/24 dev eth0
-#   add default gateway and DNS
-    route add default gw 192.168.1.1 eth0
-    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 #	/sbin/ifup eth0
 	[ $? = 0 ] && echo "OK" || echo "FAIL"
 	;;
