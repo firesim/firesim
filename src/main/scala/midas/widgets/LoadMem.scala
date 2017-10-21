@@ -7,6 +7,8 @@ import Chisel._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 
+import scala.math.max
+
 class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends WidgetIO()(p){
   // TODO: Slave nasti key should be passed in explicitly
   val toSlaveMem = new NastiIO()(p alterPartial ({ case NastiKey => p(hKey) }))
@@ -30,12 +32,13 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   val size = hParams.bytesToXSize(UInt(hWidth/8))
   val widthRatio = hWidth/cWidth
   require(hWidth >= cWidth)
-  require(p(hKey).addrBits <= cWidth)
+  require(p(hKey).addrBits <= 2 * cWidth)
 
-  val wAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "W_ADDRESS")
+  val wAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
+  val wAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "W_ADDRESS_L")
   io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
       id = UInt(0),
-      addr = wAddrQ.bits,
+      addr = Cat(wAddrH, wAddrQ.bits),
       size = size)(p alterPartial ({ case NastiKey => p(hKey) }))
   io.toSlaveMem.aw.valid := wAddrQ.valid
   wAddrQ.ready := io.toSlaveMem.aw.ready
@@ -51,10 +54,11 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   // TODO: Handle write responses better?
   io.toSlaveMem.b.ready := Bool(true)
 
-  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS")
+  val rAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "R_ADDRESS_H")
+  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS_L")
   io.toSlaveMem.ar.bits := NastiReadAddressChannel(
       id = UInt(0),
-      addr = rAddrQ.bits,
+      addr = Cat(rAddrH, rAddrQ.bits),
       size = size)(p alterPartial ({ case NastiKey => p(hKey) }))
   io.toSlaveMem.ar.valid := rAddrQ.valid
   rAddrQ.ready := io.toSlaveMem.ar.ready
