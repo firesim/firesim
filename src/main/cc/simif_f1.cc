@@ -111,6 +111,15 @@ void simif_f1_t::fpga_setup(int slot_id) {
     pci_bar_handle = PCI_BAR_HANDLE_INIT;
     rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
     check_rc(rc, "fpga_pci_attach FAILED");
+
+    // EDMA setup
+    char device_file_name[256];
+    
+    sprintf(device_file_name, "/dev/edma%d_queue_0", slot_id);
+    printf("Using edma queue: %s\n", device_file_name);
+
+    edma_fd = open(device_file_name, O_RDWR);
+    assert(edma_fd >= 0);
 #endif
 }
 
@@ -155,6 +164,13 @@ uint32_t simif_f1_t::read(size_t addr) {
 #endif
 }
 
+ssize_t simif_f1_t::pread(size_t addr, char* data, size_t size) {
+#ifdef SIMULATION_XSIM
+  return -1; // TODO
+#else
+  return ::pread(edma_fd, data, size, 0x0);
+#endif
+}
 
 uint32_t simif_f1_t::is_write_ready() {
     uint64_t addr = 0x4;

@@ -16,15 +16,14 @@
 #endif // VM_TRACE
 #endif
 
-void mmio_zynq_t::read_req(uint64_t addr) {
-  mmio_req_addr_t ar(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
+void mmio_zynq_t::read_req(uint64_t addr, size_t size, size_t len) {
+  mmio_req_addr_t ar(0, addr, size, len);
   this->ar.push(ar);
 }
 
-void mmio_zynq_t::write_req(uint64_t addr, void* data) {
-  static const size_t CTRL_STRB = (1 << CTRL_STRB_BITS) - 1;
-  mmio_req_addr_t aw(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
-  mmio_req_data_t w((char*) data, CTRL_STRB, true);
+void mmio_zynq_t::write_req(uint64_t addr, size_t size, size_t len, void* data, size_t strb) {
+  mmio_req_addr_t aw(0, addr, size, len);
+  mmio_req_data_t w((char*) data, strb, true);
   this->aw.push(aw);
   this->w.push(w);
 }
@@ -51,7 +50,9 @@ void mmio_zynq_t::tick(
   if (aw_fire) write_inflight = true;
   if (w_fire) this->w.pop();
   if (r_fire) {
-    mmio_resp_data_t r(r_id, (char*) r_data, r_last);
+    char* dat = (char*)malloc(dummy_data.size());
+    memcpy(dat, (char*)r_data, dummy_data.size());
+    mmio_resp_data_t r(r_id, dat, r_last);
     this->r.push(r);
   }
   if (b_fire) {
@@ -60,15 +61,16 @@ void mmio_zynq_t::tick(
 }
 
 bool mmio_zynq_t::read_resp(void* data) {
-  if (ar.empty() || r.empty()) {
+  if (ar.empty() || r.size() <= ar.front().len) {
     return false;
   } else {
-    mmio_req_addr_t& ar = this->ar.front();
+    auto ar = this->ar.front();
     size_t word_size = 1 << ar.size;
     for (size_t i = 0 ; i <= ar.len ; i++) {
-      mmio_resp_data_t& r = this->r.front();
+      auto r = this->r.front();
       assert(ar.id == r.id && (i < ar.len || r.last));
-      memcpy(((char*) data) + i * word_size, r.data, word_size);
+      memcpy(((char*)data) + i * word_size, r.data, word_size);
+      free(r.data);
       this->r.pop();
     }
     this->ar.pop();
