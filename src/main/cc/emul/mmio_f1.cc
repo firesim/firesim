@@ -14,15 +14,14 @@
 #endif // VM_TRACE
 #endif
 
-void mmio_f1_t::read_req(uint64_t addr) {
-  mmio_req_addr_t ar(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
+void mmio_f1_t::read_req(uint64_t addr, size_t size, size_t len) {
+  mmio_req_addr_t ar(0, addr, size, len);
   this->ar.push(ar);
 }
 
-void mmio_f1_t::write_req(uint64_t addr, void* data) {
-  static const size_t CTRL_STRB = (1 << CTRL_STRB_BITS) - 1;
-  mmio_req_addr_t aw(0, addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
-  mmio_req_data_t w((char*) data, CTRL_STRB, true);
+void mmio_f1_t::write_req(uint64_t addr, size_t size, size_t len, void* data, size_t strb) {
+  mmio_req_addr_t aw(0, addr, size, len);
+  mmio_req_data_t w((char*) data, strb, true);
   this->aw.push(aw);
   this->w.push(w);
 }
@@ -49,7 +48,9 @@ void mmio_f1_t::tick(
   if (aw_fire) write_inflight = true;
   if (w_fire) this->w.pop();
   if (r_fire) {
-    mmio_resp_data_t r(r_id, (char*) r_data, r_last);
+    char* dat = (char*)malloc(dummy_data.size());
+    memcpy(dat, (char*)r_data, dummy_data.size());
+    mmio_resp_data_t r(r_id, dat, r_last);
     this->r.push(r);
   }
   if (b_fire) {
@@ -58,14 +59,16 @@ void mmio_f1_t::tick(
 }
 
 bool mmio_f1_t::read_resp(void* data) {
-  if (ar.empty() || r.empty()) {
+  if (ar.empty() || r.size() <= ar.front().len) {
     return false;
   } else {
-    mmio_req_addr_t& ar = this->ar.front();
+    auto ar = this->ar.front();
     size_t word_size = 1 << ar.size;
     for (size_t i = 0 ; i <= ar.len ; i++) {
-      mmio_resp_data_t& r = this->r.front();
-      memcpy(((char*) data) + i * word_size, r.data, word_size);
+      auto r = this->r.front();
+      assert(i < ar.len || r.last);
+      memcpy(((char*)data) + i * word_size, r.data, word_size);
+      free(r.data);
       this->r.pop();
     }
     this->ar.pop();
@@ -87,10 +90,12 @@ bool mmio_f1_t::write_resp() {
 
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
+extern std::unique_ptr<mmio_t> dma;
 std::unique_ptr<mm_t> slave;
 
 void* init(uint64_t memsize, bool dramsim) {
-  master.reset(new mmio_f1_t);
+  master.reset(new mmio_f1_t(MMIO_WIDTH));
+  dma.reset(new mmio_f1_t(DMA_WIDTH));
   slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t);
   slave->init(memsize, MEM_WIDTH, 64);
   return slave->get_data();
@@ -98,6 +103,7 @@ void* init(uint64_t memsize, bool dramsim) {
 
 #ifdef VCS
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
+static const size_t DMA_DATA_SIZE = DMA_WIDTH / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 extern midas_context_t* host;
 extern bool vcs_fin;
@@ -139,6 +145,38 @@ void tick(
   vc_handle master_b_bits_resp,
   vc_handle master_b_bits_id,
 
+  vc_handle dma_ar_valid,
+  vc_handle dma_ar_ready,
+  vc_handle dma_ar_bits_addr,
+  vc_handle dma_ar_bits_id,
+  vc_handle dma_ar_bits_size,
+  vc_handle dma_ar_bits_len,
+
+  vc_handle dma_aw_valid,
+  vc_handle dma_aw_ready,
+  vc_handle dma_aw_bits_addr,
+  vc_handle dma_aw_bits_id,
+  vc_handle dma_aw_bits_size,
+  vc_handle dma_aw_bits_len,
+
+  vc_handle dma_w_valid,
+  vc_handle dma_w_ready,
+  vc_handle dma_w_bits_strb,
+  vc_handle dma_w_bits_data,
+  vc_handle dma_w_bits_last,
+
+  vc_handle dma_r_valid,
+  vc_handle dma_r_ready,
+  vc_handle dma_r_bits_resp,
+  vc_handle dma_r_bits_id,
+  vc_handle dma_r_bits_data,
+  vc_handle dma_r_bits_last,
+
+  vc_handle dma_b_valid,
+  vc_handle dma_b_ready,
+  vc_handle dma_b_bits_resp,
+  vc_handle dma_b_bits_id,
+
   vc_handle slave_ar_valid,
   vc_handle slave_ar_ready,
   vc_handle slave_ar_bits_addr,
@@ -171,11 +209,17 @@ void tick(
   vc_handle slave_b_bits_resp,
   vc_handle slave_b_bits_id
 ) {
-  mmio_f1_t* m;
+  mmio_f1_t *m, *d;
   assert(m = dynamic_cast<mmio_f1_t*>(master.get()));
+  assert(d = dynamic_cast<mmio_f1_t*>(dma.get()));
+
   uint32_t master_r_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
     master_r_data[i] = vc_4stVectorRef(master_r_bits_data)[i].d;
+  }
+  uint32_t dma_r_data[DMA_DATA_SIZE];
+  for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
+    dma_r_data[i] = vc_4stVectorRef(dma_r_bits_data)[i].d;
   }
   uint32_t slave_w_data[SLAVE_DATA_SIZE];
   for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
@@ -235,6 +279,61 @@ void tick(
     vc_getScalar(master_r_valid),
     vc_4stVectorRef(master_b_bits_id)->d,
     vc_getScalar(master_b_valid)
+  );
+
+  vc_putScalar(dma_aw_valid, d->aw_valid());
+  vc_putScalar(dma_ar_valid, d->ar_valid());
+  vc_putScalar(dma_w_valid, d->w_valid());
+  vc_putScalar(dma_w_bits_last, d->w_last());
+  vc_putScalar(dma_r_ready, d->r_ready());
+  vc_putScalar(dma_b_ready, d->b_ready());
+
+  vec32 dd[DMA_DATA_SIZE];
+  dd[0].c = 0;
+  dd[0].d = d->aw_id();
+  vc_put4stVector(dma_aw_bits_id, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_addr();
+  vc_put4stVector(dma_aw_bits_addr, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_size();
+  vc_put4stVector(dma_aw_bits_size, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_len();
+  vc_put4stVector(dma_aw_bits_len, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_id();
+  vc_put4stVector(dma_ar_bits_id, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_addr();
+  vc_put4stVector(dma_ar_bits_addr, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_size();
+  vc_put4stVector(dma_ar_bits_size, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_len();
+  vc_put4stVector(dma_ar_bits_len, dd);
+  dd[0].c = 0;
+  dd[0].d = d->w_strb();
+  vc_put4stVector(dma_w_bits_strb, dd);
+
+  for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
+    dd[i].c = 0;
+    dd[i].d = ((uint32_t*) d->w_data())[i];
+  }
+  vc_put4stVector(dma_w_bits_data, dd);
+
+  d->tick(
+    vcs_rst,
+    vc_getScalar(dma_ar_ready),
+    vc_getScalar(dma_aw_ready),
+    vc_getScalar(dma_w_ready),
+    vc_4stVectorRef(dma_r_bits_id)->d,
+    dma_r_data,
+    vc_getScalar(dma_r_bits_last),
+    vc_getScalar(dma_r_valid),
+    vc_4stVectorRef(dma_b_bits_id)->d,
+    vc_getScalar(dma_b_valid)
   );
 
   slave->tick(
@@ -303,8 +402,9 @@ extern VerilatedVcdC* tfp;
 #endif // VM_TRACE
 
 void tick() {
-  mmio_f1_t* m;
+  mmio_f1_t *m, *d;
   assert(m = dynamic_cast<mmio_f1_t*>(master.get()));
+  assert(d = dynamic_cast<mmio_f1_t*>(dma.get()));
   top->clock = 1;
   top->eval();
 #if VM_TRACE
@@ -351,6 +451,47 @@ void tick() {
     top->io_master_r_valid,
     top->io_master_b_bits_id,
     top->io_master_b_valid
+  );
+
+  top->io_dma_aw_valid = d->aw_valid();
+  top->io_dma_aw_bits_id = d->aw_id();
+  top->io_dma_aw_bits_addr = d->aw_addr();
+  top->io_dma_aw_bits_size = d->aw_size();
+  top->io_dma_aw_bits_len = d->aw_len();
+
+  top->io_dma_ar_valid = d->ar_valid();
+  top->io_dma_ar_bits_id = d->ar_id();
+  top->io_dma_ar_bits_addr = d->ar_addr();
+  top->io_dma_ar_bits_size = d->ar_size();
+  top->io_dma_ar_bits_len = d->ar_len();
+
+  top->io_dma_w_valid = d->w_valid();
+  top->io_dma_w_bits_strb = d->w_strb();
+  top->io_dma_w_bits_last = d->w_last();
+
+  top->io_dma_r_ready = d->r_ready();
+  top->io_dma_b_ready = d->b_ready();
+#if CTRL_DATA_BITS > 64
+  memcpy(top->io_dma_w_bits_data, d->w_data(), MMIO_WIDTH);
+#else
+  memcpy(&top->io_dma_w_bits_data, d->w_data(), MMIO_WIDTH);
+#endif
+
+  d->tick(
+    top->reset,
+    top->io_dma_ar_ready,
+    top->io_dma_aw_ready,
+    top->io_dma_w_ready,
+    top->io_dma_r_bits_id,
+#if CTRL_DATA_BITS > 64
+    top->io_dma_r_bits_data,
+#else
+    &top->io_dma_r_bits_data,
+#endif
+    top->io_dma_r_bits_last,
+    top->io_dma_r_valid,
+    top->io_dma_b_bits_id,
+    top->io_dma_b_valid
   );
 
   top->io_slave_aw_ready = slave->aw_ready();

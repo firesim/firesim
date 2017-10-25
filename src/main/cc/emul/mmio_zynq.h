@@ -80,8 +80,8 @@ public:
     bool b_valid
   );
 
-  virtual void read_req(uint64_t addr);
-  virtual void write_req(uint64_t addr, void* data);
+  virtual void read_req(uint64_t addr, size_t size, size_t len);
+  virtual void write_req(uint64_t addr, size_t size, size_t len, void* data, size_t strb);
   virtual bool read_resp(void *data);
   virtual bool write_resp();
 

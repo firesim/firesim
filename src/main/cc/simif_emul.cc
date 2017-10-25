@@ -15,6 +15,7 @@
 
 uint64_t main_time = 0;
 std::unique_ptr<mmio_t> master;
+std::unique_ptr<mmio_t> dma;
 
 #ifdef VCS
 midas_context_t* host;
@@ -119,7 +120,8 @@ int simif_emul_t::finish() {
 }
 
 void simif_emul_t::write(size_t addr, data_t data) {
-  master->write_req(addr, &data);
+  size_t strb = (1 << CTRL_STRB_BITS) - 1;
+  master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0, &data, strb);
   while(!master->write_resp()) {
 #ifdef VCS
     target.switch_to();
@@ -131,7 +133,7 @@ void simif_emul_t::write(size_t addr, data_t data) {
 
 data_t simif_emul_t::read(size_t addr) {
   data_t data;
-  master->read_req(addr);
+  master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
   while(!master->read_resp(&data)) {
 #ifdef VCS
     target.switch_to();
@@ -140,4 +142,17 @@ data_t simif_emul_t::read(size_t addr) {
 #endif
   }
   return data;
+}
+
+ssize_t simif_emul_t::pread(size_t addr, char* data, size_t size) {
+  size_t len = (size - 1) / DMA_WIDTH;
+  dma->read_req(addr, DMA_SIZE, len);
+  while(!dma->read_resp(data)) {
+#ifdef VCS
+    target.switch_to();
+#else
+    ::tick();
+#endif
+  }
+  return size;
 }

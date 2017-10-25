@@ -57,6 +57,7 @@ class simif_t
     // Widget communication
     virtual void write(size_t addr, data_t data) = 0;
     virtual data_t read(size_t addr) = 0;
+    virtual ssize_t pread(size_t addr, char* data, size_t size) = 0;
 
     inline void poke(size_t id, data_t value) {
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n",
