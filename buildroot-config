@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Buildroot 2017.05-rc2-07404-ga9e2274 Configuration
+# Buildroot 2017.05-rc2-00036-ga9e2274 Configuration
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_HOST_GCC_AT_LEAST_4_5=y
@@ -1645,7 +1645,7 @@ BR2_PACKAGE_GESFTPSERVER=y
 # BR2_PACKAGE_INADYN is not set
 # BR2_PACKAGE_IODINE is not set
 # BR2_PACKAGE_IPERF is not set
-# BR2_PACKAGE_IPERF3 is not set
+BR2_PACKAGE_IPERF3=y
 # BR2_PACKAGE_IPROUTE2 is not set
 # BR2_PACKAGE_IPSEC_TOOLS is not set
 # BR2_PACKAGE_IPSET is not set
