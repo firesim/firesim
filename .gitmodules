@@ -1,9 +1,9 @@
 [submodule "riscv-linux"]
 	path = riscv-linux
-	url = git@github.com:riscv/riscv-linux.git
+	url = git@github.com:firesim/riscv-linux.git
 [submodule "buildroot"]
 	path = buildroot
 	url = git@github.com:sifive/buildroot.git
 [submodule "riscv-pk"]
 	path = riscv-pk
-	url = git@github.com:riscv/riscv-pk.git
+	url = git@github.com:firesim/riscv-pk.git
