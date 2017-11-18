@@ -9,7 +9,9 @@ Builds a linux distro for firesim target nodes. Assumes priv 1.10.
 
 ## How to use:
 
+    git submodule update --init
     ./build.sh
+    
 
 ## Starting up simplenic (once you're running linux on firesim):
 
