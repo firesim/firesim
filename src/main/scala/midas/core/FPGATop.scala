@@ -111,8 +111,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     }
 
     loop(port.hBits -> wires)
-    port.toHost.hValid := valid reduce (_ && _)
-    port.fromHost.hReady := ready reduce (_ && _)
+    port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
+    port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
   // Host Memory Channels
