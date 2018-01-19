@@ -4,12 +4,13 @@ package midas
 package widgets
 
 import core.HostDecoupledIO
-// from rokcetchip
 import junctions._
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
+import freechips.rocketchip.config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import CppGenerationUtils._
@@ -17,15 +18,19 @@ import CppGenerationUtils._
   * Returns a Seq of the leaf nodes with their absolute/final direction.
   */
 object FlattenData {
-  // TODO: fix for gsdt
-  import Chisel._
-  def dirProduct(context: Direction, field: Direction): Direction =
-    if (context == INPUT) field.flip else field
+  def dirProduct(context: ActualDirection, field: ActualDirection): ActualDirection =
+    (context: @unchecked) match {
+      case ActualDirection.Output => field
+      case ActualDirection.Input => (field: @unchecked) match {
+        case ActualDirection.Output => ActualDirection.Input
+        case ActualDirection.Input => ActualDirection.Output
+      }
+    }
 
   def apply[T <: Data](
       gen: T,
-      parentDir: Direction = OUTPUT): Seq[(Data, Direction)] = {
-    val currentDir = dirProduct(parentDir, gen.dir)
+      parentDir: ActualDirection = ActualDirection.Output): Seq[(Data, ActualDirection)] = {
+    val currentDir = dirProduct(parentDir, directionOf(gen))
     gen match {
       case a : Bundle => (a.elements flatMap(e => { this(e._2, currentDir)})).toSeq
       case v : Vec[_] => v.flatMap(el => this(el, currentDir))
@@ -43,12 +48,13 @@ object ScanRegister {
   import Chisel._
   def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
     val leaves = FlattenData(data)
-    leaves.foldLeft(scanIn)((in: Bool, leaf: Tuple2[Data,Direction]) => {
+    leaves.foldLeft(scanIn)((in: Bool, leaf: (Data, ActualDirection)) => {
       val r = Reg(Vec(leaf._1.toBits.toBools))
-      if(leaf._2 == OUTPUT){
-        r := leaf._1.toBits.toBools
-      } else {
-        leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
+      (leaf._2: @unchecked) match {
+        case ActualDirection.Output =>
+          r := leaf._1.toBits.toBools
+        case ActualDirection.Input =>
+          leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
       }
 
       val out = Wire(false.B)
@@ -360,13 +366,16 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   io.nasti.w.ready := ~wFired
 }
 
-class CRIO(val direction: Direction, width: Int, val default: Int) extends Bundle {
-  val value = UInt(Some(direction), width)
+class CRIO(direction: ActualDirection, width: Int, val default: Int) extends Bundle {
+  val value = (direction: @unchecked) match {
+    case ActualDirection.Input => Input(UInt(width.W))
+    case ActualDirection.Output => Output(UInt(width.W))
+  }
   def apply(dummy: Int = 0) = value
 }
 
 object CRIO {
-  def apply(direction: Direction, width: Int, default: Int) =
+  def apply(direction: ActualDirection, width: Int, default: Int) =
     new CRIO(direction, width, default)
 }
 
