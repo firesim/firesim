@@ -7,7 +7,9 @@ import junctions._
 import widgets._
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
+import freechips.rocketchip.config.{Parameters, Field}
 import scala.collection.mutable.ArrayBuffer
 
 case object MemNastiKey extends Field[NastiParameters]
@@ -31,7 +33,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   implicit val channelWidth = sim.channelWidth
   sim.io.clock := clock
-  sim.io.reset := reset || simReset
+  sim.io.reset := reset.toBool || simReset
 
   val master = addWidget(new EmulationMaster, "Master")
   simReset := master.io.simReset
@@ -42,7 +44,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "DefaultIOWidget")
   defaultIOWidget.io.step <> master.io.step
   master.io.done := defaultIOWidget.io.idle
-  defaultIOWidget.reset := reset || simReset
+  defaultIOWidget.reset := reset.toBool || simReset
 
   // Note we are connecting up target reset here; we override part of this
   // assignment below when connecting the memory models to this same reset
@@ -53,7 +55,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   if (p(EnableSnapshot)) {
     val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
-    daisyController.reset := reset || simReset
+    daisyController.reset := reset.toBool || simReset
     daisyController.io.daisy <> simIo.daisy
 
     val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
@@ -62,7 +64,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       simIo.readyValidInputs,
       simIo.readyValidOutputs),
       "IOTraces")
-    traceWidget.reset := reset || simReset
+    traceWidget.reset := reset.toBool || simReset
     traceWidget.io.wireIns <> simIo.wireInTraces
     traceWidget.io.wireOuts <> simIo.wireOutTraces
     traceWidget.io.readyValidIns <> simIo.readyValidInTraces
@@ -77,13 +79,13 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     def loop[T <: Data](arg: (T, T)): Unit = arg match {
       case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
         val (name, channel) = simIo.readyValidMap(rv)
-        (channel.host.hValid.dir: @unchecked) match {
-          case INPUT  =>
+        (directionOf(channel.host.hValid): @unchecked) match {
+          case ActualDirection.Input =>
             import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
             channel.target <> target
             channel.host.hValid := port.fromHost.hValid || simResetNext
             ready += channel.host.hReady
-          case OUTPUT =>
+          case ActualDirection.Output =>
             import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
             target <> channel.target
             channel.host.hReady := port.toHost.hReady
@@ -96,18 +98,20 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       case (target: Vec[_], v: Vec[_]) =>
         assert(target.size == v.size)
         (target.toSeq zip v.toSeq) foreach loop
-      case (target: Bits, wire: Bits) if wire.dir == INPUT =>
-        val channels = simIo.getIns(wire)
-        channels.zipWithIndex foreach { case (in, i) =>
-          in.bits  := target >> UInt(i * simIo.channelWidth)
-          in.valid := port.fromHost.hValid || simResetNext
-        }
-        ready ++= channels map (_.ready)
-      case (target: Bits, wire: Bits) if wire.dir == OUTPUT =>
-        val channels = simIo.getOuts(wire)
-        target := Cat(channels.reverse map (_.bits))
-        channels foreach (_.ready := port.toHost.hReady)
-        valid ++= channels map (_.valid)
+      case (target: Bits, wire: Bits) => (directionOf(wire): @unchecked) match {
+        case ActualDirection.Input =>
+          val channels = simIo.getIns(wire)
+          channels.zipWithIndex foreach { case (in, i) =>
+            in.bits  := target >> UInt(i * simIo.channelWidth)
+            in.valid := port.fromHost.hValid || simResetNext
+          }
+          ready ++= channels map (_.ready)
+        case ActualDirection.Output =>
+          val channels = simIo.getOuts(wire)
+          target := Cat(channels.reverse map (_.bits))
+          channels foreach (_.ready := port.toHost.hReady)
+          valid ++= channels map (_.valid)
+      }
     }
 
     loop(port.hBits -> wires)
@@ -121,7 +125,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   io.mem <> arb.io.slave
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-    loadMem.reset := reset || simReset
+    loadMem.reset := reset.toBool || simReset
     arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
   }
 
@@ -134,7 +138,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case _ => s"${endpoint.widgetName}_$i"
       }
       val widget = addWidget(endpoint.widget(p), widgetName)
-      widget.reset := reset || simReset
+      widget.reset := reset.toBool || simReset
       widget match {
         case model: MemModel => arb.io.master(i) <> model.io.host_mem
         case _ =>
@@ -142,7 +146,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       channels2Port(widget.io.hPort, endpoint(i)._2)
       // each widget should have its own reset queue
       val resetQueue = Module(new Queue(Bool(), 4))
-      resetQueue.reset := reset || simReset
+      resetQueue.reset := reset.toBool || simReset
       widget.io.tReset <> resetQueue.io.deq
       resetQueue.io.enq.bits := defaultIOWidget.io.tReset.bits
       resetQueue.io.enq.valid := defaultIOWidget.io.tReset.valid
