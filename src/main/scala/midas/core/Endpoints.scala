@@ -3,14 +3,15 @@
 package midas
 package core
 
-// from rocketchip
-import junctions.{NastiIO, NastiKey, NastiParameters}
-import uncore.axi4.AXI4Bundle
-import config.Parameters
+import freechips.rocketchip.uncore.axi4.AXI4Bundle
+import freechips.rocketchip.config.Parameters
 
 import chisel3._
 import chisel3.util._
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
 import widgets._
+import junctions.{NastiIO, NastiKey, NastiParameters}
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 trait Endpoint {
@@ -67,14 +68,16 @@ abstract class SimMemIO extends Endpoint {
 
 class SimNastiMemIO extends SimMemIO {
   def matchType(data: Data) = data match {
-    case channel: NastiIO => channel.w.valid.dir == OUTPUT
+    case channel: NastiIO =>
+      directionOf(channel.w.valid) == ActualDirection.Output
     case _ => false
   }
 }
 
 class SimAXI4MemIO extends SimMemIO {
   def matchType(data: Data) = data match {
-    case channel: AXI4Bundle => channel.w.valid.dir == OUTPUT
+    case channel: AXI4Bundle =>
+      directionOf(channel.w.valid) == ActualDirection.Output
     case _ => false
   }
 }

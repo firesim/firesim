@@ -3,7 +3,8 @@
 package midas
 package passes
 
-import midas.core.SimWrapper
+import java.io.{File, FileWriter, StringWriter}
+
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -11,11 +12,13 @@ import firrtl.Utils.BoolType
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{splitRef, mergeRef, create_exps, gender, module_type}
 import Utils._
-import java.io.{File, FileWriter, StringWriter}
+import freechips.rocketchip.config.Parameters
+
+import midas.core.SimWrapper
 
 private[passes] class SimulationMapping(
-    io: chisel3.Data)
-   (implicit param: config.Parameters) extends firrtl.passes.Pass {
+    io: Seq[chisel3.Data])
+   (implicit param: Parameters) extends firrtl.passes.Pass {
   
   override def name = "[midas] Simulation Mapping"
 

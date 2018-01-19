@@ -26,6 +26,7 @@ class WireChannel(val w: Int)(implicit p: Parameters) extends Module {
   if (p(EnableSnapshot)) {
     io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
+    io.trace := DontCare
     io.trace.valid := Bool(false)
   }
 }
@@ -111,6 +112,7 @@ class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implici
     wires.ready.ready := tokensFace.ready
     io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
   } else {
+    io.trace := DontCare
     io.trace.bits.valid  := Bool(false)
     io.trace.valid.valid := Bool(false)
     io.trace.ready.valid := Bool(false)
