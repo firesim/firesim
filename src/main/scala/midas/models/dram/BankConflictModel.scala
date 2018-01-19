@@ -35,13 +35,13 @@ case class BankConflictReferenceKey(cycleBits: Int, idBits: Int, lenBits: Int, b
 
 class BankQueueEntry(key: BankConflictReferenceKey) extends GenericParameterizedBundle(key) {
   val xaction = new TransactionMetaData(MetaDataWidths(key.idBits, key.lenBits))
-  val bankAddr = UInt(width = key.bankAddrBits)
+  val bankAddr = UInt(key.bankAddrBits.W)
 }
 
 // Appends a target cycle at which this reference should be complete
 class BankConflictReference(key: BankConflictReferenceKey) extends GenericParameterizedBundle(key) {
   val reference = new BankQueueEntry(key)
-  val cycle = UInt(width = key.cycleBits) // Indicates latency until doneness
+  val cycle = UInt(key.cycleBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires
 }
 

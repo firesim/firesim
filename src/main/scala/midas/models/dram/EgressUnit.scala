@@ -18,8 +18,8 @@ import midas.widgets._
 
 class FreeList(entries: Int) extends Module {
   val io = IO(new Bundle {
-    val freeId = Flipped(Valid(UInt(width=log2Up(entries))))
-    val nextId = Decoupled(UInt(width = log2Up(entries)))
+    val freeId = Flipped(Valid(UInt(log2Up(entries).W)))
+    val nextId = Decoupled(UInt(log2Up(entries).W))
   })
   require(entries > 0)
   val nextId = Reg(init = { val i = Wire(Valid(UInt())); i.valid := true.B;
@@ -46,8 +46,8 @@ class FreeList(entries: Int) extends Module {
 // This maintains W-W R-R orderings by managing a set of shared physical
 // queues based on the the NASTI id field.
 class RATEntry(vIdWidth: Int, pIdWidth: Int) extends Bundle {
-  val current = Valid(UInt(width = vIdWidth))
-  val next = Valid(UInt(width = pIdWidth))
+  val current = Valid(UInt(vIdWidth.W))
+  val next = Valid(UInt(pIdWidth.W))
   val head = Output(Bool())
 
   def matchHead(id: UInt): Bool = {
@@ -86,8 +86,8 @@ object RATEntry {
 }
 
 class AllocationIO(vIdWidth: Int, pIdWidth: Int) extends Bundle {
-  val pId = Output(UInt(width = pIdWidth))
-  val vId = Input(UInt(width = vIdWidth))
+  val pId = Output(UInt(pIdWidth.W))
+  val vId = Input(UInt(vIdWidth.W))
   val ready = Output(Bool())
   val valid = Input(Bool())
 
@@ -100,7 +100,7 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
   val vIdWidth = log2Up(numVIds)
   val io = IO(new Bundle {
     // Free a physical ID
-    val free = Flipped(Valid(UInt(width=pIdWidth)))
+    val free = Flipped(Valid(UInt(pIdWidth.W)))
     // ID Allocation. Two way handshake. The next available PId is held on
     // nextPId.bits. nextPID.valid == false if there are no free IDs avaiable.
     // Allocation occurs when nextPId.fire asserts
@@ -174,7 +174,7 @@ class ReadEgressResponseIO(implicit p: Parameters) extends NastiBundle()(p) {
 }
 
 class ReadEgressReqIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val t = Output(Valid(UInt(width = p(NastiKey).idBits)))
+  val t = Output(Valid(UInt(p(NastiKey).idBits.W)))
   val hValid = Output(Bool())
 }
 
@@ -211,11 +211,11 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   // Queue address from which to dequeue the response
   val (deqPId: UInt, deqPIdReg: ValidIO[UInt]) = if (generateTranslation) {
     val rob = Module(new ReorderBuffer(1 << p(NastiKey).idBits, maxRequests))
-    val enqPIdReg = Reg(init = {val i = Wire(Valid(UInt(width = log2Up(maxRequests))))
+    val enqPIdReg = Reg(init = {val i = Wire(Valid(UInt(log2Up(maxRequests).W)))
                               i.valid := false.B
                               i})
 
-    val deqPIdReg = RegInit({ val r = Wire(Valid(UInt(width = log2Up(maxRequests))));
+    val deqPIdReg = RegInit({ val r = Wire(Valid(UInt(log2Up(maxRequests).W)));
                               r.valid := false.B;
                               r })
     val translationFailure = currReqReg.valid && ~deqPIdReg.valid
@@ -286,7 +286,7 @@ class WriteEgressResponseIO(implicit p: Parameters) extends NastiBundle()(p) {
 }
 
 class WriteEgressReqIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val t = Output(Valid(UInt(width = p(NastiKey).idBits)))
+  val t = Output(Valid(UInt(p(NastiKey).idBits.W)))
   val hValid = Output(Bool())
 }
 // Maintains a series of incrementer/decrementers to track the number of

@@ -26,12 +26,12 @@ class LatencyPipeIO(cfg: LatencyPipeConfig)(implicit p: Parameters) extends Timi
 }
 
 class WritePipeEntry(key: MetaDataWidths) extends GenericParameterizedBundle(key) {
-  val releaseCycle = UInt(width = 64)
+  val releaseCycle = UInt(64.W)
   val xaction = new WriteMetaData(key)
 }
 
 class ReadPipeEntry(key: MetaDataWidths) extends GenericParameterizedBundle(key) {
-  val releaseCycle = UInt(width = 64)
+  val releaseCycle = UInt(64.W)
   val xaction = new ReadMetaData(key)
 }
 

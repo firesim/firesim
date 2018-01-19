@@ -190,9 +190,9 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   writeEgress.io.resp.tReady := model.io.egressResp.bReady
   model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
-  ingress.reset := reset || io.tReset.bits && tFireHelper.fire(ingressReady)
-  readEgress.reset := reset || io.tReset.bits && tFireHelper.fire(true.B)
-  writeEgress.reset := reset || io.tReset.bits && tFireHelper.fire(true.B)
+  ingress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(ingressReady)
+  readEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
+  writeEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
 
   val targetFire = tFireHelper.fire(true.B)// dummy arg
   // Generate the configuration registers and tie them to the ctrl bus

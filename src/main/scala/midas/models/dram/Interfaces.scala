@@ -28,8 +28,8 @@ class NastiRespChannels(implicit val p: Parameters) extends ParameterizedBundle 
 // Target-level interface
 class EgressReq(implicit val p: Parameters) extends ParameterizedBundle
     with HasNastiParameters {
-  val b = Valid(UInt(width = nastiWIdBits))
-  val r = Valid(UInt(width = nastiRIdBits))
+  val b = Valid(UInt(nastiWIdBits.W))
+  val r = Valid(UInt(nastiRIdBits.W))
 }
 
 // Target-level interface
@@ -43,12 +43,12 @@ class EgressResp(implicit val p: Parameters) extends ParameterizedBundle {
 // Contains the metadata required to track a transaction as it it requested from the egress unit
 class CurrentReadResp(implicit val p: Parameters) extends ParameterizedBundle
     with HasNastiParameters {
-  val id = UInt(width = nastiRIdBits)
-  val len = UInt(width = nastiXLenBits)
+  val id = UInt(nastiRIdBits.W)
+  val len = UInt(nastiXLenBits.W)
 }
 class CurrentWriteResp(implicit val p: Parameters) extends ParameterizedBundle 
     with HasNastiParameters {
-  val id = UInt(width = nastiRIdBits)
+  val id = UInt(nastiRIdBits.W)
 }
 
 class MemModelTargetIO(implicit val p: Parameters) extends ParameterizedBundle {
