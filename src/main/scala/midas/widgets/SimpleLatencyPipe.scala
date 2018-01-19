@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import chisel3._
+import chisel3.core._
 import chisel3.util._
 import junctions._
 import config.{Parameters, Field}
@@ -60,12 +60,12 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
 
   val ren = has_addr && state === sIdle
   val v = Seq.fill(key.nWays)(Mem(key.nSets, Bool()))
-  val tags = Seq.fill(key.nWays)(SeqMem(key.nSets, UInt((nastiXAddrBits-8).W)))
+  val tags = Seq.fill(key.nWays)(SyncReadMem(key.nSets, UInt((nastiXAddrBits-8).W)))
   val tag_reads = tags map (_.read(idx, ren) & tagMask)
   val tag_matches = tag_reads map (_ === tag_reg)
-  val match_way = Vec(tag_matches) indexWhere ((x: Bool) => x)
+  val match_way = VecInit(tag_matches) indexWhere ((x: Bool) => x)
 
-  io.resp.bits.hit := Vec(v map (_(idx)))(match_way) && (tag_matches reduce (_ || _))
+  io.resp.bits.hit := VecInit(v map (_(idx)))(match_way) && (tag_matches reduce (_ || _))
   io.resp.bits.wr := is_wr_reg
   io.resp.valid := state === sRead
   io.idle := state === sIdle && !has_addr
@@ -74,7 +74,7 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
   val wen = !ren && state === sRead && !io.resp.bits.hit
   val valid_all = ((v map (_(idx_reg))).zipWithIndex foldLeft true.B){
     case (res, (x, way)) => res && (x || wayMask < way.U) }
-  val invalid_way = Vec(v map (_(idx_reg))) indexWhere ((x: Bool) => !x)
+  val invalid_way = VecInit(v map (_(idx_reg))) indexWhere ((x: Bool) => !x)
   val lsfr = LFSR16(!io.resp.bits.hit && io.resp.valid) // is it right?
   val repl_way = Mux(wayBits === 0.U, 0.U,
                  Mux(valid_all, lsfr & wayMask, invalid_way))
@@ -149,7 +149,7 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
       l2.io.raddr.valid := tNasti.ar.valid && fire
       l2.io.waddr.bits  := tNasti.aw.bits.addr
       l2.io.waddr.valid := tNasti.aw.valid && fire
-      l2.io.wlast.bits  := Bool(true)
+      l2.io.wlast.bits  := true.B
       l2.io.wlast.valid := tNasti.w.valid && tNasti.w.bits.last && fire
       l2Idle := l2.io.idle
       rCycleReady := rCycles.io.enq.ready && l2.io.raddr.ready
@@ -159,8 +159,8 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
       Mux(l2.io.resp.bits.hit, l2Latency, memLatency)
   }
 
-  rCycles.reset := reset || targetReset
-  wCycles.reset := reset || targetReset
+  rCycles.reset := reset.toBool || targetReset
+  wCycles.reset := reset.toBool || targetReset
   rCycleValid := rCycles.io.deq.valid && rCycles.io.deq.bits <= cycles
   wCycleValid := wCycles.io.deq.valid && wCycles.io.deq.bits <= cycles
   rCycles.io.enq.bits  := cycles + latency
