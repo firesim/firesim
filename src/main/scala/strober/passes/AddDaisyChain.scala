@@ -441,7 +441,7 @@ class AddDaisyChains(
     val chirrtl = Parser parse (chisel3.Driver emit (() => new core.DaisyBox))
     val daisybox = (new MiddleFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
-    val daisyType = daisybox.modules.head.ports.head.tpe
+    val daisyType = daisybox.modules.head.ports.find(_.name == "io").get.tpe
     val targetMods = postorder(c, meta)(transform(namespace, daisyType, chainMods, hasChain))
     c.copy(modules = chainMods ++ targetMods)
   }
