@@ -56,10 +56,10 @@ private[passes] class SimulationMapping(
     val chirrtl = Parser parse (chisel3.Driver emit (() => sim))
     val annotations = new AnnotationMap(Nil)
     val writer = new StringWriter
-    val targetType = module_type((c.modules find (_.name == c.main)).get)
     // val writer = new FileWriter(new File("SimWrapper.ir"))
     val circuit = renameMods((new LowFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), writer)).circuit, Namespace(c))
+    val targetType = module_type((c.modules find (_.name == c.main)).get)
     val modules = c.modules ++ (circuit.modules flatMap
       init(c.info, c.main, circuit.main, targetType))
     // writer.close
