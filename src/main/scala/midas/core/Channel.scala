@@ -63,7 +63,7 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 
 class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
-  val target = Module(new Queue(gen, n))
+  val target = Module(new Queue(gen.chiselCloneType, n))
   val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
 
   target.reset := io.targetReset.bits && io.targetReset.valid

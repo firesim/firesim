@@ -4,7 +4,6 @@ package midas
 package widgets
 
 import core.{HostPort, HostPortIO}
-// from rocketchip
 import junctions._
 
 import chisel3._
