@@ -32,19 +32,19 @@ private[passes] class SimulationMapping(
   private def init(info: Info, target: String, main: String, tpe: Type)(m: DefModule) = m match {
     case m: Module if m.name == main =>
       val body = initStmt(target)(m.body)
-      val stmts = Seq(
-        Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire", BoolType)),
-        Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))) ++
+      val stmts = Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire", BoolType)) +:
       (if (!param(EnableSnapshot)) Nil
        else {
          val ports = (m.ports map (p => p.name -> p)).toMap
-         create_exps(wsub(wref("target", tpe), "daisy")) map { e =>
+         (create_exps(wsub(wref("target", tpe), "daisy")) map { e =>
            val io = WRef(loweredName(mergeRef(wref("io"), splitRef(e)._2)))
            ports(io.name).direction match {
              case Input  => Connect(NoInfo, e, io)
              case Output => Connect(NoInfo, io, e)
            }
-         }
+         }) ++ Seq(
+           Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))
+         )
        })
       Some(m copy (info = info, body = Block(body +: stmts)))
     case m: Module => Some(m)
