@@ -32,9 +32,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
   })
 
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
-  private val daisyResetPort = Port(NoInfo, "daisyReset", Input, BoolType)
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
-  private val daisyReset = wref(daisyResetPort.name, daisyResetPort.tpe)
 
   private def collect(ens: Enables)(s: Statement): Statement = {
     s match {
@@ -59,8 +57,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
                       (s: Statement): Statement = s match {
     case s: WDefInstance if !(srams contains s.module) =>
       Block(Seq(s,
-        Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire),
-        Connect(NoInfo, wsub(wref(s.name), "daisyReset"), daisyReset)
+        Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire)
       ))
     case s: DefRegister =>
       val regRef = wref(s.name, s.tpe)
@@ -89,7 +86,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
     if (srams contains m.name) m
     else m map collect(ens) map connect(ens, stmts) match {
       case m: Module =>
-        m.copy(ports = m.ports ++ Seq(targetFirePort, daisyResetPort),
+        m.copy(ports = m.ports ++ Seq(targetFirePort),
                body = Block(m.body +: stmts))
       case m: ExtModule => m
     }

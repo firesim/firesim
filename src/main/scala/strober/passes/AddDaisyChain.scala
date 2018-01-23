@@ -385,6 +385,7 @@ class AddDaisyChains(
                   (s: Statement): Statement = s match {
     // Connect restart pins
     case s: WDefInstance if !(srams contains s.module) => Block(Seq(s,
+      Connect(NoInfo, wsub(wref(s.name), "daisyReset"), wref("daisyReset", BoolType)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.SRAM), daisyPort("restart")(ChainType.SRAM)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.RegFile), daisyPort("restart")(ChainType.RegFile))
     ))
@@ -424,12 +425,13 @@ class AddDaisyChains(
       val repl = new Netlist
       val clock = m.ports flatMap (p =>
         create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
+      val daisyReset = Port(NoInfo, "daisyReset", Input, BoolType)
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
         insertChains(m, namespace, netlist, readers, repl, chainMods, hasChain))
       val bodyx = updateStmts(readers, repl, clock, stmts)(m.body)
-      m.copy(ports = m.ports :+ daisyPort,
+      m.copy(ports = m.ports ++ Seq(daisyReset, daisyPort),
              body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
     case m => m
   }
