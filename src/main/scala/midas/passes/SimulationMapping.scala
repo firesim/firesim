@@ -24,8 +24,10 @@ private[passes] class SimulationMapping(
 
   private def initStmt(target: String)(s: Statement): Statement =
     s match {
-      case s: WDefInstance if s.name == "target" && s.module == "TargetBox" =>
-        s copy (module = target) // replace TargetBox with the actual target module
+      case s: WDefInstance if s.name == "target" && s.module == "TargetBox" => Block(Seq(
+        s copy (module = target), // replace TargetBox with the actual target module
+        IsInvalid(NoInfo, wref("target")) // FIXME: due to rocketchip
+      ))
       case s => s map initStmt(target)
     }
 
