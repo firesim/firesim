@@ -124,6 +124,7 @@ class MultiQueue[T <: Data](
 
   require(isPow2(entries))
   val io = IO(new MultiQueueIO(gen, numQueues, entries))
+  io.count := DontCare
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
   // slot
 
@@ -171,7 +172,7 @@ class MultiQueue[T <: Data](
   io.empty := empty
   io.deq.valid := deqValid
   io.enq.ready := !full
-  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), true.B)
+  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr))
 }
 
 // Selects one of two input host decoupled channels. Drives ready false
