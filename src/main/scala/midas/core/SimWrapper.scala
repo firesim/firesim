@@ -259,9 +259,9 @@ class SimWrapper(targetIo: Seq[Data])
             targetResets += channel.io.out.bits
           case _ =>
         } */
+        if (!enableSnapshot) channel.io.trace := DontCare
         if (name == "reset") targetResets += channel.io.out.bits // FIXME: it's awkward
         channel suggestName s"WireChannel_${name}_${off}"
-        channel.io.trace := DontCare
         channel
       }
     }
@@ -312,6 +312,7 @@ class SimWrapper(targetIo: Seq[Data])
         case ActualDirection.Input => io <> channel.io.deq.target
         case ActualDirection.Output => channel.io.enq.target <> io
       }
+      if (!enableSnapshot) channel.io.trace := DontCare
       channel.io.targetReset.bits := targetReset
       channel.io.targetReset.valid := fire
       channel
