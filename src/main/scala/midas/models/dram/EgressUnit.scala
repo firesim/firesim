@@ -197,7 +197,7 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   val targetFire = io.req.hValid
 
   // On reset, the egress unit always has a single output token valid, but with invalid target data
-  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r})
+  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r.bits := DontCare ; r})
   val xactionDone = Wire(Bool())
   when (targetFire && io.req.t.valid) {
     currReqReg := io.req.t
@@ -304,7 +304,7 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   val targetFire = io.req.hValid
 
   // Indicates whether the egress unit is releasing a transaction
-  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r})
+  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r.bits := DontCare ; r})
   val haveAck = RegInit(false.B)
   when (targetFire && io.req.t.valid) {
     currReqReg := io.req.t

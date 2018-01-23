@@ -77,7 +77,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   tNasti.b <> backend.io.b
   tNasti.r <> backend.io.r
   io.egressReq <> backend.io.egressReq
-  io.egressResp <> backend.io.egressResp
+  backend.io.egressResp <> io.egressResp
 
   /*
   val totalReads = RegInit(0.U(32.W))

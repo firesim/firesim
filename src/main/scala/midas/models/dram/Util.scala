@@ -55,7 +55,7 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
 // Adds a pipeline stage to a decoupled. Readys are tied together combinationally
 object DecoupledPipeStage {
   def apply[T <: Data](in: DecoupledIO[T]): DecoupledIO[T] = {
-    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := false.B; i})
+    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := false.B; i.bits := DontCare ; i})
     val out = V2D(reg)
     when (out.ready || !reg.valid) {
       reg.valid := in.valid

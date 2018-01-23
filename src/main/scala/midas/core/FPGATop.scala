@@ -139,7 +139,14 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       val widget = addWidget(endpoint.widget(p), widgetName)
       widget.reset := reset.toBool || simReset
       widget match {
-        case model: MemModel => arb.io.master(i) <> model.io.host_mem
+        case model: MemModel =>
+          arb.io.master(i) <> model.io.host_mem
+          model.io.tNasti.hBits.aw.bits.user := DontCare
+          model.io.tNasti.hBits.aw.bits.region := DontCare
+          model.io.tNasti.hBits.ar.bits.user := DontCare
+          model.io.tNasti.hBits.ar.bits.region := DontCare
+          model.io.tNasti.hBits.w.bits.id := DontCare
+          model.io.tNasti.hBits.w.bits.user := DontCare
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
