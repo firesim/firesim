@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
@@ -19,6 +19,7 @@ class MidasLLCConfigBundle(key: MidasLLCParameters) extends Bundle {
 }
 
 class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiModule {
+  import Chisel._
   val io = IO(new Bundle {
     val config = Input(new MidasLLCConfigBundle(key))
     val raddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
