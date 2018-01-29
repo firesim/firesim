@@ -7,6 +7,8 @@ if [ $# -ne 0 ]; then
     LINUX_CONFIG=linux-config-spike
   elif [ $1 == "firesim" ]; then
     LINUX_CONFIG=linux-config-firesim
+  elif [ $1 == "initramfs" ] ; then
+    LINUX_CONFIG=linux-config-initramfs
   else
     echo "Please provide a valid platform (or no arguments to default to firesim)"
     exit 1
