@@ -50,29 +50,29 @@ $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) $(foreach f, $(DRIVER), -I$(dir $(f)))
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread 
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp 
 
 design_v = $(GEN_DIR)/$(shim).v
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
 endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.o, $(endpoint_cc))
-$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h) $(platform_gmp)
-	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
+$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
 platform_files := simif simif_$(PLATFORM) sample/sample
 platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files) sample/simif_sample))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files) sample/simif_sample))
 
-$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h) $(platform_gmp)
+$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -I$(platform_gmp_install_dir)/include -c -o $@ $< -include $(word 2, $^)
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o) $(platform_gmp)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -I$(platform_gmp_install_dir)/include -include $< \
-	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(platform_gmp)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< \
+	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
@@ -84,8 +84,7 @@ emul_v := $(v_dir)/emul_$(PLATFORM).v
 # Compile verilator emulation binary
 VERILATOR ?= verilator --cc --exe
 override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
-	-CFLAGS "$(CXXFLAGS) -I$(emul_gmp_install_dir)/include" \
-	-LDFLAGS "$(LDFLAGS) -L$(emul_gmp_install_dir)/lib -lgmp -lmidas" \
+	-CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS) -lmidas" \
 	$(VERILATOR_FLAGS)
 
 ifeq ($(PLATFORM),zynq)
@@ -95,7 +94,7 @@ ifeq ($(PLATFORM),f1)
 top_module = F1Shim
 endif
 
-$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
@@ -103,7 +102,7 @@ $(OUT_DIR)/V$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gm
 	-o $@ $(design_v) $(DRIVER) $(emul_cc) $(endpoint_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/V$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
@@ -117,9 +116,9 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 # Compile VCS emulation binary
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
-	-debug_pp +no_notifier -e vcs_main -cpp $(CXX) \
-	-CFLAGS "$(CXXFLAGS) -I$(emul_gmp_install_dir)/include -DVCS -I$(VCS_HOME)/include" \
-	-LDFLAGS "$(LDFLAGS) -L$(emul_gmp_install_dir)/lib -lgmp -lmidas" \
+	 -notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_pp +no_notifier -e vcs_main -cpp $(CXX) \
+	-CFLAGS "$(CXXFLAGS) -DVCS -I$(VCS_HOME)/include" \
+	-LDFLAGS "$(LDFLAGS) -lmidas" \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_MEM_INIT \
 	+define+RANDOMIZE_REG_INIT \
@@ -127,7 +126,7 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+RANDOMIZE_INVALID_ASSIGN \
 	$(VCS_FLAGS)
 
-$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN).csrc
 	rm -rf $(OUT_DIR)/$(DESIGN).daidir
@@ -136,7 +135,7 @@ $(OUT_DIR)/$(DESIGN): $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) 
 	-CFLAGS "-include $<" \
 	-o $@ $(GEN_DIR)/$(DESIGN)-const.vh $(design_v) $(emul_v) $(lib) $(DRIVER) $(emul_cc) $(endpoint_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(emul_gmp) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(GEN_DIR)/$(DESIGN)-const.h $(design_v) $(emul_v) $(lib) $(DRIVER) $(driver_h) $(emul_cc) $(emul_h) $(endpoint_cc) $(endpoint_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
