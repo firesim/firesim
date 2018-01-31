@@ -8,14 +8,7 @@ import freechips.rocketchip.util.GenericParameterizedBundle
 import junctions._
 import midas.widgets._
 
-class BankConflictMMRegIO(cfg: BankConflictConfig) extends MMRegIO(cfg: BaseConfig){
-  val latency = Input(UInt(32.W))
-  val conflictPenalty = Input(UInt(32.W))
-  //  The mask bits setting determines how many banks are used
-  val bankAddr = Input(new ProgrammableSubAddr(log2Ceil(cfg.maxBanks)))
-
-  val bankConflicts = Output(Vec(cfg.maxBanks, UInt(32.W)))
-}
+import Console.{UNDERLINED, RESET}
 
 case class BankConflictConfig(
     maxBanks: Int,
@@ -26,23 +19,45 @@ case class BankConflictConfig(
   def elaborate()(implicit p: Parameters): BankConflictModel = Module(new BankConflictModel(this))
 }
 
+class BankConflictMMRegIO(cfg: BankConflictConfig) extends SplitTransactionMMRegIO(cfg: BaseConfig){
+  val latency = Input(UInt(cfg.maxLatencyBits.W))
+  val conflictPenalty = Input(UInt(32.W))
+  //  The mask bits setting determines how many banks are used
+  val bankAddr = Input(new ProgrammableSubAddr(log2Ceil(cfg.maxBanks), "Bank Address"))
+  val bankConflicts = Output(Vec(cfg.maxBanks, UInt(32.W)))
+
+  val registers = maxReqRegisters ++ Seq(
+    (latency         -> RuntimeSetting(30,
+                                       "Latency",
+                                       min = 1,
+                                       max = Some((1 << (cfg.maxLatencyBits-1)) - 1))),
+    (conflictPenalty -> RuntimeSetting(30,
+                                      "Bank-Conflict Penalty",
+                                      max = Some((1 << (cfg.maxLatencyBits-1)) - 1)))
+  )
+
+  def requestSettings() {
+    Console.println(s"${UNDERLINED}Generating runtime configuration for Bank-Conflict Model${RESET}")
+  }
+}
+
 class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
-    extends TimingModelIO(cfg)(p) {
+    extends SplitTransactionModelIO(cfg)(p) {
   val mmReg = new BankConflictMMRegIO(cfg)
 }
 
-case class BankConflictReferenceKey(cycleBits: Int, idBits: Int, lenBits: Int, bankAddrBits: Int)
-
-class BankQueueEntry(key: BankConflictReferenceKey) extends GenericParameterizedBundle(key) {
-  val xaction = new TransactionMetaData(MetaDataWidths(key.idBits, key.lenBits))
-  val bankAddr = UInt(key.bankAddrBits.W)
+class BankQueueEntry(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+  val xaction = new TransactionMetaData
+  val bankAddr = UInt(log2Ceil(cfg.maxBanks).W)
+  override def cloneType = new BankQueueEntry(cfg)(p).asInstanceOf[this.type]
 }
 
 // Appends a target cycle at which this reference should be complete
-class BankConflictReference(key: BankConflictReferenceKey) extends GenericParameterizedBundle(key) {
-  val reference = new BankQueueEntry(key)
-  val cycle = UInt(key.cycleBits.W) // Indicates latency until doneness
+class BankConflictReference(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+  val reference = new BankQueueEntry(cfg)
+  val cycle = UInt(cfg.maxLatencyBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires
+  override def cloneType = new BankConflictReference(cfg)(p).asInstanceOf[this.type]
 }
 
 object BankConflictConstants {
@@ -52,38 +67,29 @@ object BankConflictConstants {
 
 import BankConflictConstants._
 
-class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends TimingModel(cfg)(p) {
+class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
   // This is the absolute number of banks the model can account for
   lazy val io = IO(new BankConflictIO(cfg))
 
   val latency = io.mmReg.latency
   val conflictPenalty = io.mmReg.conflictPenalty
 
-  val refKey = BankConflictReferenceKey(cfg.maxLatencyBits, nastiXIdBits, nastiXLenBits, log2Up(cfg.maxBanks))
-
   val transactionQueue = Module(new DualQueue(
-      gen = new BankQueueEntry(refKey),
+      gen = new BankQueueEntry(cfg),
       entries = cfg.maxWrites + cfg.maxReads))
 
   transactionQueue.io.enqA.valid := newWReq
-  transactionQueue.io.enqA.bits.xaction.id := awQueue.io.deq.bits.id
-  transactionQueue.io.enqA.bits.xaction.len := awQueue.io.deq.bits.len
-  transactionQueue.io.enqA.bits.xaction.isWrite := true.B
+  transactionQueue.io.enqA.bits.xaction := TransactionMetaData(awQueue.io.deq.bits)
   transactionQueue.io.enqA.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
 
   transactionQueue.io.enqB.valid := tNasti.ar.fire
-  transactionQueue.io.enqB.bits.xaction.id := tNasti.ar.bits.id
-  transactionQueue.io.enqB.bits.xaction.len := tNasti.ar.bits.len
-  transactionQueue.io.enqB.bits.xaction.isWrite := false.B
+  transactionQueue.io.enqB.bits.xaction := TransactionMetaData(tNasti.ar.bits)
   transactionQueue.io.enqB.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
 
   val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(UInt(0, cfg.maxLatencyBits)))
   val bankConflictCounts = RegInit(Vec.fill(cfg.maxBanks)(0.U(32.W)))
 
-  val refList = Seq.fill(cfg.maxReads + cfg.maxWrites)(
-     RegInit({val w = Wire(Valid(new BankConflictReference(refKey))); w.valid := false.B; w}))
-
-  val newReference = Wire(Decoupled(new BankConflictReference(refKey)))
+  val newReference = Wire(Decoupled(new BankConflictReference(cfg)))
   newReference.valid := transactionQueue.io.deq.valid
   newReference.bits.reference := transactionQueue.io.deq.bits
   val marginalCycles = latency + Vec(bankBusyCycles)(transactionQueue.io.deq.bits.bankAddr)
@@ -91,7 +97,9 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   newReference.bits.done := marginalCycles === 0.U
   transactionQueue.io.deq.ready := newReference.ready
 
-  val refUpdates = CollapsingBuffer(refList, newReference)
+  val refBuffer = CollapsingBuffer(newReference, cfg.maxReads + cfg.maxWrites)
+  val refList = refBuffer.io.entries
+  val refUpdates = refBuffer.io.updates
 
   bankBusyCycles.zip(bankConflictCounts).zipWithIndex.foreach({ case ((busyCycles, conflictCount), idx) =>
     when(busyCycles > 0.U){
@@ -110,13 +118,11 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   })
 
   val selector =  Module(new Arbiter(refList.head.bits.cloneType, refList.size))
-  //Shouldn't be required
-  selector.io.out.ready := true.B
-  selector.io.in <> Vec(refList.map({ entry =>
+  selector.io.in <> refList.map({ entry =>
       val candidate = V2D(entry)
       candidate.valid := entry.valid && entry.bits.done
       candidate
-    }))
+    })
 
   // Take the readies from the arbiter, and kill the selected entry
   refUpdates.zip(selector.io.in).foreach({ case (ref, sel) =>
@@ -124,9 +130,11 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
 
   io.mmReg.bankConflicts := bankConflictCounts
 
-  lazy val backend = Module(new UnifiedAXI4Backend(cfg))
-
   val completedRef = selector.io.out.bits.reference
-  backend.io.newXaction.bits := completedRef.xaction
-  backend.io.newXaction.valid := selector.io.out.valid
+
+  rResp.bits := ReadResponseMetaData(completedRef.xaction)
+  wResp.bits := WriteResponseMetaData(completedRef.xaction)
+  wResp.valid := selector.io.out.valid && completedRef.xaction.isWrite
+  rResp.valid := selector.io.out.valid && !completedRef.xaction.isWrite
+  selector.io.out.ready := Mux(completedRef.xaction.isWrite, wResp.ready, rResp.ready)
 }

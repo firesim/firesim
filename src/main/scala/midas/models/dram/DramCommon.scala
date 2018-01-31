@@ -1,15 +1,24 @@
 package midas
 package models
 
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.GenericParameterizedBundle
 import chisel3._
 import chisel3.util._
+
+import org.json4s._
+import org.json4s.native.JsonMethods._
+
+import Console.{UNDERLINED, GREEN, RESET}
+import scala.collection.mutable
+import scala.io.Source
+
 
 trait HasDRAMMASConstants {
   val maxDRAMTimingBits = 7 // width of a DRAM timing
   val tREFIWidth = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
   val tREFIBits = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
-  val tRFCBits = 10       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
+  val tRFCBits = 10
   val numBankStates = 2
   val numRankStates = 2
 }
@@ -20,7 +29,11 @@ object DRAMMasEnums extends HasDRAMMASConstants {
   val rank_active :: rank_refresh :: Nil = Enum(numRankStates)
 }
 
-class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants {
+
+case class JSONField(value: BigInt, units: String)
+
+class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasProgrammableRegisters 
+    with HasConsoleUtils {
   // The most vanilla of DRAM timings
   val tAL = UInt(maxDRAMTimingBits.W)
   val tCAS = UInt(maxDRAMTimingBits.W)
@@ -40,30 +53,214 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants {
   val tWR  = UInt(maxDRAMTimingBits.W)
   val tWTR = UInt(maxDRAMTimingBits.W)
 
+
+  def tCAS2tCWL(tCAS: BigInt) = {
+    require(tCAS > 4)
+    if      (tCAS > 12 ) tCAS - 4
+    else if (tCAS > 9)   tCAS - 3
+    else if (tCAS > 7)   tCAS - 2
+    else if (tCAS > 5)   tCAS - 1
+    else                 tCAS
+  }
+
+  // Defaults are set to sg093, x8, 2048Mb density (1GHz clock)
+  val registers = Seq(
+    tAL   -> RuntimeSetting(0,"Additive Latency"),
+    tCAS  -> JSONSetting(14,  "CAS Latency",                    { _("CL_TIME") }),
+    tCMD  -> JSONSetting(1,   "Command Transport Time",         { lut => 1 }),
+    tCWD  -> JSONSetting(10,  "Write CAS Latency",              { lut =>  tCAS2tCWL(lut("CL_TIME")) }),
+    tCCD  -> JSONSetting(4,   "Column-to-Column Delay",         { _("TCCD") }),
+    tFAW  -> JSONSetting(25,  "Four row-Activation Window",     { _("TFAW") }),
+    tRAS  -> JSONSetting(33,  "Row Access Strobe Delay",        { _("TRAS_MIN") }),
+    tREFI -> JSONSetting(7800,"REFresh Interval",               { _("TRFC_MAX")/9 }),
+    tRC   -> JSONSetting(47,  "Row Cycle time",                 { _("TRC") }),
+    tRCD  -> JSONSetting(14,  "Row-to-Column Delay",            { _("TRCD") }),
+    tRFC  -> JSONSetting(160, "ReFresh Cycle time",             { _("TRFC_MIN") }),
+    tRRD  -> JSONSetting(8,   "Row-to-Row Delay",               { _("TRRD") }),
+    tRP   -> JSONSetting(14,  "Row-Precharge delay",            { _("TRP") }),
+    tRTP  -> JSONSetting(8,   "Read-To-Precharge delay",        { lut => lut("TRTP").max(lut("TRTP_TCK")) }),
+    tRTRS -> JSONSetting(2,   "Rank-to-Rank Switching Time",    { lut => 2 }), // FIXME
+    tWR   -> JSONSetting(15,  "Write-Recovery time",            { _("TWR") }),
+    tWTR  -> JSONSetting(8,   "Write-To-Read Turnaround Time",  { _("TWTR") })
+  )
+
+  def setDependentRegisters(lut: Map[String, JSONField], freqMHz: BigInt) {
+    val periodPs = 1000000.0/freqMHz.toFloat
+    // Generate a lookup table of timings in units of tCK (as all programmable
+    // timings in the model are in units of the controller clock frequency
+    val lutTCK = lut.flatMap({
+      case (name , JSONField(value, "ps")) =>
+        Some(name -> BigInt(((value.toFloat + periodPs - 1)/periodPs).toInt))
+      case (name , JSONField(value, "tCK")) => Some(name -> value)
+      case _ => None
+    })
+
+    registers foreach {
+      case (elem, reg: JSONSetting) => reg.setWithLUT(lutTCK)
+      case _ => None
+    }
+  }
+
   override def cloneType = new DRAMProgrammableTimings().asInstanceOf[this.type]
+
 }
 
-abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(baseParams) { 
+case class DRAMBackendKey(writeDepth: Int, readDepth: Int, latencyBits: Int)
+
+abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(baseParams) with HasDRAMMASConstants {
   def dramKey: DRAMOrganizationKey
+  def backendKey: DRAMBackendKey
 }
 
-class DRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) {
+abstract class BaseDRAMMMRegIO(val cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
   // Addr assignment
-  val bankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.bankBits))
-  val rowAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rowBits))
-  val rankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rankBits))
+  val bankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.bankBits, "Bank Address"))
+  val rowAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rowBits, "Row Address"))
+  val rankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rankBits, "Rank Address"))
   // Page policy 1 = open, 0 = closed
   val openPagePolicy = Input(Bool())
+  // Additional latency added to read data beats after it's received from the devices
+  val backendLatency = Input(UInt(cfg.backendKey.latencyBits.W))
+
   // Counts the number of misses in the open row buffer
   //val rowMisses = Output(UInt(32.W))
   val dramTimings = Input(new DRAMProgrammableTimings())
   val rankPower = Output(Vec(cfg.dramKey.maxRanks, new RankPowerIO))
+
+
+  // END CHISEL TYPES
+  val dramBaseRegisters = Seq(
+    (openPagePolicy -> RuntimeSetting(1, "Open-Page Policy")),
+    (backendLatency -> RuntimeSetting(2,
+                                      "Backend Latency",
+                                      min = 1,
+                                      max = Some(1 << (cfg.backendKey.latencyBits - 1))))
+  )
+
+  // A list of DDR3 speed grades provided by micron.
+  // _1 = is used as a key to look up a device,  _2 = long name
+  val speedGrades = Seq(
+    ("sg093" -> "DDR3-2133 (14-14-14)  Minimum Clock Period: 938 ps"),
+    ("sg107" -> "DDR3-1866 (13-13-13)  Minimum Clock Period: 1071 ps"),
+    ("sg125" -> "DDR3-1600 (11-11-11)  Minimum Clock Period: 1250 ps"),
+    ("sg15E" -> "DDR3-1333H (9-9-9)  Minimum Clock Period: 1500 ps"),
+    ("sg15" -> "DDR3-1333J (10-10-10)  Minimum Clock Period: 1500 ps"),
+    ("sg187U" -> "DDR3-1066F (7-7-7)  Minimum Clock Period: 1875 ps"),
+    ("sg187" -> "DDR3-1066G (8-8-8)  Minimum Clock Period: 1875 ps"),
+    ("sg25E" -> "DDR3-800E (5-5-5)  Minimum Clock Period: 2500 ps"),
+    ("sg25" -> "DDR3-800 (6-6-6)  Minimum Clock Period: 2500 ps")
+  )
+
+  // Prompt the user for an address assignment scheme. TODO: Channel bits.
+  def getAddressScheme(
+      numRanks: BigInt,
+      numBanks: BigInt,
+      numRows: BigInt,
+      numBytesPerLine: BigInt,
+      pageSize: BigInt) {
+
+    case class SubAddr(
+        shortName: String,
+        longName: String,
+        field: Option[ProgrammableSubAddr],
+        count: BigInt) {
+      require(isPow2(count))
+      val bits = log2Ceil(count)
+      def set(offset: Int) { field.foreach( _.forceSettings(offset, count - 1) ) }
+      def legendEntry = s"  ${shortName} -> ${longName}"
+    }
+
+    val ranks       = SubAddr("L", "Rank Address Bits", Some(rankAddr), numRanks)
+    val banks       = SubAddr("B", "Bank Address Bits", Some(bankAddr), numBanks)
+    val rows        = SubAddr("R", "Row Address Bits", Some(rowAddr),  numRows)
+    val linesPerRow = SubAddr("N", "log2(Lines Per Row)", None, pageSize/numBytesPerLine)
+    val bytesPerLine= SubAddr("Z", "log2(Bytes Per Line)", None, numBytesPerLine)
+
+    // Address schemes
+    // _1 = long name, _2 = A seq of subfields from address MSBs to LSBs
+    val addressSchemes = Seq(
+      "Baseline Open   " -> Seq(rows, ranks, banks, linesPerRow, bytesPerLine),
+      "Baseline Closed " -> Seq(rows, linesPerRow, ranks, banks, bytesPerLine)
+    )
+
+    val legendHeader = s"${UNDERLINED}Legend${RESET}\n"
+    val legendBody   = (addressSchemes.head._2 map {_.legendEntry}).mkString("\n")
+
+    val schemeStrings = addressSchemes map { case (name, addrOrder) =>
+      val shortNameOrder = (addrOrder map { _.shortName }).mkString(" | ")
+      s"${name} -> ( ${shortNameOrder} ) "
+    }
+
+    val scheme = addressSchemes(requestSeqSelection(
+      "Select an address assignment scheme:",
+      schemeStrings,
+      legendHeader + legendBody + "\nAddress scheme number"))._2
+
+    def setSubAddresses(ranges: Seq[SubAddr], offset: Int = 0): Unit = ranges match {
+      case current :: moreSigFields =>
+        current.set(offset)
+        setSubAddresses(moreSigFields, offset + current.bits)
+      case Nil => None
+    }
+    setSubAddresses(scheme.reverse)
+  }
+
+  // Prompt the user for a speedgrade selection. TODO: illegalize SGs based on frequency
+  def getSpeedGrade(): String = {
+    speedGrades(requestSeqSelection("Select a speed grade:", speedGrades.unzip._2))._1
+  }
+
+  // Get the parameters (timings, bitwidths etc..) for a paticular device from jsons in resources/
+  def lookupPart(density: BigInt, dqWidth: BigInt, speedGrade: String): Map[String, JSONField] = {
+    val dqKey = "x" + dqWidth.toString
+    val stream = getClass.getResourceAsStream(s"/midas/models/dram/${density}Mb_ddr3.json")
+    val lines = Source.fromInputStream(stream).getLines
+    implicit val formats = org.json4s.DefaultFormats
+    val json = parse(lines.mkString).extract[Map[String, Map[String, Map[String, JSONField]]]]
+    json(speedGrade)(dqKey)
+  }
+
+  def setBaseDRAMSettings(): Unit = {
+
+    // Prompt the user for overall memory organization of this channel
+    Console.println(s"${UNDERLINED}Memory system organization${RESET}")
+    val memorySize = requestInput("Memory system size in GiB", 2)
+    val numRanks =   requestInput("Number of ranks", 1)
+    val busWidth =   requestInput("DRAM data bus width in bits", 64)
+    val dqWidth =    requestInput("Device DQ width", 8)
+
+    val devicesPerRank = busWidth / dqWidth
+    val deviceDensityMib = ((memorySize << 30) * 8 / numRanks / devicesPerRank) >> 20
+    Console.println(s"${GREEN}Selected Device density (Mib) -> ${deviceDensityMib}${RESET}")
+
+    // Select the appropriate device, and look up it's parameters in resource jsons
+    Console.println(s"\n${UNDERLINED}Device Selection${RESET}")
+    val freqMHz       = requestInput("Clock Frequency in MHz", 1000)
+    val speedGradeKey = getSpeedGrade()
+
+    val lut = lookupPart(deviceDensityMib, dqWidth, speedGradeKey)
+    val dramTimingSettings = dramTimings.setDependentRegisters(lut, freqMHz)
+
+    // Determine the address assignment scheme
+    Console.println(s"\n${UNDERLINED}Address assignment${RESET}")
+    val lineSize = requestInput("Line size in Bytes", 64)
+
+    val numBanks = 8  // DDR3 Mandated
+    val pageSize = ((BigInt(1) << lut("COL_BITS").value.toInt) * devicesPerRank * dqWidth ) / 8
+    val numRows = BigInt(1) << lut("ROW_BITS").value.toInt
+    getAddressScheme(numRanks, numBanks,  numRows, lineSize, pageSize)
+  }
 }
 
-case class DRAMOrganizationKey(maxBanks: Int, maxRanks: Int, maxRows: Int) {
+case class DRAMOrganizationKey(maxBanks: Int, maxRanks: Int, dramSize: BigInt, lineBits: Int = 8) {
+  require(isPow2(maxBanks))
+  require(isPow2(maxRanks))
+  require(isPow2(dramSize))
+  require(isPow2(lineBits))
   def bankBits = log2Up(maxBanks)
   def rankBits = log2Up(maxRanks)
-  def rowBits = log2Up(maxRows)
+  def rowBits  = log2Ceil(dramSize) - lineBits
+  def maxRows  = 1 << rowBits
 }
 
 trait CommandLegalBools {
@@ -80,24 +277,37 @@ trait HasLegalityUpdateIO {
   val selectedCmd = Input(cmd_nop.cloneType)
   val autoPRE = Input(Bool())
   val cmdRow = Input(UInt(key.rowBits.W))
-  val burstLength = Input(UInt(4.W)) // TODO: Fixme
+  //val burstLength = Input(UInt(4.W)) // TODO: Fixme
 }
-
-case class BankReferenceKey(
-    idBits: Int,
-    lenBits: Int,
-    dramKey: DRAMOrganizationKey
-  ) extends HasTransactionMetaData
 
 // Add some scheduler specific metadata to a reference
 // TODO factor out different MAS metadata into a mixin
-class MASEntry(key: BankReferenceKey) extends GenericParameterizedBundle(key) {
-  val xaction = new TransactionMetaData(MetaDataWidths(key.idBits, key.lenBits))
+class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
+  val xaction = new TransactionMetaData
   val rowAddr = UInt(key.dramKey.rowBits.W)
   val bankAddrOH = UInt(key.dramKey.maxBanks.W)
   val bankAddr = UInt(key.dramKey.bankBits.W)
   val rankAddrOH = UInt(key.dramKey.maxRanks.W)
   val rankAddr = UInt(key.dramKey.rankBits.W)
+
+  def decode(from: XactionSchedulerEntry, mmReg: BaseDRAMMMRegIO) {
+    xaction := from.xaction
+    bankAddr := mmReg.bankAddr.getSubAddr(from.addr)
+    bankAddrOH := UIntToOH(bankAddr)
+    rowAddr := mmReg.rowAddr.getSubAddr(from.addr)
+    rankAddr := mmReg.rankAddr.getSubAddr(from.addr)
+    rankAddrOH := UIntToOH(rankAddr)
+  }
+
+  def addrMatch(rank: UInt, bank: UInt, row: Option[UInt] = None): Bool = {
+    val rowHit =  row.foldLeft(true.B)({ case (p, addr) => p && addr === rowAddr })
+    rank === rankAddr && bank === bankAddr && rowHit
+  }
+
+  override def cloneType = new MASEntry(key)(p).asInstanceOf[this.type]
+}
+
+class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends MASEntry(key)(p) {
   val isReady = Bool() //Set when entry hits in open row buffer
   val mayPRE = Bool() // Set when no other entires hit open row buffer
 
@@ -105,12 +315,9 @@ class MASEntry(key: BankReferenceKey) extends GenericParameterizedBundle(key) {
   // and the entry isn't personally ready
   def wantPRE(): Bool = !isReady && mayPRE // Don't need the dummy args
   def wantACT(): Bool = !isReady
-
-  def addrMatch(rank: UInt, bank: UInt, row: Option[UInt] = None): Bool = {
-    val rowHit =  row.foldLeft(true.B)({ case (p, addr) => p && addr === rowAddr })
-    rank === rankAddr && bank === bankAddr && rowHit
-  }
+  override def cloneType = new FirstReadyFCFSEntry(key)(p).asInstanceOf[this.type]
 }
+
 // Tracks the state of a bank, including:
 //   - Whether it's active/idle
 //   - Open row address
@@ -153,6 +360,7 @@ class BankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
   Seq(nextLegalPRE, nextLegalCAS, nextLegalACT) foreach { mod =>
     mod.io.decr := true.B
     mod.io.set.valid := false.B
+    mod.io.set.bits := DontCare
   }
 
   when (io.cmdUsesThisBank) {
@@ -253,6 +461,7 @@ class RankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
   Seq(nextLegalPRE, nextLegalCASW, nextLegalCASR, nextLegalACT) foreach { mod =>
     mod.io.decr := true.B
     mod.io.set.valid := false.B
+    mod.io.set.bits := DontCare
   }
 
   val tFAWcheck = Module(new Queue(io.tCycle.cloneType, entries = 4))
@@ -429,10 +638,10 @@ class RankPowerIO extends Bundle {
 
 object RankPowerIO {
   def apply(): RankPowerIO = {
-    val w = Wire(new RankPowerIO())
+    val w = Wire(new RankPowerIO)
     w.allPreCycles := 0.U
     w.numCASR := 0.U
-    w.numCASR := 0.U
+    w.numCASW := 0.U
     w.numACT := 0.U
     w
   }
@@ -468,4 +677,28 @@ class RankPowerMonitor(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
   }
 
   io.stats := stats
+}
+
+class DRAMBackendIO(latencyBits: Int)(implicit p: Parameters) extends Bundle {
+  val newRead = Flipped(Decoupled(new ReadResponseMetaData))
+  val newWrite = Flipped(Decoupled(new WriteResponseMetaData))
+  val completedRead = Decoupled(new ReadResponseMetaData)
+  val completedWrite = Decoupled(new WriteResponseMetaData)
+  val readLatency = Input(UInt(latencyBits.W))
+  val writeLatency = Input(UInt(latencyBits.W))
+  val tCycle = Input(UInt(latencyBits.W))
+}
+
+class DRAMBackend(key: DRAMBackendKey)(implicit p: Parameters) extends Module {
+  val io = IO(new DRAMBackendIO(key.latencyBits))
+  val rQueue = Module(new DynamicLatencyPipe(new ReadResponseMetaData, key.readDepth, key.latencyBits))
+  val wQueue = Module(new DynamicLatencyPipe(new WriteResponseMetaData, key.writeDepth, key.latencyBits))
+
+  io.completedRead <> rQueue.io.deq
+  io.completedWrite <> wQueue.io.deq
+  rQueue.io.enq <> io.newRead
+  rQueue.io.latency := io.readLatency
+  wQueue.io.enq <> io.newWrite
+  wQueue.io.latency := io.writeLatency
+  Seq(rQueue, wQueue) foreach { _.io.tCycle := io.tCycle }
 }

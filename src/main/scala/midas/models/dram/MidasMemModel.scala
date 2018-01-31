@@ -14,20 +14,47 @@ import midas.widgets._
 import midas.passes.{Fame1Annotator, DontTouchAnnotator}
 
 import scala.math.min
+import Console.{UNDERLINED, RESET}
+
+import java.io.{File, FileWriter}
+
 
 case class BaseParams(
+  // Pessimistically provisions the functional model. Don't be cheap:
+  // underprovisioning will force functional model to assert backpressure on
+  // target AW. W or R channels, which may lead to unexpected bandwidth throttling.
   maxReads: Int,
   maxWrites: Int,
 
-  // Area Optimization: AXI4 bursts(INCR) can be 256 beats in length -- some
+  // AREA OPTIMIZATIONS:
+  // AXI4 bursts(INCR) can be 256 beats in length -- some
   // area can be saved if the target design only issues smaller requests
   maxReadLength: Int = 256,
   maxReadsPerID: Option[Int] = None,
   maxWriteLength: Int = 256,
-  maxWritesPerID: Option[Int] = None)
+  maxWritesPerID: Option[Int] = None,
+
+  // DEBUG FEATURES
+  // Check for collisions in pending reads and writes to the host memory system
+  // May produce false positives in timing models that reorder requests
+  detectAddressCollisions: Boolean = false,
+
+  // HOST INSTRUMENTATION
+  stallEventCounters: Boolean = false, // To track causes of target-time stalls
+  localHCycleCount: Boolean = false, // Host Cycle Counter
+
+  // BASE TIMING-MODEL SETTINGS
+  // Some(key) instantiates an LLC model in front of the DRAM timing model
+  llcKey: Option[LLCKey] = None,
+
+  // BASE TIMING-MODEL INSTRUMENTATION
+  xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
+  // Number of xactions in flight in a given cycle or Some(Number of Bins)
+  occupancyHistograms: Option[Int] = None
+)
 
 abstract class BaseConfig(
-  params: BaseParams
+  val params: BaseParams
 ) extends MemModelConfig {
 
   def getMaxPerID(modelMaxXactions: Int, userMax: Option[Int]): Int = {
@@ -45,6 +72,8 @@ abstract class BaseConfig(
   def maxWritesPerID(implicit p: Parameters) =  getMaxPerID(maxWrites, params.maxWritesPerID)
   def maxReadsPerID(implicit p: Parameters) =  getMaxPerID(maxReads, params.maxReadsPerID)
 
+  def useLLCModel = params.llcKey != None
+
   // Timing model classes implement this function to elaborate the correct module
   def elaborate()(implicit p: Parameters): TimingModel
 
@@ -52,71 +81,31 @@ abstract class BaseConfig(
   val maxReadsBits = log2Up(maxReads)
 }
 
-trait IngressModuleParameters {
-  val cfg: BaseConfig
-  // In general the only consequence of undersizing these are more wasted
-  // host cycles the model waits to drain these. TODO: Find good defaults
 
-  // DEADLOCK RISK: if the host memory system accepts only one AW while a W
-  // xaction is inflight, and the entire W-transaction is not available in the
-  // ingress module the host memory system will drain the WQueue without
-  // consuming another AW token. The target will remain stalled and cannot
-  // complete the W xaction.
-  val ingressAWQdepth = cfg.maxWrites
-  val ingressWQdepth = 2*cfg.maxWriteLength
-  val ingressARQdepth = 4
-}
+// A wrapper bundle around all of the programmable settings in the functional model (!timing model).
+class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
+  val relaxFunctionalModel = Input(Bool())
 
-// ********** IngressModule **********
-// Simply queues up incoming target axi request channels.
+  val registers = Seq(
+    (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
+  )
 
-class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Module 
-    with IngressModuleParameters {
-  val io = IO(new Bundle {
-    // This is target valid and not decoupled because the model has handshaked
-    // the target-level channels already for us
-    val nastiInputs = Flipped(HostDecoupled((new ValidNastiReqChannels)))
-    val nastiOutputs = new NastiReqChannels
-  })
-  val awQueue = Module(new Queue(new NastiWriteAddressChannel, ingressAWQdepth))
-  val wQueue  = Module(new Queue(new NastiWriteDataChannel, ingressWQdepth))
-  val arQueue = Module(new Queue(new NastiReadAddressChannel, ingressARQdepth))
-
-  val targetFire = io.nastiInputs.hReady && io.nastiInputs.hValid
-  io.nastiInputs.hReady := awQueue.io.enq.ready && wQueue.io.enq.ready && arQueue.io.enq.ready
-
-  arQueue.io.enq.bits := io.nastiInputs.hBits.ar.bits
-  arQueue.io.enq.valid := targetFire && io.nastiInputs.hBits.ar.valid
-  io.nastiOutputs.ar <> arQueue.io.deq
-
-  // Host request gating -- wait until we have a complete W transaction before
-  // we issue it.
-  val wCredits = SatUpDownCounter(cfg.maxWrites)
-  wCredits.inc := awQueue.io.enq.fire()
-  wCredits.dec := wQueue.io.deq.fire() && wQueue.io.deq.bits.last
-  val awCredits = SatUpDownCounter(cfg.maxWrites)
-  awCredits.inc := wQueue.io.enq.fire() && wQueue.io.enq.bits.last
-  awCredits.dec := awQueue.io.deq.fire()
-
-
-  awQueue.io.enq.bits := io.nastiInputs.hBits.aw.bits
-  awQueue.io.enq.valid := targetFire && io.nastiInputs.hBits.aw.valid
-  wQueue.io.enq.bits := io.nastiInputs.hBits.w.bits
-  wQueue.io.enq.valid := targetFire && io.nastiInputs.hBits.w.valid
-
-  io.nastiOutputs.aw.bits := awQueue.io.deq.bits
-  io.nastiOutputs.w.bits := wQueue.io.deq.bits
-
-  io.nastiOutputs.aw.valid := ~awCredits.empty && awQueue.io.deq.valid
-  awQueue.io.deq.ready := io.nastiOutputs.aw.ready && ~awCredits.empty
-  io.nastiOutputs.w.valid := ~wCredits.empty && wQueue.io.deq.valid
-  wQueue.io.deq.ready := io.nastiOutputs.w.ready && ~wCredits.empty
+  def getFuncModelSettings(): Seq[(String, String)] = {
+    Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
+    setUnboundSettings()
+    getSettings()
+  }
 }
 
 class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
     with DontTouchAnnotator with Fame1Annotator {
 
   val model = cfg.elaborate()
+
+  // Debug: Put an optional bound on the number of memory requests we can make
+  // to the host memory system
+
+  val funcModelRegs = Wire(new FuncModelProgrammableRegs)
   val ingress = Module(new IngressModule(cfg))
   io.host_mem.aw <> ingress.io.nastiOutputs.aw
   io.host_mem.ar <> ingress.io.nastiOutputs.ar
@@ -140,10 +129,18 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   val hOutstandingReads = SatUpDownCounter(cfg.maxReads)
   hOutstandingReads.inc := io.host_mem.ar.fire()
   hOutstandingReads.dec := io.host_mem.r.fire() && io.host_mem.r.bits.last
+  hOutstandingReads.max := cfg.maxReads.U
   val hOutstandingWrites = SatUpDownCounter(cfg.maxWrites)
   hOutstandingWrites.inc := io.host_mem.aw.fire()
   hOutstandingWrites.dec := io.host_mem.b.fire()
-  val hostMemoryIdle = hOutstandingReads.empty && hOutstandingWrites.empty
+  hOutstandingWrites.max := cfg.maxWrites.U
+
+  val host_mem_idle = hOutstandingReads.empty && hOutstandingWrites.empty
+  // By default, disallow all R->W, W->R, and W->W reorderings in host memory
+  // system. see IngressUnit.scala for more detail
+  ingress.io.host_mem_idle := host_mem_idle
+  ingress.io.host_read_inflight := !hOutstandingReads.empty
+  ingress.io.relaxed := funcModelRegs.relaxFunctionalModel
 
   // Five conditions to execute a target cycle:
   // 1: AXI4 tokens are available, and there is space to enqueue a new input token
@@ -154,7 +151,7 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   // 4: Egress unit has produced the payloads for write response channel
   val bReady = writeEgress.io.resp.hValid
   // 5: We have a reset token, and if it's asserted the host-memory system must first settle
-  val tResetReady = io.tReset.valid && (!io.tReset.bits || hostMemoryIdle)
+  val tResetReady = io.tReset.valid && (!io.tReset.bits || host_mem_idle)
 
   val tFireHelper = DecoupledHelper(io.tNasti.toHost.hValid,
                                     io.tNasti.fromHost.hReady,
@@ -190,13 +187,84 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   writeEgress.io.resp.tReady := model.io.egressResp.bReady
   model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
-  ingress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(ingressReady)
-  readEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
+  ingress.reset     := reset.toBool || io.tReset.bits && tFireHelper.fire(ingressReady)
+  readEgress.reset  := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
   writeEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
 
   val targetFire = tFireHelper.fire(true.B)// dummy arg
+
+  if (cfg.params.localHCycleCount) {
+    val hCycle = RegInit(0.U(32.W))
+    hCycle := hCycle + 1.U
+    attach(hCycle, "hostCycle", ReadOnly)
+  }
+
+  if (cfg.params.stallEventCounters) {
+    val writeEgressStalls = RegInit(0.U(32.W))
+    when(!bReady) {
+      writeEgressStalls := writeEgressStalls + 1.U
+    }
+
+    val readEgressStalls = RegInit(0.U(32.W))
+    when(!rReady) {
+      readEgressStalls := readEgressStalls + 1.U
+    }
+
+    val tokenStalls = RegInit(0.U(32.W))
+    when(!(tResetReady && io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady)) {
+      tokenStalls := tokenStalls + 1.U
+    }
+
+    val hostMemoryIdleCycles = RegInit(0.U(32.W))
+    when(host_mem_idle) {
+      hostMemoryIdleCycles := hostMemoryIdleCycles + 1.U
+    }
+
+    when (targetFire) {
+      writeEgressStalls := 0.U
+      readEgressStalls := 0.U
+      tokenStalls := 0.U
+    }
+    attach(writeEgressStalls, "writeStalled", ReadOnly)
+    attach(readEgressStalls, "readStalled", ReadOnly)
+    attach(tokenStalls, "tokenStalled", ReadOnly)
+  }
+
+  if (cfg.params.detectAddressCollisions) {
+    val discardedMSBs = 6
+    val collision_checker = Module(new AddressCollisionChecker(
+      cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs))
+    collision_checker.io.read_req.valid  := targetFire && io.tNasti.hBits.ar.fire
+    collision_checker.io.read_req.bits   := io.tNasti.hBits.ar.bits.addr >> discardedMSBs
+    collision_checker.io.read_done       := io.host_mem.r.fire && io.host_mem.r.bits.last
+
+    collision_checker.io.write_req.valid := targetFire && io.tNasti.hBits.aw.fire
+    collision_checker.io.write_req.bits  := io.tNasti.hBits.aw.bits.addr >> discardedMSBs
+    collision_checker.io.write_done      := io.host_mem.b.fire
+
+    val collision_addr = RegEnable(collision_checker.io.collision_addr.bits,
+                                   targetFire & collision_checker.io.collision_addr.valid)
+
+    val num_collisions = RegInit(0.U(32.W))
+    when (targetFire && collision_checker.io.collision_addr.valid) {
+      num_collisions := num_collisions + 1.U
+    }
+
+    attach(num_collisions, "addrCollision", ReadOnly)
+    attach(collision_addr, "collisionAddr", ReadOnly)
+  }
+
+  val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
+    io.host_mem.r.bits.resp != 0.U && io.host_mem.r.fire)
+  val brespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
+    io.host_mem.b.bits.resp != 0.U && io.host_mem.b.fire)
+
   // Generate the configuration registers and tie them to the ctrl bus
   attachIO(model.io.mmReg)
+  attachIO(funcModelRegs)
+  attach(rrespError, "rrespError", ReadOnly)
+  attach(brespError, "brespError", ReadOnly)
+
   genCRFile()
   dontTouch(targetFire)
   fame1transform(model)
@@ -210,5 +278,19 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
     super.genHeader(base, sb)
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+  }
+
+  // Accepts an elaborated memory model and generates a runtime configuration for it
+  def getSettings(fileName: String) {
+    println("\nGenerating a Midas Memory Model Configuration File")
+    val functionalModelSettings = funcModelRegs.getFuncModelSettings()
+    println("")
+    val timingModelSettings = model.io.mmReg.getTimingModelSettings()
+    val file = new File(fileName)
+    val writer = new FileWriter(file)
+    (functionalModelSettings ++ timingModelSettings).foreach({
+      case (field, value) => writer.write(s"+mm_${field}=${value}\n")
+    })
+    writer.close
   }
 }
