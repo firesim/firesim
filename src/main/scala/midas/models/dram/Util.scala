@@ -52,33 +52,54 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   }
 }
 
-// Adds a pipeline stage to a decoupled. Readys are tied together combinationally
-object DecoupledPipeStage {
-  def apply[T <: Data](in: DecoupledIO[T]): DecoupledIO[T] = {
-    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := false.B; i.bits := DontCare ; i})
-    val out = V2D(reg)
-    when (out.ready || !reg.valid) {
-      reg.valid := in.valid
-      reg.bits := in.bits
-    }
-    in.ready := out.ready || !reg.valid
-    out
-  }
-}
-
-class ProgrammableSubAddr(maskBits: Int) extends Bundle {
+class ProgrammableSubAddr(maskBits: Int, longName: String) extends Bundle with HasProgrammableRegisters{
   val offset = UInt(32.W) // TODO:fixme
   val mask = UInt(maskBits.W) // Must be contiguous high bits starting from LSB
   def getSubAddr(fullAddr: UInt): UInt = (fullAddr >> offset) & mask
 
-  // Used to produce a one-hot vector, indicating positions that can be addressed
+  // Used to produce a bit vector of enables from a mask
   def maskToOH(): UInt = {
     val decodings = Seq.tabulate(maskBits)({ i => ((1 << (1 << (i + 1))) - 1).U})
     MuxCase(1.U, (mask.toBools.zip(decodings)).reverse)
   }
 
-  override def cloneType = new ProgrammableSubAddr(maskBits).asInstanceOf[this.type]
+  val registers = Seq(
+    (offset -> RuntimeSetting(8,s"${longName} Offset", min = 0)),
+    (mask   -> RuntimeSetting(7,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
+  )
 
+  def forceSettings(offsetValue: BigInt, maskValue: BigInt) {
+    regMap(offset).set(offsetValue)
+    regMap(mask).set(maskValue)
+  }
+
+  override def cloneType = new ProgrammableSubAddr(maskBits, longName).asInstanceOf[this.type]
+
+}
+
+// A common motif to track inputs in a buffer
+trait HasFIFOPointers {
+  val entries: Int
+  val do_enq = Wire(Bool())
+  val do_deq = Wire(Bool())
+
+  val enq_ptr = Counter(entries)
+  val deq_ptr = Counter(entries)
+  val maybe_full = Reg(init=false.B)
+
+  val ptr_match = enq_ptr.value === deq_ptr.value
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+
+  when (do_enq) {
+    enq_ptr.inc()
+  }
+  when (do_deq) {
+    deq_ptr.inc()
+  }
+  when (do_enq != do_deq) {
+    maybe_full := do_enq
+  }
 }
 
 class DynamicLatencyPipeIO[T <: Data](gen: T, entries: Int, countBits: Int)
@@ -90,53 +111,23 @@ class DynamicLatencyPipeIO[T <: Data](gen: T, entries: Int, countBits: Int)
 }
 
 // I had to copy this code because critical fields are now private
-class DynamicLatencyPipe[T <: Data](
+class DynamicLatencyPipe[T <: Data] (
     gen: T,
-    entries: Int,
-    countBits: Int,
-    pipe: Boolean = false,
-    flow: Boolean = false
-  ) extends Module {
-  require(!flow, "Flow not yet supported in DynamicLatencyPipe")
+    val entries: Int,
+    countBits: Int
+  ) extends Module with HasFIFOPointers {
   val io = IO(new DynamicLatencyPipeIO(gen, entries, countBits))
 
   val ram = Mem(entries, gen)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=false.B)
-
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val do_enq = Wire(init=io.enq.fire())
-  val do_deq = Wire(init=io.deq.fire())
+  do_enq := io.enq.fire()
+  do_deq := io.deq.fire()
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
-    enq_ptr.inc()
-  }
-  when (do_deq) {
-    deq_ptr.inc()
-  }
-  when (do_enq != do_deq) {
-    maybe_full := do_enq
   }
 
   io.enq.ready := !full
   io.deq.bits := ram(deq_ptr.value)
-
-  if (flow) {
-    when (io.enq.valid) { io.deq.valid := true.B }
-    when (empty) {
-      io.deq.bits := io.enq.bits
-      do_deq := false.B
-      when (io.deq.ready) { do_enq := false.B }
-    }
-  }
-
-  if (pipe) {
-    when (io.deq.ready) { io.enq.ready := true.B }
-  }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
@@ -206,140 +197,210 @@ class CycleTracker(counterWidth: Int) extends Module {
   io.idle := idle
 }
 
-// [WIP] This generates a collapsing buffer and returns a set of wires for updating
-// elements in the buffer without needing to worry about them shifting
-object CollapsingBuffer {
-  def apply[T <: Data](entries: Seq[ValidIO[T]], enq: DecoupledIO[T]): Seq[Valid[T]] = {
-    def genStage[T <: Data](entries: Seq[Tuple2[ValidIO[T], ValidIO[T]]], shifting: Bool): Unit = entries match {
-      case Nil => throw new RuntimeException("Not possible")
-      // Final entry, connect up the enqueuer
-      case (entry, currentUpdate) :: Nil => {
-        val shift = shifting || !currentUpdate.valid
-        entry := Mux(shift, D2V(enq), currentUpdate)
-        enq.ready := shift
-      }
-      // Default case
-      case (entry, currentUpdate) :: tail => {
-        val youngerUpdate = tail.head._2
-        val shift = shifting || !currentUpdate.valid
-        entry := Mux(shift, youngerUpdate, currentUpdate)
-        genStage(tail, shift)
-      }
-    }
+// A collapsing buffer with entries that can be updated. Valid entries trickle
+// down through queue, one entry per cycle.
+// Kill is implemented by setting io.update(entry).valid := false.B
+//
+// NB: Companion object should be used to generate a module instance -> or
+// updates must be driven to entries by default for the module to behave
+// correctly
+class CollapsingBufferIO[T <: Data](gen: T, depth: Int) extends Bundle {
+  val entries = Output(Vec(depth, Valid(gen.cloneType)))
+  val updates = Input(Vec(depth, Valid(gen.cloneType)))
+  val enq = Flipped(Decoupled(gen.cloneType))
+  val programmableDepth = Input(UInt(log2Ceil(depth+1).W))
+}
 
-    val updateEntries = entries.map({ reg => Wire(init = reg) })
-    genStage(entries.zip(updateEntries), false.B)
-    updateEntries
+// Note: Use companion object
+class CollapsingBuffer[T <: Data](gen: T, depth: Int) extends Module {
+  val io = IO(new CollapsingBufferIO(gen, depth))
+
+  def linkEntries(entries: Seq[(ValidIO[T], ValidIO[T], Bool)], shifting: Bool): Unit = entries match {
+    case Nil => throw new RuntimeException("Asked for 0 entry collapasing buffer?")
+    // Youngest entry, connect up io.enq
+    case (entry, currentUpdate, lastEntry) :: Nil => {
+      val shift = shifting || !currentUpdate.valid
+      entry := Mux(shift, D2V(io.enq), currentUpdate)
+      io.enq.ready := shift
+    }
+    // Default case, a younger stage enqueues into this one
+    case (entry, currentUpdate, lastEntry) :: tail => {
+      val youngerUpdate = tail.head._2
+      val shift = !lastEntry && ( shifting || !currentUpdate.valid)
+      entry := Mux(shift, youngerUpdate, currentUpdate)
+      linkEntries(tail, shift)
+    }
+  }
+
+  val lastEntry = UIntToOH(io.programmableDepth).toBools.take(depth).reverse
+  val entries = Seq.fill(depth)(
+    RegInit({val w = Wire(Valid(gen.cloneType)); w.valid := false.B; w.bits := DontCare; w}))
+  io.entries := entries
+
+  linkEntries((entries, io.updates, lastEntry).zipped.toList, false.B)
+}
+
+object CollapsingBuffer {
+  def apply[T <: Data](
+      enq: DecoupledIO[T],
+      depth: Int,
+      programmableDepth: Option[UInt] = None): CollapsingBuffer[T] = {
+
+    val buffer = Module(new CollapsingBuffer(enq.bits, depth))
+    // This sets the default that each entry retains its value unless driven by the parent mod
+    (buffer.io.updates).zip(buffer.io.entries).foreach({ case (e, u) =>  e := u })
+    buffer.io.enq <> enq
+    buffer.io.programmableDepth := programmableDepth.getOrElse(depth.U)
+    buffer
   }
 }
 
-trait HasTransactionMetaData {
-  def idBits: Int
-  def lenBits: Int
-}
+trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
+trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
+trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
 
-case class MetaDataWidths(idBits: Int, lenBits: Int) extends HasTransactionMetaData
-
-object AXI4MetaDataWidths { // Hack
-  def apply()(implicit p: Parameters): MetaDataWidths = MetaDataWidths(p(NastiKey).idBits, 8)
-}
-
-class TransactionMetaData(val key: MetaDataWidths) extends GenericParameterizedBundle(key) {
-  val id = UInt(key.idBits.W)
-  val len = UInt(key.lenBits.W)
+class TransactionMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4IdAndLen {
   val isWrite = Bool()
 }
 
-class ReadMetaData(val key: MetaDataWidths) extends GenericParameterizedBundle(key) {
-  val id = UInt(key.idBits.W)
-  val len = UInt(key.lenBits.W)
+object TransactionMetaData {
+  def apply(id: UInt, len: UInt, isWrite: Bool)(implicit p: Parameters): TransactionMetaData = {
+    val w = Wire(new TransactionMetaData)
+    w.id := id
+    w.len := len
+    w.isWrite := isWrite
+    w
+  }
+
+  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): TransactionMetaData = 
+    apply(x.id, x.len, false.B)
+
+  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): TransactionMetaData = 
+    apply(x.id, x.len, true.B)
+
 }
 
-object ReadMetaData {
-  def apply(md: TransactionMetaData): ReadMetaData = {
-    val readMetaData = Wire(new ReadMetaData(md.key))
-    readMetaData.id := md.id
-    readMetaData.len := md.len
+class WriteResponseMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4Id
+class ReadResponseMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4IdAndLen
+
+object ReadResponseMetaData {
+  def apply(x: HasAXI4IdAndLen)(implicit p: Parameters): ReadResponseMetaData = {
+    val readMetaData = Wire(new ReadResponseMetaData)
+    readMetaData.id := x.id
+    readMetaData.len := x.len
+    readMetaData
+  }
+  // UGH. Will fix when i go to RC's AXI4 impl
+  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): ReadResponseMetaData = {
+    val readMetaData = Wire(new ReadResponseMetaData)
+    readMetaData.id := x.id
+    readMetaData.len := x.len
     readMetaData
   }
 }
 
-class WriteMetaData(key: MetaDataWidths) extends GenericParameterizedBundle(key) {
-  val id = UInt(key.idBits.W)
-}
+object WriteResponseMetaData {
+  def apply(x: HasAXI4Id)(implicit p: Parameters): WriteResponseMetaData = {
+    val writeMetaData = Wire(new WriteResponseMetaData)
+    writeMetaData.id := x.id
+    writeMetaData
+  }
 
-object WriteMetaData {
-  def apply(md: TransactionMetaData): WriteMetaData = {
-    val writeMetaData = Wire(new WriteMetaData(md.key))
-    writeMetaData.id := md.id
+  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): WriteResponseMetaData = {
+    val writeMetaData = Wire(new WriteResponseMetaData)
+    writeMetaData.id := x.id
     writeMetaData
   }
 }
 
-trait AXI4BackendIO extends Bundle {
-  implicit val p: Parameters
+class AXI4ReleaserIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val b = Decoupled(new NastiWriteResponseChannel)
   val r = Decoupled(new NastiReadDataChannel)
   val egressReq = new EgressReq
   val egressResp = Flipped(new EgressResp)
-}
-
-// Accepts transactions from MAS
-class UnifiedAXI4BackendIO(key: MetaDataWidths)(implicit val p: Parameters)
-    extends GenericParameterizedBundle(key) with AXI4BackendIO {
-  val newXaction = Flipped(Decoupled(new TransactionMetaData(key)))
-}
-
-// Can accept a read and write resp in a single cycle. Useful for simple models
-// that divide read and write pipes
-class SplitAXI4BackendIO(key: MetaDataWidths)(implicit val p: Parameters)
-    extends GenericParameterizedBundle(key) with AXI4BackendIO {
-  val newRead = Flipped(Decoupled(new ReadMetaData(key)))
-  val newWrite = Flipped(Decoupled(new WriteMetaData(key)))
+  val nextRead = Flipped(Decoupled(new ReadResponseMetaData))
+  val nextWrite = Flipped(Decoupled(new WriteResponseMetaData))
 }
 
 
-abstract class AXI4Backend(cfg: BaseConfig)(implicit p: Parameters) extends Module {
-  val io: AXI4BackendIO
+class AXI4Releaser(implicit p: Parameters) extends Module {
+  val io = IO(new AXI4ReleaserIO)
 
-  val rQueue = Module(new Queue(new ReadMetaData(AXI4MetaDataWidths()), cfg.maxReads))
-  val wQueue = Module(new Queue(new WriteMetaData(AXI4MetaDataWidths()), cfg.maxWrites))
-
-  val currentRead = DecoupledPipeStage(rQueue.io.deq) //FIXME
+  val currentRead = Queue(io.nextRead, 1, pipe = true)
   currentRead.ready := io.r.fire && io.r.bits.last
-  io.egressReq.r.valid := rQueue.io.deq.fire
-  io.egressReq.r.bits := rQueue.io.deq.bits.id
+  io.egressReq.r.valid := io.nextRead.fire
+  io.egressReq.r.bits := io.nextRead.bits.id
   io.r.valid := currentRead.valid
   io.r.bits := io.egressResp.rBits
   io.egressResp.rReady := io.r.ready
 
-  val currentWrite = DecoupledPipeStage(wQueue.io.deq)
-
+  val currentWrite = Queue(io.nextWrite, 1, pipe = true)
   currentWrite.ready := io.b.fire
-  io.egressReq.b.valid := wQueue.io.deq.fire
-  io.egressReq.b.bits := wQueue.io.deq.bits.id
+  io.egressReq.b.valid := io.nextWrite.fire
+  io.egressReq.b.bits := io.nextWrite.bits.id
   io.b.valid := currentWrite.valid
   io.b.bits := io.egressResp.bBits
   io.egressResp.bReady := io.b.ready
 }
 
-class UnifiedAXI4Backend(cfg: BaseConfig)(implicit p: Parameters) extends AXI4Backend(cfg)(p) {
-  lazy val io = IO(new UnifiedAXI4BackendIO(AXI4MetaDataWidths()))
+class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with HasFIFOPointers {
+  val io  = IO(new Bundle {
+    val enq = Flipped(Valid(UInt(addrWidth.W)))
+    val deq = Input(Bool())
+    val match_address = Input(UInt(addrWidth.W))
+    val hit = Output(Bool())
+  })
 
-  rQueue.io.enq.bits := ReadMetaData(io.newXaction.bits)
-  rQueue.io.enq.valid := io.newXaction.valid && !io.newXaction.bits.isWrite
+  val addrs = RegInit(Vec.fill(entries)({ val w = Wire(Valid(UInt(addrWidth.W))); w.valid := false.B; w }))
+  do_enq := io.enq.valid
+  do_deq := io.deq
 
-  wQueue.io.enq.bits := WriteMetaData(io.newXaction.bits)
-  wQueue.io.enq.valid := io.newXaction.valid && io.newXaction.bits.isWrite
+  assert(!full || (!do_enq || do_deq)) // Since we don't have backpressure, check for overflow
+  when (do_enq) {
+    addrs(enq_ptr.value).valid := true.B
+    addrs(enq_ptr.value).bits := io.enq.bits
+  }
 
-  io.newXaction.ready := Mux(io.newXaction.bits.isWrite, wQueue.io.enq.ready, rQueue.io.enq.ready)
+  when (do_deq) {
+    addrs(deq_ptr.value).valid := false.B
+  }
+
+  io.hit := addrs.exists({entry =>  entry.valid && entry.bits === io.match_address })
 }
 
-// Used in simple timing models where a read and write may be retired in a single cycle
-class SplitAXI4Backend(cfg: BaseConfig)(implicit p: Parameters)
-    extends AXI4Backend(cfg)(p) {
-  lazy val io = IO(new SplitAXI4BackendIO(AXI4MetaDataWidths()))
+class AddressCollisionCheckerIO(addrWidth: Int)(implicit p: Parameters) extends NastiBundle()(p) {
+  val read_req = Input(Valid(UInt(addrWidth.W)))
+  val read_done = Input(Bool())
+  val write_req = Input(Valid(UInt(addrWidth.W)))
+  val write_done = Input(Bool())
+  val collision_addr = ValidIO(UInt(addrWidth.W))
+}
 
-  rQueue.io.enq <> io.newRead
-  wQueue.io.enq <> io.newWrite
+class AddressCollisionChecker(numReads: Int, numWrites: Int, addrWidth: Int)(implicit p: Parameters)
+    extends NastiModule()(p) {
+  val io = IO(new AddressCollisionCheckerIO(addrWidth))
+
+  require(isPow2(numReads))
+  require(isPow2(numWrites))
+  //val discardedLSBs = 6
+  //val addrType = UInt(p(NastiKey).addrBits - discardedLSBs)
+
+  val read_matcher = Module(new FIFOAddressMatcher(numReads, addrWidth)).io
+  read_matcher.enq := io.read_req
+  read_matcher.deq := io.read_done
+  read_matcher.match_address := io.write_req.bits
+
+  val write_matcher = Module(new FIFOAddressMatcher(numReads, addrWidth)).io
+  write_matcher.enq := io.write_req
+  write_matcher.deq := io.write_done
+  write_matcher.match_address := io.read_req.bits
+
+  io.collision_addr.valid := io.read_req.valid && write_matcher.hit ||
+                             io.write_req.valid && read_matcher.hit
+  io.collision_addr.bits := Mux(io.read_req.valid, io.read_req.bits, io.write_req.bits)
+}
+
+object AddressCollisionCheckMain extends App {
+  implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
+  chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))
 }

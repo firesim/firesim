@@ -79,7 +79,9 @@ object RATEntry {
   def apply(vIdWidth: Int, pIdWidth: Int) = {
     val entry = Wire(new RATEntry(vIdWidth, pIdWidth))
     entry.current.valid := false.B
+    entry.current.bits := DontCare
     entry.next.valid := false.B
+    entry.next.bits := DontCare
     entry.head := false.B
     entry
   }
@@ -108,7 +110,7 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
     val trans = new AllocationIO(vIdWidth, pIdWidth)
   })
 
-  val rat = Reg(init = Vec.fill(numPIds)(RATEntry(vIdWidth, pIdWidth)))
+  val rat = RegInit(Vec.fill(numPIds)(RATEntry(vIdWidth, pIdWidth)))
   val freeList = Module(new FreeList(numPIds))
   freeList.io.freeId <> io.free
 
@@ -119,8 +121,7 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
   io.next.pId := nextPId
 
   // Pointer to the child of an entry being freed (it will become the new head)
-  val nextHeadPtr = Wire(Valid(UInt()))
-  nextHeadPtr.valid := false.B
+  val nextHeadPtr = WireInit({val w = Wire(Valid(UInt(pIdWidth.W))); w.valid := false.B; w.bits := DontCare; w})
 
   // Pointer to the parent of a entry being appended to a linked-list
   val parentEntryPtr = Wire(Valid(UInt()))
@@ -197,7 +198,13 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   val targetFire = io.req.hValid
 
   // On reset, the egress unit always has a single output token valid, but with invalid target data
-  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r.bits := DontCare ; r})
+  val currReqReg = RegInit({
+    val r = Wire(io.req.t.cloneType)
+    r.valid := false.B
+    r.bits := DontCare
+    r
+  })
+
   val xactionDone = Wire(Bool())
   when (targetFire && io.req.t.valid) {
     currReqReg := io.req.t
@@ -211,12 +218,14 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   // Queue address from which to dequeue the response
   val (deqPId: UInt, deqPIdReg: ValidIO[UInt]) = if (generateTranslation) {
     val rob = Module(new ReorderBuffer(1 << p(NastiKey).idBits, maxRequests))
-    val enqPIdReg = Reg(init = {val i = Wire(Valid(UInt(log2Up(maxRequests).W)))
-                              i.valid := false.B
+    val enqPIdReg = RegInit({val i = Wire(Valid(UInt(log2Up(maxRequests).W)))
+                              i.valid := false.B;
+                              i.bits := DontCare;
                               i})
 
     val deqPIdReg = RegInit({ val r = Wire(Valid(UInt(log2Up(maxRequests).W)));
                               r.valid := false.B;
+                              r.bits := DontCare;
                               r })
     val translationFailure = currReqReg.valid && ~deqPIdReg.valid
 
@@ -304,7 +313,12 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   val targetFire = io.req.hValid
 
   // Indicates whether the egress unit is releasing a transaction
-  val currReqReg = RegInit({ val r = Wire(io.req.t.cloneType); r.valid := false.B; r.bits := DontCare ; r})
+  val currReqReg = RegInit({
+    val r = Wire(io.req.t.cloneType)
+    r.valid := false.B
+    r.bits := DontCare
+    r
+  })
   val haveAck = RegInit(false.B)
   when (targetFire && io.req.t.valid) {
     currReqReg := io.req.t

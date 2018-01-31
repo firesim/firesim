@@ -12,6 +12,22 @@ class NastiReqChannels(implicit val p: Parameters) extends ParameterizedBundle {
   val aw = Decoupled(new NastiWriteAddressChannel)
   val w  = Decoupled(new NastiWriteDataChannel)
   val ar = Decoupled(new NastiReadAddressChannel)
+
+  def fromNasti(n: NastiIO): Unit = {
+    aw <> n.aw
+    ar <> n.ar
+    w  <> n.w
+  }
+}
+
+object NastiReqChannels {
+  def apply(nasti: NastiIO)(implicit p: Parameters): NastiReqChannels = {
+    val w = Wire(new NastiReqChannels)
+    w.ar <> nasti.ar
+    w.aw <> nasti.aw
+    w.w  <> nasti.w
+    w
+  }
 }
 
 class ValidNastiReqChannels(implicit val p: Parameters) extends ParameterizedBundle {

@@ -1,58 +1,67 @@
 package midas
 package models
 
-import chisel3._
-import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.GenericParameterizedBundle
+
+import chisel3._
+import chisel3.util._
+
 import junctions._
 import midas.widgets._
 
+import Console.{UNDERLINED, RESET}
+
 case class FirstReadyFCFSConfig(
     dramKey: DRAMOrganizationKey,
+    schedulerWindowSize: Int,
+    transactionQueueDepth: Int,
+    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
     baseParams: BaseParams)
   extends DRAMBaseConfig(baseParams) {
 
   def elaborate()(implicit p: Parameters): FirstReadyFCFSModel = Module(new FirstReadyFCFSModel(this))
 }
 
-class FirstReadyFCFSIO(cfg: FirstReadyFCFSConfig)(implicit p: Parameters)
-    extends TimingModelIO(cfg)(p){
-  val mmReg = new DRAMMMRegIO(cfg)
+class FirstReadyFCFSMMRegIO(cfg: FirstReadyFCFSConfig) extends BaseDRAMMMRegIO(cfg) {
+  val schedulerWindowSize = Input(UInt(log2Ceil(cfg.schedulerWindowSize).W))
+  val transactionQueueDepth = Input(UInt(log2Ceil(cfg.transactionQueueDepth).W))
+
+  val registers = dramBaseRegisters ++ Seq(
+    (schedulerWindowSize -> RuntimeSetting(
+        default =  cfg.schedulerWindowSize,
+        query   = "Reference queue depth",
+        min     = 1,
+        max     = Some(cfg.schedulerWindowSize))),
+    transactionQueueDepth -> RuntimeSetting(
+        default = cfg.transactionQueueDepth,
+        query   = "Transaction queue depth",
+        min     = 1,
+        max     = Some(cfg.transactionQueueDepth)))
+
+  def requestSettings() {
+    Console.println(s"Configuring First-Ready First-Come First Serve Model")
+    setBaseDRAMSettings()
+  }
+}
+
+class FirstReadyFCFSIO(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModelIO(cfg)(p){
+  val mmReg = new FirstReadyFCFSMMRegIO(cfg)
 }
 
 class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModel(cfg)(p)
     with HasDRAMMASConstants {
 
   import DRAMMasEnums._
-
   lazy val io = IO(new FirstReadyFCFSIO(cfg))
+
   val timings = io.mmReg.dramTimings
-  val refKey = BankReferenceKey(nastiXIdBits, nastiXLenBits, cfg.dramKey)
 
-  val transactionQueue = Module(new DualQueue(
-      gen = new MASEntry(refKey),
-      entries = cfg.maxWrites + cfg.maxReads))
-
-  transactionQueue.io.enqA.valid := newWReq
-  transactionQueue.io.enqA.bits.xaction.id := awQueue.io.deq.bits.id
-  transactionQueue.io.enqA.bits.xaction.len := awQueue.io.deq.bits.len
-  transactionQueue.io.enqA.bits.xaction.isWrite := true.B
-  transactionQueue.io.enqA.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
-  transactionQueue.io.enqA.bits.bankAddrOH := UIntToOH(transactionQueue.io.enqA.bits.bankAddr)
-  transactionQueue.io.enqA.bits.rowAddr := io.mmReg.rowAddr.getSubAddr(awQueue.io.deq.bits.addr)
-  transactionQueue.io.enqA.bits.rankAddr := io.mmReg.rankAddr.getSubAddr(awQueue.io.deq.bits.addr)
-  transactionQueue.io.enqA.bits.rankAddrOH := UIntToOH(transactionQueue.io.enqA.bits.rankAddr)
-
-  transactionQueue.io.enqB.valid := pendingReads.io.inc
-  transactionQueue.io.enqB.bits.xaction.id := tNasti.ar.bits.id
-  transactionQueue.io.enqB.bits.xaction.len := tNasti.ar.bits.len
-  transactionQueue.io.enqB.bits.xaction.isWrite := false.B
-  transactionQueue.io.enqB.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
-  transactionQueue.io.enqB.bits.bankAddrOH := UIntToOH(transactionQueue.io.enqB.bits.bankAddr)
-  transactionQueue.io.enqB.bits.rowAddr := io.mmReg.rowAddr.getSubAddr(tNasti.ar.bits.addr)
-  transactionQueue.io.enqB.bits.rankAddr := io.mmReg.rankAddr.getSubAddr(tNasti.ar.bits.addr)
-  transactionQueue.io.enqB.bits.rankAddrOH := UIntToOH(transactionQueue.io.enqB.bits.rankAddr)
+  val backend = Module(new DRAMBackend(cfg.backendKey))
+  val xactionScheduler = Module(new UnifiedFIFOXactionScheduler(cfg.transactionQueueDepth, cfg))
+  xactionScheduler.io.req <> nastiReq
+  xactionScheduler.io.pendingAWReq := pendingAWReq.value
+  xactionScheduler.io.pendingWReq := pendingWReq.value
 
   // Trackers for controller-level structural hazards
   val cmdBusBusy = Module(new DownCounter((maxDRAMTimingBits)))
@@ -70,28 +79,31 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   // Instead of counting the number, we keep a bit to indicate presence
   // it is set on activation, enqueuing a new ready entry, and unset when a memreq kills the last
   // ready entry
-  val bankHasReadyEntries = RegInit(Wire(Vec(cfg.dramKey.maxRanks * cfg.dramKey.maxBanks, false.B)))
+  val bankHasReadyEntries = RegInit(Vec.fill(cfg.dramKey.maxRanks * cfg.dramKey.maxBanks)(false.B))
 
   // State for the collapsing buffer of pending memory references
-  val refList = Seq.fill(cfg.maxReads + cfg.maxWrites)(
-     RegInit({val w = Wire(Valid(new MASEntry(refKey))); w.valid := false.B; w}))
-
-  val newReference = Wire(Decoupled(new MASEntry(refKey)))
-  newReference.valid := transactionQueue.io.deq.valid
-  newReference.bits := transactionQueue.io.deq.bits
+  val newReference = Wire(Decoupled(new FirstReadyFCFSEntry(cfg)))
+  newReference.valid := xactionScheduler.io.nextXaction.valid
+  newReference.bits.decode(xactionScheduler.io.nextXaction.bits, io.mmReg)
 
   // Mark that the new reference hits an open row buffer, in case it missed the broadcast
   val rowHitsInRank = Vec(rankStateTrackers map { tracker =>
     Vec(tracker.io.rank.banks map { _.isRowHit(newReference.bits)}).asUInt })
 
-  transactionQueue.io.deq.ready := newReference.ready
+  xactionScheduler.io.nextXaction.ready := newReference.ready
 
-  val refUpdates = CollapsingBuffer(refList, newReference) // Stateless
+  val refBuffer = CollapsingBuffer(
+    enq               = newReference,
+    depth             = cfg.schedulerWindowSize,
+    programmableDepth = Some(io.mmReg.schedulerWindowSize)
+  )
+  val refList = refBuffer.io.entries
+  val refUpdates = refBuffer.io.updates
 
   // Selects the oldest candidate from all ready references that can legally request a CAS
   val columnArbiter =  Module(new Arbiter(refList.head.bits.cloneType, refList.size))
 
-  def checkRankBankLegality(getField: CommandLegalBools => Bool)(masEntry: MASEntry): Bool = {
+  def checkRankBankLegality(getField: CommandLegalBools => Bool)(masEntry: FirstReadyFCFSEntry): Bool = {
     val bankFields = rankStateTrackers map { rank => Vec(rank.io.rank.banks map getField).asUInt }
     val bankLegal = (Mux1H(masEntry.rankAddrOH, bankFields) & masEntry.bankAddrOH).orR
     val rankFields = Vec(rankStateTrackers map { rank => getField(rank.io.rank) }).asUInt
@@ -108,10 +120,10 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   val canLegallyACT = checkRankBankLegality(_.canACT) _
   val canLegallyPRE = checkRankBankLegality(_.canPRE) _
 
-  columnArbiter.io.in <> Vec(refList map { entry =>
+  columnArbiter.io.in <> refList.map({ entry =>
       val candidate = V2D(entry)
-      val canCASR = canLegallyCASR(entry.bits)
-      val canCASW = canLegallyCASW(entry.bits)
+      val canCASR = canLegallyCASR(entry.bits) && backend.io.newRead.ready
+      val canCASW = canLegallyCASW(entry.bits) && backend.io.newWrite.ready
       candidate.valid := entry.valid && entry.bits.isReady &&
         Mux(entry.bits.xaction.isWrite, canCASW, canCASR) &&
         !rankWantsRef(entry.bits.rankAddrOH)
@@ -136,6 +148,9 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   val suggestAct = (entryWantsACT.zip(entryWantsPRE)).foldRight(false.B)({
     case ((act, pre), current) => Mux(act, true.B, !pre && current) })
 
+  // NB: These are not driven for all command types. Ex. When issuing a CAS cmdRow
+  // will not correspond to the row of the CAS command since that is implicit
+  // to the state of the bank.
   val cmdBank = Wire(UInt(cfg.dramKey.bankBits.W), init = preBank)
   val cmdBankOH = UIntToOH(cmdBank)
   val cmdRank = Wire(UInt(cfg.dramKey.rankBits.W), init = columnArbiter.io.out.bits.rankAddr)
@@ -179,8 +194,6 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   val otherReadyEntries = entriesStillReady reduce { _ || _ }
   val casAutoPRE = Mux(io.mmReg.openPagePolicy, false.B, memReqDone && !otherReadyEntries)
 
-
-  // Watchu kno about critical paths?
   // Mark new entries that now hit in a open row buffer
   // Or invalidate them if a precharge was issued
   refUpdates.foreach({ ref =>
@@ -198,18 +211,22 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   })
 
   val newRefAddrMatch = newReference.bits.addrMatch(cmdRank, cmdBank, Some(cmdRow))
-  newReference.bits.isReady := // 1) Row just opened or 2) already open && No Auto-PRE to that row
+  val newRefBankAddrMatch = newReference.bits.addrMatch(cmdRank, cmdBank)
+  newReference.bits.isReady := // 1) Row just opened or 2) already open && No precharges to that row this cycle
     selectedCmd === cmd_act && newRefAddrMatch ||
     (rowHitsInRank(newReference.bits.rankAddr) & newReference.bits.bankAddrOH).orR &&
-    !(memReqDone && casAutoPRE && newRefAddrMatch)
+    !(memReqDone && casAutoPRE && newRefBankAddrMatch) && !(selectedCmd === cmd_pre && newRefBankAddrMatch)
 
 
   // Useful only for the open-page policy. In closed page policy, precharges
   // are always issued as part of auto-pre commands on in preperation for refresh.
   newReference.bits.mayPRE := // Last ready reference serviced or no other ready entries
     Mux(io.mmReg.openPagePolicy,
+      // 1:The last ready request has been made to the bank
       newReference.bits.addrMatch(cmdRank, cmdBank) && memReqDone && !otherReadyEntries ||
-      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)),
+      // 2: There are no ready references, and a precharge is not being issued to the bank this cycle
+      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) && 
+      !(selectedCmd === cmd_pre && newRefBankAddrMatch),
       false.B)
 
   // Check if the broadcasted cmdBank and cmdRank hit a ready entry
@@ -235,22 +252,18 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   cmdBusBusy.io.set.bits := timings.tCMD - 1.U
   cmdBusBusy.io.set.valid := selectedCmd != cmd_nop
 
-  lazy val backend = Module(new SplitAXI4Backend(cfg))
-  // Dequeue completed transactions in output queues
-  // Read transactions use a latency pipe to account for tCAS
-  val completedReads = Module(new DynamicLatencyPipe(
-                         ReadMetaData(columnArbiter.io.out.bits.xaction),
-                         entries = cfg.maxReads,
-                         maxDRAMTimingBits))
-  completedReads.io.enq.bits := ReadMetaData(columnArbiter.io.out.bits.xaction)
-  completedReads.io.enq.valid := memReqDone && !columnArbiter.io.out.bits.xaction.isWrite
-  completedReads.io.latency := timings.tCAS + timings.tAL
-  completedReads.io.tCycle := tCycle
-  backend.io.newRead <> completedReads.io.deq
+  backend.io.tCycle := tCycle
+  backend.io.newRead.bits  := ReadResponseMetaData(columnArbiter.io.out.bits.xaction)
+  backend.io.newRead.valid := memReqDone && !columnArbiter.io.out.bits.xaction.isWrite
+  backend.io.readLatency := timings.tCAS + timings.tAL + io.mmReg.backendLatency
 
   // For writes we send out the acknowledge immediately
-  backend.io.newWrite.bits := WriteMetaData(columnArbiter.io.out.bits.xaction)
+  backend.io.newWrite.bits := WriteResponseMetaData(columnArbiter.io.out.bits.xaction)
   backend.io.newWrite.valid := memReqDone && columnArbiter.io.out.bits.xaction.isWrite
+  backend.io.writeLatency := 1.U
+
+  wResp <> backend.io.completedWrite
+  rResp <> backend.io.completedRead
 
   // Dump the cmd stream
   val cmdMonitor = Module(new CommandBusMonitor())
