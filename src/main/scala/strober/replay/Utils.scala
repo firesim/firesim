@@ -3,14 +3,14 @@
 package strober
 package replay
 
-import chisel3.{Module, Data, Element, Bundle, Vec}
+import chisel3.{Module, Data, Element, Record, Vec}
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 
 private[replay] object getDataNames {
   def apply(name: String, data: Data): Seq[(Element, String)] = data match {
     case e: Element => Seq(e -> name)
-    case b: Bundle => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
+    case b: Record => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
   def apply(ports: Seq[Data]): Seq[(Element, String)] =

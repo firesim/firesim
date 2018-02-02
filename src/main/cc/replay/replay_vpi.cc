@@ -45,13 +45,11 @@ void replay_vpi_t::probe_signals() {
   vpiHandle net_iter = vpi_iterate(vpiNet, replay_handle);
   while (vpiHandle reg_handle = vpi_scan(reg_iter)) {
     std::string regname = vpi_get_str(vpiName, reg_handle);
-    if ((regname.find("io_") == 0 && regname.find("_delay") != 0) || regname.find("reset") == 0)
-      add_signal(reg_handle, regname);
+    if (regname.find("_delay") != 0) add_signal(reg_handle, regname);
   }
   while (vpiHandle net_handle = vpi_scan(net_iter)) {
     std::string netname = vpi_get_str(vpiName, net_handle);
-    if (netname.find("io_") == 0 && netname.find("_delay") != 0)
-      add_signal(net_handle, netname);
+    if (netname.find("_delay") != 0) add_signal(net_handle, netname);
   }
 
   vpiHandle syscall_handle = vpi_handle(vpiSysTfCall, NULL);
