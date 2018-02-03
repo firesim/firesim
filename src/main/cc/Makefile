@@ -71,8 +71,8 @@ $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(
 
 $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
 	mkdir -p $(OUT_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -include $< \
-	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o)
+	$(CXX) $(CXXFLAGS) -include $< \
+	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(LDFLAGS)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
