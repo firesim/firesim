@@ -177,7 +177,7 @@ abstract class SplitTransactionModel(cfg: BaseConfig)(implicit p: Parameters)
   val newWReq = if (!cfg.useLLCModel) {
     ((pendingWReq.value > pendingAWReq.value) && pendingAWReq.inc) ||
     ((pendingWReq.value < pendingAWReq.value) && pendingWReq.inc) ||
-    (pendingWReq.inc && pendingWReq.inc)
+    (pendingWReq.inc && pendingAWReq.inc)
   } else {
     val memWReqs = SatUpDownCounter(cfg.maxWrites)
     val newWReq = ((memWReqs.value > awQueue.io.count) && nastiReq.aw.fire) ||
