@@ -286,7 +286,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   }
 
   d_array_busy.io.decr := Mux(state === llc_w_wb || state === llc_r_wb,
-                              io.req.w.fire,
+                              io.memReq.w.fire,
                               Mux(state === llc_w_daccess, io.req.w.valid, true.B))
 
   io.req.w.ready := (state === llc_w_daccess) || (state === llc_w_mdaccess && !evict_dirty_way)
@@ -324,18 +324,22 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     }
     is (llc_w_mdaccess) {
       when (!evict_dirty_way) {
-        state := llc_w_daccess
+        when (io.req.w.valid && io.req.w.bits.last) {
+          state := llc_idle
+        }.otherwise {
+          state := llc_w_daccess
+        }
       }.otherwise {
         state := llc_w_wb
       }
     }
     is (llc_r_wb) {
-      when(io.req.w.fire && io.req.w.bits.last) {
+      when(io.memReq.w.fire && io.memReq.w.bits.last) {
         state := llc_idle
       }
     }
     is (llc_w_wb) {
-      when(io.req.w.fire && io.req.w.bits.last) {
+      when(io.memReq.w.fire && io.memReq.w.bits.last) {
         state := llc_w_daccess
       }
     }

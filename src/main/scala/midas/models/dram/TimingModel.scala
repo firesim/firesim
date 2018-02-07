@@ -181,11 +181,11 @@ abstract class SplitTransactionModel(cfg: BaseConfig)(implicit p: Parameters)
   } else {
     val memWReqs = SatUpDownCounter(cfg.maxWrites)
     val newWReq = ((memWReqs.value > awQueue.io.count) && nastiReq.aw.fire) ||
-    ((memWReqs.value < awQueue.io.count) && memWReqs.inc) ||
-    (memWReqs.inc && nastiReq.aw.fire)
+                  ((memWReqs.value < awQueue.io.count) && memWReqs.inc) ||
+                   (memWReqs.inc && nastiReq.aw.fire)
 
-    pendingWReq.inc := nastiReq.w.fire() && nastiReq.w.bits.last
-    pendingWReq.dec := newWReq
+    memWReqs.inc := nastiReq.w.fire && nastiReq.w.bits.last
+    memWReqs.dec := newWReq
     newWReq
   }
 
