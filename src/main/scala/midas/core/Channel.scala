@@ -63,8 +63,11 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 
 class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
+  // Stores tokens with valid target-data that have been successfully enqueued
   val target = Module(new Queue(gen.chiselCloneType, n))
-  val tokens = Module(new Queue(Bool(), p(ChannelLen))) // keep enq handshakes
+  // Stores a bit indicating if a given token contained valid target-data
+  // 1 = there was a target handshake; 0 = no target handshake
+  val tokens = Module(new Queue(Bool(), p(ChannelLen)))
 
   target.reset := io.targetReset.bits && io.targetReset.valid
   io.targetReset.ready := true.B // TODO: is it ok?
@@ -76,11 +79,12 @@ class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implici
   tokens.io.enq.bits := target.io.enq.fire()
   tokens.io.enq.valid := io.enq.host.hValid
 
+  // Track the number of valid target-handshakes that should be visible to the dequeuer
   val deqCnts = RegInit(0.U(8.W))
   val deqValid = tokens.io.deq.bits || deqCnts.orR
   io.deq.target.bits := target.io.deq.bits
   io.deq.target.valid := target.io.deq.valid && deqValid
-  target.io.deq.ready := io.deq.target.ready && io.deq.host.hReady && deqValid
+  target.io.deq.ready := io.deq.target.ready && deqValid && io.deq.host.fire
   io.deq.host.hValid := tokens.io.deq.valid
   tokens.io.deq.ready := io.deq.host.hReady
 
