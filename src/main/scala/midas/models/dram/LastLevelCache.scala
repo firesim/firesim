@@ -291,7 +291,8 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   io.req.w.ready := (state === llc_w_daccess) || (state === llc_w_mdaccess && !evict_dirty_way)
 
-  io.rResp.valid := refill_start || (state === llc_r_mdaccess && hit_valid)
+  io.rResp.valid := (refill_start && !mshrs(io.memRResp.bits.id).xaction.isWrite) ||
+                    (state === llc_r_mdaccess && hit_valid)
   io.rResp.bits := Mux(refill_start,
                        ReadResponseMetaData(mshrs(io.memRResp.bits.id).xaction),
                        ReadResponseMetaData(reads.bits))
@@ -315,7 +316,11 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     }
     is (llc_r_mdaccess) {
       when (hit_valid) {
-        state := llc_r_daccess
+        when(reads.bits.len != 0.U) {
+          state := llc_r_daccess
+        }.otherwise {
+          state := llc_idle
+        }
       }.elsewhen (evict_dirty_way) {
         state := llc_r_wb
       }.otherwise {
