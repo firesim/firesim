@@ -268,6 +268,7 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   genCRFile()
   dontTouch(targetFire)
   fame1transform(model)
+  getDefaultSettings("runtime.conf")
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
@@ -281,16 +282,25 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   }
 
   // Accepts an elaborated memory model and generates a runtime configuration for it
-  def getSettings(fileName: String) {
-    println("\nGenerating a Midas Memory Model Configuration File")
-    val functionalModelSettings = funcModelRegs.getFuncModelSettings()
-    println("")
-    val timingModelSettings = model.io.mmReg.getTimingModelSettings()
-    val file = new File(fileName)
+  private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
+    val file = new File(p(OutputDir), fileName)
     val writer = new FileWriter(file)
-    (functionalModelSettings ++ timingModelSettings).foreach({
+    settings.foreach({
       case (field, value) => writer.write(s"+mm_${field}=${value}\n")
     })
     writer.close
+  }
+
+  def getSettings(fileName: String)(implicit p: Parameters) {
+    println("\nGenerating a Midas Memory Model Configuration File")
+    val functionalModelSettings = funcModelRegs.getFuncModelSettings()
+    val timingModelSettings = model.io.mmReg.getTimingModelSettings()
+    emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
+  }
+
+  def getDefaultSettings(fileName: String)(implicit p: Parameters) {
+    val functionalModelSettings = funcModelRegs.getDefaults()
+    val timingModelSettings = model.io.mmReg.getDefaults()
+    emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
   }
 }
