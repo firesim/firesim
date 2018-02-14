@@ -2,15 +2,19 @@
 
 package midas
 
-import chisel3.Data
+import chisel3.{Data, Bundle, Record, Clock, Bool}
+import chisel3.internal.firrtl.Port
 import firrtl.ir.Circuit
 import firrtl.AnnotationMap
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
 import barstools.macros._
+import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
-import freechips.rocketchip.config.Parameters
+
+// Directory into which output files are dumped. Set by dir argument
+case object OutputDir extends Field[File]
 
 // Compiler for Midas Transforms
 private class MidasCompiler(dir: File, io: Seq[Data])(implicit param: Parameters) 
@@ -52,8 +56,10 @@ object MidasCompiler {
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
         json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
     val writer = new java.io.StringWriter
-    val midas = new MidasCompiler(dir, io) compile (firrtl.CircuitState(
+    val compiler = new MidasCompiler(dir, io)(p alterPartial { case OutputDir => dir })
+    val midas = compiler.compile(firrtl.CircuitState(
       chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))), writer)
+
     val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
     val result = new VerilogCompiler compile (firrtl.CircuitState(
       midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))), verilog)
