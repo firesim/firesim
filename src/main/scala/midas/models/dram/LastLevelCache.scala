@@ -69,6 +69,12 @@ class LLCProgrammableSettings(llcKey: LLCKey) extends Bundle
   val setBits    = Input(UInt(log2Ceil(llcKey.sets.maxBits).W))
   val blockBits  = Input(UInt(log2Ceil(llcKey.blockBytes.maxBits).W))
 
+  // Instrumentation
+  val misses     = Output(UInt(32.W)) // Total accesses is provided by (totalReads + totalWrites)
+  val writebacks = Output(UInt(32.W)) // Number of dirty lines returned to DRAM
+  val refills    = Output(UInt(32.W)) // Number of clean lines requested from DRAM
+  // Note short-burst writes will produce a refill, whereas releases from caches will not
+
   val registers = Seq(
     wayBits   -> RuntimeSetting(2, "Log2(ways per set)"),
     setBits   -> RuntimeSetting(4, "Log2(sets per bank"),
@@ -132,9 +138,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val io = IO(new LLCModelIO(llcKey))
 
   val maxTagBits = llcKey.maxTagBits(nastiXAddrBits)
-
-  val active_ways = MaskGen(((1 << llcKey.ways.max) - 1).U, 1.U << io.settings.wayBits, 1 << llcKey.ways.max)
-  val way_addr_mask =  MaskGen((llcKey.ways.max - 1).U, io.settings.wayBits, llcKey.ways.max)
+  val way_addr_mask = Reverse(MaskGen((llcKey.ways.max - 1).U, io.settings.wayBits, llcKey.ways.max))
 
   // Behold: this is why it sucks to be a hardware model
   val md_array = SyncReadMem(llcKey.sets.max, Vec(llcKey.ways.max, new BlockMetadata(maxTagBits)))
@@ -182,24 +186,27 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   }
 
   def isHit(m: BlockMetadata): Bool = m.valid && (m.tag === s1_tag_addr)
-  val hit_way_OH  = Vec(s1_metadata.map(isHit)).asUInt
-  val hit_valid   = hit_way_OH.orR
+  val hit_ways  = Vec(s1_metadata.map(isHit)).asUInt & way_addr_mask
+  val hit_way_sel = PriorityEncoderOH(hit_ways)
+  val hit_valid   = hit_ways.orR
 
   def isEmptyWay(m: BlockMetadata): Bool = !m.valid
-  val empty_valid  = s1_metadata.exists(isEmptyWay _)
-  val empty_way_OH = PriorityEncoderOH(Vec(s1_metadata map isEmptyWay).asUInt)
+  val empty_ways    = Vec(s1_metadata.map(isEmptyWay)).asUInt & way_addr_mask
+  val empty_way_sel = PriorityEncoderOH(empty_ways)
+  val empty_valid   = empty_ways.orR
+
   val fill_empty_way = !hit_valid && empty_valid
 
   val lsfr = LFSR16(true.B)
-  val evict_way_OH = UIntToOH(lsfr(log2Ceil(llcKey.ways.max) - 1, 0) & way_addr_mask)
-  val evict_way_is_dirty = (Vec(s1_metadata.map(_.dirty)).asUInt & evict_way_OH).orR
-  val evict_way_tag = Mux1H(evict_way_OH, s1_metadata.map(_.tag))
+  val evict_way_sel = UIntToOH(lsfr(llcKey.ways.maxBits - 1, 0) & ((1.U << io.settings.wayBits) - 1.U))
+  val evict_way_is_dirty = (Vec(s1_metadata.map(_.dirty)).asUInt & evict_way_sel).orR
+  val evict_way_tag = Mux1H(evict_way_sel, s1_metadata.map(_.tag))
 
   val do_evict         = !hit_valid && !empty_valid
   val evict_dirty_way  = do_evict && evict_way_is_dirty
   val dirty_line_addr = io.settings.regenPhysicalAddress(0.U, s1_set_addr, evict_way_tag)
 
-  val selected_way_OH = Mux(hit_valid, hit_way_OH, Mux(empty_valid, empty_way_OH, evict_way_OH)).toBools
+  val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).toBools
 
   val md_update = s1_metadata.zip(selected_way_OH) map { case (md, sel) =>
     val next = Wire(init = md)
@@ -218,7 +225,9 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     }
     next
   }
-  md_array.write(s1_valid, Vec(md_update))
+  when (s1_valid) {
+    md_array.write(s1_set_addr, Vec(md_update))
+  }
 
   val allocate_mshr = (state === llc_w_mdaccess && evict_dirty_way) ||
                       (state === llc_r_mdaccess && !hit_valid)
@@ -364,4 +373,18 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
       }
     }
   }
+
+  // Instrumentation
+  val miss_count = RegInit(0.U(32.W))
+  when (s1_valid && !hit_valid) { miss_count := miss_count + 1.U }
+  io.settings.misses := miss_count
+
+  val wb_count = RegInit(0.U(32.W))
+  when (s1_valid && evict_dirty_way) { wb_count := wb_count + 1.U }
+  io.settings.writebacks := wb_count
+
+  val refill_count = RegInit(0.U(32.W))
+  when (state === llc_r_mdaccess && !hit_valid) { refill_count := refill_count + 1.U }
+  io.settings.refills := refill_count
+
 }
