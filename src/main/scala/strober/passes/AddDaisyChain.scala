@@ -17,7 +17,7 @@ import mdf.macrolib.SRAMMacro
 class AddDaisyChains(
     meta: StroberMetaData,
     srams: Map[String, SRAMMacro])
-   (implicit param: config.Parameters) extends firrtl.passes.Pass {
+   (implicit param: freechips.rocketchip.config.Parameters) extends firrtl.passes.Pass {
   override def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize

@@ -3,13 +3,13 @@
 package midas
 package widgets
 
-import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import junctions._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.ParameterizedBundle
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 

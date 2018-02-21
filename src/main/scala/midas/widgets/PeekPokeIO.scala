@@ -4,7 +4,7 @@ package midas
 package widgets
 
 import Chisel._
-import config.Parameters
+import freechips.rocketchip.config.Parameters
 
 trait HasChannels {
   // A higher order funciton that takes a hardware elaborator for each channel.

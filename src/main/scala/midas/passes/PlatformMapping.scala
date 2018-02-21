@@ -12,7 +12,7 @@ import java.io.{File, FileWriter, StringWriter}
 private[passes] class PlatformMapping(
     target: String,
     dir: File)
-    (implicit param: config.Parameters) extends firrtl.passes.Pass {
+    (implicit param: freechips.rocketchip.config.Parameters) extends firrtl.passes.Pass {
 
   override def name = "[midas] Platform Mapping"
 
