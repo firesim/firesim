@@ -5,7 +5,7 @@ package widgets
 
 import Chisel._
 import junctions._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
 
 class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends WidgetIO()(p){
   // TODO: Slave nasti key should be passed in explicitly

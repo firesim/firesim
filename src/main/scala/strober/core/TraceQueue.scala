@@ -5,7 +5,7 @@ package core
 
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
 
 case object TraceMaxLen extends Field[Int]
 

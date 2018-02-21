@@ -3,7 +3,7 @@
 package midas
 package core
 
-import freechips.rocketchip.uncore.axi4.AXI4Bundle
+import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.Parameters
 
 import chisel3._

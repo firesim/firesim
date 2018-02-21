@@ -15,9 +15,8 @@ import scala.collection.mutable.ArrayBuffer
 case object MemNastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
-class FPGATopIO(implicit p: Parameters) extends _root_.util.ParameterizedBundle()(p) {
-  val ctrl = Flipped(new WidgetMMIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
-  val mem  = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
+class FPGATopIO(implicit p: Parameters) extends WidgetIO {
+  val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 

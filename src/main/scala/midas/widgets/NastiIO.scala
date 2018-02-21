@@ -9,7 +9,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import freechips.rocketchip.config.Parameters
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data]

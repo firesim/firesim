@@ -3,10 +3,10 @@
 package strober
 package core
 
-import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.ParameterizedBundle
 
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
