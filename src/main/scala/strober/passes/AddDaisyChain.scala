@@ -385,6 +385,7 @@ class AddDaisyChains(
                   (s: Statement): Statement = s match {
     // Connect restart pins
     case s: WDefInstance if !(srams contains s.module) => Block(Seq(s,
+      IsInvalid(NoInfo, wsub(wref(s.name), "daisy")),
       Connect(NoInfo, wsub(wref(s.name), "daisyReset"), wref("daisyReset", BoolType)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.SRAM), daisyPort("restart")(ChainType.SRAM)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.RegFile), daisyPort("restart")(ChainType.RegFile))
