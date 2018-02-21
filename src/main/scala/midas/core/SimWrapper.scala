@@ -96,7 +96,7 @@ class SimWrapperIO(io: TargetBoxIO)
       case Some(endpoint) =>
         endpoint add (name, data)
       case None => data match {
-        case b: Bundle => b.elements foreach {
+        case b: Record => b.elements foreach {
           case (n, e) => findEndpoint(s"${name}_${n}", e)
         }
         case v: Vec[_] => v.zipWithIndex foreach {
@@ -106,7 +106,7 @@ class SimWrapperIO(io: TargetBoxIO)
       }
     }
   }
-  findEndpoint("io", io)
+  io.elements.foreach({ case (name, data) => findEndpoint(name, data)})
 
   val (inputs, outputs) = parsePorts(io)
 
