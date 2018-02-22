@@ -11,14 +11,14 @@
 class simif_f1_t: public virtual simif_t
 {
   public:
-    simif_f1_t();
+    simif_f1_t(int argc, char** argv);
     virtual ~simif_f1_t();
     virtual void write(size_t addr, uint32_t data);
     virtual uint32_t read(size_t addr);
     uint32_t is_write_ready();
     void check_rc(int rc, char * infostr);
     void fpga_shutdown();
-    void fpga_setup();
+    void fpga_setup(int slot_id);
   private:
     char in_buf[MMIO_WIDTH];
     char out_buf[MMIO_WIDTH];
