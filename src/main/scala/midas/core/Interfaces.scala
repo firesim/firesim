@@ -11,7 +11,7 @@ class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
   val hReady = Input(Bool())
   val hValid = Output(Bool())
   val hBits  = gen.cloneType
-  def fire(dummy: Int = 0): Bool = hReady && hValid
+  def fire(): Bool = hReady && hValid
   override def cloneType: this.type =
     new HostDecoupledIO(gen).asInstanceOf[this.type]
 }
@@ -27,7 +27,7 @@ object HostDecoupled {
 class HostReadyValid extends Bundle {
   val hReady= Input(Bool())
   val hValid = Output(Bool())
-  def fire(dummy: Int = 0): Bool = hReady && hValid
+  def fire(): Bool = hReady && hValid
 }
 
 /**
@@ -69,7 +69,7 @@ class MidasDecoupledIO[+T <: Data](gen: T) extends Bundle
   val hReady = Input(Bool())
   val hValid = Output(Bool())
   val hBits  = gen.cloneType.asOutput
-  def fire(dummy: Int = 0): Bool = hReady && hValid
+  def fire(): Bool = hReady && hValid
   override def cloneType: this.type =
     new MidasDecoupledIO(gen).asInstanceOf[this.type]
 }

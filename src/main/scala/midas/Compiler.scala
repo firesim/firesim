@@ -2,67 +2,82 @@
 
 package midas
 
-import chisel3.Data
+import chisel3.{Data, Bundle, Record, Clock, Bool}
+import chisel3.internal.firrtl.Port
 import firrtl.ir.Circuit
+import firrtl.AnnotationMap
+import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
 import barstools.macros._
+import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
 
+// Directory into which output files are dumped. Set by dir argument
+case object OutputDir extends Field[File]
+
 // Compiler for Midas Transforms
-private class MidasCompiler(dir: File, io: Data)(implicit param: config.Parameters) extends firrtl.Compiler {
+private class MidasCompiler(dir: File, io: Seq[Data])(implicit param: Parameters) 
+    extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
   def transforms =
-    getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++ Seq(
-    new InferReadWrite,
-    new ReplSeqMem) ++
-    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm) ++ Seq(
-    new passes.MidasTransforms(dir, io))
+    getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++
+    Seq(new InferReadWrite,
+        new ReplSeqMem) ++
+    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm) ++
+    Seq(new passes.MidasTransforms(dir, io))
 }
 
 // Compilers to emit proper verilog
 private class VerilogCompiler extends firrtl.Compiler {
   def emitter = new firrtl.VerilogEmitter
-  def transforms = getLoweringTransforms(firrtl.HighForm, firrtl.LowForm) :+ (
-    new firrtl.LowFirrtlOptimization)
+  def transforms =
+    Seq(new firrtl.IRToWorkingIR,
+        new firrtl.ResolveAndCheck,
+        new firrtl.HighFirrtlToMiddleFirrtl) ++
+    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm) ++
+    Seq(new firrtl.LowFirrtlOptimization)
 }
 
 object MidasCompiler {
   def apply(
       chirrtl: Circuit,
-      io: Data,
+      targetAnnos: Seq[Annotation],
+      io: Seq[Data],
       dir: File,
       lib: Option[File])
-     (implicit p: config.Parameters): Circuit = {
+     (implicit p: Parameters): Circuit = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val json = new File(dir, s"${chirrtl.main}.macros.json")
-    val annotations = new firrtl.AnnotationMap(Seq(
+    val midasAnnos = Seq(
       InferReadWriteAnnotation(chirrtl.main),
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops))))
-    // val writer = new FileWriter(new File("debug.ir"))
+        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
     val writer = new java.io.StringWriter
-    val midas = new MidasCompiler(dir, io) compile (
-      firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)), writer)
-    // writer.close
-    // firrtl.Parser.parse(writer.serialize)
+    val compiler = new MidasCompiler(dir, io)(p alterPartial { case OutputDir => dir })
+    val midas = compiler.compile(firrtl.CircuitState(
+      chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))), writer)
+
     val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
-    val result = new VerilogCompiler compile (
-      firrtl.CircuitState(midas.circuit, firrtl.HighForm), verilog)
+    val result = new VerilogCompiler compile (firrtl.CircuitState(
+      midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))), verilog)
     verilog.close
     result.circuit
   }
 
-  def apply[T <: chisel3.Module](
+  // Unlike above, elaborates the target locally, before constructing the target IO Record.
+  def apply[T <: chisel3.core.UserModule](
       w: => T,
       dir: File,
-      lib: Option[File] = None)
-     (implicit p: config.Parameters): Circuit = {
+      libFile: Option[File] = None)
+     (implicit p: Parameters): Circuit = {
     dir.mkdirs
     lazy val target = w
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(() => target))
-    apply(chirrtl, target.io, dir, lib)
+    val circuit = chisel3.Driver.elaborate(() => target)
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
+    val io = target.getPorts map (_.id)
+    apply(chirrtl, circuit.annotations.toSeq, io, dir, libFile)
   }
 }

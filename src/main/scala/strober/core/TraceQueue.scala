@@ -5,15 +5,18 @@ package core
 
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
 
 case object TraceMaxLen extends Field[Int]
 
-class TraceQueueIO[T <: Data](data: => T, val entries: Int) extends QueueIO(data, entries) {
-  val limit = Input(UInt(width=log2Up(entries)))
+class TraceQueueIO[T <: Data](data: T, val entries: Int) extends Bundle {
+  val enq = Flipped(EnqIO(data))
+  val deq = Flipped(DeqIO(data))
+  val limit = Input(UInt(log2Ceil(entries).W))
 }
 
-class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
+class TraceQueue[T <: Data](data: T)(implicit p: Parameters) extends Module {
+  import Chisel._ // FIXME: due to a bug in SyncReadMem
   val io = IO(new TraceQueueIO(data, p(TraceMaxLen)))
 
   val do_flow = Wire(Bool())
@@ -21,10 +24,10 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   val do_deq = io.deq.fire() && !do_flow
 
   val maybe_full = RegInit(false.B)
-  val enq_ptr = RegInit(UInt(0, log2Up(io.entries)))
-  val deq_ptr = RegInit(UInt(0, log2Up(io.entries)))
-  val enq_wrap = enq_ptr === io.limit - 2.U
-  val deq_wrap = deq_ptr === io.limit - 2.U
+  val enq_ptr = RegInit(UInt(0, log2Ceil(io.entries)))
+  val deq_ptr = RegInit(UInt(0, log2Ceil(io.entries)))
+  val enq_wrap = enq_ptr === (io.limit - 2.U)
+  val deq_wrap = deq_ptr === (io.limit - 2.U)
   when (do_enq) { enq_ptr := Mux(enq_wrap, 0.U, enq_ptr + 1.U) }
   when (do_deq) { deq_ptr := Mux(deq_wrap, 0.U, deq_ptr + 1.U) }
   when (do_enq =/= do_deq) { maybe_full := do_enq }
@@ -35,7 +38,7 @@ class TraceQueue[T <: Data](data: => T)(implicit p: Parameters) extends Module {
   val atLeastTwo = full || enq_ptr - deq_ptr >= 2.U
   do_flow := empty && io.deq.ready
 
-  val ram = SeqMem(io.entries, data)
+  val ram = SyncReadMem(io.entries, data.chiselCloneType)
   when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
 
   val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)

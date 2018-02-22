@@ -1,12 +1,11 @@
 package midas
 package platform
 
-import util.ParameterizedBundle // from rocketchip
-
 import chisel3._
 import chisel3.util._
 import junctions._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.ParameterizedBundle
 
 class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))

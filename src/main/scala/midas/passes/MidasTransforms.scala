@@ -4,10 +4,14 @@ package midas
 package passes
 
 import midas.core._
+
+import chisel3.experimental.ChiselAnnotation
+
 import firrtl._
+import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.annotations._
+import firrtl.transforms.{DedupModules, DeadCodeElimination}
 import Utils._
 import java.io.{File, FileWriter}
 
@@ -32,8 +36,8 @@ object MidasAnnotation {
 
 private[midas] class MidasTransforms(
     dir: File,
-    io: chisel3.Data)
-   (implicit param: config.Parameters) extends Transform {
+    io: Seq[chisel3.Data])
+    (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
@@ -48,7 +52,7 @@ private[midas] class MidasTransforms(
         new barstools.macros.MacroCompilerTransform,
         firrtl.passes.ResolveKinds,
         firrtl.passes.RemoveEmpty,
-        new Fame1Transform(lib getOrElse json),
+        new Fame1Transform(Some(lib getOrElse json)),
         new strober.passes.StroberTransforms(dir, lib getOrElse json),
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir))
@@ -56,3 +60,52 @@ private[midas] class MidasTransforms(
         xform runTransform in).copy(form=outputForm)
   }
 }
+
+// FIXME - get from C3
+trait DontTouchAnnotator { // scalastyle:ignore object.name
+  this: chisel3.Module =>
+
+  def dontTouch[T <: chisel3.Data](data: T): T = {
+    // TODO unify with firrtl.transforms.DontTouchAnnotation
+    annotate(ChiselAnnotation(data, classOf[firrtl.Transform], "DONTtouch!"))
+    data
+  }
+}
+
+// Mixed into modules that contain instances that will be Fame1 tranformed
+trait Fame1Annotator {
+  this: chisel3.Module =>
+
+  // Transforms a single instance; targetFire should be set to the name of a Bool
+  // that will be used to tick the module
+  def fame1transform(module: chisel3.Module, targetFire: String): Unit = {
+    annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
+    annotate(ChiselAnnotation(module, classOf[Fame1Instances], targetFire))
+  }
+
+  // Takes a series of modules; uses a bool named "targetFire" in enclosing context
+  def fame1transform(modules: chisel3.Module*): Unit = modules.foreach(fame1transform(_, "targetFire"))
+}
+
+object Fame1Annotation {
+  def apply(target: ModuleName, tFire: String): Annotation = Annotation(target, classOf[Fame1Instances], tFire)
+
+  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
+    case Annotation(ModuleName(n, c), _, tFire) => Some(ModuleName(n, c) -> tFire) 
+    case _ => None
+  }
+}
+
+class Fame1Instances extends Transform {
+  def inputForm = LowForm
+  def outputForm = HighForm
+  def execute(state: CircuitState): CircuitState = {
+    getMyAnnotations(state) match {
+      case Nil => state.copy()
+      case annos =>
+      val fame1s = (annos.collect { case Fame1Annotation(ModuleName(m, c), tFire) => m -> tFire }).toMap
+      state.copy(circuit = new ModelFame1Transform(fame1s).run(state.circuit))
+    }
+  }
+}
+

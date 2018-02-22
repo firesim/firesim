@@ -95,7 +95,7 @@ private object postorder {
 class StroberTransforms(
     dir: java.io.File,
     json: java.io.File)
-   (implicit param: config.Parameters) extends Transform {
+   (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
   def execute(state: CircuitState) = {
