@@ -3,11 +3,13 @@
 package midas
 package widgets
 
-import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
 import junctions._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.ParameterizedBundle
 
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
@@ -57,12 +59,9 @@ abstract class Widget(implicit p: Parameters) extends Module {
   //   For outputs, direct binds the wire to the map
   def attachIO(io: Record, prefix: String = ""): Unit = {
     def innerAttachIO(node: Data, name: String): Unit = node match {
-      case (b: Bits) => {
-        if (b.dir == OUTPUT) {
-          attach(b, s"${name}", ReadOnly)
-        } else {
-          genWOReg(b, name)
-        }
+      case (b: Bits) => (directionOf(b): @unchecked) match {
+        case ActualDirection.Output => attach(b, s"${name}", ReadOnly)
+        case ActualDirection.Input => genWOReg(b, name)
       }
       case (v: Vec[_]) => {
         (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, s"${name}_$idx")})
@@ -116,6 +115,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
 
   def genCRFile() {
     val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
+    crFile.io.mcr := DontCare
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
   }

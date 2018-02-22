@@ -8,7 +8,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util.{Decoupled, Counter, log2Up}
-import config.Parameters
+import freechips.rocketchip.config.Parameters
 
 class EmulationMasterIO(implicit p: Parameters) extends WidgetIO()(p){
   val simReset = Output(Bool())

@@ -5,7 +5,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import freechips.rocketchip.config.Parameters
 import midas.widgets._
 import strober.core.{DaisyBundle, DaisyData, ChainType}
 

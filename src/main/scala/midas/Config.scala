@@ -6,8 +6,8 @@ import core._
 import widgets._
 import platform._
 import strober.core._
-import config.{Parameters, Config, Field}
 import junctions.{NastiKey, NastiParameters}
+import freechips.rocketchip.config.{Parameters, Config, Field}
 
 trait PlatformType
 case object Zynq extends PlatformType

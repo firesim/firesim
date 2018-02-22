@@ -17,7 +17,7 @@ import mdf.macrolib.SRAMMacro
 class AddDaisyChains(
     meta: StroberMetaData,
     srams: Map[String, SRAMMacro])
-   (implicit param: config.Parameters) extends firrtl.passes.Pass {
+   (implicit param: freechips.rocketchip.config.Parameters) extends firrtl.passes.Pass {
   override def name = "[strober] Add Daisy Chains"
 
   implicit def expToString(e: Expression): String = e.serialize
@@ -385,6 +385,8 @@ class AddDaisyChains(
                   (s: Statement): Statement = s match {
     // Connect restart pins
     case s: WDefInstance if !(srams contains s.module) => Block(Seq(s,
+      IsInvalid(NoInfo, wsub(wref(s.name), "daisy")),
+      Connect(NoInfo, wsub(wref(s.name), "daisyReset"), wref("daisyReset", BoolType)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.SRAM), daisyPort("restart")(ChainType.SRAM)),
       Connect(NoInfo, childDaisyPort(s.name)("restart")(ChainType.RegFile), daisyPort("restart")(ChainType.RegFile))
     ))
@@ -424,12 +426,13 @@ class AddDaisyChains(
       val repl = new Netlist
       val clock = m.ports flatMap (p =>
         create_exps(wref(p.name, p.tpe))) find (_.tpe ==  ClockType)
+      val daisyReset = Port(NoInfo, "daisyReset", Input, BoolType)
       val daisyPort = Port(NoInfo, "daisy", Output, daisyType)
       val daisyInvalid = IsInvalid(NoInfo, wref("daisy", daisyType))
       val chainStmts = (ChainType.values.toList map
         insertChains(m, namespace, netlist, readers, repl, chainMods, hasChain))
       val bodyx = updateStmts(readers, repl, clock, stmts)(m.body)
-      m.copy(ports = m.ports :+ daisyPort,
+      m.copy(ports = m.ports ++ Seq(daisyReset, daisyPort),
              body = Block(Seq(daisyInvalid, bodyx) ++ chainStmts ++ stmts))
     case m => m
   }
@@ -441,7 +444,7 @@ class AddDaisyChains(
     val chirrtl = Parser parse (chisel3.Driver emit (() => new core.DaisyBox))
     val daisybox = (new MiddleFirrtlCompiler compile (
       CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit
-    val daisyType = daisybox.modules.head.ports.head.tpe
+    val daisyType = daisybox.modules.head.ports.find(_.name == "io").get.tpe
     val targetMods = postorder(c, meta)(transform(namespace, daisyType, chainMods, hasChain))
     c.copy(modules = chainMods ++ targetMods)
   }

@@ -4,12 +4,13 @@ package midas
 package widgets
 
 import core.HostDecoupledIO
-// from rokcetchip
 import junctions._
 
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
+import freechips.rocketchip.config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import CppGenerationUtils._
@@ -17,15 +18,19 @@ import CppGenerationUtils._
   * Returns a Seq of the leaf nodes with their absolute/final direction.
   */
 object FlattenData {
-  // TODO: fix for gsdt
-  import Chisel._
-  def dirProduct(context: Direction, field: Direction): Direction =
-    if (context == INPUT) field.flip else field
+  def dirProduct(context: ActualDirection, field: ActualDirection): ActualDirection =
+    (context: @unchecked) match {
+      case ActualDirection.Output => field
+      case ActualDirection.Input => (field: @unchecked) match {
+        case ActualDirection.Output => ActualDirection.Input
+        case ActualDirection.Input => ActualDirection.Output
+      }
+    }
 
   def apply[T <: Data](
       gen: T,
-      parentDir: Direction = OUTPUT): Seq[(Data, Direction)] = {
-    val currentDir = dirProduct(parentDir, gen.dir)
+      parentDir: ActualDirection = ActualDirection.Output): Seq[(Data, ActualDirection)] = {
+    val currentDir = dirProduct(parentDir, directionOf(gen))
     gen match {
       case a : Bundle => (a.elements flatMap(e => { this(e._2, currentDir)})).toSeq
       case v : Vec[_] => v.flatMap(el => this(el, currentDir))
@@ -43,12 +48,13 @@ object ScanRegister {
   import Chisel._
   def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
     val leaves = FlattenData(data)
-    leaves.foldLeft(scanIn)((in: Bool, leaf: Tuple2[Data,Direction]) => {
+    leaves.foldLeft(scanIn)((in: Bool, leaf: (Data, ActualDirection)) => {
       val r = Reg(Vec(leaf._1.toBits.toBools))
-      if(leaf._2 == OUTPUT){
-        r := leaf._1.toBits.toBools
-      } else {
-        leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
+      (leaf._2: @unchecked) match {
+        case ActualDirection.Output =>
+          r := leaf._1.toBits.toBools
+        case ActualDirection.Input =>
+          leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
       }
 
       val out = Wire(false.B)
@@ -63,6 +69,7 @@ object ScanRegister {
 class SatUpDownCounterIO(val n: Int) extends Bundle {
   val inc = Input(Bool())
   val dec = Input(Bool())
+  val set = Input(Valid(UInt(log2Up(n+1).W)))
   val max = Input(UInt(log2Up(n+1).W))
   val value = Output(UInt())
   val full = Output(Bool())
@@ -80,7 +87,9 @@ class SatUpDownCounter(val n: Int) extends Module {
   io.full := value >= io.max
   io.empty := value === 0.U
 
-  when (io.inc && ~io.dec && ~io.full) {
+  when (io.set.valid) {
+    io.value := io.set.bits
+  }.elsewhen (io.inc && ~io.dec && ~io.full) {
     value := value + 1.U
   }.elsewhen(~io.inc && io.dec && ~io.empty){
     value := value - 1.U
@@ -90,9 +99,11 @@ class SatUpDownCounter(val n: Int) extends Module {
 object SatUpDownCounter {
   def apply(n: Int): SatUpDownCounterIO = {
     val c = (Module(new SatUpDownCounter(n))).io
-    c.max := UInt(n)
+    c.max := n.U
     c.inc := false.B
+    c.set.valid := false.B
     c.dec := false.B
+    c.set.bits := DontCare
     c
   }
 }
@@ -118,6 +129,7 @@ class MultiQueue[T <: Data](
 
   require(isPow2(entries))
   val io = IO(new MultiQueueIO(gen, numQueues, entries))
+  io.count := DontCare
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
   // slot
 
@@ -156,7 +168,7 @@ class MultiQueue[T <: Data](
   val deqPtr = Wire(UInt())
   when(do_deq && (deqAddrReg === io.deqAddr)) {
     deqPtr := deqPtrs(io.deqAddr) + 1.U
-    empty := (deqPtrs(io.deqAddr) + 1.U) === enqPtrs(io.enqAddr)
+    empty := (deqPtrs(io.deqAddr) + 1.U) === enqPtrs(io.deqAddr)
   }.otherwise {
     deqPtr := deqPtrs(io.deqAddr)
     empty := ptr_matches(io.deqAddr) && !maybe_full(io.deqAddr)
@@ -165,7 +177,7 @@ class MultiQueue[T <: Data](
   io.empty := empty
   io.deq.valid := deqValid
   io.enq.ready := !full
-  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr), true.B)
+  io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr))
 }
 
 // Selects one of two input host decoupled channels. Drives ready false
@@ -360,13 +372,16 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   io.nasti.w.ready := ~wFired
 }
 
-class CRIO(val direction: Direction, width: Int, val default: Int) extends Bundle {
-  val value = UInt(Some(direction), width)
+class CRIO(direction: ActualDirection, width: Int, val default: Int) extends Bundle {
+  val value = (direction: @unchecked) match {
+    case ActualDirection.Input => Input(UInt(width.W))
+    case ActualDirection.Output => Output(UInt(width.W))
+  }
   def apply(dummy: Int = 0) = value
 }
 
 object CRIO {
-  def apply(direction: Direction, width: Int, default: Int) =
+  def apply(direction: ActualDirection, width: Int, default: Int) =
     new CRIO(direction, width, default)
 }
 
@@ -420,4 +435,21 @@ object SkidRegister {
   }
 }
 
+class IdentityModule[T <: Data](gen: T) extends Module
+{
+  val io = IO(new Bundle {
+    val in = Flipped(gen.cloneType)
+    val out = gen.cloneType
+  })
 
+  io.out <> io.in
+}
+
+object IdentityModule
+{
+  def apply[T <: Data](x: T): T = {
+    val identity = Module(new IdentityModule(x))
+    identity.io.in := x
+    identity.io.out
+  }
+}

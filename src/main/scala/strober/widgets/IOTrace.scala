@@ -7,7 +7,7 @@ import midas.widgets._
 import midas.core._
 import chisel3._
 import chisel3.util._
-import config.Parameters
+import freechips.rocketchip.config.Parameters
 
 class IOTraceWidgetIO(
      wireInNum: Int,

@@ -3,10 +3,10 @@
 package strober
 package core
 
-import util.ParameterizedBundle // from rocketchip
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.ParameterizedBundle
 
 case object DaisyWidth extends Field[Int]
 case object DataWidth extends Field[Int]
@@ -54,10 +54,9 @@ class DaisyBundle(val daisyWidth: Int, sramChainNum: Int) extends Bundle {
     new DaisyBundle(daisyWidth, sramChainNum).asInstanceOf[this.type]
 }
 
-class DaisyBox(implicit p: Parameters) extends BlackBox {
-  val io = IO(new Bundle {
-    val daisy = new DaisyBundle(p(DaisyWidth), p(SRAMChainNum))
-  })
+class DaisyBox(implicit p: Parameters) extends Module {
+  val io = IO(new DaisyBundle(p(DaisyWidth), p(SRAMChainNum)))
+  io := DontCare
 }
 
 // Common structures for daisy chains
@@ -146,7 +145,7 @@ class RegChainControl(implicit p: Parameters) extends DaisyChainModule()(p) {
   val counter = new DaisyCounter(io.stall, io.ctrlIo, daisyLen)
   
   io.ctrlIo.cntrNotZero := counter.isNotZero
-  io.ctrlIo.copyCond := io.stall && !copied || RegNext(reset)
+  io.ctrlIo.copyCond := io.stall && !copied || RegNext(reset.toBool)
   io.ctrlIo.readCond := io.stall && copied && counter.isNotZero
 }
 
