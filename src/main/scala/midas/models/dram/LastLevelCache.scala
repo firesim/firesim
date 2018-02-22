@@ -307,7 +307,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
                        ReadResponseMetaData(reads.bits))
 
   io.wResp.valid := (state === llc_w_mdaccess || state === llc_w_daccess) &&
-    io.req.w.valid && io.req.w.bits.last
+    io.req.w.fire && io.req.w.bits.last
   io.wResp.bits := WriteResponseMetaData(writes.bits)
 
   switch (state) {
