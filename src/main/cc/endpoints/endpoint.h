@@ -9,6 +9,7 @@ class endpoint_t
 {
 public:
   endpoint_t(simif_t* s): sim(s) { }
+  virtual void init() {}; // FIXME; should be pure;
   virtual void tick() = 0;
   virtual bool done() = 0;
 
