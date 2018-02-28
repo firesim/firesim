@@ -47,7 +47,7 @@ class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
-  case MemNastiKey    => NastiParameters(64, 32, 16)
+  case MemNastiKey    => NastiParameters(64, 34, 16)
   case MasterNastiKey => site(CtrlNastiKey)
   case SlaveNastiKey => site(MemNastiKey)
 }) ++ new SimConfig)
