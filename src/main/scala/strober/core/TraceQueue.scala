@@ -10,8 +10,8 @@ import freechips.rocketchip.config.{Parameters, Field}
 case object TraceMaxLen extends Field[Int]
 
 class TraceQueueIO[T <: Data](data: T, val entries: Int) extends Bundle {
-  val enq = Flipped(EnqIO(data))
-  val deq = Flipped(DeqIO(data))
+  val enq = Flipped(EnqIO(data.cloneType))
+  val deq = Flipped(DeqIO(data.cloneType))
   val limit = Input(UInt(log2Ceil(entries).W))
 }
 

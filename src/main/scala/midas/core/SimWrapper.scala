@@ -70,8 +70,8 @@ trait HasSimWrapperParams {
 class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
   val elements = ListMap() ++ (es map { case (name, rv) =>
     (directionOf(rv.valid): @unchecked) match {
-      case ActualDirection.Input => name -> Flipped(SimReadyValid(rv.bits))
-      case ActualDirection.Output => name -> SimReadyValid(rv.bits)
+      case ActualDirection.Input => name -> Flipped(SimReadyValid(rv.bits.cloneType))
+      case ActualDirection.Output => name -> SimReadyValid(rv.bits.cloneType)
     }
   })
   def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
@@ -79,7 +79,7 @@ class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record 
 
 class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
   val elements = ListMap() ++ (es map {
-    case (name, rv) => name -> ReadyValidTrace(rv.bits)
+    case (name, rv) => name -> ReadyValidTrace(rv.bits.cloneType)
   })
   def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
 }
@@ -306,7 +306,7 @@ class SimWrapper(targetIo: Seq[Data])
   def genReadyValidChannel[T <: Data](arg: (String, ReadyValidIO[T])) =
     arg match { case (name, io) =>
       val channel = Module(new ReadyValidChannel(
-        io.bits, directionOf(io.valid) == ActualDirection.Input))
+        io.bits.cloneType, directionOf(io.valid) == ActualDirection.Input))
       channel suggestName s"ReadyValidChannel_$name"
       (directionOf(io.valid): @unchecked) match {
         case ActualDirection.Input => io <> channel.io.deq.target

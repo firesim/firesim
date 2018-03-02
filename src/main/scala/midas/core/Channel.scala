@@ -64,7 +64,7 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 class ReadyValidChannel[T <: Data](gen: T, flipped: Boolean, n: Int = 2)(implicit p: Parameters) extends Module {
   val io = IO(new ReadyValidChannelIO(gen))
   // Stores tokens with valid target-data that have been successfully enqueued
-  val target = Module(new Queue(gen.chiselCloneType, n))
+  val target = Module(new Queue(gen, n))
   // Stores a bit indicating if a given token contained valid target-data
   // 1 = there was a target handshake; 0 = no target handshake
   val tokens = Module(new Queue(Bool(), p(ChannelLen)))
