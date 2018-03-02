@@ -83,6 +83,18 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   pendingWReq.inc := tNasti.w.fire() && tNasti.w.bits.last
   pendingWReq.dec := tNasti.b.fire()
 
+  assert(!tNasti.ar.valid ||
+    (tNasti.ar.bits.len === 0.U || tNasti.ar.bits.size === log2Ceil(nastiXDataBits/8).U),
+    "Illegal ar request: memory model only supports full-width bursts")
+  assert(!tNasti.ar.valid || (tNasti.ar.bits.burst === NastiConstants.BURST_INCR),
+    "Illegal ar request: memory model only supports incrementing bursts")
+
+  assert(!tNasti.aw.valid ||
+    (tNasti.aw.bits.len === 0.U || tNasti.aw.bits.size === log2Ceil(nastiXDataBits/8).U),
+    "Illegal aw request: memory model only supports full-width bursts")
+  assert(!tNasti.aw.valid || (tNasti.aw.bits.burst === NastiConstants.BURST_INCR),
+    "Illegal aw request: memory model only supports incrementing bursts")
+
   // Release; returns responses to target
   val xactionRelease = Module(new AXI4Releaser)
   tNasti.b <> xactionRelease.io.b
