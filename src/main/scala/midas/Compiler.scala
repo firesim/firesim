@@ -5,7 +5,7 @@ package midas
 import chisel3.{Data, Bundle, Record, Clock, Bool}
 import chisel3.internal.firrtl.Port
 import firrtl.ir.Circuit
-import firrtl.AnnotationMap
+import firrtl.{Transform, CircuitState, AnnotationMap}
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
@@ -45,8 +45,9 @@ object MidasCompiler {
       targetAnnos: Seq[Annotation],
       io: Seq[Data],
       dir: File,
-      lib: Option[File])
-     (implicit p: Parameters): Circuit = {
+      lib: Option[File],
+      customTransforms: Seq[Transform])
+     (implicit p: Parameters): CircuitState = {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val json = new File(dir, s"${chirrtl.main}.macros.json")
     val midasAnnos = Seq(
@@ -55,29 +56,31 @@ object MidasCompiler {
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
         json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
-    val writer = new java.io.StringWriter
     val compiler = new MidasCompiler(dir, io)(p alterPartial { case OutputDir => dir })
     val midas = compiler.compile(firrtl.CircuitState(
-      chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))), writer)
+      chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))),
+      customTransforms)
 
+    val result = (new VerilogCompiler).compileAndEmit(firrtl.CircuitState(
+      midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))))
     val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
-    val result = new VerilogCompiler compile (firrtl.CircuitState(
-      midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))), verilog)
+    verilog.write(result.getEmittedCircuit.value)
     verilog.close
-    result.circuit
+    result
   }
 
   // Unlike above, elaborates the target locally, before constructing the target IO Record.
   def apply[T <: chisel3.core.UserModule](
       w: => T,
       dir: File,
-      libFile: Option[File] = None)
-     (implicit p: Parameters): Circuit = {
+      libFile: Option[File] = None,
+      customTransforms: Seq[Transform] = Nil)
+     (implicit p: Parameters): CircuitState = {
     dir.mkdirs
     lazy val target = w
     val circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val io = target.getPorts map (_.id)
-    apply(chirrtl, circuit.annotations.toSeq, io, dir, libFile)
+    apply(chirrtl, circuit.annotations.toSeq, io, dir, libFile, customTransforms)
   }
 }
