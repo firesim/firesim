@@ -30,6 +30,7 @@ class FIFOMASMMRegIO(cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
 
 class FIFOMASIO(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingModelIO(cfg)(p) {
   val mmReg = new FIFOMASMMRegIO(cfg)
+  //override def clonetype = new FIFOMASIO(cfg)(p).asInstanceOf[this.type]
 }
 
 class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingModel(cfg)(p)
