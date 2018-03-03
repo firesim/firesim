@@ -28,9 +28,8 @@ class AddDaisyChains(
                             instIdx: Int = 0)
                             (implicit chainType: ChainType.Value) = {
     val chirrtl = Parser parse (chisel3.Driver emit chainGen)
-    val annotation = new AnnotationMap(Nil)
     val circuit = renameMods((new MiddleFirrtlCompiler compile (
-      CircuitState(chirrtl, ChirrtlForm), new StringWriter)).circuit, namespace)
+      CircuitState(chirrtl, ChirrtlForm), Nil)).circuit, namespace)
     chainMods ++= circuit.modules
     Seq(WDefInstance(NoInfo, chainRef(instIdx).name, circuit.main, ut),
         IsInvalid(NoInfo, chainRef(instIdx)))
