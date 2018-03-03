@@ -108,7 +108,7 @@ object SatUpDownCounter {
   }
 }
 
-class MultiQueueIO[T <: Data](gen: T, numQueues: Int, entries: Int) extends
+class MultiQueueIO[T <: Data](private val gen: T, numQueues: Int, entries: Int) extends
     QueueIO(gen, entries) {
   val enqAddr = Input(UInt(log2Up(numQueues).W))
   val deqAddr = Input(UInt(log2Up(numQueues).W))
