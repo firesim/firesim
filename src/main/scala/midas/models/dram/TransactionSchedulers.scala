@@ -15,7 +15,7 @@ class XactionSchedulerEntry(implicit p: Parameters) extends NastiBundle()(p) {
   val addr = UInt(nastiXAddrBits.W)
  }
 
-class XactionSchedulerIO(cfg: BaseConfig)(implicit p: Parameters) extends ParameterizedBundle()(p){
+class XactionSchedulerIO(cfg: BaseConfig)(implicit p: Parameters) extends Bundle{
   val req = Flipped(new NastiReqChannels)
   val nextXaction = Decoupled(new XactionSchedulerEntry)
   val pendingWReq = Input(UInt((cfg.maxWrites + 1).W))

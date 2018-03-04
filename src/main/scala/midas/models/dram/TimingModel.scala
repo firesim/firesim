@@ -47,8 +47,7 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   }
 }
 
-abstract class TimingModelIO(cfg: BaseConfig)(implicit val p: Parameters)
-    extends ParameterizedBundle()(p) {
+abstract class TimingModelIO(cfg: BaseConfig)(implicit val p: Parameters) extends Bundle {
   val tNasti = Flipped(new NastiIO)
   val egressReq = new EgressReq
   val egressResp = Flipped(new EgressResp)

@@ -32,12 +32,12 @@ class LatencyPipeIO(cfg: LatencyPipeConfig)(implicit p: Parameters) extends Spli
   val mmReg = new LatencyPipeMMRegIO(cfg)
 }
 
-class WritePipeEntry(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class WritePipeEntry(implicit val p: Parameters) extends Bundle {
   val releaseCycle = UInt(64.W)
   val xaction = new WriteResponseMetaData
 }
 
-class ReadPipeEntry(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class ReadPipeEntry(implicit val p: Parameters) extends Bundle {
   val releaseCycle = UInt(64.W)
   val xaction = new ReadResponseMetaData
 }

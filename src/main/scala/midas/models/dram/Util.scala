@@ -259,7 +259,7 @@ trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
 trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
 trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
 
-class TransactionMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4IdAndLen {
+class TransactionMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen {
   val isWrite = Bool()
 }
 
@@ -280,8 +280,8 @@ object TransactionMetaData {
 
 }
 
-class WriteResponseMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4Id
-class ReadResponseMetaData(implicit val p: Parameters) extends ParameterizedBundle()(p) with HasAXI4IdAndLen
+class WriteResponseMetaData(implicit val p: Parameters) extends Bundle with HasAXI4Id
+class ReadResponseMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen
 
 object ReadResponseMetaData {
   def apply(x: HasAXI4IdAndLen)(implicit p: Parameters): ReadResponseMetaData = {
