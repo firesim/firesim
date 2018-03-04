@@ -121,7 +121,7 @@ case class LLCKey(
     addrWidth - blockBytes.minBits - banks.minBits - sets.minBits
 }
 
-class LLCModelIO(key: LLCKey)(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class LLCModelIO(key: LLCKey)(implicit p: Parameters) extends Bundle {
   val req = Flipped(new NastiReqChannels)
   val wResp = Decoupled(new WriteResponseMetaData) // to backend
   val rResp = Decoupled(new ReadResponseMetaData)
