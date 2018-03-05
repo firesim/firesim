@@ -28,7 +28,7 @@ class SimConfig extends Config((site, here, up) => {
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case MemNastiKey      => NastiParameters(64, 32, 6)
-  case EndpointKey      => EndpointMap(Seq(new SimNastiMemIO, new SimAXI4MemIO))
+  case EndpointKey      => EndpointMap(Seq(new SimNastiMemIO))
   case MemModelKey      => Some((p: Parameters) => new SimpleLatencyPipe()(p))
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case MidasLLCKey      => None
