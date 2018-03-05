@@ -3,7 +3,6 @@
 package midas
 package core
 
-import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.Parameters
 
 import chisel3._
@@ -40,9 +39,6 @@ abstract class SimMemIO extends Endpoint {
     initialized = true
     super.add(name, channel)
     targetAXI4Widths = channel match {
-      case axi4: AXI4Bundle => NastiParameters(axi4.r.bits.data.getWidth,
-                                               axi4.ar.bits.addr.getWidth,
-                                               axi4.ar.bits.id.getWidth)
       case axi4: NastiIO => NastiParameters(axi4.r.bits.data.getWidth,
                                             axi4.ar.bits.addr.getWidth,
                                             axi4.ar.bits.id.getWidth)
@@ -69,14 +65,6 @@ abstract class SimMemIO extends Endpoint {
 class SimNastiMemIO extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: NastiIO =>
-      directionOf(channel.w.valid) == ActualDirection.Output
-    case _ => false
-  }
-}
-
-class SimAXI4MemIO extends SimMemIO {
-  def matchType(data: Data) = data match {
-    case channel: AXI4Bundle =>
       directionOf(channel.w.valid) == ActualDirection.Output
     case _ => false
   }
