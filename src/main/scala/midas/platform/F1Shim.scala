@@ -6,9 +6,11 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
+import midas.core.DMANastiKey
 
 class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
+  val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) }))
 }
 
@@ -90,6 +92,66 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
       )
   }
 
+  when (io.dma.aw.fire()) {
+    printf("[dma,awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
+      cyclecount,
+      io.dma.aw.bits.addr,
+      io.dma.aw.bits.len,
+      io.dma.aw.bits.size,
+      io.dma.aw.bits.burst,
+      io.dma.aw.bits.lock,
+      io.dma.aw.bits.cache,
+      io.dma.aw.bits.prot,
+      io.dma.aw.bits.qos,
+      io.dma.aw.bits.region,
+      io.dma.aw.bits.id,
+      io.dma.aw.bits.user)
+  }
+
+  when (io.dma.w.fire()) {
+    printf("[dma,wfire,%x] data %x, last %x, id %x, strb %x, user %x\n",
+      cyclecount,
+      io.dma.w.bits.data,
+      io.dma.w.bits.last,
+      io.dma.w.bits.id,
+      io.dma.w.bits.strb,
+      io.dma.w.bits.user)
+  }
+
+  when (io.dma.b.fire()) {
+    printf("[dma,bfire,%x] resp %x, id %x, user %x\n",
+      cyclecount,
+      io.dma.b.bits.resp,
+      io.dma.b.bits.id,
+      io.dma.b.bits.user)
+  }
+
+  when (io.dma.ar.fire()) {
+    printf("[dma,arfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
+      cyclecount,
+      io.dma.ar.bits.addr,
+      io.dma.ar.bits.len,
+      io.dma.ar.bits.size,
+      io.dma.ar.bits.burst,
+      io.dma.ar.bits.lock,
+      io.dma.ar.bits.cache,
+      io.dma.ar.bits.prot,
+      io.dma.ar.bits.qos,
+      io.dma.ar.bits.region,
+      io.dma.ar.bits.id,
+      io.dma.ar.bits.user)
+  }
+
+  when (io.dma.r.fire()) {
+    printf("[dma,rfire,%x] resp %x, data %x, last %x, id %x, user %x\n",
+      cyclecount,
+      io.dma.r.bits.resp,
+      io.dma.r.bits.data,
+      io.dma.r.bits.last,
+      io.dma.r.bits.id,
+      io.dma.r.bits.user)
+  }
+
   when (io.slave.aw.fire()) {
     printf("[slave,awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
       cyclecount,
@@ -161,6 +223,7 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
   }
 
   top.io.ctrl <> io.master
+  top.io.dma  <> io.dma
   io.slave <> top.io.mem
 
   val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 4097)

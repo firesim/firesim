@@ -14,6 +14,7 @@ case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableSnapshot extends Field[Boolean]
+case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
 case object MemModelKey extends Field[Option[Parameters => MemModel]]
 case object EndpointKey extends Field[EndpointMap]
@@ -28,6 +29,7 @@ class SimConfig extends Config((site, here, up) => {
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case MemNastiKey      => NastiParameters(64, 32, 6)
+  case DMANastiKey      => NastiParameters(512, 64, 6)
   case EndpointKey      => EndpointMap(Seq(new SimNastiMemIO, new SimAXI4MemIO))
   case MemModelKey      => Some((p: Parameters) => new SimpleLatencyPipe()(p))
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
@@ -36,6 +38,7 @@ class SimConfig extends Config((site, here, up) => {
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => Zynq
+  case HasDMAChannel  => false
   case MasterNastiKey => site(CtrlNastiKey)
   case SlaveNastiKey  => site(MemNastiKey)
 }) ++ new SimConfig)
@@ -46,6 +49,7 @@ class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
 
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
+  case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case MemNastiKey    => NastiParameters(64, 34, 16)
   case MasterNastiKey => site(CtrlNastiKey)
