@@ -39,7 +39,7 @@ $(info clock period: $(CLOCK_PERIOD))
 
 shim := FPGATop
 
-override CXXFLAGS := -std=c++11 -Wall -I$(midas_dir)/dramsim2 $(CXXFLAGS)
+override CXXFLAGS := -std=c++11 -Wall -Wno-unused-variable -I$(midas_dir)/dramsim2 $(CXXFLAGS)
 
 include $(util_dir)/utils.mk
 
