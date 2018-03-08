@@ -40,13 +40,14 @@ mkdir -p build
 cd build
 ../configure --host=riscv64-unknown-elf --with-payload=../../riscv-linux/vmlinux
 make -j16
-cp bbl ../../bbl-vmlinux
+cp bbl ../../bbl-vmlinux0
 
 if [ $PLATFORM == "firesim" ]; then
   # make 7 more copies of the rootfs for f1.16xlarge nodes
   cd ../../
   for i in {1..7}
   do
+      cp bbl-vmlinux0 bbl-vmlinux$i
       cp rootfs0.ext2 rootfs$i.ext2
   done
 fi
