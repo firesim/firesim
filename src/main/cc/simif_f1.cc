@@ -109,7 +109,7 @@ void simif_f1_t::fpga_setup(int slot_id) {
 
     /* attach to BAR0 */
     pci_bar_handle = PCI_BAR_HANDLE_INIT;
-    rc = fpga_pci_attach(0, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
+    rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
     check_rc(rc, "fpga_pci_attach FAILED");
 #endif
 }
