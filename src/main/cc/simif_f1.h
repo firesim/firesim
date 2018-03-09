@@ -15,7 +15,8 @@ class simif_f1_t: public virtual simif_t
     virtual ~simif_f1_t();
     virtual void write(size_t addr, uint32_t data);
     virtual uint32_t read(size_t addr);
-    virtual ssize_t pread(size_t addr, char* data, size_t size);
+    virtual ssize_t pull(size_t addr, char* data, size_t size);
+    virtual ssize_t push(size_t addr, char* data, size_t size);
     uint32_t is_write_ready();
     void check_rc(int rc, char * infostr);
     void fpga_shutdown();

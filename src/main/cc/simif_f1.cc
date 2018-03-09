@@ -49,6 +49,7 @@ void simif_f1_t::fpga_shutdown() {
     if (rc) {
         fprintf(stderr, "Failure while detaching from the fpga: %d\n", rc);
     }
+    close(edma_fd);
 #endif
 }
 
@@ -164,11 +165,19 @@ uint32_t simif_f1_t::read(size_t addr) {
 #endif
 }
 
-ssize_t simif_f1_t::pread(size_t addr, char* data, size_t size) {
+ssize_t simif_f1_t::pull(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
   return -1; // TODO
 #else
-  return ::pread(edma_fd, data, size, 0x0);
+  return ::pread(edma_fd, data, size, addr);
+#endif
+}
+
+ssize_t simif_f1_t::push(size_t addr, char* data, size_t size) {
+#ifdef SIMULATION_XSIM
+  return -1; // TODO
+#else
+  return ::pwrite(edma_fd, data, size, addr);
 #endif
 }
 

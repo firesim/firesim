@@ -19,11 +19,16 @@ void mmio_f1_t::read_req(uint64_t addr, size_t size, size_t len) {
   this->ar.push(ar);
 }
 
-void mmio_f1_t::write_req(uint64_t addr, size_t size, size_t len, void* data, size_t strb) {
+void mmio_f1_t::write_req(uint64_t addr, size_t size, size_t len, void* data, size_t *strb) {
+  int nbytes = 1 << size;
+
   mmio_req_addr_t aw(0, addr, size, len);
-  mmio_req_data_t w((char*) data, strb, true);
   this->aw.push(aw);
-  this->w.push(w);
+
+  for (int i = 0; i < len + 1; i++) {
+    mmio_req_data_t w(((char*) data) + i * nbytes, strb[i], i == len);
+    this->w.push(w);
+  }
 }
 
 void mmio_f1_t::tick(

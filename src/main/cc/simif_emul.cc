@@ -11,7 +11,6 @@
 #endif
 #endif
 #include <signal.h>
-#include <memory>
 
 uint64_t main_time = 0;
 std::unique_ptr<mmio_t> master;
@@ -119,40 +118,82 @@ int simif_emul_t::finish() {
   return exitcode;
 }
 
-void simif_emul_t::write(size_t addr, data_t data) {
-  size_t strb = (1 << CTRL_STRB_BITS) - 1;
-  master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0, &data, strb);
-  while(!master->write_resp()) {
+void simif_emul_t::wait_write(std::unique_ptr<mmio_t>& mmio) {
+  while(!mmio->write_resp()) {
 #ifdef VCS
     target.switch_to();
 #else
     ::tick();
 #endif
   }
+}
+
+void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
+  while(!mmio->read_resp(data)) {
+#ifdef VCS
+    target.switch_to();
+#else
+    ::tick();
+#endif
+  }
+}
+
+void simif_emul_t::write(size_t addr, data_t data) {
+  size_t strb = (1 << CTRL_STRB_BITS) - 1;
+  master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0, &data, &strb);
+  wait_write(master);
 }
 
 data_t simif_emul_t::read(size_t addr) {
   data_t data;
   master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
-  while(!master->read_resp(&data)) {
-#ifdef VCS
-    target.switch_to();
-#else
-    ::tick();
-#endif
-  }
+  wait_read(master, &data);
   return data;
 }
 
-ssize_t simif_emul_t::pread(size_t addr, char* data, size_t size) {
-  size_t len = (size - 1) / DMA_WIDTH;
-  dma->read_req(addr, DMA_SIZE, len);
-  while(!dma->read_resp(data)) {
-#ifdef VCS
-    target.switch_to();
-#else
-    ::tick();
-#endif
+#define MAX_LEN 255
+
+ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
+  ssize_t len = (size - 1) / DMA_WIDTH;
+
+  while (len >= 0) {
+      size_t part_len = len % (MAX_LEN + 1);
+
+      dma->read_req(addr, DMA_SIZE, part_len);
+      wait_read(dma, data);
+
+      len -= (part_len + 1);
+      addr += (part_len + 1) * DMA_WIDTH;
+      data += (part_len + 1) * DMA_WIDTH;
   }
+  return size;
+}
+
+ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
+  ssize_t len = (size - 1) / DMA_WIDTH;
+  size_t remaining = size - len * DMA_WIDTH;
+  size_t strb[len + 1];
+  size_t *strb_ptr = &strb[0];
+
+  for (int i = 0; i < len; i++)
+      strb[i] = (1L << DMA_WIDTH) - 1;
+
+  if (remaining == DMA_WIDTH)
+      strb[len] = strb[0];
+  else
+      strb[len] = (1L << remaining) - 1;
+
+  while (len >= 0) {
+      size_t part_len = len % (MAX_LEN + 1);
+
+      dma->write_req(addr, DMA_SIZE, part_len, data, strb_ptr);
+      wait_write(dma);
+
+      len -= (part_len + 1);
+      addr += (part_len + 1) * DMA_WIDTH;
+      data += (part_len + 1) * DMA_WIDTH;
+      strb_ptr += (part_len + 1);
+  }
+
   return size;
 }

@@ -79,7 +79,7 @@ public:
   );
 
   virtual void read_req(uint64_t addr, size_t size, size_t len);
-  virtual void write_req(uint64_t addr, size_t size, size_t len, void* data, size_t strb);
+  virtual void write_req(uint64_t addr, size_t size, size_t len, void* data, size_t *strb);
   virtual bool read_resp(void *data);
   virtual bool write_resp();
 
