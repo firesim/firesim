@@ -153,18 +153,17 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel, 2))
   val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel, 2))
+  val miss_resource_hazard = !mshr_available || !s2_aw_mem.io.enq.ready || !s2_ar_mem.io.enq.ready
 
   val reads = Queue(io.req.ar)
   val read_set = io.settings.maskSet(reads.bits.addr)
   val read_set_collision = mshrs.exists({ m: MSHR => m.setCollision(read_set) })
-  val can_deq_read = reads.valid && !read_set_collision && mshr_available && s2_ar_mem.io.enq.ready &&
-    io.rResp.ready
+  val can_deq_read = reads.valid && !read_set_collision && !miss_resource_hazard && io.rResp.ready
 
   val writes = Queue(io.req.aw)
   val write_set = io.settings.maskSet(writes.bits.addr)
   val write_set_collision = mshrs.exists({ m: MSHR => m.setCollision(write_set) })
-  val can_deq_write = writes.valid && !write_set_collision && mshr_available && s2_aw_mem.io.enq.ready &&
-    io.wResp.ready
+  val can_deq_write = writes.valid && !write_set_collision && !miss_resource_hazard && mshr_available && io.wResp.ready
 
   val llc_idle :: llc_r_mdaccess :: llc_r_wb :: llc_r_daccess :: llc_w_mdaccess :: llc_w_wb :: llc_w_daccess :: llc_refill :: Nil = Enum(8)
 
@@ -204,7 +203,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   val do_evict         = !hit_valid && !empty_valid
   val evict_dirty_way  = do_evict && evict_way_is_dirty
-  val dirty_line_addr = io.settings.regenPhysicalAddress(0.U, s1_set_addr, evict_way_tag)
+  val dirty_line_addr  = io.settings.regenPhysicalAddress(0.U, s1_set_addr, evict_way_tag)
 
   val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).toBools
 
@@ -229,8 +228,18 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     md_array.write(s1_set_addr, Vec(md_update))
   }
 
-  val allocate_mshr = (state === llc_w_mdaccess && evict_dirty_way) ||
-                      (state === llc_r_mdaccess && !hit_valid)
+  // FIXME: Inner and outer widths are the same
+  val block_beats = (1.U << (io.settings.blockBits - log2Ceil(nastiXDataBits/8).U))
+  // AXI4 length; subtract 1
+  val axi4_block_len = block_beats - 1.U
+
+  val read_triggered_refill =  state === llc_r_mdaccess && !hit_valid
+  val write_triggered_refill = state === llc_w_mdaccess && (writes.bits.len < axi4_block_len) &&
+                               !hit_valid
+  val need_refill = read_triggered_refill || write_triggered_refill
+  val need_writeback = s1_valid && evict_dirty_way
+
+  val allocate_mshr = need_refill || need_writeback
 
   when(allocate_mshr) {
     mshrs(mshr_next_idx) := MSHR(
@@ -239,27 +248,31 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
                     TransactionMetaData(reads.bits),
                     TransactionMetaData(writes.bits)),
       set_addr = s1_set_addr,
-      do_acq   = (state === llc_r_mdaccess),
-      do_wb    = evict_dirty_way)
+      do_acq   = need_refill,
+      do_wb    = need_writeback)
   }
 
-  // AXI4 length; subtract 1
-  val outer_block_beats = (1.U << (io.settings.blockBits - log2Ceil(nastiXDataBits/8).U)) - 1.U
-  // refills
-  s2_ar_mem.io.enq.bits     := reads.bits
-  s2_ar_mem.io.enq.bits.id  := mshr_next_idx
-  s2_ar_mem.io.enq.bits.len := outer_block_beats
-  s2_ar_mem.io.enq.valid    := (state === llc_r_mdaccess || state === llc_w_mdaccess) && allocate_mshr
+
+  // Refill Issue
+  // For now always fetch whole cache lines from DRAM, even if fewer beats are required for 
+  // a write-triggered refill
+  val current_line_addr = io.settings.regenPhysicalAddress(0.U, s1_set_addr, s1_tag_addr)
+  s2_ar_mem.io.enq.bits := NastiReadAddressChannel(
+                            addr = current_line_addr,
+                            id   = mshr_next_idx,
+                            size = log2Ceil(nastiXDataBits/8).U,
+                            len  = axi4_block_len)
+  s2_ar_mem.io.enq.valid := need_refill
 
   reads.ready := (state === llc_r_mdaccess)
 
-  // writebacks
+  // Writeback Issue
   s2_aw_mem.io.enq.bits := NastiWriteAddressChannel(
-                            id   = mshr_next_idx,
                             addr = dirty_line_addr,
+                            id   = mshr_next_idx,
                             size = log2Ceil(nastiXDataBits/8).U,
-                            len  = outer_block_beats)
-  s2_aw_mem.io.enq.valid := s1_valid && evict_dirty_way
+                            len  = axi4_block_len)
+  s2_aw_mem.io.enq.valid := need_writeback
 
   writes.ready := io.req.w.bits.last && io.req.w.fire
 
@@ -277,14 +290,15 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   when (refill_start) {
     mshrs(io.memRResp.bits.id).acq_in_flight := false.B
   }
-  val can_refill = io.memRResp.valid && io.rResp.ready
+  val can_refill = io.memRResp.valid &&
+    (mshrs(io.memRResp.bits.id).xaction.isWrite || io.rResp.ready)
   io.memRResp.ready := refill_start
 
   // Data-array hazard tracking
   when (((state === llc_w_mdaccess || state === llc_r_mdaccess) && evict_dirty_way) ||
           refill_start) {
     d_array_busy.io.set.valid := true.B
-    d_array_busy.io.set.bits  := outer_block_beats
+    d_array_busy.io.set.bits  := axi4_block_len
   }.elsewhen (state === llc_r_mdaccess && hit_valid) {
     d_array_busy.io.set.valid := true.B
     d_array_busy.io.set.bits  := reads.bits.len
