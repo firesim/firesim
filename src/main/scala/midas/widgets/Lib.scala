@@ -15,26 +15,14 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import CppGenerationUtils._
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
-  * Returns a Seq of the leaf nodes with their absolute/final direction.
+  * Returns a Seq of the leaf nodes with their absolute direction.
   */
 object FlattenData {
-  def dirProduct(context: ActualDirection, field: ActualDirection): ActualDirection =
-    (context: @unchecked) match {
-      case ActualDirection.Output => field
-      case ActualDirection.Input => (field: @unchecked) match {
-        case ActualDirection.Output => ActualDirection.Input
-        case ActualDirection.Input => ActualDirection.Output
-      }
-    }
-
-  def apply[T <: Data](
-      gen: T,
-      parentDir: ActualDirection = ActualDirection.Output): Seq[(Data, ActualDirection)] = {
-    val currentDir = dirProduct(parentDir, directionOf(gen))
+  def apply[T <: Data](gen: T): Seq[(Data, ActualDirection)] = {
     gen match {
-      case a : Bundle => (a.elements flatMap(e => { this(e._2, currentDir)})).toSeq
-      case v : Vec[_] => v.flatMap(el => this(el, currentDir))
-      case leaf => Seq((leaf, currentDir))
+      case a : Aggregate => a.getElements flatMap(e => this(e))
+      case e : Element => Seq((e, directionOf(e)))
+      case _ => throw new RuntimeException("Cannot handle this type")
     }
   }
 }
@@ -45,19 +33,19 @@ object FlattenData {
   *    I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths
   */
 object ScanRegister {
-  import Chisel._
   def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
     val leaves = FlattenData(data)
     leaves.foldLeft(scanIn)((in: Bool, leaf: (Data, ActualDirection)) => {
-      val r = Reg(Vec(leaf._1.toBits.toBools))
-      (leaf._2: @unchecked) match {
+      val r = Reg(VecInit(leaf._1.asUInt.toBools).cloneType)
+      (leaf._2) match {
         case ActualDirection.Output =>
-          r := leaf._1.toBits.toBools
+          r := VecInit(leaf._1.asUInt.toBools)
         case ActualDirection.Input =>
-          leaf._1 := leaf._1.fromBits(r.reduce[UInt](_ ## _))
+          leaf._1 := r.asUInt
+        case _ => throw new RuntimeException("Directions on all elements must be specified")
       }
 
-      val out = Wire(false.B)
+      val out = WireInit(false.B)
       when (scanEnable) {
         out := r.foldLeft(in)((in: Bool, r: Bool) => {r := in; r })
       }
