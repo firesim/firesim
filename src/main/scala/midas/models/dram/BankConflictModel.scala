@@ -42,7 +42,7 @@ class BankConflictMMRegIO(cfg: BankConflictConfig) extends SplitTransactionMMReg
 }
 
 class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
-    extends SplitTransactionModelIO(cfg)(p) {
+    extends SplitTransactionModelIO()(p) {
   val mmReg = new BankConflictMMRegIO(cfg)
 }
 
@@ -62,7 +62,7 @@ class BankConflictReference(cfg: BankConflictConfig)(implicit p: Parameters) ext
 
 object BankConflictConstants {
   val nBankStates = 3
-  val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(UInt(), nBankStates)
+  val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(nBankStates)
 }
 
 import BankConflictConstants._
@@ -87,12 +87,12 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   transactionQueue.io.enqB.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
 
   val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(UInt(0, cfg.maxLatencyBits)))
-  val bankConflictCounts = RegInit(Vec.fill(cfg.maxBanks)(0.U(32.W)))
+  val bankConflictCounts = RegInit(VecInit(Seq.fill(cfg.maxBanks)(0.U(32.W))))
 
   val newReference = Wire(Decoupled(new BankConflictReference(cfg)))
   newReference.valid := transactionQueue.io.deq.valid
   newReference.bits.reference := transactionQueue.io.deq.bits
-  val marginalCycles = latency + Vec(bankBusyCycles)(transactionQueue.io.deq.bits.bankAddr)
+  val marginalCycles = latency + VecInit(bankBusyCycles)(transactionQueue.io.deq.bits.bankAddr)
   newReference.bits.cycle := tCycle(cfg.maxLatencyBits-1, 0) + marginalCycles
   newReference.bits.done := marginalCycles === 0.U
   transactionQueue.io.deq.ready := newReference.ready

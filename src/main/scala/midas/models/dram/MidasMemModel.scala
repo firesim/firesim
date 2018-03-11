@@ -255,9 +255,9 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   }
 
   val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
-    io.host_mem.r.bits.resp != 0.U && io.host_mem.r.fire)
+    io.host_mem.r.bits.resp =/= 0.U && io.host_mem.r.fire)
   val brespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
-    io.host_mem.b.bits.resp != 0.U && io.host_mem.b.fire)
+    io.host_mem.b.bits.resp =/= 0.U && io.host_mem.b.fire)
 
   // Generate the configuration registers and tie them to the ctrl bus
   attachIO(model.io.mmReg)
