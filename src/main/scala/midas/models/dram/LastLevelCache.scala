@@ -121,7 +121,7 @@ case class LLCKey(
     addrWidth - blockBytes.minBits - banks.minBits - sets.minBits
 }
 
-class LLCModelIO(key: LLCKey)(implicit p: Parameters) extends Bundle {
+class LLCModelIO(val key: LLCKey)(implicit val p: Parameters) extends Bundle {
   val req = Flipped(new NastiReqChannels)
   val wResp = Decoupled(new WriteResponseMetaData) // to backend
   val rResp = Decoupled(new ReadResponseMetaData)
@@ -147,7 +147,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   d_array_busy.io.set.bits := DontCare
   d_array_busy.io.decr := false.B
 
-  val mshrs =  RegInit(Vec.fill(llcKey.mshrs.max)(MSHR(llcKey)))
+  val mshrs =  RegInit(VecInit(Seq.fill(llcKey.mshrs.max)(MSHR(llcKey))))
   val mshr_available = mshrs.exists({ m: MSHR => !m.valid() })
   val mshr_next_idx = mshrs.indexWhere({ m: MSHR => !m.valid() })
 
@@ -185,12 +185,12 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   }
 
   def isHit(m: BlockMetadata): Bool = m.valid && (m.tag === s1_tag_addr)
-  val hit_ways  = Vec(s1_metadata.map(isHit)).asUInt & way_addr_mask
+  val hit_ways  = VecInit(s1_metadata.map(isHit)).asUInt & way_addr_mask
   val hit_way_sel = PriorityEncoderOH(hit_ways)
   val hit_valid   = hit_ways.orR
 
   def isEmptyWay(m: BlockMetadata): Bool = !m.valid
-  val empty_ways    = Vec(s1_metadata.map(isEmptyWay)).asUInt & way_addr_mask
+  val empty_ways    = VecInit(s1_metadata.map(isEmptyWay)).asUInt & way_addr_mask
   val empty_way_sel = PriorityEncoderOH(empty_ways)
   val empty_valid   = empty_ways.orR
 
@@ -198,7 +198,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   val lsfr = LFSR16(true.B)
   val evict_way_sel = UIntToOH(lsfr(llcKey.ways.maxBits - 1, 0) & ((1.U << io.settings.wayBits) - 1.U))
-  val evict_way_is_dirty = (Vec(s1_metadata.map(_.dirty)).asUInt & evict_way_sel).orR
+  val evict_way_is_dirty = (VecInit(s1_metadata.map(_.dirty)).asUInt & evict_way_sel).orR
   val evict_way_tag = Mux1H(evict_way_sel, s1_metadata.map(_.tag))
 
   val do_evict         = !hit_valid && !empty_valid
@@ -208,7 +208,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).toBools
 
   val md_update = s1_metadata.zip(selected_way_OH) map { case (md, sel) =>
-    val next = Wire(init = md)
+    val next = WireInit(md)
     when (sel) {
       when (fill_empty_way) {
         next.valid := true.B
@@ -225,7 +225,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     next
   }
   when (s1_valid) {
-    md_array.write(s1_set_addr, Vec(md_update))
+    md_array.write(s1_set_addr, VecInit(md_update))
   }
 
   // FIXME: Inner and outer widths are the same
@@ -339,7 +339,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
     }
     is (llc_r_mdaccess) {
       when (hit_valid) {
-        when(reads.bits.len != 0.U) {
+        when(reads.bits.len =/= 0.U) {
           state := llc_r_daccess
         }.otherwise {
           state := llc_idle

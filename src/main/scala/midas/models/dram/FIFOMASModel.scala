@@ -19,7 +19,7 @@ case class FIFOMASConfig(
   def elaborate()(implicit p: Parameters): FIFOMASModel = Module(new FIFOMASModel(this))
 }
 
-class FIFOMASMMRegIO(cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
+class FIFOMASMMRegIO(val cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
   val registers = dramBaseRegisters
 
   def requestSettings() {
@@ -28,7 +28,7 @@ class FIFOMASMMRegIO(cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
   }
 }
 
-class FIFOMASIO(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingModelIO(cfg)(p) {
+class FIFOMASIO(val cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingModelIO()(p) {
   val mmReg = new FIFOMASMMRegIO(cfg)
   //override def clonetype = new FIFOMASIO(cfg)(p).asInstanceOf[this.type]
 }
@@ -55,7 +55,7 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
       next
     }, 1, pipe = true)
 
-  val selectedCmd = Wire(init = cmd_nop)
+  val selectedCmd = WireInit(cmd_nop)
   val memReqDone = (selectedCmd === cmd_casr || selectedCmd === cmd_casw)
 
   // Trackers controller-level structural hazards
@@ -64,17 +64,17 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
 
   // Trackers for bank-level hazards and timing violations
   val rankStateTrackers = Seq.fill(cfg.dramKey.maxRanks)(Module(new RankStateTracker(cfg.dramKey)))
-  val currentRank = Vec(rankStateTrackers map { _.io.rank })(currentReference.bits.rankAddr)
-  val bankMuxes = Vec(rankStateTrackers map { tracker => tracker.io.rank.banks(currentReference.bits.bankAddr) })
-  val currentBank = Wire(init = bankMuxes(currentReference.bits.rankAddr))
+  val currentRank = VecInit(rankStateTrackers map { _.io.rank })(currentReference.bits.rankAddr)
+  val bankMuxes = VecInit(rankStateTrackers map { tracker => tracker.io.rank.banks(currentReference.bits.bankAddr) })
+  val currentBank = WireInit(bankMuxes(currentReference.bits.rankAddr))
 
   // Command scheduling logic
   val cmdRow = currentReference.bits.rowAddr
-  val cmdRank = Wire(UInt(cfg.dramKey.rankBits.W), init = currentReference.bits.rankAddr)
-  val cmdBank = Wire(init = currentReference.bits.bankAddr)
+  val cmdRank = WireInit(UInt(cfg.dramKey.rankBits.W), init = currentReference.bits.rankAddr)
+  val cmdBank = WireInit(currentReference.bits.bankAddr)
   val cmdBankOH = UIntToOH(cmdBank)
   val currentRowHit = currentBank.state === bank_active && cmdRow === currentBank.openRow
-  val casAutoPRE = Wire(init = false.B)
+  val casAutoPRE = WireInit(false.B)
 
   val canCASW = backend.io.newWrite.ready && currentReference.valid &&
     currentRowHit && currentReference.bits.xaction.isWrite && currentBank.canCASW &&
@@ -131,7 +131,7 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
   // TODO: sensible mapping to DRAM bus width
 
   cmdBusBusy.io.set.bits := timings.tCMD - 1.U
-  cmdBusBusy.io.set.valid := (selectedCmd != cmd_nop)
+  cmdBusBusy.io.set.valid := (selectedCmd =/= cmd_nop)
 
   currentReference.ready := memReqDone
 
@@ -165,5 +165,5 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
       powerMonitor.io.stats
     }
 
-  io.mmReg.rankPower := Vec(powerStats)
+  io.mmReg.rankPower := VecInit(powerStats)
 }

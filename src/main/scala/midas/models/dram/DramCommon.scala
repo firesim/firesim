@@ -112,7 +112,7 @@ abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(basePa
   def backendKey: DRAMBackendKey
 }
 
-abstract class BaseDRAMMMRegIO(val cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
+abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
   // Addr assignment
   val bankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.bankBits, "Bank Address"))
   val rowAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rowBits, "Row Address"))
@@ -554,9 +554,9 @@ class CommandBusMonitor extends Module {
   val cycleCounter = RegInit(1.U(32.W))
   val lastCommand = RegInit(0.U(32.W))
   cycleCounter := cycleCounter + 1.U
-  when (io.cmd != cmd_nop) {
+  when (io.cmd =/= cmd_nop) {
     lastCommand := cycleCounter
-    when (lastCommand + 1.U != cycleCounter) { printf("nop(%d);\n", cycleCounter - lastCommand - 1.U) }
+    when (lastCommand + 1.U =/= cycleCounter) { printf("nop(%d);\n", cycleCounter - lastCommand - 1.U) }
   }
 
   switch (io.cmd) {
@@ -604,8 +604,8 @@ class RankRefreshUnitIO(key: DRAMOrganizationKey) extends GenericParameterizedBu
 class RefreshUnit(key: DRAMOrganizationKey) extends Module {
   val io = IO(new RankRefreshUnitIO(key))
 
-  val ranksWantingRefresh = Vec(io.rankStati map { _.wantREF }).asUInt
-  val refreshableRanks = Vec(io.rankStati map { _.canREF }).asUInt & io.ranksInUse
+  val ranksWantingRefresh = VecInit(io.rankStati map { _.wantREF }).asUInt
+  val refreshableRanks = VecInit(io.rankStati map { _.canREF }).asUInt & io.ranksInUse
 
   io.refRankAddr := PriorityEncoder(ranksWantingRefresh & refreshableRanks)
   io.suggestREF := (ranksWantingRefresh & refreshableRanks).orR
@@ -613,7 +613,7 @@ class RefreshUnit(key: DRAMOrganizationKey) extends Module {
   // preRef => a precharge needed before refresh may occur
   val preRefBanks = io.rankStati map { rank => PriorityEncoder(rank.banks map { _.canPRE })}
 
-  val prechargeableRanks = Vec(io.rankStati map { rank => rank.canPRE &&
+  val prechargeableRanks = VecInit(io.rankStati map { rank => rank.canPRE &&
     (rank.banks map { _.canPRE } reduce { _ || _ })}).asUInt & io.ranksInUse
 
   io.suggestPRE := (ranksWantingRefresh & prechargeableRanks).orR
@@ -672,14 +672,14 @@ class RankPowerMonitor(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
   }
 
   // This is questionable. Needs to be reevaluated once CKE toggling is accounted for
-  when (io.rankState.state != rank_refresh && ((io.rankState.banks) forall { _.canACT })) {
+  when (io.rankState.state =/= rank_refresh && ((io.rankState.banks) forall { _.canACT })) {
     stats.allPreCycles := stats.allPreCycles + 1.U
   }
 
   io.stats := stats
 }
 
-class DRAMBackendIO(latencyBits: Int)(implicit p: Parameters) extends Bundle {
+class DRAMBackendIO(val latencyBits: Int)(implicit val p: Parameters) extends Bundle {
   val newRead = Flipped(Decoupled(new ReadResponseMetaData))
   val newWrite = Flipped(Decoupled(new WriteResponseMetaData))
   val completedRead = Decoupled(new ReadResponseMetaData)

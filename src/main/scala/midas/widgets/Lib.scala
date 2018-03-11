@@ -70,7 +70,7 @@ class SatUpDownCounterIO(val n: Int) extends Bundle {
 class SatUpDownCounter(val n: Int) extends Module {
   require(n >= 1)
   val io = IO(new SatUpDownCounterIO(n))
-  val value =  Reg(init=UInt(0, log2Up(n + 1)))
+  val value =  RegInit(0.U(log2Up(n + 1).W))
   io.value := value
   io.full := value >= io.max
   io.empty := value === 0.U
@@ -96,7 +96,7 @@ object SatUpDownCounter {
   }
 }
 
-class MultiQueueIO[T <: Data](private val gen: T, numQueues: Int, entries: Int) extends
+class MultiQueueIO[T <: Data](private val gen: T, val numQueues: Int, entries: Int) extends
     QueueIO(gen, entries) {
   val enqAddr = Input(UInt(log2Up(numQueues).W))
   val deqAddr = Input(UInt(log2Up(numQueues).W))
@@ -122,15 +122,15 @@ class MultiQueue[T <: Data](
   // slot
 
   val ram = SeqMem(entries * numQueues, gen)
-  val enqPtrs = RegInit(Vec.fill(numQueues)(0.U(log2Up(entries).W)))
-  val deqPtrs = RegInit(Vec.fill(numQueues)(0.U(log2Up(entries).W)))
-  val maybe_full = RegInit(Vec.fill(numQueues)(false.B))
-  val ptr_matches = Vec.tabulate(numQueues)(i => enqPtrs(i) === deqPtrs(i))
+  val enqPtrs = RegInit(VecInit(Seq.fill(numQueues)(0.U(log2Up(entries).W))))
+  val deqPtrs = RegInit(VecInit(Seq.fill(numQueues)(0.U(log2Up(entries).W))))
+  val maybe_full = RegInit(VecInit(Seq.fill(numQueues)(false.B)))
+  val ptr_matches = VecInit.tabulate(numQueues)(i => enqPtrs(i) === deqPtrs(i))
 
   val empty = Wire(Bool())
   val full = ptr_matches(io.enqAddr) && maybe_full(io.enqAddr)
-  val do_enq = Wire(init=io.enq.fire())
-  val do_deq = Wire(init=io.deq.fire())
+  val do_enq = WireInit(io.enq.fire)
+  val do_deq = WireInit(io.deq.fire)
   val deqAddrReg = RegNext(io.deqAddr)
 
   when (do_enq) {
@@ -141,7 +141,7 @@ class MultiQueue[T <: Data](
     deqPtrs(deqAddrReg) := deqPtrs(deqAddrReg) + 1.U
   }
   when (io.enqAddr === deqAddrReg) {
-    when(do_enq != do_deq) {
+    when(do_enq =/= do_deq) {
     maybe_full(io.enqAddr) := do_enq
     }
   }.otherwise {
@@ -265,7 +265,7 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
         reg.node := write(addr).bits
       }
     } else {
-      assert(write(addr).valid != true.B, s"Register ${reg.name} is read only")
+      assert(write(addr).valid =/= true.B, s"Register ${reg.name} is read only")
     }
 
     if (reg.permissions.readable) {

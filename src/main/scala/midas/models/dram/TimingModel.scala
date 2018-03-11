@@ -47,7 +47,7 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   }
 }
 
-abstract class TimingModelIO(cfg: BaseConfig)(implicit val p: Parameters) extends Bundle {
+abstract class TimingModelIO(implicit val p: Parameters) extends Bundle {
   val tNasti = Flipped(new NastiIO)
   val egressReq = new EgressReq
   val egressResp = Flipped(new EgressResp)
@@ -165,8 +165,8 @@ abstract class SplitTransactionMMRegIO(cfg: BaseConfig) extends MMRegIO(cfg) {
   )
 }
 
-abstract class SplitTransactionModelIO(cfg: BaseConfig)(implicit p: Parameters)
-    extends TimingModelIO(cfg) {
+abstract class SplitTransactionModelIO(implicit p: Parameters)
+    extends TimingModelIO()(p) {
   // This sub-bundle contains all the programmable fields of the model
   val mmReg: SplitTransactionMMRegIO
 }

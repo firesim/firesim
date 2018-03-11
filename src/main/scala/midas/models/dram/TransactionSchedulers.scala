@@ -15,7 +15,7 @@ class XactionSchedulerEntry(implicit p: Parameters) extends NastiBundle()(p) {
   val addr = UInt(nastiXAddrBits.W)
  }
 
-class XactionSchedulerIO(cfg: BaseConfig)(implicit p: Parameters) extends Bundle{
+class XactionSchedulerIO(val cfg: BaseConfig)(implicit val p: Parameters) extends Bundle{
   val req = Flipped(new NastiReqChannels)
   val nextXaction = Decoupled(new XactionSchedulerEntry)
   val pendingWReq = Input(UInt((cfg.maxWrites + 1).W))
@@ -44,7 +44,7 @@ class UnifiedFIFOXactionScheduler(depth: Int, cfg: BaseConfig)(implicit p: Param
   // TODO: More sensible model; maybe track a write buffer volume
   io.req.w.ready := io.pendingWReq <= io.pendingAWReq
 
-  val selectedCmd = Wire(init = cmd_nop)
+  val selectedCmd = WireInit(cmd_nop)
   val completedWrites = SatUpDownCounter(cfg.maxWrites)
   completedWrites.inc := io.req.w.fire && io.req.w.bits.last
   completedWrites.dec := io.nextXaction.fire && io.nextXaction.bits.xaction.isWrite

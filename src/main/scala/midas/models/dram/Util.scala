@@ -85,7 +85,7 @@ trait HasFIFOPointers {
 
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=false.B)
+  val maybe_full = RegInit(false.B)
 
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
@@ -97,7 +97,7 @@ trait HasFIFOPointers {
   when (do_deq) {
     deq_ptr.inc()
   }
-  when (do_enq != do_deq) {
+  when (do_enq =/= do_deq) {
     maybe_full := do_enq
   }
 }
@@ -141,7 +141,7 @@ class DynamicLatencyPipe[T <: Data] (
   }
 
   val latencies = Reg(Vec(entries, UInt(countBits.W)))
-  val pending = RegInit(Vec.fill(entries)(false.B))
+  val pending = RegInit(VecInit(Seq.fill(entries)(false.B)))
   latencies.zip(pending) foreach { case (lat, pending) =>
     when (lat === io.tCycle) { pending := false.B }
   }
@@ -169,7 +169,7 @@ class DownCounter(counterWidth: Int) extends Module {
   val delay = RegInit(0.U(counterWidth.W))
   when(io.set.valid && io.set.bits >= delay) {
     delay := io.set.bits
-  }.elsewhen(io.decr && delay != 0.U){
+  }.elsewhen(io.decr && delay =/= 0.U){
     delay := delay - 1.U
   }
   io.idle := delay === 0.U
@@ -181,14 +181,14 @@ class DownCounter(counterWidth: Int) extends Module {
 class CycleTracker(counterWidth: Int) extends Module {
   val io = IO(new Bundle {
     val set = Input(Valid(UInt(counterWidth.W)))
-    val tCycle = Input(UInt(counterWidth))
+    val tCycle = Input(UInt(counterWidth.W))
     val idle = Output(Bool())
   })
 
   require(counterWidth > 0, "CycleTracker must have a width > 0")
   val delay = RegInit(0.U(counterWidth.W))
   val idle  = RegInit(true.B)
-  when(io.set.valid && io.tCycle != io.set.bits) {
+  when(io.set.valid && io.tCycle =/= io.set.bits) {
     delay := io.set.bits
     idle := false.B
   }.elsewhen(delay === io.tCycle){
@@ -204,10 +204,10 @@ class CycleTracker(counterWidth: Int) extends Module {
 // NB: Companion object should be used to generate a module instance -> or
 // updates must be driven to entries by default for the module to behave
 // correctly
-class CollapsingBufferIO[T <: Data](gen: T, depth: Int) extends Bundle {
-  val entries = Output(Vec(depth, Valid(gen.cloneType)))
-  val updates = Input(Vec(depth, Valid(gen.cloneType)))
-  val enq = Flipped(Decoupled(gen.cloneType))
+class CollapsingBufferIO[T <: Data](private val gen: T, val depth: Int) extends Bundle {
+  val entries = Output(Vec(depth, Valid(gen)))
+  val updates = Input(Vec(depth, Valid(gen)))
+  val enq = Flipped(Decoupled(gen))
   val programmableDepth = Input(UInt(log2Ceil(depth+1).W))
 }
 
@@ -246,7 +246,7 @@ object CollapsingBuffer {
       depth: Int,
       programmableDepth: Option[UInt] = None): CollapsingBuffer[T] = {
 
-    val buffer = Module(new CollapsingBuffer(enq.bits, depth))
+    val buffer = Module(new CollapsingBuffer(enq.bits.cloneType, depth))
     // This sets the default that each entry retains its value unless driven by the parent mod
     (buffer.io.updates).zip(buffer.io.entries).foreach({ case (e, u) =>  e := u })
     buffer.io.enq <> enq
@@ -313,7 +313,7 @@ object WriteResponseMetaData {
   }
 }
 
-class AXI4ReleaserIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class AXI4ReleaserIO(implicit val p: Parameters) extends ParameterizedBundle()(p) {
   val b = Decoupled(new NastiWriteResponseChannel)
   val r = Decoupled(new NastiReadDataChannel)
   val egressReq = new EgressReq
@@ -351,7 +351,11 @@ class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with H
     val hit = Output(Bool())
   })
 
-  val addrs = RegInit(Vec.fill(entries)({ val w = Wire(Valid(UInt(addrWidth.W))); w.valid := false.B; w }))
+  val addrs = RegInit(VecInit(Seq.fill(entries)({
+    val w = Wire(Valid(UInt(addrWidth.W)))
+    w.valid := false.B
+    w
+  })))
   do_enq := io.enq.valid
   do_deq := io.deq
 
