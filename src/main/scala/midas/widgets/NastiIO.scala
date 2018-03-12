@@ -12,6 +12,7 @@ import freechips.rocketchip.config.Parameters
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data]
+  def dma: Option[NastiIO]
   val tReset = Flipped(Decoupled(Bool()))
 }
 
@@ -25,6 +26,7 @@ class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
   val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO
   def hPort = tNasti
+  val dma = None
 }
 
 abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){

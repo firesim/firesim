@@ -10,12 +10,14 @@ import chisel3.util._
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 case object MemNastiKey extends Field[NastiParameters]
+case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
+  val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
 }
 
@@ -128,6 +130,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
   }
 
+  val dmaPorts = new ListBuffer[NastiIO]
+
   // Instantiate endpoint widgets
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
@@ -150,6 +154,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
+      widget.io.dma.foreach(dma => dmaPorts += dma)
+
       // each widget should have its own reset queue
       val resetQueue = Module(new Queue(Bool(), 4))
       resetQueue.reset := reset.toBool || simReset
@@ -160,10 +166,17 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     }
   }
 
+  assert(dmaPorts.size <= 1)
+  if (dmaPorts.nonEmpty) {
+    dmaPorts(0) <> io.dma
+  } else {
+    io.dma := DontCare
+  }
+
   genCtrlIO(io.ctrl, p(FpgaMMIOSize))
 
   val headerConsts = List(
-    "CTRL_ID_BITS"   -> io.ctrl.nastiExternal.idBits,
+    "CTRL_ID_BITS"   -> io.ctrl.nastiXIdBits,
     "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
@@ -173,6 +186,12 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "MEM_SIZE_BITS"  -> arb.nastiXSizeBits,
     "MEM_LEN_BITS"   -> arb.nastiXLenBits,
     "MEM_RESP_BITS"  -> arb.nastiXRespBits,
-    "MEM_STRB_BITS"  -> arb.nastiWStrobeBits
+    "MEM_STRB_BITS"  -> arb.nastiWStrobeBits,
+    "DMA_ID_BITS"    -> io.dma.nastiXIdBits,
+    "DMA_ADDR_BITS"  -> io.dma.nastiXAddrBits,
+    "DMA_DATA_BITS"  -> io.dma.nastiXDataBits,
+    "DMA_STRB_BITS"  -> io.dma.nastiWStrobeBits,
+    "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
+    "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
 }
