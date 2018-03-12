@@ -35,6 +35,38 @@ extern "A" void tick
   input  reg [1:0]                 master_b_resp,
   input  reg [`CTRL_ID_BITS-1:0]   master_b_id,
 
+  output reg                       dma_ar_valid,
+  input  reg                       dma_ar_ready,
+  output reg [`CTRL_ADDR_BITS-1:0] dma_ar_addr,
+  output reg [`CTRL_ID_BITS-1:0]   dma_ar_id,
+  output reg [2:0]                 dma_ar_size,
+  output reg [7:0]                 dma_ar_len,
+
+  output reg                       dma_aw_valid,
+  input  reg                       dma_aw_ready,
+  output reg [`DMA_ADDR_BITS-1:0]  dma_aw_addr,
+  output reg [`DMA_ID_BITS-1:0]    dma_aw_id,
+  output reg [2:0]                 dma_aw_size,
+  output reg [7:0]                 dma_aw_len,
+
+  output reg                       dma_w_valid,
+  input  reg                       dma_w_ready,
+  output reg [`DMA_STRB_BITS-1:0]  dma_w_strb,
+  output reg [`DMA_DATA_BITS-1:0]  dma_w_data,
+  output reg                       dma_w_last,
+
+  input  reg                       dma_r_valid,
+  output reg                       dma_r_ready,
+  input  reg [1:0]                 dma_r_resp,
+  input  reg [`DMA_ID_BITS-1:0]    dma_r_id,
+  input  reg [`DMA_DATA_BITS-1:0]  dma_r_data,
+  input  reg                       dma_r_last,
+
+  input  reg                       dma_b_valid,
+  output reg                       dma_b_ready,
+  input  reg [1:0]                 dma_b_resp,
+  input  reg [`DMA_ID_BITS-1:0]    dma_b_id,
+
   input  reg                       slave_ar_valid,
   output reg                       slave_ar_ready,
   input  reg [`MEM_ADDR_BITS-1:0]  slave_ar_addr,
@@ -120,6 +152,38 @@ module emul;
   wire [1:0]                 master_b_resp;
   wire [`CTRL_ID_BITS-1:0]   master_b_id;
 
+  reg                        dma_ar_valid;
+  wire                       dma_ar_ready;
+  reg  [`CTRL_ADDR_BITS-1:0] dma_ar_addr;
+  reg  [`CTRL_ID_BITS-1:0]   dma_ar_id;
+  reg  [2:0]                 dma_ar_size;
+  reg  [7:0]                 dma_ar_len;
+
+  reg                        dma_aw_valid;
+  wire                       dma_aw_ready;
+  reg  [`DMA_ADDR_BITS-1:0]  dma_aw_addr;
+  reg  [`DMA_ID_BITS-1:0]    dma_aw_id;
+  reg  [2:0]                 dma_aw_size;
+  reg  [7:0]                 dma_aw_len;
+
+  reg                        dma_w_valid;
+  wire                       dma_w_ready;
+  reg  [`DMA_STRB_BITS-1:0]  dma_w_strb;
+  reg  [`DMA_DATA_BITS-1:0]  dma_w_data;
+  reg                        dma_w_last;
+
+  wire                       dma_r_valid;
+  reg                        dma_r_ready;
+  wire [1:0]                 dma_r_resp;
+  wire [`DMA_ID_BITS-1:0]    dma_r_id;
+  wire [`DMA_DATA_BITS-1:0]  dma_r_data;
+  wire                       dma_r_last;
+
+  wire                       dma_b_valid;
+  reg                        dma_b_ready;
+  wire [1:0]                 dma_b_resp;
+  wire [`DMA_ID_BITS-1:0]    dma_b_id;
+
   wire                       slave_ar_valid;
   reg                        slave_ar_ready;
   wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr;
@@ -184,6 +248,38 @@ module emul;
   wire [1:0]                 master_b_resp_delay;
   wire [`CTRL_ID_BITS-1:0]   master_b_id_delay;
 
+  wire                       dma_ar_valid_delay;
+  wire                       dma_ar_ready_delay;
+  wire [`DMA_ADDR_BITS-1:0]  dma_ar_addr_delay;
+  wire [`DMA_ID_BITS-1:0]    dma_ar_id_delay;
+  wire [2:0]                 dma_ar_size_delay;
+  wire [7:0]                 dma_ar_len_delay;
+
+  wire                       dma_aw_valid_delay;
+  wire                       dma_aw_ready_delay;
+  wire [`DMA_ADDR_BITS-1:0]  dma_aw_addr_delay;
+  wire [`DMA_ID_BITS-1:0]    dma_aw_id_delay;
+  wire [2:0]                 dma_aw_size_delay;
+  wire [7:0]                 dma_aw_len_delay;
+
+  wire                       dma_w_valid_delay;
+  wire                       dma_w_ready_delay;
+  wire [`DMA_STRB_BITS-1:0]  dma_w_strb_delay;
+  wire [`DMA_DATA_BITS-1:0]  dma_w_data_delay;
+  wire                       dma_w_last_delay;
+
+  wire                       dma_r_valid_delay;
+  wire                       dma_r_ready_delay;
+  wire [1:0]                 dma_r_resp_delay;
+  wire [`DMA_ID_BITS-1:0]    dma_r_id_delay;
+  wire [`DMA_DATA_BITS-1:0]  dma_r_data_delay;
+  wire                       dma_r_last_delay;
+
+  wire                       dma_b_valid_delay;
+  wire                       dma_b_ready_delay;
+  wire [1:0]                 dma_b_resp_delay;
+  wire [`DMA_ID_BITS-1:0]    dma_b_id_delay;
+
   wire                       slave_ar_valid_delay;
   wire                       slave_ar_ready_delay;
   wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr_delay;
@@ -247,6 +343,38 @@ module emul;
   assign #0.1 master_b_ready_delay = master_b_ready;
   assign #0.1 master_b_resp = master_b_resp_delay;
   assign #0.1 master_b_id = master_b_id_delay;
+
+  assign #0.1 dma_ar_valid_delay = dma_ar_valid;
+  assign #0.1 dma_ar_ready = dma_ar_ready_delay;
+  assign #0.1 dma_ar_addr_delay = dma_ar_addr;
+  assign #0.1 dma_ar_id_delay = dma_ar_id;
+  assign #0.1 dma_ar_size_delay = dma_ar_size;
+  assign #0.1 dma_ar_len_delay = dma_ar_len;
+
+  assign #0.1 dma_aw_valid_delay = dma_aw_valid;
+  assign #0.1 dma_aw_ready = dma_aw_ready_delay;
+  assign #0.1 dma_aw_addr_delay = dma_aw_addr;
+  assign #0.1 dma_aw_id_delay = dma_aw_id;
+  assign #0.1 dma_aw_size_delay = dma_aw_size;
+  assign #0.1 dma_aw_len_delay = dma_aw_len;
+
+  assign #0.1 dma_w_valid_delay = dma_w_valid;
+  assign #0.1 dma_w_ready = dma_w_ready_delay;
+  assign #0.1 dma_w_strb_delay = dma_w_strb;
+  assign #0.1 dma_w_data_delay = dma_w_data;
+  assign #0.1 dma_w_last_delay = dma_w_last;
+
+  assign #0.1 dma_r_valid = dma_r_valid_delay;
+  assign #0.1 dma_r_ready_delay = dma_r_ready;
+  assign #0.1 dma_r_resp = dma_r_resp_delay;
+  assign #0.1 dma_r_id = dma_r_id_delay;
+  assign #0.1 dma_r_data = dma_r_data_delay;
+  assign #0.1 dma_r_last = dma_r_last_delay;
+
+  assign #0.1 dma_b_valid = dma_b_valid_delay;
+  assign #0.1 dma_b_ready_delay = dma_b_ready;
+  assign #0.1 dma_b_resp = dma_b_resp_delay;
+  assign #0.1 dma_b_id = dma_b_id_delay;
 
   assign #0.1 slave_ar_valid = slave_ar_valid_delay;
   assign #0.1 slave_ar_ready_delay = slave_ar_ready;
@@ -315,6 +443,38 @@ module emul;
     .io_master_b_ready(master_b_ready_delay),
     .io_master_b_bits_resp(master_b_resp_delay),
     .io_master_b_bits_id(master_b_id_delay),
+
+    .io_dma_ar_valid(dma_ar_valid_delay),
+    .io_dma_ar_ready(dma_ar_ready_delay),
+    .io_dma_ar_bits_addr(dma_ar_addr_delay),
+    .io_dma_ar_bits_id(dma_ar_id_delay),
+    .io_dma_ar_bits_size(dma_ar_size_delay),
+    .io_dma_ar_bits_len(dma_ar_len_delay),
+
+    .io_dma_aw_valid(dma_aw_valid_delay),
+    .io_dma_aw_ready(dma_aw_ready_delay),
+    .io_dma_aw_bits_addr(dma_aw_addr_delay),
+    .io_dma_aw_bits_id(dma_aw_id_delay),
+    .io_dma_aw_bits_size(dma_aw_size_delay),
+    .io_dma_aw_bits_len(dma_aw_len_delay),
+
+    .io_dma_w_valid(dma_w_valid_delay),
+    .io_dma_w_ready(dma_w_ready_delay),
+    .io_dma_w_bits_strb(dma_w_strb_delay),
+    .io_dma_w_bits_data(dma_w_data_delay),
+    .io_dma_w_bits_last(dma_w_last_delay),
+
+    .io_dma_r_valid(dma_r_valid_delay),
+    .io_dma_r_ready(dma_r_ready_delay),
+    .io_dma_r_bits_resp(dma_r_resp_delay),
+    .io_dma_r_bits_id(dma_r_id_delay),
+    .io_dma_r_bits_data(dma_r_data_delay),
+    .io_dma_r_bits_last(dma_r_last_delay),
+
+    .io_dma_b_valid(dma_b_valid_delay),
+    .io_dma_b_ready(dma_b_ready_delay),
+    .io_dma_b_bits_resp(dma_b_resp_delay),
+    .io_dma_b_bits_id(dma_b_id_delay),
 
     .io_slave_ar_valid(slave_ar_valid_delay),
     .io_slave_ar_ready(slave_ar_ready_delay),
@@ -390,6 +550,38 @@ module emul;
       master_b_ready,
       master_b_resp,
       master_b_id,
+
+      dma_ar_valid,
+      dma_ar_ready,
+      dma_ar_addr,
+      dma_ar_id,
+      dma_ar_size,
+      dma_ar_len,
+
+      dma_aw_valid,
+      dma_aw_ready,
+      dma_aw_addr,
+      dma_aw_id,
+      dma_aw_size,
+      dma_aw_len,
+
+      dma_w_valid,
+      dma_w_ready,
+      dma_w_strb,
+      dma_w_data,
+      dma_w_last,
+
+      dma_r_valid,
+      dma_r_ready,
+      dma_r_resp,
+      dma_r_id,
+      dma_r_data,
+      dma_r_last,
+
+      dma_b_valid,
+      dma_b_ready,
+      dma_b_resp,
+      dma_b_id,
 
       slave_ar_valid,
       slave_ar_ready,
