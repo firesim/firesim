@@ -22,6 +22,14 @@ protected:
     return sim->read(addr);
   }
 
+  inline ssize_t pull(size_t addr, char *data, size_t size) {
+    return sim->pull(addr, data, size);
+  }
+
+  inline ssize_t push(size_t addr, char *data, size_t size) {
+    return sim->push(addr, data, size);
+  }
+
 private:
   simif_t *sim;
 };
