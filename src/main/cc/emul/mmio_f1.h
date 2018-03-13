@@ -40,8 +40,8 @@ struct mmio_resp_data_t
 class mmio_f1_t: public mmio_t
 {
 public:
-  mmio_f1_t(): read_inflight(false), write_inflight(false) {
-    dummy_data.resize(MMIO_WIDTH);
+  mmio_f1_t(size_t size): read_inflight(false), write_inflight(false) {
+    dummy_data.resize(size);
   }
 
   bool aw_valid() { return !aw.empty() && !write_inflight; }
@@ -78,8 +78,8 @@ public:
     bool b_valid
   );
 
-  virtual void read_req(uint64_t addr);
-  virtual void write_req(uint64_t addr, void* data);
+  virtual void read_req(uint64_t addr, size_t size, size_t len);
+  virtual void write_req(uint64_t addr, size_t size, size_t len, void* data, size_t *strb);
   virtual bool read_resp(void *data);
   virtual bool write_resp();
 
