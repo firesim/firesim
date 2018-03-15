@@ -176,12 +176,12 @@ ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
   size_t *strb_ptr = &strb[0];
 
   for (int i = 0; i < len; i++)
-      strb[i] = (1L << DMA_WIDTH) - 1;
+      strb[i] = (1LL << DMA_WIDTH) - 1;
 
   if (remaining == DMA_WIDTH)
       strb[len] = strb[0];
   else
-      strb[len] = (1L << remaining) - 1;
+      strb[len] = (1LL << remaining) - 1;
 
   while (len >= 0) {
       size_t part_len = len % (MAX_LEN + 1);
