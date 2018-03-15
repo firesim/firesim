@@ -5,6 +5,7 @@ package widgets
 
 import Chisel._
 import junctions._
+import freechips.rocketchip.util.MultiWidthFifo
 import freechips.rocketchip.config.{Parameters, Field}
 
 import scala.math.max
