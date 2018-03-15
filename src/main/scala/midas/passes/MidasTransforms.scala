@@ -35,11 +35,11 @@ object MidasAnnotation {
 }
 
 private[midas] class MidasTransforms(
-    dir: File,
     io: Seq[chisel3.Data])
     (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
+  val dir = param(OutputDir)
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
     case Seq(MidasAnnotation(state.circuit.main, conf, json, lib)) =>
       val xforms = Seq(

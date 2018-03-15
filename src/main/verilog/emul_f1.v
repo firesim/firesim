@@ -37,8 +37,8 @@ extern "A" void tick
 
   output reg                       dma_ar_valid,
   input  reg                       dma_ar_ready,
-  output reg [`CTRL_ADDR_BITS-1:0] dma_ar_addr,
-  output reg [`CTRL_ID_BITS-1:0]   dma_ar_id,
+  output reg [`DMA_ADDR_BITS-1:0]  dma_ar_addr,
+  output reg [`DMA_ID_BITS-1:0]    dma_ar_id,
   output reg [2:0]                 dma_ar_size,
   output reg [7:0]                 dma_ar_len,
 
@@ -154,8 +154,8 @@ module emul;
 
   reg                        dma_ar_valid;
   wire                       dma_ar_ready;
-  reg  [`CTRL_ADDR_BITS-1:0] dma_ar_addr;
-  reg  [`CTRL_ID_BITS-1:0]   dma_ar_id;
+  reg  [`DMA_ADDR_BITS-1:0]  dma_ar_addr;
+  reg  [`DMA_ID_BITS-1:0]    dma_ar_id;
   reg  [2:0]                 dma_ar_size;
   reg  [7:0]                 dma_ar_len;
 

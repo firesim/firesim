@@ -17,15 +17,13 @@ import java.io.{File, FileWriter, Writer}
 case object OutputDir extends Field[File]
 
 // Compiler for Midas Transforms
-private class MidasCompiler(dir: File, io: Seq[Data])(implicit param: Parameters) 
-    extends firrtl.Compiler {
+private class MidasCompiler extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
   def transforms =
     getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++
     Seq(new InferReadWrite,
         new ReplSeqMem) ++
-    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm) ++
-    Seq(new passes.MidasTransforms(dir, io))
+    getLoweringTransforms(firrtl.MidForm, firrtl.LowForm)
 }
 
 // Compilers to emit proper verilog
@@ -56,10 +54,11 @@ object MidasCompiler {
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
         json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
-    val compiler = new MidasCompiler(dir, io)(p alterPartial { case OutputDir => dir })
+    val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
+    val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
       chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))),
-      customTransforms)
+      customTransforms :+ midasTransforms)
 
     val result = (new VerilogCompiler).compileAndEmit(firrtl.CircuitState(
       midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))))

@@ -3,7 +3,6 @@
 package midas
 package core
 
-import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.Parameters
 
 import chisel3._
@@ -34,20 +33,20 @@ abstract class SimMemIO extends Endpoint {
   // This is hideous, but we want some means to get the widths of the target
   // interconnect so that we can pass that information to the widget the
   // endpoint will instantiate.
-  var targetAXI4Widths = NastiParameters(0,0,0)
-  var initialized = false
-  override def add(name: String, channel: Data) {
-    initialized = true
-    super.add(name, channel)
-    targetAXI4Widths = channel match {
-      case axi4: AXI4Bundle => NastiParameters(axi4.r.bits.data.getWidth,
-                                               axi4.ar.bits.addr.getWidth,
-                                               axi4.ar.bits.id.getWidth)
+  private var targetAXI4Widths = NastiParameters(0,0,0)
+  private var initialized = false
+  protected def inferTargetAXI4Widths(channel: Data) =
+    channel match {
       case axi4: NastiIO => NastiParameters(axi4.r.bits.data.getWidth,
                                             axi4.ar.bits.addr.getWidth,
                                             axi4.ar.bits.id.getWidth)
       case _ => throw new RuntimeException("Unexpected channel type passed to SimMemIO")
     }
+
+  override def add(name: String, channel: Data) {
+    initialized = true
+    super.add(name, channel)
+    targetAXI4Widths = inferTargetAXI4Widths(channel)
   }
 
   private def getChannelAXI4Parameters = {
@@ -69,14 +68,6 @@ abstract class SimMemIO extends Endpoint {
 class SimNastiMemIO extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: NastiIO =>
-      directionOf(channel.w.valid) == ActualDirection.Output
-    case _ => false
-  }
-}
-
-class SimAXI4MemIO extends SimMemIO {
-  def matchType(data: Data) = data match {
-    case channel: AXI4Bundle =>
       directionOf(channel.w.valid) == ActualDirection.Output
     case _ => false
   }
