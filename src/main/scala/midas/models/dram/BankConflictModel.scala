@@ -68,6 +68,10 @@ object BankConflictConstants {
 import BankConflictConstants._
 
 class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
+
+  val longName = "Bank Conflict"
+  def printTimingModelGenerationConfig {}
+  /**************************** CHISEL BEGINS *********************************/
   // This is the absolute number of banks the model can account for
   lazy val io = IO(new BankConflictIO(cfg))
 

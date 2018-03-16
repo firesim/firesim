@@ -36,6 +36,9 @@ class FIFOMASIO(val cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMo
 class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingModel(cfg)(p)
     with HasDRAMMASConstants {
 
+  val longName = "FIFO MAS"
+  def printTimingModelGenerationConfig {}
+  /**************************** CHISEL BEGINS *********************************/
   import DRAMMasEnums._
 
   lazy val io = IO(new FIFOMASIO(cfg))

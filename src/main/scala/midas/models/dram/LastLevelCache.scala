@@ -107,6 +107,7 @@ class LLCProgrammableSettings(llcKey: LLCKey) extends Bundle
 case class WRange(min: Int, max: Int) {
   def minBits: Int = log2Ceil(min)
   def maxBits: Int = log2Ceil(max)
+  override def toString(): String = s"[${min},${max}]"
 }
 
 case class LLCKey(
@@ -119,6 +120,15 @@ case class LLCKey(
 
   def maxTagBits(addrWidth: Int): Int =
     addrWidth - blockBytes.minBits - banks.minBits - sets.minBits
+
+  def print(): Unit = {
+    println("  LLC Parameters:")
+    println("    Sets:              " + sets)
+    println("    Associativity:     " + ways)
+    println("    Block Size (B):    " + blockBytes)
+    println("    MSHRs:             " + mshrs)
+    println("    Replacement Policy: Random\n")
+  }
 }
 
 class LLCModelIO(val key: LLCKey)(implicit val p: Parameters) extends Bundle {

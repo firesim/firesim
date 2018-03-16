@@ -52,6 +52,10 @@ class FirstReadyFCFSIO(val cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ex
 class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModel(cfg)(p)
     with HasDRAMMASConstants {
 
+  val longName = "First-Ready FCFS MAS"
+  def printTimingModelGenerationConfig {}
+  /**************************** CHISEL BEGINS *********************************/
+
   import DRAMMasEnums._
   lazy val io = IO(new FirstReadyFCFSIO(cfg))
 

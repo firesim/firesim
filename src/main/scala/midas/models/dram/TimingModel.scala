@@ -57,8 +57,22 @@ abstract class TimingModelIO(implicit val p: Parameters) extends Bundle {
 
 abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) extends Module
     with IngressModuleParameters with EgressUnitParameters with HasNastiParameters {
-  val io: TimingModelIO
 
+  // Concrete timing models must implement io with the MMRegIO sub-bundle
+  // containing all of the requisite runtime-settings and instrumentation brought
+  // out as inputs and outputs respectively. See MMRegIO above.
+  val io: TimingModelIO
+  val longName: String
+  // Implemented by concrete timing models to describe their configuration during
+  // chisel elaboration
+  protected def printTimingModelGenerationConfig: Unit
+
+  def printGenerationConfig {
+    println("  Timing Model Class: " + longName)
+    printTimingModelGenerationConfig
+  }
+
+  /**************************** CHISEL BEGINS *********************************/
   // Regulates the return of beats to the target memory system
   val tNasti = io.tNasti
   // Request channels presented to DRAM models
