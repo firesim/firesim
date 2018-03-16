@@ -101,10 +101,10 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
     with DontTouchAnnotator with Fame1Annotator {
 
   val model = cfg.elaborate()
+  printGenerationConfig
 
   // Debug: Put an optional bound on the number of memory requests we can make
   // to the host memory system
-
   val funcModelRegs = Wire(new FuncModelProgrammableRegs)
   val ingress = Module(new IngressModule(cfg))
   io.host_mem.aw <> ingress.io.nastiOutputs.aw
@@ -279,6 +279,20 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
     super.genHeader(base, sb)
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+  }
+
+  // Prints out key elaboration time settings
+  private def printGenerationConfig(): Unit = {
+    println("Generating a Midas Memory Model")
+    println("  Max Read Requests: " + cfg.maxReads)
+    println("  Max Write Requests: " + cfg.maxReads)
+
+    println("\nTiming Model Parameters")
+    model.printGenerationConfig
+    cfg.params.llcKey match {
+      case Some(key) => key.print()
+      case None => println("  No LLC Model Instantiated\n")
+    }
   }
 
   // Accepts an elaborated memory model and generates a runtime configuration for it

@@ -45,6 +45,9 @@ class ReadPipeEntry(implicit val p: Parameters) extends Bundle {
 class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
   lazy val io = IO(new LatencyPipeIO(cfg))
 
+  val longName = "Latency Bandwidth Pipe"
+  def printTimingModelGenerationConfig {}
+  /**************************** CHISEL BEGINS *********************************/
   // Configuration values
   val readLatency = io.mmReg.readLatency
   val writeLatency = io.mmReg.writeLatency
