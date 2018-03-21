@@ -76,8 +76,8 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
   // Note short-burst writes will produce a refill, whereas releases from caches will not
 
   val registers = Seq(
-    wayBits   -> RuntimeSetting(2, "Log2(ways per set)"),
-    setBits   -> RuntimeSetting(4, "Log2(sets per bank"),
+    wayBits   -> RuntimeSetting(3, "Log2(ways per set)"),
+    setBits   -> RuntimeSetting(9, "Log2(sets per bank"),
     blockBits -> RuntimeSetting(6, "Log2(cache-block bytes")
   )
 
