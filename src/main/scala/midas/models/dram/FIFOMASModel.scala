@@ -10,7 +10,7 @@ import midas.widgets._
 import Console.{UNDERLINED, RESET}
 
 case class FIFOMASConfig(
-    dramKey: DRAMOrganizationKey,
+    dramKey: DramOrganizationParams,
     transactionQueueDepth: Int,
     backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
     baseParams: BaseParams)

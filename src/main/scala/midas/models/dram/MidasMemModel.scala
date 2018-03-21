@@ -45,7 +45,7 @@ case class BaseParams(
 
   // BASE TIMING-MODEL SETTINGS
   // Some(key) instantiates an LLC model in front of the DRAM timing model
-  llcKey: Option[LLCKey] = None,
+  llcKey: Option[LLCParams] = None,
 
   // BASE TIMING-MODEL INSTRUMENTATION
   xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
