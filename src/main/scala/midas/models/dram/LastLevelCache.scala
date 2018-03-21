@@ -339,12 +339,12 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
       when (can_refill) {
         state := llc_refill
         refill_start := true.B
-      }.elsewhen(can_deq_write) {
-        state := llc_w_mdaccess
-        write_start := true.B
       }.elsewhen(can_deq_read) {
         state := llc_r_mdaccess
         read_start := true.B
+      }.elsewhen(can_deq_write) {
+        state := llc_w_mdaccess
+        write_start := true.B
       }
     }
     is (llc_r_mdaccess) {
