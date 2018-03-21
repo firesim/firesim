@@ -13,7 +13,7 @@ import midas.widgets._
 import Console.{UNDERLINED, RESET}
 
 case class FirstReadyFCFSConfig(
-    dramKey: DRAMOrganizationKey,
+    dramKey: DramOrganizationParams,
     schedulerWindowSize: Int,
     transactionQueueDepth: Int,
     backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
