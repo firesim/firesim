@@ -4,6 +4,7 @@ package models
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
+import freechips.rocketchip.diplomacy.{LazyModule}
 import junctions._
 
 import chisel3._
@@ -107,23 +108,40 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
   // to the host memory system
   val funcModelRegs = Wire(new FuncModelProgrammableRegs)
   val ingress = Module(new IngressModule(cfg))
-  io.host_mem.aw <> ingress.io.nastiOutputs.aw
-  io.host_mem.ar <> ingress.io.nastiOutputs.ar
-  io.host_mem.w  <> ingress.io.nastiOutputs.w
+
+  // Drop in a width adapter to handle differences between
+  // the host and target memory widths
+  val widthAdapter = Module(LazyModule(
+    new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
+  ).module)
+
+  io.host_mem <> widthAdapter.sAxi4
+  io.host_mem.aw.bits.user := DontCare
+  io.host_mem.aw.bits.region := DontCare
+  io.host_mem.ar.bits.user := DontCare
+  io.host_mem.ar.bits.region := DontCare
+  io.host_mem.w.bits.id := DontCare
+  io.host_mem.w.bits.user := DontCare
+
+  widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
+  widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar
+  widthAdapter.mAxi4.w <> ingress.io.nastiOutputs.w
 
   val readEgress = Module(new ReadEgress(
     maxRequests = cfg.maxReads,
     maxReqLength = cfg.maxReadLength,
     maxReqsPerId = cfg.maxReadsPerID))
 
-  readEgress.io.enq <> io.host_mem.r
+  readEgress.io.enq <> widthAdapter.mAxi4.r
+  readEgress.io.enq.bits.user := DontCare
 
   val writeEgress = Module(new WriteEgress(
     maxRequests = cfg.maxWrites,
     maxReqLength = cfg.maxWriteLength,
     maxReqsPerId = cfg.maxWritesPerID))
 
-  writeEgress.io.enq <> io.host_mem.b
+  writeEgress.io.enq <> widthAdapter.mAxi4.b
+  writeEgress.io.enq.bits.user := DontCare
 
   // Track outstanding requests to the host memory system
   val hOutstandingReads = SatUpDownCounter(cfg.maxReads)
