@@ -94,10 +94,10 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
     regMap(blockBits).set(log2Ceil(requestInput("Block size in bytes", 128,
                                                 min = Some(llcKey.blockBytes.min),
                                                 max = Some(llcKey.sets.max))))
-    regMap(wayBits).set(log2Ceil(requestInput("Number of sets in LLC", 4096,
+    regMap(setBits).set(log2Ceil(requestInput("Number of sets in LLC", 4096,
                                                min = Some(llcKey.sets.min),
                                                max = Some(llcKey.sets.max))))
-    regMap(setBits).set(log2Ceil(requestInput("Set associativity", 8,
+    regMap(wayBits).set(log2Ceil(requestInput("Set associativity", 8,
                                               min = Some(llcKey.ways.min),
                                               max = Some(llcKey.ways.max))))
   }
