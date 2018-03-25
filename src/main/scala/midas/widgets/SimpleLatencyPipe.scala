@@ -8,6 +8,8 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 
+import midas.core.{MemNastiKey}
+
 case class MidasLLCParameters(nWays: Int, nSets: Int, blockBytes: Int)
 case object MidasLLCKey extends Field[Option[MidasLLCParameters]]
 
@@ -31,12 +33,12 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
     })
     val idle = Output(Bool())
   })
+
   println("[Midas Last Level Cache] # Ways <= %d, # Sets <= %d, Block Size <= %d B => Cache Size <= %d KiB".format(
           key.nWays, key.nSets, key.blockBytes, (key.nWays * key.nSets * key.blockBytes) / 1024))
 
   val sIdle :: sRead :: sRefill :: sReady :: Nil = Enum(UInt(), 4)
   val state = RegInit(sIdle)
-
   val raddrQueue = Queue(io.raddr)
   val waddrQueue = Queue(io.waddr)
   val wlastQueue = Queue(io.wlast)
@@ -120,6 +122,8 @@ class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
   val wCycleReady = Wire(Bool())
   val l2Idle = Wire(Bool())
 
+  scala.Predef.require(p(NastiKey).dataBits == p(MemNastiKey).dataBits,
+    "Simple latency pipe only supports matching target and host AXI4 data widths")
   // Control Registers
   val memLatency = RegInit(32.U(32.W))
   val l2Latency = RegInit(8.U(32.W))

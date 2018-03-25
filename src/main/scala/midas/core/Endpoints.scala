@@ -56,8 +56,6 @@ abstract class SimMemIO extends Endpoint {
   }
 
   def widget(p: Parameters) = {
-    // We can't handle width adaption yet
-    scala.Predef.assert(p(MemNastiKey).dataBits == getChannelAXI4Parameters.dataBits)
     val param = p alterPartial ({ case NastiKey => getChannelAXI4Parameters })
     (p(MemModelKey): @unchecked) match {
       case Some(modelGen) => modelGen(param)
