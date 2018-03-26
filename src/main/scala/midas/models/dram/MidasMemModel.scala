@@ -51,7 +51,13 @@ case class BaseParams(
   // BASE TIMING-MODEL INSTRUMENTATION
   xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
   // Number of xactions in flight in a given cycle or Some(Number of Bins)
-  occupancyHistograms: Option[Int] = None
+  occupancyHistograms: Option[Seq[(UInt) => Bool]] = Some(
+    Seq({ _ === 0.U},
+        { _ <  2.U},
+        { _ <  4.U},
+        { _ <  8.U},
+        { x => true.B })
+  )
 )
 
 abstract class BaseConfig(
