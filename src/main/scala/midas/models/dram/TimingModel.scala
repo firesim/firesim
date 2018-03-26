@@ -26,7 +26,10 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   val llc = if (cfg.useLLCModel) Some(new LLCProgrammableSettings(cfg.params.llcKey.get)) else None
 
   // Instrumentation Registers
-  val bins = cfg.params.occupancyHistograms.getOrElse(0)
+  val bins = cfg.params.occupancyHistograms match {
+    case Some(rules) => rules.size
+    case None => 0
+  }
   val readOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
   val writeOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
 
@@ -136,18 +139,21 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
     io.mmReg.totalWrites foreach { _ := totalWrites }
   }
 
-  cfg.params.occupancyHistograms foreach { num_bins =>
-    require(isPow2(num_bins))
-    val readOutstandingHistogram = Seq.fill(num_bins)(RegInit(0.U(32.W)))
-    val writeOutstandingHistogram = Seq.fill(num_bins)(RegInit(0.U(32.W)))
+  cfg.params.occupancyHistograms foreach { binPredicates =>
+    val numBins = binPredicates.size
+    val readOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
+    val writeOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
 
-    (readOutstandingHistogram.zipWithIndex).foreach { case (count, idx) =>
-      count := Mux(pendingReads.value.head(log2Ceil(num_bins)) === idx.U, count + 1.U, count)
+    def bindHistograms(bins: Seq[UInt], predicates: Seq[Bool]): Bool = {
+      (bins.zip(predicates)).foldLeft(false.B)({ case (hasIncrmented, (bin, pred)) =>
+        when (!hasIncrmented && pred) {
+          bin :=  bin + 1.U
+        }
+        hasIncrmented || pred
+      })
     }
-    (writeOutstandingHistogram.zipWithIndex).foreach { case (count, idx) =>
-      count := Mux(pendingAWReq.value.head(log2Ceil(num_bins)) === idx.U, count + 1.U, count)
-    }
-
+    bindHistograms(readOutstandingHistogram, binPredicates map { _(pendingReads.value) })
+    bindHistograms(writeOutstandingHistogram, binPredicates map { _(pendingAWReq.value) })
     io.mmReg.readOutstandingHistogram := readOutstandingHistogram
     io.mmReg.writeOutstandingHistogram := writeOutstandingHistogram
   }
