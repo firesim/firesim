@@ -22,6 +22,11 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   } else {
     (None, None)
   }
+  val (totalReadBeats, totalWriteBeats) = if (cfg.params.beatCounters) {
+    (Some(Output(UInt(32.W))),  Some(Output(UInt(32.W))))
+  } else {
+    (None, None)
+  }
 
   val llc = if (cfg.useLLCModel) Some(new LLCProgrammableSettings(cfg.params.llcKey.get)) else None
 
@@ -137,6 +142,15 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
     when(pendingAWReq.inc){ totalWrites := totalWrites + 1.U}
     io.mmReg.totalReads foreach { _ := totalReads }
     io.mmReg.totalWrites foreach { _ := totalWrites }
+  }
+
+  if (cfg.params.beatCounters) {
+    val totalReadBeats = RegInit(0.U(32.W))
+    val totalWriteBeats = RegInit(0.U(32.W))
+    when(tNasti.r.fire){ totalReadBeats := totalReadBeats + 1.U }
+    when(tNasti.w.fire){ totalWriteBeats := totalWriteBeats + 1.U }
+    io.mmReg.totalReadBeats foreach { _ := totalReadBeats}
+    io.mmReg.totalWriteBeats foreach { _ := totalWriteBeats }
   }
 
   cfg.params.occupancyHistograms foreach { binPredicates =>
