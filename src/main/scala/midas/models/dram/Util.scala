@@ -404,7 +404,94 @@ class AddressCollisionChecker(numReads: Int, numWrites: Int, addrWidth: Int)(imp
   io.collision_addr.bits := Mux(io.read_req.valid, io.read_req.bits, io.write_req.bits)
 }
 
+
+class HistogramReadoutIO(val binAddrBits: Int) extends Bundle {
+  val enable = Input(Bool()) // Set when the simulation memory bus whishes to read out the values
+  val addr = Input(UInt(binAddrBits.W))
+  val dataL = Output(UInt(32.W))
+  val dataH = Output(UInt(32.W))
+}
+// Stores a histogram of host latencies in BRAM
+// Setting io.readoutEnable ties a read port of the BRAM to a read address that
+//   can be driven by the simulation bus
+//
+// WARNING: Will drop bin updates if attempting to read values while host
+// transactions are still inflight
+
+class HostLatencyHistogramIO(val idBits: Int, val binAddrBits: Int) extends Bundle {
+  val reqId = Flipped(ValidIO(UInt(idBits.W)))
+  val respId = Flipped(ValidIO(UInt(idBits.W)))
+  val cycleCountEnable = Input(Bool()) // Indicates which cycles the counter should be incremented
+  val readout = new HistogramReadoutIO(binAddrBits)
+}
+
+// Defaults Will fit in a 36K BRAM
+class HostLatencyHistogram (
+    idBits: Int,
+    cycleCountBits: Int = 10
+  ) extends Module {
+  val io = IO(new HostLatencyHistogramIO(idBits, cycleCountBits))
+  val binSize = 36
+  // Need a queue for each ID to track the host cycle a request was issued.
+  val queues = Seq.fill(1 << idBits)(Module(new Queue(UInt(cycleCountBits.W), 1)))
+
+  val histogram = SyncReadMem(1 << cycleCountBits, UInt(binSize.W))
+
+  val cycle = RegInit(0.U(cycleCountBits.W))
+  when (io.cycleCountEnable) { cycle := cycle + 1.U }
+
+  // When the host accepts an AW/AR enq the current cycle
+  (queues map { _.io.enq }).zip(UIntToOH(io.reqId.bits).toBools).foreach({ case (enq, sel) =>
+     enq.valid := io.reqId.valid && sel
+     enq.bits := cycle
+     assert(!(enq.valid && !enq.ready), "Multiple requests issued to same ID")
+  })
+
+  val deqAddrOH = UIntToOH(io.respId.bits)
+  val reqCycle = Mux1H(deqAddrOH, (queues map { _.io.deq.bits }))
+  (queues map { _.io.deq }).zip(deqAddrOH.toBools).foreach({ case (deq, sel) =>
+    deq.ready := io.respId.valid && sel
+    assert(deq.valid || !deq.ready, "Received an unexpected response")
+  })
+
+  val readAddr = cycle - reqCycle
+  val s1_readAddr = RegNext(readAddr)
+  val s1_valid    = RegNext(io.respId.valid)
+  val s1_histReadData = histogram.read(Mux(io.readout.enable, io.readout.addr, readAddr))
+  val s2_binValue = Reg(UInt(binSize.W))
+
+  // Avoid R-on-W difficulties
+  val doBypass = s1_valid && io.respId.valid && s1_readAddr === readAddr
+  val s1_binUpdate = Mux(doBypass, s2_binValue,  s1_histReadData) + 1.U
+  s2_binValue := s1_binUpdate
+  when(s1_valid && !io.readout.enable) { histogram(s1_readAddr) := s1_binUpdate }
+
+  io.readout.dataL := s1_histReadData(31,0)
+  io.readout.dataH := s1_histReadData(binSize-1,32)
+}
+
+object HostLatencyHistogram {
+  def apply(
+      reqValid: Bool,
+      reqId: UInt,
+      respValid: UInt,
+      respId: UInt,
+      cycleCountEnable: Bool = true.B,
+      binAddrBits: Int = 10): HistogramReadoutIO = {
+    require(reqId.getWidth == respId.getWidth)
+    val histogram = Module(new HostLatencyHistogram(reqId.getWidth, binAddrBits))
+    histogram.io.reqId.bits := reqId
+    histogram.io.reqId.valid := reqValid
+    histogram.io.respId.bits := respId
+    histogram.io.respId.valid := respValid
+    histogram.io.cycleCountEnable := cycleCountEnable
+    histogram.io.readout
+  }
+}
+
 object AddressCollisionCheckMain extends App {
   implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
   chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))
 }
+
+
