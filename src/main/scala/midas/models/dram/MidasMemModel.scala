@@ -43,6 +43,7 @@ case class BaseParams(
   // HOST INSTRUMENTATION
   stallEventCounters: Boolean = false, // To track causes of target-time stalls
   localHCycleCount: Boolean = false, // Host Cycle Counter
+  latencyHistograms: Boolean = false, // Creates a BRAM histogram of various system latencies
 
   // BASE TIMING-MODEL SETTINGS
   // Some(key) instantiates an LLC model in front of the DRAM timing model
@@ -277,6 +278,98 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
 
     attach(num_collisions, "addrCollision", ReadOnly)
     attach(collision_addr, "collisionAddr", ReadOnly)
+  }
+
+  if (cfg.params.latencyHistograms) {
+
+    // Measure latency from reception of first read data beat; need
+    // some state to track when a beat corresponds to the start of a new xaction
+    val newHRead = RegInit(true.B)
+    when (readEgress.io.enq.fire && readEgress.io.enq.bits.last) {
+      newHRead := true.B
+    }.elsewhen (readEgress.io.enq.fire) {
+      newHRead := false.B
+    }
+    // Latencies of host xactions
+    val hReadLatencyHist = HostLatencyHistogram(
+      ingress.io.nastiOutputs.ar.fire,
+      ingress.io.nastiOutputs.ar.bits.id,
+      readEgress.io.enq.fire && newHRead,
+      readEgress.io.enq.bits.id
+    )
+    attachIO(hReadLatencyHist, "hostReadLatencyHist_")
+
+    val hWriteLatencyHist = HostLatencyHistogram(
+      ingress.io.nastiOutputs.aw.fire,
+      ingress.io.nastiOutputs.aw.bits.id,
+      writeEgress.io.enq.fire,
+      writeEgress.io.enq.bits.id
+    )
+    attachIO(hWriteLatencyHist, "hostWriteLatencyHist_")
+
+    // target-time latencies of xactions
+    val newTRead = RegInit(true.B)
+    // Measure latency from reception of first read data beat; need
+    // some state to track when a beat corresponds to the start of a new xaction
+    when (targetFire) {
+      when (model.io.tNasti.r.fire && model.io.tNasti.r.bits.last) {
+        newTRead := true.B
+      }.elsewhen (model.io.tNasti.r.fire) {
+        newTRead := false.B
+      }
+    }
+
+    val tReadLatencyHist = HostLatencyHistogram(
+      model.io.tNasti.ar.fire && targetFire,
+      model.io.tNasti.ar.bits.id,
+      model.io.tNasti.r.fire && targetFire && newTRead,
+      model.io.tNasti.r.bits.id,
+      cycleCountEnable = targetFire
+    )
+    attachIO(tReadLatencyHist, "targetReadLatencyHist_")
+
+    val tWriteLatencyHist = HostLatencyHistogram(
+      model.io.tNasti.w.fire && targetFire && model.io.tNasti.w.bits.last,
+      model.io.tNasti.aw.bits.id,
+      model.io.tNasti.b.fire && targetFire,
+      model.io.tNasti.b.bits.id,
+      cycleCountEnable = targetFire
+    )
+    attachIO(tWriteLatencyHist, "targetWriteLatencyHist_")
+
+    // Total host-latency of transactions
+    val totalReadLatencyHist = HostLatencyHistogram(
+      model.io.tNasti.ar.fire && targetFire,
+      model.io.tNasti.ar.bits.id,
+      model.io.tNasti.r.fire && targetFire && newTRead,
+      model.io.tNasti.r.bits.id
+    )
+    attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
+
+    val totalWriteLatencyHist = HostLatencyHistogram(
+      model.io.tNasti.aw.fire && targetFire,
+      model.io.tNasti.aw.bits.id,
+      model.io.tNasti.b.fire && targetFire,
+      model.io.tNasti.b.bits.id
+    )
+    attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
+
+    // Ingress latencies
+    val iReadLatencyHist = HostLatencyHistogram(
+      ingress.io.nastiInputs.hBits.ar.fire() && targetFire,
+      ingress.io.nastiInputs.hBits.ar.bits.id,
+      ingress.io.nastiOutputs.ar.fire,
+      ingress.io.nastiOutputs.ar.bits.id
+    )
+    attachIO(iReadLatencyHist, "ingressReadLatencyHist_")
+
+    val iWriteLatencyHist = HostLatencyHistogram(
+      ingress.io.nastiInputs.hBits.aw.fire() && targetFire,
+      ingress.io.nastiInputs.hBits.aw.bits.id,
+      ingress.io.nastiOutputs.aw.fire,
+      ingress.io.nastiOutputs.aw.bits.id
+    )
+    attachIO(iWriteLatencyHist, "ingressWriteLatencyHist_")
   }
 
   val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
