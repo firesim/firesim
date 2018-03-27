@@ -23,6 +23,10 @@ public:
   uint32_t r_addr(std::string name) { return r_registers[name]; };
   uint32_t w_addr(std::string name) { return w_registers[name]; };
 
+  // Check for register presence
+  bool r_reg_exists(std::string name) { return r_registers.find(name) != r_registers.end(); };
+  bool w_reg_exists(std::string name) { return w_registers.find(name) != w_registers.end(); };
+
   // Register name -> register addresses
   std::map<std::string, uint32_t> r_registers;
   std::map<std::string, uint32_t> w_registers;
