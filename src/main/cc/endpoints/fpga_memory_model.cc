@@ -27,15 +27,26 @@ FpgaMemoryModel::FpgaMemoryModel(
   }
 
   for (auto pair: addr_map.r_registers) {
-    stats_file << pair.first << ",";
+    // Only profile readable registers
+    if (!addr_map.w_reg_exists((pair.first))) {
+      // Iterate through substrings to exclude
+      bool exclude = false;
+      for (auto &substr: profile_exclusion) {
+        if (pair.first.find(substr) != std::string::npos) { exclude = true; }
+      }
+      if (!exclude) {
+        profile_reg_addrs.push_back(pair.second);
+        stats_file << pair.first << ",";
+      }
+    }
   }
   stats_file << std::endl;
 
 }
 
 void FpgaMemoryModel::profile() {
-  for (auto pair: addr_map.r_registers) {
-    stats_file << read(pair.first) << ",";
+  for (auto addr: profile_reg_addrs) {
+    stats_file << read(addr) << ",";
   }
   stats_file << std::endl;
 }
