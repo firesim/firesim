@@ -329,7 +329,7 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
     attachIO(tReadLatencyHist, "targetReadLatencyHist_")
 
     val tWriteLatencyHist = HostLatencyHistogram(
-      model.io.tNasti.w.fire && targetFire && model.io.tNasti.w.bits.last,
+      model.io.tNasti.aw.fire && targetFire,
       model.io.tNasti.aw.bits.id,
       model.io.tNasti.b.fire && targetFire,
       model.io.tNasti.b.bits.id,
