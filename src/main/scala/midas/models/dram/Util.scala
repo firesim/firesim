@@ -354,6 +354,7 @@ class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with H
   val addrs = RegInit(VecInit(Seq.fill(entries)({
     val w = Wire(Valid(UInt(addrWidth.W)))
     w.valid := false.B
+    w.bits := DontCare
     w
   })))
   do_enq := io.enq.valid
