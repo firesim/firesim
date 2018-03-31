@@ -23,7 +23,13 @@ class BankConflictMMRegIO(cfg: BankConflictConfig) extends SplitTransactionMMReg
   val latency = Input(UInt(cfg.maxLatencyBits.W))
   val conflictPenalty = Input(UInt(32.W))
   //  The mask bits setting determines how many banks are used
-  val bankAddr = Input(new ProgrammableSubAddr(log2Ceil(cfg.maxBanks), "Bank Address"))
+  val bankAddr = Input(new ProgrammableSubAddr(
+    maskBits = log2Ceil(cfg.maxBanks),
+    longName = "Bank Address",
+    defaultOffset = 13,
+    defaultMask = (1 << cfg.maxBanks) - 1
+  ))
+
   val bankConflicts = Output(Vec(cfg.maxBanks, UInt(32.W)))
 
   val registers = maxReqRegisters ++ Seq(

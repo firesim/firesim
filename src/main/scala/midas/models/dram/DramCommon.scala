@@ -113,10 +113,31 @@ abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(basePa
 }
 
 abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
-  // Addr assignment
-  val bankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.bankBits, "Bank Address"))
-  val rowAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rowBits, "Row Address"))
-  val rankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rankBits, "Rank Address"))
+
+  // The default assignment corresponde to a standard open-page policy
+  // with 8K pages. All available ranks are enabled.
+  val bankAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.bankBits,
+    longName = "Bank Address",
+    defaultOffset = 13, // Assume 8KB page size
+    defaultMask = 7 // DDR3 Has 8 banks
+  ))
+
+  val rankAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.rankBits,
+    longName = "Rank Address",
+    defaultOffset = bankAddr.defaultOffset + log2Ceil(bankAddr.defaultMask + 1),
+    defaultMask = (1 << cfg.dramKey.rankBits) - 1
+  ))
+
+  val defaultRowOffset = rankAddr.defaultOffset + log2Ceil(rankAddr.defaultMask + 1)
+  val rowAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.rowBits,
+    longName = "Row Address",
+    defaultOffset = defaultRowOffset,
+    defaultMask = (cfg.dramKey.dramSize >> defaultRowOffset.toInt) - 1
+  ))
+
   // Page policy 1 = open, 0 = closed
   val openPagePolicy = Input(Bool())
   // Additional latency added to read data beats after it's received from the devices
