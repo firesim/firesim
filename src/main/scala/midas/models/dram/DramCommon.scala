@@ -530,7 +530,8 @@ class RankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMM
       nextLegalACT.io.set.bits := io.timings.tRFC - 1.U
   }
 
-  when (tREFI === io.timings.tREFI) {
+  // Disable refresion by setting tREFI = 0
+  when (tREFI === io.timings.tREFI && io.timings.tREFI =/= 0.U) {
     tREFI := 0.U
     wantREF := true.B
   }.otherwise {
