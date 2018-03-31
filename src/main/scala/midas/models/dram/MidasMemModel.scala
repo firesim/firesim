@@ -52,6 +52,7 @@ case class BaseParams(
   // BASE TIMING-MODEL INSTRUMENTATION
   xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
   beatCounters: Boolean = false, // Numbers of read and write beats in AXI4 xactions
+  targetCycleCounter: Boolean = false, // Redundant in a full simulator; useful for testing
   // Number of xactions in flight in a given cycle or Some(Number of Bins)
   occupancyHistograms: Option[Seq[(UInt) => Bool]] = Some(
     Seq({ _ === 0.U},
