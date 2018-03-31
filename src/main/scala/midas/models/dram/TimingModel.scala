@@ -38,6 +38,8 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   val readOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
   val writeOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
 
+  val targetCycle = if (cfg.params.targetCycleCounter) Some(Output(UInt(32.W))) else None
+
   // Implemented by each timing model to query runtime values for its
   // programmable settings
   def requestSettings(): Unit
@@ -92,6 +94,8 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
 
   val tCycle = RegInit(0.U(64.W))
   tCycle := tCycle + 1.U
+  io.mmReg.targetCycle.foreach({ _ := tCycle })
+
 
   val pendingReads = SatUpDownCounter(cfg.maxReads)
   pendingReads.inc := tNasti.ar.fire()
