@@ -83,8 +83,7 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
 
   def maskTag(addr: UInt): UInt = (addr >> (blockBits + setBits))
   def maskSet(addr: UInt): UInt = ((addr >> blockBits) & ((1.U << setBits) - 1.U))(llcKey.sets.maxBits-1, 0)
-  def regenPhysicalAddress(bank_addr: UInt, set_addr: UInt, tag_addr: UInt): UInt =
-    (bank_addr << (blockBits)) |
+  def regenPhysicalAddress(set_addr: UInt, tag_addr: UInt): UInt =
     (set_addr << (blockBits)) |
     (tag_addr << (blockBits + setBits))
 
@@ -212,7 +211,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   val do_evict         = !hit_valid && !empty_valid
   val evict_dirty_way  = do_evict && evict_way_is_dirty
-  val dirty_line_addr  = io.settings.regenPhysicalAddress(0.U, s1_set_addr, evict_way_tag)
+  val dirty_line_addr  = io.settings.regenPhysicalAddress(s1_set_addr, evict_way_tag)
 
   val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).toBools
 
@@ -265,7 +264,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   // Refill Issue
   // For now always fetch whole cache lines from DRAM, even if fewer beats are required for 
   // a write-triggered refill
-  val current_line_addr = io.settings.regenPhysicalAddress(0.U, s1_set_addr, s1_tag_addr)
+  val current_line_addr = io.settings.regenPhysicalAddress(s1_set_addr, s1_tag_addr)
   s2_ar_mem.io.enq.bits := NastiReadAddressChannel(
                             addr = current_line_addr,
                             id   = mshr_next_idx,
