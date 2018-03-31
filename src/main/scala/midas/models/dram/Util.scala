@@ -52,7 +52,11 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   }
 }
 
-class ProgrammableSubAddr(maskBits: Int, longName: String) extends Bundle with HasProgrammableRegisters{
+class ProgrammableSubAddr(
+    val maskBits: Int,
+    val longName: String,
+    val defaultOffset: BigInt,
+    val defaultMask: BigInt) extends Bundle with HasProgrammableRegisters {
   val offset = UInt(32.W) // TODO:fixme
   val mask = UInt(maskBits.W) // Must be contiguous high bits starting from LSB
   def getSubAddr(fullAddr: UInt): UInt = (fullAddr >> offset) & mask
@@ -64,17 +68,14 @@ class ProgrammableSubAddr(maskBits: Int, longName: String) extends Bundle with H
   }
 
   val registers = Seq(
-    (offset -> RuntimeSetting(8,s"${longName} Offset", min = 0)),
-    (mask   -> RuntimeSetting(7,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
+    (offset -> RuntimeSetting(defaultOffset,s"${longName} Offset", min = 0)),
+    (mask   -> RuntimeSetting(defaultMask,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
   )
 
   def forceSettings(offsetValue: BigInt, maskValue: BigInt) {
     regMap(offset).set(offsetValue)
     regMap(mask).set(maskValue)
   }
-
-  override def cloneType = new ProgrammableSubAddr(maskBits, longName).asInstanceOf[this.type]
-
 }
 
 // A common motif to track inputs in a buffer
