@@ -81,11 +81,11 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
     blockBits -> RuntimeSetting(6, "Log2(cache-block bytes")
   )
 
-  def maskTag(addr: UInt): UInt = (addr >> (blockBits + setBits))
+  def maskTag(addr: UInt): UInt = (addr >> (blockBits +& setBits))
   def maskSet(addr: UInt): UInt = ((addr >> blockBits) & ((1.U << setBits) - 1.U))(llcKey.sets.maxBits-1, 0)
   def regenPhysicalAddress(set_addr: UInt, tag_addr: UInt): UInt =
     (set_addr << (blockBits)) |
-    (tag_addr << (blockBits + setBits))
+    (tag_addr << (blockBits +& setBits))
 
   def setLLCSettings(bytesPerBlock: Option[Int] = None): Unit = {
     Console.println(s"\n${UNDERLINED}Last-Level Cache Settings${RESET}")
@@ -116,8 +116,7 @@ case class LLCParams(
     mshrs: WRange      = WRange(1, 8)// TODO: check against AXI ID width
   ) {
 
-  def maxTagBits(addrWidth: Int): Int =
-    addrWidth - blockBytes.minBits - sets.minBits
+  def maxTagBits(addrWidth: Int): Int = addrWidth - blockBytes.minBits - sets.minBits
 
   def print(): Unit = {
     println("  LLC Parameters:")
