@@ -15,6 +15,7 @@ Welcome to FireSim's documentation!
    single-node-sim
    cluster-sim
    advanced-usage
+   Developing-New-Devices
 
 Indices and tables
 ==================
