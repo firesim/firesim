@@ -1,12 +1,14 @@
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.firesim
-DESIGN ?= FireSim
+# DESIGN ?= FireSim
+DESIGN ?= SupernodeTop
 # DESIGN ?= FireBoom
 
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.firesim
-TARGET_CONFIG ?= FireSimRocketChipConfig
+#TARGET_CONFIG ?= FireSimRocketChipConfig
+TARGET_CONFIG ?= SupernodeFireSimRocketChipConfig
 # TARGET_CONFIG ?= FireSimBoomConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
@@ -46,7 +48,7 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim/firesim_top fesvr/firesim_fesvr endpoints/serial endpoints/uart \
+	firesim/firesim_top fesvr/firesim_fesvr endpoints/serial endpoints/loadmem_m endpoints/uart \
 	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev)) $(RISCV)/lib/libfesvr.a
 
 TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include

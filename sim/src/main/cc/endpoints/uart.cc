@@ -22,11 +22,38 @@ void sighand(int s) {
 }
 #endif
 
-uart_t::uart_t(simif_t* sim): endpoint_t(sim)
+uart_t::uart_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid): endpoint_t(sim, addr_map)
 {
 #ifndef _WIN32
+#define UART_DEVNAME_BYTES 80
+    if (!slotid) {
+      fprintf(stderr, "Slot ID not specified. Assuming stdin0\n");
+      slotid = "0";
+    }
+    if (!subslotid) {
+      fprintf(stderr, "Sub-Slot ID not specified. Assuming stdin%s_0\n",slotid);
+      subslotid = '0';
+    }
+
+    char stdinname_p[UART_DEVNAME_BYTES+1];
+    char stdinname[UART_DEVNAME_BYTES+1];
+    stdinname_p[0] = '\0';
+    strncat(stdinname_p, "firesim_stdin_sub", UART_DEVNAME_BYTES);
+    sprintf(stdinname, "%s_%c", stdinname_p, subslotid);
+    stdin_file=fopen(stdinname, "w+");
+    stdin_desc=fileno(stdin_file);
+
+
+    char stdoutname_p[UART_DEVNAME_BYTES+1];
+    char stdoutname[UART_DEVNAME_BYTES+1];
+    stdoutname_p[0] = '\0';
+    strncat(stdoutname_p, "firesim_stdout_sub", UART_DEVNAME_BYTES);
+    sprintf(stdoutname, "%s_%c", stdoutname_p, subslotid);
+    stdout_file=fopen(stdoutname, "w+");
+    stdout_desc=fileno(stdout_file);
+
     // Don't block on stdin reads if there is nothing typed in
-    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+    fcntl(stdin_desc, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
 
     // signal handler so ctrl-c doesn't kill simulation
     struct sigaction sigIntHandler;
@@ -37,21 +64,30 @@ uart_t::uart_t(simif_t* sim): endpoint_t(sim)
 #endif
 }
 
+
+
+uart_t::~uart_t()
+{
+  fclose(stdin_file);
+  fclose(stdout_file);
+}
+
+
 void uart_t::send() {
     if (data.in.fire()) {
-        write(UARTWIDGET_0(in_bits), data.in.bits);
-        write(UARTWIDGET_0(in_valid), data.in.valid);
+        write("in_bits", data.in.bits);
+        write("in_valid", data.in.valid);
     }
     if (data.out.fire()) {
-        write(UARTWIDGET_0(out_ready), data.out.ready);
+        write("out_ready", data.out.ready);
     }
 }
 
 void uart_t::recv() {
-    data.in.ready = read(UARTWIDGET_0(in_ready));
-    data.out.valid = read(UARTWIDGET_0(out_valid));
+    data.in.ready = read("in_ready");
+    data.out.valid = read("out_valid");
     if (data.out.valid) {
-        data.out.bits = read(UARTWIDGET_0(out_bits));
+        data.out.bits = read("out_bits");
     }
 }
 
@@ -72,7 +108,7 @@ void uart_t::tick() {
                 readamt = 1;
             } else {
                 // else check if we have input on stdin
-                readamt = ::read(STDIN_FILENO, &inp, 1);
+                readamt = ::read(stdin_desc, &inp, 1);
             }
 
             if (readamt > 0) {
@@ -83,9 +119,9 @@ void uart_t::tick() {
 #endif
 
         if (data.out.fire()) {
-            fprintf(stdout, "%c", data.out.bits);
+            fprintf(stdout_file, "%c", data.out.bits);
             // always flush to get char-by-char output (not line-buffered)
-            fflush(stdout);
+            fflush(stdout_file);
         }
 
         this->send();

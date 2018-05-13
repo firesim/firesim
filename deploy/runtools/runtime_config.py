@@ -74,8 +74,11 @@ class RuntimeHWConfig:
         return runtime_conf_local
 
 
-    def get_boot_simulation_command(self, macaddr, blkdev, slotid, linklatency,
-                                    netbw, bootbin, shmemportname):
+    def get_boot_simulation_command(self, macaddr0, macaddr1, macaddr2, macaddr3,
+                                    blkdev0, blkdev1, blkdev2, blkdev3, slotid,
+                                    linklatency, netbw, bootbin0, bootbin1,
+                                    bootbin2, bootbin3, shmemportname0, shmemportname1,
+                                    shmemportname2, shmemportname3):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -86,7 +89,7 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(slotid=slotid, driver=driver, runtimeconf=runtimeconf, macaddr=macaddr, blkdev=blkdev, linklatency=linklatency, netbw=netbw, shmemportname=shmemportname, bootbin=bootbin)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0}  +macaddr1={macaddr1}  +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +shmemportname={shmemportname0} +shmemportname1={shmemportname1} +shmemportname2={shmemportname2} +shmemportname3={shmemoportname3} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(slotid=slotid, driver=driver, runtimeconf=runtimeconf, macaddr0=macaddr0, macaddr1=macaddr1, macaddr2=macaddr2, macaddr3=macaddr3, blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3, linklatency=linklatency, netbw=netbw, bootbin0=bootbin0, bootbin1=bootbin1, bootbin2=bootbin2, bootbin3=bootbin3)
 
         return basecommand
 

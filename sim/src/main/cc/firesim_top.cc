@@ -10,20 +10,24 @@
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
 
-firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size): 
-    fesvr(fesvr), fesvr_step_size(fesvr_step_size)
+firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<firesim_fesvr_t*> fesvr_vec, uint32_t fesvr_step_size): 
+    fesvr_vec(fesvr_vec), fesvr_step_size(fesvr_step_size)
 {
     // fields to populate to pass to endpoints
-    char * blkfile = NULL;
+    char * blkfile[4] = {NULL};
+    uint64_t mac_little_end[4] = {0}; // default to invalid mac addr, force user to specify one
     char * niclogfile = NULL;
-    char * slotid = NULL;
-    char * shmemportname = NULL;
-    uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
+    char * shmemportname[4] = {NULL};
     int netbw = MAX_BANDWIDTH, netburst = 8;
     int linklatency = 0;
+    char subslotid_str[2] = {NULL};
+
+
 
     std::vector<std::string> args(argv + 1, argv + argc);
     max_cycles = -1;
+    char subslotid[4] = {NULL};
+    char * slotid;
     for (auto &arg: args) {
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
@@ -38,8 +42,11 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
         if (arg.find("+fesvr-step-size=") == 0) {
             fesvr_step_size = atoi(arg.c_str()+17);
         }
-        if (arg.find("+blkdev=") == 0) {
-            blkfile = const_cast<char*>(arg.c_str()) + 8;
+
+        if (arg.find("+blkdev") == 0) {
+           subslotid_str[0] = arg.at(7);
+           int subnode_id = atoi(subslotid_str); //extract the subnode id
+           blkfile[subnode_id] = const_cast<char*>(arg.c_str()) + 9;
         }
         if (arg.find("+niclog=") == 0) {
             niclogfile = const_cast<char*>(arg.c_str()) + 8;
@@ -48,19 +55,22 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
             slotid = const_cast<char*>(arg.c_str()) + 8;
         }
 
-        // TODO: move this and a bunch of other NIC arg parsing into the nic endpoint code itself
-        if (arg.find("+shmemportname=") == 0) {
-            shmemportname = const_cast<char*>(arg.c_str()) + 15;
+        if (arg.find("+shmemportname") == 0) {
+            subslotid_str[0] = arg.at(14);
+            int subnode_id = atoi(subslotid_str); //extract the subnode id
+            shmemportname[subnode_id] = const_cast<char*>(arg.c_str()) + 16;
         }
 
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
         }
-        if (arg.find("+macaddr=") == 0) {
+        if (arg.find("+macaddr") == 0) {
             uint8_t mac_bytes[6];
             int mac_octets[6];
             char * macstring = NULL;
-            macstring = const_cast<char*>(arg.c_str()) + 9;
+            subslotid_str[0] = arg.at(8);
+            int subnode_id = atoi(subslotid_str);
+            macstring = const_cast<char*>(arg.c_str()) + 10;
             char * trailingjunk;
 
             // convert mac address from string to 48 bit int
@@ -70,12 +80,13 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
                         trailingjunk)) {
 
                 for (int i = 0; i < 6; i++) {
-                    mac_little_end |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
+                    mac_little_end[subnode_id] |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
                 }
             } else {
                 fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddr=\n");
             }
         }
+
         if (arg.find("+netbw=") == 0) {
             char *str = const_cast<char*>(arg.c_str()) + 7;
             netbw = atoi(str);
@@ -90,12 +101,115 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
         }
     }
 
-    add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, fesvr, fesvr_step_size));
+    subslotid[0] = '0';
+    subslotid[1] = '1';
+    subslotid[2] = '2';
+    subslotid[3] = '3';
 
+    add_endpoint(new uart_t(this, AddressMap(             UARTWIDGET_0_R_num_registers,
+                                  (const unsigned int*) UARTWIDGET_0_R_addrs,
+                                  (const char* const*)  UARTWIDGET_0_R_names,
+                                                        UARTWIDGET_0_W_num_registers,
+                                  (const unsigned int*) UARTWIDGET_0_W_addrs,
+                                  (const char* const*)  UARTWIDGET_0_W_names), 
+               slotid, subslotid[0]));
+     add_endpoint(new uart_t(this, AddressMap(             UARTWIDGET_1_R_num_registers,
+                                  (const unsigned int*) UARTWIDGET_1_R_addrs,
+                                  (const char* const*)  UARTWIDGET_1_R_names,
+                                                        UARTWIDGET_1_W_num_registers,
+                                  (const unsigned int*) UARTWIDGET_1_W_addrs,
+                                  (const char* const*)  UARTWIDGET_1_W_names),
+               slotid, subslotid[1]));
+    add_endpoint(new uart_t(this, AddressMap(             UARTWIDGET_2_R_num_registers,
+                                  (const unsigned int*) UARTWIDGET_2_R_addrs,
+                                  (const char* const*)  UARTWIDGET_2_R_names,
+                                                        UARTWIDGET_2_W_num_registers,
+                                  (const unsigned int*) UARTWIDGET_2_W_addrs,
+                                  (const char* const*)  UARTWIDGET_2_W_names), 
+               slotid, subslotid[2]));
+    add_endpoint(new uart_t(this, AddressMap(             UARTWIDGET_3_R_num_registers,
+                                  (const unsigned int*) UARTWIDGET_3_R_addrs,
+                                  (const char* const*)  UARTWIDGET_3_R_names,
+                                                        UARTWIDGET_3_W_num_registers,
+                                  (const unsigned int*) UARTWIDGET_3_W_addrs,
+                                  (const char* const*)  UARTWIDGET_3_W_names), 
+               slotid, subslotid[3]));
+
+    add_endpoint(new serial_t(this, AddressMap(           SERIALWIDGET_0_R_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_0_R_addrs,
+                                  (const char* const*)  SERIALWIDGET_0_R_names,
+                                                        SERIALWIDGET_0_W_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_0_W_addrs,
+                                  (const char* const*)  SERIALWIDGET_0_W_names), 
+                 fesvr_vec[0], fesvr_step_size));
+    add_endpoint(new serial_t(this, AddressMap(           SERIALWIDGET_1_R_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_1_R_addrs,
+                                  (const char* const*)  SERIALWIDGET_1_R_names,
+                                                        SERIALWIDGET_1_W_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_1_W_addrs,
+                                  (const char* const*)  SERIALWIDGET_1_W_names), 
+                 fesvr_vec[1], fesvr_step_size));
+    add_endpoint(new serial_t(this, AddressMap(           SERIALWIDGET_2_R_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_2_R_addrs,
+                                  (const char* const*)  SERIALWIDGET_2_R_names,
+                                                        SERIALWIDGET_2_W_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_2_W_addrs,
+                                  (const char* const*)  SERIALWIDGET_2_W_names), 
+                 fesvr_vec[2], fesvr_step_size));
+    add_endpoint(new serial_t(this, AddressMap(           SERIALWIDGET_3_R_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_3_R_addrs,
+                                  (const char* const*)  SERIALWIDGET_3_R_names,
+                                                        SERIALWIDGET_3_W_num_registers,
+                                  (const unsigned int*) SERIALWIDGET_3_W_addrs,
+                                  (const char* const*)  SERIALWIDGET_3_W_names), 
+                 fesvr_vec[3], fesvr_step_size));
+
+
+    add_endpoint(new simplenic_t(this, AddressMap(  SIMPLENICWIDGET_0_R_num_registers,
+                              (const unsigned int*) SIMPLENICWIDGET_0_R_addrs,
+                              (const char* const*)  SIMPLENICWIDGET_0_R_names,
+                                                    SIMPLENICWIDGET_0_W_num_registers,
+                              (const unsigned int*) SIMPLENICWIDGET_0_W_addrs,
+                              (const char* const*)  SIMPLENICWIDGET_0_W_names),
+                 slotid, subslotid, mac_little_end, netbw, netburst, linklatency, shmemportname));
+   
+    add_endpoint(new blockdev_t(this, AddressMap(   BLOCKDEVWIDGET_0_R_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_0_R_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_0_R_names,
+                                                    BLOCKDEVWIDGET_0_W_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_0_W_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_0_W_names),
+                                blkfile[0]));
+    add_endpoint(new blockdev_t(this, AddressMap(   BLOCKDEVWIDGET_1_R_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_1_R_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_1_R_names,
+                                                    BLOCKDEVWIDGET_1_W_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_1_W_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_1_W_names),
+                              blkfile[1]));
+    add_endpoint(new blockdev_t(this, AddressMap(   BLOCKDEVWIDGET_2_R_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_2_R_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_2_R_names,
+                                                    BLOCKDEVWIDGET_2_W_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_2_W_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_2_W_names),
+                              blkfile[2]));
+    add_endpoint(new blockdev_t(this, AddressMap(   BLOCKDEVWIDGET_3_R_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_3_R_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_3_R_names,
+                                                    BLOCKDEVWIDGET_3_W_num_registers,
+                              (const unsigned int*) BLOCKDEVWIDGET_3_W_addrs,
+                              (const char* const*)  BLOCKDEVWIDGET_3_W_names),
+                              blkfile[3]));
+
+
+                // add more endpoints here
+
+/*
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
 #endif
+*/
 
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
@@ -107,12 +221,77 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats0.csv"));
 #endif
 
-    add_endpoint(new blockdev_t(this, blkfile));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, shmemportname));
-    // add more endpoints here
+#ifdef MEMMODEL_1
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_1_R_num_registers,
+                    (const unsigned int*) MEMMODEL_1_R_addrs,
+                    (const char* const*) MEMMODEL_1_R_names,
+                    MEMMODEL_1_W_num_registers,
+                    (const unsigned int*) MEMMODEL_1_W_addrs,
+                    (const char* const*) MEMMODEL_1_W_names),
+                argc, argv, "memory_stats1.csv"));
+#endif
+
+
+#ifdef MEMMODEL_2
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_2_R_num_registers,
+                    (const unsigned int*) MEMMODEL_2_R_addrs,
+                    (const char* const*) MEMMODEL_2_R_names,
+                    MEMMODEL_2_W_num_registers,
+                    (const unsigned int*) MEMMODEL_2_W_addrs,
+                    (const char* const*) MEMMODEL_2_W_names),
+                argc, argv, "memory_stats2.csv"));
+#endif
+
+#ifdef MEMMODEL_3
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_3_R_num_registers,
+                    (const unsigned int*) MEMMODEL_3_R_addrs,
+                    (const char* const*) MEMMODEL_3_R_names,
+                    MEMMODEL_3_W_num_registers,
+                    (const unsigned int*) MEMMODEL_3_W_addrs,
+                    (const char* const*) MEMMODEL_3_W_names),
+                argc, argv, "memory_stats3.csv"));
+#endif
+
+    //add loadmem "endpoints"
+    loadmem_vec.push_back(loadmem_m(this, AddressMap(           LOADMEM_0_R_num_registers,
+                                 (const unsigned int*) LOADMEM_0_R_addrs,
+                                 (const char* const*)  LOADMEM_0_R_names,
+                                                       LOADMEM_0_W_num_registers,
+                                 (const unsigned int*) LOADMEM_0_W_addrs,
+                                 (const char* const*)  LOADMEM_0_W_names)));
+
+    loadmem_vec.push_back(loadmem_m(this, AddressMap(           LOADMEM_1_R_num_registers,
+                                 (const unsigned int*) LOADMEM_1_R_addrs,
+                                 (const char* const*)  LOADMEM_1_R_names,
+                                                       LOADMEM_1_W_num_registers,
+                                 (const unsigned int*) LOADMEM_1_W_addrs,
+                                 (const char* const*)  LOADMEM_1_W_names)));
+
+    loadmem_vec.push_back(loadmem_m(this, AddressMap(           LOADMEM_2_R_num_registers,
+                                 (const unsigned int*) LOADMEM_2_R_addrs,
+                                 (const char* const*)  LOADMEM_2_R_names,
+                                                       LOADMEM_2_W_num_registers,
+                                 (const unsigned int*) LOADMEM_2_W_addrs,
+                                 (const char* const*)  LOADMEM_2_W_names)));
+
+    loadmem_vec.push_back(loadmem_m(this, AddressMap(           LOADMEM_3_R_num_registers,
+                                 (const unsigned int*) LOADMEM_3_R_addrs,
+                                 (const char* const*)  LOADMEM_3_R_names,
+                                                       LOADMEM_3_W_num_registers,
+                                 (const unsigned int*) LOADMEM_3_W_addrs,
+                                 (const char* const*)  LOADMEM_3_W_names)));
 
 }
 
@@ -165,21 +344,50 @@ void firesim_top_t::serial_bypass_via_loadmem() {
     }
 }
 
+void firesim_top_t::loadmem() {
+    fesvr_loadmem_t loadmem;
+    for (int i=0; i<fesvr_vec.size(); i++) {
+        firesim_fesvr_t* fesvr = fesvr_vec[i];
+        loadmem_m ldmem = loadmem_vec[i]; 
+        while (fesvr->recv_loadmem_req(loadmem)) {
+            assert(loadmem.size <= 1024);
+            static char buf[1024]; // This should be enough...
+            fesvr->recv_loadmem_data(buf, loadmem.size);
+            const size_t mem_data_bytes = MEM_DATA_CHUNK * sizeof(data_t);
+            for (size_t off = 0 ; off < loadmem.size ; off += mem_data_bytes) {
+                mpz_t data;
+                mpz_init(data);
+                mpz_import(data, mem_data_bytes / sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf + off); \
+                ldmem.write_mem(loadmem.addr + off, data);
+            }
+        }
+     }
+}
+
 void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
     size_t loop_start = cycles();
     size_t loop_end = cycles() + coarse_step_size;
+    unsigned int fesvr_done_counter=0;
 
     do {
+      fesvr_done_counter=0;
         step(step_size, false);
 
         while(!done()){
             for (auto e: endpoints) e->tick();
         }
-        if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
-            serial_bypass_via_loadmem();
+        for (auto fesvr: fesvr_vec) { 
+          if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
+              serial_bypass_via_loadmem();
+          }
+        }
+
+        if (fesvr->done()) {
+           fesvr_done_counter++;
         }
     } while (!fesvr->done() && cycles() < loop_end && cycles() <= max_cycles);
 }
+
 
 void firesim_top_t::run() {
     for (auto e: fpga_models) {
@@ -199,16 +407,24 @@ void firesim_top_t::run() {
     // Assert reset T=0 -> 50
     target_reset(0, 50);
 
-    uint64_t start_time = timestamp();
+    start_time = timestamp();
 
+    unsigned int fesvr_done_counter=0;
     do {
+        fesvr_done_counter=0;
         // Every profile_interval iterations, collect state from all fpga models
-        for (auto mod: fpga_models) {
-            mod->profile();
+        for (auto fesvr: fesvr_vec) {
+            for (auto mod: fpga_models) {
+                mod->profile();
+            }
+            loop(fesvr_step_size, profile_interval);
+            if (fesvr->done()) {
+                fesvr_done_counter++;
+                break;
+            }
         }
         loop(fesvr_step_size, profile_interval);
-    } while (!fesvr->done() && cycles() <= max_cycles);
-
+    } while ((fesvr_done_counter == 0) && cycles() <= max_cycles);
 
     uint64_t end_time = timestamp();
     double sim_time = diff_secs(end_time, start_time);
@@ -218,16 +434,18 @@ void firesim_top_t::run() {
     } else {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
     }
-    int exitcode = fesvr->exit_code();
-    if (exitcode) {
-        fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, cycles());
-    } else if (cycles() > max_cycles) {
-        fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", cycles());
-    } else {
-        fprintf(stderr, "*** PASSED *** after %llu cycles\n", cycles());
-    }
-    expect(!exitcode, NULL);
 
+    for (auto fesvr: fesvr_vec) { 
+      int exitcode = fesvr->exit_code();
+      if (exitcode) {
+        fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, cycles());
+      } else if (cycles() > max_cycles) {
+        fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", cycles());
+      } else {
+        fprintf(stderr, "*** PASSED *** after %llu cycles\n", cycles());
+      }
+      expect(!exitcode, NULL);
+    }
     for (auto e: fpga_models) {
         e->finish();
     }

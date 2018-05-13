@@ -3,5 +3,5 @@
   "common_bootbinary" : "bbl-vmlinux",
   "common_rootfs"     : "poweroffnode.ext2",
   "common_outputs"    : [],
-  "common_simulation_outputs" : ["uartlog"]
+  "common_simulation_outputs" : ["uartlog", "firesim_stdout_sub_0", "firesim_stdout_sub_1", "firesim_stdout_sub_2", "firesim_stdout_sub_3"]
 }

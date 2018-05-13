@@ -176,3 +176,37 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
+
+
+//**********************************************************************************
+//* Supernode Configurations
+//*********************************************************************************/
+class WithNumNodes(n: Int) extends Config((pname, site, here) => {
+  case NumNodes => n
+})
+
+class SupernodeFireSimRocketChipConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipConfig)
+
+class SupernodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipSingleCoreConfig)
+
+class SupernodeFireSimRocketChipDualCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipDualCoreConfig)
+
+class SupernodeFireSimRocketChipQuadCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipQuadCoreConfig)
+
+class SupernodeFireSimRocketChipHexaCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipHexaCoreConfig)
+
+class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new FireSimRocketChipOctaCoreConfig)
+
+
