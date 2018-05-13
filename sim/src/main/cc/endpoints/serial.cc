@@ -1,25 +1,25 @@
 #include "serial.h"
 
-serial_t::serial_t(simif_t* sim, fesvr_proxy_t* fesvr):
-    endpoint_t(sim), fesvr(fesvr)
+serial_t::serial_t(simif_t* sim, AddressMap addr_map, fesvr_proxy_t* fesvr):
+    endpoint_t(sim, addr_map), fesvr(fesvr)
 {
 }
 
 void serial_t::send() {
     if (data.in.fire()) {
-        write(SERIALWIDGET_0(in_bits), data.in.bits);
-        write(SERIALWIDGET_0(in_valid), data.in.valid);
+      write("in_bits", data.in.bits);
+      write("in_valid", data.in.valid);
     }
     if (data.out.fire()) {
-        write(SERIALWIDGET_0(out_ready), data.out.ready);
+      write("out_ready", data.out.ready);
     }
 }
 
 void serial_t::recv() {
-    data.in.ready = read(SERIALWIDGET_0(in_ready));
-    data.out.valid = read(SERIALWIDGET_0(out_valid));
+    data.in.ready = read("in_ready");
+    data.out.valid = read("out_valid");
     if (data.out.valid) {
-        data.out.bits = read(SERIALWIDGET_0(out_bits));
+        data.out.bits = read("out_bits");
     }
 }
 

@@ -4,14 +4,16 @@
 
 # These point at the main class of the target's Chisel generator
 PROJECT ?= firesim
-DESIGN ?= FireSim
+# DESIGN ?= FireSim
 # DESIGN ?= FireBoom
+DESIGN ?= SupernodeTop
 
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_PROJECT ?= firesim
-TARGET_CONFIG ?= FireSimRocketChipConfig
+# TARGET_CONFIG ?= FireSimRocketChipConfig
 # TARGET_CONFIG ?= FireSimBoomConfig
+TARGET_CONFIG ?= SupernodeFireSimRocketChipConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
@@ -44,7 +46,7 @@ driver_h = $(shell find $(driver_dir) -name ".h")
 midas_h  = $(shell find $(simif_dir) -name "*.h")
 midas_cc = $(shell find $(simif_dir) -name "*.cc")
 emul_cc  = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart)) \
+	firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart endpoints/loadmem_m)) \
 	$(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim_f1 endpoints/simplenic endpoints/blockdev))
 
@@ -229,7 +231,7 @@ $(PLATFORM): $($(PLATFORM)) $(output_dir)/$(DESIGN).chain
 
 fpga_dir = $(base_dir)/../platforms/$(PLATFORM)/aws-fpga
 driver_cc = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-		firesim_f1 endpoints/simplenic endpoints/blockdev firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart))
+		firesim_f1 endpoints/simplenic endpoints/blockdev firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart endpoints/loadmem_m))
 
 # TODO: Specify a main with a particular variable?
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include

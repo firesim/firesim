@@ -34,7 +34,7 @@ struct blkdev_write_tracker {
 class blockdev_t: public endpoint_t
 {
     public:
-        blockdev_t(simif_t* sim, char* filename);
+        blockdev_t(simif_t* sim, AddressMap addr_map, char* filename);
         ~blockdev_t();
 
         uint32_t nsectors(void) { return _nsectors; }

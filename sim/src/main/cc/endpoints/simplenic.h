@@ -15,19 +15,21 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency);
+        simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid[4], uint64_t mac_little_end[4], int netbw, int netburst, int linklatency);
         ~simplenic_t();
 
         virtual void init();
         virtual void tick();
         virtual bool done();
         virtual bool stall() { return false; }
+        void checked_pull(int subnodeno);
+        void checked_push(int subnodeno);
 
     private:
         simif_t* sim;
-        uint64_t mac_lendian;
-        char * pcis_read_bufs[2];
-        char * pcis_write_bufs[2];
+        uint64_t mac_lendian[4];
+        char * pcis_read_bufs[4][2];
+        char * pcis_write_bufs[4][2];
         int rlimit_inc, rlimit_period, rlimit_size;
         int LINKLATENCY;
 };

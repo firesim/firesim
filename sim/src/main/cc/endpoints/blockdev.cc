@@ -18,7 +18,8 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t* sim, char* fname): endpoint_t(sim) {
+blockdev_t::blockdev_t(simif_t* sim, AddressMap addr_map, char* fname): endpoint_t(sim, addr_map)
+{
     // TODO: what is ntags?
     _ntags = 1; // TODO set this automatically
     long size;
@@ -56,12 +57,11 @@ blockdev_t::~blockdev_t() {
 /* "init" for blockdev widget that gets called right before target_reset.
  * Here, we set control regs e.g. for # sectors, allowed request length
  * at boot */
-void blockdev_t::init() {
-#ifdef BLOCKDEVWIDGET_0
+void blockdev_t::init()
+{
     // setup blk dev widget
-    write(BLOCKDEVWIDGET_0(bdev_nsectors), nsectors());
-    write(BLOCKDEVWIDGET_0(bdev_max_req_len), max_request_length());
-#endif // #ifdef BLOCKDEVWIDGET_0
+    write("bdev_nsectors", nsectors());
+    write("bdev_max_req_len", max_request_length());
 }
 
 /* Take a read request, get data from the disk file, and fill the beats
@@ -206,20 +206,21 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
     responses.push(resp);
 }
 
+
 /* Read state of the blockdev widget for this "cycle".
  * Called first during each tick */
 void blockdev_t::recv() {
 #ifdef BLOCKDEVWIDGET_0
     /* Check if there is a request coming from the target that should be
      * processed */
-    a_req_valid = read(BLOCKDEVWIDGET_0(bdev_req_valid));
+    a_req_valid = read("bdev_req_valid");
     if (a_req_valid) {
         /* Take a request from the FPGA and put it in SW processing queues */
         struct blkdev_request req;
-        req.write = read(BLOCKDEVWIDGET_0(bdev_req_write));
-        req.offset = read(BLOCKDEVWIDGET_0(bdev_req_offset));
-        req.len = read(BLOCKDEVWIDGET_0(bdev_req_len));
-        req.tag = read(BLOCKDEVWIDGET_0(bdev_req_tag));
+        req.write = read("bdev_req_write");
+        req.offset = read("bdev_req_offset");
+        req.len = read("bdev_req_len");
+        req.tag = read("bdev_req_tag");
         requests.push(req);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got req. write %x, offset %x, len %x, tag %x\n",
@@ -233,13 +234,12 @@ void blockdev_t::recv() {
 
     /* Check if there is data coming from the target that should be
      * processed */
-    a_data_valid = read(BLOCKDEVWIDGET_0(bdev_data_valid));
+    a_data_valid = read("bdev_data_valid");
     if (a_data_valid) {
         /* Take a data chunk from the FPGA and put it in SW processing queues */
         struct blkdev_data data;
-        data.data = (((uint64_t)read(BLOCKDEVWIDGET_0(bdev_data_data_upper))) << 32)
-            | (read(BLOCKDEVWIDGET_0(bdev_data_data_lower)) & 0xFFFFFFFF);
-        data.tag = read(BLOCKDEVWIDGET_0(bdev_data_tag));
+       data.data = (((uint64_t)read("bdev_data_data_upper")) << 32) | (read("bdev_data_data_lower") & 0xFFFFFFFF);
+        data.tag = read("bdev_data_tag");
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got data. data %llx, tag %x\n", data.data, data.tag);
 #endif
@@ -260,21 +260,21 @@ void blockdev_t::send() {
      * something
      * TODO: don't do these writes if a_req_ready,a_data_ready are not true?
      */
-    write(BLOCKDEVWIDGET_0(bdev_req_ready), a_req_ready);
-    write(BLOCKDEVWIDGET_0(bdev_data_ready), a_data_ready);
+    write("bdev_req_ready", a_req_ready);
+    write("bdev_data_ready", a_data_ready);
 
     /* If the block device widget is ready to accept data and we have available
      * responses, send one to the FPGA */
-    a_resp_ready = read(BLOCKDEVWIDGET_0(bdev_resp_ready));
+    a_resp_ready = read("bdev_resp_ready");
     if (!responses.empty() && a_resp_ready) {
         /* Send a response to the FPGA */
         a_resp_valid = true;
         struct blkdev_data resp;
         resp = responses.front();
-        write(BLOCKDEVWIDGET_0(bdev_resp_data_upper), (resp.data >> 32) & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_resp_data_lower), resp.data & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_resp_tag), resp.tag);
-        write(BLOCKDEVWIDGET_0(bdev_resp_valid), a_resp_valid);
+        write("bdev_resp_data_upper", (resp.data >> 32) & 0xFFFFFFFF);
+        write("bdev_resp_data_lower", resp.data & 0xFFFFFFFF);
+        write("bdev_resp_tag", resp.tag);
+        write("bdev_resp_valid", a_resp_valid);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] sending resp. data %llx, tag %x\n", resp.data, resp.tag);
 #endif
@@ -338,7 +338,7 @@ void blockdev_t::tick() {
 /* Check if blockdev widget has any work left */
 bool blockdev_t::done() {
 #ifdef BLOCKDEVWIDGET_0
-    return read(BLOCKDEVWIDGET_0(done));
+    return read("done");
 #else
     return true;
 #endif

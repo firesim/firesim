@@ -23,12 +23,12 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, fesvr_proxy_t* fesvr);
+        serial_t(simif_t* sim, AddressMap addr_map, fesvr_proxy_t* fesvr);
         void send();
         void recv();
         void work();
         virtual void tick() { }
-        virtual bool done() { return read(SERIALWIDGET_0(done)); }
+        virtual bool done() { return read("done"); }
         virtual bool stall() { return false; }
 
     private:
