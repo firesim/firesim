@@ -96,6 +96,34 @@ class FireSimServerNode(FireSimNode):
     def get_mac_address(self):
         return self.mac_address
 
+    def supernode_get_sibling(self, siblingindex):
+        """ return the sibling for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        for index, servernode in enumerate(self.uplinks[0].downlinks):
+            if self == servernode:
+                return self.uplinks[0].downlinks[index+siblingindex]
+
+    def supernode_get_sibling_mac_address(self, siblingindex):
+        """ return the sibling's mac address for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_mac_address()
+
+    def supernode_get_sibling_rootfs(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
+
+    def supernode_get_sibling_bootbin(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
+
+    def supernode_get_sibling_rootfs_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
+
+    def supernode_get_sibling_bootbinary_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().bootbinary_path()
+
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
                                                    str(self.server_id_internal),
@@ -108,9 +136,23 @@ class FireSimServerNode(FireSimNode):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
+        sibling1mac = self.supernode_get_sibling_mac_address(1)
+        sibling2mac = self.supernode_get_sibling_mac_address(2)
+        sibling3mac = self.supernode_get_sibling_mac_address(3)
+
+        sibling1root = self.supernode_get_sibling_rootfs(1)
+        sibling2root = self.supernode_get_sibling_rootfs(2)
+        sibling3root = self.supernode_get_sibling_rootfs(3)
+
+        sibling1bootbin = self.supernode_get_sibling_bootbin(1)
+        sibling2bootbin = self.supernode_get_sibling_bootbin(2)
+        sibling3bootbin = self.supernode_get_sibling_bootbin(3)
+
         return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_rootfs_name(), slotno, self.server_link_latency,
-            self.server_bw_max, self.get_bootbin_name())
+            self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
+            self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
+            slotno, self.server_link_latency, self.server_bw_max,
+            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin)
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -161,13 +203,37 @@ class FireSimServerNode(FireSimNode):
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as
         an array. """
+
+        def get_path_trailing(filepath):
+            return filepath.split("/")[-1]
+
+        def local_and_remote(filepath, index):
+            return [filepath, get_path_trailing(filepath) + str(index)]
+
         all_paths = []
         # todo handle none case
-        all_paths.append(self.get_job().rootfs_path())
-        all_paths.append(self.get_job().bootbinary_path())
+        all_paths.append([self.get_job().rootfs_path(),
+                          self.get_rootfs_name()])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(1),
+                          self.supernode_get_sibling_rootfs(1)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(2),
+                          self.supernode_get_sibling_rootfs(2)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(3),
+                          self.supernode_get_sibling_rootfs(3)])
 
-        all_paths.append(self.server_hardware_config.get_local_driver_path())
-        all_paths.append(self.server_hardware_config.get_local_runtime_conf_path())
+
+        all_paths.append([self.get_job().bootbinary_path(),
+                          self.get_bootbin_name()])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(1),
+                          self.supernode_get_sibling_bootbin(1)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(2),
+                          self.supernode_get_sibling_bootbin(2)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(3),
+                          self.supernode_get_sibling_bootbin(3)])
+
+
+        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         return all_paths
 
     def get_agfi(self):
@@ -185,12 +251,25 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self):
+    def get_rootfs_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self):
+    def get_bootbin_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().bootbinary_path().split("/")[-1]
 
+
+
+class FireSimDummyServerNode(FireSimServerNode):
+    """ This is a dummy server node for supernode mode. """
+    def __init__(self, server_hardware_config=None, server_link_latency=None,
+                 server_bw_max=None):
+        super(FireSimDummyServerNode, self).__init__(server_hardware_config,
+                                                     server_link_latency,
+                                                     server_bw_max)
 
 class FireSimSwitchNode(FireSimNode):
     """ This is a simulated switch instance in FireSim.

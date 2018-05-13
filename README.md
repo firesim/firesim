@@ -26,3 +26,10 @@ the Public Cloud**. *To appear, In proceedings of the 45th International Symposi
 on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 
 [PDF coming soon](#)
+
+## Current supernode perf:
+
+Latest perf results for this branch (# nodes vs. sim rate in MHz):
+
+    [(1024, 6.6), (512, 8.48), (256, 8.97), (128, 10.05), (64, 9.89), (32, 10.66), (16, 13.02), (8, 13.84), (4, 14.27)]
+ 

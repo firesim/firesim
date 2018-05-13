@@ -165,19 +165,20 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
-            if all([isinstance(x, FireSimSwitchNode) for x in switch.downlinks]):
+            dls = [downlink for downlink in switch.downlinks if not isinstance(downlink, FireSimDummyServerNode)]
+            if all([isinstance(x, FireSimSwitchNode) for x in dls]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
                 m4_16s_used += 1
-            elif all([isinstance(x, FireSimServerNode) for x in switch.downlinks]):
+            elif all([isinstance(x, FireSimServerNode) for x in dls]):
                 # all downlinks are simulations
-                if (len(switch.downlinks) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
+                if (len(dls) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
-                    self.run_farm.f1_2s[f1_2s_used].add_simulation(switch.downlinks[0])
+                    self.run_farm.f1_2s[f1_2s_used].add_simulation(dls[0])
                     f1_2s_used += 1
                 else:
                     self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
-                    for server in switch.downlinks:
+                    for server in dls:
                         self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
                     f1_16s_used += 1
             else:
