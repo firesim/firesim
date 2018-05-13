@@ -1,0 +1,6 @@
+env.sh
+riscv-tools-install
+*memory_stats.csv
+sim/ucli.key
+target-design/switch/switchconfig.h
+sim[0-9]

@@ -1,0 +1,7 @@
+*.ext2
+4-thread
+5-thread
+95th-memcached-request-latency.pdf
+95thcomparison.csv
+99th-memcached-request-latency.pdf
+99thcomparison.csv

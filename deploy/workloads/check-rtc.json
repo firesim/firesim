@@ -1,0 +1,13 @@
+{
+  "benchmark_name" : "check-rtc",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "workloads" : [
+    {
+      "name" : "check-rtc",
+      "bootbinary" : "check-rtc",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}

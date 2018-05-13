@@ -1,0 +1,18 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "check-rtc-linux",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "check-rtc-linux",
+          "files" : ["check-rtc-linux"],
+          "command" : "/root/check-rtc-linux && poweroff",
+          "simulation_outputs": [],
+          "outputs": []
+      }
+  ]
+}

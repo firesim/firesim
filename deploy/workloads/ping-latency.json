@@ -1,0 +1,68 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "ping-latency",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["bin/pinglatency.sh"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "pinger",
+      "files": [],
+      "command": "pinglatency.sh && poweroff -f",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "pingee",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-1",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-2",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-3",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-4",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-5",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-6",
+      "files": [],
+      "command": "while true; do sleep 1000; done",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "memcached-thread-imbalance",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["bin/memcached4.sh", "bin/memcached5.sh", "bin/memcached4-pinned.sh", "bin/mutilate3", "bin/mutilateagent.sh", "bin/mutilatemaster4.sh", "bin/mutilatemaster5.sh", "bin/mutilatemaster4-pinned.sh", "bin/mutilatesetup4.sh", "bin/mutilatesetup5.sh", "bin/mutilatesetup4-pinned.sh", "bin/runtest.sh"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "post_run_hook": "python process-data.py",
+  "workloads" : [
+    {
+      "name": "memcachednode-4thread",
+      "files": [],
+      "command": "/bin/memcached4.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-1",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-2",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-3",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-4",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-5",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4-6",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilatemaster-4",
+      "files": [],
+      "command": "sleep 0.1 && echo 'setup:' && /bin/mutilatesetup4.sh && echo 'runtest:' && /bin/runtest.sh 4 && poweroff",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "memcachednode-5thread",
+      "files": [],
+      "command": "/bin/memcached5.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-1",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-2",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-3",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-4",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-5",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent5-6",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilatemaster-5",
+      "files": [],
+      "command": "sleep 0.1 && echo 'setup:' && /bin/mutilatesetup5.sh && echo 'runtest:' && /bin/runtest.sh 5 && poweroff",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "memcachednode-4thread-pinned",
+      "files": [],
+      "command": "/bin/memcached4-pinned.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-1",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-2",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-3",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-4",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-5",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent4pinned-6",
+      "files": [],
+      "command": "/bin/mutilateagent.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilatemaster-4-pinned",
+      "files": [],
+      "command": "sleep 0.1 && echo 'setup:' && /bin/mutilatesetup4-pinned.sh && echo 'runtest:' && /bin/runtest.sh 4-pinned && poweroff",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

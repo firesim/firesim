@@ -1,0 +1,305 @@
+#!/usr/bin/env python2
+# PYTHON_ARGCOMPLETE_OK
+
+# REQUIRES PYTHON2, because fabric requires python2
+
+from __future__ import with_statement, print_function
+import sys
+import os
+import signal
+import argparse
+from time import sleep, strftime, gmtime
+import logging
+import random
+
+import argcomplete
+from fabric.api import *
+# firesim runtools
+from runtools.runtime_config import RuntimeConfig
+
+from awstools.awstools import *
+from awstools.afitools import *
+
+# firesim buildtools
+from buildtools.buildafi import *
+from buildtools.buildconfig import GlobalBuildConfig
+
+from util.streamlogger import StreamLogger
+
+## below are tasks that users can call
+## to add a task, add it here and to the choices array
+
+def managerinit():
+    """ Setup local FireSim manager components. """
+    # prompt users to run aws configure
+    # run the subscription script
+    # copy config files
+    rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
+    # DO NOT wrap this local call with StreamLogger, we don't want creds to get
+    # stored in the log
+    local("aws configure")
+    rootLogger.info("Backing up initial config files, if they exist.")
+    config_files = ["build", "build_recipes", "hwdb", "runtime"]
+    for conf_file in config_files:
+        with warn_only(), hide('everything'):
+            m = local("""cp config_{}.ini sample-backup-configs/backup_config_{}.ini""".format(conf_file, conf_file), capture=True)
+            rootLogger.debug(m)
+            rootLogger.debug(m.stderr)
+
+
+    rootLogger.info("Creating initial config files from examples.")
+    with hide('everything'):
+        for conf_file in config_files:
+            m = local("""cp sample-backup-configs/sample_config_{}.ini config_{}.ini""".format(conf_file, conf_file), capture=True)
+            rootLogger.debug(m)
+            rootLogger.debug(m.stderr)
+
+    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    if useremail != "":
+        subscribe_to_firesim_topic(useremail)
+    else:
+        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+    rootLogger.info("FireSim Manager setup completed.")
+
+def infrasetup(runtime_conf):
+    """ do infrasetup. """
+    runtime_conf.infrasetup()
+
+def boot(runtime_conf):
+    """ do boot. """
+    runtime_conf.boot()
+
+def kill(runtime_conf):
+    """ do kill. """
+    runtime_conf.kill()
+
+def runworkload(runtime_conf):
+    """ do runworkload. """
+    runtime_conf.run_workload()
+
+def buildafi(globalbuildconf):
+    """ Starting from local Chisel, build an AFI for all of the specified
+    hardware configs. """
+
+    @parallel
+    def instance_liveness():
+        """ confirm that all instances are running first. """
+        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("uname -a")
+
+    auto_create_bucket(globalbuildconf.s3_bucketname)
+
+    def terminate_instances_handler(sig, frame):
+        """ Handler that prompts to terminate build instances if you press ctrl-c. """
+        rootLogger.info("You pressed ctrl-c, so builds have been killed.")
+        userconfirm = raw_input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+        if userconfirm == "yes":
+            globalbuildconf.terminate_all_build_instances()
+            rootLogger.info("Instances terminated. Please confirm in your AWS Management Console.")
+        else:
+            rootLogger.info("Termination skipped. There may still be build instances running.")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, terminate_instances_handler)
+
+    # local items (replace_rtl) need to be called in a loop, for each config
+    # remote items will map themselves
+    globalbuildconf.launch_build_instances()
+
+    for buildconf in globalbuildconf.get_builds_list():
+        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+
+    # confirm that build instances have finished booting
+    globalbuildconf.wait_build_instances()
+
+    # confirm that we can connect to the launched instances
+    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
+
+    # run builds, then terminate instances
+    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+
+
+def runcheck(runtime_conf):
+    """ Do nothing, just let the config process run. """
+    pass
+
+
+def launchrunfarm(runtime_conf):
+    """ This starts an FPGA run farm, based on the parameters listed in the
+    [runfarm] section of the config file. Instances are
+    a) tagged with "runfarmtag" so that the manager can find them in the future
+    and does not have to track state locally
+    b) the list of IPs is always used locally AFTER sorting, so there is always
+    a consistent "first" instance (useful for debugging)
+    """
+    # short versions of config file vars
+    runtime_conf.runfarm.launch_run_farm()
+
+
+def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_2,
+                     terminatesomem4_16, forceterminate):
+    """ Terminate instances in the runfarm.
+
+    This works in 2 modes:
+
+    1) If you pass no --terminatesomeINSTANCETYPE flags, it will terminate all
+       instances with the specified runfarm tag.
+
+    2) If you pass ANY --terminatesomeINSTANCETYPE flag, it will terminate only
+       that many instances of the specified types and leave all others
+       untouched.
+    """
+    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+                                    terminatesomem4_16, forceterminate)
+
+def shareagfi(buildconf):
+    """ Share the agfis specified in the [agfistoshare] section with the users
+    specified in the [agfisharing] section """
+    # share the image with all users
+    for agfiname in buildconf.agfistoshare:
+        agfi = buildconf.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
+
+        userlist = buildconf.acctids_to_sharewith
+        share_agfi_in_all_regions(agfi, userlist)
+        rootLogger.info("AGFI '%s': %s has been shared with the users specified in [sharewithaccounts]",
+                        agfiname, agfi)
+
+
+def construct_firesim_argparser():
+    # parse command line args
+    parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
+    parser.add_argument('task', type=str,
+                        help='Management task to run.', choices=[
+                            'managerinit',
+                            'buildafi',
+                            'launchrunfarm',
+                            'infrasetup',
+                            'boot',
+                            'kill',
+                            'terminaterunfarm',
+                            'runworkload',
+                            'shareagfi',
+                            'runcheck'
+                            ])
+    parser.add_argument('-c', '--runtimeconfigfile', type=str,
+                        help='Optional custom runtime/workload config file. Defaults to config_runtime.ini.',
+                        default='config_runtime.ini')
+    parser.add_argument('-b', '--buildconfigfile', type=str,
+                        help='Optional custom build config file. Defaults to config_build.ini.',
+                        default='config_build.ini')
+    parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
+                        help='Optional custom build recipe config file. Defaults to config_build_recipes.ini.',
+                        default='config_build_recipes.ini')
+    parser.add_argument('-a', '--hwdbconfigfile', type=str,
+                        help='Optional custom HW database config file. Defaults to config_hwdb.ini.',
+                        default='config_hwdb.ini')
+    parser.add_argument('-x', '--overrideconfigdata', type=str,
+                        help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "targetconfig linklatency 6405".',
+                        default="")
+    parser.add_argument('-f', '--terminatesomef116', type=int,
+                        help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
+                        default=-1)
+    parser.add_argument('-g', '--terminatesomef12', type=int,
+                        help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
+                        default=-1)
+    parser.add_argument('-m', '--terminatesomem416', type=int,
+                        help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
+                        default=-1)
+    parser.add_argument('-q', '--forceterminate', action='store_true',
+                        help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
+
+    argcomplete.autocomplete(parser)
+    return parser.parse_args()
+
+def main(args):
+    """ Main function for FireSim manager. """
+    # large timeouts, retry connections
+    env.timeout = 100
+    env.connection_attempts = 10
+    # we elastically spin instances up/down. we can easily get re-used IPs with
+    # different keys. also, probably won't get MITM'd
+    env.disable_known_hosts = True
+
+    # make sure that sourceme-f1 was sourced
+    if os.environ.get('FIRESIM_SOURCED') is None:
+        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
+        exit(1)
+
+    rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
+
+    # tasks that have a special config/dispatch setup
+    if args.task == 'managerinit':
+        managerinit()
+
+    if args.task == 'buildafi' or args.task == 'shareagfi':
+        buildconfig = GlobalBuildConfig(args)
+        globals()[args.task](buildconfig)
+
+    if args.task == 'terminaterunfarm':
+        runtime_conf = RuntimeConfig(args)
+        terminaterunfarm(runtime_conf, args.terminatesomef116,
+                         args.terminatesomef12, args.terminatesomem416,
+                         args.forceterminate)
+
+    if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
+        # construct simulation config
+        simconf = RuntimeConfig(args)
+        # run task
+        globals()[args.task](simconf)
+
+if __name__ == '__main__':
+    # set the program working dir to wherever firesim is located
+    # this lets you run firesim from anywhere, not necessarily firesim/deploy/
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
+    # parse args BEFORE setting up logs, otherwise argcomplete will cause
+    # junk log files to be created. also lets us use args.task in the logfile
+    # name
+    args = construct_firesim_argparser()
+
+    # logging setup
+    def logfilename():
+        """ Construct a unique log file name from: date + 16 char random. """
+        timeline = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+        randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        return timeline + "-" + args.task + "-" + randname + ".log"
+
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(logging.NOTSET) # capture everything
+
+    # log to file
+    full_log_filename = "logs/" + logfilename()
+    fileHandler = logging.FileHandler(full_log_filename)
+    # formatting for log to file
+    # TODO: filehandler should be handler 0 (firesim_topology_with_passes expects this
+    # to get the filename) - handle this more appropriately later
+    logFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    fileHandler.setFormatter(logFormatter)
+    fileHandler.setLevel(logging.NOTSET) # log everything to file
+    rootLogger.addHandler(fileHandler)
+
+    # log to stdout, without special formatting
+    consoleHandler = logging.StreamHandler(stream=sys.stdout)
+    consoleHandler.setLevel(logging.INFO) # show only INFO and greater in console
+    rootLogger.addHandler(consoleHandler)
+
+    # hide messages lower than warning from boto3/paramiko
+    logging.getLogger('boto3').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('nose').setLevel(logging.WARNING)
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+    # lastly - whenever you use run/local/put/etc from fabric, you need to wrap
+    # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
+    # unfortunately there's no proper way to do it with fabric
+
+    try:
+        main(args)
+    except:
+        # log all exceptions that make it this far
+        rootLogger.exception("Fatal error.")
+    finally:
+        rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))

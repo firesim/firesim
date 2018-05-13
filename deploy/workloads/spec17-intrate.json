@@ -1,0 +1,81 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "spec17-intrate",
+  "deliver_dir" : "spec17-intrate",
+  "common_args" : ["--copies 1"],
+  "common_files" : ["intrate.sh"],
+  "common_outputs" : ["/output"],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name": "500.perlbench_r",
+      "files": ["500.perlbench_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 500.perlbench_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "502.gcc_r",
+      "files": ["502.gcc_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 502.gcc_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "505.mcf_r",
+      "files": ["505.mcf_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 505.mcf_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "520.omnetpp_r",
+      "files": ["520.omnetpp_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 520.omnetpp_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "523.xalancbmk_r",
+      "files": ["523.xalancbmk_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 523.xalancbmk_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "525.x264_r",
+      "files": ["525.x264_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 525.x264_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "531.deepsjeng_r",
+      "files": ["531.deepsjeng_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 531.deepsjeng_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "541.leela_r",
+      "files": ["541.leela_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 541.leela_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "548.exchange2_r",
+      "files": ["548.exchange2_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 548.exchange2_r",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "557.xz_r",
+      "files": ["557.xz_r"],
+      "command": "cd /spec17-intrate && ./intrate.sh 557.xz_r",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

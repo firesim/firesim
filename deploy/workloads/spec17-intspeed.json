@@ -1,0 +1,88 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "spec17-intspeed",
+  "deliver_dir" : "spec17-intspeed",
+  "common_args" : ["--threads 1"],
+  "common_files" : ["intspeed.sh"],
+  "common_outputs" : ["/output"],
+  "common_simulation_outputs": ["uartlog"],
+  "workloads" : [
+    {
+      "name": "600.perlbench_s",
+      "files": ["600.perlbench_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 600.perlbench_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "602.gcc_s",
+      "files": ["602.gcc_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 602.gcc_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "605.mcf_s",
+      "files": ["605.mcf_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 605.mcf_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "620.omnetpp_s",
+      "files": ["620.omnetpp_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 620.omnetpp_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "623.xalancbmk_s",
+      "files": ["623.xalancbmk_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 623.xalancbmk_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "625.x264_s",
+      "files": ["625.x264_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 625.x264_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "631.deepsjeng_s",
+      "files": ["631.deepsjeng_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 631.deepsjeng_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "641.leela_s",
+      "files": ["641.leela_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 641.leela_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "648.exchange2_s",
+      "files": ["648.exchange2_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 648.exchange2_s",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "657.xz_s-cpu2006docs",
+      "files": ["657.xz_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 657.xz_s --workload 0",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "657.xz_s-cld",
+      "files": ["657.xz_s"],
+      "command": "cd /spec17-intspeed && ./intspeed.sh 657.xz_s --workload 1",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "comments" : "this is hacky. i have separate build/run jsons for this because the rootfs build scripts don't support building uniform-mode rootfses, and the manager doesn't support having a single workload be specified as a uniform run",
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "simperf-test",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["bin/poweroffone.sh"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "poweroffnode",
+      "files": [],
+      "command": "poweroffone.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}
