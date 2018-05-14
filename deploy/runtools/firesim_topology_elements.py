@@ -109,8 +109,11 @@ class FireSimServerNode(FireSimNode):
         called in a directory where its required_files are already located.
         """
         return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_rootfs_name(), slotno, self.server_link_latency,
-            self.server_bw_max, self.get_bootbin_name())
+            self.get_mac_address(), self.get_mac_address(), self.get_mac_address(), self.get_mac_address(),
+            self.get_rootfs_name(), self.get_rootfs_name(), self.get_rootfs_name(), self.get_rootfs_name(),
+            slotno, self.server_link_latency, self.server_bw_max,
+            self.get_bootbin_name(), self.get_bootbin_name(),
+            self.get_bootbin_name(), self.get_bootbin_name())
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -191,6 +194,14 @@ class FireSimServerNode(FireSimNode):
     def get_bootbin_name(self):
         return self.get_job().bootbinary_path().split("/")[-1]
 
+
+class FireSimDummyServerNode(FireSimServerNode):
+    """ This is a dummy server node for supernode mode. """
+    def __init__(self, server_hardware_config=None, server_link_latency=None,
+                 server_bw_max=None):
+        super(FireSimDummyServerNode, self).__init__(server_hardware_config,
+                                                     server_link_latency,
+                                                     server_bw_max)
 
 class FireSimSwitchNode(FireSimNode):
     """ This is a simulated switch instance in FireSim.
