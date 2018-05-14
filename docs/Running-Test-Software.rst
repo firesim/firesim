@@ -68,3 +68,41 @@ The program should print out
     0000000034510204
     0000000010329999
     0000000092101222
+
+For verilator, the command is the following:
+
+.. code-block:: shell
+
+    $ cd verisim
+    $ ./simulator-example-FixedInputStreamConfig ../tests/input-stream.riscv
+
+Debugging Verilog Simulation
+----------------------------
+
+If there is a bug in your hardware, one way to diagnose the issue is to
+generate a waveform from the simulation so that you can introspect into the
+design and see what values signals take over time.
+
+In VCS, you can accomplish this with the ``+vcdplusfile`` flag, which will
+generate a VPD file that can be viewed in DVE. To use this flag, you will
+need to build the debug version of the simulator executable.
+
+.. code-block:: shell
+
+    $ cd vsim
+    $ make CONFIG=FixedInputStreamConfig debug
+    $ ./simv-example-FixedInputStreamConfig-debug +max-cycles=50000 +vcdplusfile=input-stream.vpd ../tests/input-stream.riscv
+    $ dve -full64 -vpd input-stream.vpd
+
+The ``+max-cycles`` flag is used to set a timeout for the simulation. This is
+useful in the case the program hangs without completing.
+
+If you are using verilator, you can generate a VCD file that can be viewed in
+an open source waveform viewer like GTKwave.
+
+.. code-block:: shell
+
+    $ cd verisim
+    $ make CONFIG=FixedInputStreamConfig debug
+    $ ./simulator-example-FixedInputStreamConfig-debug +max-cycles=50000 -vinput-stream.vcd ../tests/input-stream.riscv
+    $ gtkwave -o input-stream.vcd

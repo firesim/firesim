@@ -1,6 +1,9 @@
 Connecting Devices to Bus
 =========================
 
+SoC Mixin Traits
+----------------
+
 Now that we have finished designing our peripheral device, we need to
 hook it up into the SoC. To do this, we first need to create two traits:
 one for the lazy module and one for the module implementation. The lazy
@@ -48,6 +51,9 @@ implementation.
 The ``connectFixedInput`` method will be used by the test harness to connect
 an input stream model that just sends a pre-specified stream of data.
 
+Top-Level Design and Configuration
+----------------------------------
+
 We can now mix these traits into the SoC design. Open up
 ``src/main/scala/example/Top.scala`` and add the following:
 
@@ -87,7 +93,7 @@ and then connect a fixed input stream model to it.
 
 We can now compile the simulation using VCS.
 
-.. code-block:: scala
+.. code-block:: shell
 
     cd vsim
     make CONFIG=FixedInputStreamConfig
@@ -95,3 +101,13 @@ We can now compile the simulation using VCS.
 This will produce a ``simv-example-FixedInputStreamConfig`` executable that
 can be used to run tests. We will discuss how to write and run those tests in
 the next section.
+
+If you don't have VCS installed and want to use
+verilator instead, the commands are similar.
+
+.. code-block:: shell
+
+    cd verisim
+    make CONFIG=FixedInputStreamConfig
+
+This creates an executable called ``simulator-example-FixedInputStreamConfig``.

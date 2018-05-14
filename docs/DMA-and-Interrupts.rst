@@ -1,6 +1,9 @@
 DMA and Interrupts
 ==================
 
+TileLink Client Port
+--------------------
+
 In order to move data from the external input stream to memory, we need to
 perform direct memory access (DMA). We can achieve this by giving the device
 a TLClientNode. Once we add it, the ``LazyModule`` will now look like this:
@@ -33,6 +36,9 @@ name of the port and ``sourceId`` indicates the range of transaction IDs
 that can be used in memory requests. The lower bound is inclusive, and the
 upper bound is exclusive, so this device can use source IDs from 0 to
 ``maxInflight - 1``.
+
+TileLink Protocol and State Machine
+-----------------------------------
 
 In the module implementation, we can now implement a state machine that
 sends write requests to memory. We first call `outer.dmanode.out` to get
@@ -131,7 +137,10 @@ the `D` channel. Once the responses have all returned, the state machine
 sets ``running`` to false and ``completed`` to true. The CPU can poll the
 ``completed`` register to check if the operation has finished.
 
-However, for long-running operations, we would usually like to have the device
+Interrupts
+----------
+
+For long-running operations, we would like to have the device
 notify the CPU through an interrupt. To add an interrupt to the device,
 we need to create an ``IntSourceNode`` in the lazy module.
 

@@ -28,8 +28,8 @@ reusing the one in firesim. So make sure to go into firesim and source
 ``sourceme-f1-full.sh`` before you run the rest of the commands in this
 tutorial.
 
-Now that everything is checked out, you can build the VCS or Verilator
-simulator and run the regression tests to make sure everything is working.
+Now that everything is checked out, you can build the VCS simulator and run the
+regression tests to make sure everything is working.
 
 .. code-block:: shell
 

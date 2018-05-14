@@ -9,8 +9,8 @@ We'll have to create the model in Verilog and call out to C++ using the
 Verilog DPI-C API.
 
 First, how do we include Verilog code in a Chisel codebase? We can do this
-using the Chisel BlackBox class. This class allows us to define IO ports and
-can be used like a regular Chisel module, but the internal implementation is
+using the Chisel BlackBox class. BlackBox modules can be used like regular
+Chisel modules and have defined IO ports, but the internal implementation is
 left to Verilog.
 
 .. code-block:: scala

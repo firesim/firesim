@@ -1,11 +1,11 @@
-MMIO-mapped Registers
-=====================
+Memory-mapped Registers
+=======================
 
-In this tutorial, we will create a new device which pulls in data from an
-externally-connected input stream and writes it to memory. We'll create out
-device in the file ``src/main/scala/example/InputStream.scala``. The first
-thing we need to do is set up some memory-mapped control registers that the
-CPU can use to communicate with the device. The easiest way to do this is by
+In this tutorial, we will create a device which pulls in data from an
+externally-connected input stream and writes the data to memory. We'll create
+our device in the file ``src/main/scala/example/InputStream.scala``. The first
+thing we need to do is set up some memory-mapped control registers that the CPU
+can use to communicate with the device. The easiest way to do this is by
 creating a ``TLRegisterNode``, which provides a ``regmap`` method that can be
 used to generate the hardware for reading and writing to RTL registers.
 
@@ -25,7 +25,7 @@ used to generate the hardware for reading and writing to RTL registers.
       lazy val module = new InputStreamModuleImp(this)
     }
 
-We want to specify or override two arguments in the ``TLRegisterNode``  
+We want to specify or override three arguments in the ``TLRegisterNode`` 
 constructor. The first is the address of the device in the memory map.
 The address is specified as an ``AddressSet`` containing two values, a base
 address and a mask. The system bus will route all addresses that match the
@@ -46,7 +46,7 @@ class argument.
 We want the device to be able to write a specified amount of bytes to a
 specified location in memory, so we'll provide ``addr`` and ``len`` registers.
 We will also want a ``running`` register for the CPU to signal that the device
-to start operation and a ``complete`` register for the device to signal to
+should start operation and a ``complete`` register for the device to signal to
 the CPU that it has completed.
 
 .. code-block:: scala
