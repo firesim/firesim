@@ -11,7 +11,7 @@ SPECint in parallel on many simulators.
    :caption: Single-Node Simulation Tutorial:
    :numbered:
 
-   Building-a-FireSim-AFI-(FPGA-Image)
+   Building-a-FireSim-AFI
    Setting-up-an-FPGA-Run-Farm
    Deploying-simulations
 

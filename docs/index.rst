@@ -11,11 +11,11 @@ Welcome to FireSim's documentation!
    :caption: Contents:
 
    FireSim-Basics
-   initial-setup
-   single-node-sim
-   cluster-sim
-   advanced-usage
-   Developing-New-Devices
+   Initial-Setup/index
+   Single-Node-Simulation-Tutorial/index
+   Cluster-Simulation-Tutorial/index
+   Advanced-Usage/index
+   Developing-New-Devices/index
 
 Indices and tables
 ==================
