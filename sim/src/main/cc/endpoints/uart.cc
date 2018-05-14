@@ -38,8 +38,7 @@ uart_t::uart_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid)
     char stdinname_p[UART_DEVNAME_BYTES+1];
     char stdinname[UART_DEVNAME_BYTES+1];
     stdinname_p[0] = '\0';
-    strncat(stdinname_p, "/tmp/firesim_stdin_", UART_DEVNAME_BYTES);
-    strncat(stdinname_p, slotid, UART_DEVNAME_BYTES-20);
+    strncat(stdinname_p, "firesim_stdin_sub", UART_DEVNAME_BYTES);
     sprintf(stdinname, "%s_%c", stdinname_p, subslotid);
     stdin_file=fopen(stdinname, "w+");
     stdin_desc=fileno(stdin_file);
@@ -48,8 +47,7 @@ uart_t::uart_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid)
     char stdoutname_p[UART_DEVNAME_BYTES+1];
     char stdoutname[UART_DEVNAME_BYTES+1];
     stdoutname_p[0] = '\0';
-    strncat(stdoutname_p, "/tmp/firesim_stdout_", UART_DEVNAME_BYTES);
-    strncat(stdoutname_p, slotid, UART_DEVNAME_BYTES-20);
+    strncat(stdoutname_p, "firesim_stdout_sub", UART_DEVNAME_BYTES);
     sprintf(stdoutname, "%s_%c", stdoutname_p, subslotid);
     stdout_file=fopen(stdoutname, "w+");
     stdout_desc=fileno(stdout_file);

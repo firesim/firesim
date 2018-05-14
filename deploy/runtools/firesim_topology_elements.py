@@ -96,6 +96,29 @@ class FireSimServerNode(FireSimNode):
     def get_mac_address(self):
         return self.mac_address
 
+    def supernode_get_sibling(self, siblingindex):
+        """ return the sibling for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        for index, servernode in enumerate(self.uplinks[0].downlinks):
+            if self == servernode:
+                return self.uplinks[0].downlinks[index+siblingindex]
+
+    def supernode_get_sibling_mac_address(self, siblingindex):
+        """ return the sibling's mac address for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_mac_address()
+
+    def supernode_get_sibling_rootfs(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name()
+
+    def supernode_get_sibling_bootbin(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name()
+
+
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
                                                    str(self.server_id_internal),
@@ -108,12 +131,23 @@ class FireSimServerNode(FireSimNode):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
+        sibling1mac = self.supernode_get_sibling_mac_address(1)
+        sibling2mac = self.supernode_get_sibling_mac_address(2)
+        sibling3mac = self.supernode_get_sibling_mac_address(3)
+
+        sibling1root = self.supernode_get_sibling_rootfs(1)
+        sibling2root = self.supernode_get_sibling_rootfs(2)
+        sibling3root = self.supernode_get_sibling_rootfs(3)
+
+        sibling1bootbin = self.supernode_get_sibling_bootbin(1)
+        sibling2bootbin = self.supernode_get_sibling_bootbin(2)
+        sibling3bootbin = self.supernode_get_sibling_bootbin(3)
+
         return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_mac_address(), self.get_mac_address(), self.get_mac_address(),
-            self.get_rootfs_name(), self.get_rootfs_name(), self.get_rootfs_name(), self.get_rootfs_name(),
+            self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
+            self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
             slotno, self.server_link_latency, self.server_bw_max,
-            self.get_bootbin_name(), self.get_bootbin_name(),
-            self.get_bootbin_name(), self.get_bootbin_name())
+            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin)
 
     def copy_back_job_results_from_run(self, slotno):
         """
