@@ -353,7 +353,7 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
           //printf("fesvr_done_counter %d\n", fesvr_done_counter);
           if (fesvr->done()) {fesvr_done_counter++;}
       }
-    } while ((fesvr_done_counter < 1) && cycles() < loop_end && cycles() <= max_cycles);
+    } while ((fesvr_done_counter == 0) && cycles() < loop_end && cycles() <= max_cycles);
 }
 
 void firesim_top_t::run(size_t step_size) {
@@ -381,7 +381,7 @@ void firesim_top_t::run(size_t step_size) {
             loop(step_size, profile_interval);
             if (fesvr->done()) {fesvr_done_counter++;}
         }
-    } while ((fesvr_done_counter < 1) && cycles() <= max_cycles);
+    } while ((fesvr_done_counter == 0) && cycles() <= max_cycles);
 
     uint64_t end_time = timestamp();
     double sim_time = diff_secs(end_time, start_time);
