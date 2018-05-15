@@ -111,13 +111,18 @@ class FireSimServerNode(FireSimNode):
     def supernode_get_sibling_rootfs(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_rootfs_name()
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
 
     def supernode_get_sibling_bootbin(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_bootbin_name()
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
 
+    def supernode_get_sibling_rootfs_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
+
+    def supernode_get_sibling_bootbinary_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().bootbinary_path()
 
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
@@ -198,13 +203,37 @@ class FireSimServerNode(FireSimNode):
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as
         an array. """
+
+        def get_path_trailing(filepath):
+            return filepath.split("/")[-1]
+
+        def local_and_remote(filepath, index):
+            return [filepath, get_path_trailing(filepath) + str(index)]
+
         all_paths = []
         # todo handle none case
-        all_paths.append(self.get_job().rootfs_path())
-        all_paths.append(self.get_job().bootbinary_path())
+        all_paths.append([self.get_job().rootfs_path(),
+                          self.get_rootfs_name()])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(1),
+                          self.supernode_get_sibling_rootfs(1)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(2),
+                          self.supernode_get_sibling_rootfs(2)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(3),
+                          self.supernode_get_sibling_rootfs(3)])
 
-        all_paths.append(self.server_hardware_config.get_local_driver_path())
-        all_paths.append(self.server_hardware_config.get_local_runtime_conf_path())
+
+        all_paths.append([self.get_job().bootbinary_path(),
+                          self.get_bootbin_name()])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(1),
+                          self.supernode_get_sibling_bootbin(1)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(2),
+                          self.supernode_get_sibling_bootbin(2)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(3),
+                          self.supernode_get_sibling_bootbin(3)])
+
+
+        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         return all_paths
 
     def get_agfi(self):
@@ -222,11 +251,16 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self):
+    def get_rootfs_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self):
+    def get_bootbin_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().bootbinary_path().split("/")[-1]
+
 
 
 class FireSimDummyServerNode(FireSimServerNode):
