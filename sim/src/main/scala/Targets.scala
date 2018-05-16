@@ -4,7 +4,7 @@ import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.config.Parameters
-//import boom.system.{BoomCoreplex, BoomCoreplexModule}
+import boom.system.{BoomSubsystem, BoomSubsystemModule}
 import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
@@ -23,7 +23,7 @@ import java.io.File
 *******************************************************************************/
 
 class FireSim(implicit p: Parameters) extends RocketSubsystem
-    with HasMisalignedMasterAXI4MemPort
+    with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasSystemErrorSlave
     // with HasSyncExtInterrupts
@@ -38,7 +38,7 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with HasMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
@@ -48,7 +48,7 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasPeripheryBlockDeviceModuleImp
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
-    with HasMisalignedMasterAXI4MemPort
+    with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasSystemErrorSlave
     // with HasSyncExtInterrupts
@@ -62,7 +62,7 @@ class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
 
 class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with HasMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
@@ -71,27 +71,25 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryBlockDeviceModuleImp
 
 
-//class FireBoom(implicit p: Parameters) extends BoomCoreplex
-//    with HasMisalignedMasterAXI4MemPort
-//    with HasPeripheryBootROM
-//    with HasSystemErrorSlave
-//    // with HasSyncExtInterrupts
-//    with HasNoDebug
-//    with HasPeripherySerial
-//    with HasPeripheryUART
-//    // with HasPeripheryIceNIC
-//    with HasPeripheryBlockDevice
-//{
-//  override lazy val module = new FireBoomModule(this)
-//}
-//
-//class FireBoomModule[+L <: FireBoom](l: L) extends BoomCoreplexModuleImpl(l)
-//    with HasRTCModuleImp
-//    with HasMisalignedMasterAXI4MemPortModuleImp
-//    with HasPeripheryBootROMModuleImp
-//    // with HasExtInterruptsModuleImp
-//    with HasNoDebugModuleImp
-//    with HasPeripherySerialModuleImp
-//    with HasPeripheryUARTModuleImp
-//    // with HasPeripheryIceNICModuleImp
-//    with HasPeripheryBlockDeviceModuleImp
+class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
+    with CanHaveMisalignedMasterAXI4MemPort
+    with HasPeripheryBootROM
+    with HasSystemErrorSlave
+    // with HasSyncExtInterrupts
+    with HasNoDebug
+    with HasPeripherySerial
+    with HasPeripheryUART
+    with HasPeripheryBlockDevice
+{
+  override lazy val module = new FireBoomNoNICModuleImp(this)
+}
+
+class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModule(l)
+    with HasRTCModuleImp
+    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with HasPeripheryBootROMModuleImp
+    // with HasExtInterruptsModuleImp
+    with HasNoDebugModuleImp
+    with HasPeripherySerialModuleImp
+    with HasPeripheryUARTModuleImp
+    with HasPeripheryBlockDeviceModuleImp

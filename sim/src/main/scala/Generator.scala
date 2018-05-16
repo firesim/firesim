@@ -11,7 +11,7 @@ import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
-//import boom.system.BoomTilesKey
+import boom.system.{BoomTilesKey, BoomTestSuites}
 import java.io.File
 
 trait HasGenerator extends GeneratorApp {
@@ -20,7 +20,7 @@ trait HasGenerator extends GeneratorApp {
     targetNames.topModuleClass match {
       case "FireSim"  => LazyModule(new FireSim()(params)).module
       case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
-//      case "FireBoom" => LazyModule(new FireBoom()(params)).module
+      case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
     }
   }
 
@@ -59,8 +59,8 @@ trait HasTestSuites {
       "rv64ud-v-fadd",
       "rv64uf-v-fadd",
       "rv64um-v-mul",
-      // "rv64mi-p-breakpoint",
-      // "rv64uc-v-rvc",
+      // "rv64mi-p-breakpoint", // Not implemented in BOOM
+      // "rv64uc-v-rvc", // Not implemented in BOOM
       "rv64ud-v-structural",
       "rv64si-p-wfi",
       "rv64um-v-divw",
@@ -94,8 +94,7 @@ trait HasTestSuites {
       if (params(RocketTilesKey).nonEmpty) {
         params(RocketTilesKey).head.core
       } else {
-        throw new RuntimeException("Boom generation disabled")
-//        params(BoomTilesKey).head.core
+        params(BoomTilesKey).head.core
       }
     val xlen = params(XLen)
     val vm = coreParams.useVM
@@ -115,7 +114,8 @@ trait HasTestSuites {
     if (coreParams.useAtomics)    TestGeneration.addSuites(env.map(if (xlen == 64) rv64ua else rv32ua))
     if (coreParams.useCompressed) TestGeneration.addSuites(env.map(if (xlen == 64) rv64uc else rv32uc))
     val (rvi, rvu) =
-      if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
+      if (params(BoomTilesKey).nonEmpty) ((if (vm) BoomTestSuites.rv64i else BoomTestSuites.rv64pi), rv64u)
+      else if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
       else            ((if (vm) rv32i else rv32pi), rv32u)
 
     TestGeneration.addSuites(rvi.map(_("p")))
@@ -133,7 +133,7 @@ object FireSimGenerator extends HasGenerator with HasTestSuites {
   lazy val target = targetGenerator
   val c3circuit = chisel3.Driver.elaborate(() => target)
   val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
-  val annos = c3circuit.annotations
+  val annos = c3circuit.annotations.map(_.toFirrtl)
   val portList = target.getPorts flatMap {
     case Port(id: DebugIO, _) => None
     case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
@@ -143,7 +143,7 @@ object FireSimGenerator extends HasGenerator with HasTestSuites {
   val customPasses = Seq(
     passes.AsyncResetRegPass,
     passes.PlusArgReaderPass
-  ) 
+  )
 
   args.head match {
     case "midas" | "strober"  =>
