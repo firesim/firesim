@@ -47,7 +47,7 @@ class DumpChains(
                   val ports = sram.ports filter (_.output.nonEmpty)
                   (ports foldLeft 0){ (sum, p) =>
                     chainFile write s"$id ${path}.${s.name}.${p.output.get.name} ${p.width} -1\n"
-                    sum + p.width
+                    sum + p.width.get
                   }
               }
             case s: DefMemory if s.readLatency > 0 =>

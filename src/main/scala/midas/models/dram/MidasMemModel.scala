@@ -9,10 +9,11 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.dontTouch
 
 import midas.core._
 import midas.widgets._
-import midas.passes.{Fame1Annotator, DontTouchAnnotator}
+import midas.passes.{Fame1ChiselAnnotation}
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}
@@ -107,8 +108,7 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
   }
 }
 
-class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
-    with DontTouchAnnotator with Fame1Annotator {
+class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
 
   val model = cfg.elaborate()
   printGenerationConfig
@@ -386,7 +386,7 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel
 
   genCRFile()
   dontTouch(targetFire)
-  fame1transform(model)
+  chisel3.experimental.annotate(Fame1ChiselAnnotation(model, "targetFire"))
   getDefaultSettings("runtime.conf")
 
   override def genHeader(base: BigInt, sb: StringBuilder) {

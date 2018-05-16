@@ -82,8 +82,8 @@ case class MemConf(
       PolarizedPort(s"R${i}_clk", ActiveHigh),
       output = Some(PolarizedPort(s"R${i}_data", ActiveHigh)),
       chipEnable = Some(PolarizedPort(s"R${i}_en", ActiveHigh)),
-      depth = depth.toInt,
-      width = width.toInt
+      depth  = Some(depth.toInt),
+      width  = Some(width.toInt)
     )}
     val writePorts = writers.zipWithIndex map { case (w, i) => MacroPort(
       PolarizedPort(s"W${i}_addr", ActiveHigh),
@@ -92,8 +92,8 @@ case class MemConf(
       chipEnable = Some(PolarizedPort(s"W${i}_en", ActiveHigh)),
       maskPort = if (w.head == 'm') Some(PolarizedPort(s"W${i}_mask", ActiveHigh)) else None,
       maskGran = if (w.head == 'm') Some(maskGran.toInt) else None,
-      depth = depth.toInt,
-      width = width.toInt
+      depth  = Some(depth.toInt),
+      width  = Some(width.toInt)
     )}
     val readwritePorts = readwriters.zipWithIndex map { case (rw, i) => MacroPort(
       PolarizedPort(s"RW${i}_addr", ActiveHigh),
@@ -104,8 +104,8 @@ case class MemConf(
       writeEnable = Some(PolarizedPort(s"RW${i}_wmode", ActiveHigh)),
       maskPort = if (rw.head == 'm') Some(PolarizedPort(s"RW${i}_wmask", ActiveHigh)) else None,
       maskGran = if (rw.head == 'm') Some(maskGran.toInt) else None,
-      depth = depth.toInt,
-      width = width.toInt
+      depth  = Some(depth.toInt),
+      width  = Some(width.toInt)
     )}
     SRAMMacro(name, width.toInt, depth.toInt, "",
               readPorts ++ writePorts ++ readwritePorts, Nil)
