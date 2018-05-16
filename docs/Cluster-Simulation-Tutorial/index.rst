@@ -1,11 +1,10 @@
-Cluster Simulation Tutorial
+Running a Cluster Simulation
 =============================
 
 .. toctree::
    :maxdepth: 2
    :caption: Cluster Simulation Tutorial:
-   :numbered:
 
+   Setting-up-an-FPGA-Run-Farm
    Building-and-Deploying-a-Cluster-Simulation
-
 

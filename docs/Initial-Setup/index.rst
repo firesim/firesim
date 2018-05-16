@@ -7,7 +7,6 @@ FireSim, as well as cloning/installing FireSim on your manager instance.
 .. toctree::
    :maxdepth: 2
    :caption: Initial Setup/Installation:
-   :numbered:
 
    First-time-AWS-User-Setup
    Configuring-Required-Infrastructure-in-Your-AWS-Account

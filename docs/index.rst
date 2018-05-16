@@ -8,14 +8,22 @@ Welcome to FireSim's documentation!
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
+   :caption: Getting Started:
+   :numbered:
 
    FireSim-Basics
    Initial-Setup/index
    Single-Node-Simulation-Tutorial/index
    Cluster-Simulation-Tutorial/index
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Advanced Docs:
+
    Advanced-Usage/index
    Developing-New-Devices/index
+   ISCA-2018-Experiments/index
+
 
 Indices and tables
 ==================
