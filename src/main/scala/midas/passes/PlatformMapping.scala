@@ -68,9 +68,9 @@ private[passes] class PlatformMapping(
     }
     val c3circuit = chisel3.Driver.elaborate(() => shim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = new firrtl.AnnotationMap(c3circuit.annotations.toList)
+    val annos = c3circuit.annotations.map(_.toFirrtl)
     val circuit = renameMods((new LowFirrtlCompiler().compile(
-                                CircuitState(chirrtl, ChirrtlForm, Some(annos)),
+                                CircuitState(chirrtl, ChirrtlForm, annos),
                                 new StringWriter, Seq(new Fame1Instances))
                               ).circuit, Namespace(c))
     dumpHeader(shim)

@@ -9,7 +9,6 @@ import chisel3._
 import chisel3.util._
 
 import midas.core._
-import midas.passes.Fame1Annotator
 import midas.widgets._
 
 import Console.{UNDERLINED, RESET}

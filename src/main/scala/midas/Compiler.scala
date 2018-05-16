@@ -5,7 +5,7 @@ package midas
 import chisel3.{Data, Bundle, Record, Clock, Bool}
 import chisel3.internal.firrtl.Port
 import firrtl.ir.Circuit
-import firrtl.{Transform, CircuitState, AnnotationMap}
+import firrtl.{Transform, CircuitState}
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
@@ -51,18 +51,17 @@ object MidasCompiler {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val json = new File(dir, s"${chirrtl.main}.macros.json")
     val midasAnnos = Seq(
-      InferReadWriteAnnotation(chirrtl.main),
-      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
+      InferReadWriteAnnotation,
+      ReplSeqMemAnnotation("", conf.getPath),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
-      MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
+      MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
     val compiler = new MidasCompiler(dir, io)(p alterPartial { case OutputDir => dir })
     val midas = compiler.compile(firrtl.CircuitState(
-      chirrtl, firrtl.ChirrtlForm, Some(new AnnotationMap(targetAnnos ++ midasAnnos))),
+      chirrtl, firrtl.ChirrtlForm, targetAnnos ++ midasAnnos),
       customTransforms)
 
     val result = (new VerilogCompiler).compileAndEmit(firrtl.CircuitState(
-      midas.circuit, firrtl.HighForm, Some(new AnnotationMap(midasAnnos))))
+      midas.circuit, firrtl.HighForm, midasAnnos))
     val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
     verilog.write(result.getEmittedCircuit.value)
     verilog.close
@@ -81,6 +80,6 @@ object MidasCompiler {
     val circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val io = target.getPorts map (_.id)
-    apply(chirrtl, circuit.annotations.toSeq, io, dir, libFile, customTransforms)
+    apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, libFile, customTransforms)
   }
 }

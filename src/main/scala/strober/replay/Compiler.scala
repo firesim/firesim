@@ -29,14 +29,13 @@ object Compiler {
     val jsonFile = new File(dir, s"${chirrtl.main}.macros.json")
     val macroFile = new File(dir, s"${chirrtl.main}.macros.v")
     val pathFile = new File(dir, s"${chirrtl.main}.macros.path")
-    val annotations = new AnnotationMap(Seq(
-      InferReadWriteAnnotation(chirrtl.main),
-      ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$confFile"),
-      MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        jsonFile.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Default))))
+    val annotations = Seq(
+      InferReadWriteAnnotation,
+      ReplSeqMemAnnotation(chirrtl.main, confFile.getPath),
+      MacroCompilerAnnotation(jsonFile.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Default, useCompiler = false))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(confFile, jsonFile, lib getOrElse jsonFile, macroFile, pathFile) compile (
-      CircuitState(chirrtl, ChirrtlForm, Some(annotations)), verilog)
+      CircuitState(chirrtl, ChirrtlForm, annotations), verilog)
     genVerilogFragment(chirrtl.main, io, new FileWriter(new File(dir, s"${chirrtl.main}.vfrag")))
     verilog.close
     result.circuit

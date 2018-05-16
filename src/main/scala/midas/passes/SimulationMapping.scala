@@ -57,11 +57,11 @@ private[passes] class SimulationMapping(
     lazy val sim = new SimWrapper(io)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = new AnnotationMap(c3circuit.annotations.toSeq)
+    val annos = c3circuit.annotations.map(_.toFirrtl)
     val writer = new StringWriter
     // val writer = new FileWriter(new File("SimWrapper.ir"))
     val circuit = renameMods((new LowFirrtlCompiler compile (
-        CircuitState(chirrtl, ChirrtlForm, Some(annos)), writer)
+        CircuitState(chirrtl, ChirrtlForm, annos), writer)
       ).circuit, Namespace(c))
     val targetType = module_type((c.modules find (_.name == c.main)).get)
     val modules = c.modules ++ (circuit.modules flatMap
