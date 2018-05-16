@@ -140,10 +140,14 @@ object FireSimGenerator extends HasGenerator with HasTestSuites {
     case otherPort => Some(otherPort.id)
   }
   override def addTestSuites = super.addTestSuites(params)
+  val customPasses = Seq(
+    passes.AsyncResetRegPass,
+    passes.PlusArgReaderPass
+  ) 
 
   args.head match {
     case "midas" | "strober"  =>
-      midas.MidasCompiler(chirrtl, annos, portList, testDir, libFile, Seq.empty)(hostParams alterPartial { 
+      midas.MidasCompiler(chirrtl, annos, portList, testDir, libFile, customPasses)(hostParams alterPartial { 
         case midas.EnableSnapshot => args.head == "strober" })
     // Need replay
   }

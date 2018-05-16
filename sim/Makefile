@@ -69,18 +69,10 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submo
 # Timestamp & Patching #
 ########################
 
-timestamps = $(addprefix $(base_dir)/, $(addsuffix .timestamp, firrtl rocket-chip sifive-blocks))
+timestamps = $(addprefix $(base_dir)/, $(addsuffix .timestamp, firrtl))
 
 $(base_dir)/firrtl.timestamp: $(shell find $(base_dir)/firrtl/$(src_path) -name "*.scala")
-	cd $(base_dir)/firrtl && sbt publishLocal
-	touch $@
-
-$(base_dir)/rocket-chip.timestamp: $(base_dir)/target-rtl/rocket-chip-no-async.patch
-	cd $(base_dir)/target-rtl/firechip/rocket-chip && git apply $<
-	touch $@
-
-$(base_dir)/sifive-blocks.timestamp: $(base_dir)/target-rtl/sifive-blocks-uart-no-plusarg.patch
-	cd $(base_dir)/target-rtl/firechip/sifive-blocks && git apply $<
+	cd $(base_dir)/firrtl && $(SBT) $(SBT_FLAGS) publishLocal
 	touch $@
 
 ########################
