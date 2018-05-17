@@ -6,7 +6,6 @@
 #include "endpoints/fpga_memory_model.h"
 #include "endpoints/simplenic.h"
 #include "endpoints/blockdev.h"
-#include "endpoints/loadmem_m.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<fesvr_proxy_t*> fesvr_vec): fesvr_vec(fesvr_vec)
 {
@@ -201,7 +200,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<fesvr_proxy_t*> 
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats0.csv"));
 #endif
 
 #ifdef MEMMODEL_1
@@ -214,7 +213,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<fesvr_proxy_t*> 
                     MEMMODEL_1_W_num_registers,
                     (const unsigned int*) MEMMODEL_1_W_addrs,
                     (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats1.csv"));
 #endif
 
 #ifdef MEMMODEL_2
@@ -227,7 +226,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<fesvr_proxy_t*> 
                     MEMMODEL_2_W_num_registers,
                     (const unsigned int*) MEMMODEL_2_W_addrs,
                     (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats2.csv"));
 #endif
 
 #ifdef MEMMODEL_3
@@ -240,15 +239,10 @@ firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<fesvr_proxy_t*> 
                     MEMMODEL_3_W_num_registers,
                     (const unsigned int*) MEMMODEL_3_W_addrs,
                     (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats3.csv"));
 #endif
 
-}
-
-void firesim_top_t::loadmem() {
-    
     //add loadmem "endpoints"
-    std::vector<loadmem_m> loadmem_vec;
     loadmem_vec.push_back(loadmem_m(this, AddressMap(           LOADMEM_0_R_num_registers,
                                  (const unsigned int*) LOADMEM_0_R_addrs,
                                  (const char* const*)  LOADMEM_0_R_names,
@@ -277,7 +271,9 @@ void firesim_top_t::loadmem() {
                                  (const unsigned int*) LOADMEM_3_W_addrs,
                                  (const char* const*)  LOADMEM_3_W_names)));
 
+}
 
+void firesim_top_t::loadmem() {
     fesvr_loadmem_t loadmem;
     for (int i=0; i<fesvr_vec.size(); i++) {
         fesvr_proxy_t* fesvr = fesvr_vec[i];
@@ -320,6 +316,8 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
         }
       }
 
+      fprintf(stderr, "done fesbusy got %u\n", fesvr_busy_counter);
+
       if (fesvr_busy_counter > 0) {
           step(1, false);
           delta_sum += 1;
@@ -338,6 +336,8 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
               e->tick();
           }
       } while(!_done);
+    
+      fprintf(stderr, "done ep loop\n");
 
       for (auto fesvr: fesvr_vec) { 
         if (delta_sum == step_size || fesvr->busy()) {
@@ -351,10 +351,23 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
             if (delta_sum == step_size) delta_sum = 0;
           }
           //printf("fesvr_done_counter %d\n", fesvr_done_counter);
-          if (fesvr->done()) {fesvr_done_counter++;}
+          if (fesvr->done()) {return;}
       }
+      print_sim_rate();
     } while ((fesvr_done_counter == 0) && cycles() < loop_end && cycles() <= max_cycles);
 }
+
+void firesim_top_t::print_sim_rate() {
+    uint64_t end_time = timestamp();
+    double sim_time = diff_secs(end_time, start_time);
+    double sim_speed = ((double) cycles()) / (sim_time * 1000.0);
+    if (sim_speed > 1000.0) {
+        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
+    } else {
+        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
+    }
+}
+
 
 void firesim_top_t::run(size_t step_size) {
     for (auto e: fpga_models) {
@@ -368,7 +381,7 @@ void firesim_top_t::run(size_t step_size) {
     // Assert reset T=0 -> 5
     target_reset(0, 50);
 
-    uint64_t start_time = timestamp();
+    start_time = timestamp();
 
     unsigned int fesvr_done_counter=0;
     do {
@@ -379,18 +392,15 @@ void firesim_top_t::run(size_t step_size) {
                 mod->profile();
             }
             loop(step_size, profile_interval);
-            if (fesvr->done()) {fesvr_done_counter++;}
+            if (fesvr->done()) {
+                fesvr_done_counter++;
+                break;
+            }
         }
     } while ((fesvr_done_counter == 0) && cycles() <= max_cycles);
 
-    uint64_t end_time = timestamp();
-    double sim_time = diff_secs(end_time, start_time);
-    double sim_speed = ((double) cycles()) / (sim_time * 1000.0);
-    if (sim_speed > 1000.0) {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
-    } else {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
-    }
+    print_sim_rate();
+
     for (auto fesvr: fesvr_vec) { 
       int exitcode = fesvr->exit_code();
       if (exitcode) {

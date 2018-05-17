@@ -51,7 +51,7 @@ emul_cc  = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim_f1 endpoints/simplenic endpoints/blockdev))
 
 
-common_cxx_flags = -I$(RISCV)/include -Wno-unused-variable
+common_cxx_flags = -I$(RISCV)/include -Wno-unused-variable -ggdb3
 
 SBT ?= sbt
 SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
