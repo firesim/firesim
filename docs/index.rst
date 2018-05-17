@@ -25,7 +25,7 @@ Welcome to FireSim's documentation!
    Developing-New-Devices/index
    ISCA-2018-Experiments/index
 
-
+ 
 Indices and tables
 ==================
 
