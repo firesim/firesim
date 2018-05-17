@@ -110,7 +110,6 @@ Here's a high-level outline of what we'll be doing:
 
 
 Generally speaking, you only need to follow step 4 if you're modifying
-Chisel RTL or changing non-runtime configurable hardware parameters. If
-someone has given you a prebuilt AFI/AGFI.
+Chisel RTL or changing non-runtime configurable hardware parameters.
 
 Now, hit next to proceed with setup.
