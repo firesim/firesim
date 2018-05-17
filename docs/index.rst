@@ -15,6 +15,7 @@ Welcome to FireSim's documentation!
    Initial-Setup/index
    Single-Node-Simulation-Tutorial/index
    Cluster-Simulation-Tutorial/index
+   Building-Your-Own-Hardware-Designs/index
 
 .. toctree::
    :maxdepth: 3
