@@ -12,7 +12,7 @@
 
 /* Uncomment to get DEBUG printing
  * TODO: better logging mechanism so that we don't need this */
-#define BLKDEV_DEBUG
+//#define BLKDEV_DEBUG
 
 /* Block Dev software driver constructor.
  * Setup software driver state:
