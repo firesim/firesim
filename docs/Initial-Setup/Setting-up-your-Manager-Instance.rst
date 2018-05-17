@@ -6,13 +6,19 @@ Launching a "Manager Instance"
 
 Now, we need to launch a "Manager Instance" that essentially acts as a
 "head" node that we will actually ``ssh`` or ``mosh`` into to work from.
-Since we will deploy the heavy lifting to separate ``c4.8xlarge`` and
-``f1`` instances later, this can be a relatively cheap instance. Here,
-we will assume that our manager instance is a ``c4.4xlarge`` instance,
-running the AWS FPGA Developer AMI. The instructions below will guide
-you through the process of getting this instance up and running.
+We will deploy the heavy lifting to separate ``c4.4xlarge`` and
+``f1`` instances later, this can be a relatively cheap instance. In this guide
+however, we will assume that our manager instance is a ``c4.4xlarge`` instance,
+running the AWS FPGA Developer AMI (the specific version listed below). The
+instructions below will guide you through the process of getting this instance
+up and running.
 
-First, head to the `EC2 Management
+First, we need to subscribe to the Amazon FPGA Developer AMI (which is free).
+To do so, make sure you are logged into your AWS account, then visit: https://aws.amazon.com/marketplace/pp/B06VVYBLZZ/
+
+On this page, click "Continue to Subscribe" and then "Accept Terms" on the following page.
+
+Next, head to the `EC2 Management
 Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
 right corner, ensure that the correct region is selected.
 
@@ -22,8 +28,9 @@ To launch a manager instance, follow these steps:
    ``Launch Instance``. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
-2. When prompted to select an AMI, search the AWS Marketplace for "FPGA"
-   and select the Amazon FPGA Developer AMI, version 1.3.5
+2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
+   "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.3.5``.
+   **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c4.4xlarge``.
 4. On the "Configure Instance Details" page:
@@ -37,10 +44,12 @@ To launch a manager instance, follow these steps:
       to disable this setting before being able to terminate the
       instance using usual methods.
    3. Also on this page, expand "Advanced Details" and in the resulting
-      text box, paste the contents of `this
-      script <https://github.com/firesim/firesim/blob/master/scripts/machine-launch-script.sh>`__.
-      This will pre-install all of the dependencies needed to run
-      FireSim on your instance.
+      text box, paste the following:
+
+      .. include:: /../scripts/machine-launch-script.sh
+         :code: bash
+
+      This will pre-install all of the dependencies needed to run FireSim on your instance.
 
 5. On the next page ("Add Storage"), increase the size of the root EBS
    volume to ~300GB. The default of 150GB can quickly become tight as
@@ -52,7 +61,7 @@ To launch a manager instance, follow these steps:
    security group that was automatically created for you earlier.
 8. On the review page, click the button to launch your instance.
 
-Make sure you select the 'firesim' key pair that we setup earlier.
+Make sure you select the ``firesim`` key pair that we setup earlier.
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
@@ -74,9 +83,8 @@ In either case, ``ssh`` into your instance and wait until the
     machine launch script started
     machine launch script completed!
 
-Once this line appears, if you want to use ``mosh``, logout of the
-instance and ``mosh`` back into the instance. If you want to use
-``ssh``, simply continue.
+Once this line appears, you should exit and re-``ssh`` into the system. If you want
+to use ``mosh``, ``mosh`` back into the system.
 
 Key Setup, Part 2
 ~~~~~~~~~~~~~~~~~
@@ -135,6 +143,6 @@ Next, it will create initial configuration files, which we will edit in later
 sections. Finally, it will prompt you for an email address, which is used to
 send email notifications upon FPGA build completion and optionally for
 workload completion. You can leave this blank if you do not wish to receive any
-notifications.
+notifications, but this is not recommended.
 
 Hit Next to continue to the next page.
