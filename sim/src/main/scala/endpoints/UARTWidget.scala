@@ -8,6 +8,7 @@ import chisel3.core._
 import chisel3.util._
 import DataMirror.directionOf
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.UARTPortIO
 
 class SimUART extends Endpoint {
@@ -16,7 +17,10 @@ class SimUART extends Endpoint {
       directionOf(channel.txd) == ActualDirection.Output
     case _ => false
   }
-  def widget(p: Parameters) = new UARTWidget()(p)
+  def widget(p: Parameters) = {
+    val div = (p(PeripheryBusKey).frequency / 115200).toInt
+    new UARTWidget(div)(p)
+  }
   override def widgetName = "UARTWidget"
 }
 
@@ -25,7 +29,7 @@ class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val dma = None
 }
 
-class UARTWidget(div: Int = 868)(implicit p: Parameters) extends EndpointWidget()(p) {
+class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new UARTWidgetIO)
 
   val txfifo = Module(new Queue(UInt(8.W), 128))

@@ -49,7 +49,7 @@ trait HasGenerator extends GeneratorApp {
   lazy val testDir = new File(names.targetDir)
   // While this is called the HostConfig, it does also include configurations
   // that control what models are instantiated
-  lazy val hostParams = getParameters(hostNames.fullConfigClasses)
+  lazy val hostParams = getParameters(hostNames.fullConfigClasses ++ names.fullConfigClasses)
 }
 
 trait HasTestSuites {
