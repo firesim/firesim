@@ -316,7 +316,7 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
         }
       }
 
-      fprintf(stderr, "done fesbusy got %u\n", fesvr_busy_counter);
+//      fprintf(stderr, "done fesbusy got %u\n", fesvr_busy_counter);
 
 //      if (fesvr_busy_counter > 0) {
 //          step(1, false);
@@ -337,7 +337,7 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
           }
       } while(!_done);
     
-      fprintf(stderr, "done ep loop\n");
+//      fprintf(stderr, "done ep loop\n");
 
       for (auto fesvr: fesvr_vec) { 
         if (delta_sum == step_size || fesvr->busy()) {
@@ -353,7 +353,7 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
           //printf("fesvr_done_counter %d\n", fesvr_done_counter);
           if (fesvr->done()) {return;}
       }
-      print_sim_rate();
+//      print_sim_rate();
     } while ((fesvr_done_counter == 0) && cycles() < loop_end && cycles() <= max_cycles);
 }
 
