@@ -4,21 +4,14 @@ Setting up your Manager Instance
 Launching a "Manager Instance"
 ------------------------------
 
-Now, we need to launch a "Manager Instance" that essentially acts as a
-"head" node that we will actually ``ssh`` or ``mosh`` into to work from.
-We will deploy the heavy lifting to separate ``c4.4xlarge`` and
-``f1`` instances later, this can be a relatively cheap instance. In this guide
-however, we will assume that our manager instance is a ``c4.4xlarge`` instance,
-running the AWS FPGA Developer AMI (the specific version listed below). The
-instructions below will guide you through the process of getting this instance
-up and running.
+Now, we need to launch a "Manager Instance" that acts as a
+"head" node that we will ``ssh`` or ``mosh`` into to work from.
+Since we will deploy the heavy lifting to separate ``c4.4xlarge`` and
+``f1`` instances later, the Manager Instance can be a relatively cheap instance. In this guide, however,
+we will use a ``c4.4xlarge``,
+running the AWS FPGA Developer AMI (be sure to subscribe if you have not done so. See :ref:`ami-subscription`).
 
-First, we need to subscribe to the Amazon FPGA Developer AMI (which is free).
-To do so, make sure you are logged into your AWS account, then visit: https://aws.amazon.com/marketplace/pp/B06VVYBLZZ/
-
-On this page, click "Continue to Subscribe" and then "Accept Terms" on the following page.
-
-Next, head to the `EC2 Management
+Head to the `EC2 Management
 Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
 right corner, ensure that the correct region is selected.
 
@@ -53,7 +46,7 @@ To launch a manager instance, follow these steps:
 
 5. On the next page ("Add Storage"), increase the size of the root EBS
    volume to ~300GB. The default of 150GB can quickly become tight as
-   you have large Vivado reports/outputs, large waveforms, XSim outputs,
+   you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
    and large root filesystems for simulations. You can get rid of the
    small (5GB) secondary volume that is added by default.
 6. You can skip the "Add Tags" page, unless you want tags.
@@ -83,13 +76,13 @@ In either case, ``ssh`` into your instance and wait until the
     machine launch script started
     machine launch script completed!
 
-Once this line appears, you should exit and re-``ssh`` into the system. If you want
+Once this line appears, exit and re-``ssh`` into the system. If you want
 to use ``mosh``, ``mosh`` back into the system.
 
 Key Setup, Part 2
 ~~~~~~~~~~~~~~~~~
 
-Now that our manager instance is started, copy the key that you
+Now that our manager instance is started, copy the private key that you
 downloaded from AWS earlier (``firesim.pem``) to ``~/firesim.pem`` on
 your manager instance. This step is required to give the manager access
 to the instances it launches for you.
@@ -97,11 +90,7 @@ to the instances it launches for you.
 Setting up the FireSim Repo
 ---------------------------
 
-Since FireSim is not yet public, you must setup another set of ``ssh``
-keys to use with your GitHub account with ``ssh-keygen``. Make sure you
-**DO NOT overwrite** ``~/firesim.pem``. ``ssh-keygen`` will put the new
-key it generates in ``~/.ssh/id_rsa[.pub]``, which is fine. Once you
-have done that, run:
+We're finally ready to fetch FireSim's sources. Run:
 
 ::
 
@@ -145,4 +134,4 @@ send email notifications upon FPGA build completion and optionally for
 workload completion. You can leave this blank if you do not wish to receive any
 notifications, but this is not recommended.
 
-Hit Next to continue to the next page.
+Now you're ready to launch FireSim simulations! Hit Next to learn how to run single-node simulations.

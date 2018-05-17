@@ -64,13 +64,22 @@ Background/Terminology
 -  **Run Farm**: These are F1 (and M4) instances that the manager
    automatically launches and deploys simulations onto.
 
+To disambiguate between the computers being simulated and the computers doing the simulating, we define:
+
+-  **Target**: The design and environment under simulation. Generally, a
+   network of one or more multi-core RISC-V microprocessors.
+-  **Host**: The computers executing the FireSim simulation -- the Run Farm.
+
+We frequently prefix words with these terms. For example, software can run
+on the simulated RISCV system (*target*-software) or on a host x86 machine (*host*-software).
+
 Using FireSim/The FireSim Workflow
 -------------------------------------
 
 The tutorials that follow this page will guide you through the complete flow for
 getting an example FireSim simulation up and running. At the end of this
 tutorial, you'll have a simulation that simulates a single quad-core Rocket
-Chip-based node with a 4 MB LLC, 16 GB DDR3, and no NIC. After this, you'll
+Chip-based node with a 4 MB last level cache, 16 GB DDR3, and no NIC. After this, you'll
 have the option to continue on to a tutorial that describes how to simulate
 many of these single-node simulations in parallel or how to simulate
 a globally-cycle-accurate cluster-scale FireSim simulation. Here's a high-level
@@ -85,15 +94,15 @@ outline of what we'll be doing:
        This sets up the appropriate VPCs/subnets/security groups required to
        run FireSim.
     c. Setting up a "Manager Instance" from which you will coordinate
-       building/deploying simulations.
+       building and deploying simulations.
 
 2. Single-node simulation tutorial
 
     a. Building a FireSim AFI: Running a build process that goes from Chisel -> Verilog and then
-       Verilog -> AFI/AGFI (FPGA Image). This process automatically creates "Build Farm" instances,
-       runs builds on them, and terminates them when AGFI completion is
-       completed. All Vivado reports/outputs are copied onto your Manager
-       Instance before they are terminated.
+       Verilog -> AFI/AGFI (Amazon's FPGA Image). This process automatically creates "Build Farm" instances,
+       runs builds on them, and terminates them once the AGFIs has been generated.
+       All Vivado reports/outputs are copied onto your Manager
+       Instance before Build Farm instances are terminated.
     b. Launching instances for an FPGA "Run Farm" consisting of ``f1.2xlarge``,
        ``f1.16xlarge``, and ``m4.16xlarge`` instances.
     c. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
