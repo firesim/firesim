@@ -3,7 +3,7 @@ Configuring Required Infrastructure in Your AWS Account
 
 Once we have an AWS Account setup, we need to perform some advance setup
 of resources on AWS. You will need to follow these steps even if you
-already had an AWS account, these are FireSim-specific.
+already had an AWS account as these are FireSim-specific.
 
 Select a region
 ~~~~~~~~~~~~~~~
@@ -56,7 +56,7 @@ your local machine, we will spin up a very cheap ``t2.nano`` instance to
 run a series of one-time aws configuration commands to setup our AWS
 account for FireSim. At the end of these instructions, we'll terminate
 the ``t2.nano`` instance. If you happen to already have ``boto3`` and
-the AWS CLI installed on your local machine, you can use that instead.
+the AWS CLI installed on your local machine, you can do this locally.
 
 Launch a ``t2.nano`` by following these instructions:
 
@@ -82,7 +82,7 @@ SSH into the ``t2.nano`` like so:
 
     ssh -i firesim.pem ec2-user@INSTANCE_PUBLIC_IP
 
-Which should present you with:
+Which should present you with something like:
 
 ::
 
@@ -126,6 +126,8 @@ Terminate the t2.nano
 At this point, we are finished with the general account configuration.
 You should terminate the t2.nano instance you created, since we do not
 need it anymore (and it shouldn't contain any important data).
+
+.. _ami-subscription:
 
 Subscribe to the AWS FPGA Developer AMI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
