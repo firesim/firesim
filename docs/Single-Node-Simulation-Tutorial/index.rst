@@ -10,7 +10,6 @@ SPECint in parallel on many simulators.
    :maxdepth: 2
    :caption: Single-Node Simulation Tutorial:
 
-   Building-a-FireSim-AFI
    Setting-up-an-FPGA-Run-Farm
    Deploying-simulations
 
