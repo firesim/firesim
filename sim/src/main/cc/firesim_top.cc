@@ -318,15 +318,15 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
 
       fprintf(stderr, "done fesbusy got %u\n", fesvr_busy_counter);
 
-      if (fesvr_busy_counter > 0) {
-          step(1, false);
-          delta_sum += 1;
-          if (--delta == 0) delta = (cycles() + GET_DELTA < loop_end) ? GET_DELTA : loop_end - cycles() ;
-      } else {
+//      if (fesvr_busy_counter > 0) {
+//          step(1, false);
+//          delta_sum += 1;
+//          if (--delta == 0) delta = (cycles() + GET_DELTA < loop_end) ? GET_DELTA : loop_end - cycles() ;
+//      } else {
           step(delta, false);
           delta_sum += delta;
           delta = (cycles() + GET_DELTA < loop_end) ? GET_DELTA : loop_end - cycles() ;
-      }
+//      }
 
       bool _done;
       do {
