@@ -73,8 +73,10 @@ tutorial, you'll have a simulation that simulates a single quad-core Rocket
 Chip-based node with a 4 MB LLC, 16 GB DDR3, and no NIC. After this, you'll
 have the option to continue on to a tutorial that describes how to simulate
 many of these single-node simulations in parallel or how to simulate
-a globally-cycle-accurate cluster-scale FireSim simulation. Here's a high-level
-outline of what we'll be doing:
+a globally-cycle-accurate cluster-scale FireSim simulation. The final tutorial
+will show you how to build your own FPGA images with customized hardware. 
+
+Here's a high-level outline of what we'll be doing:
 
 1. Initial Setup/Installation
 
@@ -87,19 +89,28 @@ outline of what we'll be doing:
     c. Setting up a "Manager Instance" from which you will coordinate
        building/deploying simulations.
 
-2. Single-node simulation tutorial
+2. Single-node simulation tutorial: This tutorial guides you through the process of running one simulation on a single ``f1.2xlarge``, using our pre-built public FireSim AGFIs.
+
+    a. Launching instances for an FPGA "Run Farm" consisting of ``f1.2xlarge`` instances.
+    b. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
+
+3. Cluster simulation tutorial: This tutorial guides you through the process of running 16 networked simulations on 2 ``f1.16xlarge``\s and one ``m4.16xlarge``, using our pre-built public FireSim AGFIs.
+
+    a. Launching instances for an FPGA "Run Farm" consisting of
+       ``f1.16xlarge`` and ``m4.16xlarge`` instances.
+    b. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
+
+4. Building your own hardware designs tutorial (Chisel -> FPGA Image)
 
     a. Building a FireSim AFI: Running a build process that goes from Chisel -> Verilog and then
        Verilog -> AFI/AGFI (FPGA Image). This process automatically creates "Build Farm" instances,
        runs builds on them, and terminates them when AGFI completion is
        completed. All Vivado reports/outputs are copied onto your Manager
        Instance before they are terminated.
-    b. Launching instances for an FPGA "Run Farm" consisting of ``f1.2xlarge``,
-       ``f1.16xlarge``, and ``m4.16xlarge`` instances.
-    c. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
 
 
 Generally speaking, you only need to follow step 4 if you're modifying
 Chisel RTL or changing non-runtime configurable hardware parameters. If
-someone has given you a prebuilt AFI/AGFI, you can skip the instructions
-for step 4.
+someone has given you a prebuilt AFI/AGFI.
+
+Now, hit next to proceed with setup.
