@@ -2,7 +2,8 @@ ISCA 2018 Experiments
 ================================
 
 This page contains descriptions of the experiments in our `ISCA 2018 paper
-<#comingsoon>`__ and instructions for reproducing them on your own simulations.
+<https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__ and instructions for
+reproducing them on your own simulations.
 
 TODO: a paragraph here about config
 

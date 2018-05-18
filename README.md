@@ -10,13 +10,14 @@ site: https://docs.fires.im/
 You can learn more about FireSim in the following places:
 
 * FireSim website: https://fires.im
-* FireSim ISCA 2018 Paper: [Coming soon](#)
+* FireSim ISCA 2018 Paper: [Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)
 * FireSim documentation: https://docs.fires.im
 
 ## Need help?
 
 * Join the FireSim Mailing list: https://groups.google.com/forum/#!forum/firesim
 * Post an issue on this repo
+* Follow on Twitter for project updates: [@firesimproject](https://twitter.com/firesimproject)
 
 ## Contributing
 
@@ -34,4 +35,4 @@ Asanović. **FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation i
 the Public Cloud**. *To appear, In proceedings of the 45th International Symposium
 on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 
-[PDF coming soon](#)
+[Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)

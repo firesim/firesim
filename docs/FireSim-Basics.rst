@@ -18,7 +18,7 @@ automation/tooling, FireSim drastically simplifies the process of building and
 deploying large-scale FPGA-based hardware simulations.
 
 To learn more, see the `FireSim website <https://fires.im>`__ and the FireSim
-`ISCA 2018 paper <#comingsoon>`__.
+`ISCA 2018 paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
 Two common use cases:
 --------------------------
