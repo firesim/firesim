@@ -25,11 +25,11 @@ class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val dma = None
 }
 
-class UARTWidget(div: Int = 868)(implicit p: Parameters) extends EndpointWidget()(p) {
+class UARTWidget(div: Int = 27777)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new UARTWidgetIO)
 
-  val txfifo = Module(new Queue(UInt(8.W), 128))
-  val rxfifo = Module(new Queue(UInt(8.W), 128))
+  val txfifo = Module(new Queue(UInt(8.W), 512))
+  val rxfifo = Module(new Queue(UInt(8.W), 512))
 
   val target = io.hPort.hBits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
