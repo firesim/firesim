@@ -11,7 +11,16 @@ You can learn more about FireSim in the following places:
 
 * FireSim website: https://fires.im
 * FireSim ISCA 2018 Paper: [Coming soon](#)
-* FireSIm documentation: https://docs.fires.im
+* FireSim documentation: https://docs.fires.im
+
+## Need help?
+
+* Join the FireSim Mailing list: https://groups.google.com/forum/#!forum/firesim
+* Post an issue on this repo
+
+## Contributing
+
+* See CONTRIBUTING.md
 
 ## ISCA 2018 Paper
 

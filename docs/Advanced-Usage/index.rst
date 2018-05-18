@@ -15,3 +15,4 @@ Advanced Usage
    AGFI-Tagging.rst
    Miscellaneous-Tips.rst
    Booting-Fedora.rst
+   GUI-Setup.rst

@@ -20,13 +20,14 @@ AWS Credit at Berkeley
 If you're an internal user at Berkeley and affiliated with UCB-BAR or the RISE
 Lab, see the `RISE Lab Wiki
 <https://rise.cs.berkeley.edu/wiki/resources/aws>`__  for instructions on
-getting access to the AWS credit pool. See the next section about getting
-access to the research credit pool. Otherwise, skip to the following section.
+getting access to the AWS credit pool. Otherwise, skip to the following section.
+
+.. _limitincrease:
 
 Requesting Limit Increases
 --------------------------
 
-New AWS accounts generally do not have access to EC2 F1 instances by
+In our experience, new AWS accounts do not have access to EC2 F1 instances by
 default. In order to get access, you should file a limit increase
 request.
 
@@ -57,14 +58,14 @@ Request 2:
 This allows you to run 1 or 4 nodes on the ``f1.2xlarge`` or 8 or 32
 nodes on the ``f1.16xlarge``.
 
-For the "Use Case Description", you should write something about
-hardware simulation and mention that information about the tool you're
-using can be found at:
-https://aws.amazon.com/blogs/compute/bringing-datacenter-scale-hardware-software-co-design-to-the-cloud-with-firesim-and-amazon-ec2-f1-instances/.
+For the "Use Case Description", you should describe your project and write
+something about hardware simulation and mention that information about the tool
+you're using can be found at: https://fires.im
 
 This process has a human in the loop, so you should submit it ASAP. At
-this point, you should wait for the response to this request, as well as
-the email stating that your account has been added to the RISE billing
-pool, if you're a Berkeley user.
+this point, you should wait for the response to this request.
+
+If you're at Berkeley/UCB-Bar, you also need to wait until your account has
+been added to the RISE billing pool.
 
 Hit Next below to continue.

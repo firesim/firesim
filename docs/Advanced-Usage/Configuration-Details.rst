@@ -137,25 +137,6 @@ hardware configuration from ``config_hwdb.ini``, NOT the actual agfi itself
 (NOT something like ``agfi-XYZ...``).
 
 
-
-``defaultserver`` ---------- FROM MASTER TODODOD
-"""""""""""""""""""""""""""""
-
-This sets the server configuration launched by default in the above topologies.
-Heterogeneous configurations can be achieved by manually specifying different
-names within the topology itself, but all the ``example_Nconfig`` configurations
-are homogeneous and use this value for all nodes.
-
-You should set this to one of the AGFIs you have defined already in
-``config_agfidb.ini``.  You should set this to the NAME (left hand side) of the
-AGFI from ``config_agfidb.ini``, NOT the actual agfi itself (NOT something like
-``agfi-XYZ...``).
-
-
-
-
-
-
 ``[workload]``
 ^^^^^^^^^^^^^^^^^^^
 
@@ -396,7 +377,7 @@ to the relative name of the config. For example,
 
 
 Add more hardware config sections, like ``[NAME_GOES_HERE_2]``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add as many of these entries to ``config_hwdb.ini`` as you want, following the format
 discussed above (i.e. you provide ``agfi``, ``deploytripletoverride``, or ``customruntimeconfig``).

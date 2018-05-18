@@ -14,11 +14,16 @@ object PlusArgReaderPass extends firrtl.passes.Pass {
   def run(c: Circuit): Circuit = {
     c.copy(modules = c.modules map {
       case m: Module => m
-      case m: ExtModule if m.defname == "plusarg_reader" =>
+      case m: ExtModule if m.defname == "plusarg_reader" => {
+        val default = m.params.find(_.name == "DEFAULT")
+                              .map(_.asInstanceOf[IntParam].value)
+                              .getOrElse(BigInt(0))
+        val literal = UIntLiteral(default, IntWidth(32))
         Module(m.info, m.name, m.ports, Block(Seq(
           // IsInvalid(NoInfo, WRef("out"))
-          Connect(NoInfo, WRef("out"), zero)
+          Connect(NoInfo, WRef("out"), literal)
         )))
+      }
       case m: ExtModule => m
     })
   }

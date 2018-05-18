@@ -1,4 +1,4 @@
-Single Node Simulation Tutorial
+Running a Single Node Simulation
 ================================
 
 This guide will walk you through simulating a single-node, non-networked target.
@@ -9,9 +9,7 @@ SPECint in parallel on many simulators.
 .. toctree::
    :maxdepth: 2
    :caption: Single-Node Simulation Tutorial:
-   :numbered:
 
-   Building-a-FireSim-AFI
    Setting-up-an-FPGA-Run-Farm
    Deploying-simulations
 
