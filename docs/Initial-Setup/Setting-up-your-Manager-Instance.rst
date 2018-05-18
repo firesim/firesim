@@ -109,7 +109,11 @@ Next, run:
 
 This will have initialized the AWS shell, added the RISC-V tools to your
 path, and started an ``ssh-agent`` that supplies ``~/firesim.pem``
-automatically when you use ``ssh`` to access other nodes.
+automatically when you use ``ssh`` to access other nodes. Sourcing this the
+first time will take some time -- however each time after that should be instantaneous.
+
+**Every time you login to your manager instance to use FireSim, you should ``cd`` into
+your firesim directory and source this file again.**
 
 
 Completing Setup Using the Manager
