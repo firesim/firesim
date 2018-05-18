@@ -1,3 +1,5 @@
+.. _firesim-basics:
+
 FireSim Basics
 ===================================
 

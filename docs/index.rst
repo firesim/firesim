@@ -6,6 +6,8 @@
 Welcome to FireSim's documentation!
 ===================================
 
+New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
+
 .. toctree::
    :maxdepth: 3
    :caption: Getting Started:
@@ -25,7 +27,6 @@ Welcome to FireSim's documentation!
    Developing-New-Devices/index
    ISCA-2018-Experiments/index
 
- 
 Indices and tables
 ==================
 
