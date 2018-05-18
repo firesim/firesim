@@ -20,7 +20,9 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 })
 
 class WithUARTKey extends Config((site, here, up) => {
-   case PeripheryUARTKey => List(UARTParams(address = BigInt(0x54000000L)))
+   case PeripheryUARTKey => List(UARTParams(
+     address = BigInt(0x54000000L),
+     initBaudRate = BigInt(3686400L)))
 })
 
 class WithNICKey extends Config((site, here, up) => {

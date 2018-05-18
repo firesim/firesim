@@ -9,7 +9,7 @@ import chisel3.util._
 import DataMirror.directionOf
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.uart.UARTPortIO
+import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
 class SimUART extends Endpoint {
   def matchType(data: Data) = data match {
@@ -18,7 +18,9 @@ class SimUART extends Endpoint {
     case _ => false
   }
   def widget(p: Parameters) = {
-    val div = (p(PeripheryBusKey).frequency / 115200).toInt
+    val frequency = p(PeripheryBusKey).frequency
+    val baudrate = p(PeripheryUARTKey).head.initBaudRate
+    val div = (p(PeripheryBusKey).frequency / baudrate).toInt
     new UARTWidget(div)(p)
   }
   override def widgetName = "UARTWidget"
