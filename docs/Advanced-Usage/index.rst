@@ -8,6 +8,7 @@ Advanced Usage
    Configuration-Details
    Running-Custom-Workloads
    Defining-Custom-Workloads
+   RTL-Simulation
    Verilator-and-VCS-Simulation
    XSim-Simulation
    Network-Parameter-Topology-Modification
