@@ -12,6 +12,7 @@ You can learn more about FireSim in the following places:
 * FireSim website: https://fires.im
 * FireSim ISCA 2018 Paper: [Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)
 * FireSim documentation: https://docs.fires.im
+* Two-minute lightning talk from ISCA 2018 (FireSim simulating a datacenter): [YouTube](https://www.youtube.com/watch?v=4XwoSe5c8lY)
 
 ## Need help?
 

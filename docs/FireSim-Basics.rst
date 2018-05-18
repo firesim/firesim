@@ -20,6 +20,9 @@ deploying large-scale FPGA-based hardware simulations.
 To learn more, see the `FireSim website <https://fires.im>`__ and the FireSim
 `ISCA 2018 paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
+For a two-minute overview that describes how FireSim simulates a datacenter,
+see our ISCA 2018 lightning talk `on YouTube <https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
+
 Two common use cases:
 --------------------------
 
@@ -40,7 +43,10 @@ In this mode, FireSim also models a cycle-accurate network with
 parameterizeable bandwidth and link latency, as well as configurable
 topology, to accurately model current and future datacenter-scale
 systems. For example, FireSim has been used to simulate 1024 quad-core
-Rocket Chip-based nodes, interconnected by a 200 Gbps, 2us network.
+Rocket Chip-based nodes, interconnected by a 200 Gbps, 2us network. To learn
+more about this use case, see our `ISCA 2018 paper
+<https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__ or `two-minute lightning talk
+<https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
 
 Background/Terminology
 ---------------------------
