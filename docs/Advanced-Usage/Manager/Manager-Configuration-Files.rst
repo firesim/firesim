@@ -1,4 +1,4 @@
-Configuration Details
+Manager Configuration Files
 ========================
 
 This page contains a centralized reference for all of the configuration options
