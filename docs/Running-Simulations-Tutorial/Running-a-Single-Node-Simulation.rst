@@ -1,5 +1,5 @@
-Running a Single Node FireSim Simulation
-===============================
+Running a Single Node Simulation
+===================================
 
 Now that we've completed the setup of our manager instance, it's time to run
 a simulation! In this section, we will simulate **1 target node**, for which we
