@@ -1,0 +1,42 @@
+usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
+               [-r BUILDRECIPESCONFIGFILE] [-a HWDBCONFIGFILE]
+               [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
+               [-g TERMINATESOMEF12] [-m TERMINATESOMEM416] [-q]
+               
+               {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+
+FireSim Simulation Manager.
+
+positional arguments:
+  {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+                        Management task to run.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c RUNTIMECONFIGFILE, --runtimeconfigfile RUNTIMECONFIGFILE
+                        Optional custom runtime/workload config file. Defaults
+                        to config_runtime.ini.
+  -b BUILDCONFIGFILE, --buildconfigfile BUILDCONFIGFILE
+                        Optional custom build config file. Defaults to
+                        config_build.ini.
+  -r BUILDRECIPESCONFIGFILE, --buildrecipesconfigfile BUILDRECIPESCONFIGFILE
+                        Optional custom build recipe config file. Defaults to
+                        config_build_recipes.ini.
+  -a HWDBCONFIGFILE, --hwdbconfigfile HWDBCONFIGFILE
+                        Optional custom HW database config file. Defaults to
+                        config_hwdb.ini.
+  -x OVERRIDECONFIGDATA, --overrideconfigdata OVERRIDECONFIGDATA
+                        Override a single value from one of the the RUNTIME
+                        e.g.: --overrideconfigdata "targetconfig linklatency
+                        6405".
+  -f TERMINATESOMEF116, --terminatesomef116 TERMINATESOMEF116
+                        Only used by terminatesome. Terminates this many of
+                        the previously launched f1.16xlarges.
+  -g TERMINATESOMEF12, --terminatesomef12 TERMINATESOMEF12
+                        Only used by terminatesome. Terminates this many of
+                        the previously launched f1.2xlarges.
+  -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
+                        Only used by terminatesome. Terminates this many of
+                        the previously launched m4.16xlarges.
+  -q, --forceterminate  For terminaterunfarm, force termination without
+                        prompting user for confirmation. Defaults to False
