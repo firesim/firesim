@@ -27,11 +27,11 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/RTL-Simulation
    Advanced-Usage/Verilator-and-VCS-Simulation
    Advanced-Usage/XSim-Simulation
+   Developing-New-Devices/index
    Advanced-Usage/Network-Parameter-Topology-Modification
+   Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/GUI-Setup.rst
-   Advanced-Usage/Supernode.rst
-   Developing-New-Devices/index
 
 Indices and tables
 ==================
