@@ -59,6 +59,10 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 	#firesim-quadcore-nic-ddr3-llc4mb
 	#firesim-quadcore-no-nic-ddr3-llc4mb
 
+
+Running a Build
+----------------------
+
 Now, we can run a build like so:
 
 ::
@@ -66,7 +70,8 @@ Now, we can run a build like so:
     firesim buildafi
 
 This will run through the entire build process, taking the Chisel RTL
-and producing an AFI/AGFI that runs on the FPGA. When the build
+and producing an AFI/AGFI that runs on the FPGA. This whole process will
+usually take a few hours. When the build
 completes, you will see a directory in
 ``deploy/results-build/``, named after your build parameter
 settings, that contains AGFI information (the ``AGFI_INFO`` file) and
