@@ -11,7 +11,6 @@ SPECInt2017-ref in parallel on many simulators.
    :maxdepth: 2
    :caption: Single-Node Simulation Tutorial:
 
-   Setting-up-an-FPGA-Run-Farm
    Deploying-simulations
 
 
