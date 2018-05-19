@@ -1,5 +1,5 @@
 Manager Configuration Files
-========================
+===============================
 
 This page contains a centralized reference for all of the configuration options
 in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,  and ``config_hwdb.ini``.
