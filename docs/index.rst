@@ -23,8 +23,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    :caption: Advanced Docs:
 
    Advanced-Usage/Manager/index
-   Advanced-Usage/Running-Custom-Workloads
-   Advanced-Usage/Defining-Custom-Workloads
+   Advanced-Usage/Workloads/index
    Advanced-Usage/RTL-Simulation
    Advanced-Usage/Verilator-and-VCS-Simulation
    Advanced-Usage/XSim-Simulation
@@ -32,12 +31,10 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Adding-Devices
    Advanced-Usage/AGFI-Tagging.rst
    Advanced-Usage/Miscellaneous-Tips.rst
-   Advanced-Usage/Booting-Fedora.rst
    Advanced-Usage/GUI-Setup.rst
 
 
    Developing-New-Devices/index
-   ISCA-2018-Experiments/index
 
 Indices and tables
 ==================
