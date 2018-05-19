@@ -5,4 +5,4 @@
 set -e
 set -o pipefail
 
-bash build-setup-nolog.sh $@ | tee build-setup-log
+bash build-setup-nolog.sh $@ 2>&1 | tee build-setup-log
