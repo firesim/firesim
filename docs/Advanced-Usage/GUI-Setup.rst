@@ -1,4 +1,4 @@
-GUI Setup
+FPGA Dev AMI Remote Desktop Setup
 ===========================
 
 To Remote Desktop into your manager instance, you must do the following:
