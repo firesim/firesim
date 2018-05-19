@@ -245,8 +245,8 @@ write:
 ::
 
     [builds]
-	awesome-firesim-config
-	quad-core-awesome-firesim-config
+    awesome-firesim-config
+    quad-core-awesome-firesim-config
 
 
 ``[agfistoshare]``
@@ -259,18 +259,18 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-	[firesim-quadcore-nic-ddr3-llc4mb]
-	# this is a comment that describes my favorite configuration!
-	agfi=agfi-0a6449b5894e96e53
-	deploytripletoverride=None
-	customruntimeconfig=None
+    [firesim-quadcore-nic-ddr3-llc4mb]
+    # this is a comment that describes my favorite configuration!
+    agfi=agfi-0a6449b5894e96e53
+    deploytripletoverride=None
+    customruntimeconfig=None
 
 you would use:
 
 ::
 
-	[agfistoshare]
-	firesim-quadcore-nic-ddr3-llc4mb
+    [agfistoshare]
+    firesim-quadcore-nic-ddr3-llc4mb
 
 
 ``[sharewithaccounts]``
@@ -361,11 +361,11 @@ these as necessary:
 
 ::
 
-	[firesim-quadcore-nic-ddr3-llc4mb]
-	# this is a comment that describes my favorite configuration!
-	agfi=agfi-0a6449b5894e96e53
-	deploytripletoverride=None
-	customruntimeconfig=None
+    [firesim-quadcore-nic-ddr3-llc4mb]
+    # this is a comment that describes my favorite configuration!
+    agfi=agfi-0a6449b5894e96e53
+    deploytripletoverride=None
+    customruntimeconfig=None
 
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
