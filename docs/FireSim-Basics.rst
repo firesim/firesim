@@ -68,28 +68,41 @@ Background/Terminology
 
    FireSim Infrastructure Diagram
 
--  **FireSim Manager**: This program (located in ``firesim/deploy/``,
-   called ``firesim``) automates the work required to launch FPGA builds
-   and run simulations. Most users will only have to interact with the
-   manager most of the time.
--  **Manager Instance**: This is the machine on AWS that you will
-   SSH-into. It only needs to be powerful enough to run Chisel
-   builds/target software builds.
--  **Build Farm**: These are instances that are elastically
-   started/terminated by the FireSim manager when you run FPGA builds.
-   The manager will automatically ship builds to these instances and run
-   the Verilog -> FPGA Image process on them.
--  **Run Farm**: These are F1 (and M4) instances that the manager
-   automatically launches and deploys simulations onto.
+**FireSim Manager** (``firesim``)
+  This program (available on your path as ``firesim``
+  once we source necessary scripts) automates the work required to launch FPGA
+  builds and run simulations. Most users will only have to interact with the
+  manager most of the time. If you're familiar with tools like Vagrant or Docker, the ``firesim``
+  command is just like the ``vagrant`` and ``docker`` commands, but for FPGA simulators
+  instead of VMs/containers.
 
-To disambiguate between the computers being simulated and the computers doing the simulating, we define:
+**Manager Instance** 
+  This is the machine on AWS that you will
+  SSH-into. It only needs to be powerful enough to run Chisel
+  builds/target software builds.
 
--  **Target**: The design and environment under simulation. Generally, a
-   network of one or more multi-core RISC-V microprocessors.
--  **Host**: The computers executing the FireSim simulation -- the Run Farm.
+**Build Farm**
+  These are instances that are elastically
+  started/terminated by the FireSim manager when you run FPGA builds.
+  The manager will automatically ship source for builds to these instances and
+  run the Verilog -> FPGA Image process on them.
+
+**Run Farm** 
+  These are F1 (and M4) instances that the manager
+  automatically launches and deploys simulations onto.
+
+To disambiguate between the computers being simulated and the computers doing
+the simulating, we define:
+
+**Target** 
+  The design and environment under simulation. Generally, a
+  group of one or more multi-core RISC-V microprocessors with or without a network between them.
+
+**Host**
+  The computers executing the FireSim simulation -- the **Run Farm** from above.
 
 We frequently prefix words with these terms. For example, software can run
-on the simulated RISCV system (*target*-software) or on a host x86 machine (*host*-software).
+on the simulated RISC-V system (*target*-software) or on a host x86 machine (*host*-software).
 
 Using FireSim/The FireSim Workflow
 -------------------------------------
@@ -101,39 +114,41 @@ Chip-based node with a 4 MB last level cache, 16 GB DDR3, and no NIC. After this
 have the option to continue on to a tutorial that describes how to simulate
 many of these single-node simulations in parallel or how to simulate
 a globally-cycle-accurate cluster-scale FireSim simulation. The final tutorial
-will show you how to build your own FPGA images with customized hardware. 
+will show you how to build your own FPGA images with customized hardware.
 
 Here's a high-level outline of what we'll be doing:
 
-1. Initial Setup/Installation
+#. **Initial Setup/Installation**
 
-    a. First-time AWS User Setup
-       You can skip this if you already have an AWS account/payment method
-       set up.
-    b. Configuring required AWS resources in your account: 
-       This sets up the appropriate VPCs/subnets/security groups required to
-       run FireSim.
-    c. Setting up a "Manager Instance" from which you will coordinate
-       building and deploying simulations.
+   a. First-time AWS User Setup: You can skip this if you already have an AWS
+      account/payment method set up.
 
-2. Single-node simulation tutorial: This tutorial guides you through the process of running one simulation on a single ``f1.2xlarge``, using our pre-built public FireSim AGFIs.
+   #. Configuring required AWS resources in your account: This sets up the
+      appropriate VPCs/subnets/security groups required to run FireSim.
 
-    a. Launching instances for an FPGA "Run Farm" consisting of ``f1.2xlarge`` instances.
-    b. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
+   #. Setting up a "Manager Instance" from which you will coordinate building
+      and deploying simulations.
 
-3. Cluster simulation tutorial: This tutorial guides you through the process of running 16 networked simulations on 2 ``f1.16xlarge``\s and one ``m4.16xlarge``, using our pre-built public FireSim AGFIs.
+#. **Single-node simulation tutorial**: This tutorial guides you through the process of running one simulation on a single ``f1.2xlarge``, using our pre-built public FireSim AGFIs.
 
-    a. Launching instances for an FPGA "Run Farm" consisting of
-       ``f1.16xlarge`` and ``m4.16xlarge`` instances.
-    b. Deploying simulations on your "Run Farm" once you have an AFI/AGFI.
+   a. Launching an FPGA "Run Farm" consisting of one ``f1.2xlarge`` instance
+      and deploying a simulation on your "Run Farm" using a pre-built FPGA-image
+      that we provide.
 
-4. Building your own hardware designs tutorial (Chisel -> FPGA Image)
+#. **Cluster simulation tutorial**: This tutorial guides you through the process of running 8 networked simulations on 1 ``f1.16xlarge``, using our pre-built public FireSim AGFIs.
 
-    a. Building a FireSim AFI: Running a build process that goes from Chisel -> Verilog and then
-       Verilog -> AFI/AGFI (Amazon's FPGA Image). This process automatically creates "Build Farm" instances,
-       runs builds on them, and terminates them once the AGFIs has been generated.
-       All Vivado reports/outputs are copied onto your Manager
-       Instance before Build Farm instances are terminated.
+   a. Launching an FPGA "Run Farm" consisting of one ``f1.16xlarge`` instance
+      and deploying a simulation on your "Run Farm" using a pre-built FPGA-image
+      that we provide.
+
+#. **Building your own hardware designs tutorial (Chisel to FPGA Image)**
+
+   a. Running a build process that goes from Chisel to
+      Verilog and then Verilog to AFI/AGFI (Amazon FPGA Image). This process
+      automatically creates "Build Farm" instances, runs builds on them, and
+      terminates them once the AGFIs has been generated.  All Vivado
+      reports/outputs are copied onto your Manager Instance before Build Farm
+      instances are terminated.
 
 Generally speaking, you only need to follow step 4 if you're modifying
 Chisel RTL or changing non-runtime configurable hardware parameters.
