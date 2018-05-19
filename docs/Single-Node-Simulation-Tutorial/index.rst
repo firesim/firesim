@@ -1,16 +1,18 @@
-Running a Single Node Simulation
+Running FireSim Simulations
 ================================
 
-This guide will walk you through simulating a single-node, non-networked target,
-using a pre-generated hardware image.
+These guides will walk you through running two kinds of simulations:
 
-After following this guide, you can, for example, move to running workloads like
-SPECInt2017-ref in parallel on many simulators.
+First, we will simulate a single-node, non-networked target, using a pre-generated
+hardware image.
+
+Then we will, simulate an eight-node, networked cluster target, also using
+a pre-generated hardware image.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Single-Node Simulation Tutorial:
+   :caption: Running FireSim Simulations:
 
-   Deploying-simulations
-
+   Running-a-Single-Node-Simulation
+   Running-a-Cluster-Simulation
 

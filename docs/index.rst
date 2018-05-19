@@ -16,7 +16,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    FireSim-Basics
    Initial-Setup/index
    Single-Node-Simulation-Tutorial/index
-   Cluster-Simulation-Tutorial/index
    Building-Your-Own-Hardware-Designs/index
 
 .. toctree::

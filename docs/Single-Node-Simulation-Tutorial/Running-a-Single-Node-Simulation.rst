@@ -1,4 +1,4 @@
-Deploying FireSim Simulations
+Running a Single Node FireSim Simulation
 ===============================
 
 Now that we've completed the setup of our manager instance, it's time to run
