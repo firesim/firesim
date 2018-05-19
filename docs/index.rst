@@ -28,8 +28,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Verilator-and-VCS-Simulation
    Advanced-Usage/XSim-Simulation
    Advanced-Usage/Network-Parameter-Topology-Modification
-   Advanced-Usage/Adding-Devices
-   Advanced-Usage/AGFI-Tagging.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/GUI-Setup.rst
 

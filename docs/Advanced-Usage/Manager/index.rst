@@ -11,5 +11,5 @@ options.
 
    Manager-Configuration-Files
    Manager-Commands
-
+   AGFI-Tagging
 
