@@ -50,6 +50,16 @@ more about this use case, see our `ISCA 2018 paper
 <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__ or `two-minute lightning talk
 <https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
 
+Other Use Cases
+---------------------
+
+This release does not support a non-cycle-accurate network as our `AWS Compute Blog Post/Demo
+<https://aws.amazon.com/blogs/compute/bringing-datacenter-scale-hardware-software-co-design-to-the-cloud-with-firesim-and-amazon-ec2-f1-instances/>`__
+used. This feature will be restored in a future release.
+
+If you have other use-cases that we haven't covered, feel free to contact us!
+
+
 Background/Terminology
 ---------------------------
 
