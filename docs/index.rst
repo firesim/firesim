@@ -30,8 +30,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Network-Parameter-Topology-Modification
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/GUI-Setup.rst
-
-
+   Advanced-Usage/Supernode.rst
    Developing-New-Devices/index
 
 Indices and tables
