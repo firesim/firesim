@@ -529,3 +529,5 @@ responsible for ensuring that your instances are terminated appropriately.**
 
 Congratulations on running a cluster FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left.
+Or, hit next to continue to a tutorial that shows you how to build your own
+custom FPGA images.
