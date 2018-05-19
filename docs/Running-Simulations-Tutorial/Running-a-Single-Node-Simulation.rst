@@ -252,11 +252,21 @@ Finally, let's run our simulation! To do so, run:
 This command boots up a simulation and prints out the live status of the simulated
 nodes every 10s. When you do this, you will initially see output like:
 
-TODO
+::
 
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim runworkload
+	FireSim Manager. Docs: http://docs.fires.im
+	Running: runworkload
 
-If you don't look quickly, you might miss it! After that, you'll get a live
-status page:
+	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	[172.30.2.174] Executing task 'instance_liveness'
+	[172.30.2.174] Checking if host instance is up...
+	[172.30.2.174] Executing task 'boot_simulation_wrapper'
+	[172.30.2.174] Starting FPGA simulation for slot: 0.
+	[172.30.2.174] Executing task 'monitor_jobs_wrapper'
+
+If you don't look quickly, you might miss it, since it will get replaced with a
+live status page:
 
 ::
 
