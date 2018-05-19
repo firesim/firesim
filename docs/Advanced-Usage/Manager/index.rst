@@ -8,6 +8,7 @@ options.
 .. toctree::
    :maxdepth: 2
    :caption: Manager:
+   :numbered:
 
    Manager-Configuration-Files
    Manager-Commands

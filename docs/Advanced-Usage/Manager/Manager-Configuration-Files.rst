@@ -8,6 +8,13 @@ in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,  
 ``config_runtime.ini``
 --------------------------
 
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
+
 ``[runfarm]``
 ^^^^^^^^^^^^^^^^^^^
 
@@ -176,6 +183,14 @@ after the workload has completed and results have been copied off.
 ``config_build.ini``
 --------------------------
 
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
+
+
 ``[afibuild]``
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -270,6 +285,14 @@ just for human readability, only the actual account IDs listed here matter.
 ``config_build_recipes.ini``
 --------------------------------
 
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
+
+
 Build definition sections, e.g. ``[awesome-firesim-config]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -317,6 +340,12 @@ users of the simulator.
 
 ``config_hwdb.ini``
 ---------------------------
+
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+   :code: ini
+
 
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
