@@ -6,7 +6,7 @@ These guides will walk you through running two kinds of simulations:
 First, we will simulate a single-node, non-networked target, using a pre-generated
 hardware image.
 
-Then we will, simulate an eight-node, networked cluster target, also using
+Then, we will simulate an eight-node, networked cluster target, also using
 a pre-generated hardware image.
 
 .. toctree::
