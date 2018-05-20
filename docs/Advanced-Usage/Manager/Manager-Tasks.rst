@@ -189,11 +189,43 @@ the AWS EC2 Management Panel.**
 ``firesim infrasetup``
 -------------------------
 
+Once you have launched a Run Farm and setup all of your configuration options,
+the ``infrasetup`` command will build all components necessary to run the
+simulation and deploy those components to the machines in the Run Farm. Here
+is a rough outline of what the command does:
+
+- Constructs the internal representation of your simulation. This is a tree of
+  components in the simulation (simulated server blades, switches)
+- For each type of server blade, query the AWS AFI API to get the build-triplet
+  needed to construct the software simulation driver, then build each driver
+- For each type of switch in the simulation, generate the switch model binary
+- For each host instance in the Run Farm, collect information about all the
+  resources necessary to run a simulation on that host instance, then copy
+  files and flash FPGAs with the required AGFIs.
+
+Details about setting up your simulation configuration can be found in
+:ref:`config-runtime`.
+
+**Once you run a simulation, you should re-run ``firesim infrasetup`` before
+starting another one, even if it is the same exact simulation on the same Run
+Farm.**
+
+You can see detailed output from an example run of ``infrasetup`` in the
+Single-node and Cluster Simulation tutorials. TODO LINK
 
 .. _firesim-boot:
 
 ``firesim boot``
 -------------------
+
+Once you have run ``firesim infrasetup``, this command will actually start
+simulations. It begins by launching all switches (if they exist in your
+simulation config), then launches all server blade simulations. This simply
+launches simulations and then exits -- it does not perform any monitoring.
+
+This command is useful if you want to launch a simulation, then plan to
+interact with the simulation by-hand (i.e. by directly interacting with the
+console).
 
 
 .. _firesim-kill:
@@ -201,6 +233,10 @@ the AWS EC2 Management Panel.**
 ``firesim kill``
 -------------------
 
+Given a simulation configuration and simulations running on a Run Farm, this
+command force-terminates all components of the simulation. Importantly, this
+does not allow any outstanding changes to the filesystem in the simulated
+systems to be committed to the disk image.
 
 
 .. _firesim-runworkload:
@@ -208,12 +244,52 @@ the AWS EC2 Management Panel.**
 ``firesim runworkload``
 --------------------------
 
+This command is the standard tool that lets you launch simulations, monitor the
+progress of workloads running on them, and collect results automatically when
+the workloads complete. To call this command, you must have first called
+``firesim infrasetup`` to setup all required simulation infrastructure on the
+remote nodes.
 
+This command will first create a directory in ``firesim/deploy/results-workload/``
+named as ``LAUNCH_TIME-WORKLOADNAME``, where results will be completed as simulations
+complete.
+This command will then automatically call ``firesim boot`` to start simulations.
+Then, it polls all the instances in the Run Farm every 10 seconds to determine
+the state of the simulated system. If it notices that a simulation has shutdown
+(i.e. the simulation disappears from the output of ``screen -ls``), it will
+automatically copy back all results from the simulation, as defined in the
+workload configuration (see TODO for details on configuring workloads). 
+
+For
+non-networked simulations, it will wait for ALL simulations to complete (copying
+back results as each workload completes), then exit. 
+
+For
+globally-cycle-accurate networked simulations, the global simulation will stop
+when any single node powers off. Thus, for these simulations, ``runworkload``
+will copy back results from all nodes and force them to terminate by calling
+``kill`` when ANY SINGLE ONE of them shuts down cleanly.
+
+A simulation shuts down cleanly when the workload running on the simulator calls ``poweroff``.
 
 .. _firesim-runcheck:
 
 ``firesim runcheck``
 ----------------------
 
+This command is provided to let you debug configuration options without launching
+instances. In addition to the output produced at command line/in the log, you will
+find a pdf diagram of the topology you specify, annotated with information about
+the workloads, hardware configurations, and abstract host mappings for each
+simulation (and optionally, switch) in your design. These diagrams are located
+in ``firesim/deploy/generated-topology-diagrams/``, named after your topology.
+
+Here is an example of such a diagram (click to expand/zoom):
+
+.. figure:: runcheck_example.png
+   :scale: 50 %
+   :alt: Example diagram from running ``firesim runcheck``
+
+   Example diagram for an 8-node cluster with one ToR switch
 
 
