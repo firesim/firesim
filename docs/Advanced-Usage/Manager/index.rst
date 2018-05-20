@@ -1,9 +1,5 @@
-Manager Details (``firesim``)
-================
-
-This section contains detailed information about manager commands and configuration
-options.
-
+Manager Usage (the ``firesim`` command)
+==========================================
 
 .. toctree::
    :maxdepth: 2
