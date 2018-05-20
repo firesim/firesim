@@ -60,7 +60,8 @@ will exit when all builds are completed (but you will get notified as
 INDIVIDUAL builds complete).
 
 **It is highly recommended that you either run this command in a ``screen`` or use
-``mosh`` to access the build instance. Builds will not finish if you kill the manager.**
+``mosh`` to access the build instance. Builds will not finish if the manager is
+killed due to disconnection to the instance.**
 
 When you run a build for a particular configuration, a directory named
 ``LAUNCHTIME-CONFIG_TRIPLET-BUILD_NAME`` is created in ``firesim/deploy/results-build/``.
