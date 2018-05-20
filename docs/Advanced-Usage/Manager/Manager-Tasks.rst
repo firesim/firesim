@@ -1,18 +1,7 @@
-Manager Commands
+Manager Tasks
 ========================
 
-This page contains a centralized reference for all of the manager commands.
-
-Overview
-----------------
-
-When you source ``sourceme-f1-manager.sh`` in your copy of the firesim repo,
-you get access to a new command, ``firesim``, which is the manager.
-
-The manager provides built-in help output if you run ``firesim --help``
-
-.. include:: HELP_OUTPUT
-   :code: ini
+This page contains a centralized reference for all of the manager tasks.
 
 In the following sections, we outline the individual commands that the manager
 supports.
@@ -23,7 +12,10 @@ supports.
 ``firesim managerinit``
 ----------------------------
 
+This is a setup command that does the following:
 
+* Run ``aws configure``, prompt for credentials
+* Backup existing default config files if the user has them
 
 
 
