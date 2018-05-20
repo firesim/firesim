@@ -74,10 +74,25 @@ This directory will contain:
 - ``cl_firesim_generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
 
 
+.. _firesim-shareagfi:
+
+``firesim shareagfi``
+----------------------
+
+
+
 .. _firesim-launchrunfarm:
 
 ``firesim launchrunfarm``
 ---------------------------
+
+
+
+.. _firesim-terminaterunfarm:
+
+``firesim terminaterunfarm``
+-----------------------------
+
 
 
 
@@ -101,24 +116,11 @@ This directory will contain:
 
 
 
-
-.. _firesim-terminaterunfarm:
-
-``firesim terminaterunfarm``
------------------------------
-
-
-
 .. _firesim-runworkload:
 
 ``firesim runworkload``
 --------------------------
 
-
-.. _firesim-shareagfi:
-
-``firesim shareagfi``
-----------------------
 
 
 .. _firesim-runcheck:
