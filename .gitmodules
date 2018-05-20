@@ -25,3 +25,6 @@
 [submodule "deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release"]
 	path = deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release
 	url = git@github.com:firesim/mutilate-loadgen-riscv-release
+[submodule "deploy/workloads/Speckle"]
+	path = deploy/workloads/Speckle
+	url = git@github.com:ccelio/Speckle.git
