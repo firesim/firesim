@@ -2,8 +2,10 @@ Manager Configuration Files
 ===============================
 
 This page contains a centralized reference for all of the configuration options
-in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,  and ``config_hwdb.ini``.
+in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,
+and ``config_hwdb.ini``.
 
+.. _config-runtime:
 
 ``config_runtime.ini``
 --------------------------
@@ -179,6 +181,7 @@ Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
 
+.. _config-build:
 
 ``config_build.ini``
 --------------------------
@@ -281,6 +284,7 @@ A list of AWS account IDs that you want to share the AGFIs listed in
 should specify names in the form ``usersname=AWSACCTID``. The left-hand-side is
 just for human readability, only the actual account IDs listed here matter.
 
+.. _config-build-recipes:
 
 ``config_build_recipes.ini``
 --------------------------------
@@ -305,13 +309,15 @@ you made up). Such a section must contain the following fields:
 
 This specifies the basic target design that will be built. Unless you
 are defining a custom system, this should either be ``FireSim``, for
-systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC.
+systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
+are defined in ``firesim/sim/src/main/scala/Targets.scala``.
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulation. Some
 examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
+These are defined in ``firesim/sim/src/main/scala/TargetConfigs.scala``.
 
 
 ``PLATFORM_CONFIG``
@@ -319,6 +325,7 @@ examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConf
 
 This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
+These are defined in ``firesim/sim/src/main/scala/SimConfigs.scala``.
 
 ``instancetype``
 """""""""""""""""""
@@ -337,6 +344,7 @@ you should leave this set to ``None``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
 users of the simulator.
 
+.. _config-hwdb:
 
 ``config_hwdb.ini``
 ---------------------------
