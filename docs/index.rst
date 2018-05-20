@@ -8,7 +8,7 @@ Welcome to FireSim's documentation!
 
 
 
-Message: May 20, 2018: THIS IS A STAGING PRE-RELEASE so that we can test that everything is working as intended, not intended for public usage yet. Notably, private submodules are NOT opened yet.
+Message: May 20, 2018: THIS IS A STAGING PRE-RELEASE so that we can test that everything is working as intended, not intended for public usage yet. Notably, private submodules are NOT opened yet. We will make an official announement on May 21st 2018 when everything is ready-to-go.
 ------------------------------------------------------------------------------
 
 
