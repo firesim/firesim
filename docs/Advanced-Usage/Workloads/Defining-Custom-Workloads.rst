@@ -108,6 +108,9 @@ be fixed in a future release.
 Non-uniform Workload JSON (explicit job per simulated node)
 ---------------------------------------------------------------
 
+.. include:: /../deploy/workloads/ping-latency.json
+   :code: json
+
 
 
 
