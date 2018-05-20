@@ -32,8 +32,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Manager/index
    Advanced-Usage/Workloads/index
    Advanced-Usage/RTL-Simulation
-   Advanced-Usage/Verilator-and-VCS-Simulation
-   Advanced-Usage/XSim-Simulation
    Developing-New-Devices/index
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
