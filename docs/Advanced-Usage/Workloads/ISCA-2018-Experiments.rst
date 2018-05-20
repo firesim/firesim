@@ -5,7 +5,13 @@ This page contains descriptions of the experiments in our `ISCA 2018 paper
 <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__ and instructions for
 reproducing them on your own simulations.
 
-TODO: a paragraph here about config
+One important difference between the configuration used in the ISCA
+2018 paper and the open-source release of FireSim is that the ISCA
+paper used a proprietary L2 cache design that is not open-source.
+Instead, the open-source FireSim uses an LLC model that models the
+behavior of having an L2 cache as part of the memory model. Even with
+the LLC model, you should be able to see the same trends in these
+experiments, but exact numbers may vary.
 
 Each section below describes the resources necessary to run the experiment.
 Some of these experiments require a large number of instances -- you should
