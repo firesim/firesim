@@ -6,6 +6,13 @@
 Welcome to FireSim's documentation!
 ===================================
 
+
+
+Message: May 20, 2018: THIS IS A STAGING PRE-RELEASE so that we can test that everything is working as intended, not intended for public usage yet. Notably, private submodules are NOT opened yet.
+------------------------------------------------------------------------------
+
+
+
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
