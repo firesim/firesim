@@ -180,7 +180,7 @@ def aws_build(global_build_config, bypass=False):
     # copy the image to all regions for the current user
     copy_afi_to_all_regions(afi)
 
-    send_firesim_notification("FireSim FPGA Build Completed", "Your AGFI has been created!\nAdd\n[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\nto your config_agfidb.ini to use this hardware configuration.")
+    send_firesim_notification("FireSim FPGA Build Completed", "Your AGFI has been created!\nAdd\n[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\nto your config_hwdb.ini to use this hardware configuration.")
 
     rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
     rootLogger.info("Terminating the build instance now.")
