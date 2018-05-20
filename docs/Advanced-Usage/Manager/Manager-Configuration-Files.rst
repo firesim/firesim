@@ -101,8 +101,9 @@ ToR switches connected by a root switch.
 8 simulated servers (for a total of 64 nodes), with the eight ToR switches
 connected by a root switch.
 
-Additional configurations are available in ``deploy/runtools/clusterconfig.py``
-and more can be added there (search for the functions named ``example_Nconfig``.
+Additional configurations are available in ``deploy/runtools/user_topology.py``
+and more can be added there. See the Network Topology Definitions page TODO
+for more info.
 
 ``no_net_num_nodes``
 """""""""""""""""""""""""""""
