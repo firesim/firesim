@@ -10,7 +10,7 @@ the design/abstraction heirarchy. Ordered from least to most detailed, they are:
 
 - **Target-Level**: This simulates just the RTL of the target-design (Rocket
   Chip). There are no host-level features being simulated. Supported
-  simulators: VCS, Verilator.
+  simulators: VCS, Verilator. This is decribed in :ref:`target-level-simulation` 
 - **MIDAS-Level**: This simulates the target-design after it's been tranformed
   by MIDAS.  The target- and host-clock are decoupled. FPGA-hosted simulation
   models are present.  Abstract models for host-FPGA provided services, like
@@ -26,15 +26,15 @@ Generally, MIDAS-level simulations are only slightly slower than simulating at
 target-RTL. Moving to FPGA-Level is very expensive. This illustrated in the
 chart below.
 
-====== ===== =======  ========= ======
+====== ===== =======  ========= =======
 Level  Waves VCS      Verilator XSIM
-====== ===== =======  ========= ======
+====== ===== =======  ========= =======
 Target Off   4.8 kHz  6.2 kHz   N/A
 Target On    0.8 kHz  4.8 kHz   N/A
 MIDAS  Off   3.8 kHz  2.0 kHz   N/A
 MIDAS  On    2.9 kHz  1.0 kHz   N/A
-FPGA   On    TODO     N/A       TODO
-====== ===== =======  ========= ======
+FPGA   On    2.3  Hz  N/A       0.56 Hz
+====== ===== =======  ========= =======
 
 Notes: Default configurations of a single-core Rocket Chip instance running
 rv64ui-v-add.  Frequencies are given in target-Hz. Presently, the default
