@@ -1,11 +1,7 @@
 Manager Tasks
 ========================
 
-This page contains a centralized reference for all of the manager tasks.
-
-In the following sections, we outline the individual commands that the manager
-supports.
-
+This page outlines all of the tasks that the FireSim manager supports.
 
 .. _firesim-managerinit:
 
@@ -15,8 +11,8 @@ supports.
 This is a setup command that does the following:
 
 * Run ``aws configure``, prompt for credentials
-* Backup existing default config files if the user has them
-
+* Replace the default config files (``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``, and ``config_hwdb.ini``) with clean example versions.
+* Prompt the user for email address and subscribe them to notifications for their own builds.
 
 
 
