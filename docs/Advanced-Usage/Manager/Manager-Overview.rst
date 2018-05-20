@@ -9,14 +9,14 @@ respectively. In essence, ``firesim`` lets us manage the entire lifecycle
 of FPGA simulations, just like ``vagrant`` and ``docker`` do for VMs and
 containers respectively.
 
-"Inputs"
---------------
+"Inputs" to the Manager
+-------------------------
 
 The manager gets configuration information from several places:
 
 - Command Line Arguments, consisting of:
 
-  - Configuration files to use
+  - Paths to configuration files to use
 
   - A task to run
 
@@ -24,7 +24,6 @@ The manager gets configuration information from several places:
 
 - Configuration Files
 
-- ``user_topology.py``
-
+- Topology definitions for networked simulations (``user_topology.py``)
 
 The following sections detail these inputs. Hit Next to continue.
