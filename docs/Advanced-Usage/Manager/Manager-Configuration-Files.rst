@@ -34,7 +34,7 @@ values allows you to run many experiments at once from the same manager instance
 
 The instances launched by the ``launchrunfarm`` command will be tagged with
 this value. All later operations done by the manager rely on this tag, so
-you should not change unless you are done with your current Run Farm.
+you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 

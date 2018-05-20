@@ -79,6 +79,15 @@ This directory will contain:
 ``firesim shareagfi``
 ----------------------
 
+This command allows you to share AGFIs that you have already built (that are
+listed in :ref:`config-hwdb`) with other users. It will take the
+named hardware configurations that you list in the ``[agfistoshare]`` section of
+``config_build.ini``, grab the respective AGFIs for each from
+``config_hwdb.ini``, and share them across all F1 regions with the users listed
+in the ``[sharewithaccounts]`` section of ``config_build.ini``.
+
+You must own the AGFIs in order to do this -- this will NOT let you share AGFIs
+that someone else owns and gave you access to.
 
 
 .. _firesim-launchrunfarm:
@@ -86,15 +95,93 @@ This directory will contain:
 ``firesim launchrunfarm``
 ---------------------------
 
+This command launches a Run Farm on which you run simulations. Run Farms
+consist of ``f1.16xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
+Before you run the command, you define the number of each that you want in
+``config_runtime.ini``.
 
+A launched Run Farm is tagged with a ``runfarmtag`` from
+``config_runtime.ini``, which is used to disambiguate multiple parallel Run
+Farms; that is, you can have many Run Farms running, each running a different
+experiment at the same time, each with its own unique ``runfarmtag``. One
+convenient feature to add to your AWS management panel is the column for
+``fsimcluster``, which contains the ``runfarmtag`` value. You can see how to do
+that here TODO.
+
+The other options in the ``[runfarm]`` section, ``runinstancemarket``,
+``spotinterruptionbehavior``, and ``spotmaxprice`` define *how* instances in
+the Run Farm are launched. See the documentation for ``config_runtime.ini`` for
+more details.
+
+**ERRATA**: One current requirement is that you must define a target config in
+the ``[targetconfig]`` section of ``config_runtime.ini`` that does not require
+more resources than the Run Farm you are trying to launch. Thus, you should
+also setup your ``[targetconfig]`` parameters before trying to launch the
+corresponding Run Farm. This requirement will be removed in the future.
+
+Once you setup your configuration and call ``firesim launchrunfarm``, the command
+will launch the requested numbers and types of instances. If all succeeds, you
+will see the command print out instance IDs for the correct number/types of
+launched instances (you do not need to pay attention to these or record them).
+If an error occurs, it will be printed to console.
+
+**Once you run this command, your Run Farm will continue to run until you call
+``firesim terminaterunfarm``. This means you will be charged for the running
+instances in your Run Farm until you call ``terminaterunfarm``. You are
+responsible for ensuring that instances are only running when you want them to
+be by checking the AWS EC2 Management Panel.**
 
 .. _firesim-terminaterunfarm:
 
 ``firesim terminaterunfarm``
 -----------------------------
 
+This command terminates some or all of the instances in the Run Farm defined
+in your ``config_runtime.ini`` file, depending on the command line arguments
+you supply. By default, running ``firesim terminaterunfarm`` will terminate
+ALL instances with the specified ``runfarmtag``. When you run this command,
+it will prompt for confirmation that you want to terminate the listed instances.
+If you respond in the affirmative, it will move forward with the termination.
+
+If you do not want to have to confirm the termination (e.g. you are using this
+command in a script), you can give the command the ``--forceterminate`` command
+line argument. For example, the following will TERMINATE ALL INSTANCES IN THE
+RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
+
+::
+
+    firesim terminaterunfarm --forceterminate
 
 
+There a few additional commandline arguments that let you terminate only
+some of the instances in a particular Run Farm: ``--terminatesomef116 INT``,
+``--terminatesomef12 INT``, and ``--terminatesomem416 INT``, which will terminate
+ONLY as many of each type of instance as you specify.
+
+Here are some examples:
+
+::
+
+    [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+
+    firesim terminaterunfarm --terminatesomef116 1 --forceterminate
+
+    [ now, we have: 1 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+
+
+::
+
+    [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+
+    firesim terminaterunfarm --terminatesomef116 1 --terminatesomef12 2 --forceterminate
+
+    [ now, we have: 1 f1.16xlarges, 0 f1.2xlarges, 2 m4.16xlarges ]
+
+
+**Once you call ``launchrunfarm``, you will be charged for running instances in
+your Run Farm until you call ``terminaterunfarm``. You are responsible for
+ensuring that instances are only running when you want them to be by checking
+the AWS EC2 Management Panel.**
 
 
 .. _firesim-infrasetup:
