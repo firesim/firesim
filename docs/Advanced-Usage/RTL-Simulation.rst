@@ -154,7 +154,8 @@ To run a simulation you need to make both the DUT and driver targets by typing:
     make xsim-dut <VCS=1> & # Launch the DUT
     make xsim SIM_BINARY=<PATH/TO/BINARY> # Launch the driver
 
-It might take some time but eventually you should see:
+
+Once both processes are running, you should see:
 
 ::
 
@@ -189,4 +190,4 @@ And for VCS:
     <BUILD_DIR>/verif/sim/vcs/test_firesim_c/test_null.vpd
 
 
-When finished, be sure to any lingering processes if you interrupted simulation prematurely.
+When finished, be sure to kill any lingering processes if you interrupted simulation prematurely.
