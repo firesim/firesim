@@ -1,30 +1,30 @@
 [submodule "platforms/f1/aws-fpga"]
 	path = platforms/f1/aws-fpga
-	url = git@github.com:firesim/aws-fpga-firesim
+	url = https://github.com/firesim/aws-fpga-firesim
 [submodule "sw/firesim-software"]
 	path = sw/firesim-software
-	url = git@github.com:firesim/firesim-software
+	url = https://github.com/firesim/firesim-software
 [submodule "sim/firrtl"]
 	path = sim/firrtl
-	url = git@github.com:ucb-bar/firrtl
+	url = https://github.com/ucb-bar/firrtl
 [submodule "sim/midas"]
 	path = sim/midas
-	url = git@github.com:ucb-bar/midas
+	url = https://github.com/ucb-bar/midas
 [submodule "sim/barstools"]
 	path = sim/barstools
-	url = git@github.com:ucb-bar/barstools.git
+	url = https://github.com/ucb-bar/barstools.git
 [submodule "sim/firechip"]
 	path = target-design/firechip
-	url = git@github.com:firesim/firechip
+	url = https://github.com/firesim/firechip
 [submodule "sw/network-benchmarks"]
 	path = sw/network-benchmarks
-	url = git@github.com:firesim/network-benchmarks.git
+	url = https://github.com/firesim/network-benchmarks.git
 [submodule "sw/qemu"]
 	path = sw/qemu
-	url = git@github.com:qemu/qemu
+	url = https://github.com/qemu/qemu
 [submodule "deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release"]
 	path = deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release
-	url = git@github.com:firesim/mutilate-loadgen-riscv-release
+	url = https://github.com/firesim/mutilate-loadgen-riscv-release
 [submodule "deploy/workloads/Speckle"]
 	path = deploy/workloads/Speckle
-	url = git@github.com:ccelio/Speckle.git
+	url = https://github.com/ccelio/Speckle.git
