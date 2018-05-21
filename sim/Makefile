@@ -117,10 +117,12 @@ conf:
 # SW RTL Simulation Args #
 ##########################
 TIMEOUT_CYCLES = 100000000
-HOST_SETTINGS ?= +dramsim
 SIM_RUNTIME_CONF ?= $(generated_dir)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-SW_SIM_ARGS ?= $(HOST_SETTINGS) $(mem_model_args)
+COMMON_SIM_ARGS ?= $(mem_model_args)
+
+# Arguments used only in MIDAS-level (ML) RTL simulation
+MIDAS_LEVEL_SIM_ARGS ?= +dramsim
 
 ######################
 # Verilator Emulation #
@@ -167,17 +169,17 @@ vcs-debug: $(vcs_debug)
 ###########################
 $(output_dir)/%.run: $(output_dir)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(SW_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(output_dir)/%.out: $(output_dir)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(SW_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(output_dir)/%.vpd: $(output_dir)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(SW_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
 ######################
@@ -267,11 +269,7 @@ fpga: export CL_DIR := $(fpga_work_dir)
 fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
 
-# Run simulation
-FPGA_SIM_ARGS ?= $(SW_SIM_ARGS)
-run: $(PLATFORM)
-	cd $(dir $(f1)) && sudo ./$(notdir $(f1)) $(FPGA_SIM_ARGS) \
-	+sample=$(notdir $(SIM_BINARY)).sample $(abspath $(SIM_BINARY)) 2> $(notdir $(SIM_BINARY)).out
+FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
 
 # Run XSIM DUT
 xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
@@ -289,8 +287,8 @@ $(xsim): $(header) $(driver_cc) $(driver_h) $(midas_cc) $(midas_h)
 xsim: $(xsim)
 
 run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<) $(FPGA_SIM_ARGS) \
-	+sample=$(notdir $(SIM_BINARY)).sample $(abspath $(SIM_BINARY))
+	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
+	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
 
 cleanfpga:
 	rm -rf $(fpga_work_dir)
