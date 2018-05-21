@@ -19,7 +19,7 @@ manager configuration by doing the following:
 ::
 
     cd firesim/deploy
-    cp backup-sample-configs/sample_config_runtime.ini config_runtime.ini
+    cp sample-backup-configs/sample_config_runtime.ini config_runtime.ini
 
 
 Building target software
