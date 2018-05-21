@@ -16,7 +16,7 @@ local machine and initialize the submodules.
 
 .. code-block:: shell
 
-    $ git clone git@github.com:yourusername/firechip.git
+    $ git clone https://github.com/yourusername/firechip.git
     $ cd firechip
     $ git submodule update --init
     $ cd rocket-chip

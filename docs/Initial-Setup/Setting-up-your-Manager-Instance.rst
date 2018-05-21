@@ -94,7 +94,7 @@ We're finally ready to fetch FireSim's sources. Run:
 
 ::
 
-    git clone git@github.com:firesim/firesim
+    git clone https://github.com/firesim/firesim
     cd firesim
     ./build-setup.sh fast
 

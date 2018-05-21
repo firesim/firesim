@@ -38,7 +38,7 @@ if [ $# -eq 0 ]; then
     # handle case where no args passed. default to FASTINSTALL false
     FASTINSTALL=false
 elif [ "$1" = "fast" ]; then
-    git clone git@github.com:firesim/firesim-riscv-tools-prebuilt.git
+    git clone https://github.com:firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
     PREBUILTHASH="$(cat HASH)"
     cd ../target-design/firechip
