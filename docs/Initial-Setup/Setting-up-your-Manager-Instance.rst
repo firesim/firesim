@@ -67,7 +67,7 @@ bad network connection to your manager instance. On this instance, the
 before, so we need to first ssh into the instance and make sure the
 setup is complete.
 
-In either case, ``ssh`` into your instance and wait until the
+In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
 ``~/machine-launchstatus`` file contains all the following text:
 
 ::
