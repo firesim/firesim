@@ -2,7 +2,7 @@
   "common_bootbinary" : "bbl-vmlinux",
   "benchmark_name" : "spec17-intrate",
   "deliver_dir" : "spec17-intrate",
-  "common_args" : ["--copies 1"],
+  "common_args" : ["--copies 4"],
   "common_files" : ["intrate.sh"],
   "common_outputs" : ["/output"],
   "common_simulation_outputs" : ["uartlog"],
