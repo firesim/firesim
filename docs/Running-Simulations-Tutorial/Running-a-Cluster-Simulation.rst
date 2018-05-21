@@ -48,8 +48,8 @@ Once this is completed, you'll have the following files:
 The fact that there are 8 of these is a relic from the days when we ran
 FireSim simulations by hand (they are all the same) -- in most cases, only
 ``bbl-vmlinux0`` and ``rootfs0.ext2`` will used to form base images to either
-build more complicated workloads (see the Workloads section TODO) or to copy
-around for deploying.
+build more complicated workloads (see the :ref:`defining-custom-workloads`
+section) or to copy around for deploying.
 
 Setting up the manager configuration
 -------------------------------------
@@ -57,7 +57,7 @@ Setting up the manager configuration
 All runtime configuration options for the manager are set in a file called
 ``firesim/deploy/config_runtime.ini``. In this guide, we will explain only the
 parts of this file necessary for our purposes. You can find full descriptions of
-all of the parameters in the (Configuration options section TODO).
+all of the parameters in the :ref:`manager-configuration-files` section.
 
 If you open up this file, you will see the following default config (assuming
 you have not modified it):
@@ -70,17 +70,20 @@ we want. Let's outline the important parameters:
 
 * ``f1_16xlarges=1``: This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
 * ``topology=example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
+* ``linklatency=6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
+* ``switchinglatency=10``: This models switches with a minimum port-to-port latency of 10 cycles.
+* ``netbandwidth=200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
 * ``defaulthwconfig=firesim-quadcore-nic-ddr3-llc4mb``: This tells the manager to use a quad-core Rocket Chip configuration with 4 MB of L2 and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
 
 You'll see other parameters here, like ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
-AWS user, you can see what these do by looking at the (advanced configuration
-section TODO). Otherwise, don't change them.
+AWS user, you can see what these do by looking at the
+:ref:`manager-configuration-files` section. Otherwise, don't change them.
 
 As in the single-node tutorial, we will leave the last section (``[workload]``)
 unchanged here, since we do want to run Linux on our simulated system. The
 ``terminateoncompletion`` feature is an advanced feature that you can learn
-more about in the (advanced configuration TODO) section.
+more about in the :ref:`manager-configuration-files` section.
 
 As a final sanity check, your ``config_runtime.ini`` file should now look like this:
 
@@ -132,8 +135,9 @@ the instances launched with this operation with the value you specified above
 as the ``runfarmtag`` parameter from the ``config_runtime.ini`` file, which we left
 set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
 apart -- i.e., you can have multiple independent Run Farms running different
-workloads/hardware configurations in parallel. This is detailed in the advanced
-manager features section TODO -- you do not need to be familiar with it here.
+workloads/hardware configurations in parallel. This is detailed in the
+:ref:`manager-configuration-files` and the :ref:`firesim-launchrunfarm` 
+sections -- you do not need to be familiar with it here.
 
 Setting up the simulation infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -483,8 +487,8 @@ What are these files? They are specified to the manager in a configuration file
 (``firesim/deploy/workloads/linux-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. Note that there is a directory for
-each simulated node and each simulated switch in the cluster. The advanced
-workloads section TODO will describes this process in detail.
+each simulated node and each simulated switch in the cluster. The
+:ref:`defining-custom-workloads` section describes this process in detail.
 
 For now, let's wrap-up our tutorial by terminating the ``f1.16xlarge`` instance
 that we launched. To do so, run:

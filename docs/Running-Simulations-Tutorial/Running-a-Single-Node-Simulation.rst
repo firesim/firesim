@@ -439,7 +439,7 @@ What are these files? They are specified to the manager in a configuration file
 (``firesim/deploy/workloads/linux-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
-:ref:`defining-custom-workloads` section describe this process in detail.
+:ref:`defining-custom-workloads` section describes this process in detail.
 
 For now, let's wrap-up our tutorial by terminating the ``f1.2xlarge`` instance
 that we launched. To do so, run:
