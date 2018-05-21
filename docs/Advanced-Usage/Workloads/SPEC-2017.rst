@@ -1,2 +1,6 @@
+.. _spec-2017:
+
 Running SPEC 2017
 ---------------------
+
+Coming soon!

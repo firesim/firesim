@@ -72,8 +72,8 @@ Since we only want to simulate a single node, let's switch to using one
 
 You'll see other parameters here, like ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
-AWS user, you can see what these do by looking at the (advanced configuration
-section TODO). Otherwise, don't change them.
+AWS user, you can see what these do by looking at the
+:ref:`manager-configuration-files` section. Otherwise, don't change them.
 
 Now, let's change the ``[targetconfig]`` section to model the correct target design.
 By default, it is set to model an 8-node cluster with a cycle-accurate network.
@@ -107,8 +107,8 @@ MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 
 We will leave the last section (``[workload]``) unchanged here, since we do
 want to run Linux on our simulated system. The ``terminateoncompletion``
-feature is an advanced feature that you can learn more about in the (advanced
-configuration TODO) section.
+feature is an advanced feature that you can learn more about in the
+:ref:`manager-configuration-files` section.
 
 As a final sanity check, your ``config_runtime.ini`` file should now look like this:
 
@@ -190,8 +190,9 @@ the instances launched with this operation with the value you specified above
 as the ``runfarmtag`` parameter from the ``config_runtime.ini`` file, which we left
 set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
 apart -- i.e., you can have multiple independent Run Farms running different
-workloads/hardware configurations in parallel. This is detailed in the advanced
-manager features section TODO -- you do not need to be familiar with it here.
+workloads/hardware configurations in parallel. This is detailed in the
+:ref:`manager-configuration-files` and the :ref:`firesim-launchrunfarm` 
+sections -- you do not need to be familiar with it here.
 
 Setting up the simulation infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -342,6 +343,9 @@ with a Linux login prompt, like so:
 	buildroot login:
 
 
+You can ignore the messages about the network -- that is expected because we
+are simulating a design without a NIC.
+
 Now, you can login to the system! The username is ``root`` and the password is
 ``firesim``. At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
@@ -434,8 +438,8 @@ If you take a look at the workload output directory given in the manager output 
 What are these files? They are specified to the manager in a configuration file
 (``firesim/deploy/workloads/linux-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
-useful for running benchmarks automatically. The advanced workloads section TODO
-will describe this process in detail.
+useful for running benchmarks automatically. The
+:ref:`defining-custom-workloads` section describe this process in detail.
 
 For now, let's wrap-up our tutorial by terminating the ``f1.2xlarge`` instance
 that we launched. To do so, run:
@@ -478,5 +482,8 @@ the instance is in the shutting-down or terminated states. You are ultimately
 responsible for ensuring that your instances are terminated appropriately.**
 
 Congratulations on running your first FireSim simulation! At this point, you can
-check-out some of the advanced features of FireSim in the sidebar to the left,
-or you can continue on with the cluster simulation tutorial.
+check-out some of the advanced features of FireSim in the sidebar to the left
+(for example, we expect that many people will be interested in the ability to
+automatically run the SPEC17 benchmarks: :ref:`spec-2017`), or you can continue
+on with the cluster simulation tutorial.
+
