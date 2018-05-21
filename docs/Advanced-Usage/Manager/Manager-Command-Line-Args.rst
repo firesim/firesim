@@ -14,28 +14,29 @@ complicated, so we will give them their own section on the following pages.
 -----------------------------------------
 
 This lets you specify a custom runtime config file. By default, ``config_runtime.ini``
-is used. See TODO for what this config file does.
+is used. See :ref:`config-runtime` for what this config file does.
 
 
 ``--buildconfigfile`` ``FILENAME``
 ------------------------------------------
 
 This lets you specify a custom build config file. By default, ``config_build.ini``
-is used. See TODO for what this config file does.
+is used. See :ref:`config-build` for what this config file does.
 
 
 ``--buildrecipesconfigfile`` ``FILENAME``
 ---------------------------------------------------
 
 This lets you specify a custom build **recipes** config file. By default,
-``config_build_recipes.ini`` is used. See TODO for what this config file does.
+``config_build_recipes.ini`` is used. See :ref:`config-build-recipes` for what
+this config file does.
 
 
 ``--hwdbconfigfile`` ``FILENAME``
 --------------------------------------------
 
 This lets you specify a custom hardware database config file. By default,
-``config_hwdb.ini`` is used. See TODO for what this config file does.
+``config_hwdb.ini`` is used. See :ref:`config-hwdb` for what this config file does.
 
 
 ``--overrideconfigdata`` ``SECTION`` ``PARAMETER`` ``VALUE``

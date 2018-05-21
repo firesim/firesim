@@ -106,7 +106,7 @@ Farms; that is, you can have many Run Farms running, each running a different
 experiment at the same time, each with its own unique ``runfarmtag``. One
 convenient feature to add to your AWS management panel is the column for
 ``fsimcluster``, which contains the ``runfarmtag`` value. You can see how to do
-that here TODO.
+that in the :ref:`fsimcluster-aws-panel` section.
 
 The other options in the ``[runfarm]`` section, ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice`` define *how* instances in
@@ -211,7 +211,7 @@ starting another one, even if it is the same exact simulation on the same Run
 Farm.**
 
 You can see detailed output from an example run of ``infrasetup`` in the
-Single-node and Cluster Simulation tutorials. TODO LINK
+:ref:`single-node-sim` and :ref:`cluster-sim` Tutorials.
 
 .. _firesim-boot:
 
@@ -258,7 +258,7 @@ Then, it polls all the instances in the Run Farm every 10 seconds to determine
 the state of the simulated system. If it notices that a simulation has shutdown
 (i.e. the simulation disappears from the output of ``screen -ls``), it will
 automatically copy back all results from the simulation, as defined in the
-workload configuration (see TODO for details on configuring workloads). 
+workload configuration (see the :ref:`defining-custom-workloads` section).
 
 For
 non-networked simulations, it will wait for ALL simulations to complete (copying

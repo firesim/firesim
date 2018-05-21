@@ -104,7 +104,7 @@ ToR switches connected by a root switch.
 connected by a root switch.
 
 Additional configurations are available in ``deploy/runtools/user_topology.py``
-and more can be added there. See the Network Topology Definitions page TODO
+and more can be added there. See the :ref:`usertopologies` section
 for more info.
 
 ``no_net_num_nodes``

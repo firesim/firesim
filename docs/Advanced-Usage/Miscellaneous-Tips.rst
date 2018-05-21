@@ -1,6 +1,7 @@
 Miscellaneous Tips
 =============================
 
+.. _fsimcluster-aws-panel:
 
 Add the ``fsimcluster`` column to your AWS management console
 ----------------------------------------------------------------

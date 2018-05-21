@@ -85,8 +85,8 @@ The ``common_outputs`` field is a list of outputs that the manager will copy out
 the root filesystem image AFTER a simulation completes. In this simple example,
 when a workload running on a simulated cluster with ``firesim runworkload``
 completes, ``/etc/os-release`` will be copied out from each rootfs and placed
-in the job's output directory within the workload's output directory (TODO see
-the documentation for ``firesim runworkload``). You can add multiple paths
+in the job's output directory within the workload's output directory (See
+the :ref:`firesim-runworkload` section). You can add multiple paths
 here.
 
 The ``common_simulation_outputs`` field is a list of outputs that the manager
@@ -97,7 +97,7 @@ completes, the ``uartlog`` (an automatically generated file that contains the
 full console output of the simulated system) and ``memory_stats.csv`` files
 will be copied out of the simulation's base directory on the host instance and
 placed in the job's output directory within the workload's output directory
-(TODO see the documentation for ``firesim runworkload``). You can add multiple
+(see the :ref:`firesim-runworkload` section). You can add multiple
 paths here.
 
 **ERRATA**: "Uniform" style workloads currently do not support being

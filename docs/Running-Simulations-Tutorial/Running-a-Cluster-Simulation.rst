@@ -1,3 +1,5 @@
+.. _cluster-sim:
+
 Running a Cluster Simulation
 ===============================
 

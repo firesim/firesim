@@ -1,3 +1,5 @@
+.. _usertopologies:
+
 Manager Network Topology Definitions (``user_topology.py``)
 ==================================================================
 

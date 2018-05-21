@@ -1,3 +1,5 @@
+.. _single-node-sim:
+
 Running a Single Node Simulation
 ===================================
 
