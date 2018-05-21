@@ -1,6 +1,92 @@
 .. _spec-2017:
 
-Running SPEC 2017
+SPEC 2017
 ---------------------
 
-Coming soon!
+SPEC2017 is supported using the ``firesim-2017`` branch of Speckle, which
+provides the tooling required to cross-compile SPEC for RISCV.  These
+instructions presuppose you've have a license for, and have installed SPEC on
+your machine either EC2 or locally.  Additionally, your SPEC environment must be setup;
+``SPEC_DIR`` must be set. If you are building binaries on a different machine,
+you should be able to trivially copy Speckle's generated overlay directories to
+EC2.
+
+Some notes:
+
+-  Benchmarks use reference inputs. ``train`` or ``test`` inputs can be used by changing the Speckle invocation in the Makefile.
+-  You may need to increase the size of the RootFS in buildroot in ``firesim/sw/firesim-software``.
+-  No support for fp{rate, speed} benchmarks yet.
+
+
+--------
+Intspeed
+--------
+
+The intspeed workload definition splits the xz benchmark into two jobs
+(these are two independent inputs) to achieve better load balance across the
+simulations (9T dynamic instructions becomes 4T and 5T.)
+
+To Build Binaries And RootFSes:
+
+.. code-block:: bash
+
+    cd firesim/deploy/workloads/
+    make spec2017-intspeed
+
+Run Resource requirements:
+
+.. include:: /../deploy/workloads/spec17-intspeed.ini
+   :start-line: 3
+   :end-line: 6
+   :code: ini
+
+To Run:
+
+.. code-block:: bash
+
+    firesim launchrunfarm    -c workloads/spec17-intspeed.ini
+    firesim infrasetup       -c workloads/spec17-intspeed.ini
+    firesim runworkload      -c workloads/spec17-intspeed.ini
+    firesim terminaterunfarm -c workloads/spec17-intspeed.ini
+
+On a single-core rocket-based SoC with a DDR3 + 256 KiB LLC model, with a 160
+MHz host clock, the longest benchmarks (xz, mcf) complete in about 1
+day. All other benchmarks finish in under 15 hours.
+
+--------
+Intrate
+--------
+
+By default, the intrate workload definition spins up **four copies** of each
+benchmark, which may be entirely inappropriate for your target machine. This
+can be changed by modifying the json.
+
+To Build Binaries and RootFSes:
+
+.. code-block:: bash
+
+    cd firesim/deploy/workloads/
+    make spec2017-intrate
+
+Run Resource Requirements:
+
+.. include:: /../deploy/workloads/spec17-intrate.ini
+   :start-line: 3
+   :end-line: 6
+   :code: ini
+
+
+To Run:
+
+.. code-block:: bash
+
+    firesim launchrunfarm    -c workloads/spec17-intrate.ini
+    firesim infrasetup       -c workloads/spec17-intrate.ini
+    firesim runworkload      -c workloads/spec17-intrate.ini
+    firesim terminaterunfarm -c workloads/spec17-intrate.ini
+
+
+Simulation times are host and target dependent. For reference, on a
+four-core rocket-based SoC with a DDR3 + 1 MiB LLC model, with a 160
+MHz host clock, the longest benchmarks complete in about 30 hours when
+running four copies.
