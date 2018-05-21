@@ -1,3 +1,5 @@
+.. _manager-configuration-files:
+
 Manager Configuration Files
 ===============================
 

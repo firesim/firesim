@@ -1,3 +1,5 @@
+.. _defining-custom-workloads:
+
 Defining Custom Workloads
 ================================================
 

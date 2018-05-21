@@ -32,8 +32,8 @@ Once this is completed, you'll have the following files:
 The fact that there are 8 of these is a relic from the days when we ran
 FireSim simulations by hand (they are all the same) -- in most cases, only
 ``bbl-vmlinux0`` and ``rootfs0.ext2`` will used to form base images to either
-build more complicated workloads (see the Workloads section TODO) or to copy
-around for deploying.
+build more complicated workloads (see the :ref:`defining-custom-workloads`
+section) or to copy around for deploying.
 
 Setting up the manager configuration
 -------------------------------------
@@ -41,7 +41,7 @@ Setting up the manager configuration
 All runtime configuration options for the manager are set in a file called
 ``firesim/deploy/config_runtime.ini``. In this guide, we will explain only the
 parts of this file necessary for our purposes. You can find full descriptions of
-all of the parameters in the (Configuration options section TODO).
+all of the parameters in the :ref:`manager-configuration-files` section.
 
 If you open up this file, you will see the following default config (assuming
 you have not modified it):
