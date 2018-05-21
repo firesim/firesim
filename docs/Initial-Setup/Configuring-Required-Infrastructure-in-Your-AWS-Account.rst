@@ -114,7 +114,7 @@ Again on the ``t2.nano`` instance, do the following:
 ::
 
     sudo pip install boto3
-    wget https://github.com/firesim/firesim/blob/master/scripts/aws-setup.py
+    wget https://raw.githubusercontent.com/firesim/firesim/master/scripts/aws-setup.py
     python aws-setup.py
 
 This will create a VPC named ``firesim`` and a security group named
