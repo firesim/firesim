@@ -1,14 +1,20 @@
-sudo pip install -r requirements.txt
+Building Docs
+--------------
 
-make html
+    sudo pip install -r requirements.txt
+    make html
 
-look in the _build/html directory for output
+Look in the `_build/html` directory for output. You can also run 
 
+    python -m SimpleHTTPServer
 
-if you want to generate a pdf version, you will additionally need:
+To get a proper locally-hosted version.
 
-wget http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
-tar -xvf install-tl-unx.tar.gz
-sudo ./install-tl
+If you want to generate a pdf version, you will additionally need:
 
-follow the prompts, add the suggested path to your bashrc
+    wget http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+    tar -xvf install-tl-unx.tar.gz
+    cd install-tl*
+    sudo ./install-tl
+
+Follow the prompts, add the suggested path to your `.bashrc`.
