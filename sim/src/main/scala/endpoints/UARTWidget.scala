@@ -113,14 +113,14 @@ class UARTWidget(div: Int = 868)(implicit p: Parameters) extends EndpointWidget(
     }
   }
   rxfifo.io.deq.ready := (rxState === sRxData) && rxDataWrap && rxBaudWrap && fire
+  /* concat low-width fields to reduce # of pcie reads */
+  val catMMIOread = Cat(txfifo.io.deq.bits, txfifo.io.deq.valid, rxfifo.io.enq.ready)
+  genROReg(catMMIOread, "out_bits_out_valid_in_ready")
 
-  genROReg(txfifo.io.deq.bits, "out_bits")
-  genROReg(txfifo.io.deq.valid, "out_valid")
   Pulsify(genWORegInit(txfifo.io.deq.ready, "out_ready", false.B), pulseLength = 1)
 
   genWOReg(rxfifo.io.enq.bits, "in_bits")
   Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
-  genROReg(rxfifo.io.enq.ready, "in_ready")
 
   genROReg(!tFire, "done")
   genROReg(stall, "stall")

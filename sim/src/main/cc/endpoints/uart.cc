@@ -48,11 +48,11 @@ void uart_t::send() {
 }
 
 void uart_t::recv() {
-    data.in.ready = read(UARTWIDGET_0(in_ready));
-    data.out.valid = read(UARTWIDGET_0(out_valid));
-    if (data.out.valid) {
-        data.out.bits = read(UARTWIDGET_0(out_bits));
-    }
+    /* do a single read since these are 1bit, 1bit, 8bits respectively */
+    unsigned int readval = read(UARTWIDGET_0(out_bits_out_valid_in_ready));
+    data.in.ready = readval & 0x1;
+    data.out.valid = (readval >> 1) & 0x1;
+    data.out.bits = (readval >> 2) & 0xFF;
 }
 
 void uart_t::tick() {

@@ -16,8 +16,9 @@ void serial_t::send() {
 }
 
 void serial_t::recv() {
-    data.in.ready = read(SERIALWIDGET_0(in_ready));
-    data.out.valid = read(SERIALWIDGET_0(out_valid));
+    unsigned int readval = read(SERIALWIDGET_0(in_ready_out_valid));
+    data.in.ready  = (readval >> 1) & 0x1;
+    data.out.valid = (readval & 0x1);
     if (data.out.valid) {
         data.out.bits = read(SERIALWIDGET_0(out_bits));
     }

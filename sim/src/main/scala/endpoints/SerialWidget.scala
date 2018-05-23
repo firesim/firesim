@@ -53,9 +53,11 @@ class SerialWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
   genWOReg(inBuf.io.enq.bits, "in_bits")
   Pulsify(genWORegInit(inBuf.io.enq.valid, "in_valid", false.B), pulseLength = 1)
-  genROReg(inBuf.io.enq.ready, "in_ready")
+
+  /* concat low-width values to reduce # of PCIe reads */
+  val catMMIOread = Cat(inBuf.io.enq.ready, outBuf.io.deq.valid)
+  genROReg(catMMIOread, "in_ready_out_valid")
   genROReg(outBuf.io.deq.bits, "out_bits")
-  genROReg(outBuf.io.deq.valid, "out_valid")
   Pulsify(genWORegInit(outBuf.io.deq.ready, "out_ready", false.B), pulseLength = 1)
 
   genROReg(!tFire, "done")
