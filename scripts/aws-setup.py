@@ -14,6 +14,10 @@ av_zones_with_3octet = zip(range(len(avail_zones)), avail_zones)
 
 print("Creating VPC for FireSim...")
 vpc = ec2.create_vpc(CidrBlock='192.168.0.0/16')
+vpc_id = vpc.id
+# confirm that vpc is actually available before running commands
+client.get_waiter('vpc_available').wait(VpcIds=[vpc_id])
+
 vpc.create_tags(Tags=[{"Key": "Name", "Value": vpcname}])
 vpc.wait_until_available()
 
