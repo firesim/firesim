@@ -106,8 +106,9 @@ On this machine, run the following:
 
 See
 https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about aws configure. You should specify the same region that
-you chose above and set the default output format to ``json``.
+for more about aws configure. You should specify the same region that you chose
+above (one of ``us-east-1``, ``us-west-2``, ``eu-west-1``) and set the default
+output format to ``json``.
 
 Again on the ``t2.nano`` instance, do the following:
 
