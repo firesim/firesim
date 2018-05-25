@@ -16,6 +16,7 @@ print("Creating VPC for FireSim...")
 vpc = ec2.create_vpc(CidrBlock='192.168.0.0/16')
 vpc_id = vpc.id
 # confirm that vpc is actually available before running commands
+client.get_waiter('vpc_exists').wait(VpcIds=[vpc_id])
 client.get_waiter('vpc_available').wait(VpcIds=[vpc_id])
 
 vpc.create_tags(Tags=[{"Key": "Name", "Value": vpcname}])
@@ -36,6 +37,7 @@ subnets = []
 # create a subnet in each availability zone for this vpc
 for ip, zone in av_zones_with_3octet:
     subnets.append(ec2.create_subnet(CidrBlock='192.168.' + str(ip) + '.0/24', VpcId=vpc.id, AvailabilityZone=zone))
+    client.get_waiter('subnet_available').wait(SubnetIds=[subnets[-1].id])
     client.modify_subnet_attribute(MapPublicIpOnLaunch={'Value': True}, SubnetId=subnets[-1].id)
     route_table.associate_with_subnet(SubnetId=subnets[-1].id)
 print("Success!")
