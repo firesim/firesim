@@ -36,7 +36,12 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
     *dd = d / a;
 }
 
-simplenic_t::simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency): endpoint_t(sim)
+#define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); }
+
+simplenic_t::simplenic_t(
+        simif_t *sim, char *slotid,
+        uint64_t mac_little_end, int netbw, int netburst, int linklatency,
+        char *niclogfile): endpoint_t(sim)
 {
 #ifdef SIMPLENICWIDGET_0
     // store link latency:
@@ -53,6 +58,15 @@ simplenic_t::simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, i
     printf("using link latency: %d cycles\n", linklatency);
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
+
+    this->niclog = NULL;
+    if (niclogfile) {
+        this->niclog = fopen(niclogfile, "w");
+        if (!this->niclog) {
+            fprintf(stderr, "Could not open NIC log file: %s\n", niclogfile);
+            abort();
+        }
+    }
 
 #ifndef SIMULATION_XSIM
     char name[100];
@@ -75,6 +89,8 @@ simplenic_t::simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, i
 }
 
 simplenic_t::~simplenic_t() {
+    if (this->niclog)
+        fclose(this->niclog);
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
@@ -154,12 +170,12 @@ void simplenic_t::tick() {
         // we will read/write the min of tokens available / token input capacity
         tokens_this_round = std::min(output_tokens_available, input_token_capacity);
 #ifdef DEBUG_NIC_PRINT
-        printf("tokens this round: %d\n", tokens_this_round);
+        niclog_printf("tokens this round: %d\n", tokens_this_round);
 #endif
 
         if (tokens_this_round != SIMLATENCY_BT) {
 #ifdef DEBUG_NIC_PRINT
-            printf("FAIL: output available %d, input capacity: %d\n", output_tokens_available, input_token_capacity);
+            niclog_printf("FAIL: output available %d, input capacity: %d\n", output_tokens_available, input_token_capacity);
 #endif
             return;
         }
@@ -167,14 +183,14 @@ void simplenic_t::tick() {
         // read into read_buffer
 #ifdef DEBUG_NIC_PRINT
         iter++;
-        printf("read fpga iter %ld\n", iter);
+        niclog_printf("read fpga iter %ld\n", iter);
 #endif
         token_bytes_obtained_from_fpga = pull(
                 0x0,
                 pcis_read_bufs[currentround],
                 BUFWIDTH * tokens_this_round);
 #ifdef DEBUG_NIC_PRINT
-        printf("send iter %ld\n", iter);
+        niclog_printf("send iter %ld\n", iter);
 #endif
 
         pcis_read_bufs[currentround][BUFBYTES] = 1;
@@ -189,14 +205,17 @@ void simplenic_t::tick() {
             for (int token_in_bigtoken = 0; token_in_bigtoken < 7; token_in_bigtoken++) {
                 if (TOKENLRV_AND_COUNT & (1L << (43+token_in_bigtoken*3))) {
                     LAST = (TOKENLRV_AND_COUNT >> (45 + token_in_bigtoken*3)) & 0x1;
-                    printf("sending to other node, valid data chunk: %016lx, last %x, sendcycle: %016ld\n", *((((uint64_t*)pcis_read_bufs[currentround])+i*8)+1+token_in_bigtoken), LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
+                    niclog_printf("sending to other node, valid data chunk: "
+                                "%016lx, last %x, sendcycle: %016ld\n",
+                                *((((uint64_t*)pcis_read_bufs[currentround])+i*8)+1+token_in_bigtoken),
+                                LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
                 }
             }
 
             //            *((uint64_t*)(pcis_read_buf + i*64)) |= 0x4924900000000000;
             uint32_t thistoken = *((uint32_t*)(pcis_read_bufs[currentround] + i*64));
             if (thistoken != next_token_from_fpga) {
-                printf("FAIL! Token lost on FPGA interface.\n");
+                niclog_printf("FAIL! Token lost on FPGA interface.\n");
                 exit(1);
             }
             next_token_from_fpga++;
@@ -209,7 +228,7 @@ void simplenic_t::tick() {
         }
 
 #ifdef DEBUG_NIC_PRINT
-        printf("recv iter %ld\n", iter);
+        niclog_printf("recv iter %ld\n", iter);
 #endif
 
 #ifdef TOKENVERIFY
@@ -219,7 +238,7 @@ void simplenic_t::tick() {
         volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
         while (*polladdr == 0) { ; }
 #ifdef DEBUG_NIC_PRINT
-        printf("done recv iter %ld\n", iter);
+        niclog_printf("done recv iter %ld\n", iter);
 #endif
 
 #ifdef TOKENVERIFY
@@ -231,7 +250,10 @@ void simplenic_t::tick() {
             for (int token_in_bigtoken = 0; token_in_bigtoken < 7; token_in_bigtoken++) {
                 if (TOKENLRV_AND_COUNT & (1L << (43+token_in_bigtoken*3))) {
                     LAST = (TOKENLRV_AND_COUNT >> (45 + token_in_bigtoken*3)) & 0x1;
-                    printf("from other node, valid data chunk: %016lx, last %x, recvcycle: %016ld\n", *((((uint64_t*)pcis_write_bufs[currentround])+i*8)+1+token_in_bigtoken), LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
+                    niclog_printf("from other node, valid data chunk: %016lx, "
+                                "last %x, recvcycle: %016ld\n",
+                                *((((uint64_t*)pcis_write_bufs[currentround])+i*8)+1+token_in_bigtoken),
+                                LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
                 }
             }
         }
