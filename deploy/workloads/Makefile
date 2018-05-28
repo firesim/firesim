@@ -10,7 +10,7 @@
 # 	spec 2017
 # 	spec 2006
 
-allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test ping-latency
+allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
 
 SPEC_RATE_OVERLAY=/benchmarks/overlays/spec17-intrate
 spec17-intrate: spec17-intrate.json
@@ -54,8 +54,13 @@ memcached-thread-imbalance:
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/mutilate-loadgen-riscv-release/overlay
 
-bw-test: bw-test.json
-	cd ../../sw/network-benchmarks && python build.py
+bw-test-two-instances: bw-test-two-instances.json
+	cd ../../sw/network-benchmarks && python build.py -n 8
+	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
+
+bw-test-one-instance: bw-test-one-instance.json
+	cd ../../sw/network-benchmarks && python build.py -n 4
+	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 ping-latency:
 	mkdir -p $@
