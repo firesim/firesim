@@ -36,7 +36,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
     *dd = d / a;
 }
 
-#define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); }
+#define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
 simplenic_t::simplenic_t(
         simif_t *sim, char *slotid,
