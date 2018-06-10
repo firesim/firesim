@@ -27,6 +27,8 @@ protected:
   }
 
   inline ssize_t push(size_t addr, char *data, size_t size) {
+    if (size == 0)
+      return 0;
     return sim->push(addr, data, size);
   }
 
