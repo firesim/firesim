@@ -22,7 +22,8 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
   val top = Module(new midas.core.FPGATop(simIo))
   val headerConsts = List(
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
-    "MEM_WIDTH"  -> p(SlaveNastiKey).dataBits / 8
+    "MEM_WIDTH"  -> p(SlaveNastiKey).dataBits / 8,
+    "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
   ) ++ top.headerConsts
 
   val cyclecount = Reg(init = UInt(0, width=64.W))
