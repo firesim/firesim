@@ -320,7 +320,7 @@ def send_firesim_notification(subject, body):
 
     # this will either create the topic, if it doesn't exist, or just get the arn
     response = client.create_topic(
-        Name='HELLOTESTyo'
+        Name='FireSim'
     )
 
     arn = response['TopicArn']

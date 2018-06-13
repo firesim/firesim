@@ -6,6 +6,8 @@
 Welcome to FireSim's documentation!
 ===================================
 
+New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
+
 .. toctree::
    :maxdepth: 3
    :caption: Getting Started:
@@ -13,18 +15,19 @@ Welcome to FireSim's documentation!
 
    FireSim-Basics
    Initial-Setup/index
-   Single-Node-Simulation-Tutorial/index
-   Cluster-Simulation-Tutorial/index
-   Building-Your-Own-Hardware-Designs/index
+   Running-Simulations-Tutorial/index
+   Building-a-FireSim-AFI
 
 .. toctree::
    :maxdepth: 3
    :caption: Advanced Docs:
 
-   Advanced-Usage/index
+   Advanced-Usage/Manager/index
+   Advanced-Usage/Workloads/index
+   Advanced-Usage/RTL-Simulation
    Developing-New-Devices/index
-   ISCA-2018-Experiments/index
-
+   Advanced-Usage/Supernode.rst
+   Advanced-Usage/Miscellaneous-Tips.rst
 
 Indices and tables
 ==================

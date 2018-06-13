@@ -5,30 +5,29 @@
 # be attached to your EC2 instance if you have a license
 # Regular benchmarks are cloned from git/the internet and built automatically
 
-# build some standard benchmarks. not all of these will work unless you have
-# necessary licenses for:
-# 	spec 2017
-# 	spec 2006
+allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test ping-latency
 
-allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
+# We use a branch of Speckle (https://github.com/ccelio/Speckle) to cross
+# compile the binaries for SPEC2017. These can be compiled locally on a machine
+# with the Spec installation, and the overlay directories
+# ($SPECKLE_DIR/build/overlay) can be moved EC2
 
-SPEC_RATE_OVERLAY=/benchmarks/overlays/spec17-intrate
-spec17-intrate: spec17-intrate.json
+# Default to the submodule
+SPECKLE_DIR=Speckle
+
+#TODO: Provide runscripts for fp{speed, rate}
+spec17_suites = intrate intspeed
+spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
+
+$(SPECKLE_DIR)/build/overlay/%:
+	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $*
+
+spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%
 	mkdir -p $@
 	cp ../../sw/firesim-software/bbl-vmlinux0 $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w spec17-intrate.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $(SPEC_RATE_OVERLAY)
+	python gen-benchmark-rootfs.py -w $< -r -b ../../sw/firesim-software/rootfs0.ext2 \
+		-s $(SPECKLE_DIR)/build/overlay/$*
 
-SPEC_SPEED_OVERLAY=/benchmarks/overlays/spec17-intspeed
-spec17-intspeed: spec17-intspeed.json
-	mkdir -p $@
-	cp ../../sw/firesim-software/bbl-vmlinux0 $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w spec17-intspeed.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $(SPEC_SPEED_OVERLAY)
-
-GAPBS_OVERLAY=/benchmarks/overlays/gapbs
-gapbs: gapbs.json
-	mkdir -p $@
-	cp ../../sw/firesim-software/bbl-vmlinux0 $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w gapbs.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $(GAPBS_OVERLAY)
 
 fedora-uniform: fedora-uniform.json
 	mkdir -p $@
@@ -88,4 +87,4 @@ check-rtc-linux:
 	cd $@ && ln -sf ../../../sw/firesim-software/bbl-vmlinux0 bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
 
-.PHONY: spec17-intrate spec17-intspeed gapbs fedora-uniform memcached-thread-imbalance bw-test ping-latency simperf-test simperf-test-latency simperf-test-scale iperf3 check-rtc check-rtc-linux allpaper
+.PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform memcached-thread-imbalance bw-test ping-latency simperf-test simperf-test-latency simperf-test-scale iperf3 check-rtc check-rtc-linux allpaper

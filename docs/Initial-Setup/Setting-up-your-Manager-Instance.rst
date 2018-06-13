@@ -67,7 +67,7 @@ bad network connection to your manager instance. On this instance, the
 before, so we need to first ssh into the instance and make sure the
 setup is complete.
 
-In either case, ``ssh`` into your instance and wait until the
+In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
 ``~/machine-launchstatus`` file contains all the following text:
 
 ::
@@ -94,7 +94,7 @@ We're finally ready to fetch FireSim's sources. Run:
 
 ::
 
-    git clone git@github.com:firesim/firesim
+    git clone https://github.com/firesim/firesim
     cd firesim
     ./build-setup.sh fast
 
@@ -109,7 +109,13 @@ Next, run:
 
 This will have initialized the AWS shell, added the RISC-V tools to your
 path, and started an ``ssh-agent`` that supplies ``~/firesim.pem``
-automatically when you use ``ssh`` to access other nodes.
+automatically when you use ``ssh`` to access other nodes. Sourcing this the
+first time will take some time -- however each time after that should be instantaneous.
+Also, if your ``firesim.pem`` key requires a passphrase, you will be asked for
+it here and ``ssh-agent`` should cache it.
+
+**Every time you login to your manager instance to use FireSim, you should ``cd`` into
+your firesim directory and source this file again.**
 
 
 Completing Setup Using the Manager

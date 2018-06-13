@@ -114,7 +114,7 @@ Again on the ``t2.nano`` instance, do the following:
 ::
 
     sudo pip install boto3
-    wget https://github.com/firesim/firesim/blob/master/scripts/aws-setup.py
+    wget https://raw.githubusercontent.com/firesim/firesim/master/scripts/aws-setup.py
     python aws-setup.py
 
 This will create a VPC named ``firesim`` and a security group named
@@ -135,4 +135,6 @@ Subscribe to the AWS FPGA Developer AMI
 Go to the `AWS Marketplace page for the FPGA Developer
 AMI <https://aws.amazon.com/marketplace/pp/B06VVYBLZZ>`__. Click the
 button to subscribe to the FPGA Dev AMI (it should be free) and follow
-the prompts to accept the EULA, (but do not launch any instances).
+the prompts to accept the EULA (but do not launch any instances).
+
+Now, hit next to continue on to setting up our Manager Instance.

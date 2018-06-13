@@ -1,12 +1,23 @@
-Configuration Details
-========================
+.. _manager-configuration-files:
+
+Manager Configuration Files
+===============================
 
 This page contains a centralized reference for all of the configuration options
-in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,  and ``config_hwdb.ini``.
+in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,
+and ``config_hwdb.ini``.
 
+.. _config-runtime:
 
 ``config_runtime.ini``
 --------------------------
+
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
 
 ``[runfarm]``
 ^^^^^^^^^^^^^^^^^^^
@@ -25,7 +36,7 @@ values allows you to run many experiments at once from the same manager instance
 
 The instances launched by the ``launchrunfarm`` command will be tagged with
 this value. All later operations done by the manager rely on this tag, so
-you should not change unless you are done with your current Run Farm.
+you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
@@ -92,8 +103,9 @@ ToR switches connected by a root switch.
 8 simulated servers (for a total of 64 nodes), with the eight ToR switches
 connected by a root switch.
 
-Additional configurations are available in ``deploy/runtools/clusterconfig.py``
-and more can be added there (search for the functions named ``example_Nconfig``.
+Additional configurations are available in ``deploy/runtools/user_topology.py``
+and more can be added there. See the :ref:`usertopologies` section
+for more info.
 
 ``no_net_num_nodes``
 """""""""""""""""""""""""""""
@@ -172,9 +184,18 @@ Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
 
+.. _config-build:
 
 ``config_build.ini``
 --------------------------
+
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
+
 
 ``[afibuild]``
 ^^^^^^^^^^^^^^^^^^^^^
@@ -230,8 +251,8 @@ write:
 ::
 
     [builds]
-	awesome-firesim-config
-	quad-core-awesome-firesim-config
+    awesome-firesim-config
+    quad-core-awesome-firesim-config
 
 
 ``[agfistoshare]``
@@ -244,18 +265,18 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-	[firesim-quadcore-nic-ddr3-llc4mb]
-	# this is a comment that describes my favorite configuration!
-	agfi=agfi-0a6449b5894e96e53
-	deploytripletoverride=None
-	customruntimeconfig=None
+    [firesim-quadcore-nic-ddr3-llc4mb]
+    # this is a comment that describes my favorite configuration!
+    agfi=agfi-0a6449b5894e96e53
+    deploytripletoverride=None
+    customruntimeconfig=None
 
 you would use:
 
 ::
 
-	[agfistoshare]
-	firesim-quadcore-nic-ddr3-llc4mb
+    [agfistoshare]
+    firesim-quadcore-nic-ddr3-llc4mb
 
 
 ``[sharewithaccounts]``
@@ -266,9 +287,18 @@ A list of AWS account IDs that you want to share the AGFIs listed in
 should specify names in the form ``usersname=AWSACCTID``. The left-hand-side is
 just for human readability, only the actual account IDs listed here matter.
 
+.. _config-build-recipes:
 
 ``config_build_recipes.ini``
 --------------------------------
+
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+   :code: ini
+
+Below, we outline each section and parameter in detail.
+
 
 Build definition sections, e.g. ``[awesome-firesim-config]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -282,13 +312,15 @@ you made up). Such a section must contain the following fields:
 
 This specifies the basic target design that will be built. Unless you
 are defining a custom system, this should either be ``FireSim``, for
-systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC.
+systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
+are defined in ``firesim/sim/src/main/scala/Targets.scala``.
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulation. Some
 examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
+These are defined in ``firesim/sim/src/main/scala/TargetConfigs.scala``.
 
 
 ``PLATFORM_CONFIG``
@@ -296,6 +328,7 @@ examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConf
 
 This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
+These are defined in ``firesim/sim/src/main/scala/SimConfigs.scala``.
 
 ``instancetype``
 """""""""""""""""""
@@ -314,9 +347,16 @@ you should leave this set to ``None``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
 users of the simulator.
 
+.. _config-hwdb:
 
 ``config_hwdb.ini``
 ---------------------------
+
+Here is a sample of this configuration file:
+
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+   :code: ini
+
 
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
@@ -332,11 +372,11 @@ these as necessary:
 
 ::
 
-	[firesim-quadcore-nic-ddr3-llc4mb]
-	# this is a comment that describes my favorite configuration!
-	agfi=agfi-0a6449b5894e96e53
-	deploytripletoverride=None
-	customruntimeconfig=None
+    [firesim-quadcore-nic-ddr3-llc4mb]
+    # this is a comment that describes my favorite configuration!
+    agfi=agfi-0a6449b5894e96e53
+    deploytripletoverride=None
+    customruntimeconfig=None
 
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

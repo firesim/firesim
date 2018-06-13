@@ -4,3 +4,4 @@ riscv-tools-install
 sim/ucli.key
 target-design/switch/switchconfig.h
 sim[0-9]
+build-setup-log

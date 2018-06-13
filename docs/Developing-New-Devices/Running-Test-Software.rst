@@ -76,6 +76,8 @@ For verilator, the command is the following:
     $ cd verisim
     $ ./simulator-example-FixedInputStreamConfig ../tests/input-stream.riscv
 
+.. _target-level-simulation:
+
 Debugging Verilog Simulation
 ----------------------------
 

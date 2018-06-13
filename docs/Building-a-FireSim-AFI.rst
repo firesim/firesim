@@ -1,8 +1,11 @@
-Building a FireSim AFI (FPGA Image)
-===================================
+Building Your Own Hardware Designs (FireSim FPGA Images)
+===========================================================
 
 This section will guide you through building an AFI image for a FireSim
 simulation.
+
+Amazon S3 Setup
+---------------
 
 During the build process, the build system will need to upload a tar
 file to Amazon S3 in order to complete the build process using Amazon's
@@ -25,6 +28,10 @@ with your own bucket name, e.g.:
 ::
 
     s3bucketname=firesim-sagar
+
+
+Build Recipes
+---------------
 
 In the ``deploy/config_build.ini`` file, you will notice that the ``[builds]``
 section currently contains several lines, which
@@ -52,6 +59,10 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 	#firesim-quadcore-nic-ddr3-llc4mb
 	#firesim-quadcore-no-nic-ddr3-llc4mb
 
+
+Running a Build
+----------------------
+
 Now, we can run a build like so:
 
 ::
@@ -59,7 +70,8 @@ Now, we can run a build like so:
     firesim buildafi
 
 This will run through the entire build process, taking the Chisel RTL
-and producing an AFI/AGFI that runs on the FPGA. When the build
+and producing an AFI/AGFI that runs on the FPGA. This whole process will
+usually take a few hours. When the build
 completes, you will see a directory in
 ``deploy/results-build/``, named after your build parameter
 settings, that contains AGFI information (the ``AGFI_INFO`` file) and
@@ -76,4 +88,7 @@ that should look something like this:
    Build Completion Email
 
 
-Hit Next to continue to the next page.
+Now that you know how to generate your own FPGA image, you can modify the target-design
+to add your own features, then build a FireSim-compatible FPGA image automatically!
+To learn more advanced FireSim features, you can choose a link under the "Advanced
+Docs" section to the left.
