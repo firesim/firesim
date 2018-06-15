@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import shutil
+import time
 
 BUILD_DIR = 'build'
 MOUNT_POINT = BUILD_DIR + "/mount_point"
@@ -90,6 +91,7 @@ def generate_init_script(command):
     chmod_target('755', INIT_SCRIPT_NAME)
 
 def unmount_rootfs():
+    time.sleep(0.2)
     rc = subprocess.check_output(["sudo", "umount", MOUNT_POINT])
 
 class Workload:
