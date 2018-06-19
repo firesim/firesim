@@ -1,5 +1,7 @@
 # FireSim: Easy-to-use, Scalable, FPGA-accelerated Cycle-accurate Hardware Simulation
 
+![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
+
 ## Using FireSim
 
 To get started with using FireSim, see the tutorials on the FireSim documentation
