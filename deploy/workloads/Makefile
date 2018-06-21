@@ -5,7 +5,7 @@
 # be attached to your EC2 instance if you have a license
 # Regular benchmarks are cloned from git/the internet and built automatically
 
-allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test ping-latency
+allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
 
 # We use a branch of Speckle (https://github.com/ccelio/Speckle) to cross
 # compile the binaries for SPEC2017. These can be compiled locally on a machine
