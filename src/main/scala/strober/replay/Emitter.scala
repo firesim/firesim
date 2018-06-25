@@ -18,8 +18,8 @@ object StroberMacroEmitter {
       (port.writeEnable map (p => Seq(tab, "input", p.name))) ++
       (port.readEnable map (p => Seq(tab, "input", p.name))) ++
       (port.chipEnable map (p => Seq(tab, "input", p.name))) ++
-      (port.output map (p => Seq(tab, s"output[${port.width-1}:0]", p.name))) ++
-      (port.input map (p => Seq(tab, s"input[${port.width-1}:0]", p.name))) ++
+      (port.output map (p => Seq(tab, s"output[${port.width.get-1}:0]", p.name))) ++
+      (port.input map (p => Seq(tab, s"input[${port.width.get-1}:0]", p.name))) ++
       (port.maskPort map (p => Seq(tab, s"input[${sram.width/port.maskGran.get-1}:0]", p.name)))
     ) // TODO: extra ports...
 
