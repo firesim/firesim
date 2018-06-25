@@ -53,7 +53,7 @@ object MidasCompiler {
       ReplSeqMemAnnotation(s"-c:${chirrtl.main}:-o:$conf"),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(chirrtl.main, MacroCompilerAnnotation.Params(
-        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops)))
+        json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false)))
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
