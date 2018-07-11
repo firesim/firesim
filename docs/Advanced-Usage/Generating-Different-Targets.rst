@@ -66,9 +66,12 @@ Quad-core Rocket pipeline
 Other configurations are predefined in TODO.
 
 
-----------------
-BOOM-based SoCs
-----------------
+----------------------
+BOOM-based SoCs (Beta)
+----------------------
+
+Note: BOOM support is in beta as we resolve some issues with Linux boot. See `issue #12
+<https://github.com/firesim/firesim/issues/12>`_.
 
 Two design classes use the BOOM scalar in-order pipelines.
 
