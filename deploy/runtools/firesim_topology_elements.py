@@ -134,7 +134,7 @@ class FireSimServerNode(FireSimNode):
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""sudo mkdir -p {}""".format(mountpoint))
             run("""sudo mount /home/centos/sim_slot_{}/{} {}""".format(simserverindex, self.get_rootfs_name(), mountpoint))
-            run("""sudo chmod -R 777 {}""".format(mountpoint))
+            run("""sudo chmod -Rf 777 {}""".format(mountpoint))
 
         ## copy back files from inside the rootfs
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):

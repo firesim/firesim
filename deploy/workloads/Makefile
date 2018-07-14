@@ -5,7 +5,7 @@
 # be attached to your EC2 instance if you have a license
 # Regular benchmarks are cloned from git/the internet and built automatically
 
-allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test ping-latency
+allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
 
 # We use a branch of Speckle (https://github.com/ccelio/Speckle) to cross
 # compile the binaries for SPEC2017. These can be compiled locally on a machine
@@ -53,8 +53,13 @@ memcached-thread-imbalance:
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/mutilate-loadgen-riscv-release/overlay
 
-bw-test: bw-test.json
-	cd ../../sw/network-benchmarks && python build.py
+bw-test-two-instances: bw-test-two-instances.json
+	cd ../../sw/network-benchmarks && python build.py -n 8
+	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
+
+bw-test-one-instance: bw-test-one-instance.json
+	cd ../../sw/network-benchmarks && python build.py -n 4
+	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 ping-latency:
 	mkdir -p $@
@@ -82,4 +87,4 @@ check-rtc-linux:
 	cd $@ && ln -sf ../../../sw/firesim-software/bbl-vmlinux0 bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
 
-.PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform memcached-thread-imbalance bw-test ping-latency simperf-test simperf-test-latency simperf-test-scale iperf3 check-rtc check-rtc-linux allpaper
+.PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform memcached-thread-imbalance bw-test-one-instance bw-test-two-instances ping-latency simperf-test simperf-test-latency simperf-test-scale iperf3 check-rtc check-rtc-linux allpaper

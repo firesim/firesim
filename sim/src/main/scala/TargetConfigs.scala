@@ -5,14 +5,14 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-//import boom.system.BoomTilesKey
+import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
-    contentFileName = s"./target-rtl/firechip/bootrom/bootrom.rv${site(XLen)}.img")
+    contentFileName = s"./target-rtl/firechip/testchipip/bootrom/bootrom.rv${site(XLen)}.img")
 })
 
 class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) => {
@@ -20,7 +20,9 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 })
 
 class WithUARTKey extends Config((site, here, up) => {
-   case PeripheryUARTKey => List(UARTParams(address = BigInt(0x54000000L)))
+   case PeripheryUARTKey => List(UARTParams(
+     address = BigInt(0x54000000L),
+     initBaudRate = BigInt(3686400L)))
 })
 
 class WithNICKey extends Config((site, here, up) => {
@@ -46,6 +48,15 @@ class WithPerfCounters extends Config((site, here, up) => {
     core = tile.core.copy(nPerfCounters = 29)
   ))
 })
+
+class BoomWithLargeTLBs extends Config((site, here, up) => {
+  case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
+    core = tile.core.copy(
+      nL2TLBEntries = 1024 // TLB reach = 1024 * 4KB = 4MB
+    )
+  ))
+})
+
 
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
@@ -89,35 +100,14 @@ class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
 
-//class BoomWithLargeTLBs extends Config((site, here, up) => {
-//  case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
-//    icache = tile.icache map (_.copy(
-//      nTLBEntries = 32 // TLB reach = 32 * 4KB = 128KB
-//    )),
-//    dcache = tile.dcache map (_.copy(
-//      nMSHRs = 2, // BOOM should use non-blocking D$
-//      nTLBEntries = 32 // TLB reach = 32 * 4KB = 128KB
-//    )),
-//    core = tile.core.copy(
-//      nL2TLBEntries = 1024 // TLB reach = 1024 * 4KB = 4MB
-//    )
-//  ))
-//})
-//
-//class FireSimBoomConfig extends Config(
-//  new WithBootROM ++
-//  new WithPeripheryBusFrequency(BigInt(1600000000)) ++
-//  new WithExtMemSize(0x400000000L) ++ // 16GB
-//  new WithoutTLMonitors ++
-//  new WithUARTKey ++
-//  // new WithNICKey ++
-//  new WithBlockDevice ++
-//  new BoomWithLargeTLBs ++
-//  new boom.system.BoomConfig)
-
-/*class WithHwachaBlockDev extends Config((site, here, up) => {
-  // We can't use systembus because the platform wrapper doesn't have one
-  case BlockDeviceKey => BlockDeviceConfig(dataBitsPerBeat = 128)//up(SystemBusParams).beatBytes*8)
-})*/
-//class FireSimHwachaConfig extends Config(new WithHwachaBlockDev ++ new FireSimConfig)
-//class FireSimHwachaChipConfig extends Config(/*new WithoutTLMonitors ++*/ new WithHwachaBlockDev ++ /*new hwacha.ISCA2016Config ++*/ new FireSimRocketChipConfig)
+class FireSimBoomConfig extends Config(
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithExtMemSize(0x400000000L) ++ // 16GB
+  new WithoutTLMonitors ++
+  new WithUARTKey ++
+  new WithNICKey ++
+  new WithBlockDevice ++
+  new BoomWithLargeTLBs ++
+  // Using a small config because it has 64-bit system bus, and compiles quickly
+  new boom.system.SmallBoomConfig)

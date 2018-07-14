@@ -15,7 +15,7 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency);
+        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile);
         ~simplenic_t();
 
         virtual void init();
@@ -30,6 +30,7 @@ class simplenic_t: public endpoint_t
         char * pcis_write_bufs[2];
         int rlimit_inc, rlimit_period, rlimit_size;
         int LINKLATENCY;
+        FILE * niclog;
 };
 
 #endif // __SIMPLENIC_H

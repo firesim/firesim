@@ -1,5 +1,7 @@
 # FireSim: Easy-to-use, Scalable, FPGA-accelerated Cycle-accurate Hardware Simulation
 
+![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
+
 ## Using FireSim
 
 To get started with using FireSim, see the tutorials on the FireSim documentation
@@ -33,7 +35,7 @@ Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol
 Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing
 Huang, Kyle Kovacs, Borivoje Nikolic, Randy Katz, Jonathan Bachrach, and Krste
 Asanović. **FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in
-the Public Cloud**. *To appear, In proceedings of the 45th International Symposium
+the Public Cloud**. *In proceedings of the 45th International Symposium
 on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 
 [Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)

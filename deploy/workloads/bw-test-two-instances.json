@@ -1,0 +1,103 @@
+{
+  "benchmark_name" : "bw-test-two-instances",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "workloads" : [
+    {
+      "name" : "client-0",
+      "bootbinary" : "bw-test-client-0.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-1",
+      "bootbinary" : "bw-test-client-1.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-2",
+      "bootbinary" : "bw-test-client-2.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-3",
+      "bootbinary" : "bw-test-client-3.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-4",
+      "bootbinary" : "bw-test-client-4.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-5",
+      "bootbinary" : "bw-test-client-5.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-6",
+      "bootbinary" : "bw-test-client-6.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-7",
+      "bootbinary" : "bw-test-client-7.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-8",
+      "bootbinary" : "bw-test-server-8.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-9",
+      "bootbinary" : "bw-test-server-9.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-10",
+      "bootbinary" : "bw-test-server-10.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-11",
+      "bootbinary" : "bw-test-server-11.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-12",
+      "bootbinary" : "bw-test-server-12.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-13",
+      "bootbinary" : "bw-test-server-13.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-14",
+      "bootbinary" : "bw-test-server-14.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-15",
+      "bootbinary" : "bw-test-server-15.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}

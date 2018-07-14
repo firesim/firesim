@@ -2,6 +2,17 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.2.0] - 2018-07-14
+
+### Added
+
+* FireSim now has beta support for simulating [BOOM](https://github.com/ucb-bar/riscv-boom)-based nodes. BOOM is the Berkeley Out-of-Order Machine, a superscalar out-of-order RISC-V Core. See the following page for usage instructions: https://docs.fires.im/en/1.2/Advanced-Usage/Generating-Different-Targets.html#boom-based-socs-beta
+
+### Changed
+
+* Rocket Chip has now been bumped to a version from April 23, 2018.
+
+
 ## [1.1.0] - 2018-05-21
 
 ### Added
@@ -9,6 +20,7 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 Our first release of FireSim! Everything is a newly added feature, so check out
 the full documentation in the docs directory or the docs tagged 1.1.0 at 
 https://docs.fires.im .
+
 
 ## [1.0.0] - 2017-08-29
 

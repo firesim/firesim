@@ -226,7 +226,7 @@ def instance_privateip_lookup_table(instances):
 def wait_on_instance_launches(instances, message=""):
     """ Take a list of instances (as returned by create_instances), wait until
     instance is running. """
-    rootLogger.info("Waiting for instance boots: " + message)
+    rootLogger.info("Waiting for instance boots: " + str(len(instances)) + " " + message)
     for instance in instances:
         instance.wait_until_running()
         rootLogger.info(str(instance.id) + " booted!")

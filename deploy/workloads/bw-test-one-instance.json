@@ -1,0 +1,55 @@
+{
+  "benchmark_name" : "bw-test-one-instance",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "workloads" : [
+    {
+      "name" : "client-0",
+      "bootbinary" : "bw-test-client-0.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-1",
+      "bootbinary" : "bw-test-client-1.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-2",
+      "bootbinary" : "bw-test-client-2.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "client-3",
+      "bootbinary" : "bw-test-client-3.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-4",
+      "bootbinary" : "bw-test-server-4.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-5",
+      "bootbinary" : "bw-test-server-5.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-6",
+      "bootbinary" : "bw-test-server-6.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "server-7",
+      "bootbinary" : "bw-test-server-7.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}

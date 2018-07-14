@@ -138,7 +138,6 @@ class FireSimConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevice ++ // Widget needs BlockDeviceKey too
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
   new midas.F1Config)
@@ -147,7 +146,6 @@ class FireSimDDR3Config extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevice ++ // Widget needs the BlockDeviceKey too
   new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
   new midas.F1Config)
@@ -156,7 +154,6 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevice ++ // Widget needs the BlockDeviceKey too
   new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
@@ -165,7 +162,6 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevice ++ // Widget needs the BlockDeviceKey too
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
   new midas.F1Config)
@@ -174,7 +170,6 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevice ++ // Widget needs the BlockDeviceKey too
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
