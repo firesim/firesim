@@ -2,7 +2,7 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.2.0] - 2018-06-TBD
+## [1.2.0] - 2018-07-14
 
 ### Added
 
