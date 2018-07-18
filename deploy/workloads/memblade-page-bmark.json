@@ -1,0 +1,20 @@
+{
+  "benchmark_name" : "memblade-page-bmark",
+  "common_rootfs" : "dummy.ext2",
+  "common_simulation_outputs" : ["uartlog"],
+
+  "workloads" : [
+    {
+      "name" : "memblade-page-bmark",
+      "bootbinary" : "memblade-page-bmark.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy",
+      "bootbinary" : "memblade-dummy.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

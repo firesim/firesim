@@ -10,6 +10,7 @@ import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
 import java.io.File
+import memblade.{HasPeripheryMemBlade, HasPeripheryMemBladeModuleImpValidOnly}
 
 /*******************************************************************************
 * Top level DESIGN configurations. These describe the basic instantiations of
@@ -145,3 +146,12 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
 
 class FireBoomNoNICModuleImpTraced[+L <: FireBoomNoNIC](l: L) extends FireBoomNoNICModuleImp(l)
     with CanHaveBoomTraceIO
+
+class FireSimMemBlade(implicit p: Parameters) extends FireSimNoNIC
+    with HasPeripheryMemBlade {
+  override lazy val module = new FireSimMemBladeModuleImp(this)
+}
+
+class FireSimMemBladeModuleImp[+L <: FireSimMemBlade](l: L)
+    extends FireSimNoNICModuleImp(l)
+    with HasPeripheryMemBladeModuleImpValidOnly

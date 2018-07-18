@@ -1,0 +1,26 @@
+{
+  "benchmark_name" : "memblade-linux-bmark",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "memblade-bmark",
+          "bootbinary" : "bbl-vmlinux",
+          "files" : ["run-bmark.sh", "memblade-bmark.riscv"],
+          "command" : "/root/run-bmark.sh",
+          "simulation_outputs": [],
+          "outputs": []
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
+      }
+  ]
+}

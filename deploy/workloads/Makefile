@@ -63,7 +63,11 @@ simperf-test-latency: simperf-test
 iperf3: iperf3.json
 	mkdir -p $@
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+iperf3-loopback: iperf3-loopback.json
+	cd $@ && ln -sf ../../../sw/firesim-software/bbl-vmlinux0 bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
 
 check-rtc:
 	cd ../../sw/check-rtc && make check-rtc
@@ -78,7 +82,50 @@ check-rtc-linux:
 checksum-test:
 	cd ../../target-design/firechip/tests && make checksum.riscv
 
+memblade-test:
+	cd ../../sw/memblade-tests/baremetal && make memblade-test.riscv memblade-dummy.riscv
+
+memblade-page-bmark:
+	cd ../../sw/memblade-tests/baremetal && make memblade-page-bmark.riscv memblade-dummy.riscv
+
+memblade-linux-bmark:
+	cd ../../sw/memblade-tests/linux && make memblade-bmark.riscv
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cp ../../sw/memblade-tests/linux/memblade-bmark.riscv $@/overlay
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
+
+memblade-linux-bmark2:
+	cd ../../sw/memblade-tests/linux && make memblade-bmark.riscv
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cp ../../sw/memblade-tests/linux/memblade-bmark.riscv $@/overlay
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
+
+pagerank-local:
+	mkdir -p $@/overlay
+	cd ../../sw/memblade-tests/linux && make pagerank-local.riscv
+	cp ../../sw/memblade-tests/linux/pagerank-local.riscv $@/overlay
+	cp ../../sw/memblade-tests/data/* $@/overlay
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
+
+pagerank-remote:
+	mkdir -p $@/overlay
+	cd ../../sw/memblade-tests/linux && make pagerank-remote.riscv load-memblade.riscv
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cp ../../sw/memblade-tests/linux/{pagerank-remote,load-memblade}.riscv $@/overlay
+	cp ../../sw/memblade-tests/data/* $@/overlay
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
+
+pagerank-remote2:
+	mkdir -p $@/overlay
+	cd ../../sw/memblade-tests/linux && make pagerank-remote.riscv load-memblade.riscv
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cp ../../sw/memblade-tests/linux/{pagerank-remote,load-memblade}.riscv $@/overlay
+	cp ../../sw/memblade-tests/data/* $@/overlay
+	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
-	iperf3 check-rtc check-rtc-linux allpaper checksum-test
+	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
+	memblade-test memblade-page-bmark memblade-linux-bmark memblade-linux-bmark2 \
+	pagerank-local pagerank-remote pagerank-remote2

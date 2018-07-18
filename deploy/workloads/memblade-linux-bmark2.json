@@ -1,0 +1,42 @@
+{
+  "benchmark_name" : "memblade-linux-bmark2",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name" : "memblade-bmark-primary",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : ["run-primary.sh", "memblade-bmark.riscv"],
+      "command" : "/root/run-primary.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memblade-bmark-secondary",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : ["run-secondary.sh", "memblade-bmark.riscv"],
+      "command" : "/root/run-secondary.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memblade-dummy1",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy2",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

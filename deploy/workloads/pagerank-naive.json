@@ -1,0 +1,14 @@
+{
+  "benchmark_name" : "pagerank-naive",
+  "common_rootfs" : "dummy.ext2",
+  "common_simulation_outputs" : ["uartlog"],
+
+  "workloads" : [
+    {
+      "name" : "pagerank-naive",
+      "bootbinary" : "pagerank-naive.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

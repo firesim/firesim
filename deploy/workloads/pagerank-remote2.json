@@ -1,0 +1,54 @@
+{
+  "benchmark_name" : "pagerank-remote2",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name" : "pagerank-primary",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : [
+          "run-primary.sh",
+          "pagerank-remote.riscv",
+          "load-memblade.riscv",
+          "pagerank-data-512.bin",
+          "pagerank-data-1024.bin",
+          "pagerank-data-2048.bin",
+          "pagerank-data-4096.bin",
+          "pagerank-data-8192.bin"
+      ],
+      "command" : "/root/run-primary.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "pagerank-secondary",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : [
+          "run-secondary.sh",
+          "pagerank-remote.riscv"
+      ],
+      "command" : "/root/run-secondary.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memblade-dummy1",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy2",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

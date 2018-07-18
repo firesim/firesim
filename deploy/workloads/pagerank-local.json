@@ -1,0 +1,26 @@
+{
+  "benchmark_name" : "pagerank-local",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "pagerank-local",
+          "bootbinary" : "bbl-vmlinux",
+          "files" : [
+              "run-pagerank.sh",
+              "pagerank-local.riscv",
+              "pagerank-data-512.bin",
+              "pagerank-data-1024.bin",
+              "pagerank-data-2048.bin",
+              "pagerank-data-4096.bin",
+              "pagerank-data-8192.bin"
+          ],
+          "command" : "/root/run-pagerank.sh",
+          "simulation_outputs": [],
+          "outputs": []
+      }
+  ]
+}

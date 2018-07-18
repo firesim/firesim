@@ -1,0 +1,18 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "iperf3-loopback",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "iperf3-loopback",
+          "files" : ["run-iperf.sh"],
+          "command" : "/root/run-iperf.sh && poweroff",
+          "simulation_outputs": [],
+          "outputs": ["/root/server.log"]
+      }
+  ]
+}
