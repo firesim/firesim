@@ -10,7 +10,9 @@ import midas.core._
 import midas.widgets._
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
 
-class SimBlockDev extends Endpoint {
+class SimBlockDev(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio)
+  extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: BlockDeviceIO =>
       directionOf(channel.req.valid) == ActualDirection.Output
