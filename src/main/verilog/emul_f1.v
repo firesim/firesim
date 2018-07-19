@@ -107,7 +107,7 @@ module emul;
 
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
-  reg [1023:0] vcdplusfile = 0;
+  reg [2055:0] vcdplusfile = 0;
 
   initial begin
 `ifdef DEBUG
