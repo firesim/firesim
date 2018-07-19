@@ -119,10 +119,11 @@ class LBP32R32WLLC4MB extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
 
-// An LBP that runs at half the frequency of the cores + uncore
-class LBP32R32WHalfRate extends Config(
+// An LBP that runs at 1/3 the frequency of the cores + uncore
+// This is 1067 MHz for default core frequency of 3.2 GHz
+class LBP32R32W3Div extends Config(
   new WithFuncModelLimits(32,32) ++
-  new WithDefaultMemModel(2))
+  new WithDefaultMemModel(3))
 
 // DDR3 - FCFS models.
 class FCFS16GBQuadRank extends Config(new WithDDR3FIFOMAS(8) ++ new FireSimConfig)
@@ -140,15 +141,9 @@ class FRFCFS16GBQuadRankLLC4MB extends Config(
   new FRFCFS16GBQuadRank
 )
 
-// DDR3 - FRFCFS models include a clock division between uncore and DDR controller (1/2 and 1/4)
-class FRFCFS16GBQuadRankLLC4MBHalfRate extends Config(
+class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
   new WithLLCModel(4096, 8) ++
-  new FRFCFS16GBQuadRank(2)
-)
-
-class FRFCFS16GBQuadRankLLC4MBQuarterRate extends Config(
-  new WithLLCModel(4096, 8) ++
-  new FRFCFS16GBQuadRank(4)
+  new FRFCFS16GBQuadRank(3)
 )
 
 /*******************************************************************************
@@ -168,12 +163,12 @@ class FireSimConfig extends Config(
   new WithDefaultMemModel ++
   new BasePlatformConfig)
 
-class FireSimHalfRateLBPConfig extends Config(
+class FireSimClockDivConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
-  new LBP32R32WHalfRate ++
+  new WithDefaultMemModel(clockDivision = 2) ++
   new BasePlatformConfig)
 
 class FireSimDDR3Config extends Config(
@@ -206,4 +201,12 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
+  new BasePlatformConfig)
+
+class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
+  new WithSerialWidget ++
+  new WithUARTWidget ++
+  new WithSimpleNICWidget ++
+  new WithBlockDevWidget ++
+  new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)
