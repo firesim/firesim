@@ -297,7 +297,7 @@ class InstanceDeployManager:
         # TODO: we checkout a specific version of aws-fpga here, in case upstream
         # master is bumped. But now we have to remember to change AWS_FPGA_FIRESIM_UPSTREAM_VERSION
         # when we bump our stuff. Need a better way to do this.
-        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "b1ed5e951de3442ffb1fc8c7097e7064489e83f1"
+        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "7f1e76765766f579d3a767bedf669019d50342f3"
         self.instance_logger("""Installing AWS FPGA SDK on remote nodes.""")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
