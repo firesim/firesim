@@ -33,6 +33,7 @@ class simif_f1_t: public virtual simif_t
 //    int rc;
     int slot_id;
     int edma_fd;
+    int edma_read_fd;
     pci_bar_handle_t pci_bar_handle;
 #endif
 };
