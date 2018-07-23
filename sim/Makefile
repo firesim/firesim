@@ -37,8 +37,10 @@ driver_dir = $(base_dir)/src/main/cc
 
 name_tuple = $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 
-generated_dir ?= $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
-output_dir    ?= $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+base_generated_dir := $(base_dir)/generated-src
+base_output_dir := $(base_dir)/output
+generated_dir ?= $(base_generated_dir)/$(PLATFORM)/$(name_tuple)
+output_dir    ?= $(base_output_dir)/$(PLATFORM)/$(name_tuple)
 
 driver_h = $(shell find $(driver_dir) -name ".h")
 midas_h  = $(shell find $(simif_dir) -name "*.h")
@@ -289,6 +291,31 @@ xsim: $(xsim)
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
 	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
+
+#########################
+# MIDAS Unit Tests      #
+#########################
+UNITTEST_CONFIG ?= AllUnitTests
+
+midas_resources := $(base_dir)/midas/src/main/resources/midas
+rocketchip_dir := $(base_dir)/target-rtl/firechip/rocket-chip
+unittest_sim_dir := $(base_output_dir)/unittest/$(UNITTEST_CONFIG)
+unittest_generated_dir := $(base_generated_dir)/unittest/$(UNITTEST_CONFIG)
+unittest_args = \
+		base_dir=$(base_dir) \
+		generated_dir=$(unittest_generated_dir) \
+		rocketchip_dir=$(rocketchip_dir) \
+		sim_dir=$(unittest_sim_dir) \
+		SBT=$(SBT) \
+		CONFIG=$(UNITTEST_CONFIG)
+
+run-midas-unittests: $(chisel_srcs)
+	mkdir -p $(unittest_sim_dir)
+	$(MAKE) -f $(midas_resources)/unittest/Makefrag $@ $(unittest_args)
+
+run-midas-unittests-debug: $(chisel_srcs)
+	mkdir -p $(unittest_sim_dir)
+	$(MAKE) -f $(midas_resources)/unittest/Makefrag $@ $(unittest_args)
 
 cleanfpga:
 	rm -rf $(fpga_work_dir)
