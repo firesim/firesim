@@ -21,12 +21,10 @@ class WithWireChannelTests extends Config((site, here, up) => {
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(6))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(6))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
       Module(new WireChannelUnitTest)
     )
@@ -38,13 +36,20 @@ class WithReadyValidChannelTests extends Config((site, here, up) => {
     implicit val p = q
     val timeout = 200000
     Seq(
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
       Module(new ReadyValidChannelUnitTest)
     )
   }
 })
 
 // Complete configs
-//class AllUnitTests extends Config(new WithWireChannelTests ++ new SimConfig)
 class AllUnitTests extends Config(new WithReadyValidChannelTests ++ new WithWireChannelTests ++ new SimConfig)
 
 object Generator extends App with freechips.rocketchip.util.HasGeneratorUtilities {
