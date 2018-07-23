@@ -201,7 +201,7 @@ class ReadyValidChannel[T <: Data](
   io.targetReset.ready := true.B // TODO: is it ok?
 
   target.io.enq.bits := io.enq.target.bits
-  target.io.enq.valid := io.enq.target.valid && io.enq.host.hValid
+  target.io.enq.valid := io.enq.target.valid && io.enq.host.fire
   io.enq.target.ready := target.io.enq.ready
   io.enq.host.hReady := tokens.io.enq.ready
   tokens.io.enq.bits := target.io.enq.fire()
