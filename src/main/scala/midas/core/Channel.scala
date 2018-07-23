@@ -3,12 +3,14 @@
 package midas
 package core
 
-import strober.core.{TraceQueue, TraceMaxLen}
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.ParameterizedBundle
+import freechips.rocketchip.unittest._
+import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
+
+import strober.core.{TraceQueue, TraceMaxLen}
 
 // For now use the convention that clock ratios are set with respect to the transformed RTL
 trait IsRationalClockRatio {
@@ -54,6 +56,7 @@ class WireChannel(
   )(implicit p: Parameters) extends Module {
 
   require(clockRatio.isReciprocal || clockRatio.isIntegral)
+  require(p(ChannelLen) >= clockRatio.denominator)
 
   val io = IO(new WireChannelIO(w))
   val tokens = Module(new Queue(UInt(w.W), p(ChannelLen)))
@@ -93,6 +96,60 @@ class WireChannel(
   }
 }
 
+class WireChannelUnitTest(
+    clockRatio: IsRationalClockRatio = UnityClockRatio,
+    numTokens: Int = 4096,
+    timeout: Int = 50000
+  )(implicit p: Parameters) extends UnitTest(timeout) {
+
+  require(clockRatio.isReciprocal || clockRatio.isIntegral)
+  override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+
+  val payloadWidth = numTokens * clockRatio.numerator
+
+  val dut = Module(new WireChannel(payloadWidth, clockRatio))
+  val inputTokenNum       = RegInit(0.U(payloadWidth.W))
+  val outputTokenNum      = RegInit(0.U(payloadWidth.W))
+  val expectedOutputToken = RegInit(0.U(payloadWidth.W))
+  val outputDuplicatesRemaining = RegInit((clockRatio.numerator - 1).U)
+
+  val outputReadyFuzz = LFSR64()(0)
+  val inputValidFuzz = LFSR64()(0)
+
+  val finished = RegInit(false.B)
+
+  dut.io.in.bits := inputTokenNum
+  dut.io.in.valid  := inputValidFuzz
+  dut.io.out.ready := outputReadyFuzz && !finished
+
+  dut.io.traceLen := DontCare
+  dut.io.trace.ready := DontCare
+
+
+  when (dut.io.in.fire) {
+    inputTokenNum := inputTokenNum + 1.U
+  }
+
+  when (dut.io.out.fire) {
+    assert(finished || dut.io.out.bits === expectedOutputToken, "Output token does not match expected value")
+
+    outputTokenNum := outputTokenNum + 1.U
+    outputDuplicatesRemaining := Mux(outputDuplicatesRemaining === 0.U,
+                                     (clockRatio.numerator-1).U,
+                                     outputDuplicatesRemaining - 1.U)
+    if (clockRatio.isIntegral) {
+      expectedOutputToken := Mux(outputDuplicatesRemaining === 0.U,
+                                 expectedOutputToken + 1.U,
+                                 expectedOutputToken)
+    } else {
+      expectedOutputToken := expectedOutputToken + clockRatio.denominator.U
+    }
+
+    finished := finished || outputTokenNum === (numTokens-1).U
+  }
+
+  io.finished := finished
+}
 
 class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
@@ -230,4 +287,64 @@ class ReadyValidChannel[T <: Data](
     io.trace.valid.valid := Bool(false)
     io.trace.ready.valid := Bool(false)
   }
+}
+
+class ReadyValidChannelUnitTest(
+    clockRatio: IsRationalClockRatio = UnityClockRatio,
+    numTokens: Int = 4096,
+    timeout: Int = 50000
+  )(implicit p: Parameters) extends UnitTest(timeout) {
+
+  require(clockRatio.isReciprocal || clockRatio.isIntegral)
+  override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+
+  val payloadWidth = numTokens * clockRatio.numerator
+
+  val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), flipped = false, clockRatio = clockRatio))
+  val inputTokenNum       = RegInit(0.U(payloadWidth.W))
+  val outputTokenNum      = RegInit(0.U(payloadWidth.W))
+  val expectedOutputToken = RegInit(0.U(payloadWidth.W))
+  val outputDuplicatesRemaining = RegInit((clockRatio.numerator - 1).U)
+
+  val outputHReadyFuzz = LFSR64()(0)
+  val outputTReadyFuzz = LFSR64()(0)
+  val inputHValidFuzz = LFSR64()(0)
+  val inputTValidFuzz = LFSR64()(0)
+
+  val finished = RegInit(false.B)
+
+  dut.io.enq.host.hValid := inputHValidFuzz
+  dut.io.enq.target.valid  := inputTValidFuzz
+  dut.io.enq.target.bits := inputTokenNum
+
+  dut.io.deq.host.hReady := outputHReadyFuzz && !finished
+  dut.io.deq.target.ready := outputTReadyFuzz && !finished
+
+  dut.io.traceLen := DontCare
+  dut.io.trace.ready := DontCare
+
+
+  when (dut.io.enq.host.fire && dut.io.enq.target.fire) {
+    inputTokenNum := inputTokenNum + 1.U
+  }
+
+  when (dut.io.deq.host.fire && dut.io.deq.target.fire) {
+    assert(finished || dut.io.deq.target.bits === expectedOutputToken, "Output token does not match expected value")
+    outputTokenNum := outputTokenNum + 1.U
+    expectedOutputToken := expectedOutputToken + 1.U //clockRatio.denominator.U
+
+    finished := finished || outputTokenNum === (numTokens-1).U
+  }
+
+  io.finished := finished
+
+  dut.io.traceLen := DontCare
+  dut.io.traceLen := DontCare
+  // TODO: FIXME
+  dut.io.targetReset.valid := reset.toBool()
+  dut.io.targetReset.bits := reset.toBool()
+  dut.io.trace.ready.ready := DontCare
+  dut.io.trace.valid.ready := DontCare
+  dut.io.trace.bits.ready := DontCare
+  dut.io.traceLen := DontCare
 }
