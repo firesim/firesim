@@ -291,20 +291,23 @@ class ReadyValidChannel[T <: Data](
 
 class ReadyValidChannelUnitTest(
     clockRatio: IsRationalClockRatio = UnityClockRatio,
-    numTokens: Int = 4096,
+    numNonEmptyTokens: Int = 2048,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
 
   require(clockRatio.isReciprocal || clockRatio.isIntegral)
   override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
 
-  val payloadWidth = numTokens * clockRatio.numerator
+  val payloadWidth = log2Ceil(numNonEmptyTokens + 1)
 
   val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), flipped = false, clockRatio = clockRatio))
-  val inputTokenNum       = RegInit(0.U(payloadWidth.W))
-  val outputTokenNum      = RegInit(0.U(payloadWidth.W))
-  val expectedOutputToken = RegInit(0.U(payloadWidth.W))
-  val outputDuplicatesRemaining = RegInit((clockRatio.numerator - 1).U)
+  // Count host-level handshakes on tokens
+  val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))
+  val outputTokenNum     = RegInit(0.U(log2Ceil(timeout).W))
+
+  // For driving the values of non-empty tokens
+  val inputTokenPayload   = RegInit(0.U(payloadWidth.W))
+  val expectedOutputPayload = RegInit(0.U(payloadWidth.W))
 
   val outputHReadyFuzz = LFSR64()(0)
   val outputTReadyFuzz = LFSR64()(0)
@@ -315,7 +318,7 @@ class ReadyValidChannelUnitTest(
 
   dut.io.enq.host.hValid := inputHValidFuzz
   dut.io.enq.target.valid  := inputTValidFuzz
-  dut.io.enq.target.bits := inputTokenNum
+  dut.io.enq.target.bits := inputTokenPayload
 
   dut.io.deq.host.hReady := outputHReadyFuzz && !finished
   dut.io.deq.target.ready := outputTReadyFuzz && !finished
@@ -324,16 +327,42 @@ class ReadyValidChannelUnitTest(
   dut.io.trace.ready := DontCare
 
 
-  when (dut.io.enq.host.fire && dut.io.enq.target.fire) {
+  when (dut.io.enq.host.fire) {
     inputTokenNum := inputTokenNum + 1.U
+
+    when ( dut.io.enq.target.fire) {
+      inputTokenPayload := inputTokenPayload + 1.U
+    }
   }
 
-  when (dut.io.deq.host.fire && dut.io.deq.target.fire) {
-    assert(finished || dut.io.deq.target.bits === expectedOutputToken, "Output token does not match expected value")
-    outputTokenNum := outputTokenNum + 1.U
-    expectedOutputToken := expectedOutputToken + 1.U //clockRatio.denominator.U
+  val (lowerTokenBound, upperTokenBound) = if (clockRatio.isIntegral) {
+    val lB = Mux( inputTokenNum > p(ChannelLen).U,
+                 (inputTokenNum - p(ChannelLen).U)  * clockRatio.numerator.U,
+                  0.U)
+    val uB = inputTokenNum * clockRatio.numerator.U
+    (lB, uB)
+  } else {
+    // The channel requires only a single input token after reset to produce its output token
+    val uB = (inputTokenNum + (clockRatio.denominator - 1).U) / clockRatio.denominator.U 
+    val lB = Mux(uB > p(ChannelLen).U,
+                 uB - p(ChannelLen).U,
+                 0.U)
+    (lB, uB)
+  }
 
-    finished := finished || outputTokenNum === (numTokens-1).U
+  when (dut.io.deq.host.fire) {
+    outputTokenNum := outputTokenNum + 1.U
+
+    assert(finished || outputTokenNum <= upperTokenBound, "Received too many output tokens.")
+    assert(finished || outputTokenNum >= lowerTokenBound, "Received too few output tokens.")
+
+    // Check the target-data
+    when (dut.io.deq.target.fire) {
+      assert(finished || dut.io.deq.target.bits === expectedOutputPayload, "Output token does not match expected value")
+      expectedOutputPayload := expectedOutputPayload + 1.U //clockRatio.denominator.U
+
+      finished := finished || expectedOutputPayload === (numNonEmptyTokens - 1).U
+    }
   }
 
   io.finished := finished
