@@ -27,6 +27,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     bool nic_loopback = false;
 
     std::vector<std::string> args(argv + 1, argv + argc);
+    max_cycles = -1;
+    profile_interval = max_cycles;
+
     for (auto &arg: args) {
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
