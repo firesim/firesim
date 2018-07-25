@@ -166,7 +166,8 @@ class AbstractSwitchToSwitchConfig:
         """ Return the command to boot the switch."""
         switchlatency = self.fsimswitchnode.switch_switching_latency
         linklatency = self.fsimswitchnode.switch_link_latency
-        return """screen -S {} -d -m bash -c "script -f -c './{} {} {}' switchlog"; sleep 1""".format(self.switch_binary_name(), self.switch_binary_name(), linklatency, switchlatency)
+        bandwidth = self.fsimswitchnode.switch_bandwidth
+        return """screen -S {} -d -m bash -c "script -f -c './{} {} {} {}' switchlog"; sleep 1""".format(self.switch_binary_name(), self.switch_binary_name(), linklatency, switchlatency, bandwidth)
 
     def kill_switch_simulation_command(self):
         """ Return the command to kill the switch. """

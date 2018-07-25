@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <cstdlib>
 
-#define IGNORE_PRINTF
+//#define IGNORE_PRINTF
 
 #ifdef IGNORE_PRINTF
 #define printf(fmt, ...) (0)
@@ -33,6 +33,12 @@ int LINKLATENCY = 0;
 int switchlat = 0;
 
 #define SWITCHLATENCY (switchlat)
+
+// param: max number of flits that can be sent per batch
+// Used to throttle outbound bandwidth from port
+//
+// THIS IS SET BY A COMMAND LINE ARGUMENT. DO NOT CHANGE IT HERE.
+int maxflits = 0;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
@@ -156,8 +162,8 @@ while (!pqueue.empty()) {
     switchpacket * tsp = pqueue.top().switchpack;
     pqueue.pop();
     uint16_t send_to_port = get_port_from_flit(tsp->dat[0], 0 /* junk remove arg */);
-    printf("packet for port: %x\n", send_to_port);
-    printf("packet timestamp: %ld\n", tsp->timestamp);
+    //printf("packet for port: %x\n", send_to_port);
+    //printf("packet timestamp: %ld\n", tsp->timestamp);
     if (send_to_port == BROADCAST_ADJUSTED) {
         for (int i = 0; i < NUMPORTS; i++) {
             if (i != tsp->sender ) {
@@ -186,19 +192,25 @@ for (int port = 0; port < NUMPORTS; port++) {
 
 
 int main (int argc, char *argv[]) {
-    if (argc < 3) {
+    int bandwidth;
+
+    if (argc < 4) {
         // if insufficient args, error out
-        fprintf(stdout, "usage: ./switch LINKLATENCY SWITCHLATENCY\n");
+        fprintf(stdout, "usage: ./switch LINKLATENCY SWITCHLATENCY BANDWIDTH\n");
         fprintf(stdout, "insufficient args provided\n.");
         fprintf(stdout, "LINKLATENCY and SWITCHLATENCY should be provided in cycles.\n");
+        fprintf(stdout, "BANDWIDTH should be provided in Gbps\n");
         exit(1);
     }
 
     LINKLATENCY = atoi(argv[1]);
     switchlat = atoi(argv[2]);
+    bandwidth = atoi(argv[3]);
+    maxflits = (LINKLATENCY * bandwidth) / 200;
 
     fprintf(stdout, "Using link latency: %d\n", LINKLATENCY);
     fprintf(stdout, "Using switching latency: %d\n", SWITCHLATENCY);
+    fprintf(stdout, "Using max %d flits per batch\n", maxflits);
 
     if ((LINKLATENCY % 7) != 0) {
         // if invalid link latency, error out.

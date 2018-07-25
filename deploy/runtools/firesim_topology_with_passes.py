@@ -242,6 +242,8 @@ class FireSimTopologyWithPasses:
                     node.switch_link_latency = self.defaultlinklatency
                 if node.switch_switching_latency is None:
                     node.switch_switching_latency = self.defaultswitchinglatency
+                if node.switch_bandwidth is None:
+                    node.switch_bandwidth = self.defaultnetbandwidth
 
             if isinstance(node, FireSimServerNode):
                 if node.server_link_latency is None:
