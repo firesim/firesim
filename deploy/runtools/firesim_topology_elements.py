@@ -75,11 +75,12 @@ class FireSimServerNode(FireSimNode):
     SERVERS_CREATED = 0
 
     def __init__(self, server_hardware_config=None, server_link_latency=None,
-                 server_bw_max=None):
+                 server_bw_max=None, server_profile_interval=None):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
+        self.server_profile_interval = server_profile_interval
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         FireSimServerNode.SERVERS_CREATED += 1
@@ -110,7 +111,7 @@ class FireSimServerNode(FireSimNode):
         """
         return self.server_hardware_config.get_boot_simulation_command(
             self.get_mac_address(), self.get_rootfs_name(), slotno, self.server_link_latency,
-            self.server_bw_max, self.get_bootbin_name())
+            self.server_bw_max, self.server_profile_interval, self.get_bootbin_name())
 
     def copy_back_job_results_from_run(self, slotno):
         """
