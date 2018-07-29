@@ -67,11 +67,11 @@ void BasePort::write_flits_to_output() {
         
         // confirm that a) we are allowed to send this out based on timestamp
         // b) we are allowed to send this out based on available space (TODO fix)
-        if (outputtimestampend < maxtime && (thispacket->amtwritten <= space_available) && next_amtwritten <= maxflits) {
+        if (outputtimestamp < maxtime) {
 #ifdef LIMITED_BUFSIZE
             // output-buffer size-based throttling, based on input time of first flit
             int64_t diff = basetime + flitswritten - outputtimestamp;
-            if (diff > OUTPUT_BUF_SIZE) {
+            if ((outputqueue.front()->amt_read == 0) && (diff > OUTPUT_BUF_SIZE)) {
                 // this packet would've been dropped due to buffer overflow.
                 // so, drop it.
                 printf("overflow, drop pack: intended timestamp: %ld, current timestamp: %ld, out bufsize in # flits: %ld, diff: %ld\n", outputtimestamp, basetime + flitswritten, OUTPUT_BUF_SIZE, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
@@ -85,16 +85,28 @@ void BasePort::write_flits_to_output() {
             // first, advance flitswritten to the correct start point:
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
-            outputqueue.pop();
             printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
-            for (int i = 0; i < thispacket->amtwritten; i++) {
+            int i = thispacket->amtread;
+            for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
                 write_flit(current_output_buf, flitswritten, thispacket->dat[i]);
-                flitswritten++;
+
+		if ((i + 1) % throttle_numer == 0)
+		    flitswritten += (throttle_denom - throttle_numer + 1);
+		else
+		    flitswritten++;
             }
-            amtwritten = next_amtwritten;
-            free(thispacket);
+            if (i == thispacket->amtwritten) {
+                // we finished sending this packet, so get rid of it
+                outputqueue.pop();
+                free(thispacket);
+            } else {
+                // we're not done sending this packet, so mark how much has been sent
+                // for the next time
+                thispacket->amtread = i;
+                break;
+            }
         } else {
             // since otuput queue is sorted on time, we have nothing else to
             // write

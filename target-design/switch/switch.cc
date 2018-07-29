@@ -34,11 +34,12 @@ int switchlat = 0;
 
 #define SWITCHLATENCY (switchlat)
 
-// param: max number of flits that can be sent per batch
+// param: numerator and denominator of bandwidth throttle
 // Used to throttle outbound bandwidth from port
 //
-// THIS IS SET BY A COMMAND LINE ARGUMENT. DO NOT CHANGE IT HERE.
-int maxflits = 0;
+// THESE ARE SET BY A COMMAND LINE ARGUMENT. DO NOT CHANGE IT HERE.
+int throttle_numer = 1;
+int throttle_denom = 1;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
@@ -189,7 +190,20 @@ for (int port = 0; port < NUMPORTS; port++) {
 
 }
 
+static void simplify_frac(int n, int d, int *nn, int *dd)
+{
+    int a = n, b = d;
 
+    // compute GCD
+    while (b > 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+
+    *nn = n / a;
+    *dd = d / a;
+}
 
 int main (int argc, char *argv[]) {
     int bandwidth;
@@ -206,11 +220,12 @@ int main (int argc, char *argv[]) {
     LINKLATENCY = atoi(argv[1]);
     switchlat = atoi(argv[2]);
     bandwidth = atoi(argv[3]);
-    maxflits = (LINKLATENCY * bandwidth) / 200;
+
+    simplify_frac(bandwidth, 200, &throttle_numer, &throttle_denom);
 
     fprintf(stdout, "Using link latency: %d\n", LINKLATENCY);
     fprintf(stdout, "Using switching latency: %d\n", SWITCHLATENCY);
-    fprintf(stdout, "Using max %d flits per batch\n", maxflits);
+    fprintf(stdout, "BW throttle set to %d/%d\n", throttle_numer, throttle_denom);
 
     if ((LINKLATENCY % 7) != 0) {
         // if invalid link latency, error out.
