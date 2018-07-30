@@ -152,7 +152,7 @@ To run a simulation you need to make both the DUT and driver targets by typing:
 
     make xsim
     make xsim-dut <VCS=1> & # Launch the DUT
-    make xsim SIM_BINARY=<PATH/TO/BINARY> # Launch the driver
+    make run-xsim SIM_BINARY=<PATH/TO/BINARY/FOR/TARGET/TO/RUN> # Launch the driver
 
 
 Once both processes are running, you should see:
