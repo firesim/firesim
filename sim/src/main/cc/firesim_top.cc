@@ -169,7 +169,11 @@ void firesim_top_t::run(size_t step_size) {
         e->init();
     }
 
-    if (do_zero_out_dram) zero_out_dram(); 
+    if (do_zero_out_dram) {
+        fprintf(stderr, "Zeroing out FPGA DRAM...\n");
+        zero_out_dram();
+    }
+    fprintf(stderr, "Commencing simulation.\n");
 
     // Assert reset T=0 -> 50
     target_reset(0, 50);
