@@ -38,11 +38,26 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
 
   val wAddrH = genWOReg(Wire(UInt(max(0,  p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
   val wAddrL = genWOReg(Wire(UInt(min(32, p(hKey).addrBits     ).W)), "W_ADDRESS_L")
-  val wLen = genWORegInit(Wire(UInt(32.W)), "W_LENGTH", 0.U)
-  val wBeatsRemaining = RegInit(0.U(log2Ceil(maxBurst+1).W))
+  val wLen = genWORegInit(Wire(UInt((p(hKey).addrBits - log2Ceil(hWidth/8) + 1).W)), "W_LENGTH", 0.U)
+  // When set, instructs the unit to write 0s to the complete address space
+  // Cleared when completed
+  val zeroOutDram = genAndAttachReg(Wire(Bool()), "ZERO_OUT_DRAM", Some(false.B))
 
+  val wBeatsRemaining = RegInit(0.U(log2Ceil(maxBurst+1).W))
   val nextBurstLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
   val wAddr = Cat(wAddrH, wAddrL)
+
+  when (zeroOutDram && wLen === 0.U) {
+    when (wBeatsRemaining === 0.U) {
+      // Commence initialization by faking a really large write
+      wLen := 1.U << (p(hKey).addrBits - log2Ceil(hWidth/8))
+      wAddrH := 0.U
+      wAddrL := 0.U
+    }.elsewhen(io.toSlaveMem.w.fire && io.toSlaveMem.w.bits.last) {
+      // We've written the last beat; clear the zeroOutDram bit to indicate doneness
+      zeroOutDram := false.B
+    }
+  }
 
   io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
       id = 0.U,
@@ -69,15 +84,15 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
   attachDecoupledSink(wDataQ.io.in, "W_DATA")
 
   io.toSlaveMem.w.bits := NastiWriteDataChannel(
-    data = wDataQ.io.out.bits,
+    data = Mux(zeroOutDram, 0.U, wDataQ.io.out.bits),
     last = wBeatsRemaining === 1.U
   )(p alterPartial ({ case NastiKey => p(hKey) }))
 
   when (io.toSlaveMem.w.fire) {
     wBeatsRemaining := wBeatsRemaining - 1.U
   }
-  io.toSlaveMem.w.valid := wDataQ.io.out.valid && wBeatsRemaining =/= 0.U
-  wDataQ.io.out.ready := io.toSlaveMem.w.ready && wBeatsRemaining =/= 0.U
+  io.toSlaveMem.w.valid := (zeroOutDram || wDataQ.io.out.valid) && wBeatsRemaining =/= 0.U
+  wDataQ.io.out.ready := !zeroOutDram && io.toSlaveMem.w.ready && wBeatsRemaining =/= 0.U
 
   // TODO: Handle write responses better?
   io.toSlaveMem.b.ready := Bool(true)
