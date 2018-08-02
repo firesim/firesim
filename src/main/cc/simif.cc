@@ -198,4 +198,9 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
     write(LOADMEM_W_DATA, i < size ? data[i] : 0);
   }
 }
+
+void simif_t::zero_out_dram() {
+  write(LOADMEM_ZERO_OUT_DRAM, 1);
+  while(read(LOADMEM_ZERO_OUT_DRAM) != 0);
+}
 #endif // LOADMEM
