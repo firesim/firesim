@@ -95,6 +95,7 @@ class simif_t
 #ifdef LOADMEM
     void read_mem(size_t addr, mpz_t& value);
     void write_mem(size_t addr, mpz_t& value);
+    void write_mem_chunk(size_t addr, mpz_t& value, size_t bytes);
 #endif
 
     // A default reset scheme that pulses the global chisel reset
