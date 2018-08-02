@@ -39,6 +39,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr
         if (arg.find("+slotid=") == 0) {
             slotid = const_cast<char*>(arg.c_str()) + 8;
         }
+        if (arg.find("+zero-out-dram") == 0) {
+            do_zero_out_dram = true;
+        }
         if (arg.find("+macaddr=") == 0) {
             uint8_t mac_bytes[6];
             int mac_octets[6];
@@ -105,25 +108,10 @@ void firesim_top_t::loadmem() {
         assert(loadmem.size <= 1024);
         static char buf[1024]; // This should be enough...
         fesvr->recv_loadmem_data(buf, loadmem.size);
-#ifdef LOADMEM
-        const size_t mem_data_bytes = MEM_DATA_CHUNK * sizeof(data_t);
-#define WRITE_MEM(addr, src) \
-        mpz_t data; \
-        mpz_init(data); \
-        mpz_import(data, mem_data_bytes / sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, src); \
-        write_mem(addr, data)
-#else
-        const size_t mem_data_bytes = MEM_DATA_BITS / 8;
-#define WRITE_MEM(addr, src) \
-        for (auto e: endpoints) { \
-            if (sim_mem_t* s = dynamic_cast<sim_mem_t*>(e)) { \
-                s->write_mem(addr, src); \
-            } \
-        }
-#endif
-        for (size_t off = 0 ; off < loadmem.size ; off += mem_data_bytes) {
-            WRITE_MEM(loadmem.addr + off, buf + off);
-        }
+        mpz_t data;
+        mpz_init(data);
+        mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
+        write_mem_chunk(loadmem.addr, data, loadmem.size);
     }
 }
 
@@ -181,7 +169,9 @@ void firesim_top_t::run(size_t step_size) {
         e->init();
     }
 
-    // Assert reset T=0 -> 5
+    if (do_zero_out_dram) zero_out_dram(); 
+
+    // Assert reset T=0 -> 50
     target_reset(0, 50);
 
     uint64_t start_time = timestamp();

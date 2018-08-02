@@ -32,6 +32,8 @@ class firesim_top_t: virtual simif_t
         // This sets the coarse_step_size in loop
         uint64_t profile_interval;
 
+        // If set, will write all zeros to fpga dram before commencing simulation
+        bool do_zero_out_dram = false;
         // Main simulation loop
         // stepsize = number of target cycles between FESVR interactions
         // coarse_step_size = maximum number of target cycles loop may advance the simulator
