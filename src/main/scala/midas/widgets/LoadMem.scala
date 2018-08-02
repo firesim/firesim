@@ -3,11 +3,12 @@
 package midas
 package widgets
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 
-import scala.math.max
+import scala.math.{max, min}
 
 class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends WidgetIO()(p){
   // TODO: Slave nasti key should be passed in explicitly
@@ -19,7 +20,8 @@ class NastiParams()(implicit val p: Parameters) extends HasNastiParameters
 // A crude load mem unit that writes in single beats into the destination memory system
 // Arguments:
 //  Hkey -> the Nasti key for the interconnect of the memory system we are writing to
-class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extends Widget()(p) {
+//  maxBurst -> the maximum number of beats in a request made to the host memory system
+class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new LoadMemIO(hKey))
 
   // prefix h -> host memory we are writing to
@@ -34,30 +36,57 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   require(hWidth >= cWidth)
   require(p(hKey).addrBits <= 2 * cWidth)
 
-  val wAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
-  val wAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "W_ADDRESS_L")
-  io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
-      id = UInt(0),
-      addr = Cat(wAddrH, wAddrQ.bits),
-      size = size)(p alterPartial ({ case NastiKey => p(hKey) }))
-  io.toSlaveMem.aw.valid := wAddrQ.valid
-  wAddrQ.ready := io.toSlaveMem.aw.ready
+  val wAddrH = genWOReg(Wire(UInt(max(0,  p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
+  val wAddrL = genWOReg(Wire(UInt(min(32, p(hKey).addrBits     ).W)), "W_ADDRESS_L")
+  val wLen = genWORegInit(Wire(UInt(32.W)), "W_LENGTH", 0.U)
+  val wBeatsRemaining = RegInit(0.U(log2Ceil(maxBurst+1).W))
 
-  val wDataQ = Module(new MultiWidthFifo(cWidth, hWidth, 2))
+  val nextBurstLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
+  val wAddr = Cat(wAddrH, wAddrL)
+
+  io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
+      id = 0.U,
+      addr = wAddr,
+      len = nextBurstLen - 1.U,
+      size = size)(p.alterPartial({ case NastiKey => p(hKey) }))
+
+  io.toSlaveMem.aw.valid := wLen > 0.U && wBeatsRemaining === 0.U
+
+  val nextWAddr = wAddr + (nextBurstLen << (log2Ceil(hWidth/8).U))
+
+  when (io.toSlaveMem.aw.fire) {
+    wLen := wLen - nextBurstLen
+    wBeatsRemaining := nextBurstLen
+    if (p(hKey).addrBits > p(CtrlNastiKey).dataBits) {
+      wAddrH := nextWAddr(p(hKey).addrBits - 1, 32)
+      wAddrL := nextWAddr(31, 0)
+    } else {
+      wAddrL := nextWAddr(p(hKey).addrBits - 1, 0)
+    }
+  }
+
+  val wDataQ = Module(new MultiWidthFifo(cWidth, hWidth, maxBurst))
   attachDecoupledSink(wDataQ.io.in, "W_DATA")
 
-  io.toSlaveMem.w.bits := NastiWriteDataChannel(data = wDataQ.io.out.bits)(
-      p alterPartial ({ case NastiKey => p(hKey) }))
-  io.toSlaveMem.w.valid := wDataQ.io.out.valid
-  wDataQ.io.out.ready := io.toSlaveMem.w.ready
+  io.toSlaveMem.w.bits := NastiWriteDataChannel(
+    data = wDataQ.io.out.bits,
+    last = wBeatsRemaining === 1.U
+  )(p alterPartial ({ case NastiKey => p(hKey) }))
+
+  when (io.toSlaveMem.w.fire) {
+    wBeatsRemaining := wBeatsRemaining - 1.U
+  }
+  io.toSlaveMem.w.valid := wDataQ.io.out.valid && wBeatsRemaining =/= 0.U
+  wDataQ.io.out.ready := io.toSlaveMem.w.ready && wBeatsRemaining =/= 0.U
 
   // TODO: Handle write responses better?
   io.toSlaveMem.b.ready := Bool(true)
 
   val rAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "R_ADDRESS_H")
   val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS_L")
+
   io.toSlaveMem.ar.bits := NastiReadAddressChannel(
-      id = UInt(0),
+      id = 0.U,
       addr = Cat(rAddrH, rAddrQ.bits),
       size = size)(p alterPartial ({ case NastiKey => p(hKey) }))
   io.toSlaveMem.ar.valid := rAddrQ.valid
@@ -67,6 +96,7 @@ class LoadMemWidget(hKey: Field[NastiParameters])(implicit p: Parameters) extend
   attachDecoupledSource(rDataQ.io.out, "R_DATA")
   io.toSlaveMem.r.ready := rDataQ.io.in.ready
   rDataQ.io.in.valid := io.toSlaveMem.r.valid
+  rDataQ.io.in.bits := io.toSlaveMem.r.bits.data
 
   genCRFile()
 
