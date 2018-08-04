@@ -165,6 +165,7 @@ void simif_t::load_mem(std::string filename) {
   fprintf(stdout, "[loadmem] done\n");
 }
 
+// NB: mpz_t variables may not export <size> <data_t> beats, if initialized with an array of zeros.
 void simif_t::read_mem(size_t addr, mpz_t& value) {
   write(LOADMEM_R_ADDRESS_H, addr >> 32);
   write(LOADMEM_R_ADDRESS_L, addr & ((1ULL << 32) - 1));
