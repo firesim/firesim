@@ -39,11 +39,11 @@ This is assuming that you are simulating a 1-node networked cluster. These instr
 will let you both ssh into the simulated node and access the outside internet from within
 the simulated node:
 
-1. Set your config files to simulate a 1-node networked cluster (example_1config)
-2. Run "firesim launchrunfarm && firesim infrasetup" and wait for them to complete
-3. cd to firesim/target-design/switch/
-4. Go into the newest directory that is prefixed with "switch0-"
-5. Edit the switchconfig.h file so that it looks like this:
+1. Set your config files to simulate a 1-node networked cluster (``example_1config``)
+2. Run ``firesim launchrunfarm && firesim infrasetup`` and wait for them to complete
+3. cd to ``firesim/target-design/switch/``
+4. Go into the newest directory that is prefixed with ``switch0-``
+5. Edit the ``switchconfig.h`` file so that it looks like this:
 
 ::
 
