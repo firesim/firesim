@@ -32,3 +32,78 @@ and
 
 https://forums.aws.amazon.com/ann.jspa?annID=5710
 
+
+Experimental Support for SSHing into simulated nodes and accessing the internet from within simulations
+-------------------------------------------------------------------------------------------------------
+This is assuming that you are simulating a 1-node networked cluster. These instructions
+will let you both ssh into the simulated node and access the outside internet from within
+the simulated node:
+
+1. Set your config files to simulate a 1-node networked cluster (``example_1config``)
+2. Run ``firesim launchrunfarm && firesim infrasetup`` and wait for them to complete
+3. cd to ``firesim/target-design/switch/``
+4. Go into the newest directory that is prefixed with ``switch0-``
+5. Edit the ``switchconfig.h`` file so that it looks like this:
+
+::
+
+    // THIS FILE IS MACHINE GENERATED. SEE deploy/buildtools/switchmodelconfig.py
+
+    #ifdef NUMCLIENTSCONFIG
+    #define NUMPORTS 2
+    #endif
+    #ifdef PORTSETUPCONFIG
+    ports[0] = new ShmemPort(0);
+    ports[1] = new SSHPort(1);
+    #endif
+
+    #ifdef MACPORTSCONFIG
+    uint16_t mac2port[3]  {1, 2, 0};
+    #endif
+
+
+6. Run ``make`` then ``cp switch switch0``
+7. Run ``scp switch0 YOUR_RUN_FARM_INSTANCE_IP:switch_slot_0/switch0``
+8. On the RUN FARM INSTANCE, run:
+
+::
+
+    sudo ip tuntap add mode tap dev tap0 user $USER
+    sudo ip link set tap0 up
+    sudo ip addr add 192.168.0.1/24 dev tap0
+    sudo ifconfig tap0 hw ether 8e:6b:35:04:00:00
+    sudo sysctl -w net.ipv6.conf.tap0.disable_ipv6=1
+
+
+9. Run ``firesim runworkload``. Confirm that the node has booted to the login prompt in the fsim0 screen.
+
+10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (192.168.0.2), username root, password firesim. You should also prefix with TERM=linux to get backspace to work correctly: So:
+
+::
+
+    ssh YOUR_RUN_FARM_INSTANCE_IP
+    # from within the run farm instance:
+    TERM=linux ssh 192.168.0.2
+
+
+11. To also be able to access the internet from within the simulation, run the following
+on the RUN FARM INSTANCE:
+
+::
+
+    sudo sysctl -w net.ipv4.ip_forward=1
+    sudo iptables -A FORWARD -i eth0 -o tap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+    sudo iptables -A FORWARD -i tap0 -o eth0 -j ACCEPT
+    sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+
+12. Then run the following in the simulation:
+
+::
+
+    route add default gw 192.168.0.1 eth0
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+
+At this point, you will be able to access the outside internet, e.g. ``ping google.com`` or ``wget google.com``.
