@@ -13,7 +13,7 @@ class firesim_top_t: virtual simif_t
         ~firesim_top_t() { }
 
         void run(size_t step_size);
-        void loadmem();
+        void tether_bypass_via_loadmem();
 
     protected:
         void add_endpoint(endpoint_t* endpoint) {
@@ -32,10 +32,16 @@ class firesim_top_t: virtual simif_t
         // This sets the coarse_step_size in loop
         uint64_t profile_interval;
 
+        // If set, will write all zeros to fpga dram before commencing simulation
+        bool do_zero_out_dram = false;
         // Main simulation loop
         // stepsize = number of target cycles between FESVR interactions
         // coarse_step_size = maximum number of target cycles loop may advance the simulator
         void loop(size_t step_size, uint64_t coarse_step_size);
+
+        // Helper functions to handoff fesvr requests to the loadmem unit
+        void handle_loadmem_read(fesvr_loadmem_t loadmem);
+        void handle_loadmem_write(fesvr_loadmem_t loadmem);
 };
 
 #endif // __FIRESIM_TOP_H

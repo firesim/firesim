@@ -11,9 +11,11 @@ struct fesvr_loadmem_t {
 class fesvr_proxy_t
 {
     public:
-        virtual bool recv_loadmem_req(fesvr_loadmem_t& req) = 0;
+        virtual bool recv_loadmem_write_req(fesvr_loadmem_t& req) = 0;
+        virtual bool recv_loadmem_read_req(fesvr_loadmem_t& req) = 0;
         virtual void recv_loadmem_data(void* buf, size_t len) = 0;
 
+        virtual bool has_loadmem_reqs() = 0;
         virtual bool data_available() = 0;
         virtual uint32_t recv_word() = 0;
         virtual void send_word(uint32_t word) = 0;
