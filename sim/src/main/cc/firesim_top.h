@@ -13,7 +13,7 @@ class firesim_top_t: virtual simif_t
         ~firesim_top_t() { }
 
         void run(size_t step_size);
-        void tether_bypass_loadmem();
+        void tether_bypass_via_loadmem();
 
     protected:
         void add_endpoint(endpoint_t* endpoint) {

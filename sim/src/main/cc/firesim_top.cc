@@ -142,7 +142,7 @@ void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     mpz_clear(data);
 }
 
-void firesim_top_t::tether_bypass_loadmem() {
+void firesim_top_t::tether_bypass_via_loadmem() {
     fesvr_loadmem_t loadmem;
     while (fesvr->has_loadmem_reqs()) {
         // Check for reads first as they preceed a narrow write;
@@ -190,7 +190,7 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
                 }
             }
             // Generally this will do nothing except during program_load;
-            tether_bypass_loadmem();
+            tether_bypass_via_loadmem();
 
             if (delta_sum == step_size) delta_sum = 0;
         }
