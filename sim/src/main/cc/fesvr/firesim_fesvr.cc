@@ -59,10 +59,14 @@ void firesim_fesvr_t::read_chunk(reg_t taddr, size_t nbytes, void* dst)
     uint32_t *result = static_cast<uint32_t*>(dst);
     size_t len = nbytes / sizeof(uint32_t);
 
-    write(&cmd, 1);
-    push_addr(taddr);
-    push_len(len - 1);
-
+    // If we are in htif::load_program route all reads through the loadmem unit
+    if (is_loadmem) {
+        load_mem_read(taddr, nbytes);
+    } else {
+        write(&cmd, 1);
+        push_addr(taddr);
+        push_len(len - 1);
+    }
     read(result, len);
 }
 
@@ -72,12 +76,10 @@ void firesim_fesvr_t::write_chunk(reg_t taddr, size_t nbytes, const void* src)
     const uint32_t *src_data = static_cast<const uint32_t*>(src);
     size_t len = nbytes / sizeof(uint32_t);
 
-    // #ifndef __CYGWIN__
+    // If we are in htif::load_program route all writes through the loadmem unit
     if (is_loadmem) {
-        load_mem(taddr, nbytes, src);
-    } else
-        // #endif
-    {
+        load_mem_write(taddr, nbytes, src);
+    } else {
         write(&cmd, 1);
         push_addr(taddr);
         push_len(len - 1);
@@ -98,7 +100,11 @@ void firesim_fesvr_t::write(const uint32_t* data, size_t len) {
     in_data.insert(in_data.end(), data, data + len);
 }
 
-void firesim_fesvr_t::load_mem(addr_t addr, size_t nbytes, const void* src) {
-    loadmem_reqs.push_back(fesvr_loadmem_t(addr, nbytes));
-    loadmem_data.insert(loadmem_data.end(), (const char*)src, (const char*)src + nbytes);
+void firesim_fesvr_t::load_mem_write(addr_t addr, size_t nbytes, const void* src) {
+    loadmem_write_reqs.push_back(fesvr_loadmem_t(addr, nbytes));
+    loadmem_write_data.insert(loadmem_write_data.end(), (const char*)src, (const char*)src + nbytes);
+}
+
+void firesim_fesvr_t::load_mem_read(addr_t addr, size_t nbytes) {
+    loadmem_read_reqs.push_back(fesvr_loadmem_t(addr, nbytes));
 }
