@@ -31,12 +31,6 @@ addons:
       - texinfo
       - device-tree-compiler
       - libusb-1.0-0-dev
-- python-pexpect
+      - python-pexpect
 
-
-jobs:
-  include:
-    - &test
-      stage: Test
-      script:
-        - ./build-setup.sh
+install: ./build-setup.sh
