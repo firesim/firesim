@@ -70,7 +70,7 @@ else
     git submodule update --init --recursive riscv-tools #--jobs 8
     cd riscv-tools
     export MAKEFLAGS="-j16"
-    ./build.sh
+    ./build.sh &> tools-install-log
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh

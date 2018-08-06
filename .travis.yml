@@ -33,4 +33,4 @@ addons:
       - libusb-1.0-0-dev
       - python-pexpect
 
-install: ./build-setup.sh
+install: travis_wait 120 ./build-setup.sh
