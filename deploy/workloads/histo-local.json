@@ -1,0 +1,21 @@
+{
+  "benchmark_name" : "histo-local",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "histo-local",
+          "bootbinary" : "bbl-vmlinux",
+          "files" : [
+              "histo-local.riscv",
+              "histo-data-26-22.bin"
+          ],
+          "command" : "/root/histo-local.riscv -m 4194304 -n 67108864 /root/histo-data-26-22.bin",
+          "simulation_outputs": [],
+          "outputs": []
+      }
+  ]
+}

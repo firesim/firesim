@@ -1,0 +1,42 @@
+{
+  "benchmark_name" : "memblade-lat2",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name" : "memblade-lat",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : ["run-bmark.sh", "memblade-lat.riscv"],
+      "command" : "/root/run-bmark.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memblade-interference",
+      "bootbinary" : "bbl-vmlinux",
+      "files" : ["run-interference.sh", "memblade-bmark.riscv"],
+      "command" : "/root/run-interference.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memblade-dummy1",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy2",
+      "bootbinary" : "memblade-dummy.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}
