@@ -1,0 +1,80 @@
+# These point at the main class of the target's Chisel generator
+PROJECT ?= firesim.firesim
+DESIGN ?= FireSim
+# DESIGN ?= FireBoom
+
+# These guide chisel elaboration of the target design specified above.
+# See src/main/scala/SimConfigs.scala
+TARGET_PROJECT ?= firesim.firesim
+TARGET_CONFIG ?= FireSimRocketChipConfig
+# TARGET_CONFIG ?= FireSimBoomConfig
+
+# These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
+# See src/main/scala/SimConfigs.scala
+PLATFORM_PROJECT ?= firesim.firesim
+PLATFORM_CONFIG ?= FireSimConfig
+
+base_dir = $(abspath .)
+GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+##########################
+# RTL Generation         #
+##########################
+VERILOG := $(GENERATED_DIR)/FPGATop.v
+HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
+
+submodules = . midas firrtl \
+	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks \
+	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend))
+
+src_path = src/main/scala
+chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
+
+name_tuple = $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+
+common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(PROJECT) $(DESIGN) $(TARGET_PROJECT) $(TARGET_CONFIG) $(PLATFORM_PROJECT) $(PLATFORM_CONFIG)
+
+$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
+	mkdir -p $(@D)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(PROJECT).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+
+##########################
+# Driver Sources & Flags #
+##########################
+
+driver_dir = $(firesim_base_dir)/src/main/cc
+DRIVER_H = $(shell find $(driver_dir) -name "*.h")
+
+EMUL_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
+	firesim/firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart \
+	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev))
+
+TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+TARGET_LD_FLAGS :=-L$(RISCV)/lib -lfesvr
+
+####################################
+# Runtime-Configuraiton Generation #
+####################################
+CONF_NAME ?= runtime.conf
+.PHONY: conf
+conf:
+	mkdir -p $(GENERATED_DIR)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(PROJECT).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+
+##########################
+# Midas-Level Sim Recipes#
+##########################
+
+ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
+output_dir := $(OUTPUT_DIR)
+-include $(GENERATED_DIR)/$(PROJECT).d
+endif
+
+disasm := 2>
+which_disasm := $(shell which spike-dasm 2> /dev/null)
+ifneq ($(which_disasm),)
+        disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
+endif

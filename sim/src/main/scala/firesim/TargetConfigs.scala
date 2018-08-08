@@ -1,4 +1,4 @@
-package firesim
+package firesim.firesim
 
 import freechips.rocketchip.config.{Parameters, Config}
 import freechips.rocketchip.tile._

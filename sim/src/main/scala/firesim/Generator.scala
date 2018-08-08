@@ -1,9 +1,11 @@
-package firesim
+package firesim.firesim
+
+import java.io.File
 
 import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.{Circuit, Port}
+
 import freechips.rocketchip.diplomacy._
-// import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.devices.debug.DebugIO
 import freechips.rocketchip.util.{GeneratorApp, ParsedInputNames}
 import freechips.rocketchip.system.DefaultTestSuites._
@@ -11,8 +13,8 @@ import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
+
 import boom.system.{BoomTilesKey, BoomTestSuites}
-import java.io.File
 
 trait HasGenerator extends GeneratorApp {
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
@@ -50,7 +52,10 @@ trait HasGenerator extends GeneratorApp {
   lazy val testDir = new File(names.targetDir)
   // While this is called the HostConfig, it does also include configurations
   // that control what models are instantiated
-  lazy val hostParams = getParameters(hostNames.fullConfigClasses ++ names.fullConfigClasses)
+  lazy val hostParams = getParameters(
+    hostNames.fullConfigClasses ++
+    names.fullConfigClasses
+  ).alterPartial({ case midas.OutputDir => testDir })
 }
 
 trait HasTestSuites {
@@ -142,8 +147,8 @@ object FireSimGenerator extends HasGenerator with HasTestSuites {
   }
   override def addTestSuites = super.addTestSuites(params)
   val customPasses = Seq(
-    passes.AsyncResetRegPass,
-    passes.PlusArgReaderPass
+    firesim.passes.AsyncResetRegPass,
+    firesim.passes.PlusArgReaderPass
   )
 
   args.head match {

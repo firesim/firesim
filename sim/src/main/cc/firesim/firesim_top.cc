@@ -1,11 +1,14 @@
 #include "firesim_top.h"
+
+// FireSim-defined endpoints
 #include "endpoints/serial.h"
 #include "endpoints/uart.h"
+#include "endpoints/simplenic.h"
+#include "endpoints/blockdev.h"
+// MIDAS-defined endpoints
 #include "endpoints/fpga_model.h"
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
-#include "endpoints/simplenic.h"
-#include "endpoints/blockdev.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr(fesvr)
 {

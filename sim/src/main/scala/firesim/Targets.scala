@@ -1,4 +1,4 @@
-package firesim
+package firesim.firesim
 
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
