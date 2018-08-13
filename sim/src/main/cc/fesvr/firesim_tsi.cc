@@ -48,16 +48,29 @@ bool firesim_tsi_t::data_available()
     return !in_data.empty();
 }
 
-bool firesim_tsi_t::recv_loadmem_req(fesvr_loadmem_t& loadmem) {
-    if (loadmem_reqs.empty()) return false;
-    auto r = loadmem_reqs.front();
+bool firesim_tsi_t::has_loadmem_reqs() {
+    return(!loadmem_write_reqs.empty() || !loadmem_read_reqs.empty());
+}
+
+bool firesim_tsi_t::recv_loadmem_write_req(fesvr_loadmem_t& loadmem) {
+    if (loadmem_write_reqs.empty()) return false;
+    auto r = loadmem_write_reqs.front();
     loadmem.addr = r.addr;
     loadmem.size = r.size;
-    loadmem_reqs.pop_front();
+    loadmem_write_reqs.pop_front();
+    return true;
+}
+
+bool firesim_tsi_t::recv_loadmem_read_req(fesvr_loadmem_t& loadmem) {
+    if (loadmem_read_reqs.empty()) return false;
+    auto r = loadmem_read_reqs.front();
+    loadmem.addr = r.addr;
+    loadmem.size = r.size;
+    loadmem_read_reqs.pop_front();
     return true;
 }
 
 void firesim_tsi_t::recv_loadmem_data(void* buf, size_t len) {
-    std::copy(loadmem_data.begin(), loadmem_data.begin() + len, (char*)buf);
-    loadmem_data.erase(loadmem_data.begin(), loadmem_data.begin() + len);
+    std::copy(loadmem_write_data.begin(), loadmem_write_data.begin() + len, (char*)buf);
+    loadmem_write_data.erase(loadmem_write_data.begin(), loadmem_write_data.begin() + len);
 }

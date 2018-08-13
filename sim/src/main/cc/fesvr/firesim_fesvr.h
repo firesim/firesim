@@ -41,11 +41,14 @@ class firesim_fesvr_t : public htif_t
 
         std::deque<uint32_t> in_data;
         std::deque<uint32_t> out_data;
-        std::deque<fesvr_loadmem_t> loadmem_reqs;
-        std::deque<char> loadmem_data;
+        std::deque<fesvr_loadmem_t> loadmem_write_reqs;
+        std::deque<fesvr_loadmem_t> loadmem_read_reqs;
+        std::deque<char> loadmem_write_data;
 
     private:
         bool is_busy;
+        // A flag set only during program load to forward fesvr
+        // read/write_chunks to the loadmem unit instead of going over tsi
         bool is_loadmem;
         size_t idle_counts;
 
@@ -54,7 +57,9 @@ class firesim_fesvr_t : public htif_t
 
         virtual void read(uint32_t* data, size_t len);
         virtual void write(const uint32_t* data, size_t len);
-        virtual void load_mem(addr_t addr, size_t nbytes, const void* src);
+        virtual void load_mem_write(addr_t addr, size_t nbytes, const void* src);
+        virtual void load_mem_read(addr_t addr, size_t nbytes);
+
 };
 
 #endif // __FIRESIM_FESVR_H

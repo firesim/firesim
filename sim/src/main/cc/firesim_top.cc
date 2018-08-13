@@ -39,6 +39,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr
         if (arg.find("+slotid=") == 0) {
             slotid = const_cast<char*>(arg.c_str()) + 8;
         }
+        if (arg.find("+zero-out-dram") == 0) {
+            do_zero_out_dram = true;
+        }
         if (arg.find("+macaddr=") == 0) {
             uint8_t mac_bytes[6];
             int mac_octets[6];
@@ -99,31 +102,52 @@ firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr
 
 }
 
-void firesim_top_t::loadmem() {
+void firesim_top_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
+    assert(loadmem.size % sizeof(uint32_t) == 0);
+    // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
+    mpz_t buf;
+    mpz_init(buf);
+    while (loadmem.size > 0) {
+        read_mem(loadmem.addr, buf);
+
+        // If the read word is 0; mpz_export seems to return an array with length 0
+        size_t beats_requested = (loadmem.size/sizeof(uint32_t) > MEM_DATA_CHUNK) ?
+                                 MEM_DATA_CHUNK :
+                                 loadmem.size/sizeof(uint32_t);
+        // The number of beats exported from buf; may be less than beats requested.
+        size_t non_zero_beats;
+        uint32_t* data = (uint32_t*)mpz_export(NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
+        for (size_t j = 0; j < beats_requested; j++) {
+            if (j < non_zero_beats) {
+                fesvr->send_word(data[j]);
+            } else {
+                fesvr->send_word(0);
+            }
+        }
+        loadmem.size -= beats_requested * sizeof(uint32_t);
+    }
+    mpz_clear(buf);
+    // Switch back to fesvr for it to process read data
+    fesvr->tick();
+}
+
+void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
+    assert(loadmem.size <= 1024);
+    static char buf[1024];
+    fesvr->recv_loadmem_data(buf, loadmem.size);
+    mpz_t data;
+    mpz_init(data);
+    mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
+    write_mem_chunk(loadmem.addr, data, loadmem.size);
+    mpz_clear(data);
+}
+
+void firesim_top_t::tether_bypass_via_loadmem() {
     fesvr_loadmem_t loadmem;
-    while (fesvr->recv_loadmem_req(loadmem)) {
-        assert(loadmem.size <= 1024);
-        static char buf[1024]; // This should be enough...
-        fesvr->recv_loadmem_data(buf, loadmem.size);
-#ifdef LOADMEM
-        const size_t mem_data_bytes = MEM_DATA_CHUNK * sizeof(data_t);
-#define WRITE_MEM(addr, src) \
-        mpz_t data; \
-        mpz_init(data); \
-        mpz_import(data, mem_data_bytes / sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, src); \
-        write_mem(addr, data)
-#else
-        const size_t mem_data_bytes = MEM_DATA_BITS / 8;
-#define WRITE_MEM(addr, src) \
-        for (auto e: endpoints) { \
-            if (sim_mem_t* s = dynamic_cast<sim_mem_t*>(e)) { \
-                s->write_mem(addr, src); \
-            } \
-        }
-#endif
-        for (size_t off = 0 ; off < loadmem.size ; off += mem_data_bytes) {
-            WRITE_MEM(loadmem.addr + off, buf + off);
-        }
+    while (fesvr->has_loadmem_reqs()) {
+        // Check for reads first as they preceed a narrow write;
+        if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);
+        if (fesvr->recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem);
     }
 }
 
@@ -165,7 +189,8 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
                     s->work();
                 }
             }
-            loadmem();
+            // Generally this will do nothing except during program_load;
+            tether_bypass_via_loadmem();
 
             if (delta_sum == step_size) delta_sum = 0;
         }
@@ -181,7 +206,13 @@ void firesim_top_t::run(size_t step_size) {
         e->init();
     }
 
-    // Assert reset T=0 -> 5
+    if (do_zero_out_dram) {
+        fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+        zero_out_dram();
+    }
+    fprintf(stderr, "Commencing simulation.\n");
+
+    // Assert reset T=0 -> 50
     target_reset(0, 50);
 
     uint64_t start_time = timestamp();
