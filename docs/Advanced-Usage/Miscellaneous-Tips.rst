@@ -83,7 +83,7 @@ the simulated node:
 
     ssh YOUR_RUN_FARM_INSTANCE_IP
     # from within the run farm instance:
-    TERM=linux ssh 192.168.0.2
+    TERM=linux ssh root@192.168.0.2
 
 
 11. To also be able to access the internet from within the simulation, run the following
