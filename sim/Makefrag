@@ -89,25 +89,6 @@ $(vcs_debug): $(HEADER) $(EMUL_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
 
-###########################
-#  RTL-Simulation Rules   #
-###########################
-$(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
-	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
-	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
-
-$(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
-	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
-	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
-
-$(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
-	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
-	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
-
-
 ######################
 #   FPGA Simulation  #
 ######################
