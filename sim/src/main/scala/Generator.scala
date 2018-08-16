@@ -19,6 +19,7 @@ trait HasGenerator extends GeneratorApp {
     implicit val valName = ValName(targetNames.topModuleClass)
     targetNames.topModuleClass match {
       case "FireSim"  => LazyModule(new FireSim()(params)).module
+      case "FireBoom" => LazyModule(new FireBoom()(params)).module
       case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
       case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
     }
