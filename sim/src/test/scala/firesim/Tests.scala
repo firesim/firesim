@@ -35,7 +35,13 @@ abstract class FireSimTestSuite(
   override lazy val platform = hostParams(midas.Platform)
 
   def runTest(backend: String, name: String, debug: Boolean) = {
-    make(s"${outDir}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
+    behavior of s"${name} running on ${backend}"
+    compileMlSimulator(backend, debug)
+    if (isCmdAvailable(backend)) {
+      it should "pass in MIDAS-level simulation" in {
+        assert(make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}") == 0)
+      }
+    }
   }
 
   //def runReplay(backend: String, replayBackend: String, name: String) = {

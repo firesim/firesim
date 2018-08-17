@@ -70,7 +70,7 @@ conf:
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
--include $(GENERATED_DIR)/$(PROJECT).d
+-include $(GENERATED_DIR)/$(DESIGN).d
 endif
 
 disasm := 2>
