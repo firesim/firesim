@@ -63,7 +63,6 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
     } else 0
   }
 
-  println("TESTSUITE")
   //def runReplay(b: String, sample: Option[File] = None) = {
   //  if (isCmdAvailable("vcs")) {
   //    Seq("make", s"$replay-$b", s"PLATFORM=$platformName",

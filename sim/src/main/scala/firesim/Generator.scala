@@ -1,13 +1,13 @@
 package firesim.firesim
 
-import java.io.File
+import java.io.{File, FileWriter}
 
 import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.{Circuit, Port}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug.DebugIO
-import freechips.rocketchip.util.{GeneratorApp, ParsedInputNames}
+import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 import freechips.rocketchip.system.DefaultTestSuites._
 import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
@@ -52,10 +52,11 @@ object FireSimGeneratorArgs {
   )
 }
 
-trait HasGenerator extends GeneratorApp with HasTestSuites {
+trait HasGenerator extends HasGeneratorUtilities with HasTestSuites {
   // We reuse this trait in the scala tests and in a top-level App, where this
   // this structure will be populated with CML arguments
   def generatorArgs: FireSimGeneratorArgs
+
 
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
     implicit val valName = ValName(targetNames.topModuleClass)
@@ -67,13 +68,13 @@ trait HasGenerator extends GeneratorApp with HasTestSuites {
     }
   }
 
-  override lazy val names = generatorArgs.targetNames
+  lazy val names = generatorArgs.targetNames
+  lazy val longName = names.topModuleClass
   // Use a second parsedInputNames to reuse RC's handy config lookup functions
   lazy val hostNames = generatorArgs.platformNames
   lazy val targetParams = getParameters(names.fullConfigClasses)
   lazy val target = getGenerator(names, targetParams)
   lazy val testDir = new File(names.targetDir)
-  //override def addTestSuites = super.addTestSuites(params)
   val customPasses = Seq(
     firesim.passes.AsyncResetRegPass,
     firesim.passes.PlusArgReaderPass
@@ -97,12 +98,26 @@ trait HasGenerator extends GeneratorApp with HasTestSuites {
       case otherPort => Some(otherPort.id)
     }
 
-    args.head match {
-      case "midas" | "strober"  =>
+    generatorArgs.midasFlowKind match {
+      case "midas" | "strober" =>
         midas.MidasCompiler(chirrtl, annos, portList, testDir, None, customPasses)(hostParams alterPartial { 
-          case midas.EnableSnapshot => args.head == "strober" })
+          case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
     // Need replay
     }
+  }
+
+  /** Output software test Makefrags, which provide targets for integration testing. */
+  def generateTestSuiteMakefrags {
+    addTestSuites(targetParams)
+    writeOutputFile(generatorArgs.targetDir, s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
+  }
+
+  def writeOutputFile(targetDir: String, fname: String, contents: String): File = {
+    val f = new File(targetDir, fname)
+    val fw = new FileWriter(f)
+    fw.write(contents)
+    fw.close
+    f
   }
   println("HAS_GENERATOR")
 }
@@ -180,9 +195,9 @@ trait HasTestSuites {
   }
 }
 
-object FireSimGenerator extends HasGenerator {
-  val longName = names.topModuleProject
+object FireSimGenerator extends App with HasGenerator {
   lazy val generatorArgs = FireSimGeneratorArgs(args)
+
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
 }

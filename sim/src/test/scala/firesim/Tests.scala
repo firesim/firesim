@@ -24,7 +24,6 @@ abstract class FireSimTestSuite(
   import ExecutionContext.Implicits.global
 
   // From RocketChip GeneratorApp
-  val longName = "FiresimScalaTests"
   println(generatorArgs)
 
   // From TestSuiteCommon
