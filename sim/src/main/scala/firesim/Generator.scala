@@ -45,18 +45,17 @@ object FireSimGeneratorArgs {
   // Shortform useful when all classes are local to the firesim.firesim package
   def apply(targetName: String, targetConfig: String, platformConfig: String): FireSimGeneratorArgs =
   FireSimGeneratorArgs(
-    targetDir = "generated-src/f1",
+    targetDir = "generated-src/",
     topModuleClass = targetName,
     targetConfigs = targetConfig,
     platformConfigs = platformConfig
   )
 }
 
-trait HasGenerator extends HasGeneratorUtilities with HasTestSuites {
+trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSuites {
   // We reuse this trait in the scala tests and in a top-level App, where this
   // this structure will be populated with CML arguments
   def generatorArgs: FireSimGeneratorArgs
-
 
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
     implicit val valName = ValName(targetNames.topModuleClass)
@@ -87,7 +86,6 @@ trait HasGenerator extends HasGeneratorUtilities with HasTestSuites {
   ).alterPartial({ case midas.OutputDir => testDir })
 
   def elaborateAndCompileWithMidas() {
-    println("WHERE AMI I?")
     val c3circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
@@ -109,17 +107,16 @@ trait HasGenerator extends HasGeneratorUtilities with HasTestSuites {
   /** Output software test Makefrags, which provide targets for integration testing. */
   def generateTestSuiteMakefrags {
     addTestSuites(targetParams)
-    writeOutputFile(generatorArgs.targetDir, s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
+    writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
-  def writeOutputFile(targetDir: String, fname: String, contents: String): File = {
-    val f = new File(targetDir, fname)
+  def writeOutputFile(fname: String, contents: String): File = {
+    val f = new File(testDir, fname)
     val fw = new FileWriter(f)
     fw.write(contents)
     fw.close
     f
   }
-  println("HAS_GENERATOR")
 }
 
 trait HasTestSuites {
@@ -195,7 +192,7 @@ trait HasTestSuites {
   }
 }
 
-object FireSimGenerator extends App with HasGenerator {
+object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
   lazy val generatorArgs = FireSimGeneratorArgs(args)
 
   elaborateAndCompileWithMidas

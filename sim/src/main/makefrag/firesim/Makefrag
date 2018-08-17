@@ -15,6 +15,7 @@ PLATFORM_PROJECT ?= firesim.firesim
 PLATFORM_CONFIG ?= FireSimConfig
 
 base_dir = $(abspath .)
+name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 
@@ -31,7 +32,6 @@ submodules = . midas firrtl \
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
 
-name_tuple = $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(PROJECT) $(DESIGN) $(TARGET_PROJECT) $(TARGET_CONFIG) $(PLATFORM_PROJECT) $(PLATFORM_CONFIG)
 

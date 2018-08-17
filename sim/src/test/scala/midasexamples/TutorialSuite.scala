@@ -17,8 +17,8 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
 
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for
-  lazy val genDir  = new File("generated-src/${platformName}/${targetTuple}")
-  lazy val outDir = new File("output/${platformName}/${targetTuple}")
+  lazy val genDir  = new File(s"generated-src/${platformName}/${targetTuple}")
+  lazy val outDir = new File(s"output/${platformName}/${targetTuple}")
 
   implicit def toStr(f: File): String = f.toString replace (File.separator, "/")
 
@@ -35,6 +35,7 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
   }).toInstance
 
   def clean() { make("clean") }
+  def mkdirs() { genDir.mkdirs; outDir.mkdirs }
 
   def isCmdAvailable(cmd: String) =
     Seq("which", cmd) ! ProcessLogger(_ => {}) == 0
@@ -105,7 +106,8 @@ abstract class TutorialSuite(
       ignore should s"pass in MIDAS-level simulation" in { }
     }
   }
-  make("clean")
+  clean
+  mkdirs
   compile
   runTest("verilator")
   runTest("vcs")

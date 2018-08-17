@@ -19,23 +19,23 @@ import freechips.rocketchip.config.{Config, Parameters}
 abstract class FireSimTestSuite(
     val generatorArgs: FireSimGeneratorArgs,
     simulationArgs: String,
-    N: Int = 5) extends firesim.midasexamples.TestSuiteCommon with HasGenerator {
+    N: Int = 5) extends firesim.midasexamples.TestSuiteCommon with HasFireSimGeneratorUtilities {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 
-  // From RocketChip GeneratorApp
-  println(generatorArgs)
+  // From HasFireSimGeneratorUtilities
+  // For the firesim utilities to use the same directory as the test suite
+  override lazy val testDir = genDir
 
   // From TestSuiteCommon
   val targetTuple = generatorArgs.tupleName
-  val commonMakeArgs = Seq(s"DESIGN=$generatorArgs.topModuleClass",
-                           s"TARGET_CONFIG=$generatorArgs.targetConfigs",
-                           s"PLATFORM_CONFIG=$generatorArgs.platformConfigs")
+  val commonMakeArgs = Seq(s"DESIGN=${generatorArgs.topModuleClass}",
+                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}",
+                           s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
   override lazy val platform = hostParams(midas.Platform)
 
   def runTest(backend: String, name: String, debug: Boolean) = {
-    val dir = (new File(outDir, backend)).getAbsolutePath
-    make(s"${dir}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
+    make(s"${outDir}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
   }
 
   //def runReplay(backend: String, replayBackend: String, name: String) = {
@@ -80,7 +80,8 @@ abstract class FireSimTestSuite(
     }
   }
 
-  make("clean")
+  clean
+  mkdirs
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
 }
@@ -93,7 +94,6 @@ class RocketChipF1Tests extends FireSimTestSuite(
   runTest("vcs", "rv64ui-p-simple", false)
   //runSuite("verilator")(benchmarks)
   //runSuite("vcs", true)(benchmarks)
-  println("HOWNOW")
 }
 
 /*class BoomF1Tests extends FireSimTestSuite(
