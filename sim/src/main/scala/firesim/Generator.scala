@@ -16,7 +16,47 @@ import freechips.rocketchip.tile.XLen
 
 import boom.system.{BoomTilesKey, BoomTestSuites}
 
-trait HasGenerator extends GeneratorApp {
+case class FireSimGeneratorArgs(
+  midasFlowKind: String = "midas", // "midas", "strober", "replay"
+  targetDir: String, // Where generated files should be emitted
+  topModuleProject: String = "firesim.firesim",
+  topModuleClass: String,
+  targetConfigProject: String = "firesim.firesim",
+  targetConfigs: String,
+  platformConfigProject: String = "firesim.firesim",
+  platformConfigs: String) {
+
+  def targetNames(): ParsedInputNames =
+    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs)
+
+  def platformNames(): ParsedInputNames =
+    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs)
+
+  def tupleName(): String = s"$topModuleClass-$targetConfigs-$platformConfigs"
+}
+
+object FireSimGeneratorArgs {
+  def apply(a: Seq[String]): FireSimGeneratorArgs = {
+    require(a.size == 8, "Usage: sbt> run [midas | strober | replay] " +
+      "TargetDir TopModuleProjectName TopModuleName ConfigProjectName ConfigNameString HostConfig")
+    FireSimGeneratorArgs(a(0), a(1), a(2), a(3), a(4), a(5), a(6), a(7))
+  }
+
+  // Shortform useful when all classes are local to the firesim.firesim package
+  def apply(targetName: String, targetConfig: String, platformConfig: String): FireSimGeneratorArgs =
+  FireSimGeneratorArgs(
+    targetDir = "generated-src/f1",
+    topModuleClass = targetName,
+    targetConfigs = targetConfig,
+    platformConfigs = platformConfig
+  )
+}
+
+trait HasGenerator extends GeneratorApp with HasTestSuites {
+  // We reuse this trait in the scala tests and in a top-level App, where this
+  // this structure will be populated with CML arguments
+  def generatorArgs: FireSimGeneratorArgs
+
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
     implicit val valName = ValName(targetNames.topModuleClass)
     targetNames.topModuleClass match {
@@ -27,35 +67,44 @@ trait HasGenerator extends GeneratorApp {
     }
   }
 
-  override lazy val names: ParsedInputNames = {
-    require(args.size == 8, "Usage: sbt> run [midas | strober | replay] " +
-      "TargetDir TopModuleProjectName TopModuleName ConfigProjectName ConfigNameString HostConfig")
-    ParsedInputNames(
-      targetDir = args(1),
-      topModuleProject = args(2),
-      topModuleClass = args(3),
-      configProject = args(4),
-      configs = args(5))
-  }
-
-  // Unfortunately ParsedInputNames is the interface provided by RC's convenient 
-  // parameter elaboration utilities
-  lazy val hostNames: ParsedInputNames = ParsedInputNames(
-      targetDir = args(1),
-      topModuleProject = "Unused",
-      topModuleClass = "Unused",
-      configProject = args(6),
-      configs = args(7))
-
+  override lazy val names = generatorArgs.targetNames
+  // Use a second parsedInputNames to reuse RC's handy config lookup functions
+  lazy val hostNames = generatorArgs.platformNames
   lazy val targetParams = getParameters(names.fullConfigClasses)
-  lazy val targetGenerator = getGenerator(names, targetParams)
+  lazy val target = getGenerator(names, targetParams)
   lazy val testDir = new File(names.targetDir)
+  //override def addTestSuites = super.addTestSuites(params)
+  val customPasses = Seq(
+    firesim.passes.AsyncResetRegPass,
+    firesim.passes.PlusArgReaderPass
+  )
   // While this is called the HostConfig, it does also include configurations
   // that control what models are instantiated
   lazy val hostParams = getParameters(
     hostNames.fullConfigClasses ++
     names.fullConfigClasses
   ).alterPartial({ case midas.OutputDir => testDir })
+
+  def elaborateAndCompileWithMidas() {
+    println("WHERE AMI I?")
+    val c3circuit = chisel3.Driver.elaborate(() => target)
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
+    val annos = c3circuit.annotations.map(_.toFirrtl)
+
+    val portList = target.getPorts flatMap {
+      case Port(id: DebugIO, _) => None
+      case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
+      case otherPort => Some(otherPort.id)
+    }
+
+    args.head match {
+      case "midas" | "strober"  =>
+        midas.MidasCompiler(chirrtl, annos, portList, testDir, None, customPasses)(hostParams alterPartial { 
+          case midas.EnableSnapshot => args.head == "strober" })
+    // Need replay
+    }
+  }
+  println("HAS_GENERATOR")
 }
 
 trait HasTestSuites {
@@ -131,33 +180,10 @@ trait HasTestSuites {
   }
 }
 
-object FireSimGenerator extends HasGenerator with HasTestSuites {
+object FireSimGenerator extends HasGenerator {
   val longName = names.topModuleProject
-  val libFile = if (args.size > 8) Some(new File(args(8))) else None
-  // To leave the debug module unconnected we omit it from the Record we generate
-  // before invoking the MIDAS compiler.
-  lazy val target = targetGenerator
-  val c3circuit = chisel3.Driver.elaborate(() => target)
-  val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
-  val annos = c3circuit.annotations.map(_.toFirrtl)
-  val portList = target.getPorts flatMap {
-    case Port(id: DebugIO, _) => None
-    case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
-    case otherPort => Some(otherPort.id)
-  }
-  override def addTestSuites = super.addTestSuites(params)
-  val customPasses = Seq(
-    firesim.passes.AsyncResetRegPass,
-    firesim.passes.PlusArgReaderPass
-  )
-
-  args.head match {
-    case "midas" | "strober"  =>
-      midas.MidasCompiler(chirrtl, annos, portList, testDir, libFile, customPasses)(hostParams alterPartial { 
-        case midas.EnableSnapshot => args.head == "strober" })
-    // Need replay
-  }
-
+  lazy val generatorArgs = FireSimGeneratorArgs(args)
+  elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
 }
 
@@ -166,23 +192,23 @@ object FireSimGenerator extends HasGenerator with HasTestSuites {
 //   0: filename (basename)
 //   1: Output directory (same as above)
 //   Remaining argments are the same as above
-object FireSimRuntimeConfGenerator extends HasGenerator {
-  val longName = ""
-  // We need the scala instance of an elaborated memory-model, so that settings
-  // may be legalized against the generated hardware. TODO: Currently these
-  // settings aren't dependent on the target-AXI4 widths (~bug); this will need
-  // to be an optional post-generation step in MIDAS
-  lazy val memModel = (hostParams(midas.MemModelKey).get)(hostParams alterPartial {
-      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
-  chisel3.Driver.elaborate(() => memModel)
-
-  val confFileName = args(0)
-  memModel match {
-    case model: midas.models.MidasMemModel => {
-      model.getSettings(confFileName)(hostParams)
-    }
-    // TODO: Support other model types;
-    case _ => throw new RuntimeException(
-      "This memory model does not support runtime-configuration generation")
-  }
-}
+//object FireSimRuntimeConfGenerator extends HasGenerator {
+//  val longName = ""
+//  // We need the scala instance of an elaborated memory-model, so that settings
+//  // may be legalized against the generated hardware. TODO: Currently these
+//  // settings aren't dependent on the target-AXI4 widths (~bug); this will need
+//  // to be an optional post-generation step in MIDAS
+//  lazy val memModel = (hostParams(midas.MemModelKey).get)(hostParams alterPartial {
+//      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
+//  chisel3.Driver.elaborate(() => memModel)
+//
+//  val confFileName = args(0)
+//  memModel match {
+//    case model: midas.models.MidasMemModel => {
+//      model.getSettings(confFileName)(hostParams)
+//    }
+//    // TODO: Support other model types;
+//    case _ => throw new RuntimeException(
+//      "This memory model does not support runtime-configuration generation")
+//  }
+//}

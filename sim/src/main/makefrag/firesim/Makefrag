@@ -1,5 +1,5 @@
 # These point at the main class of the target's Chisel generator
-POJECT ?= firesim.firesim
+PROJECT ?= firesim.firesim
 DESIGN ?= FireSim
 # DESIGN ?= FireBoom
 

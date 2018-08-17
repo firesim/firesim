@@ -63,6 +63,7 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
     } else 0
   }
 
+  println("TESTSUITE")
   //def runReplay(b: String, sample: Option[File] = None) = {
   //  if (isCmdAvailable("vcs")) {
   //    Seq("make", s"$replay-$b", s"PLATFORM=$platformName",
@@ -111,7 +112,7 @@ abstract class TutorialSuite(
   runTest("vcs")
 }
 
-class PointerChaserF1Tests extends TutorialSuite("PointerChaser", midas.F1, 8, Seq("`cat runtime.conf`"))
+//class PointerChaserF1Tests extends TutorialSuite("PointerChaser", midas.F1, 8, Seq("`cat runtime.conf`"))
 //class GCDF1Test extends TutorialSuite("GCD", midas.F1, 3)
 //class ParityF1Test extends TutorialSuite("Parity", midas.F1)
 //class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister", midas.F1)

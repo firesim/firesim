@@ -17,64 +17,26 @@ import freechips.rocketchip.system.DefaultTestSuites._
 import freechips.rocketchip.config.{Config, Parameters}
 
 abstract class FireSimTestSuite(
-    targetName: String,
-    targetConfig: Config,
-    platformConfig: Config,
+    val generatorArgs: FireSimGeneratorArgs,
     simulationArgs: String,
-    N: Int = 5) extends firesim.midasexamples.TestSuiteCommon with HasTestSuites {
+    N: Int = 5) extends firesim.midasexamples.TestSuiteCommon with HasGenerator {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 
+  // From RocketChip GeneratorApp
+  val longName = "FiresimScalaTests"
+  println(generatorArgs)
+
   // From TestSuiteCommon
-  val targetTuple = s"$targetName-$targetConfig-$platformConfig"
-  val commonMakeArgs = Seq(s"DESIGN=$targetName",
-                           s"TARGET_CONFIG=$targetConfig",
-                           s"PLATFORM_CONFIG=$platformConfig")
-
-  val platformParams = platformConfig.toInstance//.alterPartial({ case midas.EnableSnapshot => snapshot })
-  val platformConfigName = platformConfig.getClass.getSimpleName
-  val platform = platformParams(midas.Platform)
-
-  val targetParams = targetConfig.toInstance
-  val targetConfigName = targetConfig.getClass.getSimpleName
-
-  implicit val valName = ValName(targetName)
-  lazy val target = targetName match {
-    case "FireSim"  => LazyModule(new FireSimNoNIC()(targetParams)).module
-    case "FireBoom" => LazyModule(new FireBoomNoNIC()(targetParams)).module
-  }
-  val circuit = chisel3.Driver.elaborate(() => target)
-  val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
-  val annos = circuit.annotations map { _.toFirrtl }
-  val ports = target.getPorts flatMap {
-    case Port(id: DebugIO, _) => None
-    case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
-    case otherPort => Some(otherPort.id)
-  }
-  val customPasses = Seq(
-    firesim.passes.AsyncResetRegPass,
-    firesim.passes.PlusArgReaderPass
-  )
-  midas.MidasCompiler(chirrtl, annos, ports, genDir, None, customPasses)(platformParams)
-  //if (platformParams(midas.EnableSnapshot))
-  //  strober.replay.Compiler(chirrtl, annos, ports, genDir, lib)
-  addTestSuites(targetParams)
-
-  val makefrag = new FileWriter(new File(genDir, "firesim.d"))
-  makefrag write generateMakefrag
-  makefrag.close
-
-  lazy val makeArgs = Seq(
-    s"PLATFORM=$platformName",
-    s"DESIGN=$targetName",
-    s"TARGET_CONFIG=$targetConfigName",
-    s"PLATFORM_CONFIG=$platformConfigName",
-    s"SW_SIM_ARGS=${simulationArgs}")
+  val targetTuple = generatorArgs.tupleName
+  val commonMakeArgs = Seq(s"DESIGN=$generatorArgs.topModuleClass",
+                           s"TARGET_CONFIG=$generatorArgs.targetConfigs",
+                           s"PLATFORM_CONFIG=$generatorArgs.platformConfigs")
+  override lazy val platform = hostParams(midas.Platform)
 
   def runTest(backend: String, name: String, debug: Boolean) = {
     val dir = (new File(outDir, backend)).getAbsolutePath
-    (Seq("make", s"${dir}/${name}.%s".format(if (debug) "vpd" else "out"),
-         s"EMUL=$backend", s"output_dir=$dir") ++ makeArgs).!
+    make(s"${dir}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
   }
 
   //def runReplay(backend: String, replayBackend: String, name: String) = {
@@ -87,7 +49,7 @@ abstract class FireSimTestSuite(
     // compile emulators
     behavior of s"${suite.makeTargetName} in $backend"
     if (isCmdAvailable(backend)) {
-      assert((Seq("make", s"$backend%s".format(if (debug) "-debug" else "")) ++ makeArgs).! == 0)
+      assert((Seq("make", s"$backend%s".format(if (debug) "-debug" else "")) ++ commonMakeArgs).! == 0)
       val postfix = suite match {
         case s: BenchmarkTestSuite => ".riscv"
         case _ => ""
@@ -118,21 +80,24 @@ abstract class FireSimTestSuite(
       ignore should s"pass $backend"
     }
   }
+
+  make("clean")
+  elaborateAndCompileWithMidas
+  generateTestSuiteMakefrags
 }
 
-/*class RocketChipF1Tests extends FireSimTestSuite(
-  "FireSim",
-  new FireSimRocketChipConfig,
-  new FireSimConfig,
-  "+dramsim +mm_MEM_LATENCY=80 +mm_LLC_LATENCY=1 +mm_LLC_WAY_BITS=2 +mm_LLC_SET_BITS=12 +mm_LLC_BLOCK_BITS=6",
-  snapshot = true
+class RocketChipF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig"),
+  "`cat runtime.conf`"
 )
 {
-  runSuite("verilator")(benchmarks)
-  runSuite("vcs", true)(benchmarks)
+  runTest("vcs", "rv64ui-p-simple", false)
+  //runSuite("verilator")(benchmarks)
+  //runSuite("vcs", true)(benchmarks)
+  println("HOWNOW")
 }
 
-class BoomF1Tests extends FireSimTestSuite(
+/*class BoomF1Tests extends FireSimTestSuite(
   "FireBoom",
   new FireSimBoomConfig,
   new FireSimConfig,
