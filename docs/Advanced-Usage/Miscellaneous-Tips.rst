@@ -92,9 +92,10 @@ on the RUN FARM INSTANCE:
 ::
 
     sudo sysctl -w net.ipv4.ip_forward=1
-    sudo iptables -A FORWARD -i eth0 -o tap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-    sudo iptables -A FORWARD -i tap0 -o eth0 -j ACCEPT
-    sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    export EXT_IF_TO_USE=$(ifconfig -a | sed 's/[ \t].*//;/^\(lo:\|\)$/d' | sed 's/[ \t].*//;/^\(tap0:\|\)$/d' | sed 's/://g')
+    sudo iptables -A FORWARD -i $EXT_IF_TO_USE -o tap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+    sudo iptables -A FORWARD -i tap0 -o $EXT_IF_TO_USE -j ACCEPT
+    sudo iptables -t nat -A POSTROUTING -o $EXT_IF_TO_USE -j MASQUERADE
 
 
 12. Then run the following in the simulation:
