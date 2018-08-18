@@ -70,20 +70,20 @@ the simulated node:
 
     sudo ip tuntap add mode tap dev tap0 user $USER
     sudo ip link set tap0 up
-    sudo ip addr add 192.168.0.1/24 dev tap0
+    sudo ip addr add 172.16.0.1/16 dev tap0
     sudo ifconfig tap0 hw ether 8e:6b:35:04:00:00
     sudo sysctl -w net.ipv6.conf.tap0.disable_ipv6=1
 
 
 9. Run ``firesim runworkload``. Confirm that the node has booted to the login prompt in the fsim0 screen.
 
-10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (192.168.0.2), username root, password firesim. You should also prefix with TERM=linux to get backspace to work correctly: So:
+10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (172.16.0.2), username root, password firesim. You should also prefix with TERM=linux to get backspace to work correctly: So:
 
 ::
 
     ssh YOUR_RUN_FARM_INSTANCE_IP
     # from within the run farm instance:
-    TERM=linux ssh root@192.168.0.2
+    TERM=linux ssh root@172.16.0.2
 
 
 11. To also be able to access the internet from within the simulation, run the following
@@ -102,7 +102,7 @@ on the RUN FARM INSTANCE:
 
 ::
 
-    route add default gw 192.168.0.1 eth0
+    route add default gw 172.16.0.1 eth0
     echo "nameserver 8.8.8.8" >> /etc/resolv.conf
     echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
