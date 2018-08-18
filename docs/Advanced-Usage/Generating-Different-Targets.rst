@@ -68,9 +68,6 @@ Quad-core, Rocket pipeline
 BOOM-based SoCs (Beta)
 ----------------------
 
-Note: BOOM support is in beta as we resolve some issues with Linux boot. See `issue #12
-<https://github.com/firesim/firesim/issues/12>`_.
-
 Two design classes use BOOM (`Berkeley Out-of-Order Machine <https://github.com/ucb-bar/riscv-boom>`_) superscalar out-of-order pipelines.
 
 Single-core BOOM
