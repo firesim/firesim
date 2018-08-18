@@ -10,7 +10,7 @@
       {
           "name" : "iperf3-client",
           "files" : [],
-          "command" : "sleep 0.1 && iperf3 -c 192.168.0.3 && poweroff",
+          "command" : "sleep 0.1 && iperf3 -c 172.16.0.3 && poweroff",
           "simulation_outputs": [],
           "outputs": []
       },
