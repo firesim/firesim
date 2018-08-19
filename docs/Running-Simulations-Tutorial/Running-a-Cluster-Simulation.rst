@@ -94,6 +94,11 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
    :code: ini
 
 
+.. attention::
+
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-nic-ddr3-llc4mb``.
+
+
 Launching a Simulation!
 -----------------------------
 
