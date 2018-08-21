@@ -1,25 +1,21 @@
 //See LICENSE for license details.
 package firesim.firesim
 
-import java.io.{File, FileWriter}
+import java.io.File
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
-import scala.reflect.ClassTag
-
-import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.devices.debug.DebugIO
 import freechips.rocketchip.system.{RocketTestSuite, BenchmarkTestSuite}
 import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
-import freechips.rocketchip.config.{Config, Parameters}
 
 abstract class FireSimTestSuite(
     val generatorArgs: FireSimGeneratorArgs,
-    simulationArgs: String,
-    N: Int = 5) extends firesim.midasexamples.TestSuiteCommon with HasFireSimGeneratorUtilities {
+    simulationArgs: String = "`cat runtime.conf`",
+    N: Int = 8
+  ) extends firesim.midasexamples.TestSuiteCommon with HasFireSimGeneratorUtilities {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 
@@ -34,12 +30,16 @@ abstract class FireSimTestSuite(
                            s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
   override lazy val platform = hostParams(midas.Platform)
 
+  def invokeMlSimulator(backend: String, name: String, debug: Boolean) = {
+    make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
+  }
+
   def runTest(backend: String, name: String, debug: Boolean) = {
-    behavior of s"${name} running on ${backend}"
+    behavior of s"${name} running on ${backend} in MIDAS-level simulation"
     compileMlSimulator(backend, debug)
     if (isCmdAvailable(backend)) {
-      it should "pass in MIDAS-level simulation" in {
-        assert(make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}") == 0)
+      it should s"pass" in {
+        assert(invokeMlSimulator(backend, name, debug) == 0)
       }
     }
   }
@@ -52,16 +52,15 @@ abstract class FireSimTestSuite(
 
   def runSuite(backend: String, debug: Boolean = false)(suite: RocketTestSuite) {
     // compile emulators
-    behavior of s"${suite.makeTargetName} in $backend"
+    behavior of s"${suite.makeTargetName} running on $backend"
     if (isCmdAvailable(backend)) {
-      assert((Seq("make", s"$backend%s".format(if (debug) "-debug" else "")) ++ commonMakeArgs).! == 0)
       val postfix = suite match {
         case s: BenchmarkTestSuite => ".riscv"
         case _ => ""
       }
       val results = suite.names.toSeq sliding (N, N) map { t => 
         val subresults = t map (name =>
-          Future(name -> runTest(backend, s"$name$postfix", debug)))
+          Future(name -> invokeMlSimulator(backend, s"$name$postfix", debug)))
         Await result (Future sequence subresults, Duration.Inf)
       }
       results.flatten foreach { case (name, exitcode) =>
@@ -90,25 +89,12 @@ abstract class FireSimTestSuite(
   mkdirs
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
+  runTest("verilator", "rv64ui-p-simple", false)
+  runSuite("verilator")(benchmarks)
 }
 
-class RocketChipF1Tests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig"),
-  "`cat runtime.conf`"
-)
-{
-  runTest("vcs", "rv64ui-p-simple", false)
-  //runSuite("verilator")(benchmarks)
-  //runSuite("vcs", true)(benchmarks)
-}
+class RocketF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig"))
 
-/*class BoomF1Tests extends FireSimTestSuite(
-  "FireBoom",
-  new FireSimBoomConfig,
-  new FireSimConfig,
-  "+dramsim +mm_MEM_LATENCY=80 +mm_LLC_LATENCY=1 +mm_LLC_WAY_BITS=2 +mm_LLC_SET_BITS=12 +mm_LLC_BLOCK_BITS=6",
-  snapshot = true
-)
-{
-  runSuite("vcs", true)(benchmarks)
-}*/
+class BoomF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "FireSimConfig"))
