@@ -2,7 +2,8 @@
 
 package firesim.midasexamples
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 
@@ -37,7 +38,7 @@ class PointerChaser(seed: Long = System.currentTimeMillis)
     busy := false.B
   }
 
-  io.startAddr.ready := !busy && !reset
+  io.startAddr.ready := !busy
 
   io.result.bits := resultReg
   io.result.valid := resultValid
@@ -67,7 +68,7 @@ class PointerChaser(seed: Long = System.currentTimeMillis)
   val arRegAddr = RegInit(0.U)
   val arValid = RegInit(false.B)
 
-  when (startFire | (nextAddrAvailable && memoryIF.r.bits.data != 0.U)) {
+  when (startFire | (nextAddrAvailable && memoryIF.r.bits.data =/= 0.U)) {
     arValid := true.B
     arRegAddr := Mux(startFire, io.startAddr.bits, memoryIF.r.bits.data)
   }.elsewhen(arFire) {
@@ -93,7 +94,6 @@ class PointerChaser(seed: Long = System.currentTimeMillis)
   memoryIF.w.valid := false.B
   memoryIF.b.ready := true.B
 
-  //TODO: Figure out how to prevent chisel from optimizing these parameters away
   println("MemSize " + p(MemSize))
   println("Number of Channels: " + p(NMemoryChannels))
   println("Cache Block Size: " + p(CacheBlockBytes))

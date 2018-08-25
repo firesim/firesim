@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import chisel3.util.log2Up
+import chisel3.util.log2Ceil
 
 class Stack extends Module {
   val depth = 8
@@ -16,7 +16,7 @@ class Stack extends Module {
   })
 
   val stack_mem = Mem(depth, UInt(32.W))
-  val sp        = RegInit(0.U(log2Up(depth+1).W))
+  val sp        = RegInit(0.U(log2Ceil(depth+1).W))
   val out       = RegInit(0.U(32.W))
 
   when (io.en) {
