@@ -6,12 +6,11 @@ typedef std::vector< uint32_t > app_t;
 
 class Risc_t: public virtual simif_t
 {
-public:
+  public:
+  uint32_t expected = 4;
+  uint64_t timeout = 10;
   Risc_t(int argc, char** argv) {}
   void run() {
-    //TODO: These need to passed as arguments
-    uint32_t expected = 4;
-    uint64_t timeout = 10;
     app_t app;
     init_app(app);
     target_reset();

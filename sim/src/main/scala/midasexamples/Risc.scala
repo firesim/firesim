@@ -16,7 +16,7 @@ class Risc extends Module {
   })
   val file = Mem(256, UInt(32.W))
   val code = Mem(256, UInt(32.W))
-  val pc   = RegInit(0.U(8))
+  val pc   = RegInit(0.U(8.W))
 
   val add_op :: imm_op :: Nil = Enum(UInt(), 2)
 
@@ -28,10 +28,11 @@ class Risc extends Module {
 
   val ra = Mux(rai === 0.U, 0.U, file(rai))
   val rb = Mux(rbi === 0.U, 0.U, file(rbi))
-  val rc = WireInit(0.U(32.W))
+  val rc = Wire(UInt(32.W))
 
-  io.valid := true.B
+  io.valid := false.B
   io.out   := 0.U
+  rc       := 0.U
 
   when (io.isWr) {
     code(io.wrAddr) := io.wrData

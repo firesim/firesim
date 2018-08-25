@@ -45,13 +45,13 @@ abstract class TutorialSuite(
   }
 
 
-  def runTest(b: String) {
+  def runTest(b: String, debug: Boolean = false) {
     behavior of s"$targetName in $b"
-    compileMlSimulator(b, true)
+    compileMlSimulator(b, debug)
     val sample = Some(new File(outDir, s"$targetName.$b.sample"))
     if (isCmdAvailable(b)) {
       it should s"pass in MIDAS-level simulation" in {
-        assert(run(b, true, sample, args=args) == 0)
+        assert(run(b, debug, sample, args=args) == 0)
       }
       //if (p(midas.EnableSnapshot)) {
       //  replayBackends foreach { replayBackend =>
@@ -72,7 +72,7 @@ abstract class TutorialSuite(
   mkdirs
   compile
   runTest("verilator")
-  runTest("vcs")
+  runTest("vcs", true)
 }
 
 class PointerChaserF1Test extends TutorialSuite("PointerChaser", midas.F1, 8, Seq("`cat runtime.conf`"))
