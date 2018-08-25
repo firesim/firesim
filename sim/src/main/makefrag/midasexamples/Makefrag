@@ -32,8 +32,7 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
 
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-
-EMUL_CC := $(driver_dir)/midasexamples/Driver.cc
+DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc
 
 TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(driver_dir)/midasexamples
 TARGET_LD_FLAGS :=

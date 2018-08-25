@@ -19,9 +19,9 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 
-##########################
-# RTL Generation         #
-##########################
+##################
+# RTL Generation #
+##################
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
@@ -46,8 +46,7 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
 
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-
-EMUL_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
+DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim/firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart \
 	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev))
 
@@ -64,9 +63,9 @@ conf:
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(PROJECT).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
-##########################
-# Midas-Level Sim Recipes#
-##########################
+############################################
+# Midas-Level Simulation Execution Recipes #
+############################################
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)

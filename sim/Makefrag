@@ -9,7 +9,7 @@ DESIGN ?=
 
 # SOURCE FILES
 # Driver source files
-EMUL_CC ?=
+DRIVER_CC ?=
 DRIVER_H ?=
 # Simulation memory map emitted by the MIDAS compiler
 HEADER ?=
@@ -35,9 +35,9 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 CONF_NAME ?= runtime.conf
 
-##########################
-# SW RTL Simulation Args #
-##########################
+################################################################
+# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
+################################################################
 TIMEOUT_CYCLES = 100000000
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
@@ -46,11 +46,12 @@ COMMON_SIM_ARGS ?= $(mem_model_args)
 # Arguments used only in MIDAS-level (ML) RTL simulation
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim
 
-######################
-# Verilator Emulation #
-######################
 # The desired RTL simulator. supported options: {vcs, verilator}
 EMUL ?= verilator
+
+####################################
+# Verilator MIDAS-Level Simulators #
+####################################
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
@@ -58,40 +59,40 @@ verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 $(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D RTLSIM
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
 
-$(verilator): $(HEADER) $(EMUL_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(EMUL_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
-$(verilator_debug): $(HEADER) $(EMUL_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(EMUL_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
 
-######################
-#   VCS Emulation    #
-######################
+##############################
+# VCS MIDAS-Level Simulators #
+##############################
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 
 $(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(VCS_HOME)/include -D RTLSIM
 $(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
 
-$(vcs): $(HEADER) $(EMUL_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(EMUL_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
-$(vcs_debug): $(HEADER) $(EMUL_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) vcs-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(EMUL_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
 
-######################
-#   FPGA Simulation  #
-######################
+############################
+# Master Simulation Driver #
+############################
 $(OUTPUT_DIR)/$(DESIGN).chain: $(VERILOG)
 	mkdir -p $(OUTPUT_DIR)
 	$(if $(wildcard $(GENERATED_DIR)/$(DESIGN).chain),cp $(GENERATED_DIR)/$(DESIGN).chain $@,)
@@ -100,23 +101,22 @@ $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
 $(PLATFORM): $($(PLATFORM)) $(OUTPUT_DIR)/$(DESIGN).chain
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
-driver_cc = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-		firesim_f1 endpoints/simplenic endpoints/blockdev firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart))
 
-# TODO: Specify a main with a particular variable?
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt -Wl,-Bstatic -lfesvr -Wl,-Bdynamic
 
 # Compile Driver
-$(f1): $(HEADER) $(driver_cc) $(DRIVER_H) $(midas_cc) $(midas_h) $(fesvr) $(spike) $(runtime_conf)
+$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(fesvr) $(spike) $(runtime_conf)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(HEADER) $(OUTPUT_DIR)/build/
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
-	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(driver_cc)"
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)"
 
-# Generate Bitstream
+#############################
+# FPGA Build Initialization #
+#############################
 board_dir 	   := $(fpga_dir)/hdk/cl/developer_designs
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
 build_dir      := $(fpga_work_dir)/build
@@ -142,9 +142,15 @@ $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/st
 	mkdir -p $(@D)
 	ln -sf $(build_dir)/checkpoints/to_aws $@
 
+# Runs a local fpga-bitstream build. Strongly consider using the manager instead.
 fpga: export CL_DIR := $(fpga_work_dir)
 fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
+
+
+#############################
+# FPGA-level RTL Simulation #
+#############################
 
 FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
 
@@ -152,14 +158,14 @@ FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
 xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
 
-# Compile XSIM Driver
-xsim = $(GENERATED_DIR)/sim-shell
+# Compile XSIM Driver #
+xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
 $(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
-$(xsim): export LDFLAGS := $(LDFLAGS) -L$(RISCV)/lib -lfesvr -Wl,-rpath,$(RISCV)/lib
-$(xsim): $(HEADER) $(driver_cc) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
+$(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(driver_cc)"
+	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 xsim: $(xsim)
 
@@ -179,7 +185,7 @@ clean:
 veryclean:
 	rm -rf generated-src output
 
-tags: $(HEADER) $(driver_cc) $(DRIVER_H) $(midas_cc) $(midas_h)
+tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
 
 .PHONY: sbt test
