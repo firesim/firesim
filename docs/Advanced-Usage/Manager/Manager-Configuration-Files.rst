@@ -313,14 +313,14 @@ you made up). Such a section must contain the following fields:
 This specifies the basic target design that will be built. Unless you
 are defining a custom system, this should either be ``FireSim``, for
 systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
-are defined in ``firesim/sim/src/main/scala/Targets.scala``.
+are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``.
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulation. Some
 examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
-These are defined in ``firesim/sim/src/main/scala/TargetConfigs.scala``.
+These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
 
 
 ``PLATFORM_CONFIG``
@@ -328,7 +328,7 @@ These are defined in ``firesim/sim/src/main/scala/TargetConfigs.scala``.
 
 This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
-These are defined in ``firesim/sim/src/main/scala/SimConfigs.scala``.
+These are defined in ``firesim/sim/src/main/scala/firesim/SimConfigs.scala``.
 
 ``instancetype``
 """""""""""""""""""
