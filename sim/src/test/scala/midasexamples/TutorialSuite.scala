@@ -12,7 +12,7 @@ abstract class TutorialSuite(
   ) extends TestSuiteCommon with GeneratorUtils {
 
   val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
-  val commonMakeArgs = Seq(s"ROOT_PROJECT=midasexamples", s"DESIGN=$targetName")
+  val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples", s"DESIGN=$targetName")
   val targetTuple = targetName
 
   //implicit val p = (platform match {

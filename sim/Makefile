@@ -2,19 +2,18 @@
 #   Parameters   #
 ##################
 
-# Multiple target-projects co-exist in firesim, their sources exist in:
-# src/main/{cc, scala, makefrag}/<project-name>
+# Multiple target-projects, each with it's own chisel generator, co-exist in firesim.
+# Their sources exist in:
+# src/main/{cc, scala, makefrag}/<target-project-name>
 #
 # Currently these projects are:
-# 	firesim: the default, rocket-chip-based target designs
-# 	midasexamples: simple chisel designs, demonstrating how to build midas-style simulators
-ROOT_PROJECT ?= firesim
+# 	firesim: the default, rocket-chip-based target-designs
+# 	midasexamples: simple chisel designs demonstrating how to build midas-style simulators
+TARGET_PROJECT ?= firesim
 
-# Users can override this to point at a makefrag defined in a parent project that submodules firesim
-ROOT_PROJECT_MAKEFRAG ?= src/main/makefrag/$(ROOT_PROJECT)/Makefrag
-
-# The host-platform type.
-PLATFORM := f1
+# Users can override this to point at a makefrag defined in a parent project
+# that submodules firesim or source sim/Makefrag directly
+TARGET_PROJECT_MAKEFRAG ?= src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 
 default: compile
 
@@ -35,8 +34,10 @@ $(firesim_base_dir)/firrtl.timestamp: $(shell find $(firesim_base_dir)/firrtl/$(
 	cd $(firesim_base_dir)/firrtl && $(SBT) $(SBT_FLAGS) publishLocal
 	touch $@
 
+PLATFORM := f1
+
 # Include target-specific sources and input generation recipes
-include $(ROOT_PROJECT_MAKEFRAG)
+include $(TARGET_PROJECT_MAKEFRAG)
 
 verilog: $(VERILOG)
 compile: $(VERILOG)
