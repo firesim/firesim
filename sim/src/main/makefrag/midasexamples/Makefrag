@@ -1,6 +1,6 @@
 # These point at the main class of the target's Chisel generator
 PROJECT ?= firesim.midasexamples
-DESIGN ?= PointerChaser
+DESIGN ?= GCD
 
 base_dir = $(abspath .)
 name_tuple = $(DESIGN)
