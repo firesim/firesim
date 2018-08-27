@@ -51,7 +51,7 @@ DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev))
 
 TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
-TARGET_LD_FLAGS :=-L$(RISCV)/lib -lfesvr
+TARGET_LD_FLAGS :=-L$(RISCV)/lib  -Wl,-Bstatic -lfesvr -Wl,-Bdynamic
 
 ####################################
 # Runtime-Configuraiton Generation #

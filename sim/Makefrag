@@ -57,7 +57,7 @@ verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
 $(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D RTLSIM
-$(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
+$(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
@@ -77,7 +77,7 @@ vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 
 $(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(VCS_HOME)/include -D RTLSIM
-$(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
+$(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
@@ -104,10 +104,10 @@ fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt -Wl,-Bstatic -lfesvr -Wl,-Bdynamic
+$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 
 # Compile Driver
-$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(fesvr) $(spike) $(runtime_conf)
+$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(HEADER) $(OUTPUT_DIR)/build/
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
@@ -162,7 +162,7 @@ xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
 $(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
-$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath,$(RISCV)/lib
+$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
