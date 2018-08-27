@@ -46,11 +46,13 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-
     rootLogger.info("Creating initial config files from examples.")
     with hide('everything'):
         for conf_file in config_files:
             m = local("""cp sample-backup-configs/sample_config_{}.ini config_{}.ini""".format(conf_file, conf_file), capture=True)
+            rootLogger.debug(m)
+            rootLogger.debug(m.stderr)
+            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.ini""".format(get_aws_username(), conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
