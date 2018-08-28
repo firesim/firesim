@@ -54,11 +54,11 @@ memcached-thread-imbalance:
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/mutilate-loadgen-riscv-release/overlay
 
 bw-test-two-instances: bw-test-two-instances.json
-	cd ../../sw/network-benchmarks && python build.py -n 8
+	cd ../../sw/network-benchmarks && python build-bw-test.py -n 8
 	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 bw-test-one-instance: bw-test-one-instance.json
-	cd ../../sw/network-benchmarks && python build.py -n 4
+	cd ../../sw/network-benchmarks && python build-bw-test.py -n 4
 	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 ping-latency:
