@@ -1,10 +1,13 @@
-package firesim
+package firesim.firesim
 
-import endpoints.LoopbackNIC
+import freechips.rocketchip.config.{Parameters, Config, Field}
+
 import midas.models._
 import midas.MemModelKey
+
 import testchipip.{WithBlockDevice}
-import freechips.rocketchip.config.{Parameters, Config, Field}
+
+import firesim.endpoints._
 
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
@@ -12,23 +15,23 @@ object DramOrganizationKey extends Field[DramOrganizationParams]
 
 class WithSerialWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new endpoints.SimSerialIO))
+    midas.core.EndpointMap(Seq(new SimSerialIO))
 })
 
 class WithUARTWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new endpoints.SimUART))
+    midas.core.EndpointMap(Seq(new SimUART))
 })
 
 class WithSimpleNICWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new endpoints.SimSimpleNIC))
+    midas.core.EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new endpoints.SimBlockDev))
+    midas.core.EndpointMap(Seq(new SimBlockDev))
 })
 
 class WithDefaultMemModel extends Config((site, here, up) => {
