@@ -41,6 +41,8 @@ void firesim_fesvr_t::reset()
 {
     uint32_t one = 1;
     write_chunk(MSIP_BASE, sizeof(uint32_t), &one);
+    fprintf(stderr, "Done reset write_chunk\n");
+
 }
 
 void firesim_fesvr_t::push_addr(reg_t addr)

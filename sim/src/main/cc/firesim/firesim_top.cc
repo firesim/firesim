@@ -10,7 +10,8 @@
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
 
-firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr): fesvr(fesvr)
+firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size): 
+    fesvr(fesvr), fesvr_step_size(fesvr_step_size)
 {
     // fields to populate to pass to endpoints
     char * blkfile = NULL;
@@ -33,6 +34,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr): fes
             profile_interval = max_cycles;
         }
 
+        if (arg.find("+fesvr-step-size=") == 0) {
+            fesvr_step_size = atoi(arg.c_str()+17);
+        }
         if (arg.find("+blkdev=") == 0) {
             blkfile = const_cast<char*>(arg.c_str()) + 8;
         }
@@ -80,7 +84,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr): fes
     }
 
     add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, fesvr));
+    add_endpoint(new serial_t(this, fesvr, fesvr_step_size));
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
@@ -145,7 +149,7 @@ void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     mpz_clear(data);
 }
 
-void firesim_top_t::tether_bypass_via_loadmem() {
+void firesim_top_t::serial_bypass_via_loadmem() {
     fesvr_loadmem_t loadmem;
     while (fesvr->has_loadmem_reqs()) {
         // Check for reads first as they preceed a narrow write;
@@ -154,53 +158,23 @@ void firesim_top_t::tether_bypass_via_loadmem() {
     }
 }
 
-#ifndef ENABLE_SNAPSHOT
-#define GET_DELTA step_size
-#else
-#define GET_DELTA std::min(step_size, tracelen)
-#endif
-
 void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
-    size_t delta = GET_DELTA;
-    size_t delta_sum = 0;
     size_t loop_start = cycles();
     size_t loop_end = cycles() + coarse_step_size;
 
     do {
-        if (fesvr->busy()) {
-            step(1, false);
-            delta_sum += 1;
-            if (--delta == 0) delta = (cycles() + GET_DELTA < loop_end) ? GET_DELTA : loop_end - cycles() ;
-        } else {
-            step(delta, false);
-            delta_sum += delta;
-            delta = (cycles() + GET_DELTA < loop_end) ? GET_DELTA : loop_end - cycles() ;
+        step(step_size, false);
+
+        while(!done()){
+            for (auto e: endpoints) e->tick();
         }
-
-        bool _done;
-        do {
-            _done = done();
-            for (auto e: endpoints) {
-                _done &= e->done();
-                e->tick();
-            }
-        } while(!_done);
-
-        if (delta_sum == step_size || fesvr->busy()) {
-            for (auto e: endpoints) {
-                if (serial_t* s = dynamic_cast<serial_t*>(e)) {
-                    s->work();
-                }
-            }
-            // Generally this will do nothing except during program_load;
-            tether_bypass_via_loadmem();
-
-            if (delta_sum == step_size) delta_sum = 0;
+        if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
+            serial_bypass_via_loadmem();
         }
     } while (!fesvr->done() && cycles() < loop_end && cycles() <= max_cycles);
 }
 
-void firesim_top_t::run(size_t step_size) {
+void firesim_top_t::run() {
     for (auto e: fpga_models) {
         e->init();
     }
@@ -225,7 +199,7 @@ void firesim_top_t::run(size_t step_size) {
         for (auto mod: fpga_models) {
             mod->profile();
         }
-        loop(step_size, profile_interval);
+        loop(fesvr_step_size, profile_interval);
     } while (!fesvr->done() && cycles() <= max_cycles);
 
 
@@ -250,4 +224,4 @@ void firesim_top_t::run(size_t step_size) {
     for (auto e: fpga_models) {
         e->finish();
     }
-}
+} 
