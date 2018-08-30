@@ -10,7 +10,7 @@
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
 
-firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr(fesvr)
+firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr): fesvr(fesvr)
 {
     // fields to populate to pass to endpoints
     char * blkfile = NULL;

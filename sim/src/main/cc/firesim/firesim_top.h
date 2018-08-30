@@ -2,14 +2,14 @@
 #define __FIRESIM_TOP_H
 
 #include "simif.h"
-#include "fesvr/fesvr_proxy.h"
+#include "fesvr/firesim_fesvr.h"
 #include "endpoints/endpoint.h"
 #include "endpoints/fpga_model.h"
 
 class firesim_top_t: virtual simif_t
 {
     public:
-        firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr);
+        firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr);
         ~firesim_top_t() { }
 
         void run(size_t step_size);
@@ -25,7 +25,7 @@ class firesim_top_t: virtual simif_t
         std::vector<endpoint_t*> endpoints;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
-        fesvr_proxy_t* fesvr;
+        firesim_fesvr_t* fesvr;
         uint64_t max_cycles;
 
         // profile interval: # of cycles to advance before profiling instrumentation registers in models

@@ -2,7 +2,7 @@
 #define __SERIAL_H
 
 #include "endpoints/endpoint.h"
-#include "fesvr/fesvr_proxy.h"
+#include "fesvr/firesim_fesvr.h"
 
 template<class T>
 struct serial_data_t {
@@ -23,7 +23,7 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, fesvr_proxy_t* fesvr);
+        serial_t(simif_t* sim, firesim_fesvr_t* fesvr);
         void send();
         void recv();
         void work();
@@ -33,7 +33,7 @@ class serial_t: public endpoint_t
 
     private:
         serial_data_t<uint32_t> data;
-        fesvr_proxy_t* fesvr;
+        firesim_fesvr_t* fesvr;
 };
 
 #endif // __SERIAL_H
