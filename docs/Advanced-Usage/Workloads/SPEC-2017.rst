@@ -70,7 +70,7 @@ To Build Binaries and RootFSes:
 .. code-block:: bash
 
     cd firesim/deploy/workloads/
-    make spec2017-intrate
+    make spec17-intrate
 
 Run Resource Requirements:
 
