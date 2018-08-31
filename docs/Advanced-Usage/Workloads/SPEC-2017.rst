@@ -31,7 +31,7 @@ To Build Binaries And RootFSes:
 .. code-block:: bash
 
     cd firesim/deploy/workloads/
-    make spec2017-intspeed
+    make spec17-intspeed
     
 .. attention::
 
