@@ -32,6 +32,10 @@ To Build Binaries And RootFSes:
 
     cd firesim/deploy/workloads/
     make spec2017-intspeed
+    
+.. attention::
+
+    **[Advanced users] Spec 2017 for BOOM instead of Rocket Chip**: Please change ``-march=rv64imafdc`` to ``-march=rv64imafd`` in the ``riscv.cfg`` file in the Speckle directory since BOOM does not support compressed instructions yet.
 
 Run Resource requirements:
 
