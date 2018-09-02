@@ -65,6 +65,8 @@ conf:
 ############################################
 # Midas-Level Simulation Execution Recipes #
 ############################################
+# The desired RTL simulator. supported options: {vcs, verilator}
+EMUL ?= verilator
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
