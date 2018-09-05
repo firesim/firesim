@@ -30,9 +30,9 @@ class serial_t: public endpoint_t
         bool stall() { return false; }
 
     private:
+        firesim_fesvr_t* fesvr;
         // Number of target cycles between fesvr interactions
         uint32_t step_size;
-        firesim_fesvr_t* fesvr;
 
         // Tell the widget to start enqueuing tokens
         void go();
