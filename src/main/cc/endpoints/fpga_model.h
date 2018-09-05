@@ -49,6 +49,12 @@ protected:
     return sim->read(addr_map.r_addr(reg));
   }
 
+  uint64_t read64(std::string msw, std::string lsw, data_t upper_word_mask) {
+    assert(sizeof(data_t) == 4);
+    uint64_t data = ((uint64_t) (read(msw) & upper_word_mask)) << 32;
+    return data | read(lsw);
+  }
+
 };
 
 #endif // __FPGA_MODEL_H

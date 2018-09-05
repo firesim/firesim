@@ -108,15 +108,36 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
 case class DRAMBackendKey(writeDepth: Int, readDepth: Int, latencyBits: Int)
 
 abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(baseParams) with HasDRAMMASConstants {
-  def dramKey: DRAMOrganizationKey
+  def dramKey: DramOrganizationParams
   def backendKey: DRAMBackendKey
 }
 
-abstract class BaseDRAMMMRegIO(val cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
-  // Addr assignment
-  val bankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.bankBits, "Bank Address"))
-  val rowAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rowBits, "Row Address"))
-  val rankAddr = Input(new ProgrammableSubAddr(cfg.dramKey.rankBits, "Rank Address"))
+abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
+
+  // The default assignment corresponde to a standard open-page policy
+  // with 8K pages. All available ranks are enabled.
+  val bankAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.bankBits,
+    longName = "Bank Address",
+    defaultOffset = 13, // Assume 8KB page size
+    defaultMask = 7 // DDR3 Has 8 banks
+  ))
+
+  val rankAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.rankBits,
+    longName = "Rank Address",
+    defaultOffset = bankAddr.defaultOffset + log2Ceil(bankAddr.defaultMask + 1),
+    defaultMask = (1 << cfg.dramKey.rankBits) - 1
+  ))
+
+  val defaultRowOffset = rankAddr.defaultOffset + log2Ceil(rankAddr.defaultMask + 1)
+  val rowAddr = Input(new ProgrammableSubAddr(
+    maskBits = cfg.dramKey.rowBits,
+    longName = "Row Address",
+    defaultOffset = defaultRowOffset,
+    defaultMask = (cfg.dramKey.dramSize >> defaultRowOffset.toInt) - 1
+  ))
+
   // Page policy 1 = open, 0 = closed
   val openPagePolicy = Input(Bool())
   // Additional latency added to read data beats after it's received from the devices
@@ -252,7 +273,7 @@ abstract class BaseDRAMMMRegIO(val cfg: DRAMBaseConfig) extends MMRegIO(cfg) wit
   }
 }
 
-case class DRAMOrganizationKey(maxBanks: Int, maxRanks: Int, dramSize: BigInt, lineBits: Int = 8) {
+case class DramOrganizationParams(maxBanks: Int, maxRanks: Int, dramSize: BigInt, lineBits: Int = 8) {
   require(isPow2(maxBanks))
   require(isPow2(maxRanks))
   require(isPow2(dramSize))
@@ -271,7 +292,7 @@ trait CommandLegalBools {
 }
 
 trait HasLegalityUpdateIO {
-  val key: DRAMOrganizationKey
+  val key: DramOrganizationParams
   import DRAMMasEnums._
   val timings = Input(new DRAMProgrammableTimings)
   val selectedCmd = Input(cmd_nop.cloneType)
@@ -330,7 +351,7 @@ class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends M
 // timing and resource constraints are met. The controller must also ensure CAS
 // commands use the open ROW. 
 
-class BankStateTrackerO(key: DRAMOrganizationKey) extends GenericParameterizedBundle(key)
+class BankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
     with CommandLegalBools {
 
   import DRAMMasEnums._
@@ -340,13 +361,13 @@ class BankStateTrackerO(key: DRAMOrganizationKey) extends GenericParameterizedBu
   def isRowHit(ref: MASEntry): Bool = ref.rowAddr === openRow && state === bank_active
 }
 
-class BankStateTrackerIO(val key: DRAMOrganizationKey) extends GenericParameterizedBundle(key)
+class BankStateTrackerIO(val key: DramOrganizationParams) extends GenericParameterizedBundle(key)
   with HasLegalityUpdateIO {
   val out = new BankStateTrackerO(key)
   val cmdUsesThisBank = Input(Bool())
 }
 
-class BankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASConstants {
+class BankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMMASConstants {
   import DRAMMasEnums._
   val io = IO(new BankStateTrackerIO(key))
 
@@ -428,7 +449,7 @@ class BankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
 // timing and resource constraints are met. The controller must also ensure CAS
 // commands use the open ROW. 
 
-class RankStateTrackerO(key: DRAMOrganizationKey) extends GenericParameterizedBundle(key)
+class RankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
     with CommandLegalBools {
   import DRAMMasEnums._
   val canREF = Output(Bool())
@@ -437,7 +458,7 @@ class RankStateTrackerO(key: DRAMOrganizationKey) extends GenericParameterizedBu
   val banks = Vec(key.maxBanks, Output(new BankStateTrackerO(key)))
 }
 
-class RankStateTrackerIO(val key: DRAMOrganizationKey) extends GenericParameterizedBundle(key)
+class RankStateTrackerIO(val key: DramOrganizationParams) extends GenericParameterizedBundle(key)
     with HasLegalityUpdateIO with HasDRAMMASConstants {
   val rank = new RankStateTrackerO(key)
   val tCycle = Input(UInt(maxDRAMTimingBits.W))
@@ -445,7 +466,7 @@ class RankStateTrackerIO(val key: DRAMOrganizationKey) extends GenericParameteri
   val cmdBankOH = Input(UInt(key.maxBanks.W))
 }
 
-class RankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASConstants {
+class RankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMMASConstants {
   import DRAMMasEnums._
 
   val io = IO(new RankStateTrackerIO(key))
@@ -509,7 +530,8 @@ class RankStateTracker(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
       nextLegalACT.io.set.bits := io.timings.tRFC - 1.U
   }
 
-  when (tREFI === io.timings.tREFI) {
+  // Disable refresion by setting tREFI = 0
+  when (tREFI === io.timings.tREFI && io.timings.tREFI =/= 0.U) {
     tREFI := 0.U
     wantREF := true.B
   }.otherwise {
@@ -554,9 +576,9 @@ class CommandBusMonitor extends Module {
   val cycleCounter = RegInit(1.U(32.W))
   val lastCommand = RegInit(0.U(32.W))
   cycleCounter := cycleCounter + 1.U
-  when (io.cmd != cmd_nop) {
+  when (io.cmd =/= cmd_nop) {
     lastCommand := cycleCounter
-    when (lastCommand + 1.U != cycleCounter) { printf("nop(%d);\n", cycleCounter - lastCommand - 1.U) }
+    when (lastCommand + 1.U =/= cycleCounter) { printf("nop(%d);\n", cycleCounter - lastCommand - 1.U) }
   }
 
   switch (io.cmd) {
@@ -589,7 +611,7 @@ class CommandBusMonitor extends Module {
   }
 }
 
-class RankRefreshUnitIO(key: DRAMOrganizationKey) extends GenericParameterizedBundle(key) {
+class RankRefreshUnitIO(key: DramOrganizationParams) extends GenericParameterizedBundle(key) {
   val rankStati = Vec(key.maxRanks, Flipped(new RankStateTrackerO(key)))
   // The user may have instantiated multiple ranks, but is only modelling a single
   // rank system. Don't issue refreshes to ranks we aren't modelling
@@ -601,11 +623,11 @@ class RankRefreshUnitIO(key: DRAMOrganizationKey) extends GenericParameterizedBu
   val preBankAddr = Output(UInt(key.bankBits.W))
 }
 
-class RefreshUnit(key: DRAMOrganizationKey) extends Module {
+class RefreshUnit(key: DramOrganizationParams) extends Module {
   val io = IO(new RankRefreshUnitIO(key))
 
-  val ranksWantingRefresh = Vec(io.rankStati map { _.wantREF }).asUInt
-  val refreshableRanks = Vec(io.rankStati map { _.canREF }).asUInt & io.ranksInUse
+  val ranksWantingRefresh = VecInit(io.rankStati map { _.wantREF }).asUInt
+  val refreshableRanks = VecInit(io.rankStati map { _.canREF }).asUInt & io.ranksInUse
 
   io.refRankAddr := PriorityEncoder(ranksWantingRefresh & refreshableRanks)
   io.suggestREF := (ranksWantingRefresh & refreshableRanks).orR
@@ -613,7 +635,7 @@ class RefreshUnit(key: DRAMOrganizationKey) extends Module {
   // preRef => a precharge needed before refresh may occur
   val preRefBanks = io.rankStati map { rank => PriorityEncoder(rank.banks map { _.canPRE })}
 
-  val prechargeableRanks = Vec(io.rankStati map { rank => rank.canPRE &&
+  val prechargeableRanks = VecInit(io.rankStati map { rank => rank.canPRE &&
     (rank.banks map { _.canPRE } reduce { _ || _ })}).asUInt & io.ranksInUse
 
   io.suggestPRE := (ranksWantingRefresh & prechargeableRanks).orR
@@ -647,7 +669,7 @@ object RankPowerIO {
   }
 }
 
-class RankPowerMonitor(key: DRAMOrganizationKey) extends Module with HasDRAMMASConstants {
+class RankPowerMonitor(key: DramOrganizationParams) extends Module with HasDRAMMASConstants {
   import DRAMMasEnums._
   val io = IO(new Bundle {
     val stats = Output(new RankPowerIO)
@@ -672,14 +694,14 @@ class RankPowerMonitor(key: DRAMOrganizationKey) extends Module with HasDRAMMASC
   }
 
   // This is questionable. Needs to be reevaluated once CKE toggling is accounted for
-  when (io.rankState.state != rank_refresh && ((io.rankState.banks) forall { _.canACT })) {
+  when (io.rankState.state =/= rank_refresh && ((io.rankState.banks) forall { _.canACT })) {
     stats.allPreCycles := stats.allPreCycles + 1.U
   }
 
   io.stats := stats
 }
 
-class DRAMBackendIO(latencyBits: Int)(implicit p: Parameters) extends Bundle {
+class DRAMBackendIO(val latencyBits: Int)(implicit val p: Parameters) extends Bundle {
   val newRead = Flipped(Decoupled(new ReadResponseMetaData))
   val newWrite = Flipped(Decoupled(new WriteResponseMetaData))
   val completedRead = Decoupled(new ReadResponseMetaData)

@@ -7,6 +7,8 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.ArrayBuffer
 
 // from rocketchip
+import junctions.NastiIO
+import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._

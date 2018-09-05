@@ -39,7 +39,7 @@ $(info clock period: $(CLOCK_PERIOD))
 
 shim := FPGATop
 
-override CXXFLAGS := -std=c++11 -Wall -Wno-unused-variable -I$(midas_dir)/dramsim2 $(CXXFLAGS)
+override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
 
 include $(util_dir)/utils.mk
 
@@ -49,7 +49,7 @@ $(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
 $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
-override CXXFLAGS += -I$(midas_dir) -I$(util_dir) $(foreach f, $(DRIVER), -I$(dir $(f)))
+override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
 override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp 
 
 design_v = $(GEN_DIR)/$(shim).v

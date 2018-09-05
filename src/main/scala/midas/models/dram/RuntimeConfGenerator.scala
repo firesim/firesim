@@ -1,6 +1,7 @@
 package midas
 package models
 
+import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames} // For parameter lookup
 import freechips.rocketchip.config._
 
 import chisel3._

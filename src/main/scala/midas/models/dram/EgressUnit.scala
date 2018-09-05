@@ -22,13 +22,13 @@ class FreeList(entries: Int) extends Module {
     val nextId = Decoupled(UInt(log2Up(entries).W))
   })
   require(entries > 0)
-  val nextId = Reg(init = { val i = Wire(Valid(UInt())); i.valid := true.B;
+  val nextId = RegInit({ val i = Wire(Valid(UInt())); i.valid := true.B;
                             i.bits := 0.U; i})
 
   io.nextId.valid := nextId.valid
   io.nextId.bits := nextId.bits
   // Add an extra entry to represent the empty bit. Maybe not necessary?
-  val ids = Reg(init = Vec.tabulate(entries)(i =>
+  val ids = RegInit(Vec.tabulate(entries)(i =>
     if (i == 0) false.B else true.B))
   val next = ids.indexWhere((x:Bool) => x)
 
@@ -327,7 +327,7 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   }
 
   val ackCounters = Seq.fill(1 << p(NastiKey).idBits)(RegInit(0.U(log2Up(maxReqsPerId + 1).W)))
-  val notEmpty = Vec(ackCounters map {_ != 0.U})
+  val notEmpty = VecInit(ackCounters map {_ =/= 0.U})
   val retry = currReqReg.valid && !haveAck
   val deqId = Mux(retry, currReqReg.bits, io.req.t.bits)
   when (retry || targetFire && io.req.t.valid) {
