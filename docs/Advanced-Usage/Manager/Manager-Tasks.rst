@@ -45,7 +45,7 @@ For each config, the build process entails:
 
 5. Launch an FPGA Dev AMI build instance for each configuration you want built.
 
-6. [Local/Remote] Prep build instances, copy generated verilog for hardware configuration to buidl instance.
+6. [Local/Remote] Prep build instances, copy generated verilog for hardware configuration to build instance.
 
 7. [Remote] Run Vivado Synthesis and P&R for the configuration
 
