@@ -13,7 +13,7 @@ import midas.widgets._
 import Console.{UNDERLINED, RESET}
 
 case class FirstReadyFCFSConfig(
-    dramKey: DRAMOrganizationKey,
+    dramKey: DramOrganizationParams,
     schedulerWindowSize: Int,
     transactionQueueDepth: Int,
     backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
@@ -23,7 +23,7 @@ case class FirstReadyFCFSConfig(
   def elaborate()(implicit p: Parameters): FirstReadyFCFSModel = Module(new FirstReadyFCFSModel(this))
 }
 
-class FirstReadyFCFSMMRegIO(cfg: FirstReadyFCFSConfig) extends BaseDRAMMMRegIO(cfg) {
+class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMRegIO(cfg) {
   val schedulerWindowSize = Input(UInt(log2Ceil(cfg.schedulerWindowSize).W))
   val transactionQueueDepth = Input(UInt(log2Ceil(cfg.transactionQueueDepth).W))
 
@@ -45,12 +45,16 @@ class FirstReadyFCFSMMRegIO(cfg: FirstReadyFCFSConfig) extends BaseDRAMMMRegIO(c
   }
 }
 
-class FirstReadyFCFSIO(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModelIO(cfg)(p){
+class FirstReadyFCFSIO(val cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModelIO()(p){
   val mmReg = new FirstReadyFCFSMMRegIO(cfg)
 }
 
 class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModel(cfg)(p)
     with HasDRAMMASConstants {
+
+  val longName = "First-Ready FCFS MAS"
+  def printTimingModelGenerationConfig {}
+  /**************************** CHISEL BEGINS *********************************/
 
   import DRAMMasEnums._
   lazy val io = IO(new FirstReadyFCFSIO(cfg))
@@ -69,7 +73,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
 
 
   // Forward declared wires
-  val selectedCmd = Wire(init = cmd_nop)
+  val selectedCmd = WireInit(cmd_nop)
   val memReqDone = (selectedCmd === cmd_casr || selectedCmd === cmd_casw)
 
   // Trackers for DRAM timing violations
@@ -79,7 +83,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   // Instead of counting the number, we keep a bit to indicate presence
   // it is set on activation, enqueuing a new ready entry, and unset when a memreq kills the last
   // ready entry
-  val bankHasReadyEntries = RegInit(Vec.fill(cfg.dramKey.maxRanks * cfg.dramKey.maxBanks)(false.B))
+  val bankHasReadyEntries = RegInit(VecInit(Seq.fill(cfg.dramKey.maxRanks * cfg.dramKey.maxBanks)(false.B)))
 
   // State for the collapsing buffer of pending memory references
   val newReference = Wire(Decoupled(new FirstReadyFCFSEntry(cfg)))
@@ -87,8 +91,8 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   newReference.bits.decode(xactionScheduler.io.nextXaction.bits, io.mmReg)
 
   // Mark that the new reference hits an open row buffer, in case it missed the broadcast
-  val rowHitsInRank = Vec(rankStateTrackers map { tracker =>
-    Vec(tracker.io.rank.banks map { _.isRowHit(newReference.bits)}).asUInt })
+  val rowHitsInRank = VecInit(rankStateTrackers map { tracker =>
+    VecInit(tracker.io.rank.banks map { _.isRowHit(newReference.bits)}).asUInt })
 
   xactionScheduler.io.nextXaction.ready := newReference.ready
 
@@ -104,15 +108,15 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   val columnArbiter =  Module(new Arbiter(refList.head.bits.cloneType, refList.size))
 
   def checkRankBankLegality(getField: CommandLegalBools => Bool)(masEntry: FirstReadyFCFSEntry): Bool = {
-    val bankFields = rankStateTrackers map { rank => Vec(rank.io.rank.banks map getField).asUInt }
+    val bankFields = rankStateTrackers map { rank => VecInit(rank.io.rank.banks map getField).asUInt }
     val bankLegal = (Mux1H(masEntry.rankAddrOH, bankFields) & masEntry.bankAddrOH).orR
-    val rankFields = Vec(rankStateTrackers map { rank => getField(rank.io.rank) }).asUInt
+    val rankFields = VecInit(rankStateTrackers map { rank => getField(rank.io.rank) }).asUInt
     val rankLegal = (masEntry.rankAddrOH & rankFields).orR
     rankLegal && bankLegal
   }
 
   def rankWantsRef(rankAddrOH: UInt): Bool =
-    (rankAddrOH & (Vec(rankStateTrackers map { _.io.rank.wantREF }).asUInt)).orR
+    (rankAddrOH & (VecInit(rankStateTrackers map { _.io.rank.wantREF }).asUInt)).orR
 
 
   val canLegallyCASR = checkRankBankLegality( _.canCASR ) _
@@ -151,9 +155,9 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   // NB: These are not driven for all command types. Ex. When issuing a CAS cmdRow
   // will not correspond to the row of the CAS command since that is implicit
   // to the state of the bank.
-  val cmdBank = Wire(UInt(cfg.dramKey.bankBits.W), init = preBank)
+  val cmdBank = WireInit(UInt(cfg.dramKey.bankBits.W), init = preBank)
   val cmdBankOH = UIntToOH(cmdBank)
-  val cmdRank = Wire(UInt(cfg.dramKey.rankBits.W), init = columnArbiter.io.out.bits.rankAddr)
+  val cmdRank = WireInit(UInt(cfg.dramKey.rankBits.W), init = columnArbiter.io.out.bits.rankAddr)
   val cmdRow = actRow
 
   val refreshUnit = Module(new RefreshUnit(cfg.dramKey)).io
@@ -250,7 +254,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   }
 
   cmdBusBusy.io.set.bits := timings.tCMD - 1.U
-  cmdBusBusy.io.set.valid := selectedCmd != cmd_nop
+  cmdBusBusy.io.set.valid := selectedCmd =/= cmd_nop
 
   backend.io.tCycle := tCycle
   backend.io.newRead.bits  := ReadResponseMetaData(columnArbiter.io.out.bits.xaction)
@@ -282,5 +286,5 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
       powerMonitor.io.stats
     }
 
-  io.mmReg.rankPower := Vec(powerStats)
+  io.mmReg.rankPower := VecInit(powerStats)
 }

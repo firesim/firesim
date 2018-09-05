@@ -5,8 +5,6 @@ package passes
 
 import midas.core._
 
-import chisel3.experimental.ChiselAnnotation
-
 import firrtl._
 import firrtl.annotations._
 import firrtl.ir._
@@ -61,51 +59,26 @@ private[midas] class MidasTransforms(
   }
 }
 
-// FIXME - get from C3
-trait DontTouchAnnotator { // scalastyle:ignore object.name
-  this: chisel3.Module =>
-
-  def dontTouch[T <: chisel3.Data](data: T): T = {
-    // TODO unify with firrtl.transforms.DontTouchAnnotation
-    annotate(ChiselAnnotation(data, classOf[firrtl.Transform], "DONTtouch!"))
-    data
-  }
+/**
+  * An annotation on a module indicating it should be fame1 tranformed using
+  * a Bool, whose name is indicated by tFire, used as the targetFire signal
+  */
+case class Fame1ChiselAnnotation(target: chisel3.experimental.RawModule, tFire: String = "targetFire") 
+    extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl = Fame1Annotation(target.toNamed, tFire)
 }
 
-// Mixed into modules that contain instances that will be Fame1 tranformed
-trait Fame1Annotator {
-  this: chisel3.Module =>
-
-  // Transforms a single instance; targetFire should be set to the name of a Bool
-  // that will be used to tick the module
-  def fame1transform(module: chisel3.Module, targetFire: String): Unit = {
-    annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
-    annotate(ChiselAnnotation(module, classOf[Fame1Instances], targetFire))
-  }
-
-  // Takes a series of modules; uses a bool named "targetFire" in enclosing context
-  def fame1transform(modules: chisel3.Module*): Unit = modules.foreach(fame1transform(_, "targetFire"))
-}
-
-object Fame1Annotation {
-  def apply(target: ModuleName, tFire: String): Annotation = Annotation(target, classOf[Fame1Instances], tFire)
-
-  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
-    case Annotation(ModuleName(n, c), _, tFire) => Some(ModuleName(n, c) -> tFire) 
-    case _ => None
-  }
+case class Fame1Annotation(target: ModuleName, tFire: String) extends
+    SingleTargetAnnotation[ModuleName] {
+  def duplicate(n: ModuleName) = this.copy(target = n)
 }
 
 class Fame1Instances extends Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   def execute(state: CircuitState): CircuitState = {
-    getMyAnnotations(state) match {
-      case Nil => state.copy()
-      case annos =>
-      val fame1s = (annos.collect { case Fame1Annotation(ModuleName(m, c), tFire) => m -> tFire }).toMap
-      state.copy(circuit = new ModelFame1Transform(fame1s).run(state.circuit))
-    }
+    val fame1s = (state.annotations.collect { case Fame1Annotation(ModuleName(m, c), tFire) => m -> tFire }).toMap
+    state.copy(circuit = new ModelFame1Transform(fame1s).run(state.circuit))
   }
 }
 

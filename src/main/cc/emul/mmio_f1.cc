@@ -482,10 +482,10 @@ void tick() {
 
   top->io_dma_r_ready = d->r_ready();
   top->io_dma_b_ready = d->b_ready();
-#if CTRL_DATA_BITS > 64
-  memcpy(top->io_dma_w_bits_data, d->w_data(), MMIO_WIDTH);
+#if DMA_DATA_BITS > 64
+  memcpy(top->io_dma_w_bits_data, d->w_data(), DMA_WIDTH);
 #else
-  memcpy(&top->io_dma_w_bits_data, d->w_data(), MMIO_WIDTH);
+  memcpy(&top->io_dma_w_bits_data, d->w_data(), DMA_WIDTH);
 #endif
 
   d->tick(
@@ -494,7 +494,7 @@ void tick() {
     top->io_dma_aw_ready,
     top->io_dma_w_ready,
     top->io_dma_r_bits_id,
-#if CTRL_DATA_BITS > 64
+#if DMA_DATA_BITS > 64
     top->io_dma_r_bits_data,
 #else
     &top->io_dma_r_bits_data,

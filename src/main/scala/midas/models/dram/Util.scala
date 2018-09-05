@@ -52,7 +52,11 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   }
 }
 
-class ProgrammableSubAddr(maskBits: Int, longName: String) extends Bundle with HasProgrammableRegisters{
+class ProgrammableSubAddr(
+    val maskBits: Int,
+    val longName: String,
+    val defaultOffset: BigInt,
+    val defaultMask: BigInt) extends Bundle with HasProgrammableRegisters {
   val offset = UInt(32.W) // TODO:fixme
   val mask = UInt(maskBits.W) // Must be contiguous high bits starting from LSB
   def getSubAddr(fullAddr: UInt): UInt = (fullAddr >> offset) & mask
@@ -64,17 +68,14 @@ class ProgrammableSubAddr(maskBits: Int, longName: String) extends Bundle with H
   }
 
   val registers = Seq(
-    (offset -> RuntimeSetting(8,s"${longName} Offset", min = 0)),
-    (mask   -> RuntimeSetting(7,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
+    (offset -> RuntimeSetting(defaultOffset,s"${longName} Offset", min = 0)),
+    (mask   -> RuntimeSetting(defaultMask,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
   )
 
   def forceSettings(offsetValue: BigInt, maskValue: BigInt) {
     regMap(offset).set(offsetValue)
     regMap(mask).set(maskValue)
   }
-
-  override def cloneType = new ProgrammableSubAddr(maskBits, longName).asInstanceOf[this.type]
-
 }
 
 // A common motif to track inputs in a buffer
@@ -85,7 +86,7 @@ trait HasFIFOPointers {
 
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=false.B)
+  val maybe_full = RegInit(false.B)
 
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
@@ -97,7 +98,7 @@ trait HasFIFOPointers {
   when (do_deq) {
     deq_ptr.inc()
   }
-  when (do_enq != do_deq) {
+  when (do_enq =/= do_deq) {
     maybe_full := do_enq
   }
 }
@@ -141,7 +142,7 @@ class DynamicLatencyPipe[T <: Data] (
   }
 
   val latencies = Reg(Vec(entries, UInt(countBits.W)))
-  val pending = RegInit(Vec.fill(entries)(false.B))
+  val pending = RegInit(VecInit(Seq.fill(entries)(false.B)))
   latencies.zip(pending) foreach { case (lat, pending) =>
     when (lat === io.tCycle) { pending := false.B }
   }
@@ -169,7 +170,7 @@ class DownCounter(counterWidth: Int) extends Module {
   val delay = RegInit(0.U(counterWidth.W))
   when(io.set.valid && io.set.bits >= delay) {
     delay := io.set.bits
-  }.elsewhen(io.decr && delay != 0.U){
+  }.elsewhen(io.decr && delay =/= 0.U){
     delay := delay - 1.U
   }
   io.idle := delay === 0.U
@@ -181,14 +182,14 @@ class DownCounter(counterWidth: Int) extends Module {
 class CycleTracker(counterWidth: Int) extends Module {
   val io = IO(new Bundle {
     val set = Input(Valid(UInt(counterWidth.W)))
-    val tCycle = Input(UInt(counterWidth))
+    val tCycle = Input(UInt(counterWidth.W))
     val idle = Output(Bool())
   })
 
   require(counterWidth > 0, "CycleTracker must have a width > 0")
   val delay = RegInit(0.U(counterWidth.W))
   val idle  = RegInit(true.B)
-  when(io.set.valid && io.tCycle != io.set.bits) {
+  when(io.set.valid && io.tCycle =/= io.set.bits) {
     delay := io.set.bits
     idle := false.B
   }.elsewhen(delay === io.tCycle){
@@ -204,10 +205,10 @@ class CycleTracker(counterWidth: Int) extends Module {
 // NB: Companion object should be used to generate a module instance -> or
 // updates must be driven to entries by default for the module to behave
 // correctly
-class CollapsingBufferIO[T <: Data](gen: T, depth: Int) extends Bundle {
-  val entries = Output(Vec(depth, Valid(gen.cloneType)))
-  val updates = Input(Vec(depth, Valid(gen.cloneType)))
-  val enq = Flipped(Decoupled(gen.cloneType))
+class CollapsingBufferIO[T <: Data](private val gen: T, val depth: Int) extends Bundle {
+  val entries = Output(Vec(depth, Valid(gen)))
+  val updates = Input(Vec(depth, Valid(gen)))
+  val enq = Flipped(Decoupled(gen))
   val programmableDepth = Input(UInt(log2Ceil(depth+1).W))
 }
 
@@ -246,7 +247,7 @@ object CollapsingBuffer {
       depth: Int,
       programmableDepth: Option[UInt] = None): CollapsingBuffer[T] = {
 
-    val buffer = Module(new CollapsingBuffer(enq.bits, depth))
+    val buffer = Module(new CollapsingBuffer(enq.bits.cloneType, depth))
     // This sets the default that each entry retains its value unless driven by the parent mod
     (buffer.io.updates).zip(buffer.io.entries).foreach({ case (e, u) =>  e := u })
     buffer.io.enq <> enq
@@ -313,7 +314,7 @@ object WriteResponseMetaData {
   }
 }
 
-class AXI4ReleaserIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class AXI4ReleaserIO(implicit val p: Parameters) extends ParameterizedBundle()(p) {
   val b = Decoupled(new NastiWriteResponseChannel)
   val r = Decoupled(new NastiReadDataChannel)
   val egressReq = new EgressReq
@@ -351,7 +352,12 @@ class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with H
     val hit = Output(Bool())
   })
 
-  val addrs = RegInit(Vec.fill(entries)({ val w = Wire(Valid(UInt(addrWidth.W))); w.valid := false.B; w }))
+  val addrs = RegInit(VecInit(Seq.fill(entries)({
+    val w = Wire(Valid(UInt(addrWidth.W)))
+    w.valid := false.B
+    w.bits := DontCare
+    w
+  })))
   do_enq := io.enq.valid
   do_deq := io.deq
 
@@ -400,7 +406,94 @@ class AddressCollisionChecker(numReads: Int, numWrites: Int, addrWidth: Int)(imp
   io.collision_addr.bits := Mux(io.read_req.valid, io.read_req.bits, io.write_req.bits)
 }
 
+
+class HistogramReadoutIO(val binAddrBits: Int) extends Bundle {
+  val enable = Input(Bool()) // Set when the simulation memory bus whishes to read out the values
+  val addr = Input(UInt(binAddrBits.W))
+  val dataL = Output(UInt(32.W))
+  val dataH = Output(UInt(32.W))
+}
+// Stores a histogram of host latencies in BRAM
+// Setting io.readoutEnable ties a read port of the BRAM to a read address that
+//   can be driven by the simulation bus
+//
+// WARNING: Will drop bin updates if attempting to read values while host
+// transactions are still inflight
+
+class HostLatencyHistogramIO(val idBits: Int, val binAddrBits: Int) extends Bundle {
+  val reqId = Flipped(ValidIO(UInt(idBits.W)))
+  val respId = Flipped(ValidIO(UInt(idBits.W)))
+  val cycleCountEnable = Input(Bool()) // Indicates which cycles the counter should be incremented
+  val readout = new HistogramReadoutIO(binAddrBits)
+}
+
+// Defaults Will fit in a 36K BRAM
+class HostLatencyHistogram (
+    idBits: Int,
+    cycleCountBits: Int = 10
+  ) extends Module {
+  val io = IO(new HostLatencyHistogramIO(idBits, cycleCountBits))
+  val binSize = 36
+  // Need a queue for each ID to track the host cycle a request was issued.
+  val queues = Seq.fill(1 << idBits)(Module(new Queue(UInt(cycleCountBits.W), 1)))
+
+  val histogram = SyncReadMem(1 << cycleCountBits, UInt(binSize.W))
+
+  val cycle = RegInit(0.U(cycleCountBits.W))
+  when (io.cycleCountEnable) { cycle := cycle + 1.U }
+
+  // When the host accepts an AW/AR enq the current cycle
+  (queues map { _.io.enq }).zip(UIntToOH(io.reqId.bits).toBools).foreach({ case (enq, sel) =>
+     enq.valid := io.reqId.valid && sel
+     enq.bits := cycle
+     assert(!(enq.valid && !enq.ready), "Multiple requests issued to same ID")
+  })
+
+  val deqAddrOH = UIntToOH(io.respId.bits)
+  val reqCycle = Mux1H(deqAddrOH, (queues map { _.io.deq.bits }))
+  (queues map { _.io.deq }).zip(deqAddrOH.toBools).foreach({ case (deq, sel) =>
+    deq.ready := io.respId.valid && sel
+    assert(deq.valid || !deq.ready, "Received an unexpected response")
+  })
+
+  val readAddr = cycle - reqCycle
+  val s1_readAddr = RegNext(readAddr)
+  val s1_valid    = RegNext(io.respId.valid)
+  val s1_histReadData = histogram.read(Mux(io.readout.enable, io.readout.addr, readAddr))
+  val s2_binValue = Reg(UInt(binSize.W))
+
+  // Avoid R-on-W difficulties
+  val doBypass = s1_valid && io.respId.valid && s1_readAddr === readAddr
+  val s1_binUpdate = Mux(doBypass, s2_binValue,  s1_histReadData) + 1.U
+  s2_binValue := s1_binUpdate
+  when(s1_valid && !io.readout.enable) { histogram(s1_readAddr) := s1_binUpdate }
+
+  io.readout.dataL := s1_histReadData(31,0)
+  io.readout.dataH := s1_histReadData(binSize-1,32)
+}
+
+object HostLatencyHistogram {
+  def apply(
+      reqValid: Bool,
+      reqId: UInt,
+      respValid: UInt,
+      respId: UInt,
+      cycleCountEnable: Bool = true.B,
+      binAddrBits: Int = 10): HistogramReadoutIO = {
+    require(reqId.getWidth == respId.getWidth)
+    val histogram = Module(new HostLatencyHistogram(reqId.getWidth, binAddrBits))
+    histogram.io.reqId.bits := reqId
+    histogram.io.reqId.valid := reqValid
+    histogram.io.respId.bits := respId
+    histogram.io.respId.valid := respValid
+    histogram.io.cycleCountEnable := cycleCountEnable
+    histogram.io.readout
+  }
+}
+
 object AddressCollisionCheckMain extends App {
   implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
   chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))
 }
+
+
