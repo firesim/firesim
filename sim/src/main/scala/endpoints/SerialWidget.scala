@@ -32,7 +32,7 @@ class SerialWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
   val inBuf  = Module(new Queue(UInt(io.w.W), 16))
   val outBuf = Module(new Queue(UInt(io.w.W), 16))
-  val tokensToEnqueue = Reg(UInt(32.W))
+  val tokensToEnqueue = RegInit(0.U(32.W))
 
   val target = io.hPort.hBits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid && tokensToEnqueue =/= 0.U
