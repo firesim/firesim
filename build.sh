@@ -9,6 +9,18 @@ if [ $# -ne 0 ]; then
     LINUX_CONFIG=linux-config-firesim
   elif [ $1 == "initramfs" ] ; then
     LINUX_CONFIG=linux-config-initramfs
+  elif [ $1 == "fedora-initramfs" ] ; then
+    if [ ! -f ../../deploy/workloads/fedora-uniform/stage4-disk.img ]; then
+      echo "This software target assumes it is being built within the main FireSim project directory tree, and that the fedora-uniform workload has been fully generated within the deploy/workloads directory"
+      exit 1
+    fi
+    LINUX_CONFIG=linux-config-fedora-initramfs
+    sudo mount ../../deploy/workloads/fedora-uniform/stage4-disk.img ../../deploy/workloads/fedora-uniform/fedoramount/
+    cd ../../deploy/workloads/fedora-uniform/fedoramount
+    sudo ln -s -f /sbin/init init
+    sudo find . -print0 | sudo cpio --null -ov --format=newc > /tmp/initramfs.cpio
+    cd ../../../../sw/firesim-software
+    sudo umount ../../deploy/workloads/fedora-uniform/fedoramount/
   else
     echo "Please provide a valid platform (or no arguments to default to firesim)"
     exit 1
