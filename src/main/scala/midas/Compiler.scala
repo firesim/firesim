@@ -59,8 +59,7 @@ object MidasCompiler {
       chirrtl, firrtl.ChirrtlForm, targetAnnos ++ midasAnnos),
       customTransforms :+ midasTransforms)
 
-    val result = (new VerilogCompiler).compileAndEmit(firrtl.CircuitState(
-      midas.circuit, firrtl.HighForm, midasAnnos))
+    val result = (new VerilogCompiler).compileAndEmit(midas)
     val verilog = new FileWriter(new File(dir, s"FPGATop.v"))
     verilog.write(result.getEmittedCircuit.value)
     verilog.close
