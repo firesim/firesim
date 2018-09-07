@@ -343,6 +343,21 @@ class InstanceDeployManager:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo insmod /home/centos/edma/linux_kernel_drivers/edma/edma-drv.ko single_transaction_size=65536 transient_buffer_size=67108864 edma_queue_depth=1024 poll_mode=1")
 
+    def start_ila_server(self):
+        """ start the vivado hw_server and virtual jtag on simulation instance.) """
+        self.instance_logger("Starting Vivado hw_server.")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("""screen -S hw_server -d -m bash -c "script -f -c '/opt/Xilinx/Vivado/2017.4.op/bin/hw_server'"; sleep 1""")
+        self.instance_logger("Starting Vivado virtual JTAG.")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
+  
+    def kill_ila_server(self):
+        """ Kill the vivado hw_server and virtual jtag """
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            run("sudo pkill -SIGKILL hw_server")
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            run("sudo pkill -SIGKILL fpga-local-cmd")
 
     def copy_sim_slot_infrastructure(self, slotno):
         """ copy all the simulation infrastructure to the remote node. """
@@ -446,6 +461,9 @@ class InstanceDeployManager:
             # re-load EDMA
             self.load_edma()
 
+            # start ila server
+            self.start_ila_server()
+
         if self.instance_assigned_switches():
             # all nodes could have a switch
             for slotno in range(self.parentnode.get_num_switch_slots()):
@@ -484,6 +502,7 @@ class InstanceDeployManager:
             # only on sim nodes
             for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
                 self.kill_sim_slot(slotno)
+            self.kill_ila_server()
 
     def running_simulations(self):
         """ collect screen results from node to see what's running on it. """

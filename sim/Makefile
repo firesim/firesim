@@ -245,6 +245,7 @@ fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
 build_dir      := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
+ila_work_dir   := $(fpga_work_dir)/design/ila_files/
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
@@ -256,9 +257,15 @@ $(fpga_v): $(verilog) $(fpga_work_dir)/stamp
 	sed -i "s/\$$random/64'b0/g" $@
 	sed -i 's/fatal/fatal(0, "")/g' $@
 
+.PHONY: $(ila_work_dir)
+$(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
+	cp -f $(generated_dir)/firesim_ila_insert_* $(fpga_work_dir)/design/ila_files/
+	sed -i "s/\$$random/64'b0/g" $(fpga_work_dir)/design/ila_files/*
+	sed -i 's/fatal/fatal(0, "")/g' $(fpga_work_dir)/design/ila_files/*
+
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_v)
+replace-rtl: $(fpga_v) $(ila_work_dir)
 .PHONY: replace-rtl
 
 $(base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/stamp
