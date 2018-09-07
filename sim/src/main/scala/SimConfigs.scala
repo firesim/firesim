@@ -31,6 +31,11 @@ class WithBlockDevWidget extends Config((site, here, up) => {
     midas.core.EndpointMap(Seq(new endpoints.SimBlockDev))
 })
 
+class WithTracerVWidget extends Config((site, here, up) => {
+  case midas.EndpointKey => up(midas.EndpointKey) ++
+    midas.core.EndpointMap(Seq(new endpoints.SimTracerV))
+})
+
 class WithDefaultMemModel extends Config((site, here, up) => {
   case LlcKey => None
   // Only used if a DRAM model is requested
@@ -140,6 +145,7 @@ class FireSimConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
+  new WithTracerVWidget ++
   new midas.F1Config)
 
 class FireSimDDR3Config extends Config(

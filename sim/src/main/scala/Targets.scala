@@ -1,5 +1,6 @@
 package firesim
 
+import chisel3._
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
@@ -9,6 +10,7 @@ import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
 import java.io.File
+import freechips.rocketchip.rocket.TracedInstruction
 
 
 /*******************************************************************************
@@ -69,6 +71,15 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+{
+
+  val traced_params = outer.rocketTiles(0).p
+
+  val traceIO = IO(Output(new TracedInstruction()(traced_params)))
+  traceIO := outer.rocketTiles(0).module.trace.get(0)
+
+//  printf("%d", outer.rocketTiles(0).module.trace.get(0).asUInt)
+}
 
 
 

@@ -4,7 +4,7 @@
 
 # These point at the main class of the target's Chisel generator
 PROJECT ?= firesim
-DESIGN ?= FireSim
+DESIGN ?= FireSimNoNIC
 # DESIGN ?= FireBoom
 
 # These guide chisel elaboration of the target design specified above.
@@ -46,13 +46,14 @@ midas_cc = $(shell find $(simif_dir) -name "*.cc")
 emul_cc  = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart)) \
 	$(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim_f1 endpoints/simplenic endpoints/blockdev))
+	firesim_f1 endpoints/simplenic endpoints/blockdev endpoints/tracerv))
 
 
 common_cxx_flags = -I$(RISCV)/include -Wno-unused-variable
 
 SBT ?= sbt
-SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
+#SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
+SBT_FLAGS ?= -sbt-dir /scratch/sagark/.sbt -sbt-boot /scratch/sagark/.sbt/boot -ivy /scratch/sagark/.ivy2 -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
 sbt:
 	$(SBT) $(SBT_FLAGS)
 test:
@@ -223,7 +224,7 @@ $(PLATFORM): $($(PLATFORM)) $(output_dir)/$(DESIGN).chain
 
 fpga_dir = $(base_dir)/../platforms/$(PLATFORM)/aws-fpga
 driver_cc = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-		firesim_f1 endpoints/simplenic endpoints/blockdev firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart))
+		firesim_f1 endpoints/simplenic endpoints/blockdev firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart endpoints/tracerv))
 
 # TODO: Specify a main with a particular variable?
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include
