@@ -135,6 +135,6 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
 {
   val traced_params = outer.boomTiles(0).p
 
-  val traceIO = IO(Output(new TracedInstruction()(traced_params)))
-  traceIO := outer.boomTiles(0).module.trace.get(0)
+  val traceIO = IO(Output(new TraceOutputTop(1)(traced_params)))
+  traceIO.traces(0) := outer.boomTiles(0).module.trace.get(0)
 }

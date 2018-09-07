@@ -57,6 +57,13 @@ class BoomWithLargeTLBs extends Config((site, here, up) => {
   ))
 })
 
+class WithTraceRocket extends Config((site, here, up) => {
+   case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(trace = true) }
+})
+
+class WithTraceBoom extends Config((site, here, up) => {
+   case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
+})
 
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
@@ -69,6 +76,7 @@ class BoomWithLargeTLBs extends Config((site, here, up) => {
 * determine which driver to build.
 *******************************************************************************/
 class FireSimRocketChipConfig extends Config(
+  new WithTraceRocket ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
@@ -101,6 +109,7 @@ class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
 
 
 class FireSimBoomConfig extends Config(
+  new WithTraceBoom ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
