@@ -99,9 +99,33 @@ class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends En
   io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
+
+
+//class TracedInstruction(implicit p: Parameters) extends CoreBundle {
+//  val valid = Bool()
+//  val iaddr = UInt(width = coreMaxAddrBits)
+//  val insn = UInt(width = iLen)
+//  val priv = UInt(width = 3)
+//  val exception = Bool()
+//  val interrupt = Bool()
+//  val cause = UInt(width = log2Ceil(1 + CSR.busErrorIntCause))
+//  val tval = UInt(width = coreMaxAddrBits max iLen)
+//}
+//
+//
+//
+
    when (tFireHelper.fire(true.B)) {
     printf("valid: %x\n", io.hPort.hBits.valid)
     printf("iaddr: %x\n", io.hPort.hBits.iaddr)
+    printf("insn: %x\n", io.hPort.hBits.insn)
+    printf("priv: %x\n", io.hPort.hBits.priv)
+    printf("exception: %x\n", io.hPort.hBits.exception)
+    printf("interrupt: %x\n", io.hPort.hBits.interrupt)
+    printf("cause: %x\n", io.hPort.hBits.cause)
+    printf("tval: %x\n", io.hPort.hBits.tval)
+
+
 //    printf("%d\n", model.io.cmdTrace.bank)
 //    printf("%d\n", model.io.cmdTrace.autoPRE)
   }

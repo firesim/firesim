@@ -52,15 +52,24 @@ void tracerv_t::tick() {
 
     if (outfull) {
         pull(0x0, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        for (int i = 0; i < QUEUE_DEPTH * 8; i++) {
-            if (i % 8 == 0) {
+        for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+/*            if (i % 8 == 0) {
                 fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 7) & 0xFFFFFFFF);
                 fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 4) & 0x7);
                 fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 1) & 0x7);
                 fprintf(this->tracefile, "%lld\n", (OUTBUF[i]) & 0x1);
 
-//                printf("%llx\n", OUTBUF[i]);
-            }
+            }*/
+
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+0]);
+            fprintf(this->tracefile, "\n");
         }
     }
 
