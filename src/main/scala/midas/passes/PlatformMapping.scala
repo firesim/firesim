@@ -71,7 +71,7 @@ private[passes] class PlatformMapping(
     val annos = c3circuit.annotations.map(_.toFirrtl)
     val circuit = renameMods((new LowFirrtlCompiler().compile(
                                 CircuitState(chirrtl, ChirrtlForm, annos),
-                                new StringWriter, Seq(new Fame1Instances))
+                                new StringWriter, Seq(new ILATopWiringTransform(dir)) ++ Seq(new Fame1Instances))
                               ).circuit, Namespace(c))
     dumpHeader(shim)
     circuit.copy(modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main)))
