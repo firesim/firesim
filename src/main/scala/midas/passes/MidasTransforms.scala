@@ -82,3 +82,9 @@ class Fame1Instances extends Transform {
   }
 }
 
+
+case class ILAWiringAnnotation(target: chisel3.core.Data) 
+    extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl = ILATopWiringAnnotation(target.toNamed)
+}
+
