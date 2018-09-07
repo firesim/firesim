@@ -46,11 +46,11 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim/firesim_top fesvr/firesim_tsi fesvr/firesim_fesvr endpoints/serial endpoints/uart \
-	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev))
+	firesim/firesim_top fesvr/firesim_fesvr endpoints/serial endpoints/uart \
+	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev)) $(RISCV)/lib/libfesvr.a
 
 TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
-TARGET_LD_FLAGS :=-L$(RISCV)/lib  -Wl,-Bstatic -lfesvr -Wl,-Bdynamic
+TARGET_LD_FLAGS :=
 
 ####################################
 # Runtime-Configuraiton Generation #
@@ -65,6 +65,8 @@ conf:
 ############################################
 # Midas-Level Simulation Execution Recipes #
 ############################################
+# The desired RTL simulator. supported options: {vcs, verilator}
+EMUL ?= verilator
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)

@@ -4,6 +4,17 @@
 
 #define NHARTS_MAX 16
 
+int firesim_fesvr_t::host_thread(void *arg)
+{
+    firesim_fesvr_t *fesvr = static_cast<firesim_fesvr_t*>(arg);
+    fesvr->run();
+
+    while (true)
+        fesvr->target->switch_to();
+
+    return 0;
+}
+
 firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string>& args) : htif_t(args)
 {
     is_loadmem = false;
@@ -14,10 +25,9 @@ firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string>& args) : htif_t(
             idle_counts = atoi(arg.c_str()+13);
         }
     }
-}
 
-firesim_fesvr_t::~firesim_fesvr_t(void)
-{
+    target = midas_context_t::current();
+    host.init(host_thread, this);
 }
 
 void firesim_fesvr_t::idle()
@@ -107,4 +117,58 @@ void firesim_fesvr_t::load_mem_write(addr_t addr, size_t nbytes, const void* src
 
 void firesim_fesvr_t::load_mem_read(addr_t addr, size_t nbytes) {
     loadmem_read_reqs.push_back(fesvr_loadmem_t(addr, nbytes));
+}
+
+void firesim_fesvr_t::tick()
+{
+    host.switch_to();
+}
+
+void firesim_fesvr_t::wait()
+{
+    target->switch_to();
+}
+
+void firesim_fesvr_t::send_word(uint32_t word)
+{
+    out_data.push_back(word);
+}
+
+uint32_t firesim_fesvr_t::recv_word()
+{
+    uint32_t word = in_data.front();
+    in_data.pop_front();
+    return word;
+}
+
+bool firesim_fesvr_t::data_available()
+{
+    return !in_data.empty();
+}
+
+bool firesim_fesvr_t::has_loadmem_reqs() {
+    return(!loadmem_write_reqs.empty() || !loadmem_read_reqs.empty());
+}
+
+bool firesim_fesvr_t::recv_loadmem_write_req(fesvr_loadmem_t& loadmem) {
+    if (loadmem_write_reqs.empty()) return false;
+    auto r = loadmem_write_reqs.front();
+    loadmem.addr = r.addr;
+    loadmem.size = r.size;
+    loadmem_write_reqs.pop_front();
+    return true;
+}
+
+bool firesim_fesvr_t::recv_loadmem_read_req(fesvr_loadmem_t& loadmem) {
+    if (loadmem_read_reqs.empty()) return false;
+    auto r = loadmem_read_reqs.front();
+    loadmem.addr = r.addr;
+    loadmem.size = r.size;
+    loadmem_read_reqs.pop_front();
+    return true;
+}
+
+void firesim_fesvr_t::recv_loadmem_data(void* buf, size_t len) {
+    std::copy(loadmem_write_data.begin(), loadmem_write_data.begin() + len, (char*)buf);
+    loadmem_write_data.erase(loadmem_write_data.begin(), loadmem_write_data.begin() + len);
 }

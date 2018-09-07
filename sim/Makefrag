@@ -46,9 +46,6 @@ COMMON_SIM_ARGS ?= $(mem_model_args)
 # Arguments used only in MIDAS-level (ML) RTL simulation
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim
 
-# The desired RTL simulator. supported options: {vcs, verilator}
-EMUL ?= verilator
-
 ####################################
 # Verilator MIDAS-Level Simulators #
 ####################################
