@@ -11,7 +11,7 @@ import testchipip._
 import sifive.blocks.devices.uart._
 import java.io.File
 import freechips.rocketchip.rocket.TracedInstruction
-
+import firesim.endpoints.TraceOutputTop
 
 /*******************************************************************************
 * Top level DESIGN configurations. These describe the basic instantiations of
@@ -75,8 +75,10 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
 
   val traced_params = outer.rocketTiles(0).p
 
-  val traceIO = IO(Output(new TracedInstruction()(traced_params)))
-  traceIO := outer.rocketTiles(0).module.trace.get(0)
+  val traceIO = IO(Output(new TraceOutputTop(1)(traced_params)))
+  traceIO.traces(0) := outer.rocketTiles(0).module.trace.get(0)
+
+//  val traceIO = IO(Output(Vec(1, new TracedInstruction()(traced_params))))
 
 //  printf("%d", outer.rocketTiles(0).module.trace.get(0).asUInt)
 }
@@ -130,3 +132,9 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+{
+  val traced_params = outer.boomTiles(0).p
+
+  val traceIO = IO(Output(new TracedInstruction()(traced_params)))
+  traceIO := outer.boomTiles(0).module.trace.get(0)
+}

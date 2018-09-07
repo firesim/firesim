@@ -19,15 +19,19 @@ import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import freechips.rocketchip.rocket.TracedInstruction
 
+class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
+  val traces = Vec(numTraces, new TracedInstruction)
+}
+
 class SimTracerV extends Endpoint {
 
   // this is questionable ...
   // but I can't see a better way to do this for now. getting sharedMemoryTLEdge is the problem.
   var tracer_param = Parameters.empty
   def matchType(data: Data) = data match {
-    case channel: TracedInstruction => {
+    case channel: TraceOutputTop => {
       // this is questionable ...
-      tracer_param = channel.p  
+      tracer_param = channel.traces(0).p
       true  
     }
 /*      directionOf(channel.out.valid) == ActualDirection.Output*/
@@ -38,7 +42,7 @@ class SimTracerV extends Endpoint {
 }
 
 class TracerVWidgetIO(tracerParams: Parameters)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new TracedInstruction()(tracerParams)))
+  val hPort = Flipped(HostPort(new TraceOutputTop(1)(tracerParams)))
   val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
 }
@@ -50,7 +54,7 @@ class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends En
    // copy from FireSim's SimpleNICWidget, because it should work here too
   val outgoingPCISdat = Module(new SplitSeqQueue)
   val PCIS_BYTES = 64
-   outgoingPCISdat.io.enq.bits := io.hPort.hBits.asUInt
+   outgoingPCISdat.io.enq.bits := io.hPort.hBits.traces(0).asUInt
    // and io.dma gets you access to pcis
   io.dma.map { dma =>
     // copy from FireSim's SimpleNICWidget, because it should work here too
@@ -116,14 +120,14 @@ class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends En
 //
 
    when (tFireHelper.fire(true.B)) {
-    printf("valid: %x\n", io.hPort.hBits.valid)
-    printf("iaddr: %x\n", io.hPort.hBits.iaddr)
-    printf("insn: %x\n", io.hPort.hBits.insn)
-    printf("priv: %x\n", io.hPort.hBits.priv)
-    printf("exception: %x\n", io.hPort.hBits.exception)
-    printf("interrupt: %x\n", io.hPort.hBits.interrupt)
-    printf("cause: %x\n", io.hPort.hBits.cause)
-    printf("tval: %x\n", io.hPort.hBits.tval)
+    printf("valid: %x\n", io.hPort.hBits.traces(0).valid)
+    printf("iaddr: %x\n", io.hPort.hBits.traces(0).iaddr)
+    printf("insn: %x\n", io.hPort.hBits.traces(0).insn)
+    printf("priv: %x\n", io.hPort.hBits.traces(0).priv)
+    printf("exception: %x\n", io.hPort.hBits.traces(0).exception)
+    printf("interrupt: %x\n", io.hPort.hBits.traces(0).interrupt)
+    printf("cause: %x\n", io.hPort.hBits.traces(0).cause)
+    printf("tval: %x\n", io.hPort.hBits.traces(0).tval)
 
 
 //    printf("%d\n", model.io.cmdTrace.bank)
