@@ -102,7 +102,12 @@ class simif_t
     // A default reset scheme that pulses the global chisel reset
     void target_reset(int pulse_start = 1, int pulse_length = 5);
 
-    inline uint64_t cycles() { return t; }
+    // Returns an upper bound for the cycle reached by the target
+    // If using blocking steps, this will be ~equivalent to actual_tcycle()
+    uint64_t cycles(){ return t; };
+    // Returns the current cycle as measured by a hardware counter in the DefaultIOWidget
+    // (# of reset tokens generated)
+    uint64_t actual_tcycle();
     uint64_t rand_next(uint64_t limit) { return gen() % limit; }
 
 #ifdef ENABLE_SNAPSHOT
