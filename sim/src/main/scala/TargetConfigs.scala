@@ -92,7 +92,7 @@ class FireSimRocketChipConfig extends Config(
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
 
 // dual core config
-class FireSimRocketChipDualCoreConfig extends Config(new WithNBigCores(2) ++
+class FireSimRocketChipDualCoreConfig extends Config(new WithTraceRocket ++ new WithNBigCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
 
 // quad core config

@@ -28,39 +28,45 @@ class SimTracerV extends Endpoint {
   // this is questionable ...
   // but I can't see a better way to do this for now. getting sharedMemoryTLEdge is the problem.
   var tracer_param = Parameters.empty
+  var num_traces = 0
   def matchType(data: Data) = data match {
     case channel: TraceOutputTop => {
       // this is questionable ...
       tracer_param = channel.traces(0).p
+      num_traces = channel.traces.length
       true  
     }
 /*      directionOf(channel.out.valid) == ActualDirection.Output*/
     case _ => false
   }
-  def widget(p: Parameters) = new TracerVWidget(tracer_param)(p)
+  def widget(p: Parameters) = new TracerVWidget(tracer_param, num_traces)(p)
   override def widgetName = "TracerVWidget"
 }
 
-class TracerVWidgetIO(tracerParams: Parameters)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new TraceOutputTop(1)(tracerParams)))
+class TracerVWidgetIO(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+  val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
   val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
 }
 
 
-class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new TracerVWidgetIO(tracerParams))
+class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
+  val io = IO(new TracerVWidgetIO(tracerParams, num_traces))
 
    // copy from FireSim's SimpleNICWidget, because it should work here too
   val outgoingPCISdat = Module(new SplitSeqQueue)
   val PCIS_BYTES = 64
-   outgoingPCISdat.io.enq.bits := io.hPort.hBits.traces(0).asUInt
-   // and io.dma gets you access to pcis
+
+  val uint_traces = io.hPort.hBits.traces map (trace => trace.asUInt)
+
+  outgoingPCISdat.io.enq.bits := Cat(uint_traces) //io.hPort.hBits.traces(0).asUInt
+
+  // and io.dma gets you access to pcis
   io.dma.map { dma =>
     // copy from FireSim's SimpleNICWidget, because it should work here too
     val ar_queue = Queue(dma.ar, 10)
-     assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-     def fire_read(exclude: Bool, includes: Bool*) = {
+      assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
+      def fire_read(exclude: Bool, includes: Bool*) = {
       val rvs = Array (
         ar_queue.valid,
         dma.r.ready,
@@ -78,15 +84,15 @@ class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends En
     } .otherwise {
       readBeatCounter := readBeatCounter
     }
-     outgoingPCISdat.io.deq.ready := fire_read(outgoingPCISdat.io.deq.valid)
-     dma.r.valid := fire_read(dma.r.ready)
+    outgoingPCISdat.io.deq.ready := fire_read(outgoingPCISdat.io.deq.valid)
+    dma.r.valid := fire_read(dma.r.ready)
     dma.r.bits.data := outgoingPCISdat.io.deq.bits
     dma.r.bits.resp := 0.U(2.W)
     dma.r.bits.last := readBeatCounter === ar_queue.bits.len
     dma.r.bits.id := ar_queue.bits.id
     dma.r.bits.user := ar_queue.bits.user
     ar_queue.ready := fire_read(ar_queue.valid, readBeatCounter === ar_queue.bits.len)
-     // we don't care about writes
+    // we don't care about writes
     dma.aw.ready := 0.U
     dma.w.ready := 0.U
     dma.b.valid := 0.U
@@ -120,18 +126,16 @@ class TracerVWidget(tracerParams: Parameters)(implicit p: Parameters) extends En
 //
 
    when (tFireHelper.fire(true.B)) {
-    printf("valid: %x\n", io.hPort.hBits.traces(0).valid)
-    printf("iaddr: %x\n", io.hPort.hBits.traces(0).iaddr)
-    printf("insn: %x\n", io.hPort.hBits.traces(0).insn)
-    printf("priv: %x\n", io.hPort.hBits.traces(0).priv)
-    printf("exception: %x\n", io.hPort.hBits.traces(0).exception)
-    printf("interrupt: %x\n", io.hPort.hBits.traces(0).interrupt)
-    printf("cause: %x\n", io.hPort.hBits.traces(0).cause)
-    printf("tval: %x\n", io.hPort.hBits.traces(0).tval)
-
-
-//    printf("%d\n", model.io.cmdTrace.bank)
-//    printf("%d\n", model.io.cmdTrace.autoPRE)
+    for (i <- 0 until io.hPort.hBits.traces.length) {
+      printf("trace %d, valid: %x\n", i.U, io.hPort.hBits.traces(i).valid)
+      printf("trace %d, iaddr: %x\n", i.U, io.hPort.hBits.traces(i).iaddr)
+      printf("trace %d, insn: %x\n", i.U, io.hPort.hBits.traces(i).insn)
+      printf("trace %d, priv: %x\n", i.U, io.hPort.hBits.traces(i).priv)
+      printf("trace %d, exception: %x\n", i.U, io.hPort.hBits.traces(i).exception)
+      printf("trace %d, interrupt: %x\n", i.U, io.hPort.hBits.traces(i).interrupt)
+      printf("trace %d, cause: %x\n", i.U, io.hPort.hBits.traces(i).cause)
+      printf("trace %d, tval: %x\n", i.U, io.hPort.hBits.traces(i).tval)
+    }
   }
   attach(outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready, "tracequeuefull", ReadOnly)
   genCRFile()

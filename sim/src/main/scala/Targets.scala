@@ -72,15 +72,10 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
 {
-
   val traced_params = outer.rocketTiles(0).p
-
-  val traceIO = IO(Output(new TraceOutputTop(1)(traced_params)))
-  traceIO.traces(0) := outer.rocketTiles(0).module.trace.get(0)
-
-//  val traceIO = IO(Output(Vec(1, new TracedInstruction()(traced_params))))
-
-//  printf("%d", outer.rocketTiles(0).module.trace.get(0).asUInt)
+  val tile_traces = outer.rocketTiles flatMap (tile => tile.module.trace.get)
+  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
+  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
 }
 
 
@@ -134,7 +129,7 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripheryBlockDeviceModuleImp
 {
   val traced_params = outer.boomTiles(0).p
-
-  val traceIO = IO(Output(new TraceOutputTop(1)(traced_params)))
-  traceIO.traces(0) := outer.boomTiles(0).module.trace.get(0)
+  val tile_traces = outer.boomTiles flatMap (tile => tile.module.trace.get)
+  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
+  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
 }

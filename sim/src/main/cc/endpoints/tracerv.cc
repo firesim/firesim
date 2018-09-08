@@ -65,8 +65,8 @@ void tracerv_t::tick() {
 //            fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
 //            fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
 //            fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
             fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
             fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
         }
