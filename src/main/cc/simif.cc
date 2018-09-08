@@ -54,6 +54,13 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
+uint64_t simif_t::actual_tcycle() {
+    write(DEFAULTIOWIDGET(tCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(tCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(tCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
 void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
   take_steps(pulse_start, true);

@@ -113,6 +113,26 @@ abstract class Widget(implicit p: Parameters) extends Module {
   def genRORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default), false)
 
+
+  def genWideRORegInit[T <: Bits](default: T, name: String): T = {
+    val cW = io.ctrl.nastiXDataBits
+    val reg = RegInit(default)
+    val shadowReg = Reg(default.cloneType)
+    shadowReg.suggestName(s"${name}_mmreg")
+    val baseAddr = Seq.tabulate((default.getWidth + cW - 1) / cW)({ i =>
+      val msb = math.min(cW * (i + 1) - 1, default.getWidth - 1)
+      val slice = shadowReg(msb, cW * i)
+      attach(slice, s"${name}_$i", ReadOnly)
+    }).head
+    // When a read request is made of the low order address snapshot the entire register
+    val latchEnable = WireInit(false.B).suggestName(s"${name}_latchEnable")
+    attach(latchEnable, s"${name}_latch", WriteOnly)
+    when (latchEnable) {
+      shadowReg := reg
+    }
+    reg
+  }
+
   def genCRFile() {
     val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     crFile.io.mcr := DontCare
@@ -120,7 +140,7 @@ abstract class Widget(implicit p: Parameters) extends Module {
     crRegistry.bindRegs(crFile.io.mcr)
   }
 
-  // Returns a word addresses
+  // Returns widget-relative word address
   def getCRAddr(name: String): Int = {
     require(_finalized, "Must build Widgets with their companion object")
     crRegistry.lookupAddress(name).getOrElse(
