@@ -347,7 +347,7 @@ class InstanceDeployManager:
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
         self.instance_logger("Starting Vivado hw_server.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""screen -S hw_server -d -m bash -c "script -f -c '/opt/Xilinx/Vivado/2017.4.op/bin/hw_server'"; sleep 1""")
+            run("""screen -S hw_server -d -m bash -c "script -f -c 'hw_server'"; sleep 1""")
         self.instance_logger("Starting Vivado virtual JTAG.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
@@ -461,7 +461,8 @@ class InstanceDeployManager:
             # re-load EDMA
             self.load_edma()
 
-            # start ila server
+            #restart (or start form scratch) ila server
+            self.kill_ila_server()
             self.start_ila_server()
 
         if self.instance_assigned_switches():
@@ -502,7 +503,6 @@ class InstanceDeployManager:
             # only on sim nodes
             for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
                 self.kill_sim_slot(slotno)
-            self.kill_ila_server()
 
     def running_simulations(self):
         """ collect screen results from node to see what's running on it. """

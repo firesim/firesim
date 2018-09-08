@@ -69,6 +69,6 @@ the manager instance. i.e. The IP starting with 192.168.X.X).
 The probes file can be found in the manager instance under the path 
 ``firesim/deploy/results-build/<build_identifier>/cl_firesim/build/checkpoints/<probes_file.ltx>``
 
-Select the ILA with the description of XXXXX, and you may now use the ILA just as if it was on
+Select the ILA with the description of `WRAPPER_INST/CL/CL_FIRESIM_DEBUG_WIRING_TRANSFORM`, and you may now use the ILA just as if it was on
 a local FPGA.
 
