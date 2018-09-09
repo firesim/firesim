@@ -56,6 +56,10 @@ bool tracerv_t::done() {
 #endif
 }
 
+// defining this stores as human readable hex (e.g. open in VIM)
+// undefining this stores as bin (e.g. open with vim hex mode)
+#define HUMAN_READABLE
+
 void tracerv_t::tick() {
 #ifdef TRACERVWIDGET_0
     uint64_t outfull = read(TRACERVWIDGET_0(tracequeuefull));
@@ -67,6 +71,7 @@ void tracerv_t::tick() {
     if (outfull) {
         // TODO. as opt can mmap file and just load directly into it.
         pull(0x0, (char*)OUTBUF, QUEUE_DEPTH * 64);
+#ifdef HUMAN_READABLE
         for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
             fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
             fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
@@ -77,6 +82,14 @@ void tracerv_t::tick() {
             fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
             fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
         }
+#else
+        for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+            // this stores as raw binary. stored as little endian. e.g. to get the same thing as the human readable above, flip all the bytes in each 512-bit line.
+            for (int q = 0; q < 8; q++) {
+                fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
+            }
+        }
+#endif
     }
 
 #endif // ifdef TRACERVWIDGET_0
