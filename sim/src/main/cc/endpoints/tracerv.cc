@@ -10,6 +10,21 @@
 
 #include <sys/mman.h>
 
+// TODO: generate a header with these automatically
+
+// bitwidths for stuff in the trace. assume this order too.
+#define VALID_WID 1
+#define IADDR_WID 40
+#define INSN_WID 32
+#define PRIV_WID 3
+#define EXCP_WID 1
+#define INT_WID 1
+#define CAUSE_WID 8
+#define TVAL_WID 40
+#define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
+
+
+
 tracerv_t::tracerv_t(simif_t *sim, char *tracefile): endpoint_t(sim)
 {
 #ifdef TRACERVWIDGET_0
@@ -44,36 +59,25 @@ bool tracerv_t::done() {
 void tracerv_t::tick() {
 #ifdef TRACERVWIDGET_0
     uint64_t outfull = read(TRACERVWIDGET_0(tracequeuefull));
-    //fprintf(power_file, "outfull: %d\n", outfull);
 
     #define QUEUE_DEPTH 6144
     
     uint64_t OUTBUF[QUEUE_DEPTH * 8];
 
     if (outfull) {
+        // TODO. as opt can mmap file and just load directly into it.
         pull(0x0, (char*)OUTBUF, QUEUE_DEPTH * 64);
         for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-/*            if (i % 8 == 0) {
-                fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 7) & 0xFFFFFFFF);
-                fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 4) & 0x7);
-                fprintf(this->tracefile, "%lld,", (OUTBUF[i] >> 1) & 0x7);
-                fprintf(this->tracefile, "%lld\n", (OUTBUF[i]) & 0x1);
-
-            }*/
-
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
-//            fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
+            fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
             fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
             fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
             fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
             fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
         }
     }
-
-
-
 
 #endif // ifdef TRACERVWIDGET_0
 }
