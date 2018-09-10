@@ -17,6 +17,12 @@ Some notes:
 -  You may need to increase the size of the RootFS in buildroot in ``firesim/sw/firesim-software``.
 -  No support for fp{rate, speed} benchmarks yet.
 
+.. attention::
+
+     **Regarding BOOM.** Users wishing to run SPEC on BOOM must change the
+     default architecture from ``-march=rv64imafdc`` to ``-march=rv64imafd`` in
+     Speckle’s target SPEC configuration (``riscv.cfg``), as BOOM does not
+     support compressed instructions
 
 --------
 Intspeed
@@ -31,7 +37,7 @@ To Build Binaries And RootFSes:
 .. code-block:: bash
 
     cd firesim/deploy/workloads/
-    make spec2017-intspeed
+    make spec17-intspeed
 
 Run Resource requirements:
 
@@ -44,10 +50,10 @@ To Run:
 
 .. code-block:: bash
 
-    firesim launchrunfarm    -c workloads/spec17-intspeed.ini
-    firesim infrasetup       -c workloads/spec17-intspeed.ini
-    firesim runworkload      -c workloads/spec17-intspeed.ini
-    firesim terminaterunfarm -c workloads/spec17-intspeed.ini
+    firesim launchrunfarm    -c spec17-intspeed.ini
+    firesim infrasetup       -c spec17-intspeed.ini
+    firesim runworkload      -c spec17-intspeed.ini
+    firesim terminaterunfarm -c spec17-intspeed.ini
 
 On a single-core rocket-based SoC with a DDR3 + 256 KiB LLC model, with a 160
 MHz host clock, the longest benchmarks (xz, mcf) complete in about 1
@@ -66,7 +72,7 @@ To Build Binaries and RootFSes:
 .. code-block:: bash
 
     cd firesim/deploy/workloads/
-    make spec2017-intrate
+    make spec17-intrate
 
 Run Resource Requirements:
 
@@ -80,10 +86,10 @@ To Run:
 
 .. code-block:: bash
 
-    firesim launchrunfarm    -c workloads/spec17-intrate.ini
-    firesim infrasetup       -c workloads/spec17-intrate.ini
-    firesim runworkload      -c workloads/spec17-intrate.ini
-    firesim terminaterunfarm -c workloads/spec17-intrate.ini
+    firesim launchrunfarm    -c spec17-intrate.ini
+    firesim infrasetup       -c spec17-intrate.ini
+    firesim runworkload      -c spec17-intrate.ini
+    firesim terminaterunfarm -c spec17-intrate.ini
 
 
 Simulation times are host and target dependent. For reference, on a

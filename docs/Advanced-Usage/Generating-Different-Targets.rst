@@ -74,7 +74,7 @@ variables in the sections that follow.
 Rocket-based SoCs
 -----------------
 
-Two design classes use Rocket scalar in-order pipelines.
+Three design classes use Rocket scalar in-order pipelines.
 
 Single core, Rocket pipeline (default)
 
