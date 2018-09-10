@@ -109,55 +109,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
 
 }
 
-void firesim_top_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
-    assert(loadmem.size % sizeof(uint32_t) == 0);
-    // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
-    mpz_t buf;
-    mpz_init(buf);
-    while (loadmem.size > 0) {
-        read_mem(loadmem.addr, buf);
-
-        // If the read word is 0; mpz_export seems to return an array with length 0
-        size_t beats_requested = (loadmem.size/sizeof(uint32_t) > MEM_DATA_CHUNK) ?
-                                 MEM_DATA_CHUNK :
-                                 loadmem.size/sizeof(uint32_t);
-        // The number of beats exported from buf; may be less than beats requested.
-        size_t non_zero_beats;
-        uint32_t* data = (uint32_t*)mpz_export(NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
-        for (size_t j = 0; j < beats_requested; j++) {
-            if (j < non_zero_beats) {
-                fesvr->send_word(data[j]);
-            } else {
-                fesvr->send_word(0);
-            }
-        }
-        loadmem.size -= beats_requested * sizeof(uint32_t);
-    }
-    mpz_clear(buf);
-    // Switch back to fesvr for it to process read data
-    fesvr->tick();
-}
-
-void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
-    assert(loadmem.size <= 1024);
-    static char buf[1024];
-    fesvr->recv_loadmem_data(buf, loadmem.size);
-    mpz_t data;
-    mpz_init(data);
-    mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
-    write_mem_chunk(loadmem.addr, data, loadmem.size);
-    mpz_clear(data);
-}
-
-void firesim_top_t::serial_bypass_via_loadmem() {
-    fesvr_loadmem_t loadmem;
-    while (fesvr->has_loadmem_reqs()) {
-        // Check for reads first as they preceed a narrow write;
-        if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);
-        if (fesvr->recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem);
-    }
-}
-
 void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
     size_t loop_start = cycles();
     size_t loop_end = cycles() + coarse_step_size;
@@ -168,11 +119,21 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
         while(!done()){
             for (auto e: endpoints) e->tick();
         }
-        if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
-            serial_bypass_via_loadmem();
-        }
     } while (!fesvr->done() && cycles() < loop_end && cycles() <= max_cycles);
 }
+
+bool firesim_top_t::has_timed_out() {
+    return cycles() > max_cycles;
+}
+
+bool firesim_top_t::simulation_complete() {
+    bool is_complete = false;
+    for (auto e: endpoints) {
+        is_complete |= e->terminate();
+    }
+    return is_complete;
+}
+
 
 void firesim_top_t::run() {
     for (auto e: fpga_models) {
@@ -200,13 +161,13 @@ void firesim_top_t::run() {
             mod->profile();
         }
         loop(fesvr_step_size, profile_interval);
-    } while (!fesvr->done() && cycles() <= max_cycles);
+    } while (!simulation_complete() && !has_timed_out());
 
 
     uint64_t end_time = timestamp();
+    uint64_t end_cycle = actual_tcycle();
     double sim_time = diff_secs(end_time, start_time);
-    double sim_speed = ((double) cycles()) / (sim_time * 1000.0);
-
+    double sim_speed = ((double) end_cycle) / (sim_time * 1000.0);
     // always print a newline after target's output
     fprintf(stderr, "\n");
     if (sim_speed > 1000.0) {
@@ -218,13 +179,13 @@ void firesim_top_t::run() {
     if (exitcode) {
         fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, cycles());
     } else if (cycles() > max_cycles) {
-        fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", cycles());
+        fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", end_cycle);
     } else {
-        fprintf(stderr, "*** PASSED *** after %llu cycles\n", cycles());
+        fprintf(stderr, "*** PASSED *** after %llu cycles\n", end_cycle);
     }
     expect(!exitcode, NULL);
 
     for (auto e: fpga_models) {
         e->finish();
     }
-} 
+}

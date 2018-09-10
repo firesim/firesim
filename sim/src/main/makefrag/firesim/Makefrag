@@ -49,7 +49,7 @@ DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 	firesim/firesim_top fesvr/firesim_fesvr endpoints/serial endpoints/uart \
 	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev)) $(RISCV)/lib/libfesvr.a
 
-TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
 ####################################

@@ -44,8 +44,7 @@ class blockdev_t: public endpoint_t
         void recv();
         virtual void init();
         virtual void tick();
-        virtual bool done();
-        virtual bool stall() { return false; }
+        virtual bool terminate() { return false; }
 
     private:
         bool a_req_valid;

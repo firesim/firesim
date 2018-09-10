@@ -24,6 +24,8 @@ class firesim_top_t: virtual simif_t
         std::vector<endpoint_t*> endpoints;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
+
+
         firesim_fesvr_t* fesvr;
         uint64_t max_cycles;
 
@@ -39,10 +41,10 @@ class firesim_top_t: virtual simif_t
         // coarse_step_size = maximum number of target cycles loop may advance the simulator
         void loop(size_t step_size, uint64_t coarse_step_size);
 
-        // Helper functions to handoff fesvr requests to the loadmem unit
-        void handle_loadmem_read(fesvr_loadmem_t loadmem);
-        void handle_loadmem_write(fesvr_loadmem_t loadmem);
-        void serial_bypass_via_loadmem();
+        // Returns true if any endpoint has signaled for simulation termination
+        bool simulation_complete();
+        bool has_timed_out();
+
 };
 
 #endif // __FIRESIM_TOP_H

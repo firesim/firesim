@@ -103,7 +103,5 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   Pulsify(genWORegInit(respBuf.io.enq.valid, "bdev_resp_valid", false.B), pulseLength = 1)
   genROReg(respBuf.io.enq.ready, "bdev_resp_ready")
 
-  genROReg(!tFire, "done")
-
   genCRFile()
 }

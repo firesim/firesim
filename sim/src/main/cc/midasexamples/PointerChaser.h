@@ -47,6 +47,7 @@ public:
       e->init();
     }
     target_reset(0);
+    int current_cycle = 0;
 
     poke(io_startAddr_bits, address);
     poke(io_startAddr_valid, 1);

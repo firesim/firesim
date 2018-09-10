@@ -20,8 +20,7 @@ class simplenic_t: public endpoint_t
 
         virtual void init();
         virtual void tick();
-        virtual bool done();
-        virtual bool stall() { return false; }
+        virtual bool terminate() { return false; };
 
     private:
         simif_t* sim;

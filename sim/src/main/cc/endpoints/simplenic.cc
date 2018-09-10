@@ -125,14 +125,6 @@ void simplenic_t::init() {
 #endif // ifdef SIMPLENICWIDGET_0
 }
 
-bool simplenic_t::done() {
-#ifdef SIMPLENICWIDGET_0
-    return read(SIMPLENICWIDGET_0(done));
-#else
-    return true;
-#endif
-}
-
 //#define TOKENVERIFY
 
 // checking for token loss
