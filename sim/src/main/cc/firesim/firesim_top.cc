@@ -193,9 +193,9 @@ void firesim_top_t::run() {
 
     uint64_t start_time = timestamp();
 
-    if (step_size > profile_interval) {
+    if (fesvr_step_size > profile_interval) {
         fprintf(stderr, "step_size (%ld) cannot be larger than profile_interval (%ld)\n",
-                step_size, profile_interval);
+                fesvr_step_size, profile_interval);
         abort();
     }
 
