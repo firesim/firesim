@@ -298,11 +298,19 @@ class MyZynqConfig extends Config(new WithMyEndpoints ++ new midas.ZynqConfig)
 To write endpoint software, implement a derived class of [`endpoint_t`](src/main/cc/endpoints/endpoint.h). Software models can be also plugged using this class. You are supposed to implement two methods.
 
 * `tick`: performs operations on outstanding transactions. This method may interact with software components.
-* `done`: informs whether or not all timing tokens from the target designs are consumed.
+* `terminate`: indicates that the endpoint is calling for simulation to terminate.
 
-Therefore, in the software driver, non-blocking `n` steps are taken with `step(n, false)`, and `tick` functions of all endpoints are called until they are `done`.
+Therefore, in the software driver, non-blocking `n` steps are taken with
+`step(n, false)`, and `tick` functions of all endpoints should be called until
+simif::done() returns true (the simulator has advanced n cycles) or one of the endpoints
+has signaled that the simulation should teriminate.
 
-`tick` and `done` are implemented using `read` and `write` functions for memory-mapped registers. Once custom endpoints are instantiated, macros for memory mapped registers are generated in `<Design>-const.h`. If you implemented an endpoint widget `FooWidget` and generated a memory mapped register with `name` being `"bar"`, this register can be read and written with `read(FOOWIDGET_0(bar))` and `write(FOOWIDGET_0(bar), ...)`, respectively.
+`tick` is implemented using `read` and `write` functions for memory-mapped
+registers. Once custom endpoints are instantiated, macros for memory mapped
+registers are generated in `<Design>-const.h`. If you implemented an endpoint
+widget `FooWidget` and generated a memory mapped register with `name` being
+`"bar"`, this register can be read and written with `read(FOOWIDGET_0(bar))`
+and `write(FOOWIDGET_0(bar), ...)`, respectively.
 
 ### Porting to Other FPGA Platforms
 
