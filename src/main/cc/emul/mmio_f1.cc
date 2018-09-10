@@ -101,7 +101,7 @@ std::unique_ptr<mm_t> slave;
 void* init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_f1_t(MMIO_WIDTH));
   dma.reset(new mmio_f1_t(DMA_WIDTH));
-  slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t);
+  slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t(1 << MEM_ID_BITS) : (mm_t*) new mm_magic_t);
   slave->init(memsize, MEM_WIDTH, 64);
   return slave->get_data();
 }

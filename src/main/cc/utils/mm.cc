@@ -17,9 +17,13 @@ void mm_base_t::write(uint64_t addr, uint8_t *data) {
 
 void mm_base_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size)
 {
-  strb &= ((1L << size) - 1) << (addr % word_size);
-  addr %= this->size;
+  if (addr > this->size) {
+    char buf[80];
+    snprintf(buf, 80, "Out-of-bounds write @ address: 0x%lx Memory size: 0x%lx\n", addr, this->size);
+    throw(mm_exception(buf));
+  }
 
+  strb &= ((1L << size) - 1) << (addr % word_size);
   uint8_t *base = this->data + (addr / word_size) * word_size;
   for (int i = 0; i < word_size; i++) {
     if (strb & 1)
@@ -28,10 +32,14 @@ void mm_base_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size
   }
 }
 
+
 std::vector<char> mm_base_t::read(uint64_t addr)
 {
-  addr %= this->size;
-
+  if (addr > this->size) {
+    char buf[80];
+    snprintf(buf, 80, "Out-of-bounds read @ address: 0x%lx Memory size: 0x%lx\n", addr, this->size);
+    throw(mm_exception(buf));
+  }
   uint8_t *base = this->data + addr;
   return std::vector<char>(base, base + word_size);
 }
