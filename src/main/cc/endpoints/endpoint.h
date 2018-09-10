@@ -19,7 +19,7 @@ public:
   virtual void tick() = 0;
   // Indicates the simulation should terminate.
   // Tie off to false if the endpoint will never call for the simulation to teriminate.
-  virtual bool done() = 0;
+  virtual bool terminate() = 0;
 
 protected:
   void write(size_t addr, data_t data) {
