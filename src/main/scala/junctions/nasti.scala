@@ -228,6 +228,27 @@ object NastiWriteResponseChannel {
   }
 }
 
+class NastiQueue(depth: Int)(implicit p: Parameters) extends Module {
+  val io = new Bundle {
+    val in = (new NastiIO).flip
+    val out = new NastiIO
+  }
+
+  io.out.ar <> Queue(io.in.ar, depth)
+  io.out.aw <> Queue(io.in.aw, depth)
+  io.out.w  <> Queue(io.in.w,  depth)
+  io.in.r   <> Queue(io.out.r, depth)
+  io.in.b   <> Queue(io.out.b, depth)
+}
+
+object NastiQueue {
+  def apply(in: NastiIO, depth: Int = 2)(implicit p: Parameters): NastiIO = {
+    val queue = Module(new NastiQueue(depth))
+    queue.io.in <> in
+    queue.io.out
+  }
+}
+
 class NastiArbiterIO(arbN: Int)(implicit p: Parameters) extends Bundle {
   val master = Vec(arbN, new NastiIO).flip
   val slave = new NastiIO
