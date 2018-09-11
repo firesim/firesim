@@ -1,5 +1,6 @@
 package firesim.firesim
 
+import chisel3._
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
@@ -9,7 +10,8 @@ import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
 import java.io.File
-
+import freechips.rocketchip.rocket.TracedInstruction
+import firesim.endpoints.TraceOutputTop
 
 /*******************************************************************************
 * Top level DESIGN configurations. These describe the basic instantiations of
@@ -69,6 +71,12 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+{
+  val traced_params = outer.rocketTiles(0).p
+  val tile_traces = outer.rocketTiles flatMap (tile => tile.module.trace.get)
+  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
+  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
+}
 
 
 
@@ -119,3 +127,9 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+{
+  val traced_params = outer.boomTiles(0).p
+  val tile_traces = outer.boomTiles flatMap (tile => tile.module.trace.get)
+  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
+  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
+}

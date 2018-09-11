@@ -19,6 +19,7 @@ default: compile
 
 SBT ?= sbt
 SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
+#SBT_FLAGS ?= -sbt-dir /scratch/sagark/.sbt -sbt-boot /scratch/sagark/.sbt/boot -ivy /scratch/sagark/.ivy2 -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
 sbt:
 	$(SBT) $(SBT_FLAGS)
 test:

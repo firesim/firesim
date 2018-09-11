@@ -5,6 +5,7 @@
 #include "endpoints/uart.h"
 #include "endpoints/simplenic.h"
 #include "endpoints/blockdev.h"
+#include "endpoints/tracerv.h"
 // MIDAS-defined endpoints
 #include "endpoints/fpga_model.h"
 #include "endpoints/sim_mem.h"
@@ -105,6 +106,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
 
     add_endpoint(new blockdev_t(this, blkfile));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
+    add_endpoint(new tracerv_t(this, "TRACEFILE"));
     // add more endpoints here
 
 }
