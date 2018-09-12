@@ -1,0 +1,70 @@
+# These point at the main class of the target's Chisel generator
+PROJECT ?= firesim.midasexamples
+DESIGN ?= GCD
+
+base_dir = $(abspath .)
+name_tuple = $(DESIGN)
+GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+##########################
+# RTL Generation         #
+##########################
+VERILOG := $(GENERATED_DIR)/FPGATop.v
+HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
+
+submodules = . midas \
+	$(addprefix target-rtl/firechip/rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend)
+
+src_path = src/main/scala
+chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
+
+
+common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(PROJECT) $(DESIGN) $(TARGET_PROJECT) $(TARGET_CONFIG) $(PLATFORM_PROJECT) $(PLATFORM_CONFIG)
+
+$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
+	cd $(base_dir) && $(SBT) $(SBT_FLAGS) \
+	"runMain $(PROJECT).Generator midas $(DESIGN) $(patsubst $(base_dir)/%,%,$(dir $@)) $(PLATFORM) $(macro_lib)"
+
+##########################
+# Driver Sources & Flags #
+##########################
+
+driver_dir = $(firesim_base_dir)/src/main/cc
+DRIVER_H = $(shell find $(driver_dir) -name "*.h")
+DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc
+
+TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(driver_dir)/midasexamples
+TARGET_LD_FLAGS :=
+
+##########################
+# Midas-Level Sim Recipes#
+##########################
+
+# PointerChaser requires a custom memory initialization
+ifeq ($(DESIGN),PointerChaser)
+LOADMEM ?= $(GENERATED_DIR)/mem_init.hex
+
+$(LOADMEM): src/main/resources/midasexamples/generate_memory_init.py
+	$< --output_file $@
+else
+LOADMEM ?=
+endif
+
+# These are from MIDAS examples
+strober = $(if $(STROBER),strober,midas)
+loadmem = $(if $(LOADMEM),+loadmem=$(abspath $(LOADMEM)),)
+benchmark = $(notdir $(basename $(if $(LOADMEM),$(notdir $(LOADMEM)),$(DESIGN))))
+sample = $(if $(SAMPLE),$(abspath $(SAMPLE)),$(OUTPUT_DIR)/$(benchmark).sample)
+logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$(benchmark).$1.out)
+waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$(benchmark).$1.$2)
+
+run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
+	mkdir -p $(OUTPUT_DIR)
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) +dramsim +sample=$(sample) \
+	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
+
+run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
+	mkdir -p $(OUTPUT_DIR)
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) +dramsim +sample=$(sample) \
+	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)
