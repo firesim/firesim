@@ -355,11 +355,12 @@ class FireSimTopologyWithPasses:
                 while True:
                     with StreamLogger('stdout'), StreamLogger('stderr'):
                         screenoutput = run("screen -ls")
-                        # If AutoILA is disabled, use the following condition
-                        #if "No Sockets found" in screenoutput:
                         # If AutoILA is enabled, use the following condition
                         if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
                             break
+                        # If AutoILA is disabled, use the following condition
+                        elif "No Sockets found" in screenoutput:
+                            break 
                         time.sleep(1)
 
         execute(screens, hosts=all_runfarm_ips)
