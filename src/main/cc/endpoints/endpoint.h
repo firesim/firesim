@@ -20,6 +20,9 @@ public:
   // Indicates the simulation should terminate.
   // Tie off to false if the endpoint will never call for the simulation to teriminate.
   virtual bool terminate() = 0;
+  // If the endpoint calls for termination, encode a cause here. 0 = PASS All other
+  // codes are endpoint-implementation defined
+  virtual int exit_code() = 0;
 
 protected:
   void write(size_t addr, data_t data) {
