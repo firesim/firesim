@@ -27,6 +27,7 @@ class serial_t: public endpoint_t
         virtual void init();
         virtual void tick();
         virtual bool terminate(){ return fesvr->done(); }
+        virtual int exit_code(){ return fesvr->exit_code(); }
 
     private:
         simif_t* sim;

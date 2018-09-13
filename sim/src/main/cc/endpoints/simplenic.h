@@ -21,6 +21,7 @@ class simplenic_t: public endpoint_t
         virtual void init();
         virtual void tick();
         virtual bool terminate() { return false; };
+        virtual int exit_code() { return 0; }
 
     private:
         simif_t* sim;

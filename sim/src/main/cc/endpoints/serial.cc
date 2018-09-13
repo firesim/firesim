@@ -88,7 +88,9 @@ void serial_t::tick() {
     if (fesvr->has_loadmem_reqs()) {
         serial_bypass_via_loadmem();
     }
-    // Write all the requests to the target
-    this->send();
-    go();
+    if (!terminate()) {
+        // Write all the requests to the target
+        this->send();
+        go();
+    }
 }

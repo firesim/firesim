@@ -10,7 +10,7 @@
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
 
-firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size): 
+firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size):
     fesvr(fesvr), fesvr_step_size(fesvr_step_size)
 {
     // fields to populate to pass to endpoints
@@ -22,7 +22,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
     int linklatency = 0;
 
     std::vector<std::string> args(argv + 1, argv + argc);
-    max_cycles = -1;
     for (auto &arg: args) {
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
@@ -30,10 +29,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
 
         if (arg.find("+profile-interval=") == 0) {
             profile_interval = atoi(arg.c_str()+18);
-        } else {
-            profile_interval = max_cycles;
         }
-
         if (arg.find("+fesvr-step-size=") == 0) {
             fesvr_step_size = atoi(arg.c_str()+17);
         }
@@ -105,25 +101,12 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
 
     add_endpoint(new blockdev_t(this, blkfile));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
-    // add more endpoints here
 
-}
+    // Add functions you'd like to periodically invoke on a paused simulator here.
+    if (profile_interval != -1) {
+        register_task([this](){ return this->profile_models();}, 0);
+    }
 
-void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
-    size_t loop_start = cycles();
-    size_t loop_end = cycles() + coarse_step_size;
-
-    do {
-        step(step_size, false);
-
-        while(!done()){
-            for (auto e: endpoints) e->tick();
-        }
-    } while (!fesvr->done() && cycles() < loop_end && cycles() <= max_cycles);
-}
-
-bool firesim_top_t::has_timed_out() {
-    return cycles() > max_cycles;
 }
 
 bool firesim_top_t::simulation_complete() {
@@ -132,6 +115,21 @@ bool firesim_top_t::simulation_complete() {
         is_complete |= e->terminate();
     }
     return is_complete;
+}
+
+uint64_t firesim_top_t::profile_models(){
+    for (auto mod: fpga_models) {
+        mod->profile();
+    }
+    return profile_interval;
+}
+
+int firesim_top_t::exit_code(){
+    for (auto e: endpoints) {
+        if (e->exit_code())
+            return e->exit_code();
+    }
+    return 0;
 }
 
 
@@ -155,14 +153,13 @@ void firesim_top_t::run() {
 
     uint64_t start_time = timestamp();
 
-    do {
-        // Every profile_interval iterations, collect state from all fpga models
-        for (auto mod: fpga_models) {
-            mod->profile();
+    while (!simulation_complete() && !has_timed_out()) {
+        run_scheduled_tasks();
+        step(get_largest_stepsize(), false);
+        while(!done() && !simulation_complete()){
+            for (auto e: endpoints) e->tick();
         }
-        loop(fesvr_step_size, profile_interval);
-    } while (!simulation_complete() && !has_timed_out());
-
+    }
 
     uint64_t end_time = timestamp();
     uint64_t end_cycle = actual_tcycle();
@@ -175,10 +172,10 @@ void firesim_top_t::run() {
     } else {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
     }
-    int exitcode = fesvr->exit_code();
+    int exitcode = exit_code();
     if (exitcode) {
-        fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, cycles());
-    } else if (cycles() > max_cycles) {
+        fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, end_cycle);
+    } else if (!simulation_complete() && has_timed_out()) {
         fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", end_cycle);
     } else {
         fprintf(stderr, "*** PASSED *** after %llu cycles\n", end_cycle);
@@ -189,3 +186,4 @@ void firesim_top_t::run() {
         e->finish();
     }
 }
+

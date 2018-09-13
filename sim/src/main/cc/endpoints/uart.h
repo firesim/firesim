@@ -13,6 +13,7 @@ class uart_t: public endpoint_t
         virtual void init() {};
         virtual void tick();
         virtual bool terminate() { return false; }
+        virtual int exit_code() { return 0; }
 
     private:
         serial_data_t<char> data;
