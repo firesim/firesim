@@ -80,7 +80,7 @@ int simif_t::finish() {
   finish_sampling();
 #endif
 
-  fprintf(stderr, "Runs %llu cycles\n", cycles());
+  fprintf(stderr, "Runs %llu cycles\n", actual_tcycle());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "\nSEED: %ld\n", seed);
@@ -134,9 +134,8 @@ bool simif_t::expect(size_t id, mpz_t& expected) {
   return expect(pass, NULL);
 }
 
-void simif_t::step(int n, bool blocking) {
+void simif_t::step(uint32_t n, bool blocking) {
   if (n == 0) return;
-  assert(n > 0);
 #ifdef ENABLE_SNAPSHOT
   reservoir_sampling(n);
 #endif
