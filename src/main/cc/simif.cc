@@ -61,6 +61,13 @@ uint64_t simif_t::actual_tcycle() {
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
+uint64_t simif_t::hcycle() {
+    write(DEFAULTIOWIDGET(hCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(hCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(hCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
 void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
   take_steps(pulse_start, true);
