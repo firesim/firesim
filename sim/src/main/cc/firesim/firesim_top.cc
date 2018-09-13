@@ -162,16 +162,12 @@ void firesim_top_t::run() {
     }
 
     uint64_t end_time = timestamp();
+    uint64_t end_hcycle = hcycle();
     uint64_t end_cycle = actual_tcycle();
     double sim_time = diff_secs(end_time, start_time);
     double sim_speed = ((double) end_cycle) / (sim_time * 1000.0);
     // always print a newline after target's output
     fprintf(stderr, "\n");
-    if (sim_speed > 1000.0) {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
-    } else {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
-    }
     int exitcode = exit_code();
     if (exitcode) {
         fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, end_cycle);
@@ -180,6 +176,13 @@ void firesim_top_t::run() {
     } else {
         fprintf(stderr, "*** PASSED *** after %llu cycles\n", end_cycle);
     }
+    if (sim_speed > 1000.0) {
+        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
+    } else {
+        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
+    }
+    double fmr = ((double) end_hcycle / end_cycle);
+    fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 
     for (auto e: fpga_models) {
