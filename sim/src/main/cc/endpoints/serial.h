@@ -23,18 +23,17 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, firesim_fesvr_t* fesvr, uint32_t step_size);
+        serial_t(simif_t* sim, const std::vector<std::string>& args);
         virtual void init();
         virtual void tick();
-        virtual bool terminate(){ return fesvr->done(); }
-        virtual int exit_code(){ return fesvr->exit_code(); }
+        virtual bool terminate(){ return fesvr.done(); }
+        virtual int exit_code(){ return fesvr.exit_code(); }
 
     private:
         simif_t* sim;
-        firesim_fesvr_t* fesvr;
+        firesim_fesvr_t fesvr;
         // Number of target cycles between fesvr interactions
         uint32_t step_size;
-
         // Tell the widget to start enqueuing tokens
         void go();
         // Moves data to and from the widget and fesvr

@@ -10,8 +10,7 @@
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
 
-firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size):
-    fesvr(fesvr), fesvr_step_size(fesvr_step_size)
+firesim_top_t::firesim_top_t(int argc, char** argv)
 {
     // fields to populate to pass to endpoints
     char * blkfile = NULL;
@@ -26,12 +25,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
         }
-
         if (arg.find("+profile-interval=") == 0) {
             profile_interval = atoi(arg.c_str()+18);
-        }
-        if (arg.find("+fesvr-step-size=") == 0) {
-            fesvr_step_size = atoi(arg.c_str()+17);
         }
         if (arg.find("+blkdev=") == 0) {
             blkfile = const_cast<char*>(arg.c_str()) + 8;
@@ -80,7 +75,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
     }
 
     add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, fesvr, fesvr_step_size));
+    add_endpoint(new serial_t(this, args));
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));

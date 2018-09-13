@@ -2,7 +2,6 @@
 #define __FIRESIM_TOP_H
 
 #include "simif.h"
-#include "fesvr/firesim_fesvr.h"
 #include "endpoints/endpoint.h"
 #include "endpoints/fpga_model.h"
 #include "systematic_scheduler.h"
@@ -10,7 +9,7 @@
 class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 {
     public:
-        firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size);
+        firesim_top_t(int argc, char** argv);
         ~firesim_top_t() { }
 
         void run();
@@ -26,11 +25,8 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
 
-        firesim_fesvr_t* fesvr;
-
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         uint64_t profile_interval = -1;
-        uint32_t fesvr_step_size;
         uint64_t profile_models();
 
         // If set, will write all zeros to fpga dram before commencing simulation
