@@ -105,9 +105,11 @@ class simif_t
     // Returns an upper bound for the cycle reached by the target
     // If using blocking steps, this will be ~equivalent to actual_tcycle()
     uint64_t cycles(){ return t; };
-    // Returns the current cycle as measured by a hardware counter in the DefaultIOWidget
+    // Returns the current target cycle as measured by a hardware counter in the DefaultIOWidget
     // (# of reset tokens generated)
     uint64_t actual_tcycle();
+    // Returns the current host cycle as measured by a hardware counter
+    uint64_t hcycle();
     uint64_t rand_next(uint64_t limit) { return gen() % limit; }
 
 #ifdef ENABLE_SNAPSHOT

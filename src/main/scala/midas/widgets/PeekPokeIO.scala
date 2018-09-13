@@ -51,6 +51,8 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   val oTokensPending = RegInit(1.U(io.ctrl.nastiXDataBits.W))
   val tCycleName = "tCycle"
   val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
+  val hCycleName = "hCycle"
+  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
 
   // needs back pressure from reset queues
   val fromHostReady = io.ins.foldLeft(io.tReset.ready)(_ && _.ready)
@@ -86,6 +88,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     oTokensPending := oTokensPending - UInt(1)
     tCycle := tCycle + 1.U
   }
+  hCycle := hCycle + 1.U
 
 
   when (io.step.fire) {
