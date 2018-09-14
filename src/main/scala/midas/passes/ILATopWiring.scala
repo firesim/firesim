@@ -31,8 +31,6 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
  
   def ILAWiringOutputFiles(dir: String, mapping: Seq[((ComponentName, Type, Boolean, InstPath, String), Int)], state: CircuitState): CircuitState = {
 
-    //val targetFile: Option[String] = state.annotations.collectFirst { case ILADebugFileAnnotation(fn) => fn }
-
     //output vivado tcl file
     val tclOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_vivado.tcl" ))
     //output verilog 'include' file with ports
@@ -51,7 +49,7 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
 
 
     if (mapping.nonEmpty) {
-      //verilg wires `include file prologeu
+      //verilog wires `include file prologue
       wiresOutputFile.append(s"//Automatically generated wire declarations for ILA connections\n")
 
       //verilog ila instantiation `include file prologue 
@@ -63,7 +61,6 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
     //body
     mapping map {
           case ((cname, tpe, _, path, prefix), index) => {
-            //val probewidth = tpe.asInstanceOf[GroundType].width.asInstanceOf[IntWidth].width
             val probewidth = tpe match { case GroundType(IntWidth(w)) => w }
             val probewidth1 = probewidth - 1
             val probetriggers = 3
