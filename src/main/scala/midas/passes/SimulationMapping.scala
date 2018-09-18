@@ -6,11 +6,11 @@ package passes
 import java.io.{File, FileWriter, StringWriter}
 
 import firrtl._
+import firrtl.annotations.{CircuitName}
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Utils.BoolType
 import firrtl.passes.LowerTypes.loweredName
-import firrtl.Utils.{splitRef, mergeRef, create_exps, gender, module_type}
+import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
@@ -18,9 +18,11 @@ import midas.core.SimWrapper
 
 private[passes] class SimulationMapping(
     io: Seq[chisel3.Data])
-   (implicit param: Parameters) extends firrtl.passes.Pass {
-  
-  override def name = "[midas] Simulation Mapping"
+  (implicit param: Parameters) extends firrtl.Transform {
+
+  def inputForm = LowForm
+  def outputForm = HighForm
+  override def name = "[MIDAS] Simulation Mapping"
 
   private def initStmt(target: String)(s: Statement): Statement =
     s match {
@@ -53,20 +55,31 @@ private[passes] class SimulationMapping(
     case m: ExtModule => None
   }
 
-  def run(c: Circuit) = {
+  def execute(innerState: CircuitState) = {
+    val innerCircuit = innerState.circuit
     lazy val sim = new SimWrapper(io)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
-    val writer = new StringWriter
-    // val writer = new FileWriter(new File("SimWrapper.ir"))
-    val circuit = renameMods((new LowFirrtlCompiler compile (
-        CircuitState(chirrtl, ChirrtlForm, annos), writer)
-      ).circuit, Namespace(c))
-    val targetType = module_type((c.modules find (_.name == c.main)).get)
-    val modules = c.modules ++ (circuit.modules flatMap
-      init(c.info, c.main, circuit.main, targetType))
-    // writer.close
-    new WCircuit(circuit.info, modules, circuit.main, sim.io)
+
+    val transforms = Seq(new PreLinkRenaming(Namespace(innerCircuit)))
+    val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos),
+                                                     transforms)
+
+    val outerCircuit = outerState.circuit
+    val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
+    val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
+      init(innerCircuit.info, innerCircuit.main, outerCircuit.main, targetType))
+
+    // Rename the annotations from the inner module, which are using an obselete CircuitName
+    val renameMap = RenameMap(
+      Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
+
+    CircuitState(
+      circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.io),
+      form        = HighForm,
+      annotations = innerState.annotations ++ outerState.annotations,
+      renames     = Some(renameMap)
+    )
   }
 }
