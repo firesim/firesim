@@ -326,7 +326,9 @@ class SimWrapper(targetIo: Seq[Data])
           (wireOutChannels foldLeft true.B)(_ && _.io.in.ready) &&
           (readyValidInChannels foldLeft true.B)(_ && _.io.deq.host.hValid) &&
           (readyValidOutChannels foldLeft true.B)(_ && _.io.enq.host.hReady)
- 
+
+  chisel3.experimental.annotate(passes.FpgaDebugAnnotation(fire))
+
   // Inputs are consumed when firing conditions are met
   wireInChannels foreach (_.io.out.ready := fire)
   readyValidInChannels foreach (_.io.deq.host.hReady := fire)

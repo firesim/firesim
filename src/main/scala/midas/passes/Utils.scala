@@ -66,6 +66,13 @@ object Utils {
     }
     c copy (modules = modules map (_ map updateModNames), main = nameMap(c.main))
   }
+
+  // Takes a circuitState that has been emitted and writes the result to file
+  def writeEmittedCircuit(state: CircuitState, file: File) {
+    val f = new FileWriter(file)
+    f.write(state.getEmittedCircuit.value)
+    f.close
+  }
 }
 
 case class MemConf(
