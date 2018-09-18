@@ -142,11 +142,11 @@ void firesim_top_t::run() {
         zero_out_dram();
     }
     fprintf(stderr, "Commencing simulation.\n");
+    uint64_t start_hcycle = hcycle();
+    uint64_t start_time = timestamp();
 
     // Assert reset T=0 -> 50
     target_reset(0, 50);
-
-    uint64_t start_time = timestamp();
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
@@ -157,8 +157,8 @@ void firesim_top_t::run() {
     }
 
     uint64_t end_time = timestamp();
-    uint64_t end_hcycle = hcycle();
     uint64_t end_cycle = actual_tcycle();
+    uint64_t hcycles = hcycle() - start_hcycle;
     double sim_time = diff_secs(end_time, start_time);
     double sim_speed = ((double) end_cycle) / (sim_time * 1000.0);
     // always print a newline after target's output
@@ -176,7 +176,7 @@ void firesim_top_t::run() {
     } else {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
     }
-    double fmr = ((double) end_hcycle / end_cycle);
+    double fmr = ((double) hcycles / end_cycle);
     fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 
