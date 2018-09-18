@@ -70,7 +70,6 @@ object MidasCompiler {
       chirrtl, firrtl.ChirrtlForm, targetAnnos ++ midasAnnos),
       targetTransforms :+ midasTransforms)
 
-    logger.Logger.setLevel(logger.LogLevel.Debug)
     val postHostTransforms = new HostTransformCompiler().compile(midas, hostTransforms)
     val result = new LastStageVerilogCompiler().compileAndEmit(postHostTransforms)
 
