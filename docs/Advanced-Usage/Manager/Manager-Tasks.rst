@@ -84,7 +84,7 @@ listed in :ref:`config-hwdb`) with other users. It will take the
 named hardware configurations that you list in the ``[agfistoshare]`` section of
 ``config_build.ini``, grab the respective AGFIs for each from
 ``config_hwdb.ini``, and share them across all F1 regions with the users listed
-in the ``[sharewithaccounts]`` section of ``config_build.ini``.
+in the ``[sharewithaccounts]`` section of ``config_build.ini``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
 
 You must own the AGFIs in order to do this -- this will NOT let you share AGFIs
 that someone else owns and gave you access to.
