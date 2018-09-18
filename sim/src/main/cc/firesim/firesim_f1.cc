@@ -14,7 +14,11 @@ class firesim_f1_t:
 #endif
 {
     public:
+#ifdef RTLSIM
         firesim_f1_t(int argc, char** argv): firesim_top_t(argc, argv) {};
+#else
+        firesim_f1_t(int argc, char** argv): simif_f1_t(argc, argv), firesim_top_t(argc, argv) {};
+#endif
 };
 
 int main(int argc, char** argv) {
