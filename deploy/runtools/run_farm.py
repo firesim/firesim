@@ -314,6 +314,8 @@ class InstanceDeployManager:
             run('mkdir -p /home/centos/edma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
                 '/home/centos/edma/', mirror_local_mode=True)
+            with cd('/home/centos/edma/linux_kernel_drivers/edma/'):
+                run('make')
 
     def unload_edma(self):
         self.instance_logger("Unloading EDMA Driver Kernel Module.")
