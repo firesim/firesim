@@ -1,9 +1,10 @@
 //See LICENSE for license details.
+
 package firesim.midasexamples
 
-import java.io.File
-import freechips.rocketchip.config.Config
 import midas._
+import freechips.rocketchip.config.Config
+import java.io.File
 
 trait GeneratorUtils {
   def targetName: String
@@ -23,16 +24,19 @@ trait GeneratorUtils {
     case midas.F1       => new Config(new firesim.firesim.WithDefaultMemModel ++ new midas.F1Config)
   }).toInstance
 
-  def compile() { MidasCompiler(dut, genDir)(midasParams) }
+ lazy val hostTransforms = Seq(
+    new firesim.passes.ILATopWiringTransform(genDir)
+  )
+
+  def compile() { MidasCompiler(dut, genDir, hostTransforms = hostTransforms)(midasParams) }
   def compileWithSnaptshotting() {
-    MidasCompiler(dut, genDir)(
+    MidasCompiler(dut, genDir, hostTransforms = hostTransforms)(
       midasParams alterPartial { case midas.EnableSnapshot => true })
   }
   def compileWithReplay() {
     strober.replay.Compiler(dut, genDir)
   }
 }
-
 
 object Generator extends App with GeneratorUtils {
   lazy val targetName = args(1)
