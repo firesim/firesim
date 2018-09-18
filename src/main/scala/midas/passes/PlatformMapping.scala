@@ -4,6 +4,7 @@ package midas
 package passes
 
 import firrtl._
+import firrtl.annotations.{CircuitName}
 import firrtl.ir._
 import firrtl.Mappers._
 import Utils._
@@ -12,9 +13,11 @@ import java.io.{File, FileWriter, StringWriter}
 private[passes] class PlatformMapping(
     target: String,
     dir: File)
-    (implicit param: freechips.rocketchip.config.Parameters) extends firrtl.passes.Pass {
+  (implicit param: freechips.rocketchip.config.Parameters) extends firrtl.Transform {
 
-  override def name = "[midas] Platform Mapping"
+  def inputForm = LowForm
+  def outputForm = HighForm
+  override def name = "[MIDAS] Platform Mapping"
 
   private def dumpHeader(c: platform.PlatformShim) {
     def vMacro(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"
@@ -60,20 +63,30 @@ private[passes] class PlatformMapping(
     case m: ExtModule => None
   }
 
-  def run(c: Circuit) = {
-    val sim = c match { case w: WCircuit => w.sim }
+  def linkCircuits(parent: Circuit, child: Circuit): Circuit = {
+    parent.copy(modules = child.modules ++ (parent.modules flatMap init(child.info, child.main)))
+  }
+
+  def execute(c: CircuitState) = {
+    val sim = c.circuit match { case w: WCircuit => w.sim }
     lazy val shim = param(Platform) match {
       case Zynq     => new platform.ZynqShim(sim)
       case F1       => new platform.F1Shim(sim)
     }
-    val c3circuit = chisel3.Driver.elaborate(() => shim)
-    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = c3circuit.annotations.map(_.toFirrtl)
-    val circuit = renameMods((new LowFirrtlCompiler().compile(
-                                CircuitState(chirrtl, ChirrtlForm, annos),
-                                new StringWriter, Seq(new ILATopWiringTransform(dir)) ++ Seq(new Fame1Instances))
-                              ).circuit, Namespace(c))
+    val shimCircuit = chisel3.Driver.elaborate(() => shim)
+    val chirrtl = Parser.parse(chisel3.Driver.emit(shimCircuit))
+    val shimAnnos = shimCircuit.annotations.map(_.toFirrtl)
+    val transforms = Seq(new Fame1Instances,
+                         new PreLinkRenaming(Namespace(c.circuit)))
+    val shimCircuitState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, shimAnnos), transforms)
+
+    // Rename the annotations from the inner module, which are using an obselete CircuitName
+    val renameMap = RenameMap(
+      Map(CircuitName(c.circuit.main) -> Seq(CircuitName(shimCircuitState.circuit.main))))
+
     dumpHeader(shim)
-    circuit.copy(modules = c.modules ++ (circuit.modules flatMap init(c.info, c.main)))
+    c.copy(circuit = linkCircuits(shimCircuitState.circuit, c.circuit),
+           annotations = shimCircuitState.annotations ++ c.annotations,
+           renames = Some(renameMap))
   }
 }

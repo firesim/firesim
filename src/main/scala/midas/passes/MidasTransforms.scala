@@ -82,9 +82,13 @@ class Fame1Instances extends Transform {
   }
 }
 
-
-case class ILAWiringAnnotation(target: chisel3.core.Data) 
+// This is currently implemented by the enclosing project
+case class FpgaDebugAnnotation(target: chisel3.core.Data)
     extends chisel3.experimental.ChiselAnnotation {
-  def toFirrtl = ILATopWiringAnnotation(target.toNamed)
+  def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
 
+case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
+    SingleTargetAnnotation[ComponentName] {
+  def duplicate(n: ComponentName) = this.copy(target = n)
+}
