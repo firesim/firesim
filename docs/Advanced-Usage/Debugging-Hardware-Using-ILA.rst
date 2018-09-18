@@ -29,12 +29,12 @@ Example:
 
 ::
 
-    import midas.passes.ILAWiringAnnotation
+    import midas.passes.FpgaDebugAnnotation
 
     class SomeModuleIO(implicit p: Parameters) extends SomeIO()(p){
        val out1 = Output(Bool())
        val in1 = Input(Bool())
-       chisel3.experimental.annotate(ILAWiringAnnotation(out1))
+       chisel3.experimental.annotate(FpgaDebugAnnotation(out1))
     }
 
 Note: In case the module with the annotated signal is instantiated multiple times,
