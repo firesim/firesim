@@ -74,10 +74,14 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
   lazy val targetParams = getParameters(names.fullConfigClasses)
   lazy val target = getGenerator(names, targetParams)
   lazy val testDir = new File(names.targetDir)
-  val customPasses = Seq(
+  val targetTransforms = Seq(
     firesim.passes.AsyncResetRegPass,
     firesim.passes.PlusArgReaderPass
   )
+  lazy val hostTransforms = Seq(
+    new firesim.passes.ILATopWiringTransform(testDir)
+  )
+
   // While this is called the HostConfig, it does also include configurations
   // that control what models are instantiated
   lazy val hostParams = getParameters(
@@ -98,8 +102,9 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
 
     generatorArgs.midasFlowKind match {
       case "midas" | "strober" =>
-        midas.MidasCompiler(chirrtl, annos, portList, testDir, None, customPasses)(hostParams alterPartial { 
-          case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
+        midas.MidasCompiler(
+          chirrtl, annos, portList, testDir, None, targetTransforms, hostTransforms
+        )(hostParams alterPartial {case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
     // Need replay
     }
   }
