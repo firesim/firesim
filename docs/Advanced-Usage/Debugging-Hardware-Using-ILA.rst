@@ -21,8 +21,8 @@ large number of signals.
 Annotating Signals
 ------------------------
 
-In order to annotate a signal, we must import ``midas.passes.ILAWiringAnnotation``.
-We then simply add a relevant ``ILAWiringAnnotation(<selected_signal>)`` with the
+In order to annotate a signal, we must import ``midas.passes.FpgaDebugAnnotation``.
+We then simply add a relevant ``FpgaDebugAnnotation(<selected_signal>)`` with the
 desired signal as an argument.
 
 Example:
