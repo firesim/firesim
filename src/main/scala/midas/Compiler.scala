@@ -42,7 +42,7 @@ private class HostTransformCompiler extends firrtl.Compiler {
 
 // Custom transforms have been scheduled -> do the final lowering
 private class LastStageVerilogCompiler extends firrtl.Compiler {
-  def emitter = new firrtl.LowFirrtlEmitter
+  def emitter = new firrtl.VerilogEmitter
   def transforms = Seq(new firrtl.LowFirrtlOptimization)
 }
 
