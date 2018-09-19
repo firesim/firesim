@@ -85,8 +85,6 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   }
 
 
-  chisel3.experimental.annotate(passes.FpgaDebugAnnotation(oTokensPending))
-
   when (io.step.fire) {
     iTokensAvailable := io.step.bits
     oTokensPending := io.step.bits
