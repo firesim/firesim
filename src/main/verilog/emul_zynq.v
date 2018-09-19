@@ -78,18 +78,19 @@ module emul;
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
   reg [2047:0] vcdplusfile = 0;
+  reg [63:0] dump_start = 0;
+  reg [63:0] trace_count = 0;
 
   initial begin
 `ifdef DEBUG
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
+      $value$plusargs("dump-start=%d", dump_start);
       $vcdplusfile(vcdplusfile);
-      $vcdpluson(0);
-      $vcdplusmemon(0);
     end
 `endif
   end
-  
+
   reg                        master_ar_valid;
   wire                       master_ar_ready;
   reg  [`CTRL_ADDR_BITS-1:0] master_ar_addr;
@@ -352,11 +353,16 @@ module emul;
   );
 
   always @(posedge clock) begin
-    if (fin) begin
 `ifdef DEBUG
+    if (fin) begin
       $vcdplusclose;
-`endif
     end
+    if (trace_count == dump_start) begin
+      $vcdpluson(0);
+      $vcdplusmemon(0);
+    end
+`endif
+    trace_count = trace_count + 1;
     tick(
       reset,
       fin,
