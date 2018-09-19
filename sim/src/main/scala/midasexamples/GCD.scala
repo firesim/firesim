@@ -2,8 +2,6 @@
 
 package firesim.midasexamples
 
-import midas.passes.FpgaDebugAnnotation
-
 import chisel3._
 import chisel3.util.unless
 
@@ -22,7 +20,4 @@ class GCD extends Module {
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === 0.U
-
-  chisel3.experimental.annotate(FpgaDebugAnnotation(x))
-  chisel3.experimental.annotate(FpgaDebugAnnotation(y))
 }
