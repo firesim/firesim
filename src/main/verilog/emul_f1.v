@@ -109,6 +109,8 @@ module emul;
 
   reg [2047:0] vcdplusfile = 0;
   reg [63:0] dump_start = 0;
+  reg [63:0] dump_end = {64{1'b1}};
+  reg [63:0] dump_cycles = 0;
   reg [63:0] trace_count = 0;
 
   initial begin
@@ -116,7 +118,18 @@ module emul;
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
       $value$plusargs("dump-start=%d", dump_start);
+      if ($value$plusargs("dump-cycles=%d", dump_cycles)) begin
+        dump_end = dump_start + dump_cycles;
+      end
+
       $vcdplusfile(vcdplusfile);
+      wait (trace_count >= dump_start) begin
+        $vcdpluson(0);
+        $vcdplusmemon(0);
+      end
+      wait ((trace_count > dump_end) || fin) begin
+        $vcdplusclose;
+      end
     end
 `endif
   end
@@ -511,15 +524,6 @@ module emul;
   );
 
   always @(posedge clock) begin
-`ifdef DEBUG
-    if (fin) begin
-      $vcdplusclose;
-    end
-    if (trace_count == dump_start) begin
-      $vcdpluson(0);
-      $vcdplusmemon(0);
-    end
-`endif
     trace_count = trace_count + 1;
     tick(
       reset,
