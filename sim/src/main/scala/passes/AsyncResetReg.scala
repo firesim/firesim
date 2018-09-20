@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firesim
 package passes
 
@@ -16,7 +18,7 @@ class AsyncResetReg extends chisel3.experimental.MultiIOModule {
 
 // Transform RocketChip's async reset to sync reset
 object AsyncResetRegPass extends firrtl.passes.Pass {
-  override def name = "[midas top] AsyncResetReg Pass"
+  override def name = "[FireSim] Replace AsyncReset Pass"
   override def inputForm = MidForm
   override def outputForm = MidForm
 
