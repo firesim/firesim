@@ -1,3 +1,3 @@
 -have not bumped riscv-tools
 -have not fixed boom
--mdf submodule inside barstools needs to be manually changed because i don't have push access yet
+-probably want to bump linux too
