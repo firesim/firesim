@@ -71,7 +71,7 @@ private[passes] class SimulationMapping(
     val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
       init(innerCircuit.info, innerCircuit.main, outerCircuit.main, targetType))
 
-    // Rename the annotations from the inner module, which are using an obselete CircuitName
+    // Rename the annotations from the inner module, which are using an obsolete CircuitName
     val renameMap = RenameMap(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
