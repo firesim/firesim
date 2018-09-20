@@ -20,7 +20,7 @@
  * number of sectors to pass to widget */
 blockdev_t::blockdev_t(simif_t* sim, char* fname): endpoint_t(sim) {
     // TODO: what is ntags?
-    _ntags = 1; // TODO set this automatically
+    _ntags = 1; // TODO set this automatically Biancolin: Emit this in the header.
     long size;
     filename = fname;
 
@@ -114,7 +114,7 @@ void blockdev_t::do_read(struct blkdev_request &req) {
         struct blkdev_data resp;
         resp.data = blk_data[i];
         resp.tag = req.tag;
-        responses.push(resp);
+        read_responses.push(resp);
     }
 }
 
@@ -200,90 +200,87 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
     tracker.size = 0;
 
     /* Send an ack to the block device.
-     * TODO: should a block device do this? */
-    resp.data = 0;
-    resp.tag = data.tag;
-    responses.push(resp);
+     * TODO: should a block device do this?  Biancolin: Yes.*/
+    write_acks.push(data.tag);
 }
 
-/* Read state of the blockdev widget for this "cycle".
- * Called first during each tick */
+/* Read all pending request data from the widget */
 void blockdev_t::recv() {
 #ifdef BLOCKDEVWIDGET_0
-    /* Check if there is a request coming from the target that should be
-     * processed */
-    a_req_valid = read(BLOCKDEVWIDGET_0(bdev_req_valid));
-    if (a_req_valid) {
+    /* Read all pending requests from the widget */
+    while (read(BLOCKDEVWIDGET_0(bdev_req_valid))) {
         /* Take a request from the FPGA and put it in SW processing queues */
         struct blkdev_request req;
         req.write = read(BLOCKDEVWIDGET_0(bdev_req_write));
         req.offset = read(BLOCKDEVWIDGET_0(bdev_req_offset));
         req.len = read(BLOCKDEVWIDGET_0(bdev_req_len));
         req.tag = read(BLOCKDEVWIDGET_0(bdev_req_tag));
+        write(BLOCKDEVWIDGET_0(bdev_req_ready), true);
         requests.push(req);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got req. write %x, offset %x, len %x, tag %x\n",
                 req.write, req.offset, req.len, req.tag);
 #endif
-        a_req_ready = true;
-    } else {
-        /* no request from target */
-        a_req_ready = false;
     }
 
-    /* Check if there is data coming from the target that should be
-     * processed */
-    a_data_valid = read(BLOCKDEVWIDGET_0(bdev_data_valid));
-    if (a_data_valid) {
+    /* Read all pending data beats from the widget */
+    while (read(BLOCKDEVWIDGET_0(bdev_data_valid))) {
         /* Take a data chunk from the FPGA and put it in SW processing queues */
         struct blkdev_data data;
         data.data = (((uint64_t)read(BLOCKDEVWIDGET_0(bdev_data_data_upper))) << 32)
             | (read(BLOCKDEVWIDGET_0(bdev_data_data_lower)) & 0xFFFFFFFF);
         data.tag = read(BLOCKDEVWIDGET_0(bdev_data_tag));
+        write(BLOCKDEVWIDGET_0(bdev_data_ready), true);
+        req_data.push(data);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got data. data %llx, tag %x\n", data.data, data.tag);
 #endif
-        req_data.push(data);
-        a_data_ready = true;
-    } else {
-        /* No data from target */
-        a_data_ready = false;
     }
 #endif // #ifdef BLOCKDEVWIDGET_0
 }
 
-/* Write responses for this cycle to the block device widget, set readys to
- * indicate data we consumed from the block device widget this cycle */
+/* This dumps as much read_response and write_ack data onto the widget as possible
+ * In the event the widget buffers fill up; set resp_data_pending, indicating that
+ * we must try again on the next tick() invocation */
 void blockdev_t::send() {
 #ifdef BLOCKDEVWIDGET_0
-    /* Write readies for request/data coming from the FPGA, if we consumed
-     * something
-     * TODO: don't do these writes if a_req_ready,a_data_ready are not true?
-     */
-    write(BLOCKDEVWIDGET_0(bdev_req_ready), a_req_ready);
-    write(BLOCKDEVWIDGET_0(bdev_data_ready), a_data_ready);
 
-    /* If the block device widget is ready to accept data and we have available
-     * responses, send one to the FPGA */
-    a_resp_ready = read(BLOCKDEVWIDGET_0(bdev_resp_ready));
-    if (!responses.empty() && a_resp_ready) {
-        /* Send a response to the FPGA */
-        a_resp_valid = true;
-        struct blkdev_data resp;
-        resp = responses.front();
-        write(BLOCKDEVWIDGET_0(bdev_resp_data_upper), (resp.data >> 32) & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_resp_data_lower), resp.data & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_resp_tag), resp.tag);
-        write(BLOCKDEVWIDGET_0(bdev_resp_valid), a_resp_valid);
+    /* Return as many write acknowledgements as the blockdev widget can accept */
+    while (!write_acks.empty() && read(BLOCKDEVWIDGET_0(bdev_wack_ready))) {
+        uint32_t tag = write_acks.front();
+        write(BLOCKDEVWIDGET_0(bdev_wack_tag), tag);
+        write(BLOCKDEVWIDGET_0(bdev_wack_valid), true);
 #ifdef BLKDEV_DEBUG
-        fprintf(stderr, "[disk] sending resp. data %llx, tag %x\n", resp.data, resp.tag);
+        fprintf(stderr, "[disk] sending W ack. tag %x\n", tag);
 #endif
-        responses.pop();
-    } else {
-        /* No response to send to the FPGA */
-        a_resp_valid = false;
+        write_acks.pop();
     }
+
+    /* Send as much read reponse data as as the blockdev widget will accept */
+    while (!read_responses.empty() && read(BLOCKDEVWIDGET_0(bdev_rresp_ready))) {
+        struct blkdev_data resp;
+        resp = read_responses.front();
+        write(BLOCKDEVWIDGET_0(bdev_rresp_data_upper), (resp.data >> 32) & 0xFFFFFFFF);
+        write(BLOCKDEVWIDGET_0(bdev_rresp_data_lower), resp.data & 0xFFFFFFFF);
+        write(BLOCKDEVWIDGET_0(bdev_rresp_tag), resp.tag);
+        write(BLOCKDEVWIDGET_0(bdev_rresp_valid), true);
+#ifdef BLKDEV_DEBUG
+        fprintf(stderr, "[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
+#endif
+        read_responses.pop();
+    }
+
+    /* Mark if finished */
+    resp_data_pending = !read_responses.empty() || !write_acks.empty();
 #endif // #ifdef BLOCKDEVWIDGET_0
+}
+
+bool blockdev_t::idle() {
+#ifdef BLOCKDEVWIDGET_0
+    return !resp_data_pending && !read(BLOCKDEVWIDGET_0(bdev_reqs_pending));
+#else
+    return true;
+#endif
 }
 
 /* This method is called to run a "cycle" of the block dev:
@@ -291,46 +288,48 @@ void blockdev_t::send() {
  * 2) Do software processing
  * 3) Write responses to the block device widget */
 void blockdev_t::tick() {
-    a_req_valid = false;
-    a_req_ready = false;
-    a_data_valid = false;
-    a_data_ready = false;
-    a_resp_valid = false;
-    a_resp_ready = false;
 
-    do {
-        /* Read state of block device widget */
-        this->recv();
+    /* If there's nothing to do early out and save a bunch of MMIO */
+    if (idle()) {
+        return;
+    }
 
-        /* Do software processing of request queues. (requests coming from the
-         * block dev widget) */
-        while (!requests.empty()) {
-            struct blkdev_request &req = requests.front();
-            if (req.write) {
-                /* if write request, setup a write tracker */
-                do_write(req);
-            } else {
-                /* if read request, perform read from file and put data into
-                 * responses queue. */
-                do_read(req);
-            }
-            requests.pop();
-        }
-
-        /* Do software processing of write data queues. (data coming from the
-         * block dev widget).
-         *
-         * If there is data in req_data (from the FPGA) and a tracker has been
-         * properly setup for this write, then call handle_data for this beat
-         * of the write. */
-        while (!req_data.empty() && can_accept(req_data.front())) {
-            handle_data(req_data.front());
-            req_data.pop();
-        }
-
-        /* Write state back to block device widget */
+    /* If there's pending response data from the last invocation of tick(),
+     * write that back first as it might be locking up the simulator */
+    if (resp_data_pending) {
         this->send();
+    }
 
-        /* While: if we did any work during this iteration, do another iter */
-    } while((a_req_valid && a_req_ready) || (a_data_valid && a_data_ready) || (a_resp_valid && a_resp_ready));
+    /* Collect all of the requests sitting in the widget queues */
+    this->recv();
+
+    /* Do software processing of request queues. (requests coming from the
+     * block dev widget) */
+    while (!requests.empty()) {
+        struct blkdev_request &req = requests.front();
+        if (req.write) {
+            /* if write request, setup a write tracker */
+            do_write(req);
+        } else {
+            /* if read request, perform read from file and put data into
+             * read_responses queue. */
+            do_read(req);
+        }
+        requests.pop();
+    }
+
+    /* Do software processing of write data queues. (data coming from the
+     * block dev widget).
+     *
+     * If there is data in req_data (from the FPGA) and a tracker has been
+     * properly setup for this write, then call handle_data for this beat
+     * of the write. */
+    while (!req_data.empty() && can_accept(req_data.front())) {
+        handle_data(req_data.front());
+        req_data.pop();
+    }
+
+    /* Write state back to block device widget */
+    this->send();
 }
+
