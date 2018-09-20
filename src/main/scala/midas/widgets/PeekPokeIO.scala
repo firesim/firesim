@@ -79,9 +79,11 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
     iTokensAvailable := iTokensAvailable - UInt(1)
   }
+
   when (oTokensPending =/= UInt(0) && toHostValid) {
     oTokensPending := oTokensPending - UInt(1)
   }
+
 
   when (io.step.fire) {
     iTokensAvailable := io.step.bits
