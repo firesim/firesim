@@ -8,6 +8,5 @@ This section describes methods of debugging the target design and the simulation
       :maxdepth: 2
    :caption: Debugging:
 
-   Debugging & Testing with RTL Simulation
-   Debugging Using FPGA Integrated Logic Analyzers (ILA) 
-
+   RTL-Simulation.rst
+   Debugging-Hardware-Using-ILA.rst
