@@ -6,6 +6,24 @@
 #include <stdint.h>
 #include <cstring>
 #include <queue>
+#include <string>
+#include <stdexcept>
+
+class mm_exception : public std::runtime_error {
+  public:
+    explicit mm_exception(const std::string& msg)  :
+      std::runtime_error(msg), msg_(msg) {};
+
+    virtual const char* what() const throw()
+    {
+      return msg_.c_str();
+    };
+
+    virtual ~mm_exception() throw () {};
+
+  private:
+    std::string msg_;
+};
 
 class mm_base_t
 {
