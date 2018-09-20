@@ -45,6 +45,8 @@ all instatiations of the annotated signal will be wired to the ILA.
 Using the ILA at Runtime
 ------------------------
 
+Prerequisite: Make sure that ports 3121 and 10201 are enabled in the firesim AWS security group.
+
 In order to use the ILA, we must enable the GUI interface on our manager instance.
 This can be done by running the command:
 
