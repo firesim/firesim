@@ -180,7 +180,24 @@ def aws_build(global_build_config, bypass=False):
     # copy the image to all regions for the current user
     copy_afi_to_all_regions(afi)
 
-    send_firesim_notification("FireSim FPGA Build Completed", "Your AGFI has been created!\nAdd\n[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\nto your config_hwdb.ini to use this hardware configuration.")
+    message_title = "FireSim FPGA Build Completed"
+    agfi_entry = "[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\n\n"
+    message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+
+    send_firesim_notification(message_title, message_body)
+
+    rootLogger.info(message_title)
+    rootLogger.info(message_body)
+
+    # for convenience when generating a bunch of images. you can just
+    # cat all the files in this directory after your builds finish to get
+    # all the entries to copy into config_hwdb.ini
+    hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(ddir)
+    local("mkdir -p " + hwdb_entry_file_location)
+    with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
+        outputfile.write(agfi_entry)
+
+
 
     rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
     rootLogger.info("Terminating the build instance now.")
