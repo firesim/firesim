@@ -25,6 +25,13 @@ sudo yum -y install epel-release
 sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm
 sudo yum -y install git2u
 
+# install verilator
+git clone http://git.veripool.org/git/verilator
+cd verilator/
+git checkout v4.002
+autoconf && ./configure && make -j16 && sudo make install
+cd ..
+
 # bash completion for manager
 sudo yum -y install bash-completion
 
