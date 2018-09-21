@@ -243,4 +243,10 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   genROReg(~rRespStallN, "bdev_rresp_stalled")
 
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    super.genHeader(base, sb)
+    sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_latency_bits", UInt32(latencyBits)))
+    sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_trackers", UInt32(nTrackers)))
+  }
 }

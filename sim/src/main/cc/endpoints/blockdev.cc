@@ -20,7 +20,7 @@
  * number of sectors to pass to widget */
 blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim) {
     // TODO: what is ntags?
-    _ntags = 1; // TODO set this automatically Biancolin: Emit this in the header.
+    _ntags = BLOCKDEVWIDGET_0(num_trackers);
     long size;
 
     for (auto &arg: args) {
@@ -33,6 +33,19 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
         if (arg.find("+blkdev-rlatency=") == 0) {
             read_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
         }
+    }
+
+    uint32_t max_latency = (1UL << BLOCKDEVWIDGET_0(latency_bits)) - 1;
+    if (write_latency > max_latency) {
+        fprintf(stderr, "Requested blockdev write latency (%u) exceeds HW limit (%u).\n",
+                write_latency, max_latency);
+        abort();
+    }
+
+    if (read_latency > max_latency) {
+        fprintf(stderr, "Requested blockdev read latency (%u) exceeds HW limit (%u).\n",
+                read_latency, max_latency);
+        abort();
     }
 
     if (filename) {
