@@ -237,6 +237,8 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
   // Indicates to the CPU-hosted component that we need to be serviced
   genROReg(reqBuf.io.deq.valid || dataBuf.io.deq.valid, "bdev_reqs_pending")
+  genROReg(~wAckStallN, "bdev_wack_stalled")
+  genROReg(~rRespStallN, "bdev_rresp_stalled")
 
   genCRFile()
 }
