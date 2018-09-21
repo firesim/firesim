@@ -18,11 +18,22 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t* sim, char* fname): endpoint_t(sim) {
+blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim) {
     // TODO: what is ntags?
     _ntags = 1; // TODO set this automatically Biancolin: Emit this in the header.
     long size;
-    filename = fname;
+
+    for (auto &arg: args) {
+        if (arg.find("+blkdev=") == 0) {
+            filename = const_cast<char*>(arg.c_str()) + 8;
+        }
+        if (arg.find("+blkdev-wlatency=") == 0) {
+            write_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
+        }
+        if (arg.find("+blkdev-rlatency=") == 0) {
+            read_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
+        }
+    }
 
     if (filename) {
         _file = fopen(filename, "r+");
@@ -61,6 +72,8 @@ void blockdev_t::init() {
     // setup blk dev widget
     write(BLOCKDEVWIDGET_0(bdev_nsectors), nsectors());
     write(BLOCKDEVWIDGET_0(bdev_max_req_len), max_request_length());
+    write(BLOCKDEVWIDGET_0(read_latency), read_latency);
+    write(BLOCKDEVWIDGET_0(write_latency), write_latency);
 #endif // #ifdef BLOCKDEVWIDGET_0
 }
 

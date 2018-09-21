@@ -92,6 +92,10 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     tCycle := tCycle + 1.U
   }
 
+  // Timing model programmable settings
+  val readLatency = genWORegInit(Wire(UInt(latencyBits.W)), "read_latency", defaultReadLatency)
+  val writeLatency = genWORegInit(Wire(UInt(latencyBits.W)), "write_latency", defaultWriteLatency)
+
   chisel3.experimental.withReset(reset.toBool || targetReset) {
     when (tFire) {
       assert(!target.req.fire || ((dataBeats.U * target.req.bits.len) < ((BigInt(1) << sectorBits) - 1).U),
@@ -106,7 +110,6 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     val wValid = RegInit(VecInit(Seq.fill(nTrackers)(false.B)))
 
     val writeLatencyPipe = Module(new DynamicLatencyPipe(UInt(1.W), nTrackers, latencyBits))
-    val writeLatency = genWORegInit(Wire(UInt(latencyBits.W)), "write_latency", defaultWriteLatency)
     writeLatencyPipe.io.enq.valid := false.B
     writeLatencyPipe.io.enq.bits := DontCare
     writeLatencyPipe.io.latency := writeLatency
@@ -140,7 +143,6 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     // Timing Model -- Read Latency Pipe
     // Read latency is simply the number of cycles between read-req and first resp beat
     val readLatencyPipe = Module(new DynamicLatencyPipe(UInt(sectorBits.W), nTrackers, latencyBits))
-    val readLatency = genWORegInit(Wire(UInt(latencyBits.W)), "read_latency", defaultReadLatency)
 
     readLatencyPipe.io.enq.valid := tFire && target.req.fire && !target.req.bits.write
     readLatencyPipe.io.enq.bits := target.req.bits.len

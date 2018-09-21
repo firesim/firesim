@@ -34,7 +34,7 @@ struct blkdev_write_tracker {
 class blockdev_t: public endpoint_t
 {
     public:
-        blockdev_t(simif_t* sim, char* filename);
+        blockdev_t(simif_t* sim, const std::vector<std::string>& args);
         ~blockdev_t();
 
         uint32_t nsectors(void) { return _nsectors; }
@@ -62,7 +62,7 @@ class blockdev_t: public endpoint_t
         uint32_t _ntags;
         uint32_t _nsectors;
         FILE *_file;
-        char * filename;
+        char * filename = NULL;
         std::queue<blkdev_request> requests;
         std::queue<blkdev_data> req_data;
         std::queue<blkdev_data> read_responses;
@@ -76,6 +76,10 @@ class blockdev_t: public endpoint_t
         void handle_data(struct blkdev_data &data);
         // Returns true if no widget interaction is required
         bool idle();
+
+        // Default timing model parameters
+        uint32_t read_latency = 4096;
+        uint32_t write_latency = 4096;
 };
 
 #endif // __BLOCKDEV_H
