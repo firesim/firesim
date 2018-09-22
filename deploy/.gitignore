@@ -13,3 +13,4 @@ backup_config_build_recipes.ini
 backup_config_hwdb.ini
 generated-topology-diagrams/
 logs/*.log
+built-hwdb-entries/
