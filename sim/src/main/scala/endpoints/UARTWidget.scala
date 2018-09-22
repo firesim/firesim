@@ -19,7 +19,7 @@ class SimUART extends Endpoint {
   }
   def widget(p: Parameters) = {
     val frequency = p(PeripheryBusKey).frequency
-    val baudrate = p(PeripheryUARTKey).head.initBaudRate
+    val baudrate = 115200L
     val div = (p(PeripheryBusKey).frequency / baudrate).toInt
     new UARTWidget(div)(p)
   }
