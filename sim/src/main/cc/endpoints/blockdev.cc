@@ -22,10 +22,15 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
     // TODO: what is ntags?
     _ntags = BLOCKDEVWIDGET_0(num_trackers);
     long size;
+    long mem_filesize = 0;
 
     for (auto &arg: args) {
         if (arg.find("+blkdev=") == 0) {
             filename = const_cast<char*>(arg.c_str()) + 8;
+        }
+        // Spoofs a file with fmemopen. Useful for testing
+        if (arg.find("+blkdev-in-mem=") == 0) {
+            mem_filesize = atoi(const_cast<char*>(arg.c_str()) + 15);
         }
         if (arg.find("+blkdev-wlatency=") == 0) {
             write_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
@@ -48,8 +53,10 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
         abort();
     }
 
-    if (filename) {
-        _file = fopen(filename, "r+");
+    if (filename || mem_filesize > 0) {
+
+        _file = (mem_filesize > 0) ? fmemopen(NULL, mem_filesize << SECTOR_SHIFT, "r+"):
+                                     fopen(filename, "r+");
         if (!_file) {
             fprintf(stderr, "Could not open %s\n", filename);
             abort();
