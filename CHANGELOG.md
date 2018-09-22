@@ -32,6 +32,8 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 * Scalatests updated
   * generates all of the MIDAS-examples, a Rocket- and Boom-based target and runs them through midas-level simulation.
     * good regression test for bumping/changing chisel/firrtl/rocket chip/midas
+* Better ctags support. Script to generate ctags efficiently in `gen-tags.sh`. Also called by build-setup process. On a fresh clone, gen-tags.sh only takes ~10s. Resolves #79 
+  * Generated across: target-design code, all shim code, driver code, workloads, etc.
 
 
 ## [1.3.1] - 2018-08-18
