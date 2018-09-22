@@ -16,18 +16,23 @@ using namespace DRAMSim;
 
 void mm_dramsim2_t::read_complete(unsigned id, uint64_t address, uint64_t clock_cycle)
 {
-  mm_rresp_t resp;
-  do {
-    resp = rreq[address].front();
-    rresp.push(resp);
-    rreq[address].pop();
-  } while (!resp.last);
+  assert(!rreq[address].empty());
+  auto req = rreq[address].front();
+  uint64_t start_addr = (req.addr / word_size) * word_size;
+  for (size_t i = 0; i < req.len; i++) {
+    auto dat = read(start_addr + i * word_size);
+    rresp.push(mm_rresp_t(req.id, dat, (i == req.len - 1)));
+  }
+  read_id_busy[req.id] = false;
+  rreq[address].pop();
 }
 
 void mm_dramsim2_t::write_complete(unsigned id, uint64_t address, uint64_t clock_cycle)
 {
+  assert(!wreq[address].empty());
   auto b_id = wreq[address].front();
   bresp.push(b_id);
+  write_id_busy[b_id] = false;
   wreq[address].pop();
 }
 
@@ -44,12 +49,7 @@ void mm_dramsim2_t::init(size_t sz, int wsz, int lsz)
   dummy_data.resize(word_size);
 
   assert(size % (1024*1024) == 0);
-#ifndef _WIN32
-  std::string pwd = "dramsim2_ini";
-#else
-  std::string pwd = "";
-#endif
-  mem = new MultiChannelMemorySystem("DDR3_micron_64M_8B_x4_sg15.ini", "system.ini", pwd, "results", size/(1024*1024));
+  mem = getMemorySystemInstance(memory_ini, system_ini, ini_dir, "results", size/(1024*1024));
 
   TransactionCompleteCB *read_cb = new Callback<mm_dramsim2_t, void, unsigned, uint64_t, uint64_t>(this, &mm_dramsim2_t::read_complete);
   TransactionCompleteCB *write_cb = new Callback<mm_dramsim2_t, void, unsigned, uint64_t, uint64_t>(this, &mm_dramsim2_t::write_complete);
@@ -58,6 +58,14 @@ void mm_dramsim2_t::init(size_t sz, int wsz, int lsz)
 #ifdef DEBUG_DRAMSIM2
   fprintf(stderr,"Dramsim2 init successful\n");
 #endif
+}
+
+bool mm_dramsim2_t::ar_ready() {
+  return mem->willAcceptTransaction();
+}
+
+bool mm_dramsim2_t::aw_ready() {
+  return mem->willAcceptTransaction() && !store_inflight;
 }
 
 void mm_dramsim2_t::tick(
@@ -89,13 +97,21 @@ void mm_dramsim2_t::tick(
   bool r_fire = !reset && r_valid() && r_ready;
   bool b_fire = !reset && b_valid() && b_ready;
 
-  if (ar_fire) {
-    uint64_t start_addr = (ar_addr / word_size) * word_size;
-    for (size_t i = 0; i <= ar_len; i++) {
-      auto dat = read(start_addr + i * word_size);
-      rreq[ar_addr].push(mm_rresp_t(ar_id, dat, (i == ar_len)));
+  if (mem->willAcceptTransaction()) {
+    for (auto it = rreq_queue.begin(); it != rreq_queue.end(); it++) {
+      if (!read_id_busy[it->id]) {
+        read_id_busy[it->id] = true;
+        auto transaction = *it;
+        rreq[transaction.addr].push(transaction);
+        mem->addTransaction(false, transaction.addr);
+        rreq_queue.erase(it);
+        break;
+      }
     }
-    mem->addTransaction(false, ar_addr);
+  }
+
+  if (ar_fire) {
+    rreq_queue.push_back(mm_req_t(ar_id, 1 << ar_size, ar_len + 1, ar_addr));
   }
 
   if (aw_fire) {
