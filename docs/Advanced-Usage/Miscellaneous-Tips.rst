@@ -125,7 +125,7 @@ your ``.vimrc``:
 
 ::
 
-    set tags=../tags,../../tags,../../../tags,../../../../tags,tags
+    set tags=../tags,../../tags,../../../tags,../../../../tags,../../../../../tags,../../../../../../tags,../../../../../../../tags,../../../../../../../../tags,tags
 
 
 Then, you can move the cursor over something you want to jump to and hit
