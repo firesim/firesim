@@ -6,9 +6,9 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 
 ### Changed
 
-* Serial IO model made deterministic (resolves ucb-bar/midas#78)
+* Serial IO model made deterministic (resolves https://github.com/ucb-bar/midas/issues/78 )
 * `firesim managerinit` generates an initial bucket name that won't collide with an existing one
-* verilator is now installed by the machine launch script
+* verilator is now installed by the machine launch script 
 * Rebuild EDMA driver on Run Farm nodes. This fixes a potential kernel version mismatch issue due to AWS GUI scripts
 
 ### Added
@@ -20,15 +20,15 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
   * Documentation and integration into manager for ease of use
 * sim/Make system fractured into:
   * `sim/Makefile` -- the top-level Makefile
-  * `sim/Makefrag` -- target-agnostic recipes for build simulators and simulation drivers and
+  * `sim/Makefrag` -- target-agnostic recipes for build simulators and simulation drivers and 
   * `sim/src/main/makefrag/<project>/Makefrag` -- target specific recipes for generating RTL
   * this makes it easier to submodule firesim from a larger project, and allows for multiple target projects to coexist within FireSim
-  * see `Targets/Generating Different Target-RTL` in Advanced Docs.
-* MIDAS-examples added
+  * see `Targets/Generating Different Target-RTL` in Advanced Docs. 
+* MIDAS-examples added (Resolves https://github.com/firesim/firesim/issues/81 )
   * live in `sim/src/main/{cc, scala, makefrag}/midas-examples`
   * a suite of simple circuits like GCD to demonstrate MIDAS/FireSim
   * these serve as good smoke tests for bringing up features in MIDAS
-  * see `Targets/Midas Examples` in Advanced Docs.
+  * see `Targets/Midas Examples` in Advanced Docs. 
 * Scalatests updated
   * generates all of the MIDAS-examples, a Rocket- and Boom-based target and runs them through midas-level simulation.
     * good regression test for bumping/changing chisel/firrtl/rocket chip/midas
