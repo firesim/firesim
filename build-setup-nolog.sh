@@ -104,6 +104,9 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     bash sourceme-f1-full.sh
 fi
 
+cd $RDIR
+./gen-tags.sh
+
 echo "Setup complete!"
 echo "To use the manager to deploy builds/simulations, source sourceme-f1-manager.sh to setup your environment."
 echo "To run builds/simulations manually on this machine, source sourceme-f1-full.sh to setup your environment."
