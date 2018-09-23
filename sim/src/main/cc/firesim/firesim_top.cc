@@ -208,6 +208,9 @@ void firesim_top_t::run() {
     uint64_t end_time = timestamp();
     double sim_time = diff_secs(end_time, start_time);
     double sim_speed = ((double) cycles()) / (sim_time * 1000.0);
+
+    // always print a newline after target's output
+    fprintf(stderr, "\n");
     if (sim_speed > 1000.0) {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
     } else {

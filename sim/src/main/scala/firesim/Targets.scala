@@ -5,7 +5,7 @@ import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.config.Parameters
-import boom.system.{BoomSubsystem, BoomSubsystemModule}
+/*import boom.system.{BoomSubsystem, BoomSubsystemModule}*/
 import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
@@ -72,6 +72,7 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryBlockDeviceModuleImp
     with CanHaveRocketTraceIO
 
+/*
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
@@ -121,3 +122,4 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
     with CanHaveBoomTraceIO
+    */

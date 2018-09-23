@@ -5,7 +5,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-import boom.system.BoomTilesKey
+/*import boom.system.BoomTilesKey*/
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
@@ -22,7 +22,8 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 class WithUARTKey extends Config((site, here, up) => {
    case PeripheryUARTKey => List(UARTParams(
      address = BigInt(0x54000000L),
-     initBaudRate = BigInt(3686400L)))
+     nTxEntries = 256,
+     nRxEntries = 256))
 })
 
 class WithNICKey extends Config((site, here, up) => {
@@ -49,21 +50,22 @@ class WithPerfCounters extends Config((site, here, up) => {
   ))
 })
 
-class BoomWithLargeTLBs extends Config((site, here, up) => {
+/*class BoomWithLargeTLBs extends Config((site, here, up) => {
   case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
     core = tile.core.copy(
       nL2TLBEntries = 1024 // TLB reach = 1024 * 4KB = 4MB
     )
   ))
-})
+})*/
 
 class WithTraceRocket extends Config((site, here, up) => {
    case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(trace = true) }
 })
 
-class WithTraceBoom extends Config((site, here, up) => {
+/*class WithTraceBoom extends Config((site, here, up) => {
    case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
 })
+*/
 
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
@@ -115,7 +117,7 @@ class FireSimRocketChipOctaCoreConfig extends Config(
   new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
-
+/*
 class FireSimBoomConfig extends Config(
   new WithTraceBoom ++
   new WithBootROM ++
@@ -127,4 +129,4 @@ class FireSimBoomConfig extends Config(
   new WithBlockDevice ++
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly
-  new boom.system.SmallBoomConfig)
+  new boom.system.SmallBoomConfig)*/

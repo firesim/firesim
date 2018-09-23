@@ -285,7 +285,7 @@ you would use:
 A list of AWS account IDs that you want to share the AGFIs listed in
 ``[agfistoshare]`` with when calling the manager's ``shareagfi`` command. You
 should specify names in the form ``usersname=AWSACCTID``. The left-hand-side is
-just for human readability, only the actual account IDs listed here matter.
+just for human readability, only the actual account IDs listed here matter. If you specify ``public=public`` here, the AGFIs are shared publicly, regardless of any other entires that are present.
 
 .. _config-build-recipes:
 

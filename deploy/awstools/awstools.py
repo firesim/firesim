@@ -32,7 +32,7 @@ def get_aws_username():
     """ Get the users IAM username to intelligently create a bucket name when doing managerinit
     """
     client = boto3.client('iam')
-    return client.get_user()['User']['UserName']
+    return client.get_user()['User']['UserId']
 
 def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
     """ construct the dictionary necessary to configure instance market selection
