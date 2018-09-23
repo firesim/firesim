@@ -4,4 +4,4 @@ version := "1.0-SNAPSHOT"
 
 name := "strober"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.4"
