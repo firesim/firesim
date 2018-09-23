@@ -41,7 +41,8 @@ CONF_NAME ?= runtime.conf
 TIMEOUT_CYCLES = 100000000
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args)
+nic_args = +niclog=niclog +linklatency=6405 +netbw=100 +netburst=8
+COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args)
 
 # Arguments used only in MIDAS-level (ML) RTL simulation
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim
