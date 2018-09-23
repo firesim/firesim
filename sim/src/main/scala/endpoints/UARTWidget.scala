@@ -29,6 +29,7 @@ class SimUART extends Endpoint {
 class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new UARTPortIO))
   val dma = None
+  val address = None
 }
 
 class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {

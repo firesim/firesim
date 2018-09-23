@@ -6,6 +6,7 @@ import chisel3.util._
 import chisel3.Module
 import DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
@@ -47,6 +48,8 @@ class TracerVWidgetIO(tracerParams: Parameters, num_traces: Int)(implicit p: Par
   val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
   val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
+  val address = Some(AddressSet(
+    BigInt("100000000", 16), BigInt("FFFFFFFF", 16)))
 }
 
 

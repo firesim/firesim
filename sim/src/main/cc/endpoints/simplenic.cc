@@ -50,6 +50,7 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
+    assert(linklatency > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
@@ -68,7 +69,6 @@ simplenic_t::simplenic_t(
         }
     }
 
-#ifndef SIMULATION_XSIM
     char name[100];
     int shmemfd;
 
@@ -84,7 +84,6 @@ simplenic_t::simplenic_t(
         ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
         pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
     }
-#endif // SIMULATION_XSIM
 #endif // #ifdef SIMPLENICWIDGET_0
 }
 
@@ -102,7 +101,6 @@ void simplenic_t::init() {
     write(SIMPLENICWIDGET_0(rlimit_settings),
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
 
-#ifndef SIMULATION_XSIM
     uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
     uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
     if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
@@ -120,7 +118,6 @@ void simplenic_t::init() {
         printf("ERR MISMATCH!\n");
         exit(1);
     }
-#endif
     return;
 #endif // ifdef SIMPLENICWIDGET_0
 }
@@ -150,13 +147,12 @@ uint64_t timeelapsed_cycles = 0;
 
 void simplenic_t::tick() {
 #ifdef SIMPLENICWIDGET_0
-#ifndef SIMULATION_XSIM
     struct timespec tstart, tend;
 
     uint32_t token_bytes_obtained_from_fpga = 0;
     uint32_t token_bytes_sent_to_fpga = 0;
 
-    //#define DEBUG_NIC_PRINT
+    #define DEBUG_NIC_PRINT
 
     while (true) { // break when we don't have 5k tokens
         token_bytes_obtained_from_fpga = 0;
@@ -273,6 +269,5 @@ void simplenic_t::tick() {
         nextround = (nextround + 1) % 2;
 
     }
-#endif
 #endif // ifdef SIMPLENICWIDGET_0
 }

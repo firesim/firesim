@@ -36,7 +36,7 @@ class WithBlockDevWidget extends Config((site, here, up) => {
 
 class WithTracerVWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new endpoints.SimTracerV))
+    midas.core.EndpointMap(Seq(new SimTracerV))
 })
 
 class WithDefaultMemModel extends Config((site, here, up) => {

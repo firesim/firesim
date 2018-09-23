@@ -22,6 +22,7 @@
 #define CAUSE_WID 8
 #define TVAL_WID 40
 #define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
+#define TRACERV_ADDR 0x100000000L
 
 
 
@@ -70,7 +71,7 @@ void tracerv_t::tick() {
 
     if (outfull) {
         // TODO. as opt can mmap file and just load directly into it.
-        pull(0x0, (char*)OUTBUF, QUEUE_DEPTH * 64);
+        pull(TRACERV_ADDR, (char*)OUTBUF, QUEUE_DEPTH * 64);
 #ifdef HUMAN_READABLE
         for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
             fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);

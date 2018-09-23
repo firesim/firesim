@@ -6,6 +6,7 @@ import chisel3.util._
 import chisel3.Module
 import DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
 import midas.core._
@@ -172,6 +173,8 @@ class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
     Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
   } else None
+  val address = if (!p(LoopbackNIC))
+    Some(AddressSet(0x00, BigInt("FFFFFFFF", 16))) else None
 }
 
 

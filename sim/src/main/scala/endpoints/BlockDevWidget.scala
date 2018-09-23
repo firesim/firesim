@@ -23,6 +23,7 @@ class SimBlockDev extends Endpoint {
 class BlockDevWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new BlockDeviceIO))
   val dma = None
+  val address = None
 }
 
 class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
