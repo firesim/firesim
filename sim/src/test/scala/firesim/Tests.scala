@@ -96,5 +96,8 @@ abstract class FireSimTestSuite(
 class RocketF1Tests extends FireSimTestSuite(
   FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig"))
 
+class RocketF1ClockDivTests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimClockDivConfig"))
+
 class BoomF1Tests extends FireSimTestSuite(
   FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "FireSimConfig"))
