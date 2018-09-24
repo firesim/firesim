@@ -152,7 +152,7 @@ To run a simulation you need to make both the DUT and driver targets by typing:
 
     make xsim
     make xsim-dut <VCS=1> & # Launch the DUT
-    make xsim SIM_BINARY=<PATH/TO/BINARY> # Launch the driver
+    make run-xsim SIM_BINARY=<PATH/TO/BINARY/FOR/TARGET/TO/RUN> # Launch the driver
 
 
 Once both processes are running, you should see:
@@ -191,3 +191,33 @@ And for VCS:
 
 
 When finished, be sure to kill any lingering processes if you interrupted simulation prematurely.
+
+Scala Tests
+-----------
+
+To make it easier to do RTL-simulation-based regression testing, the scala
+tests wrap calls to Makefiles, and run a limited set of tests on a set of selected
+designs, including all of the MIDAS examples, FireSimNoNIC and FireBoomNoNIC.
+
+The selected tests, target configurations, as well as the type of RTL simulator
+to compile can be modified by changing the scala tests that reside at
+``firesim/sim/src/test/scala/<target-project>/``.
+
+To run all tests, with the sbt console open, do the familiar:
+
+::
+
+    test
+
+To run only tests on Rocket-Chip based targets:
+
+::
+
+    testOnly firesim.firesim.*
+
+To run only the MIDAS examples:
+
+::
+
+    testOnly firesim.midasexamples.*
+

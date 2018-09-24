@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firesim
 package passes
 
@@ -7,7 +9,7 @@ import firrtl.Utils.zero
 
 // Remove RocketChip's plusarg_reader
 object PlusArgReaderPass extends firrtl.passes.Pass {
-  override def name = "[midas top] PlusArgReader Pass"
+  override def name = "[FireSim] PlusArgReader Pass"
   override def inputForm = MidForm
   override def outputForm = MidForm
 

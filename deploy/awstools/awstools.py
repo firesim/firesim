@@ -13,7 +13,7 @@ rootLogger = logging.getLogger()
 keyname = 'firesim'
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.3.5-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0067013ed95d27159.4"
+f1_ami_name = "FPGA Developer AMI - 1.4.0 - pre8-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0335b86e84e820e8d.4"
 
 # users are instructed to create these in the setup instructions
 securitygroupname = 'firesim'
@@ -27,6 +27,12 @@ def get_f1_ami_id():
     response = client.describe_images(Filters=[{'Name': 'name', 'Values': [f1_ami_name]}])
     assert len(response['Images']) == 1
     return response['Images'][0]['ImageId']
+
+def get_aws_username():
+    """ Get the users IAM username to intelligently create a bucket name when doing managerinit
+    """
+    client = boto3.client('iam')
+    return client.get_user()['User']['UserId']
 
 def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
     """ construct the dictionary necessary to configure instance market selection

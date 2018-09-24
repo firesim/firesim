@@ -1,4 +1,4 @@
-package firesim
+package firesim.firesim
 
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
@@ -70,6 +70,32 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
 
+
+
+class FireBoom(implicit p: Parameters) extends BoomSubsystem
+    with CanHaveMisalignedMasterAXI4MemPort
+    with HasPeripheryBootROM
+    with HasSystemErrorSlave
+    // with HasSyncExtInterrupts
+    with HasNoDebug
+    with HasPeripherySerial
+    with HasPeripheryUART
+    with HasPeripheryIceNIC
+    with HasPeripheryBlockDevice
+{
+  override lazy val module = new FireBoomModuleImp(this)
+}
+
+class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
+    with HasRTCModuleImp
+    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with HasPeripheryBootROMModuleImp
+    // with HasExtInterruptsModuleImp
+    with HasNoDebugModuleImp
+    with HasPeripherySerialModuleImp
+    with HasPeripheryUARTModuleImp
+    with HasPeripheryIceNICModuleImpValidOnly
+    with HasPeripheryBlockDeviceModuleImp
 
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort

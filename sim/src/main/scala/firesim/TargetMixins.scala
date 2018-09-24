@@ -1,4 +1,4 @@
-package firesim
+package firesim.firesim
 
 import Chisel._
 import freechips.rocketchip.config.{Field, Parameters}

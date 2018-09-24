@@ -1,12 +1,15 @@
-package firesim
+package firesim.firesim
 
-import endpoints.LoopbackNIC
-import midas.models._
-import midas.core.{SimAXI4MemIO, ReciprocalClockRatio, EndpointMap}
-import midas.{EndpointKey, MemModelKey}
-import testchipip.{WithBlockDevice}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
+import midas.{EndpointKey, MemModelKey}
+import midas.core.{SimAXI4MemIO, ReciprocalClockRatio, EndpointMap}
+import midas.models._
+import midas.MemModelKey
+
+import testchipip.{WithBlockDevice}
+
+import firesim.endpoints._
 
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
@@ -18,20 +21,20 @@ class BasePlatformConfig extends Config(new Config((site, here, up) => {
 }) ++ new midas.F1Config)
 
 class WithSerialWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new endpoints.SimSerialIO))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
 })
 
 class WithUARTWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new endpoints.SimUART))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
 })
 
 class WithSimpleNICWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new endpoints.SimSimpleNIC))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new endpoints.SimBlockDev))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimBlockDev))
 })
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency

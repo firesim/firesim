@@ -22,7 +22,7 @@ def process_uartlog(uartlogpath):
             readlines = f.readlines()
     rtts = []
     for line in readlines:
-        if "64 bytes from 192.168.0.3:" in line:
+        if "64 bytes from 172.16.0.3:" in line:
             thisrtt = line.split()[-2].split("=")[-1]
             rtts.append(float(thisrtt))
     return mean(rtts)

@@ -2,18 +2,17 @@
 #define __FIRESIM_TOP_H
 
 #include "simif.h"
-#include "fesvr/fesvr_proxy.h"
+#include "fesvr/firesim_fesvr.h"
 #include "endpoints/endpoint.h"
 #include "endpoints/fpga_model.h"
 
 class firesim_top_t: virtual simif_t
 {
     public:
-        firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr);
+        firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint32_t fesvr_step_size);
         ~firesim_top_t() { }
 
-        void run(size_t step_size);
-        void loadmem();
+        void run();
 
     protected:
         void add_endpoint(endpoint_t* endpoint) {
@@ -25,17 +24,25 @@ class firesim_top_t: virtual simif_t
         std::vector<endpoint_t*> endpoints;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
-        fesvr_proxy_t* fesvr;
+        firesim_fesvr_t* fesvr;
         uint64_t max_cycles;
 
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         // This sets the coarse_step_size in loop
         uint64_t profile_interval;
+        uint32_t fesvr_step_size;
 
+        // If set, will write all zeros to fpga dram before commencing simulation
+        bool do_zero_out_dram = false;
         // Main simulation loop
         // stepsize = number of target cycles between FESVR interactions
         // coarse_step_size = maximum number of target cycles loop may advance the simulator
         void loop(size_t step_size, uint64_t coarse_step_size);
+
+        // Helper functions to handoff fesvr requests to the loadmem unit
+        void handle_loadmem_read(fesvr_loadmem_t loadmem);
+        void handle_loadmem_write(fesvr_loadmem_t loadmem);
+        void serial_bypass_via_loadmem();
 };
 
 #endif // __FIRESIM_TOP_H
