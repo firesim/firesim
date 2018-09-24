@@ -299,11 +299,12 @@ To write endpoint software, implement a derived class of [`endpoint_t`](src/main
 
 * `tick`: performs operations on outstanding transactions. This method may interact with software components.
 * `terminate`: indicates that the endpoint is calling for simulation to terminate.
+* `exit_code`: indicates what caused the endpoint to signal for termination.
 
 Therefore, in the software driver, non-blocking `n` steps are taken with
 `step(n, false)`, and `tick` functions of all endpoints should be called until
 simif::done() returns true (the simulator has advanced n cycles) or one of the endpoints
-has signaled that the simulation should teriminate.
+has signaled that the simulation should terminate.
 
 `tick` is implemented using `read` and `write` functions for memory-mapped
 registers. Once custom endpoints are instantiated, macros for memory mapped

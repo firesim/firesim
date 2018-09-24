@@ -57,6 +57,7 @@ public:
 
   virtual void tick();
   virtual bool terminate() { return false; };
+  virtual int exit_code() { return 0; };
 
   void write_mem(uint64_t addr, void* data);
 
