@@ -37,8 +37,8 @@ extern "A" void tick
 
   output reg                       dma_ar_valid,
   input  reg                       dma_ar_ready,
-  output reg [`CTRL_ADDR_BITS-1:0] dma_ar_addr,
-  output reg [`CTRL_ID_BITS-1:0]   dma_ar_id,
+  output reg [`DMA_ADDR_BITS-1:0]  dma_ar_addr,
+  output reg [`DMA_ID_BITS-1:0]    dma_ar_id,
   output reg [2:0]                 dma_ar_size,
   output reg [7:0]                 dma_ar_len,
 
@@ -107,19 +107,33 @@ module emul;
 
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
-  reg [2055:0] vcdplusfile = 0;
+  reg [2047:0] vcdplusfile = 0;
+  reg [63:0] dump_start = 0;
+  reg [63:0] dump_end = {64{1'b1}};
+  reg [63:0] dump_cycles = 0;
+  reg [63:0] trace_count = 0;
 
   initial begin
 `ifdef DEBUG
     if ($value$plusargs("waveform=%s", vcdplusfile))
     begin
+      $value$plusargs("dump-start=%d", dump_start);
+      if ($value$plusargs("dump-cycles=%d", dump_cycles)) begin
+        dump_end = dump_start + dump_cycles;
+      end
+
       $vcdplusfile(vcdplusfile);
-      $vcdpluson(0);
-      $vcdplusmemon(0);
+      wait (trace_count >= dump_start) begin
+        $vcdpluson(0);
+        $vcdplusmemon(0);
+      end
+      wait ((trace_count > dump_end) || fin) begin
+        $vcdplusclose;
+      end
     end
 `endif
   end
-  
+
   reg                        master_ar_valid;
   wire                       master_ar_ready;
   reg  [`CTRL_ADDR_BITS-1:0] master_ar_addr;
@@ -154,8 +168,8 @@ module emul;
 
   reg                        dma_ar_valid;
   wire                       dma_ar_ready;
-  reg  [`CTRL_ADDR_BITS-1:0] dma_ar_addr;
-  reg  [`CTRL_ID_BITS-1:0]   dma_ar_id;
+  reg  [`DMA_ADDR_BITS-1:0]  dma_ar_addr;
+  reg  [`DMA_ID_BITS-1:0]    dma_ar_id;
   reg  [2:0]                 dma_ar_size;
   reg  [7:0]                 dma_ar_len;
 
@@ -510,11 +524,7 @@ module emul;
   );
 
   always @(posedge clock) begin
-    if (fin) begin
-`ifdef DEBUG
-      $vcdplusclose;
-`endif
-    end
+    trace_count = trace_count + 1;
     tick(
       reset,
       fin,

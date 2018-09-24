@@ -33,11 +33,11 @@ object MidasAnnotation {
 }
 
 private[midas] class MidasTransforms(
-    dir: File,
     io: Seq[chisel3.Data])
     (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
+  val dir = param(OutputDir)
   def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
     case Seq(MidasAnnotation(state.circuit.main, conf, json, lib)) =>
       val xforms = Seq(
@@ -82,3 +82,13 @@ class Fame1Instances extends Transform {
   }
 }
 
+// This is currently implemented by the enclosing project
+case class FpgaDebugAnnotation(target: chisel3.core.Data)
+    extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
+}
+
+case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
+    SingleTargetAnnotation[ComponentName] {
+  def duplicate(n: ComponentName) = this.copy(target = n)
+}
