@@ -101,7 +101,7 @@ std::unique_ptr<mm_t> slave;
 void* init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_f1_t(MMIO_WIDTH));
   dma.reset(new mmio_f1_t(DMA_WIDTH));
-  slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t : (mm_t*) new mm_magic_t);
+  slave.reset(dramsim ? (mm_t*) new mm_dramsim2_t(1 << MEM_ID_BITS) : (mm_t*) new mm_magic_t);
   slave->init(memsize, MEM_WIDTH, 64);
   return slave->get_data();
 }
@@ -109,6 +109,7 @@ void* init(uint64_t memsize, bool dramsim) {
 #ifdef VCS
 static const size_t MASTER_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t DMA_DATA_SIZE = DMA_WIDTH / sizeof(uint32_t);
+static const size_t DMA_STRB_SIZE = (DMA_WIDTH/8 + sizeof(uint32_t) - 1) / sizeof(uint32_t);
 static const size_t SLAVE_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
 extern midas_context_t* host;
 extern bool vcs_fin;
@@ -217,6 +218,7 @@ void tick(
   mmio_f1_t *m, *d;
   assert(m = dynamic_cast<mmio_f1_t*>(master.get()));
   assert(d = dynamic_cast<mmio_f1_t*>(dma.get()));
+  assert(DMA_STRB_SIZE <= 2);
 
   uint32_t master_r_data[MASTER_DATA_SIZE];
   for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
@@ -318,8 +320,12 @@ void tick(
   dd[0].c = 0;
   dd[0].d = d->ar_len();
   vc_put4stVector(dma_ar_bits_len, dd);
-  dd[0].c = 0;
-  dd[0].d = d->w_strb();
+
+  auto strb = d->w_strb();
+  for (size_t i = 0 ; i < DMA_STRB_SIZE ; i++) {
+    dd[i].c = 0;
+    dd[i].d = ((uint32_t*)(&strb))[i];
+  }
   vc_put4stVector(dma_w_bits_strb, dd);
 
   for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
