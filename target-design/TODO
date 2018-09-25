@@ -1,0 +1,3 @@
+-have not bumped riscv-tools
+-probably want to bump linux too
+-barstools/mdf are not bumped to master

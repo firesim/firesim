@@ -22,7 +22,8 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 class WithUARTKey extends Config((site, here, up) => {
    case PeripheryUARTKey => List(UARTParams(
      address = BigInt(0x54000000L),
-     initBaudRate = BigInt(3686400L)))
+     nTxEntries = 256,
+     nRxEntries = 256))
 })
 
 class WithNICKey extends Config((site, here, up) => {
@@ -56,7 +57,6 @@ class BoomWithLargeTLBs extends Config((site, here, up) => {
     )
   ))
 })
-
 
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
