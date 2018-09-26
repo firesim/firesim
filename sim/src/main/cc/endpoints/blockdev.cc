@@ -334,12 +334,3 @@ void blockdev_t::tick() {
         /* While: if we did any work during this iteration, do another iter */
     } while((a_req_valid && a_req_ready) || (a_data_valid && a_data_ready) || (a_resp_valid && a_resp_ready));
 }
-
-/* Check if blockdev widget has any work left */
-bool blockdev_t::done() {
-#ifdef BLOCKDEVWIDGET_0
-    return read(BLOCKDEVWIDGET_0(done));
-#else
-    return true;
-#endif
-}
