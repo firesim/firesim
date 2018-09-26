@@ -38,9 +38,7 @@ class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val rxfifo = Module(new Queue(UInt(8.W), 128))
 
   val target = io.hPort.hBits
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
-  val stall = !txfifo.io.enq.ready
-  val fire = tFire && !stall
+  val fire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid & txfifo.io.enq.ready
   val targetReset = fire & io.tReset.bits
   rxfifo.reset := reset.toBool || targetReset
   txfifo.reset := reset.toBool || targetReset
@@ -127,9 +125,6 @@ class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   genWOReg(rxfifo.io.enq.bits, "in_bits")
   Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
   genROReg(rxfifo.io.enq.ready, "in_ready")
-
-  genROReg(!tFire, "done")
-  genROReg(stall, "stall")
 
   genCRFile()
 }
