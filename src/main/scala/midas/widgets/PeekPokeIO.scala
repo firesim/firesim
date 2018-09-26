@@ -49,6 +49,10 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(0.U(io.ctrl.nastiXDataBits.W))
   val oTokensPending = RegInit(1.U(io.ctrl.nastiXDataBits.W))
+  val tCycleName = "tCycle"
+  val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
+  val hCycleName = "hCycle"
+  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
 
   // needs back pressure from reset queues
   val fromHostReady = io.ins.foldLeft(io.tReset.ready)(_ && _.ready)
@@ -82,7 +86,9 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
 
   when (oTokensPending =/= UInt(0) && toHostValid) {
     oTokensPending := oTokensPending - UInt(1)
+    tCycle := tCycle + 1.U
   }
+  hCycle := hCycle + 1.U
 
 
   when (io.step.fire) {
@@ -103,11 +109,12 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
     import CppGenerationUtils._
-    // offsets
 
+    val name = getWName.toUpperCase
     def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
       case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
+    super.genHeader(base, sb)
     sb.append(genComment("Pokeable target inputs"))
     sb.append(genMacro("POKE_SIZE", UInt64(inputs.size)))
     genOffsets(inputs.unzip._1)

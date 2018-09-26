@@ -48,14 +48,6 @@ bool sim_mem_t::stall() {
 #endif
 }
 
-bool sim_mem_t::done() {
-#ifdef NASTIWIDGET_0
-  return read(NASTIWIDGET_0(done));
-#else
-  return true;
-#endif
-}
-
 const uint64_t addr_mask = (1L << MEM_ADDR_BITS) - 1;
 const data_t id_mask = (1 << MEM_ID_BITS) - 1;
 const data_t size_mask = (1 << MEM_SIZE_BITS) - 1;
@@ -138,6 +130,8 @@ void sim_mem_t::send(sim_mem_data_t& data) {
 
 void sim_mem_t::tick() {
 #ifdef NASTIWIDGET_0
+  if (read(NASTIWIDGET_0(done))) return;
+
   bool _stall = this->stall();
   static size_t num_reads = 0;
   static size_t num_writes = 0;
