@@ -5,7 +5,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-import boom.system.BoomTilesKey
+//import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
@@ -49,7 +49,7 @@ class WithPerfCounters extends Config((site, here, up) => {
     core = tile.core.copy(nPerfCounters = 29)
   ))
 })
-
+/*
 class BoomWithLargeTLBs extends Config((site, here, up) => {
   case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
     core = tile.core.copy(
@@ -57,7 +57,7 @@ class BoomWithLargeTLBs extends Config((site, here, up) => {
     )
   ))
 })
-
+*/
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
 * simulated.
@@ -99,7 +99,7 @@ class FireSimRocketChipHexaCoreConfig extends Config(new WithNBigCores(6) ++
 class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
-
+/*
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
@@ -110,4 +110,4 @@ class FireSimBoomConfig extends Config(
   new WithBlockDevice ++
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly
-  new boom.system.SmallBoomConfig)
+  new boom.system.SmallBoomConfig)*/
