@@ -54,6 +54,20 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
+uint64_t simif_t::actual_tcycle() {
+    write(DEFAULTIOWIDGET(tCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(tCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(tCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
+uint64_t simif_t::hcycle() {
+    write(DEFAULTIOWIDGET(hCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(hCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(hCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
 void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
   take_steps(pulse_start, true);
@@ -73,7 +87,7 @@ int simif_t::finish() {
   finish_sampling();
 #endif
 
-  fprintf(stderr, "Runs %llu cycles\n", cycles());
+  fprintf(stderr, "Runs %llu cycles\n", actual_tcycle());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "\nSEED: %ld\n", seed);
@@ -127,9 +141,8 @@ bool simif_t::expect(size_t id, mpz_t& expected) {
   return expect(pass, NULL);
 }
 
-void simif_t::step(int n, bool blocking) {
+void simif_t::step(uint32_t n, bool blocking) {
   if (n == 0) return;
-  assert(n > 0);
 #ifdef ENABLE_SNAPSHOT
   reservoir_sampling(n);
 #endif
