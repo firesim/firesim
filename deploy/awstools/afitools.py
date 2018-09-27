@@ -65,12 +65,22 @@ def copy_afi_to_all_regions(afi_id, starting_region=None):
 def share_afi_with_users(afi_id, region, useridlist):
     """ share the AFI in Region region with users in userlist. """
     client = boto3.client('ec2', region_name=region)
-    result = client.modify_fpga_image_attribute(
-        FpgaImageId=afi_id,
-        Attribute='loadPermission',
-        OperationType='add',
-        UserIds=useridlist
-    )
+    if "public" in useridlist:
+        rootLogger.info("Sharing AGFI publicly.")
+        result = client.modify_fpga_image_attribute(
+            FpgaImageId=afi_id,
+            Attribute='loadPermission',
+            OperationType='add',
+            UserGroups=['all']
+        )
+    else:
+        rootLogger.info("Sharing AGFI with selected users.")
+        result = client.modify_fpga_image_attribute(
+            FpgaImageId=afi_id,
+            Attribute='loadPermission',
+            OperationType='add',
+            UserIds=useridlist
+        )
     rootLogger.debug(result)
 
 def get_afi_sharing_ids_from_conf(conf):

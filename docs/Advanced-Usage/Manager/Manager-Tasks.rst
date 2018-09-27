@@ -45,7 +45,7 @@ For each config, the build process entails:
 
 5. Launch an FPGA Dev AMI build instance for each configuration you want built.
 
-6. [Local/Remote] Prep build instances, copy generated verilog for hardware configuration to buidl instance.
+6. [Local/Remote] Prep build instances, copy generated verilog for hardware configuration to build instance.
 
 7. [Remote] Run Vivado Synthesis and P&R for the configuration
 
@@ -84,7 +84,7 @@ listed in :ref:`config-hwdb`) with other users. It will take the
 named hardware configurations that you list in the ``[agfistoshare]`` section of
 ``config_build.ini``, grab the respective AGFIs for each from
 ``config_hwdb.ini``, and share them across all F1 regions with the users listed
-in the ``[sharewithaccounts]`` section of ``config_build.ini``.
+in the ``[sharewithaccounts]`` section of ``config_build.ini``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
 
 You must own the AGFIs in order to do this -- this will NOT let you share AGFIs
 that someone else owns and gave you access to.

@@ -1,0 +1,95 @@
+# These point at the main class of the target's Chisel generator
+DESIGN_PACKAGE ?= firesim.firesim
+DESIGN ?= FireSim
+# DESIGN ?= FireBoom
+
+# These guide chisel elaboration of the target design specified above.
+# See src/main/scala/SimConfigs.scala
+TARGET_CONFIG_PACKAGE ?= firesim.firesim
+TARGET_CONFIG ?= FireSimRocketChipConfig
+# TARGET_CONFIG ?= FireSimBoomConfig
+
+# These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
+# See src/main/scala/SimConfigs.scala
+PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
+PLATFORM_CONFIG ?= FireSimConfig
+
+base_dir = $(abspath .)
+name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+##################
+# RTL Generation #
+##################
+VERILOG := $(GENERATED_DIR)/FPGATop.v
+HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
+
+submodules = . midas firrtl \
+	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks \
+	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend))
+
+src_path = src/main/scala
+chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
+
+common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+
+$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
+	mkdir -p $(@D)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+
+##########################
+# Driver Sources & Flags #
+##########################
+
+driver_dir = $(firesim_base_dir)/src/main/cc
+DRIVER_H = $(shell find $(driver_dir) -name "*.h")
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, \
+	firesim/* fesvr/* endpoints/*))) $(RISCV)/lib/libfesvr.a
+
+TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+TARGET_LD_FLAGS :=
+
+####################################
+# Runtime-Configuraiton Generation #
+####################################
+CONF_NAME ?= runtime.conf
+.PHONY: conf
+conf:
+	mkdir -p $(GENERATED_DIR)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+
+############################################
+# Midas-Level Simulation Execution Recipes #
+############################################
+# The desired RTL simulator. supported options: {vcs, verilator}
+EMUL ?= verilator
+
+ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
+output_dir := $(OUTPUT_DIR)
+-include $(GENERATED_DIR)/$(DESIGN).d
+endif
+
+disasm := 2>
+which_disasm := $(shell which spike-dasm 2> /dev/null)
+ifneq ($(which_disasm),)
+        disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
+endif
+
+$(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
+	cd $(dir $($(EMUL))) && \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
+
+$(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
+	cd $(dir $($(EMUL))) && \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
+
+$(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
+	cd $(dir $($(EMUL)_debug)) && \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
+
