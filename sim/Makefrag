@@ -68,6 +68,12 @@ $(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
 
+run-verilator: $(verilator)
+	$(verilator) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-verilator-debug: $(verilator_debug)
+	$(verilator_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
 ##############################
 # VCS MIDAS-Level Simulators #
 ##############################
