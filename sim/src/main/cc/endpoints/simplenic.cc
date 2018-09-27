@@ -153,7 +153,7 @@ void simplenic_t::tick() {
     uint32_t token_bytes_obtained_from_fpga = 0;
     uint32_t token_bytes_sent_to_fpga = 0;
 
-    #define DEBUG_NIC_PRINT
+    //#define DEBUG_NIC_PRINT
 
     while (true) { // break when we don't have 5k tokens
         token_bytes_obtained_from_fpga = 0;
