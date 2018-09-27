@@ -14,7 +14,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
 
-//import boom.system.{BoomTilesKey, BoomTestSuites}
+import boom.system.{BoomTilesKey, BoomTestSuites}
 
 case class FireSimGeneratorArgs(
   midasFlowKind: String = "midas", // "midas", "strober", "replay"
@@ -61,9 +61,9 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     implicit val valName = ValName(targetNames.topModuleClass)
     targetNames.topModuleClass match {
       case "FireSim"  => LazyModule(new FireSim()(params)).module
-//      case "FireBoom" => LazyModule(new FireBoom()(params)).module
+      case "FireBoom" => LazyModule(new FireBoom()(params)).module
       case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
-//      case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
+      case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
     }
   }
 
@@ -163,11 +163,11 @@ trait HasTestSuites {
 
   def addTestSuites(params: Parameters) {
     val coreParams =
-//      if (params(RocketTilesKey).nonEmpty) {
+      if (params(RocketTilesKey).nonEmpty) {
         params(RocketTilesKey).head.core
-//      } else {
-//        params(BoomTilesKey).head.core
-//      }
+      } else {
+        params(BoomTilesKey).head.core
+      }
     val xlen = params(XLen)
     val vm = coreParams.useVM
     val env = if (vm) List("p","v") else List("p")
@@ -186,8 +186,8 @@ trait HasTestSuites {
     if (coreParams.useAtomics)    TestGeneration.addSuites(env.map(if (xlen == 64) rv64ua else rv32ua))
     if (coreParams.useCompressed) TestGeneration.addSuites(env.map(if (xlen == 64) rv64uc else rv32uc))
     val (rvi, rvu) =
-      /*if (params(BoomTilesKey).nonEmpty) ((if (vm) BoomTestSuites.rv64i else BoomTestSuites.rv64pi), rv64u)
-      else*/ if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
+      if (params(BoomTilesKey).nonEmpty) ((if (vm) BoomTestSuites.rv64i else BoomTestSuites.rv64pi), rv64u)
+      else if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
       else            ((if (vm) rv32i else rv32pi), rv32u)
 
     TestGeneration.addSuites(rvi.map(_("p")))
