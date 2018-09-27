@@ -22,5 +22,5 @@ class BlockdevTestSuite(prefix: String, val names: LinkedHashSet[String]) extend
 }
 
 object FastBlockdevTests extends BlockdevTestSuite("fast", LinkedHashSet("blkdev"))
-object AllBlockdevTests extends BlockdevTestSuite("all", LinkedHashSet("blkdev", "big-blkdev"))
+object SlowBlockdevTests extends BlockdevTestSuite("all", LinkedHashSet("big-blkdev"))
 

@@ -195,7 +195,7 @@ trait HasTestSuites {
     TestGeneration.addSuite(benchmarks)
     TestGeneration.addSuite(new RegressionTestSuite(if (xlen == 64) rv64RegrTestNames else rv32RegrTestNames))
     TestGeneration.addSuite(FastBlockdevTests)
-    TestGeneration.addSuite(AllBlockdevTests)
+    TestGeneration.addSuite(SlowBlockdevTests)
   }
 }
 
