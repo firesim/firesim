@@ -14,7 +14,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, fesvr_proxy_t* fesvr): fesvr
     char * niclogfile = NULL;
     char * slotid = NULL;
     uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
-    int netbw = MAX_BANDWIDTH, netburst = 8;
+    int netbw = ORIG_BANDWIDTH, netburst = 8;
     int linklatency = 0;
 
     std::vector<std::string> args(argv + 1, argv + argc);

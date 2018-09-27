@@ -13,6 +13,7 @@ import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
+import icenet.IceNetConsts._
 import junctions.{NastiIO, NastiKey}
 
 case object LoopbackNIC extends Field[Boolean]
@@ -138,36 +139,45 @@ class ReadyValidLast extends Bundle {
   val valid = Bool()
 }
 
-class BIGToken extends Bundle {
-  val data = Vec(7, UInt(64.W))
-  val rvls = Vec(7, new ReadyValidLast())
-  val pad = UInt(43.W)
+/* AJG: I am fairly certain that this big token is characterized by the size of the 512 buffer and not the actual size of the extra items
+ * this should probably be converted variable size data with variable amount of mini tokens per big token based on this number */
+// This and the other toekns should probalay be parameterized
+class BIGToken(tokenSize: Int) extends Bundle {
+  //val data = Vec(7, UInt(64.W))
+  //val rvls = Vec(7, new ReadyValidLast())
+  //val pad = UInt(43.W)
+  val data = Vec((512 / (tokenSize + 3)), UInt(tokenSize.W))
+  val rvls = Vec((512 / (tokenSize + 3)), new ReadyValidLast())
+  val pad = UInt((512 - ((512 / (tokenSize + 3)) * (tokenSize + 3))).W)
+  override def cloneType: this.type = new BIGToken(tokenSize).asInstanceOf[this.type]
 }
 
-class HostToNICToken extends Bundle {
-  val data_in = new StreamChannel(64)
+class HostToNICToken(tokenSize: Int) extends Bundle {
+  val data_in = new StreamChannel(tokenSize)
   val data_in_valid = Bool()
   val data_out_ready = Bool()
+  override def cloneType: this.type = new HostToNICToken(tokenSize).asInstanceOf[this.type]
 }
 
-class NICToHostToken extends Bundle {
-  val data_out = new StreamChannel(64)
+class NICToHostToken(tokenSize: Int) extends Bundle {
+  val data_out = new StreamChannel(tokenSize)
   val data_out_valid = Bool()
   val data_in_ready = Bool()
+  override def cloneType: this.type = new NICToHostToken(tokenSize).asInstanceOf[this.type]
 }
 
-class SimSimpleNIC extends Endpoint {
+class SimSimpleNIC(bufSize: Int) extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: NICIOvonly =>
       directionOf(channel.out.valid) == ActualDirection.Output
     case _ => false
   }
-  def widget(p: Parameters) = new SimpleNICWidget()(p)
+  def widget(p: Parameters) = new SimpleNICWidget(bufSize = bufSize)(p)
   override def widgetName = "SimpleNICWidget"
 }
 
-class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new NICIOvonly))
+class SimpleNICWidgetIO(bufSize: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+  val hPort = Flipped(HostPort(new NICIOvonly(bufSize)))
   val dma = if (!p(LoopbackNIC)) {
     Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
@@ -175,13 +185,13 @@ class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
 }
 
 
-class BigTokenToNICTokenAdapter extends Module {
+class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   val io = IO(new Bundle {
-    val htnt = DecoupledIO(new HostToNICToken)
+    val htnt = DecoupledIO(new HostToNICToken(tokenSize))
     val pcie_in = Flipped(DecoupledIO(UInt(512.W)))
   })
 
-  val pcieBundled = (new BIGToken).fromBits(io.pcie_in.bits)
+  val pcieBundled = (new BIGToken(tokenSize)).fromBits(io.pcie_in.bits)
 
   def fire_xact(exclude: Bool, includes: Bool*) = {
     val rvs = Array (
@@ -209,16 +219,16 @@ class BigTokenToNICTokenAdapter extends Module {
   io.pcie_in.ready := fire_xact(io.pcie_in.valid, loopIter === 6.U)
 }
 
-class NICTokenToBigTokenAdapter extends Module {
+class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   val io = IO(new Bundle {
-    val ntht = Flipped(DecoupledIO(new NICToHostToken))
+    val ntht = Flipped(DecoupledIO(new NICToHostToken(tokenSize)))
     val pcie_out = DecoupledIO(UInt(512.W))
   })
 
   // step one, buffer 7 elems into registers. note that the 7th element is here 
   // just for convenience. in reality, it is not used since we're bypassing to
   // remove a cycle of latency
-  val NTHT_BUF = Reg(Vec(7, new NICToHostToken))
+  val NTHT_BUF = Reg(Vec(7, new NICToHostToken(tokenSize)))
   val specialCounter = RegInit(0.U(32.W))
 
   when (io.ntht.valid) {
@@ -245,7 +255,7 @@ class NICTokenToBigTokenAdapter extends Module {
     token_trace_counter := token_trace_counter
   }
 
-  val out = Wire(new BIGToken)
+  val out = Wire(new BIGToken(tokenSize))
   for (i <- 0 until 6) {
     out.data(i) := NTHT_BUF(i).data_out.data
     out.rvls(i).data_last := NTHT_BUF(i).data_out.last
@@ -261,10 +271,10 @@ class NICTokenToBigTokenAdapter extends Module {
   io.pcie_out.bits := out.asUInt
 }
 
-class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Module {
+class HostToNICTokenGenerator(nTokens: Int, tokenSize: Int)(implicit p: Parameters) extends Module {
   val io = IO(new Bundle {
-    val out = Decoupled(new HostToNICToken)
-    val in = Flipped(Decoupled(new NICToHostToken))
+    val out = Decoupled(new HostToNICToken(tokenSize))
+    val in = Flipped(Decoupled(new NICToHostToken(tokenSize)))
   })
 
   val s_init :: s_seed :: s_forward :: Nil = Enum(3)
@@ -282,14 +292,15 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new SimpleNICWidgetIO)
+// AJG: This needs to be parameterized
+class SimpleNICWidget(bufSize: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
+  val io = IO(new SimpleNICWidgetIO(bufSize))
 
-  val htnt_queue = Module(new Queue(new HostToNICToken, 10))
-  val ntht_queue = Module(new Queue(new NICToHostToken, 10))
+  val htnt_queue = Module(new Queue(new HostToNICToken(bufSize), 10))
+  val ntht_queue = Module(new Queue(new NICToHostToken(bufSize), 10))
 
-  val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter)
-  val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
+  val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter(bufSize))
+  val NICtokenToBig = Module(new NICTokenToBigTokenAdapter(bufSize))
 
   val incomingPCISdat = Module(new SplitSeqQueue)
   val outgoingPCISdat = Module(new SplitSeqQueue)
@@ -327,7 +338,7 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 //  ntht_queue.reset := reset //|| targetReset
 
   if (p(LoopbackNIC)) {
-    val tokenGen = Module(new HostToNICTokenGenerator(10))
+    val tokenGen = Module(new HostToNICTokenGenerator(nTokens = 10, tokenSize = bufSize))
     htnt_queue.io.enq <> tokenGen.io.out
     tokenGen.io.in <> ntht_queue.io.deq
     NICtokenToBig.io.ntht.valid := false.B
@@ -384,7 +395,8 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
   genCRFile()
 
-  val PCIS_BYTES = 64
+  // AJG: Changed this to be the parameterized value
+  //val PCIS_BYTES = 64
 
   io.dma.map { dma =>
     // TODO, will these queues bottleneck us?
@@ -392,9 +404,9 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     val w_queue = Queue(dma.w, 10)
     val ar_queue = Queue(dma.ar, 10)
 
-    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-    assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-    assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(PCIS_BYTES.W))
+    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(bufSize).U)
+    assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(bufSize).U)
+    assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(bufSize.W))
 
     def fire_write(exclude: Bool, includes: Bool*) = {
       val rvs = Array (

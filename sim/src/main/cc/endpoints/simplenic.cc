@@ -13,13 +13,20 @@
 // IMPORTANT! LINKLATENCY CONFIG HAS MOVED TO simplenic.h
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
-#define TOKENS_PER_BIGTOKEN 7
-
-#define SIMLATENCY_BT (LINKLATENCY/TOKENS_PER_BIGTOKEN)
-
-#define BUFWIDTH (512/8)
-#define BUFBYTES (SIMLATENCY_BT*BUFWIDTH)
-#define EXTRABYTES 1
+// AJG: NOTE THE FREQ OF THE SYSTEM IS ASSUMED TO BE 3.2Ghz
+//
+// The max bandwidth can be a flit size of 509 since there is 3 extra bits given in the scala code
+// this this token size should alway fill up the 512 as much as possible without going over 512.
+//
+// This makes the max bw be 509 x 3.2ghz =~=(about) 1.6tbps
+// to find flit size it should be bwWanted / 3.2 = flitsize
+//
+// Eq should be
+//      tokensperbigtoken = PCIE_WIDTH/(FLIT_SIZE + 3) 
+#define PCIE_WIDTH (512)
+#define PROC_SPEED (3.2)
+#define VAL_BITS (3)
+#define EXTRABYTES (1)
 
 static void simplify_frac(int n, int d, int *nn, int *dd)
 {
@@ -50,9 +57,21 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
-    assert(netbw <= MAX_BANDWIDTH);
+    //AJG: Let netbw determine the variables
+    assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
+    // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
+    BUFWIDTH = netbw / PROC_SPEED;
+    TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (FLIT_SIZE + VAL_BITS);
+    SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
+    BUFBYTES = SIMLATENCY * BUFWIDTH;
+    
     assert(netburst < 256);
-    simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
+    //simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
+    //AJG: If the bandwidth is at its max then it should be 1 and 1 on the output variables
+    rlimit_inc = 1;
+    rlimit_period = 1;
+    // AJG: REvert above later when you know the actual max
+    // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
     rlimit_size = netburst;
 
     printf("using link latency: %d cycles\n", linklatency);
@@ -99,9 +118,11 @@ void simplenic_t::init() {
 #ifdef SIMPLENICWIDGET_0
     write(SIMPLENICWIDGET_0(macaddr_upper), (mac_lendian >> 32) & 0xFFFF);
     write(SIMPLENICWIDGET_0(macaddr_lower), mac_lendian & 0xFFFFFFFF);
+    // AJG: At this point this is written in memory and sent to the actual NIC
     write(SIMPLENICWIDGET_0(rlimit_settings),
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
 
+    //AJG: Should I care about the BUFWIDTH?
 #ifndef SIMULATION_XSIM
     uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
     uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
