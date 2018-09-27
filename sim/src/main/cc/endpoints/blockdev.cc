@@ -53,16 +53,8 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
         abort();
     }
 
-    if (filename || mem_filesize > 0) {
-
-        if (mem_filesize > 0 ) {
-            size = mem_filesize << SECTOR_SHIFT;
-            _file = fmemopen(NULL, size, "r+");
-        } else {
-            _file = fopen(filename, "r+");
-            size = ftell(_file);
-        }
-
+    if (filename) {
+        _file = fopen(filename, "r+");
         if (!_file) {
             fprintf(stderr, "Could not open %s\n", filename);
             abort();
@@ -71,8 +63,16 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
             perror("fseek");
             abort();
         }
+        size = ftell(_file);
         if (size < 0) {
             perror("ftell");
+            abort();
+        }
+    } else if (mem_filesize > 0 ) {
+        size = mem_filesize << SECTOR_SHIFT;
+        _file = fmemopen(NULL, size, "r+");
+        if (!_file) {
+            perror("fmemopen");
             abort();
         }
     } else {
