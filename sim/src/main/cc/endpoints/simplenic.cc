@@ -50,6 +50,7 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
+    assert(slotid != NULL);
     assert(linklatency > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
