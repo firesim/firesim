@@ -66,11 +66,11 @@ simplenic_t::simplenic_t(
     BUFBYTES = SIMLATENCY * BUFWIDTH;
     
     assert(netburst < 256);
-    //simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
+    simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
     //AJG: If the bandwidth is at its max then it should be 1 and 1 on the output variables
-    rlimit_inc = 1;
-    rlimit_period = 1;
-    // AJG: REvert above later when you know the actual max
+    //rlimit_inc = 1;
+    //rlimit_period = 1;
+    // AJG: Revert above later when you know the actual max
     // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
     rlimit_size = netburst;
 
