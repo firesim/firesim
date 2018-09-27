@@ -103,7 +103,7 @@ ifneq ($(which_disasm),)
 endif
 
 ####################################
-# Runtime-Configuraiton Generation #
+# Runtime-Configuration Generation #
 ####################################
 CONF_NAME ?= runtime.conf
 
