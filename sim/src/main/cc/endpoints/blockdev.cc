@@ -19,7 +19,6 @@
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
 blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim) {
-    // TODO: what is ntags?
     _ntags = BLOCKDEVWIDGET_0(num_trackers);
     long size;
     long mem_filesize = 0;
@@ -321,13 +320,12 @@ bool blockdev_t::idle() {
 #endif
 }
 
-/* This method is called to run a "cycle" of the block dev:
- * 1) Read information from the block device widget
- * 2) Do software processing
- * 3) Write responses to the block device widget */
+/* This method is called to service functional requests made by the widget.
+ * No target time is modelled here; the widget will stall stimulation if
+ * we have not yet serviced a transaction that is scheduled to be released. */
 void blockdev_t::tick() {
 
-    /* If there's nothing to do early out and save a bunch of MMIO */
+    /* If there's nothing to do, early out and save a bunch of MMIO */
     if (idle()) {
         return;
     }
