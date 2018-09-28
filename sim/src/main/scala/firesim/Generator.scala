@@ -194,6 +194,8 @@ trait HasTestSuites {
     TestGeneration.addSuites((if (vm) List("v") else List()).flatMap(env => rvu.map(_(env))))
     TestGeneration.addSuite(benchmarks)
     TestGeneration.addSuite(new RegressionTestSuite(if (xlen == 64) rv64RegrTestNames else rv32RegrTestNames))
+    TestGeneration.addSuite(FastBlockdevTests)
+    TestGeneration.addSuite(SlowBlockdevTests)
   }
 }
 
