@@ -33,9 +33,14 @@ class UserTopologies(object):
         servers = [FireSimServerNode()]
         midswitch.add_downlinks(servers)
 
-
-
-
+    def example_cross_links(self):
+        self.roots = [FireSimSwitchNode() for x in range(2)]
+        midswitches = [FireSimSwitchNode() for x in range(2)]
+        self.roots[0].add_downlinks(midswitches)
+        self.roots[1].add_downlinks(midswitches)
+        servers = [FireSimServerNode() for x in range(2)]
+        midswitches[0].add_downlinks([servers[0]])
+        midswitches[1].add_downlinks([servers[1]])
 
     def example_1config(self):
         self.roots = [FireSimSwitchNode()]
