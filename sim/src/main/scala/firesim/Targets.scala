@@ -25,7 +25,7 @@ import java.io.File
 class FireSim(implicit p: Parameters) extends RocketSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    with HasSystemErrorSlave
+//    with HasSystemErrorSlave
     // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
@@ -51,7 +51,7 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    with HasSystemErrorSlave
+//    with HasSystemErrorSlave
     // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
@@ -76,7 +76,7 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    with HasSystemErrorSlave
+//    with HasSystemErrorSlave
     // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
@@ -102,7 +102,7 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    with HasSystemErrorSlave
+//    with HasSystemErrorSlave
     // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
