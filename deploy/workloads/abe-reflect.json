@@ -1,0 +1,20 @@
+{
+  "benchmark_name" : "abe-reflect",
+  "common_bootbinary" : "bbl-vmlinux",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["bin/r5-socket-test",
+                    "bin/socket-test.sh"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "pingerAndPingee",
+      "files": [],
+      "command": "socket-test.sh && poweroff -f",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}
