@@ -27,7 +27,7 @@ class WithUARTKey extends Config((site, here, up) => {
 })
 
 class WithNICKey(bufSize: Int) extends Config((site, here, up) => {
-  case NICKey => new NICConfig(NET_IF_WIDTH = bufSize, inBufPackets = 10)
+  case NICKey => new NICConfig(NET_IF_WIDTH_BITS = bufSize, inBufPackets = 10)
 })
 
 class WithLargeTLBs extends Config((site, here, up) => {

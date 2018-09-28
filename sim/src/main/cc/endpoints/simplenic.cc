@@ -61,9 +61,9 @@ simplenic_t::simplenic_t(
     assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
     BUFWIDTH = netbw / PROC_SPEED;
-    TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (FLIT_SIZE + VAL_BITS);
+    TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
     SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
-    BUFBYTES = SIMLATENCY * BUFWIDTH;
+    BUFBYTES = SIMLATENCY_BT * BUFWIDTH;
     
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
@@ -72,6 +72,7 @@ simplenic_t::simplenic_t(
     //rlimit_period = 1;
     // AJG: Revert above later when you know the actual max
     // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
+    // THE AMOUTN OF PACKETS THAT ARE BEING PUT INTO THE PCIE WIDTH (THIS MUST SCALE WITH THE SIZE OF THE FLIT)
     rlimit_size = netburst;
 
     printf("using link latency: %d cycles\n", linklatency);
