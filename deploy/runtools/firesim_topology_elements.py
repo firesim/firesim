@@ -28,6 +28,8 @@ class FireSimNode(object):
 
     def __init__(self):
         self.downlinks = []
+        # used when there are multiple links between switches to disambiguate
+        self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -37,6 +39,7 @@ class FireSimNode(object):
         Uplinks are automatically inferred. """
         firesimnode.add_uplink(self)
         self.downlinks.append(firesimnode)
+        self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes):
         """ Just a convenience function to add multiple downlinks at once.

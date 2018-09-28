@@ -8,6 +8,35 @@ class UserTopologies(object):
     """ A class that just separates out user-defined/configurable topologies
     from the rest of the boilerplate in FireSimTopology() """
 
+    def example_multilink(self):
+        self.roots = [FireSimSwitchNode()]
+        midswitch = FireSimSwitchNode()
+        lowerlayer = [midswitch for x in range(16)]
+        self.roots[0].add_downlinks(lowerlayer)
+        servers = [FireSimServerNode()]
+        midswitch.add_downlinks(servers)
+
+
+    def example_multilink_32(self):
+        self.roots = [FireSimSwitchNode()]
+        midswitch = FireSimSwitchNode()
+        lowerlayer = [midswitch for x in range(32)]
+        self.roots[0].add_downlinks(lowerlayer)
+        servers = [FireSimServerNode()]
+        midswitch.add_downlinks(servers)
+
+    def example_multilink_64(self):
+        self.roots = [FireSimSwitchNode()]
+        midswitch = FireSimSwitchNode()
+        lowerlayer = [midswitch for x in range(64)]
+        self.roots[0].add_downlinks(lowerlayer)
+        servers = [FireSimServerNode()]
+        midswitch.add_downlinks(servers)
+
+
+
+
+
     def example_1config(self):
         self.roots = [FireSimSwitchNode()]
         servers = [FireSimServerNode() for y in range(1)]

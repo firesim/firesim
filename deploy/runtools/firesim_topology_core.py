@@ -20,6 +20,8 @@ class FireSimTopology(UserTopologies):
             if nextup in visitedonce:
                 if nextup not in retlist:
                     retlist.append(stack.pop(0))
+                else:
+                    stack.pop(0)
             else:
                 visitedonce.add(nextup)
                 stack = nextup.downlinks + stack

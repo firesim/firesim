@@ -31,12 +31,13 @@ class AbstractSwitchToSwitchConfig:
         """ Emit an init for a switch to talk to it's uplink.
 
         TODO: currently, we only support one uplink. """
-        assert uplinkno < 1, "Only 1 uplink is currently supported."
+        #assert uplinkno < 1, "Only 1 uplink is currently supported."
         downlinkno = None
         iterno = 0
         for downlink in self.fsimswitchnode.uplinks[uplinkno].downlinks:
-            if self.fsimswitchnode == downlink:
+            if self.fsimswitchnode == downlink and not self.fsimswitchnode.uplinks[uplinkno].downlinks_consumed[iterno]:
                 downlinkno = iterno
+                self.fsimswitchnode.uplinks[uplinkno].downlinks_consumed[iterno] = True
                 break
             iterno += 1
         assert self.fsimswitchnode.host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
