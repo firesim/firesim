@@ -26,13 +26,16 @@
 
 
 
-tracerv_t::tracerv_t(simif_t *sim, char *tracefile): endpoint_t(sim)
+tracerv_t::tracerv_t(simif_t *sim, char *tracefilename): endpoint_t(sim)
 {
 #ifdef TRACERVWIDGET_0
-    this->tracefile = fopen(tracefile, "w");
-    if (!this->tracefile) {
-        fprintf(stderr, "Could not open Trace log file: %s\n", this->tracefile);
-        abort();
+    this->tracefile = NULL;
+    if (tracefilename) {
+        this->tracefile = fopen(tracefilename, "w");
+        if (!this->tracefile) {
+            fprintf(stderr, "Could not open Trace log file: %s\n", this->tracefile);
+            abort();
+        }
     }
 #endif // #ifdef TRACERVWIDGET_0
 }
@@ -72,25 +75,29 @@ void tracerv_t::tick() {
     if (outfull) {
         // TODO. as opt can mmap file and just load directly into it.
         pull(TRACERV_ADDR, (char*)OUTBUF, QUEUE_DEPTH * 64);
+        if (this->tracefile) {
 #ifdef HUMAN_READABLE
-        for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
-            fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
-            fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
-        }
-#else
-        for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-            // this stores as raw binary. stored as little endian. e.g. to get the same thing as the human readable above, flip all the bytes in each 512-bit line.
-            for (int q = 0; q < 8; q++) {
-                fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
+            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
+                fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
+                fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
             }
-        }
+#else
+            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                // this stores as raw binary. stored as little endian.
+                // e.g. to get the same thing as the human readable above,
+                // flip all the bytes in each 512-bit line.
+                for (int q = 0; q < 8; q++) {
+                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
+                }
+            }
 #endif
+        }
     }
 
 #endif // ifdef TRACERVWIDGET_0
