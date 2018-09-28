@@ -41,3 +41,40 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
     }
   }
 }
+
+// HACK: Hijacks TestSuiteCommon to run the MIDAS unit tests
+abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = false) extends TestSuiteCommon {
+  val targetTuple = unitTestConfig
+  // GENERATED_DIR & OUTPUT_DIR are only used to properly invoke `make clean`
+  val commonMakeArgs = Seq(s"UNITTEST_CONFIG=${unitTestConfig}",
+                           s"GENERATED_DIR=${genDir}",
+                           s"OUTPUT_DIR=${outDir}")
+  // Currently, this is just a dummy arg
+  lazy val platform = midas.F1
+
+  override lazy val genDir  = new File(s"generated-src/unittests/${targetTuple}")
+  override lazy val outDir = new File(s"output/unittests/${targetTuple}")
+
+  def runUnitTestSuite(backend: String, debug: Boolean = false) {
+    behavior of s"MIDAS unittest: ${unitTestConfig} running on ${backend}"
+    if (isCmdAvailable(backend)) {
+      lazy val result = make("run-midas-unittests%s".format(if (debug) "-debug" else ""),
+                             s"EMUL=$backend")
+      if (shouldFail) {
+        it should "fail" in { assert(result != 0) }
+      } else {
+        it should "pass" in { assert(make("run-midas-unittests%s".format(if (debug) "-debug" else "")) == 0) }
+      }
+    }
+  }
+
+  clean
+  mkdirs
+  runUnitTestSuite("verilator")
+}
+
+class AllMidasUnitTests extends MidasUnitTestSuite("AllUnitTests") {
+  runUnitTestSuite("vcs")
+}
+// Need to get VCS to return non-zero exitcodes when $fatal is called
+class FailingUnitTests extends MidasUnitTestSuite("TimeOutCheck", shouldFail = true)
