@@ -173,7 +173,9 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   if (dmaPorts.isEmpty) {
-    io.dma := DontCare
+    val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
+    val error = Module(new NastiErrorSlave()(dmaParams))
+    error.io <> io.dma
   } else if (dmaPorts.size == 1) {
     dmaPorts(0) <> io.dma
   } else {
