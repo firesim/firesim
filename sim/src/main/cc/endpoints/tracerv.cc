@@ -51,15 +51,6 @@ tracerv_t::~tracerv_t() {
 void tracerv_t::init() {
 }
 
-bool tracerv_t::done() {
-#ifdef TRACERVWIDGET_0
-//    return read(TRACERVWIDGET_0(done));
-    return true;
-#else
-    return true;
-#endif
-}
-
 // defining this stores as human readable hex (e.g. open in VIM)
 // undefining this stores as bin (e.g. open with vim hex mode)
 #define HUMAN_READABLE

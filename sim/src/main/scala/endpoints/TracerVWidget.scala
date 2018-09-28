@@ -128,7 +128,7 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
 //
 //
 
-   when (tFireHelper.fire(true.B)) {
+   when (outgoingPCISdat.io.enq.fire()) {
     for (i <- 0 until io.hPort.hBits.traces.length) {
       printf("trace %d, valid: %x\n", i.U, io.hPort.hBits.traces(i).valid)
       printf("trace %d, iaddr: %x\n", i.U, io.hPort.hBits.traces(i).iaddr)
