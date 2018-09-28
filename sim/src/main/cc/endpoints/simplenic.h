@@ -3,8 +3,8 @@
 
 #include "endpoints/endpoint.h"
 
-// TODO this should not be hardcoded here.
-#define MAX_BANDWIDTH 200
+#define MAX_BANDWIDTH  400 //This BW is still in flux while my changes are being made
+#define ORIG_BANDWIDTH 200
 
 // param: link latency in cycles
 // assuming 3.2 GHz, this number / 3.2 = link latency in ns
@@ -31,6 +31,13 @@ class simplenic_t: public endpoint_t
         int rlimit_inc, rlimit_period, rlimit_size;
         int LINKLATENCY;
         FILE * niclog;
+
+        // AJG: Note: These are set during the init function of the simplenic_t
+        int BUFWIDTH;
+        int TOKENS_PER_BIGTOKEN;
+        int SIMLATENCY_BT;
+        int BUFBYTES;
+
 };
 
 #endif // __SIMPLENIC_H
