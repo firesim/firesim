@@ -182,25 +182,21 @@ run-xsim: $(xsim)
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
 
-midas_resources := $(base_dir)/midas/src/main/resources/midas
 rocketchip_dir := $(base_dir)/target-rtl/firechip/rocket-chip
-unittest_sim_dir := $(base_dir)/output/unittest/$(UNITTEST_CONFIG)
-unittest_generated_dir := $(base_dir)/generated-src/unittest/$(UNITTEST_CONFIG)
+unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
-		base_dir=$(base_dir) \
-		generated_dir=$(unittest_generated_dir) \
-		rocketchip_dir=$(rocketchip_dir) \
-		sim_dir=$(unittest_sim_dir) \
-		SBT=$(SBT) \
+		BASE_DIR=$(base_dir) \
+		ROCKETCHIP_DIR=$(rocketchip_dir) \
+		GEN_DIR=$(unittest_generated_dir) \
+		SBT="$(SBT) $(SBT_FLAGS)" \
 		CONFIG=$(UNITTEST_CONFIG)
 
 run-midas-unittests: $(chisel_srcs)
-	mkdir -p $(unittest_sim_dir)
-	$(MAKE) -f $(midas_resources)/unittest/Makefrag $@ $(unittest_args)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
 run-midas-unittests-debug: $(chisel_srcs)
-	mkdir -p $(unittest_sim_dir)
-	$(MAKE) -f $(midas_resources)/unittest/Makefrag $@ $(unittest_args)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
+
 
 cleanfpga:
 	rm -rf $(fpga_work_dir)
