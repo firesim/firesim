@@ -16,7 +16,7 @@ import freechips.rocketchip.unittest.{UnitTests, TestHarness}
 class WithWireChannelTests extends Config((site, here, up) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
-    val timeout = 200000
+    val timeout = 2000000
     Seq(
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
@@ -49,9 +49,25 @@ class WithReadyValidChannelTests extends Config((site, here, up) => {
   }
 })
 
+// Failing tests
+class WithTimeOutCheck extends Config((site, here, up) => {
+  case UnitTests => (q: Parameters) => {
+    implicit val p = q
+    Seq(
+      Module(new WireChannelUnitTest(timeout = 100, clockRatio = ReciprocalClockRatio(2))),
+    )
+  }
+})
+
 // Complete configs
 class AllUnitTests extends Config(new WithReadyValidChannelTests ++ new WithWireChannelTests ++ new SimConfig)
+class TimeOutCheck extends Config(new WithTimeOutCheck ++ new SimConfig)
 
+// Generates synthesizable unit tests for key modules, such as simulation channels
+// See: src/main/cc/unittest/Makefile for the downstream RTL-simulation flow
+//
+// TODO: Make the core of this generator a trait that can be mixed into
+// FireSim's ScalaTests for more type safety
 object Generator extends App with freechips.rocketchip.util.HasGeneratorUtilities {
 
  case class UnitTestOptions(

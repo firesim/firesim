@@ -50,14 +50,17 @@ $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp 
+# The trailing whitespace is important for some reason...
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
 
-design_v = $(GEN_DIR)/$(shim).v
+design_v  := $(GEN_DIR)/$(shim).v
+design_h  := $(GEN_DIR)/$(DESIGN)-const.h
+design_vh := $(GEN_DIR)/$(DESIGN)-const.vh
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 endpoint_h := $(wildcard $(endpoint_dir)/*.h)
 endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
 endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.o, $(endpoint_cc))
-$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(endpoint_h)
+$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(design_h) $(endpoint_h)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
 platform_files := simif simif_$(PLATFORM) sample/sample
@@ -65,11 +68,11 @@ platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files) sample/simif_sample))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files) sample/simif_sample))
 
-$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(GEN_DIR)/$(DESIGN)-const.h $(platform_h)
+$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) -include $< \
 	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(LDFLAGS)
@@ -77,12 +80,13 @@ $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(GEN_DIR)/$(DESIGN)-const.h $(lib) $(DRIVER) 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
+override CFLAGS += -include $(design_h)
+
 emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
-emul_h := $(driver_h) $(endpoint_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio))
+emul_h     := $(driver_h) $(endpoint_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
 # This includes c sources and static libraries
-emul_cc := $(DRIVER) $(endpoint_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
-emul_v := $(design_v)
-emul_h_inc := $(GEN_DIR)/$(DESIGN)-const.h
+emul_cc    := $(DRIVER) $(endpoint_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
+emul_v     := $(design_vh) $(design_v)
 
 # The lop level module must be called out for verilator
 ifeq ($(PLATFORM),zynq)
@@ -91,15 +95,16 @@ endif
 ifeq ($(PLATFORM),f1)
 top_module = F1Shim
 endif
-
-include Makefrag-verilator
+include rtlsim/Makefrag-verilator
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/emul_$(PLATFORM).v
-include Makefrag-vcs
+TB := emul
+VCS_FLAGS := -e vcs_main
+include rtlsim/Makefrag-vcs
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
