@@ -17,6 +17,30 @@ class UserTopologies(object):
         midswitch.add_downlinks(servers)
 
 
+    def fat_tree_4ary(self):
+        # 4-ary fat tree as described in
+        # http://ccr.sigcomm.org/online/files/p63-alfares.pdf
+        coreswitches = [FireSimSwitchNode() for x in range(4)]
+        self.roots = coreswitches
+        aggrswitches = [FireSimSwitchNode() for x in range(8)]
+        edgeswitches = [FireSimSwitchNode() for x in range(8)]
+        servers = [FireSimServerNode() for x in range(16)]
+        for switchno in range(len(coreswitches)):
+            core = coreswitches[switchno]
+            base = 0 if switchno < 2 else 1
+            dls = range(base, 8, 2)
+            dls = map(lambda x: aggrswitches[x], dls)
+            core.add_downlinks(dls)
+        for switchbaseno in range(0, len(aggrswitches), 2):
+            switchno = switchbaseno + 0
+            aggr = aggrswitches[switchno]
+            aggr.add_downlinks([edgeswitches[switchno], edgeswitches[switchno+1]])
+            switchno = switchbaseno + 1
+            aggr = aggrswitches[switchno]
+            aggr.add_downlinks([edgeswitches[switchno-1], edgeswitches[switchno]])
+        for edgeno in range(len(edgeswitches)):
+            edgeswitches[edgeno].add_downlinks([servers[edgeno*2], servers[edgeno*2+1]])
+
     def example_multilink_32(self):
         self.roots = [FireSimSwitchNode()]
         midswitch = FireSimSwitchNode()
