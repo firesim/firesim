@@ -140,7 +140,7 @@ class FRFCFS16GBQuadRankLLC4MB extends Config(
 class FireSimConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(bufSize = 128) ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
   new midas.F1Config)
@@ -148,7 +148,7 @@ class FireSimConfig extends Config(
 class FireSimDDR3Config extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(bufSize = 128) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
   new midas.F1Config)
@@ -156,7 +156,7 @@ class FireSimDDR3Config extends Config(
 class FireSimDDR3LLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(bufSize = 128) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
@@ -164,7 +164,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
 class FireSimDDR3FRFCFSConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(bufSize = 128) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
   new midas.F1Config)
@@ -172,7 +172,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(bufSize = 128) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)

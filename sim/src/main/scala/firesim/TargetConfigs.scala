@@ -74,7 +74,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(64) ++
+  new WithNICKey(128) ++
   new WithBlockDevice ++
   new WithLargeTLBs ++
   new WithPerfCounters ++
@@ -106,7 +106,7 @@ class FireSimBoomConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(64) ++
+  new WithNICKey(128) ++
   new WithBlockDevice ++
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly

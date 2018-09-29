@@ -13,6 +13,7 @@
 // IMPORTANT! LINKLATENCY CONFIG HAS MOVED TO simplenic.h
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
+
 // AJG: NOTE THE FREQ OF THE SYSTEM IS ASSUMED TO BE 3.2Ghz
 //
 // The max bandwidth can be a flit size of 509 since there is 3 extra bits given in the scala code
@@ -57,27 +58,30 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
-    //AJG: Let netbw determine the variables
-    assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
+    // AJG: netbw should be lower than the max PCIE width (minus some) by the speed of the processor
+    //      Note: For now this is MAX_BW since that is being used to created the limit below
+    //assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
+    assert( netbw <= MAX_BANDWIDTH );
+
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
-    BUFWIDTH = netbw / PROC_SPEED;
-    TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
+    BUFWIDTH = 128;//netbw / PROC_SPEED; //OG was 512/8
+    TOKENS_PER_BIGTOKEN = 3;//PCIE_WIDTH / (BUFWIDTH + VAL_BITS); //OG was 7
     SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
     BUFBYTES = SIMLATENCY_BT * BUFWIDTH;
     
+    // AJG: Following is used to limit the amount of tokens the nic is given depending on the MAX_BW and the input BW
+    //      Note: netburst is the amt of pkts put into a larger PCIE packet (ex. 64bit small flits can fit into 512bits 8 times so netburst can be up to 8)
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
-    //AJG: If the bandwidth is at its max then it should be 1 and 1 on the output variables
-    //rlimit_inc = 1;
-    //rlimit_period = 1;
-    // AJG: Revert above later when you know the actual max
-    // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
-    // THE AMOUTN OF PACKETS THAT ARE BEING PUT INTO THE PCIE WIDTH (THIS MUST SCALE WITH THE SIZE OF THE FLIT)
     rlimit_size = netburst;
 
     printf("using link latency: %d cycles\n", linklatency);
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
+    printf("using SIMLATENCY_BT: %d\n", SIMLATENCY_BT);
+    printf("using BUFBYTES: %d\n", BUFBYTES);
+    printf("using rlimit_inc: %d\n", rlimit_inc);
+    printf("using rlimit_period: %d\n", rlimit_period);
 
     this->niclog = NULL;
     if (niclogfile) {
@@ -92,17 +96,20 @@ simplenic_t::simplenic_t(
     char name[100];
     int shmemfd;
 
+    // Created shared memory regions for NIC
     for (int j = 0; j < 2; j++) {
         sprintf(name, "/port_nts%s_%d", slotid, j);
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
         ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
         pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        printf("AJG: created shmem region %s\n", name);
         sprintf(name, "/port_stn%s_%d", slotid, j);
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
         ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
         pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        printf("AJG: created shmem region %s\n", name);
     }
 #endif // SIMULATION_XSIM
 #endif // #ifdef SIMPLENICWIDGET_0
@@ -116,6 +123,7 @@ simplenic_t::~simplenic_t() {
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
 void simplenic_t::init() {
+    printf( "AJG: entering init" );
 #ifdef SIMPLENICWIDGET_0
     write(SIMPLENICWIDGET_0(macaddr_upper), (mac_lendian >> 32) & 0xFFFF);
     write(SIMPLENICWIDGET_0(macaddr_lower), mac_lendian & 0xFFFFFFFF);
@@ -170,7 +178,8 @@ void simplenic_t::tick() {
     uint32_t token_bytes_obtained_from_fpga = 0;
     uint32_t token_bytes_sent_to_fpga = 0;
 
-    //#define DEBUG_NIC_PRINT
+    #define DEBUG_NIC_PRINT
+    printf("AJG: entering tick");
 
     while (true) { // break when we don't have 5k tokens
         token_bytes_obtained_from_fpga = 0;

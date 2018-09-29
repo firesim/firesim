@@ -225,21 +225,22 @@ class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
     val pcie_out = DecoupledIO(UInt(512.W))
   })
 
+  val amtOfSmallTokens = 512 / (tokenSize + 3)
   // step one, buffer 7 elems into registers. note that the 7th element is here 
   // just for convenience. in reality, it is not used since we're bypassing to
   // remove a cycle of latency
-  val NTHT_BUF = Reg(Vec(7, new NICToHostToken(tokenSize)))
+  val NTHT_BUF = Reg(Vec(amtOfSmallTokens, new NICToHostToken(tokenSize)))
   val specialCounter = RegInit(0.U(32.W))
 
   when (io.ntht.valid) {
     NTHT_BUF(specialCounter) := io.ntht.bits
   }
 
-  io.ntht.ready := (specialCounter === 6.U && io.pcie_out.ready) || (specialCounter =/= 6.U)
-  io.pcie_out.valid := specialCounter === 6.U && io.ntht.valid
-  when ((specialCounter =/= 6.U) && io.ntht.valid) {
+  io.ntht.ready := (specialCounter === (amtOfSmallTokens-1).U && io.pcie_out.ready) || (specialCounter =/= (amtOfSmallTokens-1).U)
+  io.pcie_out.valid := specialCounter === (amtOfSmallTokens-1).U && io.ntht.valid
+  when ((specialCounter =/= (amtOfSmallTokens-1).U) && io.ntht.valid) {
     specialCounter := specialCounter + 1.U
-  } .elsewhen ((specialCounter === 6.U) && io.ntht.valid && io.pcie_out.ready) {
+  } .elsewhen ((specialCounter === (amtOfSmallTokens-1).U) && io.ntht.valid && io.pcie_out.ready) {
     specialCounter := 0.U
   } .otherwise {
     specialCounter := specialCounter
@@ -248,7 +249,8 @@ class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   // TODO: attach pcie_out to data
 
   // debug check to help check we're not losing tokens somewhere
-  val token_trace_counter = RegInit(0.U(43.W))
+  val padding = (512 - ((512 / (tokenSize + 3)) * (tokenSize + 3)))
+  val token_trace_counter = RegInit(0.U(padding.W))
   when (io.pcie_out.fire()) {
     token_trace_counter := token_trace_counter + 1.U
   } .otherwise {
@@ -256,16 +258,16 @@ class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   }
 
   val out = Wire(new BIGToken(tokenSize))
-  for (i <- 0 until 6) {
+  for (i <- 0 until (amtOfSmallTokens-1)) {
     out.data(i) := NTHT_BUF(i).data_out.data
     out.rvls(i).data_last := NTHT_BUF(i).data_out.last
     out.rvls(i).ready := NTHT_BUF(i).data_in_ready
     out.rvls(i).valid := NTHT_BUF(i).data_out_valid
   }
-  out.data(6) := io.ntht.bits.data_out.data
-  out.rvls(6).data_last := io.ntht.bits.data_out.last
-  out.rvls(6).ready := io.ntht.bits.data_in_ready
-  out.rvls(6).valid := io.ntht.bits.data_out_valid
+  out.data((amtOfSmallTokens-1)) := io.ntht.bits.data_out.data
+  out.rvls((amtOfSmallTokens-1)).data_last := io.ntht.bits.data_out.last
+  out.rvls((amtOfSmallTokens-1)).ready := io.ntht.bits.data_in_ready
+  out.rvls((amtOfSmallTokens-1)).valid := io.ntht.bits.data_out_valid
   out.pad := token_trace_counter
 
   io.pcie_out.bits := out.asUInt
