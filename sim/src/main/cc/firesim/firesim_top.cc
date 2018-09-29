@@ -1,3 +1,5 @@
+#include <limits.h>
+
 #include "firesim_top.h"
 
 // FireSim-defined endpoints
@@ -19,6 +21,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     char * slotid = NULL;
     char * tracefile = NULL;
     uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
+    uint64_t trace_start = 0, trace_end = ULONG_MAX;
     int netbw = MAX_BANDWIDTH, netburst = 8;
     int linklatency = 0;
 
@@ -77,6 +80,14 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         if (arg.find("+tracefile=") == 0) {
             tracefile = const_cast<char*>(arg.c_str()) + 11;
         }
+        if (arg.find("+trace-start=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 13;
+            trace_start = atol(str);
+        }
+        if (arg.find("+trace-end=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 11;
+            trace_end = atol(str);
+        }
     }
 
     add_endpoint(new uart_t(this));
@@ -101,7 +112,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
     add_endpoint(new blockdev_t(this, blkfile));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
-    add_endpoint(new tracerv_t(this, tracefile));
+    add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
     // add more endpoints here
 
     // Add functions you'd like to periodically invoke on a paused simulator here.

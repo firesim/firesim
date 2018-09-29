@@ -26,17 +26,22 @@
 
 
 
-tracerv_t::tracerv_t(simif_t *sim, char *tracefilename): endpoint_t(sim)
+tracerv_t::tracerv_t(
+    simif_t *sim, char *tracefilename,
+    uint64_t start_cycle, uint64_t end_cycle)
+    : endpoint_t(sim)
 {
 #ifdef TRACERVWIDGET_0
     this->tracefile = NULL;
     if (tracefilename) {
         this->tracefile = fopen(tracefilename, "w");
         if (!this->tracefile) {
-            fprintf(stderr, "Could not open Trace log file: %s\n", this->tracefile);
+            fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
             abort();
         }
     }
+    this->start_cycle = start_cycle;
+    this->end_cycle = end_cycle;
 #endif // #ifdef TRACERVWIDGET_0
 }
 
@@ -49,6 +54,9 @@ tracerv_t::~tracerv_t() {
 }
 
 void tracerv_t::init() {
+    cur_cycle = 0;
+
+    printf("Collect trace from %lu to %lu cycles\n", start_cycle, end_cycle);
 }
 
 // defining this stores as human readable hex (e.g. open in VIM)
@@ -64,9 +72,11 @@ void tracerv_t::tick() {
     uint64_t OUTBUF[QUEUE_DEPTH * 8];
 
     if (outfull) {
+        int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
+
         // TODO. as opt can mmap file and just load directly into it.
         pull(TRACERV_ADDR, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        if (this->tracefile) {
+        if (this->tracefile && can_write) {
 #ifdef HUMAN_READABLE
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                 fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
@@ -89,6 +99,7 @@ void tracerv_t::tick() {
             }
 #endif
         }
+        cur_cycle += QUEUE_DEPTH;
     }
 
 #endif // ifdef TRACERVWIDGET_0

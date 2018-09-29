@@ -6,7 +6,8 @@
 class tracerv_t: public endpoint_t
 {
     public:
-        tracerv_t(simif_t *sim, char *tracefile);
+        tracerv_t(simif_t *sim, char *tracefile,
+	          uint64_t start_cycle, uint64_t end_cycle);
         ~tracerv_t();
 
         virtual void init();
@@ -17,6 +18,7 @@ class tracerv_t: public endpoint_t
     private:
         simif_t* sim;
         FILE * tracefile;
+	uint64_t start_cycle, end_cycle, cur_cycle;
 };
 
 #endif // __TRACERV_H

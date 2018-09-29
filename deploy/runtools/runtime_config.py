@@ -74,24 +74,26 @@ class RuntimeHWConfig:
         return runtime_conf_local
 
 
-    def get_boot_simulation_command(self, macaddr, blkdev, slotid, linklatency,
-                                    netbw, bootbin, tracing):
+    def get_boot_simulation_command(self, macaddr, blkdev, slotid,
+                                    linklatency, netbw, bootbin,
+                                    trace_enable, trace_start, trace_end):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
 
-        tracefile = "+tracefile=TRACEFILE" if tracing else ""
+        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, bootbin=bootbin, tracefile=tracefile)
+                netbw=netbw, bootbin=bootbin, tracefile=tracefile,
+                trace_start=trace_start, trace_end=trace_end)
 
         return basecommand
 
@@ -176,7 +178,9 @@ class InnerRuntimeConfiguration:
         self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
         self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
         self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
-        self.tracing = runtime_dict['targetconfig']['tracing'] == "yes"
+        self.trace_enable = runtime_dict['tracing']['enable'] == "yes"
+        self.trace_start = int(runtime_dict['tracing']['startcycle'])
+        self.trace_end = int(runtime_dict['tracing']['endcycle'])
 
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
 
@@ -226,7 +230,8 @@ class RuntimeConfig:
             self.runfarm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
-            self.innerconf.tracing, self.innerconf.terminateoncompletion)
+            self.innerconf.trace_enable, self.innerconf.trace_start,
+            self.innerconf.trace_end, self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """
