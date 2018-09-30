@@ -67,10 +67,21 @@ conf:
 # The desired RTL simulator. supported options: {vcs, verilator}
 EMUL ?= verilator
 
+# Firechip Tests
+fc_test_dir = $(base_dir)/target-rtl/firechip/tests
+fc_test_srcs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
+fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
+
+$(info $(fc_test_srcs))
+
+$(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
+	make -C $(fc_test_dir)
+
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
 -include $(GENERATED_DIR)/$(DESIGN).d
 endif
+
 
 disasm := 2>
 which_disasm := $(shell which spike-dasm 2> /dev/null)
@@ -78,18 +89,20 @@ ifneq ($(which_disasm),)
         disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
 endif
 
+# Some of the generated suites use specific plus args, that are prefixed with
+# the binary name. These are captured with $($*_ARGS)
 $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 

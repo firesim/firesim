@@ -55,7 +55,7 @@ abstract class FireSimTestSuite(
     behavior of s"${suite.makeTargetName} running on $backend"
     if (isCmdAvailable(backend)) {
       val postfix = suite match {
-        case s: BenchmarkTestSuite => ".riscv"
+        case _: BenchmarkTestSuite | _: BlockdevTestSuite => ".riscv"
         case _ => ""
       }
       val results = suite.names.toSeq sliding (N, N) map { t => 
@@ -91,6 +91,7 @@ abstract class FireSimTestSuite(
   generateTestSuiteMakefrags
   runTest("verilator", "rv64ui-p-simple", false)
   runSuite("verilator")(benchmarks)
+  runSuite("verilator")(FastBlockdevTests)
 }
 
 class RocketF1Tests extends FireSimTestSuite(
