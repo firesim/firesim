@@ -13,7 +13,6 @@
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
     // fields to populate to pass to endpoints
-    char * blkfile = NULL;
     char * niclogfile = NULL;
     char * slotid = NULL;
     uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
@@ -27,9 +26,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
         if (arg.find("+profile-interval=") == 0) {
             profile_interval = atoi(arg.c_str()+18);
-        }
-        if (arg.find("+blkdev=") == 0) {
-            blkfile = const_cast<char*>(arg.c_str()) + 8;
         }
         if (arg.find("+niclog=") == 0) {
             niclogfile = const_cast<char*>(arg.c_str()) + 8;
@@ -94,7 +90,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                 argc, argv, "memory_stats.csv"));
 #endif
 
-    add_endpoint(new blockdev_t(this, blkfile));
+    add_endpoint(new blockdev_t(this, args));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
 
     // Add functions you'd like to periodically invoke on a paused simulator here.
