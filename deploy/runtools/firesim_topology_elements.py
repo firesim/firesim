@@ -8,6 +8,60 @@ from fabric.api import *
 
 rootLogger = logging.getLogger()
 
+
+class FireSimLink(object):
+    """ This represents a link that connects different FireSimNodes. """
+
+    # links have a globally unique identifier, currently used for naming
+    # shmem regions for Shmem Links
+    #
+    # these are used as 100 character hex strings
+    next_unique_link_identifier = 0
+
+    def __init__(self, downlink_of, uplink_of):
+        self.id = FireSimLink.next_unique_link_identifier
+        FireSimLink.next_unique_link_identifier += 1
+        # format as 100 char hex string padded with zeroes
+        self.id_as_str = format(self.id, '0100X')
+        self.downlink_of = None
+        self.uplink_of = None
+        self.set_downlink_of(downlink_of)
+        self.set_uplink_of(uplink_of)
+
+    def set_downlink_of(self, fsimnode):
+        """ Set which fsimnode this link is a downlink of. E.g. with a root
+        switch connected to one fpga-simulated node, this would be set to the
+        root switch. """
+        self.downlink_of = fsimnode
+
+    def set_uplink_of(self, fsimnode):
+        """ Set which fsimnode this link is an uplink of. E.g. with a root
+        switch connected to one fpga-simulated node, this would be set to the
+        simulated node. """
+        self.uplink_of = fsimnode
+
+    def get_downlink_of(self):
+        """ Get the fsimnode this link is a downlink of. E.g. with a root
+        switch connected to one fpga-simulated node, this would be set to the
+        simulated node. """
+        return self.downlink_of
+
+    def get_uplink_of(self):
+        """ Get the fsimnode this link is an uplink of. E.g. with a root
+        switch connected to one fpga-simulated node, this would be set to the
+        simulated node. """
+        return self.uplink_of
+
+    def get_link_type(self):
+        """ TODO: this should check if the downlink_of node's host instance is
+        the same as the uplink_of node's host instance, then use shmemports.
+        Otherwise use socketports. """
+        pass
+
+    ## TODO: the instance itself should track host port allocation
+
+
+
 class FireSimNode(object):
     """ This represents a node in the high-level FireSim Simulation Topology
     Graph. These nodes are either
@@ -29,7 +83,7 @@ class FireSimNode(object):
     def __init__(self):
         self.downlinks = []
         # used when there are multiple links between switches to disambiguate
-        self.downlinks_consumed = []
+        #self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -37,22 +91,25 @@ class FireSimNode(object):
         """ A "downlink" is a link that will take you further from the root
         of the tree. Users define a tree topology by specifying "downlinks".
         Uplinks are automatically inferred. """
-        firesimnode.add_uplink(self)
-        self.downlinks.append(firesimnode)
-        self.downlinks_consumed.append(False)
+        linkobj = FireSimLink(self, firesimnode)
+        #linkobj.set_downlink_of(self)
+        #linkobj.set_uplink_of(firesimnode)
+        firesimnode.add_uplink(linkobj)
+        self.downlinks.append(linkobj)
+        #self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes):
         """ Just a convenience function to add multiple downlinks at once.
         Assumes downlinks in the supplied list are ordered. """
         [self.add_downlink(node) for node in firesimnodes]
 
-    def add_uplink(self, firesimnode):
+    def add_uplink(self, firesimlink):
         """ This is only for internal use - uplinks are automatically populated
         when a node is specified as the downlink of another.
 
         An "uplink" is a link that takes you towards one of the roots of the
         tree."""
-        self.uplinks.append(firesimnode)
+        self.uplinks.append(firesimlink)
 
     def num_links(self):
         """ Return the total number of nodes. """

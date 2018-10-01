@@ -32,24 +32,18 @@ class AbstractSwitchToSwitchConfig:
 
         TODO: currently, we only support one uplink. """
         #assert uplinkno < 1, "Only 1 uplink is currently supported."
-        downlinkno = None
-        iterno = 0
-        for downlink in self.fsimswitchnode.uplinks[uplinkno].downlinks:
-            if self.fsimswitchnode == downlink and not self.fsimswitchnode.uplinks[uplinkno].downlinks_consumed[iterno]:
-                downlinkno = iterno
-                self.fsimswitchnode.uplinks[uplinkno].downlinks_consumed[iterno] = True
-                break
-            iterno += 1
+        upperswitch = self.fsimswitchnode.uplinks[uplinkno].get_downlink_of()
+        downlinkno = upperswitch.downlinks.index(self.fsimswitchnode.uplinks[uplinkno])
         assert self.fsimswitchnode.host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
         # TODO: remove the requirement from the above assert by passing IPs
         # as cmd line arguments.
-        uplinkip = self.fsimswitchnode.uplinks[uplinkno].host_instance.get_private_ip()
+        uplinkip = upperswitch.host_instance.get_private_ip()
         return "new SocketClientPort(" + str(len(self.fsimswitchnode.downlinks)+uplinkno) +  \
                 ", \"" + uplinkip + "\", " + str(BASEPORT + downlinkno) + ");\n"
 
     def emit_init_for_downlink(self, downlinkno):
         """ emit an init for the specified downlink. """
-        downlink = self.fsimswitchnode.downlinks[downlinkno]
+        downlink = self.fsimswitchnode.downlinks[downlinkno].get_uplink_of()
         # this must be here to avoid circular deps
         # TODO: for real fix, need to refactor the abstract switch / implementation
         # interface
