@@ -41,7 +41,6 @@ CONF_NAME ?= runtime.conf
 TIMEOUT_CYCLES = 100000000
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-nic_args = +niclog=niclog +linklatency=6405 +netbw=100 +netburst=8
 COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args)
 
 # Arguments used only in MIDAS-level (ML) RTL simulation
@@ -68,12 +67,6 @@ $(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
 
-run-verilator: $(verilator)
-	$(verilator) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
-
-run-verilator-debug: $(verilator_debug)
-	$(verilator_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
-
 ##############################
 # VCS MIDAS-Level Simulators #
 ##############################
@@ -93,12 +86,6 @@ $(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
-
-run-vcs: $(vcs)
-	$(vcs) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
-
-run-vcs-debug: $(vcs_debug)
-	$(vcs_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 ############################
 # Master Simulation Driver #
@@ -169,8 +156,6 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 # FPGA-level RTL Simulation #
 #############################
 
-FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
-
 # Run XSIM DUT
 xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
@@ -185,10 +170,6 @@ $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 xsim: $(xsim)
-
-run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
-	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
 
 cleanfpga:
 	rm -rf $(fpga_work_dir)

@@ -61,6 +61,36 @@ conf:
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
+################################
+# Verilator/VCS/XSIM execution #
+################################
+
+nic_args = +niclog=niclog +linklatency=6405 +netbw=100 +netburst=8
+
+FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS) $(nic_args)
+
+verilator = $(GENERATED_DIR)/V$(DESIGN)
+verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
+vcs = $(GENERATED_DIR)/$(DESIGN)
+vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
+xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
+
+run-verilator: $(verilator)
+	$(verilator) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-verilator-debug: $(verilator_debug)
+	$(verilator_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-vcs: $(vcs)
+	$(vcs) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-vcs-debug: $(vcs_debug)
+	$(vcs_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-xsim: $(xsim)
+	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
+	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
+
 ############################################
 # Midas-Level Simulation Execution Recipes #
 ############################################
