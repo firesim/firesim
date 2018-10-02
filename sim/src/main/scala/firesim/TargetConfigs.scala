@@ -77,7 +77,6 @@ class WithTraceBoom extends Config((site, here, up) => {
 * determine which driver to build.
 *******************************************************************************/
 class FireSimRocketChipConfig extends Config(
-  new WithTraceRocket ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
@@ -89,36 +88,48 @@ class FireSimRocketChipConfig extends Config(
   new WithPerfCounters ++
   new freechips.rocketchip.system.DefaultConfig)
 
+class FireSimRocketChipTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipConfig)
+
 // single core config
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
 
+class FireSimRocketChipSingleCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipSingleCoreConfig)
+
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(
-  new WithTraceRocket ++
   new WithNBigCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
 
+class FireSimRocketChipDualCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipDualCoreConfig)
+
 // quad core config
 class FireSimRocketChipQuadCoreConfig extends Config(
-  new WithTraceRocket ++
   new WithNBigCores(4) ++
   new FireSimRocketChipSingleCoreConfig)
 
+class FireSimRocketChipQuadCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipQuadCoreConfig)
+
 // hexa core config
 class FireSimRocketChipHexaCoreConfig extends Config(
-  new WithTraceRocket ++
   new WithNBigCores(6) ++
   new FireSimRocketChipSingleCoreConfig)
 
+class FireSimRocketChipHexaCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipHexaCoreConfig)
+
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(
-  new WithTraceRocket ++
   new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
+class FireSimRocketChipOctaCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
 
 class FireSimBoomConfig extends Config(
-  new WithTraceBoom ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
@@ -129,3 +140,6 @@ class FireSimBoomConfig extends Config(
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)
+
+class FireSimBoomTracedConfig extends Config(
+  new WithTraceBoom ++ new FireSimBoomConfig)
