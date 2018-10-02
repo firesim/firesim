@@ -122,6 +122,20 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     fw.close
     f
   }
+
+  // Capture FPGA-toolflow related verilog defines
+  def generateHostVerilogHeader() {
+    val headerName = "cl_firesim_generated_defines.vh"
+    val requestedFrequency = hostParams(DesiredHostFrequency)
+    val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
+    val legalFreqs = availableFrequenciesMhz.filter(_ < requestedFrequency)
+    val selectedFrequency = if (legalFreqs.isEmpty) {
+      throw new RuntimeException(s"Requested frequency is too slow: ${requestedFrequency} MHz\nSlowest available frequency: ${availableFrequenciesMhz.tail}")
+    } else {
+      legalFreqs.reduce((a, b) => if (a > b) a else b)
+    }
+    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK clock_gend_${selectedFrequency}\n")
+  }
 }
 
 trait HasTestSuites {
@@ -204,6 +218,7 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
 
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
+  generateHostVerilogHeader
 }
 
 // A runtime-configuration generation for memory models

@@ -81,26 +81,33 @@ class FireSimRocketChipConfig extends Config(
   new freechips.rocketchip.system.DefaultConfig)
 
 // single core config
-class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
+class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig ++ 
+  new WithDesiredHostFrequency(150)
+)
 
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(new WithNBigCores(2) ++
+  new WithDesiredHostFrequency(150) ++
   new FireSimRocketChipSingleCoreConfig)
 
 // quad core config
 class FireSimRocketChipQuadCoreConfig extends Config(new WithNBigCores(4) ++
+  new WithDesiredHostFrequency(150) ++
   new FireSimRocketChipSingleCoreConfig)
 
 // hexa core config
 class FireSimRocketChipHexaCoreConfig extends Config(new WithNBigCores(6) ++
+  new WithDesiredHostFrequency(90) ++
   new FireSimRocketChipSingleCoreConfig)
 
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
+  new WithDesiredHostFrequency(90) ++
   new FireSimRocketChipSingleCoreConfig)
 
 
 class FireSimBoomConfig extends Config(
+  new WithDesiredHostFrequency(125) ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB

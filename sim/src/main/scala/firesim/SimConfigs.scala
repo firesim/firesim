@@ -12,6 +12,12 @@ import firesim.endpoints._
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
+object DesiredHostFrequency extends Field[Int](190) // In MHz
+
+class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
+    case DesiredHostFrequency =>
+      if (up(DesiredHostFrequency) < freq) up(DesiredHostFrequency) else freq
+})
 
 class WithSerialWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
@@ -138,6 +144,7 @@ class FRFCFS16GBQuadRankLLC4MB extends Config(
 * determine which driver to build.
 *******************************************************************************/
 class FireSimConfig extends Config(
+  new WithDesiredHostFrequency(150) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -146,6 +153,7 @@ class FireSimConfig extends Config(
   new midas.F1Config)
 
 class FireSimDDR3Config extends Config(
+  new WithDesiredHostFrequency(150) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -154,6 +162,7 @@ class FireSimDDR3Config extends Config(
   new midas.F1Config)
 
 class FireSimDDR3LLC4MBConfig extends Config(
+  new WithDesiredHostFrequency(150) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -162,6 +171,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new midas.F1Config)
 
 class FireSimDDR3FRFCFSConfig extends Config(
+  new WithDesiredHostFrequency(150) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -170,6 +180,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new midas.F1Config)
 
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
+  new WithDesiredHostFrequency(150) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
