@@ -94,6 +94,12 @@ $(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
 
+run-vcs: $(vcs)
+	$(vcs) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-vcs-debug: $(vcs_debug)
+	$(vcs_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
 ############################
 # Master Simulation Driver #
 ############################
