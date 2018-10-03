@@ -13,6 +13,8 @@ trait PlatformType
 case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
+case object EnableDebug extends Field[Boolean]
+case object EnablePrint extends Field[Boolean]
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -25,6 +27,8 @@ class SimConfig extends Config((site, here, up) => {
   case ChannelLen       => 16
   case ChannelWidth     => 32
   case DaisyWidth       => 32
+  case EnableDebug      => false
+  case EnablePrint      => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)

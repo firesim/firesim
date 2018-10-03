@@ -18,6 +18,8 @@ void simif_t::init_sampling(int argc, char** argv) {
   profile = false;
   sample_count = 0;
   sample_time = 0;
+  sample_cycle = 0;
+  snap_cycle = -1ULL;
   tracelen = TRACE_MAX_LEN;
   trace_count = 0;
 
@@ -28,6 +30,9 @@ void simif_t::init_sampling(int argc, char** argv) {
     }
     if (arg.find("+samplenum=") == 0) {
       sample_num = strtol(arg.c_str() + 11, NULL, 10);
+    }
+    if (arg.find("+sample-cycle=") == 0) {
+      sample_cycle = strtoll(arg.c_str() + 14, NULL, 10);
     }
     if (arg.find("+tracelen=") == 0) {
       tracelen = strtol(arg.c_str() + 10, NULL, 10);
@@ -58,8 +63,6 @@ void simif_t::init_sampling(int argc, char** argv) {
       bits_id + (size_t)OUT_TR_BITS_FIELD_NUMS[id] :
       trace_ready_valid_bits(NULL, false, id, bits_id);
   }
-
-  if (profile) sim_start_time = timestamp();
 }
 
 void simif_t::finish_sampling() {
@@ -93,8 +96,7 @@ void simif_t::finish_sampling() {
   fprintf(stderr, "Sample Count: %zu\n", sample_count);
   if (profile) {
     double sim_time = diff_secs(timestamp(), sim_start_time);
-    fprintf(stderr, "Simulation Time: %.3f s, Sample Time: %.3f s\n", 
-                    sim_time, diff_secs(sample_time, 0));
+    fprintf(stderr, "Sample Time: %.3f s\n", diff_secs(sample_time, 0));
   }
 }
 
@@ -227,6 +229,10 @@ sample_t* simif_t::read_traces(sample_t *sample) {
     }
   }
 
+  if (sample && sample_cycle > 0) {
+    sample->add_cmd(new step_t(5)); // to catch assertions in replay
+  }
+
   return sample;
 }
 
@@ -238,7 +244,7 @@ static inline char* int_to_bin(char *bin, data_t value, size_t size) {
   return bin;
 }
 
-sample_t* simif_t::read_snapshot() {
+sample_t* simif_t::read_snapshot(bool load) {
   std::ostringstream snap;
   char bin[DAISY_WIDTH+1];
   for (size_t t = 0 ; t < CHAIN_NUM ; t++) {
@@ -258,12 +264,16 @@ sample_t* simif_t::read_snapshot() {
             break;
         }
         for (size_t j = 0 ; j < chain_len ; j++) {
-          snap << int_to_bin(bin, read(CHAIN_ADDR[t] + i), DAISY_WIDTH);
+          // TODO: write arbitrary values
+          if (load) write(CHAIN_IN_ADDR[t], 0);
+          data_t value = read(CHAIN_ADDR[t] + i);
+          if (!load) snap << int_to_bin(bin, value, DAISY_WIDTH);
         }
+        if (load) write(CHAIN_LOAD_ADDR[t], 1);
       }
     }
   }
-  return new sample_t(snap.str().c_str(), cycles());
+  return load ? NULL : new sample_t(snap.str().c_str(), cycles());
 }
 
 void simif_t::save_sample() {
@@ -299,5 +309,25 @@ void simif_t::reservoir_sampling(size_t n) {
     }
   }
   if (trace_count < tracelen) trace_count += n;
+}
+
+void simif_t::deterministic_sampling(size_t n) {
+  if (((t + n) - sample_cycle <= tracelen || sample_cycle <= t) &&
+      ((last_sample_id + 1) < sample_num)) {
+    sample_count++;
+    snap_cycle = t;
+    fprintf(stderr, "[id: %u] Snapshot at %llu\n",
+           (unsigned)last_sample_id, (unsigned long long)t);
+    trace_count = std::min(n, tracelen);
+    if (last_sample) {
+      save_sample();
+    } else {
+      // flush trace buffer
+      read_traces(NULL);
+    }
+    trace_count = 0;
+    last_sample_id = last_sample ? last_sample_id + 1 : 0;
+    last_sample = read_snapshot();
+  }
 }
 #endif

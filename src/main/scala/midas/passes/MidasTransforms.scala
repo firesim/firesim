@@ -50,6 +50,7 @@ private[midas] class MidasTransforms(
         new barstools.macros.MacroCompilerTransform,
         firrtl.passes.ResolveKinds,
         firrtl.passes.RemoveEmpty,
+        new AssertPass(dir),
         new Fame1Transform(Some(lib getOrElse json)),
         new strober.passes.StroberTransforms(dir, lib getOrElse json),
         new SimulationMapping(io),
