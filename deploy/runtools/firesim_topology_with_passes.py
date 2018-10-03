@@ -92,7 +92,7 @@ class FireSimTopologyWithPasses:
             if isinstance(node, FireSimServerNode):
                 node.downlinkmacs = [node.get_mac_address()]
             else:
-                childdownlinkmacs = [x.get_uplink_of().downlinkmacs for x in node.downlinks]
+                childdownlinkmacs = [x.get_downlink_side().downlinkmacs for x in node.downlinks]
                 node.downlinkmacs = reduce(lambda x, y: x + y, childdownlinkmacs)
 
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
@@ -103,7 +103,7 @@ class FireSimTopologyWithPasses:
             # prepopulate the table with the last port, which will be
             switchtab = [uplinkportno for x in range(MacAddress.next_mac_to_allocate())]
             for port_no in range(len(switch.downlinks)):
-                portmacs = switch.downlinks[port_no].get_uplink_of().downlinkmacs
+                portmacs = switch.downlinks[port_no].get_downlink_side().downlinkmacs
                 for mac in portmacs:
                     switchtab[mac.as_int_no_prefix()] = port_no
 
@@ -132,7 +132,7 @@ class FireSimTopologyWithPasses:
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
         for node in switches_dfs_order:
             for downlink in node.downlinks:
-                downlink = downlink.get_uplink_of()
+                downlink = downlink.get_downlink_side()
                 gviz_graph.edge(str(node), str(downlink))
 
         gviz_graph.render(view=False)
@@ -166,7 +166,7 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
-            downlinknodes = map(lambda x: x.get_uplink_of(), switch.downlinks)
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)

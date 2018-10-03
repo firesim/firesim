@@ -24,7 +24,7 @@ class FireSimTopology(UserTopologies):
                     stack.pop(0)
             else:
                 visitedonce.add(nextup)
-                stack = list(map(lambda x: x.get_uplink_of(), nextup.downlinks)) + stack
+                stack = list(map(lambda x: x.get_downlink_side(), nextup.downlinks)) + stack
         return retlist
 
     def get_dfs_order_switches(self):

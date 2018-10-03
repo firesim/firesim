@@ -10,56 +10,69 @@ rootLogger = logging.getLogger()
 
 
 class FireSimLink(object):
-    """ This represents a link that connects different FireSimNodes. """
+    """ This represents a link that connects different FireSimNodes.
+
+    Terms:
+        Naming assumes a tree-ish topology, with roots at the top, leaves at the
+        bottom. So in a topology like:
+                        RootSwitch
+                        /        \
+              Link A   /          \  Link B
+                      /            \
+                    Sim X         Sim Y
+
+        "Uplink side" of Link A is RootSwitch.
+        "Downlink side" of Link A is Sim X.
+        Sim X has an uplink connected to RootSwitch.
+        RootSwitch has a downlink to Sim X.
+
+    """
 
     # links have a globally unique identifier, currently used for naming
     # shmem regions for Shmem Links
-    #
-    # these are used as 100 character hex strings
     next_unique_link_identifier = 0
 
-    def __init__(self, downlink_of, uplink_of):
+    def __init__(self, uplink_side, downlink_side):
         self.id = FireSimLink.next_unique_link_identifier
         FireSimLink.next_unique_link_identifier += 1
         # format as 100 char hex string padded with zeroes
         self.id_as_str = format(self.id, '0100X')
-        self.downlink_of = None
-        self.uplink_of = None
-        self.set_downlink_of(downlink_of)
-        self.set_uplink_of(uplink_of)
+        self.uplink_side = None
+        self.downlink_side = None
+        self.port = None
+        self.set_uplink_side(uplink_side)
+        self.set_downlink_side(downlink_side)
 
-    def set_downlink_of(self, fsimnode):
-        """ Set which fsimnode this link is a downlink of. E.g. with a root
-        switch connected to one fpga-simulated node, this would be set to the
-        root switch. """
-        self.downlink_of = fsimnode
+    def set_uplink_side(self, fsimnode):
+        self.uplink_side = fsimnode
 
-    def set_uplink_of(self, fsimnode):
-        """ Set which fsimnode this link is an uplink of. E.g. with a root
-        switch connected to one fpga-simulated node, this would be set to the
-        simulated node. """
-        self.uplink_of = fsimnode
+    def set_downlink_side(self, fsimnode):
+        self.downlink_side = fsimnode
 
-    def get_downlink_of(self):
-        """ Get the fsimnode this link is a downlink of. E.g. with a root
-        switch connected to one fpga-simulated node, this would be set to the
-        simulated node. """
-        return self.downlink_of
+    def get_uplink_side(self):
+        return self.uplink_side
 
-    def get_uplink_of(self):
-        """ Get the fsimnode this link is an uplink of. E.g. with a root
-        switch connected to one fpga-simulated node, this would be set to the
-        simulated node. """
-        return self.uplink_of
+    def get_downlink_side(self):
+        return self.downlink_side
 
-    def get_link_type(self):
-        """ TODO: this should check if the downlink_of node's host instance is
-        the same as the uplink_of node's host instance, then use shmemports.
-        Otherwise use socketports. """
-        pass
+    def link_hostserver_port(self):
+        """ Get the port used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        if self.port is None:
+            self.port = self.get_uplink_side().host_instance.allocate_host_port()
+        return self.port
 
-    ## TODO: the instance itself should track host port allocation
+    def link_hostserver_ip(self):
+        """ Get the IP address used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        assert self.get_uplink_side().host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
+        return self.get_uplink_side().host_instance.get_private_ip()
 
+    def link_crosses_hosts(self):
+        """ Return True if the user has mapped the two endpoints of this link to
+        separate hosts. This implies a SocketServerPort / SocketClientPort will be used
+        to implement the Link. If False, use a sharedmem port to implement the link. """
+        return self.get_uplink_side().host_instance != self.get_downlink_side().host_instance
 
 
 class FireSimNode(object):
@@ -92,8 +105,6 @@ class FireSimNode(object):
         of the tree. Users define a tree topology by specifying "downlinks".
         Uplinks are automatically inferred. """
         linkobj = FireSimLink(self, firesimnode)
-        #linkobj.set_downlink_of(self)
-        #linkobj.set_uplink_of(firesimnode)
         firesimnode.add_uplink(linkobj)
         self.downlinks.append(linkobj)
         #self.downlinks_consumed.append(False)

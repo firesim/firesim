@@ -31,6 +31,7 @@ class EC2Inst(object):
         self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
         self.switch_slots_consumed = 0
         self.instance_deploy_manager = InstanceDeployManager(self)
+        self._next_port = 10000 # track ports to allocate for server switch model ports
 
     def assign_boto3_instance_object(self, boto3obj):
         self.boto3_instance_object = boto3obj
@@ -50,6 +51,14 @@ class EC2Inst(object):
 
     def get_num_switch_slots(self):
         return self.SWITCH_SLOTS
+
+    def allocate_host_port(self):
+        """ Allocate a port to use for something on the host. Successive calls
+        will return a new port. """
+        retport = self._next_port
+        assert retport < 11000, "Exceeded number of ports used on host. You will need to modify your security groups to increase this value."
+        self._next_port += 1
+        return retport
 
 class F1_Instance(EC2Inst):
     FPGA_SLOTS = 0

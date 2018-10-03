@@ -30,28 +30,30 @@ class AbstractSwitchToSwitchConfig:
     def emit_init_for_uplink(self, uplinkno):
         """ Emit an init for a switch to talk to it's uplink.
 
-        TODO: currently, we only support one uplink. """
+        TODO: currently, we only support one uplink.
+
+        TODO: support uplink to the same machine over shmem. """
         #assert uplinkno < 1, "Only 1 uplink is currently supported."
-        upperswitch = self.fsimswitchnode.uplinks[uplinkno].get_downlink_of()
+        linkobj = self.fsimswitchnode.uplinks[uplinkno]
+        upperswitch = linkobj.get_uplink_side()
         downlinkno = upperswitch.downlinks.index(self.fsimswitchnode.uplinks[uplinkno])
-        assert self.fsimswitchnode.host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
-        # TODO: remove the requirement from the above assert by passing IPs
-        # as cmd line arguments.
-        uplinkip = upperswitch.host_instance.get_private_ip()
-        return "new SocketClientPort(" + str(len(self.fsimswitchnode.downlinks)+uplinkno) +  \
-                ", \"" + uplinkip + "\", " + str(BASEPORT + downlinkno) + ");\n"
+
+        uplinkhostip = linkobj.link_hostserver_ip() #upperswitch.host_instance.get_private_ip()
+        uplinkhostport = linkobj.link_hostserver_port()
+
+        target_local_portno = len(self.fsimswitchnode.downlinks) + uplinkno
+        return "new SocketClientPort(" + str(target_local_portno) +  \
+                ", \"" + uplinkhostip + "\", " + str(uplinkhostport) + ");\n"
 
     def emit_init_for_downlink(self, downlinkno):
         """ emit an init for the specified downlink. """
-        downlink = self.fsimswitchnode.downlinks[downlinkno].get_uplink_of()
-        # this must be here to avoid circular deps
-        # TODO: for real fix, need to refactor the abstract switch / implementation
-        # interface
-        from runtools.firesim_topology_elements import FireSimSwitchNode
-        if isinstance(downlink, FireSimSwitchNode):
+        downlinkobj = self.fsimswitchnode.downlinks[downlinkno]
+        downlink = downlinkobj.get_downlink_side()
+        if downlinkobj.link_crosses_hosts():
+            hostport = downlinkobj.link_hostserver_port()
             # create a SocketServerPort
             return "new SocketServerPort(" + str(downlinkno) + ", " + \
-                    str(BASEPORT + downlinkno)  + ");\n"
+                    str(hostport)  + ");\n"
         else:
             return "new ShmemPort(" + str(downlinkno) + ");\n"
 
