@@ -1,11 +1,22 @@
 package midas
 package widgets
 
-import midas.core.{NumAsserts, PrintPorts, PrintRecord}
 import chisel3._
 import chisel3.util._
-import config.{Parameters, Field}
+
+import scala.collection.immutable.ListMap
+
+import freechips.rocketchip.config.{Parameters}
+
 import junctions._
+import midas.{NumAsserts, PrintPorts}
+
+class PrintRecord(es: Seq[(String, Int)]) extends Record {
+  val elements = ListMap((es map {
+    case (name, width) => name -> UInt(width.W)
+  }):_*)
+  def cloneType = new PrintRecord(es).asInstanceOf[this.type]
+}
 
 class AssertWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   val tReset = Flipped(Decoupled(Bool()))
@@ -62,7 +73,7 @@ class PrintWidget(implicit p: Parameters) extends Widget()(p) with HasChannels {
     val width = channelWidth min (printWidth - off)
     val wires = Wire(Decoupled(UInt(width.W)))
     // val queue = Queue(wires, 8 * 1024)
-    val queue = SeqQueue(wires, 8 * 1024)
+    val queue = BRAMQueue(wires, 8 * 1024)
     wires.bits  := data(width + off - 1, off)
     wires.valid := fire && enable && valid
     if (countAddrs.isEmpty) {

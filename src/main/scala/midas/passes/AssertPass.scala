@@ -1,18 +1,22 @@
 package midas
 package passes
 
+import java.io.{File, FileWriter, Writer}
+
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.Utils.{zero, to_flip}
+
+import freechips.rocketchip.config.{Parameters, Field}
+
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
-import java.io.{File, FileWriter, Writer}
 
 private[passes] class AssertPass(
      dir: File)
-    (implicit param: config.Parameters) extends firrtl.passes.Pass {
+    (implicit param: Parameters) extends firrtl.passes.Pass {
   override def name = "[midas] Assert Pass"
   type Asserts = collection.mutable.HashMap[String, (Int, String)]
   type Messages = collection.mutable.HashMap[Int, String]
@@ -62,7 +66,6 @@ private[passes] class AssertPass(
 
     def getChildren(ports: collection.mutable.Map[String, Port]) = {
       (meta.childInsts(m.name) filter (x =>
-        !meta.isBOOM || 
         !(m.name == "RocketTile" && x == "fpuOpt") &&
         !(m.name == "NonBlockingDCache_dcache" && x == "dtlb")
       ) foldRight Seq[(String, Port)]())(
@@ -140,7 +143,6 @@ private[passes] class AssertPass(
           assertNum += 1
         }
         meta.childInsts(mod) filter (x =>
-         !meta.isBOOM ||
          !(mod == "RocketTile" && x == "fpuOpt") &&
          !(mod == "NonBlockingDCache_dcache" && x == "dtlb")
         ) foreach { child =>
@@ -155,7 +157,6 @@ private[passes] class AssertPass(
           printNum += 1
         }
         meta.childInsts(mod).reverse filter (x =>
-         !meta.isBOOM ||
          !(mod == "RocketTile" && x == "fpuOpt") &&
          !(mod == "NonBlockingDCache_dcache" && x == "dtlb")
         ) foreach { child =>

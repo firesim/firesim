@@ -14,6 +14,8 @@ case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableDebug extends Field[Boolean]
+case object NumAsserts extends Field[Int]
+case object PrintPorts extends Field[Seq[(String, Int)]]
 case object EnablePrint extends Field[Boolean]
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
