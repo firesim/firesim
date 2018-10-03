@@ -68,33 +68,28 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
   io.dma.map { dma =>
     // copy from FireSim's SimpleNICWidget, because it should work here too
     val ar_queue = Queue(dma.ar, 10)
-      assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-      def fire_read(exclude: Bool, includes: Bool*) = {
-      val rvs = Array (
-        ar_queue.valid,
-        dma.r.ready,
-        outgoingPCISdat.io.deq.valid
-      )
-      (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-    }
+    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
+
+    val readHelper = DecoupledHelper(
+      ar_queue.valid,
+      dma.r.ready,
+      outgoingPCISdat.io.deq.valid
+    )
+
     val readBeatCounter = RegInit(0.U(9.W))
-    when (fire_read(true.B, readBeatCounter === ar_queue.bits.len)) {
-      //printf("resetting readBeatCounter\n")
-      readBeatCounter := 0.U
-    } .elsewhen(fire_read(true.B)) {
-      //printf("incrementing readBeatCounter\n")
-      readBeatCounter := readBeatCounter + 1.U
-    } .otherwise {
-      readBeatCounter := readBeatCounter
+    val lastReadBeat = readBeatCounter === ar_queue.bits.len
+    when (dma.r.fire()) {
+      readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
     }
-    outgoingPCISdat.io.deq.ready := fire_read(outgoingPCISdat.io.deq.valid)
-    dma.r.valid := fire_read(dma.r.ready)
+
+    outgoingPCISdat.io.deq.ready := readHelper.fire(outgoingPCISdat.io.deq.valid)
+    dma.r.valid := readHelper.fire(dma.r.ready)
     dma.r.bits.data := outgoingPCISdat.io.deq.bits
     dma.r.bits.resp := 0.U(2.W)
-    dma.r.bits.last := readBeatCounter === ar_queue.bits.len
+    dma.r.bits.last := lastReadBeat
     dma.r.bits.id := ar_queue.bits.id
     dma.r.bits.user := ar_queue.bits.user
-    ar_queue.ready := fire_read(ar_queue.valid, readBeatCounter === ar_queue.bits.len)
+    ar_queue.ready := readHelper.fire(ar_queue.valid, lastReadBeat)
     // we don't care about writes
     dma.aw.ready := 0.U
     dma.w.ready := 0.U
@@ -113,22 +108,7 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
 
-
-//class TracedInstruction(implicit p: Parameters) extends CoreBundle {
-//  val valid = Bool()
-//  val iaddr = UInt(width = coreMaxAddrBits)
-//  val insn = UInt(width = iLen)
-//  val priv = UInt(width = 3)
-//  val exception = Bool()
-//  val interrupt = Bool()
-//  val cause = UInt(width = log2Ceil(1 + CSR.busErrorIntCause))
-//  val tval = UInt(width = coreMaxAddrBits max iLen)
-//}
-//
-//
-//
-
-   when (outgoingPCISdat.io.enq.fire()) {
+  when (outgoingPCISdat.io.enq.fire()) {
     for (i <- 0 until io.hPort.hBits.traces.length) {
       printf("trace %d, valid: %x\n", i.U, io.hPort.hBits.traces(i).valid)
       printf("trace %d, iaddr: %x\n", i.U, io.hPort.hBits.traces(i).iaddr)

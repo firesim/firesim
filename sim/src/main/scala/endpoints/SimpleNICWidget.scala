@@ -88,35 +88,24 @@ class SplitSeqQueue(implicit p: Parameters) extends Module {
 
   val voq = VecInit(Seq.fill(SPLITS)(Module((new BRAMQueue(DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
 
-  def fire_enq(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.enq.valid
-    )
-    val qs = voq.map(_.enq.ready)
-    val allstuff = rvs ++ qs
-    (allstuff.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
+  val enqHelper = new DecoupledHelper(
+    io.enq.valid +: voq.map(_.enq.ready))
 
-  io.enq.ready := fire_enq(io.enq.valid)
+  io.enq.ready := enqHelper.fire(io.enq.valid)
 
   for (i <- 0 until SPLITS) {
-    voq(i).enq.valid := fire_enq(voq(i).enq.ready)
+    voq(i).enq.valid := enqHelper.fire(voq(i).enq.ready)
     voq(i).enq.bits := io.enq.bits((i+1)*INTERNAL_WIDTH-1, i*INTERNAL_WIDTH)
   }
 
-  def fire_deq(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.deq.ready
-    )
-    val qs = voq.map(_.deq.valid)
-    val allstuff = rvs ++ qs
-    (allstuff.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
+  val deqHelper = new DecoupledHelper(
+    io.deq.ready +: voq.map(_.deq.valid))
+
   for (i <- 0 until SPLITS) {
-    voq(i).deq.ready := fire_deq(voq(i).deq.valid)
+    voq(i).deq.ready := deqHelper.fire(voq(i).deq.valid)
   }
   io.deq.bits := Cat(voq.map(_.deq.bits).reverse)
-  io.deq.valid := fire_deq(io.deq.ready)
+  io.deq.valid := deqHelper.fire(io.deq.ready)
 }
 
 /* on a NIC token transaction:
@@ -186,21 +175,11 @@ class BigTokenToNICTokenAdapter extends Module {
 
   val pcieBundled = (new BIGToken).fromBits(io.pcie_in.bits)
 
-  def fire_xact(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.htnt.ready,
-      io.pcie_in.valid
-    )
-    (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
+  val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
   val loopIter = RegInit(0.U(32.W))
-  when (fire_xact(false.B, loopIter === 6.U)) {
-    loopIter := 0.U
-  } .elsewhen (fire_xact(false.B)) {
-    loopIter := loopIter + 1.U
-  } .otherwise {
-    loopIter := loopIter
+  when (io.htnt.fire()) {
+    loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
   }
 
   io.htnt.bits.data_in.data := pcieBundled.data(loopIter)
@@ -208,8 +187,8 @@ class BigTokenToNICTokenAdapter extends Module {
   io.htnt.bits.data_in.last := pcieBundled.rvls(loopIter).data_last
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
-  io.htnt.valid := fire_xact(io.htnt.ready)
-  io.pcie_in.ready := fire_xact(io.pcie_in.valid, loopIter === 6.U)
+  io.htnt.valid := xactHelper.fire(io.htnt.ready)
+  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === 6.U)
 }
 
 class NICTokenToBigTokenAdapter extends Module {
@@ -399,74 +378,50 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(PCIS_BYTES).U)
     assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(PCIS_BYTES.W))
 
-    def fire_write(exclude: Bool, includes: Bool*) = {
-      val rvs = Array (
-        aw_queue.valid,
-        w_queue.valid,
-        dma.b.ready,
-        incomingPCISdat.io.enq.ready
-      )
-      (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-    }
+    val writeHelper = DecoupledHelper(
+      aw_queue.valid,
+      w_queue.valid,
+      dma.b.ready,
+      incomingPCISdat.io.enq.ready
+    )
 
-    def fire_read(exclude: Bool, includes: Bool*) = {
-      val rvs = Array (
-        ar_queue.valid,
-        dma.r.ready,
-        outgoingPCISdat.io.deq.valid
-      )
-      (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-    }
+    val readHelper = DecoupledHelper(
+      ar_queue.valid,
+      dma.r.ready,
+      outgoingPCISdat.io.deq.valid
+    )
 
     val writeBeatCounter = RegInit(0.U(9.W))
-    when (fire_write(true.B, writeBeatCounter === aw_queue.bits.len)) {
-      //printf("resetting writeBeatCounter\n")
-      writeBeatCounter := 0.U
-    } .elsewhen(fire_write(true.B)) {
-      //printf("incrementing writeBeatCounter\n")
-      writeBeatCounter := writeBeatCounter + 1.U
-    } .otherwise {
-      writeBeatCounter := writeBeatCounter
+    val lastWriteBeat = writeBeatCounter === aw_queue.bits.len
+    when (w_queue.fire()) {
+      writeBeatCounter := Mux(lastWriteBeat, 0.U, writeBeatCounter + 1.U)
     }
 
     val readBeatCounter = RegInit(0.U(9.W))
-    when (fire_read(true.B, readBeatCounter === ar_queue.bits.len)) {
-      //printf("resetting readBeatCounter\n")
-      readBeatCounter := 0.U
-    } .elsewhen(fire_read(true.B)) {
-      //printf("incrementing readBeatCounter\n")
-      readBeatCounter := readBeatCounter + 1.U
-    } .otherwise {
-      readBeatCounter := readBeatCounter
+    val lastReadBeat = readBeatCounter === ar_queue.bits.len
+    when (dma.r.fire()) {
+      readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
     }
 
     dma.b.bits.resp := 0.U(2.W)
     dma.b.bits.id := aw_queue.bits.id
     dma.b.bits.user := aw_queue.bits.user
-    dma.b.valid := fire_write(dma.b.ready, writeBeatCounter === aw_queue.bits.len)
-    aw_queue.ready := fire_write(aw_queue.valid, writeBeatCounter === aw_queue.bits.len)
-    w_queue.ready := fire_write(w_queue.valid)
+    dma.b.valid := writeHelper.fire(dma.b.ready, lastWriteBeat)
+    aw_queue.ready := writeHelper.fire(aw_queue.valid, lastWriteBeat)
+    w_queue.ready := writeHelper.fire(w_queue.valid)
 
-    //when (fire_write(false.B)) {
-    //  printf("firing write\n")
-    //}
-
-    incomingPCISdat.io.enq.valid := fire_write(incomingPCISdat.io.enq.ready)
+    incomingPCISdat.io.enq.valid := writeHelper.fire(incomingPCISdat.io.enq.ready)
     incomingPCISdat.io.enq.bits := w_queue.bits.data
 
-    //when (fire_read(false.B)) {
-    //  printf("firing read\n")
-    //}
+    outgoingPCISdat.io.deq.ready := readHelper.fire(outgoingPCISdat.io.deq.valid)
 
-    outgoingPCISdat.io.deq.ready := fire_read(outgoingPCISdat.io.deq.valid)
-
-    dma.r.valid := fire_read(dma.r.ready)
+    dma.r.valid := readHelper.fire(dma.r.ready)
     dma.r.bits.data := outgoingPCISdat.io.deq.bits
     dma.r.bits.resp := 0.U(2.W)
-    dma.r.bits.last := readBeatCounter === ar_queue.bits.len
+    dma.r.bits.last := lastReadBeat
     dma.r.bits.id := ar_queue.bits.id
     dma.r.bits.user := ar_queue.bits.user
-    ar_queue.ready := fire_read(ar_queue.valid, readBeatCounter === ar_queue.bits.len)
+    ar_queue.ready := readHelper.fire(ar_queue.valid, lastReadBeat)
   }
 
   //when (outgoingPCISdat.io.enq.fire()) {
