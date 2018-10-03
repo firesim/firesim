@@ -14,8 +14,6 @@ from colorama import Fore, Style
 
 from util.streamlogger import StreamLogger
 
-#BASEPORT = 10000
-
 rootLogger = logging.getLogger()
 
 @parallel

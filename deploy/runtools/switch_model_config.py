@@ -11,8 +11,6 @@ from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
-BASEPORT = 10000
-
 class AbstractSwitchToSwitchConfig:
     """ This class is responsible for providing functions that take a FireSimSwitchNode
     and emit the correct config header to produce an actual switch simulator binary
