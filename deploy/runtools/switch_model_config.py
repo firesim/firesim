@@ -26,22 +26,22 @@ class AbstractSwitchToSwitchConfig:
         self.build_disambiguate = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(64))
 
     def emit_init_for_uplink(self, uplinkno):
-        """ Emit an init for a switch to talk to it's uplink.
+        """ Emit an init for a switch to talk to it's uplink."""
 
-        TODO: currently, we only support one uplink.
-
-        TODO: support uplink to the same machine over shmem. """
-        #assert uplinkno < 1, "Only 1 uplink is currently supported."
         linkobj = self.fsimswitchnode.uplinks[uplinkno]
         upperswitch = linkobj.get_uplink_side()
-        downlinkno = upperswitch.downlinks.index(self.fsimswitchnode.uplinks[uplinkno])
-
-        uplinkhostip = linkobj.link_hostserver_ip() #upperswitch.host_instance.get_private_ip()
-        uplinkhostport = linkobj.link_hostserver_port()
 
         target_local_portno = len(self.fsimswitchnode.downlinks) + uplinkno
-        return "new SocketClientPort(" + str(target_local_portno) +  \
-                ", \"" + uplinkhostip + "\", " + str(uplinkhostport) + ");\n"
+        if linkobj.link_crosses_hosts():
+            uplinkhostip = linkobj.link_hostserver_ip() #upperswitch.host_instance.get_private_ip()
+            uplinkhostport = linkobj.link_hostserver_port()
+
+            return "new SocketClientPort(" + str(target_local_portno) +  \
+                    ", \"" + uplinkhostip + "\", " + str(uplinkhostport) + ");\n"
+
+        else:
+            linkbasename = linkobj.get_global_link_id()
+            return "new ShmemPort(" + str(target_local_portno) + ', "' + linkbasename + '", true);\n'
 
     def emit_init_for_downlink(self, downlinkno):
         """ emit an init for the specified downlink. """
@@ -53,7 +53,8 @@ class AbstractSwitchToSwitchConfig:
             return "new SocketServerPort(" + str(downlinkno) + ", " + \
                     str(hostport)  + ");\n"
         else:
-            return "new ShmemPort(" + str(downlinkno) + ");\n"
+            linkbasename = downlinkobj.get_global_link_id()
+            return "new ShmemPort(" + str(downlinkno) + ', "' + linkbasename + '", false);\n'
 
     def emit_switch_configfile(self):
         """ Produce a config file for the switch generator for this switch """

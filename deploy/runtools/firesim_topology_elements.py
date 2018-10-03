@@ -74,6 +74,10 @@ class FireSimLink(object):
         to implement the Link. If False, use a sharedmem port to implement the link. """
         return self.get_uplink_side().host_instance != self.get_downlink_side().host_instance
 
+    def get_global_link_id(self):
+        """ Return the globally unique link id, used for naming shmem ports. """
+        return self.id_as_str
+
 
 class FireSimNode(object):
     """ This represents a node in the high-level FireSim Simulation Topology
@@ -179,9 +183,13 @@ class FireSimServerNode(FireSimNode):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
+        shmemportname = "default"
+        if self.uplinks:
+            shmemportname = self.uplinks[0].get_global_link_id()
+
         return self.server_hardware_config.get_boot_simulation_command(
             self.get_mac_address(), self.get_rootfs_name(), slotno, self.server_link_latency,
-            self.server_bw_max, self.get_bootbin_name())
+            self.server_bw_max, self.get_bootbin_name(), shmemportname)
 
     def copy_back_job_results_from_run(self, slotno):
         """

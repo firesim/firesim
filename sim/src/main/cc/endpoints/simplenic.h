@@ -15,7 +15,7 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile);
+        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile, char * shmemportname);
         ~simplenic_t();
 
         virtual void init();

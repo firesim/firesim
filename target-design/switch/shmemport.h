@@ -2,7 +2,7 @@
 
 class ShmemPort : public BasePort {
     public:
-        ShmemPort(int portNo);
+        ShmemPort(int portNo, char * shmemportname, bool uplink);
         void tick();
         void tick_pre();
         void send();
@@ -13,21 +13,47 @@ class ShmemPort : public BasePort {
         int currentround = 0;
 };
 
-ShmemPort::ShmemPort(int portNo) : BasePort(portNo) {
+ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(portNo) {
 #define SHMEM_EXTRABYTES 1
 
     // create shared memory regions
     char name[100];
     int shmemfd;
+
+    char * recvdirection;
+    char * senddirection;
+
+    if (uplink) {
+        printf("Uplink Port\n");
+        recvdirection = "stn";
+        senddirection = "nts";
+    } else {
+        printf("Downlink Port\n");
+        recvdirection = "nts";
+        senddirection = "stn";
+    }
+
     for (int j = 0; j < 2; j++) {
-        sprintf(name, "/port_nts%d_%d", _portNo, j);
+        if (shmemportname) {
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_%s%s_%d", recvdirection, shmemportname, j);
+        } else {
+            printf("Using slot-id associated shmemportname:\n");
+            sprintf(name, "/port_%s%d_%d", recvdirection, _portNo, j);
+        }
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
         ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
         recvbufs[j] = (uint8_t*)mmap(NULL, BUFSIZE_BYTES+SHMEM_EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd,0);
         memset(recvbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
 
-        sprintf(name, "/port_stn%d_%d", _portNo, j);
+        if (shmemportname) {
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_%s%s_%d", senddirection, shmemportname, j);
+        } else {
+            printf("Using slot-id associated shmemportname:\n");
+            sprintf(name, "/port_%s%d_%d", senddirection, _portNo, j);
+        }
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
         ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
