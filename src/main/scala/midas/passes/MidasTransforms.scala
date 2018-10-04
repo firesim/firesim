@@ -52,7 +52,9 @@ private[midas] class MidasTransforms(
         firrtl.passes.RemoveEmpty,
         new AssertPass(dir),
         new Fame1Transform(Some(lib getOrElse json)),
-        new strober.passes.StroberTransforms(dir, lib getOrElse json),
+        new strober.passes.StroberTransforms(dir, lib getOrElse json)) ++
+      // Any subFields must be flattened out beforing linking in HighForm constructs must Lower 
+      firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++ Seq(
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir))
       (xforms foldLeft state)((in, xform) =>
@@ -94,15 +96,15 @@ case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
   def duplicate(n: ComponentName) = this.copy(target = n)
 }
 
-/* An annotation on IO added to the target prior to simulation mapping */
-case class AddedTargetIoAnnotation[T <: chisel3.Data](target: ComponentName, gen: firrtl.ir.Port => T) extends
-    SingleTargetAnnotation[ComponentName] {
-  def duplicate(n: ComponentName) = this.copy(target = n)
-  def generateChiselIO(circuit: Circuit): Tuple2[String, T] = {
-    val moduleMap = circuit.modules.map(m => m.name -> m).toMap
-    val main = moduleMap(circuit.main)
-    require(target.module.name == circuit.main, "Must name ports on the top-level IO")
-    val port = main.ports.filter(_.name == target.name)
-    (target.name, gen(port.head))
+/* Instead of passing a data structure between pre-FAME target-transforming passes 
+ * Add NoTargetAnnotations that can regenerate a chisel type from a HighForm port
+ *
+ * Initially i tried extending SingleTargetAnnotation but we need a LowForm
+ * inner circuit to do linking (if the wrapping circuit is LowForm), and thus the target
+ *  will have lost its subFields when we go to regenerate the ChiselIO.
+ */
+case class AddedTargetIoAnnotation[T <: chisel3.Data](port: Port, gen: Port => T) extends NoTargetAnnotation {
+  def generateChiselIO(): Tuple2[String, T] = {
+    (port.name, gen(port))
   }
 }

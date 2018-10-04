@@ -191,14 +191,12 @@ private[passes] class AssertPass(
 
     val mName = ModuleName(c.main, CircuitName(c.main))
     val assertAnno = if (assertNum > 0) {
-      Seq(AddedTargetIoAnnotation(ComponentName(assertPorts(c.main).name, mName),
-                              AssertBundle.apply))
+      Seq(AddedTargetIoAnnotation(assertPorts(c.main), AssertBundle.apply))
     } else {
       Seq()
     }
     val printAnno = if (printNum > 0) {
-      Seq(AddedTargetIoAnnotation(ComponentName(printPorts(c.main).name, mName),
-                              PrintRecord.apply))
+      Seq(AddedTargetIoAnnotation(printPorts(c.main), PrintRecord.apply))
     } else {
       Seq()
     }
