@@ -8,15 +8,6 @@ class UserTopologies(object):
     """ A class that just separates out user-defined/configurable topologies
     from the rest of the boilerplate in FireSimTopology() """
 
-    def example_multilink(self):
-        self.roots = [FireSimSwitchNode()]
-        midswitch = FireSimSwitchNode()
-        lowerlayer = [midswitch for x in range(16)]
-        self.roots[0].add_downlinks(lowerlayer)
-        servers = [FireSimServerNode()]
-        midswitch.add_downlinks(servers)
-
-
     def fat_tree_4ary(self):
         # 4-ary fat tree as described in
         # http://ccr.sigcomm.org/online/files/p63-alfares.pdf
@@ -40,6 +31,52 @@ class UserTopologies(object):
             aggr.add_downlinks([edgeswitches[switchno-1], edgeswitches[switchno]])
         for edgeno in range(len(edgeswitches)):
             edgeswitches[edgeno].add_downlinks([servers[edgeno*2], servers[edgeno*2+1]])
+
+
+        def custom_mapper(fsim_topol_with_passes):
+            """ In a custom mapper, you have access to the firesim topology with passes,
+            where you can access the run_farm nodes:
+
+            fsim_topol_with_passes.run_farm.{f1_16s, f1_2s, m4_16s}
+
+            To map, call add_switch or add_simulation on run farm instance
+            objs in the aforementioned arrays.
+
+            Because of the scope of this fn, you also have access to whatever
+            stuff you created in the topology itself, which we expect will be
+            useful for performing the mapping."""
+
+            # map the fat tree onto one m4.16xlarge (for core switches)
+            # and two f1.16xlarges (two pods of aggr/edge/4sims per f1.16xlarge)
+            for core in coreswitches:
+                fsim_topol_with_passes.run_farm.m4_16s[0].add_switch(core)
+
+            for aggrsw in aggrswitches[:4]:
+                fsim_topol_with_passes.run_farm.f1_16s[0].add_switch(aggrsw)
+            for aggrsw in aggrswitches[4:]:
+                fsim_topol_with_passes.run_farm.f1_16s[1].add_switch(aggrsw)
+
+            for edgesw in edgeswitches[:4]:
+                fsim_topol_with_passes.run_farm.f1_16s[0].add_switch(edgesw)
+            for edgesw in edgeswitches[4:]:
+                fsim_topol_with_passes.run_farm.f1_16s[1].add_switch(edgesw)
+
+            for sim in servers[:8]:
+                fsim_topol_with_passes.run_farm.f1_16s[0].add_simulation(sim)
+            for sim in servers[8:]:
+                fsim_topol_with_passes.run_farm.f1_16s[1].add_simulation(sim)
+
+        self.custom_mapper = custom_mapper
+
+
+
+    def example_multilink(self):
+        self.roots = [FireSimSwitchNode()]
+        midswitch = FireSimSwitchNode()
+        lowerlayer = [midswitch for x in range(16)]
+        self.roots[0].add_downlinks(lowerlayer)
+        servers = [FireSimServerNode()]
+        midswitch.add_downlinks(servers)
 
     def example_multilink_32(self):
         self.roots = [FireSimSwitchNode()]
@@ -68,6 +105,7 @@ class UserTopologies(object):
 
 
     def small_hierarchy_8sims(self):
+        self.custom_mapper = 'mapping_use_one_f1_16xlarge'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(4)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(4)]
@@ -77,14 +115,13 @@ class UserTopologies(object):
 
 
     def small_hierarchy_2sims(self):
+        self.custom_mapper = 'mapping_use_one_f1_16xlarge'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(1)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(1)]
         self.roots[0].add_downlinks(midlevel)
         for swno in range(len(midlevel)):
             midlevel[swno].add_downlinks(servers[swno])
-
-
 
 
     def example_1config(self):

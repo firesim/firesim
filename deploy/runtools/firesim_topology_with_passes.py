@@ -11,6 +11,7 @@ from firesim_topology_core import *
 from utils import MacAddress
 from fabric.api import *
 from colorama import Fore, Style
+import types
 
 from util.streamlogger import StreamLogger
 
@@ -183,7 +184,7 @@ class FireSimTopologyWithPasses:
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def pass_one_node_networked_host_node_mapping(self):
+    def mapping_use_one_f1_16xlarge(self):
         """ Just put everything on one f1.16xlarge """
         switches = self.firesimtopol.get_dfs_order_switches()
         f1_2s_used = 0
@@ -209,20 +210,30 @@ class FireSimTopologyWithPasses:
         top level elements are switches, it will assume you're simulating a
         networked config, """
 
-        # if your roots are servers, just pack as tightly as possible, since
-        # you have no_net_config
-        if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
-            # all roots are servers, so we're in no_net_config
-            # if the user has specified any 16xlarges, we assign to them first
-            self.pass_no_net_host_mapping()
-            return
-
-        # now, we're handling the cycle-accurate networked simulation case
-        # currently, we only handle the case where
-
-        #self.pass_simple_networked_host_node_mapping()
-        self.pass_one_node_networked_host_node_mapping()
-
+        if self.firesimtopol.custom_mapper is None:
+            """ Use default mapping strategy. The topol has not specified a
+            special one. """
+            # if your roots are servers, just pack as tightly as possible, since
+            # you have no_net_config
+            if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
+                # all roots are servers, so we're in no_net_config
+                # if the user has specified any 16xlarges, we assign to them first
+                self.pass_no_net_host_mapping()
+                return
+            else:
+                # now, we're handling the cycle-accurate networked simulation case
+                # currently, we only handle the case where
+                self.pass_simple_networked_host_node_mapping()
+        elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
+            """ call the mapper fn defined in the topology itself. """
+            self.firesimtopol.custom_mapper(self)
+        elif type(self.firesimtopol.custom_mapper) == str:
+            """ assume that the mapping strategy is a custom pre-defined strategy
+            given in this class, supplied as a string in the topology """
+            mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
+            mapperfunc()
+        else:
+            assert False, "IMPROPER MAPPING CONFIGURATION"
 
     def pass_apply_default_hwconfig(self):
         """ This is the default mapping pass for hardware configurations - it
