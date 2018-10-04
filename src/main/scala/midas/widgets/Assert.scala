@@ -18,6 +18,25 @@ class PrintRecord(es: Seq[(String, Int)]) extends Record {
   def cloneType = new PrintRecord(es).asInstanceOf[this.type]
 }
 
+object PrintRecord {
+  def apply(port: firrtl.ir.Port): PrintRecord = {
+    val fields = port.tpe match {
+      case firrtl.ir.BundleType(fs) => fs map (f => f.name -> firrtl.bitWidth(f.tpe).toInt)
+    }
+    new PrintRecord(fields)
+  }
+}
+
+class AssertBundle(val numAsserts: Int) extends Bundle {
+  val asserts = Output(UInt(numAsserts.W))
+}
+
+object AssertBundle {
+  def apply(port: firrtl.ir.Port): AssertBundle = {
+    new AssertBundle(firrtl.bitWidth(port.tpe).toInt)
+  }
+}
+
 class AssertWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   val tReset = Flipped(Decoupled(Bool()))
   val assert = Flipped(Decoupled(UInt((log2Ceil(p(NumAsserts) max 1) + 1).W)))
