@@ -54,9 +54,11 @@ tracerv_t::~tracerv_t() {
 }
 
 void tracerv_t::init() {
+#ifdef TRACERVWIDGET_0
     cur_cycle = 0;
 
     printf("Collect trace from %lu to %lu cycles\n", start_cycle, end_cycle);
+#endif // #ifdef TRACERVWIDGET_0
 }
 
 // defining this stores as human readable hex (e.g. open in VIM)
