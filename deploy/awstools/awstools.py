@@ -60,7 +60,7 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     else:
         assert False, "INVALID INSTANCE MARKET TYPE."
 
-def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None):
+def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False):
     """ Launch count instances of type instancetype, optionally with additional
     block devices mappings and instance tags
 
@@ -72,6 +72,8 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     vpcfilter = [{'Name':'tag:Name', 'Values': [vpcname]}]
     firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))
     subnets = list(firesimvpc[0].subnets.filter())
+    if randomsubnet:
+        random.shuffle(subnets)
     firesimsecuritygroup = client.describe_security_groups(
         Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
 
