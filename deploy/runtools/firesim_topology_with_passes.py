@@ -183,6 +183,22 @@ class FireSimTopologyWithPasses:
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
+    def pass_one_node_networked_host_node_mapping(self):
+        """ Just put everything on one f1.16xlarge """
+        switches = self.firesimtopol.get_dfs_order_switches()
+        f1_2s_used = 0
+        f1_16s_used = 0
+        m4_16s_used = 0
+
+        for switch in switches:
+            self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+                for server in downlinknodes:
+                    self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+            elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+                assert False, "MIXED DOWNLINKS NOT SUPPORTED."
+        f1_16s_used += 1
 
     def pass_perform_host_node_mapping(self):
         """ This pass assigns host nodes to nodes in the abstract FireSim
@@ -203,7 +219,9 @@ class FireSimTopologyWithPasses:
 
         # now, we're handling the cycle-accurate networked simulation case
         # currently, we only handle the case where
-        self.pass_simple_networked_host_node_mapping()
+
+        #self.pass_simple_networked_host_node_mapping()
+        self.pass_one_node_networked_host_node_mapping()
 
 
     def pass_apply_default_hwconfig(self):

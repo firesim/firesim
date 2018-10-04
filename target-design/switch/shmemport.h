@@ -1,4 +1,4 @@
-
+#include <errno.h>
 
 class ShmemPort : public BasePort {
     public:
@@ -23,42 +23,106 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
     char * recvdirection;
     char * senddirection;
 
+    int ftresult;
+
+    int shm_flags;
     if (uplink) {
-        printf("Uplink Port\n");
+        // uplink should not truncate on SHM_OPEN
+        shm_flags = O_RDWR /*| O_CREAT*/;
+    } else {
+        shm_flags = O_RDWR | O_CREAT | O_TRUNC;
+    }
+
+    if (uplink) {
+        fprintf(stdout, "Uplink Port\n");
         recvdirection = "stn";
         senddirection = "nts";
     } else {
-        printf("Downlink Port\n");
+        fprintf(stdout, "Downlink Port\n");
         recvdirection = "nts";
         senddirection = "stn";
     }
 
     for (int j = 0; j < 2; j++) {
         if (shmemportname) {
-            printf("Using non-slot-id associated shmemportname:\n");
+            fprintf(stdout, "Using non-slot-id associated shmemportname:\n");
             sprintf(name, "/port_%s%s_%d", recvdirection, shmemportname, j);
         } else {
-            printf("Using slot-id associated shmemportname:\n");
+            fprintf(stdout, "Using slot-id associated shmemportname:\n");
             sprintf(name, "/port_%s%d_%d", recvdirection, _portNo, j);
         }
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
-        ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+        fprintf(stdout, "opening/creating shmem region\n%s\n", name);
+        shmemfd = shm_open(name, shm_flags, S_IRWXU);
+
+        while (shmemfd == -1) {
+            perror("shm_open failed");
+            if (uplink) {
+                fprintf(stdout, "retrying in 1s...\n");
+                sleep(1);
+                shmemfd = shm_open(name, shm_flags, S_IRWXU);
+            } else {
+                abort();
+            }
+        }
+
+        if (!uplink) {
+            ftresult = ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+            if (ftresult == -1) {
+                perror("ftruncate failed");
+                abort();
+            }
+        }
+
         recvbufs[j] = (uint8_t*)mmap(NULL, BUFSIZE_BYTES+SHMEM_EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd,0);
-        memset(recvbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+
+        if (recvbufs[j] == MAP_FAILED) {
+            perror("mmap failed");
+            abort();
+        }
+
+        if (!uplink) {
+            memset(recvbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+        }
 
         if (shmemportname) {
-            printf("Using non-slot-id associated shmemportname:\n");
+            fprintf(stdout, "Using non-slot-id associated shmemportname:\n");
             sprintf(name, "/port_%s%s_%d", senddirection, shmemportname, j);
         } else {
-            printf("Using slot-id associated shmemportname:\n");
+            fprintf(stdout, "Using slot-id associated shmemportname:\n");
             sprintf(name, "/port_%s%d_%d", senddirection, _portNo, j);
         }
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
-        ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+        fprintf(stdout, "opening/creating shmem region\n%s\n", name);
+        shmemfd = shm_open(name, shm_flags, S_IRWXU);
+
+        while (shmemfd == -1) {
+            perror("shm_open failed");
+            if (uplink) {
+                fprintf(stdout, "retrying in 1s...\n");
+                sleep(1);
+                shmemfd = shm_open(name, shm_flags, S_IRWXU);
+            } else {
+                abort();
+            }
+        }
+
+        if (!uplink) {
+            ftresult = ftruncate(shmemfd, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+            if (ftresult == -1) {
+                perror("ftruncate failed");
+                abort();
+            }
+        }
+
         sendbufs[j] = (uint8_t*)mmap(NULL, BUFSIZE_BYTES+SHMEM_EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd,0);
-        memset(sendbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+
+        if (sendbufs[j] == MAP_FAILED) {
+            perror("mmap failed");
+            abort();
+        }
+
+        if (!uplink) {
+            memset(sendbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
+        }
     }
 
     // setup "current" bufs. tick will swap for shmem passing

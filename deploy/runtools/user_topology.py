@@ -66,6 +66,27 @@ class UserTopologies(object):
         midswitches[0].add_downlinks([servers[0]])
         midswitches[1].add_downlinks([servers[1]])
 
+
+    def small_hierarchy_8sims(self):
+        self.roots = [FireSimSwitchNode()]
+        midlevel = [FireSimSwitchNode() for x in range(4)]
+        servers = [[FireSimServerNode() for x in range(2)] for x in range(4)]
+        self.roots[0].add_downlinks(midlevel)
+        for swno in range(len(midlevel)):
+            midlevel[swno].add_downlinks(servers[swno])
+
+
+    def small_hierarchy_2sims(self):
+        self.roots = [FireSimSwitchNode()]
+        midlevel = [FireSimSwitchNode() for x in range(1)]
+        servers = [[FireSimServerNode() for x in range(2)] for x in range(1)]
+        self.roots[0].add_downlinks(midlevel)
+        for swno in range(len(midlevel)):
+            midlevel[swno].add_downlinks(servers[swno])
+
+
+
+
     def example_1config(self):
         self.roots = [FireSimSwitchNode()]
         servers = [FireSimServerNode() for y in range(1)]
