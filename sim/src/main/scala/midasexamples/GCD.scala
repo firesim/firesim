@@ -20,4 +20,8 @@ class GCD extends Module {
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === 0.U
+
+  assert(!io.e || io.a =/= 0.U && io.b =/= 0.U, "Inputs to GCD cannot be 0")
+  printf("X: %d, Y:%d\n", x, y)
 }
+

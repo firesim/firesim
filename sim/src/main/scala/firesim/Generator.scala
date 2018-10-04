@@ -97,7 +97,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     val portList = target.getPorts flatMap {
       case Port(id: DebugIO, _) => None
       case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
-      case otherPort => Some(otherPort.id)
+      case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 
     generatorArgs.midasFlowKind match {
