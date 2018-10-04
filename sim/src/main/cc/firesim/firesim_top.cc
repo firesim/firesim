@@ -23,6 +23,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     uint64_t trace_start = 0, trace_end = ULONG_MAX;
     int netbw = MAX_BANDWIDTH, netburst = 8;
     int linklatency = 0;
+    bool nic_loopback = false;
 
     std::vector<std::string> args(argv + 1, argv + argc);
     for (auto &arg: args) {
@@ -34,6 +35,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
         if (arg.find("+niclog=") == 0) {
             niclogfile = const_cast<char*>(arg.c_str()) + 8;
+        }
+        if (arg.find("+nic-loopback") == 0) {
+            nic_loopback = true;
         }
         if (arg.find("+slotid=") == 0) {
             slotid = const_cast<char*>(arg.c_str()) + 8;
@@ -107,7 +111,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #endif
 
     add_endpoint(new blockdev_t(this, args));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
+    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback));
     add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
     // add more endpoints here
 

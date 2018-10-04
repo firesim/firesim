@@ -41,7 +41,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 simplenic_t::simplenic_t(
         simif_t *sim, char *slotid,
         uint64_t mac_little_end, int netbw, int netburst, int linklatency,
-        char *niclogfile): endpoint_t(sim)
+        char *niclogfile, bool loopback): endpoint_t(sim)
 {
 #ifdef SIMPLENICWIDGET_0
     // store link latency:
@@ -61,6 +61,7 @@ simplenic_t::simplenic_t(
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
 
+    this->loopback = loopback;
     this->niclog = NULL;
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");
@@ -73,24 +74,42 @@ simplenic_t::simplenic_t(
     char name[100];
     int shmemfd;
 
-    for (int j = 0; j < 2; j++) {
-        sprintf(name, "/port_nts%s_%d", slotid, j);
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
-        sprintf(name, "/port_stn%s_%d", slotid, j);
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+    if (!loopback) {
+        for (int j = 0; j < 2; j++) {
+            sprintf(name, "/port_nts%s_%d", slotid, j);
+            printf("opening/creating shmem region %s\n", name);
+            shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
+            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
+            pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+            sprintf(name, "/port_stn%s_%d", slotid, j);
+            printf("opening/creating shmem region %s\n", name);
+            shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
+            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
+            pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        }
+    } else {
+        for (int j = 0; j < 2; j++) {
+            pcis_read_bufs[j] = (char *) malloc(BUFBYTES + EXTRABYTES);
+            pcis_write_bufs[j] = pcis_read_bufs[j];
+        }
     }
 #endif // #ifdef SIMPLENICWIDGET_0
 }
 
 simplenic_t::~simplenic_t() {
+#ifdef SIMPLENICWIDGET_0
     if (this->niclog)
         fclose(this->niclog);
+    if (loopback) {
+        for (int j = 0; j < 2; j++)
+            free(pcis_read_bufs[j]);
+    } else {
+        for (int j = 0; j < 2; j++) {
+            munmap(pcis_read_bufs[j], BUFBYTES+EXTRABYTES);
+            munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
+        }
+    }
+#endif // #ifdef SIMPLENICWIDGET_0
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
@@ -224,8 +243,10 @@ void simplenic_t::tick() {
         timeelapsed_cycles += LINKLATENCY;
 #endif
 
-        volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
-        while (*polladdr == 0) { ; }
+        if (!loopback) {
+            volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
+            while (*polladdr == 0) { ; }
+        }
 #ifdef DEBUG_NIC_PRINT
         niclog_printf("done recv iter %ld\n", iter);
 #endif
