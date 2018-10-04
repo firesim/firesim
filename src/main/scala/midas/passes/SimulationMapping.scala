@@ -17,7 +17,7 @@ import freechips.rocketchip.config.Parameters
 import midas.core.SimWrapper
 
 private[passes] class SimulationMapping(
-    io: Seq[chisel3.Data])
+    io: Seq[(String, chisel3.Data)])
   (implicit param: Parameters) extends firrtl.Transform {
 
   def inputForm = LowForm
@@ -55,9 +55,19 @@ private[passes] class SimulationMapping(
     case m: ExtModule => None
   }
 
-  def execute(innerState: CircuitState) = {
+  def execute(innerState: CircuitState): CircuitState = {
     val innerCircuit = innerState.circuit
-    lazy val sim = new SimWrapper(io)
+
+    // Look up new IO than may have been added by instrumentation or debugging passes
+    val newTargetIO = innerState.annotations.collect({
+      case a @ AddedTargetIoAnnotation(_,_) => a.generateChiselIO(innerCircuit)
+    })
+    val innerAnnos = innerState.annotations.flatMap({
+      case AddedTargetIoAnnotation(_,_) => None
+      case a => Some(a)
+    })
+
+    lazy val sim = new SimWrapper(io, newTargetIO)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
@@ -78,7 +88,7 @@ private[passes] class SimulationMapping(
     CircuitState(
       circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.io),
       form        = HighForm,
-      annotations = innerState.annotations ++ outerState.annotations,
+      annotations = innerAnnos ++ outerState.annotations,
       renames     = Some(renameMap)
     )
   }

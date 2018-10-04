@@ -4,6 +4,7 @@ package passes
 import java.io.{File, FileWriter, Writer}
 
 import firrtl._
+import firrtl.annotations.{CircuitName, ModuleName, ComponentName}
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
@@ -13,11 +14,15 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
+import midas.widgets.{PrintRecord, AssertBundle}
 
 private[passes] class AssertPass(
      dir: File)
-    (implicit param: Parameters) extends firrtl.passes.Pass {
-  override def name = "[midas] Assert Pass"
+    (implicit p: Parameters) extends firrtl.Transform {
+  def inputForm = LowForm
+  def outputForm = HighForm
+  override def name = "[MIDAS] Assert Pass"
+
   type Asserts = collection.mutable.HashMap[String, (Int, String)]
   type Messages = collection.mutable.HashMap[Int, String]
   type Prints = collection.mutable.ArrayBuffer[Print]
@@ -29,11 +34,21 @@ private[passes] class AssertPass(
   private val prints = collection.mutable.HashMap[String, Prints]()
   private val printPorts = collection.mutable.HashMap[String, Port]()
 
+  // Helper method to filter out unwanted prints
+  private def excludePrint(printMessage: String): Boolean =
+    p(PrintExcludes).exists(ex => printMessage contains(ex))
+
+  // Helper method to filter out module instances
+  private def excludeInst(parentMod: String, inst: String): Boolean =
+    p(DebugExcludeInstances).exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
+
+
+  // Matches all on all stop statements, registering the enable predicate
   private def synAsserts(mname: String,
                          namespace: Namespace)
                         (s: Statement): Statement =
     s map synAsserts(mname, namespace) match {
-      case s: Stop if param(EnableDebug) && s.ret != 0 && !weq(s.en, zero) =>
+      case s: Stop if p(EnableDebug) && s.ret != 0 && !weq(s.en, zero) =>
         val idx = asserts(mname).size
         val name = namespace newName s"assert_$idx"
         asserts(mname)(s.en.serialize) = idx -> name
@@ -41,17 +56,18 @@ private[passes] class AssertPass(
       case s => s
     }
 
+
   private def findMessages(mname: String)
                           (s: Statement): Statement =
     s map findMessages(mname) match {
-      case s: Print if param(EnableDebug) && s.args.isEmpty =>
+      case s: Print if p(EnableDebug) && s.args.isEmpty =>
         asserts(mname) get s.en.serialize match {
           case Some((idx, str)) =>
             messages(mname)(idx) = s.string.serialize
             EmptyStmt
           case _ => s
         }
-      case s: Print if param(EnablePrint) && s.args.nonEmpty && !(mname contains "UART") =>
+      case s: Print if p(EnablePrint) && s.args.nonEmpty && !excludePrint(mname) =>
         prints(mname) += s
         EmptyStmt
       case s => s
@@ -86,9 +102,10 @@ private[passes] class AssertPass(
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
-          val tpe = UIntType(IntWidth(assertWidth))
+          // Hackish; Put the UInt in a bundle so that we can type match on it in SimMapping
+          val tpe = BundleType(Seq(Field("asserts", Default, UIntType(IntWidth(assertWidth)))))
           val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
-          val stmt = Connect(NoInfo, WRef(port.name), cat(
+          val stmt = Connect(NoInfo, wsub(WRef(port.name), "asserts"), cat(
             (assertChildren map (x => wsub(wref(x._1), x._2.name))) ++
             (asserts(m.name).values.toSeq sortWith (_._1 > _._1) map (x => wref(x._2)))))
           assertPorts(m.name) = port
@@ -142,12 +159,10 @@ private[passes] class AssertPass(
           writer write "0\n"
           assertNum += 1
         }
-        meta.childInsts(mod) filter (x =>
-         !(mod == "RocketTile" && x == "fpuOpt") &&
-         !(mod == "NonBlockingDCache_dcache" && x == "dtlb")
-        ) foreach { child =>
-          dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}")
-        }
+        meta.childInsts(mod)
+            .filter(inst => excludeInst(mod, inst))
+            .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
+
       case DumpPrints =>
         prints(mod) foreach { print =>
           writer write """%s""".format(print.string.serialize)
@@ -156,16 +171,14 @@ private[passes] class AssertPass(
           writer write s"\n"
           printNum += 1
         }
-        meta.childInsts(mod).reverse filter (x =>
-         !(mod == "RocketTile" && x == "fpuOpt") &&
-         !(mod == "NonBlockingDCache_dcache" && x == "dtlb")
-        ) foreach { child =>
-          dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}")
-        }
+        meta.childInsts(mod).reverse
+            .filter(inst => excludeInst(mod, inst))
+            .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
     }
   }
 
-  def run(c: Circuit) = {
+  def execute(state: CircuitState): CircuitState = {
+    val c = state.circuit
     val meta = StroberMetaData(c)
     val mods = postorder(c, meta)(transform(meta))
     Seq(DumpAsserts, DumpPrints) foreach { t =>
@@ -173,12 +186,26 @@ private[passes] class AssertPass(
       dump(f, meta, c.main, c.main)(t)
       f.close
     }
-    if (assertNum > 0) {
-      println(s"[midas] total # of assertions: $assertNum")
+    println(s"[MIDAS] total # of assertions synthesized: $assertNum")
+    println(s"[MIDAS] total # of prints synthesized: $printNum")
+
+    val mName = ModuleName(c.main, CircuitName(c.main))
+    val assertAnno = if (assertNum > 0) {
+      Seq(AddedTargetIoAnnotation(ComponentName(assertPorts(c.main).name, mName),
+                              AssertBundle.apply))
+    } else {
+      Seq()
     }
-    if (printNum > 0) {
-      println(s"[midas] total # of prints: $printNum")
+    val printAnno = if (printNum > 0) {
+      Seq(AddedTargetIoAnnotation(ComponentName(printPorts(c.main).name, mName),
+                              PrintRecord.apply))
+    } else {
+      Seq()
     }
-    c.copy(modules = mods)
+
+    state.copy(
+      circuit = c.copy(modules = mods),
+      form    = HighForm,
+      annotations = state.annotations ++ assertAnno ++ printAnno)
   }
 }

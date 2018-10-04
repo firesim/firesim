@@ -13,7 +13,7 @@ import firrtl.transforms.{DedupModules, DeadCodeElimination}
 import Utils._
 import java.io.{File, FileWriter}
 
-private class WCircuit(
+private[passes] class WCircuit(
   info: Info,
   modules: Seq[DefModule],
   main: String,
@@ -33,7 +33,7 @@ object MidasAnnotation {
 }
 
 private[midas] class MidasTransforms(
-    io: Seq[chisel3.Data])
+    io: Seq[(String, chisel3.Data)])
     (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
@@ -84,7 +84,7 @@ class Fame1Instances extends Transform {
 }
 
 // This is currently implemented by the enclosing project
-case class FpgaDebugAnnotation(target: chisel3.core.Data)
+case class FpgaDebugAnnotation(target: chisel3.Data)
     extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
@@ -92,4 +92,17 @@ case class FpgaDebugAnnotation(target: chisel3.core.Data)
 case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
     SingleTargetAnnotation[ComponentName] {
   def duplicate(n: ComponentName) = this.copy(target = n)
+}
+
+/* An annotation on IO added to the target prior to simulation mapping */
+case class AddedTargetIoAnnotation[T <: chisel3.Data](target: ComponentName, gen: firrtl.ir.Port => T) extends
+    SingleTargetAnnotation[ComponentName] {
+  def duplicate(n: ComponentName) = this.copy(target = n)
+  def generateChiselIO(circuit: Circuit): Tuple2[String, T] = {
+    val moduleMap = circuit.modules.map(m => m.name -> m).toMap
+    val main = moduleMap(circuit.main)
+    require(target.module.name == circuit.main, "Must name ports on the top-level IO")
+    val port = main.ports.filter(_.name == target.name)
+    (target.name, gen(port.head))
+  }
 }

@@ -14,9 +14,15 @@ case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
 case object EnableDebug extends Field[Boolean]
-case object NumAsserts extends Field[Int]
-case object PrintPorts extends Field[Seq[(String, Int)]]
+// Exclude module instances from assertion and print synthesis
+// Tuple of Parent Module (where the instance is instantiated) and the instance name
+case object DebugExcludeInstances extends Field[Seq[(String, String)]](Seq(
+  ("RocketTile", "fpuOpt"),
+  ("NonBlockingDCache_dcache", "dtlb")))
 case object EnablePrint extends Field[Boolean]
+case object PrintPorts extends Field[Seq[(String, Int)]]
+case object PrintExcludes extends Field[Seq[(String)]](Seq())
+case object NumAsserts extends Field[Int]
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]

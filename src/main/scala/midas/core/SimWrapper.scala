@@ -198,15 +198,15 @@ class SimWrapperIO(io: TargetBoxIO)
     new SimWrapperIO(io).asInstanceOf[this.type]
 }
 
-class TargetBoxIO(targetIo: Seq[Data]) extends Record {
-  val elements = ListMap() ++ (targetIo map (port => port.instanceName -> port.chiselCloneType))
+class TargetBoxIO(targetIo: Seq[(String, Data)]) extends Record {
+  val elements = ListMap((targetIo map { case (name, field) => name -> field.chiselCloneType }):_*)
   def resets = elements collect { case (_, r: Reset) => r }
   def clocks = elements collect { case (_, c: Clock) => c }
   def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
 }
 
 // this gets replaced with the real target
-class TargetBox(targetIo: Seq[Data]) extends BlackBox {
+class TargetBox(targetIo: Seq[(String, Data)]) extends BlackBox {
   val io = IO(new TargetBoxIO(targetIo))
 }
 
@@ -220,9 +220,9 @@ class SimBox(simIo: SimWrapperIO)
   })
 }
 
-class SimWrapper(targetIo: Seq[Data])
+class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, Data)])
                 (implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  val target = Module(new TargetBox(targetIo))
+  val target = Module(new TargetBox(targetIo ++ generatedTargetIo))
   val io = IO(new SimWrapperIO(target.io))
   val fire = Wire(Bool())
 
@@ -322,7 +322,7 @@ class SimWrapper(targetIo: Seq[Data])
   // Firing condtion:
   // 1) all input values are valid
   // 2) all output FIFOs are not full
-  fire := (wireInChannels foldLeft true.B)(_ && _.io.out.valid) && 
+  fire := (wireInChannels foldLeft true.B)(_ && _.io.out.valid) &&
           (wireOutChannels foldLeft true.B)(_ && _.io.in.ready) &&
           (readyValidInChannels foldLeft true.B)(_ && _.io.deq.host.hValid) &&
           (readyValidOutChannels foldLeft true.B)(_ && _.io.enq.host.hReady)
@@ -330,7 +330,7 @@ class SimWrapper(targetIo: Seq[Data])
   // Inputs are consumed when firing conditions are met
   wireInChannels foreach (_.io.out.ready := fire)
   readyValidInChannels foreach (_.io.deq.host.hReady := fire)
-   
+
   // Outputs should be ready when firing conditions are met
   val resetNext = RegNext(reset.toBool)
   wireOutChannels foreach (_.io.in.valid := fire || resetNext)
@@ -350,4 +350,4 @@ class SimWrapper(targetIo: Seq[Data])
     // cycles := Mux(target.io.reset, UInt(0), cycles + UInt(1))
     when(false.B) { printf("%d", cycles) }
   }
-} 
+}
