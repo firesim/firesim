@@ -65,8 +65,11 @@ conf:
 # Verilator/VCS/XSIM execution #
 ################################
 
-nic_args = +niclog=niclog +linklatency=6405 +netbw=100 +netburst=8
+NET_SLOT ?= 0
+NET_LINK_LATENCY ?= 6405
+NET_BW ?= 100
 
+nic_args = +slotid=$(NET_SLOT) +niclog=niclog +linklatency=$(NET_LINK_LATENCY) +netbw=$(NET_BW) +netburst=8
 FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS) $(nic_args)
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
@@ -76,16 +79,16 @@ vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
 run-verilator: $(verilator)
-	$(verilator) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+	$(verilator) +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 run-verilator-debug: $(verilator_debug)
-	$(verilator_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+	$(verilator_debug) +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 run-vcs: $(vcs)
-	$(vcs) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+	$(vcs) +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 run-vcs-debug: $(vcs_debug)
-	$(vcs_debug) +permissive +slotid=0 $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+	$(vcs_debug) +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
