@@ -8,9 +8,9 @@ import DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
+import freechips.rocketchip.rocket.TracedInstruction
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
-
 
 import midas.core._
 import midas.widgets._
@@ -18,7 +18,6 @@ import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
-import freechips.rocketchip.rocket.TracedInstruction
 
 class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
   val traces = Vec(numTraces, new TracedInstruction)
@@ -37,7 +36,6 @@ class SimTracerV extends Endpoint {
       num_traces = channel.traces.length
       true  
     }
-/*      directionOf(channel.out.valid) == ActualDirection.Output*/
     case _ => false
   }
   def widget(p: Parameters) = new TracerVWidget(tracer_param, num_traces)(p)
@@ -91,12 +89,10 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
     dma.r.bits.user := ar_queue.bits.user
     ar_queue.ready := readHelper.fire(ar_queue.valid, lastReadBeat)
     // we don't care about writes
-    dma.aw.ready := 0.U
-    dma.w.ready := 0.U
-    dma.b.valid := 0.U
-    dma.b.bits.resp := 0.U(2.W)
-    dma.b.bits.id := 0.U
-    dma.b.bits.user := 0.U
+    dma.aw.ready := false.B
+    dma.w.ready := false.B
+    dma.b.valid := false.B
+    dma.b.bits := DontCare
   }
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
