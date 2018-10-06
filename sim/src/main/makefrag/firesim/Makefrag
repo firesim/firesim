@@ -91,7 +91,7 @@ run-vcs-debug: $(vcs_debug)
 	$(vcs_debug) +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
 
 run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
+	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
 
 ############################################
