@@ -178,10 +178,14 @@ class InnerRuntimeConfiguration:
         self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
         self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
         self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
-        self.trace_enable = runtime_dict['tracing']['enable'] == "yes"
-        self.trace_start = int(runtime_dict['tracing']['startcycle'])
-        self.trace_end = int(runtime_dict['tracing']['endcycle'])
-
+        # Default values
+        self.trace_enable = False
+        self.trace_start = 0
+        self.trace_end = -1
+        if 'tracing' in runtime_dict:
+            self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.trace_start = int(runtime_dict['tracing'].get('startcycle', "0"))
+            self.trace_end = int(runtime_dict['tracing'].get('endcycle', "-1"))
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
 
         self.workload_name = runtime_dict['workload']['workloadname']
