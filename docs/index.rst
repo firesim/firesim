@@ -29,6 +29,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Developing-New-Devices/index
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
+   Advanced-Usage/FAQs.rst
 
 Indices and tables
 ==================
