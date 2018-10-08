@@ -164,14 +164,12 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       }
 
       // each widget should have its own reset queue
-      val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
-      resetQueue.io.traceLen := DontCare
-      resetQueue.io.trace.ready := DontCare
+      val resetQueue = Module(new Queue(Bool(), 4))
       resetQueue.reset := reset.toBool || simReset
-      widget.io.tReset <> resetQueue.io.out
-      resetQueue.io.in.bits := defaultIOWidget.io.tReset.bits
-      resetQueue.io.in.valid := defaultIOWidget.io.tReset.valid
-      ready && resetQueue.io.in.ready
+      widget.io.tReset <> resetQueue.io.deq
+      resetQueue.io.enq.bits := defaultIOWidget.io.tReset.bits
+      resetQueue.io.enq.valid := defaultIOWidget.io.tReset.valid
+      ready && resetQueue.io.enq.ready
     }
   }
 

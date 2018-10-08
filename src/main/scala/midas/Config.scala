@@ -8,7 +8,6 @@ import platform._
 import strober.core._
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
-import freechips.rocketchip.unittest.UnitTests
 
 trait PlatformType
 case object Zynq extends PlatformType
@@ -61,4 +60,3 @@ class F1Config extends Config(new Config((site, here, up) => {
 class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new F1Config)
-
