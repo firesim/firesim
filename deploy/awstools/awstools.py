@@ -60,53 +60,9 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     else:
         assert False, "INVALID INSTANCE MARKET TYPE."
 
-def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice):
-    """ Launch an instance of type instancetype.
-    This will randomly select an availability zone in the region to launch into.
-    """
-
-    ec2 = boto3.resource('ec2')
-    client = boto3.client('ec2')
-
-    vpcfilter = [{'Name':'tag:Name', 'Values': [vpcname]}]
-    firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))
-    subnets = list(firesimvpc[0].subnets.filter())
-    firesimsecuritygroup = client.describe_security_groups(
-        Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
-
-    # randomly select one of the subnets (aka availability zones)
-    chosensubnet = subnets[random.randint(0, len(subnets)-1)].subnet_id
-
-    marketconfig = construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice)
-
-    f1_image_id = get_f1_ami_id()
-
-    instances = ec2.create_instances(ImageId=f1_image_id,
-                                     EbsOptimized=True,
-                                     BlockDeviceMappings=[
-                                         {
-                                             'DeviceName': '/dev/sdb',
-                                             'NoDevice': '',
-                                         },
-                                     ],
-                                     InstanceType=instancetype,
-                                     MinCount=count,
-                                     MaxCount=count,
-                                     NetworkInterfaces=[
-                                         {'SubnetId': chosensubnet,
-                                          'DeviceIndex':0,
-                                          'AssociatePublicIpAddress':True,
-                                          'Groups':[firesimsecuritygroup]}
-                                     ],
-                                     KeyName=keyname,
-                                     InstanceMarketOptions=marketconfig
-                                     )
-    return instances
-
-def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
-    """ Launch count instances of type instancetype, with
-    Tag: Key=fsimcluster
-         Value={fsimclustertag}
+def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False):
+    """ Launch count instances of type instancetype, optionally with additional
+    block devices mappings and instance tags
 
          This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
     """
@@ -116,11 +72,16 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
     vpcfilter = [{'Name':'tag:Name', 'Values': [vpcname]}]
     firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))
     subnets = list(firesimvpc[0].subnets.filter())
+    if randomsubnet:
+        random.shuffle(subnets)
     firesimsecuritygroup = client.describe_security_groups(
         Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
 
     marketconfig = construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice)
     f1_image_id = get_f1_ami_id()
+
+    if blockdevices is None:
+        blockdevices = []
 
     # starting with the first subnet, keep trying until you get the instances you need
     startsubnet = 0
@@ -136,19 +97,12 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
         try:
             instance = ec2.create_instances(ImageId=f1_image_id,
                             EbsOptimized=True,
-                            BlockDeviceMappings=[
-                                {
-                                    'DeviceName': '/dev/sda1',
-                                    'Ebs': {
-                                        'VolumeSize': 300,
-                                        'VolumeType': 'gp2',
-                                    },
-                                },
+                            BlockDeviceMappings=(blockdevices + [
                                 {
                                     'DeviceName': '/dev/sdb',
                                     'NoDevice': '',
                                 },
-                            ],
+                            ]),
                             InstanceType=instancetype, MinCount=1, MaxCount=1,
                             NetworkInterfaces=[
                                 {'SubnetId': chosensubnet,
@@ -157,16 +111,12 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
                                  'Groups':[firesimsecuritygroup]}
                             ],
                             KeyName=keyname,
-                            TagSpecifications=[
+                            TagSpecifications=([] if tags is None else [
                                 {
                                     'ResourceType': 'instance',
-                                    'Tags': [
-                                        { 'Key': 'fsimcluster',
-                                         'Value': fsimclustertag
-                                         },
-                                    ]
+                                    'Tags': [{ 'Key': k, 'Value': v} for k, v in tags.items()],
                                 },
-                            ],
+                            ]),
                             InstanceMarketOptions=marketconfig
                         )
             instances += instance
@@ -176,6 +126,19 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
             rootLogger.info("This probably means there was no more capacity in this availability zone. Try the next one.")
             startsubnet += 1
     return instances
+
+def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
+    return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice,
+        blockdevices=[
+            {
+                'DeviceName': '/dev/sda1',
+                'Ebs': {
+                    'VolumeSize': 300,
+                    'VolumeType': 'gp2',
+                },
+            },
+        ],
+        tags={ 'fsimcluster': fsimclustertag })
 
 def get_instances_by_tag_type(fsimclustertag, instancetype):
     """ return list of instances that match a tag and instance type """
