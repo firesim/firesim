@@ -4,6 +4,7 @@ package midas
 package passes
 
 import midas.core._
+import chisel3.core.DataMirror.directionOf
 
 import firrtl._
 import firrtl.annotations._
@@ -50,8 +51,10 @@ private[midas] class MidasTransforms(
         new barstools.macros.MacroCompilerTransform,
         firrtl.passes.ResolveKinds,
         firrtl.passes.RemoveEmpty,
-        new Fame1Transform(Some(lib getOrElse json)),
-        new strober.passes.StroberTransforms(dir, lib getOrElse json),
+        new ChannelizeTargetIO(io),
+        new firrtl.transforms.fame.FAMETransform) ++
+        firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
+        Seq(
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir))
       (xforms foldLeft state)((in, xform) =>
@@ -62,6 +65,8 @@ private[midas] class MidasTransforms(
 /**
   * An annotation on a module indicating it should be fame1 tranformed using
   * a Bool, whose name is indicated by tFire, used as the targetFire signal
+  *
+  * This uses the legacy non-LI-BDN F1 transform
   */
 case class Fame1ChiselAnnotation(target: chisel3.experimental.RawModule, tFire: String = "targetFire") 
     extends chisel3.experimental.ChiselAnnotation {

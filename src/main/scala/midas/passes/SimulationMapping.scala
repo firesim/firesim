@@ -36,9 +36,9 @@ private[passes] class SimulationMapping(
   private def init(info: Info, target: String, main: String, tpe: Type)(m: DefModule) = m match {
     case m: Module if m.name == main =>
       val body = initStmt(target)(m.body)
-      val stmts = Connect(NoInfo, wsub(wref("target"), "targetFire"), wref("fire", BoolType)) +:
-      (if (!param(EnableSnapshot)) Nil
-       else {
+      val stmts = if (!param(EnableSnapshot)) {
+        Seq()
+      } else {
          val ports = (m.ports map (p => p.name -> p)).toMap
          (create_exps(wsub(wref("target", tpe), "daisy")) map { e =>
            val io = WRef(loweredName(mergeRef(wref("io"), splitRef(e)._2)))
@@ -49,7 +49,7 @@ private[passes] class SimulationMapping(
          }) ++ Seq(
            Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))
          )
-       })
+       }
       Some(m copy (info = info, body = Block(body +: stmts)))
     case m: Module => Some(m)
     case m: ExtModule => None
@@ -57,6 +57,7 @@ private[passes] class SimulationMapping(
 
   def execute(innerState: CircuitState) = {
     val innerCircuit = innerState.circuit
+
     lazy val sim = new SimWrapper(io)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
@@ -76,7 +77,7 @@ private[passes] class SimulationMapping(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
     CircuitState(
-      circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.io),
+      circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.channelPorts),
       form        = HighForm,
       annotations = innerState.annotations ++ outerState.annotations,
       renames     = Some(renameMap)

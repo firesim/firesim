@@ -16,13 +16,13 @@ import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 trait Endpoint {
   protected val channels = ArrayBuffer[(String, Record)]()
-  protected val wires = HashSet[Bits]()
+  protected val wires = HashSet[Element]()
   def clockRatio: IsRationalClockRatio = UnityClockRatio
   def matchType(data: Data): Boolean
   def widget(p: Parameters): EndpointWidget
   def widgetName: String = getClass.getSimpleName
   final def size = channels.size
-  final def apply(wire: Bits) = wires(wire)
+  final def apply(wire: Element) = wires(wire)
   final def apply(i: Int) = channels(i)
   def add(name: String, channel: Data) {
     val (ins, outs) = SimUtils.parsePorts(channel)

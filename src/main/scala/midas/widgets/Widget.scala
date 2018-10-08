@@ -50,8 +50,22 @@ abstract class Widget(implicit p: Parameters) extends Module {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
+  lazy val ctrlWidth = io.ctrl.nastiXDataBits
+  def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
+
   def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
     crRegistry.allocate(RegisterEntry(reg, name, permissions))
+  }
+
+  def attachWide(reg: Bits, name: String, permissions: Permissions = ReadWrite): Seq[Int] = {
+    if (numChunks(reg) > 1) {
+      Seq.tabulate(numChunks(reg))({ i =>
+        val msb = math.min(ctrlWidth * (i + 1) - 1, reg.getWidth - 1)
+        attach(reg(msb, ctrlWidth * i), s"${name}_${i}", permissions)
+      })
+    } else {
+      Seq(attach(reg, name, permissions))
+    }
   }
 
   // Recursively binds the IO of a module:
