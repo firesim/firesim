@@ -37,7 +37,7 @@ class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
 
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(0.U(ctrlWidth.W))
-  val oTokensPending = RegInit(1.U(ctrlWidth.W))
+  val oTokensPending = RegInit(0.U(ctrlWidth.W))
 
   // needs back pressure from reset queues
   val fromHostReady = io.ins.elements.foldLeft(true.B)(_ && _._2.ready)
