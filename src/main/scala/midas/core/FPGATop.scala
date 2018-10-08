@@ -33,6 +33,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   val master = addWidget(new EmulationMaster, "Master")
   val simReset = master.io.simReset
 
+  sim.io.clock     := clock
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
 
