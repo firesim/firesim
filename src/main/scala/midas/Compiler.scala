@@ -14,6 +14,7 @@ import firrtl.passes.memlib._
 import barstools.macros._
 import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
+import logger._
 
 // Directory into which output files are dumped. Set by dir argument
 case object OutputDir extends Field[File]
@@ -66,6 +67,8 @@ object MidasCompiler {
       MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
+    Logger.setLevel(LogLevel.Trace)
+    Logger.setOutput("firrtl.out")
     val midas = compiler.compile(firrtl.CircuitState(
       chirrtl, firrtl.ChirrtlForm, targetAnnos ++ midasAnnos),
       targetTransforms :+ midasTransforms)
