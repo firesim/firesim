@@ -1,0 +1,83 @@
+# See LICENSE for license details.
+#
+# Makefrag for generating MIDAS's synthesizable unit tests
+
+# Compulsory arguments:
+# ROCKETCHIP_DIR: Location of rocket chip source -- to grab verilog sources and simulation makefrags
+# 	TODO: These are provided as resources -- fix.
+# SBT: command to invoke sbt
+# GEN_DIR: Directory into which to emit generate verilog
+
+DESIGN := TestHarness
+CONFIG ?= AllUnitTests
+OUT_DIR ?= $(GEN_DIR)
+TB ?= TestDriver
+EMUL ?= vcs
+CLOCK_PERIOD ?= 1.0
+
+MAKEFRAG_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+sim_makefrag_dir := $(MAKEFRAG_DIR)/../rtlsim
+
+vsrc := $(ROCKETCHIP_DIR)/src/main/resources/vsrc
+csrc := $(ROCKETCHIP_DIR)/src/main/resources/csrc
+
+# Stupidly guess what this test might depend on
+src_path = src/main/scala
+scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
+
+$(GEN_DIR)/$(DESIGN).v $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
+	mkdir -p $(@D)
+	cd $(BASE_DIR) && $(SBT) "runMain midas.unittest.Generator -td $(GEN_DIR) -conf $(CONFIG)"
+	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
+
+verilog: $(GEN_DIR)/$(DESIGN).v
+
+# Common SW RTL simulation Makefrag arguments
+# These aren't required as yet, but will be in the future
+#bb_vsrcs = \
+#    $(vsrc)/ClockDivider2.v \
+#    $(vsrc)/ClockDivider3.v \
+#    $(vsrc)/AsyncResetReg.v \
+#
+#sim_vsrcs = \
+#    $(bb_vsrcs)
+
+emul_v     := $(GEN_DIR)/$(DESIGN).v #$(sim_vsrcs)
+emul_h     :=
+emul_cc    :=
+
+# VCS Makefrag arguments
+ifeq ($(EMUL),vcs)
+vcs_wrapper_v := $(vsrc)/TestDriver.v
+VCS_FLAGS = +verbose
+include $(sim_makefrag_dir)/Makefrag-vcs
+
+vcs = $(OUT_DIR)/$(DESIGN)
+vcs_debug = $(OUT_DIR)/$(DESIGN)-debug
+
+vcs: $(vcs)
+vcs-debug: $(vcs_debug)
+else
+
+# Verilator Makefrag arguments
+top_module := TestHarness
+override CFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
+override emul_cc += $(sim_makefrag_dir)/generic_vharness.cc
+
+include $(sim_makefrag_dir)/Makefrag-verilator
+
+verilator = $(OUT_DIR)/V$(DESIGN)
+verilator_debug = $(OUT_DIR)/V$(DESIGN)-debug
+
+verilator: $(verilator)
+verilator-debug: $(verilator_debug)
+endif
+
+# Run recipes
+run-midas-unittests: $($(EMUL))
+	cd $(GEN_DIR) && $<
+
+run-midas-unittests-debug: $($(EMUL)_debug)
+	cd $(GEN_DIR) && $<
+
+.PHONY: run-midas-unittests run-midas-unittests-debug verilog
