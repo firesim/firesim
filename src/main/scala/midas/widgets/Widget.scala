@@ -57,17 +57,6 @@ abstract class Widget(implicit p: Parameters) extends Module {
     crRegistry.allocate(RegisterEntry(reg, name, permissions))
   }
 
-  def attachWide(reg: Bits, name: String, permissions: Permissions = ReadWrite): Seq[Int] = {
-    if (numChunks(reg) > 1) {
-      Seq.tabulate(numChunks(reg))({ i =>
-        val msb = math.min(ctrlWidth * (i + 1) - 1, reg.getWidth - 1)
-        attach(reg(msb, ctrlWidth * i), s"${name}_${i}", permissions)
-      })
-    } else {
-      Seq(attach(reg, name, permissions))
-    }
-  }
-
   // Recursively binds the IO of a module:
   //   For inputs, generates a registers and binds that to the map
   //   For outputs, direct binds the wire to the map
