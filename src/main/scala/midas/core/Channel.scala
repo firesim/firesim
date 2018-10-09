@@ -11,6 +11,7 @@ import chisel3._
 import chisel3.util._
 
 import strober.core.{TraceQueue, TraceMaxLen}
+import midas.core.SimUtils.{ChLeafType}
 
 // For now use the convention that clock ratios are set with respect to the transformed RTL
 trait IsRationalClockRatio {
@@ -42,24 +43,25 @@ case class IntegralClockRatio(numerator: Int) extends IsRationalClockRatio {
   def inverse = ReciprocalClockRatio(denominator = numerator)
 }
 
-class WireChannelIO(w: Int)(implicit p: Parameters) extends Bundle {
-  val in    = Flipped(Decoupled(UInt(w.W)))
-  val out   = Decoupled(UInt(w.W))
-  val trace = Decoupled(UInt(w.W))
+class WireChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
+  val in    = Flipped(Decoupled(gen))
+  val out   = Decoupled(gen)
+  val trace = Decoupled(gen)
   val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
-  override def cloneType = new WireChannelIO(w)(p).asInstanceOf[this.type]
+  override def cloneType = new WireChannelIO(gen)(p).asInstanceOf[this.type]
+
 }
 
-class WireChannel(
-    val w: Int,
+class WireChannel[T <: ChLeafType](
+    val gen: T,
     clockRatio: IsRationalClockRatio = UnityClockRatio
   )(implicit p: Parameters) extends Module {
 
   require(clockRatio.isReciprocal || clockRatio.isIntegral)
   require(p(ChannelLen) >= clockRatio.denominator)
 
-  val io = IO(new WireChannelIO(w))
-  val tokens = Module(new Queue(UInt(w.W), p(ChannelLen)))
+  val io = IO(new WireChannelIO(gen))
+  val tokens = Module(new Queue(gen, p(ChannelLen)))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
 
@@ -107,7 +109,7 @@ class WireChannelUnitTest(
 
   val payloadWidth = numTokens * clockRatio.numerator
 
-  val dut = Module(new WireChannel(payloadWidth, clockRatio))
+  val dut = Module(new WireChannel(UInt(payloadWidth.W), clockRatio))
   val inputTokenNum       = RegInit(0.U(payloadWidth.W))
   val outputTokenNum      = RegInit(0.U(payloadWidth.W))
   val expectedOutputToken = RegInit(0.U(payloadWidth.W))

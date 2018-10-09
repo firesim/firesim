@@ -45,19 +45,29 @@ class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
 
   io.idle := iTokensAvailable === 0.U && oTokensPending === 0.U
 
+  def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
+      (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i => 
+    val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
+    Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
+  })
+
   def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
-    val reg = Reg(channel.bits)
-    reg suggestName ("target_" + name)
-    channel.bits := reg
+    val reg = genWideReg(name, channel.bits)
+    channel.bits := Cat(reg.reverse)
     channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
-    attachWide(reg, name)
+    reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
   }
 
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    val reg = genWideReg(name, channel.bits)
     channel.ready := oTokensPending =/= UInt(0) && toHostValid
-    val reg = RegEnable(channel.bits, channel.fire)
-    reg suggestName ("target_" + name)
-    attachWide(reg, name)
+    when (channel.fire) {
+      reg.zipWithIndex.foreach({ case (reg, i) =>
+        val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
+        reg := channel.bits(msb, ctrlWidth * i)
+      })
+    }
+    reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
   }
 
   val inputAddrs = io.ins.elements.map(elm => bindInputs(elm._1, elm._2))

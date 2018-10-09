@@ -227,7 +227,7 @@ class SimWrapper(targetIo: Seq[Data])(implicit val p: Parameters) extends MultiI
   target.io.clock := clock
 
   /*** Wire Channels ***/
-  def genWireChannel(port: ChLeafType, name: String): WireChannel = {
+  def genWireChannel[T <: ChLeafType](port: T, name: String): WireChannel[T] = {
     // Figure out the clock ratio by looking up the endpoint to which this wire belongs
     //val endpointClockRatio = io.endpoints.find(_(port)) match {
     //  case Some(endpoint) => endpoint.clockRatio
@@ -236,7 +236,7 @@ class SimWrapper(targetIo: Seq[Data])(implicit val p: Parameters) extends MultiI
 
     // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
     val flipped = directionOf(port) == ActualDirection.Input
-    val channel = Module(new WireChannel(port.getWidth))
+    val channel = Module(new WireChannel(port.cloneType))
     channel suggestName s"WireChannel_${name}"
     if (!flipped) {
       channelPorts.elements(name) <> channel.io.out
@@ -249,10 +249,10 @@ class SimWrapper(targetIo: Seq[Data])(implicit val p: Parameters) extends MultiI
     channel.io.traceLen := DontCare
     channel
   }
-  def genWireChannel(arg: (ChLeafType, String)): WireChannel = genWireChannel(arg._1, arg._2)
+  def genWireChannel[T <: ChLeafType](arg: (T, String)): WireChannel[T] = genWireChannel(arg._1, arg._2)
 
-  val wireInChannels: Seq[WireChannel] = channelPorts.inputs.map(genWireChannel)
-  val wireOutChannels: Seq[WireChannel] = channelPorts.outputs.map(genWireChannel)
+  val wireInChannels:  Seq[WireChannel[ChLeafType]] = channelPorts.inputs.map(genWireChannel[ChLeafType])
+  val wireOutChannels: Seq[WireChannel[ChLeafType]] = channelPorts.outputs.map(genWireChannel[ChLeafType])
 
 
  // /*** ReadyValid Channels ***/
