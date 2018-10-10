@@ -27,7 +27,7 @@ $(SPECKLE_DIR)/build/overlay/%/$(input):
 
 spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	mkdir -p $@
-	cp ../../sw/firesim-software/bbl-firesim $@/bbl-vmlinux
+	cp ../../sw/firesim-software/bbl-vmlinux0 $@/bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $< -r -b ../../sw/firesim-software/firesim.ext2 \
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
 
