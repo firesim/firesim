@@ -17,6 +17,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
     char * blkfile = NULL;
     char * niclogfile = NULL;
     char * slotid = NULL;
+    char * shmemportname = NULL;
     uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
     int netbw = MAX_BANDWIDTH, netburst = 8;
     int linklatency = 0;
@@ -46,6 +47,12 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
         if (arg.find("+slotid=") == 0) {
             slotid = const_cast<char*>(arg.c_str()) + 8;
         }
+
+        // TODO: move this and a bunch of other NIC arg parsing into the nic endpoint code itself
+        if (arg.find("+shmemportname=") == 0) {
+            shmemportname = const_cast<char*>(arg.c_str()) + 15;
+        }
+
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
         }
@@ -104,7 +111,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv, firesim_fesvr_t* fesvr, uint
 #endif
 
     add_endpoint(new blockdev_t(this, blkfile));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
+    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, shmemportname));
     // add more endpoints here
 
 }
