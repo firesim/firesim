@@ -8,15 +8,15 @@ import freechips.rocketchip.config.Parameters
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
+import chisel3.experimental.{Direction}
+import chisel3.experimental.DataMirror.{directionOf}
 import widgets._
 import junctions.{NastiIO, NastiKey, NastiParameters}
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 trait Endpoint {
-  protected val channels = ArrayBuffer[(String, Record)]()
-  protected val wires = HashSet[Element]()
+  val channels = ArrayBuffer[(String, Record)]()
+  val wires = HashSet[Element]()
   def clockRatio: IsRationalClockRatio = UnityClockRatio
   def matchType(data: Data): Boolean
   def widget(p: Parameters): EndpointWidget
@@ -29,6 +29,18 @@ trait Endpoint {
     wires ++= (ins ++ outs).unzip._1
     channels += (name -> channel.asInstanceOf[Record])
   }
+
+  // Finds all of the target ReadyValid bundles sourced or sunk by the target
+  // input => sunk by the target
+  private def findRVChannels(dir: Direction): Seq[(String, ReadyValidIO[Data])] =
+    channels.flatMap({ case (prefix, data) => data.elements.toSeq.collect({
+        case (name, rv: ReadyValidIO[_]) if directionOf(rv.valid) == dir => s"${prefix}_${name}" -> rv
+      })
+  })
+
+  lazy val readyValidOutputs = findRVChannels(Direction.Output)
+  lazy val readyValidInputs = findRVChannels(Direction.Input)
+
 }
 
 abstract class SimMemIO extends Endpoint {
@@ -70,7 +82,7 @@ class SimNastiMemIO(
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: NastiIO =>
-      directionOf(channel.w.valid) == ActualDirection.Output
+      directionOf(channel.w.valid) == Direction.Output
     case _ => false
   }
 }
@@ -80,7 +92,7 @@ class SimAXI4MemIO(
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: AXI4Bundle =>
-      directionOf(channel.w.valid) == ActualDirection.Output
+      directionOf(channel.w.valid) == Direction.Output
     case _ => false
   }
 }

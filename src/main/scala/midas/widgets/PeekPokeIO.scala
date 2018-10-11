@@ -89,8 +89,6 @@ class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
   // it has gone idle
   io.step.ready := io.idle
 
-  // Target reset connection
-  // Hack: insert high to resetQueue as initial tokens
   genCRFile()
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
