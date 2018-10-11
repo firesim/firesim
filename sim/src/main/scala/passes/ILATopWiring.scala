@@ -40,10 +40,10 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
     val ilaInstOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_inst.v" ))
 
     //vivado tcl prologue
-    tclOutputFile.append(s"create_project managed_ip_project $$CL_DIR/ip/firesim_ila_ip/managed_ip_project -part xcvu9p-flgb2104-2-i -ip\n")
+    tclOutputFile.append(s"create_project managed_ip_project $$CL_DIR/ip/firesim_ila_ip/managed_ip_project -part xcvu9p-flgb2104-2-i -ip -force\n")
     tclOutputFile.append(s"set_property simulator_language Verilog [current_project]\n")
     tclOutputFile.append(s"set_property target_simulator XSim [current_project]\n")
-    tclOutputFile.append(s"create_ip -name ila -vendor xilinx.com -library ip -version 6.2 -module_name ila_firesim_0 -dir $$CL_DIR/ip/firesim_ila_ip\n")
+    tclOutputFile.append(s"create_ip -name ila -vendor xilinx.com -library ip -version 6.2 -module_name ila_firesim_0 -dir $$CL_DIR/ip/firesim_ila_ip -force\n")
     tclOutputFile.append(s"set_property -dict [list ")
 
 

@@ -42,6 +42,7 @@ class firesim_fesvr_t : public htif_t
         void idle();
         void reset();
         void load_program() {
+            wait(); // Switch back to commit all pending requests
             is_loadmem = true;
             htif_t::load_program();
             is_loadmem = false;

@@ -37,6 +37,11 @@ class WithBlockDevWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimBlockDev))
 })
 
+class WithTracerVWidget extends Config((site, here, up) => {
+  case midas.EndpointKey => up(midas.EndpointKey) ++
+    midas.core.EndpointMap(Seq(new SimTracerV))
+})
+
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
@@ -164,6 +169,7 @@ class FireSimConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
+  new WithTracerVWidget ++
   new BasePlatformConfig)
 
 class FireSimClockDivConfig extends Config(

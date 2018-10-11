@@ -15,13 +15,13 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile);
+        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile, bool loopback);
         ~simplenic_t();
 
         virtual void init();
         virtual void tick();
-        virtual bool done();
-        virtual bool stall() { return false; }
+        virtual bool terminate() { return false; };
+        virtual int exit_code() { return 0; }
 
     private:
         simif_t* sim;
@@ -31,6 +31,7 @@ class simplenic_t: public endpoint_t
         int rlimit_inc, rlimit_period, rlimit_size;
         int LINKLATENCY;
         FILE * niclog;
+	bool loopback;
 };
 
 #endif // __SIMPLENIC_H
