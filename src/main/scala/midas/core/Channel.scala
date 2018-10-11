@@ -286,7 +286,7 @@ class ReadyValidChannel[T <: Data](
   when (io.deq.rev.fire && !io.deq.fwd.fire) {
     deqRevSlip  := true.B
     deqRevLast  := io.deq.target.ready
-  }.elsewhen(io.deq.rev.fire) {
+  }.elsewhen(io.deq.fwd.fire) {
     deqRevSlip  := false.B
   }
 
