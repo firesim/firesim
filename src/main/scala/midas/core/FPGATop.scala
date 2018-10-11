@@ -69,102 +69,107 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   //  simIo.traceLen := traceWidget.io.traceLen
   //}
 
-//  val simResetNext = RegNext(simReset)
-//  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
-//    val valid = ArrayBuffer[Bool]()
-//    val ready = ArrayBuffer[Bool]()
-//    def loop[T <: Data](arg: (T, T)): Unit = arg match {
-//      case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
-//        val (name, channel) = simIo.readyValidMap(rv)
-//        (directionOf(channel.host.hValid): @unchecked) match {
-//          case ActualDirection.Input =>
-//            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-//            channel.target <> target
-//            channel.host.hValid := port.fromHost.hValid || simResetNext
-//            ready += channel.host.hReady
-//          case ActualDirection.Output =>
-//            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-//            target <> channel.target
-//            channel.host.hReady := port.toHost.hReady
-//            valid += channel.host.hValid
-//        }
-//      case (target: Record, b: Record) =>
-//        b.elements.toList foreach { case (name, wire) =>
-//          loop(target.elements(name), wire)
-//        }
-//      case (target: Vec[_], v: Vec[_]) =>
-//        assert(target.size == v.size)
-//        (target.toSeq zip v.toSeq) foreach loop
-//      case (target: Bits, wire: Bits) => (directionOf(wire): @unchecked) match {
-//        case ActualDirection.Input =>
-//          val channel = simIo.getIns(wire)
-//          in.bits  := target
-//          in.valid := port.fromHost.hValid || simResetNext
-//          ready ++= channels map (_.ready)
-//        case ActualDirection.Output =>
-//          val channels = simIo.getOuts(wire)
-//          target := Cat(channels.reverse map (_.bits))
-//          channels foreach (_.ready := port.toHost.hReady)
-//          valid ++= channels map (_.valid)
-//      }
-//    }
-//
-//    loop(port.hBits -> wires)
-//    port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
-//    port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
-//  }
-//
-//  // Host Memory Channels
-//  // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIoSize+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
-  arb.io <> DontCare
-  io.mem <> DontCare
-//  io.mem <> arb.io.slave
-//  if (p(MemModelKey) != None) {
-//    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-//    loadMem.reset := reset.toBool || simReset
-//    arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
-//  }
-//
-  val dmaPorts = new ListBuffer[NastiIO]
-//
-//  // Instantiate endpoint widgets
-//  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
-//    ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
-//      val widgetName = (endpoint, p(MemModelKey)) match {
-//        case (_: SimMemIO, Some(_)) => s"MemModel_$i"
-//        case (_: SimMemIO, None) => s"NastiWidget_$i"
-//        case _ => s"${endpoint.widgetName}_$i"
-//      }
-//      val widget = addWidget(endpoint.widget(p), widgetName)
-//      widget.reset := reset.toBool || simReset
-//      widget match {
-//        case model: MemModel =>
-//          arb.io.master(i) <> model.io.host_mem
-//          model.io.tNasti.hBits.aw.bits.user := DontCare
-//          model.io.tNasti.hBits.aw.bits.region := DontCare
-//          model.io.tNasti.hBits.ar.bits.user := DontCare
-//          model.io.tNasti.hBits.ar.bits.region := DontCare
-//          model.io.tNasti.hBits.w.bits.id := DontCare
-//          model.io.tNasti.hBits.w.bits.user := DontCare
-//        case _ =>
-//      }
-//      channels2Port(widget.io.hPort, endpoint(i)._2)
-//      widget.io.dma.foreach(dma => dmaPorts += dma)
-//
-//      // each widget should have its own reset queue
-//      val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
-//      resetQueue.io.traceLen := DontCare
-//      resetQueue.io.trace.ready := DontCare
-//      resetQueue.reset := reset.toBool || simReset
-//      widget.io.tReset <> resetQueue.io.out
-//      resetQueue.io.in.bits := defaultIOWidget.io.tReset.bits
-//      resetQueue.io.in.valid := defaultIOWidget.io.tReset.valid
-//      ready && resetQueue.io.in.ready
-//    }
-//  }
+  val simResetNext = RegNext(simReset)
+  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
+    val valid = ArrayBuffer[Bool]()
+    val ready = ArrayBuffer[Bool]()
+    def loop[T <: Data](arg: (T, T)): Unit = arg match {
+      case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
+        val channel = simIo(rv)
+        directionOf(channel.fwd.hValid) match {
+          case ActualDirection.Input =>
+            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
+            channel.target <> target
+            channel.fwd.hValid := port.fromHost.hValid || simResetNext
+            channel.rev.hReady := port.toHost.hReady || simResetNext
+            ready += channel.fwd.hReady
+            valid += channel.rev.hValid
+          case ActualDirection.Output =>
+            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
+            target <> channel.target
+            channel.fwd.hReady := port.toHost.hReady
+            channel.rev.hValid := port.fromHost.hValid
+            ready += channel.rev.hReady
+            valid += channel.fwd.hValid
+          case _ => throw new RuntimeException(s"Unexpected valid direction: ${directionOf(channel.fwd.hValid)}")
+        }
+      case (target: Record, b: Record) =>
+        b.elements.toList foreach { case (name, wire) =>
+          loop(target.elements(name), wire)
+        }
+      case (target: Vec[_], v: Vec[_]) =>
+        require(target.size == v.size)
+        (target.zip(v)).foreach(loop)
+      case (target: Bits, wire: Bits) => directionOf(wire) match {
+        case ActualDirection.Input =>
+          val channel = simIo(wire)
+          channel.bits  := target
+          channel.valid := port.fromHost.hValid || simResetNext
+          ready += channel.ready
+        case ActualDirection.Output =>
+          val channel = simIo(wire)
+          target := channel.bits
+          channel.ready := port.toHost.hReady
+          valid += channel.valid
+        case _ => throw new RuntimeException(s"Unexpected Bits direction: ${directionOf(wire)}")
+      }
+    }
 
-  assert(dmaPorts.size <= 1)
+    loop(port.hBits -> wires)
+    port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
+    port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
+  }
+
+  // Host Memory Channels
+  // Masters = Target memory channels + loadMemWidget
+  val arb = Module(new NastiArbiter(memIoSize+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
+  io.mem <> arb.io.slave
+  if (p(MemModelKey) != None) {
+    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
+    loadMem.reset := reset.toBool || simReset
+    arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
+  }
+
+  val dmaPorts = new ListBuffer[NastiIO]
+  val tResetChannel = defaultIOWidget.io.ins.elements("reset")
+
+  // Instantiate endpoint widgets
+  tResetChannel.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
+    ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
+      val widgetName = (endpoint, p(MemModelKey)) match {
+        case (_: SimMemIO, Some(_)) => s"MemModel_$i"
+        case (_: SimMemIO, None) => s"NastiWidget_$i"
+        case _ => s"${endpoint.widgetName}_$i"
+      }
+      val widget = addWidget(endpoint.widget(p), widgetName)
+      widget.reset := reset.toBool || simReset
+      widget match {
+        case model: MemModel =>
+          arb.io.master(i) <> model.io.host_mem
+          model.io.tNasti.hBits.aw.bits.user := DontCare
+          model.io.tNasti.hBits.aw.bits.region := DontCare
+          model.io.tNasti.hBits.ar.bits.user := DontCare
+          model.io.tNasti.hBits.ar.bits.region := DontCare
+          model.io.tNasti.hBits.w.bits.id := DontCare
+          model.io.tNasti.hBits.w.bits.user := DontCare
+        case _ =>
+      }
+      channels2Port(widget.io.hPort, endpoint(i)._2)
+      widget.io.dma.foreach(dma => dmaPorts += dma)
+
+      // each widget should have its own reset queue
+      val resetQueue = Module(new WireChannel(Bool(), endpoint.clockRatio))
+      resetQueue.io.traceLen := DontCare
+      resetQueue.io.trace.ready := DontCare
+      resetQueue.reset := reset.toBool || simReset
+      widget.io.tReset <> resetQueue.io.out
+      resetQueue.io.in.bits := tResetChannel.bits
+      resetQueue.io.in.valid := tResetChannel.valid
+      ready && resetQueue.io.in.ready
+    }
+  }
+
+  require(dmaPorts.size <= 1)
   if (dmaPorts.nonEmpty) {
     dmaPorts(0) <> io.dma
   } else {
