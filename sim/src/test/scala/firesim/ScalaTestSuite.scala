@@ -13,7 +13,6 @@ import freechips.rocketchip.system.DefaultTestSuites._
 
 abstract class FireSimTestSuite(
     val generatorArgs: FireSimGeneratorArgs,
-    simulationArgs: String = "`cat runtime.conf`",
     N: Int = 8
   ) extends firesim.midasexamples.TestSuiteCommon with HasFireSimGeneratorUtilities {
   import scala.concurrent.duration._
@@ -31,7 +30,9 @@ abstract class FireSimTestSuite(
   override lazy val platform = hostParams(midas.Platform)
 
   def invokeMlSimulator(backend: String, name: String, debug: Boolean) = {
-    make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
+    make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"),
+         s"EMUL=${backend}"
+         )
   }
 
   def runTest(backend: String, name: String, debug: Boolean) = {
@@ -55,7 +56,7 @@ abstract class FireSimTestSuite(
     behavior of s"${suite.makeTargetName} running on $backend"
     if (isCmdAvailable(backend)) {
       val postfix = suite match {
-        case _: BenchmarkTestSuite | _: BlockdevTestSuite => ".riscv"
+        case _: BenchmarkTestSuite | _: BlockdevTestSuite | _: NICTestSuite => ".riscv"
         case _ => ""
       }
       val results = suite.names.toSeq sliding (N, N) map { t => 
@@ -99,3 +100,8 @@ class RocketF1Tests extends FireSimTestSuite(
 
 class BoomF1Tests extends FireSimTestSuite(
   FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "FireSimConfig"))
+
+class RocketNICF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireSim", "FireSimRocketChipConfig", "FireSimConfig")) {
+  runSuite("verilator")(NICLoopbackTests)
+}

@@ -35,17 +35,6 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 CONF_NAME ?= runtime.conf
 
-################################################################
-# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
-################################################################
-TIMEOUT_CYCLES = 100000000
-SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
-mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args)
-
-# Arguments used only in MIDAS-level (ML) RTL simulation
-MIDAS_LEVEL_SIM_ARGS ?= +dramsim
-
 ####################################
 # Verilator MIDAS-Level Simulators #
 ####################################
