@@ -57,14 +57,16 @@ abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = 
 
   def runUnitTestSuite(backend: String, debug: Boolean = false) {
     behavior of s"MIDAS unittest: ${unitTestConfig} running on ${backend}"
+    val testSpecString = if (shouldFail) "fail" else "pass"
+
     if (isCmdAvailable(backend)) {
       lazy val result = make("run-midas-unittests%s".format(if (debug) "-debug" else ""),
                              s"EMUL=$backend")
-      if (shouldFail) {
-        it should "fail" in { assert(result != 0) }
-      } else {
-        it should "pass" in { assert(make("run-midas-unittests%s".format(if (debug) "-debug" else "")) == 0) }
+      it should testSpecString in {
+        if (shouldFail) assert(result != 0) else assert(result == 0)
       }
+    } else {
+      ignore should testSpecString in { }
     }
   }
 
