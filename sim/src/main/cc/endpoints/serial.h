@@ -23,10 +23,10 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, firesim_fesvr_t* fesvr, uint32_t step_size);
+        serial_t(simif_t* sim, AddressMap addr_map, firesim_fesvr_t* fesvr, uint32_t step_size);
         void init();
         void tick();
-        bool done() { return read(SERIALWIDGET_0(done)); }
+        bool done() { return read("done"); }
         bool stall() { return false; }
 
     private:
