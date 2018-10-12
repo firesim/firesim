@@ -28,23 +28,33 @@ void loadmem_m::load_mem(std::string filename) {
 
 
 void loadmem_m::read_mem(size_t addr, mpz_t& value) {
-  write("R_ADDRESS_H", addr >> 32);
-  write("R_ADDRESS_L", addr & ((1ULL << 32) - 1));
+  write("LOADMEM_R_ADDRESS_H", addr >> 32);
+  write("LOADMEM_R_ADDRESS_L", addr & ((1ULL << 32) - 1));
   const size_t size = MEM_DATA_CHUNK;
   data_t data[size];
   for (size_t i = 0 ; i < size ; i++) {
-    data[i] = read("R_DATA");
+    data[i] = read("LOADMEM_R_DATA");
   }
   mpz_import(value, size, -1, sizeof(data_t), 0, 0, data);
 }
 
-void loadmem_m::write_mem(size_t addr, mpz_t& value) {
-  write("W_ADDRESS_H", addr >> 32);
-  write("W_ADDRESS_L", addr & ((1ULL << 32) - 1));
+void loadmem_m::write_mem(size_t addr, mpz_t& value, size_t bytes) {
+  write("LOADMEM_W_ADDRESS_H", addr >> 32);
+  write("LOADMEM_W_ADDRESS_L", addr & ((1ULL << 32) - 1));
+  size_t num_beats = (bytes + (MEM_DATA_CHUNK*sizeof(data_t)))/(MEM_DATA_CHUNK*sizeof(data_t));
+  write(LOADMEM_W_LENGTH, num_beats);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
-  for (size_t i = 0 ; i < MEM_DATA_CHUNK ; i++) {
-    write("W_DATA", i < size ? data[i] : 0);
+  for (size_t i = 0 ; i < num_beats * MEM_DATA_CHUNK ; i++) {
+    write("LOADMEM_W_DATA", i < size ? data[i] : 0);
   }
 }
+
+void loadmem_m::zero_out_dram() {
+  write("LOADMEM_ZERO_OUT_DRAM", 1);
+  while(read("LOADMEM_ZERO_OUT_DRAM") != 0);
+}
+
+
+
 

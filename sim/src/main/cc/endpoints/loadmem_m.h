@@ -26,7 +26,8 @@ public:
   loadmem_m(simif_t* s, AddressMap addr_map): sim(s), addr_map(addr_map) {};
   void load_mem(std::string filename);
   void read_mem(size_t addr, mpz_t& value);
-  void write_mem(size_t addr, mpz_t& value);
+  void write_mem(size_t addr, mpz_t& value, size_t bytes);
+  void zero_out_dram();
 
 protected:
   AddressMap addr_map;

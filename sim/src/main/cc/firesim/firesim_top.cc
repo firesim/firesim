@@ -295,13 +295,13 @@ firesim_top_t::firesim_top_t(int argc, char** argv, std::vector<firesim_fesvr_t*
 
 }
 
-void firesim_top_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
+void firesim_top_t::handle_loadmem_read(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m ldmem) {
     assert(loadmem.size % sizeof(uint32_t) == 0);
     // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
     mpz_t buf;
     mpz_init(buf);
     while (loadmem.size > 0) {
-        read_mem(loadmem.addr, buf);
+        ldmem.read_mem(loadmem.addr, buf);
 
         // If the read word is 0; mpz_export seems to return an array with length 0
         size_t beats_requested = (loadmem.size/sizeof(uint32_t) > MEM_DATA_CHUNK) ?
@@ -324,44 +324,24 @@ void firesim_top_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     fesvr->tick();
 }
 
-void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
+void firesim_top_t::handle_loadmem_write(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m ldmem) {
     assert(loadmem.size <= 1024);
     static char buf[1024];
     fesvr->recv_loadmem_data(buf, loadmem.size);
     mpz_t data;
     mpz_init(data);
     mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
-    write_mem_chunk(loadmem.addr, data, loadmem.size);
+    ldmem.write_mem(loadmem.addr, data, loadmem.size);
     mpz_clear(data);
 }
 
-void firesim_top_t::serial_bypass_via_loadmem() {
+void firesim_top_t::serial_bypass_via_loadmem(firesim_fesvr_t* fesvr, loadmem_m ldmem) {
     fesvr_loadmem_t loadmem;
     while (fesvr->has_loadmem_reqs()) {
         // Check for reads first as they preceed a narrow write;
-        if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);
-        if (fesvr->recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem);
+        if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem, fesvr, ldmem);
+        if (fesvr->recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem, fesvr, ldmem);
     }
-}
-
-void firesim_top_t::loadmem() {
-    fesvr_loadmem_t loadmem;
-    for (int i=0; i<fesvr_vec.size(); i++) {
-        firesim_fesvr_t* fesvr = fesvr_vec[i];
-        loadmem_m ldmem = loadmem_vec[i]; 
-        while (fesvr->recv_loadmem_req(loadmem)) {
-            assert(loadmem.size <= 1024);
-            static char buf[1024]; // This should be enough...
-            fesvr->recv_loadmem_data(buf, loadmem.size);
-            const size_t mem_data_bytes = MEM_DATA_CHUNK * sizeof(data_t);
-            for (size_t off = 0 ; off < loadmem.size ; off += mem_data_bytes) {
-                mpz_t data;
-                mpz_init(data);
-                mpz_import(data, mem_data_bytes / sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf + off); \
-                ldmem.write_mem(loadmem.addr + off, data);
-            }
-        }
-     }
 }
 
 void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
@@ -376,9 +356,11 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
         while(!done()){
             for (auto e: endpoints) e->tick();
         }
-        for (auto fesvr: fesvr_vec) { 
+        for (int i=0; i<fesvr_vec.size(); i++) {
+          firesim_fesvr_t* fesvr = fesvr_vec[i];
+          loadmem_m ldmem = loadmem_vec[i];
           if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
-              serial_bypass_via_loadmem();
+              serial_bypass_via_loadmem(fesvr);
           }
         }
 
@@ -400,7 +382,9 @@ void firesim_top_t::run() {
 
     if (do_zero_out_dram) {
         fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
-        zero_out_dram();
+        for (auto ldmem: loadmem_vec) {
+           ldmem.zero_out_dram();
+        }
     }
     fprintf(stderr, "Commencing simulation.\n");
 
