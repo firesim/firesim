@@ -296,15 +296,6 @@ class ReadyValidChannel[T <: Data](
     numTValid := numTValid - 1.U
   }
 
-  // We have a valid deq-fwd token when:
-  // 1) We've not advanced further than the enq-domain and
-  // 2A) We've lost decoupling between deq-fwd & deq-rev tokens  or
-  // 2B) We are behind the enq-domain and no target-valid tokens are available
-  // In both of these cases we do not depend on the presence of a deq-rev token
-  //io.deq.fwd.hValid := tokens.io.deq.valid && // (1)
-  //                     (!deqFwdTokens.io.deq.valid || // 2A
-  //                      !deqFwdTokens.io.deq.bits)    // 2B
-
   // Enqueuing and dequeuing domains have the same frequency
   // The token queue can be directly coupled between domains
   //if (clockRatio.isUnity) {
