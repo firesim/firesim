@@ -2,6 +2,8 @@ package firesim.firesim
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
+import midas.{EndpointKey, MemModelKey}
+import midas.core.{SimAXI4MemIO, ReciprocalClockRatio, EndpointMap}
 import midas.models._
 import midas.MemModelKey
 
@@ -13,25 +15,26 @@ object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
 
+// Removes default endpoints from the MIDAS-provided config
+class BasePlatformConfig extends Config(new Config((site, here, up) => {
+    case EndpointKey => EndpointMap(Seq.empty)
+}) ++ new midas.F1Config)
+
 class WithSerialWidget extends Config((site, here, up) => {
-  case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimSerialIO))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
 })
 
 class WithUARTWidget extends Config((site, here, up) => {
-  case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimUART))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
 })
 
 class WithSimpleNICWidget extends Config((site, here, up) => {
-  case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimSimpleNIC))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {
-  case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimBlockDev))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimBlockDev))
 })
 
 class WithTracerVWidget extends Config((site, here, up) => {
@@ -39,7 +42,11 @@ class WithTracerVWidget extends Config((site, here, up) => {
     midas.core.EndpointMap(Seq(new SimTracerV))
 })
 
-class WithDefaultMemModel extends Config((site, here, up) => {
+// Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
+// of the RTL transformed model (Rocket Chip)
+class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(
+    new SimAXI4MemIO(ReciprocalClockRatio(clockDivision))))
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
@@ -112,11 +119,19 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
 * Complete Memory-Timing Model Configurations
 *******************************************************************************/
 // Latency Bandwidth Pipes
-class LBP32R32W extends Config(new WithFuncModelLimits(32,32) ++ new FireSimConfig)
+class LBP32R32W extends Config(
+  new WithFuncModelLimits(32,32) ++
+  new WithDefaultMemModel)
 class LBP32R32WLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
   new WithFuncModelLimits(32,32) ++
-  new FireSimConfig)
+  new WithDefaultMemModel)
+
+// An LBP that runs at 1/3 the frequency of the cores + uncore
+// This is 1067 MHz for default core frequency of 3.2 GHz
+class LBP32R32W3Div extends Config(
+  new WithFuncModelLimits(32,32) ++
+  new WithDefaultMemModel(3))
 
 // DDR3 - FCFS models.
 class FCFS16GBQuadRank extends Config(new WithDDR3FIFOMAS(8) ++ new FireSimConfig)
@@ -125,12 +140,18 @@ class FCFS16GBQuadRankLLC4MB extends Config(
   new FCFS16GBQuadRank)
 
 // DDR3 - First-Ready FCFS models
-class FRFCFS16GBQuadRank extends Config(
-  new WithDDR3FRFCFS(8, 8) ++ new FireSimConfig
+class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
+  new WithDDR3FRFCFS(8, 8) ++
+  new WithDefaultMemModel(clockDiv)
 )
 class FRFCFS16GBQuadRankLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank
+)
+
+class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
+  new WithLLCModel(4096, 8) ++
+  new FRFCFS16GBQuadRank(3)
 )
 
 /*******************************************************************************
@@ -149,7 +170,15 @@ class FireSimConfig extends Config(
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
   new WithTracerVWidget ++
-  new midas.F1Config)
+  new BasePlatformConfig)
+
+class FireSimClockDivConfig extends Config(
+  new WithSerialWidget ++
+  new WithUARTWidget ++
+  new WithSimpleNICWidget ++
+  new WithBlockDevWidget ++
+  new WithDefaultMemModel(clockDivision = 2) ++
+  new BasePlatformConfig)
 
 class FireSimDDR3Config extends Config(
   new WithSerialWidget ++
@@ -157,7 +186,7 @@ class FireSimDDR3Config extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
-  new midas.F1Config)
+  new BasePlatformConfig)
 
 class FireSimDDR3LLC4MBConfig extends Config(
   new WithSerialWidget ++
@@ -165,7 +194,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
-  new midas.F1Config)
+  new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSConfig extends Config(
   new WithSerialWidget ++
@@ -173,7 +202,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
-  new midas.F1Config)
+  new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
@@ -181,4 +210,12 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSimpleNICWidget ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
-  new midas.F1Config)
+  new BasePlatformConfig)
+
+class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
+  new WithSerialWidget ++
+  new WithUARTWidget ++
+  new WithSimpleNICWidget ++
+  new WithBlockDevWidget ++
+  new FRFCFS16GBQuadRankLLC4MB3Div ++
+  new BasePlatformConfig)
