@@ -61,14 +61,13 @@ object MidasCompiler {
     val conf = new File(dir, s"${chirrtl.main}.conf")
     val json = new File(dir, s"${chirrtl.main}.macros.json")
     val midasAnnos = Seq(
+      firrtl.TargetDirAnnotation(dir.getPath()),
       InferReadWriteAnnotation,
       ReplSeqMemAnnotation("", conf.getPath),
       passes.MidasAnnotation(chirrtl.main, conf, json, lib),
       MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
-    //Logger.setLevel(LogLevel.Trace)
-    //Logger.setOutput("firrtl.out")
     val midas = compiler.compile(firrtl.CircuitState(
       chirrtl, firrtl.ChirrtlForm, targetAnnos ++ midasAnnos),
       targetTransforms :+ midasTransforms)
