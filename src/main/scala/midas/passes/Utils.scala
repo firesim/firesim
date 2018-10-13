@@ -67,6 +67,20 @@ object Utils {
     c copy (modules = modules map (_ map updateModNames), main = nameMap(c.main))
   }
 
+  // Takes a circuit state and writes it out to the target-directory by selecting
+  // an appropriate emitter for its form
+  def writeState(state: CircuitState, name: String) {
+    val td = state.annotations.collectFirst { case TargetDirAnnotation(value) => value }.get
+    val writer = new java.io.PrintWriter(new File(td, name))
+    val emitter = state.form match {
+      case LowForm  => new LowFirrtlEmitter
+      case MidForm  => new MiddleFirrtlEmitter
+      case HighForm => new HighFirrtlEmitter
+      case        _ => throw new RuntimeException("Cannot select emitter for unrecognized form.")
+    }
+    emitter.emit(state, writer)
+  }
+
   // Takes a circuitState that has been emitted and writes the result to file
   def writeEmittedCircuit(state: CircuitState, file: File) {
     val f = new FileWriter(file)

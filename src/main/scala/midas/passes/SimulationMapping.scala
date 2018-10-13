@@ -76,11 +76,13 @@ private[passes] class SimulationMapping(
     val renameMap = RenameMap(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
-    CircuitState(
+    val linkedState = CircuitState(
       circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.channelPorts),
       form        = HighForm,
       annotations = innerState.annotations ++ outerState.annotations,
       renames     = Some(renameMap)
     )
+    writeState(linkedState, "post-sim-mapping.fir")
+    linkedState
   }
 }
