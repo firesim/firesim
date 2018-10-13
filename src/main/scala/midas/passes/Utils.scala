@@ -71,7 +71,7 @@ object Utils {
   // an appropriate emitter for its form
   def writeState(state: CircuitState, name: String) {
     val td = state.annotations.collectFirst { case TargetDirAnnotation(value) => value }.get
-    val writer = new java.io.PrintWriter(new File(td, name))
+    val writer = new java.io.FileWriter(new File(td, name))
     val emitter = state.form match {
       case LowForm  => new LowFirrtlEmitter
       case MidForm  => new MiddleFirrtlEmitter
@@ -79,6 +79,7 @@ object Utils {
       case        _ => throw new RuntimeException("Cannot select emitter for unrecognized form.")
     }
     emitter.emit(state, writer)
+    writer.close
   }
 
   // Takes a circuitState that has been emitted and writes the result to file
