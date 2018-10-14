@@ -54,6 +54,20 @@ void simif_t::init(int argc, char** argv, bool log) {
 #endif
 }
 
+uint64_t simif_t::actual_tcycle() {
+    write(DEFAULTIOWIDGET(tCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(tCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(tCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
+uint64_t simif_t::hcycle() {
+    write(DEFAULTIOWIDGET(hCycle_latch), 1);
+    data_t cycle_l = read(DEFAULTIOWIDGET(hCycle_0));
+    data_t cycle_h = read(DEFAULTIOWIDGET(hCycle_1));
+    return (((uint64_t) cycle_h) << 32) | cycle_l;
+}
+
 void simif_t::target_reset(int pulse_start, int pulse_length) {
   poke(reset, 0);
   take_steps(pulse_start, true);
@@ -73,7 +87,7 @@ int simif_t::finish() {
   finish_sampling();
 #endif
 
-  fprintf(stderr, "Runs %llu cycles\n", cycles());
+  fprintf(stderr, "Runs %llu cycles\n", actual_tcycle());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "\nSEED: %ld\n", seed);
@@ -127,9 +141,8 @@ bool simif_t::expect(size_t id, mpz_t& expected) {
   return expect(pass, NULL);
 }
 
-void simif_t::step(int n, bool blocking) {
+void simif_t::step(uint32_t n, bool blocking) {
   if (n == 0) return;
-  assert(n > 0);
 #ifdef ENABLE_SNAPSHOT
   reservoir_sampling(n);
 #endif
@@ -188,10 +201,13 @@ void simif_t::write_mem(size_t addr, mpz_t& value) {
   }
 }
 
+#define MEM_DATA_CHUNK_BYTES (MEM_DATA_CHUNK*sizeof(data_t))
+#define ceil_div(a, b) (((a) - 1) / (b) + 1)
+
 void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
   write(LOADMEM_W_ADDRESS_H, addr >> 32);
   write(LOADMEM_W_ADDRESS_L, addr & ((1ULL << 32) - 1));
-  size_t num_beats = (bytes + (MEM_DATA_CHUNK*sizeof(data_t)))/(MEM_DATA_CHUNK*sizeof(data_t));
+  size_t num_beats = ceil_div(bytes, MEM_DATA_CHUNK_BYTES);
   write(LOADMEM_W_LENGTH, num_beats);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
@@ -202,6 +218,6 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
 
 void simif_t::zero_out_dram() {
   write(LOADMEM_ZERO_OUT_DRAM, 1);
-  while(read(LOADMEM_ZERO_OUT_DRAM) != 0);
+  while(!read(LOADMEM_ZERO_FINISHED));
 }
 #endif // LOADMEM

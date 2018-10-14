@@ -10,6 +10,7 @@ import chisel3.util._
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy.AddressSet
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 case object MemNastiKey extends Field[NastiParameters]
@@ -122,8 +123,9 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
-  val arb = Module(new NastiArbiter(memIoSize+1)(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
-  io.mem <> arb.io.slave
+  val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
+  val arb = Module(new NastiArbiter(memIoSize+1)(nastiP))
+  io.mem <> NastiQueue(arb.io.slave)(nastiP)
   if (p(MemModelKey) != None) {
     val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
     loadMem.reset := reset.toBool || simReset
@@ -131,6 +133,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   val dmaPorts = new ListBuffer[NastiIO]
+  val addresses = new ListBuffer[AddressSet]
   val tResetChannel = defaultIOWidget.io.ins.elements("reset")
 
   // Instantiate endpoint widgets
@@ -155,7 +158,11 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
-      widget.io.dma.foreach(dma => dmaPorts += dma)
+
+      if (widget.io.dma.nonEmpty) {
+        dmaPorts += widget.io.dma.get
+        addresses += widget.io.address.get
+      }
 
       // each widget should have its own reset queue
       val resetQueue = Module(new WireChannel(Bool(), endpoint.clockRatio))
@@ -169,11 +176,18 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     }
   }
 
-  require(dmaPorts.size <= 1)
-  if (dmaPorts.nonEmpty) {
+  if (dmaPorts.isEmpty) {
+    val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
+    val error = Module(new NastiErrorSlave()(dmaParams))
+    error.io <> io.dma
+  } else if (dmaPorts.size == 1) {
     dmaPorts(0) <> io.dma
   } else {
-    io.dma := DontCare
+    val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
+    val routeFunc = (addr: UInt) => Cat(addresses.map(_.contains(addr)).reverse)
+    val router = Module(new NastiRouter(dmaPorts.size, routeFunc)(dmaParams))
+    router.io.master <> NastiQueue(io.dma)(dmaParams)
+    dmaPorts.zip(router.io.slave).foreach { case (dma, slave) => dma <> slave }
   }
 
   genCtrlIO(io.ctrl, p(FpgaMMIOSize))
