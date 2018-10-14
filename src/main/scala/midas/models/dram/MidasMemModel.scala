@@ -186,8 +186,10 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
                                     io.tNasti.fromHost.hReady,
                                     ingressReady, bReady, rReady, tResetReady, temp_true_B)
 
-  io.tNasti.toHost.hReady := tFireHelper.fire(io.tNasti.toHost.hValid)
-  io.tNasti.fromHost.hValid := tFireHelper.fire(io.tNasti.fromHost.hReady)
+  // HACK: Feeding valid back on ready and ready back on valid until we figure out
+  // channel tokenization
+  io.tNasti.toHost.hReady := tFireHelper.fire(temp_true_B)
+  io.tNasti.fromHost.hValid := tFireHelper.fire(temp_true_B)
   io.tReset.ready := tFireHelper.fire(tResetReady)
   ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
