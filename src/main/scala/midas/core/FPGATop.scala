@@ -40,7 +40,9 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   val defaultIOWidget = addWidget(new PeekPokeIOWidget(
     simIo.pokedInputs,
-    simIo.peekedOutputs),
+    simIo.peekedOutputs,
+    simIo.pokedReadyValidInputs,
+    simIo.peekedReadyValidOutputs),
     "DefaultIOWidget")
   defaultIOWidget.io.step <> master.io.step
   master.io.done := defaultIOWidget.io.idle
@@ -50,6 +52,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // assignment below when connecting the memory models to this same reset
   simIo.pokedInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.ins.elements(name) })
   simIo.peekedOutputs.foreach({case (wire, name) => defaultIOWidget.io.outs.elements(name) <> simIo.elements(name)})
+  simIo.pokedReadyValidInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.rvins.elements(name) })
+  simIo.peekedReadyValidOutputs.foreach({case (wire, name) => defaultIOWidget.io.rvouts.elements(name) <> simIo.elements(name)})
 
   //if (p(EnableSnapshot)) {
   //  val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
