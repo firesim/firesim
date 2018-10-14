@@ -35,17 +35,6 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 CONF_NAME ?= runtime.conf
 
-################################################################
-# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
-################################################################
-TIMEOUT_CYCLES = 100000000
-SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
-mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args)
-
-# Arguments used only in MIDAS-level (ML) RTL simulation
-MIDAS_LEVEL_SIM_ARGS ?= +dramsim
-
 ####################################
 # Verilator MIDAS-Level Simulators #
 ####################################
@@ -156,8 +145,6 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 # FPGA-level RTL Simulation #
 #############################
 
-FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
-
 # Run XSIM DUT
 xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
@@ -173,10 +160,6 @@ $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 xsim: $(xsim)
 
-run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
-	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
-
 #########################
 # MIDAS Unit Tests      #
 #########################
@@ -186,6 +169,7 @@ rocketchip_dir := $(base_dir)/target-rtl/firechip/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
 		BASE_DIR=$(base_dir) \
+		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
 		SBT="$(SBT) $(SBT_FLAGS)" \

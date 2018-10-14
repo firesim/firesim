@@ -47,6 +47,7 @@ public:
       e->init();
     }
     target_reset(0);
+    int current_cycle = 0;
 
     poke(io_startAddr_bits, address);
     poke(io_startAddr_valid, 1);
@@ -54,17 +55,12 @@ public:
       step(1);
     } while (!peek(io_startAddr_ready));
     poke(io_startAddr_valid, 0);
-    poke(io_result_ready, 1);
+    poke(io_result_ready, 0);
     do {
       step(1, false);
-      bool _done;
-      do {
-        _done = done();
-        for (auto e: endpoints) {
-          _done &= e->done();
-          e->tick();
-        }
-      } while(!_done);
+      for (auto e: endpoints) {
+        e->tick();
+      }
     } while (!peek(io_result_valid) && cycles() < max_cycles);
     expect(io_result_bits, result);
   }
