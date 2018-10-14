@@ -247,7 +247,7 @@ class ReadyValidChannel[T <: Data](
 
   // Capture ready tokens that would be dropped
   val readyTokens = Module(new Queue(Bool(), n, flow = false))
-  readyTokens.io.enq.valid := enqFwdHelper.fire(dummy)
+  readyTokens.io.enq.valid := enqFwdHelper.fire(dummy) && !io.enq.rev.hReady
   readyTokens.io.enq.bits  := target.io.enq.ready
 
   io.enq.rev.hValid   := true.B
