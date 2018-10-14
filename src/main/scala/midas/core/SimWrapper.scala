@@ -236,7 +236,7 @@ class SimWrapper(targetIo: Seq[Data])(implicit val p: Parameters) extends MultiI
   val channelPorts = IO(new SimWrapperIO(targetIo))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(targetIo))
-  target.io.hostReset := hostReset
+  target.io.hostReset := reset.toBool && hostReset
   target.io.clock := clock
 
   /*** Wire Channels ***/
