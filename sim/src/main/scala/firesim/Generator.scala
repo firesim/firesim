@@ -95,7 +95,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     val annos = c3circuit.annotations.map(_.toFirrtl)
 
     val portList = target.getPorts flatMap {
-      case Port(id: DebugIO, _) => None
+      //case Port(id: DebugIO, _) => None
       case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
       case otherPort => Some(otherPort.id)
     }
