@@ -25,7 +25,7 @@ trait Endpoint {
   final def apply(wire: Element) = wires(wire)
   final def apply(i: Int) = channels(i)
   def add(name: String, channel: Data) {
-    val (ins, outs) = SimUtils.parsePorts(channel)
+    val (ins, outs, _, _) = SimUtils.parsePorts(channel)
     wires ++= (ins ++ outs).unzip._1
     channels += (name -> channel.asInstanceOf[Record])
   }

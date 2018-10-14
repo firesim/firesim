@@ -5,10 +5,12 @@ package widgets
 
 import scala.collection.immutable.ListMap
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimUtils._
+import midas.core.{SimReadyValid, SimReadyValidIO}
 
 class ChannelRecord(channels: Seq[ChTuple]) extends Record {
   val elements = ListMap((channels map { case (elm, name) =>
@@ -17,23 +19,38 @@ class ChannelRecord(channels: Seq[ChTuple]) extends Record {
   def cloneType = new ChannelRecord(channels).asInstanceOf[this.type]
 }
 
-class PeekPokeIOWidgetIO(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
-    (implicit p: Parameters) extends WidgetIO()(p) {
+class RVChannelRecord(channels: Seq[RVChTuple]) extends Record {
+  val elements = ListMap((channels map { case (elm, name) =>
+    name -> SimReadyValid(elm.bits.cloneType)
+  }):_*)
+  def cloneType = new RVChannelRecord(channels).asInstanceOf[this.type]
+}
+
+class PeekPokeIOWidgetIO(
+  inputs: Seq[ChTuple],
+  outputs: Seq[ChTuple],
+  rvInputs: Seq[RVChTuple],
+  rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
   // Place for a heterogenous seq
   val ins  = new ChannelRecord(inputs)
   val outs = Flipped(new ChannelRecord(outputs))
+  val rvins  = new RVChannelRecord(rvInputs)
+  val rvouts = Flipped(new RVChannelRecord(rvOutputs))
 
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
-  val idle = Bool(OUTPUT)
+  val idle = Output(Bool())
 }
 
 // The interface to this widget is temporary, and matches the Vec of channels
 // the sim wrapper produces. Ultimately, the wrapper should have more coarsely
 // tokenized IOs.
-class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
-    (implicit p: Parameters) extends Widget()(p) {
-  val io = IO(new PeekPokeIOWidgetIO(inputs, outputs))
+class PeekPokeIOWidget(
+    inputs: Seq[ChTuple],
+    outputs: Seq[ChTuple],
+    rvInputs: Seq[RVChTuple],
+    rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends Widget()(p) {
+  val io = IO(new PeekPokeIOWidgetIO(inputs, outputs, rvInputs, rvOutputs))
 
   // i = input, o = output tokens (as seen from the target)
   val iTokensAvailable = RegInit(0.U(ctrlWidth.W))
@@ -62,6 +79,20 @@ class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
     reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
   }
 
+  // Hacks
+  def bindRVInputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
+    channel.fwd.hValid := iTokensAvailable =/= UInt(0) && fromHostReady
+    channel.rev.hReady := oTokensPending =/= UInt(0) && toHostValid
+    channel.target.valid := false.B
+    channel.target.bits := DontCare
+  }
+
+  def bindRVOutputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
+    channel.rev.hValid := iTokensAvailable =/= UInt(0) && fromHostReady
+    channel.fwd.hReady := oTokensPending =/= UInt(0) && toHostValid
+    channel.target.ready := false.B
+  }
+
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
     channel.ready := oTokensPending =/= UInt(0) && toHostValid
@@ -76,6 +107,8 @@ class PeekPokeIOWidget(inputs: Seq[ChTuple], outputs: Seq[ChTuple])
 
   val inputAddrs = io.ins.elements.map(elm => bindInputs(elm._1, elm._2))
   val outputAddrs = io.outs.elements.map(elm => bindOutputs(elm._1, elm._2))
+  io.rvins.elements.foreach(elm => bindRVInputs(elm._1, elm._2))
+  io.rvouts.elements.foreach(elm => bindRVOutputs(elm._1, elm._2))
 
   when (iTokensAvailable =/= UInt(0) && fromHostReady) {
     iTokensAvailable := iTokensAvailable - UInt(1)
