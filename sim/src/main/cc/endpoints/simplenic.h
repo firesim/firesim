@@ -15,7 +15,7 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid[4], uint64_t mac_little_end[4], int netbw, int netburst, int linklatency, char shmemportname[4]);
+        simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid[4], uint64_t mac_little_end[4], int netbw, int netburst, int linklatency, char* shmemportname[4]);
         ~simplenic_t();
 
         virtual void init();

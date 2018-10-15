@@ -93,7 +93,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
     *dd = d / a;
 }
 
-simplenic_t::simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid[4], uint64_t mac_little_end[4], int netbw, int netburst, int linklatency, char shmemportname[4]): endpoint_t(sim, addr_map)
+simplenic_t::simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char subslotid[4], uint64_t mac_little_end[4], int netbw, int netburst, int linklatency, char* shmemportname[4]): endpoint_t(sim, addr_map)
 {
     // store link latency:
     LINKLATENCY = linklatency;
@@ -129,8 +129,8 @@ simplenic_t::simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char 
         }
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_read_bufs[subnode][j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        ftruncate(shmemfd, SINGLEBUFBYTES+EXTRABYTES);
+        pcis_read_bufs[subnode][j] = (char*)mmap(NULL, SINGLEBUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
 
         if (shmemportname[subnode]) {
             printf("Using non-slot-id associated shmemportname:\n");
@@ -142,8 +142,8 @@ simplenic_t::simplenic_t(simif_t* sim, AddressMap addr_map, char * slotid, char 
 
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_write_bufs[subnode][j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        ftruncate(shmemfd, SINGLEBUFBYTES+EXTRABYTES);
+        pcis_write_bufs[subnode][j] = (char*)mmap(NULL, SINGLEBUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
       }
     }
 #endif // SIMULATION_XSIM

@@ -42,7 +42,7 @@ void loadmem_m::write_mem(size_t addr, mpz_t& value, size_t bytes) {
   write("LOADMEM_W_ADDRESS_H", addr >> 32);
   write("LOADMEM_W_ADDRESS_L", addr & ((1ULL << 32) - 1));
   size_t num_beats = (bytes + (MEM_DATA_CHUNK*sizeof(data_t)))/(MEM_DATA_CHUNK*sizeof(data_t));
-  write(LOADMEM_W_LENGTH, num_beats);
+  write("LOADMEM_W_LENGTH", num_beats);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
   for (size_t i = 0 ; i < num_beats * MEM_DATA_CHUNK ; i++) {

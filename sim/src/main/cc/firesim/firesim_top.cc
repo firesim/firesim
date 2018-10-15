@@ -360,14 +360,16 @@ void firesim_top_t::loop(size_t step_size, uint64_t coarse_step_size) {
           firesim_fesvr_t* fesvr = fesvr_vec[i];
           loadmem_m ldmem = loadmem_vec[i];
           if (fesvr->has_loadmem_reqs() && !fesvr->data_available()) {
-              serial_bypass_via_loadmem(fesvr);
+              serial_bypass_via_loadmem(fesvr, ldmem);
           }
         }
 
-        if (fesvr->done()) {
-           fesvr_done_counter++;
+        for (auto fesvr: fesvr_vec) {
+          if (fesvr->done()) {
+             fesvr_done_counter++;
+          }
         }
-    } while (!fesvr->done() && cycles() < loop_end && cycles() <= max_cycles);
+    } while ((fesvr_done_counter == 0) && cycles() < loop_end && cycles() <= max_cycles);
 }
 
 

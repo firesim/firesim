@@ -165,7 +165,8 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
-            dls = [downlink for downlink in switch.downlinks if not isinstance(downlink, FireSimDummyServerNode)]
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            dls = [downlink for downlink in downlinknodes if not isinstance(downlink, FireSimDummyServerNode)]
             if all([isinstance(x, FireSimSwitchNode) for x in dls]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
@@ -182,6 +183,7 @@ class FireSimTopologyWithPasses:
                         self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
                     f1_16s_used += 1
             else:
+                print(dls)
                 assert False, "Mixed downlinks currently not supported."""
 
     def mapping_use_one_f1_16xlarge(self):
