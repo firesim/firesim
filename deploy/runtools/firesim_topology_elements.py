@@ -174,9 +174,9 @@ class FireSimServerNode(FireSimNode):
     def supernode_get_sibling(self, siblingindex):
         """ return the sibling for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        for index, servernode in enumerate(map(lambda x: x.get_downlink_side(), self.uplinks[0].downlinks)):
+        for index, servernode in enumerate(map(lambda x: x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
             if self == servernode:
-                return self.uplinks[0].downlinks[index+siblingindex].get_downlink_side()
+                return self.uplinks[0].get_uplink_side().downlinks[index+siblingindex].get_downlink_side()
 
     def supernode_get_sibling_mac_address(self, siblingindex):
         """ return the sibling's mac address for supernode mode.
