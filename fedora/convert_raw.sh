@@ -47,6 +47,7 @@ rm $RAWIMG
 
 # Setup the image how we want for firesim 
 echo "Setting up image for firesim"
+mkdir -p $MNT
 sudo mount -o loop $NEWIMG $MNT
 
 # fix serial port
