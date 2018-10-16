@@ -45,17 +45,14 @@ trap - ERR
 # Don't keep the raw image around, it's big and pointless. But cache the compressed one just in case.
 rm $RAWIMG
 
-# Resize the image to be big enough for basic stuff (this file is going to be
-# copied around a lot so don't over do it on the size here.
-# truncate -s 4G $NEWIMG
-# e2fsck -f $NEWIMG 
-# resize2fs $NEWIMG
-
-# Update the default serial port setup
+# Setup the image how we want for firesim 
 echo "Setting up image for firesim"
 sudo mount -o loop $NEWIMG $MNT
+
+# fix serial port
 sudo cp ./getty@.service $MNT/usr/lib/systemd/system/
 sudo chmod 644 $MNT/usr/lib/systemd/system/getty@.service
 sudo ln -s /usr/lib/systemd/system/getty@.service $MNT/etc/systemd/system/getty.target.wants/getty@hvc0.service
 sudo rm $MNT/etc/systemd/system/getty.target.wants/getty@tty1.service
+
 sudo umount $MNT 

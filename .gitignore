@@ -1,2 +1,2 @@
-bbl-vmlinux*
-rootfs*.ext2
+*.img
+*-bin

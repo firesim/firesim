@@ -4,3 +4,6 @@
 [submodule "riscv-pk"]
 	path = riscv-pk
 	url = https://github.com/firesim/riscv-pk.git
+[submodule "buildroot/buildroot"]
+	path = buildroot/buildroot
+	url = https://github.com/sifive/buildroot.git
