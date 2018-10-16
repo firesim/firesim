@@ -7,8 +7,8 @@ else
   PLATFORM=$1
 fi
 
-if [ $1 == "buildroot" ]; then
-  DIST_DIR=buildroot/
+if [ $1 == "br" ]; then
+  DIST_DIR=br/
 elif [ $1 == "fedora" ] ; then
   DIST_DIR=fedora
 else

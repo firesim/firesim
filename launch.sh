@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-  PLATFORM=buildroot
+  PLATFORM=br
 else
   PLATFORM=$1
 fi
