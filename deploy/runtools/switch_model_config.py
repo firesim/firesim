@@ -95,12 +95,16 @@ class AbstractSwitchToSwitchConfig:
 
     def get_numclientsconfig(self):
         """ Emit constants for num ports. """
-        totalports = len(self.fsimswitchnode.downlinks) + len(self.fsimswitchnode.uplinks)
+        numdownlinks = len(self.fsimswitchnode.downlinks)
+        numuplinks = len(self.fsimswitchnode.uplinks)
+        totalports = numdownlinks + numuplinks
 
         retstr = """
     #ifdef NUMCLIENTSCONFIG
     #define NUMPORTS {}
-    #endif""".format(totalports)
+    #define NUMDOWNLINKS {}
+    #define NUMUPLINKS {}
+    #endif""".format(totalports, numdownlinks, numuplinks)
         return retstr
 
     def get_portsetup(self):
