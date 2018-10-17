@@ -8,6 +8,51 @@ class UserTopologies(object):
     """ A class that just separates out user-defined/configurable topologies
     from the rest of the boilerplate in FireSimTopology() """
 
+    def clos_m_n_r(self, m, n, r):
+        """ DO NOT USE THIS DIRECTLY, USE ONE OF THE INSTANTIATIONS BELOW. """
+        """ Clos topol where:
+        m = number of root switches
+        n = number of links to nodes on leaf switches
+        r = number of leaf switches
+
+        and each leaf switch has a link to each root switch.
+
+        With the default mapping specified below, you will need:
+        m m4.16xlarges.
+        n f1.16xlarges.
+
+        TODO: improve this later to pack leaf switches with <= 4 downlinks onto
+        one 16x.large.
+        """
+
+        rootswitches = [FireSimSwitchNode() for x in range(m)]
+        self.roots = rootswitches
+        leafswitches = [FireSimSwitchNode() for x in range(r)]
+        servers = [[FireSimServerNode() for x in range(n)] for y in range(r)]
+        for rswitch in rootswitches:
+            rswitch.add_downlinks(leafswitches)
+
+        for leafswitch, servergroup in zip(leafswitches, servers):
+            leafswitch.add_downlinks(servergroup)
+
+        def custom_mapper(fsim_topol_with_passes):
+            for i, rswitch in enumerate(rootswitches):
+                fsim_topol_with_passes.run_farm.m4_16s[i].add_switch(rswitch)
+
+            for j, lswitch in enumerate(leafswitches):
+                fsim_topol_with_passes.run_farm.f1_16s[j].add_switch(lswitch)
+                for sim in servers[j]:
+                    fsim_topol_with_passes.run_farm.f1_16s[j].add_simulation(sim)
+
+        self.custom_mapper = custom_mapper
+
+    def clos_2_8_2(self):
+        """ clos topol with:
+        2 roots
+        8 nodes/leaf
+        2 leaves. """
+        self.clos_m_n_r(2, 8, 2)
+
     def fat_tree_4ary(self):
         # 4-ary fat tree as described in
         # http://ccr.sigcomm.org/online/files/p63-alfares.pdf
