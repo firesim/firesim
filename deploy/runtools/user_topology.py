@@ -60,6 +60,69 @@ class UserTopologies(object):
         16 leaves. = 128 nodes."""
         self.clos_m_n_r(8, 8, 16)
 
+
+    def clos_m_n_r_supernode(self, m, n, r):
+        """ DO NOT USE THIS DIRECTLY, USE ONE OF THE INSTANTIATIONS BELOW. """
+        """ Clos topol where:
+        m = number of root switches
+        n = number of links to nodes on leaf switches
+        r = number of leaf switches
+
+        and each leaf switch has a link to each root switch.
+
+        With the default mapping specified below, you will need:
+        m m4.16xlarges.
+        n f1.16xlarges.
+
+        TODO: improve this later to pack leaf switches with <= 4 downlinks onto
+        one 16x.large.
+        """
+
+        rootswitches = [FireSimSwitchNode() for x in range(m)]
+        self.roots = rootswitches
+        leafswitches = [FireSimSwitchNode() for x in range(r)]
+
+        assert (n % 4 == 0), "Currently, # of nodes per leaf switch must be a multiple of 4"
+        nsupernodequads = n / 4
+        servers = [list(reduce(lambda x, y: x + y, [[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for x in range(nsupernodequads)])) for y in range(r)]
+        for rswitch in rootswitches:
+            rswitch.add_downlinks(leafswitches)
+
+        for leafswitch, servergroup in zip(leafswitches, servers):
+            leafswitch.add_downlinks(servergroup)
+
+        def custom_mapper(fsim_topol_with_passes):
+            for i, rswitch in enumerate(rootswitches):
+                fsim_topol_with_passes.run_farm.m4_16s[i].add_switch(rswitch)
+
+            # get # of servers per leaf
+            div = len(servers[0])
+            # how many can we pack per f1.16x?
+            div = 32 / div
+            for j, lswitch in enumerate(leafswitches):
+                f116xid = j / div
+                fsim_topol_with_passes.run_farm.f1_16s[f116xid].add_switch(lswitch)
+                for sim in servers[j]:
+                    if not isinstance(sim, FireSimDummyServerNode):
+                        # NEW FOR SUPERNODE: skip the dummy placeholders when mapping
+                        fsim_topol_with_passes.run_farm.f1_16s[f116xid].add_simulation(sim)
+
+        self.custom_mapper = custom_mapper
+
+
+    def clos_4_4_8_supernode(self):
+        """ clos topol with:
+        4 roots
+        4 nodes/leaf
+        8 leaves. = 32 nodes."""
+        self.clos_m_n_r_supernode(4, 4, 8)
+
+
+
+
+
+
+
     def fat_tree_4ary(self):
         # 4-ary fat tree as described in
         # http://ccr.sigcomm.org/online/files/p63-alfares.pdf
