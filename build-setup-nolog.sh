@@ -37,6 +37,9 @@ FASTINSTALL=false
 if [ $# -eq 0 ]; then
     # handle case where no args passed. default to FASTINSTALL false
     FASTINSTALL=false
+elif [ "$1" = "submodules-only" ]; then
+    # Only initialize submodules
+    exit
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt

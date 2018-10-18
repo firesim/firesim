@@ -34,7 +34,7 @@ struct blkdev_write_tracker {
 class blockdev_t: public endpoint_t
 {
     public:
-        blockdev_t(simif_t* sim, char* filename);
+        blockdev_t(simif_t* sim, const std::vector<std::string>& args);
         ~blockdev_t();
 
         uint32_t nsectors(void) { return _nsectors; }
@@ -44,8 +44,8 @@ class blockdev_t: public endpoint_t
         void recv();
         virtual void init();
         virtual void tick();
-        virtual bool done();
-        virtual bool stall() { return false; }
+        virtual bool terminate() { return false; }
+        virtual int exit_code() { return 0; }
 
     private:
         bool a_req_valid;
@@ -55,20 +55,31 @@ class blockdev_t: public endpoint_t
         bool a_resp_valid;
         bool a_resp_ready;
 
+        // Set if, on the previous tick, we couldn't write back all of our response data
+        bool resp_data_pending = false;
+
         simif_t* sim;
         uint32_t _ntags;
         uint32_t _nsectors;
         FILE *_file;
-        char * filename;
+        char * filename = NULL;
         std::queue<blkdev_request> requests;
         std::queue<blkdev_data> req_data;
-        std::queue<blkdev_data> responses;
+        std::queue<blkdev_data> read_responses;
+        std::queue<uint32_t> write_acks;
+
         std::vector<blkdev_write_tracker> write_trackers;
 
         void do_read(struct blkdev_request &req);
         void do_write(struct blkdev_request &req);
         bool can_accept(struct blkdev_data &data);
         void handle_data(struct blkdev_data &data);
+        // Returns true if no widget interaction is required
+        bool idle();
+
+        // Default timing model parameters
+        uint32_t read_latency = 4096;
+        uint32_t write_latency = 4096;
 };
 
 #endif // __BLOCKDEV_H

@@ -1,0 +1,13 @@
+{
+  "benchmark_name" : "checksum-test",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "workloads" : [
+    {
+      "name" : "checksum",
+      "bootbinary" : "checksum.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}

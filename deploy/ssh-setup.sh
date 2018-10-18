@@ -5,20 +5,25 @@
 
 # adapted from https://stackoverflow.com/a/48509425
 # Ensure agent is running
-ssh-add -l &>/dev/null
-if [ $? -eq 2 ]; then
-    # Could not open a connection to your authentication agent.
 
-    # Load stored agent connection info.
-    test -r ~/.ssh-agent && \
-        eval "$(<~/.ssh-agent)" >/dev/null
+_no_agent() {
+    # NOTE: Ignore agent forwarding if running within tmux or screen, as
+    # detaching a session and logging out closes the agent socket.
+    { test -n "${TMUX}${STY}" && test -z "${SSH_AGENT_PID}" ; } ||
+    { ssh-add -l >/dev/null 2>&1 ; test $? -eq 2 ; }
+}
 
-    ssh-add -l &>/dev/null
-    if [ $? -eq 2 ]; then
-        # Start agent and store agent connection info.
-        (umask 066; ssh-agent > ~/.ssh-agent)
-        eval "$(<~/.ssh-agent)" >/dev/null
-    fi
+if _no_agent ; then
+    {
+        flock -x 3
+        # Load cached agent connection info.
+        source /dev/fd/3
+
+        if _no_agent ; then
+            # Start agent and cache agent connection info.
+            eval "$(umask 066 && ssh-agent -s 3>&- | tee /dev/fd/3)" >/dev/null
+        fi
+    } 3<> ~/.ssh-agent
 fi
 
 # if key is available, print success, else add it

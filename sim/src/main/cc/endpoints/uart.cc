@@ -24,7 +24,6 @@ void sighand(int s) {
 
 uart_t::uart_t(simif_t* sim): endpoint_t(sim)
 {
-#ifndef _WIN32
     // Don't block on stdin reads if there is nothing typed in
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
 
@@ -34,7 +33,6 @@ uart_t::uart_t(simif_t* sim): endpoint_t(sim)
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
-#endif
 }
 
 void uart_t::send() {
@@ -61,7 +59,6 @@ void uart_t::tick() {
     do {
         this->recv();
 
-#ifndef _WIN32
         if (data.in.ready) {
             char inp;
             int readamt;
@@ -80,7 +77,6 @@ void uart_t::tick() {
                 data.in.valid = true;
             }
         }
-#endif
 
         if (data.out.fire()) {
             fprintf(stdout, "%c", data.out.bits);
