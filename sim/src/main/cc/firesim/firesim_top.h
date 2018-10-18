@@ -23,7 +23,7 @@ class firesim_top_t: virtual simif_t
         }
 
     private:
-        std::vector<loadmem_m> loadmem_vec;
+        std::vector<loadmem_m*> loadmem_vec;
 
         uint64_t start_time;
 
@@ -47,9 +47,9 @@ class firesim_top_t: virtual simif_t
         void loop(size_t step_size, uint64_t coarse_step_size);
 
         // Helper functions to handoff fesvr requests to the loadmem unit
-        void handle_loadmem_read(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m ldmem);
-        void handle_loadmem_write(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m ldmem);
-        void serial_bypass_via_loadmem(firesim_fesvr_t* fesvr, loadmem_m ldmem);
+        void handle_loadmem_read(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m* ldmem);
+        void handle_loadmem_write(fesvr_loadmem_t loadmem, firesim_fesvr_t* fesvr, loadmem_m* ldmem);
+        void serial_bypass_via_loadmem(firesim_fesvr_t* fesvr, loadmem_m* ldmem);
 };
 
 #endif // __FIRESIM_TOP_H
