@@ -42,8 +42,6 @@ sudo dd if=${LOOP_DEV}p1 of=$NEWIMG bs=4M
 # clean up the loopback interface
 sudo losetup -d $LOOP_DEV
 trap - ERR
-# Don't keep the raw image around, it's big and pointless. But cache the compressed one just in case.
-rm $RAWIMG
 
 # Setup the image how we want for firesim 
 echo "Setting up image for firesim"
