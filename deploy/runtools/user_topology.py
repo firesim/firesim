@@ -53,6 +53,13 @@ class UserTopologies(object):
         2 leaves. """
         self.clos_m_n_r(2, 8, 2)
 
+    def clos_8_8_16(self):
+        """ clos topol with:
+        8 roots
+        8 nodes/leaf
+        16 leaves. = 128 nodes."""
+        self.clos_m_n_r(8, 8, 16)
+
     def fat_tree_4ary(self):
         # 4-ary fat tree as described in
         # http://ccr.sigcomm.org/online/files/p63-alfares.pdf
