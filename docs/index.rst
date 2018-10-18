@@ -32,6 +32,13 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
 
+.. toctree::
+   :maxdepth: 3
+   :caption: MIDAS Docs:
+
+   MIDAS/Overview
+
+
 Indices and tables
 ==================
 
