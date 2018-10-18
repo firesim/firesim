@@ -72,6 +72,8 @@ class FireSimLink(object):
         """ Return True if the user has mapped the two endpoints of this link to
         separate hosts. This implies a SocketServerPort / SocketClientPort will be used
         to implement the Link. If False, use a sharedmem port to implement the link. """
+	if type(self.get_downlink_side()) == FireSimDummyServerNode:
+            return False
         return self.get_uplink_side().host_instance != self.get_downlink_side().host_instance
 
     def get_global_link_id(self):
