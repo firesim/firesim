@@ -20,7 +20,7 @@ class firesim_f1_t:
     public simif_emul_t, public firesim_top_t     
 {
     public:
-        firesim_f1_t(int argc, char** argv, firesim_fesvr_t* fesvr):
+        firesim_f1_t(int argc, char** argv, std::vector<firesim_fesvr_t*> fesvr):
             firesim_top_t(argc, argv, fesvr, DESIRED_STEPSIZE) { }
 };
 #else
