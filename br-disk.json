@@ -1,0 +1,7 @@
+{
+  "name" : "br-disk",
+  "root-dir" : "br",
+  "linux-config" : "linux-config-disk",
+  "rootfs" : "rootfs.img"
+}
+
