@@ -336,7 +336,11 @@ class InstanceDeployManager:
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo fpga-clear-local-image -S {}""".format(slotno))
+                run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+        for slotno in range(self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
 
     def flash_fpgas(self):
         for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
@@ -344,8 +348,13 @@ class InstanceDeployManager:
                 agfi = firesimservernode.get_agfi()
                 self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
                 with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""sudo fpga-load-local-image -S {} -I {}""".format(
+                    run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
                         slotno, agfi))
+        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
+            if firesimservernode is not None:
+                self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
+                with StreamLogger('stdout'), StreamLogger('stderr'):
+                    run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
     def load_edma(self):
         """ load the edma kernel module. """
@@ -387,6 +396,7 @@ class InstanceDeployManager:
         files_to_copy = serv.get_required_files_local_paths()
         for filename in files_to_copy:
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                # -z --inplace
                 rsync_cap = rsync_project(local_dir=filename, remote_dir=remote_sim_rsync_dir,
                               ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
