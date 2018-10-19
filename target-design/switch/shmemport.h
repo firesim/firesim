@@ -131,6 +131,11 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
 }
 
 void ShmemPort::send() {
+    if (((uint64_t*)current_output_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+        // if compress flag is set, clear it, this port type doesn't care
+        // (and in fact, we're writing too much, so stuff later will get confused)
+        ((uint64_t*)current_output_buf)[0] = 0L;
+    }
     // mark flag to initiate "send"
     current_output_buf[BUFSIZE_BYTES] = 1;
 }
