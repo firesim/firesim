@@ -121,6 +121,28 @@ class UserTopologies(object):
 
 
 
+    ## nonblocking, new
+    def clos_8_8_32_supernode(self):
+        """ clos topol with:
+        8 roots
+        8 nodes/leaf
+        32 leaves. = 256 nodes."""
+        self.clos_m_n_r_supernode(8, 8, 32)
+
+    def clos_8_4_64_supernode(self):
+        """ clos topol with:
+        8 roots
+        4 nodes/leaf
+        64 leaves. = 256 nodes."""
+        self.clos_m_n_r_supernode(8, 4, 64)
+
+    def clos_16_16_16_supernode(self):
+        """ clos topol with:
+        16 roots
+        16 nodes/leaf
+        16 leaves. = 256 nodes."""
+        self.clos_m_n_r_supernode(16, 16, 16)
+
 
 
     def fat_tree_4ary(self):
