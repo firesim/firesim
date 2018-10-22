@@ -4,13 +4,25 @@
 # critical feature (should be rare). Note that this assumes the current (circa
 # Oct '18) images, you may need to tweak this.
 #
-# Usage: ./convert_img.sh UPSTREAM_IMAGE NEW_FILE_NAME
+# Usage: ./convert_img.sh [-c] UPSTREAM_IMAGE NEW_FILE_NAME
 
 set -e
 
+USAGE="./convert_img.sh [-c] UPSTREAM_IMAGE NEW_FILE_NAME\n\t-c\n\t\tCreate a CPIO archive instead of the default raw filesystem image."
 RAWIMG=$1
 NEWIMG=$2
 MNT=disk-mount/
+
+while getopts ":c" opt; do
+  case ${opt} in
+    c )
+      CPIO="True"
+      ;;
+    \? )
+      echo $USAGE
+      ;;
+  esac
+done
 
 if [ -f $NEWIMG ]; then
   read -p "Overwrite existing image \"$NEWIMG\"? (y/n) " OVERWRITE_IMG

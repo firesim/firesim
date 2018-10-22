@@ -4,5 +4,4 @@
   "linux-config" : "linux-config-initramfs",
   "rootfs" : "rootfs.cpio",
   "keep-rootfs" : "false",
-  "linux_cmdline" : "root=/dev/generic-blkdev rw"
 }
