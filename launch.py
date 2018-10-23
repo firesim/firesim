@@ -8,6 +8,7 @@ import shutil
 
 parser = argparse.ArgumentParser(description="Launch the provided configuration in qemu.")
 parser.add_argument('config_file', help='Configuration file to use (defaults to br-disk.json)', nargs='?', default='br-disk.json')
+parser.add_argument('-s', '--spike', action='store_true', help='Use spike instead of qemu')
 
 args = parser.parse_args()
 
@@ -22,20 +23,30 @@ for field in ['name', 'root-dir', 'linux-config', 'rootfs']:
 if not "keep-rootfs" in config:
   config['keep-rootfs'] = 'true'
 
-qemu_cmd = ['qemu-system-riscv64',
-  '-nographic',
-  '-smp', '4',
-  '-machine', 'virt',
-  '-m', '4G',
-  '-kernel', config['name'] + '-bin',
-  '-object', 'rng-random,filename=/dev/urandom,id=rng0',
-  '-device', 'virtio-rng-device,rng=rng0',
-  '-device', 'virtio-net-device,netdev=usernet',
-  '-netdev' ,'user,id=usernet,hostfwd=tcp::10000-:22']
+if args.spike:
+  if config['keep-rootfs'] == 'true':
+    sys.exit("Spike currently does not support disk-based configurations. Please use an initramfs based image.")
 
-if config['keep-rootfs'] == 'true':
-  qemu_cmd = qemu_cmd + ['-device', 'virtio-blk-device,drive=hd0',
-  '-drive', 'file=' + config['name'] + '.img,format=raw,id=hd0']
-  qemu_cmd = qemu_cmd + ['-append', 'ro root=/dev/vda']
+  cmd = ['spike',
+      '-p4',
+      '-m4096',
+      os.path.join("images", config['name'] + '-bin')]
 
-sp.check_call(qemu_cmd)
+else:
+  cmd = ['qemu-system-riscv64',
+    '-nographic',
+    '-smp', '4',
+    '-machine', 'virt',
+    '-m', '4G',
+    '-kernel', os.path.join("images", config['name'] + '-bin'),
+    '-object', 'rng-random,filename=/dev/urandom,id=rng0',
+    '-device', 'virtio-rng-device,rng=rng0',
+    '-device', 'virtio-net-device,netdev=usernet',
+    '-netdev' ,'user,id=usernet,hostfwd=tcp::10000-:22']
+
+  if config['keep-rootfs'] == 'true':
+    cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
+    '-drive', 'file=' + os.path.join("images", config['name'] + '.img') + ',format=raw,id=hd0']
+    cmd = cmd + ['-append', 'ro root=/dev/vda']
+
+sp.check_call(cmd)

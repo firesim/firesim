@@ -3,5 +3,5 @@
   "root-dir" : "br",
   "linux-config" : "linux-config-initramfs",
   "rootfs" : "rootfs.cpio",
-  "keep-rootfs" : "false",
+  "keep-rootfs" : "false"
 }

@@ -28,7 +28,8 @@ if not "keep-rootfs" in config:
 # Build the disk image first because the binary may require it (e.g. initramfs)
 sp.check_call(['make', config['rootfs'], jlevel], cwd=config['root-dir'])
 if config['keep-rootfs'] == 'true':
-  shutil.copy(os.path.join(config['root-dir'], config['rootfs']), config['name'] + ".img")
+  shutil.copy(os.path.join(config['root-dir'], config['rootfs']),
+      os.path.join("images", config['name'] + ".img"))
 
 # Now build linux/bbl
 shutil.copy(os.path.join(config['root-dir'], config['linux-config']), "riscv-linux/.config")
@@ -38,4 +39,5 @@ if not os.path.exists('riscv-pk/build'):
 
 sp.check_call(['../configure', '--host=riscv64-unknown-elf', '--with-payload=../../riscv-linux/vmlinux'], cwd='riscv-pk/build')
 sp.check_call(['make', jlevel], cwd='riscv-pk/build')
-shutil.copy('riscv-pk/build/bbl', config['name'] + "-bin")
+shutil.copy('riscv-pk/build/bbl',
+  os.path.join("images", config['name'] + "-bin"))
