@@ -76,7 +76,7 @@ class RuntimeHWConfig:
 
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
                                     linklatency, netbw, bootbin,
-                                    trace_enable, trace_start, trace_end):
+                                    trace_enable, trace_start, trace_end, shmemportname):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -89,10 +89,10 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, bootbin=bootbin, tracefile=tracefile,
+                netbw=netbw, shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
                 trace_start=trace_start, trace_end=trace_end)
 
         return basecommand

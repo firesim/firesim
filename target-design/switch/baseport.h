@@ -57,12 +57,14 @@ void BasePort::write_flits_to_output() {
     uint64_t basetime = this_iter_cycles_start;
     uint64_t maxtime = this_iter_cycles_start + LINKLATENCY;
 
+    bool empty_buf = true;
+
     while (!(outputqueue.empty())) {
         // first, check timing boundaries.
         uint64_t space_available = LINKLATENCY - flitswritten;
         uint64_t outputtimestamp = outputqueue.front()->timestamp;
         uint64_t outputtimestampend = outputtimestamp + outputqueue.front()->amtwritten;
-        
+
         // confirm that a) we are allowed to send this out based on timestamp
         // b) we are allowed to send this out based on available space (TODO fix)
         if (outputtimestampend < maxtime && (outputqueue.front()->amtwritten <= space_available)) {
@@ -91,6 +93,7 @@ void BasePort::write_flits_to_output() {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
                 write_flit(current_output_buf, flitswritten, thispacket->dat[i]);
+                empty_buf = false;
                 flitswritten++;
             }
             free(thispacket);
@@ -99,6 +102,9 @@ void BasePort::write_flits_to_output() {
             // write
             break;
         }
+    }
+    if (empty_buf) {
+        ((uint64_t*)current_output_buf)[0] = 0xDEADBEEFDEADBEEFL;
     }
 }
 
