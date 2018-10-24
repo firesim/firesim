@@ -1,7 +1,7 @@
 {
   "benchmark_name" : "linux-uniform",
-  "common_bootbinary" : "bbl-vmlinux",
-  "common_rootfs"     : "rootfs.ext2",
+  "common_bootbinary" : "br-disk-bin",
+  "common_rootfs"     : "br-disk.img",
   "common_outputs"    : ["/etc/os-release"],
   "common_simulation_outputs" : ["uartlog", "memory_stats.csv"]
 }
