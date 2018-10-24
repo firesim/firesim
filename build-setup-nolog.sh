@@ -77,15 +77,13 @@ else
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh
-    # update linux headers
-    cd $RDIR
-    cd sw/firesim-software/riscv-linux
-    # TODO: why is this here?
-    cp ../linux-config-firesim .config
     # build linux toolchain
     cd $RDIR
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
+    cd $RDIR
+    cd sw
+    ./install-qemu.sh
     cd $RDIR
 fi
 
