@@ -176,3 +176,12 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
+
+// for increased flit size
+class FireSimConfig256Flit extends Config(
+  new WithSerialWidget ++
+  new WithUARTWidget ++
+  new WithSimpleNICWidget(bufSize = 256) ++
+  new WithBlockDevWidget ++
+  new WithDefaultMemModel ++
+  new midas.F1Config)

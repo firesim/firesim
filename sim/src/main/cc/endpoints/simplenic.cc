@@ -58,18 +58,16 @@ simplenic_t::simplenic_t(
     mac_lendian = mac_little_end;
 
     //AJG: Let netbw determine the variables
-    assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
+    assert( netbw <= MAX_BANDWIDTH );//(( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
-    BUFWIDTH = netbw / PROC_SPEED;
+    BUFWIDTH = 256; // currently hardcoded since there is you want to manipulate the sim speed by the rlimiter//netbw / PROC_SPEED;
     TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
     SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
     BUFBYTES = SIMLATENCY_BT * BUFWIDTH;
     
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
-    //AJG: If the bandwidth is at its max then it should be 1 and 1 on the output variables
-    //rlimit_inc = 1;
-    //rlimit_period = 1;
+
     // AJG: Revert above later when you know the actual max
     // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
     // THE AMOUTN OF PACKETS THAT ARE BEING PUT INTO THE PCIE WIDTH (THIS MUST SCALE WITH THE SIZE OF THE FLIT)

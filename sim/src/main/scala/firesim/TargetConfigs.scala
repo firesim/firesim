@@ -99,6 +99,8 @@ class FireSimRocketChipHexaCoreConfig extends Config(new WithNBigCores(6) ++
 class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
+// AJG: for increased flit size
+class FireSimRocketChip256FlitConfig extends Config(new FireSimRocketChipConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
