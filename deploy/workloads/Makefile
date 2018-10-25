@@ -28,22 +28,6 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%
 	python gen-benchmark-rootfs.py -w $< -r -b ../../sw/firesim-software/rootfs0.ext2 \
 		-s $(SPECKLE_DIR)/build/overlay/$*
 
-
-fedora-uniform: fedora-uniform.json
-	mkdir -p $@
-	#cp ../../sw/firesim-software/bbl-vmlinux0 $@/bbl-vmlinux
-	cd $@ && wget https://fedorapeople.org/groups/risc-v/disk-images/stage4-disk.img.xz && unxz -f stage4-disk.img.xz
-	cd $@ && wget https://fedorapeople.org/groups/risc-v/disk-images/bbl && mv bbl QEMU-ONLY-bbl
-	mkdir -p $@/fedoramount
-	sudo mount -t ext4 $@/stage4-disk.img $@/fedoramount
-	#sudo cp $@/getty@.service $@/fedoramount/lib/systemd/system/
-	#sudo chmod 644 $@/fedoramount/lib/systemd/system/getty@.service
-	sudo cp $@/getty@.service $@/fedoramount/usr/lib/systemd/system/
-	sudo chmod 644 $@/fedoramount/usr/lib/systemd/system/getty@.service
-	sudo ln -s /usr/lib/systemd/system/getty@.service $@/fedoramount/etc/systemd/system/getty.target.wants/getty@hvc0.service
-	sudo rm $@/fedoramount/etc/systemd/system/getty.target.wants/getty@tty1.service
-	sudo umount $@/fedoramount
-
 memcached-thread-imbalance:
 	mkdir -p $@
 	sudo yum -y install gengetopt
