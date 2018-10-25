@@ -49,7 +49,7 @@ int switchlat = 0;
 
 // DO NOT TOUCH
 #define NUM_TOKENS (LINKLATENCY)
-#define TOKENS_PER_BIGTOKEN (7)
+#define TOKENS_PER_BIGTOKEN (1) // since 256 is the largest flit that can fit in the 512 pcie
 #define BIGTOKEN_BYTES (64)
 #define NUM_BIGTOKENS (NUM_TOKENS/TOKENS_PER_BIGTOKEN)
 #define BUFSIZE_BYTES (NUM_BIGTOKENS*BIGTOKEN_BYTES)

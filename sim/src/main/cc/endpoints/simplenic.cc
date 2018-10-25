@@ -58,14 +58,11 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
-    // AJG: netbw should be lower than the max PCIE width (minus some) by the speed of the processor
-    //      Note: For now this is MAX_BW since that is being used to created the limit below
-    //assert( netbw <= (( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
-    assert( netbw <= MAX_BANDWIDTH );
-
+    //AJG: Let netbw determine the variables
+    assert( netbw <= MAX_BANDWIDTH );//(( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
-    BUFWIDTH = 128;//netbw / PROC_SPEED; //OG was 512/8
-    TOKENS_PER_BIGTOKEN = 3;//PCIE_WIDTH / (BUFWIDTH + VAL_BITS); //OG was 7
+    BUFWIDTH = 256; // currently hardcoded since there is you want to manipulate the sim speed by the rlimiter//netbw / PROC_SPEED;
+    TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
     SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
     BUFBYTES = SIMLATENCY_BT * BUFWIDTH;
     
@@ -73,6 +70,10 @@ simplenic_t::simplenic_t(
     //      Note: netburst is the amt of pkts put into a larger PCIE packet (ex. 64bit small flits can fit into 512bits 8 times so netburst can be up to 8)
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
+
+    // AJG: Revert above later when you know the actual max
+    // What is netburst, if it is the amount of packets to try to fit in a pcie section then this must also be parameterized
+    // THE AMOUTN OF PACKETS THAT ARE BEING PUT INTO THE PCIE WIDTH (THIS MUST SCALE WITH THE SIZE OF THE FLIT)
     rlimit_size = netburst;
 
     printf("using link latency: %d cycles\n", linklatency);

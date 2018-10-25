@@ -139,13 +139,7 @@ class ReadyValidLast extends Bundle {
   val valid = Bool()
 }
 
-/* AJG: I am fairly certain that this big token is characterized by the size of the 512 buffer and not the actual size of the extra items
- * this should probably be converted variable size data with variable amount of mini tokens per big token based on this number */
-// This and the other toekns should probalay be parameterized
 class BIGToken(tokenSize: Int) extends Bundle {
-  //val data = Vec(7, UInt(64.W))
-  //val rvls = Vec(7, new ReadyValidLast())
-  //val pad = UInt(43.W)
   val data = Vec((512 / (tokenSize + 3)), UInt(tokenSize.W))
   val rvls = Vec((512 / (tokenSize + 3)), new ReadyValidLast())
   val pad = UInt((512 - ((512 / (tokenSize + 3)) * (tokenSize + 3))).W)
@@ -211,7 +205,7 @@ class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   }
 
   io.htnt.bits.data_in.data := pcieBundled.data(loopIter)
-  io.htnt.bits.data_in.keep := 0xFF.U
+  io.htnt.bits.data_in.keep := ((BigInt(1) << (tokenSize/8)) - 1).U
   io.htnt.bits.data_in.last := pcieBundled.rvls(loopIter).data_last
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
