@@ -83,6 +83,7 @@ check-rtc:
 
 check-rtc-linux:
 	mkdir -p $@/overlay
+	cd ../../sw/check-rtc && make check-rtc-linux
 	cp ../../sw/check-rtc/check-rtc-linux $@/overlay
 	cd $@ && ln -sf ../../../sw/firesim-software/bbl-vmlinux0 bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s $@/overlay
