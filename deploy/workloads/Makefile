@@ -70,6 +70,7 @@ check-rtc:
 
 check-rtc-linux:
 	mkdir -p $@/overlay
+	cd ../../sw/check-rtc && make check-rtc-linux
 	cp ../../sw/check-rtc/check-rtc-linux $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
