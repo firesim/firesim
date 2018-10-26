@@ -1,0 +1,7 @@
+{
+  "name" : "fedora-initramfs",
+  "root-dir" : "fedora",
+  "linux-config" : "linux-config-initramfs",
+  "rootfs" : "rootfs.cpio",
+  "keep-rootfs" : "false"
+}
