@@ -16,10 +16,10 @@ To build:
     ./sw-manager.py -c CONFIG.json build
 
 To run on qemu:
-  ./sw-manager.py -c CONFIG.json
+  ./sw-manager.py -c CONFIG.json launch
 
 To run on spike:
-  ./sw-manager.py -c CONFIG.json -s
+  ./sw-manager.py -c CONFIG.json launch -s
 
 To run on FireSim:
 See the firesim documentation.
