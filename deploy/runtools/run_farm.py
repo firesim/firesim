@@ -22,8 +22,9 @@ class MockBoto3Instance:
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
 class EC2Inst(object):
-    # for now, we require that only one switch is mapped to each host
-    # this could be overridden based on instance type later
+    # TODO: this is leftover from when we could only support switch slots.
+    # This can be removed once self.switch_slots is dynamically allocated.
+    # Just make it arbitrarily large for now.
     SWITCH_SLOTS = 100000
 
     def __init__(self):
