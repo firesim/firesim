@@ -1,8 +1,7 @@
 {
   "benchmark_name" : "fedora-uniform",
-  "common_bootbinary" : "bbl-vmlinux",
-  "common_rootfs"     : "stage4-disk.img",
-  "common_rootfsOLD"     : "rootfs-fedora-full.ext4",
+  "common_bootbinary" : "fedora-disk-bin",
+  "common_rootfs"     : "fedora-disk.img",
   "common_outputs"    : ["/etc/os-release"],
   "common_simulation_outputs" : ["uartlog"]
 }
