@@ -87,6 +87,12 @@ void SSHPort::send() {
     // (data is in current_output_buf)
     // and push it into queues to send into the TAP
 
+    if (((uint64_t*)current_output_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+        // if compress flag is set, clear it, this port type doesn't care
+        // (and in fact, we're writing too much, so stuff later will get confused)
+        ((uint64_t*)current_output_buf)[0] = 0L;
+    }
+
     // first, push into out_flits queue
     for (int tokenno = 0; tokenno < NUM_TOKENS; tokenno++) {
         if (is_valid_flit(current_output_buf, tokenno)) {
