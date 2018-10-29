@@ -3,7 +3,7 @@
   "benchmark_name" : "ping-deny",
   "deliver_dir" : "/",
   "common_args" : [],
-  "common_files" : ["bin/pingdeny.sh"],
+  "common_files" : ["bin/pingdeny-deny.sh", "bin/pingdeny-ping.sh"],
   "common_outputs" : [],
   "common_simulation_outputs" : ["uartlog"],
   "no_post_run_hook": "",
