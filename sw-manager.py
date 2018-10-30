@@ -93,9 +93,10 @@ def makeBin(config):
 
 def makeImage(config):
     # Build the disk image first because the binary may require it (e.g. initramfs)
-    sp.check_call(['make', config['rootfs'], jlevel], cwd=config['root-dir'])
+    sp.check_call(['./build.sh'], cwd=config['root-dir'])
     if config['keep-rootfs'] == 'true':
-      shutil.copy(os.path.join(config['root-dir'], config['rootfs']),
-          os.path.join("images", config['name'] + ".img"))
+        shutil.copy(
+                os.path.join(config['root-dir'], config['rootfs']),
+                os.path.join("images", config['name'] + ".img"))
 
 main()
