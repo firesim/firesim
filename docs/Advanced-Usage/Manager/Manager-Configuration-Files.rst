@@ -165,8 +165,8 @@ Workload definitions are located in ``firesim/deploy/workloads/*.json``.
 
 Some sample workloads:
 
-``linux-uniform.json``: This runs the default FireSim Linux distro on as many nodes 
-as you specify when setting the ``[targetconfig]`` parameters.
+``br-uniform.json``: This runs the default buildroot-based FireSim Linux distro
+on as many nodes as you specify when setting the ``[targetconfig]`` parameters.
 
 ``spec17-intrate.json``: This runs SPECint 2017's rate benchmarks. In this type of
 workload, you should launch EXACTLY the correct number of nodes necessary to run the

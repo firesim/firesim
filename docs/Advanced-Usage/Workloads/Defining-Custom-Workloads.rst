@@ -10,7 +10,7 @@ either:
 - A single type of job, that is run on as many simulations as specfied by the user.
   These workloads are usually suffixed with ``-uniform``, which indicates that
   all nodes in the workload run the same job. An example of such a workload is
-  ``firesim/deploy/workloads/linux-uniform.json``.
+  ``firesim/deploy/workloads/br-uniform.json``.
 
 - Several different jobs, in which case there must be exactly as many
   jobs as there are running simulated nodes. An example of such a workload is
@@ -33,24 +33,24 @@ this should really be named "jobs" -- we will fix this in a future release.
 Uniform Workload JSON
 ----------------------------
 
-``firesim/deploy/workloads/linux-uniform.json`` is an example of a "uniform"
+``firesim/deploy/workloads/br-uniform.json`` is an example of a "uniform"
 style workload, where each simulated node runs the same software configuration.
 
 Let's take a look at this file:
 
-.. include:: /../deploy/workloads/linux-uniform.json
+.. include:: /../deploy/workloads/br-uniform.json
    :code: json
 
 There is also a corresponding directory named after this workload/file:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/linux-uniform$ ls -la
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/br-uniform$ ls -la
 	total 4
 	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
 	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/bbl-vmlinux0
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 rootfs.ext2 -> ../../../sw/firesim-software/rootfs0.ext2
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-disk-bin -> ../../../sw/firesim-software/images/br-disk-bin
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-disk.img -> ../../../sw/firesim-software/images/br-disk.img
 
 We will elaborate on this later.
 
@@ -59,17 +59,17 @@ workload definition.
 
 In this "uniform" case, the manager will name simulations after the
 ``benchmark_name`` field, appending a number for each simulation using the
-workload (e.g.  ``linux-uniform0``, ``linux-uniform1``, and so on). It is
+workload (e.g.  ``br-uniform0``, ``br-uniform1``, and so on). It is
 standard pratice to keep ``benchmark_name``, the json filename, and the above
 directory name the same. In this case, we have set all of them to
-``linux-uniform``.
+``br-uniform``.
 
 Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
 for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is 
 relative to the workload's directory, in this case
-``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``bbl-vmlinux0`` that
+``firesim/deploy/workloads/br-uniform``. You'll notice in the above output
+from ``ls -la`` that this is actually just a symlink to ``br-disk-bin`` that
 is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 Similarly, the ``common_rootfs`` field represents the disk image that the simulations
@@ -77,8 +77,8 @@ in this workload are expected to boot from. The manager will copy this root
 filesystem image for each of the nodes in the simulation (each gets its own copy).
 The ``common_rootfs`` path is
 relative to the workload's directory, in this case
-``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``rootfs0.ext2`` that
+``firesim/deploy/workloads/br-uniform``. You'll notice in the above output
+from ``ls -la`` that this is actually just a symlink to ``br-disk.img`` that
 is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 The ``common_outputs`` field is a list of outputs that the manager will copy out of
@@ -125,7 +125,7 @@ AFTER the workload is built:
 	total 15203216
 	drwxrwxr-x  3 centos centos       4096 May 18 07:45 .
 	drwxrwxr-x 13 centos centos       4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/bbl-vmlinux0
+	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/images/br-disk-bin
 	-rw-rw-r--  1 centos centos          7 May 17 21:58 .gitignore
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-1.ext2
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-2.ext2
@@ -180,7 +180,7 @@ see in the ``ping-latency`` directory.
 ::
 
     [ from the workloads/ directory ]
-    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s ping-latency/overlay
+    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-disk.img -s ping-latency/overlay
 
 Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
 that we want to include in the generated disk images. This script will take care of the rest and we'll end up with 
