@@ -1,3 +1,5 @@
+#ifdef SIMPLENICWIDGET_struct
+
 #include "simplenic.h"
 
 #include <stdio.h>
@@ -41,9 +43,11 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 simplenic_t::simplenic_t(
         simif_t *sim, char *slotid,
         uint64_t mac_little_end, int netbw, int netburst, int linklatency,
-        char *niclogfile, bool loopback, char *shmemportname): endpoint_t(sim)
+        char *niclogfile, bool loopback, char *shmemportname, SIMPLENICWIDGET_struct *mmio_addrs): endpoint_t(sim)
 {
-#ifdef SIMPLENICWIDGET_0
+
+    this->mmio_addrs = mmio_addrs;
+
     // store link latency:
     LINKLATENCY = linklatency;
 
@@ -107,11 +111,9 @@ simplenic_t::simplenic_t(
             pcis_write_bufs[j] = pcis_read_bufs[j];
         }
     }
-#endif // #ifdef SIMPLENICWIDGET_0
 }
 
 simplenic_t::~simplenic_t() {
-#ifdef SIMPLENICWIDGET_0
     if (this->niclog)
         fclose(this->niclog);
     if (loopback) {
@@ -123,20 +125,18 @@ simplenic_t::~simplenic_t() {
             munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
         }
     }
-#endif // #ifdef SIMPLENICWIDGET_0
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
 void simplenic_t::init() {
-#ifdef SIMPLENICWIDGET_0
-    write(SIMPLENICWIDGET_0(macaddr_upper), (mac_lendian >> 32) & 0xFFFF);
-    write(SIMPLENICWIDGET_0(macaddr_lower), mac_lendian & 0xFFFFFFFF);
-    write(SIMPLENICWIDGET_0(rlimit_settings),
+    write(mmio_addrs->macaddr_upper, (mac_lendian >> 32) & 0xFFFF);
+    write(mmio_addrs->macaddr_lower, mac_lendian & 0xFFFFFFFF);
+    write(mmio_addrs->rlimit_settings,
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
 
-    uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
-    uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
+    uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
+    uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
     if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
         printf("FAIL. INCORRECT TOKENS ON BOOT. produced tokens available %d, input slots available %d\n", output_tokens_available, input_token_capacity);
         exit(1);
@@ -153,7 +153,6 @@ void simplenic_t::init() {
         exit(1);
     }
     return;
-#endif // ifdef SIMPLENICWIDGET_0
 }
 
 //#define TOKENVERIFY
@@ -172,7 +171,6 @@ uint64_t timeelapsed_cycles = 0;
 #endif
 
 void simplenic_t::tick() {
-#ifdef SIMPLENICWIDGET_0
     struct timespec tstart, tend;
 
     uint32_t token_bytes_obtained_from_fpga = 0;
@@ -186,8 +184,8 @@ void simplenic_t::tick() {
 
         uint32_t tokens_this_round = 0;
 
-        uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
-        uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
+        uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
+        uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
 
         // we will read/write the min of tokens available / token input capacity
         tokens_this_round = std::min(output_tokens_available, input_token_capacity);
@@ -297,5 +295,7 @@ void simplenic_t::tick() {
         nextround = (nextround + 1) % 2;
 
     }
-#endif // ifdef SIMPLENICWIDGET_0
 }
+
+#endif // #ifdef SIMPLENICWIDGET_struct
+

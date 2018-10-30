@@ -118,7 +118,12 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #endif
 
     add_endpoint(new blockdev_t(this, args));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback, shmemportname));
+
+#ifdef SIMPLENICWIDGET_struct
+    SIMPLENICWIDGET_0_substruct_create;
+    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback, shmemportname, &SIMPLENICWIDGET_0_substruct));
+#endif
+
     add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
     // add more endpoints here
 
