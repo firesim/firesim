@@ -225,15 +225,9 @@ class MCRFileMap() {
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-
-    // two phases
-    // 1) emit the struct def
-    // 2) fill it in
-    //
-    // (1) is wrapped in an ifndef so only happens once
-    
-    // ignore widget number
-    val prefix_no_num = prefix.split("_")(0)
+    val prefix_no_num = prefix.split("_")(0) // ignore widget number if present
+    // emit generic struct for this widget type. guarded so it only gets defined
+    // once
     sb append s"#ifndef ${prefix_no_num}_struct_guard\n"
     sb append s"#define ${prefix_no_num}_struct_guard\n"
     sb append s"typedef struct ${prefix_no_num}_struct {\n"
@@ -243,18 +237,16 @@ class MCRFileMap() {
     sb append s"} ${prefix_no_num}_struct;\n"
     sb append s"#endif\n\n"
 
-    
-//    sb append s"#ifndef ${prefix}_substruct_guard\n"
-//    sb append s"#define ${prefix}_substruct_guard\n"
+    // emit macro to create a version of this struct with values filled in
     sb append s"#define ${prefix}_substruct_create \\\n"
-    sb append s"struct ${prefix}_substruct : ${prefix_no_num}_struct { ${prefix}_substruct() { \\\n"
+    sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
     name2addr.toList foreach { case (regName, idx) =>
       val address = base + idx
-      sb append s"    ${regName} = ${address}; \\\n"
+      sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
     }
-    sb append s"} } ${prefix}_substruct;\n\n"
-//    sb append s"#endif\n\n"
+    sb append s"\n"
 
+    // keep old way for now as we transition widgets
     name2addr.toList foreach { case (regName, idx) =>
       val fullName = s"${prefix}_${regName}"
       val address = base + idx
