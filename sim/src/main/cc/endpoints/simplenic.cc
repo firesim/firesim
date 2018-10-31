@@ -1,4 +1,4 @@
-#ifdef SIMPLENICWIDGET_struct
+#ifdef SIMPLENICWIDGET_struct_guard
 
 #include "simplenic.h"
 
@@ -61,9 +61,9 @@ simplenic_t::simplenic_t(
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
     rlimit_size = netburst;
 
-    printf("using link latency: %d cycles\n", linklatency);
-    printf("using netbw: %d\n", netbw);
-    printf("using netburst: %d\n", netburst);
+    printf("NIC using link latency: %d cycles\n", linklatency);
+    printf("NIC using netbw: %d\n", netbw);
+    printf("NIC using netburst: %d\n", netburst);
 
     this->loopback = loopback;
     this->niclog = NULL;
@@ -297,5 +297,5 @@ void simplenic_t::tick() {
     }
 }
 
-#endif // #ifdef SIMPLENICWIDGET_struct
+#endif // #ifdef SIMPLENICWIDGET_struct_guard
 

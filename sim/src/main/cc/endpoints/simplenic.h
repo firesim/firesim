@@ -13,7 +13,7 @@
 // IMPORTANT: this must be a multiple of 7
 //#define LINKLATENCY 6405
 
-#ifdef SIMPLENICWIDGET_struct
+#ifdef SIMPLENICWIDGET_struct_guard
 class simplenic_t: public endpoint_t
 {
     public:
@@ -36,6 +36,6 @@ class simplenic_t: public endpoint_t
         SIMPLENICWIDGET_struct *mmio_addrs;
         bool loopback;
 };
-#endif // SIMPLENICWIDGET_struct
+#endif // SIMPLENICWIDGET_struct_guard
 
 #endif // __SIMPLENIC_H
