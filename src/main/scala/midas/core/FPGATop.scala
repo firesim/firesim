@@ -92,7 +92,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
             channel.host.hReady := port.toHost.hReady
             valid += channel.host.hValid
         }
-      case (target: Bundle, b: Bundle) =>
+      case (target: Record, b: Record) =>
         b.elements.toList foreach { case (name, wire) =>
           loop(target.elements(name), wire)
         }

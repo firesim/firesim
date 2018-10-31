@@ -488,7 +488,7 @@ class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
 
 object BRAMQueue {
   def apply[T <: Data](enq: DecoupledIO[T], entries: Int) = {
-    val q = Module((new BRAMQueue(entries)) { enq.bits })
+    val q = Module((new BRAMQueue(entries)) { enq.bits.cloneType })
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
