@@ -102,11 +102,11 @@ private[passes] class AssertPass(
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
-          // Hackish; Put the UInt in a bundle so that we can type match on it in SimMapping
+          // Hack: Put the UInt in a bundle so that we can type match on it in SimMapping
           val tpe = BundleType(Seq(Field("asserts", Default, UIntType(IntWidth(assertWidth)))))
           val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
           val stmt = Connect(NoInfo, wsub(WRef(port.name), "asserts"), cat(
-            (assertChildren map (x => wsub(wref(x._1), x._2.name))) ++
+            (assertChildren map (x => wsub(wsub(wref(x._1), x._2.name), "asserts"))) ++
             (asserts(m.name).values.toSeq sortWith (_._1 > _._1) map (x => wref(x._2)))))
           assertPorts(m.name) = port
           ports += port
@@ -160,7 +160,7 @@ private[passes] class AssertPass(
           assertNum += 1
         }
         meta.childInsts(mod)
-            .filter(inst => excludeInst(mod, inst))
+            .filterNot(inst => excludeInst(mod, inst))
             .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
 
       case DumpPrints =>
@@ -172,7 +172,7 @@ private[passes] class AssertPass(
           printNum += 1
         }
         meta.childInsts(mod).reverse
-            .filter(inst => excludeInst(mod, inst))
+            .filterNot(inst => excludeInst(mod, inst))
             .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
     }
   }
