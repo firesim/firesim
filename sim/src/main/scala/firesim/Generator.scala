@@ -111,7 +111,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
 
   /** Output software test Makefrags, which provide targets for integration testing. */
   def generateTestSuiteMakefrags {
-    addTestSuites(targetParams)
+    addTestSuites(names.topModuleClass, targetParams)
     writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
@@ -161,7 +161,7 @@ trait HasTestSuites {
       "rv32mi-p-sbreak",
       "rv32ui-p-sll")
 
-  def addTestSuites(params: Parameters) {
+  def addTestSuites(targetName: String, params: Parameters) {
     val coreParams =
       if (params(RocketTilesKey).nonEmpty) {
         params(RocketTilesKey).head.core
@@ -196,6 +196,8 @@ trait HasTestSuites {
     TestGeneration.addSuite(new RegressionTestSuite(if (xlen == 64) rv64RegrTestNames else rv32RegrTestNames))
     TestGeneration.addSuite(FastBlockdevTests)
     TestGeneration.addSuite(SlowBlockdevTests)
+    if (!targetName.contains("NoNIC"))
+      TestGeneration.addSuite(NICLoopbackTests)
   }
 }
 

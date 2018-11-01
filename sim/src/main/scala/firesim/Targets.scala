@@ -1,5 +1,6 @@
 package firesim.firesim
 
+import chisel3._
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
@@ -9,7 +10,6 @@ import icenet._
 import testchipip._
 import sifive.blocks.devices.uart._
 import java.io.File
-
 
 /*******************************************************************************
 * Top level DESIGN configurations. These describe the basic instantiations of
@@ -33,7 +33,11 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
 {
-  override lazy val module = new FireSimModuleImp(this)
+  val hasTraces = rocketTiles.map(_.rocketParams.trace).reduce(_ || _)
+
+  override lazy val module =
+    if (hasTraces) new FireSimModuleImpTraced(this)
+    else new FireSimModuleImp(this)
 }
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
@@ -47,6 +51,9 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
 
+class FireSimModuleImpTraced[+L <: FireSim](l: L) extends FireSimModuleImp(l)
+    with CanHaveRocketTraceIO
+
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
@@ -57,7 +64,11 @@ class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryUART
     with HasPeripheryBlockDevice
 {
-  override lazy val module = new FireSimNoNICModuleImp(this)
+  val hasTraces = rocketTiles.map(_.rocketParams.trace).reduce(_ || _)
+
+  override lazy val module =
+    if (hasTraces) new FireSimNoNICModuleImpTraced(this)
+    else new FireSimNoNICModuleImp(this)
 }
 
 class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemModuleImp(l)
@@ -70,7 +81,8 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
 
-
+class FireSimNoNICModuleImpTraced[+L <: FireSimNoNIC](l: L) extends FireSimNoNICModuleImp(l)
+    with CanHaveRocketTraceIO
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
@@ -83,7 +95,11 @@ class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
 {
-  override lazy val module = new FireBoomModuleImp(this)
+  val hasTraces = boomTiles.map(_.boomParams.trace).reduce(_ || _)
+
+  override lazy val module = 
+    if (hasTraces) new FireBoomModuleImpTraced(this)
+    else new FireBoomModuleImp(this)
 }
 
 class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
@@ -97,6 +113,9 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
 
+class FireBoomModuleImpTraced[+L <: FireBoom](l: L) extends FireBoomModuleImp(l)
+    with CanHaveBoomTraceIO
+
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
@@ -107,7 +126,11 @@ class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with HasPeripheryUART
     with HasPeripheryBlockDevice
 {
-  override lazy val module = new FireBoomNoNICModuleImp(this)
+  val hasTraces = boomTiles.map(_.boomParams.trace).reduce(_ || _)
+
+  override lazy val module = 
+    if (hasTraces) new FireBoomNoNICModuleImpTraced(this)
+    else new FireBoomNoNICModuleImp(this)
 }
 
 class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModule(l)
@@ -119,3 +142,6 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+
+class FireBoomNoNICModuleImpTraced[+L <: FireBoomNoNIC](l: L) extends FireBoomNoNICModuleImp(l)
+    with CanHaveBoomTraceIO

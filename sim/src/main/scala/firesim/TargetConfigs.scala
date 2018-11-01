@@ -58,6 +58,14 @@ class BoomWithLargeTLBs extends Config((site, here, up) => {
   ))
 })
 
+class WithTraceRocket extends Config((site, here, up) => {
+   case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(trace = true) }
+})
+
+class WithTraceBoom extends Config((site, here, up) => {
+   case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
+})
+
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
 * simulated.
@@ -80,25 +88,46 @@ class FireSimRocketChipConfig extends Config(
   new WithPerfCounters ++
   new freechips.rocketchip.system.DefaultConfig)
 
+class FireSimRocketChipTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipConfig)
+
 // single core config
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
 
+class FireSimRocketChipSingleCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipSingleCoreConfig)
+
 // dual core config
-class FireSimRocketChipDualCoreConfig extends Config(new WithNBigCores(2) ++
+class FireSimRocketChipDualCoreConfig extends Config(
+  new WithNBigCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
+
+class FireSimRocketChipDualCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipDualCoreConfig)
 
 // quad core config
-class FireSimRocketChipQuadCoreConfig extends Config(new WithNBigCores(4) ++
+class FireSimRocketChipQuadCoreConfig extends Config(
+  new WithNBigCores(4) ++
   new FireSimRocketChipSingleCoreConfig)
+
+class FireSimRocketChipQuadCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipQuadCoreConfig)
 
 // hexa core config
-class FireSimRocketChipHexaCoreConfig extends Config(new WithNBigCores(6) ++
+class FireSimRocketChipHexaCoreConfig extends Config(
+  new WithNBigCores(6) ++
   new FireSimRocketChipSingleCoreConfig)
+
+class FireSimRocketChipHexaCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipHexaCoreConfig)
 
 // octa core config
-class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
+class FireSimRocketChipOctaCoreConfig extends Config(
+  new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
+class FireSimRocketChipOctaCoreTracedConfig extends Config(
+  new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
@@ -111,3 +140,6 @@ class FireSimBoomConfig extends Config(
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)
+
+class FireSimBoomTracedConfig extends Config(
+  new WithTraceBoom ++ new FireSimBoomConfig)

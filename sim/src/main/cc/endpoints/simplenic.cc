@@ -41,7 +41,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 simplenic_t::simplenic_t(
         simif_t *sim, char *slotid,
         uint64_t mac_little_end, int netbw, int netburst, int linklatency,
-        char *niclogfile): endpoint_t(sim)
+        char *niclogfile, bool loopback, char *shmemportname): endpoint_t(sim)
 {
 #ifdef SIMPLENICWIDGET_0
     // store link latency:
@@ -50,6 +50,8 @@ simplenic_t::simplenic_t(
     // store mac address
     mac_lendian = mac_little_end;
 
+    assert(slotid != NULL);
+    assert(linklatency > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
@@ -59,6 +61,7 @@ simplenic_t::simplenic_t(
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
 
+    this->loopback = loopback;
     this->niclog = NULL;
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");
@@ -68,29 +71,59 @@ simplenic_t::simplenic_t(
         }
     }
 
-#ifndef SIMULATION_XSIM
-    char name[100];
+    char name[257];
     int shmemfd;
 
-    for (int j = 0; j < 2; j++) {
-        sprintf(name, "/port_nts%s_%d", slotid, j);
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
-        sprintf(name, "/port_stn%s_%d", slotid, j);
-        printf("opening/creating shmem region %s\n", name);
-        shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-        ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-        pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+    if (!loopback) {
+        for (int j = 0; j < 2; j++) {
+            if (shmemportname) {
+                printf("Using non-slot-id associated shmemportname:\n");
+                sprintf(name, "/port_nts%s_%d", shmemportname, j);
+            } else {
+                printf("Using slot-id associated shmemportname:\n");
+                sprintf(name, "/port_nts%s_%d", slotid, j);
+            }
+            printf("opening/creating shmem region %s\n", name);
+            shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
+            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
+            pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+
+            if (shmemportname) {
+                printf("Using non-slot-id associated shmemportname:\n");
+                sprintf(name, "/port_stn%s_%d", shmemportname, j);
+            } else {
+                printf("Using slot-id associated shmemportname:\n");
+                sprintf(name, "/port_stn%s_%d", slotid, j);
+            }
+
+            printf("opening/creating shmem region %s\n", name);
+            shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
+            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
+            pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+        }
+    } else {
+        for (int j = 0; j < 2; j++) {
+            pcis_read_bufs[j] = (char *) malloc(BUFBYTES + EXTRABYTES);
+            pcis_write_bufs[j] = pcis_read_bufs[j];
+        }
     }
-#endif // SIMULATION_XSIM
 #endif // #ifdef SIMPLENICWIDGET_0
 }
 
 simplenic_t::~simplenic_t() {
+#ifdef SIMPLENICWIDGET_0
     if (this->niclog)
         fclose(this->niclog);
+    if (loopback) {
+        for (int j = 0; j < 2; j++)
+            free(pcis_read_bufs[j]);
+    } else {
+        for (int j = 0; j < 2; j++) {
+            munmap(pcis_read_bufs[j], BUFBYTES+EXTRABYTES);
+            munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
+        }
+    }
+#endif // #ifdef SIMPLENICWIDGET_0
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
@@ -102,7 +135,6 @@ void simplenic_t::init() {
     write(SIMPLENICWIDGET_0(rlimit_settings),
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
 
-#ifndef SIMULATION_XSIM
     uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
     uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
     if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
@@ -120,7 +152,6 @@ void simplenic_t::init() {
         printf("ERR MISMATCH!\n");
         exit(1);
     }
-#endif
     return;
 #endif // ifdef SIMPLENICWIDGET_0
 }
@@ -142,7 +173,6 @@ uint64_t timeelapsed_cycles = 0;
 
 void simplenic_t::tick() {
 #ifdef SIMPLENICWIDGET_0
-#ifndef SIMULATION_XSIM
     struct timespec tstart, tend;
 
     uint32_t token_bytes_obtained_from_fpga = 0;
@@ -227,8 +257,10 @@ void simplenic_t::tick() {
         timeelapsed_cycles += LINKLATENCY;
 #endif
 
-        volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
-        while (*polladdr == 0) { ; }
+        if (!loopback) {
+            volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
+            while (*polladdr == 0) { ; }
+        }
 #ifdef DEBUG_NIC_PRINT
         niclog_printf("done recv iter %ld\n", iter);
 #endif
@@ -265,6 +297,5 @@ void simplenic_t::tick() {
         nextround = (nextround + 1) % 2;
 
     }
-#endif
 #endif // ifdef SIMPLENICWIDGET_0
 }

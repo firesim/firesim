@@ -1,3 +1,5 @@
+#include <limits.h>
+
 #include "firesim_top.h"
 
 // FireSim-defined endpoints
@@ -5,6 +7,7 @@
 #include "endpoints/uart.h"
 #include "endpoints/simplenic.h"
 #include "endpoints/blockdev.h"
+#include "endpoints/tracerv.h"
 // MIDAS-defined endpoints
 #include "endpoints/fpga_model.h"
 #include "endpoints/sim_mem.h"
@@ -16,9 +19,13 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     // fields to populate to pass to endpoints
     char * niclogfile = NULL;
     char * slotid = NULL;
+    char * tracefile = NULL;
+    char * shmemportname = NULL;
     uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
+    uint64_t trace_start = 0, trace_end = ULONG_MAX;
     int netbw = MAX_BANDWIDTH, netburst = 8;
     int linklatency = 0;
+    bool nic_loopback = false;
 
     std::vector<std::string> args(argv + 1, argv + argc);
     for (auto &arg: args) {
@@ -31,9 +38,18 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         if (arg.find("+niclog=") == 0) {
             niclogfile = const_cast<char*>(arg.c_str()) + 8;
         }
+        if (arg.find("+nic-loopback") == 0) {
+            nic_loopback = true;
+        }
         if (arg.find("+slotid=") == 0) {
             slotid = const_cast<char*>(arg.c_str()) + 8;
         }
+
+        // TODO: move this and a bunch of other NIC arg parsing into the nic endpoint code itself
+        if (arg.find("+shmemportname=") == 0) {
+            shmemportname = const_cast<char*>(arg.c_str()) + 15;
+        }
+
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
         }
@@ -69,6 +85,17 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             char *str = const_cast<char*>(arg.c_str()) + 13;
             linklatency = atoi(str);
         }
+        if (arg.find("+tracefile=") == 0) {
+            tracefile = const_cast<char*>(arg.c_str()) + 11;
+        }
+        if (arg.find("+trace-start=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 13;
+            trace_start = atol(str);
+        }
+        if (arg.find("+trace-end=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 11;
+            trace_end = atol(str);
+        }
     }
 
     add_endpoint(new uart_t(this));
@@ -92,7 +119,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #endif
 
     add_endpoint(new blockdev_t(this, args));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
+    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback, shmemportname));
+    add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
+    // add more endpoints here
 
 #ifdef ASSERTIONWIDGET_0
     endpoints.push_back(new synthesized_assertions_t(this));
@@ -101,7 +130,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);
     }
-
 }
 
 bool firesim_top_t::simulation_complete() {
