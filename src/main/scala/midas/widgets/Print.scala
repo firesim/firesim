@@ -60,6 +60,11 @@ class PrintWidgetIO(private val record: PrintRecord)(implicit p: Parameters) ext
   } else {
     None
   }
+  val address = if (p(HasDMAChannel)) {
+    throw new RuntimeException("Damn it Howie.")
+  } else {
+    None
+  }
 }
 
 class PrintWidget(printRecord: PrintRecord)(implicit p: Parameters) extends EndpointWidget()(p) with HasChannels {
