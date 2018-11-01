@@ -29,6 +29,7 @@ object AssertBundle {
 class AssertWidgetIO(val numAsserts: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new AssertBundle(numAsserts)))
   val dma = None
+  val address = None // DMA unused
 }
 
 class AssertBundleEndpoint extends Endpoint {
