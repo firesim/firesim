@@ -11,12 +11,11 @@ class synthesized_assertions_t: public endpoint_t
         virtual void tick();
         void resume(); // Clears any set assertions, and allows the simulation to advance
         virtual bool terminate() { return assert_fired; };
-        virtual int exit_code() { return assert_id; };
-
+        virtual int exit_code() { return (assert_fired) ? assert_id + 1 : 0; };
     private:
         bool assert_fired = false;
         int assert_id;
-        uint64_t  assert_cycle;
+        uint64_t assert_cycle;
 };
 
 #endif //__SYNTHESIZED_ASSERTIONS_H
