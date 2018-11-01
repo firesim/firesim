@@ -21,7 +21,7 @@ trait GeneratorUtils {
            .asInstanceOf[chisel3.Module]
   }
   def midasParams = (platform match {
-    case midas.F1       => new Config(new firesim.firesim.WithDefaultMemModel ++ new midas.F1Config)
+    case midas.F1       => new Config(new DefaultMIDASConfig ++ new midas.F1Config)
   }).toInstance
 
  lazy val hostTransforms = Seq(
