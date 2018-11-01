@@ -19,7 +19,7 @@ public:
         step(1);
         poke(io_cycleToFail, 1024);
         poke(io_a, 1);
-        step(2053, false);
+        step(4096, false);
         while (!done()) {
             assert_endpoint->tick();
             if (assert_endpoint->terminate()) {
@@ -28,7 +28,7 @@ public:
                     poke(io_b, 1);
                     poke(io_a, 0);
                 } else if (assertions_thrown == 1) {
-                    poke(io_cycleToFail, 2052);
+                    poke(io_cycleToFail, 3056);
                     poke(io_b, 0);
                     poke(io_c, 1);
                 } else {
