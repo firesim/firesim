@@ -156,5 +156,3 @@ class MultiWidthFifoTest extends UnitTest {
   assert(!bl_start_recv || big2little.io.count === UInt(8),
     "Big to Little count incorrect")
 }
-
-

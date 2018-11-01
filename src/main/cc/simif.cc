@@ -201,10 +201,13 @@ void simif_t::write_mem(size_t addr, mpz_t& value) {
   }
 }
 
+#define MEM_DATA_CHUNK_BYTES (MEM_DATA_CHUNK*sizeof(data_t))
+#define ceil_div(a, b) (((a) - 1) / (b) + 1)
+
 void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
   write(LOADMEM_W_ADDRESS_H, addr >> 32);
   write(LOADMEM_W_ADDRESS_L, addr & ((1ULL << 32) - 1));
-  size_t num_beats = (bytes + (MEM_DATA_CHUNK*sizeof(data_t)))/(MEM_DATA_CHUNK*sizeof(data_t));
+  size_t num_beats = ceil_div(bytes, MEM_DATA_CHUNK_BYTES);
   write(LOADMEM_W_LENGTH, num_beats);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
@@ -215,6 +218,6 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
 
 void simif_t::zero_out_dram() {
   write(LOADMEM_ZERO_OUT_DRAM, 1);
-  while(read(LOADMEM_ZERO_OUT_DRAM) != 0);
+  while(!read(LOADMEM_ZERO_FINISHED));
 }
 #endif // LOADMEM
