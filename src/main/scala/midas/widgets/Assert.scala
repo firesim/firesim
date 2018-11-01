@@ -54,12 +54,13 @@ class AssertBundleEndpoint extends Endpoint {
 
 class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) with HasChannels {
   val io = IO(new AssertWidgetIO(numAsserts))
-  val resume = Wire(init=false.B)
-  val cycles = Reg(UInt(64.W))
+  val resume = WireInit(false.B)
+  val cycles = RegInit(0.U(64.W))
   val tResetAsserted = RegInit(false.B)
   val asserts = io.hPort.hBits.asserts
-  val assertId = asserts >> 1
-  val assertFire = asserts(0) && tResetAsserted && !io.tReset.bits
+  val assertId = PriorityEncoder(asserts)
+  val assertFire = asserts.orR && tResetAsserted && !io.tReset.bits
+
   val stallN = (!assertFire || resume)
   val dummyPredicate = true.B
 
