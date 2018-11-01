@@ -39,7 +39,6 @@ class AssertBundleEndpoint extends Endpoint {
       require(DataMirror.directionOf(channel) == Direction.Output, "AssertBundle has unexpected direction")
       // Can't do this as matchType is invoked multiple times
       //require(!initialized, "Can only match on one instance of AssertBundle")
-      println(s"WHAT: ${data.instanceName}")
       initialized = true
       numAsserts = channel.numAsserts
       true
