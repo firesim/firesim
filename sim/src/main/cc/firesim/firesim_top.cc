@@ -9,6 +9,7 @@
 #include "endpoints/fpga_model.h"
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
+#include "endpoints/synthesized_assertions.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
@@ -93,6 +94,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     add_endpoint(new blockdev_t(this, args));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
 
+#ifdef ASSERTIONWIDGET_0
+    endpoints.push_back(new synthesized_assertions_t(this));
+#endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);
