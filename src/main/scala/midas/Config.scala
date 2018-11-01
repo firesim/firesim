@@ -14,16 +14,16 @@ trait PlatformType
 case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
-case object EnableDebug extends Field[Boolean]
+// Switches to synthesize prints and assertions
+case object SynthAsserts extends Field[Boolean]
+case object SynthPrints extends Field[Boolean]
 // Exclude module instances from assertion and print synthesis
 // Tuple of Parent Module (where the instance is instantiated) and the instance name
-case object DebugExcludeInstances extends Field[Seq[(String, String)]](Seq(
-  ("RocketTile", "fpuOpt"),
-  ("NonBlockingDCache_dcache", "dtlb")))
-case object EnablePrint extends Field[Boolean]
+case object ExcludeInstanceAsserts extends Field[Seq[(String, String)]](Seq())
+case object ExcludeInstancePrints extends Field[Seq[(String, String)]](Seq())
 case object PrintPorts extends Field[Seq[(String, Int)]]
+// Excludes from synthesis prints whose message contains one of the following substrings
 case object PrintExcludes extends Field[Seq[(String)]](Seq())
-case object NumAsserts extends Field[Int]
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -36,8 +36,8 @@ class SimConfig extends Config((site, here, up) => {
   case ChannelLen       => 16
   case ChannelWidth     => 32
   case DaisyWidth       => 32
-  case EnableDebug      => true
-  case EnablePrint      => false
+  case SynthAsserts     => false
+  case SynthPrints      => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)

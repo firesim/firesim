@@ -39,8 +39,12 @@ private[passes] class AssertPass(
     p(PrintExcludes).exists(ex => printMessage contains(ex))
 
   // Helper method to filter out module instances
-  private def excludeInst(parentMod: String, inst: String): Boolean =
-    p(DebugExcludeInstances).exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
+  private def excludeInst(excludes: Seq[(String, String)])
+                         (parentMod: String, inst: String): Boolean =
+    excludes.exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
+
+  private def excludeInstPrints = excludeInst(p(ExcludeInstancePrints)) _
+  private def excludeInstAsserts = excludeInst(p(ExcludeInstanceAsserts)) _
 
 
   // Matches all on all stop statements, registering the enable predicate
@@ -48,7 +52,7 @@ private[passes] class AssertPass(
                          namespace: Namespace)
                         (s: Statement): Statement =
     s map synAsserts(mname, namespace) match {
-      case s: Stop if p(EnableDebug) && s.ret != 0 && !weq(s.en, zero) =>
+      case s: Stop if p(SynthAsserts) && s.ret != 0 && !weq(s.en, zero) =>
         val idx = asserts(mname).size
         val name = namespace newName s"assert_$idx"
         asserts(mname)(s.en.serialize) = idx -> name
@@ -60,14 +64,14 @@ private[passes] class AssertPass(
   private def findMessages(mname: String)
                           (s: Statement): Statement =
     s map findMessages(mname) match {
-      case s: Print if p(EnableDebug) && s.args.isEmpty =>
+      case s: Print if p(SynthAsserts) && s.args.isEmpty =>
         asserts(mname) get s.en.serialize match {
           case Some((idx, str)) =>
             messages(mname)(idx) = s.string.serialize
             EmptyStmt
           case _ => s
         }
-      case s: Print if p(EnablePrint) && s.args.nonEmpty && !excludePrint(mname) =>
+      case s: Print if p(SynthPrints) && s.args.nonEmpty && !excludePrint(mname) =>
         prints(mname) += s
         EmptyStmt
       case s => s
@@ -80,15 +84,15 @@ private[passes] class AssertPass(
     messages(m.name) = new Messages
     prints(m.name) = new Prints
 
-    def getChildren(ports: collection.mutable.Map[String, Port]) = {
-      (meta.childInsts(m.name) filter (x =>
-        !(m.name == "RocketTile" && x == "fpuOpt") &&
-        !(m.name == "NonBlockingDCache_dcache" && x == "dtlb")
-      ) foldRight Seq[(String, Port)]())(
-        (x, res) => ports get meta.instModMap(x -> m.name) match {
-          case None    => res
-          case Some(p) => res :+ (x -> p)
-        }
+    def getChildren(ports: collection.mutable.Map[String, Port], instExcludes: Seq[(String, String)]) = {
+      (meta.childInsts(m.name)
+           .filterNot(instName => excludeInst(instExcludes)(m.name, instName))
+           .foldRight(Seq[(String, Port)]())((x, res) =>
+             ports get meta.instModMap(x -> m.name) match {
+               case None    => res
+               case Some(p) => res :+ (x -> p)
+            }
+          )
       )
     }
 
@@ -98,7 +102,7 @@ private[passes] class AssertPass(
         val ports = collection.mutable.ArrayBuffer[Port]()
         val stmts = collection.mutable.ArrayBuffer[Statement]()
         // Connect asserts
-        val assertChildren = getChildren(assertPorts)
+        val assertChildren = getChildren(assertPorts, p(ExcludeInstanceAsserts))
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
@@ -113,7 +117,7 @@ private[passes] class AssertPass(
           stmts += stmt
         }
         // Connect prints
-        val printChildren = getChildren(printPorts)
+        val printChildren = getChildren(printPorts, p(ExcludeInstancePrints))
         if (printChildren.size + prints(m.name).size > 0) {
           val tpe = BundleType((prints(m.name).zipWithIndex map { case (print, idx) =>
               val total = (print.args foldLeft 0)((res, arg) => res + bitWidth(arg.tpe).toInt)
@@ -160,7 +164,7 @@ private[passes] class AssertPass(
           assertNum += 1
         }
         meta.childInsts(mod)
-            .filterNot(inst => excludeInst(mod, inst))
+            .filterNot(inst => excludeInstAsserts(mod, inst))
             .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
 
       case DumpPrints =>
@@ -172,7 +176,7 @@ private[passes] class AssertPass(
           printNum += 1
         }
         meta.childInsts(mod).reverse
-            .filterNot(inst => excludeInst(mod, inst))
+            .filterNot(inst => excludeInstPrints(mod, inst))
             .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
     }
   }
