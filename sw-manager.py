@@ -222,36 +222,28 @@ def makeBin(config):
     shutil.copy('riscv-pk/build/bbl', config['bin'])
 
 def makeImage(config):
-    # Check if we need to make the image
-    newest = os.stat(os.path.join(workload_dir, config['name'] + ".json")).st_mtime
-    for root, dirs, files in os.walk(os.path.join(workload_dir, config['name'])):
-        for f in files:
-            newest = max(os.stat(os.path.join(root, f)).st_mtime, newest)
+    shutil.copy(config['base-img'], config['img'])
 
-    if not os.path.exists(config['img']) or newest > os.stat(config['img']).st_mtime:
-        # Need to build
-        shutil.copy(config['base-img'], config['img'])
+    overlay = os.path.join(workload_dir, config['name'], 'overlay')
+    if os.path.exists(overlay):
+        applyOverlay(config['img'], overlay, config['rootfs-format'])
 
-        overlay = os.path.join(workload_dir, config['name'], 'overlay')
-        if os.path.exists(overlay):
-            applyOverlay(config['img'], overlay, config['rootfs-format'])
+    if 'init' in config:
+        initScript = os.path.join(workload_dir, config['name'], config['init.sh'])
+        if config['rootfs-format'] == 'cpio':
+            raise ValueError("CPIO-based images do not support init scripts.")
 
-        if 'init' in config:
-            initScript = os.path.join(workload_dir, config['name'], config['init.sh'])
-            if config['rootfs-format'] == 'cpio':
-                raise ValueError("CPIO-based images do not support init scripts.")
+        config['builder'].applyBootScript(config['img'], initScript)
+        launchQemu(config)
 
-            config['builder'].applyBootScript(config['img'], initScript)
-            launchQemu(config)
-
-        if 'run' in config:
-            runScript = os.path.join(workload_dir, config['name'], config['run'])
-            config['builder'].applyBootScript(config['img'], runScript)
-        else:
-            # We need to clear the old init script if we don't overwrite it
-            # with a run script. Note: it's safe to call this even if we never
-            # wrote an init script.
-            config['builder'].applyBootScript(config['img'], None)
+    if 'run' in config:
+        runScript = os.path.join(workload_dir, config['name'], config['run'])
+        config['builder'].applyBootScript(config['img'], runScript)
+    else:
+        # We need to clear the old init script if we don't overwrite it
+        # with a run script. Note: it's safe to call this even if we never
+        # wrote an init script.
+        config['builder'].applyBootScript(config['img'], None)
 
 def toCpio(src, dst):
     sp.check_call(['sudo', 'mount', '-o', 'loop', img, mnt])
