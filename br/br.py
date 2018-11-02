@@ -44,8 +44,7 @@ exit
 # Generate a script that will run "command" at boot time on the image
 # fsBase should be the root directory of the buildroot filesystem to apply this to
 
-
-def generate_boot_script(command, fsBase):
+def _generate_boot_script(command, fsBase):
     init_script_body = init_script_head + "    " + command + init_script_tail
 
     # Create a temporary script to avoid sudo access issues in the mounted fs
@@ -58,15 +57,9 @@ def generate_boot_script(command, fsBase):
     sp.check_call(['sudo', 'chmod', '755', final_script])
     sp.check_call(["sudo", "chown", "root:root", final_script])
 
-
 class Builder:
-    # Build a base image in the requested format and return an absolute path to that image
-    def buildBaseImage(self, fmt):
-        rootfs_target = "rootfs." + fmt
-        shutil.copy(os.path.join(br_dir, 'buildroot-config'),
-                    os.path.join(br_dir, "buildroot/.config"))
-        sp.check_call(['make'], cwd=os.path.join(br_dir, "buildroot"))
-
+    @staticmethod
+    def baseImagePath(fmt):
         if fmt == 'img':
             return os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
         elif fmt == 'cpio':
@@ -75,10 +68,24 @@ class Builder:
             raise ValueError(
                 "Only img and cpio formats are currently supported")
 
+    # Build a base image in the requested format and return an absolute path to that image
+    def buildBaseImage(self, fmt):
+        rootfs_target = "rootfs." + fmt
+        shutil.copy(os.path.join(br_dir, 'buildroot-config'),
+                    os.path.join(br_dir, "buildroot/.config"))
+        sp.check_call(['make'], cwd=os.path.join(br_dir, "buildroot"))
+        return self.baseImagePath(fmt)
+
+    # Return True if the base image is up to date, or False if it needs to be
+    # rebuilt.
+    # XXX right now I just lie and say it's up to date
+    def upToDate(self):
+        return True
+
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
-
-    def applyBootScript(self, img, script):
+    @staticmethod
+    def applyBootScript(img, script):
         # Make sure we have a mountpoint to mount to
         sp.check_call(['mkdir', '-p', mnt])
 
@@ -87,7 +94,7 @@ class Builder:
             if script != None:
                 sp.check_call(['sudo', 'cp', script, mnt])
                 sp.check_call(['sudo', 'chmod', "+x", os.path.join(mnt, os.path.basename(script))])
-                generate_boot_script("/" + os.path.basename(script), mnt)
+                _generate_boot_script("/" + os.path.basename(script), mnt)
             else:
                 # -f to suppress any errors if it didn't exist
                 sp.check_call(['sudo', 'rm', '-f', INIT_SCRIPT_NAME], cwd=mnt)

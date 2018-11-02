@@ -7,11 +7,15 @@ import os
 import shutil
 import br.br as br
 import fedora.fedora as fed
+import pprint
+import doit
+import glob
 
 jlevel = "-j" + str(os.cpu_count())
 root_dir = os.getcwd()
 workload_dir = os.path.join(root_dir, "workloads")
 image_dir = os.path.join(root_dir, "images")
+linux_dir = os.path.join(root_dir, "riscv-linux")
 mnt = os.path.join(root_dir, "disk-mount")
 
 def main():
@@ -38,35 +42,33 @@ def main():
     with open(args.config_file, 'r') as f:
         config = json.load(f)
 
-    if not "boot-rootfs" in config:
-        config['boot-rootfs'] = 'true'
+    config['cfg-file'] = os.path.abspath(args.config_file)
+
+    config = resolveConfig(config)
 
     args.func(args, config)
 
-# Recursively resolve any dependencies and apply config defaults from base configs
-# Returns: Updated config file
-# Post: config['img'] will point to a valid, built image and binary, and all other config
-#       fields will be filled in.
-def buildDeps(config):
-    config['bin'] = os.path.join(image_dir, config['name'] + "-bin")
-    config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
+# Use base configs to fill in missing fields and complete the config
+def resolveConfig(config):
+    # Convert stuff to absolute paths
+    for k in ['init', 'run', 'overlay', 'linux-config']:
+        if k in config:
+            config[k] = os.path.join(workload_dir, config['name'], config[k])
+    
+    if 'base' not in config:
+        if 'distro' not in config:
+            raise ValueError("Invalid Configuration: Please provide a base config or distro to base this workload on.")
 
-    if 'linux-config' in config:
-        config['linux-config'] = os.path.join(workload_dir, config['name'], config['linux-config'])
-
-    # The two 'bottom' bases (i.e. raw buildroot or fedora) need to be handled specially
-    if config['base'] == 'br':
-        config['builder'] = br.Builder()
-        config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
-        config['base-img'] = config['builder'].buildBaseImage(
-            config['rootfs-format'])
-    elif config['base'] == 'fedora':
-        config['builder'] = fed.Builder()
-        config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
-        config['base-img'] = config['builder'].buildBaseImage(
-            config['rootfs-format'])
+        # This is one of the bottom-configs (depends only on base distro)
+        if config['distro'] == 'br':
+            config['builder'] = br.Builder()
+        elif config['distro'] == 'fedora':
+            config['builder'] = fed.Builder()
+        else:
+            raise ValueError("Invalid distro: '" + config['distro'] + "'. Available distros are 'fedora' and 'br'")
+        config['base-img'] = config['builder'].baseImagePath(config['rootfs-format'])
     else:
-        # Not one of the bottom bases, look for a config in workloads to base off
+         # Not one of the bottom bases, look for a config in workloads to base off
         config['base-cfg-file'] = os.path.join(workload_dir, config['base'])
         try:
             with open(config['base-cfg-file'], 'r') as base_cfg_file:
@@ -78,32 +80,103 @@ def buildDeps(config):
             print("Base config '" + config['base-cfg-file'] + "' failed to parse")
             raise
 
-        # Setup configs recursively
-        base_cfg = buildDeps(base_cfg)
-
-        # Use base_cfg for any values not specified in config
+        # Things to set before recursing
+        base_cfg['cfg-file'] = config['base-cfg-file']
+        base_cfg = resolveConfig(base_cfg)
+        # This takes config, but fills in any blank fields with fields from base_cfg
         tmp = base_cfg.copy()
         tmp.update(config)
         config = tmp
-        config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
         config['base-img'] = base_cfg['img']
 
-    # Build this image now that it's dependencies are met
-    if config['rootfs-format'] == 'cpio':
-        # This is kinda hacky, but initramfs images need the image before the
-        # binary (linux links against the image)
-        makeImage(config)
-        makeBin(config)
-    else:
-        # But disk-based designs need the binary before the image (to apply any
-        # boot scripts). Initramfs designs don't support the boot scripts.
-        makeBin(config)
-        makeImage(config)
+    config['bin'] = os.path.join(image_dir, config['name'] + "-bin")
+    config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
 
     return config
 
+def testMakeBin(bin_path):
+    print("Making a binary: " + bin_path)
+    sp.check_call("touch " + bin_path, shell=True)
+
+def testMakeImage():
+    print("Making an Image")
+
+class doitLoader(doit.cmd_base.TaskLoader):
+    workloads = []
+
+    # @staticmethod
+    def load_tasks(self, cmd, opt_values, pos_args):
+        for w in self.workloads:
+            pprint.pprint(w)
+
+        task_list = [doit.task.dict_to_task(w) for w in self.workloads]
+        config = {'verbosity': 2}
+        return task_list, config
+
+# Generate a task-graph loader for the doit "Run" command
+# Note: this doesn't depend on the config or runtime args at all. In theory, it
+# could be cached, but I'm not going to bother unless it becomes a performance
+# issue.
+def buildDepGraph():
+    loader = doitLoader()
+
+    # Define the base-distro tasks
+    for builder in [br.Builder(), fed.Builder()]:
+        for fmt in ['img', 'cpio']:
+            img = builder.baseImagePath(fmt)
+            loader.workloads.append({
+                    'name' : img,
+                    'actions' : [(builder.buildBaseImage, [fmt])],
+                    'targets' : [img],
+                    'uptodate': [(builder.upToDate, [])]
+                })
+
+    # Create dependency graph from config files (for all workloads)
+    for cfgFile in glob.iglob(os.path.join(workload_dir, "*.json")):
+        try:
+            with open(cfgFile, 'r') as f:
+                config = json.load(f)
+            config['cfg-file'] = cfgFile
+            config = resolveConfig(config)
+        except Exception as e:
+            print("Skipping " + cfgFile + ": Unable to parse config:")
+            print(repr(e))
+            continue
+
+        # Add a rule for the binary
+        print("Adding config to loader: " + cfgFile)
+        loader.workloads.append({
+                'name' : config['bin'],
+                'actions' : [(makeBin, [config])],
+                'targets' : [config['bin']],
+                'file_dep': [config['linux-config']]
+                })
+
+        # Add a rule for the image
+        file_deps = []
+        if 'overlay' in config:
+            for root, dirs, files in os.walk(os.path.join(workload_dir, config['overlay'])):
+                for f in files:
+                    file_deps.append(f)
+        if 'init' in config:
+            file_deps.append(config['init'])
+        if 'run' in config:
+            file_deps.append(config['run'])
+        
+        loader.workloads.append({
+            'name' : config['img'],
+            'actions' : [(makeImage, [config])],
+            'targets' : [config['img']],
+            'file_dep' : file_deps,
+            'task_dep' : [config['base-img']]
+            })
+
+    return loader
+
 def handleBuild(args, config):
-    buildDeps(config)
+    loader = buildDepGraph()
+    doit.doit_cmd.DoitMain(loader).run([config['bin'], config['img']])
+
 
 def launchSpike(config):
     sp.check_call(['spike', '-p4', '-m4096', config['bin']])
@@ -120,7 +193,7 @@ def launchQemu(config):
            '-device', 'virtio-net-device,netdev=usernet',
            '-netdev', 'user,id=usernet,hostfwd=tcp::10000-:22']
 
-    if config['boot-rootfs'] == 'true':
+    if 'boot-rootfs' not in config or config['boot-rootfs'] == 'true':
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
         cmd = cmd + ['-append', 'ro root=/dev/vda']
@@ -138,8 +211,8 @@ def handleLaunch(args, config):
 
 # Now build linux/bbl
 def makeBin(config):
-    shutil.copy(config['linux-config'], "riscv-linux/.config")
-    sp.check_call(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd='riscv-linux')
+    shutil.copy(config['linux-config'], os.path.join(linux_dir, ".config"))
+    sp.check_call(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
     if not os.path.exists('riscv-pk/build'):
         os.mkdir('riscv-pk/build')
 
@@ -163,17 +236,16 @@ def makeImage(config):
         if os.path.exists(overlay):
             applyOverlay(config['img'], overlay, config['rootfs-format'])
 
-        initScript = os.path.join(workload_dir, config['name'], 'init.sh')
-        if os.path.exists(initScript):
+        if 'init' in config:
+            initScript = os.path.join(workload_dir, config['name'], config['init.sh'])
             if config['rootfs-format'] == 'cpio':
                 raise ValueError("CPIO-based images do not support init scripts.")
 
             config['builder'].applyBootScript(config['img'], initScript)
             launchQemu(config)
-            print("Done applying init script")
 
-        runScript = os.path.join(workload_dir, config['name'], 'run.sh')
-        if os.path.exists(runScript):
+        if 'run' in config:
+            runScript = os.path.join(workload_dir, config['name'], config['run'])
             config['builder'].applyBootScript(config['img'], runScript)
         else:
             # We need to clear the old init script if we don't overwrite it
@@ -211,3 +283,62 @@ def applyOverlay(img, overlay, fmt):
 
 
 main()
+
+
+
+# Recursively resolve any dependencies and apply config defaults from base configs
+# Returns: Updated config file
+# Post: config['img'] will point to a valid, built image and binary, and all other config
+#       fields will be filled in.
+def buildDeps(config):
+    config['bin'] = os.path.join(image_dir, config['name'] + "-bin")
+    config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
+
+    if 'linux-config' in config:
+        config['linux-config'] = os.path.join(workload_dir, config['name'], config['linux-config'])
+
+    # The two 'bottom' bases (i.e. raw buildroot or fedora) need to be handled specially
+    if config['base'] == 'br':
+        config['builder'] = br.Builder()
+        config['base-img'] = config['builder'].buildBaseImage(config['rootfs-format'])
+    elif config['base'] == 'fedora':
+        config['builder'] = fed.Builder()
+        config['base-img'] = config['builder'].buildBaseImage(config['rootfs-format'])
+    else:
+        # Not one of the bottom bases, look for a config in workloads to base off
+        config['base-cfg-file'] = os.path.join(workload_dir, config['base'])
+        try:
+            with open(config['base-cfg-file'], 'r') as base_cfg_file:
+                base_cfg = json.load(base_cfg_file)
+        except FileNotFoundError:
+            print("Base config '" + config['base-cfg-file'] + "' not found")
+            raise
+        except:
+            print("Base config '" + config['base-cfg-file'] + "' failed to parse")
+            raise
+
+        # Setup configs recursively
+        base_cfg = buildDeps(base_cfg)
+
+        # Use base_cfg for any values not specified in config
+        tmp = base_cfg.copy()
+        tmp.update(config)
+        config = tmp
+        config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
+        config['base-img'] = base_cfg['img']
+
+    # Build this image now that it's dependencies are met
+    if config['rootfs-format'] == 'cpio':
+        # This is kinda hacky, but initramfs images need the image before the
+        # binary (linux links against the image)
+        makeImage(config)
+        makeBin(config)
+    else:
+        # But disk-based designs need the binary before the image (to apply any
+        # boot scripts). Initramfs designs don't support the boot scripts.
+        makeBin(config)
+        makeImage(config)
+
+    return config
+
+

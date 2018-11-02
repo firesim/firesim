@@ -3,11 +3,18 @@ import subprocess as sp
 import shutil
 
 # Some common directories for this module (all absolute paths)
-br_dir=os.path.dirname(os.path.realpath(__file__))
-mnt=os.path.join(br_dir, "disk-mount")
+fed_dir=os.path.dirname(os.path.realpath(__file__))
 
 class Builder:
-  def buildBaseImage(self, fmt):
-    raise NotImplementedError("Fedora not working yet")
+    @staticmethod
+    def baseImagePath(fmt):
+        return os.path.join(fed_dir, "rootfs." + fmt)
+        
+    def buildBaseImage(self, fmt):
+        raise NotImplementedError("Fedora not working yet")
 
-
+    # Return True if the base image is up to date, or False if it needs to be
+    # rebuilt.
+    # XXX right now I just lie and say it's up to date
+    def upToDate(self):
+        return True

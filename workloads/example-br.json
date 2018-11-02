@@ -1,5 +1,6 @@
 {
   "name" : "example-br",
   "base" : "br-disk.json",
-  "rootfs-format" : "img"
+  "rootfs-format" : "img",
+  "run" : "run.sh"
 }

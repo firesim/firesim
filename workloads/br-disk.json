@@ -1,6 +1,6 @@
 {
   "name" : "br-disk",
-  "base" : "br",
+  "distro" : "br",
   "linux-config" : "linux-config",
   "rootfs-format" : "img"
 }
