@@ -50,6 +50,8 @@ private[midas] class MidasTransforms(
         new barstools.macros.MacroCompilerTransform,
         firrtl.passes.ResolveKinds,
         firrtl.passes.RemoveEmpty,
+        // NB: Carelessly removing this pass will break the FireSim manager as we always
+        // need to generate the *.asserts file. Fix by baking into driver.
         new AssertPass(dir),
         new Fame1Transform(Some(lib getOrElse json)),
         new strober.passes.StroberTransforms(dir, lib getOrElse json)) ++
