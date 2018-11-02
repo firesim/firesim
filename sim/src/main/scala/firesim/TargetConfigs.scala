@@ -58,6 +58,14 @@ class WithTraceBoom extends Config((site, here, up) => {
    case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
 })
 
+// This is strictly speakig a MIDAS config, but it's target dependent -> mix in to target config
+class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
+  case midas.ExcludeInstanceAsserts => Seq(
+    // Boom instantiates duplicates of these module(s) with the expectation
+    // the backend tool will optimize them away. FIXME.
+    ("NonBlockingDCache", "dtlb"))
+})
+
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
 * simulated.
@@ -134,6 +142,7 @@ class FireSimBoomConfig extends Config(
   new WithNICKey ++
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
+  new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)
 
