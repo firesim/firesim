@@ -93,19 +93,19 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     add_endpoint(new blockdev_t(this, args));
     add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile));
 
-    printf( "AJG: Finished adding endpoint" );
+    //printf( "AJG: Finished adding endpoint" );
 
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);
     }
 
-    printf( "AJG: finished firesim_top_t constructor" );
+    //printf( "AJG: finished firesim_top_t constructor" );
 
 }
 
 bool firesim_top_t::simulation_complete() {
-    printf("AJG: entering simulation_complete");
+    //printf("AJG: entering simulation_complete");
     bool is_complete = false;
     for (auto e: endpoints) {
         is_complete |= e->terminate();
@@ -114,7 +114,7 @@ bool firesim_top_t::simulation_complete() {
 }
 
 uint64_t firesim_top_t::profile_models(){
-    printf("AJG: entering profile_models");
+    //printf("AJG: entering profile_models");
     for (auto mod: fpga_models) {
         mod->profile();
     }
@@ -122,7 +122,7 @@ uint64_t firesim_top_t::profile_models(){
 }
 
 int firesim_top_t::exit_code(){
-    printf("AJG: entering exit_code");
+    //printf("AJG: entering exit_code");
     for (auto e: endpoints) {
         if (e->exit_code())
             return e->exit_code();
@@ -132,7 +132,7 @@ int firesim_top_t::exit_code(){
 
 
 void firesim_top_t::run() {
-    printf("AJG: entering run");
+    //printf("AJG: entering run");
     for (auto e: fpga_models) {
         e->init();
     }
@@ -149,8 +149,11 @@ void firesim_top_t::run() {
     uint64_t start_hcycle = hcycle();
     uint64_t start_time = timestamp();
 
+    fprintf(stderr, "AJG: start_hcycle(%d) start_time(%d)\n", start_hcycle, start_time);
     // Assert reset T=0 -> 50
     target_reset(0, 50);
+
+    fprintf(stderr, "AJG: target_reset");
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();

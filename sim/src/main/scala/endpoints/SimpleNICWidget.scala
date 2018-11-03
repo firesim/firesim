@@ -14,6 +14,7 @@ import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import icenet.IceNetConsts._
+import icenet.IceNetConfig
 import junctions.{NastiIO, NastiKey}
 
 case object LoopbackNIC extends Field[Boolean]
@@ -171,7 +172,8 @@ class SimSimpleNIC(bufSize: Int) extends Endpoint {
 }
 
 class SimpleNICWidgetIO(bufSize: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new NICIOvonly(bufSize)))
+  val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = bufSize)
+  val hPort = Flipped(HostPort(new NICIOvonly(netConfig)))
   val dma = if (!p(LoopbackNIC)) {
     Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
@@ -292,6 +294,8 @@ class HostToNICTokenGenerator(nTokens: Int, tokenSize: Int)(implicit p: Paramete
 class SimpleNICWidget(bufSize: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new SimpleNICWidgetIO(bufSize))
 
+  val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = bufSize)
+
   val htnt_queue = Module(new Queue(new HostToNICToken(bufSize), 10))
   val ntht_queue = Module(new Queue(new NICToHostToken(bufSize), 10))
 
@@ -371,7 +375,7 @@ class SimpleNICWidget(bufSize: Int)(implicit p: Parameters) extends EndpointWidg
     val macAddrRegLower = Reg(UInt(32.W))
     val rlimitSettings = Reg(UInt(32.W))
 
-    target.rlimit := (new RateLimiterSettings).fromBits(rlimitSettings)
+    target.rlimit := (new RateLimiterSettings(netConfig)).fromBits(rlimitSettings)
     target.macAddr := Cat(macAddrRegUpper, macAddrRegLower)
 
     attach(macAddrRegUpper, "macaddr_upper", WriteOnly)

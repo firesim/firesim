@@ -74,7 +74,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(128) ++
+  new WithNICKey(256) ++
   new WithBlockDevice ++
   new WithLargeTLBs ++
   new WithPerfCounters ++
@@ -98,9 +98,6 @@ class FireSimRocketChipHexaCoreConfig extends Config(new WithNBigCores(6) ++
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(new WithNBigCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
-
-// AJG: for increased flit size
-class FireSimRocketChip256FlitConfig extends Config(new FireSimRocketChipConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++

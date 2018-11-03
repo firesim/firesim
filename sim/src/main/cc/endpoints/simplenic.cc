@@ -104,13 +104,13 @@ simplenic_t::simplenic_t(
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
         ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
         pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
-        printf("AJG: created shmem region %s\n", name);
+        //printf("AJG: created shmem region %s\n", name);
         sprintf(name, "/port_stn%s_%d", slotid, j);
         printf("opening/creating shmem region %s\n", name);
         shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
         ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
         pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
-        printf("AJG: created shmem region %s\n", name);
+        //printf("AJG: created shmem region %s\n", name);
     }
 #endif // SIMULATION_XSIM
 #endif // #ifdef SIMPLENICWIDGET_0
@@ -124,7 +124,7 @@ simplenic_t::~simplenic_t() {
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
 void simplenic_t::init() {
-    printf( "AJG: entering init" );
+    //printf( "AJG: entering init" );
 #ifdef SIMPLENICWIDGET_0
     write(SIMPLENICWIDGET_0(macaddr_upper), (mac_lendian >> 32) & 0xFFFF);
     write(SIMPLENICWIDGET_0(macaddr_lower), mac_lendian & 0xFFFFFFFF);
@@ -180,7 +180,7 @@ void simplenic_t::tick() {
     uint32_t token_bytes_sent_to_fpga = 0;
 
     #define DEBUG_NIC_PRINT
-    printf("AJG: entering tick");
+    //printf("AJG: entering tick");
 
     while (true) { // break when we don't have 5k tokens
         token_bytes_obtained_from_fpga = 0;
