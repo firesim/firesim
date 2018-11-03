@@ -1,6 +1,7 @@
 {
   "name" : "example-br",
   "base" : "br-disk.json",
+  "overlay" : "overlay",
   "rootfs-format" : "img",
   "run" : "run.sh"
 }

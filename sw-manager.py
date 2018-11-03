@@ -39,8 +39,12 @@ def main():
 
     args = parser.parse_args()
 
-    with open(args.config_file, 'r') as f:
-        config = json.load(f)
+    try:
+        with open(args.config_file, 'r') as f:
+            config = json.load(f)
+    except:
+        Print("Unable to open or parse config file: " + args.config_file)
+        raise
 
     config['cfg-file'] = os.path.abspath(args.config_file)
 
@@ -67,6 +71,7 @@ def resolveConfig(config):
         else:
             raise ValueError("Invalid distro: '" + config['distro'] + "'. Available distros are 'fedora' and 'br'")
         config['base-img'] = config['builder'].baseImagePath(config['rootfs-format'])
+        config['base-format'] = config['rootfs-format']
     else:
          # Not one of the bottom bases, look for a config in workloads to base off
         config['base-cfg-file'] = os.path.join(workload_dir, config['base'])
@@ -88,27 +93,18 @@ def resolveConfig(config):
         tmp.update(config)
         config = tmp
         config['base-img'] = base_cfg['img']
+        config['base-format'] = base_cfg['rootfs-format']
 
     config['bin'] = os.path.join(image_dir, config['name'] + "-bin")
     config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
 
     return config
 
-def testMakeBin(bin_path):
-    print("Making a binary: " + bin_path)
-    sp.check_call("touch " + bin_path, shell=True)
-
-def testMakeImage():
-    print("Making an Image")
-
 class doitLoader(doit.cmd_base.TaskLoader):
     workloads = []
 
     # @staticmethod
     def load_tasks(self, cmd, opt_values, pos_args):
-        for w in self.workloads:
-            pprint.pprint(w)
-
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
         config = {'verbosity': 2}
         return task_list, config
@@ -144,22 +140,30 @@ def buildDepGraph():
             continue
 
         # Add a rule for the binary
-        print("Adding config to loader: " + cfgFile)
+        file_deps = [config['linux-config']]
+
+        task_deps = []
+        if config['rootfs-format'] == 'cpio':
+            task_deps.append(config['img'])
+
         loader.workloads.append({
                 'name' : config['bin'],
                 'actions' : [(makeBin, [config])],
                 'targets' : [config['bin']],
-                'file_dep': [config['linux-config']]
+                'file_dep': file_deps,
+                'task_dep' : task_deps
                 })
 
         # Add a rule for the image
+        task_deps = [config['base-img']]
         file_deps = []
         if 'overlay' in config:
             for root, dirs, files in os.walk(os.path.join(workload_dir, config['overlay'])):
                 for f in files:
-                    file_deps.append(f)
+                    file_deps.append(os.path.join(root, f))
         if 'init' in config:
             file_deps.append(config['init'])
+            task_deps.append(config['bin'])
         if 'run' in config:
             file_deps.append(config['run'])
         
@@ -168,15 +172,21 @@ def buildDepGraph():
             'actions' : [(makeImage, [config])],
             'targets' : [config['img']],
             'file_dep' : file_deps,
-            'task_dep' : [config['base-img']]
+            'task_dep' : task_deps
             })
 
     return loader
 
 def handleBuild(args, config):
     loader = buildDepGraph()
-    doit.doit_cmd.DoitMain(loader).run([config['bin'], config['img']])
-
+    if config['rootfs-format'] == 'img':
+        # Be sure to build the bin first, then the image, because if there is
+        # an init script, we need to boot the binary in order to apply it
+        doit.doit_cmd.DoitMain(loader).run([config['bin'], config['img']])
+    elif config['rootfs-format'] == 'cpio':
+        # CPIO must build the image first, since the binary links to it.
+        # Since CPIO doesn't support init scripts, we don't need the bin first
+        doit.doit_cmd.DoitMain(loader).run([config['img'], config['bin']])
 
 def launchSpike(config):
     sp.check_call(['spike', '-p4', '-m4096', config['bin']])
@@ -222,32 +232,41 @@ def makeBin(config):
     shutil.copy('riscv-pk/build/bbl', config['bin'])
 
 def makeImage(config):
-    shutil.copy(config['base-img'], config['img'])
+    if config['base-format'] == config['rootfs-format']:
+        shutil.copy(config['base-img'], config['img'])
+    elif config['base-format'] == 'img' and config['rootfs-format'] == 'cpio':
+        toCpio(config['base-img'], config['img'])
+    elif config['base-format'] == 'cpio' and config['rootfs-format'] == 'img':
+        raise NotImplementedError("Converting from CPIO to raw img is not currently supported")
+    else:
+        raise ValueError("Invalid formats for base and/or new image: Base=" + config['base-format'] + ", New=" + config['rootfs-format'])
 
-    overlay = os.path.join(workload_dir, config['name'], 'overlay')
-    if os.path.exists(overlay):
-        applyOverlay(config['img'], overlay, config['rootfs-format'])
+    if 'overlay' in config:
+        applyOverlay(config['img'], config['overlay'], config['rootfs-format'])
 
     if 'init' in config:
-        initScript = os.path.join(workload_dir, config['name'], config['init.sh'])
         if config['rootfs-format'] == 'cpio':
             raise ValueError("CPIO-based images do not support init scripts.")
 
-        config['builder'].applyBootScript(config['img'], initScript)
+        # Apply and run the init script
+        init_overlay = config['builder'].generateBootScriptOverlay(config['init'])
+        applyOverlay(config['img'], init_overlay, config['rootfs-format'])
         launchQemu(config)
 
+        # Clear the init script
+        run_overlay = config['builder'].generateBootScriptOverlay(None)
+        applyOverlay(config['img'], run_overlay, config['rootfs-format'])
+
     if 'run' in config:
-        runScript = os.path.join(workload_dir, config['name'], config['run'])
-        config['builder'].applyBootScript(config['img'], runScript)
-    else:
-        # We need to clear the old init script if we don't overwrite it
-        # with a run script. Note: it's safe to call this even if we never
-        # wrote an init script.
-        config['builder'].applyBootScript(config['img'], None)
+        run_overlay = config['builder'].generateBootScriptOverlay(config['run'])
+        applyOverlay(config['img'], run_overlay, config['rootfs-format'])
 
 def toCpio(src, dst):
-    sp.check_call(['sudo', 'mount', '-o', 'loop', img, mnt])
-    sp.check_call("sudo find -print0 | sudo cpio --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+    sp.check_call(['sudo', 'mount', '-o', 'loop', src, mnt])
+    try:
+        sp.check_call("sudo find -print0 | sudo cpio --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+    finally:
+        sp.check_call(['sudo', 'umount', mnt])
 
 # Apply the overlay directory "overlay" to the filesystem image "img" which
 # has format "fmt" (either 'cpio' or 'img').

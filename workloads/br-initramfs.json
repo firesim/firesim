@@ -1,8 +1,7 @@
 {
   "name" : "br-initramfs",
   "distro" : "br",
-  "root-dir" : "br",
-  "linux-config" : "linux-config-initramfs",
+  "linux-config" : "linux-config",
   "rootfs-format" : "cpio",
   "boot-rootfs" : "false"
 }

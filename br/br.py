@@ -7,6 +7,7 @@ import shutil
 # Some common directories for this module (all absolute paths)
 br_dir = os.path.dirname(os.path.realpath(__file__))
 mnt = os.path.join(br_dir, "disk-mount")
+overlay = os.path.join(br_dir, 'firesim-overlay')
 
 INIT_SCRIPT_NAME = 'etc/init.d/S99run'
 
@@ -20,8 +21,6 @@ start() {
 """
 
 init_script_tail = """
-    sync
-    poweroff -f
 }
 
 case "$1" in
@@ -41,21 +40,25 @@ esac
 
 exit
 """
-# Generate a script that will run "command" at boot time on the image
-# fsBase should be the root directory of the buildroot filesystem to apply this to
 
-def _generate_boot_script(command, fsBase):
+# Generate a script that will run "command" at boot time on the image.
+# This script will take the form of an overlay
+# Returns a path to the filesystem overlay containing the boot script
+def _generate_boot_script(command):
     init_script_body = init_script_head + "    " + command + init_script_tail
 
-    # Create a temporary script to avoid sudo access issues in the mounted fs
+    # Create a temporary script to avoid sudo access issues in the overlay
     temp_script = os.path.join(br_dir, "tmp_init")
     with open(temp_script, 'wt') as f:
         f.write(init_script_body)
 
-    final_script = os.path.join(mnt, INIT_SCRIPT_NAME)
+    final_script = os.path.join(overlay, INIT_SCRIPT_NAME)
+    sp.check_call(['sudo', 'mkdir', '-p', os.path.dirname(final_script)])
     sp.check_call(['sudo', 'cp', temp_script, final_script])
     sp.check_call(['sudo', 'chmod', '755', final_script])
-    sp.check_call(["sudo", "chown", "root:root", final_script])
+    sp.check_call(["sudo", "chown", "-R", "root:root", overlay])
+
+    return overlay
 
 class Builder:
     @staticmethod
@@ -85,18 +88,13 @@ class Builder:
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
     @staticmethod
-    def applyBootScript(img, script):
-        # Make sure we have a mountpoint to mount to
-        sp.check_call(['mkdir', '-p', mnt])
-
-        sp.check_call(['sudo', 'mount', '-o', 'loop', img, mnt])
-        try:
-            if script != None:
-                sp.check_call(['sudo', 'cp', script, mnt])
-                sp.check_call(['sudo', 'chmod', "+x", os.path.join(mnt, os.path.basename(script))])
-                _generate_boot_script("/" + os.path.basename(script), mnt)
-            else:
-                # -f to suppress any errors if it didn't exist
-                sp.check_call(['sudo', 'rm', '-f', INIT_SCRIPT_NAME], cwd=mnt)
-        finally:
-            sp.check_call(['sudo', 'umount', mnt])
+    def generateBootScriptOverlay(script):
+        sp.check_call(['sudo', 'mkdir', '-p', overlay])
+        if script != None:
+            sp.check_call(['sudo', 'cp', script, overlay])
+            sp.check_call(['sudo', 'chmod', "+x", os.path.join(overlay, os.path.basename(script))])
+            _generate_boot_script("/" + os.path.basename(script))
+        else:
+            _generate_boot_script("")
+            
+        return overlay
