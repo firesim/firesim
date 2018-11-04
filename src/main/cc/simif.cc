@@ -19,11 +19,13 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL); // FIXME: better initail seed?
+  MASTER_substruct_create;
+  this->master_mmio_addrs = MASTER_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
   // Simulation reset
-  write(MASTER(SIM_RESET), 1);
+  write(this->master_mmio_addrs->SIM_RESET, 1);
   while(!done());
 
   this->log = log;
