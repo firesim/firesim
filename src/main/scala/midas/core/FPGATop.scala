@@ -19,7 +19,7 @@ case object FpgaMMIOSize extends Field[BigInt]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
+  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -124,18 +124,22 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
   val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-  val arb = Module(new NastiArbiter(memIoSize+1)(nastiP))
-  io.mem <> NastiQueue(arb.io.slave)(nastiP)
-  if (p(MemModelKey) != None) {
-    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-    loadMem.reset := reset.toBool || simReset
-    arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
+  val arb = Seq.fill(4)(Module(new NastiArbiter(/*memIoSize+1*/2)(nastiP)))
+  (io.mem.zip(arb)).zipWithIndex.foreach {
+    case ((mem_i, arb_i),i) => {mem_i <> NastiQueue(arb_i.io.slave)(nastiP)
+      if (p(MemModelKey) != None) {
+        val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_$i")
+        loadMem.reset := reset.toBool || simReset
+        arb_i.io.master(1/*memIoSize*/) <> loadMem.io.toSlaveMem
+      }
+    }
   }
 
   val dmaPorts = new ListBuffer[NastiIO]
   val addresses = new ListBuffer[AddressSet]
 
   // Instantiate endpoint widgets
+  var mem_model_index=0
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
       val widgetName = (endpoint, p(MemModelKey)) match {
@@ -147,13 +151,14 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       widget.reset := reset.toBool || simReset
       widget match {
         case model: MemModel =>
-          arb.io.master(i) <> model.io.host_mem
+          arb(mem_model_index).io.master(0) <> model.io.host_mem
           model.io.tNasti.hBits.aw.bits.user := DontCare
           model.io.tNasti.hBits.aw.bits.region := DontCare
           model.io.tNasti.hBits.ar.bits.user := DontCare
           model.io.tNasti.hBits.ar.bits.region := DontCare
           model.io.tNasti.hBits.w.bits.id := DontCare
           model.io.tNasti.hBits.w.bits.user := DontCare
+          mem_model_index += 1
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
