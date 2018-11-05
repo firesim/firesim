@@ -39,6 +39,10 @@ class simif_t
     uint64_t seed;
     std::mt19937_64 gen;
     MASTER_struct * master_mmio_addrs;
+#ifdef LOADMEM
+    LOADMEM_struct * loadmem_mmio_addrs;
+#endif
+    DEFAULTIOWIDGET_struct * defaultiowidget_mmio_addrs;
 
     inline void take_steps(size_t n, bool blocking) {
       write(this->master_mmio_addrs->STEP, n);
