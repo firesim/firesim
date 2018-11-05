@@ -237,6 +237,8 @@ class MCRFileMap() {
     sb append s"} ${prefix_no_num}_struct;\n"
     sb append s"#endif\n\n"
 
+    sb append s"#define ${prefix}_PRESENT\n"
+
     // emit macro to create a version of this struct with values filled in
     sb append s"#define ${prefix}_substruct_create \\\n"
     sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
