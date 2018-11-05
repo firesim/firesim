@@ -34,7 +34,7 @@ struct blkdev_write_tracker {
 class blockdev_t: public endpoint_t
 {
     public:
-        blockdev_t(simif_t* sim, const std::vector<std::string>& args);
+        blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs);
         ~blockdev_t();
 
         uint32_t nsectors(void) { return _nsectors; }
@@ -48,6 +48,7 @@ class blockdev_t: public endpoint_t
         virtual int exit_code() { return 0; }
 
     private:
+        BLOCKDEVWIDGET_struct * mmio_addrs;
         bool a_req_valid;
         bool a_req_ready;
         bool a_data_valid;

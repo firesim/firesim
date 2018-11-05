@@ -18,8 +18,9 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim) {
-    _ntags = BLOCKDEVWIDGET_0(num_trackers);
+blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs): endpoint_t(sim) {
+    this->mmio_addrs = mmio_addrs;
+    _ntags = num_trackers;
     long size;
     long mem_filesize = 0;
 
@@ -39,7 +40,7 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
         }
     }
 
-    uint32_t max_latency = (1UL << BLOCKDEVWIDGET_0(latency_bits)) - 1;
+    uint32_t max_latency = (1UL << latency_bits) - 1;
     if (write_latency > max_latency) {
         fprintf(stderr, "Requested blockdev write latency (%u) exceeds HW limit (%u).\n",
                 write_latency, max_latency);
@@ -83,6 +84,7 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args): endp
 }
 
 blockdev_t::~blockdev_t() {
+    free(this->mmio_addrs);
     if (filename) {
         fclose(_file);
     }
@@ -92,13 +94,13 @@ blockdev_t::~blockdev_t() {
  * Here, we set control regs e.g. for # sectors, allowed request length
  * at boot */
 void blockdev_t::init() {
-#ifdef BLOCKDEVWIDGET_0
+#ifdef BLOCKDEVWIDGET_struct_guard
     // setup blk dev widget
-    write(BLOCKDEVWIDGET_0(bdev_nsectors), nsectors());
-    write(BLOCKDEVWIDGET_0(bdev_max_req_len), max_request_length());
-    write(BLOCKDEVWIDGET_0(read_latency), read_latency);
-    write(BLOCKDEVWIDGET_0(write_latency), write_latency);
-#endif // #ifdef BLOCKDEVWIDGET_0
+    write(this->mmio_addrs->bdev_nsectors, nsectors());
+    write(this->mmio_addrs->bdev_max_req_len, max_request_length());
+    write(this->mmio_addrs->read_latency, read_latency);
+    write(this->mmio_addrs->write_latency, write_latency);
+#endif // #ifdef BLOCKDEVWIDGET_struct_guard
 }
 
 /* Take a read request, get data from the disk file, and fill the beats
@@ -243,16 +245,16 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
 
 /* Read all pending request data from the widget */
 void blockdev_t::recv() {
-#ifdef BLOCKDEVWIDGET_0
+#ifdef BLOCKDEVWIDGET_struct_guard
     /* Read all pending requests from the widget */
-    while (read(BLOCKDEVWIDGET_0(bdev_req_valid))) {
+    while (read(this->mmio_addrs->bdev_req_valid)) {
         /* Take a request from the FPGA and put it in SW processing queues */
         struct blkdev_request req;
-        req.write = read(BLOCKDEVWIDGET_0(bdev_req_write));
-        req.offset = read(BLOCKDEVWIDGET_0(bdev_req_offset));
-        req.len = read(BLOCKDEVWIDGET_0(bdev_req_len));
-        req.tag = read(BLOCKDEVWIDGET_0(bdev_req_tag));
-        write(BLOCKDEVWIDGET_0(bdev_req_ready), true);
+        req.write = read(this->mmio_addrs->bdev_req_write);
+        req.offset = read(this->mmio_addrs->bdev_req_offset);
+        req.len = read(this->mmio_addrs->bdev_req_len);
+        req.tag = read(this->mmio_addrs->bdev_req_tag);
+        write(this->mmio_addrs->bdev_req_ready, true);
         requests.push(req);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got req. write %x, offset %x, len %x, tag %x\n",
@@ -261,32 +263,32 @@ void blockdev_t::recv() {
     }
 
     /* Read all pending data beats from the widget */
-    while (read(BLOCKDEVWIDGET_0(bdev_data_valid))) {
+    while (read(this->mmio_addrs->bdev_data_valid)) {
         /* Take a data chunk from the FPGA and put it in SW processing queues */
         struct blkdev_data data;
-        data.data = (((uint64_t)read(BLOCKDEVWIDGET_0(bdev_data_data_upper))) << 32)
-            | (read(BLOCKDEVWIDGET_0(bdev_data_data_lower)) & 0xFFFFFFFF);
-        data.tag = read(BLOCKDEVWIDGET_0(bdev_data_tag));
-        write(BLOCKDEVWIDGET_0(bdev_data_ready), true);
+        data.data = (((uint64_t)read(this->mmio_addrs->bdev_data_data_upper)) << 32)
+            | (read(this->mmio_addrs->bdev_data_data_lower) & 0xFFFFFFFF);
+        data.tag = read(this->mmio_addrs->bdev_data_tag);
+        write(this->mmio_addrs->bdev_data_ready, true);
         req_data.push(data);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] got data. data %llx, tag %x\n", data.data, data.tag);
 #endif
     }
-#endif // #ifdef BLOCKDEVWIDGET_0
+#endif // #ifdef BLOCKDEVWIDGET_struct_guard
 }
 
 /* This dumps as much read_response and write_ack data onto the widget as possible
  * In the event the widget buffers fill up; set resp_data_pending, indicating that
  * we must try again on the next tick() invocation */
 void blockdev_t::send() {
-#ifdef BLOCKDEVWIDGET_0
+#ifdef BLOCKDEVWIDGET_struct_guard
 
     /* Return as many write acknowledgements as the blockdev widget can accept */
-    while (!write_acks.empty() && read(BLOCKDEVWIDGET_0(bdev_wack_ready))) {
+    while (!write_acks.empty() && read(this->mmio_addrs->bdev_wack_ready)) {
         uint32_t tag = write_acks.front();
-        write(BLOCKDEVWIDGET_0(bdev_wack_tag), tag);
-        write(BLOCKDEVWIDGET_0(bdev_wack_valid), true);
+        write(this->mmio_addrs->bdev_wack_tag, tag);
+        write(this->mmio_addrs->bdev_wack_valid, true);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] sending W ack. tag %x\n", tag);
 #endif
@@ -294,13 +296,13 @@ void blockdev_t::send() {
     }
 
     /* Send as much read reponse data as as the blockdev widget will accept */
-    while (!read_responses.empty() && read(BLOCKDEVWIDGET_0(bdev_rresp_ready))) {
+    while (!read_responses.empty() && read(this->mmio_addrs->bdev_rresp_ready)) {
         struct blkdev_data resp;
         resp = read_responses.front();
-        write(BLOCKDEVWIDGET_0(bdev_rresp_data_upper), (resp.data >> 32) & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_rresp_data_lower), resp.data & 0xFFFFFFFF);
-        write(BLOCKDEVWIDGET_0(bdev_rresp_tag), resp.tag);
-        write(BLOCKDEVWIDGET_0(bdev_rresp_valid), true);
+        write(this->mmio_addrs->bdev_rresp_data_upper, (resp.data >> 32) & 0xFFFFFFFF);
+        write(this->mmio_addrs->bdev_rresp_data_lower, resp.data & 0xFFFFFFFF);
+        write(this->mmio_addrs->bdev_rresp_tag, resp.tag);
+        write(this->mmio_addrs->bdev_rresp_valid, true);
 #ifdef BLKDEV_DEBUG
         fprintf(stderr, "[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
 #endif
@@ -309,12 +311,12 @@ void blockdev_t::send() {
 
     /* Mark if finished */
     resp_data_pending = !read_responses.empty() || !write_acks.empty();
-#endif // #ifdef BLOCKDEVWIDGET_0
+#endif // #ifdef BLOCKDEVWIDGET_struct_guard
 }
 
 bool blockdev_t::idle() {
-#ifdef BLOCKDEVWIDGET_0
-    return !resp_data_pending && !read(BLOCKDEVWIDGET_0(bdev_reqs_pending));
+#ifdef BLOCKDEVWIDGET_struct_guard
+    return !resp_data_pending && !read(this->mmio_addrs->bdev_reqs_pending);
 #else
     return true;
 #endif

@@ -97,8 +97,15 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
     }
 
-    add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, args));
+
+#ifdef UARTWIDGET_struct_guard
+    UARTWIDGET_0_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct));
+#endif
+#ifdef SERIALWIDGET_struct_guard
+    SERIALWIDGET_0_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct));
+#endif
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
@@ -117,7 +124,10 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                 argc, argv, "memory_stats.csv"));
 #endif
 
-    add_endpoint(new blockdev_t(this, args));
+#ifdef BLOCKDEVWIDGET_struct_guard
+    BLOCKDEVWIDGET_0_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct));
+#endif
 
 #ifdef SIMPLENICWIDGET_struct_guard
     SIMPLENICWIDGET_0_substruct_create;

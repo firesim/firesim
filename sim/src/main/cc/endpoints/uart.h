@@ -7,7 +7,8 @@
 class uart_t: public endpoint_t
 {
     public:
-        uart_t(simif_t* sim);
+        uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs);
+        ~uart_t();
         void send();
         void recv();
         virtual void init() {};
@@ -16,6 +17,7 @@ class uart_t: public endpoint_t
         virtual int exit_code() { return 0; }
 
     private:
+        UARTWIDGET_struct * mmio_addrs;
         serial_data_t<char> data;
 };
 

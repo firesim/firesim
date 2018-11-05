@@ -22,8 +22,10 @@ void sighand(int s) {
 }
 #endif
 
-uart_t::uart_t(simif_t* sim): endpoint_t(sim)
+uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs): endpoint_t(sim)
 {
+    this->mmio_addrs = mmio_addrs;
+
     // Don't block on stdin reads if there is nothing typed in
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
 
@@ -35,21 +37,25 @@ uart_t::uart_t(simif_t* sim): endpoint_t(sim)
     sigaction(SIGINT, &sigIntHandler, NULL);
 }
 
+uart_t::~uart_t() {
+    free(this->mmio_addrs);
+}
+
 void uart_t::send() {
     if (data.in.fire()) {
-        write(UARTWIDGET_0(in_bits), data.in.bits);
-        write(UARTWIDGET_0(in_valid), data.in.valid);
+        write(this->mmio_addrs->in_bits, data.in.bits);
+        write(this->mmio_addrs->in_valid, data.in.valid);
     }
     if (data.out.fire()) {
-        write(UARTWIDGET_0(out_ready), data.out.ready);
+        write(this->mmio_addrs->out_ready, data.out.ready);
     }
 }
 
 void uart_t::recv() {
-    data.in.ready = read(UARTWIDGET_0(in_ready));
-    data.out.valid = read(UARTWIDGET_0(out_valid));
+    data.in.ready = read(this->mmio_addrs->in_ready);
+    data.out.valid = read(this->mmio_addrs->out_valid);
     if (data.out.valid) {
-        data.out.bits = read(UARTWIDGET_0(out_bits));
+        data.out.bits = read(this->mmio_addrs->out_bits);
     }
 }
 
