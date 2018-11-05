@@ -2,12 +2,12 @@
 #define __TRACERV_H
 
 #include "endpoints/endpoint.h"
+#include <vector>
 
 class tracerv_t: public endpoint_t
 {
     public:
-        tracerv_t(simif_t *sim, char *tracefile,
-	          uint64_t start_cycle, uint64_t end_cycle);
+        tracerv_t(simif_t *sim, std::vector<std::string> &args);
         ~tracerv_t();
 
         virtual void init();

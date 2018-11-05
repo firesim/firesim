@@ -12,12 +12,10 @@
 
 #include <sys/mman.h>
 
-// IMPORTANT! LINKLATENCY CONFIG HAS MOVED TO simplenic.h
-
 // DO NOT MODIFY PARAMS BELOW THIS LINE
 #define TOKENS_PER_BIGTOKEN 7
 
-#define SIMLATENCY_BT (LINKLATENCY/TOKENS_PER_BIGTOKEN)
+#define SIMLATENCY_BT (this->LINKLATENCY/TOKENS_PER_BIGTOKEN)
 
 #define BUFWIDTH (512/8)
 #define BUFBYTES (SIMLATENCY_BT*BUFWIDTH)
@@ -40,33 +38,80 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 
 #define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
-simplenic_t::simplenic_t(
-        simif_t *sim, char *slotid,
-        uint64_t mac_little_end, int netbw, int netburst, int linklatency,
-        char *niclogfile, bool loopback, char *shmemportname, SIMPLENICWIDGET_struct *mmio_addrs): endpoint_t(sim)
+simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
+        SIMPLENICWIDGET_struct *mmio_addrs): endpoint_t(sim)
 {
-
+#ifdef SIMPLENICWIDGET_0
     this->mmio_addrs = mmio_addrs;
 
-    // store link latency:
-    LINKLATENCY = linklatency;
+    const char *niclogfile = NULL;
+    const char *shmemportname = NULL;
+    const char *slotid = NULL;
+    int netbw = MAX_BANDWIDTH, netburst = 8;
 
-    // store mac address
-    mac_lendian = mac_little_end;
+    this->loopback = false;
+    this->niclog = NULL;
+    this->mac_lendian = 0;
+    this->LINKLATENCY = 0;
+
+    for (auto &arg: args) {
+        if (arg.find("+niclog=") == 0) {
+            niclogfile = const_cast<char*>(arg.c_str()) + 8;
+        }
+        if (arg.find("+nic-loopback") == 0) {
+            this->loopback = true;
+        }
+        if (arg.find("+slotid=") == 0) {
+            slotid = const_cast<char*>(arg.c_str()) + 8;
+        }
+        if (arg.find("+macaddr=") == 0) {
+            uint8_t mac_bytes[6];
+            int mac_octets[6];
+            char * macstring = NULL;
+            macstring = const_cast<char*>(arg.c_str()) + 9;
+            char * trailingjunk;
+
+            // convert mac address from string to 48 bit int
+            if (6 == sscanf(macstring, "%x:%x:%x:%x:%x:%x%c",
+                        &mac_octets[0], &mac_octets[1], &mac_octets[2],
+                        &mac_octets[3], &mac_octets[4], &mac_octets[5],
+                        trailingjunk)) {
+
+                for (int i = 0; i < 6; i++) {
+                    mac_lendian |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
+                }
+            } else {
+                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddr=\n");
+            }
+        }
+        if (arg.find("+netbw=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 7;
+            netbw = atoi(str);
+        }
+        if (arg.find("+netburst=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 10;
+            netburst = atoi(str);
+        }
+        if (arg.find("+linklatency=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 13;
+            this->LINKLATENCY = atoi(str);
+        }
+        if (arg.find("+shmemportname=") == 0) {
+            shmemportname = const_cast<char*>(arg.c_str()) + 15;
+        }
+    }
 
     assert(slotid != NULL);
-    assert(linklatency > 0);
+    assert(this->LINKLATENCY > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
     rlimit_size = netburst;
 
-    printf("NIC using link latency: %d cycles\n", linklatency);
-    printf("NIC using netbw: %d\n", netbw);
-    printf("NIC using netburst: %d\n", netburst);
+    printf("using link latency: %d cycles\n", this->LINKLATENCY);
+    printf("using netbw: %d\n", netbw);
+    printf("using netburst: %d\n", netburst);
 
-    this->loopback = loopback;
-    this->niclog = NULL;
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");
         if (!this->niclog) {

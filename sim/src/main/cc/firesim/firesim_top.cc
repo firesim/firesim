@@ -1,5 +1,3 @@
-#include <limits.h>
-
 #include "firesim_top.h"
 
 // FireSim-defined endpoints
@@ -15,18 +13,10 @@
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
-    // fields to populate to pass to endpoints
-    char * niclogfile = NULL;
-    char * slotid = NULL;
-    char * tracefile = NULL;
-    char * shmemportname = NULL;
-    uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
-    uint64_t trace_start = 0, trace_end = ULONG_MAX;
-    int netbw = MAX_BANDWIDTH, netburst = 8;
-    int linklatency = 0;
-    bool nic_loopback = false;
-
     std::vector<std::string> args(argv + 1, argv + argc);
+    max_cycles = -1;
+    profile_interval = max_cycles;
+
     for (auto &arg: args) {
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
@@ -34,66 +24,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         if (arg.find("+profile-interval=") == 0) {
             profile_interval = atoi(arg.c_str()+18);
         }
-        if (arg.find("+niclog=") == 0) {
-            niclogfile = const_cast<char*>(arg.c_str()) + 8;
-        }
-        if (arg.find("+nic-loopback") == 0) {
-            nic_loopback = true;
-        }
-        if (arg.find("+slotid=") == 0) {
-            slotid = const_cast<char*>(arg.c_str()) + 8;
-        }
-
-        // TODO: move this and a bunch of other NIC arg parsing into the nic endpoint code itself
-        if (arg.find("+shmemportname=") == 0) {
-            shmemportname = const_cast<char*>(arg.c_str()) + 15;
-        }
-
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
-        }
-        if (arg.find("+macaddr=") == 0) {
-            uint8_t mac_bytes[6];
-            int mac_octets[6];
-            char * macstring = NULL;
-            macstring = const_cast<char*>(arg.c_str()) + 9;
-            char * trailingjunk;
-
-            // convert mac address from string to 48 bit int
-            if (6 == sscanf(macstring, "%x:%x:%x:%x:%x:%x%c",
-                        &mac_octets[0], &mac_octets[1], &mac_octets[2],
-                        &mac_octets[3], &mac_octets[4], &mac_octets[5],
-                        trailingjunk)) {
-
-                for (int i = 0; i < 6; i++) {
-                    mac_little_end |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
-                }
-            } else {
-                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddr=\n");
-            }
-        }
-        if (arg.find("+netbw=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 7;
-            netbw = atoi(str);
-        }
-        if (arg.find("+netburst=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 10;
-            netburst = atoi(str);
-        }
-        if (arg.find("+linklatency=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
-            linklatency = atoi(str);
-        }
-        if (arg.find("+tracefile=") == 0) {
-            tracefile = const_cast<char*>(arg.c_str()) + 11;
-        }
-        if (arg.find("+trace-start=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
-            trace_start = atol(str);
-        }
-        if (arg.find("+trace-end=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 11;
-            trace_end = atol(str);
         }
     }
 
@@ -131,10 +63,10 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef SIMPLENICWIDGET_struct_guard
     SIMPLENICWIDGET_0_substruct_create;
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback, shmemportname, SIMPLENICWIDGET_0_substruct));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct));
 #endif
 
-    add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
+    add_endpoint(new tracerv_t(this, args));
     // add more endpoints here
 
     // Add functions you'd like to periodically invoke on a paused simulator here.
