@@ -1,0 +1,4 @@
+- add remaining frees
+- endpoints that parse their own args need to know which # of that endpoint they are
+- add guards, instantiate 4 copies of stuff
+- fix tracerv widget (and other widgets)
