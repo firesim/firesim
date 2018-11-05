@@ -21,6 +21,12 @@ simif_t::simif_t() {
   seed = time(NULL); // FIXME: better initail seed?
   MASTER_substruct_create;
   this->master_mmio_addrs = MASTER_substruct;
+#ifdef LOADMEM
+  LOADMEM_substruct_create;
+  this->loadmem_mmio_addrs = LOADMEM_substruct;
+#endif
+  DEFAULTIOWIDGET_substruct_create;
+  this->defaultiowidget_mmio_addrs = DEFAULTIOWIDGET_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
@@ -57,16 +63,16 @@ void simif_t::init(int argc, char** argv, bool log) {
 }
 
 uint64_t simif_t::actual_tcycle() {
-    write(DEFAULTIOWIDGET(tCycle_latch), 1);
-    data_t cycle_l = read(DEFAULTIOWIDGET(tCycle_0));
-    data_t cycle_h = read(DEFAULTIOWIDGET(tCycle_1));
+    write(this->defaultiowidget_mmio_addrs->tCycle_latch, 1);
+    data_t cycle_l = read(this->defaultiowidget_mmio_addrs->tCycle_0);
+    data_t cycle_h = read(this->defaultiowidget_mmio_addrs->tCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
 uint64_t simif_t::hcycle() {
-    write(DEFAULTIOWIDGET(hCycle_latch), 1);
-    data_t cycle_l = read(DEFAULTIOWIDGET(hCycle_0));
-    data_t cycle_h = read(DEFAULTIOWIDGET(hCycle_1));
+    write(this->defaultiowidget_mmio_addrs->hCycle_latch, 1);
+    data_t cycle_l = read(this->defaultiowidget_mmio_addrs->hCycle_0);
+    data_t cycle_h = read(this->defaultiowidget_mmio_addrs->hCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
@@ -182,24 +188,24 @@ void simif_t::load_mem(std::string filename) {
 
 // NB: mpz_t variables may not export <size> <data_t> beats, if initialized with an array of zeros.
 void simif_t::read_mem(size_t addr, mpz_t& value) {
-  write(LOADMEM_R_ADDRESS_H, addr >> 32);
-  write(LOADMEM_R_ADDRESS_L, addr & ((1ULL << 32) - 1));
+  write(this->loadmem_mmio_addrs->R_ADDRESS_H, addr >> 32);
+  write(this->loadmem_mmio_addrs->R_ADDRESS_L, addr & ((1ULL << 32) - 1));
   const size_t size = MEM_DATA_CHUNK;
   data_t data[size];
   for (size_t i = 0 ; i < size ; i++) {
-    data[i] = read(LOADMEM_R_DATA);
+    data[i] = read(this->loadmem_mmio_addrs->R_DATA);
   }
   mpz_import(value, size, -1, sizeof(data_t), 0, 0, data);
 }
 
 void simif_t::write_mem(size_t addr, mpz_t& value) {
-  write(LOADMEM_W_ADDRESS_H, addr >> 32);
-  write(LOADMEM_W_ADDRESS_L, addr & ((1ULL << 32) - 1));
-  write(LOADMEM_W_LENGTH, 1);
+  write(this->loadmem_mmio_addrs->W_ADDRESS_H, addr >> 32);
+  write(this->loadmem_mmio_addrs->W_ADDRESS_L, addr & ((1ULL << 32) - 1));
+  write(this->loadmem_mmio_addrs->W_LENGTH, 1);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
   for (size_t i = 0 ; i < MEM_DATA_CHUNK ; i++) {
-    write(LOADMEM_W_DATA, i < size ? data[i] : 0);
+    write(this->loadmem_mmio_addrs->W_DATA, i < size ? data[i] : 0);
   }
 }
 
@@ -207,19 +213,19 @@ void simif_t::write_mem(size_t addr, mpz_t& value) {
 #define ceil_div(a, b) (((a) - 1) / (b) + 1)
 
 void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
-  write(LOADMEM_W_ADDRESS_H, addr >> 32);
-  write(LOADMEM_W_ADDRESS_L, addr & ((1ULL << 32) - 1));
+  write(this->loadmem_mmio_addrs->W_ADDRESS_H, addr >> 32);
+  write(this->loadmem_mmio_addrs->W_ADDRESS_L, addr & ((1ULL << 32) - 1));
   size_t num_beats = ceil_div(bytes, MEM_DATA_CHUNK_BYTES);
-  write(LOADMEM_W_LENGTH, num_beats);
+  write(this->loadmem_mmio_addrs->W_LENGTH, num_beats);
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
   for (size_t i = 0 ; i < num_beats * MEM_DATA_CHUNK ; i++) {
-    write(LOADMEM_W_DATA, i < size ? data[i] : 0);
+    write(this->loadmem_mmio_addrs->W_DATA, i < size ? data[i] : 0);
   }
 }
 
 void simif_t::zero_out_dram() {
-  write(LOADMEM_ZERO_OUT_DRAM, 1);
-  while(!read(LOADMEM_ZERO_FINISHED));
+  write(this->loadmem_mmio_addrs->ZERO_OUT_DRAM, 1);
+  while(!read(this->loadmem_mmio_addrs->ZERO_FINISHED));
 }
 #endif // LOADMEM

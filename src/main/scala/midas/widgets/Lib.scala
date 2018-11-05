@@ -246,12 +246,12 @@ class MCRFileMap() {
     }
     sb append s"\n"
 
-    // keep old way for now as we transition widgets
+/*    // keep old way for now as we transition widgets
     name2addr.toList foreach { case (regName, idx) =>
       val fullName = s"${prefix}_${regName}"
       val address = base + idx
       sb append s"#define ${fullName} ${address}\n"
-    }
+    }*/
   }
   // A variation of above which dumps the register map as a series of arrays
   def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
