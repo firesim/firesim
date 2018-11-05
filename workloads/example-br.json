@@ -3,5 +3,6 @@
   "base" : "br-disk.json",
   "overlay" : "overlay",
   "rootfs-format" : "img",
-  "run" : "run.sh"
+  "run" : "run.sh",
+  "init" : "init.sh"
 }

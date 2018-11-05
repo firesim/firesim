@@ -1,6 +1,11 @@
 #!/bin/bash
 
-echo "Hello from an initramfs"
-ls /root/qsort/
-# sync
-# poweroff -f
+if [ ! -f /root/runOutput ]; then
+  echo "ERROR: The overlay didn't get applied!"
+fi
+
+echo "I ran!" >> /root/runOutput
+cat /root/runOutput
+
+sync
+poweroff -f

@@ -6,59 +6,7 @@ import shutil
 
 # Some common directories for this module (all absolute paths)
 br_dir = os.path.dirname(os.path.realpath(__file__))
-mnt = os.path.join(br_dir, "disk-mount")
 overlay = os.path.join(br_dir, 'firesim-overlay')
-
-INIT_SCRIPT_NAME = 'etc/init.d/S99run'
-
-init_script_head = """#!/bin/sh
-#
-
-SYSLOGD_ARGS=-n
-KLOGD_ARGS=-n
-
-start() {
-"""
-
-init_script_tail = """
-}
-
-case "$1" in
-  start)
-	start
-	;;
-  stop)
-	#stop
-	;;
-  restart|reload)
-	start
-	;;
-  *)
-	echo "Usage: $0 {start|stop|restart}"
-	exit 1
-esac
-
-exit
-"""
-
-# Generate a script that will run "command" at boot time on the image.
-# This script will take the form of an overlay
-# Returns a path to the filesystem overlay containing the boot script
-def _generate_boot_script(command):
-    init_script_body = init_script_head + "    " + command + init_script_tail
-
-    # Create a temporary script to avoid sudo access issues in the overlay
-    temp_script = os.path.join(br_dir, "tmp_init")
-    with open(temp_script, 'wt') as f:
-        f.write(init_script_body)
-
-    final_script = os.path.join(overlay, INIT_SCRIPT_NAME)
-    sp.check_call(['sudo', 'mkdir', '-p', os.path.dirname(final_script)])
-    sp.check_call(['sudo', 'cp', temp_script, final_script])
-    sp.check_call(['sudo', 'chmod', '755', final_script])
-    sp.check_call(["sudo", "chown", "-R", "root:root", overlay])
-
-    return overlay
 
 class Builder:
     @staticmethod
@@ -89,12 +37,20 @@ class Builder:
     # If None is passed for script, any existing bootscript will be deleted
     @staticmethod
     def generateBootScriptOverlay(script):
-        sp.check_call(['sudo', 'mkdir', '-p', overlay])
+        # How this works:
+        # The buildroot repo has a pre-built overlay with a custom S99run
+        # script that init will run last. This script will run the /firesim.sh
+        # script at boot. We just overwrite this script.
+        scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            sp.check_call(['sudo', 'cp', script, overlay])
-            sp.check_call(['sudo', 'chmod', "+x", os.path.join(overlay, os.path.basename(script))])
-            _generate_boot_script("/" + os.path.basename(script))
+            sp.check_call(['sudo', 'cp', script, scriptDst])
         else:
-            _generate_boot_script("")
-            
+            sp.check_call(['sudo', 'rm', scriptDst])
+            # Create a blank init script because overlays won't let us delete stuff
+            # Alternatively: we could consider replacing the default.target
+            # symlink to disable the firesim target entirely
+            sp.check_call(['sudo', 'touch', scriptDst])
+        
+        sp.check_call(['sudo', 'chown', 'root:root', scriptDst])
+        sp.check_call(['sudo', 'chmod', '+x', scriptDst])
         return overlay

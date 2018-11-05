@@ -1,6 +1,11 @@
 #!/bin/bash
 
-cd root/qsort
-/usr/bin/time -f "%S,%M,%F" -v ./qsort -s 10000 > run_result.csv
+if [ ! -f /root/runOutput ]; then
+  echo "ERROR: The overlay didn't get applied!"
+fi
+
+echo "I ran!" >> /root/runOutput
+cat /root/runOutput
+
 sync
 poweroff -f

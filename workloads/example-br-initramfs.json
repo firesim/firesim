@@ -2,7 +2,7 @@
   "name" : "example-br-initramfs",
   "base" : "br-disk.json",
   "linux-config" : "linux-config",
-  "overlay" : "overlay",
   "rootfs-format" : "cpio",
-  "run" : "run.sh"
+  "run" : "run.sh",
+  "overlay" : "overlay"
 }

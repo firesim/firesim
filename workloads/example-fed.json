@@ -1,0 +1,8 @@
+{
+  "name" : "example-fed",
+  "base" : "fedora-disk.json",
+  "overlay" : "overlay",
+  "rootfs-format" : "img",
+  "init" : "init.sh",
+  "run" : "run.sh"
+}
