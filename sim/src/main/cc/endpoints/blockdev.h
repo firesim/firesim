@@ -31,6 +31,7 @@ struct blkdev_write_tracker {
     uint64_t data[MAX_REQ_LEN * SECTOR_BEATS];
 };
 
+#ifdef BLOCKDEVWIDGET_struct_guard
 class blockdev_t: public endpoint_t
 {
     public:
@@ -82,5 +83,6 @@ class blockdev_t: public endpoint_t
         uint32_t read_latency = 4096;
         uint32_t write_latency = 4096;
 };
+#endif // BLOCKDEVWIDGET_struct_guard
 
 #endif // __BLOCKDEV_H

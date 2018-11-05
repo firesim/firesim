@@ -1,3 +1,5 @@
+#ifdef UARTWIDGET_struct_guard
+
 #include "uart.h"
 #ifndef _WIN32
 #include <unistd.h>
@@ -94,3 +96,5 @@ void uart_t::tick() {
         data.in.valid = false;
     } while(data.in.fire() || data.out.fire());
 }
+
+#endif // UARTWIDGET_struct_guard

@@ -66,7 +66,10 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct));
 #endif
 
+#ifdef TRACERVWIDGET_struct_guard
     add_endpoint(new tracerv_t(this, args));
+#endif
+
     // add more endpoints here
 
     // Add functions you'd like to periodically invoke on a paused simulator here.

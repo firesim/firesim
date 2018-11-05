@@ -1,3 +1,5 @@
+#ifdef SERIALWIDGET_struct_guard
+
 #include <assert.h>
 #include "serial.h"
 
@@ -114,3 +116,5 @@ void serial_t::tick() {
         go();
     }
 }
+
+#endif // SERIALWIDGET_struct_guard

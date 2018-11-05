@@ -4,6 +4,7 @@
 #include "serial.h"
 #include <signal.h>
 
+#ifdef UARTWIDGET_struct_guard
 class uart_t: public endpoint_t
 {
     public:
@@ -20,5 +21,6 @@ class uart_t: public endpoint_t
         UARTWIDGET_struct * mmio_addrs;
         serial_data_t<char> data;
 };
+#endif // UARTWIDGET_struct_guard
 
 #endif // __UART_H

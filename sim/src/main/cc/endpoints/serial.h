@@ -20,6 +20,7 @@ struct serial_data_t {
     } out;
 };
 
+#ifdef SERIALWIDGET_struct_guard
 class serial_t: public endpoint_t
 {
     public:
@@ -47,5 +48,6 @@ class serial_t: public endpoint_t
         void handle_loadmem_write(fesvr_loadmem_t loadmem);
         void serial_bypass_via_loadmem();
 };
+#endif // SERIALWIDGET_struct_guard
 
 #endif // __SERIAL_H

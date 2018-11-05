@@ -1,3 +1,5 @@
+#ifdef TRACERVWIDGET_struct_guard
+
 #include "tracerv.h"
 
 #include <stdio.h>
@@ -25,12 +27,9 @@
 #define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
 #define TRACERV_ADDR 0x100000000L
 
-
-
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args) : endpoint_t(sim)
 {
-#ifdef TRACERVWIDGET_0
     const char *tracefilename = NULL;
 
     this->tracefile = NULL;
@@ -58,23 +57,18 @@ tracerv_t::tracerv_t(
             abort();
         }
     }
-#endif // #ifdef TRACERVWIDGET_0
 }
 
 tracerv_t::~tracerv_t() {
-#ifdef TRACERVWIDGET_0
     if (this->tracefile) {
         fclose(this->tracefile);
     }
-#endif // #ifdef TRACERVWIDGET_0
 }
 
 void tracerv_t::init() {
-#ifdef TRACERVWIDGET_0
     cur_cycle = 0;
 
     printf("Collect trace from %lu to %lu cycles\n", start_cycle, end_cycle);
-#endif // #ifdef TRACERVWIDGET_0
 }
 
 // defining this stores as human readable hex (e.g. open in VIM)
@@ -82,7 +76,6 @@ void tracerv_t::init() {
 #define HUMAN_READABLE
 
 void tracerv_t::tick() {
-#ifdef TRACERVWIDGET_0
     uint64_t outfull = read(TRACERVWIDGET_0(tracequeuefull));
 
     #define QUEUE_DEPTH 6144
@@ -119,6 +112,6 @@ void tracerv_t::tick() {
         }
         cur_cycle += QUEUE_DEPTH;
     }
-
-#endif // ifdef TRACERVWIDGET_0
 }
+
+#endif // TRACERVWIDGET_struct_guard

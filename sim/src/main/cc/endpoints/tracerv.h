@@ -4,6 +4,7 @@
 #include "endpoints/endpoint.h"
 #include <vector>
 
+#ifdef TRACERVWIDGET_struct_guard
 class tracerv_t: public endpoint_t
 {
     public:
@@ -12,13 +13,14 @@ class tracerv_t: public endpoint_t
 
         virtual void init();
         virtual void tick();
-	virtual bool terminate() { return false; }
-	virtual int exit_code() { return 0; }
+        virtual bool terminate() { return false; }
+        virtual int exit_code() { return 0; }
 
     private:
         simif_t* sim;
         FILE * tracefile;
-	uint64_t start_cycle, end_cycle, cur_cycle;
+        uint64_t start_cycle, end_cycle, cur_cycle;
 };
+#endif // TRACERVWIDGET_struct_guard
 
 #endif // __TRACERV_H
