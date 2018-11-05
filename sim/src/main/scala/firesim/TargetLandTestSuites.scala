@@ -18,7 +18,7 @@ class BlockdevTestSuite(prefix: String, val names: LinkedHashSet[String]) extend
   val makeTargetName = prefix + "-blkdev-tests"
   def kind = "blockdev"
   // Blockdev tests need an image, which complicates this
-  def additionalArgs = "+blkdev-in-mem=128 +nic-loopback"
+  def additionalArgs = "+blkdev-in-mem0=128 +nic-loopback"
   override def toString = s"$makeTargetName = \\\n" +
     // Make variable with the binaries of the suite
     names.map(n => s"\t$n.riscv").mkString(" \\\n") + "\n\n" +

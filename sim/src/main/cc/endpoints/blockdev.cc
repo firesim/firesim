@@ -3,6 +3,7 @@
 #include "blockdev.h"
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 /* Block Device Endpoint Driver
  *
@@ -20,25 +21,32 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs): endpoint_t(sim) {
+blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs, int blkdevno): endpoint_t(sim) {
     this->mmio_addrs = mmio_addrs;
     _ntags = num_trackers;
     long size;
     long mem_filesize = 0;
 
+    std::string num_equals = std::to_string(blkdevno) + std::string("=");
+
+    std::string blkdev_arg =         std::string("+blkdev") + num_equals;
+    std::string blkdevinmem_arg =    std::string("+blkdev-in-mem") + num_equals;
+    std::string blkdevwlatency_arg = std::string("+blkdev-wlatency") + num_equals;
+    std::string blkdevrlatency_arg = std::string("+blkdev-rlatency") + num_equals;
+
     for (auto &arg: args) {
-        if (arg.find("+blkdev=") == 0) {
-            filename = const_cast<char*>(arg.c_str()) + 8;
+        if (arg.find(blkdev_arg) == 0) {
+            filename = const_cast<char*>(arg.c_str()) + blkdev_arg.length();
         }
         // Spoofs a file with fmemopen. Useful for testing
-        if (arg.find("+blkdev-in-mem=") == 0) {
-            mem_filesize = atoi(const_cast<char*>(arg.c_str()) + 15);
+        if (arg.find(blkdevinmem_arg) == 0) {
+            mem_filesize = atoi(const_cast<char*>(arg.c_str()) + blkdevinmem_arg.length());
         }
-        if (arg.find("+blkdev-wlatency=") == 0) {
-            write_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
+        if (arg.find(blkdevwlatency_arg) == 0) {
+            write_latency = atoi(const_cast<char*>(arg.c_str()) + blkdevwlatency_arg.length());
         }
-        if (arg.find("+blkdev-rlatency=") == 0) {
-            read_latency = atoi(const_cast<char*>(arg.c_str()) + 17);
+        if (arg.find(blkdevrlatency_arg) == 0) {
+            read_latency = atoi(const_cast<char*>(arg.c_str()) + blkdevrlatency_arg.length());
         }
     }
 

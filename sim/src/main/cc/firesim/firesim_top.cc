@@ -58,7 +58,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef BLOCKDEVWIDGET_struct_guard
     BLOCKDEVWIDGET_0_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct));
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct, 0));
 #endif
 
 #ifdef SIMPLENICWIDGET_struct_guard

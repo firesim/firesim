@@ -89,7 +89,7 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
                 netbw=netbw, profile_interval=profile_interval,
