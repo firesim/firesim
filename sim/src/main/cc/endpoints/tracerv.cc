@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -27,12 +28,29 @@
 
 
 tracerv_t::tracerv_t(
-    simif_t *sim, char *tracefilename,
-    uint64_t start_cycle, uint64_t end_cycle)
-    : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args) : endpoint_t(sim)
 {
 #ifdef TRACERVWIDGET_0
+    const char *tracefilename = NULL;
+
     this->tracefile = NULL;
+    this->start_cycle = 0;
+    this->end_cycle = ULONG_MAX;
+
+    for (auto &arg: args) {
+        if (arg.find("+tracefile=") == 0) {
+            tracefilename = const_cast<char*>(arg.c_str()) + 11;
+        }
+        if (arg.find("+trace-start=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 13;
+            this->start_cycle = atol(str);
+        }
+        if (arg.find("+trace-end=") == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + 11;
+            this->end_cycle = atol(str);
+        }
+    }
+
     if (tracefilename) {
         this->tracefile = fopen(tracefilename, "w");
         if (!this->tracefile) {
@@ -40,8 +58,6 @@ tracerv_t::tracerv_t(
             abort();
         }
     }
-    this->start_cycle = start_cycle;
-    this->end_cycle = end_cycle;
 #endif // #ifdef TRACERVWIDGET_0
 }
 

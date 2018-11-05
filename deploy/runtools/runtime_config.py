@@ -86,7 +86,7 @@ class RuntimeHWConfig:
         return assert_def_local
 
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
-                                    linklatency, netbw, bootbin,
+                                    linklatency, netbw, profile_interval, bootbin,
                                     trace_enable, trace_start, trace_end, shmemportname):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
@@ -100,10 +100,11 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
+                netbw=netbw, profile_interval=profile_interval,
+                shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
                 trace_start=trace_start, trace_end=trace_end)
 
         return basecommand
@@ -189,6 +190,7 @@ class InnerRuntimeConfiguration:
         self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
         self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
         self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
+        self.profileinterval = int(runtime_dict['targetconfig']['profileinterval'])
         # Default values
         self.trace_enable = False
         self.trace_start = 0
@@ -245,8 +247,9 @@ class RuntimeConfig:
             self.runfarm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
-            self.innerconf.trace_enable, self.innerconf.trace_start,
-            self.innerconf.trace_end, self.innerconf.terminateoncompletion)
+            self.innerconf.profileinterval, self.innerconf.trace_enable,
+            self.innerconf.trace_start, self.innerconf.trace_end,
+            self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """

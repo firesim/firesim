@@ -27,7 +27,9 @@ class WithUARTKey extends Config((site, here, up) => {
 })
 
 class WithNICKey extends Config((site, here, up) => {
-  case NICKey => NICConfig(inBufPackets = 10)
+  case NICKey => NICConfig(
+    inBufPackets = 64,
+    ctrlQueueDepth = 64)
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
