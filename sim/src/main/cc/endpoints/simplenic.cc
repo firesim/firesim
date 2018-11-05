@@ -41,7 +41,6 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
         SIMPLENICWIDGET_struct *mmio_addrs): endpoint_t(sim)
 {
-#ifdef SIMPLENICWIDGET_0
     this->mmio_addrs = mmio_addrs;
 
     const char *niclogfile = NULL;
