@@ -169,6 +169,7 @@ simplenic_t::~simplenic_t() {
             munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
         }
     }
+    free(this->mmio_addrs);
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
