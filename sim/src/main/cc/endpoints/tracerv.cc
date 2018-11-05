@@ -64,6 +64,7 @@ tracerv_t::~tracerv_t() {
     if (this->tracefile) {
         fclose(this->tracefile);
     }
+    free(this->mmio_addrs);
 }
 
 void tracerv_t::init() {
