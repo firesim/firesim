@@ -8,7 +8,7 @@
 class tracerv_t: public endpoint_t
 {
     public:
-        tracerv_t(simif_t *sim, std::vector<std::string> &args);
+        tracerv_t(simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs);
         ~tracerv_t();
 
         virtual void init();
@@ -17,6 +17,7 @@ class tracerv_t: public endpoint_t
         virtual int exit_code() { return 0; }
 
     private:
+        TRACERVWIDGET_struct * mmio_addrs;
         simif_t* sim;
         FILE * tracefile;
         uint64_t start_cycle, end_cycle, cur_cycle;

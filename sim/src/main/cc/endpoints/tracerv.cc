@@ -28,8 +28,9 @@
 #define TRACERV_ADDR 0x100000000L
 
 tracerv_t::tracerv_t(
-    simif_t *sim, std::vector<std::string> &args) : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs) : endpoint_t(sim)
 {
+    this->mmio_addrs = mmio_addrs;
     const char *tracefilename = NULL;
 
     this->tracefile = NULL;
@@ -76,7 +77,7 @@ void tracerv_t::init() {
 #define HUMAN_READABLE
 
 void tracerv_t::tick() {
-    uint64_t outfull = read(TRACERVWIDGET_0(tracequeuefull));
+    uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
 
     #define QUEUE_DEPTH 6144
     
