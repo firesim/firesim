@@ -7,3 +7,6 @@
 [submodule "br/buildroot"]
 	path = br/buildroot
 	url = https://github.com/sifive/buildroot.git
+[submodule "workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release"]
+	path = workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release
+	url = https://github.com/firesim/mutilate-loadgen-riscv-release

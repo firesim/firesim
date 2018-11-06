@@ -330,7 +330,7 @@ def makeImage(config):
 def toCpio(config, src, dst):
     sp.check_call(['sudo', 'mount', '-o', 'loop', src, mnt])
     try:
-        sp.check_call("sudo find -print0 | sudo cpio --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+        sp.check_call("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
     finally:
         sp.check_call(['sudo', 'umount', mnt])
 
@@ -341,8 +341,9 @@ def applyOverlay(img, overlay, fmt):
     if fmt == 'img':
         sp.check_call(['sudo', 'mount', '-o', 'loop', img, mnt])
         try:
-            sp.check_call('sudo cp -a ' + overlay +
-                          '/*' + " " + mnt, shell=True)
+            # Overlays may not be owned by root, but the filesystem must be.
+            # Rsync lets us chown while copying.
+            sp.check_call('sudo rsync -a --chown=root:root ' + overlay + '/*' + " " + mnt, shell=True)
         finally:
             sp.check_call(['sudo', 'umount', mnt])
 
@@ -352,7 +353,7 @@ def applyOverlay(img, overlay, fmt):
         # name. Linux handles this just fine (it uses the latest version of a
         # file), but be aware.
         sp.check_call(
-            'sudo find ./* -print0 | sudo cpio --null -ov -H newc >> ' + img, cwd=overlay, shell=True)
+                'sudo find ./* -print0 | sudo cpio --owner root:root --null -ov -H newc >> ' + img, cwd=overlay, shell=True)
 
     else:
         raise ValueError(
