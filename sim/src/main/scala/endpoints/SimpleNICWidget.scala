@@ -180,7 +180,11 @@ class SimpleNICWidgetIO(ifWidth: Int)(implicit p: Parameters) extends EndpointWi
   } else None
 }
 
-
+/**
+ * Take a BigToken, split it into individual tokens and return it one by one
+ *
+ * @input tokenSize size of the token to split the BigToken
+ */
 class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   val io = IO(new Bundle {
     val htnt = DecoupledIO(new HostToNICToken(tokenSize))
@@ -198,6 +202,7 @@ class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   }
 
   val loopIter = RegInit(0.U(32.W))
+  // AJG: TODO: This 6 needs to be paremeterized to represent the amt of NicTokens in BigToken - 1
   when (fire_xact(false.B, loopIter === 6.U)) {
     loopIter := 0.U
   } .elsewhen (fire_xact(false.B)) {
@@ -212,9 +217,15 @@ class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
   io.htnt.valid := fire_xact(io.htnt.ready)
+  // AJG: TODO: This 6 needs to be paremeterized to represent the amt of NicTokens in BigToken - 1
   io.pcie_in.ready := fire_xact(io.pcie_in.valid, loopIter === 6.U)
 }
 
+/**
+ * Take multiple NicTokens and convert them into a single BigToken to send over PCIe
+ *
+ * @input tokenSize size of the token to insert multiple into a BigToken
+ */
 class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   val io = IO(new Bundle {
     val ntht = Flipped(DecoupledIO(new NICToHostToken(tokenSize)))
@@ -290,7 +301,6 @@ class HostToNICTokenGenerator(nTokens: Int, tokenSize: Int)(implicit p: Paramete
   when (seedDone) { state := s_forward }
 }
 
-// AJG: This needs to be parameterized
 class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new SimpleNICWidgetIO(ifWidth))
 
@@ -397,6 +407,12 @@ class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidg
 
   // AJG: Changed this to be the parameterized value
   //val PCIS_BYTES = 64
+  
+  //if(p(LoopbackNIC)) {
+  //  outgoingPCISdat.io.deq.ready := DontCare
+  //  incomingPCISdat.io.enq.bits := DontCare
+  //  incomingPCISdat.io.enq.valid := DontCare
+  //}
 
   io.dma.map { dma =>
     // TODO, will these queues bottleneck us?

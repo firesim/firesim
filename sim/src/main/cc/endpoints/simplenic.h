@@ -3,7 +3,8 @@
 
 #include "endpoints/endpoint.h"
 
-#define MAX_BANDWIDTH  800 //This BW is still in flux while my changes are being made
+ //This BW is still in flux while my changes are being made
+#define MAX_BANDWIDTH  200
 
 // param: link latency in cycles
 // assuming 3.2 GHz, this number / 3.2 = link latency in ns

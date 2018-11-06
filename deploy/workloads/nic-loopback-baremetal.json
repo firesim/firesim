@@ -1,0 +1,6 @@
+{
+  "benchmark_name" : "nic-loopback-baremetal",
+  "common_bootbinary" : "nic-loopback.riscv",
+  "common_rootfs" : "dummy.ext2",
+  "common_simulation_outputs" : ["uartlog"]
+}

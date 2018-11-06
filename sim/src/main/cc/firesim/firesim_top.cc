@@ -149,11 +149,11 @@ void firesim_top_t::run() {
     uint64_t start_hcycle = hcycle();
     uint64_t start_time = timestamp();
 
-    fprintf(stderr, "AJG: start_hcycle(%d) start_time(%d)\n", start_hcycle, start_time);
+    //fprintf(stderr, "AJG: start_hcycle(%d) start_time(%d)\n", start_hcycle, start_time);
     // Assert reset T=0 -> 50
     target_reset(0, 50);
 
-    fprintf(stderr, "AJG: target_reset");
+    //fprintf(stderr, "AJG: target_reset");
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();

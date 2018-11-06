@@ -26,7 +26,7 @@ class WithUARTWidget extends Config((site, here, up) => {
 class WithSimpleNICWidget(ifWidth: Int) extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
     midas.core.EndpointMap(Seq(new SimSimpleNIC(ifWidth)))
-  case LoopbackNIC => false
+  case LoopbackNIC => true
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {
