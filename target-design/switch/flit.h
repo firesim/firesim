@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 /* ----------------------------------------------------
  * buffer flit operations
  *
@@ -62,6 +64,13 @@ uint16_t get_port_from_flit(uint64_t flit, int current_port) {
     //printf("mac: %04x\n", sendport);
     if (sendport != 0xffff) {
         sendport = mac2port[sendport];
+    }
+    if (sendport == NUMDOWNLINKS) {
+        // this has been mapped to "any uplink", so pick one
+        int randval = rand() % NUMUPLINKS;
+        sendport = randval + NUMDOWNLINKS;
+//        printf("sending to random uplink.\n");
+//        printf("port: %04x\n", sendport);
     }
     //printf("port: %04x\n", sendport);
     return sendport;

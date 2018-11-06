@@ -15,7 +15,7 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile);
+        simplenic_t(simif_t* sim, char * slotid, uint64_t mac_little_end, int netbw, int netburst, int linklatency, char * niclogfile, bool loopback, char *shmemportname);
         ~simplenic_t();
 
         virtual void init();
@@ -38,6 +38,7 @@ class simplenic_t: public endpoint_t
         int SIMLATENCY_BT;
         int BUFBYTES;
 
+	bool loopback;
 };
 
 #endif // __SIMPLENIC_H

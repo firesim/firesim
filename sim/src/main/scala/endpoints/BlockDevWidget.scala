@@ -12,7 +12,9 @@ import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
 
-class SimBlockDev extends Endpoint {
+class SimBlockDev(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio)
+  extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: BlockDeviceIO =>
       directionOf(channel.req.valid) == ActualDirection.Output
@@ -25,6 +27,7 @@ class SimBlockDev extends Endpoint {
 class BlockDevWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new BlockDeviceIO))
   val dma = None
+  val address = None
 }
 
 class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
