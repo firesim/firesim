@@ -1,2 +1,3 @@
 - endpoints that parse their own args need to know which # of that endpoint they are
+ -serial endpoint multiple copies support (e.g. which program to load)
 - add guards, instantiate 4 tcopies of stuff
