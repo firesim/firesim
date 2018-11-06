@@ -330,18 +330,8 @@ def makeImage(config):
 def toCpio(config, src, dst):
     sp.check_call(['sudo', 'mount', '-o', 'loop', src, mnt])
     try:
-        if config['distro'] == 'fedora':
-            # This is a hack to get fedora to boot, I'm not wild about
-            # modifying the source image but cpio can't append to large
-            # archives so this is the only option (otherwise we'd just add this
-            # to the overlay)
-            sp.check_call("sudo ln -s -f /sbin/init " + os.path.join(mnt, "init"), shell=True)
-
         sp.check_call("sudo find -print0 | sudo cpio --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
     finally:
-        if config['distro'] == 'fedora':
-            sp.check_call("sudo rm " + os.path.join(mnt, "init"), shell=True)
-
         sp.check_call(['sudo', 'umount', mnt])
 
 # Apply the overlay directory "overlay" to the filesystem image "img" which
@@ -362,7 +352,7 @@ def applyOverlay(img, overlay, fmt):
         # name. Linux handles this just fine (it uses the latest version of a
         # file), but be aware.
         sp.check_call(
-            'sudo find ./* -print0 | sudo cpio -0 -ov -H newc -A -F ' + img, cwd=overlay, shell=True)
+            'sudo find ./* -print0 | sudo cpio --null -ov -H newc >> ' + img, cwd=overlay, shell=True)
 
     else:
         raise ValueError(
