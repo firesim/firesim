@@ -26,8 +26,8 @@ class WithUARTKey extends Config((site, here, up) => {
      nRxEntries = 256))
 })
 
-class WithNICKey(bufSize: Int) extends Config((site, here, up) => {
-  case NICKey => new NICConfig(NET_IF_WIDTH_BITS = bufSize, inBufPackets = 10)
+class WithNICKey(ifWidth: Int) extends Config((site, here, up) => {
+  case NICKey => new NICConfig(NET_IF_WIDTH_BITS = ifWidth, inBufPackets = 10)
 })
 
 class WithLargeTLBs extends Config((site, here, up) => {
@@ -74,7 +74,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(256) ++
+  new WithNICKey(64) ++
   new WithBlockDevice ++
   new WithLargeTLBs ++
   new WithPerfCounters ++
@@ -105,7 +105,7 @@ class FireSimBoomConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(128) ++
+  new WithNICKey(64) ++
   new WithBlockDevice ++
   new BoomWithLargeTLBs ++
   // Using a small config because it has 64-bit system bus, and compiles quickly

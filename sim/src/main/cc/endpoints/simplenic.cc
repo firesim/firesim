@@ -61,7 +61,7 @@ simplenic_t::simplenic_t(
     //AJG: Let netbw determine the variables
     assert( netbw <= MAX_BANDWIDTH );//(( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
-    BUFWIDTH = 256; // currently hardcoded since there is you want to manipulate the sim speed by the rlimiter//netbw / PROC_SPEED;
+    BUFWIDTH = 64; // currently hardcoded since there is you want to manipulate the sim speed by the rlimiter//netbw / PROC_SPEED;
     TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
     SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
     BUFBYTES = SIMLATENCY_BT * BUFWIDTH;

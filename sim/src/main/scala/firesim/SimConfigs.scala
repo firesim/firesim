@@ -23,9 +23,9 @@ class WithUARTWidget extends Config((site, here, up) => {
     midas.core.EndpointMap(Seq(new SimUART))
 })
 
-class WithSimpleNICWidget(bufSize: Int) extends Config((site, here, up) => {
+class WithSimpleNICWidget(ifWidth: Int) extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimSimpleNIC(bufSize)))
+    midas.core.EndpointMap(Seq(new SimSimpleNIC(ifWidth)))
   case LoopbackNIC => false
 })
 
@@ -140,7 +140,7 @@ class FRFCFS16GBQuadRankLLC4MB extends Config(
 class FireSimConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
   new midas.F1Config)
@@ -148,7 +148,7 @@ class FireSimConfig extends Config(
 class FireSimDDR3Config extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
   new midas.F1Config)
@@ -156,7 +156,7 @@ class FireSimDDR3Config extends Config(
 class FireSimDDR3LLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
@@ -164,7 +164,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
 class FireSimDDR3FRFCFSConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
   new midas.F1Config)
@@ -172,16 +172,16 @@ class FireSimDDR3FRFCFSConfig extends Config(
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 64) ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
 
-// for increased flit size
+// AJG: for increased flit size
 class FireSimFlit256DDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(bufSize = 256) ++
+  new WithSimpleNICWidget(ifWidth = 256) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
