@@ -30,8 +30,31 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
     }
 
-    add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, args));
+
+#ifdef UARTWIDGET_struct_guard
+    #ifdef UARTWIDGET_0_PRESENT
+    UARTWIDGET_0_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct));
+    #endif
+    #ifdef UARTWIDGET_1_PRESENT
+    UARTWIDGET_1_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_1_substruct));
+    #endif
+    #ifdef UARTWIDGET_2_PRESENT
+    UARTWIDGET_2_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_2_substruct));
+    #endif
+    #ifdef UARTWIDGET_3_PRESENT
+    UARTWIDGET_3_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_3_substruct));
+    #endif
+#endif
+
+    // TODO: Serial multiple copy support
+#ifdef SERIALWIDGET_struct_guard
+    SERIALWIDGET_0_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct));
+#endif
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
@@ -50,9 +73,63 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                 argc, argv, "memory_stats.csv"));
 #endif
 
-    add_endpoint(new blockdev_t(this, args));
-    add_endpoint(new simplenic_t(this, args));
-    add_endpoint(new tracerv_t(this, args));
+#ifdef BLOCKDEVWIDGET_struct_guard
+    #ifdef BLOCKDEVWIDGET_0_PRESENT
+    BLOCKDEVWIDGET_0_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct, 0));
+    #endif
+    #ifdef BLOCKDEVWIDGET_1_PRESENT
+    BLOCKDEVWIDGET_1_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_1_num_trackers, BLOCKDEVWIDGET_1_latency_bits, BLOCKDEVWIDGET_1_substruct, 1));
+    #endif
+    #ifdef BLOCKDEVWIDGET_2_PRESENT
+    BLOCKDEVWIDGET_2_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_2_num_trackers, BLOCKDEVWIDGET_2_latency_bits, BLOCKDEVWIDGET_2_substruct, 2));
+    #endif
+    #ifdef BLOCKDEVWIDGET_3_PRESENT
+    BLOCKDEVWIDGET_3_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_3_num_trackers, BLOCKDEVWIDGET_3_latency_bits, BLOCKDEVWIDGET_3_substruct, 3));
+    #endif
+#endif
+
+#ifdef SIMPLENICWIDGET_struct_guard
+    #ifdef SIMPLENICWIDGET_0_PRESENT
+    SIMPLENICWIDGET_0_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0));
+    #endif
+    #ifdef SIMPLENICWIDGET_1_PRESENT
+    SIMPLENICWIDGET_1_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_1_substruct, 1));
+    #endif
+    #ifdef SIMPLENICWIDGET_2_PRESENT
+    SIMPLENICWIDGET_2_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_2_substruct, 2));
+    #endif
+    #ifdef SIMPLENICWIDGET_3_PRESENT
+    SIMPLENICWIDGET_3_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3));
+    #endif
+#endif
+
+#ifdef TRACERVWIDGET_struct_guard
+    #ifdef TRACERVWIDGET_0_PRESENT
+    TRACERVWIDGET_0_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0));
+    #endif
+    #ifdef TRACERVWIDGET_1_PRESENT
+    TRACERVWIDGET_1_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1));
+    #endif
+    #ifdef TRACERVWIDGET_2_PRESENT
+    TRACERVWIDGET_2_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2));
+    #endif
+    #ifdef TRACERVWIDGET_3_PRESENT
+    TRACERVWIDGET_3_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3));
+    #endif
+#endif
+
     // add more endpoints here
 
 #ifdef ASSERTIONWIDGET_0
