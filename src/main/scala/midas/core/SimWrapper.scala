@@ -198,15 +198,15 @@ class SimWrapperIO(io: TargetBoxIO)
     new SimWrapperIO(io).asInstanceOf[this.type]
 }
 
-class TargetBoxIO(targetIo: Seq[Data]) extends Record {
-  val elements = ListMap() ++ (targetIo map (port => port.instanceName -> port.chiselCloneType))
+class TargetBoxIO(targetIo: Seq[(String, Data)]) extends Record {
+  val elements = ListMap((targetIo map { case (name, field) => name -> field.chiselCloneType }):_*)
   def resets = elements collect { case (_, r: Reset) => r }
   def clocks = elements collect { case (_, c: Clock) => c }
   def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
 }
 
 // this gets replaced with the real target
-class TargetBox(targetIo: Seq[Data]) extends BlackBox {
+class TargetBox(targetIo: Seq[(String, Data)]) extends BlackBox {
   val io = IO(new TargetBoxIO(targetIo))
 }
 
@@ -220,9 +220,9 @@ class SimBox(simIo: SimWrapperIO)
   })
 }
 
-class SimWrapper(targetIo: Seq[Data])
+class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, Data)])
                 (implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  val target = Module(new TargetBox(targetIo))
+  val target = Module(new TargetBox(targetIo ++ generatedTargetIo))
   val io = IO(new SimWrapperIO(target.io))
   val fire = Wire(Bool())
 
@@ -355,7 +355,7 @@ class SimWrapper(targetIo: Seq[Data])
   // Inputs are consumed when firing conditions are met
   wireInChannels foreach (_.io.out.ready := fire)
   readyValidInChannels foreach (_.io.deq.host.hReady := fire)
-   
+
   // Outputs should be ready when firing conditions are met, inject an intial
   // token into each output queue after reset is asserted
   val resetNext = RegNext(reset.toBool)
@@ -376,4 +376,4 @@ class SimWrapper(targetIo: Seq[Data])
     // cycles := Mux(target.io.reset, UInt(0), cycles + UInt(1))
     when(false.B) { printf("%d", cycles) }
   }
-} 
+}
