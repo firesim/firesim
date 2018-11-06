@@ -82,7 +82,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef TRACERVWIDGET_struct_guard
     TRACERVWIDGET_0_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0));
 #endif
 
     // add more endpoints here

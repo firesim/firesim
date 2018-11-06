@@ -83,13 +83,13 @@ class RuntimeHWConfig:
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
 
-        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
+        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
                 netbw=netbw, profile_interval=profile_interval,

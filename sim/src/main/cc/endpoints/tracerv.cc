@@ -28,7 +28,7 @@
 #define TRACERV_ADDR 0x100000000L
 
 tracerv_t::tracerv_t(
-    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs) : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracerno) : endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
     const char *tracefilename = NULL;
@@ -37,16 +37,21 @@ tracerv_t::tracerv_t(
     this->start_cycle = 0;
     this->end_cycle = ULONG_MAX;
 
+    std::string num_equals = std::to_string(tracerno) + std::string("=");
+    std::string tracefile_arg =         std::string("+tracefile") + num_equals;
+    std::string tracestart_arg =         std::string("+trace-start") + num_equals;
+    std::string traceend_arg =         std::string("+trace-end") + num_equals;
+
     for (auto &arg: args) {
-        if (arg.find("+tracefile=") == 0) {
-            tracefilename = const_cast<char*>(arg.c_str()) + 11;
+        if (arg.find(tracefile_arg) == 0) {
+            tracefilename = const_cast<char*>(arg.c_str()) + tracefile_arg.length();
         }
-        if (arg.find("+trace-start=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
+        if (arg.find(tracestart_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + tracestart_arg.length();
             this->start_cycle = atol(str);
         }
-        if (arg.find("+trace-end=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 11;
+        if (arg.find(traceend_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + traceend_arg.length();
             this->end_cycle = atol(str);
         }
     }
