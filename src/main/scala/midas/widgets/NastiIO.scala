@@ -12,7 +12,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.AddressSet
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: HostPortIO[Data]
+  def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
   def dma: Option[NastiIO]
   def address: Option[AddressSet]
   val tReset = Flipped(Decoupled(Bool()))
