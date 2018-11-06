@@ -24,7 +24,7 @@ FPGA-Accelerated Simulation vs FPGA Prototyping
 Key to understanding the design of MIDAS, is understanding that MIDAS-generated
 simulators, like FireSim, are not FPGA prototypes. MIDAS-generated simulators,
 like all FPGA-accelerated simulators before it (see RAMP), decouple the
-target-clock from the FPGA-host clock. Thus one cycle in the target-machine is
+target-clock from the FPGA-host clock (we say it is *host-decoupled*). Thus one cycle in the target-machine is
 simulated over a one-or-more FPGA-host clock cycles. In constrast, a
 conventional FPGA-prototype "emulates" the SoC by implementing the target
 directly in FPGA logic, with each FPGA-clock edge executing a clock edge of the
@@ -33,30 +33,29 @@ SoC.
 Why FPGA-Accelerated Simulation
 -------------------------------
 
-Decoupling the host and target clock enables:
+The host-decoupling used FPGA-accelerated simulators enables:
 
 #. **Providing simulation determinism.**
-   Debugging on an FPGA is instrinsically difficult. MIDAS creates a closed simulation
-   deterministic simulation environment such that bugs in the target can be reproduced
+   MIDAS creates a closed simulation environment such that bugs in the target can be reproduced
    despite timing-differences (eg. DRAM refresh, PCI-E transport latency) in the underlying host.
-
+   The simulators for the same target can be generated for different host-FPGAs but will maintain
+   the same target behavior.
 
 #. **FPGA-host optimizations.**
-   Structures in ASIC RTL, that map poorly to FPGA logic can be replaced with models
-   that maintain the same target-RTL behavior, but take more host-cycle to save resources.
-   eg. Simulating a multi-ported register file with a dual-ported BRAM.
-
+   Structures in ASIC RTL that map poorly to FPGA logic can be replaced with models
+   that preserve the target RTL's behavior, but take more host cycles to save resources.
+   eg. A 5R, 3W-ported register file with a dual-ported BRAM over 4 cycles.
 
 #. **Distributed simulation & SW co-simulation.**
-   Since models are decoupled from host-time, it becomes much easier to host
-   components of the simulator on multiple FPGAs, and on host-CPU, while still
-   preserving simulation determinism.
-
+   Since models are decoupled from host time, it becomes much easier to host
+   components of the simulator on multiple FPGAs, and on a host-CPU, while still
+   preserving simulation determinism. This feature serves as the basis for building
+   cycle-accurate scale-out systems with FireSim.
 
 #. **FPGA-hosted timing-faithful models of I/O devices.**
    Most simple FPGA-prototypes use FPGA-attached DRAM to model the target's
    DRAM memory system. If the available memory system does not match that of
-   the target, the target's simulated performance will be uncharacteristically
+   the target, the target's simulated performance will be artificially
    fast or slow. Host-decoupling permits writing detailed timing models that
    provide host-independent, deterministic timing of the target's memory system,
    while still use FPGA-host resources like DRAM as a functional store.
@@ -69,7 +68,7 @@ Ultimately, MIDAS-generated simulators introduce overheads not present in an
 FPGA-prototype that *may* increase FPGA resource use, decrease fmax, and
 decrease overall simulation throughput [#]_.  Those looking to develop
 soft-cores or develop a complete FPGA-based platform with their own boards and
-I/O devices would be best served by implementing their design on an FPGA. For
+I/O devices would be best served by implementing their design directly on an FPGA. For
 those looking to building a system around Rocket-Chip, we'd suggest looking at
 `SiFive's Freedom platform <https://github.com/sifive/freedom>`_ to start.
 
