@@ -38,10 +38,15 @@ class simif_t
     // random numbers
     uint64_t seed;
     std::mt19937_64 gen;
+    MASTER_struct * master_mmio_addrs;
+#ifdef LOADMEM
+    LOADMEM_struct * loadmem_mmio_addrs;
+#endif
+    DEFAULTIOWIDGET_struct * defaultiowidget_mmio_addrs;
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {
-      write(MASTER(STEP), n);
+      write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
 #ifdef LOADMEM
@@ -53,7 +58,7 @@ class simif_t
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
     virtual void step(uint32_t n, bool blocking = true);
-    inline bool done() { return read(MASTER(DONE)); }
+    inline bool done() { return read(this->master_mmio_addrs->DONE); }
 
     // Widget communication
     virtual void write(size_t addr, data_t data) = 0;

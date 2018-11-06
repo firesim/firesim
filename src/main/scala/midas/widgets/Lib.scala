@@ -225,12 +225,35 @@ class MCRFileMap() {
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+    // get widget name with no widget number (prefix includes it)
+    val prefix_no_num = prefix.split("_")(0)
+
+    // emit generic struct for this widget type. guarded so it only gets
+    // defined once
+    sb append s"#ifndef ${prefix_no_num}_struct_guard\n"
+    sb append s"#define ${prefix_no_num}_struct_guard\n"
+    sb append s"typedef struct ${prefix_no_num}_struct {\n"
     name2addr.toList foreach { case (regName, idx) =>
-      val fullName = s"${prefix}_${regName}"
-      val address = base + idx
-      sb append s"#define ${fullName} ${address}\n"
+      sb append s"    unsigned long ${regName};\n"
     }
+    sb append s"} ${prefix_no_num}_struct;\n"
+    sb append s"#endif // ${prefix_no_num}_struct_guard\n\n"
+
+    // define to mark that a particular instantiation of a widget is present
+    // (e.g. UARTWIDGET_0_PRESENT)
+    sb append s"#define ${prefix}_PRESENT\n"
+
+    // emit macro to create a version of this struct with values filled in
+    sb append s"#define ${prefix}_substruct_create \\\n"
+    // assume the widget destructor will free this
+    sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
+    name2addr.toList foreach { case (regName, idx) =>
+      val address = base + idx
+      sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
+    }
+    sb append s"\n"
   }
+
   // A variation of above which dumps the register map as a series of arrays
   def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
     def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String) {
