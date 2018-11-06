@@ -39,13 +39,12 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 #define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
-        SIMPLENICWIDGET_struct *mmio_addrs): endpoint_t(sim)
+        SIMPLENICWIDGET_struct *mmio_addrs, int simplenicno): endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
 
     const char *niclogfile = NULL;
     const char *shmemportname = NULL;
-    const char *slotid = NULL;
     int netbw = MAX_BANDWIDTH, netburst = 8;
 
     this->loopback = false;
@@ -53,21 +52,31 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     this->mac_lendian = 0;
     this->LINKLATENCY = 0;
 
+
+    // construct arg parsing strings here. We basically append the endpoint
+    // number to each of these base strings, to get args like +blkdev0 etc.
+    std::string num_equals = std::to_string(simplenicno) + std::string("=");
+    std::string niclog_arg = std::string("+niclog") + num_equals;
+    std::string nicloopback_arg = std::string("+nic-loopback") + std::to_string(simplenicno);
+    std::string macaddr_arg = std::string("+macaddr") + num_equals;
+    std::string netbw_arg = std::string("+netbw") + num_equals;
+    std::string netburst_arg = std::string("+netburst") + num_equals;
+    std::string linklatency_arg = std::string("+linklatency") + num_equals;
+    std::string shmemportname_arg = std::string("+shmemportname") + num_equals;
+
+
     for (auto &arg: args) {
-        if (arg.find("+niclog=") == 0) {
-            niclogfile = const_cast<char*>(arg.c_str()) + 8;
+        if (arg.find(niclog_arg) == 0) {
+            niclogfile = const_cast<char*>(arg.c_str()) + niclog_arg.length();
         }
-        if (arg.find("+nic-loopback") == 0) {
+        if (arg.find(nicloopback_arg) == 0) {
             this->loopback = true;
         }
-        if (arg.find("+slotid=") == 0) {
-            slotid = const_cast<char*>(arg.c_str()) + 8;
-        }
-        if (arg.find("+macaddr=") == 0) {
+        if (arg.find(macaddr_arg) == 0) {
             uint8_t mac_bytes[6];
             int mac_octets[6];
             char * macstring = NULL;
-            macstring = const_cast<char*>(arg.c_str()) + 9;
+            macstring = const_cast<char*>(arg.c_str()) + macaddr_arg.length();
             char * trailingjunk;
 
             // convert mac address from string to 48 bit int
@@ -80,27 +89,27 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
                     mac_lendian |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
                 }
             } else {
-                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddr=\n");
+                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddrN=\n");
             }
         }
-        if (arg.find("+netbw=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 7;
+        if (arg.find(netbw_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + netbw_arg.length();
             netbw = atoi(str);
         }
-        if (arg.find("+netburst=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 10;
+        if (arg.find(netburst_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + netburst_arg.length();
             netburst = atoi(str);
         }
-        if (arg.find("+linklatency=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
+        if (arg.find(linklatency_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + linklatency_arg.length();
             this->LINKLATENCY = atoi(str);
         }
-        if (arg.find("+shmemportname=") == 0) {
-            shmemportname = const_cast<char*>(arg.c_str()) + 15;
+        if (arg.find(shmemportname_arg) == 0) {
+            shmemportname = const_cast<char*>(arg.c_str()) + shmemportname_arg.length();
         }
     }
 
-    assert(slotid != NULL);
+    assert(shmemportname != NULL);
     assert(this->LINKLATENCY > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
@@ -124,27 +133,18 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
 
     if (!loopback) {
         for (int j = 0; j < 2; j++) {
-            if (shmemportname) {
-                printf("Using non-slot-id associated shmemportname:\n");
-                sprintf(name, "/port_nts%s_%d", shmemportname, j);
-            } else {
-                printf("Using slot-id associated shmemportname:\n");
-                sprintf(name, "/port_nts%s_%d", slotid, j);
-            }
-            printf("opening/creating shmem region %s\n", name);
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_nts%s_%d", shmemportname, j);
+
+            printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
             ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
             pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
 
-            if (shmemportname) {
-                printf("Using non-slot-id associated shmemportname:\n");
-                sprintf(name, "/port_stn%s_%d", shmemportname, j);
-            } else {
-                printf("Using slot-id associated shmemportname:\n");
-                sprintf(name, "/port_stn%s_%d", slotid, j);
-            }
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_stn%s_%d", shmemportname, j);
 
-            printf("opening/creating shmem region %s\n", name);
+            printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
             ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
             pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);

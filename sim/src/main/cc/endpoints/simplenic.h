@@ -12,7 +12,7 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, std::vector<std::string> &args, SIMPLENICWIDGET_struct *addrs);
+        simplenic_t(simif_t* sim, std::vector<std::string> &args, SIMPLENICWIDGET_struct *addrs, int simplenicno);
         ~simplenic_t();
 
         virtual void init();

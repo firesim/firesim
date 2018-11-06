@@ -77,7 +77,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef SIMPLENICWIDGET_struct_guard
     SIMPLENICWIDGET_0_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0));
 #endif
 
 #ifdef TRACERVWIDGET_struct_guard
