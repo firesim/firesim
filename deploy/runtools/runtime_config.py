@@ -17,6 +17,7 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
+LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -44,12 +45,15 @@ class RuntimeHWConfig:
         rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
         self.deploytriplet = get_firesim_tagval_for_agfi(self.agfi,
                                                          'firesim-deploytriplet')
+    def get_design_name(self):
+        """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        my_design = my_deploytriplet.split("-")[0]
+        return my_design
 
     def get_local_driver_binaryname(self):
         """ Get the name of the driver binary. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        my_design = my_deploytriplet.split("-")[0]
-        return my_design + "-f1"
+        return self.get_design_name() + "-f1"
 
     def get_local_driver_path(self):
         """ return relative local path of the driver used to run this sim. """
@@ -73,6 +77,13 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
+    # TODO: Delete this and bake the assertion definitions into the Driver
+    def get_local_assert_def_path(self):
+        """ return relative local path of the synthesized assertion definitions. """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        gen_src_dir = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
+        assert_def_local = gen_src_dir + self.get_design_name() + ".asserts"
+        return assert_def_local
 
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
                                     linklatency, netbw, profile_interval, bootbin,
