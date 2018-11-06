@@ -27,6 +27,9 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
     long size;
     long mem_filesize = 0;
 
+
+    // construct arg parsing strings here. We basically append the endpoint
+    // number to each of these base strings, to get args like +blkdev0 etc.
     std::string num_equals = std::to_string(blkdevno) + std::string("=");
 
     std::string blkdev_arg =         std::string("+blkdev") + num_equals;
