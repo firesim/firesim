@@ -33,8 +33,9 @@ class FireSimTopologyWithPasses:
 
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
-                 defaultnetbandwidth, defaulttraceenable,
-                 defaulttracestart, defaulttraceend, terminateoncompletion):
+                 defaultnetbandwidth, defaultprofileinterval,
+                 defaulttraceenable, defaulttracestart, defaulttraceend,
+                 terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -46,6 +47,7 @@ class FireSimTopologyWithPasses:
         self.defaultlinklatency = defaultlinklatency
         self.defaultswitchinglatency = defaultswitchinglatency
         self.defaultnetbandwidth = defaultnetbandwidth
+        self.defaultprofileinterval = defaultprofileinterval
         self.defaulttraceenable = defaulttraceenable
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
@@ -274,12 +276,16 @@ class FireSimTopologyWithPasses:
                     node.switch_link_latency = self.defaultlinklatency
                 if node.switch_switching_latency is None:
                     node.switch_switching_latency = self.defaultswitchinglatency
+                if node.switch_bandwidth is None:
+                    node.switch_bandwidth = self.defaultnetbandwidth
 
             if isinstance(node, FireSimServerNode):
                 if node.server_link_latency is None:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
+                if node.server_profile_interval is None:
+                    node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
                     node.trace_enable = self.defaulttraceenable
                 if node.trace_start is None:

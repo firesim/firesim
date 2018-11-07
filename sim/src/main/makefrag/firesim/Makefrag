@@ -69,7 +69,7 @@ TIMEOUT_CYCLES = 100000000
 NET_SLOT ?= 0
 NET_LINK_LATENCY ?= 6405
 NET_BW ?= 100
-nic_args = +slotid=$(NET_SLOT) +niclog=niclog +linklatency=$(NET_LINK_LATENCY) +netbw=$(NET_BW) +netburst=8 +nic-loopback
+nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))

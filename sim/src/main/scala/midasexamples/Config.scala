@@ -7,6 +7,11 @@ import midas.widgets._
 import freechips.rocketchip.config._
 import junctions._
 
+// This is incomplete and must be mixed into a complete platform config
+class DefaultMIDASConfig extends Config(new Config((site, here, up) => {
+    case SynthAsserts => true
+}) ++ new Config(new firesim.firesim.WithDefaultMemModel))
+
 class PointerChaserConfig extends Config((site, here, up) => {
   case MemSize => BigInt(1 << 30) // 1 GB
   case NMemoryChannels => 1

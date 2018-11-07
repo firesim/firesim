@@ -1,3 +1,5 @@
+#ifdef SERIALWIDGET_struct_guard
+
 #include <assert.h>
 #include "serial.h"
 
@@ -7,8 +9,10 @@
 #define DEFAULT_STEPSIZE (2004765L)
 #endif
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args):
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs):
         endpoint_t(sim), sim(sim), fesvr(args) {
+
+    this->mmio_addrs = mmio_addrs;
 
     step_size = DEFAULT_STEPSIZE;
     for (auto &arg: args) {
@@ -18,26 +22,30 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args):
     }
 }
 
+serial_t::~serial_t() {
+    free(this->mmio_addrs);
+}
+
 void serial_t::init() {
-    write(SERIALWIDGET_0(step_size), step_size);
+    write(this->mmio_addrs->step_size, step_size);
     go();
 }
 
 void serial_t::go() {
-    write(SERIALWIDGET_0(start), 1);
+    write(this->mmio_addrs->start, 1);
 }
 
 void serial_t::send() {
-    while(fesvr.data_available() && read(SERIALWIDGET_0(in_ready))) {
-        write(SERIALWIDGET_0(in_bits), fesvr.recv_word());
-        write(SERIALWIDGET_0(in_valid), 1);
+    while(fesvr.data_available() && read(this->mmio_addrs->in_ready)) {
+        write(this->mmio_addrs->in_bits, fesvr.recv_word());
+        write(this->mmio_addrs->in_valid, 1);
     }
 }
 
 void serial_t::recv() {
-    while(read(SERIALWIDGET_0(out_valid))) {
-        fesvr.send_word(read(SERIALWIDGET_0(out_bits)));
-        write(SERIALWIDGET_0(out_ready), 1);
+    while(read(this->mmio_addrs->out_valid)) {
+        fesvr.send_word(read(this->mmio_addrs->out_bits));
+        write(this->mmio_addrs->out_ready, 1);
     }
 }
 
@@ -92,7 +100,7 @@ void serial_t::serial_bypass_via_loadmem() {
 
 void serial_t::tick() {
     // First, check to see step_size tokens have been enqueued
-    if (!read(SERIALWIDGET_0(done))) return;
+    if (!read(this->mmio_addrs->done)) return;
     // Collect all the responses from the target
     this->recv();
     // Punt to FESVR
@@ -108,3 +116,5 @@ void serial_t::tick() {
         go();
     }
 }
+
+#endif // SERIALWIDGET_struct_guard

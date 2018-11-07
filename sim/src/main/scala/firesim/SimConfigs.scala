@@ -20,6 +20,12 @@ class BasePlatformConfig extends Config(new Config((site, here, up) => {
     case EndpointKey => EndpointMap(Seq.empty)
 }) ++ new midas.F1Config)
 
+// Experimental: mixing this in will enable assertion synthesis
+class WithSynthAsserts extends Config((site, here, up) => {
+  case midas.SynthAsserts => true
+  case EndpointKey => EndpointMap(Seq(new midas.widgets.AssertBundleEndpoint)) ++ up(EndpointKey)
+})
+
 class WithSerialWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
 })

@@ -1,3 +1,5 @@
+#ifdef SIMPLENICWIDGET_struct_guard
+
 #include "simplenic.h"
 
 #include <stdio.h>
@@ -9,8 +11,6 @@
 #include <unistd.h>
 
 #include <sys/mman.h>
-
-// IMPORTANT! LINKLATENCY CONFIG HAS MOVED TO simplenic.h
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
 
@@ -46,31 +46,90 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 
 #define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
-simplenic_t::simplenic_t(
-        simif_t *sim, char *slotid,
-        uint64_t mac_little_end, int netbw, int netburst, int linklatency,
-        char *niclogfile, bool loopback, char *shmemportname): endpoint_t(sim)
+simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
+        SIMPLENICWIDGET_struct *mmio_addrs, int simplenicno): endpoint_t(sim)
 {
-#ifdef SIMPLENICWIDGET_0
-    // store link latency:
-    LINKLATENCY = linklatency;
+    this->mmio_addrs = mmio_addrs;
 
-    // store mac address
-    mac_lendian = mac_little_end;
+    const char *niclogfile = NULL;
+    const char *shmemportname = NULL;
+    int netbw = MAX_BANDWIDTH, netburst = 8;
 
+    this->loopback = false;
+    this->niclog = NULL;
+    this->mac_lendian = 0;
+    this->LINKLATENCY = 0;
+
+
+    // construct arg parsing strings here. We basically append the endpoint
+    // number to each of these base strings, to get args like +blkdev0 etc.
+    std::string num_equals = std::to_string(simplenicno) + std::string("=");
+    std::string niclog_arg = std::string("+niclog") + num_equals;
+    std::string nicloopback_arg = std::string("+nic-loopback") + std::to_string(simplenicno);
+    std::string macaddr_arg = std::string("+macaddr") + num_equals;
+    std::string netbw_arg = std::string("+netbw") + num_equals;
+    std::string netburst_arg = std::string("+netburst") + num_equals;
+    std::string linklatency_arg = std::string("+linklatency") + num_equals;
+    std::string shmemportname_arg = std::string("+shmemportname") + num_equals;
+
+
+    for (auto &arg: args) {
+        if (arg.find(niclog_arg) == 0) {
+            niclogfile = const_cast<char*>(arg.c_str()) + niclog_arg.length();
+        }
+        if (arg.find(nicloopback_arg) == 0) {
+            this->loopback = true;
+        }
+        if (arg.find(macaddr_arg) == 0) {
+            uint8_t mac_bytes[6];
+            int mac_octets[6];
+            char * macstring = NULL;
+            macstring = const_cast<char*>(arg.c_str()) + macaddr_arg.length();
+            char * trailingjunk;
+
+            // convert mac address from string to 48 bit int
+            if (6 == sscanf(macstring, "%x:%x:%x:%x:%x:%x%c",
+                        &mac_octets[0], &mac_octets[1], &mac_octets[2],
+                        &mac_octets[3], &mac_octets[4], &mac_octets[5],
+                        trailingjunk)) {
+
+                for (int i = 0; i < 6; i++) {
+                    mac_lendian |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
+                }
+            } else {
+                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddrN=\n");
+            }
+        }
+        if (arg.find(netbw_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + netbw_arg.length();
+            netbw = atoi(str);
+        }
+        if (arg.find(netburst_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + netburst_arg.length();
+            netburst = atoi(str);
+        }
+        if (arg.find(linklatency_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + linklatency_arg.length();
+            this->LINKLATENCY = atoi(str);
+        }
+        if (arg.find(shmemportname_arg) == 0) {
+            shmemportname = const_cast<char*>(arg.c_str()) + shmemportname_arg.length();
+        }
+    }
+
+    assert(shmemportname != NULL);
+    assert(this->LINKLATENCY > 0);
+    assert(netburst < 256);
     //AJG: Let netbw determine the variables
     assert( netbw <= MAX_BANDWIDTH );//(( PCIE_WIDTH - VAL_BITS ) * PROC_SPEED ) );
     // AJG: Might have to make BUFWIDTH be the next smaller power of 2 so that you can simulate correctly (cannot have 509 as a actual datafield... right)
     BUFWIDTH = 64; // currently hardcoded since there is you want to manipulate the sim speed by the rlimiter//netbw / PROC_SPEED;
     TOKENS_PER_BIGTOKEN = PCIE_WIDTH / (BUFWIDTH + VAL_BITS);
-    SIMLATENCY_BT = LINKLATENCY / TOKENS_PER_BIGTOKEN;
+    SIMLATENCY_BT = (this->LINKLATENCY) / TOKENS_PER_BIGTOKEN;
     BUFBYTES = SIMLATENCY_BT * BUFWIDTH;
     
     // AJG: Following is used to limit the amount of tokens the nic is given depending on the MAX_BW and the input BW
     //      Note: netburst is the amt of pkts put into a larger PCIE packet (ex. 64bit small flits can fit into 512bits 8 times so netburst can be up to 8)
-    assert(slotid != NULL);
-    assert(linklatency > 0);
-    assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
 
     // AJG: Revert above later when you know the actual max
@@ -78,7 +137,7 @@ simplenic_t::simplenic_t(
     // THE AMOUTN OF PACKETS THAT ARE BEING PUT INTO THE PCIE WIDTH (THIS MUST SCALE WITH THE SIZE OF THE FLIT)
     rlimit_size = netburst;
 
-    printf("using link latency: %d cycles\n", linklatency);
+    printf("using link latency: %d cycles\n", this->LINKLATENCY);
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
     printf("using SIMLATENCY_BT: %d\n", SIMLATENCY_BT);
@@ -86,8 +145,6 @@ simplenic_t::simplenic_t(
     printf("using rlimit_inc: %d\n", rlimit_inc);
     printf("using rlimit_period: %d\n", rlimit_period);
 
-    this->loopback = loopback;
-    this->niclog = NULL;
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");
         if (!this->niclog) {
@@ -101,27 +158,18 @@ simplenic_t::simplenic_t(
 
     if (!loopback) {
         for (int j = 0; j < 2; j++) {
-            if (shmemportname) {
-                printf("Using non-slot-id associated shmemportname:\n");
-                sprintf(name, "/port_nts%s_%d", shmemportname, j);
-            } else {
-                printf("Using slot-id associated shmemportname:\n");
-                sprintf(name, "/port_nts%s_%d", slotid, j);
-            }
-            printf("opening/creating shmem region %s\n", name);
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_nts%s_%d", shmemportname, j);
+
+            printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
             ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
             pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
 
-            if (shmemportname) {
-                printf("Using non-slot-id associated shmemportname:\n");
-                sprintf(name, "/port_stn%s_%d", shmemportname, j);
-            } else {
-                printf("Using slot-id associated shmemportname:\n");
-                sprintf(name, "/port_stn%s_%d", slotid, j);
-            }
+            printf("Using non-slot-id associated shmemportname:\n");
+            sprintf(name, "/port_stn%s_%d", shmemportname, j);
 
-            printf("opening/creating shmem region %s\n", name);
+            printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
             ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
             pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
@@ -132,11 +180,9 @@ simplenic_t::simplenic_t(
             pcis_write_bufs[j] = pcis_read_bufs[j];
         }
     }
-#endif // #ifdef SIMPLENICWIDGET_0
 }
 
 simplenic_t::~simplenic_t() {
-#ifdef SIMPLENICWIDGET_0
     if (this->niclog)
         fclose(this->niclog);
     if (loopback) {
@@ -148,22 +194,19 @@ simplenic_t::~simplenic_t() {
             munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
         }
     }
-#endif // #ifdef SIMPLENICWIDGET_0
+    free(this->mmio_addrs);
 }
 
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
 void simplenic_t::init() {
-    //printf( "AJG: entering init" );
-#ifdef SIMPLENICWIDGET_0
-    write(SIMPLENICWIDGET_0(macaddr_upper), (mac_lendian >> 32) & 0xFFFF);
-    write(SIMPLENICWIDGET_0(macaddr_lower), mac_lendian & 0xFFFFFFFF);
-    // AJG: At this point this is written in memory and sent to the actual NIC
-    write(SIMPLENICWIDGET_0(rlimit_settings),
+    write(mmio_addrs->macaddr_upper, (mac_lendian >> 32) & 0xFFFF);
+    write(mmio_addrs->macaddr_lower, mac_lendian & 0xFFFFFFFF);
+    write(mmio_addrs->rlimit_settings,
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
 
-    uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
-    uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
+    uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
+    uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
     if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
         printf("FAIL. INCORRECT TOKENS ON BOOT. produced tokens available %d, input slots available %d\n", output_tokens_available, input_token_capacity);
         exit(1);
@@ -180,7 +223,6 @@ void simplenic_t::init() {
         exit(1);
     }
     return;
-#endif // ifdef SIMPLENICWIDGET_0
 }
 
 //#define TOKENVERIFY
@@ -199,7 +241,6 @@ uint64_t timeelapsed_cycles = 0;
 #endif
 
 void simplenic_t::tick() {
-#ifdef SIMPLENICWIDGET_0
     struct timespec tstart, tend;
 
     uint32_t token_bytes_obtained_from_fpga = 0;
@@ -214,8 +255,8 @@ void simplenic_t::tick() {
 
         uint32_t tokens_this_round = 0;
 
-        uint32_t output_tokens_available = read(SIMPLENICWIDGET_0(outgoing_count));
-        uint32_t input_token_capacity = SIMLATENCY_BT - read(SIMPLENICWIDGET_0(incoming_count));
+        uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
+        uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
 
         // we will read/write the min of tokens available / token input capacity
         tokens_this_round = std::min(output_tokens_available, input_token_capacity);
@@ -325,5 +366,7 @@ void simplenic_t::tick() {
         nextround = (nextround + 1) % 2;
 
     }
-#endif // ifdef SIMPLENICWIDGET_0
 }
+
+#endif // #ifdef SIMPLENICWIDGET_struct_guard
+
