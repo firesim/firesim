@@ -30,8 +30,9 @@ void Histogram::finish() {
 }
 
 FpgaMemoryModel::FpgaMemoryModel(
-    simif_t* sim, AddressMap addr_map, int argc, char** argv, std::string stats_file_name)
-  : FpgaModel(sim, addr_map){
+    simif_t* sim, AddressMap addr_map, int argc, char** argv, std::string stats_file_name, 
+    int mem_host_offset)
+  : FpgaModel(sim, addr_map), mem_host_offset(mem_host_offset) {
 
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
@@ -102,6 +103,9 @@ void FpgaMemoryModel::init() {
         throw std::runtime_error(buf);
       } else {
         fprintf(stderr, "Ignoring writeable register: %s\n", pair.first.c_str());
+      }
+      if (pair.first.find("memHostOffset") {
+         write(pair.second, mem_host_offset);
       }
     }
   }
