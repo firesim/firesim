@@ -31,6 +31,21 @@ The module implementation trait is as follows:
 
 .. code-block:: scala
 
+    class FixedInputStream(data: Seq[BigInt], w: Int) extends Module {
+        val io = IO(new Bundle {
+            val out = Decoupled(UInt(w.W))
+        })
+
+        val dataVec = VecInit(data.map(_.U(w.W)))
+        val (dataIdx, dataDone) = Counter(io.out.fire(), data.length)
+        val sending = RegInit(true.B)
+
+        io.out.valid := sending
+        io.out.bits := dataVec(dataIdx)
+
+        when (dataDone) { sending := false.B }
+    }
+
     trait HasPeripheryInputStreamModuleImp extends LazyModuleImp {
       val outer: HasPeripheryInputStream
 
