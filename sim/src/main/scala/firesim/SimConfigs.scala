@@ -28,8 +28,8 @@ class WithUARTWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
 })
 
-class WithSimpleNICWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
+class WithSimpleNICWidget(ifWidth: Int) extends Config((site, here, up) => {
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC(ifWidth)))
   case LoopbackNIC => false
 })
 
@@ -175,7 +175,7 @@ class FireSimConfig extends Config(
 class FireSimClockDivConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel(clockDivision = 2) ++
   new BasePlatformConfig)
@@ -224,7 +224,7 @@ class FireSimFlit256DDR3FRFCFSLLC4MBConfig extends Config(
 class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(ifWidth = 64) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)
