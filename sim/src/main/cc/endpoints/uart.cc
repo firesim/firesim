@@ -52,7 +52,7 @@ uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoi
     } else {
         // for UARTs that are not UART0, use a PTY
         char slavename[SLAVENAMELEN];
-        int ptyfd = open("/dev/ptmx", O_RDWR);
+        int ptyfd = posix_openpt(O_RDWR | O_NOCTTY);
         grantpt(ptyfd);
         unlockpt(ptyfd);
         ptsname_r(ptyfd, slavename, SLAVENAMELEN);
