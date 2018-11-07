@@ -146,7 +146,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           model.io.tNasti.hBits.ar.bits.region := DontCare
           model.io.tNasti.hBits.w.bits.id := DontCare
           model.io.tNasti.hBits.w.bits.user := DontCare
-          mem_model_index += 1
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
