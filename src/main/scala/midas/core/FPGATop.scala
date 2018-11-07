@@ -16,10 +16,11 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
+case object NumHostMemChannels extends Field[Int]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
+  val mem  = Vec(p(NumHostMemChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -121,25 +122,13 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
-  // Host Memory Channels
-  // Masters = Target memory channels + loadMemWidget
-  val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-  val arb = Seq.fill(4)(Module(new NastiArbiter(/*memIoSize+1*/2)(nastiP)))
-  (io.mem.zip(arb)).zipWithIndex.foreach {
-    case ((mem_i, arb_i),i) => {mem_i <> NastiQueue(arb_i.io.slave)(nastiP)
-      if (p(MemModelKey) != None) {
-        val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_$i")
-        loadMem.reset := reset.toBool || simReset
-        arb_i.io.master(1/*memIoSize*/) <> loadMem.io.toSlaveMem
-      }
-    }
-  }
 
   val dmaPorts = new ListBuffer[NastiIO]
+  val memPorts = new ListBuffer[NastiIO]
   val addresses = new ListBuffer[AddressSet]
 
   // Instantiate endpoint widgets
-  var mem_model_index=0
+
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
       val widgetName = (endpoint, p(MemModelKey)) match {
@@ -151,14 +140,13 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       widget.reset := reset.toBool || simReset
       widget match {
         case model: MemModel =>
-          arb(mem_model_index).io.master(0) <> model.io.host_mem
+          memPorts += model.io.host_mem
           model.io.tNasti.hBits.aw.bits.user := DontCare
           model.io.tNasti.hBits.aw.bits.region := DontCare
           model.io.tNasti.hBits.ar.bits.user := DontCare
           model.io.tNasti.hBits.ar.bits.region := DontCare
           model.io.tNasti.hBits.w.bits.id := DontCare
           model.io.tNasti.hBits.w.bits.user := DontCare
-          mem_model_index += 1
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
@@ -179,6 +167,37 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       ready && resetQueue.io.in.ready
     }
   }
+
+
+  // Host Memory Channels
+  // Masters = Target memory channels + loadMemWidget
+  val numMemModels = memPorts.length
+  val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
+  if (p(MemModelKey) != None) {
+        val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
+        loadMem.reset := reset.toBool || simReset
+        memPorts += loadMem.io.toSlaveMem
+  }
+
+  //Crossbar has numMemModels + 1 slave ports (+1 for the LOADMEM unit)
+  //Crossbar has NumHostMemChannels master ports
+  val memSize = scala.math.pow(2, p(MemNastiKey).addrBits).toInt
+  val addrSliceLen = memSize / p(NumHostMemChannels)
+  val hostMemAddrMap = new AddrMap((0 until p(NumHostMemChannels)).map(i =>
+    AddrMapEntry(s"memChannel$i", MemRange(i * addrSliceLen, addrSliceLen, MemAttr(AddrMapProt.RW)))))
+	
+  val mem_xbar = Module(new NastiRecursiveInterconnect(
+                                          numMemModels + 1, 
+                                           hostMemAddrMap)(nastiP))
+  
+  if (memPorts.isEmpty) {
+    val memParams = p.alterPartial({ case NastiKey => p(MemNastiKey) })
+    val error = Module(new NastiErrorSlave()(memParams))
+    error.io <> io.mem
+  } else {
+    memPorts.zip(mem_xbar.io.masters).foreach { case (mem_model, master) => mem_model <> master }
+  }
+
 
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
@@ -201,13 +220,13 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
-    "MEM_ADDR_BITS"  -> arb.nastiXAddrBits,
-    "MEM_DATA_BITS"  -> arb.nastiXDataBits,
-    "MEM_ID_BITS"    -> arb.nastiXIdBits,
-    "MEM_SIZE_BITS"  -> arb.nastiXSizeBits,
-    "MEM_LEN_BITS"   -> arb.nastiXLenBits,
-    "MEM_RESP_BITS"  -> arb.nastiXRespBits,
-    "MEM_STRB_BITS"  -> arb.nastiWStrobeBits,
+    "MEM_ADDR_BITS"  -> mem_xbar.nastiXAddrBits,
+    "MEM_DATA_BITS"  -> mem_xbar.nastiXDataBits,
+    "MEM_ID_BITS"    -> mem_xbar.nastiXIdBits,
+    "MEM_SIZE_BITS"  -> mem_xbar.nastiXSizeBits,
+    "MEM_LEN_BITS"   -> mem_xbar.nastiXLenBits,
+    "MEM_RESP_BITS"  -> mem_xbar.nastiXRespBits,
+    "MEM_STRB_BITS"  -> mem_xbar.nastiWStrobeBits,
     "DMA_ID_BITS"    -> io.dma.nastiXIdBits,
     "DMA_ADDR_BITS"  -> io.dma.nastiXAddrBits,
     "DMA_DATA_BITS"  -> io.dma.nastiXDataBits,

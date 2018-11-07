@@ -7,13 +7,14 @@ import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
 import midas.core.DMANastiKey
+import midas.core.NumHostMemChannels
 
 case object AXIDebugPrint extends Field[Boolean]
 
 class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val slave  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) })))
+  val slave  = Vec(p(NumHostMemChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) })))
 }
 
 class F1Shim(simIo: midas.core.SimWrapperIO)

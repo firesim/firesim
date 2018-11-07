@@ -124,6 +124,7 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
   ).module)
 
+  val hostMemOffset = genWORegInit(Wire(io.host_mem.aw.bits.addr.cloneType), s"hostMemOffset", 0.U) 
   io.host_mem <> widthAdapter.sAxi4
   io.host_mem.aw.bits.user := DontCare
   io.host_mem.aw.bits.region := DontCare
@@ -131,6 +132,8 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   io.host_mem.ar.bits.region := DontCare
   io.host_mem.w.bits.id := DontCare
   io.host_mem.w.bits.user := DontCare
+  io.host_mem.ar.bits.addr := widthAdapter.sAxi4.ar.bits.addr - hostMemOffset
+  io.host_mem.aw.bits.addr := widthAdapter.sAxi4.aw.bits.addr - hostMemOffset
 
   widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
   widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar
