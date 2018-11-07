@@ -22,6 +22,7 @@ class uart_t: public endpoint_t
         serial_data_t<char> data;
         int inputfd;
         int outputfd;
+        int loggingfd;
 };
 #endif // UARTWIDGET_struct_guard
 

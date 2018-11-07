@@ -36,6 +36,7 @@ void sighand(int s) {
 uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
+    this->loggingfd = 0; // unused
 
     if (uartno == 0) {
         // signal handler so ctrl-c doesn't kill simulation when UART is attached
@@ -62,9 +63,14 @@ uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoi
         unlink(symlinkname.c_str());
         symlink(slavename, symlinkname.c_str());
         printf("UART%d is on PTY: %s, symlinked at %s\n", uartno, slavename, symlinkname.c_str());
-        printf("Attach to this UART with sudo screen %s\n", slavename);
+        printf("Attach to this UART with 'sudo screen %s' or 'sudo screen %s'\n", slavename, symlinkname.c_str());
         inputfd = ptyfd;
         outputfd = ptyfd;
+
+        // also, for these we want to log output to file here.
+        std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
+        printf("UART logfile is being written to %s\n", uartlogname.c_str());
+        this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT);
     }
 
     // Don't block on reads if there is nothing typed in
@@ -73,6 +79,7 @@ uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoi
 
 uart_t::~uart_t() {
     free(this->mmio_addrs);
+    close(this->loggingfd);
 }
 
 void uart_t::send() {
@@ -123,9 +130,9 @@ void uart_t::tick() {
 
         if (data.out.fire()) {
             ::write(outputfd, &data.out.bits, 1);
-            // always flush to get char-by-char output (not line-buffered)
-            // TODO: unnecessary once we've switched to write?
-            //fflush(stdout);
+            if (loggingfd) {
+                ::write(loggingfd, &data.out.bits, 1);
+            }
         }
 
         this->send();
