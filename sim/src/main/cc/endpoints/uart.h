@@ -8,7 +8,7 @@
 class uart_t: public endpoint_t
 {
     public:
-        uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs);
+        uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno);
         ~uart_t();
         void send();
         void recv();
@@ -20,6 +20,8 @@ class uart_t: public endpoint_t
     private:
         UARTWIDGET_struct * mmio_addrs;
         serial_data_t<char> data;
+        int inputfd;
+        int outputfd;
 };
 #endif // UARTWIDGET_struct_guard
 
