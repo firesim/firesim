@@ -55,11 +55,13 @@ uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoi
         grantpt(ptyfd);
         unlockpt(ptyfd);
         ptsname_r(ptyfd, slavename, SLAVENAMELEN);
-        if (!slavename) {
-            printf("NULL\n");
-            perror("wat");
-        }
-        printf("UART%d is on PTY: %s\n", uartno, slavename);
+
+        // create symlink for reliable location to find uart pty
+        std::string symlinkname = std::string("uartpty") + std::to_string(uartno);
+        // unlink in case symlink already exists
+        unlink(symlinkname.c_str());
+        symlink(slavename, symlinkname.c_str());
+        printf("UART%d is on PTY: %s, symlinked at %s\n", uartno, slavename, symlinkname.c_str());
         printf("Attach to this UART with sudo screen %s\n", slavename);
         inputfd = ptyfd;
         outputfd = ptyfd;
