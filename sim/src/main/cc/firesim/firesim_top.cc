@@ -34,19 +34,19 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #ifdef UARTWIDGET_struct_guard
     #ifdef UARTWIDGET_0_PRESENT
     UARTWIDGET_0_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct));
+    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct, 0));
     #endif
     #ifdef UARTWIDGET_1_PRESENT
     UARTWIDGET_1_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_1_substruct));
+    add_endpoint(new uart_t(this, UARTWIDGET_1_substruct, 1));
     #endif
     #ifdef UARTWIDGET_2_PRESENT
     UARTWIDGET_2_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_2_substruct));
+    add_endpoint(new uart_t(this, UARTWIDGET_2_substruct, 2));
     #endif
     #ifdef UARTWIDGET_3_PRESENT
     UARTWIDGET_3_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_3_substruct));
+    add_endpoint(new uart_t(this, UARTWIDGET_3_substruct, 3));
     #endif
 #endif
 

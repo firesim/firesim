@@ -1,9 +1,18 @@
 #ifdef UARTWIDGET_struct_guard
 
 #include "uart.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define _XOPEN_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+
 #ifndef _WIN32
 #include <unistd.h>
-#include <fcntl.h>
+
+// name length limit for ptys
+#define SLAVENAMELEN 256
 
 /* There is no "backpressure" to the user input for sigs. only one at a time
  * non-zero value represents unconsumed special char input.
@@ -24,23 +33,53 @@ void sighand(int s) {
 }
 #endif
 
-uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs): endpoint_t(sim)
+uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
+    this->loggingfd = 0; // unused
 
-    // Don't block on stdin reads if there is nothing typed in
-    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+    if (uartno == 0) {
+        // signal handler so ctrl-c doesn't kill simulation when UART is attached
+        // to stdin/stdout
+        struct sigaction sigIntHandler;
+        sigIntHandler.sa_handler = sighand;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = 0;
+        sigaction(SIGINT, &sigIntHandler, NULL);
+        printf("UART0 is here (stdin/stdout).\n");
+        inputfd = STDIN_FILENO;
+        outputfd = STDOUT_FILENO;
+    } else {
+        // for UARTs that are not UART0, use a PTY
+        char slavename[SLAVENAMELEN];
+        int ptyfd = posix_openpt(O_RDWR | O_NOCTTY);
+        grantpt(ptyfd);
+        unlockpt(ptyfd);
+        ptsname_r(ptyfd, slavename, SLAVENAMELEN);
 
-    // signal handler so ctrl-c doesn't kill simulation
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = sighand;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
+        // create symlink for reliable location to find uart pty
+        std::string symlinkname = std::string("uartpty") + std::to_string(uartno);
+        // unlink in case symlink already exists
+        unlink(symlinkname.c_str());
+        symlink(slavename, symlinkname.c_str());
+        printf("UART%d is on PTY: %s, symlinked at %s\n", uartno, slavename, symlinkname.c_str());
+        printf("Attach to this UART with 'sudo screen %s' or 'sudo screen %s'\n", slavename, symlinkname.c_str());
+        inputfd = ptyfd;
+        outputfd = ptyfd;
+
+        // also, for these we want to log output to file here.
+        std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
+        printf("UART logfile is being written to %s\n", uartlogname.c_str());
+        this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT);
+    }
+
+    // Don't block on reads if there is nothing typed in
+    fcntl(inputfd, F_SETFL, fcntl(inputfd, F_GETFL) | O_NONBLOCK);
 }
 
 uart_t::~uart_t() {
     free(this->mmio_addrs);
+    close(this->loggingfd);
 }
 
 void uart_t::send() {
@@ -72,12 +111,15 @@ void uart_t::tick() {
             int readamt;
             if (specialchar) {
                 // send special character (e.g. ctrl-c)
+                // for stdin handling
+                //
+                // PTY should never trigger this
                 inp = specialchar;
                 specialchar = 0;
                 readamt = 1;
             } else {
-                // else check if we have input on stdin
-                readamt = ::read(STDIN_FILENO, &inp, 1);
+                // else check if we have input
+                readamt = ::read(inputfd, &inp, 1);
             }
 
             if (readamt > 0) {
@@ -87,9 +129,10 @@ void uart_t::tick() {
         }
 
         if (data.out.fire()) {
-            fprintf(stdout, "%c", data.out.bits);
-            // always flush to get char-by-char output (not line-buffered)
-            fflush(stdout);
+            ::write(outputfd, &data.out.bits, 1);
+            if (loggingfd) {
+                ::write(loggingfd, &data.out.bits, 1);
+            }
         }
 
         this->send();
