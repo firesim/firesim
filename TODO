@@ -1,2 +1,1 @@
  -serial endpoint multiple copies support (e.g. which program to load)
-- UART needs to connect to a pty to support multiple uarts?
