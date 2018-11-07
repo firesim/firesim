@@ -20,7 +20,7 @@ case object NumHostMemChannels extends Field[Int]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val mem  = Vec(p(NumHostMemChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
+  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -122,7 +122,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
-
   val dmaPorts = new ListBuffer[NastiIO]
   val memPorts = new ListBuffer[NastiIO]
   val addresses = new ListBuffer[AddressSet]
@@ -147,6 +146,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           model.io.tNasti.hBits.ar.bits.region := DontCare
           model.io.tNasti.hBits.w.bits.id := DontCare
           model.io.tNasti.hBits.w.bits.user := DontCare
+          mem_model_index += 1
         case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
