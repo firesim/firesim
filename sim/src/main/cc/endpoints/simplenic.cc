@@ -109,7 +109,6 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
         }
     }
 
-    assert(shmemportname != NULL);
     assert(this->LINKLATENCY > 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
@@ -132,6 +131,7 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     int shmemfd;
 
     if (!loopback) {
+        assert(shmemportname != NULL);
         for (int j = 0; j < 2; j++) {
             printf("Using non-slot-id associated shmemportname:\n");
             sprintf(name, "/port_nts%s_%d", shmemportname, j);
