@@ -9,8 +9,8 @@
 #define DEFAULT_STEPSIZE (2004765L)
 #endif
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs):
-        endpoint_t(sim), sim(sim), fesvr(args) {
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, uint64_t mem_host_offset):
+        endpoint_t(sim), sim(sim), fesvr(args), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 
@@ -55,7 +55,7 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     mpz_t buf;
     mpz_init(buf);
     while (loadmem.size > 0) {
-        sim->read_mem(loadmem.addr, buf);
+        sim->read_mem(loadmem.addr + mem_host_offset, buf);
 
         // If the read word is 0; mpz_export seems to return an array with length 0
         size_t beats_requested = (loadmem.size/sizeof(uint32_t) > MEM_DATA_CHUNK) ?
@@ -85,7 +85,7 @@ void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     mpz_t data;
     mpz_init(data);
     mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
-    sim->write_mem_chunk(loadmem.addr, data, loadmem.size);
+    sim->write_mem_chunk(loadmem.addr + mem_host_offset, data, loadmem.size);
     mpz_clear(data);
 }
 
