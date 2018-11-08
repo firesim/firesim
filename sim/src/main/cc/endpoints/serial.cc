@@ -10,7 +10,7 @@
 #endif
 
 serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, uint64_t mem_host_offset):
-        endpoint_t(sim), sim(sim), fesvr(args), mem_host_offset(mem_host_offset) {
+        endpoint_t(sim), sim(sim), fesvr(args, mem_host_offset), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 

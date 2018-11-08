@@ -25,7 +25,7 @@ struct fesvr_loadmem_t {
 class firesim_fesvr_t : public htif_t
 {
     public:
-        firesim_fesvr_t(const std::vector<std::string>& args);
+        firesim_fesvr_t(const std::vector<std::string>& args, uint64_t mem_host_offset);
         ~firesim_fesvr_t(){};
         bool busy() { return is_busy; }
         bool data_available();
@@ -68,6 +68,9 @@ class firesim_fesvr_t : public htif_t
         // read/write_chunks to the loadmem unit instead of going over tsi
         bool is_loadmem;
         size_t idle_counts;
+
+        //memory offset depending on the sizes and number of memory models
+        uint64_t mem_host_offset;
 
         void push_addr(reg_t addr);
         void push_len(size_t len);
