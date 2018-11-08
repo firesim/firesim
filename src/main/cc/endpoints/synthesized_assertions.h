@@ -1,12 +1,15 @@
 #ifndef __SYNTHESIZED_ASSERTIONS_H
 #define __SYNTHESIZED_ASSERTIONS_H
 
+#ifdef ASSERTIONWIDGET_struct_guard
+
 #include "endpoint.h"
 
 class synthesized_assertions_t: public endpoint_t
 {
     public:
-        synthesized_assertions_t(simif_t* sim): endpoint_t(sim) {};
+        synthesized_assertions_t(simif_t* sim, ASSERTIONWIDGET_struct * mmio_addrs);
+        ~synthesized_assertions_t();
         virtual void init() {};
         virtual void tick();
         void resume(); // Clears any set assertions, and allows the simulation to advance
@@ -16,6 +19,9 @@ class synthesized_assertions_t: public endpoint_t
         bool assert_fired = false;
         int assert_id;
         uint64_t assert_cycle;
+        ASSERTIONWIDGET_struct * mmio_addrs;
 };
+
+#endif // ASSERTIONWIDGET_struct_guard
 
 #endif //__SYNTHESIZED_ASSERTIONS_H
