@@ -35,7 +35,7 @@ class FpgaMemoryModel: public FpgaModel
 {
 public:
   FpgaMemoryModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
-                  std::string stats_file_name);
+                  std::string stats_file_name, int mem_host_offset);
   void init();
   void profile();
   void finish();

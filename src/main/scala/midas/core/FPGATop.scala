@@ -16,7 +16,9 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
-case object NumHostMemChannels extends Field[Int]
+case object HostNumMemChannels extends Field[Int]
+case object HostMemNastiKey extends Field[NastiParameters]
+case object HostMemChannelNastiKey extends Field[NastiParameters]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
@@ -179,22 +181,24 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   //Crossbar has numMemModels + 1 slave ports (+1 for the LOADMEM unit)
-  //Crossbar has NumHostMemChannels master ports
+  //Crossbar has HostNumMemChannels master ports
   val memSize = scala.math.pow(2, p(MemNastiKey).addrBits).toInt
-  val addrSliceLen = memSize / p(NumHostMemChannels)
-  val hostMemAddrMap = new AddrMap((0 until p(NumHostMemChannels)).map(i =>
+  val addrSliceLen = memSize / p(HostNumMemChannels)
+  val hostMemAddrMap = new AddrMap((0 until p(HostNumMemChannels)).map(i =>
     AddrMapEntry(s"memChannel$i", MemRange(i * addrSliceLen, addrSliceLen, MemAttr(AddrMapProt.RW)))))
 	
   val mem_xbar = Module(new NastiRecursiveInterconnect(
                                           numMemModels + 1, 
                                            hostMemAddrMap)(nastiP))
-  
+ 
+  io.mem.zip(mem_xbar.io.slaves).foreach { case (mem, slave) => mem <> slave }
+ 
   if (memPorts.isEmpty) {
     val memParams = p.alterPartial({ case NastiKey => p(MemNastiKey) })
     val error = Module(new NastiErrorSlave()(memParams))
     error.io <> io.mem
   } else {
-    memPorts.zip(mem_xbar.io.masters).foreach { case (mem_model, master) => mem_model <> master }
+    memPorts.zip(mem_xbar.io.masters).foreach { case (mem_model, master) => master <> mem_model }
   }
 
 
@@ -233,4 +237,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
+
 }
+
+

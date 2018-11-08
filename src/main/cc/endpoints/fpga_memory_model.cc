@@ -104,8 +104,11 @@ void FpgaMemoryModel::init() {
       } else {
         fprintf(stderr, "Ignoring writeable register: %s\n", pair.first.c_str());
       }
-      if (pair.first.find("memHostOffset") {
-         write(pair.second, mem_host_offset);
+      if (pair.first.find("memHostOffsetLow")) {
+         write(pair.second, mem_host_offset & ((1ULL << 32) - 1));
+      }
+      if (pair.first.find("memHostOffsetLow")) {
+         write(pair.second, mem_host_offset >> 32);
       }
     }
   }
