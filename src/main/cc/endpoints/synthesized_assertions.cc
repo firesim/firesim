@@ -1,10 +1,21 @@
+#ifdef ASSERTIONWIDGET_struct_guard
+
 #include "synthesized_assertions.h"
 #include <iostream>
 #include <fstream>
 
+
+synthesized_assertions_t::synthesized_assertions_t(simif_t* sim,
+        ASSERTIONWIDGET_struct * mmio_addrs): endpoint_t(sim) {
+    this->mmio_addrs = mmio_addrs;
+};
+
+synthesized_assertions_t::~synthesized_assertions_t() {
+    free(this->mmio_addrs);
+}
+
 void synthesized_assertions_t::tick() {
-#ifdef ASSERTIONWIDGET_0
-  if (read(ASSERTIONWIDGET_0(fire))) {
+  if (read(this->mmio_addrs->fire)) {
     // Read assertion information
     std::vector<std::string> msgs;
     std::ifstream file(std::string(TARGET_NAME) + ".asserts");
@@ -18,19 +29,18 @@ void synthesized_assertions_t::tick() {
         oss << line << std::endl;
       }
     }
-    assert_cycle = read(ASSERTIONWIDGET_0(cycle_low));
-    assert_cycle |= ((uint64_t)read(ASSERTIONWIDGET_0(cycle_high))) << 32;
-    assert_id = read(ASSERTIONWIDGET_0(id));
+    assert_cycle = read(this->mmio_addrs->cycle_low);
+    assert_cycle |= ((uint64_t)read(this->mmio_addrs->cycle_high)) << 32;
+    assert_id = read(this->mmio_addrs->id);
     std::cerr << msgs[assert_id];
     std::cerr << " at cycle: " << assert_cycle << std::endl;
     assert_fired = true;
   }
-#endif
 }
 
 void synthesized_assertions_t::resume() {
-#ifdef ASSERTIONWIDGET_0
   assert_fired = false;
-  write(ASSERTIONWIDGET_0(resume), 1);
-#endif
+  write(this->mmio_addrs->resume, 1);
 }
+
+#endif // ASSERTIONWIDGET_struct_guard
