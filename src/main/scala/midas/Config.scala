@@ -49,7 +49,9 @@ class SimConfig extends Config((site, here, up) => {
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case MidasLLCKey      => None
   case AXIDebugPrint    => false
-  case NumHostMemChannels => 4
+  case HostNumMemChannels => 1
+  case HostMemNastiKey => NastiParameters(64, 32, 6)
+  case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
@@ -63,6 +65,7 @@ class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new ZynqConfig)
 
+//we are assuming the host address size is 2^addrBits
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
   case HasDMAChannel  => true
@@ -70,6 +73,7 @@ class F1Config extends Config(new Config((site, here, up) => {
   case MemNastiKey    => NastiParameters(64, 34, 16)
   case MasterNastiKey => site(CtrlNastiKey)
   case SlaveNastiKey => site(MemNastiKey)
+  case HostNumMemChannels => 4
 }) ++ new SimConfig)
 
 class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {

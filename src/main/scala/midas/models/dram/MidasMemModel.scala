@@ -124,7 +124,13 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
   ).module)
 
-  val hostMemOffset = genWORegInit(Wire(io.host_mem.aw.bits.addr.cloneType), s"hostMemOffset", 0.U) 
+
+  val hostMemOffsetWidthOffset = io.host_mem.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
+  val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else io.host_mem.aw.bits.addr.getWidth 
+  val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 0 
+  val hostMemOffsetHigh = genWORegInit(Wire(UInt(hostMemOffsetHighWidth.W)), s"hostMemOffsetHigh", 0.U) 
+  val hostMemOffsetLow = genWORegInit(Wire(UInt(hostMemOffsetLowWidth.W)), s"hostMemOffsetLow", 0.U) 
+  val hostMemOffset = Cat(hostMemOffsetHigh, hostMemOffsetLow)
   io.host_mem <> widthAdapter.sAxi4
   io.host_mem.aw.bits.user := DontCare
   io.host_mem.aw.bits.region := DontCare
@@ -401,6 +407,8 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     }
     import midas.widgets.CppGenerationUtils._
     super.genHeader(base, sb)
+
+    sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
