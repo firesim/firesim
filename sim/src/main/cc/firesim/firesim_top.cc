@@ -60,6 +60,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     endpoints.push_back(new sim_mem_t(this, argc, argv));
 #endif
 
+uint64_t host_mem_offset = 0;
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
                 this,
@@ -70,7 +71,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", MEMMODEL_0_target_addr_bits));
+                argc, argv, "memory_stats.csv", host_mem_offset));
+     host_mem_offset += 1ULL << MEMMODEL_0_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_1
@@ -83,7 +85,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_1_W_num_registers,
                     (const unsigned int*) MEMMODEL_1_W_addrs,
                     (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats.csv", MEMMODEL_1_target_addr_bits));
+                argc, argv, "memory_stats.csv", host_mem_offset));
+     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_2
@@ -96,7 +99,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_2_W_num_registers,
                     (const unsigned int*) MEMMODEL_2_W_addrs,
                     (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats.csv", MEMMODEL_2_target_addr_bits));
+                argc, argv, "memory_stats.csv", host_mem_offset));
+     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_3
@@ -109,7 +113,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_3_W_num_registers,
                     (const unsigned int*) MEMMODEL_3_W_addrs,
                     (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats.csv", MEMMODEL_3_target_addr_bits));
+                argc, argv, "memory_stats.csv", host_mem_offset));
+     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
 
 #ifdef BLOCKDEVWIDGET_struct_guard
