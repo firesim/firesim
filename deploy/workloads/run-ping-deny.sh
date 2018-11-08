@@ -23,4 +23,4 @@ sleep 2
 
 firesim infrasetup -c workloads/ping-deny-config.ini
 firesim runworkload -c workloads/ping-deny-config.ini --overrideconfigdata "targetconfig linklatency 31997"
-firesim terminaterunfarm -c workloads/ping-latency-config.ini --forceterminate
+firesim terminaterunfarm -c workloads/ping-deny-config.ini --forceterminate
