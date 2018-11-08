@@ -21,9 +21,9 @@ simif_t::simif_t() {
   seed = time(NULL); // FIXME: better initail seed?
   MASTER_substruct_create;
   this->master_mmio_addrs = MASTER_substruct;
-#ifdef LOADMEM
-  LOADMEM_substruct_create;
-  this->loadmem_mmio_addrs = LOADMEM_substruct;
+#ifdef LOADMEM_0
+  LOADMEM_0_substruct_create;
+  this->loadmem_mmio_addrs = LOADMEM_0_substruct;
 #endif
   DEFAULTIOWIDGET_substruct_create;
   this->defaultiowidget_mmio_addrs = DEFAULTIOWIDGET_substruct;
@@ -51,7 +51,7 @@ void simif_t::init(int argc, char** argv, bool log) {
   }
   gen.seed(seed);
   fprintf(stderr, "random min: 0x%llx, random max: 0x%llx\n", gen.min(), gen.max());
-#ifdef LOADMEM
+#ifdef LOADMEM_0
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
@@ -160,7 +160,7 @@ void simif_t::step(uint32_t n, bool blocking) {
   t += n;
 }
 
-#ifdef LOADMEM
+#ifdef LOADMEM_0
 void simif_t::load_mem(std::string filename) {
   fprintf(stdout, "[loadmem] start loading\n");
   std::ifstream file(filename.c_str());
@@ -228,4 +228,4 @@ void simif_t::zero_out_dram() {
   write(this->loadmem_mmio_addrs->ZERO_OUT_DRAM, 1);
   while(!read(this->loadmem_mmio_addrs->ZERO_FINISHED));
 }
-#endif // LOADMEM
+#endif // LOADMEM_0

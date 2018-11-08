@@ -39,7 +39,7 @@ class simif_t
     uint64_t seed;
     std::mt19937_64 gen;
     MASTER_struct * master_mmio_addrs;
-#ifdef LOADMEM
+#ifdef LOADMEM_0
     LOADMEM_struct * loadmem_mmio_addrs;
 #endif
     DEFAULTIOWIDGET_struct * defaultiowidget_mmio_addrs;
@@ -49,7 +49,7 @@ class simif_t
       write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
-#ifdef LOADMEM
+#ifdef LOADMEM_0
     virtual void load_mem(std::string filename);
 #endif
 
@@ -98,7 +98,7 @@ class simif_t
     void peek(size_t id, mpz_t& value);
     bool expect(size_t id, mpz_t& expected);
 
-#ifdef LOADMEM
+#ifdef LOADMEM_0
     void read_mem(size_t addr, mpz_t& value);
     void write_mem(size_t addr, mpz_t& value);
     void write_mem_chunk(size_t addr, mpz_t& value, size_t bytes);
