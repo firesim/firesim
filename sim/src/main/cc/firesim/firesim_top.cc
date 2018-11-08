@@ -70,7 +70,46 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats.csv", MEMMODEL_0_target_addr_bits));
+#endif
+
+#ifdef MEMMODEL_1
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_1_R_num_registers,
+                    (const unsigned int*) MEMMODEL_1_R_addrs,
+                    (const char* const*) MEMMODEL_1_R_names,
+                    MEMMODEL_1_W_num_registers,
+                    (const unsigned int*) MEMMODEL_1_W_addrs,
+                    (const char* const*) MEMMODEL_1_W_names),
+                argc, argv, "memory_stats.csv", MEMMODEL_1_target_addr_bits));
+#endif
+
+#ifdef MEMMODEL_2
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_2_R_num_registers,
+                    (const unsigned int*) MEMMODEL_2_R_addrs,
+                    (const char* const*) MEMMODEL_2_R_names,
+                    MEMMODEL_2_W_num_registers,
+                    (const unsigned int*) MEMMODEL_2_W_addrs,
+                    (const char* const*) MEMMODEL_2_W_names),
+                argc, argv, "memory_stats.csv", MEMMODEL_2_target_addr_bits));
+#endif
+
+#ifdef MEMMODEL_3
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_3_R_num_registers,
+                    (const unsigned int*) MEMMODEL_3_R_addrs,
+                    (const char* const*) MEMMODEL_3_R_names,
+                    MEMMODEL_3_W_num_registers,
+                    (const unsigned int*) MEMMODEL_3_W_addrs,
+                    (const char* const*) MEMMODEL_3_W_names),
+                argc, argv, "memory_stats.csv", MEMMODEL_3_target_addr_bits));
 #endif
 
 #ifdef BLOCKDEVWIDGET_struct_guard
