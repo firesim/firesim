@@ -31,7 +31,7 @@ void Histogram::finish() {
 
 FpgaMemoryModel::FpgaMemoryModel(
     simif_t* sim, AddressMap addr_map, int argc, char** argv, std::string stats_file_name, 
-    int mem_host_offset)
+    uint64_t mem_host_offset)
   : FpgaModel(sim, addr_map), mem_host_offset(mem_host_offset) {
 
   std::vector<std::string> args(argv + 1, argv + argc);
