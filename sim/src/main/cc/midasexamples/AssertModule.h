@@ -7,7 +7,10 @@ class AssertModule_t: virtual simif_t
 {
 public:
     synthesized_assertions_t * assert_endpoint;
-    AssertModule_t(int argc, char** argv) { assert_endpoint = new synthesized_assertions_t(this); };
+    AssertModule_t(int argc, char** argv) {
+        ASSERTIONWIDGET_0_substruct_create;
+        assert_endpoint = new synthesized_assertions_t(this, ASSERTIONWIDGET_0_substruct);
+    };
     void run() {
         int assertions_thrown = 0;
         poke(reset, 1);
