@@ -50,11 +50,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #endif
 #endif
 
-    // TODO: Serial multiple copy support
-#ifdef SERIALWIDGET_struct_guard
-    SERIALWIDGET_0_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, host_mem_offset[0]));
-#endif
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
@@ -121,6 +116,13 @@ uint64_t host_mem_offset = 0;
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
+
+    // TODO: Serial multiple copy support
+#ifdef SERIALWIDGET_struct_guard
+    SERIALWIDGET_0_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, host_mem_offsets[0]));
+#endif
+
 
 #ifdef BLOCKDEVWIDGET_struct_guard
     #ifdef BLOCKDEVWIDGET_0_PRESENT
