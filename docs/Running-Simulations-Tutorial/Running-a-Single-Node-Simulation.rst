@@ -16,47 +16,26 @@ Building target software
 
 In these instructions, we'll assume that you want to boot Linux on your
 simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
-Linux distro. For this tutorial, we will use a simple buildroot-based
-distribution. The instructions for a fedora-based distribution are similar
-(simply use fedora-disk.json instead of br-disk.json). You can do this like so:
+Linux distro. You can do this like so:
 
 ::
 
     cd firesim/sw/firesim-software
-    ./sw-manager.py -c br-disk.json build
+    ./build.sh
 
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-disk-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/bbl-vmlinux[0-7]`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-disk.img`` - a disk image for
+-  ``firesim/sw/firesim-software/rootfs[0-7].ext2`` - a disk image for
    each the nodes we will simulate
 
-These files will be used to form base images to either build more complicated
-workloads (see the :ref:`defining-custom-workloads` section) or to copy around
-for deploying.
-
-Testing or customizing the target software using Qemu
------------------------------------------------------
-Before running this target software on firesim, you may choose to boot the
-image in qemu (a high-performance functional simulator). From here you will
-have access to the internet to install packages, check out repositories, or any
-other configuration tasks you would like to perform. To boot an image in qemu,
-simply use the launch command:
-
-::
-
-    ./sw-manager.py -c br-disk.json launch
-
-If you use one of the initramfs-based configurations (e.g. br-initramfs.json),
-you may additionally use the official RISC-V ISA simulator, spike, by passing
-the -s flag:
-
-::
-
-    ./sw-manager.py -c br-initramfs.json build
-    ./sw-manager.py -c br-initramfs.json launch -s
+The fact that there are 8 of these is a relic from the days when we ran
+FireSim simulations by hand (they are all the same) -- in most cases, only
+``bbl-vmlinux0`` and ``rootfs0.ext2`` will used to form base images to either
+build more complicated workloads (see the :ref:`defining-custom-workloads`
+section) or to copy around for deploying.
 
 Setting up the manager configuration
 -------------------------------------
@@ -129,10 +108,9 @@ have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 
 We will leave the last section (``[workload]``) unchanged here, since we do
-want to run the buildroot-based Linux on our simulated system (you could also
-change this to fedora-uniform.json if you'd like to boot fedora). The
-``terminateoncompletion`` feature is an advanced feature that you can learn
-more about in the :ref:`manager-configuration-files` section.
+want to run Linux on our simulated system. The ``terminateoncompletion``
+feature is an advanced feature that you can learn more about in the
+:ref:`manager-configuration-files` section.
 
 As a final sanity check, your ``config_runtime.ini`` file should now look like this:
 
@@ -165,7 +143,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	defaulthwconfig=firesim-quadcore-no-nic-ddr3-llc4mb
 
 	[workload]
-	workloadname=br-uniform.json
+	workloadname=linux-uniform.json
 	terminateoncompletion=no
 
 
@@ -288,7 +266,7 @@ nodes every 10s. When you do this, you will initially see output like:
 	FireSim Manager. Docs: http://docs.fires.im
 	Running: runworkload
 
-	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform/
+	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	[172.30.2.174] Executing task 'instance_liveness'
 	[172.30.2.174] Checking if host instance is up...
 	[172.30.2.174] Executing task 'boot_simulation_wrapper'
@@ -303,7 +281,7 @@ live status page:
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	This run's log is located in:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
@@ -317,7 +295,7 @@ live status page:
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Job: br-uniform0 | Sim running: True
+	Instance IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: True
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -376,9 +354,8 @@ You can ignore the messages about the network -- that is expected because we
 are simulating a design without a NIC.
 
 Now, you can login to the system! The username is ``root`` and the password is
-``firesim`` (the password on fedora is ``riscv``). At this point, you should be
-presented with a regular console, where you can type commands into the
-simulation and run programs. For example:
+``firesim``. At this point, you should be presented with a regular console,
+where you can type commands into the simulation and run programs. For example:
 
 ::
 
@@ -429,7 +406,7 @@ from the manager:
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	This run's log is located in:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
@@ -443,7 +420,7 @@ from the manager:
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Job: br-uniform0 | Sim running: False
+	Instance IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: False
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -451,22 +428,22 @@ from the manager:
 	0/1 simulations are still running.
 	--------------------------------------------------------------------------------
 	FireSim Simulation Exited Successfully. See results in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	The full log of this run is:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 
 
-If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform/``), you'll see the following:
+If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-uniform$ ls -la */*
-	-rw-rw-r-- 1 centos centos  797 May 19 00:46 br-uniform0/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 00:46 br-uniform0/os-release
-	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 br-uniform0/uartlog
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform$ ls -la */*
+	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 00:46 linux-uniform0/os-release
+	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 linux-uniform0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(``firesim/deploy/workloads/br-uniform.json``) as files that we want
+(``firesim/deploy/workloads/linux-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.
