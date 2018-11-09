@@ -15,6 +15,13 @@ import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 
+object TokenQueueConsts {
+  val TOKENS_PER_BIG_TOKEN = 7
+  val BIG_TOKEN_WIDTH = (TOKENS_PER_BIG_TOKEN + 1) * 64
+  val TOKEN_QUEUE_DEPTH = 6144
+}
+import TokenQueueConsts._
+
 case object LoopbackNIC extends Field[Boolean]
 
 class SplitSeqQueue(implicit p: Parameters) extends Module {
@@ -22,17 +29,16 @@ class SplitSeqQueue(implicit p: Parameters) extends Module {
      stuff. there are a variety of reasons to not fix it this way, but I just
      want to keep building this
   */
-  val EXTERNAL_WIDTH = 512
   val io = IO(new Bundle {
-    val enq = Flipped(DecoupledIO(UInt(EXTERNAL_WIDTH.W)))
-    val deq = DecoupledIO(UInt(EXTERNAL_WIDTH.W))
+    val enq = Flipped(DecoupledIO(UInt(BIG_TOKEN_WIDTH.W)))
+    val deq = DecoupledIO(UInt(BIG_TOKEN_WIDTH.W))
   })
 
   val SPLITS = 1
-  val INTERNAL_WIDTH = EXTERNAL_WIDTH / SPLITS
-  val DEPTH = 6144
+  val INTERNAL_WIDTH = BIG_TOKEN_WIDTH / SPLITS
 
-  val voq = VecInit(Seq.fill(SPLITS)(Module((new BRAMQueue(DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
+  val voq = VecInit(Seq.fill(SPLITS)(Module((
+    new BRAMQueue(TOKEN_QUEUE_DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
 
   val enqHelper = new DecoupledHelper(
     io.enq.valid +: voq.map(_.enq.ready))
@@ -104,12 +110,11 @@ class SimSimpleNIC extends Endpoint {
 
 class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new NICIOvonly))
-  val dma = if (!p(LoopbackNIC)) {
+  override val dma = if (!p(LoopbackNIC)) {
     Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
   } else None
-  val address = if (!p(LoopbackNIC))
-    Some(AddressSet(0x00, BigInt("FFFFFFFF", 16))) else None
+  override val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 }
 
 

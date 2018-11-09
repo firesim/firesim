@@ -16,6 +16,7 @@ import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
+import TokenQueueConsts._
 
 class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
   val traces = Vec(numTraces, new TracedInstruction)
@@ -42,10 +43,9 @@ class SimTracerV extends Endpoint {
 
 class TracerVWidgetIO(val tracerParams: Parameters, val num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
-  val dma = Some(Flipped(new NastiIO()(
+  override val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
-  val address = Some(AddressSet(
-    BigInt("100000000", 16), BigInt("FFFFFFFF", 16)))
+  override val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 }
 
 
