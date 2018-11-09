@@ -1,6 +1,6 @@
 {
   "name" : "fedora-initramfs",
-  "distro" : "fedora",
+  "base" : "fedora",
   "linux-config" : "linux-config",
   "overlay" : "overlay",
   "rootfs-format" : "cpio"

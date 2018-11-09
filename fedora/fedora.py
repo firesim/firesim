@@ -9,13 +9,17 @@ fed_dir=os.path.dirname(os.path.realpath(__file__))
 overlay=os.path.join(fed_dir, 'overlay')
 
 class Builder:
-    @staticmethod
-    def baseImagePath(fmt):
-        return os.path.join(fed_dir, "rootfs." + fmt)
-        
-    def buildBaseImage(self, fmt):
-        sp.check_call(['make', "rootfs." + fmt], cwd=fed_dir)
-        return self.baseImagePath(fmt)
+    def baseConfig(self):
+        return {
+                'name' : 'fedora-base',
+                'distro' : 'fedora',
+                'rootfs-format' : 'img',
+                'builder' : self,
+                'img' : os.path.join(fed_dir, "rootfs.img")
+                }
+
+    def buildBaseImage(self):
+        sp.check_call(['make', "rootfs.img"], cwd=fed_dir)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.

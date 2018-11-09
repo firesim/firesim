@@ -9,23 +9,32 @@ br_dir = os.path.dirname(os.path.realpath(__file__))
 overlay = os.path.join(br_dir, 'firesim-overlay')
 
 class Builder:
-    @staticmethod
-    def baseImagePath(fmt):
-        if fmt == 'img':
-            return os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
-        elif fmt == 'cpio':
-            return os.path.join(br_dir, "buildroot/output/images/rootfs.cpio")
-        else:
-            raise ValueError(
-                "Only img and cpio formats are currently supported")
 
+    def baseConfig(self):
+        return {
+                'name' : 'buildroot-base',
+                'distro' : 'br',
+                'rootfs-format' : 'img',
+                'builder' : self,
+                'img' : os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
+                }
+
+    # @staticmethod
+    # def baseImagePath(fmt):
+    #     if fmt == 'img':
+    #         return os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
+    #     elif fmt == 'cpio':
+    #         return os.path.join(br_dir, "buildroot/output/images/rootfs.cpio")
+    #     else:
+    #         raise ValueError(
+    #             "Only img and cpio formats are currently supported")
+    #
     # Build a base image in the requested format and return an absolute path to that image
-    def buildBaseImage(self, fmt):
-        rootfs_target = "rootfs." + fmt
+    def buildBaseImage(self):
+        rootfs_target = "rootfs.img"
         shutil.copy(os.path.join(br_dir, 'buildroot-config'),
                     os.path.join(br_dir, "buildroot/.config"))
         sp.check_call(['make'], cwd=os.path.join(br_dir, "buildroot"))
-        return self.baseImagePath(fmt)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.

@@ -1,8 +1,9 @@
 {
   "name" : "example-br",
+  "workdir" : "example-br-workdir",
   "base" : "br-disk.json",
   "overlay" : "overlay",
   "rootfs-format" : "img",
-  "run" : "run.sh",
-  "init" : "init.sh"
+  "init" : "init.sh",
+  "run" : "run.sh"
 }

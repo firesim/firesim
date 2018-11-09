@@ -11,13 +11,9 @@ import pprint
 import doit
 import glob
 import re
+from config import *
 
 jlevel = "-j" + str(os.cpu_count())
-root_dir = os.getcwd()
-workload_dir = os.path.join(root_dir, "workloads")
-image_dir = os.path.join(root_dir, "images")
-linux_dir = os.path.join(root_dir, "riscv-linux")
-mnt = os.path.join(root_dir, "disk-mount")
 
 # Some warnings might be missed if they happen early on. This string will
 # be printed at the very end
@@ -43,99 +39,13 @@ def main():
     launch_parser.add_argument('-s', '--spike', action='store_true')
 
     args = parser.parse_args()
+    args.config_file = os.path.abspath(args.config_file)
 
-    try:
-        with open(args.config_file, 'r') as f:
-            config = json.load(f)
-    except:
-        Print("Unable to open or parse config file: " + args.config_file)
-        raise
+    # Load all the configs from the workload directory
+    cfgs = ConfigManager([workload_dir])
 
-    config['cfg-file'] = os.path.abspath(args.config_file)
-
-    config = resolveConfig(config)
-
-    args.func(args, config)
+    args.func(args, cfgs)
     print(delayed_warning)
-
-# Use base configs to fill in missing fields and complete the config
-# Note that after calling resolveConfig, all paths are absolute
-def resolveConfig(config):
-    # This is a comprehensive list of all user-defined config options
-    # See the documentation for their meaning
-    configUser = ['name', 'distro', 'base', 'rootfs-format', 'linux-config',
-            'host-init', 'overlay', 'run', 'init']
-
-    # This is a comprehensive list of all options set during config parsing
-    # (but not explicitly provided by the user)
-    configDerived = [
-            'builder', # A handle to the base-distro object (e.g. br.Builder)
-            'base-img', # The filesystem image to use when building this workload
-            'base-format', # The format of base-img
-            'base-cfg-file', # Path to config file used by base configuration
-            'cfg-file', # Path to this workloads raw config file
-            ]
-
-    # These are the user-defined options that should be converted to absolute
-    # paths (from workload-relative). Derived options are already absolute.
-    configToAbs = ['init', 'run', 'overlay', 'linux-config']
-
-    # These are the options that should be inherited from base configs (if not
-    # explicitly provided)
-    configInherit = ['run', 'overlay', 'linux-config', 'builder']
-
-    # First fill in any missing options with None for consistency
-    for k in configUser + configDerived:
-        if k not in config:
-            config[k] = None
-
-    # Convert stuff to absolute paths
-    for k in configToAbs:
-        if config[k] != None:
-            config[k] = os.path.join(workload_dir, config['name'], config[k])
-
-    if config['base'] == None:
-        # This is one of the bottom-configs (depends only on base distro)
-        if config['distro'] == 'br':
-            config['builder'] = br.Builder()
-        elif config['distro'] == 'fedora':
-            config['builder'] = fed.Builder()
-        else:
-            raise ValueError("Invalid distro: '" + config['distro'] +
-                "'. Please specify one of the available distros " + 
-                "('fedora' or 'br') or speficy a workload to base off.")
-
-        config['base-img'] = config['builder'].baseImagePath(config['rootfs-format'])
-        config['base-format'] = config['rootfs-format']
-    else:
-         # Not one of the bottom bases, look for a config in workloads to base off
-        config['base-cfg-file'] = os.path.join(workload_dir, config['base'])
-        try:
-            with open(config['base-cfg-file'], 'r') as base_cfg_file:
-                base_cfg = json.load(base_cfg_file)
-        except FileNotFoundError:
-            print("Base config '" + config['base-cfg-file'] + "' not found")
-            raise
-        except:
-            print("Base config '" + config['base-cfg-file'] + "' failed to parse")
-            raise
-
-        # Things to set before recursing
-        base_cfg['cfg-file'] = config['base-cfg-file']
-        base_cfg = resolveConfig(base_cfg)
-
-        # Inherit missing values from base config
-        for k in configInherit:
-            if config[k] == None:
-                config[k] = base_cfg[k]
-
-        config['base-img'] = base_cfg['img']
-        config['base-format'] = base_cfg['rootfs-format']
-
-    config['bin'] = os.path.join(image_dir, config['name'] + "-bin")
-    config['img'] = os.path.join(image_dir, config['name'] + "." + config['rootfs-format'])
-
-    return config
 
 class doitLoader(doit.cmd_base.TaskLoader):
     workloads = []
@@ -150,31 +60,22 @@ class doitLoader(doit.cmd_base.TaskLoader):
 # Note: this doesn't depend on the config or runtime args at all. In theory, it
 # could be cached, but I'm not going to bother unless it becomes a performance
 # issue.
-def buildDepGraph():
+def buildDepGraph(cfgs):
     loader = doitLoader()
 
     # Define the base-distro tasks
-    for builder in [br.Builder(), fed.Builder()]:
-        for fmt in ['img', 'cpio']:
-            img = builder.baseImagePath(fmt)
-            loader.workloads.append({
-                    'name' : img,
-                    'actions' : [(builder.buildBaseImage, [fmt])],
-                    'targets' : [img],
-                    'uptodate': [(builder.upToDate, [])]
-                })
+    for d in distros:
+        dCfg = cfgs[d]
+        loader.workloads.append({
+                'name' : dCfg['img'],
+                'actions' : [(dCfg['builder'].buildBaseImage, [])],
+                'targets' : [dCfg['img']],
+                'uptodate': [(dCfg['builder'].upToDate, [])]
+            })
 
-    # Create dependency graph from config files (for all workloads)
-    for cfgFile in glob.iglob(os.path.join(workload_dir, "*.json")):
-        try:
-            with open(cfgFile, 'r') as f:
-                config = json.load(f)
-            config['cfg-file'] = cfgFile
-            config = resolveConfig(config)
-        except Exception as e:
-            print("Skipping " + cfgFile + ": Unable to parse config:")
-            print("\t" + repr(e))
-            continue
+    # Non-distro configs 
+    for cfgPath in (set(cfgs.keys()) - set(distros)):
+        config = cfgs[cfgPath]
 
         # Add a rule for the binary
         file_deps = [config['linux-config']]
@@ -195,14 +96,14 @@ def buildDepGraph():
         # Add a rule for the image
         task_deps = [config['base-img']]
         file_deps = [config['base-img']]
-        if config['overlay'] != None:
+        if 'overlay' in config:
             for root, dirs, files in os.walk(config['overlay']):
                 for f in files:
                     file_deps.append(os.path.join(root, f))
-        if config['init'] != None:
+        if 'init' in config:
             file_deps.append(config['init'])
             task_deps.append(config['bin'])
-        if config['run'] != None:
+        if 'run' in config:
             file_deps.append(config['run'])
         
         loader.workloads.append({
@@ -215,8 +116,9 @@ def buildDepGraph():
 
     return loader
 
-def handleBuild(args, config):
-    loader = buildDepGraph()
+def handleBuild(args, cfgs):
+    loader = buildDepGraph(cfgs)
+    config = cfgs[args.config_file]
     if config['rootfs-format'] == 'img':
         # Be sure to build the bin first, then the image, because if there is
         # an init script, we need to boot the binary in order to apply it
@@ -249,7 +151,8 @@ def launchQemu(config):
 
     sp.check_call(cmd)
 
-def handleLaunch(args, config):
+def handleLaunch(args, cfgs):
+    config = cfgs[args.config_file]
     if args.spike:
         if config['rootfs-format'] == 'img':
             sys.exit("Spike currently does not support disk-based " +
@@ -258,10 +161,12 @@ def handleLaunch(args, config):
     else:
         launchQemu(config)
 
-# Now build linux/bbl
-def makeBin(config):
+# It's pretty easy to forget to update the linux config for initramfs-based
+# workloads. We check here to make sure you've set the CONFIG_INITRAMFS_SOURCE
+# option correctly. This only issues a warning right now because you might have
+# a legitimate reason to point linux somewhere else (e.g. while debugging).
+def checkInitramfsConfig(config):
     global delayed_warning
-    # I am not without mercy
     if config['rootfs-format'] == 'cpio':
        with open(config['linux-config'], 'rt') as f:
            linux_config = f.read()
@@ -282,7 +187,12 @@ def makeBin(config):
                "using cpio for it's image.\n" + \
                "You likely want to change this option to:\n" + \
                "\tCONFIG_INITRAMFS_SOURCE=" + os.path.relpath(config['img'], linux_dir)
-             
+ 
+# Now build linux/bbl
+def makeBin(config):
+    # I am not without mercy
+    checkInitramfsConfig(config)
+            
     shutil.copy(config['linux-config'], os.path.join(linux_dir, ".config"))
     sp.check_call(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
     if not os.path.exists('riscv-pk/build'):
@@ -304,13 +214,13 @@ def makeImage(config):
         raise ValueError("Invalid formats for base and/or new image: Base=" +
                 config['base-format'] + ", New=" + config['rootfs-format'])
 
-    if config['host-init'] != None:
-        sp.check_call([config['host-init']], cwd=os.path.join(workload_dir, config['name']))
+    if 'host-init' in config:
+        sp.check_call([config['host-init']], cwd=config['workdir'])
 
-    if config['overlay'] != None:
+    if 'overlay' in config:
         applyOverlay(config['img'], config['overlay'], config['rootfs-format'])
 
-    if config['init'] != None:
+    if 'init' in config:
         if config['rootfs-format'] == 'cpio':
             raise ValueError("CPIO-based images do not support init scripts.")
 
@@ -323,7 +233,7 @@ def makeImage(config):
         run_overlay = config['builder'].generateBootScriptOverlay(None)
         applyOverlay(config['img'], run_overlay, config['rootfs-format'])
 
-    if config['run'] != None:
+    if 'run' in config:
         run_overlay = config['builder'].generateBootScriptOverlay(config['run'])
         applyOverlay(config['img'], run_overlay, config['rootfs-format'])
 
@@ -358,6 +268,5 @@ def applyOverlay(img, overlay, fmt):
     else:
         raise ValueError(
             "Only 'img' and 'cpio' formats are currently supported")
-
 
 main()
