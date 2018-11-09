@@ -55,16 +55,12 @@ class PrintRecordEndpoint extends Endpoint {
 
 class PrintWidgetIO(private val record: PrintRecord)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(record))
-  val dma = if (p(HasDMAChannel)) {
+  override val dma = if (p(HasDMAChannel)) {
     Some(Flipped(new NastiIO()( p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
-  } else {
-    None
-  }
-  val address = if (p(HasDMAChannel)) {
+  } else None
+  override val dmaSize = if (p(HasDMAChannel)) {
     throw new RuntimeException("Damn it Howie.")
-  } else {
-    None
-  }
+  } else BigInt(0)
 }
 
 class PrintWidget(printRecord: PrintRecord)(implicit p: Parameters) extends EndpointWidget()(p) with HasChannels {
