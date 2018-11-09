@@ -8,7 +8,8 @@
 class tracerv_t: public endpoint_t
 {
     public:
-        tracerv_t(simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracervno);
+        tracerv_t(simif_t *sim, std::vector<std::string> &args,
+		TRACERVWIDGET_struct * mmio_addrs, int tracervno, long dma_addr);
         ~tracerv_t();
 
         virtual void init();
@@ -21,6 +22,7 @@ class tracerv_t: public endpoint_t
         simif_t* sim;
         FILE * tracefile;
         uint64_t start_cycle, end_cycle, cur_cycle;
+	long dma_addr;
 };
 #endif // TRACERVWIDGET_struct_guard
 
