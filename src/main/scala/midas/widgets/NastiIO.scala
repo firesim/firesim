@@ -13,8 +13,8 @@ import freechips.rocketchip.diplomacy.AddressSet
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
-  def dma: Option[NastiIO]
-  def address: Option[AddressSet]
+  val dma: Option[NastiIO] = None
+  val dmaSize: BigInt = BigInt(0)
   val tReset = Flipped(Decoupled(Bool()))
 }
 
@@ -29,8 +29,6 @@ class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
   val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
   def hPort = tNasti
-  val dma = None
-  val address = None
 }
 
 abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
