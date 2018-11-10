@@ -51,23 +51,6 @@ These files will be used to form base images to either build more complicated
 workloads (see the :ref:`defining-custom-workloads` section) or to copy around
 for deploying.
 
-Testing or customizing the target software using Qemu
------------------------------------------------------
-Before running this target software on firesim, you may choose to boot the
-image in qemu (a high-performance functional simulator). From here, you can
-perform any configuration tasks you'd like before booting in Firesim. To boot
-an image in qemu, simply use the launch command:
-
-::
-
-    ./sw-manager.py -c br-disk.json launch
-
-.. attention::
-
-  Qemu currently cannot emulate clusters. Whatever changes you make to the
-  image in qemu will be replicated to all nodes in the firesim cluster
-  simulation.
-
 Setting up the manager configuration
 -------------------------------------
 
