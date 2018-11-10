@@ -31,9 +31,9 @@ of the json file inline.
 this should really be named "jobs" -- we will fix this in a future release.
 
 **ERRATA**: The following instructions assume the default buildroot-based linux
-distribution (br-disk). In order to customize fedora, you should build the
-basic fedora image (as described in :ref:`booting-fedora`) and modify the
-image directly (or in qemu). Imporantly, Fedora currently does not support the
+distribution (br-disk). In order to customize Fedora, you should build the
+basic Fedora image (as described in :ref:`booting-fedora`) and modify the
+image directly (or in QEMU). Imporantly, Fedora currently does not support the
 "command" option for workloads.
 
 Uniform Workload JSON
@@ -147,7 +147,7 @@ AFTER the workload is built:
 
 First, let's identify some of these files:
 
-- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``
+- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``. Note that it's named differently here, but still symlinks to ``br-disk-bin`` in firesim-software.
 - ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
 - ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
 
