@@ -30,6 +30,12 @@ of the json file inline.
 **ERRATA**: You will notice in the following json files the field "workloads"
 this should really be named "jobs" -- we will fix this in a future release.
 
+**ERRATA**: The following instructions assume the default buildroot-based linux
+distribution (br-disk). In order to customize fedora, you should build the
+basic fedora image (as described in :ref:`booting-fedora`) and modify the
+image directly (or in qemu). Imporantly, Fedora currently does not support the
+"command" option for workloads.
+
 Uniform Workload JSON
 ----------------------------
 

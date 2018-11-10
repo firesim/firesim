@@ -1,3 +1,5 @@
+.. _booting-fedora:
+
 Running Fedora on FireSim
 ===========================
 
