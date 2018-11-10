@@ -1,18 +1,27 @@
 diff --git a/target-design/switch/baseport.h b/target-design/switch/baseport.h
-index 8733e52..cd42300 100644
+index 8252b64..152461e 100644
 --- a/target-design/switch/baseport.h
 +++ b/target-design/switch/baseport.h
-@@ -85,6 +85,8 @@ void BasePort::write_flits_to_output() {
-             switchpacket * thispacket = outputqueue.front();
-             outputqueue.pop();
-             printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
-+            // for root switch BW logging
-+            printf("packet timestamp: %ld, len: %ld\n", basetime + flitswritten, thispacket->amtwritten);
-             for (int i = 0; i < thispacket->amtwritten; i++) {
+@@ -86,7 +86,7 @@ void BasePort::write_flits_to_output() {
+             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
+             flitswritten = std::max(flitswritten, timestampdiff);
+ 
+-            printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
++            //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
+             int i = thispacket->amtread;
+             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                  write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
-                 write_valid_flit(current_output_buf, flitswritten);
+@@ -100,6 +100,8 @@ void BasePort::write_flits_to_output() {
+                     flitswritten++;
+             }
+             if (i == thispacket->amtwritten) {
++		printf("packet timestamp: %ld, len: %ld\n",
++			basetime + flitswritten, thispacket->amtwritten);
+                 // we finished sending this packet, so get rid of it
+                 outputqueue.pop();
+                 free(thispacket);
 diff --git a/target-design/switch/switch.cc b/target-design/switch/switch.cc
-index 855a2ea..77ef270 100644
+index 8626e4a..eb56216 100644
 --- a/target-design/switch/switch.cc
 +++ b/target-design/switch/switch.cc
 @@ -11,7 +11,7 @@
@@ -24,7 +33,7 @@ index 855a2ea..77ef270 100644
  
  #ifdef IGNORE_PRINTF
  #define printf(fmt, ...) (0)
-@@ -156,8 +156,8 @@ while (!pqueue.empty()) {
+@@ -163,8 +163,8 @@ while (!pqueue.empty()) {
      switchpacket * tsp = pqueue.top().switchpack;
      pqueue.pop();
      uint16_t send_to_port = get_port_from_flit(tsp->dat[0], 0 /* junk remove arg */);
@@ -33,5 +42,5 @@ index 855a2ea..77ef270 100644
 +    //printf("packet for port: %x\n", send_to_port);
 +    //printf("packet timestamp: %ld\n", tsp->timestamp);
      if (send_to_port == BROADCAST_ADJUSTED) {
-         for (int i = 0; i < NUMPORTS; i++) {
-             if (i != tsp->sender ) {
+ #define ADDUPLINK (NUMUPLINKS > 0 ? 1 : 0)
+         // this will only send broadcasts to the first (zeroeth) uplink.
