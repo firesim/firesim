@@ -14,7 +14,7 @@ EC2.
 Some notes:
 
 -  Benchmarks use reference inputs. ``train`` or ``test`` inputs can be used by changing the Speckle invocation in the Makefile.
--  You may need to increase the size of the RootFS in buildroot in ``firesim/sw/firesim-software``.
+-  You may need to increase the size of the RootFS in buildroot in ``firesim/sw/firesim-software/images``.
 -  No support for fp{rate, speed} benchmarks yet.
 
 .. attention::

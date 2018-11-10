@@ -4,15 +4,33 @@ Running Fedora on FireSim
 You can boot Fedora disk images pulled from upstream on FireSim simulations.
 These instructions assume you've already run through the tutorials.
 
-Fedora currently requires some tweaks to the Linux configuration. To rebuild
-Linux with this configuration, first head to ``sw/firesim-software`` and
-replace the ``linux-config-firesim`` file with ``deploy/workloads/fedora-uniform/linux-config-firesim``
-and then re-run ``./build.sh`` in ``sw/firesim-software``. This will build a copy
-of ``bbl-vmlinux`` that is compatible with Fedora.
+To download and build a Fedora-based linux distro for firesim, simply do the following:
 
-Next, head to
-``deploy/workloads`` and run ``make fedora-uniform``. This will download the
-latest version of the disk image and apply some patches to it to ensure it
-functions correctly on FireSim.
+::
 
-Finally, you can change your workload to ``fedora-uniform.json`` to boot Fedora on your simulations.
+    cd firesim/sw/firesim-software
+    ./sw-manager.py -c fedora-disk.json build
+
+Testing or customizing the target software using Qemu
+-----------------------------------------------------
+Before running this target software on firesim, you may choose to boot the
+image in qemu (a high-performance functional simulator). From here, you will
+have access to the internet and can install packages (e.g. by using ``dnf
+install foo``), download files, or perform any configuration tasks you'd like
+before booting in Firesim. To boot an image in qemu, simply use the launch
+command:
+
+::
+
+    ./sw-manager.py -c fedora-disk.json launch
+
+.. attention::
+
+  Qemu currently cannot emulate clusters. Whatever changes you make to the
+  image in qemu will be replicated to all nodes in the firesim cluster
+  simulation.
+
+Running in Firesim
+------------------
+In order to run fedora in firesim, simply change your workload to
+``fedora-uniform.json`` in runtime_config.ini and boot as normal.
