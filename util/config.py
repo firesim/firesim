@@ -5,12 +5,8 @@ import fedora.fedora as fed
 import collections
 import json
 import pprint
-
-root_dir = os.getcwd()
-workload_dir = os.path.join(root_dir, "workloads")
-image_dir = os.path.join(root_dir, "images")
-linux_dir = os.path.join(root_dir, "riscv-linux")
-mnt = os.path.join(root_dir, "disk-mount")
+import logging
+from util.util import *
 
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
@@ -58,7 +54,7 @@ configToAbs = ['init', 'run', 'overlay', 'linux-config']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['run', 'overlay', 'linux-config', 'builder', 'distro']
+configInherit = ['run', 'overlay', 'linux-config', 'builder', 'distro', 'rootfs-format']
 
 # These are the permissible base-distributions to use (they get treated special)
 # TODO: add 'bare' distro for bare-metal workloads/jobs
@@ -74,35 +70,55 @@ class Config(collections.MutableMapping):
     initialized = False
 
     # Loads a config file and performs basic parsing and default-value initialization
-    # Does not recursively parse base configs
+    # Does not recursively parse base configs.
     # cfgFile - path to config file to load
     # cfgDict - path to pre-initialized dictionary to load
     # Note: cfgDict and cfgFile are mutually exclusive, but you must set one
+    # Post:
+    #   - All paths will be absolute
+    #   - Jobs will be a dictionary of { 'name' : Config } for each job
     def __init__(self, cfgFile=None, cfgDict=None):
         if cfgFile != None:
             with open(cfgFile, 'r') as f:
                 self.cfg = json.load(f)
+        else:
+            self.cfg = cfgDict
 
-            # Some default values
-            if 'workdir' in self.cfg:
+        # Some default values
+        if 'workdir' in self.cfg:
+            if not os.path.isabs(self.cfg['workdir']):
                 self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['workdir'])
-            else:
-                self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['name'])
+        else:
+            self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['name'])
 
-            # Distros are indexed by their name, not a path (since they don't have real configs)
-            # All other bases should converted to absolute paths
-            if self.cfg['base'] not in distros.keys():
+        # Distros are indexed by their name, not a path (since they don't have real configs)
+        # All other bases should converted to absolute paths
+        if 'base' in self.cfg:
+            if self.cfg['base'] not in distros.keys() and not os.path.isabs(self.cfg['base']):
                 self.cfg['base'] = os.path.join(workload_dir, self.cfg['base'])
-                
-            # Convert stuff to absolute paths
-            for k in (set(configToAbs) & set(self.cfg.keys())):
+        
+        # Convert stuff to absolute paths
+        for k in (set(configToAbs) & set(self.cfg.keys())):
+            if not os.path.isabs(self.cfg[k]):
                 self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
 
-        elif cfgDict != None:
-            self.cfg = cfgDict
-        else:
-            raise ValueError("class Config must be initialied with either a config file (cfgFile) or pre-initialized dictionary (cfgDict)")
+        # Convert jobs to standalone configs
+        if 'jobs' in self.cfg.keys():
+            jList = self.cfg['jobs']
+            self.cfg['jobs'] = {}
+            
+            for jCfg in jList:
+                jCfg['workdir'] = self.cfg['workdir']
+                # TODO come up with a better scheme here, name is used to
+                # derive the img and bin names, but naming jobs this way makes
+                # for ugly hacks later when looking them up. 
+                jCfg['name'] = self.cfg['name'] + '-' + jCfg['name']
+                # jobs can base off any workload, but default to the current workload
+                if 'base' not in jCfg.keys():
+                    jCfg['base'] = cfgFile
 
+                self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
+            
     # Finalize this config using baseCfg (which is assumed to be fully
     # initialized).
     def applyBase(self, baseCfg):
@@ -150,6 +166,7 @@ class ConfigManager(collections.MutableMapping):
     #            All files matching *.json in these directories will be loaded.
     #   paths - An iterable of absolute paths to config files to load
     def __init__(self, dirs=None, paths=None):
+        log = logging.getLogger()
         cfgPaths = []
         if paths != None:
             cfgPaths += paths
@@ -166,17 +183,17 @@ class ConfigManager(collections.MutableMapping):
             self.cfgs[dName] = Config(cfgDict=dBuilder.baseConfig())
             self.cfgs[dName].initialized = True
 
-        # for cfgFile in self.cfgPaths:
+        # Read all the configs from their files
         for f in cfgPaths:
             try:
                 self.cfgs[f] = Config(f)
             except KeyError as e:
-                print("Skipping " + f + ":")
-                print("\tMissing required option '" + e.args[0] + "'")
+                log.warning("Skipping " + f + ":")
+                log.warning("\tMissing required option '" + e.args[0] + "'")
                 raise
             except Exception as e:
-                print("Skipping " + f + ": Unable to parse config:")
-                print("\t" + repr(e))
+                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("\t" + repr(e))
                 raise
 
         # Now we recursively fill in defaults from base configs
@@ -184,17 +201,17 @@ class ConfigManager(collections.MutableMapping):
             try:
                 self._initializeFromBase(self.cfgs[f])
             except KeyError as e:
-                print("Skipping " + f + ":")
-                print("\tMissing required option '" + e.args[0] + "'")
+                log.warning("Skipping " + f + ":")
+                log.warning("\tMissing required option '" + e.args[0] + "'")
                 raise
                 continue
             except Exception as e:
-                print("Skipping " + f + ": Unable to parse config:")
-                print("\t" + repr(e))
+                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("\t" + repr(e))
                 raise
                 continue
 
-            print("Loaded " + f)
+            log.debug("Loaded " + f)
 
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.
@@ -208,7 +225,14 @@ class ConfigManager(collections.MutableMapping):
                 self._initializeFromBase(baseCfg)
 
             cfg.applyBase(baseCfg)
+            # must set initialized to True before handling jobs because jobs
+            # will reference this config (we'd infinite loop without memoization)
             cfg.initialized = True
+
+            # Now that this config is initialized, finalize jobs
+            if 'jobs' in cfg.keys():
+                for jCfg in cfg['jobs'].values():
+                    self._initializeFromBase(jCfg)
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):

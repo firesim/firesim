@@ -1,6 +1,7 @@
 import os
 import subprocess as sp
 import shutil
+from util.util import *
 
 # Some common directories for this module (all absolute paths)
 fed_dir=os.path.dirname(os.path.realpath(__file__))
@@ -12,6 +13,7 @@ class Builder:
     def baseConfig(self):
         return {
                 'name' : 'fedora-base',
+                'workdir' : fed_dir,
                 'distro' : 'fedora',
                 'rootfs-format' : 'img',
                 'builder' : self,
@@ -19,7 +21,7 @@ class Builder:
                 }
 
     def buildBaseImage(self):
-        sp.check_call(['make', "rootfs.img"], cwd=fed_dir)
+        run(['make', "rootfs.img"], cwd=fed_dir)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
@@ -38,14 +40,14 @@ class Builder:
         # can change the default boot behavior by changing this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            sp.check_call(['sudo', 'cp', script, scriptDst])
+            run(['sudo', 'cp', script, scriptDst])
         else:
-            sp.check_call(['sudo', 'rm', scriptDst])
+            run(['sudo', 'rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            sp.check_call(['sudo', 'touch', scriptDst])
+            run(['sudo', 'touch', scriptDst])
         
-        sp.check_call(['sudo', 'chown', 'root:root', scriptDst])
-        sp.check_call(['sudo', 'chmod', '+x', scriptDst])
+        run(['sudo', 'chown', 'root:root', scriptDst])
+        run(['sudo', 'chmod', '+x', scriptDst])
         return overlay
