@@ -31,11 +31,11 @@ def compute_bw(packet_data):
         if ts >= END_CYCLE:
             break
         if ts >= window_end:
-            if cur_total > 0:
+            while window_end < ts:
                 cycles.append(window_end)
                 totals.append(cur_total)
-            window_end = (ts // TIME_STEP + 1) * TIME_STEP
-            cur_total = 0
+                window_end += TIME_STEP
+                cur_total = 0
         else:
             cur_total += plen
     cycles.append(window_end)
