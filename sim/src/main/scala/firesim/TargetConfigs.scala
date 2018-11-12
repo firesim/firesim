@@ -31,16 +31,16 @@ class WithUARTKey extends Config((site, here, up) => {
 
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
-    inBufPackets = 48,
+    inBufPackets = 64,
     ctrlQueueDepth = 64)
 })
 
 class WithMemBladeKey extends Config((site, here, up) => {
   case MemBladeKey => MemBladeParams(
-    nPageTrackers = 2,
+    nSpanTrackers = 2,
     nWordTrackers = 4,
-    pageQueue = MemBladeQueueParams(reqHeadDepth = 48),
-    wordQueue = MemBladeQueueParams(reqHeadDepth = 48))
+    spanQueue = MemBladeQueueParams(reqHeadDepth = 64),
+    wordQueue = MemBladeQueueParams(reqHeadDepth = 64))
 })
 
 class WithRemoteMemClientKey extends Config((site, here, up) => {
