@@ -14,7 +14,7 @@ class SocketClientPort : public BasePort {
         int clientsocket;
 };
 
-SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : BasePort(portNo) {
+SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : BasePort(portNo, false) {
 
     struct sockaddr_in serv_addr;
 
@@ -96,7 +96,7 @@ class SocketServerPort : public BasePort {
         int serversocket;
 };
 
-SocketServerPort::SocketServerPort(int portNo, int hostport) : BasePort(portNo) {
+SocketServerPort::SocketServerPort(int portNo, int hostport) : BasePort(portNo, false) {
     int server_fd;
     struct sockaddr_in address;
     int opt = 1;
