@@ -8,6 +8,77 @@ from fabric.api import *
 
 rootLogger = logging.getLogger()
 
+
+class FireSimLink(object):
+    """ This represents a link that connects different FireSimNodes.
+
+    Terms:
+        Naming assumes a tree-ish topology, with roots at the top, leaves at the
+        bottom. So in a topology like:
+                        RootSwitch
+                        /        \
+              Link A   /          \  Link B
+                      /            \
+                    Sim X         Sim Y
+
+        "Uplink side" of Link A is RootSwitch.
+        "Downlink side" of Link A is Sim X.
+        Sim X has an uplink connected to RootSwitch.
+        RootSwitch has a downlink to Sim X.
+
+    """
+
+    # links have a globally unique identifier, currently used for naming
+    # shmem regions for Shmem Links
+    next_unique_link_identifier = 0
+
+    def __init__(self, uplink_side, downlink_side):
+        self.id = FireSimLink.next_unique_link_identifier
+        FireSimLink.next_unique_link_identifier += 1
+        # format as 100 char hex string padded with zeroes
+        self.id_as_str = format(self.id, '0100X')
+        self.uplink_side = None
+        self.downlink_side = None
+        self.port = None
+        self.set_uplink_side(uplink_side)
+        self.set_downlink_side(downlink_side)
+
+    def set_uplink_side(self, fsimnode):
+        self.uplink_side = fsimnode
+
+    def set_downlink_side(self, fsimnode):
+        self.downlink_side = fsimnode
+
+    def get_uplink_side(self):
+        return self.uplink_side
+
+    def get_downlink_side(self):
+        return self.downlink_side
+
+    def link_hostserver_port(self):
+        """ Get the port used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        if self.port is None:
+            self.port = self.get_uplink_side().host_instance.allocate_host_port()
+        return self.port
+
+    def link_hostserver_ip(self):
+        """ Get the IP address used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        assert self.get_uplink_side().host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
+        return self.get_uplink_side().host_instance.get_private_ip()
+
+    def link_crosses_hosts(self):
+        """ Return True if the user has mapped the two endpoints of this link to
+        separate hosts. This implies a SocketServerPort / SocketClientPort will be used
+        to implement the Link. If False, use a sharedmem port to implement the link. """
+        return self.get_uplink_side().host_instance != self.get_downlink_side().host_instance
+
+    def get_global_link_id(self):
+        """ Return the globally unique link id, used for naming shmem ports. """
+        return self.id_as_str
+
+
 class FireSimNode(object):
     """ This represents a node in the high-level FireSim Simulation Topology
     Graph. These nodes are either
@@ -28,6 +99,8 @@ class FireSimNode(object):
 
     def __init__(self):
         self.downlinks = []
+        # used when there are multiple links between switches to disambiguate
+        #self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -35,21 +108,23 @@ class FireSimNode(object):
         """ A "downlink" is a link that will take you further from the root
         of the tree. Users define a tree topology by specifying "downlinks".
         Uplinks are automatically inferred. """
-        firesimnode.add_uplink(self)
-        self.downlinks.append(firesimnode)
+        linkobj = FireSimLink(self, firesimnode)
+        firesimnode.add_uplink(linkobj)
+        self.downlinks.append(linkobj)
+        #self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes):
         """ Just a convenience function to add multiple downlinks at once.
         Assumes downlinks in the supplied list are ordered. """
         [self.add_downlink(node) for node in firesimnodes]
 
-    def add_uplink(self, firesimnode):
+    def add_uplink(self, firesimlink):
         """ This is only for internal use - uplinks are automatically populated
         when a node is specified as the downlink of another.
 
         An "uplink" is a link that takes you towards one of the roots of the
         tree."""
-        self.uplinks.append(firesimnode)
+        self.uplinks.append(firesimlink)
 
     def num_links(self):
         """ Return the total number of nodes. """
@@ -75,11 +150,16 @@ class FireSimServerNode(FireSimNode):
     SERVERS_CREATED = 0
 
     def __init__(self, server_hardware_config=None, server_link_latency=None,
-                 server_bw_max=None):
+                 server_bw_max=None, server_profile_interval=None,
+                 trace_enable=None, trace_start=None, trace_end=None):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
+        self.server_profile_interval = server_profile_interval
+        self.trace_enable = trace_enable
+        self.trace_start = trace_start
+        self.trace_end = trace_end
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         FireSimServerNode.SERVERS_CREATED += 1
@@ -108,9 +188,15 @@ class FireSimServerNode(FireSimNode):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
+        shmemportname = "default"
+        if self.uplinks:
+            shmemportname = self.uplinks[0].get_global_link_id()
+
         return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_rootfs_name(), slotno, self.server_link_latency,
-            self.server_bw_max, self.get_bootbin_name())
+            self.get_mac_address(), self.get_rootfs_name(), slotno,
+            self.server_link_latency, self.server_bw_max,
+            self.server_profile_interval, self.get_bootbin_name(),
+            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -168,6 +254,7 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append(self.server_hardware_config.get_local_driver_path())
         all_paths.append(self.server_hardware_config.get_local_runtime_conf_path())
+        all_paths.append(self.server_hardware_config.get_local_assert_def_path())
         return all_paths
 
     def get_agfi(self):
@@ -201,13 +288,14 @@ class FireSimSwitchNode(FireSimNode):
     # used to give switches a global ID
     SWITCHES_CREATED = 0
 
-    def __init__(self, switching_latency=None, link_latency=None):
+    def __init__(self, switching_latency=None, link_latency=None, bandwidth=None):
         super(FireSimSwitchNode, self).__init__()
         self.switch_id_internal = FireSimSwitchNode.SWITCHES_CREATED
         FireSimSwitchNode.SWITCHES_CREATED += 1
         self.switch_table = None
         self.switch_link_latency = link_latency
         self.switch_switching_latency = switching_latency
+        self.switch_bandwidth = bandwidth
 
         # switch_builder is a class designed to emit a particular switch model.
         # it should take self and then be able to emit a particular switch model's

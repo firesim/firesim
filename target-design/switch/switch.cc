@@ -34,6 +34,13 @@ int switchlat = 0;
 
 #define SWITCHLATENCY (switchlat)
 
+// param: numerator and denominator of bandwidth throttle
+// Used to throttle outbound bandwidth from port
+//
+// THESE ARE SET BY A COMMAND LINE ARGUMENT. DO NOT CHANGE IT HERE.
+int throttle_numer = 1;
+int throttle_denom = 1;
+
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
 
@@ -159,7 +166,11 @@ while (!pqueue.empty()) {
     printf("packet for port: %x\n", send_to_port);
     printf("packet timestamp: %ld\n", tsp->timestamp);
     if (send_to_port == BROADCAST_ADJUSTED) {
-        for (int i = 0; i < NUMPORTS; i++) {
+#define ADDUPLINK (NUMUPLINKS > 0 ? 1 : 0)
+        // this will only send broadcasts to the first (zeroeth) uplink.
+        // on a switch receiving broadcast packet from an uplink, this should
+        // automatically prevent switch from sending the broadcast to any uplink
+        for (int i = 0; i < NUMDOWNLINKS + ADDUPLINK; i++) {
             if (i != tsp->sender ) {
                 switchpacket * tsp2 = (switchpacket*)malloc(sizeof(switchpacket));
                 memcpy(tsp2, tsp, sizeof(switchpacket));
@@ -183,22 +194,42 @@ for (int port = 0; port < NUMPORTS; port++) {
 
 }
 
+static void simplify_frac(int n, int d, int *nn, int *dd)
+{
+    int a = n, b = d;
 
+    // compute GCD
+    while (b > 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+
+    *nn = n / a;
+    *dd = d / a;
+}
 
 int main (int argc, char *argv[]) {
-    if (argc < 3) {
+    int bandwidth;
+
+    if (argc < 4) {
         // if insufficient args, error out
-        fprintf(stdout, "usage: ./switch LINKLATENCY SWITCHLATENCY\n");
+        fprintf(stdout, "usage: ./switch LINKLATENCY SWITCHLATENCY BANDWIDTH\n");
         fprintf(stdout, "insufficient args provided\n.");
         fprintf(stdout, "LINKLATENCY and SWITCHLATENCY should be provided in cycles.\n");
+        fprintf(stdout, "BANDWIDTH should be provided in Gbps\n");
         exit(1);
     }
 
     LINKLATENCY = atoi(argv[1]);
     switchlat = atoi(argv[2]);
+    bandwidth = atoi(argv[3]);
+
+    simplify_frac(bandwidth, 200, &throttle_numer, &throttle_denom);
 
     fprintf(stdout, "Using link latency: %d\n", LINKLATENCY);
     fprintf(stdout, "Using switching latency: %d\n", SWITCHLATENCY);
+    fprintf(stdout, "BW throttle set to %d/%d\n", throttle_numer, throttle_denom);
 
     if ((LINKLATENCY % 7) != 0) {
         // if invalid link latency, error out.

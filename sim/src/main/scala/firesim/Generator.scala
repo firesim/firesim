@@ -97,7 +97,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     val portList = target.getPorts flatMap {
       case Port(id: DebugIO, _) => None
       case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
-      case otherPort => Some(otherPort.id)
+      case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 
     generatorArgs.midasFlowKind match {
@@ -111,7 +111,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
 
   /** Output software test Makefrags, which provide targets for integration testing. */
   def generateTestSuiteMakefrags {
-    addTestSuites(targetParams)
+    addTestSuites(names.topModuleClass, targetParams)
     writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
@@ -161,7 +161,7 @@ trait HasTestSuites {
       "rv32mi-p-sbreak",
       "rv32ui-p-sll")
 
-  def addTestSuites(params: Parameters) {
+  def addTestSuites(targetName: String, params: Parameters) {
     val coreParams =
       if (params(RocketTilesKey).nonEmpty) {
         params(RocketTilesKey).head.core
@@ -194,6 +194,10 @@ trait HasTestSuites {
     TestGeneration.addSuites((if (vm) List("v") else List()).flatMap(env => rvu.map(_(env))))
     TestGeneration.addSuite(benchmarks)
     TestGeneration.addSuite(new RegressionTestSuite(if (xlen == 64) rv64RegrTestNames else rv32RegrTestNames))
+    TestGeneration.addSuite(FastBlockdevTests)
+    TestGeneration.addSuite(SlowBlockdevTests)
+    if (!targetName.contains("NoNIC"))
+      TestGeneration.addSuite(NICLoopbackTests)
   }
 }
 

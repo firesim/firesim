@@ -45,11 +45,10 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
 
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC = $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim/firesim_top fesvr/firesim_fesvr endpoints/serial endpoints/uart \
-	firesim/firesim_f1 endpoints/simplenic endpoints/blockdev)) $(RISCV)/lib/libfesvr.a
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, \
+	firesim/* fesvr/* endpoints/*))) $(RISCV)/lib/libfesvr.a
 
-TARGET_CXX_FLAGS := -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
 ####################################
@@ -62,16 +61,71 @@ conf:
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
+################################################################
+# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
+################################################################
+TIMEOUT_CYCLES = 100000000
+
+NET_SLOT ?= 0
+NET_LINK_LATENCY ?= 6405
+NET_BW ?= 100
+nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
+
+SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
+mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
+COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args)
+
+# Arguments used only at a particular simulation abstraction
+MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
+FPGA_LEVEL_SIM_ARGS ?=
+
+################################
+# Verilator/VCS/XSIM execution #
+################################
+
+verilator = $(GENERATED_DIR)/V$(DESIGN)
+verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
+vcs = $(GENERATED_DIR)/$(DESIGN)
+vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
+xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
+
+run-verilator: $(verilator)
+	$(verilator) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-verilator-debug: $(verilator_debug)
+	$(verilator_debug) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-vcs: $(vcs)
+	$(vcs) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-vcs-debug: $(vcs_debug)
+	$(vcs_debug) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY))
+
+run-xsim: $(xsim)
+	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
+
 ############################################
 # Midas-Level Simulation Execution Recipes #
 ############################################
 # The desired RTL simulator. supported options: {vcs, verilator}
 EMUL ?= verilator
 
+# Firechip Tests
+fc_test_dir = $(base_dir)/target-rtl/firechip/tests
+fc_test_srcs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
+fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
+
+$(info $(fc_test_srcs))
+
+$(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
+	make -C $(fc_test_dir)
+
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
 -include $(GENERATED_DIR)/$(DESIGN).d
 endif
+
 
 disasm := 2>
 which_disasm := $(shell which spike-dasm 2> /dev/null)
@@ -79,18 +133,20 @@ ifneq ($(which_disasm),)
         disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
 endif
 
+# Some of the generated suites use specific plus args, that are prefixed with
+# the binary name. These are captured with $($*_ARGS)
 $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ +max-cycles=$(TIMEOUT_CYCLES) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 

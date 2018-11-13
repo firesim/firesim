@@ -18,9 +18,10 @@ TARGET_PROJECT_MAKEFRAG ?= src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 default: compile
 
 SBT ?= sbt
-SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G
+SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G ++2.12.4
+
 sbt:
-	$(SBT) $(SBT_FLAGS)
+	$(SBT) $(SBT_FLAGS) shell
 test:
 	$(SBT) $(SBT_FLAGS) test
 

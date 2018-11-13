@@ -20,25 +20,34 @@ struct serial_data_t {
     } out;
 };
 
+#ifdef SERIALWIDGET_struct_guard
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, firesim_fesvr_t* fesvr, uint32_t step_size);
-        void init();
-        void tick();
-        bool done() { return read(SERIALWIDGET_0(done)); }
-        bool stall() { return false; }
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs);
+        ~serial_t();
+        virtual void init();
+        virtual void tick();
+        virtual bool terminate(){ return fesvr.done(); }
+        virtual int exit_code(){ return fesvr.exit_code(); }
 
     private:
-        firesim_fesvr_t* fesvr;
+        SERIALWIDGET_struct * mmio_addrs;
+        simif_t* sim;
+        firesim_fesvr_t fesvr;
         // Number of target cycles between fesvr interactions
         uint32_t step_size;
-
         // Tell the widget to start enqueuing tokens
         void go();
         // Moves data to and from the widget and fesvr
         void send(); // FESVR -> Widget
         void recv(); // Widget -> FESVR
+
+        // Helper functions to handoff fesvr requests to the loadmem unit
+        void handle_loadmem_read(fesvr_loadmem_t loadmem);
+        void handle_loadmem_write(fesvr_loadmem_t loadmem);
+        void serial_bypass_via_loadmem();
 };
+#endif // SERIALWIDGET_struct_guard
 
 #endif // __SERIAL_H

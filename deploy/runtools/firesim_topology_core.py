@@ -20,9 +20,11 @@ class FireSimTopology(UserTopologies):
             if nextup in visitedonce:
                 if nextup not in retlist:
                     retlist.append(stack.pop(0))
+                else:
+                    stack.pop(0)
             else:
                 visitedonce.add(nextup)
-                stack = nextup.downlinks + stack
+                stack = list(map(lambda x: x.get_downlink_side(), nextup.downlinks)) + stack
         return retlist
 
     def get_dfs_order_switches(self):
@@ -41,6 +43,10 @@ class FireSimTopology(UserTopologies):
     def __init__(self, user_topology_name, no_net_num_nodes):
         # This just constructs the user topology. an upper level pass manager
         # will apply passes to it.
+
+        # a topology can specify a custom target -> host mapping. if left as None,
+        # the default mapper is used, which handles no network and simple networked cases.
+        self.custom_mapper = None
         self.no_net_num_nodes = no_net_num_nodes
         configfunc = getattr(self, user_topology_name)
         configfunc()

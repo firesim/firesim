@@ -12,7 +12,7 @@ typedef struct switchpacket switchpacket;
 
 class BasePort {
     public:
-        BasePort(int portNo);
+        BasePort(int portNo, bool throttle);
         void write_flits_to_output();
         virtual void tick() = 0; // some ports need to do management every switching loop
         virtual void tick_pre() = 0; // some ports need to do management every switching loop
@@ -37,9 +37,12 @@ class BasePort {
 
     protected:
         int _portNo;
+        bool _throttle;
 };
 
-BasePort::BasePort(int portNo) : _portNo(portNo) {
+BasePort::BasePort(int portNo, bool throttle)
+    : _portNo(portNo), _throttle(throttle)
+{
 }
 
 // assumes valid
@@ -52,28 +55,29 @@ void BasePort::write_flits_to_output() {
     // things off of its front until we can no longer fit them (either due
     // to congestion, crossing a batch boundary (TODO fix this), or timing.
 
-
     uint64_t flitswritten = 0;
     uint64_t basetime = this_iter_cycles_start;
     uint64_t maxtime = this_iter_cycles_start + LINKLATENCY;
 
+    bool empty_buf = true;
+
     while (!(outputqueue.empty())) {
+        switchpacket *thispacket = outputqueue.front();
         // first, check timing boundaries.
         uint64_t space_available = LINKLATENCY - flitswritten;
-        uint64_t outputtimestamp = outputqueue.front()->timestamp;
-        uint64_t outputtimestampend = outputtimestamp + outputqueue.front()->amtwritten;
-        
+        uint64_t outputtimestamp = thispacket->timestamp;
+        uint64_t outputtimestampend = outputtimestamp + thispacket->amtwritten;
+
         // confirm that a) we are allowed to send this out based on timestamp
         // b) we are allowed to send this out based on available space (TODO fix)
-        if (outputtimestampend < maxtime && (outputqueue.front()->amtwritten <= space_available)) {
+        if (outputtimestamp < maxtime) {
 #ifdef LIMITED_BUFSIZE
             // output-buffer size-based throttling, based on input time of first flit
             int64_t diff = basetime + flitswritten - outputtimestamp;
-            if (diff > OUTPUT_BUF_SIZE) {
+            if ((thispacket->amt_read == 0) && (diff > OUTPUT_BUF_SIZE)) {
                 // this packet would've been dropped due to buffer overflow.
                 // so, drop it.
                 printf("overflow, drop pack: intended timestamp: %ld, current timestamp: %ld, out bufsize in # flits: %ld, diff: %ld\n", outputtimestamp, basetime + flitswritten, OUTPUT_BUF_SIZE, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
-                switchpacket * thispacket = outputqueue.front();
                 outputqueue.pop();
                 free(thispacket);
                 continue;
@@ -84,21 +88,40 @@ void BasePort::write_flits_to_output() {
             // first, advance flitswritten to the correct start point:
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
-            switchpacket * thispacket = outputqueue.front();
-            outputqueue.pop();
+
             printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
-            for (int i = 0; i < thispacket->amtwritten; i++) {
+            int i = thispacket->amtread;
+            for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
                 write_flit(current_output_buf, flitswritten, thispacket->dat[i]);
-                flitswritten++;
+                empty_buf = false;
+
+                if (!_throttle)
+                    flitswritten++;
+                else if ((i + 1) % throttle_numer == 0)
+                    flitswritten += (throttle_denom - throttle_numer + 1);
+                else
+                    flitswritten++;
             }
-            free(thispacket);
+            if (i == thispacket->amtwritten) {
+                // we finished sending this packet, so get rid of it
+                outputqueue.pop();
+                free(thispacket);
+            } else {
+                // we're not done sending this packet, so mark how much has been sent
+                // for the next time
+                thispacket->amtread = i;
+                break;
+            }
         } else {
             // since otuput queue is sorted on time, we have nothing else to
             // write
             break;
         }
+    }
+    if (empty_buf) {
+        ((uint64_t*)current_output_buf)[0] = 0xDEADBEEFDEADBEEFL;
     }
 }
 

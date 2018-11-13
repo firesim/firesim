@@ -11,10 +11,9 @@ from firesim_topology_core import *
 from utils import MacAddress
 from fabric.api import *
 from colorama import Fore, Style
+import types
 
 from util.streamlogger import StreamLogger
-
-#BASEPORT = 10000
 
 rootLogger = logging.getLogger()
 
@@ -34,7 +33,9 @@ class FireSimTopologyWithPasses:
 
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
-                 defaultnetbandwidth, terminateoncompletion):
+                 defaultnetbandwidth, defaultprofileinterval,
+                 defaulttraceenable, defaulttracestart, defaulttraceend,
+                 terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -46,6 +47,10 @@ class FireSimTopologyWithPasses:
         self.defaultlinklatency = defaultlinklatency
         self.defaultswitchinglatency = defaultswitchinglatency
         self.defaultnetbandwidth = defaultnetbandwidth
+        self.defaultprofileinterval = defaultprofileinterval
+        self.defaulttraceenable = defaulttraceenable
+        self.defaulttracestart = defaulttracestart
+        self.defaulttraceend = defaulttraceend
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -92,7 +97,7 @@ class FireSimTopologyWithPasses:
             if isinstance(node, FireSimServerNode):
                 node.downlinkmacs = [node.get_mac_address()]
             else:
-                childdownlinkmacs = [x.downlinkmacs for x in node.downlinks]
+                childdownlinkmacs = [x.get_downlink_side().downlinkmacs for x in node.downlinks]
                 node.downlinkmacs = reduce(lambda x, y: x + y, childdownlinkmacs)
 
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
@@ -103,7 +108,7 @@ class FireSimTopologyWithPasses:
             # prepopulate the table with the last port, which will be
             switchtab = [uplinkportno for x in range(MacAddress.next_mac_to_allocate())]
             for port_no in range(len(switch.downlinks)):
-                portmacs = switch.downlinks[port_no].downlinkmacs
+                portmacs = switch.downlinks[port_no].get_downlink_side().downlinkmacs
                 for mac in portmacs:
                     switchtab[mac.as_int_no_prefix()] = port_no
 
@@ -132,6 +137,7 @@ class FireSimTopologyWithPasses:
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
         for node in switches_dfs_order:
             for downlink in node.downlinks:
+                downlink = downlink.get_downlink_side()
                 gviz_graph.edge(str(node), str(downlink))
 
         gviz_graph.render(view=False)
@@ -165,24 +171,41 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
-            if all([isinstance(x, FireSimSwitchNode) for x in switch.downlinks]):
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
                 m4_16s_used += 1
-            elif all([isinstance(x, FireSimServerNode) for x in switch.downlinks]):
+            elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 # all downlinks are simulations
                 if (len(switch.downlinks) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
-                    self.run_farm.f1_2s[f1_2s_used].add_simulation(switch.downlinks[0])
+                    self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
                     f1_2s_used += 1
                 else:
                     self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
-                    for server in switch.downlinks:
+                    for server in downlinknodes:
                         self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
                     f1_16s_used += 1
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
+    def mapping_use_one_f1_16xlarge(self):
+        """ Just put everything on one f1.16xlarge """
+        switches = self.firesimtopol.get_dfs_order_switches()
+        f1_2s_used = 0
+        f1_16s_used = 0
+        m4_16s_used = 0
+
+        for switch in switches:
+            self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+                for server in downlinknodes:
+                    self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+            elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+                assert False, "MIXED DOWNLINKS NOT SUPPORTED."
+        f1_16s_used += 1
 
     def pass_perform_host_node_mapping(self):
         """ This pass assigns host nodes to nodes in the abstract FireSim
@@ -193,18 +216,30 @@ class FireSimTopologyWithPasses:
         top level elements are switches, it will assume you're simulating a
         networked config, """
 
-        # if your roots are servers, just pack as tightly as possible, since
-        # you have no_net_config
-        if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
-            # all roots are servers, so we're in no_net_config
-            # if the user has specified any 16xlarges, we assign to them first
-            self.pass_no_net_host_mapping()
-            return
-
-        # now, we're handling the cycle-accurate networked simulation case
-        # currently, we only handle the case where
-        self.pass_simple_networked_host_node_mapping()
-
+        if self.firesimtopol.custom_mapper is None:
+            """ Use default mapping strategy. The topol has not specified a
+            special one. """
+            # if your roots are servers, just pack as tightly as possible, since
+            # you have no_net_config
+            if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
+                # all roots are servers, so we're in no_net_config
+                # if the user has specified any 16xlarges, we assign to them first
+                self.pass_no_net_host_mapping()
+                return
+            else:
+                # now, we're handling the cycle-accurate networked simulation case
+                # currently, we only handle the case where
+                self.pass_simple_networked_host_node_mapping()
+        elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
+            """ call the mapper fn defined in the topology itself. """
+            self.firesimtopol.custom_mapper(self)
+        elif type(self.firesimtopol.custom_mapper) == str:
+            """ assume that the mapping strategy is a custom pre-defined strategy
+            given in this class, supplied as a string in the topology """
+            mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
+            mapperfunc()
+        else:
+            assert False, "IMPROPER MAPPING CONFIGURATION"
 
     def pass_apply_default_hwconfig(self):
         """ This is the default mapping pass for hardware configurations - it
@@ -241,12 +276,22 @@ class FireSimTopologyWithPasses:
                     node.switch_link_latency = self.defaultlinklatency
                 if node.switch_switching_latency is None:
                     node.switch_switching_latency = self.defaultswitchinglatency
+                if node.switch_bandwidth is None:
+                    node.switch_bandwidth = self.defaultnetbandwidth
 
             if isinstance(node, FireSimServerNode):
                 if node.server_link_latency is None:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
+                if node.server_profile_interval is None:
+                    node.server_profile_interval = self.defaultprofileinterval
+                if node.trace_enable is None:
+                    node.trace_enable = self.defaulttraceenable
+                if node.trace_start is None:
+                    node.trace_start = self.defaulttracestart
+                if node.trace_end is None:
+                    node.trace_end = self.defaulttraceend
 
     def pass_assign_jobs(self):
         """ assign jobs to simulations. """
@@ -260,7 +305,7 @@ class FireSimTopologyWithPasses:
         automatically when creating this object. """
         self.pass_assign_mac_addresses()
         self.pass_compute_switching_tables()
-        self.pass_perform_host_node_mapping()
+        self.pass_perform_host_node_mapping() # TODO: we can know ports here?
         self.pass_apply_default_hwconfig()
         self.pass_apply_default_network_params()
         self.pass_assign_jobs()

@@ -34,7 +34,8 @@ class BuildConfig:
         self.launched_instance_object = launch_instances(self.instancetype,
                           num_instances, build_instance_market,
                           spot_interruption_behavior,
-                          spot_max_price)[0]
+                          spot_max_price,
+                          randomsubnet=True)[0]
 
     def get_launched_instance_object(self):
         """ Get the instance object returned by boto3 for this build. """

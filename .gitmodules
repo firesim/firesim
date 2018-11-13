@@ -21,7 +21,7 @@
 	url = https://github.com/firesim/network-benchmarks.git
 [submodule "sw/qemu"]
 	path = sw/qemu
-	url = https://github.com/qemu/qemu
+	url = https://github.com/riscv/riscv-qemu.git
 [submodule "deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release"]
 	path = deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release
 	url = https://github.com/firesim/mutilate-loadgen-riscv-release
