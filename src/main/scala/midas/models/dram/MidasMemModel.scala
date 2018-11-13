@@ -180,9 +180,11 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   // 5: We have a reset token, and if it's asserted the host-memory system must first settle
   val tResetReady = io.tReset.valid && (!io.tReset.bits || host_mem_idle)
 
+  // decoupled helper fire currently doesn't support directly passing true/false.B as exclude
+  val temp_true_B = true.B
   val tFireHelper = DecoupledHelper(io.tNasti.toHost.hValid,
                                     io.tNasti.fromHost.hReady,
-                                    ingressReady, bReady, rReady, tResetReady)
+                                    ingressReady, bReady, rReady, tResetReady, temp_true_B)
 
   io.tNasti.toHost.hReady := tFireHelper.fire(io.tNasti.toHost.hValid)
   io.tNasti.fromHost.hValid := tFireHelper.fire(io.tNasti.fromHost.hReady)
@@ -205,20 +207,20 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
 
   // Connect target-level signals between egress and model
   readEgress.io.req.t := model.io.egressReq.r
-  readEgress.io.req.hValid := tFireHelper.fire(true.B)
+  readEgress.io.req.hValid := tFireHelper.fire(temp_true_B)
   readEgress.io.resp.tReady := model.io.egressResp.rReady
   model.io.egressResp.rBits := readEgress.io.resp.tBits
 
   writeEgress.io.req.t := model.io.egressReq.b
-  writeEgress.io.req.hValid := tFireHelper.fire(true.B)
+  writeEgress.io.req.hValid := tFireHelper.fire(temp_true_B)
   writeEgress.io.resp.tReady := model.io.egressResp.bReady
   model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
   ingress.reset     := reset.toBool || io.tReset.bits && tFireHelper.fire(ingressReady)
-  readEgress.reset  := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
-  writeEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(true.B)
+  readEgress.reset  := reset.toBool || io.tReset.bits && tFireHelper.fire(temp_true_B)
+  writeEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(temp_true_B)
 
-  val targetFire = tFireHelper.fire(true.B)// dummy arg
+  val targetFire = tFireHelper.fire(temp_true_B)// dummy arg
 
   if (cfg.params.localHCycleCount) {
     val hCycle = RegInit(0.U(32.W))

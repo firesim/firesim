@@ -56,7 +56,8 @@ public:
   void recv(sim_mem_data_t& data);
 
   virtual void tick();
-  virtual bool done();
+  virtual bool terminate() { return false; };
+  virtual int exit_code() { return 0; };
 
   void write_mem(uint64_t addr, void* data);
 

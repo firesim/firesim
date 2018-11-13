@@ -198,15 +198,15 @@ class SimWrapperIO(io: TargetBoxIO)
     new SimWrapperIO(io).asInstanceOf[this.type]
 }
 
-class TargetBoxIO(targetIo: Seq[Data]) extends Record {
-  val elements = ListMap() ++ (targetIo map (port => port.instanceName -> port.chiselCloneType))
+class TargetBoxIO(targetIo: Seq[(String, Data)]) extends Record {
+  val elements = ListMap((targetIo map { case (name, field) => name -> field.chiselCloneType }):_*)
   def resets = elements collect { case (_, r: Reset) => r }
   def clocks = elements collect { case (_, c: Clock) => c }
   def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
 }
 
 // this gets replaced with the real target
-class TargetBox(targetIo: Seq[Data]) extends BlackBox {
+class TargetBox(targetIo: Seq[(String, Data)]) extends BlackBox {
   val io = IO(new TargetBoxIO(targetIo))
 }
 
@@ -220,9 +220,9 @@ class SimBox(simIo: SimWrapperIO)
   })
 }
 
-class SimWrapper(targetIo: Seq[Data])
+class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, Data)])
                 (implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  val target = Module(new TargetBox(targetIo))
+  val target = Module(new TargetBox(targetIo ++ generatedTargetIo))
   val io = IO(new SimWrapperIO(target.io))
   val fire = Wire(Bool())
 
@@ -252,7 +252,18 @@ class SimWrapper(targetIo: Seq[Data])
     arg match { case (port, name) =>
       (0 until getChunks(port)) map { off =>
         val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
-        val channel = Module(new WireChannel(width))
+        // Figure out the clock ratio by looking up the endpoint to which this wire belongs
+        val endpointClockRatio = io.endpoints.find(_(port)) match {
+          case Some(endpoint) => endpoint.clockRatio
+          case None => UnityClockRatio
+        }
+
+        // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
+        val flipped = directionOf(port) == ActualDirection.Input
+        val channel = Module(new WireChannel(
+          width,
+          clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio
+        ))
         // FIXME: it's not working
         /* port match {
           case _: Reset =>
@@ -304,14 +315,28 @@ class SimWrapper(targetIo: Seq[Data])
   }
 
   def genReadyValidChannel[T <: Data](arg: (String, ReadyValidIO[T])) =
-    arg match { case (name, io) =>
-      val channel = Module(new ReadyValidChannel(
-        io.bits.cloneType, directionOf(io.valid) == ActualDirection.Input))
-      channel suggestName s"ReadyValidChannel_$name"
-      (directionOf(io.valid): @unchecked) match {
-        case ActualDirection.Input => io <> channel.io.deq.target
-        case ActualDirection.Output => channel.io.enq.target <> io
+    arg match { case (name, rvInterface) =>
+        // Determine which endpoint this channel belongs to by looking it up with the valid
+      val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
+        case Some(endpoint) => endpoint.clockRatio
+        case None => UnityClockRatio
       }
+      // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
+      val flipped = directionOf(rvInterface.valid) == ActualDirection.Input
+      val channel = Module(new ReadyValidChannel(
+        rvInterface.bits.cloneType,
+        flipped,
+        clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio  
+      ))
+
+      channel suggestName s"ReadyValidChannel_$name"
+
+      if (flipped) {
+        rvInterface <> channel.io.deq.target
+      } else {
+        channel.io.enq.target <> rvInterface
+      }
+
       if (!enableSnapshot) channel.io.trace := DontCare
       channel.io.targetReset.bits := targetReset
       channel.io.targetReset.valid := fire
@@ -322,7 +347,7 @@ class SimWrapper(targetIo: Seq[Data])
   // Firing condtion:
   // 1) all input values are valid
   // 2) all output FIFOs are not full
-  fire := (wireInChannels foldLeft true.B)(_ && _.io.out.valid) && 
+  fire := (wireInChannels foldLeft true.B)(_ && _.io.out.valid) &&
           (wireOutChannels foldLeft true.B)(_ && _.io.in.ready) &&
           (readyValidInChannels foldLeft true.B)(_ && _.io.deq.host.hValid) &&
           (readyValidOutChannels foldLeft true.B)(_ && _.io.enq.host.hReady)
@@ -330,8 +355,9 @@ class SimWrapper(targetIo: Seq[Data])
   // Inputs are consumed when firing conditions are met
   wireInChannels foreach (_.io.out.ready := fire)
   readyValidInChannels foreach (_.io.deq.host.hReady := fire)
-   
-  // Outputs should be ready when firing conditions are met
+
+  // Outputs should be ready when firing conditions are met, inject an intial
+  // token into each output queue after reset is asserted
   val resetNext = RegNext(reset.toBool)
   wireOutChannels foreach (_.io.in.valid := fire || resetNext)
   readyValidOutChannels foreach (_.io.enq.host.hValid := fire || resetNext)
@@ -350,4 +376,4 @@ class SimWrapper(targetIo: Seq[Data])
     // cycles := Mux(target.io.reset, UInt(0), cycles + UInt(1))
     when(false.B) { printf("%d", cycles) }
   }
-} 
+}

@@ -225,12 +225,35 @@ class MCRFileMap() {
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+    // get widget name with no widget number (prefix includes it)
+    val prefix_no_num = prefix.split("_")(0)
+
+    // emit generic struct for this widget type. guarded so it only gets
+    // defined once
+    sb append s"#ifndef ${prefix_no_num}_struct_guard\n"
+    sb append s"#define ${prefix_no_num}_struct_guard\n"
+    sb append s"typedef struct ${prefix_no_num}_struct {\n"
     name2addr.toList foreach { case (regName, idx) =>
-      val fullName = s"${prefix}_${regName}"
-      val address = base + idx
-      sb append s"#define ${fullName} ${address}\n"
+      sb append s"    unsigned long ${regName};\n"
     }
+    sb append s"} ${prefix_no_num}_struct;\n"
+    sb append s"#endif // ${prefix_no_num}_struct_guard\n\n"
+
+    // define to mark that a particular instantiation of a widget is present
+    // (e.g. UARTWIDGET_0_PRESENT)
+    sb append s"#define ${prefix}_PRESENT\n"
+
+    // emit macro to create a version of this struct with values filled in
+    sb append s"#define ${prefix}_substruct_create \\\n"
+    // assume the widget destructor will free this
+    sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
+    name2addr.toList foreach { case (regName, idx) =>
+      val address = base + idx
+      sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
+    }
+    sb append s"\n"
   }
+
   // A variation of above which dumps the register map as a series of arrays
   def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
     def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String) {
@@ -441,3 +464,58 @@ object IdentityModule
     identity.io.out
   }
 }
+
+// Generates a queue that will be implemented in BRAM
+class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
+  val io = IO(new QueueIO(data, entries))
+  require(entries > 1)
+
+  io.count := 0.U
+
+  val do_flow = Wire(Bool())
+  val do_enq = io.enq.fire() && !do_flow
+  val do_deq = io.deq.fire() && !do_flow
+
+  val maybe_full = RegInit(false.B)
+  val enq_ptr = Counter(do_enq, entries)._1
+  val (deq_ptr, deq_done) = Counter(do_deq, entries)
+  when (do_enq =/= do_deq) { maybe_full := do_enq }
+
+  val ptr_match = enq_ptr === deq_ptr
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+  val atLeastTwo = full || enq_ptr - deq_ptr >= 2.U
+  do_flow := empty && io.deq.ready
+
+  val ram = Mem(entries, data)
+  when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
+
+  val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
+  val raddr = Mux(io.deq.valid, Mux(deq_done, 0.U, deq_ptr + 1.U), deq_ptr)
+  val ram_out_valid = RegNext(ren)
+
+  io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
+  io.enq.ready := !full
+  io.deq.bits := Mux(empty, io.enq.bits, RegEnable(ram.read(raddr), ren))
+}
+
+class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
+  val io = IO(new QueueIO(data, entries))
+
+  io.count := 0.U
+
+  val fq = Module(new BRAMFlowQueue(entries)(data))
+  fq.io.enq <> io.enq
+  io.deq <> Queue(fq.io.deq, 1, pipe = true)
+}
+
+object BRAMQueue {
+  def apply[T <: Data](enq: DecoupledIO[T], entries: Int) = {
+    val q = Module((new BRAMQueue(entries)) { enq.bits.cloneType })
+    q.io.enq.valid := enq.valid // not using <> so that override is allowed
+    q.io.enq.bits := enq.bits
+    enq.ready := q.io.enq.ready
+    q.io.deq
+  }
+}
+

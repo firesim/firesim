@@ -8,11 +8,22 @@ import platform._
 import strober.core._
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
+import freechips.rocketchip.unittest.UnitTests
 
 trait PlatformType
 case object Zynq extends PlatformType
 case object F1 extends PlatformType
 case object Platform extends Field[PlatformType]
+// Switches to synthesize prints and assertions
+case object SynthAsserts extends Field[Boolean]
+case object SynthPrints extends Field[Boolean]
+// Exclude module instances from assertion and print synthesis
+// Tuple of Parent Module (where the instance is instantiated) and the instance name
+case object ExcludeInstanceAsserts extends Field[Seq[(String, String)]](Seq())
+case object ExcludeInstancePrints extends Field[Seq[(String, String)]](Seq())
+case object PrintPorts extends Field[Seq[(String, Int)]]
+// Excludes from synthesis prints whose message contains one of the following substrings
+case object PrintExcludes extends Field[Seq[(String)]](Seq())
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -25,12 +36,15 @@ class SimConfig extends Config((site, here, up) => {
   case ChannelLen       => 16
   case ChannelWidth     => 32
   case DaisyWidth       => 32
+  case SynthAsserts     => false
+  case SynthPrints      => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case MemNastiKey      => NastiParameters(64, 32, 6)
   case DMANastiKey      => NastiParameters(512, 64, 6)
-  case EndpointKey      => EndpointMap(Seq(new SimNastiMemIO, new SimAXI4MemIO))
+  case EndpointKey      => EndpointMap(Seq(
+    new SimNastiMemIO, new SimAXI4MemIO, new AssertBundleEndpoint, new PrintRecordEndpoint))
   case MemModelKey      => Some((p: Parameters) => new SimpleLatencyPipe()(p))
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case MidasLLCKey      => None
@@ -60,3 +74,4 @@ class F1Config extends Config(new Config((site, here, up) => {
 class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new F1Config)
+
