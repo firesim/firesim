@@ -17,6 +17,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet}
 trait Endpoint {
   protected val channels = ArrayBuffer[(String, Record)]()
   protected val wires = HashSet[Bits]()
+  def clockRatio: IsRationalClockRatio = UnityClockRatio
   def matchType(data: Data): Boolean
   def widget(p: Parameters): EndpointWidget
   def widgetName: String = getClass.getSimpleName
@@ -64,7 +65,9 @@ abstract class SimMemIO extends Endpoint {
   }
 }
 
-class SimNastiMemIO extends SimMemIO {
+class SimNastiMemIO(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio
+  ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: NastiIO =>
       directionOf(channel.w.valid) == ActualDirection.Output
@@ -72,7 +75,9 @@ class SimNastiMemIO extends SimMemIO {
   }
 }
 
-class SimAXI4MemIO extends SimMemIO {
+class SimAXI4MemIO(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio
+  ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: AXI4Bundle =>
       directionOf(channel.w.valid) == ActualDirection.Output

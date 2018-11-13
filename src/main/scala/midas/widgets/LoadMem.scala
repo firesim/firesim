@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
 
 import scala.math.{max, min}
 
@@ -16,6 +17,74 @@ class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends Wi
 }
 
 class NastiParams()(implicit val p: Parameters) extends HasNastiParameters
+
+class LoadMemWriteRequest(implicit p: Parameters) extends NastiBundle {
+  val zero = Bool()
+  val addr = UInt(nastiXAddrBits.W)
+  val len = UInt(nastiXAddrBits.W)
+}
+
+class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
+  val io = IO(new Bundle {
+    val req = Flipped(Decoupled(new LoadMemWriteRequest))
+    val data = Flipped(Decoupled(UInt(nastiXDataBits.W)))
+    val mem = new NastiIO
+  })
+
+  val wZero = Reg(Bool())
+  val wAddr = Reg(UInt(nastiXAddrBits.W))
+  val wLen = Reg(UInt(nastiXAddrBits.W))
+  val wSize = log2Ceil(nastiXDataBits/8).U
+  val wBeatsLeft = RegInit(0.U(log2Ceil(maxBurst).W))
+  val nextBurstLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
+  val burstBytes = nextBurstLen << wSize
+
+  val (s_idle :: s_addr :: s_data :: s_resp :: Nil) = Enum(4)
+  val state = RegInit(s_idle)
+
+  io.req.ready := state === s_idle
+
+  io.mem.aw.valid := state === s_addr
+  io.mem.aw.bits := NastiWriteAddressChannel(
+    id = 0.U,
+    addr = wAddr,
+    len = nextBurstLen - 1.U,
+    size = wSize)
+
+  io.data.ready := (state === s_data) && !wZero && io.mem.w.ready
+  io.mem.w.valid := (state === s_data) && (wZero || io.data.valid)
+  io.mem.w.bits := NastiWriteDataChannel(
+    data = Mux(wZero, 0.U, io.data.bits),
+    last = wBeatsLeft === 0.U)
+
+  io.mem.b.ready := state === s_resp
+  io.mem.ar.valid := false.B
+  io.mem.ar.bits := DontCare
+  io.mem.r.ready := false.B
+
+  when (io.req.fire()) {
+    wZero := io.req.bits.zero
+    wAddr := io.req.bits.addr
+    wLen  := io.req.bits.len
+    state := s_addr
+  }
+
+  when (io.mem.aw.fire()) {
+    wBeatsLeft := nextBurstLen - 1.U
+    wLen := wLen - nextBurstLen
+    wAddr := wAddr + burstBytes
+    state := s_data
+  }
+
+  when (io.mem.w.fire()) {
+    wBeatsLeft := wBeatsLeft - 1.U
+    when (wBeatsLeft === 0.U) { state := s_resp }
+  }
+
+  when (io.mem.b.fire()) {
+    state := Mux(wLen === 0.U, s_idle, s_addr)
+  }
+}
 
 // A crude load mem unit that writes in single beats into the destination memory system
 // Arguments:
@@ -38,64 +107,51 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
 
   val wAddrH = genWOReg(Wire(UInt(max(0,  p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
   val wAddrL = genWOReg(Wire(UInt(min(32, p(hKey).addrBits     ).W)), "W_ADDRESS_L")
-  val wLen = genWORegInit(Wire(UInt((p(hKey).addrBits - log2Ceil(hWidth/8) + 1).W)), "W_LENGTH", 0.U)
+  val wLen = Wire(Decoupled(UInt(p(hKey).addrBits.W)))
   // When set, instructs the unit to write 0s to the complete address space
   // Cleared when completed
-  val zeroOutDram = genAndAttachReg(Wire(Bool()), "ZERO_OUT_DRAM", Some(false.B))
+  val zeroOutDram = Wire(Decoupled(Bool()))
 
-  val wBeatsRemaining = RegInit(0.U(log2Ceil(maxBurst+1).W))
-  val nextBurstLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
-  val wAddr = Cat(wAddrH, wAddrL)
+  attachDecoupledSink(wLen, "W_LENGTH")
+  attachDecoupledSink(zeroOutDram, "ZERO_OUT_DRAM")
 
-  when (zeroOutDram && wLen === 0.U) {
-    when (wBeatsRemaining === 0.U) {
-      // Commence initialization by faking a really large write
-      wLen := 1.U << (p(hKey).addrBits - log2Ceil(hWidth/8))
-      wAddrH := 0.U
-      wAddrL := 0.U
-    }.elsewhen(io.toSlaveMem.w.fire && io.toSlaveMem.w.bits.last) {
-      // We've written the last beat; clear the zeroOutDram bit to indicate doneness
-      zeroOutDram := false.B
-    }
-  }
-
-  io.toSlaveMem.aw.bits := NastiWriteAddressChannel(
-      id = 0.U,
-      addr = wAddr,
-      len = nextBurstLen - 1.U,
-      size = size)(p.alterPartial({ case NastiKey => p(hKey) }))
-
-  io.toSlaveMem.aw.valid := wLen > 0.U && wBeatsRemaining === 0.U
-
-  val nextWAddr = wAddr + (nextBurstLen << (log2Ceil(hWidth/8).U))
-
-  when (io.toSlaveMem.aw.fire) {
-    wLen := wLen - nextBurstLen
-    wBeatsRemaining := nextBurstLen
-    if (p(hKey).addrBits > p(CtrlNastiKey).dataBits) {
-      wAddrH := nextWAddr(p(hKey).addrBits - 1, 32)
-      wAddrL := nextWAddr(31, 0)
-    } else {
-      wAddrL := nextWAddr(p(hKey).addrBits - 1, 0)
-    }
-  }
+  val hAlterP = p.alterPartial({ case NastiKey => p(hKey) })
+  val wAddrQ = Module(new Queue(new LoadMemWriteRequest()(hAlterP), 2))
+  wAddrQ.io.enq.valid := wLen.valid
+  wAddrQ.io.enq.bits.zero := false.B
+  wAddrQ.io.enq.bits.addr := Cat(wAddrH, wAddrL)
+  wAddrQ.io.enq.bits.len  := wLen.bits
+  wLen.ready := wAddrQ.io.enq.ready
 
   val wDataQ = Module(new MultiWidthFifo(cWidth, hWidth, maxBurst))
   attachDecoupledSink(wDataQ.io.in, "W_DATA")
 
-  io.toSlaveMem.w.bits := NastiWriteDataChannel(
-    data = Mux(zeroOutDram, 0.U, wDataQ.io.out.bits),
-    last = wBeatsRemaining === 1.U
-  )(p alterPartial ({ case NastiKey => p(hKey) }))
+  val extMem = p(ExtMem).getOrElse(
+    MasterPortParams(
+      base = BigInt(0),
+      size = BigInt(1L << p(hKey).addrBits),
+      beatBytes = hWidth/8,
+      idBits = p(hKey).idBits))
 
-  when (io.toSlaveMem.w.fire) {
-    wBeatsRemaining := wBeatsRemaining - 1.U
-  }
-  io.toSlaveMem.w.valid := (zeroOutDram || wDataQ.io.out.valid) && wBeatsRemaining =/= 0.U
-  wDataQ.io.out.ready := !zeroOutDram && io.toSlaveMem.w.ready && wBeatsRemaining =/= 0.U
+  val reqArb = Module(new Arbiter(new LoadMemWriteRequest()(hAlterP), 2))
+  reqArb.io.in(0) <> wAddrQ.io.deq
+  reqArb.io.in(1).valid := zeroOutDram.valid
+  reqArb.io.in(1).bits.zero := true.B
+  reqArb.io.in(1).bits.addr := extMem.base.U
+  reqArb.io.in(1).bits.len  := (extMem.size >> log2Ceil(hWidth/8)).U
+  zeroOutDram.ready := reqArb.io.in(1).ready
 
-  // TODO: Handle write responses better?
-  io.toSlaveMem.b.ready := Bool(true)
+  val writer = Module(new LoadMemWriter(maxBurst)(hAlterP))
+  writer.io.req <> reqArb.io.out
+  io.toSlaveMem.aw <> writer.io.mem.aw
+  io.toSlaveMem.w  <> writer.io.mem.w
+  writer.io.mem.b <> io.toSlaveMem.b
+  writer.io.mem.ar.ready := false.B
+  writer.io.mem.r.valid := false.B
+  writer.io.mem.r.bits := DontCare
+  writer.io.data <> wDataQ.io.out
+
+  attach(writer.io.req.ready, "ZERO_FINISHED", ReadOnly)
 
   val rAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "R_ADDRESS_H")
   val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS_L")
