@@ -1,0 +1,3 @@
+# This is just a working directory meant to hold images and binaries that shouldn't be tracked by git
+*
+!.gitignore

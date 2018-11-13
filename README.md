@@ -1,17 +1,29 @@
 firesim-software
 ==================================
 
-This builds a simple buildroot-based Linux distro that is compatible with
-FireSim server blade simulations. See the FireSim documentation for the most
-up-to-date documentation.
+This builds base images for several linux-based distros that work with qemu,
+spike, and firesim. 
 
 ## How to use:
+All builds are controlled through json files. For example, br-disk.json will
+build/run the disk-based buildroot distro.
 
-    [ requires risc-v tools on path]
-    git submodule update --init
-    ./build.sh
+Prereq/Init:
+Be sure to update/init submodules. The following will require the riscv-tools
+on your path and a recent version of qemu.
 
+To build:
+    ./sw-manager.py -c CONFIG.json build
 
-## Useful notes:
+To run on qemu:
+  ./sw-manager.py -c CONFIG.json launch
 
-* http://free-electrons.com/pub/conferences/2013/kernel-recipes/rootfs-kernel-developer/rootfs-kernel-developer.pdf
+To run on spike:
+  ./sw-manager.py -c CONFIG.json launch -s
+
+To run on FireSim:
+See the firesim documentation.
+
+Tl;Dr: images built with build.py will work on firesim, you just need to update
+the symlinks in workloads/deploy/ and then run them as normal. This will be
+intergrated more completely in future releases.

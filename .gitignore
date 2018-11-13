@@ -1,2 +1,5 @@
-bbl-vmlinux*
-rootfs*.ext2
+*.img
+*-bin
+fedora/Fedora-Developer-Rawhide-20181015.n.0-sda.raw
+fedora/Fedora-Developer-Rawhide-20181015.n.0-sda.raw.xz
+fedora/rootfs.cpio
