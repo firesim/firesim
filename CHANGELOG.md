@@ -31,13 +31,13 @@ This is a large release. A much more detailed account of everything included is 
 * Endpoint clock-domain-crossing support https://github.com/firesim/firesim/pull/49
 * Add synthesizeable unit tests from MIDAS
 * Switch model token compression on empty batches of tokens to save BW when many links cross EC2 network. Does not compromise cycle-accuracy.
-* Assertion Synthesis
+* Debugging: Assertion Synthesis
     * Assertions can now be synthesized and caught during FPGA-hosted simulation: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/DESSERT.html
 * Infrastructure for merging supernode to master
     * Supernode currently lives on its own branch, will be merged in the future.
     * WIP on support for multiple copies of endpoints (e.g. multiple UARTs). 
     * Replace macro system for endpoints with generated structs.
-* TracerV Widget
+* Debugging: TracerV Widget
     * Widget for getting committed instruction trace from Rocket/BOOM to the host machine
     * See documentation at: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/TracerV.html
 
