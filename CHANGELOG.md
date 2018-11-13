@@ -15,6 +15,7 @@ This is a large release. A much more detailed account of everything included is 
     * Now supports building Fedora images, including initramfs images
     * Infrastructure prep for better workload generation/management system
 * Better support for custom network topologies / topology mapping. Topologies can now provide their own custom mapping function. Support for topologies with multiple paths. Randomized switching across multiple paths.
+    * Inline documentation as comments in user_topologies.py
 * IceNIC Improvements:
     * NIC counts MMIO registered changed to make each count 8 bits instead of 4. This expands the maximum size of the req/resp queues from 16 to 256.
     * TX/RX completion interrupts separated into two different interrupts.
