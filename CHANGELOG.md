@@ -2,6 +2,31 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.4.0] - 2018-11-13
+
+This is a large release. A much more detailed account of everything included is included in the PR: https://github.com/firesim/firesim/pull/114
+
+### Changed
+
+* Rocket Chip bumped to master as of September 26, 2018
+* Reworked main loop in FPGA driver https://github.com/firesim/firesim/pull/98
+* Minor Fixes
+    * Better instance launch handling for spot instances
+    * Fix ssh-agent handling; avoid forwarding because it breaks the workflow
+* Start re-organizing firesim-software repo:
+    * Commands for building base images have changed, see updated docs
+    * Now supports building Fedora images, including initramfs images
+    * Infrastructure prep for better workload generation/management system
+    
+### Added
+
+* Block Device Model is now deterministic https://github.com/firesim/firesim/pull/106
+* Endpoint clock-domain-crossing support https://github.com/firesim/firesim/pull/49
+* Add synthesizeable unit tests from MIDAS
+* 
+
+
+
 ## [1.3.2] - 2018-09-22
 
 ### Changed
