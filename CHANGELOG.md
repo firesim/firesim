@@ -35,8 +35,9 @@ This is a large release. A much more detailed account of everything included is 
 * **Debugging**: Assertion Synthesis
     * Assertions can now be synthesized and caught during FPGA-hosted simulation: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/DESSERT.html
 * **Debugging**: TracerV Widget
-    * Widget for getting committed instruction trace from Rocket/BOOM to the host machine
+    * Widget for getting committed instruction trace from Rocket/BOOM to the host machine quickly using PCIS DMA
     * See documentation at: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/TracerV.html
+    * Also early support for multiple DMA endpoints (e.g. Tracer + NIC). Currently requires hardcoding endpoint addresses, will be addressed in next release.
 * Infrastructure for merging supernode to master
     * Supernode currently lives on its own branch, will be merged in the future.
     * WIP on support for multiple copies of endpoints (e.g. multiple UARTs). 
