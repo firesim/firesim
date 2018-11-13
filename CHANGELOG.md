@@ -10,20 +10,20 @@ This is a large release. A much more detailed account of everything included is 
 
 * Rocket Chip bumped to master as of September 26, 2018
 * Reworked main loop in FPGA driver https://github.com/firesim/firesim/pull/98
-* Minor Fixes
-    * Better instance launch handling for spot instances
-    * Fix ssh-agent handling; avoid forwarding because it breaks the workflow
 * Start re-organizing firesim-software repo:
     * Commands for building base images have changed, see updated docs
     * Now supports building Fedora images, including initramfs images
     * Infrastructure prep for better workload generation/management system
 * Better support for custom network topologies / topology mapping. Topologies can now provide their own custom mapping function. Support for topologies with multiple paths. Randomized switching across multiple paths.
-* Use async flags to speed up FPGA flashing / clearing
-* Fix L2 TLB & HPM counter configs for multi-core targets
 * IceNIC Improvements:
     * NIC counts MMIO registered changed to make each count 8 bits instead of 4. This expands the maximum size of the req/resp queues from 16 to 256.
     * TX/RX completion interrupts separated into two different interrupts.
     * Added interrupt masking
+* Misc Small Fixes
+    * Better instance launch handling for spot instances
+    * Fix ssh-agent handling; avoid forwarding because it breaks the workflow
+    * Use async flags to speed up FPGA flashing / clearing
+    * Fix L2 TLB & HPM counter configs for multi-core targets
 
 ### Added
 
@@ -31,16 +31,15 @@ This is a large release. A much more detailed account of everything included is 
 * Endpoint clock-domain-crossing support https://github.com/firesim/firesim/pull/49
 * Add synthesizeable unit tests from MIDAS
 * Switch model token compression on empty batches of tokens to save BW when many links cross EC2 network. Does not compromise cycle-accuracy.
-* Debugging: Assertion Synthesis
+* **Debugging**: Assertion Synthesis
     * Assertions can now be synthesized and caught during FPGA-hosted simulation: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/DESSERT.html
+* **Debugging**: TracerV Widget
+    * Widget for getting committed instruction trace from Rocket/BOOM to the host machine
+    * See documentation at: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/TracerV.html
 * Infrastructure for merging supernode to master
     * Supernode currently lives on its own branch, will be merged in the future.
     * WIP on support for multiple copies of endpoints (e.g. multiple UARTs). 
     * Replace macro system for endpoints with generated structs.
-* Debugging: TracerV Widget
-    * Widget for getting committed instruction trace from Rocket/BOOM to the host machine
-    * See documentation at: http://docs.fires.im/en/latest/Advanced-Usage/Debugging/TracerV.html
-
 
 ## [1.3.2] - 2018-09-22
 
