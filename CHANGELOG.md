@@ -14,6 +14,7 @@ This is a large release. A much more detailed account of everything included is 
     * Commands for building base images have changed, see updated docs
     * Now supports building Fedora images, including initramfs images
     * Infrastructure prep for better workload generation/management system
+    * Supports easily booting images in Spike/QEMU, with network support in QEMU for installing packages
 * Better support for custom network topologies / topology mapping. Topologies can now provide their own custom mapping function. Support for topologies with multiple paths. Randomized switching across multiple paths.
     * Inline documentation as comments in user_topologies.py
 * IceNIC Improvements:
