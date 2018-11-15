@@ -66,12 +66,13 @@ class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new ZynqConfig)
 
-//we are assuming the host address size is 2^addrBits
+// we are assuming the host-DRAM size is 2^chAddrBits
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
   case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case MasterNastiKey => site(CtrlNastiKey)
+  case HostMemChannelNastiKey => NastiParameters(64, 34, 16)
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 

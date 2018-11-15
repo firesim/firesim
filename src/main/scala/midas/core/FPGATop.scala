@@ -25,7 +25,7 @@ case object MemNastiKey extends Field[NastiParameters]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) })))
+  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -213,13 +213,16 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
-    "MEM_ADDR_BITS"  -> mem_xbar.nastiXAddrBits,
-    "MEM_DATA_BITS"  -> mem_xbar.nastiXDataBits,
-    "MEM_ID_BITS"    -> mem_xbar.nastiXIdBits,
-    "MEM_SIZE_BITS"  -> mem_xbar.nastiXSizeBits,
-    "MEM_LEN_BITS"   -> mem_xbar.nastiXLenBits,
-    "MEM_RESP_BITS"  -> mem_xbar.nastiXRespBits,
-    "MEM_STRB_BITS"  -> mem_xbar.nastiWStrobeBits,
+    // These specify channel widths; used mostly in the test harnesses
+    "MEM_ADDR_BITS"  -> io.mem(0).nastiXAddrBits,
+    "MEM_DATA_BITS"  -> io.mem(0).nastiXDataBits,
+    "MEM_ID_BITS"    -> io.mem(0).nastiXIdBits,
+    // These are fixed by the AXI4 standard, only used in SW DRAM model
+    "MEM_SIZE_BITS"  -> io.mem(0).nastiXSizeBits,
+    "MEM_LEN_BITS"   -> io.mem(0).nastiXLenBits,
+    "MEM_RESP_BITS"  -> io.mem(0).nastiXRespBits,
+    "MEM_STRB_BITS"  -> io.mem(0).nastiWStrobeBits,
+    // Address width of the aggregated host-DRAM space
     "DMA_ID_BITS"    -> io.dma.nastiXIdBits,
     "DMA_ADDR_BITS"  -> io.dma.nastiXAddrBits,
     "DMA_DATA_BITS"  -> io.dma.nastiXDataBits,
