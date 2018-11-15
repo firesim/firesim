@@ -12,7 +12,7 @@ typedef struct switchpacket switchpacket;
 
 class BasePort {
     public:
-        BasePort(int portNo);
+        BasePort(int portNo, bool throttle);
         void write_flits_to_output();
         virtual void tick() = 0; // some ports need to do management every switching loop
         virtual void tick_pre() = 0; // some ports need to do management every switching loop
@@ -37,9 +37,12 @@ class BasePort {
 
     protected:
         int _portNo;
+        bool _throttle;
 };
 
-BasePort::BasePort(int portNo) : _portNo(portNo) {
+BasePort::BasePort(int portNo, bool throttle)
+    : _portNo(portNo), _throttle(throttle)
+{
 }
 
 // assumes valid
@@ -94,7 +97,9 @@ void BasePort::write_flits_to_output() {
                 write_flit(current_output_buf, flitswritten, thispacket->dat[i]);
                 empty_buf = false;
 
-                if ((i + 1) % throttle_numer == 0)
+                if (!_throttle)
+                    flitswritten++;
+                else if ((i + 1) % throttle_numer == 0)
                     flitswritten += (throttle_denom - throttle_numer + 1);
                 else
                     flitswritten++;
