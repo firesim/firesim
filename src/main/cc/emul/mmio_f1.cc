@@ -326,9 +326,24 @@ void tick(
   for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
     dma_r_data[i] = vc_4stVectorRef(dma_r_bits_data)[i].d;
   }
-  uint32_t slave_w_data[SLAVE_DATA_SIZE];
+  uint32_t slave_0_w_data[SLAVE_DATA_SIZE];
   for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
-    slave_w_data[i] = vc_4stVectorRef(slave_w_bits_data)[i].d;
+    slave_0_w_data[i] = vc_4stVectorRef(slave_0_w_bits_data)[i].d;
+  }
+
+  uint32_t slave_1_w_data[SLAVE_DATA_SIZE];
+  for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
+    slave_1_w_data[i] = vc_4stVectorRef(slave_1_w_bits_data)[i].d;
+  }
+
+  uint32_t slave_2_w_data[SLAVE_DATA_SIZE];
+  for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
+    slave_2_w_data[i] = vc_4stVectorRef(slave_2_w_bits_data)[i].d;
+  }
+
+  uint32_t slave_3_w_data[SLAVE_DATA_SIZE];
+  for (size_t i = 0 ; i < SLAVE_DATA_SIZE ; i++) {
+    slave_3_w_data[i] = vc_4stVectorRef(slave_3_w_bits_data)[i].d;
   }
 
   vc_putScalar(master_aw_valid, m->aw_valid());
