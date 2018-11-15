@@ -1,3 +1,4 @@
 *.ext2
+bbl-vmlinux
 overlay/*.riscv
 overlay/*.bin
