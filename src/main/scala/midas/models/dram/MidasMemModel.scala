@@ -109,6 +109,9 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
 }
 
 class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
+  require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
+    "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
+  )
 
   val model = cfg.elaborate()
   printGenerationConfig
@@ -123,7 +126,6 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   val widthAdapter = Module(LazyModule(
     new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
   ).module)
-
 
   val hostMemOffsetWidthOffset = io.host_mem.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
   val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else io.host_mem.aw.bits.addr.getWidth 

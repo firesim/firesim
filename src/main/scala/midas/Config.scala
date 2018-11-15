@@ -51,9 +51,12 @@ class SimConfig extends Config((site, here, up) => {
   case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
   case HostMemNumChannels => 1
 
-  // TODO: Handle ID width.
   case MemNastiKey      => site(HostMemChannelNastiKey).copy(
-    addrBits = chisel3.util.log2Ceil(site(HostMemNumChannels)) + site(HostMemChannelNastiKey).addrBits)
+    addrBits = chisel3.util.log2Ceil(site(HostMemNumChannels)) + site(HostMemChannelNastiKey).addrBits,
+    // TODO: We should try to constrain masters to 4 bits of ID space -> but we need to map
+    // multiple target-ids on a single host-id in the DRAM timing model to support that
+    idBits   = 6
+  )
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
