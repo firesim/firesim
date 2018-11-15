@@ -56,7 +56,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #endif
 
 std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = 0;
+uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
                 this,
@@ -69,7 +69,7 @@ uint64_t host_mem_offset = 0;
                     (const char* const*) MEMMODEL_0_W_names),
                 argc, argv, "memory_stats.csv", host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_0_target_addr_bits;
+     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
 #endif
 
 #ifdef MEMMODEL_1
@@ -120,7 +120,7 @@ uint64_t host_mem_offset = 0;
     // TODO: Serial multiple copy support
 #ifdef SERIALWIDGET_struct_guard
     SERIALWIDGET_0_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, 0, host_mem_offsets[0] - 0x80000000));
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, 0, host_mem_offsets[0]));
 #endif
 
 
