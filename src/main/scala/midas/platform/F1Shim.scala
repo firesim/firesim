@@ -6,15 +6,15 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
-import midas.core.DMANastiKey
-import midas.core.HostNumMemChannels
+
+import midas.core.{DMANastiKey, HostMemNumChannels, HostMemChannelNastiKey}
 
 case object AXIDebugPrint extends Field[Boolean]
 
 class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val slave  = Vec(p(HostNumMemChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) })))
+  val slave  = Vec(p(HostMemNumChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
 class F1Shim(simIo: midas.core.SimWrapperIO)
@@ -23,7 +23,7 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
   val top = Module(new midas.core.FPGATop(simIo))
   val headerConsts = List(
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
-    "MEM_WIDTH"  -> p(SlaveNastiKey).dataBits / 8,
+    "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8,
     "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
   ) ++ top.headerConsts
 
