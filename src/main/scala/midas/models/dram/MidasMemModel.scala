@@ -128,9 +128,12 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   val hostMemOffsetWidthOffset = io.host_mem.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
   val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else io.host_mem.aw.bits.addr.getWidth 
   val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 0 
-  val hostMemOffsetHigh = genWORegInit(Wire(UInt(hostMemOffsetHighWidth.W)), s"hostMemOffsetHigh", 0.U) 
-  val hostMemOffsetLow = genWORegInit(Wire(UInt(hostMemOffsetLowWidth.W)), s"hostMemOffsetLow", 0.U) 
+  val hostMemOffsetHigh = RegInit(0.U(hostMemOffsetHighWidth.W))
+  val hostMemOffsetLow = RegInit(0.U(hostMemOffsetLowWidth.W))
   val hostMemOffset = Cat(hostMemOffsetHigh, hostMemOffsetLow)
+  attach(hostMemOffsetHigh, "hostMemOffsetHigh", WriteOnly)
+  attach(hostMemOffsetLow, "hostMemOffsetLow", WriteOnly)
+
   io.host_mem <> widthAdapter.sAxi4
   io.host_mem.aw.bits.user := DontCare
   io.host_mem.aw.bits.region := DontCare
@@ -138,8 +141,8 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   io.host_mem.ar.bits.region := DontCare
   io.host_mem.w.bits.id := DontCare
   io.host_mem.w.bits.user := DontCare
-  io.host_mem.ar.bits.addr := widthAdapter.sAxi4.ar.bits.addr - hostMemOffset
-  io.host_mem.aw.bits.addr := widthAdapter.sAxi4.aw.bits.addr - hostMemOffset
+  io.host_mem.ar.bits.addr := widthAdapter.sAxi4.ar.bits.addr + hostMemOffset
+  io.host_mem.aw.bits.addr := widthAdapter.sAxi4.aw.bits.addr + hostMemOffset
 
   widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
   widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar

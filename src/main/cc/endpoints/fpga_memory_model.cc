@@ -90,7 +90,14 @@ void FpgaMemoryModel::init() {
     auto value_it = model_configuration.find(pair.first);
     if (value_it != model_configuration.end()) {
       write(pair.second, value_it->second);
-    } else {
+    }
+    else if (pair.first.find("hostMemOffsetLow") != std::string::npos) {
+      write(pair.second, mem_host_offset & ((1ULL << 32) - 1));
+    }
+    else if (pair.first.find("hostMemOffsetHigh") != std::string::npos) {
+      write(pair.second, mem_host_offset >> 32);
+    }
+    else {
       // Iterate through substrings to exclude
       bool exclude = false;
       for (auto &substr: configuration_exclusion) {
@@ -103,12 +110,6 @@ void FpgaMemoryModel::init() {
         throw std::runtime_error(buf);
       } else {
         fprintf(stderr, "Ignoring writeable register: %s\n", pair.first.c_str());
-      }
-      if (pair.first.find("hostMemOffsetLow")) {
-         write(pair.second, mem_host_offset & ((1ULL << 32) - 1));
-      }
-      if (pair.first.find("hostMemOffsetHigh")) {
-         write(pair.second, mem_host_offset >> 32);
       }
     }
   }
