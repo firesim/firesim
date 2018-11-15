@@ -37,6 +37,7 @@ class WithNICKey extends Config((site, here, up) => {
 
 class WithMemBladeKey extends Config((site, here, up) => {
   case MemBladeKey => MemBladeParams(
+    spanBytes = 1024,
     nSpanTrackers = 2,
     nWordTrackers = 4,
     spanQueue = MemBladeQueueParams(reqHeadDepth = 64),
@@ -44,7 +45,9 @@ class WithMemBladeKey extends Config((site, here, up) => {
 })
 
 class WithRemoteMemClientKey extends Config((site, here, up) => {
-  case RemoteMemClientKey => RemoteMemClientConfig()
+  case RemoteMemClientKey => RemoteMemClientConfig(
+    spanBytes = site(MemBladeKey).spanBytes,
+    nRMemXacts = 64)
 })
 
 class WithLargeTLBs extends Config((site, here, up) => {
