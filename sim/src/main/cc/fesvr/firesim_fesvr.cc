@@ -15,7 +15,7 @@ int firesim_fesvr_t::host_thread(void *arg)
     return 0;
 }
 
-firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string>& args, uint64_t mem_host_offset) : htif_t(args), mem_host_offset(mem_host_offset)
+firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string>& args) : htif_t(args)
 {
     is_loadmem = false;
     is_busy = false;
@@ -153,7 +153,7 @@ bool firesim_fesvr_t::has_loadmem_reqs() {
 bool firesim_fesvr_t::recv_loadmem_write_req(fesvr_loadmem_t& loadmem) {
     if (loadmem_write_reqs.empty()) return false;
     auto r = loadmem_write_reqs.front();
-    loadmem.addr = r.addr + mem_host_offset;
+    loadmem.addr = r.addr;
     loadmem.size = r.size;
     loadmem_write_reqs.pop_front();
     return true;
@@ -162,7 +162,7 @@ bool firesim_fesvr_t::recv_loadmem_write_req(fesvr_loadmem_t& loadmem) {
 bool firesim_fesvr_t::recv_loadmem_read_req(fesvr_loadmem_t& loadmem) {
     if (loadmem_read_reqs.empty()) return false;
     auto r = loadmem_read_reqs.front();
-    loadmem.addr = r.addr + mem_host_offset;
+    loadmem.addr = r.addr;
     loadmem.size = r.size;
     loadmem_read_reqs.pop_front();
     return true;

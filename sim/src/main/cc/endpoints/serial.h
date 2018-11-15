@@ -24,7 +24,7 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, uint64_t mem_host_offset);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();

@@ -9,17 +9,54 @@
 #define DEFAULT_STEPSIZE (2004765L)
 #endif
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, uint64_t mem_host_offset):
-        endpoint_t(sim), sim(sim), fesvr(args, mem_host_offset), mem_host_offset(mem_host_offset) {
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
+        endpoint_t(sim), fesvr(args), sim(sim), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
+
+    std::string num_equals = std::to_string(serialno) + std::string("=");
+    std::string prog_arg =         std::string("+prog") + num_equals;
+    std::vector<std::string> args_vec;
+    char** argv_arr;
+    int argc_count = 0;
 
     step_size = DEFAULT_STEPSIZE;
     for (auto &arg: args) {
         if (arg.find("+fesvr-step-size=") == 0) {
             step_size = atoi(arg.c_str()+17);
         }
+        if (arg.find(prog_arg) == 0)
+        {
+          std::string clean_target_args = const_cast<char*>(arg.c_str()) + prog_arg.length();
+
+          std::istringstream ss(clean_target_args);
+          std::string token;
+          while(std::getline(ss, token, ' ')) {
+            args_vec.push_back(token);
+            argc_count = argc_count + 1;
+  	  }
+        }
+        else
+        {
+            args_vec.push_back(arg);
+            argc_count = argc_count + 1;
+        }
     }
+
+    argv_arr = new char*[args_vec.size()];
+    for(size_t i = 0; i < args_vec.size(); ++i)
+    {
+        (argv_arr)[i] = new char[(args_vec)[i].size() + 1];
+        std::strcpy((argv_arr)[i], (args_vec)[i].c_str());
+    }
+
+    //debug for command line arguments
+    printf("command line for program %d. argc=%d:\n", serialno, argc_count);
+    for(int i = 0; i < argc_count; i++)  { printf("%s", (argv_arr)[i]);  }
+    printf("\n");
+
+   std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
+   //fesvr(args_new, mem_host_offset);
 }
 
 serial_t::~serial_t() {
