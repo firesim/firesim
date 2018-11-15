@@ -50,14 +50,18 @@ private:
     "Hist_dataL",
     "Hist_dataH",
     "Hist_addr",
-    "Hist_enable"
+    "Hist_enable",
+    "hostMemOffsetLow",
+    "hostMemOffsetHigh"
   };
 
   std::set<std::string> profile_exclusion {
     "Hist_dataL",
     "Hist_dataH",
     "Hist_addr",
-    "Hist_enable"
+    "Hist_enable",
+    "hostMemOffsetLow",
+    "hostMemOffsetHigh"
   };
 
   bool has_latency_histograms() { return histograms.size() > 0; };
