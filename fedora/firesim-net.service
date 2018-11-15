@@ -1,0 +1,7 @@
+[Unit]
+Description=FireSim NIC Bringup
+
+[Service]
+Type=simple
+ExecStart=/root/start-firesim-network.sh
+
