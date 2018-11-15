@@ -185,7 +185,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   val memSize = scala.math.pow(2, p(MemNastiKey).addrBits).toInt
   val addrSliceLen = memSize / p(HostNumMemChannels)
   val hostMemAddrMap = new AddrMap((0 until p(HostNumMemChannels)).map(i =>
-    AddrMapEntry(s"memChannel$i", MemRange(0x80000000L + i * addrSliceLen, addrSliceLen, MemAttr(AddrMapProt.RW)))))
+    AddrMapEntry(s"memChannel$i", MemRange(i * addrSliceLen, addrSliceLen, MemAttr(AddrMapProt.RW)))))
 	
   val mem_xbar = Module(new NastiRecursiveInterconnect(
                                           numMemModels + 1, 
