@@ -674,13 +674,9 @@ void tick() {
   mmio_f1_t *m, *d;
   assert(m = dynamic_cast<mmio_f1_t*>(master.get()));
   assert(d = dynamic_cast<mmio_f1_t*>(dma.get()));
-  top->clock = 1;
-  top->eval();
-#if VM_TRACE
-  if (tfp) tfp->dump((double) main_time);
-#endif // VM_TRACE
-  main_time++;
 
+  // ASSUMPTION: All models have *no* combinational paths through I/O
+  // Step 1: Clock lo -> propagate signals between DUT and software models
   top->io_master_aw_valid = m->aw_valid();
   top->io_master_aw_bits_id = m->aw_id();
   top->io_master_aw_bits_addr = m->aw_addr();
@@ -705,22 +701,6 @@ void tick() {
   memcpy(&top->io_master_w_bits_data, m->w_data(), MMIO_WIDTH);
 #endif
 
-  m->tick(
-    top->reset,
-    top->io_master_ar_ready,
-    top->io_master_aw_ready,
-    top->io_master_w_ready,
-    top->io_master_r_bits_id,
-#if CTRL_DATA_BITS > 64
-    top->io_master_r_bits_data,
-#else
-    &top->io_master_r_bits_data,
-#endif
-    top->io_master_r_bits_last,
-    top->io_master_r_valid,
-    top->io_master_b_bits_id,
-    top->io_master_b_valid
-  );
 
   top->io_dma_aw_valid = d->aw_valid();
   top->io_dma_aw_bits_id = d->aw_id();
@@ -745,23 +725,6 @@ void tick() {
 #else
   memcpy(&top->io_dma_w_bits_data, d->w_data(), DMA_WIDTH);
 #endif
-
-  d->tick(
-    top->reset,
-    top->io_dma_ar_ready,
-    top->io_dma_aw_ready,
-    top->io_dma_w_ready,
-    top->io_dma_r_bits_id,
-#if DMA_DATA_BITS > 64
-    top->io_dma_r_bits_data,
-#else
-    &top->io_dma_r_bits_data,
-#endif
-    top->io_dma_r_bits_last,
-    top->io_dma_r_valid,
-    top->io_dma_b_bits_id,
-    top->io_dma_b_valid
-  );
 
   top->io_slave_0_aw_ready = slave[0]->aw_ready();
   top->io_slave_0_ar_ready = slave[0]->ar_ready();
@@ -814,6 +777,53 @@ void tick() {
   memcpy(&top->io_slave_2_r_bits_data, slave[2]->r_data(), MEM_WIDTH);
   memcpy(&top->io_slave_3_r_bits_data, slave[3]->r_data(), MEM_WIDTH);
 #endif
+  top->eval();
+#if VM_TRACE
+  if (tfp) tfp->dump((double) main_time);
+#endif // VM_TRACE
+  main_time++;
+
+  top->clock = 0;
+  top->eval(); // This shouldn't do much
+#if VM_TRACE
+  if (tfp) tfp->dump((double) main_time);
+#endif // VM_TRACE
+  main_time++;
+
+  // Step 2: Clock high, tick all software models and evaluate DUT with posedge
+  m->tick(
+    top->reset,
+    top->io_master_ar_ready,
+    top->io_master_aw_ready,
+    top->io_master_w_ready,
+    top->io_master_r_bits_id,
+#if CTRL_DATA_BITS > 64
+    top->io_master_r_bits_data,
+#else
+    &top->io_master_r_bits_data,
+#endif
+    top->io_master_r_bits_last,
+    top->io_master_r_valid,
+    top->io_master_b_bits_id,
+    top->io_master_b_valid
+  );
+
+  d->tick(
+    top->reset,
+    top->io_dma_ar_ready,
+    top->io_dma_aw_ready,
+    top->io_dma_w_ready,
+    top->io_dma_r_bits_id,
+#if DMA_DATA_BITS > 64
+    top->io_dma_r_bits_data,
+#else
+    &top->io_dma_r_bits_data,
+#endif
+    top->io_dma_r_bits_last,
+    top->io_dma_r_valid,
+    top->io_dma_b_bits_id,
+    top->io_dma_b_valid
+  );
 
   slave[0]->tick(
     top->reset,
@@ -920,12 +930,8 @@ void tick() {
     top->io_slave_3_b_ready
   );
 
-  top->clock = 0;
+  top->clock = 1;
   top->eval();
-#if VM_TRACE
-  if (tfp) tfp->dump((double) main_time);
-#endif // VM_TRACE
-  main_time++;
 }
 
 #endif // VCS
