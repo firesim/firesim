@@ -13,12 +13,15 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
-case object HostNumMemChannels extends Field[Int]
-case object HostMemNastiKey extends Field[NastiParameters]
+
+// The AXI4 widths for a single host-DRAM channel
 case object HostMemChannelNastiKey extends Field[NastiParameters]
+// The number of host-DRAM channels -> all channels must have the same AXI4 widths
+case object HostMemNumChannels extends Field[Int]
+// The aggregate memory-space seen by masters wanting DRAM
+case object MemNastiKey extends Field[NastiParameters]
 
 class FPGATopIO(implicit p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
@@ -175,32 +178,19 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   val numMemModels = memPorts.length
   val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
   if (p(MemModelKey) != None) {
-        val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
-        loadMem.reset := reset.toBool || simReset
-        memPorts += loadMem.io.toSlaveMem
+    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
+    loadMem.reset := reset.toBool || simReset
+    memPorts += loadMem.io.toSlaveMem
   }
 
-  //Crossbar has numMemModels + 1 slave ports (+1 for the LOADMEM unit)
-  //Crossbar has HostNumMemChannels master ports
-  val memSize = scala.math.pow(2, p(MemNastiKey).addrBits).toInt
-  val addrSliceLen = memSize / p(HostNumMemChannels)
-  val hostMemAddrMap = new AddrMap((0 until p(HostNumMemChannels)).map(i =>
-    AddrMapEntry(s"memChannel$i", MemRange(i * addrSliceLen, addrSliceLen, MemAttr(AddrMapProt.RW)))))
-	
-  val mem_xbar = Module(new NastiRecursiveInterconnect(
-                                          numMemModels + 1, 
-                                           hostMemAddrMap)(nastiP))
- 
-  io.mem.zip(mem_xbar.io.slaves).foreach { case (mem, slave) => mem <> slave }
- 
-  if (memPorts.isEmpty) {
-    val memParams = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-    val error = Module(new NastiErrorSlave()(memParams))
-    error.io <> io.mem
-  } else {
-    memPorts.zip(mem_xbar.io.masters).foreach { case (mem_model, master) => master <> mem_model }
-  }
+  val channelSize = BigInt(1) << p(HostMemChannelNastiKey).addrBits
+  val hostMemAddrMap = new AddrMap(Seq.tabulate(p(HostMemNumChannels))(i =>
+    AddrMapEntry(s"memChannel$i", MemRange(i * channelSize, channelSize, MemAttr(AddrMapProt.RW)))))
 
+  val mem_xbar = Module(new NastiRecursiveInterconnect(numMemModels + 1, hostMemAddrMap)(nastiP))
+
+  io.mem.zip(mem_xbar.io.slaves).foreach({ case (mem, slave) => mem <> slave })
+  memPorts.zip(mem_xbar.io.masters).foreach({ case (mem_model, master) => master <> mem_model })
 
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })

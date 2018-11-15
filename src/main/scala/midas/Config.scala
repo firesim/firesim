@@ -41,7 +41,6 @@ class SimConfig extends Config((site, here, up) => {
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
-  case MemNastiKey      => NastiParameters(64, 32, 6)
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case EndpointKey      => EndpointMap(Seq(
     new SimNastiMemIO, new SimAXI4MemIO, new AssertBundleEndpoint, new PrintRecordEndpoint))
@@ -49,16 +48,18 @@ class SimConfig extends Config((site, here, up) => {
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case MidasLLCKey      => None
   case AXIDebugPrint    => false
-  case HostNumMemChannels => 1
-  case HostMemNastiKey => NastiParameters(64, 32, 6)
   case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
+  case HostMemNumChannels => 1
+
+  // TODO: Handle ID width.
+  case MemNastiKey      => site(HostMemChannelNastiKey).copy(
+    addrBits = chisel3.util.log2Ceil(site(HostMemNumChannels)) + site(HostMemChannelNastiKey).addrBits)
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => Zynq
   case HasDMAChannel  => false
   case MasterNastiKey => site(CtrlNastiKey)
-  case SlaveNastiKey  => site(MemNastiKey)
 }) ++ new SimConfig)
 
 class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
@@ -70,10 +71,8 @@ class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
   case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
-  case MemNastiKey    => NastiParameters(64, 34, 16)
   case MasterNastiKey => site(CtrlNastiKey)
-  case SlaveNastiKey => site(MemNastiKey)
-  case HostNumMemChannels => 4
+  case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
 class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
