@@ -94,6 +94,8 @@ echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 
 cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/edma"
 make
+cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+make
 
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
