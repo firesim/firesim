@@ -29,7 +29,7 @@ the process of including new workloads into this Linux distribution.
 You can learn more about FireSim in the following places:
 
 * **FireSim website**: https://fires.im
-* **FireSim ISCA 2018 Paper**: [Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)
+* **FireSim ISCA 2018 Paper**: [Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf) | [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816) | [ACM DL](https://dl.acm.org/citation.cfm?id=3276543)
 * **FireSim documentation**: https://docs.fires.im
 * **Two-minute lightning talk from ISCA 2018** (FireSim simulating a datacenter): [YouTube](https://www.youtube.com/watch?v=4XwoSe5c8lY)
 
@@ -55,7 +55,7 @@ Asanović. **FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation i
 the Public Cloud**. *In proceedings of the 45th International Symposium
 on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 
-[Preprint PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf)
+[Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf) | [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816) | [ACM DL](https://dl.acm.org/citation.cfm?id=3276543)
 
 
 [ucb-bar]: http://bar.eecs.berkeley.edu

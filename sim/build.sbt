@@ -1,3 +1,5 @@
+import Tests._
+
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
@@ -13,6 +15,15 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.mavenLocal)
 )
+
+// Fork each scala test for now, to work around persistent mutable state
+// in Rocket-Chip based generators when testing the same DESIGN
+def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
+      val options = ForkOptions()
+      new Group(test.name, Seq(test), SubProcess(options))
+  } toSeq
+
+testGrouping in Test := isolateAllTests( (definedTests in Test).value )
 
 lazy val rocketchip = RootProject(file("target-rtl/firechip/rocket-chip"))
 lazy val boom       = project in file("target-rtl/firechip/boom") settings commonSettings dependsOn rocketchip

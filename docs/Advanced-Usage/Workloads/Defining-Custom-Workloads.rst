@@ -30,6 +30,12 @@ of the json file inline.
 **ERRATA**: You will notice in the following json files the field "workloads"
 this should really be named "jobs" -- we will fix this in a future release.
 
+**ERRATA**: The following instructions assume the default buildroot-based linux
+distribution (br-disk). In order to customize Fedora, you should build the
+basic Fedora image (as described in :ref:`booting-fedora`) and modify the
+image directly (or in QEMU). Imporantly, Fedora currently does not support the
+"command" option for workloads.
+
 Uniform Workload JSON
 ----------------------------
 
@@ -49,8 +55,8 @@ There is also a corresponding directory named after this workload/file:
 	total 4
 	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
 	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/bbl-vmlinux0
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 rootfs.ext2 -> ../../../sw/firesim-software/rootfs0.ext2
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-disk-bin -> ../../../sw/firesim-software/images/br-disk-bin
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-disk.img -> ../../../sw/firesim-software/images/br-disk.img
 
 We will elaborate on this later.
 
@@ -69,7 +75,7 @@ in this workload are expected to boot from. The manager will copy this binary
 for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is 
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``bbl-vmlinux0`` that
+from ``ls -la`` that this is actually just a symlink to ``br-disk-bin`` that
 is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 Similarly, the ``common_rootfs`` field represents the disk image that the simulations
@@ -78,7 +84,7 @@ filesystem image for each of the nodes in the simulation (each gets its own copy
 The ``common_rootfs`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``rootfs0.ext2`` that
+from ``ls -la`` that this is actually just a symlink to ``br-disk.img`` that
 is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 The ``common_outputs`` field is a list of outputs that the manager will copy out of
@@ -125,7 +131,7 @@ AFTER the workload is built:
 	total 15203216
 	drwxrwxr-x  3 centos centos       4096 May 18 07:45 .
 	drwxrwxr-x 13 centos centos       4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/bbl-vmlinux0
+	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../../../sw/firesim-software/images/br-disk-bin
 	-rw-rw-r--  1 centos centos          7 May 17 21:58 .gitignore
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-1.ext2
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-2.ext2
@@ -141,7 +147,7 @@ AFTER the workload is built:
 
 First, let's identify some of these files:
 
-- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``
+- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``. Note that it's named differently here, but still symlinks to ``br-disk-bin`` in firesim-software.
 - ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
 - ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
 
@@ -180,7 +186,7 @@ see in the ``ping-latency`` directory.
 ::
 
     [ from the workloads/ directory ]
-    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/rootfs0.ext2 -s ping-latency/overlay
+    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-disk.img -s ping-latency/overlay
 
 Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
 that we want to include in the generated disk images. This script will take care of the rest and we'll end up with 

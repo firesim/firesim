@@ -134,8 +134,11 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
     //printf( "AJG: Finished adding endpoint" );
 
-#ifdef ASSERTIONWIDGET_0
-    endpoints.push_back(new synthesized_assertions_t(this));
+#ifdef ASSERTIONWIDGET_struct_guard
+    #ifdef ASSERTIONWIDGET_0_PRESENT
+    ASSERTIONWIDGET_0_substruct_create;
+    endpoints.push_back(new synthesized_assertions_t(this, ASSERTIONWIDGET_0_substruct));
+    #endif
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
