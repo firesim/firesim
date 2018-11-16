@@ -50,7 +50,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['init', 'run', 'overlay', 'linux-config']
+configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)

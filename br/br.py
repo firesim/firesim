@@ -33,16 +33,16 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):
-        # # XXX There's something wrong with buildroots makefile, it throws an
-        # # error and never reports being up to date.
-        # # XXX DONT COMMIT THIS CHANGE YOUR DEFNITELY GOING TO FORGET TO UNDO THIS
-        # return True
-        makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
-        cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
-        if makeStatus == 0 and cfgDiff == 0:
-            return True
-        else:
-            return False
+        # XXX There's something wrong with buildroots makefile, it throws an
+        # error and never reports being up to date.
+        # XXX DONT COMMIT THIS CHANGE YOUR DEFNITELY GOING TO FORGET TO UNDO THIS
+        return True
+        # makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
+        # cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
+        # if makeStatus == 0 and cfgDiff == 0:
+        #     return True
+        # else:
+        #     return False
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted

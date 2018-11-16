@@ -4,5 +4,6 @@
   "overlay" : "overlay",
   "rootfs-format" : "img",
   "init" : "init.sh",
+  "host-init" : "host-init.sh",
   "run" : "run.sh"
 }

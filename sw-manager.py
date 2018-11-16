@@ -19,21 +19,26 @@ def main():
         description="Build and run (in spike or qemu) boot code and disk images for firesim")
     parser.add_argument('-c', '--config',
                         help='Configuration file to use (defaults to br-disk.json)',
-                        nargs='?', default='br-disk.json', dest='config_file')
+                        nargs='?', default='workloads/br-disk.json', dest='config_file')
+    parser.add_argument('-v', '--verbose',
+                        help='Print all output of subcommands to stdout as well as the logs', action='store_true')
     subparsers = parser.add_subparsers(title='Commands')
 
     # Build command
     build_parser = subparsers.add_parser(
         'build', help='Build an image from the given configuration.')
     build_parser.set_defaults(func=handleBuild)
-    build_parser.add_argument('-j', '--job', nargs='?', default='all')
+    build_parser.add_argument('-j', '--job', nargs='?', default='all',
+            help="Build only the specified JOB (defaults to 'all')")
 
     # Launch command
     launch_parser = subparsers.add_parser(
         'launch', help='Launch an image on a software simulator (defaults to qemu)')
     launch_parser.set_defaults(func=handleLaunch)
-    launch_parser.add_argument('-s', '--spike', action='store_true')
-    launch_parser.add_argument('-j', '--job')
+    launch_parser.add_argument('-s', '--spike', action='store_true',
+            help="Use the spike isa simulator instead of qemu")
+    launch_parser.add_argument('-j', '--job', nargs='?', default='all',
+            help="Launch the specified job. Defaults to running the base image.")
 
     args = parser.parse_args()
     args.config_file = os.path.abspath(args.config_file)
@@ -43,7 +48,15 @@ def main():
 
     # Load all the configs from the workload directory
     cfgs = ConfigManager([workload_dir])
-    args.job = cfgs[args.config_file]['name'] + '-' + args.job
+    targetCfg = cfgs[args.config_file]
+    
+    # Jobs are named with their base config internally 
+    if args.job != 'all':
+        if 'jobs' in targetCfg: 
+            args.job = targetCfg['name'] + '-' + args.job
+        else:
+            print("Job " + args.job + " requested, but no jobs specified in config file\n")
+            parser.print_help()
 
     args.func(args, cfgs)
 
@@ -247,14 +260,22 @@ def makeImage(config):
                 config['base-format'] + ", New=" + config['rootfs-format'])
 
     if 'host-init' in config:
+        if not os.path.exists(config['host-init']):
+            raise ValueError("host-init script " + config['host-init'] + " not found.")
+
         run([config['host-init']], cwd=config['workdir'])
 
     if 'overlay' in config:
+        if not os.path.exists(config['overlay']):
+            raise ValueError("Overlay directory " + config['overlay'] + " not found.")
+
         applyOverlay(config['img'], config['overlay'], config['rootfs-format'])
 
     if 'init' in config:
         if config['rootfs-format'] == 'cpio':
             raise ValueError("CPIO-based images do not support init scripts.")
+        if not os.path.exists(config['init']):
+            raise ValueError("Init script " + config['init'] + " not found.")
 
         # Apply and run the init script
         init_overlay = config['builder'].generateBootScriptOverlay(config['init'])
@@ -266,6 +287,9 @@ def makeImage(config):
         applyOverlay(config['img'], run_overlay, config['rootfs-format'])
 
     if 'run' in config:
+        if not os.path.exists(config['run']):
+            raise ValueError("Run script " + config['run'] + " not found.")
+
         run_overlay = config['builder'].generateBootScriptOverlay(config['run'])
         applyOverlay(config['img'], run_overlay, config['rootfs-format'])
 

@@ -35,7 +35,11 @@ def initLogging(args):
 
     # log to stdout, without special formatting
     consoleHandler = logging.StreamHandler(stream=sys.stdout)
-    consoleHandler.setLevel(logging.INFO) # show only INFO and greater in console
+    if args.verbose:
+        consoleHandler.setLevel(logging.NOTSET) # show only INFO and greater in console
+    else:
+        consoleHandler.setLevel(logging.INFO) # show only INFO and greater in console
+
     rootLogger.addHandler(consoleHandler)
 
 # Run subcommands and handle logging etc.
@@ -46,8 +50,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
     try:
-        out = sp.check_output(*args, universal_newlines=True, **kwargs)
-        # out = sp.check_output(*args, **kwargs)
+        out = sp.check_output(*args, universal_newlines=True, stderr=sp.STDOUT, **kwargs)
         log.log(level, out)
     except sp.CalledProcessError as e:
         log.log(level, e.output)

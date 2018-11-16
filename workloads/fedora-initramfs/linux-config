@@ -1,3 +1,4 @@
+#
 # Automatically generated file; DO NOT EDIT.
 # Linux/riscv 4.15.0-rc6 Kernel Configuration
 #
@@ -715,6 +716,7 @@ CONFIG_ETHERNET=y
 # CONFIG_NET_VENDOR_HUAWEI is not set
 # CONFIG_NET_VENDOR_INTEL is not set
 CONFIG_ICENET=y
+CONFIG_ICENET_RING_SIZE=64
 # CONFIG_JME is not set
 # CONFIG_NET_VENDOR_MARVELL is not set
 # CONFIG_NET_VENDOR_MELLANOX is not set
