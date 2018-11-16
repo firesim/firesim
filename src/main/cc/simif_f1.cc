@@ -49,7 +49,7 @@ void simif_f1_t::fpga_shutdown() {
     if (rc) {
         fprintf(stderr, "Failure while detaching from the fpga: %d\n", rc);
     }
-    close(edma_fd);
+    close(edma_write_fd);
     close(edma_read_fd);
 #endif
 }
@@ -117,16 +117,16 @@ void simif_f1_t::fpga_setup(int slot_id) {
     // EDMA setup
     char device_file_name[256];
     char device_file_name2[256];
-   
+
     sprintf(device_file_name, "/dev/xdma%d_h2c_0", slot_id);
     printf("Using xdma write queue: %s\n", device_file_name);
     sprintf(device_file_name2, "/dev/xdma%d_c2h_0", slot_id);
     printf("Using xdma read queue: %s\n", device_file_name2);
 
 
-    edma_fd = open(device_file_name, O_WRONLY);
+    edma_write_fd = open(device_file_name, O_WRONLY);
     edma_read_fd = open(device_file_name2, O_RDONLY);
-    assert(edma_fd >= 0);
+    assert(edma_write_fd >= 0);
     assert(edma_read_fd >= 0);
 #endif
 }
@@ -184,7 +184,7 @@ ssize_t simif_f1_t::push(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
   return -1; // TODO
 #else
-  return ::pwrite(edma_fd, data, size, addr);
+  return ::pwrite(edma_write_fd, data, size, addr);
 #endif
 }
 
