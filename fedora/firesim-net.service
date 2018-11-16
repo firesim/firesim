@@ -1,7 +1,10 @@
 [Unit]
 Description=FireSim NIC Bringup
+After=network-online.target
 
 [Service]
 Type=simple
 ExecStart=/root/start-firesim-network.sh
 
+[Install]
+WantedBy=multi-user.target

@@ -63,8 +63,10 @@ sudo mount -o loop $NEWIMG $MNT
 # add firesim network stuff
 sudo cp ./firesim-net.service $MNT/etc/systemd/system/
 sudo cp ./start-firesim-network.sh $MNT/root/
-sudo chmod 644 $MNT/root/start-firesim-network.sh
+sudo chmod 755 $MNT/root/start-firesim-network.sh
 sudo chmod 644 $MNT/etc/systemd/system/firesim-net.service
+sudo mkdir -p $MNT/etc/systemd/system/multi-user.target.wants
+sudo ln -s /etc/systemd/system/firesim-net.service $MNT/etc/systemd/system/multi-user.target.wants/firesim-net.service
 
 # fix serial port
 sudo cp ./getty@.service $MNT/usr/lib/systemd/system/

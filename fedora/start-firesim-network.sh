@@ -5,7 +5,7 @@ macpref=$(echo $mac | cut -c 1-8 -)
 echo "mac prefix:"
 echo $macpref
 case "$macpref" in
-        "00:12:6D")
+        "00:12:6d")
                 echo "this looks like FireSim. starting network"
                 ip link set eth0 up
                 machigh=$(echo $mac | cut -c 13-14 -)
