@@ -146,38 +146,38 @@ uint64_t host_mem_offset = -0x80000000LL;
 #ifdef SIMPLENICWIDGET_struct_guard
     #ifdef SIMPLENICWIDGET_0_PRESENT
     SIMPLENICWIDGET_0_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0, SIMPLENICWIDGET_0_DMA_ADDR));
     #endif
     #ifdef SIMPLENICWIDGET_1_PRESENT
     SIMPLENICWIDGET_1_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_1_substruct, 1));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_1_substruct, 1, SIMPLENICWIDGET_1_DMA_ADDR));
     #endif
     #ifdef SIMPLENICWIDGET_2_PRESENT
     SIMPLENICWIDGET_2_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_2_substruct, 2));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_2_substruct, 2, SIMPLENICWIDGET_2_DMA_ADDR));
     #endif
     #ifdef SIMPLENICWIDGET_3_PRESENT
     SIMPLENICWIDGET_3_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3));
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3, SIMPLENICWIDGET_3_DMA_ADDR));
     #endif
 #endif
 
 #ifdef TRACERVWIDGET_struct_guard
     #ifdef TRACERVWIDGET_0_PRESENT
     TRACERVWIDGET_0_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0, TRACERVWIDGET_0_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_1_PRESENT
     TRACERVWIDGET_1_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1, TRACERVWIDGET_1_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_2_PRESENT
     TRACERVWIDGET_2_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2, TRACERVWIDGET_2_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_3_PRESENT
     TRACERVWIDGET_3_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3, TRACERVWIDGET_3_DMA_ADDR));
     #endif
 #endif
 
