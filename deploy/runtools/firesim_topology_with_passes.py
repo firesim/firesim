@@ -162,7 +162,7 @@ class FireSimTopologyWithPasses:
                     return
         assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
-   def pass_simple_networked_host_node_mapping(self):
+    def pass_simple_networked_host_node_mapping(self):
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
         f1_2s_used = 0

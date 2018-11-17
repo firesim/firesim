@@ -296,21 +296,21 @@ class FireSimDummyServerNode(FireSimServerNode):
         for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
             if self == servernode:
                 return self.uplinks[0].get_uplink_side().downlinks[index+siblingindex].get_downlink_side()
-     def supernode_get_sibling_mac_address(self, siblingindex):
+    def supernode_get_sibling_mac_address(self, siblingindex):
         """ return the sibling's mac address for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_mac_address()
-     def supernode_get_sibling_rootfs(self, siblingindex):
+    def supernode_get_sibling_rootfs(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
-     def supernode_get_sibling_bootbin(self, siblingindex):
+    def supernode_get_sibling_bootbin(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
-     def supernode_get_sibling_rootfs_path(self, siblingindex):
+    def supernode_get_sibling_rootfs_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
-     def supernode_get_sibling_bootbinary_path(self, siblingindex):
+    def supernode_get_sibling_bootbinary_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().bootbinary_path()
 
 
@@ -335,7 +335,7 @@ class FireSimDummyServerNode(FireSimServerNode):
             self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
             self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
             slotno, self.server_link_latency, self.server_bw_max, self.server_profile_interval,
-            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin
+            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin,
             self.trace_enable, self.trace_start, self.trace_end, shmemportname)
 
 
@@ -345,7 +345,7 @@ class FireSimDummyServerNode(FireSimServerNode):
 
         def get_path_trailing(filepath):
             return filepath.split("/")[-1]
-         def local_and_remote(filepath, index):
+        def local_and_remote(filepath, index):
             return [filepath, get_path_trailing(filepath) + str(index)]
 
         all_paths = []
