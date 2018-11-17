@@ -10,7 +10,7 @@
 #endif
 
 serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
-        endpoint_t(sim), fesvr(args), sim(sim), mem_host_offset(mem_host_offset) {
+        endpoint_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 
@@ -56,11 +56,12 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWID
     printf("\n");
 
    std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
-   //fesvr(args_new, mem_host_offset);
+   fesvr = new firesim_fesvr_t(args_new);
 }
 
 serial_t::~serial_t() {
     free(this->mmio_addrs);
+    free(fesvr);
 }
 
 void serial_t::init() {
@@ -73,15 +74,15 @@ void serial_t::go() {
 }
 
 void serial_t::send() {
-    while(fesvr.data_available() && read(this->mmio_addrs->in_ready)) {
-        write(this->mmio_addrs->in_bits, fesvr.recv_word());
+    while(fesvr->data_available() && read(this->mmio_addrs->in_ready)) {
+        write(this->mmio_addrs->in_bits, fesvr->recv_word());
         write(this->mmio_addrs->in_valid, 1);
     }
 }
 
 void serial_t::recv() {
     while(read(this->mmio_addrs->out_valid)) {
-        fesvr.send_word(read(this->mmio_addrs->out_bits));
+        fesvr->send_word(read(this->mmio_addrs->out_bits));
         write(this->mmio_addrs->out_ready, 1);
     }
 }
@@ -103,22 +104,22 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
         uint32_t* data = (uint32_t*)mpz_export(NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
         for (size_t j = 0; j < beats_requested; j++) {
             if (j < non_zero_beats) {
-                fesvr.send_word(data[j]);
+                fesvr->send_word(data[j]);
             } else {
-                fesvr.send_word(0);
+                fesvr->send_word(0);
             }
         }
         loadmem.size -= beats_requested * sizeof(uint32_t);
     }
     mpz_clear(buf);
     // Switch back to fesvr for it to process read data
-    fesvr.tick();
+    fesvr->tick();
 }
 
 void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     assert(loadmem.size <= 1024);
     static char buf[1024];
-    fesvr.recv_loadmem_data(buf, loadmem.size);
+    fesvr->recv_loadmem_data(buf, loadmem.size);
     mpz_t data;
     mpz_init(data);
     mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
@@ -128,10 +129,10 @@ void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
 
 void serial_t::serial_bypass_via_loadmem() {
     fesvr_loadmem_t loadmem;
-    while (fesvr.has_loadmem_reqs()) {
+    while (fesvr->has_loadmem_reqs()) {
         // Check for reads first as they preceed a narrow write;
-        if (fesvr.recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);
-        if (fesvr.recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem);
+        if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);
+        if (fesvr->recv_loadmem_write_req(loadmem)) handle_loadmem_write(loadmem);
     }
 }
 
@@ -141,10 +142,10 @@ void serial_t::tick() {
     // Collect all the responses from the target
     this->recv();
     // Punt to FESVR
-    if (!fesvr.data_available()) {
-        fesvr.tick();
+    if (!fesvr->data_available()) {
+        fesvr->tick();
     }
-    if (fesvr.has_loadmem_reqs()) {
+    if (fesvr->has_loadmem_reqs()) {
         serial_bypass_via_loadmem();
     }
     if (!terminate()) {
