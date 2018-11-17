@@ -3,6 +3,8 @@ package firesim.firesim
 import chisel3._
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
+import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.tilelink._     
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.config.Parameters
 import boom.system.{BoomSubsystem, BoomSubsystemModule}
@@ -38,6 +40,11 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
   override lazy val module =
     if (hasTraces) new FireSimModuleImpTraced(this)
     else new FireSimModuleImp(this)
+
+  // Error device used for testing and to NACK invalid front port transactions
+  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
+  // always buffer the error device because no one cares about its latency
+  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
 }
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
@@ -69,6 +76,11 @@ class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
   override lazy val module =
     if (hasTraces) new FireSimNoNICModuleImpTraced(this)
     else new FireSimNoNICModuleImp(this)
+
+  // Error device used for testing and to NACK invalid front port transactions
+  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
+  // always buffer the error device because no one cares about its latency
+  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
 }
 
 class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemModuleImp(l)
@@ -100,6 +112,11 @@ class FireBoom(implicit p: Parameters) extends BoomSubsystem
   override lazy val module = 
     if (hasTraces) new FireBoomModuleImpTraced(this)
     else new FireBoomModuleImp(this)
+
+  // Error device used for testing and to NACK invalid front port transactions
+  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
+  // always buffer the error device because no one cares about its latency
+  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
 }
 
 class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
@@ -131,6 +148,11 @@ class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
   override lazy val module = 
     if (hasTraces) new FireBoomNoNICModuleImpTraced(this)
     else new FireBoomNoNICModuleImp(this)
+
+  // Error device used for testing and to NACK invalid front port transactions
+  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
+  // always buffer the error device because no one cares about its latency
+  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
 }
 
 class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModule(l)
