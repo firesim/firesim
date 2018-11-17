@@ -162,8 +162,7 @@ class FireSimTopologyWithPasses:
                     return
         assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
-
-    def pass_simple_networked_host_node_mapping(self):
+   def pass_simple_networked_host_node_mapping(self):
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
         f1_2s_used = 0
@@ -185,6 +184,35 @@ class FireSimTopologyWithPasses:
                 else:
                     self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
                     for server in downlinknodes:
+                        self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+                    f1_16s_used += 1
+            else:
+                assert False, "Mixed downlinks currently not supported."""
+
+
+    def pass_simple_networked_host_supernode_mapping(self):
+        """ A very simple host mapping strategy for supernode.  """
+        switches = self.firesimtopol.get_dfs_order_switches()
+        f1_2s_used = 0
+        f1_16s_used = 0
+        m4_16s_used = 0
+
+        for switch in switches:
+            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            dls = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
+            if all([isinstance(x, FireSimSwitchNode) for x in dls]):
+                # all downlinks are switches
+                self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
+                m4_16s_used += 1
+            elif all([isinstance(x, FireSimServerNode) for x in dls]):
+                # all downlinks are simulations
+                if (len(dls) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
+                    self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
+                    self.run_farm.f1_2s[f1_2s_used].add_simulation(dls[0])
+                    f1_2s_used += 1
+                else:
+                    self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+                    for server in dls:
                         self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
                     f1_16s_used += 1
             else:
