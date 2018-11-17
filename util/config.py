@@ -2,6 +2,7 @@ import os
 import glob
 import br.br as br
 import fedora.fedora as fed
+import baremetal.bare as bare
 import collections
 import json
 import pprint
@@ -22,11 +23,13 @@ configUser = [
         # Path to linux configuration file to use
         'linux-config',
         # Path to script to run on host before building this config
-        'host-init',
+        'host_init',
         # Path to folder containing overlay files to apply to img
         'overlay',
         # Path to script to run on the guest every time it boots
         'run',
+        # An inline command to run at startup (cannot be set along with 'run')
+        'command',
         # Path to script to run on the guest exactly once when building
         'init',
         # Path to directory for this workload, all user-provided paths will
@@ -42,26 +45,31 @@ configDerived = [
         'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
         'base-format', # The format of base-img
-        'base-cfg-file', # Path to config file used by base configuration
         'cfg-file', # Path to this workloads raw config file
         'distro', # Base linux distribution (either 'fedora' or 'br')
-        'initialized', # boolean used for memoization during parsing (true if this config has been fully initialized)
         ]
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init']
+configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host_init', 'cfg-file', 'bin']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['run', 'overlay', 'linux-config', 'builder', 'distro', 'rootfs-format']
+configInherit = ['runSpec', 'overlay', 'linux-config', 'builder', 'distro', 'rootfs-format']
 
 # These are the permissible base-distributions to use (they get treated special)
-# TODO: add 'bare' distro for bare-metal workloads/jobs
 distros = {
         'fedora' : fed.Builder(),
-        'br' : br.Builder()
+        'br' : br.Builder(),
+        'bare' : bare.Builder()
         }
+
+class RunSpec():
+    def __init__(self, cfg):
+        self.path = cfg.get('run')
+        self.command = cfg.get('command')
+        if self.path and self.command:
+            raise ValueError("'command' and 'run' options are mutually exclusive")
 
 class Config(collections.MutableMapping):
 
@@ -81,6 +89,7 @@ class Config(collections.MutableMapping):
         if cfgFile != None:
             with open(cfgFile, 'r') as f:
                 self.cfg = json.load(f)
+            self.cfg['cfg-file'] = cfgFile
         else:
             self.cfg = cfgDict
 
@@ -91,16 +100,21 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['name'])
 
+        # Convert stuff to absolute paths (this should happen as early as
+        # possible because the next steps all assume absolute paths)
+        for k in (set(configToAbs) & set(self.cfg.keys())):
+            if not os.path.isabs(self.cfg[k]):
+                self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
+
         # Distros are indexed by their name, not a path (since they don't have real configs)
         # All other bases should converted to absolute paths
         if 'base' in self.cfg:
             if self.cfg['base'] not in distros.keys() and not os.path.isabs(self.cfg['base']):
                 self.cfg['base'] = os.path.join(workload_dir, self.cfg['base'])
         
-        # Convert stuff to absolute paths
-        for k in (set(configToAbs) & set(self.cfg.keys())):
-            if not os.path.isabs(self.cfg[k]):
-                self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
+        # This object handles setting up the 'run' and 'command' options
+        if 'run' in self.cfg.keys() or 'command' in self.cfg.keys():
+            self.cfg['runSpec'] = RunSpec(self.cfg)
 
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg.keys():
@@ -127,10 +141,13 @@ class Config(collections.MutableMapping):
             self.cfg[k] = baseCfg[k]
         
         # Derived options that can only be set after the base has been applied
-        self.cfg['base-img'] = baseCfg['img']
-        self.cfg['base-format'] = baseCfg['rootfs-format']
-        self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")
-        self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + "." + self.cfg['rootfs-format'])
+        if 'rootfs-format' in baseCfg.keys():
+            self.cfg['base-img'] = baseCfg['img']
+            self.cfg['base-format'] = baseCfg['rootfs-format']
+            self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + "." + self.cfg['rootfs-format'])
+
+        if 'bin' not in self.cfg:
+            self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):

@@ -103,5 +103,4 @@
       "command": "sleep 0.1 && echo 'setup:' && /bin/mutilatesetup4-pinned.sh && echo 'runtest:' && /bin/runtest.sh 4-pinned && poweroff"
     }
   ]
-
 }

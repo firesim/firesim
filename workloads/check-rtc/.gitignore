@@ -1,0 +1,3 @@
+*.o
+/check-rtc
+/check-rtc-linux

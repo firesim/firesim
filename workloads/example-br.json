@@ -5,5 +5,5 @@
   "overlay" : "overlay",
   "rootfs-format" : "img",
   "init" : "init.sh",
-  "run" : "run.sh"
+  "command" : "echo \"Command ran!\" | tee >> /root/runOutput"
 }

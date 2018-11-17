@@ -1,0 +1,6 @@
+{
+  "name" : "check-rtc",
+  "base" : "bare",
+  "host_init" : "build.sh",
+  "bin" : "check-rtc"
+}

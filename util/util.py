@@ -11,6 +11,7 @@ workload_dir = os.path.join(root_dir, "workloads")
 image_dir = os.path.join(root_dir, "images")
 linux_dir = os.path.join(root_dir, "riscv-linux")
 mnt = os.path.join(root_dir, "disk-mount")
+commandScript = os.path.join(root_dir, "_command.sh")
 
 jlevel = "-j" + str(os.cpu_count())
 
@@ -56,3 +57,38 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
         log.log(level, e.output)
         if check:
             raise
+
+# It's pretty easy to forget to update the linux config for initramfs-based
+# workloads. We check here to make sure you've set the CONFIG_INITRAMFS_SOURCE
+# option correctly. This only issues a warning right now because you might have
+# a legitimate reason to point linux somewhere else (e.g. while debugging).
+def checkInitramfsConfig(config):
+    log = logging.getLogger()
+    if config['rootfs-format'] == 'cpio':
+       with open(config['linux-config'], 'rt') as f:
+           linux_config = f.read()
+           match = re.search(r'^CONFIG_INITRAMFS_SOURCE=(.*)$', linux_config, re.MULTILINE)
+           if match:
+               initramfs_src = os.path.normpath(os.path.join(linux_dir, match.group(1).strip('\"')))
+               if initramfs_src != config['img']:
+                   rootLogger.warning("WARNING: The workload linux config " + \
+                   "'CONFIG_INITRAMFS_SOURCE' option doesn't point to this " + \
+                   "workload's image:\n" + \
+                   "\tCONFIG_INITRAMFS_SOURCE = " + initramfs_src + "\n" +\
+                   "\tWorkload Image = " + config['img'] + "\n" + \
+                   "You likely want to change this option to:\n" +\
+                   "\tCONFIG_INITRAMFS_SOURCE=" + os.path.relpath(config['img'], linux_dir))
+           else:
+               rootLogger.warning("WARNING: The workload linux config doesn't include a " + \
+               "CONFIG_INITRAMFS_SOURCE option, but this workload is " + \
+               "using cpio for it's image.\n" + \
+               "You likely want to change this option to:\n" + \
+               "\tCONFIG_INITRAMFS_SOURCE=" + os.path.relpath(config['img'], linux_dir))
+ 
+def genRunScript(command):
+    with open(commandScript, 'w') as s:
+        s.write("#!/bin/bash\n")
+        s.write(command + "\n")
+        s.write("poweroff\n")
+
+    return commandScript
