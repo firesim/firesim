@@ -13,7 +13,7 @@ import midas.core.HostMemChannelNastiKey
 
 abstract class PlatformShim(implicit p: Parameters) extends Module {
   def top: midas.core.FPGATop
-  def headerConsts: Seq[(String, Int)]
+  def headerConsts: Seq[(String, Long)]
   def genHeader(sb: StringBuilder, target: String) {
     import widgets.CppGenerationUtils._
     sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
@@ -41,7 +41,7 @@ class ZynqShim(simIo: midas.core.SimWrapperIO)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new ZynqShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
-  val headerConsts = List(
+  val headerConsts = List[(String, Long)](
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
     "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8
   ) ++ top.headerConsts

@@ -21,7 +21,7 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new F1ShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
-  val headerConsts = List(
+  val headerConsts = List[(String, Long)](
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
     "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8,
     "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
