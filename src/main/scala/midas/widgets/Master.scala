@@ -23,18 +23,18 @@ object Pulsify {
       val count = Counter(pulseLength)
       when(in){count.inc()}
       when(count.value === UInt(pulseLength-1)) {
-        in := Bool(false)
+        in := false.B
         count.value := UInt(0)
       }
     } else {
-      when(in) {in := Bool(false)}
+      when(in) {in := false.B}
     }
   }
 }
 
 class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new EmulationMasterIO)
-  Pulsify(genWORegInit(io.simReset, "SIM_RESET", Bool(false)), pulseLength = 4)
+  Pulsify(genWORegInit(io.simReset, "SIM_RESET", false.B), pulseLength = 4)
   genAndAttachQueue(io.step, "STEP")
   genRORegInit(io.done && ~io.simReset, "DONE", UInt(0))
 
