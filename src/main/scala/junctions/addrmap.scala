@@ -127,11 +127,11 @@ class AddrMap(
   def isCacheable(addr: UInt): Bool = {
     flatten.filter(_.region.attr.cacheable).map(
       _.region.containsAddress(addr)
-    ).foldLeft(Bool(false))(_ || _)
+    ).foldLeft(false.B)(_ || _)
   }
 
   def isValid(addr: UInt): Bool = {
-    flatten.map(_.region.containsAddress(addr)).foldLeft(Bool(false))(_ || _)
+    flatten.map(_.region.containsAddress(addr)).foldLeft(false.B)(_ || _)
   }
 
   def getProt(addr: UInt): AddrMapProt = {

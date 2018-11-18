@@ -59,10 +59,10 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   // 3. connect target channels to buffers.
   //   - Transactions are generated / consumed according to timing conditions
   def elaborate(stall: Bool,
-                rCycleValid: Bool = Bool(true),
-                wCycleValid: Bool = Bool(true),
-                rCycleReady: Bool = Bool(true),
-                wCycleReady: Bool = Bool(true)) = {
+                rCycleValid: Bool = true.B,
+                wCycleValid: Bool = true.B,
+                rCycleReady: Bool = true.B,
+                wCycleReady: Bool = true.B) = {
     val fire = tFire && !stall
     fire suggestName "fire"
     io.tNasti.toHost.hReady := fire
