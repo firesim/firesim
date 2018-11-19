@@ -1,10 +1,9 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import chisel3.Module
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
@@ -96,14 +95,14 @@ class NICToHostToken extends Bundle {
 class SimSimpleNIC extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: NICIOvonly =>
-      directionOf(channel.out.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.out.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new SimpleNICWidget()(p)
   override def widgetName = "SimpleNICWidget"
 }
 
-class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new NICIOvonly))
   val dma = if (!p(LoopbackNIC)) {
     Some(Flipped(new NastiIO()(

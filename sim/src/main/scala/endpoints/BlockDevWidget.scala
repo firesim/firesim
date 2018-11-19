@@ -1,9 +1,9 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
@@ -17,7 +17,7 @@ class SimBlockDev(
   extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: BlockDeviceIO =>
-      directionOf(channel.req.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.req.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new BlockDevWidget()(p)

@@ -4,9 +4,9 @@ package endpoints
 import midas.core._
 import midas.widgets._
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
@@ -14,7 +14,7 @@ import testchipip.SerialIO
 class SimSerialIO extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: SerialIO =>
-      directionOf(channel.out.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.out.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new SerialWidget()(p)
