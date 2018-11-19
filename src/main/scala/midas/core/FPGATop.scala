@@ -114,6 +114,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           channels foreach (_.ready := port.toHost.hReady)
           valid ++= channels map (_.valid)
       }
+      case _ => throw new RuntimeException("Uexpected type tuple in channels2Port")
     }
 
     loop(port.hBits -> wires)
