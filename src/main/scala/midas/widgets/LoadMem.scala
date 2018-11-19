@@ -100,7 +100,7 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
 
   val cWidth = p(CtrlNastiKey).dataBits
   val hWidth = p(hKey).dataBits
-  val size = hParams.bytesToXSize(UInt(hWidth/8))
+  val size = hParams.bytesToXSize((hWidth/8).U)
   val widthRatio = hWidth/cWidth
   require(hWidth >= cWidth)
   require(p(hKey).addrBits <= 2 * cWidth)
