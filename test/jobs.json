@@ -1,0 +1,14 @@
+{
+  "name" : "jobs",
+  "base" : "br-disk.json",
+  "jobs" : [
+    {
+      "name" : "j0",
+      "command" : "echo j0 Ran!"
+    },
+    {
+      "name" : "j1",
+      "command" : "echo j1 Ran!"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import json
 import pprint
 import logging
 from util.util import *
+import pathlib as pth
 
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
@@ -26,6 +27,8 @@ configUser = [
         'host_init',
         # Path to folder containing overlay files to apply to img
         'overlay',
+        # List of tuples of files to add [(dest_dir, srcFile),...]
+        'files',
         # Path to script to run on the guest every time it boots
         'run',
         # An inline command to run at startup (cannot be set along with 'run')
@@ -55,7 +58,7 @@ configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host_init', 'cfg-file'
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'overlay', 'linux-config', 'builder', 'distro', 'rootfs-format']
+configInherit = ['runSpec', 'files', 'linux-config', 'builder', 'distro', 'rootfs-format']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -71,6 +74,8 @@ class RunSpec():
         if self.path and self.command:
             raise ValueError("'command' and 'run' options are mutually exclusive")
 
+FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
+
 class Config(collections.MutableMapping):
 
     # Configs are assumed to be partially initialized until this is explicitly
@@ -81,6 +86,7 @@ class Config(collections.MutableMapping):
     # Does not recursively parse base configs.
     # cfgFile - path to config file to load
     # cfgDict - path to pre-initialized dictionary to load
+    #   * All paths should be absolute when using a pre-initialized dict
     # Note: cfgDict and cfgFile are mutually exclusive, but you must set one
     # Post:
     #   - All paths will be absolute
@@ -92,13 +98,20 @@ class Config(collections.MutableMapping):
             self.cfg['cfg-file'] = cfgFile
         else:
             self.cfg = cfgDict
+            
+        cfgDir = None
+        if 'cfg-file' in self.cfg:
+            cfgDir = os.path.dirname(self.cfg['cfg-file'])
+        else:
+            assert ('workdir' in self.cfg), "No workdir or cfg-file provided"
+            assert ( os.path.isabs(self.cfg['workdir'])), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
 
         # Some default values
         if 'workdir' in self.cfg:
-            if not os.path.isabs(self.cfg['workdir']):
-                self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['workdir'])
+            if not os.path.isabs(self.cfg['workdir']): 
+                self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['workdir'])
         else:
-            self.cfg['workdir'] = os.path.join(workload_dir, self.cfg['name'])
+            self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
 
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
@@ -106,29 +119,42 @@ class Config(collections.MutableMapping):
             if not os.path.isabs(self.cfg[k]):
                 self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
 
+        # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs) 
+        if 'files' in self.cfg:
+            fList = []
+            for f in self.cfg['files']:
+                fList.append(FileSpec(src=os.path.join(self.cfg['workdir'], f[0]), dst=f[1]))
+
+            self.cfg['files'] = fList
+
         # Distros are indexed by their name, not a path (since they don't have real configs)
         # All other bases should converted to absolute paths
         if 'base' in self.cfg:
-            if self.cfg['base'] not in distros.keys() and not os.path.isabs(self.cfg['base']):
-                self.cfg['base'] = os.path.join(workload_dir, self.cfg['base'])
+            if self.cfg['base'] not in distros and not os.path.isabs(self.cfg['base']):
+                self.cfg['base'] = os.path.join(cfgDir, self.cfg['base'])
         
         # This object handles setting up the 'run' and 'command' options
-        if 'run' in self.cfg.keys() or 'command' in self.cfg.keys():
+        if 'run' in self.cfg or 'command' in self.cfg:
             self.cfg['runSpec'] = RunSpec(self.cfg)
 
+        # Convert overlay to file list (main program doesn't handle overlays directly)
+        if 'overlay' in self.cfg:
+            self.cfg['files'] = self.cfg.get('files', []) + [FileSpec(src=os.path.join(self.cfg['overlay'], '*'), dst='/')]
+
         # Convert jobs to standalone configs
-        if 'jobs' in self.cfg.keys():
+        if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
             self.cfg['jobs'] = {}
             
             for jCfg in jList:
                 jCfg['workdir'] = self.cfg['workdir']
+                # jCfg['cfg-file'] = self.cfg['cfg-file']
                 # TODO come up with a better scheme here, name is used to
                 # derive the img and bin names, but naming jobs this way makes
                 # for ugly hacks later when looking them up. 
                 jCfg['name'] = self.cfg['name'] + '-' + jCfg['name']
                 # jobs can base off any workload, but default to the current workload
-                if 'base' not in jCfg.keys():
+                if 'base' not in jCfg:
                     jCfg['base'] = cfgFile
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
@@ -141,7 +167,7 @@ class Config(collections.MutableMapping):
             self.cfg[k] = baseCfg[k]
         
         # Derived options that can only be set after the base has been applied
-        if 'rootfs-format' in baseCfg.keys():
+        if 'rootfs-format' in baseCfg:
             self.cfg['base-img'] = baseCfg['img']
             self.cfg['base-format'] = baseCfg['rootfs-format']
             self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + "." + self.cfg['rootfs-format'])
@@ -197,12 +223,14 @@ class ConfigManager(collections.MutableMapping):
         # by their names instead of a config path so that users can just pass
         # that instead of a path to a config
         for dName,dBuilder in distros.items():
+            log.debug("Loading distro " + dName)
             self.cfgs[dName] = Config(cfgDict=dBuilder.baseConfig())
             self.cfgs[dName].initialized = True
 
         # Read all the configs from their files
         for f in cfgPaths:
             try:
+                log.debug("Loading " + f)
                 self.cfgs[f] = Config(f)
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
@@ -214,7 +242,7 @@ class ConfigManager(collections.MutableMapping):
                 raise
 
         # Now we recursively fill in defaults from base configs
-        for f in self.cfgs.keys():
+        for f in self.cfgs:
             try:
                 self._initializeFromBase(self.cfgs[f])
             except KeyError as e:
@@ -247,7 +275,7 @@ class ConfigManager(collections.MutableMapping):
             cfg.initialized = True
 
             # Now that this config is initialized, finalize jobs
-            if 'jobs' in cfg.keys():
+            if 'jobs' in cfg:
                 for jCfg in cfg['jobs'].values():
                     self._initializeFromBase(jCfg)
 

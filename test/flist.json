@@ -1,0 +1,6 @@
+{
+  "name" : "flist",
+  "base" : "br-disk.json",
+  "files" : [["runOutput", "/root/"]],
+  "command" : "cat /root/runOutput"
+}

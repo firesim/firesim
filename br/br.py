@@ -17,6 +17,7 @@ class Builder:
                 'name' : 'buildroot-base',
                 'distro' : 'br',
                 'rootfs-format' : 'img',
+                'workdir' : br_dir,
                 'builder' : self,
                 'img' : os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
                 }

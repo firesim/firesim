@@ -2,7 +2,7 @@
   "name" : "example-br",
   "workdir" : "example-br-workdir",
   "base" : "br-disk.json",
-  "overlay" : "overlay",
+  "files" : [ [ "/root/", "runOutput" ] ],
   "rootfs-format" : "img",
   "init" : "init.sh",
   "command" : "echo \"Command ran!\" | tee >> /root/runOutput"

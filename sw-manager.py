@@ -13,13 +13,21 @@ import random
 import string
 from util.config import *
 from util.util import *
+import pathlib as pth
 
 def main():
     parser = argparse.ArgumentParser(
         description="Build and run (in spike or qemu) boot code and disk images for firesim")
     parser.add_argument('-c', '--config',
                         help='Configuration file to use (defaults to br-disk.json)',
-                        nargs='?', default='workloads/br-disk.json', dest='config_file')
+                        nargs='?', default=os.path.join(root_dir, 'workloads', 'br-disk.json'), dest='config_file')
+    parser.add_argument('--workdir', help='Use a custom workload directory', default=os.path.join(root_dir, 'workloads'))
+    # parser.add_argument('-c', '--config',
+    #                     help='Configuration file to use (defaults to br-disk.json)',
+    #                     nargs='?', type=lambda p: pth.Path(p).absolute(),
+    #                     default=(root_dir / 'workloads' / 'br-disk.json'), dest='config_file')
+    # parser.add_argument('--workdir', help='Use a custom workload directory',
+    #         type=lambda p: pth.Path(p).absolute(), default=(root_dir / 'workloads'))
     parser.add_argument('-v', '--verbose',
                         help='Print all output of subcommands to stdout as well as the logs', action='store_true')
     subparsers = parser.add_subparsers(title='Commands', dest='command')
@@ -46,13 +54,14 @@ def main():
     init_parser.set_defaults(func=handleInit)
 
     args = parser.parse_args()
+    # args.config_file = args.config_file.resolve()
     args.config_file = os.path.abspath(args.config_file)
 
     initLogging(args)
     log = logging.getLogger()
 
     # Load all the configs from the workload directory
-    cfgs = ConfigManager([workload_dir])
+    cfgs = ConfigManager([os.path.abspath(args.workdir)])
     targetCfg = cfgs[args.config_file]
     
     # Jobs are named with their base config internally 
@@ -100,10 +109,11 @@ def addDep(loader, config):
         if 'base-img' in config:
             task_deps = [config['base-img']]
             file_deps = [config['base-img']]
-        if 'overlay' in config:
-            for root, dirs, files in os.walk(config['overlay']):
-                for f in files:
-                    file_deps.append(os.path.join(root, f))
+        # XXX this is broken temporarily (DONT COMMIT)
+        # if 'files' in config:
+        #     for root, dirs, files in os.walk(config['overlay']):
+        #         for f in files:
+        #             file_deps.append(os.path.join(root, f))
         if 'init' in config:
             file_deps.append(config['init'])
             task_deps.append(config['bin'])
@@ -259,18 +269,18 @@ def makeImage(config):
                 config['base-format'] + ", New=" + config['rootfs-format'])
 
     if 'host_init' in config:
+        log.info("Applying host_init: " + config['host_init'])
         if not os.path.exists(config['host_init']):
             raise ValueError("host_init script " + config['host_init'] + " not found.")
 
         run([config['host_init']], cwd=config['workdir'])
 
-    if 'overlay' in config:
-        if not os.path.exists(config['overlay']):
-            raise ValueError("Overlay directory " + config['overlay'] + " not found.")
-
-        applyOverlay(config['img'], config['overlay'], config['rootfs-format'])
+    if 'files' in config:
+        log.info("Applying file list: " + str(config['files']))
+        applyFiles(config['img'], config['files'], config['rootfs-format'])
 
     if 'init' in config:
+        log.info("Applying init script: " + config['init'])
         if config['rootfs-format'] == 'cpio':
             raise ValueError("CPIO-based images do not support init scripts.")
         if not os.path.exists(config['init']):
@@ -288,8 +298,10 @@ def makeImage(config):
     if 'runSpec' in config:
         spec = config['runSpec']
         if spec.command != None:
+            log.info("Applying run command: " + spec.command)
             scriptPath = genRunScript(spec.command)
         else:
+            log.info("Applying run script: " + spec.path)
             scriptPath = spec.path
 
         if not os.path.exists(scriptPath):
@@ -312,17 +324,26 @@ def toCpio(config, src, dst):
 # Note that all paths must be absolute
 def applyOverlay(img, overlay, fmt):
     log = logging.getLogger()
+    applyFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')], fmt)
+    
+# Copies a list of type FileSpec ('files') into the destination image (img)
+def applyFiles(img, files, fmt):
+    log = logging.getLogger()
 
     if fmt == 'img':
         run(['sudo', 'mount', '-o', 'loop', img, mnt])
         try:
-            # Overlays may not be owned by root, but the filesystem must be.
-            # Rsync lets us chown while copying.
-            run('sudo rsync -a --chown=root:root ' + overlay + '/*' + " " + mnt, shell=True)
+            for f in files:
+                # Overlays may not be owned by root, but the filesystem must be.
+                # Rsync lets us chown while copying.
+                # Note: shell=True because f.src is allowed to contain globs
+                # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
+                run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
         finally:
             run(['sudo', 'umount', mnt])
 
     elif fmt == 'cpio':
+        run("sudo cpio --owner root:root --null -ov -H newc >> " + img)
         # Note: a quirk of cpio is that it doesn't really overwrite files when
         # doing an overlay, it actually just appends a new file with the same
         # name. Linux handles this just fine (it uses the latest version of a

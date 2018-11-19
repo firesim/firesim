@@ -5,13 +5,19 @@ import time
 import random
 import string
 import sys
+import pathlib as pth
 
 root_dir = os.getcwd()
-workload_dir = os.path.join(root_dir, "workloads")
 image_dir = os.path.join(root_dir, "images")
 linux_dir = os.path.join(root_dir, "riscv-linux")
 mnt = os.path.join(root_dir, "disk-mount")
 commandScript = os.path.join(root_dir, "_command.sh")
+
+# root_dir = pth.Path.cwd() 
+# image_dir = root_dir / "images"
+# linux_dir = root_dir / "riscv-linux"
+# mnt = root_dir / "disk-mount"
+# commandScript = root_dir / "_command.sh"
 
 jlevel = "-j" + str(os.cpu_count())
 
@@ -23,12 +29,15 @@ def initLogging(args):
     # Create a unique log name
     timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
     randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+    # logPath = root_dir / ("logs" + timeline + "-" + \
+    #         str(args.config_file.stem) + \
+    #         "-" +  randname + ".log")
     logPath = os.path.join(root_dir, "logs", timeline + "-" + 
             os.path.splitext(os.path.basename(args.config_file))[0] +
             "-" +  randname + ".log")
-
+    
     # formatting for log to file
-    fileHandler = logging.FileHandler(logPath)
+    fileHandler = logging.FileHandler(str(logPath))
     logFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     fileHandler.setFormatter(logFormatter)
     fileHandler.setLevel(logging.NOTSET) # log everything to file

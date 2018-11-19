@@ -1,8 +1,13 @@
+import os
+
+bare_dir = os.path.dirname(os.path.realpath(__file__))
+
 class Builder:
     def baseConfig(self):
         return {
                 'name' : 'baremetal-base',
                 'distro' : 'bare',
+                'workdir' : bare_dir,
                 'builder' : self
                 }
 
