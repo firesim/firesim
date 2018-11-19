@@ -104,7 +104,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case ActualDirection.Input =>
           val channels = simIo.getIns(wire)
           channels.zipWithIndex foreach { case (in, i) =>
-            in.bits  := target >> UInt(i * simIo.channelWidth)
+            in.bits  := target >> (i * simIo.channelWidth).U
             in.valid := port.fromHost.hValid || simResetNext
           }
           ready ++= channels map (_.ready)
