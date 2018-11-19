@@ -1,6 +1,0 @@
-{
-  "name" : "fedora-disk",
-  "base" : "fedora",
-  "linux-config" : "linux-config",
-  "rootfs-format" : "img"
-}

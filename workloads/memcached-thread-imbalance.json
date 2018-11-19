@@ -2,7 +2,7 @@
   "name" : "memcached-thread-imbalance",
   "base" : "br-disk.json",
   "overlay" : "mutilate-loadgen-riscv-release/overlay",
-  "host_init" : "host_init.sh",
+  "host-init" : "host-init.sh",
   "simulation_outputs" : ["uartlog"],
   "post_run_hook": "python process-data.py",
   "jobs" : [

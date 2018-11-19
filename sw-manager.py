@@ -211,8 +211,10 @@ def handleBuild(args, cfgs):
 
 def launchSpike(config, initramfs=False):
     log = logging.getLogger()
-    if initramfs or 'img' not in config:
+    if initramfs:
         sp.check_call(['spike', '-p4', '-m4096', config['bin'] + '-initramfs'])
+    elif 'img' not in config:
+        sp.check_call(['spike', '-p4', '-m4096', config['bin']])
     else:
         raise ValueError("Spike does not support disk-based configurations")
 

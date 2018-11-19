@@ -1,6 +1,0 @@
-{
-  "name" : "example-bare",
-  "base" : "bare",
-  "host_init" : "build.sh",
-  "bin" : "hello"
-}

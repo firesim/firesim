@@ -1,6 +1,0 @@
-{
-  "name" : "br-initramfs",
-  "base" : "br",
-  "linux-config" : "linux-config",
-  "rootfs-format" : "cpio"
-}

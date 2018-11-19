@@ -1,8 +1,0 @@
-{
-  "name" : "example-fed-initramfs",
-  "base" : "example-fed.json",
-  "rootfs-format" : "cpio",
-  "linux-config" : "linux-config",
-  "overlay" : "overlay",
-  "run" : "run.sh"
-}

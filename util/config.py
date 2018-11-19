@@ -52,7 +52,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin']
+configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -167,9 +167,11 @@ class Config(collections.MutableMapping):
         for k in ((set(baseCfg.keys()) - set(self.cfg.keys())) & set(configInherit)):
             self.cfg[k] = baseCfg[k]
         
-        # Derived options that can only be set after the base has been applied
-        self.cfg['base-img'] = baseCfg['img']
-        self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
+        # Distros always specify an image if they use one. We assume that this
+        # config will not generate a new image if it's base didn't
+        if 'img' in baseCfg:
+            self.cfg['base-img'] = baseCfg['img']
+            self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
 
         if 'bin' not in self.cfg:
             self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")

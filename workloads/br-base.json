@@ -1,0 +1,5 @@
+{
+  "name" : "br-base",
+  "base" : "br",
+  "linux-config" : "linux-config"
+}

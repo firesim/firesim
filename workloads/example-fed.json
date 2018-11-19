@@ -2,8 +2,16 @@
   "name" : "example-fed",
   "base" : "fedora-disk.json",
   "overlay" : "overlay",
-  "rootfs-format" : "img",
   "init" : "init.sh",
-  "host_init" : "host-init.sh",
-  "run" : "run.sh"
+  "host-init" : "host-init.sh",
+  "jobs" : [
+    {
+      "name" : "qsort",
+      "run" : "runQsort.sh"
+    },
+    {
+      "name" : "spamBench",
+      "run" : "runSpam.sh"
+    }
+  ]
 }

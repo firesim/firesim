@@ -9,7 +9,8 @@
 # your script is running in the background.
 
 # In this case, we will use fedora's package manager to install something (the
-# full-featured 'time' command to replace the shell builtin). You can also
+# full-featured 'time' command to replace the shell builtin). We also use pip
+# to install a python package used by one of the benchmarks. You can also
 # download stuff, compile things that don't support cross-compilation, and/or
 # configure your system in this script.
 
@@ -20,4 +21,8 @@
 
 echo "Installing the real time tool (not the shell builtin)"
 dnf install -y time
+
+echo "Installing the spambayes python module for the spam benchmark"
+pip install spambayes
+
 poweroff

@@ -6,4 +6,5 @@
 # this script may be called multiple times.
 echo "Building qsort benchmark"
 cd overlay/root/qsort
+
 make
