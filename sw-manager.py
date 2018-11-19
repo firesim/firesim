@@ -14,6 +14,7 @@ import string
 from util.config import *
 from util.util import *
 import pathlib as pth
+import tempfile
 
 def main():
     parser = argparse.ArgumentParser(
@@ -32,6 +33,7 @@ def main():
     build_parser.set_defaults(func=handleBuild)
     build_parser.add_argument('-j', '--job', nargs='?', default='all',
             help="Build only the specified JOB (defaults to 'all')")
+    build_parser.add_argument('-i', '--initramfs', action='store_true', help="Build an image with initramfs instead of a disk")
 
     # Launch command
     launch_parser = subparsers.add_parser(
@@ -41,11 +43,14 @@ def main():
             help="Use the spike isa simulator instead of qemu")
     launch_parser.add_argument('-j', '--job', nargs='?', default='all',
             help="Launch the specified job. Defaults to running the base image.")
+    launch_parser.add_argument('-i', '--initramfs', action='store_true', help="Launch the initramfs version of this workload")
 
     # Init Command
-    init_parser = subparsers.add_parser(
-            'init', help="Initialize workloads (using 'host_init' script)")
-    init_parser.set_defaults(func=handleInit)
+    # XXX Not implemented yet: The plan is to make host_init only run when
+    # specifically requested
+    # init_parser = subparsers.add_parser(
+    #         'init', help="Initialize workloads (using 'host_init' script)")
+    # init_parser.set_defaults(func=handleInit)
 
     args = parser.parse_args()
     args.config_file = os.path.abspath(args.config_file)
@@ -57,6 +62,12 @@ def main():
     cfgs = ConfigManager([os.path.abspath(args.workdir)])
     targetCfg = cfgs[args.config_file]
     
+    if args.initramfs:
+        targetCfg['initramfs'] = True
+        if 'jobs' in targetCfg:
+            for j in targetCfg['jobs'].values():
+                j['initramfs'] = True
+
     # Jobs are named with their base config internally 
     if args.command == 'build' or args.command == 'launch':
         if args.job != 'all':
@@ -71,7 +82,6 @@ def main():
 class doitLoader(doit.cmd_base.TaskLoader):
     workloads = []
 
-    # @staticmethod
     def load_tasks(self, cmd, opt_values, pos_args):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
         config = {'verbosity': 2}
@@ -85,10 +95,6 @@ def addDep(loader, config):
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
 
-    if config.get('rootfs-format') == 'cpio':
-        file_deps.append(config['img'])
-        task_deps.append(config['img'])
-
     loader.workloads.append({
             'name' : config['bin'],
             'actions' : [(makeBin, [config])],
@@ -96,6 +102,23 @@ def addDep(loader, config):
             'file_dep': file_deps,
             'task_dep' : task_deps
             })
+
+    # Add a rule for the initramfs version if requested
+    # Note that we need both the regular bin and initramfs bin if the base
+    # workload needs an init script
+    if 'initramfs' in config:
+        file_deps = [config['img']]
+        task_deps = [config['img']]
+        if 'linux-config' in config:
+            file_deps.append(config['linux-config'])
+
+        loader.workloads.append({
+                'name' : config['bin'] + '-initramfs',
+                'actions' : [(makeBin, [config], {'initramfs' : True})],
+                'targets' : [config['bin'] + '-initramfs'],
+                'file_dep': file_deps,
+                'task_dep' : task_deps
+                })
 
     # Add a rule for the image (if any)
     file_deps = []
@@ -166,15 +189,22 @@ def handleBuild(args, cfgs):
     if 'img' in config:
         imgList.append(config['img'])
 
+    if 'initramfs' in config:
+        binList.append(config['bin'] + '-initramfs')
+
     if 'jobs' in config.keys():
         if args.job == 'all':
             for jCfg in config['jobs'].values():
                 binList.append(jCfg['bin'])
+                if 'initramfs' in jCfg:
+                    binList.append(jCfg['bin'] + '-initramfs')
                 if 'img' in jCfg:
                     imgList.append(jCfg['img'])
         else:
             jCfg = config['jobs'][args.job]
             binList.append(jCfg['bin'])
+            if 'initramfs' in jCfg:
+                binList.append(jCfg['bin'] + '-initramfs')
             if 'img' in jCfg:
                 imgList.append(jCfg['img'])
 
@@ -187,25 +217,33 @@ def handleBuild(args, cfgs):
         # Since CPIO doesn't support init scripts, we don't need the bin first
         doit.doit_cmd.DoitMain(loader).run(imgList + binList)
 
-def launchSpike(config):
+def launchSpike(config, initramfs=False):
     log = logging.getLogger()
-    sp.check_call(['spike', '-p4', '-m4096', config['bin']])
+    if initramfs or 'img' not in config:
+        sp.check_call(['spike', '-p4', '-m4096', config['bin'] + '-initramfs'])
+    else:
+        raise ValueError("Spike does not support disk-based configurations")
 
-def launchQemu(config):
+def launchQemu(config, initramfs=False):
     log = logging.getLogger()
+
+    if initramfs:
+        exe = config['bin'] + '-initramfs'
+    else:
+        exe = config['bin']
 
     cmd = ['qemu-system-riscv64',
            '-nographic',
            '-smp', '4',
            '-machine', 'virt',
            '-m', '4G',
-           '-kernel', config['bin'],
+           '-kernel', exe,
            '-object', 'rng-random,filename=/dev/urandom,id=rng0',
            '-device', 'virtio-rng-device,rng=rng0',
            '-device', 'virtio-net-device,netdev=usernet',
            '-netdev', 'user,id=usernet,hostfwd=tcp::10000-:22']
 
-    if 'img' in config and config['rootfs-format'] == 'img':
+    if 'img' in config and not initramfs:
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
         cmd = cmd + ['-append', 'ro root=/dev/vda']
@@ -223,12 +261,13 @@ def handleLaunch(args, cfgs):
         config = cfgs[args.config_file]
     
     if args.spike:
-        if 'img' in config and config['rootfs-format'] == 'img':
+        # if 'img' in config and config['rootfs-format'] == 'img':
+        if 'img' in config and 'initramfs' not in config:
             sys.exit("Spike currently does not support disk-based " +
                     "configurations. Please use an initramfs based image.")
-        launchSpike(config)
+        launchSpike(config, args.initramfs)
     else:
-        launchQemu(config)
+        launchQemu(config, args.initramfs)
 
 def handleInit(args, cfgs):
     config = cfgs[args.config_file]
@@ -236,23 +275,34 @@ def handleInit(args, cfgs):
         run([config['host_init']], cwd=config['workdir'])
 
 # Now build linux/bbl
-def makeBin(config):
+def makeBin(config, initramfs=False):
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
-        # I am not without mercy
-        checkInitramfsConfig(config)
-                
-        shutil.copy(config['linux-config'], os.path.join(linux_dir, ".config"))
-        run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
+        linuxCfg = os.path.join(linux_dir, '.config')
+        shutil.copy(config['linux-config'], linuxCfg)
+
+        if initramfs:
+            with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
+                toCpio(config, config['img'], tmpCpio.name)
+                convertInitramfsConfig(linuxCfg, tmpCpio.name)
+                run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=linux_dir)
+                run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
+        else: 
+            run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
+
         if not os.path.exists('riscv-pk/build'):
             os.mkdir('riscv-pk/build')
 
         run(['../configure', '--host=riscv64-unknown-elf',
             '--with-payload=../../riscv-linux/vmlinux'], cwd='riscv-pk/build')
         run(['make', jlevel], cwd='riscv-pk/build')
-        shutil.copy('riscv-pk/build/bbl', config['bin'])
+
+        if initramfs:
+            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-initramfs')
+        else:
+            shutil.copy('riscv-pk/build/bbl', config['bin'])
     elif config['distro'] != 'bare':
         raise ValueError("No linux config defined. This is only supported for workloads based on 'bare'")
 
@@ -290,6 +340,7 @@ def makeImage(config):
         # Apply and run the init script
         init_overlay = config['builder'].generateBootScriptOverlay(config['init'])
         applyOverlay(config['img'], init_overlay, config['rootfs-format'])
+        print("Launching: " + config['bin'])
         launchQemu(config)
 
         # Clear the init script
@@ -310,15 +361,6 @@ def makeImage(config):
 
         run_overlay = config['builder'].generateBootScriptOverlay(scriptPath)
         applyOverlay(config['img'], run_overlay, config['rootfs-format'])
-
-def toCpio(config, src, dst):
-    log = logging.getLogger()
-
-    run(['sudo', 'mount', '-o', 'loop', src, mnt])
-    try:
-        run("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
-    finally:
-        run(['sudo', 'umount', mnt])
 
 # Apply the overlay directory "overlay" to the filesystem image "img" which
 # has format "fmt" (either 'cpio' or 'img').

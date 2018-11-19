@@ -67,6 +67,14 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
         if check:
             raise
 
+# Convert a linux configuration file to use an initramfs that points to the correct cpio
+# This will modify linuxCfg in place
+def convertInitramfsConfig(cfgPath, cpioPath):
+    log = logging.getLogger()
+    with open(cfgPath, 'at') as f:
+        f.write("CONFIG_BLK_DEV_INITRD=y\n")
+        f.write('CONFIG_INITRAMFS_SOURCE="' + cpioPath + '"\n')
+ 
 # It's pretty easy to forget to update the linux config for initramfs-based
 # workloads. We check here to make sure you've set the CONFIG_INITRAMFS_SOURCE
 # option correctly. This only issues a warning right now because you might have
@@ -101,3 +109,14 @@ def genRunScript(command):
         s.write("poweroff\n")
 
     return commandScript
+
+def toCpio(config, src, dst):
+    log = logging.getLogger()
+
+    run(['sudo', 'mount', '-o', 'loop', src, mnt])
+    try:
+        run("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+    finally:
+        run(['sudo', 'umount', mnt])
+
+
