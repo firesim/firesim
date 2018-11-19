@@ -24,7 +24,7 @@ abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
 
 abstract class MemModelConfig // TODO: delete it
 
-class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
+class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
   // The default NastiKey is expected to be that of the target
   val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
@@ -57,10 +57,10 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   // 3. connect target channels to buffers.
   //   - Transactions are generated / consumed according to timing conditions
   def elaborate(stall: Bool,
-                rCycleValid: Bool = Bool(true),
-                wCycleValid: Bool = Bool(true),
-                rCycleReady: Bool = Bool(true),
-                wCycleReady: Bool = Bool(true)) = {
+                rCycleValid: Bool = true.B,
+                wCycleValid: Bool = true.B,
+                rCycleReady: Bool = true.B,
+                wCycleReady: Bool = true.B) = {
     val fire = tFire && !stall
     fire suggestName "fire"
     io.tNasti.toHost.hReady := fire
