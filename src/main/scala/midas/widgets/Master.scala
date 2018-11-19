@@ -22,7 +22,7 @@ object Pulsify {
     if (pulseLength > 1) {
       val count = Counter(pulseLength)
       when(in){count.inc()}
-      when(count.value === UInt(pulseLength-1)) {
+      when(count.value === (pulseLength - 1).U) {
         in := false.B
         count.value := 0.U
       }
