@@ -27,7 +27,7 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
   ) ++ top.headerConsts
 
   val cyclecount = RegInit(UInt(0, width=64.W))
-  cyclecount := cyclecount + UInt(1)
+  cyclecount := cyclecount + 1.U
 
   if (p(AXIDebugPrint)) {
     // print all transactions

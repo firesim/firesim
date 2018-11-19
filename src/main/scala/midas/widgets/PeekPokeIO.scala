@@ -65,7 +65,7 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val reg = Reg(channel.bits)
     reg suggestName ("target_" + name)
     channel.bits := reg
-    channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
+    channel.valid := iTokensAvailable =/= 0.U && fromHostReady
     attach(reg, name)
   }) _
 
@@ -73,19 +73,19 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val channel = io.outs(offset)
     val reg = RegEnable(channel.bits, channel.fire)
     reg suggestName ("target_" + name)
-    channel.ready := oTokensPending =/= UInt(0) && toHostValid
+    channel.ready := oTokensPending =/= 0.U && toHostValid
     attach(reg, name)
   }) _
 
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
 
-  when (iTokensAvailable =/= UInt(0) && fromHostReady) {
-    iTokensAvailable := iTokensAvailable - UInt(1)
+  when (iTokensAvailable =/= 0.U && fromHostReady) {
+    iTokensAvailable := iTokensAvailable - 1.U
   }
 
-  when (oTokensPending =/= UInt(0) && toHostValid) {
-    oTokensPending := oTokensPending - UInt(1)
+  when (oTokensPending =/= 0.U && toHostValid) {
+    oTokensPending := oTokensPending - 1.U
     tCycle := tCycle + 1.U
   }
   hCycle := hCycle + 1.U

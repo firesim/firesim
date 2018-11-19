@@ -24,7 +24,7 @@ object Pulsify {
       when(in){count.inc()}
       when(count.value === UInt(pulseLength-1)) {
         in := false.B
-        count.value := UInt(0)
+        count.value := 0.U
       }
     } else {
       when(in) {in := false.B}
@@ -36,7 +36,7 @@ class EmulationMaster(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new EmulationMasterIO)
   Pulsify(genWORegInit(io.simReset, "SIM_RESET", false.B), pulseLength = 4)
   genAndAttachQueue(io.step, "STEP")
-  genRORegInit(io.done && ~io.simReset, "DONE", UInt(0))
+  genRORegInit(io.done && ~io.simReset, "DONE", 0.U)
 
   genCRFile()
 
