@@ -17,7 +17,7 @@ case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
-class FPGATopIO(implicit p: Parameters) extends WidgetIO {
+class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
 }
@@ -104,7 +104,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case ActualDirection.Input =>
           val channels = simIo.getIns(wire)
           channels.zipWithIndex foreach { case (in, i) =>
-            in.bits  := target >> UInt(i * simIo.channelWidth)
+            in.bits  := target >> (i * simIo.channelWidth).U
             in.valid := port.fromHost.hValid || simResetNext
           }
           ready ++= channels map (_.ready)
@@ -114,6 +114,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           channels foreach (_.ready := port.toHost.hReady)
           valid ++= channels map (_.valid)
       }
+      case _ => throw new RuntimeException("Uexpected type tuple in channels2Port")
     }
 
     loop(port.hBits -> wires)
@@ -136,7 +137,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   val addresses = new ListBuffer[AddressSet]
 
   // Instantiate endpoint widgets
-  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
+  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B){ (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
       val widgetName = (endpoint, p(MemModelKey)) match {
         case (_: SimMemIO, Some(_)) => s"MemModel_$i"

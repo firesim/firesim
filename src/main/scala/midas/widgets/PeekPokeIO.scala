@@ -3,7 +3,8 @@
 package midas
 package widgets
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
 trait HasChannels {
@@ -26,14 +27,14 @@ trait HasChannels {
   }
 }
 
-class PeekPokeIOWidgetIO(inNum: Int, outNum: Int)(implicit p: Parameters)
+class PeekPokeIOWidgetIO(val inNum: Int, val outNum: Int)(implicit val p: Parameters)
     extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
   val ins  = Vec(inNum, Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val outs = Flipped(Vec(outNum, Decoupled(UInt(ctrl.nastiXDataBits.W))))
 
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
-  val idle = Bool(OUTPUT)
+  val idle = Output(Bool())
   val tReset = Decoupled(Bool())
 }
 
@@ -62,10 +63,10 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
 
   def bindInputs = bindChannels((name, offset) => {
     val channel = io.ins(offset)
-    val reg = Reg(channel.bits)
+    val reg = Reg(channel.bits.cloneType)
     reg suggestName ("target_" + name)
     channel.bits := reg
-    channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
+    channel.valid := iTokensAvailable =/= 0.U && fromHostReady
     attach(reg, name)
   }) _
 
@@ -73,19 +74,19 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
     val channel = io.outs(offset)
     val reg = RegEnable(channel.bits, channel.fire)
     reg suggestName ("target_" + name)
-    channel.ready := oTokensPending =/= UInt(0) && toHostValid
+    channel.ready := oTokensPending =/= 0.U && toHostValid
     attach(reg, name)
   }) _
 
   val inputAddrs = bindInputs(inputs, 0)
   val outputAddrs = bindOutputs(outputs, 0)
 
-  when (iTokensAvailable =/= UInt(0) && fromHostReady) {
-    iTokensAvailable := iTokensAvailable - UInt(1)
+  when (iTokensAvailable =/= 0.U && fromHostReady) {
+    iTokensAvailable := iTokensAvailable - 1.U
   }
 
-  when (oTokensPending =/= UInt(0) && toHostValid) {
-    oTokensPending := oTokensPending - UInt(1)
+  when (oTokensPending =/= 0.U && toHostValid) {
+    oTokensPending := oTokensPending - 1.U
     tCycle := tCycle + 1.U
   }
   hCycle := hCycle + 1.U
@@ -102,8 +103,8 @@ class PeekPokeIOWidget(inputs: Seq[(String, Int)], outputs: Seq[(String, Int)])
   // Target reset connection
   // Hack: insert high to resetQueue as initial tokens
   val resetNext = RegNext(reset)
-  io.tReset.bits := resetNext || io.ins(0).bits(0)
-  io.tReset.valid := resetNext || io.ins(0).valid
+  io.tReset.bits := resetNext.toBool || io.ins(0).bits(0)
+  io.tReset.valid := resetNext.toBool || io.ins(0).valid
 
   genCRFile()
 
