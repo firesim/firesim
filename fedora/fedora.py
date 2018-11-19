@@ -15,7 +15,6 @@ class Builder:
                 'name' : 'fedora-base',
                 'workdir' : fed_dir,
                 'distro' : 'fedora',
-                'rootfs-format' : 'img',
                 'builder' : self,
                 'img' : os.path.join(fed_dir, "rootfs.img")
                 }

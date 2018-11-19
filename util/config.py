@@ -19,8 +19,6 @@ configUser = [
         'name',
         # Path to config to base off (or 'fedora'/'br' if deriving from a base config)
         'base',
-        # Format used for rootfs: 'img' or 'cpio'
-        'rootfs-format',
         # Path to linux configuration file to use
         'linux-config',
         # Path to script to run on host before building this config
@@ -58,7 +56,7 @@ configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host_init', 'cfg-file'
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'linux-config', 'builder', 'distro', 'rootfs-format']
+configInherit = ['runSpec', 'files', 'linux-config', 'builder', 'distro']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -170,10 +168,8 @@ class Config(collections.MutableMapping):
             self.cfg[k] = baseCfg[k]
         
         # Derived options that can only be set after the base has been applied
-        if 'rootfs-format' in baseCfg:
-            self.cfg['base-img'] = baseCfg['img']
-            self.cfg['base-format'] = baseCfg['rootfs-format']
-            self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + "." + self.cfg['rootfs-format'])
+        self.cfg['base-img'] = baseCfg['img']
+        self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
 
         if 'bin' not in self.cfg:
             self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")

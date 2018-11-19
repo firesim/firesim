@@ -208,14 +208,8 @@ def handleBuild(args, cfgs):
             if 'img' in jCfg:
                 imgList.append(jCfg['img'])
 
-    if 'img' not in config or config['rootfs-format'] == 'img':
-        # Be sure to build the bin first, then the image, because if there is
-        # an init script, we need to boot the binary in order to apply it
-        doit.doit_cmd.DoitMain(loader).run(binList + imgList)
-    elif config['rootfs-format'] == 'cpio':
-        # CPIO must build the image first, since the binary links to it.
-        # Since CPIO doesn't support init scripts, we don't need the bin first
-        doit.doit_cmd.DoitMain(loader).run(imgList + binList)
+    # The order isn't critical here, we should have defined the dependencies correctly in loader 
+    doit.doit_cmd.DoitMain(loader).run(binList + imgList)
 
 def launchSpike(config, initramfs=False):
     log = logging.getLogger()
@@ -261,7 +255,6 @@ def handleLaunch(args, cfgs):
         config = cfgs[args.config_file]
     
     if args.spike:
-        # if 'img' in config and config['rootfs-format'] == 'img':
         if 'img' in config and 'initramfs' not in config:
             sys.exit("Spike currently does not support disk-based " +
                     "configurations. Please use an initramfs based image.")
@@ -309,16 +302,8 @@ def makeBin(config, initramfs=False):
 def makeImage(config):
     log = logging.getLogger()
 
-    if config['base-format'] == config['rootfs-format']:
-        shutil.copy(config['base-img'], config['img'])
-    elif config['base-format'] == 'img' and config['rootfs-format'] == 'cpio':
-        toCpio(config, config['base-img'], config['img'])
-    elif config['base-format'] == 'cpio' and config['rootfs-format'] == 'img':
-        raise NotImplementedError("Converting from CPIO to raw img is not currently supported")
-    else:
-        raise ValueError("Invalid formats for base and/or new image: Base=" +
-                config['base-format'] + ", New=" + config['rootfs-format'])
-
+    shutil.copy(config['base-img'], config['img'])
+    
     if 'host_init' in config:
         log.info("Applying host_init: " + config['host_init'])
         if not os.path.exists(config['host_init']):
@@ -328,24 +313,22 @@ def makeImage(config):
 
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
-        applyFiles(config['img'], config['files'], config['rootfs-format'])
+        applyFiles(config['img'], config['files'])
 
     if 'init' in config:
         log.info("Applying init script: " + config['init'])
-        if config['rootfs-format'] == 'cpio':
-            raise ValueError("CPIO-based images do not support init scripts.")
         if not os.path.exists(config['init']):
             raise ValueError("Init script " + config['init'] + " not found.")
 
         # Apply and run the init script
         init_overlay = config['builder'].generateBootScriptOverlay(config['init'])
-        applyOverlay(config['img'], init_overlay, config['rootfs-format'])
+        applyOverlay(config['img'], init_overlay)
         print("Launching: " + config['bin'])
         launchQemu(config)
 
         # Clear the init script
         run_overlay = config['builder'].generateBootScriptOverlay(None)
-        applyOverlay(config['img'], run_overlay, config['rootfs-format'])
+        applyOverlay(config['img'], run_overlay)
 
     if 'runSpec' in config:
         spec = config['runSpec']
@@ -360,41 +343,27 @@ def makeImage(config):
             raise ValueError("Run script " + scriptPath + " not found.")
 
         run_overlay = config['builder'].generateBootScriptOverlay(scriptPath)
-        applyOverlay(config['img'], run_overlay, config['rootfs-format'])
+        applyOverlay(config['img'], run_overlay)
 
-# Apply the overlay directory "overlay" to the filesystem image "img" which
-# has format "fmt" (either 'cpio' or 'img').
+# Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute
-def applyOverlay(img, overlay, fmt):
+def applyOverlay(img, overlay):
     log = logging.getLogger()
-    applyFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')], fmt)
+    applyFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')])
     
 # Copies a list of type FileSpec ('files') into the destination image (img)
-def applyFiles(img, files, fmt):
+def applyFiles(img, files):
     log = logging.getLogger()
 
-    if fmt == 'img':
-        run(['sudo', 'mount', '-o', 'loop', img, mnt])
-        try:
-            for f in files:
-                # Overlays may not be owned by root, but the filesystem must be.
-                # Rsync lets us chown while copying.
-                # Note: shell=True because f.src is allowed to contain globs
-                # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
-                run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
-        finally:
-            run(['sudo', 'umount', mnt])
-
-    elif fmt == 'cpio':
-        run("sudo cpio --owner root:root --null -ov -H newc >> " + img)
-        # Note: a quirk of cpio is that it doesn't really overwrite files when
-        # doing an overlay, it actually just appends a new file with the same
-        # name. Linux handles this just fine (it uses the latest version of a
-        # file), but be aware.
-        run('sudo find ./* -print0 | sudo cpio --owner root:root --null -ov -H newc >> ' + img,
-                cwd=overlay, shell=True)
-
-    else:
-        raise ValueError("Only 'img' and 'cpio' formats are currently supported")
+    run(['sudo', 'mount', '-o', 'loop', img, mnt])
+    try:
+        for f in files:
+            # Overlays may not be owned by root, but the filesystem must be.
+            # Rsync lets us chown while copying.
+            # Note: shell=True because f.src is allowed to contain globs
+            # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
+            run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+    finally:
+        run(['sudo', 'umount', mnt])
 
 main()
