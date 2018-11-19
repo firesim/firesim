@@ -26,7 +26,7 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
     "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
   ) ++ top.headerConsts
 
-  val cyclecount = Reg(init = UInt(0, width=64.W))
+  val cyclecount = RegInit(UInt(0, width=64.W))
   cyclecount := cyclecount + UInt(1)
 
   if (p(AXIDebugPrint)) {
