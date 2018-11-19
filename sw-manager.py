@@ -22,12 +22,6 @@ def main():
                         help='Configuration file to use (defaults to br-disk.json)',
                         nargs='?', default=os.path.join(root_dir, 'workloads', 'br-disk.json'), dest='config_file')
     parser.add_argument('--workdir', help='Use a custom workload directory', default=os.path.join(root_dir, 'workloads'))
-    # parser.add_argument('-c', '--config',
-    #                     help='Configuration file to use (defaults to br-disk.json)',
-    #                     nargs='?', type=lambda p: pth.Path(p).absolute(),
-    #                     default=(root_dir / 'workloads' / 'br-disk.json'), dest='config_file')
-    # parser.add_argument('--workdir', help='Use a custom workload directory',
-    #         type=lambda p: pth.Path(p).absolute(), default=(root_dir / 'workloads'))
     parser.add_argument('-v', '--verbose',
                         help='Print all output of subcommands to stdout as well as the logs', action='store_true')
     subparsers = parser.add_subparsers(title='Commands', dest='command')
@@ -54,7 +48,6 @@ def main():
     init_parser.set_defaults(func=handleInit)
 
     args = parser.parse_args()
-    # args.config_file = args.config_file.resolve()
     args.config_file = os.path.abspath(args.config_file)
 
     initLogging(args)
@@ -105,15 +98,21 @@ def addDep(loader, config):
             })
 
     # Add a rule for the image (if any)
+    file_deps = []
+    task_deps = []
     if 'img' in config:
         if 'base-img' in config:
             task_deps = [config['base-img']]
             file_deps = [config['base-img']]
-        # XXX this is broken temporarily (DONT COMMIT)
-        # if 'files' in config:
-        #     for root, dirs, files in os.walk(config['overlay']):
-        #         for f in files:
-        #             file_deps.append(os.path.join(root, f))
+        if 'files' in config:
+            for fSpec in config['files']:
+                # Add directories recursively
+                if os.path.isdir(fSpec.src):
+                    for root, dirs, files in os.walk(fSpec.src):
+                        for f in files:
+                            file_deps.append(os.path.join(root, f))
+                else:
+                    file_deps.append(fSpec.src)			
         if 'init' in config:
             file_deps.append(config['init'])
             task_deps.append(config['bin'])
@@ -254,6 +253,8 @@ def makeBin(config):
             '--with-payload=../../riscv-linux/vmlinux'], cwd='riscv-pk/build')
         run(['make', jlevel], cwd='riscv-pk/build')
         shutil.copy('riscv-pk/build/bbl', config['bin'])
+    elif config['distro'] != 'bare':
+        raise ValueError("No linux config defined. This is only supported for workloads based on 'bare'")
 
 def makeImage(config):
     log = logging.getLogger()

@@ -1,0 +1,5 @@
+{
+  "name" : "fed",
+  "base" : "fedora",
+  "linux-config" : "linux-config"
+}

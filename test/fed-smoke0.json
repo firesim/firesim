@@ -1,0 +1,21 @@
+{
+  "name" : "fed-smoke0",
+  "base" : "fed.json",
+  "overlay" : "overlay",
+  "init" : "init.sh",
+  "run" : "run.sh",
+  "jobs" : [
+    {
+      "name" : "j0",
+      "files" : [ ["j0_output", "/root/"] ],
+      "init" : "init0.sh",
+      "run" : "run0.sh"
+    },
+    {
+      "name" : "j1",
+      "files" : [ ["j1_output", "/root/"] ],
+      "init" : "init1.sh",
+      "run" : "run1.sh"
+    }
+  ]
+}

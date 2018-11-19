@@ -139,7 +139,10 @@ class Config(collections.MutableMapping):
 
         # Convert overlay to file list (main program doesn't handle overlays directly)
         if 'overlay' in self.cfg:
-            self.cfg['files'] = self.cfg.get('files', []) + [FileSpec(src=os.path.join(self.cfg['overlay'], '*'), dst='/')]
+            self.cfg.setdefault('files', [])
+            files = glob.glob(os.path.join(self.cfg['overlay'], '*'))
+            for f in files:
+                self.cfg['files'].append(FileSpec(src=f, dst='/'))
 
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
@@ -235,11 +238,13 @@ class ConfigManager(collections.MutableMapping):
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                raise
+                # raise
+                continue
             except Exception as e:
                 log.warning("Skipping " + f + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                raise
+                # raise
+                continue
 
         # Now we recursively fill in defaults from base configs
         for f in self.cfgs:
@@ -248,12 +253,12 @@ class ConfigManager(collections.MutableMapping):
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                raise
+                # raise
                 continue
             except Exception as e:
                 log.warning("Skipping " + f + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                raise
+                # raise
                 continue
 
             log.debug("Loaded " + f)

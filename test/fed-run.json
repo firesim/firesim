@@ -1,0 +1,5 @@
+{
+  "name" : "fed-run",
+  "base" : "fed.json",
+  "run" : "run.sh"
+}
