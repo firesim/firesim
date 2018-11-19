@@ -46,11 +46,9 @@ def main():
     launch_parser.add_argument('-i', '--initramfs', action='store_true', help="Launch the initramfs version of this workload")
 
     # Init Command
-    # XXX Not implemented yet: The plan is to make host_init only run when
-    # specifically requested
-    # init_parser = subparsers.add_parser(
-    #         'init', help="Initialize workloads (using 'host_init' script)")
-    # init_parser.set_defaults(func=handleInit)
+    init_parser = subparsers.add_parser(
+            'init', help="Initialize workloads (using 'host_init' script)")
+    init_parser.set_defaults(func=handleInit)
 
     args = parser.parse_args()
     args.config_file = os.path.abspath(args.config_file)
@@ -62,14 +60,14 @@ def main():
     cfgs = ConfigManager([os.path.abspath(args.workdir)])
     targetCfg = cfgs[args.config_file]
     
-    if args.initramfs:
-        targetCfg['initramfs'] = True
-        if 'jobs' in targetCfg:
-            for j in targetCfg['jobs'].values():
-                j['initramfs'] = True
-
     # Jobs are named with their base config internally 
     if args.command == 'build' or args.command == 'launch':
+        if args.initramfs:
+            targetCfg['initramfs'] = True
+            if 'jobs' in targetCfg:
+                for j in targetCfg['jobs'].values():
+                    j['initramfs'] = True
+
         if args.job != 'all':
             if 'jobs' in targetCfg: 
                 args.job = targetCfg['name'] + '-' + args.job
@@ -263,9 +261,14 @@ def handleLaunch(args, cfgs):
         launchQemu(config, args.initramfs)
 
 def handleInit(args, cfgs):
+    log = logging.getLogger()
     config = cfgs[args.config_file]
-    if 'host_init' in config:
-        run([config['host_init']], cwd=config['workdir'])
+    if 'host-init' in config:
+        log.info("Applying host-init: " + config['host-init'])
+        if not os.path.exists(config['host-init']):
+            raise ValueError("host-init script " + config['host-init'] + " not found.")
+
+        run([config['host-init']], cwd=config['workdir'])
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
@@ -304,13 +307,6 @@ def makeImage(config):
 
     shutil.copy(config['base-img'], config['img'])
     
-    if 'host_init' in config:
-        log.info("Applying host_init: " + config['host_init'])
-        if not os.path.exists(config['host_init']):
-            raise ValueError("host_init script " + config['host_init'] + " not found.")
-
-        run([config['host_init']], cwd=config['workdir'])
-
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         applyFiles(config['img'], config['files'])

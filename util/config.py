@@ -22,7 +22,7 @@ configUser = [
         # Path to linux configuration file to use
         'linux-config',
         # Path to script to run on host before building this config
-        'host_init',
+        'host-init',
         # Path to folder containing overlay files to apply to img
         'overlay',
         # List of tuples of files to add [(dest_dir, srcFile),...]
@@ -52,7 +52,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host_init', 'cfg-file', 'bin']
+configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
