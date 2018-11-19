@@ -129,11 +129,12 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   }
 
   val memPorts = new ListBuffer[NastiIO]
-  val dmaInfoBuffer = new ListBuffer[(String, NastiIO, BigInt)]
+  case class DmaInfo(name: String, port: NastiIO, size: BigInt)
+  val dmaInfoBuffer = new ListBuffer[DmaInfo]
 
   // Instantiate endpoint widgets
-  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B){ (resetReady, endpoint) =>
-    ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
+  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B) { (resetReady, endpoint) =>
+    ((0 until endpoint.size) foldLeft resetReady) { (ready, i) =>
       val widgetName = (endpoint, p(MemModelKey)) match {
           case (_: SimMemIO, Some(_)) => s"MemModel_$i"
           case (_: SimMemIO, None) => s"NastiWidget_$i"
@@ -156,7 +157,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     
 
       if (widget.io.dma.nonEmpty)
-        dmaInfoBuffer += Tuple3(widgetName, widget.io.dma.get, widget.io.dmaSize)
+        dmaInfoBuffer += DmaInfo(widgetName, widget.io.dma.get, widget.io.dmaSize)
 
       // each widget should have its own reset queue
       val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
@@ -169,7 +170,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       ready && resetQueue.io.in.ready
     }
   }
-
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget
@@ -192,18 +192,18 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
 
   // Sort the list of DMA ports by address region size, largest to smallest
-  val dmaInfoSorted = dmaInfoBuffer.sortBy(_._3).reverse.toSeq
+  val dmaInfoSorted = dmaInfoBuffer.sortBy(_.size).reverse.toSeq
   // Build up the address map using the sorted list,
   // auto-assigning base addresses as we go.
   val dmaAddrMap = dmaInfoSorted.foldLeft((BigInt(0), List.empty[AddrMapEntry])) {
-    case ((startAddr, addrMap), (widgetName, _, reqSize)) =>
+    case ((startAddr, addrMap), DmaInfo(widgetName, _, reqSize)) =>
       // Round up the size to the nearest power of 2
       val regionSize = 1 << log2Ceil(reqSize)
       val region = MemRange(startAddr, regionSize, MemAttr(AddrMapProt.RW))
 
       (startAddr + regionSize, AddrMapEntry(widgetName, region) :: addrMap)
   }._2.reverse
-  val dmaPorts = dmaInfoSorted.map(_._2)
+  val dmaPorts = dmaInfoSorted.map(_.port)
 
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
