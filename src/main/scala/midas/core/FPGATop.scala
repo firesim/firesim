@@ -214,7 +214,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   } else {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
     val router = Module(new NastiRecursiveInterconnect(
-      1, new AddrMap(addresses))(dmaParams))
+      1, new AddrMap(dmaAddrMap))(dmaParams))
     router.io.masters.head <> NastiQueue(io.dma)(dmaParams)
     dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> NastiQueue(slave)(dmaParams) }
   }
