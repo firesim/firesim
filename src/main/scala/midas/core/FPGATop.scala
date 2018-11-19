@@ -127,55 +127,48 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
-  val dmaPorts = new ListBuffer[NastiIO]
   val memPorts = new ListBuffer[NastiIO]
-  val addresses = new ListBuffer[AddrMapEntry]
+  val dmaInfoBuffer = new ListBuffer[(String, NastiIO, BigInt)]
 
   // Instantiate endpoint widgets
 
-  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft (BigInt(0), true.B)){
-    case ((addrStart, resetReady), endpoint) =>
-      ((0 until endpoint.size) foldLeft (addrStart, resetReady)){
-        case ((addr, ready), i) =>
-          val widgetName = (endpoint, p(MemModelKey)) match {
-            case (_: SimMemIO, Some(_)) => s"MemModel_$i"
-            case (_: SimMemIO, None) => s"NastiWidget_$i"
-            case _ => s"${endpoint.widgetName}_$i"
-          }
-          val widget = addWidget(endpoint.widget(p), widgetName)
-          widget.reset := reset.toBool || simReset
-          widget match {
-            case model: MemModel =>
-              memPorts += model.io.host_mem
-              model.io.tNasti.hBits.aw.bits.user := DontCare
-              model.io.tNasti.hBits.aw.bits.region := DontCare
-              model.io.tNasti.hBits.ar.bits.user := DontCare
-              model.io.tNasti.hBits.ar.bits.region := DontCare
-              model.io.tNasti.hBits.w.bits.id := DontCare
-              model.io.tNasti.hBits.w.bits.user := DontCare
-            case _ =>
-          }
-          channels2Port(widget.io.hPort, endpoint(i)._2)
+  defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B) { (resetReady, endpoint) =>
+    ((0 until endpoint.size) foldLeft resetReady) { (ready, i) =>
+      val widgetName = (endpoint, p(MemModelKey)) match {
+          case (_: SimMemIO, Some(_)) => s"MemModel_$i"
+          case (_: SimMemIO, None) => s"NastiWidget_$i"
+          case _ => s"${endpoint.widgetName}_$i"
+      }
+      val widget = addWidget(endpoint.widget(p), widgetName)
+      widget.reset := reset.toBool || simReset
+      widget match {
+        case model: MemModel =>
+          memPorts += model.io.host_mem
+          model.io.tNasti.hBits.aw.bits.user := DontCare
+          model.io.tNasti.hBits.aw.bits.region := DontCare
+          model.io.tNasti.hBits.ar.bits.user := DontCare
+          model.io.tNasti.hBits.ar.bits.region := DontCare
+          model.io.tNasti.hBits.w.bits.id := DontCare
+          model.io.tNasti.hBits.w.bits.user := DontCare
+          case _ =>
+      }
+      channels2Port(widget.io.hPort, endpoint(i)._2)
     
-          val nextAddr = if (widget.io.dma.nonEmpty) {
-            val regionSize = 1 << log2Ceil(widget.io.dmaSize)
-            val region = MemRange(addr, regionSize, MemAttr(AddrMapProt.RW))
-            dmaPorts += widget.io.dma.get
-            addresses += AddrMapEntry(widgetName, region)
-            addr + regionSize
-          } else addr
 
-          // each widget should have its own reset queue
-          val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
-          resetQueue.io.traceLen := DontCare
-          resetQueue.io.trace.ready := DontCare
-          resetQueue.reset := reset.toBool || simReset
-          widget.io.tReset <> resetQueue.io.out
-          resetQueue.io.in.bits := defaultIOWidget.io.tReset.bits
-          resetQueue.io.in.valid := defaultIOWidget.io.tReset.valid
-          (nextAddr, ready && resetQueue.io.in.ready)
+      if (widget.io.dma.nonEmpty)
+        dmaInfoBuffer += Tuple3(widgetName, widget.io.dma.get, widget.io.dmaSize)
+
+      // each widget should have its own reset queue
+      val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
+      resetQueue.io.traceLen := DontCare
+      resetQueue.io.trace.ready := DontCare
+      resetQueue.reset := reset.toBool || simReset
+      widget.io.tReset <> resetQueue.io.out
+      resetQueue.io.in.bits := defaultIOWidget.io.tReset.bits
+      resetQueue.io.in.valid := defaultIOWidget.io.tReset.valid
+      ready && resetQueue.io.in.ready
     }
-  }._2
+  }
 
 
   // Host Memory Channels
@@ -197,6 +190,21 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   io.mem.zip(mem_xbar.io.slaves).foreach({ case (mem, slave) => mem <> NastiQueue(slave)(nastiP) })
   memPorts.zip(mem_xbar.io.masters).foreach({ case (mem_model, master) => master <> mem_model })
 
+
+  // Sort the list of DMA ports by address region size, largest to smallest
+  val dmaInfoSorted = dmaInfoBuffer.sortBy(_._3).reverse.toSeq
+  // Build up the address map using the sorted list,
+  // auto-assigning base addresses as we go.
+  val dmaAddrMap = dmaInfoSorted.foldLeft((BigInt(0), List.empty[AddrMapEntry])) {
+    case ((startAddr, addrMap), (widgetName, _, reqSize)) =>
+      // Round up the size to the nearest power of 2
+      val regionSize = 1 << log2Ceil(reqSize)
+      val region = MemRange(startAddr, regionSize, MemAttr(AddrMapProt.RW))
+
+      (startAddr + regionSize, AddrMapEntry(widgetName, region) :: addrMap)
+  }._2.reverse
+  val dmaPorts = dmaInfoSorted.map(_._2)
+
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
     val error = Module(new NastiErrorSlave()(dmaParams))
@@ -213,7 +221,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   genCtrlIO(io.ctrl, p(FpgaMMIOSize))
 
-  val addrConsts = addresses.map {
+  val addrConsts = dmaAddrMap.map {
     case AddrMapEntry(name, MemRange(addr, _, _)) =>
       (s"${name.toUpperCase}_DMA_ADDR" -> addr.longValue)
   }
