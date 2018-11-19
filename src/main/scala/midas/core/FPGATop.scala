@@ -17,7 +17,7 @@ case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
-class FPGATopIO(implicit p: Parameters) extends WidgetIO {
+class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
 }
