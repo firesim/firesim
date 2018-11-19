@@ -14,6 +14,9 @@ import freechips.rocketchip.diplomacy.AddressSet
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
   val dma: Option[NastiIO] = None
+  // Specify the size that you want the address region to be in the DMA memory map
+  // For proper functioning, the region should be at least as big as the
+  // largest read/write request you plan to send over PCIS
   val dmaSize: BigInt = BigInt(0)
   val tReset = Flipped(Decoupled(Bool()))
 }
