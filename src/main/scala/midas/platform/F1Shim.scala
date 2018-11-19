@@ -5,12 +5,11 @@ import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.util.ParameterizedBundle
 import midas.core.DMANastiKey
 
 case object AXIDebugPrint extends Field[Boolean]
 
-class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class F1ShimIO(implicit val p: Parameters) extends Bundle {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) }))

@@ -11,7 +11,7 @@ import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
 
 import scala.math.{max, min}
 
-class LoadMemIO(hKey: Field[NastiParameters])(implicit p: Parameters) extends WidgetIO()(p){
+class LoadMemIO(val hKey: Field[NastiParameters])(implicit val p: Parameters) extends WidgetIO()(p){
   // TODO: Slave nasti key should be passed in explicitly
   val toSlaveMem = new NastiIO()(p alterPartial ({ case NastiKey => p(hKey) }))
 }

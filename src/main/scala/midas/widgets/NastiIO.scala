@@ -24,7 +24,7 @@ abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
 
 abstract class MemModelConfig // TODO: delete it
 
-class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
+class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
   // The default NastiKey is expected to be that of the target
   val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))

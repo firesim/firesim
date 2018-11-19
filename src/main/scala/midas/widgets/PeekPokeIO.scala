@@ -27,7 +27,7 @@ trait HasChannels {
   }
 }
 
-class PeekPokeIOWidgetIO(val inNum: Int, val outNum: Int)(implicit p: Parameters)
+class PeekPokeIOWidgetIO(val inNum: Int, val outNum: Int)(implicit val p: Parameters)
     extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
   val ins  = Vec(inNum, Decoupled(UInt(ctrl.nastiXDataBits.W)))
