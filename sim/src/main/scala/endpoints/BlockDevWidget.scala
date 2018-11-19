@@ -24,7 +24,7 @@ class SimBlockDev(
   override def widgetName = "BlockDevWidget"
 }
 
-class BlockDevWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class BlockDevWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new BlockDeviceIO))
   val dma = None
   val address = None

@@ -21,7 +21,7 @@ class SimSerialIO extends Endpoint {
   override def widgetName = "SerialWidget"
 }
 
-class SerialWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class SerialWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val w = testchipip.SerialAdapter.SERIAL_IF_WIDTH
   val hPort = Flipped(HostPort(new SerialIO(w)))
   val dma = None

@@ -40,7 +40,7 @@ class SimTracerV extends Endpoint {
   override def widgetName = "TracerVWidget"
 }
 
-class TracerVWidgetIO(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class TracerVWidgetIO(val tracerParams: Parameters, val num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
   val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
