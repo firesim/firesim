@@ -11,7 +11,7 @@ import midas.core.{DMANastiKey, HostMemNumChannels, HostMemChannelNastiKey}
 
 case object AXIDebugPrint extends Field[Boolean]
 
-class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class F1ShimIO(implicit val p: Parameters) extends Bundle {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
   val slave  = Vec(p(HostMemNumChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
@@ -27,8 +27,8 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
     "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
   ) ++ top.headerConsts
 
-  val cyclecount = Reg(init = UInt(0, width=64.W))
-  cyclecount := cyclecount + UInt(1)
+  val cyclecount = RegInit(0.U(64.W))
+  cyclecount := cyclecount + 1.U
 
   if (p(AXIDebugPrint)) {
     // print all transactions

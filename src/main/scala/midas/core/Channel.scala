@@ -92,7 +92,7 @@ class WireChannel(
     io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
     io.trace := DontCare
-    io.trace.valid := Bool(false)
+    io.trace.valid := false.B
   }
 }
 
@@ -283,9 +283,9 @@ class ReadyValidChannel[T <: Data](
     io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
   } else {
     io.trace := DontCare
-    io.trace.bits.valid  := Bool(false)
-    io.trace.valid.valid := Bool(false)
-    io.trace.ready.valid := Bool(false)
+    io.trace.bits.valid  := false.B
+    io.trace.valid.valid := false.B
+    io.trace.ready.valid := false.B
   }
 }
 
