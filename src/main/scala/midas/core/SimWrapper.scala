@@ -199,7 +199,9 @@ class SimWrapperIO(io: TargetBoxIO)
 }
 
 class TargetBoxIO(targetIo: Seq[(String, Data)]) extends Record {
-  val elements = ListMap((targetIo map { case (name, field) => name -> chiselTypeOf(field)}):_*)
+  // ChiselTypeOf is more strict; rely on chiselCloneType behavior defaulting
+  // to output for pass-added target-IO for now
+  val elements = ListMap((targetIo map { case (name, field) => name -> field.chiselCloneType}):_*)
   def resets = elements collect { case (_, r: Reset) => r }
   def clocks = elements collect { case (_, c: Clock) => c }
   def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
