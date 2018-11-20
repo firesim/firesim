@@ -13,7 +13,7 @@ import freechips.rocketchip.unittest.{UnitTests, TestHarness}
 
 
 // Unittests
-class WithWireChannelTests extends Config((site, here, up) => {
+class WithAllUnitTests extends Config((site, here, up) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
     val timeout = 2000000
@@ -26,16 +26,7 @@ class WithWireChannelTests extends Config((site, here, up) => {
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
       Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
-      Module(new WireChannelUnitTest)
-    )
-  }
-})
-
-class WithReadyValidChannelTests extends Config((site, here, up) => {
-  case UnitTests => (q: Parameters) => {
-    implicit val p = q
-    val timeout = 200000
-    Seq(
+      Module(new WireChannelUnitTest),
       Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
       Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
       Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
@@ -60,7 +51,7 @@ class WithTimeOutCheck extends Config((site, here, up) => {
 })
 
 // Complete configs
-class AllUnitTests extends Config(new WithReadyValidChannelTests ++ new WithWireChannelTests ++ new SimConfig)
+class AllUnitTests extends Config(new WithAllUnitTests ++ new SimConfig)
 class TimeOutCheck extends Config(new WithTimeOutCheck ++ new SimConfig)
 
 // Generates synthesizable unit tests for key modules, such as simulation channels
