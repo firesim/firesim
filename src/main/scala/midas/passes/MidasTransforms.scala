@@ -11,6 +11,7 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
+import firrtl.transforms.fame
 import Utils._
 import java.io.{File, FileWriter}
 
@@ -49,10 +50,15 @@ private[midas] class MidasTransforms(
         new firrtl.transforms.DeadCodeElimination,
         new ConfToJSON(conf, json),
         new barstools.macros.MacroCompilerTransform,
-        firrtl.passes.ResolveKinds,
-        firrtl.passes.RemoveEmpty,
+        new fame.WrapTop,
+        new ResolveAndCheck,
+        new fame.ExtractModel,
+        new ResolveAndCheck,
+        new HighFirrtlToMiddleFirrtl,
+        new MiddleFirrtlToLowFirrtl,
         new ChannelizeTargetIO(io),
-        new firrtl.transforms.fame.FAMETransform) ++
+        new fame.FAMETransform,
+        new ResolveAndCheck) ++
         firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
         Seq(
         new SimulationMapping(io),
