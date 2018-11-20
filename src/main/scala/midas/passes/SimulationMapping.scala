@@ -91,3 +91,15 @@ private[passes] class SimulationMapping(
     linkedState
   }
 }
+
+private[passes] class EmitFirrtl(fileName: String) extends firrtl.Transform {
+
+  def inputForm = HighForm
+  def outputForm = HighForm
+  override def name = s"[MIDAS] Debugging Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    writeState(state, fileName)
+    state
+  }
+}

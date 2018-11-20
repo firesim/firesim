@@ -36,7 +36,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
     val topModulePortMap: Map[String, Port] = topModule.ports.map({p => p.name -> p}).toMap
     val ioElements = io.map({port => port.instanceName -> port })
 
-    val (wireSinks, wireSources, rvSinks, rvSources) = parsePortsSeq(ioElements)
+    val (wireSinks, wireSources, rvSinks, rvSources) = parsePortsSeq(ioElements, alsoFlattenRVPorts = false)
 
     // Helper functions to generate annotations and ReferenceTargets
     def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)
@@ -46,10 +46,10 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
     def wireSourceAnno(chName: String) =
       FAMEChannelAnnotation(chName, WireChannel, Some(Seq(portRefTarget(chName))), None)
 
-    def decoupledRevSinkAnno(readyTarget: ReferenceTarget) =
-      FAMEChannelAnnotation(readyTarget.ref, DecoupledReverseChannel, Some(Seq(readyTarget)), None)
-    def decoupledRevSourceAnno(readyTarget: ReferenceTarget) =
-      FAMEChannelAnnotation(readyTarget.ref, DecoupledReverseChannel, None, Some(Seq(readyTarget)))
+    def decoupledRevSinkAnno(name: String, readyTarget: ReferenceTarget) =
+      FAMEChannelAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, None, Some(Seq(readyTarget)))
+    def decoupledRevSourceAnno(name: String, readyTarget: ReferenceTarget) =
+      FAMEChannelAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, Some(Seq(readyTarget)), None)
 
     def decoupledFwdSinkAnno(chName: String,
                              validTarget: ReferenceTarget,
@@ -61,7 +61,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
         readySource = Some(readyTarget),
         validSource = None,
         readySink   = None)
-      FAMEChannelAnnotation(chName, chInfo, None, Some(leaves))
+      FAMEChannelAnnotation(prefixWith(chName, "fwd"), chInfo, None, Some(leaves))
     }
 
     def decoupledFwdSourceAnno(chName: String,
@@ -74,7 +74,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
         readySink   = Some(readyTarget),
         validSink   = None,
         readySource = None)
-      FAMEChannelAnnotation(chName, chInfo, Some(leaves), None)
+      FAMEChannelAnnotation(prefixWith(chName, "fwd"), chInfo, Some(leaves), None)
     }
 
     // Generate ReferenceTargets for the leaves in an RV payload
@@ -91,20 +91,20 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
     def getRVTargets(port: chisel3.Data, name: String): (ReferenceTarget, ReferenceTarget, Seq[ReferenceTarget]) = {
       val validTarget = portRefTarget(prefixWith(name, "valid"))
       val readyTarget = portRefTarget(prefixWith(name, "ready"))
-      val payloadTargets = getRVLeaves(name, port)
-      (validTarget, readyTarget, payloadTargets)
+      val payloadTargets = getRVLeaves(prefixWith(name, "bits"), port)
+      (validTarget, readyTarget, Seq(validTarget) ++ payloadTargets)
     }
 
     def rvSinkAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
       case (port, name) =>
-      val (vT, rT, pTs) = getRVTargets(port, name)
-      Seq(decoupledFwdSinkAnno(name, vT, rT, pTs), decoupledRevSourceAnno(rT))
+      val (vT, rT, pTs) = getRVTargets(port.bits, name)
+      Seq(decoupledFwdSinkAnno(name, vT, rT, pTs), decoupledRevSourceAnno(name, rT))
     }
 
     def rvSourceAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
       case (port, name) =>
-      val (vT, rT, pTs) = getRVTargets(port, name)
-      Seq(decoupledFwdSourceAnno(name, vT, rT, pTs), decoupledRevSinkAnno(rT))
+      val (vT, rT, pTs) = getRVTargets(port.bits, name)
+      Seq(decoupledFwdSourceAnno(name, vT, rT, pTs), decoupledRevSinkAnno(name, rT))
     }
 
     val chAnnos =
@@ -113,6 +113,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
       rvSinks    .flatMap(rvSinkAnnos) ++
       rvSources  .flatMap(rvSourceAnnos)
 
+    chAnnos foreach println
     val f1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topChildren.head.module))
     state.copy(annotations = state.annotations ++ Seq(f1Anno) ++ chAnnos)
   }
