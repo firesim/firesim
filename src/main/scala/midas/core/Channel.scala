@@ -203,7 +203,6 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 
 class ReadyValidChannel[T <: Data](
     gen: T,
-    flipped: Boolean,
     n: Int = 2, // Target queue depth
     // Clock ratio (N/M) of deq interface (N) vs enq interface (M)
     clockRatio: IsRationalClockRatio = UnityClockRatio
@@ -336,30 +335,30 @@ class ReadyValidChannel[T <: Data](
   //}
 
 
-  if (p(EnableSnapshot)) {
-    val wires = Wire(ReadyValidTrace(gen))
-    val targetFace = if (flipped) io.deq.target else io.enq.target
-    val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
-    val readyTraceFull = Wire(Bool())
-    val validTraceFull = Wire(Bool())
-    wires.bits.bits  := targetFace.bits
-    wires.bits.valid := tokensFace.valid && targetFace.valid && !readyTraceFull && !validTraceFull
-    wires.bits.ready := tokensFace.ready
-    io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
-    wires.valid.bits  := targetFace.valid
-    wires.valid.valid := tokensFace.valid
-    wires.valid.ready := tokensFace.ready
-    io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace", Some(validTraceFull))
-    wires.ready.bits  := targetFace.ready
-    wires.ready.valid := tokensFace.valid
-    wires.ready.ready := tokensFace.ready
-    io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
-  } else {
-    io.trace := DontCare
-    io.trace.bits.valid  := Bool(false)
-    io.trace.valid.valid := Bool(false)
-    io.trace.ready.valid := Bool(false)
-  }
+  //if (p(EnableSnapshot)) {
+  //  val wires = Wire(ReadyValidTrace(gen))
+  //  val targetFace = if (flipped) io.deq.target else io.enq.target
+  //  val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
+  //  val readyTraceFull = Wire(Bool())
+  //  val validTraceFull = Wire(Bool())
+  //  wires.bits.bits  := targetFace.bits
+  //  wires.bits.valid := tokensFace.valid && targetFace.valid && !readyTraceFull && !validTraceFull
+  //  wires.bits.ready := tokensFace.ready
+  //  io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
+  //  wires.valid.bits  := targetFace.valid
+  //  wires.valid.valid := tokensFace.valid
+  //  wires.valid.ready := tokensFace.ready
+  //  io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace", Some(validTraceFull))
+  //  wires.ready.bits  := targetFace.ready
+  //  wires.ready.valid := tokensFace.valid
+  //  wires.ready.ready := tokensFace.ready
+  //  io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
+  //} else {
+  io.trace := DontCare
+  io.trace.bits.valid  := Bool(false)
+  io.trace.valid.valid := Bool(false)
+  io.trace.ready.valid := Bool(false)
+  //}
 }
 
 class ReadyValidChannelUnitTest(

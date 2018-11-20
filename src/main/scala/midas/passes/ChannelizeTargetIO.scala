@@ -2,16 +2,18 @@
 
 package midas.passes
 
-import chisel3._
-import chisel3.util._
-
 import firrtl._
-import firrtl.annotations.{CircuitName, ModuleName}
+import firrtl.analyses.InstanceGraph
+import firrtl.annotations.{ModuleTarget, ReferenceTarget, TargetToken}
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.transforms.fame.FAMETransformAnnotation
+import firrtl.transforms.fame._
 import Utils._
+
+import collection.mutable
 import java.io.{File, FileWriter, StringWriter}
+
+import midas.core.SimUtils._
 
 private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.Transform {
 
@@ -22,32 +24,96 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
   def execute(state: CircuitState): CircuitState = {
     val circuit = state.circuit
 
-    val moduleMap = circuit.modules.map(m => m.name -> m).toMap
-    val topModule = moduleMap(circuit.main)
+    // From trivial channel excision
+    val topName = state.circuit.main
+    val topModule = state.circuit.modules.find(_.name == topName).collect({
+      case m: Module => m
+    }).get
+    val topChildren = new mutable.HashSet[WDefInstance]
+    topModule.body.map(InstanceGraph.collectInstances(topChildren))
+    assert(topChildren.size == 1)
 
-    def prefixWith(prefix: String, base: Any): String =
-      if (prefix != "")  s"${prefix}_${base}" else base.toString
+    val topModulePortMap: Map[String, Port] = topModule.ports.map({p => p.name -> p}).toMap
+    val ioElements = io.map({port => port.instanceName -> port })
 
-    def tokenizePort(name: String, field: Data, channelName: Option[String] = None): Seq[(String, String)] = field match {
-      case c: Clock => Seq.empty
-      case rv: ReadyValidIO[_] =>
-        val fwdChName = prefixWith(name, "fwd")
-        Seq(prefixWith(name, "valid") -> fwdChName) ++
-        tokenizePort(prefixWith(name, "ready"), rv.ready, Some(prefixWith(name, "rev"))) ++
-        tokenizePort(prefixWith(name, "bits"), rv.bits, Some(fwdChName))
-      case b: Record =>
-        b.elements.toSeq flatMap {case (n, e) => tokenizePort(prefixWith(name, n), e, channelName)}
-      case v: Vec[_] =>
-        v.zipWithIndex flatMap {case (e, i) => tokenizePort(prefixWith(name, i), e)}
-      case b: Element => Seq(name -> channelName.getOrElse(name))
-      case _ => throw new RuntimeException("Don't know how to tokenize this type")
+    val (wireSinks, wireSources, rvSinks, rvSources) = parsePortsSeq(ioElements)
+
+    // Helper functions to generate annotations and ReferenceTargets
+    def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)
+
+    def wireSinkAnno(chName: String) =
+      FAMEChannelAnnotation(chName, WireChannel, None, Some(Seq(portRefTarget(chName))))
+    def wireSourceAnno(chName: String) =
+      FAMEChannelAnnotation(chName, WireChannel, Some(Seq(portRefTarget(chName))), None)
+
+    def decoupledRevSinkAnno(readyTarget: ReferenceTarget) =
+      FAMEChannelAnnotation(readyTarget.ref, DecoupledReverseChannel, Some(Seq(readyTarget)), None)
+    def decoupledRevSourceAnno(readyTarget: ReferenceTarget) =
+      FAMEChannelAnnotation(readyTarget.ref, DecoupledReverseChannel, None, Some(Seq(readyTarget)))
+
+    def decoupledFwdSinkAnno(chName: String,
+                             validTarget: ReferenceTarget,
+                             readyTarget: ReferenceTarget,
+                             leaves: Seq[ReferenceTarget]): FAMEChannelAnnotation =  {
+
+      val chInfo = DecoupledForwardChannel(
+        validSink   = Some(validTarget),
+        readySource = Some(readyTarget),
+        validSource = None,
+        readySink   = None)
+      FAMEChannelAnnotation(chName, chInfo, None, Some(leaves))
     }
 
-    val portMap = io.flatMap(p => tokenizePort(p.instanceName, p)).toMap
-    val cname = CircuitName(circuit.main)
-    val f1Anno = FAMETransformAnnotation(ModuleName(circuit.main, cname), portMap)
-    println(f1Anno)
+    def decoupledFwdSourceAnno(chName: String,
+                               validTarget: ReferenceTarget,
+                               readyTarget: ReferenceTarget,
+                               leaves: Seq[ReferenceTarget]): FAMEChannelAnnotation =  {
 
-    state.copy(annotations = state.annotations ++ Seq(f1Anno))
+      val chInfo = DecoupledForwardChannel(
+        validSource = Some(validTarget),
+        readySink   = Some(readyTarget),
+        validSink   = None,
+        readySource = None)
+      FAMEChannelAnnotation(chName, chInfo, Some(leaves), None)
+    }
+
+    // Generate ReferenceTargets for the leaves in an RV payload
+    def getRVLeaves(name: String, field: chisel3.Data): Seq[ReferenceTarget] = field match {
+      case b: chisel3.Record =>
+        b.elements.toSeq flatMap { case (n, e) => getRVLeaves(prefixWith(name, n), e) }
+      case v: chisel3.Vec[_] =>
+        v.zipWithIndex flatMap { case (e, i) =>   getRVLeaves(prefixWith(name, i), e) }
+      case b: chisel3.Element => Seq(portRefTarget(name))
+      case _ => throw new RuntimeException("Unexpected type in ready-valid payload")
+    }
+
+    // Generate valid, ready, and payload reference targets for a decoupled interface
+    def getRVTargets(port: chisel3.Data, name: String): (ReferenceTarget, ReferenceTarget, Seq[ReferenceTarget]) = {
+      val validTarget = portRefTarget(prefixWith(name, "valid"))
+      val readyTarget = portRefTarget(prefixWith(name, "ready"))
+      val payloadTargets = getRVLeaves(name, port)
+      (validTarget, readyTarget, payloadTargets)
+    }
+
+    def rvSinkAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
+      case (port, name) =>
+      val (vT, rT, pTs) = getRVTargets(port, name)
+      Seq(decoupledFwdSinkAnno(name, vT, rT, pTs), decoupledRevSourceAnno(rT))
+    }
+
+    def rvSourceAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
+      case (port, name) =>
+      val (vT, rT, pTs) = getRVTargets(port, name)
+      Seq(decoupledFwdSourceAnno(name, vT, rT, pTs), decoupledRevSinkAnno(rT))
+    }
+
+    val chAnnos =
+      wireSinks  .map({ case (_, chName) => wireSinkAnno(chName) }) ++
+      wireSources.map({ case (_, chName) => wireSourceAnno(chName) }) ++
+      rvSinks    .flatMap(rvSinkAnnos) ++
+      rvSources  .flatMap(rvSourceAnnos)
+
+    val f1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topChildren.head.module))
+    state.copy(annotations = state.annotations ++ Seq(f1Anno) ++ chAnnos)
   }
 }

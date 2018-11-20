@@ -11,6 +11,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
+import firrtl.transforms.fame.{FAMEChannelAnnotation}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
@@ -58,7 +59,11 @@ private[passes] class SimulationMapping(
   def execute(innerState: CircuitState) = {
     val innerCircuit = innerState.circuit
 
-    lazy val sim = new SimWrapper(io)
+    // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
+    // SimWrapper generation
+    val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelAnnotation => ch })
+
+    lazy val sim = new SimWrapper(io, chAnnos)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
