@@ -20,8 +20,7 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 })
 
 class WithUARTKey extends Config((site, here, up) => {
-   case PeripheryUARTKey => List(UARTParams(
-     address = BigInt(0x54000000L),
+   case PeripheryUARTKey => List(UARTParams( address = BigInt(0x54000000L),
      nTxEntries = 256,
      nRxEntries = 256))
 })
@@ -85,7 +84,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(64) ++
+  new WithNICKey(256) ++
   new WithBlockDevice ++
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++

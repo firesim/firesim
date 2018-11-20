@@ -5,9 +5,6 @@
 #include "endpoints/endpoint.h"
 #include <vector>
 
- //This BW is still in flux while my changes are being made
-#define MAX_BANDWIDTH  200
-
 #ifdef SIMPLENICWIDGET_struct_guard
 class simplenic_t: public endpoint_t
 {
@@ -33,12 +30,6 @@ class simplenic_t: public endpoint_t
         // IMPORTANT: this must be a multiple of 7
         int LINKLATENCY;
         FILE * niclog;
-
-        // AJG: Note: These are set during the init function of the simplenic_t
-        int BUFWIDTH;
-        int TOKENS_PER_BIGTOKEN;
-        int SIMLATENCY_BT;
-        int BUFBYTES;
 
         SIMPLENICWIDGET_struct *mmio_addrs;
         bool loopback;

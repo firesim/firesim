@@ -213,7 +213,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget(ifWidth = 64) ++
+  new WithSimpleNICWidget(ifWidth = 256) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)

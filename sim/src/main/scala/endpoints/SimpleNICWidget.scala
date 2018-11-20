@@ -33,7 +33,7 @@ class SplitSeqQueue(implicit p: Parameters) extends Module {
 
   val SPLITS = 1
   val INTERNAL_WIDTH = EXTERNAL_WIDTH / SPLITS
-  val DEPTH = 6144
+  val DEPTH = 12288//6144
 
   val voq = VecInit(Seq.fill(SPLITS)(Module((new BRAMQueue(DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
 
@@ -134,9 +134,11 @@ class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
 
   val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
+  val amtOfSmallTokens = 512 / (tokenSize + 3)
+
   val loopIter = RegInit(0.U(32.W))
   when (io.htnt.fire()) {
-    loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
+    loopIter := Mux(loopIter === (amtOfSmallTokens - 1).U, 0.U, loopIter + 1.U)
   }
 
   io.htnt.bits.data_in.data := pcieBundled.data(loopIter)
@@ -145,7 +147,7 @@ class BigTokenToNICTokenAdapter(tokenSize: Int) extends Module {
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
   io.htnt.valid := xactHelper.fire(io.htnt.ready)
-  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === 6.U)
+  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === (amtOfSmallTokens - 1).U)
 }
 
 /**
@@ -160,7 +162,7 @@ class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   })
 
   val amtOfSmallTokens = 512 / (tokenSize + 3)
-  // step one, buffer 7 elems into registers. note that the 7th element is here 
+  // step one, buffer amtOfSmallTokens elems into registers. note that the last element is here 
   // just for convenience. in reality, it is not used since we're bypassing to
   // remove a cycle of latency
   val NTHT_BUF = Reg(Vec(amtOfSmallTokens, new NICToHostToken(tokenSize)))
@@ -179,8 +181,6 @@ class NICTokenToBigTokenAdapter(tokenSize: Int) extends Module {
   } .otherwise {
     specialCounter := specialCounter
   }
-  // step two, connect 6 elems + latest one to output (7 items)
-  // TODO: attach pcie_out to data
 
   // debug check to help check we're not losing tokens somewhere
   val padding = (512 - ((512 / (tokenSize + 3)) * (tokenSize + 3)))
@@ -233,8 +233,8 @@ class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidg
 
   val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = ifWidth)
 
-  val htnt_queue = Module(new Queue(new HostToNICToken(ifWidth), 10))
-  val ntht_queue = Module(new Queue(new NICToHostToken(ifWidth), 10))
+  val htnt_queue = Module(new Queue(new HostToNICToken(ifWidth), 30))
+  val ntht_queue = Module(new Queue(new NICToHostToken(ifWidth), 30))
 
   val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter(ifWidth))
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter(ifWidth))
@@ -275,7 +275,7 @@ class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidg
 //  ntht_queue.reset := reset //|| targetReset
 
   if (p(LoopbackNIC)) {
-    val tokenGen = Module(new HostToNICTokenGenerator(nTokens = 10, tokenSize = ifWidth))
+    val tokenGen = Module(new HostToNICTokenGenerator(nTokens = 30, tokenSize = ifWidth))
     htnt_queue.io.enq <> tokenGen.io.out
     tokenGen.io.in <> ntht_queue.io.deq
     NICtokenToBig.io.ntht.valid := false.B
@@ -332,8 +332,7 @@ class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidg
 
   genCRFile()
 
-  // AJG: Changed this to be the parameterized value
-  //val PCIS_BYTES = 64
+  val PCIS_BYTES = 64
   
   //if(p(LoopbackNIC)) {
   //  outgoingPCISdat.io.deq.ready := DontCare
@@ -343,13 +342,13 @@ class SimpleNICWidget(ifWidth: Int)(implicit p: Parameters) extends EndpointWidg
 
   io.dma.map { dma =>
     // TODO, will these queues bottleneck us?
-    val aw_queue = Queue(dma.aw, 10)
-    val w_queue = Queue(dma.w, 10)
-    val ar_queue = Queue(dma.ar, 10)
+    val aw_queue = Queue(dma.aw, 30)
+    val w_queue = Queue(dma.w, 30)
+    val ar_queue = Queue(dma.ar, 30)
 
-    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(ifWidth).U)
-    assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(ifWidth).U)
-    assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(ifWidth.W))
+    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
+    assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(PCIS_BYTES).U)
+    assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(PCIS_BYTES.W))
 
     val writeHelper = DecoupledHelper(
       aw_queue.valid,

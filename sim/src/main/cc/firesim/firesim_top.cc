@@ -132,8 +132,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
     // add more endpoints here
 
-    //printf( "AJG: Finished adding endpoint" );
-
 #ifdef ASSERTIONWIDGET_struct_guard
     #ifdef ASSERTIONWIDGET_0_PRESENT
     ASSERTIONWIDGET_0_substruct_create;
@@ -144,12 +142,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);
     }
-
-    //printf( "AJG: finished firesim_top_t constructor" );
 }
 
 bool firesim_top_t::simulation_complete() {
-    //printf("AJG: entering simulation_complete");
     bool is_complete = false;
     for (auto e: endpoints) {
         is_complete |= e->terminate();
@@ -158,7 +153,6 @@ bool firesim_top_t::simulation_complete() {
 }
 
 uint64_t firesim_top_t::profile_models(){
-    //printf("AJG: entering profile_models");
     for (auto mod: fpga_models) {
         mod->profile();
     }
@@ -166,7 +160,6 @@ uint64_t firesim_top_t::profile_models(){
 }
 
 int firesim_top_t::exit_code(){
-    //printf("AJG: entering exit_code");
     for (auto e: endpoints) {
         if (e->exit_code())
             return e->exit_code();
@@ -176,7 +169,6 @@ int firesim_top_t::exit_code(){
 
 
 void firesim_top_t::run() {
-    //printf("AJG: entering run");
     for (auto e: fpga_models) {
         e->init();
     }
@@ -193,11 +185,8 @@ void firesim_top_t::run() {
     uint64_t start_hcycle = hcycle();
     uint64_t start_time = timestamp();
 
-    //fprintf(stderr, "AJG: start_hcycle(%d) start_time(%d)\n", start_hcycle, start_time);
     // Assert reset T=0 -> 50
     target_reset(0, 50);
-
-    //fprintf(stderr, "AJG: target_reset");
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
