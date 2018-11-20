@@ -35,8 +35,9 @@ class WithUARTWidget extends Config((site, here, up) => {
 })
 
 class WithSimpleNICWidget(ifWidth: Int) extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC(ifWidth)))
+  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
+  case NICWidgetKey => SimpleNICWidgetConfig(TOKEN_WIDTH_BITS = ifWidth)
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {

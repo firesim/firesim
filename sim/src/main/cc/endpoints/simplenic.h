@@ -9,7 +9,9 @@
 class simplenic_t: public endpoint_t
 {
     public:
-        simplenic_t(simif_t* sim, std::vector<std::string> &args, SIMPLENICWIDGET_struct *addrs, int simplenicno);
+        simplenic_t(simif_t* sim, std::vector<std::string> &args,
+			SIMPLENICWIDGET_struct *addrs, int simplenicno,
+			long dma_addr);
         ~simplenic_t();
 
         virtual void init();
@@ -33,6 +35,7 @@ class simplenic_t: public endpoint_t
 
         SIMPLENICWIDGET_struct *mmio_addrs;
         bool loopback;
+	long dma_addr;
 };
 #endif // SIMPLENICWIDGET_struct_guard
 

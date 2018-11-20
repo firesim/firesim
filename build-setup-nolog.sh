@@ -92,7 +92,7 @@ echo "export RISCV=$RISCV" > env.sh
 echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
 echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 
-cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/edma"
+cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
 make
 
 # commands to run only on EC2
