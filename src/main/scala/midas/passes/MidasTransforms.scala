@@ -58,6 +58,7 @@ private[midas] class MidasTransforms(
         new MiddleFirrtlToLowFirrtl,
         new ChannelizeTargetIO(io),
         new fame.FAMETransform,
+        new EmitFirrtl("post-fame-transform.fir"),
         new ResolveAndCheck) ++
         firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
         Seq(

@@ -150,6 +150,8 @@ abstract class TargetChannelRecord[T <: Data](val targetIo: Seq[Data]) extends R
   lazy val readyValidMap: ListMap[ReadyValidIO[Data], T] = readyValidInMap ++ readyValidOutMap
   // Look up a channel port using the target's RV port
   def apply(rv: ReadyValidIO[Data]): T = readyValidMap(rv)
+  lazy val readyValidPortMap = ListMap((readyValidInputPorts ++ readyValidOutputPorts):_*)
+
 
 }
 
@@ -165,10 +167,9 @@ class TargetBoxIO(targetIo: Seq[Data]) extends TargetChannelRecord[AggregatedRea
     }
   })
 
-  override val elements = wirePortMap ++ ListMap((
-    readyValidInputPorts ++ readyValidOutputPorts ++
+  override val elements = wirePortMap ++ readyValidPortMap ++
     // Untokenized ports
-    Seq("clock" -> clock, "hostReset" -> hostReset)):_*)
+    ListMap("clock" -> clock, "hostReset" -> hostReset)
   override def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
 }
 
@@ -225,9 +226,6 @@ class SimWrapperIO(val targetPorts: Seq[Data], val chAnnos: Seq[FAMEChannelAnnot
   val peekedOutputs = wireOutputs filterNot (x => endpointWires(x._1))
   val pokedReadyValidInputs = readyValidInputs filterNot (x => endpointRVs(x._1))
   val peekedReadyValidOutputs = readyValidOutputs filterNot (x => endpointRVs(x._1))
-
-  peekedReadyValidOutputs foreach { println(_) }
-  pokedReadyValidInputs  foreach { println(_) }
 
   def generateRVChannelIO(channelDefns: Seq[RVChTuple]) = channelDefns.map({ case (rv, name) =>
     if (directionOf(rv.valid) == Direction.Input) {
@@ -291,7 +289,6 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
   }
 
   def genWireChannel(chAnno: FAMEChannelAnnotation): WireChannel[ChLeafType] = {
-    println(chAnno)
     require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
     require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
     require(chAnno.sinks   == None || chAnno.sources == None, "Can't handle excised channels yet")
@@ -312,9 +309,9 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
     channel
   }
 
-  def bindOutputRVChannel[T <: Data](enq: SimReadyValidIO[T], targetPort: ReadyValidIO[T]) {
-    require(directionOf(targetPort.valid) == Direction.Output, "Target must source this RV channel")
-    val rvChPort = target.io(targetPort)
+  def bindOutputRVChannel[T <: Data](enq: SimReadyValidIO[T], chName: String) {
+    val rvChPort = target.io.readyValidPortMap(chName)
+    require(directionOf(rvChPort.fwd.valid) == Direction.Output, "Target must source this RV channel")
 
     enq.fwd.hValid := rvChPort.fwd.valid
     enq.target.valid := rvChPort.fwd.bits.valid
@@ -327,9 +324,9 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
     enq.rev.hReady := rvChPort.rev.ready
   }
 
-  def bindInputRVChannel[T <: Data](deq: SimReadyValidIO[T], targetPort: ReadyValidIO[T]) {
-    require(directionOf(targetPort.valid) == Direction.Input, "Target must sink this RV channel")
-    val rvChPort = target.io(targetPort)
+  def bindInputRVChannel[T <: Data](deq: SimReadyValidIO[T], chName: String) {
+    val rvChPort = target.io.readyValidPortMap(chName)
+    require(directionOf(rvChPort.fwd.valid) == Direction.Input, "Target must sink this RV channel")
 
     // Precondition: Target cannot sink some leaves or a target-valid token indepedently of the rest
     deq.fwd.hReady   := rvChPort.fwd.ready
@@ -343,8 +340,13 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
     rvChPort.rev.ready := deq.rev.hReady
   }
 
-  def genReadyValidChannel[T <: Data](arg: (ReadyValidIO[T], String)): ReadyValidChannel[T] = arg match {
-    case (rvInterface, name) =>
+  def getReadyValidChannelType(chName: String): Data = {
+    target.io.readyValidPortMap(chName).fwd.bits.bits.cloneType
+  }
+
+  def genReadyValidChannel(chAnno: FAMEChannelAnnotation): ReadyValidChannel[Data] = {
+    val strippedName = chAnno.name.stripSuffix("_fwd")
+    require(chAnno.sinks   == None || chAnno.sources == None, "Can't handle excised channels yet")
       // Determine which endpoint this channel belongs to by looking it up with the valid
       //val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
       //  case Some(endpoint) => endpoint.clockRatio
@@ -352,20 +354,16 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
       //}
       val endpointClockRatio = UnityClockRatio // TODO: FIXME
       // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
-      val flipped = directionOf(rvInterface.valid) == Direction.Input
-      val channel = Module(new ReadyValidChannel(
-        rvInterface.bits.cloneType,
-        clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio  
-      ))
+      val channel = Module(new ReadyValidChannel(getReadyValidChannelType(strippedName)))
 
-      channel.suggestName(s"ReadyValidChannel_$name")
+      channel.suggestName(s"ReadyValidChannel_$strippedName")
 
-      if (flipped) {
-        channel.io.enq <> channelPorts(rvInterface)
-        bindInputRVChannel(channel.io.deq, rvInterface)
+      if (chAnno.sources == None) {
+        channel.io.enq <> channelPorts.elements(strippedName)
+        bindInputRVChannel(channel.io.deq, strippedName)
       } else {
-        bindOutputRVChannel(channel.io.enq, rvInterface)
-        channelPorts(rvInterface) <> channel.io.deq
+        bindOutputRVChannel(channel.io.enq, strippedName)
+        channelPorts.elements(strippedName) <> channel.io.deq
       }
 
       channel.io.trace := DontCare
@@ -375,12 +373,10 @@ class SimWrapper(targetIo: Seq[Data], chAnnos: Seq[FAMEChannelAnnotation])
       channel
   }
 
-   val readyValidInChannels:  Seq[ReadyValidChannel[Data]] = channelPorts.readyValidInputs map genReadyValidChannel
-   val readyValidOutChannels: Seq[ReadyValidChannel[Data]] = channelPorts.readyValidOutputs map genReadyValidChannel
-
   // Iterate through the channel annotations to generate channels
   chAnnos.foreach({ _ match {
     case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.WireChannel,_,_) => genWireChannel(ch)
+    case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
     case _ => Nil
   }})
 
