@@ -4,6 +4,7 @@ package midas
 package widgets
 
 import scala.collection.immutable.ListMap
+import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._
@@ -45,84 +46,105 @@ class PeekPokeIOWidgetIO(
 // The interface to this widget is temporary, and matches the Vec of channels
 // the sim wrapper produces. Ultimately, the wrapper should have more coarsely
 // tokenized IOs.
+// Maximum channel decoupling puts a bound on the number of cycles the fastest
+// channel can advance ahead of the slowest channel
 class PeekPokeIOWidget(
     inputs: Seq[ChTuple],
     outputs: Seq[ChTuple],
     rvInputs: Seq[RVChTuple],
-    rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends Widget()(p) {
+    rvOutputs: Seq[RVChTuple],
+    maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends Widget()(p) {
   val io = IO(new PeekPokeIOWidgetIO(inputs, outputs, rvInputs, rvOutputs))
 
-  // i = input, o = output tokens (as seen from the target)
-  val iTokensAvailable = RegInit(0.U(ctrlWidth.W))
-  val oTokensPending = RegInit(0.U(ctrlWidth.W))
+  require(maxChannelDecoupling > 1, "A smaller channel decoupling could FMR")
+  // Tracks the number of tokens the slowest channel has to produce or consume
+  // before we reach the desired target cycle
+  val cycleHorizon = RegInit(0.U(ctrlWidth.W))
   val tCycleName = "tCycle"
   val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
+  val tCycleAdvancing = Wire(Bool())
+
   val hCycleName = "hCycle"
   val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
 
   // needs back pressure from reset queues
-  val fromHostReady = io.ins.elements.foldLeft(true.B)(_ && _._2.ready)
-  val toHostValid = io.outs.elements.foldLeft(true.B)(_ && _._2.valid)
-
-  io.idle := iTokensAvailable === 0.U && oTokensPending === 0.U
+  io.idle := cycleHorizon === 0.U
 
   def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
-      (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i => 
+      (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
     val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
     Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
   })
 
+  // Asserted by a channel when it is advancing or has advanced ahead of tCycle
+  val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
+
   def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
-    channel.bits := Cat(reg.reverse)
-    channel.valid := iTokensAvailable =/= UInt(0) && fromHostReady
+    // Track local-channel decoupling
+    val cyclesAhead = SatUpDownCounter(maxChannelDecoupling)
+    val isAhead = !cyclesAhead.empty || channel.fire
+    cyclesAhead.inc := channel.fire
+    cyclesAhead.dec := tCycleAdvancing
+
+    channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
+    channel.valid := cyclesAhead.value < cycleHorizon  // TODO: Let pokes advance beyond the horizon
+
+    channelDecouplingFlags += isAhead
     reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
-  }
-
-  // Hacks
-  def bindRVInputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
-    channel.fwd.hValid := iTokensAvailable =/= UInt(0) && fromHostReady
-    channel.rev.hReady := oTokensPending =/= UInt(0) && toHostValid
-    channel.target.valid := false.B
-    channel.target.bits := DontCare
-  }
-
-  def bindRVOutputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
-    channel.rev.hValid := iTokensAvailable =/= UInt(0) && fromHostReady
-    channel.fwd.hReady := oTokensPending =/= UInt(0) && toHostValid
-    channel.target.ready := false.B
   }
 
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
-    channel.ready := oTokensPending =/= UInt(0) && toHostValid
+    // Track local-channel decoupling
+    val cyclesAhead = SatUpDownCounter(maxChannelDecoupling)
+    val isAhead = !cyclesAhead.empty || channel.fire
+    cyclesAhead.inc := channel.fire
+    cyclesAhead.dec := tCycleAdvancing
+
+    channel.ready := cyclesAhead.value < cycleHorizon
     when (channel.fire) {
       reg.zipWithIndex.foreach({ case (reg, i) =>
         val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
         reg := channel.bits(msb, ctrlWidth * i)
       })
     }
+
+    channelDecouplingFlags += isAhead
     reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
   }
+
+  // Hacks
+  def bindRVInputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
+    channel.fwd.hValid := true.B
+    channel.rev.hReady := true.B
+    channel.target.valid := false.B
+    channel.target.bits := DontCare
+  }
+
+  def bindRVOutputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
+    channel.rev.hValid := true.B
+    channel.fwd.hReady := true.B
+    channel.target.ready := false.B
+  }
+
 
   val inputAddrs = io.ins.elements.map(elm => bindInputs(elm._1, elm._2))
   val outputAddrs = io.outs.elements.map(elm => bindOutputs(elm._1, elm._2))
   io.rvins.elements.foreach(elm => bindRVInputs(elm._1, elm._2))
   io.rvouts.elements.foreach(elm => bindRVOutputs(elm._1, elm._2))
 
-  when (iTokensAvailable =/= UInt(0) && fromHostReady) {
-    iTokensAvailable := iTokensAvailable - UInt(1)
+  tCycleAdvancing := channelDecouplingFlags.reduce(_ && _)
+  when (tCycleAdvancing) {
+    tCycle := tCycle + 1.U
+    assert(cycleHorizon > 0.U, "PeekPokeWidget advanced past it's target-time bound")
+    cycleHorizon := cycleHorizon - 1.U
   }
 
-  when (oTokensPending =/= UInt(0) && toHostValid) {
-    oTokensPending := oTokensPending - UInt(1)
-    tCycle := tCycle + 1.U
-  }
   hCycle := hCycle + 1.U
 
   when (io.step.fire) {
-    iTokensAvailable := io.step.bits
-    oTokensPending := io.step.bits
+    cycleHorizon := io.step.bits
   }
   // For now do now, do not allow the block to be stepped further, unless
   // it has gone idle
