@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include "serial.h"
-#include <iostream>
 
 #if defined(SIMULATION_XSIM) || defined(RTLSIM)
 #define DEFAULT_STEPSIZE (128)
@@ -31,8 +30,6 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWID
           std::string clean_target_args = const_cast<char*>(arg.c_str()) + prog_arg.length();
 
           std::istringstream ss(clean_target_args);
-          std::cout << "Debug clean_target_args: " << clean_target_args << std::endl;
-
           std::string token;
           while(std::getline(ss, token, ' ')) {
             args_vec.push_back(token);
