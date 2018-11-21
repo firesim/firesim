@@ -431,32 +431,32 @@ class CounterTable(addrBits: Int, dataBits: Int) extends Module {
   require(dataBits > 32)
   val memDepth = 1 << addrBits
 
-  val counts = SyncReadMem(memDepth, UInt(dataBits.W))
+  val counts = Mem(memDepth, UInt(dataBits.W))
 
   val s0_readAddr = Mux(io.readout.enable, io.readout.addr, io.incr.addr)
   val s1_readAddr = RegNext(s0_readAddr)
-  val s1_readData = counts.read(s0_readAddr)
+  val s1_readData = counts.read(s1_readAddr)
   val s1_valid = RegNext(io.incr.enable, false.B)
   val s1_readout = RegNext(io.readout.enable)
 
   val s2_valid = RegNext(s1_valid && !s1_readout)
-  val s2_writeAddr = Reg(UInt(addrBits.W))
-  val s2_readData = Reg(UInt(dataBits.W))
-  val s2_writeData = s2_readData + io.incr.data
+  val s2_writeAddr = RegNext(s1_readAddr)
+  val s2_readData = RegNext(s1_readData)
+  val s2_writeData = Wire(UInt(dataBits.W))
 
-  val doBypass = s1_valid && s2_valid && s1_readAddr === s2_writeAddr
+  val s3_valid = RegNext(s2_valid)
+  val s3_writeData = RegNext(s2_writeData)
+  val s3_writeAddr = RegNext(s2_writeAddr)
 
-  when (s1_valid && !s1_readout) {
-    s2_readData := Mux(doBypass, s2_writeData, s1_readData)
-    s2_writeAddr := s1_readAddr
-  }
+  val doBypass = s2_valid && s3_valid && s2_writeAddr === s3_writeAddr
+  s2_writeData := Mux(doBypass, s3_writeData, s2_readData) + io.incr.data
 
   when (s2_valid) {
     counts(s2_writeAddr) := s2_writeData
   }
 
-  io.readout.dataL := s1_readData(31, 0)
-  io.readout.dataH := s1_readData(dataBits-1, 32)
+  io.readout.dataL := s2_readData(31, 0)
+  io.readout.dataH := s2_readData(dataBits-1, 32)
 }
 
 // Stores a histogram of host latencies in BRAM
@@ -557,14 +557,14 @@ class CounterTableUnitTest extends UnitTest {
   counters.io.readout.addr := readAddrs(readIdx)
 
   val readData = Cat(counters.io.readout.dataH, counters.io.readout.dataL)
-  val initValid = RegNext(state === s_readInit, false.B)
-  val initWriteIdx = RegNext(readIdx)
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
+  val initWriteIdx = RegNext(RegNext(readIdx))
 
   when (initValid) { initValues(initWriteIdx) := readData }
 
-  val expectedCount = RegNext(readExpected(readIdx))
-  val readValid = RegNext(state === s_readout, false.B)
-  val readCount = readData - RegNext(initValues(readIdx))
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
 
   assert(!readValid || readCount === expectedCount)
 
@@ -611,8 +611,8 @@ class LatencyHistogramUnitTest extends UnitTest {
   histogram.io.readout.addr := readAddrs(readIdx)
 
   val initValues = Reg(Vec(readExpected.size, UInt(dataBits.W)))
-  val initWriteIdx = RegNext(readIdx)
-  val initValid = RegNext(state === s_readInit, false.B)
+  val initWriteIdx = RegNext(RegNext(readIdx))
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
   val readData = Cat(histogram.io.readout.dataH, histogram.io.readout.dataL)
 
   when (initValid) { initValues(initWriteIdx) := readData }
@@ -622,9 +622,9 @@ class LatencyHistogramUnitTest extends UnitTest {
   when (runDone) { state := s_readout }
   when (state === s_readout && readDone) { state := s_done }
 
-  val expectedCount = RegNext(readExpected(readIdx))
-  val readValid = RegNext(state === s_readout, false.B)
-  val readCount = readData - RegNext(initValues(readIdx))
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
 
   assert(!readValid || readCount === expectedCount)
 
