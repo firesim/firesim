@@ -13,8 +13,8 @@ public:
       uint32_t bit = rand_next(2);
       poke(io_in, bit);
       step(1);
-      expect(io_out, is_odd);
       is_odd = (is_odd + bit) % 2;
+      expect(io_out, is_odd);
     }
   }
 };

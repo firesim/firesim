@@ -13,9 +13,9 @@ public:
       uint32_t in = rand_next(2);
       poke(io_in, in);
       step(1);
-      if (cycles() > 4) expect(io_out, reg[3]);
       for (int j = 3 ; j > 0 ; j--) reg[j] = reg[j-1];
       reg[0] = in;
-    } 
+      if (cycles() > 4) expect(io_out, reg[3]);
+    }
   }
 };

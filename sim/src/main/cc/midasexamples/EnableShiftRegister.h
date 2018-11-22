@@ -15,11 +15,11 @@ public:
       poke(io_in,    in);
       poke(io_shift, shift);
       step(1);
-      expect(io_out, reg[3]);
       if (shift) {
         for (int j = 3 ; j > 0 ; j--) reg[j] = reg[j-1];
         reg[0] = in;
       }
+      expect(io_out, reg[3]);
     }
   }
 };
