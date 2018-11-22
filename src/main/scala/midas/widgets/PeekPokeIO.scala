@@ -78,6 +78,7 @@ class PeekPokeIOWidget(
 
   // Asserted by a channel when it is advancing or has advanced ahead of tCycle
   val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
+  val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
   def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
@@ -87,11 +88,27 @@ class PeekPokeIOWidget(
     cyclesAhead.inc := channel.fire
     cyclesAhead.dec := tCycleAdvancing
 
-    channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
-    channel.valid := cyclesAhead.value < cycleHorizon  // TODO: Let pokes advance beyond the horizon
+    // If a channel is being poked, allow it to enqueue it's output token
+    // This lets us peek outputs that depend combinationally on inputs we poke
+    // Asserted when a memory-mapped register associated with channel is being written to
+    val poke = Wire(Bool())
+    // Handle the fields > 32 bits
+    val wordsReceived = RegInit(0.U(log2Ceil(reg.size + 1).W))
+    val advanceViaPoke = wordsReceived === reg.size.U
 
+    when (poke) {
+      wordsReceived := wordsReceived + 1.U 
+    }.elsewhen(channel.fire) {
+      wordsReceived := 0.U
+    }
+
+    channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
+    channel.valid := cyclesAhead.value < cycleHorizon || advanceViaPoke
+
+    val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
     channelDecouplingFlags += isAhead
-    reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
+    channelPokes += regAddrs -> poke
+    regAddrs
   }
 
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
@@ -102,7 +119,10 @@ class PeekPokeIOWidget(
     cyclesAhead.inc := channel.fire
     cyclesAhead.dec := tCycleAdvancing
 
-    channel.ready := cyclesAhead.value < cycleHorizon
+    // Let token sinks accept one additional token that sources can produce (if
+    // they aren't poked) This, to allow, us to peek outputs that depend
+    // combinationally on inputs
+    channel.ready := cyclesAhead.value < (cycleHorizon + 1.U)
     when (channel.fire) {
       reg.zipWithIndex.foreach({ case (reg, i) =>
         val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
@@ -150,7 +170,12 @@ class PeekPokeIOWidget(
   // it has gone idle
   io.step.ready := io.idle
 
-  genCRFile()
+  val crFile = genCRFile()
+  // Now that we've bound registers, snoop the poke register addresses for writes
+  // Yay Chisel!
+  channelPokes.foreach({ case (addrs: Seq[Int], poked: Bool) =>
+    poked := addrs.map(i => crFile.io.mcr.write(i).valid).reduce(_ || _)
+  })
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
     import CppGenerationUtils._

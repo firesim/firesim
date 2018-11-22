@@ -136,11 +136,12 @@ abstract class Widget(implicit p: Parameters) extends Module {
     reg
   }
 
-  def genCRFile() {
+  def genCRFile(): MCRFile = {
     val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     crFile.io.mcr := DontCare
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
+    crFile
   }
 
   // Returns widget-relative word address
