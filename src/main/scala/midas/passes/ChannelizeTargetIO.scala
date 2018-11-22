@@ -29,9 +29,6 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
     val topModule = state.circuit.modules.find(_.name == topName).collect({
       case m: Module => m
     }).get
-    val topChildren = new mutable.HashSet[WDefInstance]
-    topModule.body.map(InstanceGraph.collectInstances(topChildren))
-    assert(topChildren.size == 1)
 
     val topModulePortMap: Map[String, Port] = topModule.ports.map({p => p.name -> p}).toMap
     val ioElements = io.map({port => port.instanceName -> port })
@@ -114,7 +111,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
       rvSources  .flatMap(rvSourceAnnos)
 
     chAnnos foreach println
-    val f1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topChildren.head.module))
+    val f1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topName))
     state.copy(annotations = state.annotations ++ Seq(f1Anno) ++ chAnnos)
   }
 }
