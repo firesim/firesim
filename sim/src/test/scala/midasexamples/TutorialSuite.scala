@@ -89,3 +89,6 @@ class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister", mid
 class StackF1Test extends TutorialSuite("Stack", midas.F1, 8)
 class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
+
+// MIDAS 2.0 compiler tests
+class WireInterconnectF1Test extends TutorialSuite("WireInterconnect", midas.F1)

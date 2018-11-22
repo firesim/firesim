@@ -18,7 +18,7 @@ trait GeneratorUtils {
       Class.forName(s"firesim.midasexamples.${targetName}")
            .getConstructors.head
            .newInstance()
-           .asInstanceOf[chisel3.Module]
+           .asInstanceOf[chisel3.experimental.RawModule]
   }
   def midasParams = (platform match {
     case midas.F1       => new Config(new firesim.firesim.WithDefaultMemModel ++ new midas.F1Config)

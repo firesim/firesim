@@ -25,6 +25,8 @@
 #include "ShiftRegister.h"
 #elif defined DESIGNNAME_Stack
 #include "Stack.h"
+#elif defined DESIGNNAME_WireInterconnect
+#include "WireInterconnect.h"
 #endif
 
 class dut_emul_t:
