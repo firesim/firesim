@@ -155,9 +155,10 @@ class PeekPokeIOWidget(
   io.rvouts.elements.foreach(elm => bindRVOutputs(elm._1, elm._2))
 
   tCycleAdvancing := channelDecouplingFlags.reduce(_ && _)
-  when (tCycleAdvancing) {
+  // tCycleAdvancing can be asserted if all inputs have been poked; but only increment
+  // tCycle if we've been asked to step (cycleHorizon > 0.U)
+  when (tCycleAdvancing && cycleHorizon > 0.U) {
     tCycle := tCycle + 1.U
-    assert(cycleHorizon > 0.U, "PeekPokeWidget advanced past it's target-time bound")
     cycleHorizon := cycleHorizon - 1.U
   }
 
