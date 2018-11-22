@@ -99,6 +99,8 @@ class simif_t
     void zero_out_dram();
 #endif
 
+    uint64_t get_seed() { return seed; };
+
     // A default reset scheme that pulses the global chisel reset
     void target_reset(int pulse_start = 1, int pulse_length = 5);
 
