@@ -61,7 +61,9 @@ case class BaseParams(
         { _ <  4.U},
         { _ <  8.U},
         { x => true.B })
-  )
+  ),
+
+  addrRangeCounters: BigInt = BigInt(0)
 )
 
 abstract class BaseConfig(
@@ -373,6 +375,19 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
       ingress.io.nastiOutputs.aw.bits.id
     )
     attachIO(iWriteLatencyHist, "ingressWriteLatencyHist_")
+  }
+
+  if (cfg.params.addrRangeCounters > 0) {
+    val n = cfg.params.addrRangeCounters
+    val readRanges = AddressRangeCounter(n, model.io.tNasti.ar, targetFire)
+    val writeRanges = AddressRangeCounter(n, model.io.tNasti.aw, targetFire)
+    val addrBits = model.io.tNasti.nastiXAddrBits
+    val numRanges = n.U(addrBits.W)
+
+    attachIO(readRanges, "readRanges_")
+    attachIO(writeRanges, "writeRanges_")
+    attach(numRanges(31, 0), "numRangesL", ReadOnly)
+    attach(numRanges(addrBits-1, 32), "numRangesH", ReadOnly)
   }
 
   val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,

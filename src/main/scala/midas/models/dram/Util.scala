@@ -527,6 +527,49 @@ object HostLatencyHistogram {
   }
 }
 
+class AddressRangeCounterRequest(implicit p: Parameters) extends NastiBundle {
+  val addr = UInt(nastiXAddrBits.W)
+  val len  = UInt(nastiXLenBits.W)
+  val size = UInt(nastiXSizeBits.W)
+}
+
+class AddressRangeCounter(n: BigInt)(implicit p: Parameters) extends NastiModule {
+  val io = IO(new Bundle {
+    val req = Flipped(ValidIO(new AddressRangeCounterRequest))
+    val readout = new CounterReadoutIO(log2Ceil(n))
+  })
+
+  require(n > 1)
+  require(isPow2(n))
+
+  val counterBits = 48
+  val addrMSB = nastiXAddrBits - 1
+  val addrLSB = nastiXAddrBits - log2Ceil(n)
+
+  val s1_len = RegNext(io.req.bits.len)
+  val s1_size = RegNext(io.req.bits.size)
+  val s1_bytes = (s1_len + 1.U) << s1_size
+  val s2_bytes = RegNext(s1_bytes)
+
+  val counters = Module(new CounterTable(log2Ceil(n), counterBits))
+  counters.io.incr.enable := io.req.valid
+  counters.io.incr.addr := io.req.bits.addr(addrMSB, addrLSB)
+  counters.io.incr.data := s2_bytes
+  io.readout <> counters.io.readout
+}
+
+object AddressRangeCounter {
+  def apply[T <: NastiAddressChannel](
+      n: BigInt, req: DecoupledIO[T], en: Bool)(implicit p: Parameters) = {
+    val counter = Module(new AddressRangeCounter(n))
+    counter.io.req.valid := req.fire() && en
+    counter.io.req.bits.addr := req.bits.addr
+    counter.io.req.bits.len := req.bits.len
+    counter.io.req.bits.size := req.bits.size
+    counter.io.readout
+  }
+}
+
 object AddressCollisionCheckMain extends App {
   implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
   chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))

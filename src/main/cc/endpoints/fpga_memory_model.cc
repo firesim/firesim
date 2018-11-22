@@ -29,6 +29,27 @@ void Histogram::finish() {
     write(enable, 0);
 }
 
+void AddrRangeCounter::init() {
+  nranges = read64("numRangesH", "numRangesL", NUM_RANGE_MASK);
+  range_bytes = new uint64_t[nranges];
+
+  write(enable, 1);
+  for (size_t i = 0; i < nranges; i++) {
+    write(addr, i);
+    range_bytes[i] = read64(dataH, dataL, RANGE_BYTES_MASK);
+  }
+  write(enable, 0);
+}
+
+void AddrRangeCounter::finish() {
+  write(enable, 1);
+  for (size_t i = 0; i < nranges; i++) {
+    write(addr, i);
+    range_bytes[i] = read64(dataH, dataL, RANGE_BYTES_MASK);
+  }
+  write(enable, 0);
+}
+
 FpgaMemoryModel::FpgaMemoryModel(
     simif_t* sim, AddressMap addr_map, int argc, char** argv, std::string stats_file_name)
   : FpgaModel(sim, addr_map){
@@ -75,6 +96,11 @@ FpgaMemoryModel::FpgaMemoryModel(
     histograms.push_back(Histogram(sim, addr_map, "totalReadLatency"));
     histograms.push_back(Histogram(sim, addr_map, "totalWriteLatency"));
   }
+
+  if (addr_map.w_reg_exists("readRanges_enable")) {
+    rangectrs.push_back(AddrRangeCounter(sim, addr_map, "read"));
+    rangectrs.push_back(AddrRangeCounter(sim, addr_map, "write"));
+  }
 }
 
 void FpgaMemoryModel::profile() {
@@ -106,10 +132,12 @@ void FpgaMemoryModel::init() {
     }
   }
   for (auto &hist: histograms) { hist.init(); }
+  for (auto &rctr: rangectrs)  { rctr.init(); }
 }
 
 void FpgaMemoryModel::finish() {
   for (auto &hist: histograms) { hist.finish(); }
+  for (auto &rctr: rangectrs)  { rctr.finish(); }
 
   std::ofstream histogram_file;
   histogram_file.open("latency_histogram.csv", std::ofstream::out);
@@ -121,7 +149,7 @@ void FpgaMemoryModel::finish() {
   for (auto &hist: histograms) {
     histogram_file << hist.name << ",";
   }
-   histogram_file << std::endl;
+  histogram_file << std::endl;
     // Data
   for (size_t i = 0; i < HISTOGRAM_SIZE; i++) {
     for (auto &hist: histograms) {
@@ -130,5 +158,31 @@ void FpgaMemoryModel::finish() {
     histogram_file << std::endl;
   }
   histogram_file.close();
+
+  if (!rangectrs.empty()) {
+    size_t nranges = rangectrs[0].nranges;
+    std::ofstream rangectr_file;
+
+    rangectr_file.open("range_counters.csv", std::ofstream::out);
+    if (!rangectr_file.is_open()) {
+      throw std::runtime_error("Could not open range counter file");
+    }
+
+    rangectr_file << "Address,";
+    for (auto &rctr: rangectrs) {
+      rangectr_file << rctr.name << ",";
+    }
+    rangectr_file << std::endl;
+
+    for (size_t i = 0; i < nranges; i++) {
+      rangectr_file << std::hex << (i * MEM_SIZE / nranges) << ",";
+      for (auto &rctr: rangectrs) {
+        rangectr_file << std::dec << rctr.range_bytes[i] << ",";
+      }
+      rangectr_file << std::endl;
+    }
+    rangectr_file.close();
+  }
+  
   stats_file.close();
 }
