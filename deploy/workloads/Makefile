@@ -17,14 +17,13 @@ allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-
 
 # Default to the submodule
 SPECKLE_DIR=Speckle
-GAP_DIR=gapbs
 
 #TODO: Provide runscripts for fp{speed, rate}
 spec17_suites = intrate intspeed
 spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
 
-#Default to test input size for SPEC17 and GAPBS
-input=test
+#Default to ref input size for SPEC17
+input=ref
 
 $(SPECKLE_DIR)/build/overlay/%/$(input):
 	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
@@ -34,18 +33,6 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	cp $(BASE_LINUX) $@/bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
-
-$(GAP_DIR)/overlay/$(input):
-	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
- 
-
-gapbs-kron:  gapbs.json $(GAP_DIR)/overlay/$(input) 
-	mkdir -p $@
-	cp $(BASE_LINUX) $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
-		-s $(GAP_DIR)/overlay/$(input) \
-		-o $@
-gapbs: gapbs-kron
 
 memcached-thread-imbalance:
 	mkdir -p $@
