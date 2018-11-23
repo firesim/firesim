@@ -54,10 +54,12 @@ private[midas] class MidasTransforms(
         new MiddleFirrtlToLowFirrtl,
         new ChannelizeTargetIO(io),
         new fame.WrapTop,
-        new fame.FAMEDefaults,
         new ResolveAndCheck,
         new fame.ExtractModel,
         new ResolveAndCheck,
+        new HighFirrtlToMiddleFirrtl,
+        new MiddleFirrtlToLowFirrtl,
+        new fame.FAMEDefaults,
         new fame.FAMETransform,
         new EmitFirrtl("post-fame-transform.fir"),
         new ResolveAndCheck) ++
