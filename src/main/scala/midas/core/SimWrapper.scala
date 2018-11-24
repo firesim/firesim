@@ -159,18 +159,9 @@ abstract class TargetChannelRecord[T <: Data](val targetIo: Seq[Data]) extends R
 
 }
 
-class PayloadRecord(port: firrtl.ir.Port) extends Record {
-  val elms = port.tpe match {
-    case a: firrtl.ir.BundleType => a.fields map {
-      case firrtl.ir.Field(name, _, firrtl.ir.UIntType(width: firrtl.ir.IntWidth)) => name -> UInt(width.width.toInt.W)
-      case firrtl.ir.Field(name, _, firrtl.ir.SIntType(width: firrtl.ir.IntWidth)) => name -> SInt(width.width.toInt.W)
-      case _ => throw new RuntimeException("Unexpected type in token payload.")
-    }
-    case _ => throw new RuntimeException("Unexpected type in token payload.")
-  }
-
+class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
   override val elements = ListMap(elms:_*)
-  override def cloneType: this.type = new PayloadRecord(port).asInstanceOf[this.type]
+  override def cloneType: this.type = new PayloadRecord(elms).asInstanceOf[this.type]
 }
 
 class TargetBoxIO(chAnnos: Seq[FAMEChannelAnnotation],
@@ -178,23 +169,37 @@ class TargetBoxIO(chAnnos: Seq[FAMEChannelAnnotation],
   val clock = Input(Clock())
   val hostReset = Input(Bool())
 
+  def regenTypesFromField(name: String, tpe: firrtl.ir.Type): Seq[(String, ChLeafType)] = tpe match {
+    case firrtl.ir.BundleType(fields) => fields.flatMap(f => regenTypesFromField(prefixWith(name, f.name), f.tpe))
+    case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => Seq(name -> UInt(width.width.toInt.W))
+    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => Seq(name -> SInt(width.width.toInt.W))
+    case _ => throw new RuntimeException("Unexpected type in token payload.")
+  }
+
+
+  def regenTypes(refTargets: Seq[ReferenceTarget]): Seq[(String, ChLeafType)] = {
+    val port = leafTypeMap(refTargets.head.copy(component = Seq()))
+    val fieldName = refTargets.head.component match {
+      case firrtl.annotations.TargetToken.Field(fName) :: Nil => fName
+      case _ => throw new RuntimeException("Expected only a bits field in ReferenceTarget's component.")
+    }
+
+    println(refTargets.head ->  port)
+    val bitsField = port.tpe match {
+      case a: firrtl.ir.BundleType => a.fields.filter(_.name == fieldName).head
+      case _ => throw new RuntimeException("ReferenceTargets should point at the channel's bundle.")
+    }
+    regenTypesFromField("", bitsField.tpe)
+  }
+
   def regenPayloadType(refTargets: Seq[ReferenceTarget]): PayloadRecord = {
     require(!refTargets.isEmpty)
-    val port = leafTypeMap(refTargets.head.copy(component = Seq()))
-    new PayloadRecord(port)
+    new PayloadRecord(regenTypes(refTargets))
   }
 
   def regenWireType(refTargets: Seq[ReferenceTarget]): ChLeafType = {
     require(refTargets.size == 1, "FIXME: Handle aggregated wires")
-    val port = leafTypeMap(refTargets.head.copy(component = Seq()))
-    port.tpe match {
-      case a: firrtl.ir.BundleType => a.fields.head match {
-        case firrtl.ir.Field(name, _, firrtl.ir.UIntType(width: firrtl.ir.IntWidth)) => UInt(width.width.toInt.W)
-        case firrtl.ir.Field(name, _, firrtl.ir.SIntType(width: firrtl.ir.IntWidth)) => SInt(width.width.toInt.W)
-        case _ => throw new RuntimeException("Unexpected type in token payload.")
-      }
-      case _ => throw new RuntimeException("Unexpected type in token payload.")
-    }
+    regenTypes(refTargets).head._2
   }
 
   chAnnos.collect({
