@@ -17,8 +17,8 @@ private[passes] class PreLinkRenaming(childNamespace: Namespace) extends firrtl.
 
   override def name = "[MIDAS] Pre-link Module Renaming"
   // TODO: Technically this xform should be able to accept AnyForm(TM); and be form idempotent
-  def inputForm = LowForm
-  def outputForm = LowForm
+  def inputForm = HighForm
+  def outputForm = HighForm
 
   // Updates instantiations of modules that would alias
   def updateInsts(nameMap: Map[String, String])(s: Statement): Statement = s match {

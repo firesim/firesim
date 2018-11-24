@@ -78,7 +78,7 @@ private[passes] class PlatformMapping(
     val shimAnnos = shimCircuit.annotations.map(_.toFirrtl)
     val transforms = Seq(new Fame1Instances,
                          new PreLinkRenaming(Namespace(c.circuit)))
-    val shimCircuitState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, shimAnnos), transforms)
+    val shimCircuitState = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, shimAnnos), transforms)
 
     // Rename the annotations from the inner module, which are using an obselete CircuitName
     val renameMap = RenameMap(
