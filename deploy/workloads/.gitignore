@@ -1,6 +1,6 @@
 spec17-intrate
 spec17-intspeed
-gapbs-kron
+gapbs
 build
 fedora-uniform/stage4-disk.img
 fedora-uniform/QEMU-ONLY-bbl
