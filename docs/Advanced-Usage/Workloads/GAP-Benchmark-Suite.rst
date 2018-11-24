@@ -9,9 +9,7 @@ For more information about the benchmark itself, please refer to the site:
 http://gap.cs.berkeley.edu/benchmark.html
 
 Some notes:
--  Benchmark uses ``test`` input graph size of 2^10 vertices by default.
-   ``graph500`` input size has 2^20 vertices and can be used by specifying an
-   argument into make: ``make gapbs input=graph500``
+-  Benchmark uses ``test`` input graph size of 2^10 vertices by default. ``graph500`` input size has 2^20 vertices and can be used by specifying an argument into make: ``make gapbs input=graph500``
 -  The reference input size with 2^27 verticies is not currently supported.
 -  Only the Kron input graph is currently supported.
 
