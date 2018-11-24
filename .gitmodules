@@ -29,5 +29,5 @@
 	path = deploy/workloads/Speckle
 	url = https://github.com/ccelio/Speckle.git
 [submodule "deploy/workloads/gapbs"]
-	path = deploy/workloads/runscripts/gapbs/gapbs
-	url = git@github.com:cookiestuf/gapbs.git
+	path = deploy/workloads/runscripts/gapbs-scripts/gapbs
+	url = https://github.com/sbeamer/gapbs.git

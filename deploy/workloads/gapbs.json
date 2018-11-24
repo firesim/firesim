@@ -1,9 +1,10 @@
 {
   "common_bootbinary" : "bbl-vmlinux",
-  "benchmark_name" : "gapbs-kron",
+  "benchmark_name" : "gapbs",
   "deliver_dir" : "gapbs",
   "common_args" : [],
   "common_files" : ["gapbs.sh"],
+  "common_simulation_outputs": ["uartlog"],
   "common_outputs" : ["/output"],
   "workloads" : [
     {
