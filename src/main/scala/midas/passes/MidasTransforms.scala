@@ -50,6 +50,7 @@ private[midas] class MidasTransforms(
         new firrtl.transforms.DeadCodeElimination,
         new ConfToJSON(conf, json),
         new barstools.macros.MacroCompilerTransform,
+        new ResolveAndCheck,
         new HighFirrtlToMiddleFirrtl,
         new MiddleFirrtlToLowFirrtl,
         new ChannelizeTargetIO(io),
