@@ -63,7 +63,7 @@ private[midas] class MidasTransforms(
         new fame.FAMETransform,
         new EmitFirrtl("post-fame-transform.fir"),
         new ResolveAndCheck) ++
-        firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
+        //firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
         Seq(
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir))
@@ -89,7 +89,7 @@ case class Fame1Annotation(target: ModuleName, tFire: String) extends
 }
 
 class Fame1Instances extends Transform {
-  def inputForm = LowForm
+  def inputForm = MidForm
   def outputForm = HighForm
   def execute(state: CircuitState): CircuitState = {
     val fame1s = (state.annotations.collect { case Fame1Annotation(ModuleName(m, c), tFire) => m -> tFire }).toMap

@@ -5,17 +5,32 @@ package passes
 
 import java.io.{File, FileWriter, StringWriter}
 
+import scala.collection.mutable
+
 import firrtl._
-import firrtl.annotations.{CircuitName}
+import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget}
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
-import firrtl.transforms.fame.{FAMEChannelAnnotation}
+import firrtl.transforms.fame.{FAMEChannelAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimWrapper
+
+object ReferenceTargetToPortMap {
+  def apply(state: CircuitState): Map[ReferenceTarget, Port] = {
+    val circuit = state.circuit
+    val portNodes = new mutable.LinkedHashMap[ReferenceTarget, Port]
+    val moduleNodes = new mutable.LinkedHashMap[ModuleTarget, DefModule]
+    circuit.modules.filter(_.name == circuit.main).foreach({m =>
+      val mTarget = ModuleTarget(circuit.main, m.name)
+      m.ports.foreach({ p => portNodes(mTarget.ref(p.name)) = p })
+    })
+    portNodes.toMap
+  }
+}
 
 private[passes] class SimulationMapping(
     io: Seq[chisel3.Data])
@@ -62,15 +77,18 @@ private[passes] class SimulationMapping(
     // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
     // SimWrapper generation
     val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelAnnotation => ch })
+    // Generate a port map to look up the types of the IO of the channels
+    val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
+    portTypeMap foreach println
 
-    lazy val sim = new SimWrapper(io, chAnnos)
+    lazy val sim = new SimWrapper(io, chAnnos, portTypeMap)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
 
     val transforms = Seq(new PreLinkRenaming(Namespace(innerCircuit)))
-    val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos),
-                                                     transforms)
+    //val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
+    val outerState = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
@@ -81,10 +99,16 @@ private[passes] class SimulationMapping(
     val renameMap = RenameMap(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
+    // FIXME: Renamer complains if i leave these in
+    val innerAnnos = innerState.annotations.filter(_ match {
+      case ch: FAMEChannelAnnotation => false
+      case _ => true
+    })
+
     val linkedState = CircuitState(
       circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.channelPorts),
       form        = HighForm,
-      annotations = innerState.annotations ++ outerState.annotations,
+      annotations = innerAnnos ++ outerState.annotations,
       renames     = Some(renameMap)
     )
     writeState(linkedState, "post-sim-mapping.fir")
