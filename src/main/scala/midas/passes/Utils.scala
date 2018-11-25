@@ -70,8 +70,12 @@ object Utils {
   // Takes a circuit state and writes it out to the target-directory by selecting
   // an appropriate emitter for its form
   def writeState(state: CircuitState, name: String) {
-    val td = state.annotations.collectFirst { case TargetDirAnnotation(value) => value }.get
-    val writer = new java.io.FileWriter(new File(td, name))
+    val td = state.annotations.collectFirst({ case TargetDirAnnotation(value) => value })
+    val file = td match {
+      case Some(dir) => new File(dir, name)
+      case None      => new File(name)
+    }
+    val writer = new java.io.FileWriter(file)
     val emitter = state.form match {
       case LowForm  => new LowFirrtlEmitter
       case MidForm  => new MiddleFirrtlEmitter
@@ -87,6 +91,30 @@ object Utils {
     val f = new FileWriter(file)
     f.write(state.getEmittedCircuit.value)
     f.close
+  }
+
+}
+
+// Lowers a circuitState from form A to form B, but unlike the lowering compilers
+// provided by firrtl, doesn't assume a chirrtl input form
+class IntermediateLoweringCompiler(inputForm: CircuitForm, outputForm: CircuitForm) extends firrtl.Compiler {
+  def emitter = outputForm match {
+    case LowForm  => new LowFirrtlEmitter
+    case MidForm  => new MiddleFirrtlEmitter
+    case HighForm => new HighFirrtlEmitter
+  }
+  def transforms = firrtl.CompilerUtils.getLoweringTransforms(inputForm, outputForm)
+}
+
+class EmitFirrtl(fileName: String) extends firrtl.Transform {
+
+  def inputForm = HighForm
+  def outputForm = HighForm
+  override def name = s"[MIDAS] Debugging Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    Utils.writeState(state, fileName)
+    state
   }
 }
 

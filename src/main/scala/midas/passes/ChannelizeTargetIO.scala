@@ -110,7 +110,6 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
       rvSinks    .flatMap(rvSinkAnnos) ++
       rvSources  .flatMap(rvSourceAnnos)
 
-    chAnnos foreach println
     val f1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topName))
     state.copy(annotations = state.annotations ++ Seq(f1Anno) ++ chAnnos)
   }
