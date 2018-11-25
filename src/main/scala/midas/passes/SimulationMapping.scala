@@ -19,7 +19,7 @@ import freechips.rocketchip.config.Parameters
 
 import midas.core.SimWrapper
 
-object ReferenceTargetToPortMap {
+private[passes] object ReferenceTargetToPortMap {
   def apply(state: CircuitState): Map[ReferenceTarget, Port] = {
     val circuit = state.circuit
     val portNodes = new mutable.LinkedHashMap[ReferenceTarget, Port]
@@ -72,14 +72,17 @@ private[passes] class SimulationMapping(
   }
 
   def execute(innerState: CircuitState) = {
-    val innerCircuit = innerState.circuit
 
     // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
-    // SimWrapper generation
+    // SimWrapper generation. We want the targets to point at un-lowered ports
     val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelAnnotation => ch })
     // Generate a port map to look up the types of the IO of the channels
     val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
-    portTypeMap foreach println
+
+    // Now lower the inner circuit in preparation for linking
+    // This prevents having to worry about matching aggregate structure in the wrapper IO
+    val loweredInnerState = new IntermediateLoweringCompiler(innerState.form, LowForm).compile(innerState, Seq())
+    val innerCircuit = loweredInnerState.circuit
 
     lazy val sim = new SimWrapper(io, chAnnos, portTypeMap)
     val c3circuit = chisel3.Driver.elaborate(() => sim)
@@ -87,8 +90,7 @@ private[passes] class SimulationMapping(
     val annos = c3circuit.annotations.map(_.toFirrtl)
 
     val transforms = Seq(new PreLinkRenaming(Namespace(innerCircuit)))
-    //val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
-    val outerState = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
+    val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
@@ -100,7 +102,7 @@ private[passes] class SimulationMapping(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
     // FIXME: Renamer complains if i leave these in
-    val innerAnnos = innerState.annotations.filter(_ match {
+    val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case ch: FAMEChannelAnnotation => false
       case _ => true
     })
@@ -116,14 +118,3 @@ private[passes] class SimulationMapping(
   }
 }
 
-private[passes] class EmitFirrtl(fileName: String) extends firrtl.Transform {
-
-  def inputForm = HighForm
-  def outputForm = HighForm
-  override def name = s"[MIDAS] Debugging Emission Pass: $fileName"
-
-  def execute(state: CircuitState) = {
-    writeState(state, fileName)
-    state
-  }
-}

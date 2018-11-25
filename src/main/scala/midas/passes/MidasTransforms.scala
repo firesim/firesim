@@ -64,7 +64,6 @@ private[midas] class MidasTransforms(
         new fame.FAMETransform,
         new EmitFirrtl("post-fame-transform.fir"),
         new ResolveAndCheck) ++
-        //firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++
         Seq(
         new SimulationMapping(io),
         new PlatformMapping(state.circuit.main, dir))
