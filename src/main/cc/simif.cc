@@ -68,10 +68,7 @@ uint64_t simif_t::hcycle() {
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
-void simif_t::target_reset(int pulse_start, int pulse_length) {
-  poke(reset, 0);
-  take_steps(pulse_start, true);
-  poke(reset, 1);
+void simif_t::target_reset(int pulse_length) {
   take_steps(pulse_length, true);
   poke(reset, 0);
 #ifdef ENABLE_SNAPSHOT
