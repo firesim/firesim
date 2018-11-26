@@ -99,6 +99,8 @@ class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Recor
   def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
 }
 
+// Regenerates the "bits" field of a target ready-valid interface from a list of flattened
+// elements that include the "bits_" prefix. This is stripped off.
 class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
   override val elements = ListMap((elms map { case (name, data) => name.stripPrefix("bits_") -> data.cloneType }):_*)
   override def cloneType: this.type = new PayloadRecord(elms).asInstanceOf[this.type]
@@ -115,7 +117,6 @@ class TargetBoxIO(chAnnos: Seq[FAMEChannelAnnotation],
     case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => Seq(name -> SInt(width.width.toInt.W))
     case _ => throw new RuntimeException(s"Unexpected type in token payload: ${tpe}.")
   }
-
 
   def regenTypes(refTargets: Seq[ReferenceTarget]): Seq[(String, ChLeafType)] = {
     val port = leafTypeMap(refTargets.head.copy(component = Seq()))
@@ -196,6 +197,7 @@ class TargetBoxIO(chAnnos: Seq[FAMEChannelAnnotation],
 
   val rvElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
+  // Using a chAnno; look up it's associated port tuple
   val rvPortMap: Map[FAMEChannelAnnotation, TargetRVPortTuple] = chAnnos.collect({
     case ch @ FAMEChannelAnnotation(_, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
       val sourcePortPair = leafSources.map({ tRefs =>
@@ -384,12 +386,12 @@ class SimWrapper(targetIo: Seq[Data],
     val (srcPort, sinkPort) = target.io.wirePortMap(chAnno)
     srcPort match {
       case Some(srcP) => channel.io.in <> srcP
-      case None    => channel.io.in <> channelPorts.elements(chAnno.name)
+      case None => channel.io.in <> channelPorts.elements(chAnno.name)
     }
 
     sinkPort match {
       case Some(sinkP) => sinkP <> channel.io.out
-      case None    => channelPorts.elements(chAnno.name) <> channel.io.out
+      case None => channelPorts.elements(chAnno.name) <> channel.io.out
     }
 
     channel.io.trace.ready := DontCare
@@ -427,26 +429,6 @@ class SimWrapper(targetIo: Seq[Data],
     target.io.payloadTypeMap(chAnno)
   }
 
-  // This is dangerous, and a hack. Ask Jack/Albert about what do
-  //def flattenAggregate(prefix: String, agg: Data): Seq[(String, Data)] = agg match {
-  //  case r: Record => r.elements.toSeq flatMap {case (n, e) => flattenAggregate(prefixWith(prefix, n), e)}
-  //  case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => flattenAggregate(prefixWith(prefix, i), e)}
-  //  case b: ChLeafType => Seq(prefix -> b)
-  //  case u => throw new RuntimeException("Unexpected type in token payload: ${u.type}")
-  //}
-
-  //def connectPayloads(lhs: ReadyValidIO[Data], rhs: ReadyValidIO[Data]): Unit = {
-  //  val lhsFields = flattenAggregate("bits", lhs.bits).toMap
-  //  val rhsFields = flattenAggregate("bits", rhs.bits).toMap
-  //  lhsFields foreach println
-  //  rhsFields foreach println
-
-  //  scala.Predef.assert(lhsFields.size == rhsFields.size)
-  //  lhsFields.foreach { case (name, field) =>
-  //    field := rhsFields(name)
-  //  }
-  //}
-
   def genReadyValidChannel(chAnno: FAMEChannelAnnotation): ReadyValidChannel[Data] = {
     val strippedName = chAnno.name.stripSuffix("_fwd")
     require(chAnno.sinks   == None || chAnno.sources == None, "Can't handle excised channels yet")
@@ -482,6 +464,6 @@ class SimWrapper(targetIo: Seq[Data],
   chAnnos.foreach({ _ match {
     case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.WireChannel,_,_) => genWireChannel(ch)
     case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
-    case _ => Nil
+    case _ => Nil // Drop DecoupledReverseChannel annotations
   }})
 }
