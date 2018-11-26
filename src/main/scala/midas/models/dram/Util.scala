@@ -673,3 +673,55 @@ class LatencyHistogramUnitTest extends UnitTest {
 
   io.finished := state === s_done
 }
+
+class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
+  val nCounters = 8
+  val nastiP = p.alterPartial({
+    case NastiKey => NastiParameters(64, 16, 4)
+  })
+  val counters = Module(new AddressRangeCounter(nCounters)(nastiP))
+
+  val (s_start :: s_readInit :: s_run :: s_readout :: s_done :: Nil) = Enum(5)
+  val state = RegInit(s_start)
+
+  val reqAddrs = VecInit(Seq(
+    0x00000, 0x2000, 0x4000, 0x6000,
+    0x4000,  0x2000, 0x0000, 0x6000).map(_.U(16.W)))
+  val reqSizes = VecInit(Seq(3, 2, 3, 1, 0, 1, 2, 3).map(_.U(3.W)))
+  val reqLens  = VecInit(Seq(0, 4, 5, 3, 1, 9, 4, 6).map(_.U(8.W)))
+
+  def computeExpected(idx: Int) = (reqLens(idx) + 1.U) << reqSizes(idx)
+
+  val readExpected = VecInit(Seq((0, 6), (1, 5), (2, 4), (3, 7)).map {
+    case (a, b) => computeExpected(a) + computeExpected(b)
+  })
+
+  val (readIdx, readDone) = Counter(state.isOneOf(s_readInit, s_readout), readExpected.size)
+  val (runIdx, runDone) = Counter(state === s_run, reqAddrs.size)
+
+  val initValues = Reg(Vec(readExpected.size, UInt(counters.counterBits.W)))
+  val initWriteIdx = RegNext(RegNext(readIdx))
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
+  val readData = Cat(counters.io.readout.dataH, counters.io.readout.dataL)
+
+  counters.io.req.valid := state === s_run
+  counters.io.req.bits.addr := reqAddrs(runIdx)
+  counters.io.req.bits.len  := reqLens(runIdx)
+  counters.io.req.bits.size := reqSizes(runIdx)
+  counters.io.readout.enable := state.isOneOf(s_readInit, s_readout)
+  counters.io.readout.addr := readIdx
+
+  when (initValid) { initValues(initWriteIdx) := readData }
+  when (state === s_start && io.start) { state := s_readInit }
+  when (state === s_readInit && readDone) { state := s_run }
+  when (runDone) { state := s_readout }
+  when (state === s_readout && readDone) { state := s_done }
+
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
+
+  assert(!readValid || readCount === expectedCount)
+
+  io.finished := state === s_done
+}
