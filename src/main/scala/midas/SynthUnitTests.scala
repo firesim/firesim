@@ -10,7 +10,7 @@ import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.{UnitTests, TestHarness}
-import midas.models.{CounterTableUnitTest, LatencyHistogramUnitTest}
+import midas.models.{CounterTableUnitTest, LatencyHistogramUnitTest, AddressRangeCounterUnitTest}
 
 
 // Unittests
@@ -38,7 +38,8 @@ class WithAllUnitTests extends Config((site, here, up) => {
       Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
       Module(new ReadyValidChannelUnitTest),
       Module(new CounterTableUnitTest),
-      Module(new LatencyHistogramUnitTest))
+      Module(new LatencyHistogramUnitTest),
+      Module(new AddressRangeCounterUnitTest))
   }
 })
 
