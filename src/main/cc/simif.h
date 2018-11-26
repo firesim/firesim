@@ -101,8 +101,8 @@ class simif_t
 
     uint64_t get_seed() { return seed; };
 
-    // A default reset scheme that pulses the global chisel reset
-    void target_reset(int pulse_start = 1, int pulse_length = 5);
+    // A default reset scheme that holds reset high for pulse_length cycles
+    void target_reset(int pulse_length = 5);
 
     // Returns an upper bound for the cycle reached by the target
     // If using blocking steps, this will be ~equivalent to actual_tcycle()
