@@ -204,19 +204,6 @@ void simplenic_t::init() {
 
 //#define TOKENVERIFY
 
-// checking for token loss
-uint32_t next_token_from_fpga = 0x0;
-uint32_t next_token_from_socket = 0x0;
-
-uint64_t iter = 0;
-
-int currentround = 0;
-int nextround = 1;
-
-#ifdef TOKENVERIFY
-uint64_t timeelapsed_cycles = 0;
-#endif
-
 void simplenic_t::tick() {
     struct timespec tstart, tend;
 
