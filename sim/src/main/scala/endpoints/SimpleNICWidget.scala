@@ -301,9 +301,13 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   }
 
   val target = io.hPort.hBits
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
-  val targetReset = tFire & io.tReset.bits
-  io.tReset.ready := tFire
+  val fixMeOnNextRocketBump = true.B // Need a dummy predicate to exclude for now
+  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid,
+                                    io.hPort.fromHost.hReady,
+                                    io.tReset.valid,
+                                    fixMeOnNextRocketBump)
+  val tFire = tFireHelper.fire(fixMeOnNextRocketBump)
+  io.tReset.ready := true.B // This is unused
 
 //  htnt_queue.reset  := reset //|| targetReset
 //  ntht_queue.reset := reset //|| targetReset
