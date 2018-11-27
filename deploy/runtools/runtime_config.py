@@ -100,7 +100,7 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
                 netbw=netbw, profile_interval=profile_interval,
@@ -110,7 +110,7 @@ class RuntimeHWConfig:
         return basecommand
 
 
-    def get_dummyserver_boot_simulation_command(self, macaddr0, macaddr1, macaddr2, macaddr3, blkdev0, blkdev1, blkdev2, blkdev3, slotid,
+    def get_supernode_boot_simulation_command(self, macaddr0, macaddr1, macaddr2, macaddr3, blkdev0, blkdev1, blkdev2, blkdev3, slotid,
                                     linklatency, netbw, profile_interval, bootbin0, bootbin1, bootbin2, bootbin3,
                                     trace_enable, trace_start, trace_end, shmemportname):
         """ return the command used to boot the simulation. this has to have
@@ -125,7 +125,7 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr0=macaddr0, macaddr1=macaddr1,macaddr2=macaddr2,macaddr3=macaddr3,
                 blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3, linklatency=linklatency,

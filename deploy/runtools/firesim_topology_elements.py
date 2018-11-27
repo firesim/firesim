@@ -251,12 +251,12 @@ class FireSimServerNode(FireSimNode):
         an array. """
         all_paths = []
         # todo handle none case
-        all_paths.append(self.get_job().rootfs_path())
-        all_paths.append(self.get_job().bootbinary_path())
+        all_paths.append([self.get_job().rootfs_path(), ''])
+        all_paths.append([self.get_job().bootbinary_path(), ''])
 
-        all_paths.append(self.server_hardware_config.get_local_driver_path())
-        all_paths.append(self.server_hardware_config.get_local_runtime_conf_path())
-        all_paths.append(self.server_hardware_config.get_local_assert_def_path())
+        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
     def get_agfi(self):
@@ -274,21 +274,23 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self):
+    def get_rootfs_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self):
+    def get_bootbin_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().bootbinary_path().split("/")[-1]
 
 
-class FireSimDummyServerNode(FireSimServerNode):
-    """ This is a dummy server node for supernode mode. """
-    def __init__(self, server_hardware_config=None, server_link_latency=None,
-                 server_bw_max=None):
-        super(FireSimDummyServerNode, self).__init__(server_hardware_config,
-                                                     server_link_latency,
-                                                     server_bw_max)
+class FireSimSuperNodeServerNode(FireSimServerNode):
+    """ This is the main server node for supernode mode. This knows how to 
+    call out to dummy server nodes to get all the info to launch the one
+    command line to run the FPGA sim that has N > 1 sims on one fpga.
 
+    TODO: this is currently hardcoded to N=4"""
 
     def supernode_get_sibling(self, siblingindex):
         """ return the sibling for supernode mode.
@@ -331,7 +333,7 @@ class FireSimDummyServerNode(FireSimServerNode):
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
 
-        return self.server_hardware_config.get_boot_simulation_command(
+        return self.server_hardware_config.get_supernode_boot_simulation_command(
             self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
             self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
             slotno, self.server_link_latency, self.server_bw_max, self.server_profile_interval,
@@ -386,6 +388,18 @@ class FireSimDummyServerNode(FireSimServerNode):
             return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().bootbinary_path().split("/")[-1]
 
+
+
+
+
+
+class FireSimDummyServerNode(FireSimServerNode):
+    """ This is a dummy server node for supernode mode. """
+    def __init__(self, server_hardware_config=None, server_link_latency=None,
+                 server_bw_max=None):
+        super(FireSimDummyServerNode, self).__init__(server_hardware_config,
+                                                     server_link_latency,
+                                                     server_bw_max)
 
 
 

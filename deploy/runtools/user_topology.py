@@ -268,25 +268,25 @@ class UserTopologies(object):
 
     def supernode_example_4config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = [FireSimServerNode()] + [FireSimDummyServerNode() for x in range(3)]
+        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
         self.roots[0].add_downlinks(servers)
     def supernode_example_8config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(2)])
+        servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(2)])
         self.roots[0].add_downlinks(servers)
     def supernode_example_16config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(4)])
+        servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(4)])
         self.roots[0].add_downlinks(servers)
     def supernode_example_32config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
+        servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
         self.roots[0].add_downlinks(servers)
 
     def supernode_example_64config(self):
         self.roots = [FireSimSwitchNode()]
         level2switches = [FireSimSwitchNode() for x in range(2)]
-        servers = [UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(2)]
+        servers = [UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(2)]
         for root in self.roots:
             root.add_downlinks(level2switches)
         for l2switchNo in range(len(level2switches)):
@@ -295,7 +295,7 @@ class UserTopologies(object):
     def supernode_example_128config(self):
         self.roots = [FireSimSwitchNode()]
         level2switches = [FireSimSwitchNode() for x in range(4)]
-        servers = [UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(4)]
+        servers = [UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(4)]
         for root in self.roots:
             root.add_downlinks(level2switches)
         for l2switchNo in range(len(level2switches)):
@@ -304,7 +304,7 @@ class UserTopologies(object):
     def supernode_example_256config(self):
         self.roots = [FireSimSwitchNode()]
         level2switches = [FireSimSwitchNode() for x in range(8)]
-        servers = [UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)]
+        servers = [UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)]
         for root in self.roots:
             root.add_downlinks(level2switches)
         for l2switchNo in range(len(level2switches)):
@@ -314,7 +314,7 @@ class UserTopologies(object):
         self.roots = [FireSimSwitchNode()]
         level1switches = [FireSimSwitchNode() for x in range(2)]
         level2switches = [[FireSimSwitchNode() for x in range(8)] for x in range(2)]
-        servers = [[UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)] for x in range(2)]
+        servers = [[UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)] for x in range(2)]
         self.roots[0].add_downlinks(level1switches)
         for switchno in range(len(level1switches)):
             level1switches[switchno].add_downlinks(level2switches[switchno])
@@ -326,7 +326,7 @@ class UserTopologies(object):
         self.roots = [FireSimSwitchNode()]
         level1switches = [FireSimSwitchNode() for x in range(4)]
         level2switches = [[FireSimSwitchNode() for x in range(8)] for x in range(4)]
-        servers = [[UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)] for x in range(4)]
+        servers = [[UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(8)] for x in range(4)]
         self.roots[0].add_downlinks(level1switches)
         for switchno in range(len(level1switches)):
             level1switches[switchno].add_downlinks(level2switches[switchno])
@@ -339,7 +339,7 @@ class UserTopologies(object):
         self.roots = [FireSimSwitchNode()]
         level1switches = [FireSimSwitchNode() for x in range(2)]
         level2switches = [[FireSimSwitchNode() for x in range(1)] for x in range(2)]
-        servers = [[UserTopologies.supernode_flatten([[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(1)] for x in range(2)]
+        servers = [[UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)]) for x in range(1)] for x in range(2)]
         self.roots[0].add_downlinks(level1switches)
         for switchno in range(len(level1switches)):
             level1switches[switchno].add_downlinks(level2switches[switchno])
