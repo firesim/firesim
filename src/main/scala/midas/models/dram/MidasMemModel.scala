@@ -381,13 +381,13 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     val n = cfg.params.addrRangeCounters
     val readRanges = AddressRangeCounter(n, model.io.tNasti.ar, targetFire)
     val writeRanges = AddressRangeCounter(n, model.io.tNasti.aw, targetFire)
-    val addrBits = model.io.tNasti.nastiXAddrBits
-    val numRanges = n.U(addrBits.W)
+    val numRanges = n.U(32.W)
+
+    require(n < (1L << 32))
 
     attachIO(readRanges, "readRanges_")
     attachIO(writeRanges, "writeRanges_")
-    attach(numRanges(31, 0), "numRangesL", ReadOnly)
-    attach(numRanges(addrBits-1, 32), "numRangesH", ReadOnly)
+    attach(numRanges, "numRanges", ReadOnly)
   }
 
   val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
@@ -415,6 +415,9 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     super.genHeader(base, sb)
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+
+    val targetAddrBits = model.io.tNasti.nastiXAddrBits
+    sb.append(genMacro("TARGET_MEM_ADDR_BITS", UInt32(targetAddrBits)))
   }
 
   // Prints out key elaboration time settings
