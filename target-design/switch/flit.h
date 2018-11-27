@@ -69,9 +69,11 @@ uint16_t get_port_from_flit(uint64_t flit, int current_port) {
 
     sendport = sendport & 0xFFFF;
     //printf("mac: %04x\n", sendport);
-    if (sendport != 0xffff) {
-        sendport = mac2port[sendport];
-    }
+
+    // At this point, we know the MAC address is not a broadcast address,
+    // so we can just look up the port in the mac2port table
+    sendport = mac2port[sendport];
+
     if (sendport == NUMDOWNLINKS) {
         // this has been mapped to "any uplink", so pick one
         int randval = rand() % NUMUPLINKS;
