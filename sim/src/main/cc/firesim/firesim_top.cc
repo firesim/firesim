@@ -70,7 +70,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS));
 #endif
 
 #ifdef BLOCKDEVWIDGET_struct_guard
