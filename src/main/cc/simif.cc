@@ -69,11 +69,12 @@ uint64_t simif_t::hcycle() {
 }
 
 void simif_t::target_reset(int pulse_length) {
+  poke(reset, 1);
   take_steps(pulse_length, true);
   poke(reset, 0);
 #ifdef ENABLE_SNAPSHOT
   // flush I/O traces by target resets
-  trace_count = std::min((size_t)(pulse_start + pulse_length), tracelen);
+  trace_count = std::min((size_t)(pulse_length), tracelen);
   read_traces(NULL);
   trace_count = 0;
 #endif
