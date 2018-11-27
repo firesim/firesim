@@ -298,22 +298,36 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
             if self == servernode:
                 return self.uplinks[0].get_uplink_side().downlinks[index+siblingindex].get_downlink_side()
+
     def supernode_get_sibling_mac_address(self, siblingindex):
         """ return the sibling's mac address for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_mac_address()
+
     def supernode_get_sibling_rootfs(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
+
     def supernode_get_sibling_bootbin(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
         return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
+
     def supernode_get_sibling_rootfs_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
+
     def supernode_get_sibling_bootbinary_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().bootbinary_path()
+
+    def supernode_get_sibling_link_latency(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).server_link_latency
+
+    def supernode_get_sibling_bw_max(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).server_bw_max
+
+    def supernode_get_sibling_shmemportname(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).uplinks[0].get_global_link_id()
 
 
     def get_sim_start_command(self, slotno):
@@ -323,22 +337,44 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         sibling1mac = self.supernode_get_sibling_mac_address(1)
         sibling2mac = self.supernode_get_sibling_mac_address(2)
         sibling3mac = self.supernode_get_sibling_mac_address(3)
+
         sibling1root = self.supernode_get_sibling_rootfs(1)
         sibling2root = self.supernode_get_sibling_rootfs(2)
         sibling3root = self.supernode_get_sibling_rootfs(3)
+
         sibling1bootbin = self.supernode_get_sibling_bootbin(1)
         sibling2bootbin = self.supernode_get_sibling_bootbin(2)
         sibling3bootbin = self.supernode_get_sibling_bootbin(3)
-        shmemportname = "default"
+
+        sibling1link_latency = self.supernode_get_sibling_link_latency(1)
+        sibling2link_latency = self.supernode_get_sibling_link_latency(2)
+        sibling3link_latency = self.supernode_get_sibling_link_latency(3)
+
+        sibling1bw_max = self.supernode_get_sibling_bw_max(1)
+        sibling2bw_max = self.supernode_get_sibling_bw_max(2)
+        sibling3bw_max = self.supernode_get_sibling_bw_max(3)
+
+        shmemportname0 = "default"
+        shmemportname1 = "default"
+        shmemportname2 = "default"
+        shmemportname3 = "default"
+
         if self.uplinks:
-            shmemportname = self.uplinks[0].get_global_link_id()
+            shmemportname0 = self.uplinks[0].get_global_link_id()
+            shmemportname1 = self.supernode_get_sibling_shmemportname(1)
+            shmemportname2 = self.supernode_get_sibling_shmemportname(2)
+            shmemportname3 = self.supernode_get_sibling_shmemportname(3)
 
         return self.server_hardware_config.get_supernode_boot_simulation_command(
+            slotno,
             self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
             self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
-            slotno, self.server_link_latency, self.server_bw_max, self.server_profile_interval,
+            self.server_link_latency, sibling1link_latency, sibling2link_latency, sibling3link_latency,
+            self.server_bw_max, sibling1bw_max, sibling2bw_max, sibling3bw_max,
+            self.server_profile_interval,
             self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin,
-            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
+            self.trace_enable, self.trace_start, self.trace_end, 
+            shmemportname0, shmemportname1, shmemportname2, shmemportname3)
 
 
     def get_required_files_local_paths(self):
