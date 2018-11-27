@@ -257,7 +257,7 @@ class FireSimTopologyWithPasses:
             else:
                 # now, we're handling the cycle-accurate networked simulation case
                 # currently, we only handle the case where
-                self.pass_simple_networked_host_node_mapping()
+                self.pass_simple_networked_host_supernode_mapping()
         elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
             """ call the mapper fn defined in the topology itself. """
             self.firesimtopol.custom_mapper(self)
