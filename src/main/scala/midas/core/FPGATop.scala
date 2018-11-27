@@ -11,6 +11,7 @@ import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.util.{DecoupledHelper}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 case object MemNastiKey extends Field[NastiParameters]
@@ -140,9 +141,10 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   val addresses = new ListBuffer[AddressSet]
   val tResetChannel = defaultIOWidget.io.ins.elements("reset")
 
-  // Instantiate endpoint widgets
-  tResetChannel.ready := (simIo.endpoints foldLeft Bool(true)){ (resetReady, endpoint) =>
-    ((0 until endpoint.size) foldLeft resetReady){ (ready, i) =>
+  // Instantiate endpoint widgets. Keep a tuple of each endpoint's reset channel enq.valid and enq.ready
+  //                      Valid, Ready
+  val resetEnqTuples: Seq[(Bool, Bool)] = (simIo.endpoints flatMap { endpoint =>
+    Seq.tabulate(endpoint.size)({ i =>
       val widgetName = (endpoint, p(MemModelKey)) match {
         case (_: SimMemIO, Some(_)) => s"MemModel_$i"
         case (_: SimMemIO, None) => s"NastiWidget_$i"
@@ -170,15 +172,23 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
       // each widget should have its own reset queue
       val resetQueue = Module(new WireChannel(Bool(), endpoint.clockRatio))
+      resetQueue.suggestName(s"resetQueue_${widgetName}")
       resetQueue.io.traceLen := DontCare
       resetQueue.io.trace.ready := DontCare
       resetQueue.reset := reset.toBool || simReset
       widget.io.tReset <> resetQueue.io.out
       resetQueue.io.in.bits := tResetChannel.bits
       resetQueue.io.in.valid := tResetChannel.valid
-      ready && resetQueue.io.in.ready
-    }
-  }
+      (resetQueue.io.in.valid, resetQueue.io.in.ready)
+    })
+  // HACK: Need to add the tranformed-RTL channel as well
+  }) ++ Seq((simIo.wirePortMap("reset").valid, simIo.wirePortMap("reset").ready))
+
+  // Note: This is not LI-BDN compliant... Should implement a forking decoupled helper
+  val tResetHelper = DecoupledHelper((resetEnqTuples.map(_._2) ++ Seq(tResetChannel.valid)):_*)
+  tResetChannel.ready := tResetHelper.fire(tResetChannel.valid)
+  resetEnqTuples.foreach({ case (enqValid, enqReady) => enqValid := tResetHelper.fire(enqReady) })
+
 
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
