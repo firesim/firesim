@@ -1,10 +1,8 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import chisel3.Module
-import DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
@@ -43,7 +41,7 @@ class SimTracerV extends Endpoint {
   override def widgetName = "TracerVWidget"
 }
 
-class TracerVWidgetIO(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class TracerVWidgetIO(val tracerParams: Parameters, val num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
   override val dma = Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
