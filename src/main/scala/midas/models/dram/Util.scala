@@ -527,31 +527,39 @@ object HostLatencyHistogram {
   }
 }
 
+// Pick out the relevant parts of NastiReadAddressChannel or NastiWriteAddressChannel
 class AddressRangeCounterRequest(implicit p: Parameters) extends NastiBundle {
   val addr = UInt(nastiXAddrBits.W)
   val len  = UInt(nastiXLenBits.W)
   val size = UInt(nastiXSizeBits.W)
 }
 
-class AddressRangeCounter(n: BigInt)(implicit p: Parameters) extends NastiModule {
+// Stores count of #bytes requested from each range in BRAM.
+// Setting io.readout.enable ties a read port of the BRAM to a read address
+//   that can be driven by the simulation bus
+//
+// WARNING: Will drop range updates if attempting to read values when host
+// transactions issued
+
+class AddressRangeCounter(nRanges: BigInt)(implicit p: Parameters) extends NastiModule {
   val io = IO(new Bundle {
     val req = Flipped(ValidIO(new AddressRangeCounterRequest))
-    val readout = new CounterReadoutIO(log2Ceil(n))
+    val readout = new CounterReadoutIO(log2Ceil(nRanges))
   })
 
-  require(n > 1)
-  require(isPow2(n))
+  require(nRanges > 1)
+  require(isPow2(nRanges))
 
   val counterBits = 48
   val addrMSB = nastiXAddrBits - 1
-  val addrLSB = nastiXAddrBits - log2Ceil(n)
+  val addrLSB = nastiXAddrBits - log2Ceil(nRanges)
 
   val s1_len = RegNext(io.req.bits.len)
   val s1_size = RegNext(io.req.bits.size)
   val s1_bytes = (s1_len + 1.U) << s1_size
   val s2_bytes = RegNext(s1_bytes)
 
-  val counters = Module(new CounterTable(log2Ceil(n), counterBits))
+  val counters = Module(new CounterTable(log2Ceil(nRanges), counterBits))
   counters.io.incr.enable := io.req.valid
   counters.io.incr.addr := io.req.bits.addr(addrMSB, addrLSB)
   counters.io.incr.data := s2_bytes

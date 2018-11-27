@@ -13,10 +13,9 @@
 // MICRO HACKS.
 constexpr int HISTOGRAM_SIZE = 1024;
 constexpr int BIN_SIZE = 36;
+constexpr int RANGE_COUNT_SIZE = 48;
 constexpr data_t BIN_H_MASK = (1L << (BIN_SIZE - 32)) - 1;
-constexpr data_t NUM_RANGE_MASK = (1L << 4) - 1;
-constexpr data_t RANGE_BYTES_MASK = (1L << 16) - 1;
-constexpr uint64_t MEM_SIZE (1L << 35);
+constexpr data_t RANGE_H_MASK = (1L << (RANGE_COUNT_SIZE - 32)) - 1;
 
 class AddrRangeCounter: public FpgaModel {
   public:
@@ -59,7 +58,7 @@ class FpgaMemoryModel: public FpgaModel
 {
 public:
   FpgaMemoryModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
-                  std::string stats_file_name);
+                  std::string stats_file_name, size_t mem_size);
   void init();
   void profile();
   void finish();
@@ -79,7 +78,8 @@ private:
     "Ranges_dataL",
     "Ranges_dataH",
     "Ranges_addr",
-    "Ranges_enable"
+    "Ranges_enable",
+    "numRanges"
   };
 
   std::set<std::string> profile_exclusion {
@@ -90,10 +90,12 @@ private:
     "Ranges_dataL",
     "Ranges_dataH",
     "Ranges_addr",
-    "Ranges_enable"
+    "Ranges_enable",
+    "numRanges"
   };
 
   bool has_latency_histograms() { return histograms.size() > 0; };
+  size_t mem_size;
 };
 
 #endif // __FPGA_MEMORY_MODEL_H

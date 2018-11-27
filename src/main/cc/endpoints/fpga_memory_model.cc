@@ -30,13 +30,13 @@ void Histogram::finish() {
 }
 
 void AddrRangeCounter::init() {
-  nranges = read64("numRangesH", "numRangesL", NUM_RANGE_MASK);
+  nranges = read("numRanges");
   range_bytes = new uint64_t[nranges];
 
   write(enable, 1);
   for (size_t i = 0; i < nranges; i++) {
     write(addr, i);
-    range_bytes[i] = read64(dataH, dataL, RANGE_BYTES_MASK);
+    range_bytes[i] = read64(dataH, dataL, RANGE_H_MASK);
   }
   write(enable, 0);
 }
@@ -45,14 +45,15 @@ void AddrRangeCounter::finish() {
   write(enable, 1);
   for (size_t i = 0; i < nranges; i++) {
     write(addr, i);
-    range_bytes[i] = read64(dataH, dataL, RANGE_BYTES_MASK);
+    range_bytes[i] = read64(dataH, dataL, RANGE_H_MASK);
   }
   write(enable, 0);
 }
 
 FpgaMemoryModel::FpgaMemoryModel(
-    simif_t* sim, AddressMap addr_map, int argc, char** argv, std::string stats_file_name)
-  : FpgaModel(sim, addr_map){
+    simif_t* sim, AddressMap addr_map, int argc, char** argv,
+    std::string stats_file_name, size_t mem_size)
+  : FpgaModel(sim, addr_map), mem_size(mem_size) {
 
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
@@ -175,7 +176,7 @@ void FpgaMemoryModel::finish() {
     rangectr_file << std::endl;
 
     for (size_t i = 0; i < nranges; i++) {
-      rangectr_file << std::hex << (i * MEM_SIZE / nranges) << ",";
+      rangectr_file << std::hex << (i * mem_size / nranges) << ",";
       for (auto &rctr: rangectrs) {
         rangectr_file << std::dec << rctr.range_bytes[i] << ",";
       }
