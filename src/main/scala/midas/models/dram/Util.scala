@@ -548,6 +548,7 @@ class AddressRangeCounter(nRanges: BigInt)(implicit p: Parameters) extends Nasti
   })
 
   require(nRanges > 1)
+  require(nRanges < (1L << 32))
   require(isPow2(nRanges))
 
   val counterBits = 48

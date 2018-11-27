@@ -383,8 +383,6 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     val writeRanges = AddressRangeCounter(n, model.io.tNasti.aw, targetFire)
     val numRanges = n.U(32.W)
 
-    require(n < (1L << 32))
-
     attachIO(readRanges, "readRanges_")
     attachIO(writeRanges, "writeRanges_")
     attach(numRanges, "numRanges", ReadOnly)
