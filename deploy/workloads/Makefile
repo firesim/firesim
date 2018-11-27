@@ -17,7 +17,7 @@ allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-
 
 # Default to the submodule
 SPECKLE_DIR=Speckle
-GAP_DIR=runscripts/gapbs
+GAP_DIR=runscripts/gapbs-scripts
 
 #TODO: Provide runscripts for fp{speed, rate}
 spec17_suites = intrate intspeed
