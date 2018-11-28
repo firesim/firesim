@@ -85,9 +85,13 @@ Running simulations
 Running FireSim in supernode mode follows the same process as in
 "regular" mode. Currently, the only difference is that the main simulation
 screen remains with the name ``fsim0``, while the three other simulation screens
-can be accessed by attaching ``screen`` to uartpty1, uartpty2, uartpty3
-respectively. All simulation screens will generate uart logs which will be
-copied to the manager as in a "regular" FireSim simulation
+can be accessed by attaching ``screen`` to ``uartpty1``, ``uartpty2``, ``uartpty3``
+respectively. All simulation screens will generate uart logs (``uartlog1``,
+``uartlog2``, ``uartlog3``). Notice that you must use ``sudo`` in order to
+attach to the uartpty or view the uart logs. The additional uart logs will not
+be copied back to the manager instance by default (as in a "regular" FireSim
+simulation). It is neccessary to specify the copying of the additional uartlogs
+(uartlog1, uartlog2, uartlog3) in the workload definition.
 
 Supernode topologies utilize a ``FireSimSuperNodeServerNode`` class in order to
 represent one of the 4 simulated target nodes which also represents a single
