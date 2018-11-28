@@ -191,7 +191,7 @@ class SupernodeIO(
 }
 
 
-class Supernode(implicit p: Parameters) extends Module {
+class FireSimSupernode(implicit p: Parameters) extends Module {
   val nNodes = p(NumNodes)
   val nodes = Seq.fill(nNodes) {
     Module(LazyModule(new FireSim).module)
