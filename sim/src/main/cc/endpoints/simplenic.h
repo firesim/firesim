@@ -13,8 +13,8 @@ class simplenic_t: public endpoint_t
 {
     public:
         simplenic_t(simif_t* sim, std::vector<std::string> &args,
-			SIMPLENICWIDGET_struct *addrs, int simplenicno,
-			long dma_addr);
+            SIMPLENICWIDGET_struct *addrs, int simplenicno,
+            long dma_addr);
         ~simplenic_t();
 
         virtual void init();
@@ -37,7 +37,19 @@ class simplenic_t: public endpoint_t
         FILE * niclog;
         SIMPLENICWIDGET_struct *mmio_addrs;
         bool loopback;
-	long dma_addr;
+
+        // checking for token loss
+        uint32_t next_token_from_fpga = 0x0;
+        uint32_t next_token_from_socket = 0x0;
+
+        uint64_t iter = 0;
+
+        int currentround = 0;
+
+        // only for TOKENVERIFY
+        uint64_t timeelapsed_cycles = 0;
+
+        long dma_addr;
 };
 #endif // SIMPLENICWIDGET_struct_guard
 
