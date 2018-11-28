@@ -170,6 +170,9 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
+            # Filter out FireSimDummyServerNodes for actually deploying.
+            # Infrastructure after this point will automatically look at the
+            # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
             downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
