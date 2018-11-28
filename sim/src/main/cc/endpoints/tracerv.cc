@@ -82,13 +82,18 @@ void tracerv_t::init() {
 // undefining this stores as bin (e.g. open with vim hex mode)
 #define HUMAN_READABLE
 
+#define START_MARKER 0xe000251d4c
+#define END_MARKER 0xe000251fa8
+
+static bool should_trace = false;
+
 void tracerv_t::tick() {
     uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
 
     #define QUEUE_DEPTH 6144
     
     uint64_t OUTBUF[QUEUE_DEPTH * 8];
-
+		uint64_t mini_cycle = 0;
     if (outfull) {
         int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
 
@@ -97,14 +102,27 @@ void tracerv_t::tick() {
         if (this->tracefile && can_write) {
 #ifdef HUMAN_READABLE
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+7]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+6]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+5]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+4]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+3]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+2]);
-                fprintf(this->tracefile, "%016llx", OUTBUF[i+1]);
-                fprintf(this->tracefile, "%016llx\n", OUTBUF[i+0]);
+                // Assume one hart
+                int val = (OUTBUF[i+1] >> 61) & 0x1;
+                uint64_t iaddr = (OUTBUF[i+1] >> 21) & 0xffffffffff;
+
+								mini_cycle ++;
+                
+								if (val && (iaddr == START_MARKER || should_trace)) {
+                   if (!should_trace) {
+                       should_trace = true;
+                       fprintf(this->tracefile, "========================== TRACE START ==========================\n");
+                       fprintf(this->tracefile, "Cycle            PC                   Instruction\n");
+                   }
+                   uint64_t insn = ((OUTBUF[i] >> 53) & 0x7ff) + ((OUTBUF[i+1] & 0x1fffff) << 11);
+                   fprintf(this->tracefile, "%ld,   %016llx,   %016llx\n", cur_cycle + mini_cycle, iaddr, insn);
+								}
+
+                if (val && iaddr == END_MARKER && should_trace) {
+                    should_trace = false;
+                    fprintf(this->tracefile, "========================== TRACE END ==========================\n");
+                }
+
             }
 #else
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
