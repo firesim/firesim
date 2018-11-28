@@ -63,10 +63,10 @@ then
     make converter
     CXX=${RISCV}/bin/riscv64-unknown-linux-gnu-g++ CXX_FLAGS+=--static make
     mkdir -p $overlay_dir/benchmark/graphs
+    cp $SUITE $overlay_dir/
     if [ "$input_type" = ref ]; then
         aws s3 cp s3://gapbs-ref-graphs $overlay_dir/benchmark/graphs --recursive
     else
-        cp $SUITE $overlay_dir/
         ./converter $KRON_ARGS -wb $overlay_dir/benchmark/graphs/kron.wsg
         ./converter $KRON_ARGS -b $overlay_dir/benchmark/graphs/kron.sg
         ./converter $KRON_ARGS -b $overlay_dir/benchmark/graphs/kronU.sg
