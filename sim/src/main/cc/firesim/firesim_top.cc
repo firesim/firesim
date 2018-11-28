@@ -117,7 +117,6 @@ uint64_t host_mem_offset = -0x80000000LL;
      host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
 
-    // TODO: Serial multiple copy support
 #ifdef SERIALWIDGET_struct_guard
     #ifdef SERIALWIDGET_0_PRESENT
     SERIALWIDGET_0_substruct_create;
@@ -136,7 +135,6 @@ uint64_t host_mem_offset = -0x80000000LL;
     add_endpoint(new serial_t(this, args, SERIALWIDGET_3_substruct, 3, host_mem_offsets[3]));
     #endif
 #endif
-
 
 #ifdef BLOCKDEVWIDGET_struct_guard
     #ifdef BLOCKDEVWIDGET_0_PRESENT
