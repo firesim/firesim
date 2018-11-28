@@ -286,7 +286,7 @@ class FireSimServerNode(FireSimNode):
 
 
 class FireSimSuperNodeServerNode(FireSimServerNode):
-    """ This is the main server node for supernode mode. This knows how to 
+    """ This is the main server node for supernode mode. This knows how to
     call out to dummy server nodes to get all the info to launch the one
     command line to run the FPGA sim that has N > 1 sims on one fpga.
 
@@ -329,10 +329,11 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def supernode_get_sibling_shmemportname(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).uplinks[0].get_global_link_id()
 
-
     def get_sim_start_command(self, slotno):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
+
+        Currently hardcoded to 4 nodes.
         """
         sibling1mac = self.supernode_get_sibling_mac_address(1)
         sibling2mac = self.supernode_get_sibling_mac_address(2)
@@ -376,7 +377,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.trace_enable, self.trace_start, self.trace_end, 
             shmemportname0, shmemportname1, shmemportname2, shmemportname3)
 
-
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as
         an array. """
@@ -412,8 +412,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
-
-
     def get_rootfs_name(self, dummyindex=0):
         if dummyindex:
             return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
@@ -425,10 +423,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         return self.get_job().bootbinary_path().split("/")[-1]
 
 
-
-
-
-
 class FireSimDummyServerNode(FireSimServerNode):
     """ This is a dummy server node for supernode mode. """
     def __init__(self, server_hardware_config=None, server_link_latency=None,
@@ -436,10 +430,6 @@ class FireSimDummyServerNode(FireSimServerNode):
         super(FireSimDummyServerNode, self).__init__(server_hardware_config,
                                                      server_link_latency,
                                                      server_bw_max)
-
-
-
-
 
 
 class FireSimSwitchNode(FireSimNode):
