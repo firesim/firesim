@@ -46,18 +46,6 @@ gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input)
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(GAP_DIR)/overlay/$(input) \
 
-$(GAP_DIR)/overlay/$(input):
-	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input) --json-ini
- 
-
-gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
-	cp $(GAP_DIR)/overlay/$(input)/gapbs.{json,ini} .
-	mkdir -p $@
-	cp $(BASE_LINUX) $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
-		-s $(GAP_DIR)/overlay/$(input) \
-		-o $@
-
 memcached-thread-imbalance:
 	mkdir -p $@
 	sudo yum -y install gengetopt
