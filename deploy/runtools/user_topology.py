@@ -120,8 +120,6 @@ class UserTopologies(object):
 
         self.custom_mapper = custom_mapper
 
-
-
     def example_multilink(self):
         self.roots = [FireSimSwitchNode()]
         midswitch = FireSimSwitchNode()
@@ -155,7 +153,6 @@ class UserTopologies(object):
         midswitches[0].add_downlinks([servers[0]])
         midswitches[1].add_downlinks([servers[1]])
 
-
     def small_hierarchy_8sims(self):
         self.custom_mapper = 'mapping_use_one_f1_16xlarge'
         self.roots = [FireSimSwitchNode()]
@@ -165,7 +162,6 @@ class UserTopologies(object):
         for swno in range(len(midlevel)):
             midlevel[swno].add_downlinks(servers[swno])
 
-
     def small_hierarchy_2sims(self):
         self.custom_mapper = 'mapping_use_one_f1_16xlarge'
         self.roots = [FireSimSwitchNode()]
@@ -174,7 +170,6 @@ class UserTopologies(object):
         self.roots[0].add_downlinks(midlevel)
         for swno in range(len(midlevel)):
             midlevel[swno].add_downlinks(servers[swno])
-
 
     def example_1config(self):
         self.roots = [FireSimSwitchNode()]
@@ -334,7 +329,6 @@ class UserTopologies(object):
             for switchno in range(len(level2switches[switchgroupno])):
                 level2switches[switchgroupno][switchno].add_downlinks(servers[switchgroupno][switchno])
 
-
     def supernode_example_deep64config(self):
         self.roots = [FireSimSwitchNode()]
         level1switches = [FireSimSwitchNode() for x in range(2)]
@@ -346,7 +340,6 @@ class UserTopologies(object):
         for switchgroupno in range(len(level2switches)):
             for switchno in range(len(level2switches[switchgroupno])):
                 level2switches[switchgroupno][switchno].add_downlinks(servers[switchgroupno][switchno])
-
 
     def dual_example_8config(self):
         """ two separate 8-node clusters for experiments, e.g. memcached mutilate. """
@@ -368,3 +361,4 @@ class UserTopologies(object):
 
     def no_net_config(self):
         self.roots = [FireSimServerNode() for x in range(self.no_net_num_nodes)]
+
