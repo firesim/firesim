@@ -1,13 +1,12 @@
 Supernode
 ===============
 
-Supernode support is currently in beta. Supernode is designed to improve FPGA
-resource utilization for smaller designs and allow realistic rack topology
-simulation (32 simulated nodes) using a single ``f1.16xlarge`` instance.  The
-supernode beta can be found on the ``supernode-beta`` branch of the FireSim
-repository. Supernode requires slight changes in build and runtime
-configurations. More details about supernode can be found in the `FireSim ISCA
-2018 Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
+Supernode is designed to improve FPGA resource utilization for smaller designs
+and allow realistic rack topology simulation (32 simulated nodes) using a
+single ``f1.16xlarge`` instance. Supernode requires slight changes in build and
+runtime configurations. Supernode is currently only enabled for RocketChip
+designs with NICs. More details about supernode can be found in the `FireSim
+ISCA 2018 Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
 Intro
 -----------
@@ -23,10 +22,13 @@ different block device images, etc.
 Build
 -----------
 
-The Supernode beta can be found on the ``supernode-beta`` branch of the FireSim
-repo.  Here, we outline some of the changes between supernode and regular
-simulations. The Supernode target wrapper can be found in
-``firesim/sim/src/main/scala/SimConfigs.scala``.  For example:
+Since Supernode is currently impelmented as a wrapper top level config, most of
+the relevant build components can be found in locations similar to target
+components. Here, we outline some of the changes between supernode and regular
+simulations. 
+
+The Supernode target configuration wrapper can be found in
+``firesim/sim/src/main/scala/TargetConfigs.scala``.  An example wrapper configuration is:
 
 ::
 
@@ -47,14 +49,14 @@ Supernode wrapper, with the new target configuration. For example:
 
 Next, when defining the build recipe, we must remmber to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
-``SupernodeTop``, while the ``TARGET_CONFIG`` parameter should be set to the
+``FireSimSupernode``, while the ``TARGET_CONFIG`` parameter should be set to the
 wrapper configuration that was defined in
-``firesim/sim/src/main/scala/SimConfigs.scala``.  The ``PLATFORM_CONFIG`` can
+``firesim/sim/src/main/scala/TargetConfigs.scala``.  The ``PLATFORM_CONFIG`` can
 be selected the same as in regular FireSim configurations.  For example:
 
 ::
 
-    DESIGN=SupernodeTop
+    DESIGN=FireSimSupernode
     TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
     PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig
     instancetype=c4.4xlarge
@@ -62,26 +64,70 @@ be selected the same as in regular FireSim configurations.  For example:
 
 
 We currently do not provide pre-built AGFIs for supernode. You must build your
-own, using the supplied samples on the ``supernode-beta`` branch.
+own, using the supplied samples in ``config_build_recipes.ini``.
+Importantly, in order to meet FPGA timing contraints, you must also manually
+change the host clock frequency by editing the clock assignment in 
+``firesim/platforms/f1/aws-fpga/hdk/cl/developer_designs/cl_firesim/design/cl_firesim.sv``.
+This is done by change the following line from :
+
+::
+    assign firesim_internal_clock = clock_gend_90;
+
+to
+
+::
+    assign firesim_internal_clock = clock_gend_75;
+
 
 Running simulations
 --------------------
 
 Running FireSim in supernode mode follows the same process as in
-"regular" mode. Currently, the only difference is that the standard input and
-standard output of the simulated nodes are written to files in the dispatched
-simulation directory, rather than the main simulation screen.
+"regular" mode. Currently, the only difference is that the main simulation
+screen remains with the name ``fsim0``, while the three other simulation screens
+can be accessed by attaching ``screen`` to uartpty1, uartpty2, uartpty3
+respectively. All simulation screens will generate uart logs which will be
+copied to the manager as in a "regular" FireSim simulation
 
-Here are some important pieces that you can use to run an example 32-node config
-on a single ``f1.16xlarge``. Better documentation will be available later:
+Supernode topologies utilize a ``FireSimSuperNodeServerNode`` class in order to
+represent one of the 4 simulated target nodes which also represents a single
+FPGA mapping, while using a ``FireSimDummyServerNode`` class which represent
+the other three simulated target nodes which do not represent an FPGA mapping.
+Various example  Supernode topologies are provided, ranging from 4 simulated
+target nodes to 1024 simulated target nodes.
 
-- Sample runtime config: https://github.com/firesim/firesim/blob/supernode-beta/deploy/sample-backup-configs/sample_config_runtime.ini
-- Sample topology definition: https://github.com/firesim/firesim/blob/supernode-beta/deploy/runtools/user_topology.py#L33
+Following are a couple of useful examples as templates for writing custom
+Supernode topologies.
+A sample Supernode topology of 4 simulated target nodes which can fit on a
+single ``f1.2xlarge`` is:
+
+::
+  def supernode_example_4config(self):
+    self.roots = [FireSimSwitchNode()]
+    servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
+    self.roots[0].add_downlinks(servers)
+
+
+A sample Supernode topology of 32 simulated target nodes which can fit on a
+single ``f1.16xlarge`` is:
+
+::
+  def supernode_example_32config(self):
+          self.roots = [FireSimSwitchNode()]
+          servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
+          self.roots[0].add_downlinks(servers)
+
+
+Supernode ``config_runtime.ini`` requires selecting a supernode agfi in conjunction with a defined supernode topology.
 
 
 Work in Progress!
 --------------------
 
-We are currently working on restructuring supernode support to support a
-wider-variety of use cases. More documentation will follow once we complete
-this rewrite.
+We are currently working on restructuring supernode to support a
+wider-variety of use cases (including non-networked cases, and increased
+packing of nodes). More documentation will follow.
+Not all FireSim features are currently available on Supernode. As a
+rule-of-thumb, target-related features have a higher likelihood of being
+supported "out-of-the-box", while features which involve external interfaces
+(such as TracerV) has a lesser likelihood of being supported "out-of-the-box"
