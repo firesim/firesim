@@ -14,7 +14,7 @@ class RiscSRAM extends Module {
     val valid  = Output(Bool())
     val out    = Output(UInt(32.W))
   })
-  val fileMem = SeqMem(128, UInt(32.W))
+  val fileMem = SeqMem(256, UInt(32.W))
   val codeMem = SeqMem(128, UInt(32.W))
 
   val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(UInt(), 6)
