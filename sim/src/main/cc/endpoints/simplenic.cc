@@ -207,15 +207,9 @@ void simplenic_t::init() {
 void simplenic_t::tick() {
     struct timespec tstart, tend;
 
-    uint32_t token_bytes_obtained_from_fpga = 0;
-    uint32_t token_bytes_sent_to_fpga = 0;
-
     //#define DEBUG_NIC_PRINT
 
     while (true) { // break when we don't have 5k tokens
-        token_bytes_obtained_from_fpga = 0;
-        token_bytes_sent_to_fpga = 0;
-
         uint32_t tokens_this_round = 0;
 
         uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
@@ -239,6 +233,7 @@ void simplenic_t::tick() {
         iter++;
         niclog_printf("read fpga iter %ld\n", iter);
 #endif
+        uint32_t token_bytes_obtained_from_fpga = 0;
         token_bytes_obtained_from_fpga = pull(
                 dma_addr,
                 pcis_read_bufs[currentround],
@@ -314,6 +309,7 @@ void simplenic_t::tick() {
             }
         }
 #endif
+        uint32_t token_bytes_sent_to_fpga = 0;
         token_bytes_sent_to_fpga = push(
                 dma_addr,
                 pcis_write_bufs[currentround],
@@ -326,8 +322,6 @@ void simplenic_t::tick() {
         }
 
         currentround = (currentround + 1) % 2;
-        nextround = (nextround + 1) % 2;
-
     }
 }
 

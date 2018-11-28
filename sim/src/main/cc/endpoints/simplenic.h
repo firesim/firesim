@@ -45,7 +45,6 @@ class simplenic_t: public endpoint_t
         uint64_t iter = 0;
 
         int currentround = 0;
-        int nextround = 1;
 
         // only for TOKENVERIFY
         uint64_t timeelapsed_cycles = 0;
