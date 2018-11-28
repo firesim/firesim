@@ -81,7 +81,16 @@ check-rtc-linux:
 checksum-test:
 	cd ../../target-design/firechip/tests && make checksum.riscv
 
+all-reduce-16:
+	cd ../../sw/network-benchmarks/all-reduce && make clean && make NCOMPUTE=15 NBYTES=2000000L PAUSE_MS=16 NROUNDS=3
+	cp ../../sw/network-benchmarks/all-reduce/{averager,compute}.riscv $@
+
+ring-reduce-16:
+	cd ../../sw/network-benchmarks/ring-reduce && make clean && make NCOMPUTE=16 NBYTES=2000000L PAUSE_MS=16 NROUNDS=3
+	cp ../../sw/network-benchmarks/ring-reduce/ring.riscv $@
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
-	iperf3 check-rtc check-rtc-linux allpaper checksum-test
+	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
+	all-reduce-16 ring-reduce-16 \

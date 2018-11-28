@@ -1,0 +1,103 @@
+{
+  "benchmark_name" : "all-reduce-16",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "workloads" : [
+    {
+      "name" : "averager",
+      "bootbinary" : "averager.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-1",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-2",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-3",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-4",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-5",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-6",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-7",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-8",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-9",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-10",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-11",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-12",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-13",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-14",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "compute-15",
+      "bootbinary" : "compute.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}
