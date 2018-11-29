@@ -28,3 +28,6 @@
 [submodule "deploy/workloads/Speckle"]
 	path = deploy/workloads/Speckle
 	url = https://github.com/ccelio/Speckle.git
+[submodule "sim/src/main/cc/endpoints/SimpleSSD"]
+	path = sim/src/main/cc/endpoints/SimpleSSD
+	url = https://github.com/SimpleSSD/SimpleSSD

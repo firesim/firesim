@@ -10,6 +10,7 @@ DESIGN ?=
 # SOURCE FILES
 # Driver source files
 DRIVER_CC ?=
+DRIVER_C ?=
 DRIVER_H ?=
 # Simulation memory map emitted by the MIDAS compiler
 HEADER ?=
@@ -45,14 +46,13 @@ verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 $(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D RTLSIM
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
-$(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(verilator): $(HEADER) $(DRIVER_C) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_C) $(DRIVER_CC)"
 
-$(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(verilator_debug): $(HEADER) $(DRIVER_C) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
-
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_C) $(DRIVER_CC)" 
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
 
@@ -93,12 +93,12 @@ $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/user
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 
 # Compile Driver
-$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
+$(f1): $(HEADER) $(DRIVER_C) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(HEADER) $(OUTPUT_DIR)/build/
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
-	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_C) $(DRIVER_CC)"
 
 #############################
 # FPGA Build Initialization #
@@ -194,7 +194,7 @@ clean:
 veryclean:
 	rm -rf generated-src output
 
-tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+tags: $(HEADER) $(DRIVER_C) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
 
 .PHONY: sbt test
