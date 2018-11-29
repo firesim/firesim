@@ -122,7 +122,7 @@ $(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
 	sed -i 's/fatal/fatal(0, "")/g' $@
 
 $(fpga_vh): $(VERILOG) $(fpga_work_dir)/stamp
-	cp -f $< $@
+	cp -f $(GENERATED_DIR)/$(@F) $@
 
 .PHONY: $(ila_work_dir)
 $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp

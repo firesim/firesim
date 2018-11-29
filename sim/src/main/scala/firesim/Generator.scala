@@ -129,13 +129,10 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     val headerName = "cl_firesim_generated_defines.vh"
     val requestedFrequency = hostParams(DesiredHostFrequency)
     val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
-    val legalFreqs = availableFrequenciesMhz.filter(_ < requestedFrequency)
-    val selectedFrequency = if (legalFreqs.isEmpty) {
-      throw new RuntimeException(s"Requested frequency is too slow: ${requestedFrequency} MHz\nSlowest available frequency: ${availableFrequenciesMhz.tail}")
-    } else {
-      legalFreqs.reduce((a, b) => if (a > b) a else b)
+    if (!availableFrequenciesMhz.contains(requestedFrequency)) {
+      throw new RuntimeException(s"Requested frequency (${requestedFrequency} MHz) is not available.\nAllowed options: ${availableFrequenciesMhz} MHz")
     }
-    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK clock_gend_${selectedFrequency}\n")
+    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
   }
 }
 
