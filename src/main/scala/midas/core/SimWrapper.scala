@@ -378,7 +378,6 @@ class SimWrapper(targetIo: Seq[Data],
   def genWireChannel(chAnno: FAMEChannelAnnotation): WireChannel[ChLeafType] = {
     require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
     require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
-    require(chAnno.sinks   == None || chAnno.sources == None, "Can't handle excised channels yet")
 
     val channel = Module(new WireChannel(getWireChannelType(chAnno)))
     channel suggestName s"WireChannel_${chAnno.name}"
@@ -431,7 +430,6 @@ class SimWrapper(targetIo: Seq[Data],
 
   def genReadyValidChannel(chAnno: FAMEChannelAnnotation): ReadyValidChannel[Data] = {
     val strippedName = chAnno.name.stripSuffix("_fwd")
-    require(chAnno.sinks   == None || chAnno.sources == None, "Can't handle excised channels yet")
       // Determine which endpoint this channel belongs to by looking it up with the valid
       //val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
       //  case Some(endpoint) => endpoint.clockRatio
