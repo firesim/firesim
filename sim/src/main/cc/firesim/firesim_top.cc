@@ -50,16 +50,13 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #endif
 #endif
 
-    // TODO: Serial multiple copy support
-#ifdef SERIALWIDGET_struct_guard
-    SERIALWIDGET_0_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct));
-#endif
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
 #endif
 
+std::vector<uint64_t> host_mem_offsets;
+uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
                 this,
@@ -70,7 +67,73 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS));
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
+#endif
+
+#ifdef MEMMODEL_1
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_1_R_num_registers,
+                    (const unsigned int*) MEMMODEL_1_R_addrs,
+                    (const char* const*) MEMMODEL_1_R_names,
+                    MEMMODEL_1_W_num_registers,
+                    (const unsigned int*) MEMMODEL_1_W_addrs,
+                    (const char* const*) MEMMODEL_1_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_2
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_2_R_num_registers,
+                    (const unsigned int*) MEMMODEL_2_R_addrs,
+                    (const char* const*) MEMMODEL_2_R_names,
+                    MEMMODEL_2_W_num_registers,
+                    (const unsigned int*) MEMMODEL_2_W_addrs,
+                    (const char* const*) MEMMODEL_2_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_3
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_3_R_num_registers,
+                    (const unsigned int*) MEMMODEL_3_R_addrs,
+                    (const char* const*) MEMMODEL_3_R_names,
+                    MEMMODEL_3_W_num_registers,
+                    (const unsigned int*) MEMMODEL_3_W_addrs,
+                    (const char* const*) MEMMODEL_3_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
+#endif
+
+#ifdef SERIALWIDGET_struct_guard
+    #ifdef SERIALWIDGET_0_PRESENT
+    SERIALWIDGET_0_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, 0, host_mem_offsets[0]));
+    #endif
+    #ifdef SERIALWIDGET_1_PRESENT
+    SERIALWIDGET_1_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_1_substruct, 1, host_mem_offsets[1]));
+    #endif
+    #ifdef SERIALWIDGET_2_PRESENT
+    SERIALWIDGET_2_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_2_substruct, 2, host_mem_offsets[2]));
+    #endif
+    #ifdef SERIALWIDGET_3_PRESENT
+    SERIALWIDGET_3_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_3_substruct, 3, host_mem_offsets[3]));
+    #endif
 #endif
 
 #ifdef BLOCKDEVWIDGET_struct_guard

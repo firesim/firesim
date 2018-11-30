@@ -19,6 +19,8 @@
  *
  * Reset to zero once consumed.
  */
+
+// This is fine for multiple UARTs because UARTs > uart 0 will use pty, not stdio
 char specialchar = 0;
 
 void sighand(int s) {
