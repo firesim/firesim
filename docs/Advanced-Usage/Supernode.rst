@@ -109,9 +109,9 @@ single ``f1.2xlarge`` is:
 ::
 
     def supernode_example_4config(self):
-      self.roots = [FireSimSwitchNode()]
-      servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
-      self.roots[0].add_downlinks(servers)
+        self.roots = [FireSimSwitchNode()]
+        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
+        self.roots[0].add_downlinks(servers)
 
 
 A sample Supernode topology of 32 simulated target nodes which can fit on a
