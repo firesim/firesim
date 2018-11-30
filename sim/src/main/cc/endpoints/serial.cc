@@ -56,7 +56,7 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWID
 
     //debug for command line arguments
     printf("command line for program %d. argc=%d:\n", serialno, argc_count);
-    for(int i = 0; i < argc_count; i++)  { printf("%s", (argv_arr)[i]);  }
+    for(int i = 0; i < argc_count; i++)  { printf("%s ", (argv_arr)[i]);  }
     printf("\n");
 
    std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
