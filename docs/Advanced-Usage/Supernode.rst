@@ -12,7 +12,8 @@ supernode designs. Supernode is currently only enabled for RocketChip designs
 with NICs. More details about supernode can be found in the `FireSim ISCA 2018
 Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
-Introduction -----------
+Introduction 
+--------------
 
 By default, supernode packs 4 identical designs into a single FPGA, and
 utilizes all 4 DDR channels available on each FPGA on AWS F1 instances. It
@@ -23,7 +24,8 @@ action a single node could: run different programs, interact with each other
 over the network, utilize different block device images, etc. In the networked
 case, 4 separate network links are presented to the switch-side.
 
-Building Supernode Designs -----------
+Building Supernode Designs 
+----------------------------
 
 Here, we outline some of the changes between supernode and regular simulations
 that are required to build supernode designs.
@@ -34,8 +36,8 @@ configuration is:
 
 ::
 
-    class SupernodeFireSimRocketChipConfig extends Config( new WithNumNodes(4)
-++ new FireSimRocketChipConfig)
+    class SupernodeFireSimRocketChipConfig extends Config(new WithNumNodes(4)
+    ++ new FireSimRocketChipConfig)
 
 In this example, ``SupernodeFireSimRocketChipConfig`` is the wrapper, while
 ``FireSimRocketChipConfig`` is the target node configuration. To simulate a
@@ -45,8 +47,8 @@ FPGA, you can use:
 
 ::
 
-    class SupernodeFireSimRocketChipQuadCoreConfig extends Config( new
-WithNumNodes(4) ++ new FireSimRocketChipQuadCoreConfig)
+    class SupernodeFireSimRocketChipQuadCoreConfig extends Config(new
+    WithNumNodes(4) ++ new FireSimRocketChipQuadCoreConfig)
 
 Next, when defining the build recipe, we must remmber to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
@@ -59,9 +61,10 @@ configurations.  For example:
 ::
 
     DESIGN=FireSimSupernode
-TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
-PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz instancetype=c4.4xlarge
-deploytriplet=None
+    TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
+    PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz 
+    instancetype=c4.4xlarge
+    deploytriplet=None
 
 
 We currently provide a single pre-built AGFI for supernode of 4 quad-core
@@ -103,20 +106,20 @@ A sample Supernode topology of 4 simulated target nodes which can fit on a
 single ``f1.2xlarge`` is:
 
 ::
-  def supernode_example_4config(self):
-    self.roots = [FireSimSwitchNode()]
-    servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
-    self.roots[0].add_downlinks(servers)
+    def supernode_example_4config(self):
+      self.roots = [FireSimSwitchNode()]
+      servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
+      self.roots[0].add_downlinks(servers)
 
 
 A sample Supernode topology of 32 simulated target nodes which can fit on a
 single ``f1.16xlarge`` is:
 
 ::
-  def supernode_example_32config(self):
-          self.roots = [FireSimSwitchNode()]
-          servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
-          self.roots[0].add_downlinks(servers)
+    def supernode_example_32config(self):
+        self.roots = [FireSimSwitchNode()]
+        servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
+        self.roots[0].add_downlinks(servers)
 
 
 Supernode ``config_runtime.ini`` requires selecting a supernode agfi in conjunction with a defined supernode topology.
