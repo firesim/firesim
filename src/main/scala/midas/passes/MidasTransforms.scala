@@ -87,17 +87,6 @@ class Fame1Instances extends Transform {
   }
 }
 
-// This is currently implemented by the enclosing project
-case class FpgaDebugAnnotation(target: chisel3.Data)
-    extends chisel3.experimental.ChiselAnnotation {
-  def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
-}
-
-case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
-    SingleTargetAnnotation[ComponentName] {
-  def duplicate(n: ComponentName) = this.copy(target = n)
-}
-
 /* Instead of passing a data structure between pre-FAME target-transforming passes 
  * Add NoTargetAnnotations that can regenerate a chisel type from a HighForm port
  *
