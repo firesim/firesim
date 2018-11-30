@@ -1,4 +1,4 @@
-Supernode - Multiple SoCs Per FPGA
+Supernode - Multiple Simulated SoCs Per FPGA
 ============================================
 
 Supernode allows users to run multiple simulated SoCs per-FPGA in order to improve
