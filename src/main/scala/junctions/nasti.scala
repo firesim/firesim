@@ -514,19 +514,18 @@ class NastiRouter(nSlaves: Int, routeSel: UInt => UInt)(implicit p: Parameters)
   val all_slaves = io.slave :+ err_slave.io
 
   for (i <- 0 to nSlaves) {
-    val b_match = aw_queue.io.deq(i).matches && aw_queue.io.deq(i).data === UInt(i)
-    b_arb.io.in(i).valid := all_slaves(i).b.valid && b_match
-    b_arb.io.in(i).bits := all_slaves(i).b.bits
-    all_slaves(i).b.ready := b_arb.io.in(i).ready && b_match
+    b_arb.io.in(i) <> all_slaves(i).b
     aw_queue.io.deq(i).valid := all_slaves(i).b.fire()
     aw_queue.io.deq(i).tag := all_slaves(i).b.bits.id
 
-    val r_match = ar_queue.io.deq(i).matches && ar_queue.io.deq(i).data === UInt(i)
-    r_arb.io.in(i).valid := all_slaves(i).r.valid && r_match
-    r_arb.io.in(i).bits := all_slaves(i).r.bits
-    all_slaves(i).r.ready := r_arb.io.in(i).ready && r_match
+    r_arb.io.in(i) <> all_slaves(i).r
     ar_queue.io.deq(i).valid := all_slaves(i).r.fire() && all_slaves(i).r.bits.last
     ar_queue.io.deq(i).tag := all_slaves(i).r.bits.id
+
+    assert(!aw_queue.io.deq(i).valid || aw_queue.io.deq(i).matches,
+      s"aw_queue $i tried to dequeue untracked transaction")
+    assert(!ar_queue.io.deq(i).valid || ar_queue.io.deq(i).matches,
+      s"ar_queue $i tried to dequeue untracked transaction")
   }
 
   io.master.b <> b_arb.io.out

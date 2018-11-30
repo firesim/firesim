@@ -41,7 +41,6 @@ class SimConfig extends Config((site, here, up) => {
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
-  case MemNastiKey      => NastiParameters(64, 32, 6)
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case EndpointKey      => EndpointMap(Seq(
     new SimNastiMemIO, new SimAXI4MemIO, new AssertBundleEndpoint, new PrintRecordEndpoint))
@@ -49,26 +48,35 @@ class SimConfig extends Config((site, here, up) => {
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case MidasLLCKey      => None
   case AXIDebugPrint    => false
+  case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
+  case HostMemNumChannels => 1
+
+  case MemNastiKey      => site(HostMemChannelNastiKey).copy(
+    addrBits = chisel3.util.log2Ceil(site(HostMemNumChannels)) + site(HostMemChannelNastiKey).addrBits,
+    // TODO: We should try to constrain masters to 4 bits of ID space -> but we need to map
+    // multiple target-ids on a single host-id in the DRAM timing model to support that
+    idBits   = 6
+  )
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => Zynq
   case HasDMAChannel  => false
   case MasterNastiKey => site(CtrlNastiKey)
-  case SlaveNastiKey  => site(MemNastiKey)
 }) ++ new SimConfig)
 
 class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new ZynqConfig)
 
+// we are assuming the host-DRAM size is 2^chAddrBits
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => F1
   case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
-  case MemNastiKey    => NastiParameters(64, 34, 16)
   case MasterNastiKey => site(CtrlNastiKey)
-  case SlaveNastiKey => site(MemNastiKey)
+  case HostMemChannelNastiKey => NastiParameters(64, 34, 16)
+  case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
 class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {

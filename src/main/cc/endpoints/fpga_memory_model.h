@@ -58,7 +58,7 @@ class FpgaMemoryModel: public FpgaModel
 {
 public:
   FpgaMemoryModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
-                  std::string stats_file_name, size_t mem_size);
+                  std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset);
   void init();
   void profile();
   void finish();
@@ -75,6 +75,8 @@ private:
     "Hist_dataH",
     "Hist_addr",
     "Hist_enable",
+    "hostMemOffsetLow",
+    "hostMemOffsetHigh",
     "Ranges_dataL",
     "Ranges_dataH",
     "Ranges_addr",
@@ -87,6 +89,8 @@ private:
     "Hist_dataH",
     "Hist_addr",
     "Hist_enable",
+    "hostMemOffsetLow",
+    "hostMemOffsetHigh",
     "Ranges_dataL",
     "Ranges_dataH",
     "Ranges_addr",
@@ -96,6 +100,7 @@ private:
 
   bool has_latency_histograms() { return histograms.size() > 0; };
   size_t mem_size;
+  uint64_t mem_host_offset;
 };
 
 #endif // __FPGA_MEMORY_MODEL_H

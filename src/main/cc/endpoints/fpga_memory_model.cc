@@ -51,9 +51,9 @@ void AddrRangeCounter::finish() {
 }
 
 FpgaMemoryModel::FpgaMemoryModel(
-    simif_t* sim, AddressMap addr_map, int argc, char** argv,
-    std::string stats_file_name, size_t mem_size)
-  : FpgaModel(sim, addr_map), mem_size(mem_size) {
+    simif_t* sim, AddressMap addr_map, int argc,char** argv,
+    std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset)
+  : FpgaModel(sim, addr_map), mem_size(mem_size), mem_host_offset(mem_host_offset) {
 
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
@@ -116,7 +116,14 @@ void FpgaMemoryModel::init() {
     auto value_it = model_configuration.find(pair.first);
     if (value_it != model_configuration.end()) {
       write(pair.second, value_it->second);
-    } else {
+    }
+    else if (pair.first.find("hostMemOffsetLow") != std::string::npos) {
+      write(pair.second, mem_host_offset & ((1ULL << 32) - 1));
+    }
+    else if (pair.first.find("hostMemOffsetHigh") != std::string::npos) {
+      write(pair.second, mem_host_offset >> 32);
+    }
+    else {
       // Iterate through substrings to exclude
       bool exclude = false;
       for (auto &substr: configuration_exclusion) {
