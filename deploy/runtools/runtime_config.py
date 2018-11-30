@@ -100,7 +100,7 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
                 netbw=netbw, profile_interval=profile_interval,
@@ -108,6 +108,51 @@ class RuntimeHWConfig:
                 trace_start=trace_start, trace_end=trace_end)
 
         return basecommand
+
+
+    def get_supernode_boot_simulation_command(self,
+                                              slotid,
+                                              macaddr0, macaddr1,
+                                              macaddr2, macaddr3,
+                                              blkdev0, blkdev1,
+                                              blkdev2, blkdev3,
+                                              linklatency0, linklatency1,
+                                              linklatency2, linklatency3,
+                                              netbw0, netbw1, netbw2, netbw3,
+                                              profile_interval,
+                                              bootbin0, bootbin1,
+                                              bootbin2, bootbin3,
+                                              trace_enable, trace_start,
+                                              trace_end,
+                                              shmemportname0, shmemportname1,
+                                              shmemportname2, shmemportname3):
+        """ return the command used to boot the simulation. this has to have
+        some external params passed to it, because not everything is contained
+        in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
+        pre-built runtime config? It kinda contains a mix of pre-built and
+        runtime parameters currently. """
+
+        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
+
+        # this monstrosity boots the simulator, inside screen, inside script
+        # the sed is in there to get rid of newlines in runtime confs
+        driver = self.get_local_driver_binaryname()
+        runtimeconf = self.get_local_runtimeconf_binaryname()
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency0} +linklatency1={linklatency1} +linklatency2={linklatency2} +linklatency3={linklatency3} +netbw0={netbw0} +netbw1={netbw1} +netbw2={netbw2} +netbw3={netbw3} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname0} +shmemportname1={shmemportname1} +shmemportname2={shmemportname2} +shmemportname3={shmemportname3} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
+            slotid=slotid, driver=driver, runtimeconf=runtimeconf,
+            macaddr0=macaddr0, macaddr1=macaddr1,macaddr2=macaddr2,macaddr3=macaddr3,
+            blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3,
+            linklatency0=linklatency0, linklatency1=linklatency1,
+            linklatency2=linklatency2, linklatency3=linklatency3,
+            netbw0=netbw0, netbw1=netbw1, netbw2=netbw2, netbw3=netbw3,
+            profile_interval=profile_interval,
+            shmemportname0=shmemportname0, shmemportname1=shmemportname1, shmemportname2=shmemportname2, shmemportname3=shmemportname3,
+            bootbin0=bootbin0, bootbin1=bootbin1, bootbin2=bootbin2, bootbin3=bootbin3, tracefile=tracefile,
+            trace_start=trace_start, trace_end=trace_end)
+
+        return basecommand
+
+
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()

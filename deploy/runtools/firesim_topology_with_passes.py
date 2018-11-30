@@ -162,7 +162,6 @@ class FireSimTopologyWithPasses:
                     return
         assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
-
     def pass_simple_networked_host_node_mapping(self):
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
@@ -171,14 +170,17 @@ class FireSimTopologyWithPasses:
         m4_16s_used = 0
 
         for switch in switches:
-            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            # Filter out FireSimDummyServerNodes for actually deploying.
+            # Infrastructure after this point will automatically look at the
+            # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
+            downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
                 m4_16s_used += 1
             elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 # all downlinks are simulations
-                if (len(switch.downlinks) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
+                if (len(downlinknodes) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
                     self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
                     f1_2s_used += 1

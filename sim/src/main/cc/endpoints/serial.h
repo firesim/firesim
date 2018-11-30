@@ -24,17 +24,19 @@ struct serial_data_t {
 class serial_t: public endpoint_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();
-        virtual bool terminate(){ return fesvr.done(); }
-        virtual int exit_code(){ return fesvr.exit_code(); }
+        virtual bool terminate(){ return fesvr->done(); }
+        virtual int exit_code(){ return fesvr->exit_code(); }
 
     private:
         SERIALWIDGET_struct * mmio_addrs;
         simif_t* sim;
-        firesim_fesvr_t fesvr;
+        firesim_fesvr_t* fesvr;
+        // host memory offset based on the number of memory models and their size
+        uint64_t mem_host_offset;
         // Number of target cycles between fesvr interactions
         uint32_t step_size;
         // Tell the widget to start enqueuing tokens
