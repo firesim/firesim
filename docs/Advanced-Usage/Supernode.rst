@@ -50,6 +50,7 @@ FPGA, you can use:
     class SupernodeFireSimRocketChipQuadCoreConfig extends Config(new
     WithNumNodes(4) ++ new FireSimRocketChipQuadCoreConfig)
 
+
 Next, when defining the build recipe, we must remmber to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
 ``FireSimSupernode``, while the ``TARGET_CONFIG`` parameter should be set to
@@ -106,6 +107,7 @@ A sample Supernode topology of 4 simulated target nodes which can fit on a
 single ``f1.2xlarge`` is:
 
 ::
+
     def supernode_example_4config(self):
       self.roots = [FireSimSwitchNode()]
       servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
@@ -116,6 +118,7 @@ A sample Supernode topology of 32 simulated target nodes which can fit on a
 single ``f1.16xlarge`` is:
 
 ::
+
     def supernode_example_32config(self):
         self.roots = [FireSimSwitchNode()]
         servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
