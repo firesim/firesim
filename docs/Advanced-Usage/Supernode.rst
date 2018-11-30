@@ -1,19 +1,18 @@
-Supernode - Multiple Simulations Per FPGA
+Supernode - Multiple SoCs Per FPGA
 ============================================
 
-Supernode allows users to run multiple simulations per-FPGA in order to improve
+Supernode allows users to run multiple simulated SoCs per-FPGA in order to improve
 FPGA resource utilization and reduce cost. For example, in the case of using
-FireSim to simulate a datacenter scale system, supernode mode allows
-realistic rack topology simulation (32 simulated nodes) using a
-single ``f1.16xlarge`` instance (8 FPGAs).
+FireSim to simulate a datacenter scale system, supernode mode allows realistic
+rack topology simulation (32 simulated nodes) using a single ``f1.16xlarge``
+instance (8 FPGAs).
 
 Below, we outline the build and runtime configuration changes needed to utilize
 supernode designs. Supernode is currently only enabled for RocketChip designs
 with NICs. More details about supernode can be found in the `FireSim ISCA 2018
 Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
-Introduction
------------
+Introduction -----------
 
 By default, supernode packs 4 identical designs into a single FPGA, and
 utilizes all 4 DDR channels available on each FPGA on AWS F1 instances. It
@@ -24,65 +23,53 @@ action a single node could: run different programs, interact with each other
 over the network, utilize different block device images, etc. In the networked
 case, 4 separate network links are presented to the switch-side.
 
-Building Supernode Designs
------------
+Building Supernode Designs -----------
 
-Here, we outline some of the changes between supernode and regular
-simulations that are required to build supernode designs.
+Here, we outline some of the changes between supernode and regular simulations
+that are required to build supernode designs.
 
 The Supernode target configuration wrapper can be found in
-``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  An example wrapper configuration is:
+``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  An example wrapper
+configuration is:
 
 ::
 
-    class SupernodeFireSimRocketChipConfig extends Config(
-      new WithNumNodes(4) ++
-      new FireSimRocketChipConfig)
+    class SupernodeFireSimRocketChipConfig extends Config( new WithNumNodes(4)
+++ new FireSimRocketChipConfig)
 
 In this example, ``SupernodeFireSimRocketChipConfig`` is the wrapper, while
-``FireSimRocketChipConfig`` is the target node configuration. To
-simulate a different target configuration, we will generate a new supernode
-wrapper, with the new target configuration. For example, to simulate 4 quad-core
-nodes on one FPGA, you can use:
+``FireSimRocketChipConfig`` is the target node configuration. To simulate a
+different target configuration, we will generate a new supernode wrapper, with
+the new target configuration. For example, to simulate 4 quad-core nodes on one
+FPGA, you can use:
 
 ::
 
-    class SupernodeFireSimRocketChipQuadCoreConfig extends Config(
-      new WithNumNodes(4) ++
-      new FireSimRocketChipQuadCoreConfig)
+    class SupernodeFireSimRocketChipQuadCoreConfig extends Config( new
+WithNumNodes(4) ++ new FireSimRocketChipQuadCoreConfig)
 
 Next, when defining the build recipe, we must remmber to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
-``FireSimSupernode``, while the ``TARGET_CONFIG`` parameter should be set to the
-wrapper configuration that was defined in
-``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  The ``PLATFORM_CONFIG`` can
-be selected the same as in regular FireSim configurations.  For example:
+``FireSimSupernode``, while the ``TARGET_CONFIG`` parameter should be set to
+the wrapper configuration that was defined in
+``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  The
+``PLATFORM_CONFIG`` can be selected the same as in regular FireSim
+configurations.  For example:
 
 ::
 
     DESIGN=FireSimSupernode
-    TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
-    PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig
-    instancetype=c4.4xlarge
-    deploytriplet=None
+TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
+PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz instancetype=c4.4xlarge
+deploytriplet=None
 
 
-We currently do not provide pre-built AGFIs for supernode. You must build your
-own, using the supplied samples in ``config_build_recipes.ini``.
-Importantly, in order to meet FPGA timing contraints, you must also manually
-change the host clock frequency by editing the clock assignment in
-``firesim/platforms/f1/aws-fpga/hdk/cl/developer_designs/cl_firesim/design/cl_firesim.sv``.
-75MHz is a reasonable frequency for the supplied designs.
-This is done by change the following line from:
-
-::
-    assign firesim_internal_clock = clock_gend_90;
-
-to
-
-::
-    assign firesim_internal_clock = clock_gend_75;
-
+We currently provide a single pre-built AGFI for supernode of 4 quad-core
+RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
+``config_build_recipes.ini``.  Importantly, in order to meet FPGA timing
+contraints, Supernode target may require lower host clock frequencies.
+host clock frequencies can be configured as parts of the PLATFORM_CONFIG in
+``config_build_recipes.ini``.
 
 Running Supernode simulations
 --------------------
