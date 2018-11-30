@@ -13,13 +13,19 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-case object MemNastiKey extends Field[NastiParameters]
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
 
+// The AXI4 widths for a single host-DRAM channel
+case object HostMemChannelNastiKey extends Field[NastiParameters]
+// The number of host-DRAM channels -> all channels must have the same AXI4 widths
+case object HostMemNumChannels extends Field[Int]
+// The aggregate memory-space seen by masters wanting DRAM
+case object MemNastiKey extends Field[NastiParameters]
+
 class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val mem = new NastiIO()(p alterPartial ({ case NastiKey => p(MemNastiKey) }))
+  val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA 
@@ -122,17 +128,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
-  // Host Memory Channels
-  // Masters = Target memory channels + loadMemWidget
-  val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-  val arb = Module(new NastiArbiter(memIoSize+1)(nastiP))
-  io.mem <> NastiQueue(arb.io.slave)(nastiP)
-  if (p(MemModelKey) != None) {
-    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), "LOADMEM")
-    loadMem.reset := reset.toBool || simReset
-    arb.io.master(memIoSize) <> loadMem.io.toSlaveMem
-  }
-
+  val memPorts = new ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
   val dmaInfoBuffer = new ListBuffer[DmaInfo]
 
@@ -140,24 +136,25 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B) { (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady) { (ready, i) =>
       val widgetName = (endpoint, p(MemModelKey)) match {
-        case (_: SimMemIO, Some(_)) => s"MemModel_$i"
-        case (_: SimMemIO, None) => s"NastiWidget_$i"
-        case _ => s"${endpoint.widgetName}_$i"
+          case (_: SimMemIO, Some(_)) => s"MemModel_$i"
+          case (_: SimMemIO, None) => s"NastiWidget_$i"
+          case _ => s"${endpoint.widgetName}_$i"
       }
       val widget = addWidget(endpoint.widget(p), widgetName)
       widget.reset := reset.toBool || simReset
       widget match {
         case model: MemModel =>
-          arb.io.master(i) <> model.io.host_mem
+          memPorts += model.io.host_mem
           model.io.tNasti.hBits.aw.bits.user := DontCare
           model.io.tNasti.hBits.aw.bits.region := DontCare
           model.io.tNasti.hBits.ar.bits.user := DontCare
           model.io.tNasti.hBits.ar.bits.region := DontCare
           model.io.tNasti.hBits.w.bits.id := DontCare
           model.io.tNasti.hBits.w.bits.user := DontCare
-        case _ =>
+          case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
+    
 
       if (widget.io.dma.nonEmpty)
         dmaInfoBuffer += DmaInfo(widgetName, widget.io.dma.get, widget.io.dmaSize)
@@ -173,6 +170,26 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       ready && resetQueue.io.in.ready
     }
   }
+
+  // Host Memory Channels
+  // Masters = Target memory channels + loadMemWidget
+  val numMemModels = memPorts.length
+  val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
+  if (p(MemModelKey) != None) {
+    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
+    loadMem.reset := reset.toBool || simReset
+    memPorts += loadMem.io.toSlaveMem
+  }
+
+  val channelSize = BigInt(1) << p(HostMemChannelNastiKey).addrBits
+  val hostMemAddrMap = new AddrMap(Seq.tabulate(p(HostMemNumChannels))(i =>
+    AddrMapEntry(s"memChannel$i", MemRange(i * channelSize, channelSize, MemAttr(AddrMapProt.RW)))))
+
+  val mem_xbar = Module(new NastiRecursiveInterconnect(numMemModels + 1, hostMemAddrMap)(nastiP))
+
+  io.mem.zip(mem_xbar.io.slaves).foreach({ case (mem, slave) => mem <> NastiQueue(slave)(nastiP) })
+  memPorts.zip(mem_xbar.io.masters).foreach({ case (mem_model, master) => master <> mem_model })
+
 
   // Sort the list of DMA ports by address region size, largest to smallest
   val dmaInfoSorted = dmaInfoBuffer.sortBy(_.size).reverse.toSeq
@@ -199,7 +216,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     val router = Module(new NastiRecursiveInterconnect(
       1, new AddrMap(dmaAddrMap))(dmaParams))
     router.io.masters.head <> NastiQueue(io.dma)(dmaParams)
-    dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> slave }
+    dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> NastiQueue(slave)(dmaParams) }
   }
 
   genCtrlIO(io.ctrl, p(FpgaMMIOSize))
@@ -214,13 +231,16 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
-    "MEM_ADDR_BITS"  -> arb.nastiXAddrBits,
-    "MEM_DATA_BITS"  -> arb.nastiXDataBits,
-    "MEM_ID_BITS"    -> arb.nastiXIdBits,
-    "MEM_SIZE_BITS"  -> arb.nastiXSizeBits,
-    "MEM_LEN_BITS"   -> arb.nastiXLenBits,
-    "MEM_RESP_BITS"  -> arb.nastiXRespBits,
-    "MEM_STRB_BITS"  -> arb.nastiWStrobeBits,
+    // These specify channel widths; used mostly in the test harnesses
+    "MEM_ADDR_BITS"  -> io.mem(0).nastiXAddrBits,
+    "MEM_DATA_BITS"  -> io.mem(0).nastiXDataBits,
+    "MEM_ID_BITS"    -> io.mem(0).nastiXIdBits,
+    // These are fixed by the AXI4 standard, only used in SW DRAM model
+    "MEM_SIZE_BITS"  -> io.mem(0).nastiXSizeBits,
+    "MEM_LEN_BITS"   -> io.mem(0).nastiXLenBits,
+    "MEM_RESP_BITS"  -> io.mem(0).nastiXRespBits,
+    "MEM_STRB_BITS"  -> io.mem(0).nastiWStrobeBits,
+    // Address width of the aggregated host-DRAM space
     "DMA_ID_BITS"    -> io.dma.nastiXIdBits,
     "DMA_ADDR_BITS"  -> io.dma.nastiXAddrBits,
     "DMA_DATA_BITS"  -> io.dma.nastiXDataBits,
@@ -228,4 +248,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
+
 }
+
+

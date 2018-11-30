@@ -67,37 +67,133 @@ extern "A" void tick
   input  reg [1:0]                 dma_b_resp,
   input  reg [`DMA_ID_BITS-1:0]    dma_b_id,
 
-  input  reg                       slave_ar_valid,
-  output reg                       slave_ar_ready,
-  input  reg [`MEM_ADDR_BITS-1:0]  slave_ar_addr,
-  input  reg [`MEM_ID_BITS-1:0]    slave_ar_id,
-  input  reg [2:0]                 slave_ar_size,
-  input  reg [7:0]                 slave_ar_len,
+  input  reg                       slave_0_ar_valid,
+  output reg                       slave_0_ar_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_0_ar_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_0_ar_id,
+  input  reg [2:0]                 slave_0_ar_size,
+  input  reg [7:0]                 slave_0_ar_len,
 
-  input  reg                       slave_aw_valid,
-  output reg                       slave_aw_ready,
-  input  reg [`MEM_ADDR_BITS-1:0]  slave_aw_addr,
-  input  reg [`MEM_ID_BITS-1:0]    slave_aw_id,
-  input  reg [2:0]                 slave_aw_size,
-  input  reg [7:0]                 slave_aw_len,
+  input  reg                       slave_0_aw_valid,
+  output reg                       slave_0_aw_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_0_aw_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_0_aw_id,
+  input  reg [2:0]                 slave_0_aw_size,
+  input  reg [7:0]                 slave_0_aw_len,
 
-  input  reg                       slave_w_valid,
-  output reg                       slave_w_ready,
-  input  reg [`MEM_STRB_BITS-1:0]  slave_w_strb,
-  input  reg [`MEM_DATA_BITS-1:0]  slave_w_data,
-  input  reg                       slave_w_last,
+  input  reg                       slave_0_w_valid,
+  output reg                       slave_0_w_ready,
+  input  reg [`MEM_STRB_BITS-1:0]  slave_0_w_strb,
+  input  reg [`MEM_DATA_BITS-1:0]  slave_0_w_data,
+  input  reg                       slave_0_w_last,
 
-  output reg                       slave_r_valid,
-  input  reg                       slave_r_ready,
-  output reg [1:0]                 slave_r_resp,
-  output reg [`MEM_ID_BITS-1:0]    slave_r_id,
-  output reg [`MEM_DATA_BITS-1:0]  slave_r_data,
-  output reg                       slave_r_last,
+  output reg                       slave_0_r_valid,
+  input  reg                       slave_0_r_ready,
+  output reg [1:0]                 slave_0_r_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_0_r_id,
+  output reg [`MEM_DATA_BITS-1:0]  slave_0_r_data,
+  output reg                       slave_0_r_last,
 
-  output reg                       slave_b_valid,
-  input  reg                       slave_b_ready,
-  output reg [1:0]                 slave_b_resp,
-  output reg [`MEM_ID_BITS-1:0]    slave_b_id
+  output reg                       slave_0_b_valid,
+  input  reg                       slave_0_b_ready,
+  output reg [1:0]                 slave_0_b_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_0_b_id,
+
+  input  reg                       slave_1_ar_valid,
+  output reg                       slave_1_ar_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_1_ar_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_1_ar_id,
+  input  reg [2:0]                 slave_1_ar_size,
+  input  reg [7:0]                 slave_1_ar_len,
+
+  input  reg                       slave_1_aw_valid,
+  output reg                       slave_1_aw_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_1_aw_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_1_aw_id,
+  input  reg [2:0]                 slave_1_aw_size,
+  input  reg [7:0]                 slave_1_aw_len,
+
+  input  reg                       slave_1_w_valid,
+  output reg                       slave_1_w_ready,
+  input  reg [`MEM_STRB_BITS-1:0]  slave_1_w_strb,
+  input  reg [`MEM_DATA_BITS-1:0]  slave_1_w_data,
+  input  reg                       slave_1_w_last,
+
+  output reg                       slave_1_r_valid,
+  input  reg                       slave_1_r_ready,
+  output reg [1:0]                 slave_1_r_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_1_r_id,
+  output reg [`MEM_DATA_BITS-1:0]  slave_1_r_data,
+  output reg                       slave_1_r_last,
+
+  output reg                       slave_1_b_valid,
+  input  reg                       slave_1_b_ready,
+  output reg [1:0]                 slave_1_b_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_1_b_id,
+
+  input  reg                       slave_2_ar_valid,
+  output reg                       slave_2_ar_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_2_ar_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_2_ar_id,
+  input  reg [2:0]                 slave_2_ar_size,
+  input  reg [7:0]                 slave_2_ar_len,
+
+  input  reg                       slave_2_aw_valid,
+  output reg                       slave_2_aw_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_2_aw_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_2_aw_id,
+  input  reg [2:0]                 slave_2_aw_size,
+  input  reg [7:0]                 slave_2_aw_len,
+
+  input  reg                       slave_2_w_valid,
+  output reg                       slave_2_w_ready,
+  input  reg [`MEM_STRB_BITS-1:0]  slave_2_w_strb,
+  input  reg [`MEM_DATA_BITS-1:0]  slave_2_w_data,
+  input  reg                       slave_2_w_last,
+
+  output reg                       slave_2_r_valid,
+  input  reg                       slave_2_r_ready,
+  output reg [1:0]                 slave_2_r_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_2_r_id,
+  output reg [`MEM_DATA_BITS-1:0]  slave_2_r_data,
+  output reg                       slave_2_r_last,
+
+  output reg                       slave_2_b_valid,
+  input  reg                       slave_2_b_ready,
+  output reg [1:0]                 slave_2_b_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_2_b_id,
+
+  input  reg                       slave_3_ar_valid,
+  output reg                       slave_3_ar_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_3_ar_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_3_ar_id,
+  input  reg [2:0]                 slave_3_ar_size,
+  input  reg [7:0]                 slave_3_ar_len,
+
+  input  reg                       slave_3_aw_valid,
+  output reg                       slave_3_aw_ready,
+  input  reg [`MEM_ADDR_BITS-1:0]  slave_3_aw_addr,
+  input  reg [`MEM_ID_BITS-1:0]    slave_3_aw_id,
+  input  reg [2:0]                 slave_3_aw_size,
+  input  reg [7:0]                 slave_3_aw_len,
+
+  input  reg                       slave_3_w_valid,
+  output reg                       slave_3_w_ready,
+  input  reg [`MEM_STRB_BITS-1:0]  slave_3_w_strb,
+  input  reg [`MEM_DATA_BITS-1:0]  slave_3_w_data,
+  input  reg                       slave_3_w_last,
+
+  output reg                       slave_3_r_valid,
+  input  reg                       slave_3_r_ready,
+  output reg [1:0]                 slave_3_r_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_3_r_id,
+  output reg [`MEM_DATA_BITS-1:0]  slave_3_r_data,
+  output reg                       slave_3_r_last,
+
+  output reg                       slave_3_b_valid,
+  input  reg                       slave_3_b_ready,
+  output reg [1:0]                 slave_3_b_resp,
+  output reg [`MEM_ID_BITS-1:0]    slave_3_b_id
 );
 
 module emul;
@@ -198,37 +294,133 @@ module emul;
   wire [1:0]                 dma_b_resp;
   wire [`DMA_ID_BITS-1:0]    dma_b_id;
 
-  wire                       slave_ar_valid;
-  reg                        slave_ar_ready;
-  wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr;
-  wire [`MEM_ID_BITS-1:0]    slave_ar_id;
-  wire [2:0]                 slave_ar_size;
-  wire [7:0]                 slave_ar_len;
+  wire                       slave_0_ar_valid;
+  reg                        slave_0_ar_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_0_ar_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_0_ar_id;
+  wire [2:0]                 slave_0_ar_size;
+  wire [7:0]                 slave_0_ar_len;
 
-  wire                       slave_aw_valid;
-  reg                        slave_aw_ready;
-  wire [`MEM_ADDR_BITS-1:0]  slave_aw_addr;
-  wire [`MEM_ID_BITS-1:0]    slave_aw_id;
-  wire [2:0]                 slave_aw_size;
-  wire [7:0]                 slave_aw_len;
+  wire                       slave_0_aw_valid;
+  reg                        slave_0_aw_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_0_aw_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_0_aw_id;
+  wire [2:0]                 slave_0_aw_size;
+  wire [7:0]                 slave_0_aw_len;
 
-  wire                       slave_w_valid;
-  reg                        slave_w_ready;
-  wire [`MEM_STRB_BITS-1:0]  slave_w_strb;
-  wire [`MEM_DATA_BITS-1:0]  slave_w_data;
-  wire                       slave_w_last;
+  wire                       slave_0_w_valid;
+  reg                        slave_0_w_ready;
+  wire [`MEM_STRB_BITS-1:0]  slave_0_w_strb;
+  wire [`MEM_DATA_BITS-1:0]  slave_0_w_data;
+  wire                       slave_0_w_last;
 
-  reg                        slave_r_valid;
-  wire                       slave_r_ready;
-  reg  [1:0]                 slave_r_resp;
-  reg  [`MEM_ID_BITS-1:0]    slave_r_id;
-  reg  [`MEM_DATA_BITS-1:0]  slave_r_data;
-  reg                        slave_r_last;
+  reg                        slave_0_r_valid;
+  wire                       slave_0_r_ready;
+  reg  [1:0]                 slave_0_r_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_0_r_id;
+  reg  [`MEM_DATA_BITS-1:0]  slave_0_r_data;
+  reg                        slave_0_r_last;
 
-  reg                        slave_b_valid;
-  wire                       slave_b_ready;
-  reg  [1:0]                 slave_b_resp;
-  reg  [`MEM_ID_BITS-1:0]    slave_b_id;
+  reg                        slave_0_b_valid;
+  wire                       slave_0_b_ready;
+  reg  [1:0]                 slave_0_b_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_0_b_id;
+
+  wire                       slave_1_ar_valid;
+  reg                        slave_1_ar_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_1_ar_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_1_ar_id;
+  wire [2:0]                 slave_1_ar_size;
+  wire [7:0]                 slave_1_ar_len;
+
+  wire                       slave_1_aw_valid;
+  reg                        slave_1_aw_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_1_aw_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_1_aw_id;
+  wire [2:0]                 slave_1_aw_size;
+  wire [7:0]                 slave_1_aw_len;
+
+  wire                       slave_1_w_valid;
+  reg                        slave_1_w_ready;
+  wire [`MEM_STRB_BITS-1:0]  slave_1_w_strb;
+  wire [`MEM_DATA_BITS-1:0]  slave_1_w_data;
+  wire                       slave_1_w_last;
+
+  reg                        slave_1_r_valid;
+  wire                       slave_1_r_ready;
+  reg  [1:0]                 slave_1_r_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_1_r_id;
+  reg  [`MEM_DATA_BITS-1:0]  slave_1_r_data;
+  reg                        slave_1_r_last;
+
+  reg                        slave_1_b_valid;
+  wire                       slave_1_b_ready;
+  reg  [1:0]                 slave_1_b_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_1_b_id;
+
+  wire                       slave_2_ar_valid;
+  reg                        slave_2_ar_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_2_ar_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_2_ar_id;
+  wire [2:0]                 slave_2_ar_size;
+  wire [7:0]                 slave_2_ar_len;
+
+  wire                       slave_2_aw_valid;
+  reg                        slave_2_aw_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_2_aw_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_2_aw_id;
+  wire [2:0]                 slave_2_aw_size;
+  wire [7:0]                 slave_2_aw_len;
+
+  wire                       slave_2_w_valid;
+  reg                        slave_2_w_ready;
+  wire [`MEM_STRB_BITS-1:0]  slave_2_w_strb;
+  wire [`MEM_DATA_BITS-1:0]  slave_2_w_data;
+  wire                       slave_2_w_last;
+
+  reg                        slave_2_r_valid;
+  wire                       slave_2_r_ready;
+  reg  [1:0]                 slave_2_r_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_2_r_id;
+  reg  [`MEM_DATA_BITS-1:0]  slave_2_r_data;
+  reg                        slave_2_r_last;
+
+  reg                        slave_2_b_valid;
+  wire                       slave_2_b_ready;
+  reg  [1:0]                 slave_2_b_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_2_b_id;
+
+  wire                       slave_3_ar_valid;
+  reg                        slave_3_ar_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_3_ar_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_3_ar_id;
+  wire [2:0]                 slave_3_ar_size;
+  wire [7:0]                 slave_3_ar_len;
+
+  wire                       slave_3_aw_valid;
+  reg                        slave_3_aw_ready;
+  wire [`MEM_ADDR_BITS-1:0]  slave_3_aw_addr;
+  wire [`MEM_ID_BITS-1:0]    slave_3_aw_id;
+  wire [2:0]                 slave_3_aw_size;
+  wire [7:0]                 slave_3_aw_len;
+
+  wire                       slave_3_w_valid;
+  reg                        slave_3_w_ready;
+  wire [`MEM_STRB_BITS-1:0]  slave_3_w_strb;
+  wire [`MEM_DATA_BITS-1:0]  slave_3_w_data;
+  wire                       slave_3_w_last;
+
+  reg                        slave_3_r_valid;
+  wire                       slave_3_r_ready;
+  reg  [1:0]                 slave_3_r_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_3_r_id;
+  reg  [`MEM_DATA_BITS-1:0]  slave_3_r_data;
+  reg                        slave_3_r_last;
+
+  reg                        slave_3_b_valid;
+  wire                       slave_3_b_ready;
+  reg  [1:0]                 slave_3_b_resp;
+  reg  [`MEM_ID_BITS-1:0]    slave_3_b_id;
 
   wire                       master_ar_valid_delay;
   wire                       master_ar_ready_delay;
@@ -294,37 +486,133 @@ module emul;
   wire [1:0]                 dma_b_resp_delay;
   wire [`DMA_ID_BITS-1:0]    dma_b_id_delay;
 
-  wire                       slave_ar_valid_delay;
-  wire                       slave_ar_ready_delay;
-  wire [`MEM_ADDR_BITS-1:0]  slave_ar_addr_delay;
-  wire [`MEM_ID_BITS-1:0]    slave_ar_id_delay;
-  wire [2:0]                 slave_ar_size_delay;
-  wire [7:0]                 slave_ar_len_delay;
+  wire                       slave_0_ar_valid_delay;
+  wire                       slave_0_ar_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_0_ar_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_0_ar_id_delay;
+  wire [2:0]                 slave_0_ar_size_delay;
+  wire [7:0]                 slave_0_ar_len_delay;
 
-  wire                       slave_aw_valid_delay;
-  wire                       slave_aw_ready_delay;
-  wire [`MEM_ADDR_BITS-1:0]  slave_aw_addr_delay;
-  wire [`MEM_ID_BITS-1:0]    slave_aw_id_delay;
-  wire [2:0]                 slave_aw_size_delay;
-  wire [7:0]                 slave_aw_len_delay;
+  wire                       slave_0_aw_valid_delay;
+  wire                       slave_0_aw_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_0_aw_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_0_aw_id_delay;
+  wire [2:0]                 slave_0_aw_size_delay;
+  wire [7:0]                 slave_0_aw_len_delay;
 
-  wire                       slave_w_valid_delay;
-  wire                       slave_w_ready_delay;
-  wire [`MEM_STRB_BITS-1:0]  slave_w_strb_delay;
-  wire [`MEM_DATA_BITS-1:0]  slave_w_data_delay;
-  wire                       slave_w_last_delay;
+  wire                       slave_0_w_valid_delay;
+  wire                       slave_0_w_ready_delay;
+  wire [`MEM_STRB_BITS-1:0]  slave_0_w_strb_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_0_w_data_delay;
+  wire                       slave_0_w_last_delay;
 
-  wire                       slave_r_valid_delay;
-  wire                       slave_r_ready_delay;
-  wire [1:0]                 slave_r_resp_delay;
-  wire [`MEM_ID_BITS-1:0]    slave_r_id_delay;
-  wire [`MEM_DATA_BITS-1:0]  slave_r_data_delay;
-  wire                       slave_r_last_delay;
+  wire                       slave_0_r_valid_delay;
+  wire                       slave_0_r_ready_delay;
+  wire [1:0]                 slave_0_r_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_0_r_id_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_0_r_data_delay;
+  wire                       slave_0_r_last_delay;
 
-  wire                       slave_b_valid_delay;
-  wire                       slave_b_ready_delay;
-  wire [1:0]                 slave_b_resp_delay;
-  wire [`MEM_ID_BITS-1:0]    slave_b_id_delay;
+  wire                       slave_0_b_valid_delay;
+  wire                       slave_0_b_ready_delay;
+  wire [1:0]                 slave_0_b_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_0_b_id_delay;
+
+  wire                       slave_1_ar_valid_delay;
+  wire                       slave_1_ar_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_1_ar_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_1_ar_id_delay;
+  wire [2:0]                 slave_1_ar_size_delay;
+  wire [7:0]                 slave_1_ar_len_delay;
+
+  wire                       slave_1_aw_valid_delay;
+  wire                       slave_1_aw_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_1_aw_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_1_aw_id_delay;
+  wire [2:0]                 slave_1_aw_size_delay;
+  wire [7:0]                 slave_1_aw_len_delay;
+
+  wire                       slave_1_w_valid_delay;
+  wire                       slave_1_w_ready_delay;
+  wire [`MEM_STRB_BITS-1:0]  slave_1_w_strb_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_1_w_data_delay;
+  wire                       slave_1_w_last_delay;
+
+  wire                       slave_1_r_valid_delay;
+  wire                       slave_1_r_ready_delay;
+  wire [1:0]                 slave_1_r_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_1_r_id_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_1_r_data_delay;
+  wire                       slave_1_r_last_delay;
+
+  wire                       slave_1_b_valid_delay;
+  wire                       slave_1_b_ready_delay;
+  wire [1:0]                 slave_1_b_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_1_b_id_delay;
+
+  wire                       slave_2_ar_valid_delay;
+  wire                       slave_2_ar_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_2_ar_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_2_ar_id_delay;
+  wire [2:0]                 slave_2_ar_size_delay;
+  wire [7:0]                 slave_2_ar_len_delay;
+
+  wire                       slave_2_aw_valid_delay;
+  wire                       slave_2_aw_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_2_aw_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_2_aw_id_delay;
+  wire [2:0]                 slave_2_aw_size_delay;
+  wire [7:0]                 slave_2_aw_len_delay;
+
+  wire                       slave_2_w_valid_delay;
+  wire                       slave_2_w_ready_delay;
+  wire [`MEM_STRB_BITS-1:0]  slave_2_w_strb_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_2_w_data_delay;
+  wire                       slave_2_w_last_delay;
+
+  wire                       slave_2_r_valid_delay;
+  wire                       slave_2_r_ready_delay;
+  wire [1:0]                 slave_2_r_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_2_r_id_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_2_r_data_delay;
+  wire                       slave_2_r_last_delay;
+
+  wire                       slave_2_b_valid_delay;
+  wire                       slave_2_b_ready_delay;
+  wire [1:0]                 slave_2_b_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_2_b_id_delay;
+
+  wire                       slave_3_ar_valid_delay;
+  wire                       slave_3_ar_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_3_ar_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_3_ar_id_delay;
+  wire [2:0]                 slave_3_ar_size_delay;
+  wire [7:0]                 slave_3_ar_len_delay;
+
+  wire                       slave_3_aw_valid_delay;
+  wire                       slave_3_aw_ready_delay;
+  wire [`MEM_ADDR_BITS-1:0]  slave_3_aw_addr_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_3_aw_id_delay;
+  wire [2:0]                 slave_3_aw_size_delay;
+  wire [7:0]                 slave_3_aw_len_delay;
+
+  wire                       slave_3_w_valid_delay;
+  wire                       slave_3_w_ready_delay;
+  wire [`MEM_STRB_BITS-1:0]  slave_3_w_strb_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_3_w_data_delay;
+  wire                       slave_3_w_last_delay;
+
+  wire                       slave_3_r_valid_delay;
+  wire                       slave_3_r_ready_delay;
+  wire [1:0]                 slave_3_r_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_3_r_id_delay;
+  wire [`MEM_DATA_BITS-1:0]  slave_3_r_data_delay;
+  wire                       slave_3_r_last_delay;
+
+  wire                       slave_3_b_valid_delay;
+  wire                       slave_3_b_ready_delay;
+  wire [1:0]                 slave_3_b_resp_delay;
+  wire [`MEM_ID_BITS-1:0]    slave_3_b_id_delay;
 
   assign #0.1 master_ar_valid_delay = master_ar_valid;
   assign #0.1 master_ar_ready = master_ar_ready_delay;
@@ -390,37 +678,133 @@ module emul;
   assign #0.1 dma_b_resp = dma_b_resp_delay;
   assign #0.1 dma_b_id = dma_b_id_delay;
 
-  assign #0.1 slave_ar_valid = slave_ar_valid_delay;
-  assign #0.1 slave_ar_ready_delay = slave_ar_ready;
-  assign #0.1 slave_ar_addr = slave_ar_addr_delay;
-  assign #0.1 slave_ar_id = slave_ar_id_delay;
-  assign #0.1 slave_ar_size = slave_ar_size_delay;
-  assign #0.1 slave_ar_len = slave_ar_len_delay;
+  assign #0.1 slave_0_ar_valid = slave_0_ar_valid_delay;
+  assign #0.1 slave_0_ar_ready_delay = slave_0_ar_ready;
+  assign #0.1 slave_0_ar_addr = slave_0_ar_addr_delay;
+  assign #0.1 slave_0_ar_id = slave_0_ar_id_delay;
+  assign #0.1 slave_0_ar_size = slave_0_ar_size_delay;
+  assign #0.1 slave_0_ar_len = slave_0_ar_len_delay;
 
-  assign #0.1 slave_aw_valid = slave_aw_valid_delay;
-  assign #0.1 slave_aw_ready_delay = slave_aw_ready;
-  assign #0.1 slave_aw_addr = slave_aw_addr_delay;
-  assign #0.1 slave_aw_id = slave_aw_id_delay;
-  assign #0.1 slave_aw_size = slave_aw_size_delay;
-  assign #0.1 slave_aw_len = slave_aw_len_delay;
+  assign #0.1 slave_0_aw_valid = slave_0_aw_valid_delay;
+  assign #0.1 slave_0_aw_ready_delay = slave_0_aw_ready;
+  assign #0.1 slave_0_aw_addr = slave_0_aw_addr_delay;
+  assign #0.1 slave_0_aw_id = slave_0_aw_id_delay;
+  assign #0.1 slave_0_aw_size = slave_0_aw_size_delay;
+  assign #0.1 slave_0_aw_len = slave_0_aw_len_delay;
 
-  assign #0.1 slave_w_valid = slave_w_valid_delay;
-  assign #0.1 slave_w_ready_delay = slave_w_ready;
-  assign #0.1 slave_w_strb = slave_w_strb_delay;
-  assign #0.1 slave_w_data = slave_w_data_delay;
-  assign #0.1 slave_w_last = slave_w_last_delay;
+  assign #0.1 slave_0_w_valid = slave_0_w_valid_delay;
+  assign #0.1 slave_0_w_ready_delay = slave_0_w_ready;
+  assign #0.1 slave_0_w_strb = slave_0_w_strb_delay;
+  assign #0.1 slave_0_w_data = slave_0_w_data_delay;
+  assign #0.1 slave_0_w_last = slave_0_w_last_delay;
 
-  assign #0.1 slave_r_valid_delay = slave_r_valid;
-  assign #0.1 slave_r_ready = slave_r_ready_delay;
-  assign #0.1 slave_r_resp_delay = slave_r_resp;
-  assign #0.1 slave_r_id_delay = slave_r_id;
-  assign #0.1 slave_r_data_delay = slave_r_data;
-  assign #0.1 slave_r_last_delay = slave_r_last;
+  assign #0.1 slave_0_r_valid_delay = slave_0_r_valid;
+  assign #0.1 slave_0_r_ready = slave_0_r_ready_delay;
+  assign #0.1 slave_0_r_resp_delay = slave_0_r_resp;
+  assign #0.1 slave_0_r_id_delay = slave_0_r_id;
+  assign #0.1 slave_0_r_data_delay = slave_0_r_data;
+  assign #0.1 slave_0_r_last_delay = slave_0_r_last;
 
-  assign #0.1 slave_b_valid_delay = slave_b_valid;
-  assign #0.1 slave_b_ready = slave_b_ready_delay;
-  assign #0.1 slave_b_resp_delay = slave_b_resp;
-  assign #0.1 slave_b_id_delay = slave_b_id;
+  assign #0.1 slave_0_b_valid_delay = slave_0_b_valid;
+  assign #0.1 slave_0_b_ready = slave_0_b_ready_delay;
+  assign #0.1 slave_0_b_resp_delay = slave_0_b_resp;
+  assign #0.1 slave_0_b_id_delay = slave_0_b_id;
+
+  assign #0.1 slave_1_ar_valid = slave_1_ar_valid_delay;
+  assign #0.1 slave_1_ar_ready_delay = slave_1_ar_ready;
+  assign #0.1 slave_1_ar_addr = slave_1_ar_addr_delay;
+  assign #0.1 slave_1_ar_id = slave_1_ar_id_delay;
+  assign #0.1 slave_1_ar_size = slave_1_ar_size_delay;
+  assign #0.1 slave_1_ar_len = slave_1_ar_len_delay;
+
+  assign #0.1 slave_1_aw_valid = slave_1_aw_valid_delay;
+  assign #0.1 slave_1_aw_ready_delay = slave_1_aw_ready;
+  assign #0.1 slave_1_aw_addr = slave_1_aw_addr_delay;
+  assign #0.1 slave_1_aw_id = slave_1_aw_id_delay;
+  assign #0.1 slave_1_aw_size = slave_1_aw_size_delay;
+  assign #0.1 slave_1_aw_len = slave_1_aw_len_delay;
+
+  assign #0.1 slave_1_w_valid = slave_1_w_valid_delay;
+  assign #0.1 slave_1_w_ready_delay = slave_1_w_ready;
+  assign #0.1 slave_1_w_strb = slave_1_w_strb_delay;
+  assign #0.1 slave_1_w_data = slave_1_w_data_delay;
+  assign #0.1 slave_1_w_last = slave_1_w_last_delay;
+
+  assign #0.1 slave_1_r_valid_delay = slave_1_r_valid;
+  assign #0.1 slave_1_r_ready = slave_1_r_ready_delay;
+  assign #0.1 slave_1_r_resp_delay = slave_1_r_resp;
+  assign #0.1 slave_1_r_id_delay = slave_1_r_id;
+  assign #0.1 slave_1_r_data_delay = slave_1_r_data;
+  assign #0.1 slave_1_r_last_delay = slave_1_r_last;
+
+  assign #0.1 slave_1_b_valid_delay = slave_1_b_valid;
+  assign #0.1 slave_1_b_ready = slave_1_b_ready_delay;
+  assign #0.1 slave_1_b_resp_delay = slave_1_b_resp;
+  assign #0.1 slave_1_b_id_delay = slave_1_b_id;
+
+  assign #0.1 slave_2_ar_valid = slave_2_ar_valid_delay;
+  assign #0.1 slave_2_ar_ready_delay = slave_2_ar_ready;
+  assign #0.1 slave_2_ar_addr = slave_2_ar_addr_delay;
+  assign #0.1 slave_2_ar_id = slave_2_ar_id_delay;
+  assign #0.1 slave_2_ar_size = slave_2_ar_size_delay;
+  assign #0.1 slave_2_ar_len = slave_2_ar_len_delay;
+
+  assign #0.1 slave_2_aw_valid = slave_2_aw_valid_delay;
+  assign #0.1 slave_2_aw_ready_delay = slave_2_aw_ready;
+  assign #0.1 slave_2_aw_addr = slave_2_aw_addr_delay;
+  assign #0.1 slave_2_aw_id = slave_2_aw_id_delay;
+  assign #0.1 slave_2_aw_size = slave_2_aw_size_delay;
+  assign #0.1 slave_2_aw_len = slave_2_aw_len_delay;
+
+  assign #0.1 slave_2_w_valid = slave_2_w_valid_delay;
+  assign #0.1 slave_2_w_ready_delay = slave_2_w_ready;
+  assign #0.1 slave_2_w_strb = slave_2_w_strb_delay;
+  assign #0.1 slave_2_w_data = slave_2_w_data_delay;
+  assign #0.1 slave_2_w_last = slave_2_w_last_delay;
+
+  assign #0.1 slave_2_r_valid_delay = slave_2_r_valid;
+  assign #0.1 slave_2_r_ready = slave_2_r_ready_delay;
+  assign #0.1 slave_2_r_resp_delay = slave_2_r_resp;
+  assign #0.1 slave_2_r_id_delay = slave_2_r_id;
+  assign #0.1 slave_2_r_data_delay = slave_2_r_data;
+  assign #0.1 slave_2_r_last_delay = slave_2_r_last;
+
+  assign #0.1 slave_2_b_valid_delay = slave_2_b_valid;
+  assign #0.1 slave_2_b_ready = slave_2_b_ready_delay;
+  assign #0.1 slave_2_b_resp_delay = slave_2_b_resp;
+  assign #0.1 slave_2_b_id_delay = slave_2_b_id;
+
+  assign #0.1 slave_3_ar_valid = slave_3_ar_valid_delay;
+  assign #0.1 slave_3_ar_ready_delay = slave_3_ar_ready;
+  assign #0.1 slave_3_ar_addr = slave_3_ar_addr_delay;
+  assign #0.1 slave_3_ar_id = slave_3_ar_id_delay;
+  assign #0.1 slave_3_ar_size = slave_3_ar_size_delay;
+  assign #0.1 slave_3_ar_len = slave_3_ar_len_delay;
+
+  assign #0.1 slave_3_aw_valid = slave_3_aw_valid_delay;
+  assign #0.1 slave_3_aw_ready_delay = slave_3_aw_ready;
+  assign #0.1 slave_3_aw_addr = slave_3_aw_addr_delay;
+  assign #0.1 slave_3_aw_id = slave_3_aw_id_delay;
+  assign #0.1 slave_3_aw_size = slave_3_aw_size_delay;
+  assign #0.1 slave_3_aw_len = slave_3_aw_len_delay;
+
+  assign #0.1 slave_3_w_valid = slave_3_w_valid_delay;
+  assign #0.1 slave_3_w_ready_delay = slave_3_w_ready;
+  assign #0.1 slave_3_w_strb = slave_3_w_strb_delay;
+  assign #0.1 slave_3_w_data = slave_3_w_data_delay;
+  assign #0.1 slave_3_w_last = slave_3_w_last_delay;
+
+  assign #0.1 slave_3_r_valid_delay = slave_3_r_valid;
+  assign #0.1 slave_3_r_ready = slave_3_r_ready_delay;
+  assign #0.1 slave_3_r_resp_delay = slave_3_r_resp;
+  assign #0.1 slave_3_r_id_delay = slave_3_r_id;
+  assign #0.1 slave_3_r_data_delay = slave_3_r_data;
+  assign #0.1 slave_3_r_last_delay = slave_3_r_last;
+
+  assign #0.1 slave_3_b_valid_delay = slave_3_b_valid;
+  assign #0.1 slave_3_b_ready = slave_3_b_ready_delay;
+  assign #0.1 slave_3_b_resp_delay = slave_3_b_resp;
+  assign #0.1 slave_3_b_id_delay = slave_3_b_id;
 
   F1Shim F1Shim(
     .clock(clock),
@@ -490,37 +874,133 @@ module emul;
     .io_dma_b_bits_resp(dma_b_resp_delay),
     .io_dma_b_bits_id(dma_b_id_delay),
 
-    .io_slave_ar_valid(slave_ar_valid_delay),
-    .io_slave_ar_ready(slave_ar_ready_delay),
-    .io_slave_ar_bits_addr(slave_ar_addr_delay),
-    .io_slave_ar_bits_id(slave_ar_id_delay),
-    .io_slave_ar_bits_size(slave_ar_size_delay),
-    .io_slave_ar_bits_len(slave_ar_len_delay),
+    .io_slave_0_ar_valid(slave_0_ar_valid_delay),
+    .io_slave_0_ar_ready(slave_0_ar_ready_delay),
+    .io_slave_0_ar_bits_addr(slave_0_ar_addr_delay),
+    .io_slave_0_ar_bits_id(slave_0_ar_id_delay),
+    .io_slave_0_ar_bits_size(slave_0_ar_size_delay),
+    .io_slave_0_ar_bits_len(slave_0_ar_len_delay),
 
-    .io_slave_aw_valid(slave_aw_valid_delay),
-    .io_slave_aw_ready(slave_aw_ready_delay),
-    .io_slave_aw_bits_addr(slave_aw_addr_delay),
-    .io_slave_aw_bits_id(slave_aw_id_delay),
-    .io_slave_aw_bits_size(slave_aw_size_delay),
-    .io_slave_aw_bits_len(slave_aw_len_delay),
+    .io_slave_0_aw_valid(slave_0_aw_valid_delay),
+    .io_slave_0_aw_ready(slave_0_aw_ready_delay),
+    .io_slave_0_aw_bits_addr(slave_0_aw_addr_delay),
+    .io_slave_0_aw_bits_id(slave_0_aw_id_delay),
+    .io_slave_0_aw_bits_size(slave_0_aw_size_delay),
+    .io_slave_0_aw_bits_len(slave_0_aw_len_delay),
 
-    .io_slave_w_valid(slave_w_valid_delay),
-    .io_slave_w_ready(slave_w_ready_delay),
-    .io_slave_w_bits_strb(slave_w_strb_delay),
-    .io_slave_w_bits_data(slave_w_data_delay),
-    .io_slave_w_bits_last(slave_w_last_delay),
+    .io_slave_0_w_valid(slave_0_w_valid_delay),
+    .io_slave_0_w_ready(slave_0_w_ready_delay),
+    .io_slave_0_w_bits_strb(slave_0_w_strb_delay),
+    .io_slave_0_w_bits_data(slave_0_w_data_delay),
+    .io_slave_0_w_bits_last(slave_0_w_last_delay),
 
-    .io_slave_r_valid(slave_r_valid_delay),
-    .io_slave_r_ready(slave_r_ready_delay),
-    .io_slave_r_bits_resp(slave_r_resp_delay),
-    .io_slave_r_bits_id(slave_r_id_delay),
-    .io_slave_r_bits_data(slave_r_data_delay),
-    .io_slave_r_bits_last(slave_r_last_delay),
+    .io_slave_0_r_valid(slave_0_r_valid_delay),
+    .io_slave_0_r_ready(slave_0_r_ready_delay),
+    .io_slave_0_r_bits_resp(slave_0_r_resp_delay),
+    .io_slave_0_r_bits_id(slave_0_r_id_delay),
+    .io_slave_0_r_bits_data(slave_0_r_data_delay),
+    .io_slave_0_r_bits_last(slave_0_r_last_delay),
 
-    .io_slave_b_valid(slave_b_valid_delay),
-    .io_slave_b_ready(slave_b_ready_delay),
-    .io_slave_b_bits_resp(slave_b_resp_delay),
-    .io_slave_b_bits_id(slave_b_id_delay)
+    .io_slave_0_b_valid(slave_0_b_valid_delay),
+    .io_slave_0_b_ready(slave_0_b_ready_delay),
+    .io_slave_0_b_bits_resp(slave_0_b_resp_delay),
+    .io_slave_0_b_bits_id(slave_0_b_id_delay),
+
+    .io_slave_1_ar_valid(slave_1_ar_valid_delay),
+    .io_slave_1_ar_ready(slave_1_ar_ready_delay),
+    .io_slave_1_ar_bits_addr(slave_1_ar_addr_delay),
+    .io_slave_1_ar_bits_id(slave_1_ar_id_delay),
+    .io_slave_1_ar_bits_size(slave_1_ar_size_delay),
+    .io_slave_1_ar_bits_len(slave_1_ar_len_delay),
+
+    .io_slave_1_aw_valid(slave_1_aw_valid_delay),
+    .io_slave_1_aw_ready(slave_1_aw_ready_delay),
+    .io_slave_1_aw_bits_addr(slave_1_aw_addr_delay),
+    .io_slave_1_aw_bits_id(slave_1_aw_id_delay),
+    .io_slave_1_aw_bits_size(slave_1_aw_size_delay),
+    .io_slave_1_aw_bits_len(slave_1_aw_len_delay),
+
+    .io_slave_1_w_valid(slave_1_w_valid_delay),
+    .io_slave_1_w_ready(slave_1_w_ready_delay),
+    .io_slave_1_w_bits_strb(slave_1_w_strb_delay),
+    .io_slave_1_w_bits_data(slave_1_w_data_delay),
+    .io_slave_1_w_bits_last(slave_1_w_last_delay),
+
+    .io_slave_1_r_valid(slave_1_r_valid_delay),
+    .io_slave_1_r_ready(slave_1_r_ready_delay),
+    .io_slave_1_r_bits_resp(slave_1_r_resp_delay),
+    .io_slave_1_r_bits_id(slave_1_r_id_delay),
+    .io_slave_1_r_bits_data(slave_1_r_data_delay),
+    .io_slave_1_r_bits_last(slave_1_r_last_delay),
+
+    .io_slave_1_b_valid(slave_1_b_valid_delay),
+    .io_slave_1_b_ready(slave_1_b_ready_delay),
+    .io_slave_1_b_bits_resp(slave_1_b_resp_delay),
+    .io_slave_1_b_bits_id(slave_1_b_id_delay),
+
+    .io_slave_2_ar_valid(slave_2_ar_valid_delay),
+    .io_slave_2_ar_ready(slave_2_ar_ready_delay),
+    .io_slave_2_ar_bits_addr(slave_2_ar_addr_delay),
+    .io_slave_2_ar_bits_id(slave_2_ar_id_delay),
+    .io_slave_2_ar_bits_size(slave_2_ar_size_delay),
+    .io_slave_2_ar_bits_len(slave_2_ar_len_delay),
+
+    .io_slave_2_aw_valid(slave_2_aw_valid_delay),
+    .io_slave_2_aw_ready(slave_2_aw_ready_delay),
+    .io_slave_2_aw_bits_addr(slave_2_aw_addr_delay),
+    .io_slave_2_aw_bits_id(slave_2_aw_id_delay),
+    .io_slave_2_aw_bits_size(slave_2_aw_size_delay),
+    .io_slave_2_aw_bits_len(slave_2_aw_len_delay),
+
+    .io_slave_2_w_valid(slave_2_w_valid_delay),
+    .io_slave_2_w_ready(slave_2_w_ready_delay),
+    .io_slave_2_w_bits_strb(slave_2_w_strb_delay),
+    .io_slave_2_w_bits_data(slave_2_w_data_delay),
+    .io_slave_2_w_bits_last(slave_2_w_last_delay),
+
+    .io_slave_2_r_valid(slave_2_r_valid_delay),
+    .io_slave_2_r_ready(slave_2_r_ready_delay),
+    .io_slave_2_r_bits_resp(slave_2_r_resp_delay),
+    .io_slave_2_r_bits_id(slave_2_r_id_delay),
+    .io_slave_2_r_bits_data(slave_2_r_data_delay),
+    .io_slave_2_r_bits_last(slave_2_r_last_delay),
+
+    .io_slave_2_b_valid(slave_2_b_valid_delay),
+    .io_slave_2_b_ready(slave_2_b_ready_delay),
+    .io_slave_2_b_bits_resp(slave_2_b_resp_delay),
+    .io_slave_2_b_bits_id(slave_2_b_id_delay),
+
+    .io_slave_3_ar_valid(slave_3_ar_valid_delay),
+    .io_slave_3_ar_ready(slave_3_ar_ready_delay),
+    .io_slave_3_ar_bits_addr(slave_3_ar_addr_delay),
+    .io_slave_3_ar_bits_id(slave_3_ar_id_delay),
+    .io_slave_3_ar_bits_size(slave_3_ar_size_delay),
+    .io_slave_3_ar_bits_len(slave_3_ar_len_delay),
+
+    .io_slave_3_aw_valid(slave_3_aw_valid_delay),
+    .io_slave_3_aw_ready(slave_3_aw_ready_delay),
+    .io_slave_3_aw_bits_addr(slave_3_aw_addr_delay),
+    .io_slave_3_aw_bits_id(slave_3_aw_id_delay),
+    .io_slave_3_aw_bits_size(slave_3_aw_size_delay),
+    .io_slave_3_aw_bits_len(slave_3_aw_len_delay),
+
+    .io_slave_3_w_valid(slave_3_w_valid_delay),
+    .io_slave_3_w_ready(slave_3_w_ready_delay),
+    .io_slave_3_w_bits_strb(slave_3_w_strb_delay),
+    .io_slave_3_w_bits_data(slave_3_w_data_delay),
+    .io_slave_3_w_bits_last(slave_3_w_last_delay),
+
+    .io_slave_3_r_valid(slave_3_r_valid_delay),
+    .io_slave_3_r_ready(slave_3_r_ready_delay),
+    .io_slave_3_r_bits_resp(slave_3_r_resp_delay),
+    .io_slave_3_r_bits_id(slave_3_r_id_delay),
+    .io_slave_3_r_bits_data(slave_3_r_data_delay),
+    .io_slave_3_r_bits_last(slave_3_r_last_delay),
+
+    .io_slave_3_b_valid(slave_3_b_valid_delay),
+    .io_slave_3_b_ready(slave_3_b_ready_delay),
+    .io_slave_3_b_bits_resp(slave_3_b_resp_delay),
+    .io_slave_3_b_bits_id(slave_3_b_id_delay)
   );
 
   always @(posedge clock) begin
@@ -593,37 +1073,133 @@ module emul;
       dma_b_resp,
       dma_b_id,
 
-      slave_ar_valid,
-      slave_ar_ready,
-      slave_ar_addr,
-      slave_ar_id,
-      slave_ar_size,
-      slave_ar_len,
+      slave_0_ar_valid,
+      slave_0_ar_ready,
+      slave_0_ar_addr,
+      slave_0_ar_id,
+      slave_0_ar_size,
+      slave_0_ar_len,
 
-      slave_aw_valid,
-      slave_aw_ready,
-      slave_aw_addr,
-      slave_aw_id,
-      slave_aw_size,
-      slave_aw_len,
+      slave_0_aw_valid,
+      slave_0_aw_ready,
+      slave_0_aw_addr,
+      slave_0_aw_id,
+      slave_0_aw_size,
+      slave_0_aw_len,
 
-      slave_w_valid,
-      slave_w_ready,
-      slave_w_strb,
-      slave_w_data,
-      slave_w_last,
+      slave_0_w_valid,
+      slave_0_w_ready,
+      slave_0_w_strb,
+      slave_0_w_data,
+      slave_0_w_last,
 
-      slave_r_valid,
-      slave_r_ready,
-      slave_r_resp,
-      slave_r_id,
-      slave_r_data,
-      slave_r_last,
+      slave_0_r_valid,
+      slave_0_r_ready,
+      slave_0_r_resp,
+      slave_0_r_id,
+      slave_0_r_data,
+      slave_0_r_last,
 
-      slave_b_valid,
-      slave_b_ready,
-      slave_b_resp,
-      slave_b_id
+      slave_0_b_valid,
+      slave_0_b_ready,
+      slave_0_b_resp,
+      slave_0_b_id,
+
+      slave_1_ar_valid,
+      slave_1_ar_ready,
+      slave_1_ar_addr,
+      slave_1_ar_id,
+      slave_1_ar_size,
+      slave_1_ar_len,
+
+      slave_1_aw_valid,
+      slave_1_aw_ready,
+      slave_1_aw_addr,
+      slave_1_aw_id,
+      slave_1_aw_size,
+      slave_1_aw_len,
+
+      slave_1_w_valid,
+      slave_1_w_ready,
+      slave_1_w_strb,
+      slave_1_w_data,
+      slave_1_w_last,
+
+      slave_1_r_valid,
+      slave_1_r_ready,
+      slave_1_r_resp,
+      slave_1_r_id,
+      slave_1_r_data,
+      slave_1_r_last,
+
+      slave_1_b_valid,
+      slave_1_b_ready,
+      slave_1_b_resp,
+      slave_1_b_id,
+
+      slave_2_ar_valid,
+      slave_2_ar_ready,
+      slave_2_ar_addr,
+      slave_2_ar_id,
+      slave_2_ar_size,
+      slave_2_ar_len,
+
+      slave_2_aw_valid,
+      slave_2_aw_ready,
+      slave_2_aw_addr,
+      slave_2_aw_id,
+      slave_2_aw_size,
+      slave_2_aw_len,
+
+      slave_2_w_valid,
+      slave_2_w_ready,
+      slave_2_w_strb,
+      slave_2_w_data,
+      slave_2_w_last,
+
+      slave_2_r_valid,
+      slave_2_r_ready,
+      slave_2_r_resp,
+      slave_2_r_id,
+      slave_2_r_data,
+      slave_2_r_last,
+
+      slave_2_b_valid,
+      slave_2_b_ready,
+      slave_2_b_resp,
+      slave_2_b_id,
+
+      slave_3_ar_valid,
+      slave_3_ar_ready,
+      slave_3_ar_addr,
+      slave_3_ar_id,
+      slave_3_ar_size,
+      slave_3_ar_len,
+
+      slave_3_aw_valid,
+      slave_3_aw_ready,
+      slave_3_aw_addr,
+      slave_3_aw_id,
+      slave_3_aw_size,
+      slave_3_aw_len,
+
+      slave_3_w_valid,
+      slave_3_w_ready,
+      slave_3_w_strb,
+      slave_3_w_data,
+      slave_3_w_last,
+
+      slave_3_r_valid,
+      slave_3_r_ready,
+      slave_3_r_resp,
+      slave_3_r_id,
+      slave_3_r_data,
+      slave_3_r_last,
+
+      slave_3_b_valid,
+      slave_3_b_ready,
+      slave_3_b_resp,
+      slave_3_b_id
     );
   end
 endmodule;
