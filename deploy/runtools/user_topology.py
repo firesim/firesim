@@ -84,7 +84,7 @@ class UserTopologies(object):
 
         assert (n % 4 == 0), "Currently, # of nodes per leaf switch must be a multiple of 4"
         nsupernodequads = n / 4
-        servers = [list(reduce(lambda x, y: x + y, [[FireSimServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for x in range(nsupernodequads)])) for y in range(r)]
+        servers = [list(reduce(lambda x, y: x + y, [[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for x in range(nsupernodequads)])) for y in range(r)]
         for rswitch in rootswitches:
             rswitch.add_downlinks(leafswitches)
 
