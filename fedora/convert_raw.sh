@@ -59,11 +59,14 @@ trap - ERR
 echo "Setting up image for firesim"
 mkdir -p $MNT
 sudo mount -o loop $NEWIMG $MNT
+sudo mkdir $MNT/etc/firesim
 
 # add firesim network stuff
 sudo cp ./firesim-net.service $MNT/etc/systemd/system/
-sudo cp ./start-firesim-network.sh $MNT/root/
-sudo chmod 755 $MNT/root/start-firesim-network.sh
+sudo cp ./start-firesim-network.sh $MNT/etc/firesim/
+sudo cp ./ifcfg-static $MNT/etc/firesim/
+sudo cp ./ifcfg-dhcp $MNT/etc/firesim/
+sudo chmod 755 $MNT/etc/firesim/start-firesim-network.sh
 sudo chmod 644 $MNT/etc/systemd/system/firesim-net.service
 sudo mkdir -p $MNT/etc/systemd/system/multi-user.target.wants
 sudo ln -s /etc/systemd/system/firesim-net.service $MNT/etc/systemd/system/multi-user.target.wants/firesim-net.service

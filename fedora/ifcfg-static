@@ -1,0 +1,4 @@
+DEVICE=eth0
+BOOTPROTO=static
+ONBOOT=on
+PREFIX=16

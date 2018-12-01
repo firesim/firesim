@@ -1,10 +1,14 @@
 [Unit]
 Description=FireSim NIC Bringup
-After=network-online.target
+After=local-fs.target
+Wants=local-fs.target
+
+Before=network-pre.target
+Wants=network-pre.target
 
 [Service]
-Type=simple
-ExecStart=/root/start-firesim-network.sh
+Type=oneshot
+ExecStart=/etc/firesim/start-firesim-network.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=network.target
