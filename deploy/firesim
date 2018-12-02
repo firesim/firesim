@@ -105,12 +105,12 @@ def buildafi(globalbuildconf):
 
     signal.signal(signal.SIGINT, terminate_instances_handler)
 
+    for buildconf in globalbuildconf.get_builds_list():
+        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
     globalbuildconf.launch_build_instances()
-
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
 
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
