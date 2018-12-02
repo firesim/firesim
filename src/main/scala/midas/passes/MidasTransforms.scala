@@ -53,6 +53,7 @@ private[midas] class MidasTransforms(
         // NB: Carelessly removing this pass will break the FireSim manager as we always
         // need to generate the *.asserts file. Fix by baking into driver.
         new AssertPass(dir),
+        new PrintSynthesis(dir),
         new Fame1Transform(Some(lib getOrElse json)),
         new strober.passes.StroberTransforms(dir, lib getOrElse json)) ++
       // Any subFields must be flattened out beforing linking in HighForm constructs must Lower 
