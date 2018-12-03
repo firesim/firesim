@@ -1,5 +1,5 @@
 {
   "name" : "command",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "command" : "echo I Ran!"
 }

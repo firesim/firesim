@@ -16,6 +16,9 @@ from util.util import *
 import pathlib as pth
 import tempfile
 
+if 'RISCV' not in os.environ:
+    sys.exit("Please source firesim/sourceme-manager-f1.sh first\n")
+
 def main():
     parser = argparse.ArgumentParser(
         description="Build and run (in spike or qemu) boot code and disk images for firesim")
@@ -45,19 +48,22 @@ def main():
             help="Launch the specified job. Defaults to running the base image.")
     launch_parser.add_argument('-i', '--initramfs', action='store_true', help="Launch the initramfs version of this workload")
 
-    # Init Command
-    init_parser = subparsers.add_parser(
-            'init', help="Initialize workloads (using 'host_init' script)")
-    init_parser.set_defaults(func=handleInit)
+    # # Init Command
+    # init_parser = subparsers.add_parser(
+    #         'init', help="Initialize workloads (using 'host_init' script)")
+    # init_parser.set_defaults(func=handleInit)
 
     args = parser.parse_args()
+
+    args.workdir = os.path.abspath(args.workdir)
+    # args.config_file = os.path.join(args.workdir, args.config_file)
     args.config_file = os.path.abspath(args.config_file)
 
     initLogging(args)
     log = logging.getLogger()
 
     # Load all the configs from the workload directory
-    cfgs = ConfigManager([os.path.abspath(args.workdir)])
+    cfgs = ConfigManager([args.workdir])
     targetCfg = cfgs[args.config_file]
     
     # Jobs are named with their base config internally 
@@ -262,15 +268,15 @@ def handleLaunch(args, cfgs):
     else:
         launchQemu(config, args.initramfs)
 
-def handleInit(args, cfgs):
-    log = logging.getLogger()
-    config = cfgs[args.config_file]
-    if 'host-init' in config:
-        log.info("Applying host-init: " + config['host-init'])
-        if not os.path.exists(config['host-init']):
-            raise ValueError("host-init script " + config['host-init'] + " not found.")
-
-        run([config['host-init']], cwd=config['workdir'])
+# def handleInit(args, cfgs):
+#     log = logging.getLogger()
+#     config = cfgs[args.config_file]
+#     if 'host-init' in config:
+#         log.info("Applying host-init: " + config['host-init'])
+#         if not os.path.exists(config['host-init']):
+#             raise ValueError("host-init script " + config['host-init'] + " not found.")
+#
+#         run([config['host-init']], cwd=config['workdir'])
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
@@ -301,14 +307,22 @@ def makeBin(config, initramfs=False):
             shutil.copy('riscv-pk/build/bbl', config['bin'] + '-initramfs')
         else:
             shutil.copy('riscv-pk/build/bbl', config['bin'])
-    elif config['distro'] != 'bare':
-        raise ValueError("No linux config defined. This is only supported for workloads based on 'bare'")
+    # elif config['distro'] != 'bare':
+        # raise ValueError("No linux config defined. This is only supported for workloads based on 'bare'")
 
 def makeImage(config):
     log = logging.getLogger()
 
-    shutil.copy(config['base-img'], config['img'])
-    
+    if 'base-img' in config:
+        shutil.copy(config['base-img'], config['img'])
+
+    if 'host-init' in config:
+       log.info("Applying host-init: " + config['host-init'])
+       if not os.path.exists(config['host-init']):
+           raise ValueError("host-init script " + config['host-init'] + " not found.")
+
+       run([config['host-init']], cwd=config['workdir'])
+   
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         applyFiles(config['img'], config['files'])

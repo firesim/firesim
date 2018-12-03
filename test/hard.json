@@ -1,0 +1,5 @@
+{
+  "name" : "hard",
+  "bin" : "hard-bin",
+  "img" : "hard.img"
+}

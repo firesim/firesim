@@ -1,6 +1,6 @@
 {
   "name" : "memcached-thread-imbalance",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "overlay" : "mutilate-loadgen-riscv-release/overlay",
   "host-init" : "host-init.sh",
   "simulation_outputs" : ["uartlog"],

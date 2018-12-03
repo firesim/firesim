@@ -1,0 +1,6 @@
+{
+  "name" : "init",
+  "base" : "br-base.json",
+  "init" : "init.sh",
+  "command" : "echo 'Global : command' >> /root/runOutput && cat /root/runOutput"
+}

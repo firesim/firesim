@@ -236,27 +236,31 @@ class ConfigManager(collections.MutableMapping):
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
+                del self.cfgs[f]
                 # raise
                 continue
             except Exception as e:
                 log.warning("Skipping " + f + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                # raise
+                del self.cfgs[f]
+                raise
                 continue
 
         # Now we recursively fill in defaults from base configs
-        for f in self.cfgs:
+        for f in list(self.cfgs.keys()):
             try:
                 self._initializeFromBase(self.cfgs[f])
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
+                del self.cfgs[f]
                 # raise
                 continue
             except Exception as e:
                 log.warning("Skipping " + f + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                # raise
+                del self.cfgs[f]
+                raise
                 continue
 
             log.debug("Loaded " + f)
@@ -264,15 +268,24 @@ class ConfigManager(collections.MutableMapping):
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.
     def _initializeFromBase(self, cfg):
+        log = logging.getLogger()
         if cfg.initialized == True:
             # Memoizaaaaaaation!
             return
         else:
-            baseCfg = self.cfgs[cfg['base']]
-            if baseCfg.initialized == False:
-                self._initializeFromBase(baseCfg)
+            if 'base' in cfg:
+                try:
+                    baseCfg = self.cfgs[cfg['base']]
+                except KeyError as e:
+                    if e.args[0] != 'base' and e.args[0] == cfg['base']:
+                        log.warning("Base config '" + cfg['base'] + " not found.")
+                    raise
 
-            cfg.applyBase(baseCfg)
+                if baseCfg.initialized == False:
+                    self._initializeFromBase(baseCfg)
+
+                cfg.applyBase(baseCfg)
+
             # must set initialized to True before handling jobs because jobs
             # will reference this config (we'd infinite loop without memoization)
             cfg.initialized = True
@@ -290,6 +303,7 @@ class ConfigManager(collections.MutableMapping):
         self.cfgs[key] = value
 
     def __delitem__(self, key):
+        print("I RAN!")
         del self.cfgs[key]
 
     def __iter__(self):

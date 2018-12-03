@@ -1,7 +1,7 @@
 {
   "name" : "smoke0",
   "workdir" : "smoke0-workdir",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "files" : [ [ "runOutput", "/root/" ] ],
   "init" : "init.sh",
   "command" : "echo global : command >> /root/runOutput; cat /root/runOutput"

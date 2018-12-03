@@ -1,5 +1,5 @@
 {
   "name" : "run",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "run" : "run.sh"
 }

@@ -1,7 +1,6 @@
 {
   "name" : "smoke2",
-  "workdir" : "smoke2",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "overlay" : "overlay",
   "init" : "init.sh",
   "run" : "run.sh",

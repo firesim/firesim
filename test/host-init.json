@@ -1,6 +1,6 @@
 {
   "name" : "host-init",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "files" : [["runOutput", "/root/"]],
   "host-init" : "host-init.sh",
   "command" : "cat /root/runOutput"

@@ -1,6 +1,6 @@
 {
   "name" : "example-fed",
-  "base" : "fedora-disk.json",
+  "base" : "fedora-base.json",
   "overlay" : "overlay",
   "init" : "init.sh",
   "host-init" : "host-init.sh",

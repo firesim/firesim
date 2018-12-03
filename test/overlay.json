@@ -1,6 +1,6 @@
 {
   "name" : "overlay",
-  "base" : "br-disk.json",
+  "base" : "br-base.json",
   "overlay" : "overlay",
   "command" : "cat /root/runOutput"
 }
