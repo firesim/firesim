@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <cstdlib>
 
-#define IGNORE_PRINTF
+//#define IGNORE_PRINTF
 
 #ifdef IGNORE_PRINTF
 #define printf(fmt, ...) (0)
@@ -117,6 +117,10 @@ for (int port = 0; port < NUMPORTS; port++) {
             if (is_last_flit(input_port_buf, tokenno)) {
                 current_port->inputqueue.push(sp);
                 current_port->input_in_progress = NULL;
+
+                printf("packet timestamp: %ld, len: %ld, sender: %d\n",
+                        this_iter_cycles_start + tokenno,
+                        sp->amtwritten, port);
             }
         }
     }
@@ -162,8 +166,8 @@ while (!pqueue.empty()) {
     switchpacket * tsp = pqueue.top().switchpack;
     pqueue.pop();
     uint16_t send_to_port = get_port_from_flit(tsp->dat[0], 0 /* junk remove arg */);
-    printf("packet for port: %x\n", send_to_port);
-    printf("packet timestamp: %ld\n", tsp->timestamp);
+    //printf("packet for port: %x\n", send_to_port);
+    //printf("packet timestamp: %ld\n", tsp->timestamp);
     if (send_to_port == BROADCAST_ADJUSTED) {
 #define ADDUPLINK (NUMUPLINKS > 0 ? 1 : 0)
         // this will only send broadcasts to the first (zeroeth) uplink.
