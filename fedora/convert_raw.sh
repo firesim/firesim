@@ -68,8 +68,8 @@ sudo cp ./ifcfg-static $MNT/etc/firesim/
 sudo cp ./ifcfg-dhcp $MNT/etc/firesim/
 sudo chmod 755 $MNT/etc/firesim/start-firesim-network.sh
 sudo chmod 644 $MNT/etc/systemd/system/firesim-net.service
-sudo mkdir -p $MNT/etc/systemd/system/multi-user.target.wants
-sudo ln -s /etc/systemd/system/firesim-net.service $MNT/etc/systemd/system/multi-user.target.wants/firesim-net.service
+sudo mkdir -p $MNT/etc/systemd/system/network.target.wants
+sudo ln -s /etc/systemd/system/firesim-net.service $MNT/etc/systemd/system/network.target.wants/firesim-net.service
 
 # fix serial port
 sudo cp ./getty@.service $MNT/usr/lib/systemd/system/
