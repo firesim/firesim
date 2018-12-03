@@ -1,0 +1,6 @@
+{
+  "benchmark_name" : "ring-reduce-256",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : "dummy.ext2",
+  "common_bootbinary": "ring.riscv"
+}
