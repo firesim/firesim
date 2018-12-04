@@ -1,4 +1,3 @@
-
 struct switchpacket {
     uint64_t timestamp;
     uint64_t dat[200];
@@ -91,6 +90,13 @@ void BasePort::write_flits_to_output() {
 
             //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
             int i = thispacket->amtread;
+            if (i == 0) {
+                int64_t actual = basetime + flitswritten;
+                int64_t intended = outputtimestamp;
+                int64_t realdiff = (actual > intended) ? (actual - intended) : 0;
+
+		printf("port: %d, timediff: %ld\n", _portNo, realdiff);
+            }
             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
