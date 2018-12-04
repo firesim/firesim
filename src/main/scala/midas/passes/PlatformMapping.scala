@@ -20,7 +20,7 @@ private[passes] class PlatformMapping(
   override def name = "[MIDAS] Platform Mapping"
 
   private def dumpHeader(c: platform.PlatformShim) {
-    def vMacro(arg: (String, Int)): String = s"`define ${arg._1} ${arg._2}\n"
+    def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
 
     val csb = new StringBuilder
     csb append "#ifndef __%s_H\n".format(target.toUpperCase)

@@ -12,9 +12,12 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.AddressSet
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: HostPortIO[Data]
-  def dma: Option[NastiIO]
-  def address: Option[AddressSet]
+  def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
+  val dma: Option[NastiIO] = None
+  // Specify the size that you want the address region to be in the DMA memory map
+  // For proper functioning, the region should be at least as big as the
+  // largest read/write request you plan to send over PCIS
+  val dmaSize: BigInt = BigInt(0)
   val tReset = Flipped(Decoupled(Bool()))
 }
 
@@ -24,13 +27,11 @@ abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
 
 abstract class MemModelConfig // TODO: delete it
 
-class MemModelIO(implicit p: Parameters) extends EndpointWidgetIO()(p){
+class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
   // The default NastiKey is expected to be that of the target
   val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
   def hPort = tNasti
-  val dma = None
-  val address = None
 }
 
 abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
@@ -59,10 +60,10 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   // 3. connect target channels to buffers.
   //   - Transactions are generated / consumed according to timing conditions
   def elaborate(stall: Bool,
-                rCycleValid: Bool = Bool(true),
-                wCycleValid: Bool = Bool(true),
-                rCycleReady: Bool = Bool(true),
-                wCycleReady: Bool = Bool(true)) = {
+                rCycleValid: Bool = true.B,
+                wCycleValid: Bool = true.B,
+                rCycleReady: Bool = true.B,
+                wCycleReady: Bool = true.B) = {
     val fire = tFire && !stall
     fire suggestName "fire"
     io.tNasti.toHost.hReady := fire

@@ -15,7 +15,7 @@ import java.io.{File, FileWriter, StringWriter}
 
 import midas.core.SimUtils._
 
-private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.Transform {
+private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extends firrtl.Transform {
 
   override def name = "[MIDAS] ChannelizeTargetIO"
   def inputForm = LowForm
@@ -31,9 +31,8 @@ private[passes] class ChannelizeTargetIO(io: Seq[chisel3.Data]) extends firrtl.T
     }).get
 
     val topModulePortMap: Map[String, Port] = topModule.ports.map({p => p.name -> p}).toMap
-    val ioElements = io.map({port => port.instanceName -> port })
 
-    val (wireSinks, wireSources, rvSinks, rvSources) = parsePortsSeq(ioElements, alsoFlattenRVPorts = false)
+    val (wireSinks, wireSources, rvSinks, rvSources) = parsePortsSeq(io, alsoFlattenRVPorts = false)
 
     // Helper functions to generate annotations and ReferenceTargets
     def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)

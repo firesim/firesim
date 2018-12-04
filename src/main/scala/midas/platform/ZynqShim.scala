@@ -9,9 +9,11 @@ import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
 
+import midas.core.HostMemChannelNastiKey
+
 abstract class PlatformShim(implicit p: Parameters) extends Module {
   def top: midas.core.FPGATop
-  def headerConsts: Seq[(String, Int)]
+  def headerConsts: Seq[(String, Long)]
   def genHeader(sb: StringBuilder, target: String) {
     import widgets.CppGenerationUtils._
     sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
@@ -29,20 +31,19 @@ abstract class PlatformShim(implicit p: Parameters) extends Module {
 }
 
 case object MasterNastiKey extends Field[NastiParameters]
-case object SlaveNastiKey extends Field[NastiParameters]
 
 class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
-  val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) }))
+  val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) }))
 }
 
 class ZynqShim(simIo: midas.core.SimWrapperIO)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new ZynqShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
-  val headerConsts = List(
+  val headerConsts = List[(String, Long)](
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
-    "MEM_WIDTH"  -> p(SlaveNastiKey).dataBits / 8
+    "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8
   ) ++ top.headerConsts
 
   top.io.ctrl <> io.master

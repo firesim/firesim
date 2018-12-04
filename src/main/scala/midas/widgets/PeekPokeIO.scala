@@ -28,10 +28,10 @@ class RVChannelRecord(channels: Seq[RVChTuple]) extends Record {
 }
 
 class PeekPokeIOWidgetIO(
-  inputs: Seq[ChTuple],
-  outputs: Seq[ChTuple],
-  rvInputs: Seq[RVChTuple],
-  rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends WidgetIO()(p) {
+  val inputs: Seq[ChTuple],
+  val outputs: Seq[ChTuple],
+  val rvInputs: Seq[RVChTuple],
+  val rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
   // Place for a heterogenous seq
   val ins  = new ChannelRecord(inputs)

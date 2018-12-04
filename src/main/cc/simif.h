@@ -38,12 +38,18 @@ class simif_t
     // random numbers
     uint64_t seed;
     std::mt19937_64 gen;
+    MASTER_struct * master_mmio_addrs;
+#ifdef LOADMEM_0
+    LOADMEM_struct * loadmem_mmio_addrs;
+#endif
+    DEFAULTIOWIDGET_struct * defaultiowidget_mmio_addrs;
+    midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {
-      write(MASTER(STEP), n);
+      write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
-#ifdef LOADMEM
+#ifdef LOADMEM_0
     virtual void load_mem(std::string filename);
 #endif
 
@@ -52,7 +58,7 @@ class simif_t
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
     virtual void step(uint32_t n, bool blocking = true);
-    inline bool done() { return read(MASTER(DONE)); }
+    inline bool done() { return read(this->master_mmio_addrs->DONE); }
 
     // Widget communication
     virtual void write(size_t addr, data_t data) = 0;
@@ -92,7 +98,7 @@ class simif_t
     void peek(size_t id, mpz_t& value);
     bool expect(size_t id, mpz_t& expected);
 
-#ifdef LOADMEM
+#ifdef LOADMEM_0
     void read_mem(size_t addr, mpz_t& value);
     void write_mem(size_t addr, mpz_t& value);
     void write_mem_chunk(size_t addr, mpz_t& value, size_t bytes);
@@ -124,27 +130,42 @@ class simif_t
     size_t sample_num;
     size_t last_sample_id;
     std::string sample_file;
+    uint64_t sample_cycle;
+    uint64_t snap_cycle;
 
-    size_t tracelen;
     size_t trace_count;
 
     // profile information
     bool profile;
     size_t sample_count;
     midas_time_t sample_time;
-    midas_time_t sim_start_time;
 
     void init_sampling(int argc, char** argv);
     void finish_sampling();
     void reservoir_sampling(size_t n);
+    void deterministic_sampling(size_t n);
     size_t trace_ready_valid_bits(
       sample_t* sample, bool poke, size_t id, size_t bits_id);
     inline void save_sample();
 
   protected:
-    size_t get_tracelen() const { return tracelen; }
-    sample_t* read_snapshot();
+    size_t tracelen;
+    sample_t* read_snapshot(bool load = false);
     sample_t* read_traces(sample_t* s);
+
+  public:
+    uint64_t get_snap_cycle() const {
+      return snap_cycle;
+    }
+    uint64_t get_sample_cycle() const {
+      return sample_cycle;
+    }
+    void set_sample_cycle(uint64_t cycle) {
+      sample_cycle = cycle;
+    }
+    void set_trace_count(uint64_t count) {
+      trace_count = count;
+    }
 #endif
 };
 
