@@ -51,7 +51,7 @@ object MidasCompiler {
   def apply(
       chirrtl: Circuit,
       targetAnnos: Seq[Annotation],
-      io: Seq[Data],
+      io: Seq[(String, Data)],
       dir: File,
       lib: Option[File],
       targetTransforms: Seq[Transform], // Run pre-MIDAS transforms, on the target RTL
@@ -92,7 +92,7 @@ object MidasCompiler {
     lazy val target = w
     val circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
-    val io = target.getPorts map (_.id)
+    val io = target.getPorts map (p => p.id.instanceName -> p.id)
     apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, libFile, targetTransforms, hostTransforms)
   }
 }

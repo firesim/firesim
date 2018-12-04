@@ -15,7 +15,7 @@ import firrtl.transforms.fame
 import Utils._
 import java.io.{File, FileWriter}
 
-private class WCircuit(
+private[passes] class WCircuit(
   info: Info,
   modules: Seq[DefModule],
   main: String,
@@ -35,7 +35,7 @@ object MidasAnnotation {
 }
 
 private[midas] class MidasTransforms(
-    io: Seq[chisel3.Data])
+    io: Seq[(String, chisel3.Data)])
     (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
@@ -50,6 +50,9 @@ private[midas] class MidasTransforms(
         new firrtl.transforms.DeadCodeElimination,
         new ConfToJSON(conf, json),
         new barstools.macros.MacroCompilerTransform,
+        // NB: Carelessly removing this pass will break the FireSim manager as we always
+        // need to generate the *.asserts file. Fix by baking into driver.
+        new AssertPass(dir),
         new ResolveAndCheck,
         new HighFirrtlToMiddleFirrtl,
         new MiddleFirrtlToLowFirrtl,
@@ -103,13 +106,15 @@ class Fame1Instances extends Transform {
   }
 }
 
-// This is currently implemented by the enclosing project
-case class FpgaDebugAnnotation(target: chisel3.core.Data)
-    extends chisel3.experimental.ChiselAnnotation {
-  def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
-}
-
-case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
-    SingleTargetAnnotation[ComponentName] {
-  def duplicate(n: ComponentName) = this.copy(target = n)
+/* Instead of passing a data structure between pre-FAME target-transforming passes 
+ * Add NoTargetAnnotations that can regenerate a chisel type from a HighForm port
+ *
+ * Initially i tried extending SingleTargetAnnotation but we need a LowForm
+ * inner circuit to do linking (if the wrapping circuit is LowForm), and thus the target
+ *  will have lost its subFields when we go to regenerate the ChiselIO.
+ */
+case class AddedTargetIoAnnotation[T <: chisel3.Data](port: Port, gen: Port => T) extends NoTargetAnnotation {
+  def generateChiselIO(): Tuple2[String, T] = {
+    (port.name, gen(port))
+  }
 }

@@ -33,7 +33,7 @@ private[passes] object ReferenceTargetToPortMap {
 }
 
 private[passes] class SimulationMapping(
-    io: Seq[chisel3.Data])
+    io: Seq[(String, chisel3.Data)])
   (implicit param: Parameters) extends firrtl.Transform {
 
   def inputForm = LowForm
@@ -79,12 +79,18 @@ private[passes] class SimulationMapping(
     // Generate a port map to look up the types of the IO of the channels
     val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
 
+    // Look up new IO than may have been added by instrumentation or debugging passes
+    val newTargetIO = innerState.annotations.collect({
+      case a @ AddedTargetIoAnnotation(_,_) => a.generateChiselIO()
+    })
+
     // Now lower the inner circuit in preparation for linking
     // This prevents having to worry about matching aggregate structure in the wrapper IO
     val loweredInnerState = new IntermediateLoweringCompiler(innerState.form, LowForm).compile(innerState, Seq())
     val innerCircuit = loweredInnerState.circuit
 
-    lazy val sim = new SimWrapper(io, chAnnos, portTypeMap)
+    lazy val sim = new SimWrapper(io, newTargetIO, chAnnos, portTypeMap)
+
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
@@ -104,6 +110,7 @@ private[passes] class SimulationMapping(
     // FIXME: Renamer complains if i leave these in
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case ch: FAMEChannelAnnotation => false
+      case AddedTargetIoAnnotation(_,_) => false
       case _ => true
     })
 

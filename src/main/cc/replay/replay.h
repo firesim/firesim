@@ -137,7 +137,7 @@ private:
           samples.push_back(sample);
           steps = 0;
           break;
-        case LOAD:
+        case STATE_LOAD:
           iss >> t >> id >> valstr >> idx;
           value = (mpz_t*)malloc(sizeof(mpz_t));
           mpz_init(*value);

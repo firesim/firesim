@@ -244,13 +244,13 @@ class TargetBox(chAnnos: Seq[FAMEChannelAnnotation],
   val io = IO(new TargetBoxIO(chAnnos, leafTypeMap))
 }
 
-class SimWrapperIO(val targetIo: Seq[Data],
+class SimWrapperIO(val targetIo: Seq[(String, Data)],
                    val chAnnos: Seq[FAMEChannelAnnotation])(implicit val p: Parameters) extends Record {
   //import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
 
   // Generate (ChLeafType -> flatName: String) tuples that identify all of the token
   // channels on the target
-  val channelizedPorts = targetIo.map({ port => port -> SimUtils.parsePorts(port, port.instanceName, false) })
+  val channelizedPorts = targetIo.map({ case (name, port) => port -> SimUtils.parsePorts(port, name, false) })
   val portToChannelsMap = ListMap(channelizedPorts:_*)
 
   // Need a beter name for this
@@ -318,7 +318,7 @@ class SimWrapperIO(val targetIo: Seq[Data],
       }
     }
   }
-  targetIo.foreach({ port => findEndpoint(port.instanceName, port)})
+  targetIo.foreach({ case (name, port) => findEndpoint(name, port)})
 
   /*** Wire Channels ***/
   val endpointWires = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
@@ -361,10 +361,31 @@ class SimBox(simIo: SimWrapperIO) (implicit val p: Parameters) extends BlackBox 
   })
 }
 
-class SimWrapper(targetIo: Seq[Data],
+class SimWrapper(targetIo: Seq[(String, Data)],
+                 generatedTargetIo: Seq[(String, Data)],
                  chAnnos: Seq[FAMEChannelAnnotation],
                  leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
-  val channelPorts = IO(new SimWrapperIO(targetIo, chAnnos))
+
+
+  // HACK: We need actual hardware for SimUtils.parsePorts to work -> so create
+  // a dummy module with the added ports bound as its IO
+  // This can be cleaned up when we rework endpoint
+  val boundGeneratedTargetIO: Seq[(String, Data)] =  {
+    class DummyIO(val generatedTargetIo: Seq[(String, Data)]) extends Record {
+      val elements = ListMap((generatedTargetIo.map({ case(name, elm) => name -> elm.cloneType })):_*)
+      override def cloneType: this.type = new DummyIO(generatedTargetIo).asInstanceOf[this.type]
+    }
+
+    class Dummy extends Module {
+      val io = IO(new DummyIO(generatedTargetIo))
+      io <> DontCare
+    }
+    val dummy = Module(new Dummy)
+    dummy.io <> DontCare
+    dummy.io.elements.toSeq
+  }
+
+  val channelPorts = IO(new SimWrapperIO(targetIo ++ boundGeneratedTargetIO, chAnnos))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
   target.io.hostReset := reset.toBool && hostReset
