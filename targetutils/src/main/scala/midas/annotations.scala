@@ -3,7 +3,7 @@
 package midas.targetutils
 
 import chisel3._
-import chisel3.experimental.{RawModule, ChiselAnnotation, dontTouch}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
 
 import firrtl.{RenameMap}
 import firrtl.annotations.{SingleTargetAnnotation, ComponentName} // Deprecated
@@ -53,17 +53,17 @@ case class SynthPrintfAnnotation(
 private[midas] case class ChiselSynthPrintfAnnotation(
     format: String,
     args: Seq[Bits],
-    mod: RawModule) extends ChiselAnnotation {
+    mod: BaseModule) extends ChiselAnnotation {
   def toFirrtl() = SynthPrintfAnnotation(args.map(_.toNamed.toTarget), mod.toNamed.toTarget, format)
 }
 
 // For now, this needs to be invoked on the arguments to printf, not on the printf itself
 // Eg. printf(SynthesizePrintf("True.B or False.B: Printfs can be annotated: %b\n", false.B))
-trait SynthesizablePrintfs {
-  self: chisel3.experimental.RawModule =>
-
-  def synthesizePrintf(format: String, args: Bits*): Printable = {
-    chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, self))
+object SynthesizePrintf {
+  def apply(format: String, args: Bits*): Printable = {
+    val thisModule = Module.currentModule.getOrElse(
+      throw new RuntimeException("Cannot annotate a printf outside of a Module"))
+    chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule))
     Printable.pack(format, args:_*)
   }
   // TODO: Accept a printable -> need to somehow get the format string from it
