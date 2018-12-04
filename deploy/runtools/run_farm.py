@@ -22,15 +22,17 @@ class MockBoto3Instance:
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
 class EC2Inst(object):
-    # for now, we require that only one switch is mapped to each host
-    # this could be overridden based on instance type later
-    SWITCH_SLOTS = 1
+    # TODO: this is leftover from when we could only support switch slots.
+    # This can be removed once self.switch_slots is dynamically allocated.
+    # Just make it arbitrarily large for now.
+    SWITCH_SLOTS = 100000
 
     def __init__(self):
         self.boto3_instance_object = None
         self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
         self.switch_slots_consumed = 0
         self.instance_deploy_manager = InstanceDeployManager(self)
+        self._next_port = 10000 # track ports to allocate for server switch model ports
 
     def assign_boto3_instance_object(self, boto3obj):
         self.boto3_instance_object = boto3obj
@@ -48,8 +50,16 @@ class EC2Inst(object):
         firesimswitchnode.assign_host_instance(self)
         self.switch_slots_consumed += 1
 
-    def get_num_switch_slots(self):
-        return self.SWITCH_SLOTS
+    def get_num_switch_slots_consumed(self):
+        return self.switch_slots_consumed
+
+    def allocate_host_port(self):
+        """ Allocate a port to use for something on the host. Successive calls
+        will return a new port. """
+        retport = self._next_port
+        assert retport < 11000, "Exceeded number of ports used on host. You will need to modify your security groups to increase this value."
+        self._next_port += 1
+        return retport
 
 class F1_Instance(EC2Inst):
     FPGA_SLOTS = 0
@@ -314,36 +324,66 @@ class InstanceDeployManager:
             run('mkdir -p /home/centos/edma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
                 '/home/centos/edma/', mirror_local_mode=True)
-            with cd('/home/centos/edma/linux_kernel_drivers/edma/'):
+            with cd('/home/centos/edma/linux_kernel_drivers/xdma/'):
                 run('make')
 
     def unload_edma(self):
         self.instance_logger("Unloading EDMA Driver Kernel Module.")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-            run('sudo rmmod edma-drv')
+            run('sudo rmmod xdma')
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo fpga-clear-local-image -S {}""".format(slotno))
+                run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+        for slotno in range(self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
 
     def flash_fpgas(self):
+        dummyagfi = None
         for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
             if firesimservernode is not None:
                 agfi = firesimservernode.get_agfi()
+                dummyagfi = agfi
                 self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
                 with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""sudo fpga-load-local-image -S {} -I {}""".format(
+                    run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
                         slotno, agfi))
+
+        # We only do this because XDMA hangs if some of the FPGAs on the instance
+        # are left in the cleared state. So, if you're only using some of the
+        # FPGAs on an instance, we flash the rest with one of your images
+        # anyway. Since the only interaction we have with an FPGA right now
+        # is over PCIe where the software component is mastering, this can't
+        # break anything.
+        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Flashing FPGA Slot: {} with dummy agfi: {}.""".format(slotno, dummyagfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
+                    slotno, dummyagfi))
+
+        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
+            if firesimservernode is not None:
+                self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
+                with StreamLogger('stdout'), StreamLogger('stderr'):
+                    run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+
+        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, dummyagfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+
 
     def load_edma(self):
         """ load the edma kernel module. """
         self.instance_logger("Loading EDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/edma/linux_kernel_drivers/edma/edma-drv.ko single_transaction_size=65536 transient_buffer_size=67108864 edma_queue_depth=1024 poll_mode=1")
+            run("sudo insmod /home/centos/edma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
@@ -377,8 +417,10 @@ class InstanceDeployManager:
 
         files_to_copy = serv.get_required_files_local_paths()
         for filename in files_to_copy:
+            # here, filename is a pair of (local path, remote path)
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                rsync_cap = rsync_project(local_dir=filename, remote_dir=remote_sim_rsync_dir,
+                # -z --inplace
+                rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
                               ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
@@ -469,7 +511,7 @@ class InstanceDeployManager:
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
-            for slotno in range(self.parentnode.get_num_switch_slots()):
+            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
                 self.copy_switch_slot_infrastructure(slotno)
 
 
@@ -480,7 +522,7 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-            for slotno in range(self.parentnode.get_num_switch_slots()):
+            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
                 self.start_switch_slot(slotno)
 
     def start_simulations_instance(self):
@@ -493,7 +535,7 @@ class InstanceDeployManager:
     def kill_switches_instance(self):
         """ Kill all the switches on this instance. """
         if self.instance_assigned_switches():
-            for slotno in range(self.parentnode.get_num_switch_slots()):
+            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
                 self.kill_switch_slot(slotno)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
@@ -541,7 +583,9 @@ class InstanceDeployManager:
             if teardown:
                 # handle the case where we're just tearing down nodes that have
                 # ONLY switches
-                for counter, switchsim in enumerate(self.parentnode.switch_slots):
+                numswitchesused = self.parentnode.get_num_switch_slots_consumed()
+                for counter in range(numswitchesused):
+                    switchsim = self.parentnode.switch_slots[counter]
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
 
                 if terminateoncompletion:
@@ -555,7 +599,7 @@ class InstanceDeployManager:
 
             # not teardown - just get the status of the switch sims
             switchescompleteddict = {k: False for k in self.running_simulations()['switches']}
-            for switchsim in self.parentnode.switch_slots:
+            for switchsim in self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]:
                 swname = switchsim.switch_builder.switch_binary_name()
                 if swname not in switchescompleteddict.keys():
                     switchescompleteddict[swname] = True
@@ -587,7 +631,7 @@ class InstanceDeployManager:
 
             if self.instance_assigned_switches():
                 # fill in whether switches have terminated for some reason
-                for switchsim in self.parentnode.switch_slots:
+                for switchsim in self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]:
                     swname = switchsim.switch_builder.switch_binary_name()
                     if swname not in switchescompleteddict.keys():
                         switchescompleteddict[swname] = True
@@ -626,7 +670,7 @@ class InstanceDeployManager:
 
                 self.kill_switches_instance()
 
-                for counter, switchsim in enumerate(self.parentnode.switch_slots):
+                for counter, switchsim in enumerate(self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]):
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
 
             if now_done and terminateoncompletion:

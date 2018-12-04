@@ -14,11 +14,22 @@ import firesim.endpoints._
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
+object DesiredHostFrequency extends Field[Int](190) // In MHz
+
+class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
+    case DesiredHostFrequency => freq
+})
 
 // Removes default endpoints from the MIDAS-provided config
 class BasePlatformConfig extends Config(new Config((site, here, up) => {
     case EndpointKey => EndpointMap(Seq.empty)
 }) ++ new midas.F1Config)
+
+// Experimental: mixing this in will enable assertion synthesis
+class WithSynthAsserts extends Config((site, here, up) => {
+  case midas.SynthAsserts => true
+  case EndpointKey => EndpointMap(Seq(new midas.widgets.AssertBundleEndpoint)) ++ up(EndpointKey)
+})
 
 class WithSerialWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
@@ -164,6 +175,7 @@ class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
 * determine which driver to build.
 *******************************************************************************/
 class FireSimConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -172,7 +184,20 @@ class FireSimConfig extends Config(
   new WithTracerVWidget ++
   new BasePlatformConfig)
 
+class FireSimConfig160MHz extends Config(
+  new WithDesiredHostFrequency(160) ++
+  new FireSimConfig)
+
+class FireSimConfig90MHz extends Config(
+  new WithDesiredHostFrequency(90) ++
+  new FireSimConfig)
+
+class FireSimConfig75MHz extends Config(
+  new WithDesiredHostFrequency(75) ++
+  new FireSimConfig)
+
 class FireSimClockDivConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -181,6 +206,7 @@ class FireSimClockDivConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3Config extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -189,6 +215,7 @@ class FireSimDDR3Config extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3LLC4MBConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -197,6 +224,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -205,6 +233,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -212,7 +241,20 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new FRFCFS16GBQuadRankLLC4MB ++
   new BasePlatformConfig)
 
+class FireSimDDR3FRFCFSLLC4MBConfig160MHz extends Config(
+  new WithDesiredHostFrequency(160) ++
+  new FireSimDDR3FRFCFSLLC4MBConfig)
+
+class FireSimDDR3FRFCFSLLC4MBConfig90MHz extends Config(
+  new WithDesiredHostFrequency(90) ++
+  new FireSimDDR3FRFCFSLLC4MBConfig)
+
+class FireSimDDR3FRFCFSLLC4MBConfig75MHz extends Config(
+  new WithDesiredHostFrequency(75) ++
+  new FireSimDDR3FRFCFSLLC4MBConfig)
+
 class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
+  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++

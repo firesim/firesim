@@ -11,7 +11,9 @@ TIME_STEP = 100000
 CYCLES_PER_NANO = 3.2
 CYCLES_PER_MILLI = CYCLES_PER_NANO * 1e6
 BITS_PER_WORD = 64
-END_CYCLE = 800 * 1000 * 1000
+TEST_PERIOD = 100 * 1000 * 1000
+START_CYCLE = TEST_PERIOD
+END_CYCLE = 9 * TEST_PERIOD
 
 def parse_log(f):
     data = []
@@ -31,11 +33,11 @@ def compute_bw(packet_data):
         if ts >= END_CYCLE:
             break
         if ts >= window_end:
-            if cur_total > 0:
+            while window_end < ts:
                 cycles.append(window_end)
                 totals.append(cur_total)
-            window_end = (ts // TIME_STEP + 1) * TIME_STEP
-            cur_total = 0
+                window_end += TIME_STEP
+                cur_total = 0
         else:
             cur_total += plen
     cycles.append(window_end)
@@ -75,7 +77,7 @@ def main():
             series.append(ser)
 
     for i in range(1, 8):
-        cycle = i * END_CYCLE / 8
+        cycle = i * TEST_PERIOD + START_CYCLE
         millis = cycle / CYCLES_PER_MILLI
         plt.axvline(x=millis, color='gray', linewidth=1, linestyle=':')
 
@@ -87,11 +89,13 @@ def main():
     ax.text(108, 145, '40 Gb/s', size='10')
     ax.text(40, 185, '100 Gb/s', size='10')
 
+    start_time = START_CYCLE / CYCLES_PER_MILLI
+    end_time = END_CYCLE / CYCLES_PER_MILLI
 
     #plt.legend(series, ['1 Gb/s', '10 Gb/s', '40 Gb/s', '100 Gb/s'])
     plt.xlabel("Time (ms)", size='10')
     plt.ylabel("Bandwidth (Gb/s)", size='10')
-    plt.axis([0, END_CYCLE / CYCLES_PER_MILLI, 0, 210])
+    plt.axis([start_time, end_time, 0, 210])
     plt.savefig(outputfile)
     plt.show()
 

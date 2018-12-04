@@ -27,6 +27,8 @@
 #include "Stack.h"
 #elif defined DESIGNNAME_WireInterconnect
 #include "WireInterconnect.h"
+#elif defined DESIGNNAME_AssertModule
+#include "AssertModule.h"
 #endif
 
 class dut_emul_t:

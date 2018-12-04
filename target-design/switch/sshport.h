@@ -60,7 +60,7 @@ static int tuntap_alloc(const char *dev, int flags) {
 #define DEVNAME_BYTES 128
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
-SSHPort::SSHPort(int portNo) : BasePort(portNo) {
+SSHPort::SSHPort(int portNo) : BasePort(portNo, false) {
     char * slotid = NULL; // placeholder for multiple SSH port support if we need it later
     char devname[DEVNAME_BYTES+1];
     devname[0] = '\0';
@@ -86,6 +86,12 @@ void SSHPort::send() {
     // here, we take data that was written to the port by the switch
     // (data is in current_output_buf)
     // and push it into queues to send into the TAP
+
+    if (((uint64_t*)current_output_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+        // if compress flag is set, clear it, this port type doesn't care
+        // (and in fact, we're writing too much, so stuff later will get confused)
+        ((uint64_t*)current_output_buf)[0] = 0L;
+    }
 
     // first, push into out_flits queue
     for (int tokenno = 0; tokenno < NUM_TOKENS; tokenno++) {

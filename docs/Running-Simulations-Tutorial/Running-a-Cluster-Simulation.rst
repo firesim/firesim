@@ -29,29 +29,27 @@ If you already built target software during the single-node tutorial, you can
 skip to the next part (Setting up the manager configuration). If you haven't followed the single-node tutorial,
 continue with this section.
 
-In these instructions, we'll assume that you want to boot Linux on each of the
-nodes in your
-simulated cluster. To do so, we'll need to build our FireSim-compatible RISC-V
-Linux distro. You can do this like so:
+In these instructions, we'll assume that you want to boot the buildroot-based
+Linux distribution on each of the nodes in your simulated cluster. To do so,
+we'll need to build our FireSim-compatible RISC-V Linux distro. You can do
+this like so:
 
 ::
 
     cd firesim/sw/firesim-software
-    ./build.sh
+    ./sw-manager.py -c br-disk.json build
 
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/bbl-vmlinux[0-7]`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/br-disk-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/rootfs[0-7].ext2`` - a disk image for
+-  ``firesim/sw/firesim-software/images/br-disk.img`` - a disk image for
    each the nodes we will simulate
 
-The fact that there are 8 of these is a relic from the days when we ran
-FireSim simulations by hand (they are all the same) -- in most cases, only
-``bbl-vmlinux0`` and ``rootfs0.ext2`` will used to form base images to either
-build more complicated workloads (see the :ref:`defining-custom-workloads`
-section) or to copy around for deploying.
+These files will be used to form base images to either build more complicated
+workloads (see the :ref:`defining-custom-workloads` section) or to copy around
+for deploying.
 
 Setting up the manager configuration
 -------------------------------------
@@ -83,9 +81,10 @@ AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
 As in the single-node tutorial, we will leave the last section (``[workload]``)
-unchanged here, since we do want to run Linux on our simulated system. The
-``terminateoncompletion`` feature is an advanced feature that you can learn
-more about in the :ref:`manager-configuration-files` section.
+unchanged here, since we do want to run the buildroot-based Linux on our
+simulated system. The ``terminateoncompletion`` feature is an advanced feature
+that you can learn more about in the :ref:`manager-configuration-files`
+section.
 
 As a final sanity check, your ``config_runtime.ini`` file should now look like this:
 

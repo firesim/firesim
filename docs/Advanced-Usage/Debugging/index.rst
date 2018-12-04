@@ -11,3 +11,4 @@ This section describes methods of debugging the target design and the simulation
    RTL-Simulation.rst
    Debugging-Hardware-Using-ILA.rst
    TracerV.rst
+   DESSERT.rst

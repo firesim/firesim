@@ -8,6 +8,79 @@ from fabric.api import *
 
 rootLogger = logging.getLogger()
 
+
+class FireSimLink(object):
+    """ This represents a link that connects different FireSimNodes.
+
+    Terms:
+        Naming assumes a tree-ish topology, with roots at the top, leaves at the
+        bottom. So in a topology like:
+                        RootSwitch
+                        /        \
+              Link A   /          \  Link B
+                      /            \
+                    Sim X         Sim Y
+
+        "Uplink side" of Link A is RootSwitch.
+        "Downlink side" of Link A is Sim X.
+        Sim X has an uplink connected to RootSwitch.
+        RootSwitch has a downlink to Sim X.
+
+    """
+
+    # links have a globally unique identifier, currently used for naming
+    # shmem regions for Shmem Links
+    next_unique_link_identifier = 0
+
+    def __init__(self, uplink_side, downlink_side):
+        self.id = FireSimLink.next_unique_link_identifier
+        FireSimLink.next_unique_link_identifier += 1
+        # format as 100 char hex string padded with zeroes
+        self.id_as_str = format(self.id, '0100X')
+        self.uplink_side = None
+        self.downlink_side = None
+        self.port = None
+        self.set_uplink_side(uplink_side)
+        self.set_downlink_side(downlink_side)
+
+    def set_uplink_side(self, fsimnode):
+        self.uplink_side = fsimnode
+
+    def set_downlink_side(self, fsimnode):
+        self.downlink_side = fsimnode
+
+    def get_uplink_side(self):
+        return self.uplink_side
+
+    def get_downlink_side(self):
+        return self.downlink_side
+
+    def link_hostserver_port(self):
+        """ Get the port used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        if self.port is None:
+            self.port = self.get_uplink_side().host_instance.allocate_host_port()
+        return self.port
+
+    def link_hostserver_ip(self):
+        """ Get the IP address used for this Link. This should only be called for
+        links implemented with SocketPorts. """
+        assert self.get_uplink_side().host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
+        return self.get_uplink_side().host_instance.get_private_ip()
+
+    def link_crosses_hosts(self):
+        """ Return True if the user has mapped the two endpoints of this link to
+        separate hosts. This implies a SocketServerPort / SocketClientPort will be used
+        to implement the Link. If False, use a sharedmem port to implement the link. """
+        if type(self.get_downlink_side()) == FireSimDummyServerNode:
+            return False
+        return self.get_uplink_side().host_instance != self.get_downlink_side().host_instance
+
+    def get_global_link_id(self):
+        """ Return the globally unique link id, used for naming shmem ports. """
+        return self.id_as_str
+
+
 class FireSimNode(object):
     """ This represents a node in the high-level FireSim Simulation Topology
     Graph. These nodes are either
@@ -28,6 +101,8 @@ class FireSimNode(object):
 
     def __init__(self):
         self.downlinks = []
+        # used when there are multiple links between switches to disambiguate
+        #self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -35,21 +110,23 @@ class FireSimNode(object):
         """ A "downlink" is a link that will take you further from the root
         of the tree. Users define a tree topology by specifying "downlinks".
         Uplinks are automatically inferred. """
-        firesimnode.add_uplink(self)
-        self.downlinks.append(firesimnode)
+        linkobj = FireSimLink(self, firesimnode)
+        firesimnode.add_uplink(linkobj)
+        self.downlinks.append(linkobj)
+        #self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes):
         """ Just a convenience function to add multiple downlinks at once.
         Assumes downlinks in the supplied list are ordered. """
         [self.add_downlink(node) for node in firesimnodes]
 
-    def add_uplink(self, firesimnode):
+    def add_uplink(self, firesimlink):
         """ This is only for internal use - uplinks are automatically populated
         when a node is specified as the downlink of another.
 
         An "uplink" is a link that takes you towards one of the roots of the
         tree."""
-        self.uplinks.append(firesimnode)
+        self.uplinks.append(firesimlink)
 
     def num_links(self):
         """ Return the total number of nodes. """
@@ -75,12 +152,13 @@ class FireSimServerNode(FireSimNode):
     SERVERS_CREATED = 0
 
     def __init__(self, server_hardware_config=None, server_link_latency=None,
-                 server_bw_max=None, trace_enable=None,
-                 trace_start=None, trace_end=None):
+                 server_bw_max=None, server_profile_interval=None,
+                 trace_enable=None, trace_start=None, trace_end=None):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
+        self.server_profile_interval = server_profile_interval
         self.trace_enable = trace_enable
         self.trace_start = trace_start
         self.trace_end = trace_end
@@ -112,10 +190,15 @@ class FireSimServerNode(FireSimNode):
         """ return the command to start the simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
+        shmemportname = "default"
+        if self.uplinks:
+            shmemportname = self.uplinks[0].get_global_link_id()
+
         return self.server_hardware_config.get_boot_simulation_command(
             self.get_mac_address(), self.get_rootfs_name(), slotno,
-            self.server_link_latency, self.server_bw_max, self.get_bootbin_name(),
-            self.trace_enable, self.trace_start, self.trace_end)
+            self.server_link_latency, self.server_bw_max,
+            self.server_profile_interval, self.get_bootbin_name(),
+            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -168,11 +251,12 @@ class FireSimServerNode(FireSimNode):
         an array. """
         all_paths = []
         # todo handle none case
-        all_paths.append(self.get_job().rootfs_path())
-        all_paths.append(self.get_job().bootbinary_path())
+        all_paths.append([self.get_job().rootfs_path(), ''])
+        all_paths.append([self.get_job().bootbinary_path(), ''])
 
-        all_paths.append(self.server_hardware_config.get_local_driver_path())
-        all_paths.append(self.server_hardware_config.get_local_runtime_conf_path())
+        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
     def get_agfi(self):
@@ -190,11 +274,162 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self):
+    def get_rootfs_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self):
+    def get_bootbin_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
         return self.get_job().bootbinary_path().split("/")[-1]
+
+
+class FireSimSuperNodeServerNode(FireSimServerNode):
+    """ This is the main server node for supernode mode. This knows how to
+    call out to dummy server nodes to get all the info to launch the one
+    command line to run the FPGA sim that has N > 1 sims on one fpga.
+
+    TODO: this is currently hardcoded to N=4"""
+
+    def supernode_get_sibling(self, siblingindex):
+        """ return the sibling for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
+            if self == servernode:
+                return self.uplinks[0].get_uplink_side().downlinks[index+siblingindex].get_downlink_side()
+
+    def supernode_get_sibling_mac_address(self, siblingindex):
+        """ return the sibling's mac address for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_mac_address()
+
+    def supernode_get_sibling_rootfs(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
+
+    def supernode_get_sibling_bootbin(self, siblingindex):
+        """ return the sibling's rootfs for supernode mode.
+        siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
+
+    def supernode_get_sibling_rootfs_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
+
+    def supernode_get_sibling_bootbinary_path(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).get_job().bootbinary_path()
+
+    def supernode_get_sibling_link_latency(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).server_link_latency
+
+    def supernode_get_sibling_bw_max(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).server_bw_max
+
+    def supernode_get_sibling_shmemportname(self, siblingindex):
+        return self.supernode_get_sibling(siblingindex).uplinks[0].get_global_link_id()
+
+    def get_sim_start_command(self, slotno):
+        """ return the command to start the simulation. assumes it will be
+        called in a directory where its required_files are already located.
+
+        Currently hardcoded to 4 nodes.
+        """
+        sibling1mac = self.supernode_get_sibling_mac_address(1)
+        sibling2mac = self.supernode_get_sibling_mac_address(2)
+        sibling3mac = self.supernode_get_sibling_mac_address(3)
+
+        sibling1root = self.supernode_get_sibling_rootfs(1)
+        sibling2root = self.supernode_get_sibling_rootfs(2)
+        sibling3root = self.supernode_get_sibling_rootfs(3)
+
+        sibling1bootbin = self.supernode_get_sibling_bootbin(1)
+        sibling2bootbin = self.supernode_get_sibling_bootbin(2)
+        sibling3bootbin = self.supernode_get_sibling_bootbin(3)
+
+        sibling1link_latency = self.supernode_get_sibling_link_latency(1)
+        sibling2link_latency = self.supernode_get_sibling_link_latency(2)
+        sibling3link_latency = self.supernode_get_sibling_link_latency(3)
+
+        sibling1bw_max = self.supernode_get_sibling_bw_max(1)
+        sibling2bw_max = self.supernode_get_sibling_bw_max(2)
+        sibling3bw_max = self.supernode_get_sibling_bw_max(3)
+
+        shmemportname0 = "default"
+        shmemportname1 = "default"
+        shmemportname2 = "default"
+        shmemportname3 = "default"
+
+        if self.uplinks:
+            shmemportname0 = self.uplinks[0].get_global_link_id()
+            shmemportname1 = self.supernode_get_sibling_shmemportname(1)
+            shmemportname2 = self.supernode_get_sibling_shmemportname(2)
+            shmemportname3 = self.supernode_get_sibling_shmemportname(3)
+
+        return self.server_hardware_config.get_supernode_boot_simulation_command(
+            slotno,
+            self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
+            self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
+            self.server_link_latency, sibling1link_latency, sibling2link_latency, sibling3link_latency,
+            self.server_bw_max, sibling1bw_max, sibling2bw_max, sibling3bw_max,
+            self.server_profile_interval,
+            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin,
+            self.trace_enable, self.trace_start, self.trace_end, 
+            shmemportname0, shmemportname1, shmemportname2, shmemportname3)
+
+    def get_required_files_local_paths(self):
+        """ Return local paths of all stuff needed to run this simulation as
+        an array. """
+
+        def get_path_trailing(filepath):
+            return filepath.split("/")[-1]
+        def local_and_remote(filepath, index):
+            return [filepath, get_path_trailing(filepath) + str(index)]
+
+        all_paths = []
+        # todo handle none case
+        all_paths.append([self.get_job().rootfs_path(),
+                          self.get_rootfs_name()])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(1),
+                          self.supernode_get_sibling_rootfs(1)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(2),
+                          self.supernode_get_sibling_rootfs(2)])
+        all_paths.append([self.supernode_get_sibling_rootfs_path(3),
+                          self.supernode_get_sibling_rootfs(3)])
+
+
+        all_paths.append([self.get_job().bootbinary_path(),
+                          self.get_bootbin_name()])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(1),
+                          self.supernode_get_sibling_bootbin(1)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(2),
+                          self.supernode_get_sibling_bootbin(2)])
+        all_paths.append([self.supernode_get_sibling_bootbinary_path(3),
+                          self.supernode_get_sibling_bootbin(3)])
+
+        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
+        all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
+        return all_paths
+
+    def get_rootfs_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
+        return self.get_job().rootfs_path().split("/")[-1]
+
+    def get_bootbin_name(self, dummyindex=0):
+        if dummyindex:
+            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
+        return self.get_job().bootbinary_path().split("/")[-1]
+
+
+class FireSimDummyServerNode(FireSimServerNode):
+    """ This is a dummy server node for supernode mode. """
+    def __init__(self, server_hardware_config=None, server_link_latency=None,
+                 server_bw_max=None):
+        super(FireSimDummyServerNode, self).__init__(server_hardware_config,
+                                                     server_link_latency,
+                                                     server_bw_max)
 
 
 class FireSimSwitchNode(FireSimNode):
@@ -206,13 +441,14 @@ class FireSimSwitchNode(FireSimNode):
     # used to give switches a global ID
     SWITCHES_CREATED = 0
 
-    def __init__(self, switching_latency=None, link_latency=None):
+    def __init__(self, switching_latency=None, link_latency=None, bandwidth=None):
         super(FireSimSwitchNode, self).__init__()
         self.switch_id_internal = FireSimSwitchNode.SWITCHES_CREATED
         FireSimSwitchNode.SWITCHES_CREATED += 1
         self.switch_table = None
         self.switch_link_latency = link_latency
         self.switch_switching_latency = switching_latency
+        self.switch_bandwidth = bandwidth
 
         # switch_builder is a class designed to emit a particular switch model.
         # it should take self and then be able to emit a particular switch model's

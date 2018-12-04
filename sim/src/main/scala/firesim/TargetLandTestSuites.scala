@@ -18,7 +18,7 @@ class BlockdevTestSuite(prefix: String, val names: LinkedHashSet[String]) extend
   val makeTargetName = prefix + "-blkdev-tests"
   def kind = "blockdev"
   // Blockdev tests need an image, which complicates this
-  def additionalArgs = "+blkdev-in-mem=128 +nic-loopback"
+  def additionalArgs = "+blkdev-in-mem0=128 +nic-loopback0"
   override def toString = s"$makeTargetName = \\\n" +
     // Make variable with the binaries of the suite
     names.map(n => s"\t$n.riscv").mkString(" \\\n") + "\n\n" +
@@ -35,7 +35,7 @@ class NICTestSuite(prefix: String, val names: LinkedHashSet[String]) extends Roc
   val dir = "$(fc_test_dir)"
   val makeTargetName = prefix + "-nic-tests"
   def kind = "nic"
-  def additionalArgs = "+netbw=100 +linklatency=6405 +netburst=8 +slotid=0 +nic-loopback"
+  def additionalArgs = "+netbw0=100 +linklatency0=6405 +netburst0=8 +slotid=0 +nic-loopback0"
   override def toString = s"$makeTargetName = \\\n" +
     names.map(n => s"\t$n.riscv").mkString(" \\\n") + "\n\n" +
     names.map(n => s"$n.riscv_ARGS=$additionalArgs").mkString(" \n") +

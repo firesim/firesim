@@ -43,6 +43,7 @@ elif [ "$1" = "submodules-only" ]; then
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
+    git checkout 4a2f79d5c5a8a93f3e6a83bd32a0926cdb8983c5
     PREBUILTHASH="$(cat HASH)"
     cd ../target-design/firechip
     git submodule update --init riscv-tools
@@ -77,15 +78,13 @@ else
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh
-    # update linux headers
-    cd $RDIR
-    cd sw/firesim-software/riscv-linux
-    # TODO: why is this here?
-    cp ../linux-config-firesim .config
     # build linux toolchain
     cd $RDIR
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
+    cd $RDIR
+    cd sw
+    ./install-qemu.sh
     cd $RDIR
 fi
 
@@ -93,7 +92,7 @@ echo "export RISCV=$RISCV" > env.sh
 echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
 echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 
-cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/edma"
+cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
 make
 
 # commands to run only on EC2

@@ -14,7 +14,7 @@ class SocketClientPort : public BasePort {
         int clientsocket;
 };
 
-SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : BasePort(portNo) {
+SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : BasePort(portNo, false) {
 
     struct sockaddr_in serv_addr;
 
@@ -47,12 +47,29 @@ SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : 
 }
 
 void SocketClientPort::send() {
-    int amtsent = ::send(clientsocket, current_output_buf, BUFSIZE_BYTES, 0);
-    if (amtsent != BUFSIZE_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    if (((uint64_t*)current_output_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+//        printf("sending compressed\n");
+#define COMPRESS_NUM_BYTES (8)
+        int amtsent = ::send(clientsocket, current_output_buf, COMPRESS_NUM_BYTES, 0);
+        if (amtsent != COMPRESS_NUM_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    } else {
+        int amtsent = ::send(clientsocket, current_output_buf, BUFSIZE_BYTES, 0);
+        if (amtsent != BUFSIZE_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    }
 }
 
 void SocketClientPort::recv() {
     int amtread = 0;
+    while (amtread < COMPRESS_NUM_BYTES) {
+        amtread += ::recv(clientsocket, current_input_buf + amtread,
+                COMPRESS_NUM_BYTES - amtread, 0);
+    }
+    if (((uint64_t*)current_input_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+//        printf("recv compressed\n");
+        memset(current_input_buf, 0x0, BUFSIZE_BYTES);
+        return;
+    }
+
     while (amtread < BUFSIZE_BYTES) {
         amtread += ::recv(clientsocket, current_input_buf + amtread,
                 BUFSIZE_BYTES - amtread, 0);
@@ -79,7 +96,7 @@ class SocketServerPort : public BasePort {
         int serversocket;
 };
 
-SocketServerPort::SocketServerPort(int portNo, int hostport) : BasePort(portNo) {
+SocketServerPort::SocketServerPort(int portNo, int hostport) : BasePort(portNo, false) {
     int server_fd;
     struct sockaddr_in address;
     int opt = 1;
@@ -125,12 +142,29 @@ SocketServerPort::SocketServerPort(int portNo, int hostport) : BasePort(portNo) 
 }
 
 void SocketServerPort::send() {
-    int amtsent = ::send(serversocket, current_output_buf, BUFSIZE_BYTES, 0);
-    if (amtsent != BUFSIZE_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    if (((uint64_t*)current_output_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+//        printf("sending compressed\n");
+#define COMPRESS_NUM_BYTES (8)
+        int amtsent = ::send(serversocket, current_output_buf, COMPRESS_NUM_BYTES, 0);
+        if (amtsent != COMPRESS_NUM_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    } else {
+        int amtsent = ::send(serversocket, current_output_buf, BUFSIZE_BYTES, 0);
+        if (amtsent != BUFSIZE_BYTES) { printf("SOCKETPORT SEND ERROR\n"); exit(1); }
+    }
 }
 
 void SocketServerPort::recv() {
     int amtread = 0;
+    while (amtread < COMPRESS_NUM_BYTES) {
+        amtread += ::recv(serversocket, current_input_buf + amtread,
+                COMPRESS_NUM_BYTES - amtread, 0);
+    }
+    if (((uint64_t*)current_input_buf)[0] == 0xDEADBEEFDEADBEEFL) {
+//        printf("recv compressed\n");
+        memset(current_input_buf, 0x0, BUFSIZE_BYTES);
+        return;
+    }
+
     while (amtread < BUFSIZE_BYTES) {
         amtread += ::recv(serversocket, current_input_buf + amtread,
                 BUFSIZE_BYTES - amtread, 0);

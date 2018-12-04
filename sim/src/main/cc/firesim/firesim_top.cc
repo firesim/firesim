@@ -1,5 +1,3 @@
-#include <limits.h>
-
 #include "firesim_top.h"
 
 // FireSim-defined endpoints
@@ -12,20 +10,14 @@
 #include "endpoints/fpga_model.h"
 #include "endpoints/sim_mem.h"
 #include "endpoints/fpga_memory_model.h"
+#include "endpoints/synthesized_assertions.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
-    // fields to populate to pass to endpoints
-    char * niclogfile = NULL;
-    char * slotid = NULL;
-    char * tracefile = NULL;
-    uint64_t mac_little_end = 0; // default to invalid mac addr, force user to specify one
-    uint64_t trace_start = 0, trace_end = ULONG_MAX;
-    int netbw = MAX_BANDWIDTH, netburst = 8;
-    int linklatency = 0;
-    bool nic_loopback = false;
-
     std::vector<std::string> args(argv + 1, argv + argc);
+    max_cycles = -1;
+    profile_interval = max_cycles;
+
     for (auto &arg: args) {
         if (arg.find("+max-cycles=") == 0) {
             max_cycles = atoi(arg.c_str()+12);
@@ -33,70 +25,38 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         if (arg.find("+profile-interval=") == 0) {
             profile_interval = atoi(arg.c_str()+18);
         }
-        if (arg.find("+niclog=") == 0) {
-            niclogfile = const_cast<char*>(arg.c_str()) + 8;
-        }
-        if (arg.find("+nic-loopback") == 0) {
-            nic_loopback = true;
-        }
-        if (arg.find("+slotid=") == 0) {
-            slotid = const_cast<char*>(arg.c_str()) + 8;
-        }
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
         }
-        if (arg.find("+macaddr=") == 0) {
-            uint8_t mac_bytes[6];
-            int mac_octets[6];
-            char * macstring = NULL;
-            macstring = const_cast<char*>(arg.c_str()) + 9;
-            char * trailingjunk;
-
-            // convert mac address from string to 48 bit int
-            if (6 == sscanf(macstring, "%x:%x:%x:%x:%x:%x%c",
-                        &mac_octets[0], &mac_octets[1], &mac_octets[2],
-                        &mac_octets[3], &mac_octets[4], &mac_octets[5],
-                        trailingjunk)) {
-
-                for (int i = 0; i < 6; i++) {
-                    mac_little_end |= (((uint64_t)(uint8_t)mac_octets[i]) << (8*i));
-                }
-            } else {
-                fprintf(stderr, "INVALID MAC ADDRESS SUPPLIED WITH +macaddr=\n");
-            }
-        }
-        if (arg.find("+netbw=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 7;
-            netbw = atoi(str);
-        }
-        if (arg.find("+netburst=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 10;
-            netburst = atoi(str);
-        }
-        if (arg.find("+linklatency=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
-            linklatency = atoi(str);
-        }
-        if (arg.find("+tracefile=") == 0) {
-            tracefile = const_cast<char*>(arg.c_str()) + 11;
-        }
-        if (arg.find("+trace-start=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 13;
-            trace_start = atol(str);
-        }
-        if (arg.find("+trace-end=") == 0) {
-            char *str = const_cast<char*>(arg.c_str()) + 11;
-            trace_end = atol(str);
-        }
     }
 
-    add_endpoint(new uart_t(this));
-    add_endpoint(new serial_t(this, args));
+
+#ifdef UARTWIDGET_struct_guard
+    #ifdef UARTWIDGET_0_PRESENT
+    UARTWIDGET_0_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct, 0));
+    #endif
+    #ifdef UARTWIDGET_1_PRESENT
+    UARTWIDGET_1_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_1_substruct, 1));
+    #endif
+    #ifdef UARTWIDGET_2_PRESENT
+    UARTWIDGET_2_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_2_substruct, 2));
+    #endif
+    #ifdef UARTWIDGET_3_PRESENT
+    UARTWIDGET_3_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_3_substruct, 3));
+    #endif
+#endif
+
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
 #endif
 
+std::vector<uint64_t> host_mem_offsets;
+uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
                 this,
@@ -107,14 +67,139 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv"));
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
 #endif
 
-    add_endpoint(new blockdev_t(this, args));
-    add_endpoint(new simplenic_t(this, slotid, mac_little_end, netbw, netburst, linklatency, niclogfile, nic_loopback));
-    add_endpoint(new tracerv_t(this, tracefile, trace_start, trace_end));
-    // add more endpoints here
+#ifdef MEMMODEL_1
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_1_R_num_registers,
+                    (const unsigned int*) MEMMODEL_1_R_addrs,
+                    (const char* const*) MEMMODEL_1_R_names,
+                    MEMMODEL_1_W_num_registers,
+                    (const unsigned int*) MEMMODEL_1_W_addrs,
+                    (const char* const*) MEMMODEL_1_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
+#endif
 
+#ifdef MEMMODEL_2
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_2_R_num_registers,
+                    (const unsigned int*) MEMMODEL_2_R_addrs,
+                    (const char* const*) MEMMODEL_2_R_names,
+                    MEMMODEL_2_W_num_registers,
+                    (const unsigned int*) MEMMODEL_2_W_addrs,
+                    (const char* const*) MEMMODEL_2_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_3
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_3_R_num_registers,
+                    (const unsigned int*) MEMMODEL_3_R_addrs,
+                    (const char* const*) MEMMODEL_3_R_names,
+                    MEMMODEL_3_W_num_registers,
+                    (const unsigned int*) MEMMODEL_3_W_addrs,
+                    (const char* const*) MEMMODEL_3_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
+#endif
+
+#ifdef SERIALWIDGET_struct_guard
+    #ifdef SERIALWIDGET_0_PRESENT
+    SERIALWIDGET_0_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, 0, host_mem_offsets[0]));
+    #endif
+    #ifdef SERIALWIDGET_1_PRESENT
+    SERIALWIDGET_1_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_1_substruct, 1, host_mem_offsets[1]));
+    #endif
+    #ifdef SERIALWIDGET_2_PRESENT
+    SERIALWIDGET_2_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_2_substruct, 2, host_mem_offsets[2]));
+    #endif
+    #ifdef SERIALWIDGET_3_PRESENT
+    SERIALWIDGET_3_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_3_substruct, 3, host_mem_offsets[3]));
+    #endif
+#endif
+
+#ifdef BLOCKDEVWIDGET_struct_guard
+    #ifdef BLOCKDEVWIDGET_0_PRESENT
+    BLOCKDEVWIDGET_0_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct, 0));
+    #endif
+    #ifdef BLOCKDEVWIDGET_1_PRESENT
+    BLOCKDEVWIDGET_1_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_1_num_trackers, BLOCKDEVWIDGET_1_latency_bits, BLOCKDEVWIDGET_1_substruct, 1));
+    #endif
+    #ifdef BLOCKDEVWIDGET_2_PRESENT
+    BLOCKDEVWIDGET_2_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_2_num_trackers, BLOCKDEVWIDGET_2_latency_bits, BLOCKDEVWIDGET_2_substruct, 2));
+    #endif
+    #ifdef BLOCKDEVWIDGET_3_PRESENT
+    BLOCKDEVWIDGET_3_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_3_num_trackers, BLOCKDEVWIDGET_3_latency_bits, BLOCKDEVWIDGET_3_substruct, 3));
+    #endif
+#endif
+
+#ifdef SIMPLENICWIDGET_struct_guard
+    #ifdef SIMPLENICWIDGET_0_PRESENT
+    SIMPLENICWIDGET_0_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0, SIMPLENICWIDGET_0_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_1_PRESENT
+    SIMPLENICWIDGET_1_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_1_substruct, 1, SIMPLENICWIDGET_1_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_2_PRESENT
+    SIMPLENICWIDGET_2_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_2_substruct, 2, SIMPLENICWIDGET_2_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_3_PRESENT
+    SIMPLENICWIDGET_3_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3, SIMPLENICWIDGET_3_DMA_ADDR));
+    #endif
+#endif
+
+#ifdef TRACERVWIDGET_struct_guard
+    #ifdef TRACERVWIDGET_0_PRESENT
+    TRACERVWIDGET_0_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0, TRACERVWIDGET_0_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_1_PRESENT
+    TRACERVWIDGET_1_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1, TRACERVWIDGET_1_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_2_PRESENT
+    TRACERVWIDGET_2_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2, TRACERVWIDGET_2_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_3_PRESENT
+    TRACERVWIDGET_3_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3, TRACERVWIDGET_3_DMA_ADDR));
+    #endif
+#endif
+
+    // add more endpoints here
+#ifdef ASSERTIONWIDGET_struct_guard
+    #ifdef ASSERTIONWIDGET_0_PRESENT
+    ASSERTIONWIDGET_0_substruct_create;
+    endpoints.push_back(new synthesized_assertions_t(this, ASSERTIONWIDGET_0_substruct));
+    #endif
+#endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);

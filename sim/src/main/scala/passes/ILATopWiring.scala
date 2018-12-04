@@ -2,7 +2,7 @@
 
 package firesim.passes
 
-import midas.passes.FirrtlFpgaDebugAnnotation
+import midas.targetutils.FirrtlFpgaDebugAnnotation
 
 import firrtl._
 import firrtl.ir._
