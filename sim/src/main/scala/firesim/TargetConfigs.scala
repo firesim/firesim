@@ -162,3 +162,21 @@ class FireSimBoomDualCoreConfig extends Config(
 
 class FireSimBoomTracedConfig extends Config(
   new WithTraceBoom ++ new FireSimBoomConfig)
+
+
+class FireSimHwachaConfig extends Config(
+  new hwacha.DefaultHwachaConfig ++
+  new WithNBigCores(1) ++
+  new FireSimRocketChipConfig)
+
+class FireSimHwachaSingleLaneConfig extends Config(
+  new hwacha.WithNLanes(1) ++
+  new FireSimHwachaConfig)
+
+class FireSimHwachaDualLaneConfig extends Config(
+  new hwacha.WithNLanes(2) ++
+  new FireSimHwachaConfig)
+
+class FireSimHwachaQuadLaneConfig extends Config(
+  new hwacha.WithNLanes(4) ++
+  new FireSimHwachaConfig)

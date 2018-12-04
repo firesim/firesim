@@ -27,7 +27,8 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 submodules = . midas firrtl \
 	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks \
-	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend))
+	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend)) \
+	target-rtl/hwacha-template/hwacha
 
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))

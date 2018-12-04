@@ -19,10 +19,12 @@ RDIR=$(pwd)
 # you must do this globally (otherwise riscv-tools deep
 # in the submodule tree will get pulled anyway
 git config --global submodule.riscv-tools.update none
+git config --global submodule.esp-tools.update none
 git config --global submodule.experimental-blocks.update none
 git submodule update --init --recursive #--jobs 8
 # unignore riscv-tools,catapult-shell2 globally
 git config --global --unset submodule.riscv-tools.update
+git config --global --unset submodule.esp-tools.update
 git config --global --unset submodule.experimental-blocks.update
 
 FASTINSTALL=false
@@ -70,7 +72,7 @@ else
     # install risc-v tools
     mkdir -p riscv-tools-install
     export RISCV="$RISCV"
-    cd target-design/firechip
+    cd target-design/hwacha-template
     git submodule update --init --recursive riscv-tools #--jobs 8
     cd riscv-tools
     export MAKEFLAGS="-j16"
@@ -80,7 +82,7 @@ else
     $RDIR/scripts/build-static-libfesvr.sh
     # build linux toolchain
     cd $RDIR
-    cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
+    cd target-design/hwacha-template/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
     cd $RDIR
     cd sw

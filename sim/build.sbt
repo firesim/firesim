@@ -31,8 +31,10 @@ lazy val sifiveip   = project in file("target-rtl/firechip/sifive-blocks") setti
 lazy val testchipip = project in file("target-rtl/firechip/testchipip") settings commonSettings dependsOn rocketchip
 lazy val icenet     = project in file("target-rtl/firechip/icenet") settings commonSettings dependsOn (rocketchip, testchipip)
 
+lazy val hwacha     = project in file("target-rtl/hwacha-template/hwacha") settings commonSettings dependsOn rocketchip
+
 lazy val mdf        = RootProject(file("barstools/mdf/scalalib"))
 lazy val barstools  = project in file("barstools/macros") settings commonSettings dependsOn (mdf, rocketchip)
 lazy val midas      = project in file("midas") settings commonSettings dependsOn barstools
 
-lazy val firesim    = project in file(".") settings commonSettings dependsOn (midas, sifiveip, testchipip, icenet, boom)
+lazy val firesim    = project in file(".") settings commonSettings dependsOn (midas, sifiveip, testchipip, icenet, boom, hwacha)

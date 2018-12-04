@@ -112,7 +112,8 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
   /** Output software test Makefrags, which provide targets for integration testing. */
   def generateTestSuiteMakefrags {
     addTestSuites(names.topModuleClass, targetParams)
-    writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
+    writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag +
+      "\nDISASM_EXTENSION = --extension=hwacha") // Subsystem-specific test suites
   }
 
   def writeOutputFile(fname: String, contents: String): File = {
@@ -198,6 +199,14 @@ trait HasTestSuites {
     TestGeneration.addSuite(SlowBlockdevTests)
     if (!targetName.contains("NoNIC"))
       TestGeneration.addSuite(NICLoopbackTests)
+
+    import hwacha.HwachaTestSuites._
+    if (scala.util.Try(params(hwacha.HwachaNLanes)).getOrElse(0) > 0) {
+      TestGeneration.addSuites(rv64uv.map(_("p")))
+      TestGeneration.addSuites(rv64uv.map(_("vp")))
+      TestGeneration.addSuite(rv64sv("p"))
+      TestGeneration.addSuite(hwachaBmarks)
+    }
   }
 }
 

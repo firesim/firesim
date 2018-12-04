@@ -16,7 +16,7 @@ and Computer Sciences Department][eecs] at the [University of California,
 Berkeley][berkeley].
 
 FireSim is capable of simulating from **one to thousands of multi-core compute
-nodes**, derived directly from **silicon-proven** and **open** target-RTL (e.g. [RISC-V][riscv] [Rocket Chip][rocket-chip] and [BOOM][boom]), with
+nodes**, derived directly from **silicon-proven** and **open** target-RTL (e.g. [RISC-V][riscv] [Rocket Chip][rocket-chip], [BOOM][boom], and [Hwacha][hwacha]), with
 an optional *cycle-accurate network simulation* tying them together. FireSim
 runs on FPGAs in **public cloud** environments like [AWS EC2
 F1](https://aws.amazon.com/ec2/instance-types/f1/), removing the high capex
@@ -64,3 +64,4 @@ on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 [riscv]: https://riscv.org/
 [rocket-chip]: https://github.com/freechipsproject/rocket-chip
 [boom]: https://github.com/ucb-bar/riscv-boom
+[hwacha]: https://github.com/ucb-bar/hwacha
