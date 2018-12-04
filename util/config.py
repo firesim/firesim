@@ -32,7 +32,7 @@ configUser = [
         # An inline command to run at startup (cannot be set along with 'run')
         'command',
         # Path to script to run on the guest exactly once when building
-        'init',
+        'guest-init',
         # Path to directory for this workload, all user-provided paths will
         # be relative to this (but converted to absolute when loaded)
         'workdir'
@@ -52,7 +52,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
+configToAbs = ['guest-init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)

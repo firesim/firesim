@@ -36,13 +36,13 @@ class Builder:
         # XXX There's something wrong with buildroots makefile, it throws an
         # error and never reports being up to date.
         # XXX DONT COMMIT THIS CHANGE YOUR DEFNITELY GOING TO FORGET TO UNDO THIS
-        return True
-        # makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
-        # cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
-        # if makeStatus == 0 and cfgDiff == 0:
-        #     return True
-        # else:
-        #     return False
+        # return True
+        makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
+        cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
+        if makeStatus == 0 and cfgDiff == 0:
+            return True
+        else:
+            return False
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
@@ -54,14 +54,13 @@ class Builder:
         # script at boot. We just overwrite this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            run(['sudo', 'cp', script, scriptDst])
+            run(['cp', script, scriptDst])
         else:
-            run(['sudo', 'rm', scriptDst])
+            run(['rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            run(['sudo', 'touch', scriptDst])
+            run(['touch', scriptDst])
         
-        run(['sudo', 'chown', 'root:root', scriptDst])
-        run(['sudo', 'chmod', '+x', scriptDst])
+        run(['chmod', '+x', scriptDst])
         return overlay

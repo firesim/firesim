@@ -8,62 +8,30 @@
 
 set -e
 
-USAGE="./convert_img.sh [-c] UPSTREAM_IMAGE NEW_FILE_NAME\n\t-c\n\t\tCreate a CPIO archive instead of the default raw filesystem image."
+USAGE="./convert_img.sh UPSTREAM_IMAGE NEW_FILE_NAME"
 RAWIMG=$1
 NEWIMG=$2
 MNT=disk-mount/
 
 while getopts ":c" opt; do
   case ${opt} in
-    c )
-      CPIO="True"
-      ;;
     \? )
       echo $USAGE
       ;;
   esac
 done
 
-if [ -f $NEWIMG ]; then
-  read -p "Overwrite existing image \"$NEWIMG\"? (y/n) " OVERWRITE_IMG
-  if [ $OVERWRITE_IMG != "y" ]; then
-    echo "Aborting"
-    exit
-  fi
-  rm $NEWIMG
-fi
+# Extract the partion
+# use 1MB block size for dd
+DD_BS=1048576
 
-# Be sure to cleanup mounts if something goes wrong
-function cleanup() {
-  trap - ERR
-  if [ $LOOP_DEV != "" ]; then
-    sudo losetup -d $LOOP_DEV
-  fi
-}
-trap cleanup ERR
+# Get the offset of the first partition within the image so we can strip it out
+# output of parted looks like "###B ####B ###B ..." we cast it to an array here
+PART_INFO=(`sudo parted -s $RAWIMG unit B print | tail -2`)
 
-# Attach the upstream image to a loopback device to get at the partition
-echo "Converting image to single partition and resizing"
-LOOP_DEV="$(sudo losetup -f)"
-sudo losetup -P -f $RAWIMG $LOOP_DEV
+# The output at index 1 and 2 are the partition start and end byte offset. The : : -1 strips the "B" suffix.
+# Also convert to units of 1MB blocks (I'd do that above, but parted output is weird)
+PART_START=`expr ${PART_INFO[1]: : -1} / $DD_BS`
+PART_END=`expr ${PART_INFO[2]: : -1} / $DD_BS`
 
-# Copy the partition out of the upstream image (touch to establish current user as owner)
-touch $NEWIMG
-sudo dd if=${LOOP_DEV}p1 of=$NEWIMG bs=4M
-
-# clean up the loopback interface
-sudo losetup -d $LOOP_DEV
-trap - ERR
-
-# Setup the image how we want for firesim 
-echo "Setting up image for firesim"
-mkdir -p $MNT
-sudo mount -o loop $NEWIMG $MNT
-
-# fix serial port
-sudo cp ./getty@.service $MNT/usr/lib/systemd/system/
-sudo chmod 644 $MNT/usr/lib/systemd/system/getty@.service
-sudo ln -s /usr/lib/systemd/system/getty@.service $MNT/etc/systemd/system/getty.target.wants/getty@hvc0.service
-sudo rm $MNT/etc/systemd/system/getty.target.wants/getty@tty1.service
-
-sudo umount $MNT 
+dd if=$RAWIMG of=$NEWIMG bs=$DD_BS skip=$PART_START

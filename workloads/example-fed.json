@@ -2,8 +2,8 @@
   "name" : "example-fed",
   "base" : "fedora-base.json",
   "overlay" : "overlay",
-  "init" : "init.sh",
-  "host-init" : "host-init.sh",
+  "guest-init" : "guest-init.sh",
+  "host-guest-init" : "host-guest-init.sh",
   "jobs" : [
     {
       "name" : "qsort",

@@ -3,11 +3,6 @@ COMPIMG=Fedora-Developer-Rawhide-20181015.n.0-sda.raw.xz
 RAWIMG=Fedora-Developer-Rawhide-20181015.n.0-sda.raw
 NEWIMG=rootfs.img
 
-rootfs.cpio: $(NEWIMG)
-	./mk_cpio.sh $(NEWIMG) $@ 
-	# touch it to make it newer than NEWIMG so that Make gets dependencies right
-	touch $@
-
 $(NEWIMG): $(RAWIMG)
 	./convert_raw.sh $(RAWIMG) $(NEWIMG)
 

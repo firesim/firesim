@@ -1,7 +1,7 @@
 {
-  "name" : "host-init",
+  "name" : "host-guest-init",
   "base" : "br-base.json",
   "files" : [["runOutput", "/root/"]],
-  "host-init" : "host-init.sh",
+  "host-guest-init" : "host-guest-init.sh",
   "command" : "cat /root/runOutput"
 }

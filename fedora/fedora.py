@@ -25,7 +25,7 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):
-        retcode = sp.call('make -q rootfs.img rootfs.cpio', shell=True, cwd=fed_dir)
+        retcode = sp.call('make -q rootfs.img', shell=True, cwd=fed_dir)
         if retcode == 0:
             return True
         else:
@@ -39,14 +39,14 @@ class Builder:
         # can change the default boot behavior by changing this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            run(['sudo', 'cp', script, scriptDst])
+            run(['cp', script, scriptDst])
         else:
-            run(['sudo', 'rm', scriptDst])
+            run(['rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            run(['sudo', 'touch', scriptDst])
+            run(['touch', scriptDst])
         
-        run(['sudo', 'chown', 'root:root', scriptDst])
-        run(['sudo', 'chmod', '+x', scriptDst])
+        # run(['sudo', 'chown', 'root:root', scriptDst])
+        run(['chmod', '+x', scriptDst])
         return overlay

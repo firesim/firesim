@@ -1,5 +1,5 @@
 {
   "name" : "fed-run",
-  "base" : "fed.json",
+  "base" : "fedora-base.json",
   "run" : "run.sh"
 }

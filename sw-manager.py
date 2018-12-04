@@ -137,11 +137,14 @@ def addDep(loader, config):
                 if os.path.isdir(fSpec.src):
                     for root, dirs, files in os.walk(fSpec.src):
                         for f in files:
-                            file_deps.append(os.path.join(root, f))
+                            fdep = os.path.join(root, f)
+                            # Ignore symlinks
+                            if not os.path.islink(fdep):
+                                file_deps.append(fdep)
                 else:
                     file_deps.append(fSpec.src)			
-        if 'init' in config:
-            file_deps.append(config['init'])
+        if 'guest-init' in config:
+            file_deps.append(config['guest-init'])
             task_deps.append(config['bin'])
         if 'runSpec' in config and config['runSpec'].path != None:
             file_deps.append(config['runSpec'].path)
@@ -327,13 +330,13 @@ def makeImage(config):
         log.info("Applying file list: " + str(config['files']))
         applyFiles(config['img'], config['files'])
 
-    if 'init' in config:
-        log.info("Applying init script: " + config['init'])
-        if not os.path.exists(config['init']):
-            raise ValueError("Init script " + config['init'] + " not found.")
+    if 'guest-init' in config:
+        log.info("Applying init script: " + config['guest-init'])
+        if not os.path.exists(config['guest-init']):
+            raise ValueError("Init script " + config['guest-init'] + " not found.")
 
         # Apply and run the init script
-        init_overlay = config['builder'].generateBootScriptOverlay(config['init'])
+        init_overlay = config['builder'].generateBootScriptOverlay(config['guest-init'])
         applyOverlay(config['img'], init_overlay)
         print("Launching: " + config['bin'])
         launchQemu(config)
@@ -367,15 +370,21 @@ def applyOverlay(img, overlay):
 def applyFiles(img, files):
     log = logging.getLogger()
 
-    run(['sudo', 'mount', '-o', 'loop', img, mnt])
+    if not os.path.exists(mnt):
+        run(['mkdir', mnt])
+
+    # The guestmount options (and rsync without chown) are to avoid dependence
+    # on sudo, but they require libguestfs-tools to be installed. There are
+    # other sudo dependencies in fedora.py though.
+    run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
     try:
         for f in files:
             # Overlays may not be owned by root, but the filesystem must be.
             # Rsync lets us chown while copying.
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
-            run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
     finally:
-        run(['sudo', 'umount', mnt])
+        run(['guestunmount', mnt])
 
 main()
