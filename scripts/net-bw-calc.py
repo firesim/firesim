@@ -1,13 +1,8 @@
 import csv
-import os
 import re
-import sys
 import argparse
-import glob
 
-from itertools import product
 from collections import defaultdict
-from multiprocessing.pool import ThreadPool
 
 DATA_RE = re.compile(r"^packet timestamp: (\d+), len: (\d+), (sender|receiver): (\d+)$")
 
@@ -67,8 +62,6 @@ def main():
                         default = 3.2, help = "Clock frequency (in GHz)")
     parser.add_argument("--bitwidth", dest="bitwidth", type=int,
                         default = 64, help = "Width of interface (in bits)")
-    parser.add_argument("-j", "--jobs", dest="jobs", type=int,
-                        default = 1, help="Number of parallel jobs to use")
     parser.add_argument("switchlog", help="Switch log to process")
     parser.add_argument("outfile", help="CSV file to output to")
     args = parser.parse_args()
