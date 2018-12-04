@@ -5,9 +5,9 @@ package firesim.midasexamples
 import chisel3._
 import chisel3.experimental.MultiIOModule
 
-import midas.targetutils.SynthesizablePrintfs
+import midas.targetutils.SynthesizePrintf
 
-class PrintfModule extends MultiIOModule with SynthesizablePrintfs {
+class PrintfModule extends MultiIOModule {
   val a = IO(Input(Bool()))
   val b = IO(Input(Bool()))
 
@@ -15,7 +15,7 @@ class PrintfModule extends MultiIOModule with SynthesizablePrintfs {
 
   when(a) { cycle := cycle + 1.U }
 
-  printf(synthesizePrintf("A: %d\n", cycle))
-  when(b) { printf(synthesizePrintf("B asserted\n")) } // Argument-less print
+  printf(SynthesizePrintf("A: %d\n", cycle))
+  when(b) { printf(SynthesizePrintf("B asserted\n")) } // Argument-less print
 }
 
