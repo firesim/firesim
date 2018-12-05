@@ -28,7 +28,11 @@ class Builder:
         shutil.copy(os.path.join(br_dir, 'buildroot-config'),
                     os.path.join(br_dir, "buildroot/.config"))
         # log.debug(sp.check_output(['make'], cwd=os.path.join(br_dir, "buildroot")))
-        run(['make'], cwd=os.path.join(br_dir, "buildroot"))
+
+        # Buildroot complains about some common PERL configurations
+        env = os.environ.copy()
+        env.pop('PERL_MM_OPT', None)
+        run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.

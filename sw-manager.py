@@ -376,15 +376,20 @@ def applyFiles(img, files):
     # The guestmount options (and rsync without chown) are to avoid dependence
     # on sudo, but they require libguestfs-tools to be installed. There are
     # other sudo dependencies in fedora.py though.
-    run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
+    # run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
+    # run(['fuse-ext2', '-o', 'rw+', img, mnt])
+    run(['sudo', 'mount', '-o', 'loop', img, mnt])
     try:
         for f in files:
             # Overlays may not be owned by root, but the filesystem must be.
             # Rsync lets us chown while copying.
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
-            run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            # run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            run('rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
     finally:
-        run(['guestunmount', mnt])
+        # run(['guestunmount', mnt])
+        # run(['fusermount', '-u', mnt])
+        run(['sudo', 'umount'])
 
 main()

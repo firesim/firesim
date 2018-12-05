@@ -13,12 +13,6 @@ linux_dir = os.path.join(root_dir, "riscv-linux")
 mnt = os.path.join(root_dir, "disk-mount")
 commandScript = os.path.join(root_dir, "_command.sh")
 
-# root_dir = pth.Path.cwd() 
-# image_dir = root_dir / "images"
-# linux_dir = root_dir / "riscv-linux"
-# mnt = root_dir / "disk-mount"
-# commandScript = root_dir / "_command.sh"
-
 jlevel = "-j" + str(os.cpu_count())
 
 # logging setup
@@ -29,11 +23,9 @@ def initLogging(args):
     # Create a unique log name
     timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
     randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
-    # logPath = root_dir / ("logs" + timeline + "-" + \
-    #         str(args.config_file.stem) + \
-    #         "-" +  randname + ".log")
-    logPath = os.path.join(root_dir, "logs", timeline + "-" + 
-            os.path.splitext(os.path.basename(args.config_file))[0] +
+
+    logPath = os.path.join(root_dir, "logs", os.path.splitext(os.path.basename(args.config_file))[0] +
+            "-" + timeline + "-" +
             "-" +  randname + ".log")
     
     # formatting for log to file
