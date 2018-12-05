@@ -142,7 +142,9 @@ def addDep(loader, config):
                             if not os.path.islink(fdep):
                                 file_deps.append(fdep)
                 else:
-                    file_deps.append(fSpec.src)			
+                    # Ignore symlinks
+                    if not os.path.islink(fSpec.src):
+                        file_deps.append(fSpec.src)			
         if 'guest-init' in config:
             file_deps.append(config['guest-init'])
             task_deps.append(config['bin'])
