@@ -1,0 +1,7 @@
+{
+  "benchmark_name" : "vec-dgemm-opt",
+  "common_bootbinary" : "vec-dgemm-opt.riscv",
+  "common_rootfs" : "dummy.ext2",
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"]
+}
