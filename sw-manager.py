@@ -142,7 +142,9 @@ def addDep(loader, config):
                             if not os.path.islink(fdep):
                                 file_deps.append(fdep)
                 else:
-                    file_deps.append(fSpec.src)			
+                    # Ignore symlinks
+                    if not os.path.islink(fSpec.src):
+                        file_deps.append(fSpec.src)			
         if 'guest-init' in config:
             file_deps.append(config['guest-init'])
             task_deps.append(config['bin'])
@@ -376,7 +378,8 @@ def applyFiles(img, files):
     # The guestmount options (and rsync without chown) are to avoid dependence
     # on sudo, but they require libguestfs-tools to be installed. There are
     # other sudo dependencies in fedora.py though.
-    run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
+    # run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
+    run(['sudo', 'mount', '-o', 'loop', img,  mnt])
     try:
         for f in files:
             # Overlays may not be owned by root, but the filesystem must be.
@@ -385,6 +388,6 @@ def applyFiles(img, files):
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
     finally:
-        run(['guestunmount', mnt])
+        run(['sudo', 'umount', mnt])
 
 main()
