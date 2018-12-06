@@ -388,10 +388,10 @@ def applyFiles(img, files):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             # run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
-            run('rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
     finally:
         # run(['guestunmount', mnt])
         # run(['fusermount', '-u', mnt])
-        run(['sudo', 'umount'])
+        run(['sudo', 'umount', 'mnt'])
 
 main()
