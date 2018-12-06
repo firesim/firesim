@@ -43,11 +43,14 @@ int throttle_denom = 1;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
+#define CREDIT_FLOWCONTROL
 
 // size of output buffers, in # of flits
 // only if LIMITED BUFSIZE is set
 // TODO: expose in manager
 #define OUTPUT_BUF_SIZE (131072L)
+#define INPUT_BUF_PACKETS (4095)
+#define CREDIT_UPDATE_PERIOD (5760)
 
 // pull in # clients config
 #define NUMCLIENTSCONFIG
@@ -115,7 +118,7 @@ for (int port = 0; port < NUMPORTS; port++) {
 
             sp->dat[sp->amtwritten++] = flit;
             if (is_last_flit(input_port_buf, tokenno)) {
-                current_port->inputqueue.push(sp);
+                current_port->push_input(sp);
                 current_port->input_in_progress = NULL;
             }
         }
@@ -151,8 +154,7 @@ std::priority_queue<tspacket> pqueue;
 
 for (int i = 0; i < NUMPORTS; i++) {
     while (!(ports[i]->inputqueue.empty())) {
-        switchpacket * sp = ports[i]->inputqueue.front();
-        ports[i]->inputqueue.pop();
+        switchpacket * sp = ports[i]->pop_input();
         pqueue.push( tspacket { sp->timestamp, sp });
     }
 }
