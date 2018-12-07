@@ -213,6 +213,7 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     with BidirectionalDMA {
   val io = IO(new SimpleNICWidgetIO)
 
+  // DMA mixin parameters
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
   // Biancolin: Need to look into this

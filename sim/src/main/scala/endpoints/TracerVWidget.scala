@@ -33,7 +33,7 @@ class SimTracerV extends Endpoint {
       // this is questionable ...
       tracer_param = channel.traces(0).p
       num_traces = channel.traces.length
-      true  
+      true
     }
     case _ => false
   }
@@ -43,55 +43,18 @@ class SimTracerV extends Endpoint {
 
 class TracerVWidgetIO(val tracerParams: Parameters, val num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
-  override val dma = Some(Flipped(new NastiIO()(
-      p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
-  override val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 }
 
-
-class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
+class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidget()(p)
+    with UnidirectionalDMAToHostCPU {
   val io = IO(new TracerVWidgetIO(tracerParams, num_traces))
 
-   // copy from FireSim's SimpleNICWidget, because it should work here too
-  val outgoingPCISdat = Module(new SplitSeqQueue)
-  val PCIS_BYTES = 64
+  // DMA mixin parameters
+  lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
+  lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
   val uint_traces = io.hPort.hBits.traces map (trace => trace.asUInt)
-
   outgoingPCISdat.io.enq.bits := Cat(uint_traces) //io.hPort.hBits.traces(0).asUInt
-
-  // and io.dma gets you access to pcis
-  io.dma.map { dma =>
-    // copy from FireSim's SimpleNICWidget, because it should work here too
-    val ar_queue = Queue(dma.ar, 10)
-    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-
-    val readHelper = DecoupledHelper(
-      ar_queue.valid,
-      dma.r.ready,
-      outgoingPCISdat.io.deq.valid
-    )
-
-    val readBeatCounter = RegInit(0.U(9.W))
-    val lastReadBeat = readBeatCounter === ar_queue.bits.len
-    when (dma.r.fire()) {
-      readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
-    }
-
-    outgoingPCISdat.io.deq.ready := readHelper.fire(outgoingPCISdat.io.deq.valid)
-    dma.r.valid := readHelper.fire(dma.r.ready)
-    dma.r.bits.data := outgoingPCISdat.io.deq.bits
-    dma.r.bits.resp := 0.U(2.W)
-    dma.r.bits.last := lastReadBeat
-    dma.r.bits.id := ar_queue.bits.id
-    dma.r.bits.user := ar_queue.bits.user
-    ar_queue.ready := readHelper.fire(ar_queue.valid, lastReadBeat)
-    // we don't care about writes
-    dma.aw.ready := false.B
-    dma.w.ready := false.B
-    dma.b.valid := false.B
-    dma.b.bits := DontCare
-  }
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
     io.hPort.toHost.hValid, io.hPort.fromHost.hReady, io.tReset.valid)
