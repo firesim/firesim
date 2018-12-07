@@ -41,7 +41,7 @@ class BasePort {
         int fc_updatePeriod;
         uint64_t fc_lastUpdate;
 
-        void push_input(switchpacket *sp);
+        int push_input(switchpacket *sp);
         switchpacket *pop_input(void);
 
     protected:
@@ -64,7 +64,7 @@ BasePort::BasePort(int portNo, bool throttle, int fc_incredits, int fc_updatePer
 #endif
 }
 
-void BasePort::push_input(switchpacket *sp)
+int BasePort::push_input(switchpacket *sp)
 {
 #ifdef CREDIT_FLOWCONTROL
     // Check whether or not this is a credit update packet
@@ -72,10 +72,10 @@ void BasePort::push_input(switchpacket *sp)
     uint16_t cred_update = sp->dat[0] & 0xffff;
     if (sp->amtwritten == 1 && cred_update != 0) {
         printf("port %d: got credit update %d @ %ld\n",
-			_portNo, cred_update, sp->timestamp);
+                        _portNo, cred_update, sp->timestamp);
         fc_available += cred_update;
         free(sp);
-        return;
+        return 0;
     }
 #endif
     inputqueue.push(sp);
@@ -83,6 +83,7 @@ void BasePort::push_input(switchpacket *sp)
     if (fc_updatePeriod > 0)
         this->fc_assigned--;
 #endif
+    return 1;
 }
 
 switchpacket *BasePort::pop_input(void)
@@ -158,8 +159,14 @@ void BasePort::write_flits_to_output() {
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
 
-            printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
             int i = thispacket->amtread;
+            if (i == 0) {
+                //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
+                //        outputtimestamp, basetime + flitswritten, 
+                //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
+                printf("packet timestamp: %ld, len: %ld, receiver: %d\n",
+                        basetime + flitswritten, thispacket->amtwritten, _portNo);
+            }
             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
