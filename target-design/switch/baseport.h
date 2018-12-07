@@ -35,6 +35,8 @@ class BasePort {
         std::queue<switchpacket*> inputqueue;
         std::queue<switchpacket*> outputqueue;
 
+        int push_input(switchpacket *sp);
+
     protected:
         int _portNo;
         bool _throttle;
@@ -43,6 +45,12 @@ class BasePort {
 BasePort::BasePort(int portNo, bool throttle)
     : _portNo(portNo), _throttle(throttle)
 {
+}
+
+int BasePort::push_input(switchpacket *sp)
+{
+    inputqueue.push(sp);
+    return 1;
 }
 
 // assumes valid
@@ -89,8 +97,14 @@ void BasePort::write_flits_to_output() {
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
 
-            printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
             int i = thispacket->amtread;
+            if (i == 0) {
+                //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
+                //        outputtimestamp, basetime + flitswritten, 
+                //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
+                printf("packet timestamp: %ld, len: %ld, receiver: %d\n",
+                        basetime + flitswritten, thispacket->amtwritten, _portNo);
+            }
             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
