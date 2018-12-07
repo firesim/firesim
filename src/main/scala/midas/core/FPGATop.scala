@@ -159,6 +159,11 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
       if (widget.io.dma.nonEmpty)
         dmaInfoBuffer += DmaInfo(widgetName, widget.io.dma.get, widget.io.dmaSize)
 
+      widget match {
+        case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
+        case _ => Nil
+      }
+
       // each widget should have its own reset queue
       val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
       resetQueue.io.traceLen := DontCare

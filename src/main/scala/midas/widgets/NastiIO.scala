@@ -3,13 +3,14 @@
 package midas
 package widgets
 
-import core.{HostPort, HostPortIO, MemNastiKey}
+import core.{HostPort, HostPortIO, MemNastiKey, DMANastiKey}
 import junctions._
 
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.util.{DecoupledHelper}
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
   def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
@@ -33,6 +34,151 @@ class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
   def hPort = tNasti
 }
+
+trait HasDMA {
+  self: EndpointWidget =>
+  val dma = IO(Flipped(new NastiIO()( p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
+  val dmaBytes = dma.nastiXDataBits / 8
+  val dmaSize: BigInt
+}
+
+trait DMAToHostCPU extends HasDMA {
+  self: EndpointWidget =>
+  val toHostCPUQueueDepth: Int
+
+  require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
+
+  //val incomingPCISdat = Module(new SplitSeqQueue)
+  val outgoingPCISdat = Module(new BRAMQueue(toHostCPUQueueDepth)(UInt(dma.nastiXDataBits.W)))
+
+  // incoming/outgoing queue counts to replace ready/valid for batching
+  val outgoingCount = RegInit(0.U(32.W))
+
+  when (outgoingPCISdat.io.enq.fire() && outgoingPCISdat.io.deq.fire()) {
+    outgoingCount := outgoingCount
+  } .elsewhen (outgoingPCISdat.io.enq.fire()) {
+    outgoingCount := outgoingCount + 1.U
+  } .elsewhen (outgoingPCISdat.io.deq.fire()) {
+    outgoingCount := outgoingCount - 1.U
+  } .otherwise {
+    outgoingCount := outgoingCount
+  }
+
+  // check to see if pcis has valid output instead of waiting for timeouts
+  attach(outgoingPCISdat.io.deq.valid, "pcis_out_valid", ReadOnly)
+  attach(outgoingCount, "outgoing_count", ReadOnly)
+
+  // TODO, will these queues bottleneck us? - Biancolin: no. -> just read out of BRAM queue?
+  val ar_queue = Queue(dma.ar, 10)
+
+  assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(dmaBytes).U)
+
+  val readHelper = DecoupledHelper(
+    ar_queue.valid,
+    dma.r.ready,
+    outgoingPCISdat.io.deq.valid
+  )
+
+  val readBeatCounter = RegInit(0.U(9.W))
+  val lastReadBeat = readBeatCounter === ar_queue.bits.len
+  when (dma.r.fire()) {
+    readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
+  }
+
+  outgoingPCISdat.io.deq.ready := readHelper.fire(outgoingPCISdat.io.deq.valid)
+
+  dma.r.valid := readHelper.fire(dma.r.ready)
+  dma.r.bits.data := outgoingPCISdat.io.deq.bits
+  dma.r.bits.resp := 0.U(2.W)
+  dma.r.bits.last := lastReadBeat
+  dma.r.bits.id := ar_queue.bits.id
+  dma.r.bits.user := ar_queue.bits.user
+  ar_queue.ready := readHelper.fire(ar_queue.valid, lastReadBeat)
+}
+
+trait DMAFromHostCPU extends HasDMA {
+  self: EndpointWidget =>
+  val fromHostCPUQueueDepth: Int
+
+  require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
+
+  val incomingPCISdat = Module(new BRAMQueue(fromHostCPUQueueDepth)(UInt(dma.nastiXDataBits.W)))
+
+  // incoming/outgoing queue counts to replace ready/valid for batching
+  val incomingCount = RegInit(0.U(32.W))
+
+  when (incomingPCISdat.io.enq.fire() && incomingPCISdat.io.deq.fire()) {
+    incomingCount := incomingCount
+  } .elsewhen (incomingPCISdat.io.enq.fire()) {
+    incomingCount := incomingCount + 1.U
+  } .elsewhen (incomingPCISdat.io.deq.fire()) {
+    incomingCount := incomingCount - 1.U
+  } .otherwise {
+    incomingCount := incomingCount
+  }
+
+  // check to see if pcis is ready to accept data instead of forcing writes
+  attach(incomingPCISdat.io.deq.valid, "pcis_in_busy", ReadOnly)
+  attach(incomingCount, "incoming_count", ReadOnly)
+
+  val aw_queue = Queue(dma.aw, 10)
+  val w_queue = Queue(dma.w, 10)
+
+  assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(dmaBytes).U)
+  assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(dmaBytes.W))
+
+  val writeHelper = DecoupledHelper(
+    aw_queue.valid,
+    w_queue.valid,
+    dma.b.ready,
+    incomingPCISdat.io.enq.ready
+  )
+
+  val writeBeatCounter = RegInit(0.U(9.W))
+  val lastWriteBeat = writeBeatCounter === aw_queue.bits.len
+  when (w_queue.fire()) {
+    writeBeatCounter := Mux(lastWriteBeat, 0.U, writeBeatCounter + 1.U)
+  }
+
+  dma.b.bits.resp := 0.U(2.W)
+  dma.b.bits.id := aw_queue.bits.id
+  dma.b.bits.user := aw_queue.bits.user
+  dma.b.valid := writeHelper.fire(dma.b.ready, lastWriteBeat)
+  aw_queue.ready := writeHelper.fire(aw_queue.valid, lastWriteBeat)
+  w_queue.ready := writeHelper.fire(w_queue.valid)
+
+  incomingPCISdat.io.enq.valid := writeHelper.fire(incomingPCISdat.io.enq.ready)
+  incomingPCISdat.io.enq.bits := w_queue.bits.data
+}
+
+
+trait TieOffDMAToHostCPU extends HasDMA {
+  self: EndpointWidget =>
+  dma.ar.ready := false.B
+  dma.r.valid := false.B
+  dma.r.bits := DontCare
+}
+
+trait TieOffDMAFromHostCPU extends HasDMA{
+  self: EndpointWidget =>
+  dma.aw.ready := false.B
+  dma.w.ready := false.B
+  dma.b.valid := false.B
+  dma.b.bits := DontCare
+}
+
+trait UnidirectionalDMAToHostCPU extends HasDMA with DMAToHostCPU with TieOffDMAFromHostCPU {
+  self: EndpointWidget =>
+}
+
+trait UnidirecitonalDMAFromHostCPU extends HasDMA with DMAFromHostCPU with TieOffDMAToHostCPU {
+  self: EndpointWidget =>
+}
+
+trait BidirectionalDMA extends HasDMA with DMAFromHostCPU with DMAToHostCPU {
+  self: EndpointWidget =>
+}
+
 
 abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
   val io = IO(new MemModelIO)
@@ -111,7 +257,7 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
 }
 
 // Widget to handle NastiIO efficiently when software memory timing models are used
-class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
+class NastiWidget(implicit p: Parameters) extends NastiWidgetBase {
   /*** Timing information ***/
   // deltas from the simulation driver are kept in "deltaBuf"
   val deltaBuf = Module(new Queue(UInt(32.W), 2))
