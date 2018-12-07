@@ -30,85 +30,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   def outputForm = MidForm
   override def name = "[MIDAS] Print Synthesis"
 
-  type Messages = mutable.HashMap[Int, String]
-  type Prints =  mutable.ArrayBuffer[Print]
-  type Formats = mutable.ArrayBuffer[(String, Seq[String])]
-
-  private val messages = mutable.HashMap[String, Messages]()
-  private val prints = mutable.HashMap[String, Prints]()
-  private val printPorts = mutable.HashMap[String, Port]()
   private val printMods = new mutable.HashSet[ModuleTarget]()
-
-  // Helper method to filter out unwanted prints
-  private def excludePrint(printMessage: String): Boolean =
-    p(PrintExcludes).exists(ex => printMessage contains(ex))
-
-  // Helper method to filter out module instances
-  private def excludeInst(excludes: Seq[(String, String)])
-                         (parentMod: String, inst: String): Boolean =
-    excludes.exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
-
-  private def excludeInstPrints = excludeInst(p(ExcludeInstancePrints)) _
-
-
-  private def findMessages(mname: String)(s: Statement): Statement = s map findMessages(mname) match {
-    case s: Print if p(SynthPrints) && s.args.nonEmpty && !excludePrint(mname) =>
-      prints(mname) += s
-      EmptyStmt
-    case s => s
-  }
-
-//  private def transform(m: DefModule): DefModule = {
-//    val namespace = Namespace(m)
-//    messages(m.name) = new Messages
-//    prints(m.name) = new Prints
-//
-//    (m map findMessages(m.name)) match {
-//      case m: Module if m=>
-//        val ports = collection.mutable.ArrayBuffer[Port]()
-//        val stmts = collection.mutable.ArrayBuffer[Statement]()
-//        // Connect prints
-//        val printChildren = getChildren(printPorts, p(ExcludeInstancePrints))
-//        if (printChildren.size + prints(m.name).size > 0) {
-//          val tpe = BundleType((prints(m.name).zipWithIndex map { case (print, idx) =>
-//              val total = (print.args foldLeft 0)((res, arg) => res + bitWidth(arg.tpe).toInt)
-//              val width = 8 * ((total - 1) / 8 + 1)
-//              Field(s"print_${idx}", Default, UIntType(IntWidth(width + 1)))
-//            }) ++ (printChildren flatMap { case (child, p) => p.tpe match {
-//              // Field(child, Default, p.tpe)
-//              case BundleType(fs) => fs map (f => f.copy(name=s"${child}_${f.name}")) }
-//            })
-//          )
-//          val port = Port(NoInfo, namespace.newName("midasPrints"), Output, tpe)
-//          printPorts(m.name) = port
-//          ports += port
-//          stmts ++= (printChildren flatMap { case (child, p) => p.tpe match {
-//            case BundleType(fs) => fs map (f =>
-//              Connect(NoInfo, wsub(WRef(port.name), s"${child}_${f.name}"),
-//                              wsub(wsub(WRef(child), p.name), f.name)))
-//          }}) ++ (prints(m.name).zipWithIndex map { case (print, idx) =>
-//              Connect(NoInfo, wsub(WRef(port.name), s"print_${idx}"),
-//                              cat(print.args.reverse :+ print.en))
-//          })
-//        }
-//        m.copy(ports = m.ports ++ ports.toSeq, body = Block(m.body +: stmts.toSeq))
-//      case m: ExtModule => m
-//    }
-//  }
-
-  private var printNum = 0
-//  def dump(writer: Writer, meta: StroberMetaData, mod: String, path: String): Unit = { 
-//    prints(mod) foreach { print =>
-//      writer write """%s""".format(print.string.serialize)
-//      writer write s"\n"
-//      writer write (print.args map (arg => s"${path}.${arg.serialize} ${bitWidth(arg.tpe)}") mkString " ")
-//      writer write s"\n"
-//      printNum += 1
-//    }
-//    meta.childInsts(mod).reverse
-//        .filterNot(inst => excludeInstPrints(mod, inst))
-//        .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
-//  }
 
   // Generates a bundle to aggregate
   def genPrintBundleType(print: Print): Type = BundleType(Seq(
@@ -139,7 +61,6 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     state
   }
 
-
   def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
 
@@ -154,6 +75,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val topWiringAnnos = mutable.ArrayBuffer[Annotation](
       TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc))
 
+    val topWiringPrefix = "synthesizedPrint_"
 
     def onModule(m: DefModule): DefModule = m match {
       case m: Module if printMods(mTarget(m)) =>
@@ -164,7 +86,6 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     def onStmt(annos: Seq[SynthPrintfAnnotation], modNamespace: Namespace)
               (s: Statement): Statement = s.map(onStmt(annos, modNamespace)) match {
       case p @ Print(_,str,args,_,en) if annos.exists(_.format == str.string) =>
-        printNum += 1
         val associatedAnno = annos.find(_.format == str.string).get
         val printName = getPrintName(p, associatedAnno, modNamespace)
         // Generate an aggregate with all of our arguments; this will be wired out
@@ -174,28 +95,30 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
           Connect(NoInfo,
                   wsub(WRef(wire), s"args_${idx}"),
                   arg)})
-        topWiringAnnos += TopWiringAnnotation(associatedAnno.mod.ref(printName), s"synthesizedPrint_")
-        Block(Seq(wire, enableConnect) ++ argumentConnects)
-      case Print(_,_,_,_,_) => EmptyStmt
+        topWiringAnnos += TopWiringAnnotation(associatedAnno.mod.ref(printName), topWiringPrefix)
+        Block(Seq(p, wire, enableConnect) ++ argumentConnects)
       case s => s
     }
 
-    Logger.setLevel(LogLevel.Trace)
     val processedCircuit = c.map(onModule)
     val wiredState = (new TopWiringTransform).execute(state.copy(
       circuit = processedCircuit,
       annotations = state.annotations ++ topWiringAnnos))
 
-    println(s"[MIDAS] total # of prints synthesized: $printNum")
 
-    val printAnnos = if (printNum > 0) {
-      topLevelOutputs foreach println
-      Seq()
-    } else {
-      Seq()
+    val topModule = wiredState.circuit.modules.find(_.name == wiredState.circuit.main).get
+    val portMap: Map[String, Port] = topModule.ports.map(port => port.name -> port).toMap
+    val addedPrintPorts = topLevelOutputs.map({
+      case ((_,_,_,path,prefix),_) => portMap(prefix + path.mkString("_"))
+    })
+
+    println(s"[MIDAS] total # of prints synthesized: ${addedPrintPorts.size}")
+
+    val printRecordAnno =  addedPrintPorts match {
+      case Nil   => Seq()
+      case ports => Seq(AddedPrintfIoAnnotation(topWiringPrefix, addedPrintPorts))
     }
-    Logger.setLevel(LogLevel.None)
 
-    wiredState
+    wiredState.copy(annotations = wiredState.annotations ++ printRecordAnno)
   }
 }
