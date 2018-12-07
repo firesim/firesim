@@ -20,12 +20,6 @@ class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
 }
 
-object AssertBundle {
-  def apply(port: firrtl.ir.Port): AssertBundle = {
-    new AssertBundle(firrtl.bitWidth(port.tpe).toInt)
-  }
-}
-
 class AssertWidgetIO(val numAsserts: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new AssertBundle(numAsserts)))
 }

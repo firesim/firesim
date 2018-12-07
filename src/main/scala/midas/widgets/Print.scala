@@ -3,11 +3,12 @@
 package midas
 package widgets
 
+import scala.collection.immutable.ListMap
+
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 
-import scala.collection.immutable.ListMap
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
@@ -17,28 +18,40 @@ import junctions._
 import midas.{PrintPorts}
 import midas.core.{HostPort, DMANastiKey}
 
-class PrintRecord(es: Seq[(String, Int)]) extends Record {
-  val elements = ListMap((es map {
-    case (name, width) => name -> Output(UInt(width.W))
-  }):_*)
-  def cloneType = new PrintRecord(es).asInstanceOf[this.type]
+class PrintRecord(argTypes: Seq[firrtl.ir.Type]) extends Record {
+  def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
+    case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)
+    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => SInt(width.width.toInt.W)
+    case badType => throw new RuntimeException(s"Unexpected type in PrintBundle: ${badType}")
+  }
+  val enable = Output(Bool())
+  val args: Seq[(String, Data)] =argTypes.zipWithIndex.map({ case (tpe, idx) =>
+    "args_${idx}" -> Output(regenLeafType(tpe))
+  })
+  val elements = ListMap((Seq("enable" -> enable) ++ args):_*)
+  override def cloneType = new PrintRecord(argTypes).asInstanceOf[this.type]
 }
 
-object PrintRecord {
-  def apply(port: firrtl.ir.Port): PrintRecord = {
-    val fields = port.tpe match {
-      case firrtl.ir.BundleType(fs) => fs map (f => f.name -> firrtl.bitWidth(f.tpe).toInt)
-    }
-    new PrintRecord(fields)
-  }
+
+class PrintRecordBag(prefix: String, printPorts: Seq[firrtl.ir.Port]) extends Record {
+  val ports: Seq[(String, PrintRecord)] = printPorts.collect({ 
+      case firrtl.ir.Port(_, name, _, firrtl.ir.BundleType(fields)) =>
+    val argTypes = fields.flatMap({_  match {
+      case firrtl.ir.Field(name, _, _) if name == "enable" => None
+      case firrtl.ir.Field(_, _, tpe) => Some(tpe)
+    }})
+    name.stripPrefix(prefix) -> new PrintRecord(argTypes)
+  })
+  val elements = ListMap(ports:_*)
+  override def cloneType = new PrintRecordBag(prefix, printPorts).asInstanceOf[this.type]
 }
 
 class PrintRecordEndpoint extends Endpoint {
   var initialized = false
-  var printRecordGen: PrintRecord = new PrintRecord(Seq())
+  var printRecordGen: PrintRecordBag = new PrintRecordBag("dummy", Seq())
 
   def matchType(data: Data) = data match {
-    case channel: PrintRecord =>
+    case channel: PrintRecordBag =>
       require(DataMirror.directionOf(channel) == Direction.Output, "PrintRecord has unexpected direction")
       initialized = true
       printRecordGen = channel.cloneType
@@ -52,12 +65,13 @@ class PrintRecordEndpoint extends Endpoint {
   override def widgetName = "PrintWidget"
 }
 
-class PrintWidgetIO(private val record: PrintRecord)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class PrintWidgetIO(private val record: PrintRecordBag)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(record))
 }
 
 class PrintWidget(printRecord: PrintRecord)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new PrintWidgetIO(printRecord))
+  io <> DontCare
 
 //  val printPort = io.hPort.hBits
 //  val fire = Wire(Bool())

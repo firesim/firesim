@@ -38,7 +38,8 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
 case class SynthPrintfAnnotation(
     args: Seq[ReferenceTarget],
     mod: ModuleTarget,
-    format: String) extends firrtl.annotations.Annotation {
+    format: String,
+    name: Option[String]) extends firrtl.annotations.Annotation {
 
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
@@ -53,19 +54,25 @@ case class SynthPrintfAnnotation(
 private[midas] case class ChiselSynthPrintfAnnotation(
     format: String,
     args: Seq[Bits],
-    mod: BaseModule) extends ChiselAnnotation {
-  def toFirrtl() = SynthPrintfAnnotation(args.map(_.toNamed.toTarget), mod.toNamed.toTarget, format)
+    mod: BaseModule,
+    name: Option[String]) extends ChiselAnnotation {
+  def toFirrtl() = SynthPrintfAnnotation(args.map(_.toNamed.toTarget), mod.toNamed.toTarget, format, name)
 }
 
 // For now, this needs to be invoked on the arguments to printf, not on the printf itself
 // Eg. printf(SynthesizePrintf("True.B or False.B: Printfs can be annotated: %b\n", false.B))
 object SynthesizePrintf {
-  def apply(format: String, args: Bits*): Printable = {
+  def generateAnnotations(format: String, args: Seq[Bits], name: Option[String]): Printable = {
     val thisModule = Module.currentModule.getOrElse(
       throw new RuntimeException("Cannot annotate a printf outside of a Module"))
-    chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule))
+    chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule, name))
     Printable.pack(format, args:_*)
   }
+  def apply(name: String, format: String, args: Bits*): Printable =
+    generateAnnotations(format, args, Some(name))
+
+  def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
+
   // TODO: Accept a printable -> need to somehow get the format string from it
 }
 

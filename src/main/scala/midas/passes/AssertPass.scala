@@ -14,12 +14,13 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
-import midas.widgets.{PrintRecord, AssertBundle}
+import midas.widgets.AssertBundle
 
-private[passes] object DebugPassUtils {
+
+case class AddedAssertIoAnnotation(port: Port) extends AddedTargetIoAnnotation[AssertBundle]{
+  def generateChiselIO(): (String, AssertBundle) = (port.name, new AssertBundle(firrtl.bitWidth(port.tpe).toInt))
+  def update(renames: RenameMap): Seq[AddedAssertIoAnnotation] = Seq(this)
 }
-
-import DebugPassUtils._
 
 private[passes] class AssertPass(
      dir: File)
@@ -137,7 +138,7 @@ private[passes] class AssertPass(
 
     val mName = ModuleName(c.main, CircuitName(c.main))
     val assertAnno = if (assertNum > 0) {
-      Seq(AddedTargetIoAnnotation(assertPorts(c.main), AssertBundle.apply))
+      Seq(AddedAssertIoAnnotation(assertPorts(c.main)))
     } else {
       Seq()
     }
