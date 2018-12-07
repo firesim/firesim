@@ -24,42 +24,6 @@ import TokenQueueConsts._
 
 case object LoopbackNIC extends Field[Boolean]
 
-class SplitSeqQueue(implicit p: Parameters) extends Module {
-  /* hacks. the version of FIRRTL we're using can't handle >= 512-bit-wide
-     stuff. there are a variety of reasons to not fix it this way, but I just
-     want to keep building this
-  */
-  val io = IO(new Bundle {
-    val enq = Flipped(DecoupledIO(UInt(BIG_TOKEN_WIDTH.W)))
-    val deq = DecoupledIO(UInt(BIG_TOKEN_WIDTH.W))
-  })
-
-  val SPLITS = 1
-  val INTERNAL_WIDTH = BIG_TOKEN_WIDTH / SPLITS
-
-  val voq = VecInit(Seq.fill(SPLITS)(Module((
-    new BRAMQueue(TOKEN_QUEUE_DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
-
-  val enqHelper = new DecoupledHelper(
-    io.enq.valid +: voq.map(_.enq.ready))
-
-  io.enq.ready := enqHelper.fire(io.enq.valid)
-
-  for (i <- 0 until SPLITS) {
-    voq(i).enq.valid := enqHelper.fire(voq(i).enq.ready)
-    voq(i).enq.bits := io.enq.bits((i+1)*INTERNAL_WIDTH-1, i*INTERNAL_WIDTH)
-  }
-
-  val deqHelper = new DecoupledHelper(
-    io.deq.ready +: voq.map(_.deq.valid))
-
-  for (i <- 0 until SPLITS) {
-    voq(i).deq.ready := deqHelper.fire(voq(i).deq.valid)
-  }
-  io.deq.bits := Cat(voq.map(_.deq.bits).reverse)
-  io.deq.valid := deqHelper.fire(io.deq.ready)
-}
-
 /* on a NIC token transaction:
  * 1) simulation driver feeds an empty token to start:
  *  data_in is garbage or real value (if exists)
