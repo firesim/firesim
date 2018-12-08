@@ -8,7 +8,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
-import midas.core._
+import midas.core.{HostPort}
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
