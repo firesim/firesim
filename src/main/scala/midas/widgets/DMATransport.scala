@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import core.{HostPort, HostPortIO, DMANastiKey}
+import core.{DMANastiKey}
 import junctions._
 
 import chisel3._
@@ -11,17 +11,8 @@ import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.{DecoupledHelper}
 
-abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
-  val tReset = Flipped(Decoupled(Bool()))
-}
-
-abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
-  override def io: EndpointWidgetIO
-}
-
 trait HasDMA {
-  self: EndpointWidget =>
+  self: Widget =>
   val dma = IO(Flipped(new NastiIO()( p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
   // Specify the size that you want the address region to be in the DMA memory map
   // For proper functioning, the region should be at least as big as the
@@ -31,7 +22,7 @@ trait HasDMA {
 }
 
 trait DMAToHostCPU extends HasDMA {
-  self: EndpointWidget =>
+  self: Widget =>
   val toHostCPUQueueDepth: Int
 
   require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
@@ -85,7 +76,7 @@ trait DMAToHostCPU extends HasDMA {
 }
 
 trait DMAFromHostCPU extends HasDMA {
-  self: EndpointWidget =>
+  self: Widget =>
   val fromHostCPUQueueDepth: Int
 
   require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
@@ -141,14 +132,14 @@ trait DMAFromHostCPU extends HasDMA {
 
 
 trait TieOffDMAToHostCPU extends HasDMA {
-  self: EndpointWidget =>
+  self: Widget =>
   dma.ar.ready := false.B
   dma.r.valid := false.B
   dma.r.bits := DontCare
 }
 
-trait TieOffDMAFromHostCPU extends HasDMA{
-  self: EndpointWidget =>
+trait TieOffDMAFromHostCPU extends HasDMA {
+  self: Widget =>
   dma.aw.ready := false.B
   dma.w.ready := false.B
   dma.b.valid := false.B
@@ -157,13 +148,13 @@ trait TieOffDMAFromHostCPU extends HasDMA{
 
 // Complete Endpoint mixins for DMA-based transport
 trait UnidirectionalDMAToHostCPU extends HasDMA with DMAToHostCPU with TieOffDMAFromHostCPU {
-  self: EndpointWidget =>
+  self: Widget =>
 }
 
 trait UnidirecitonalDMAFromHostCPU extends HasDMA with DMAFromHostCPU with TieOffDMAToHostCPU {
-  self: EndpointWidget =>
+  self: Widget =>
 }
 
 trait BidirectionalDMA extends HasDMA with DMAFromHostCPU with DMAToHostCPU {
-  self: EndpointWidget =>
+  self: Widget =>
 }
