@@ -34,7 +34,7 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submo
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
+$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
@@ -69,7 +69,7 @@ TIMEOUT_CYCLES = 100000000
 NET_SLOT ?= 0
 NET_LINK_LATENCY ?= 6405
 NET_BW ?= 100
-nic_args = +slotid=$(NET_SLOT) +niclog=niclog +linklatency=$(NET_LINK_LATENCY) +netbw=$(NET_BW) +netburst=8 +nic-loopback
+nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))

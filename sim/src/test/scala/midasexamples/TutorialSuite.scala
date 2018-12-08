@@ -89,3 +89,4 @@ class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister", mid
 class StackF1Test extends TutorialSuite("Stack", midas.F1, 8)
 class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
+class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)

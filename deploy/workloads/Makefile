@@ -22,14 +22,17 @@ SPECKLE_DIR=Speckle
 spec17_suites = intrate intspeed
 spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
 
-$(SPECKLE_DIR)/build/overlay/%:
-	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $*
+#Default to ref input size for SPEC17
+input=ref
 
-spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%
+$(SPECKLE_DIR)/build/overlay/%/$(input):
+	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
+
+spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	mkdir -p $@
 	cp $(BASE_LINUX) $@/bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
-		-s $(SPECKLE_DIR)/build/overlay/$*
+		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
 
 memcached-thread-imbalance:
 	mkdir -p $@

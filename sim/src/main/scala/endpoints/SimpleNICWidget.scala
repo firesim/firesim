@@ -1,10 +1,9 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import chisel3.Module
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
@@ -16,77 +15,30 @@ import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 
+object TokenQueueConsts {
+  val TOKENS_PER_BIG_TOKEN = 7
+  val BIG_TOKEN_WIDTH = (TOKENS_PER_BIG_TOKEN + 1) * 64
+  val TOKEN_QUEUE_DEPTH = 6144
+}
+import TokenQueueConsts._
+
 case object LoopbackNIC extends Field[Boolean]
-
-class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
-  val io = IO(new QueueIO(data, entries))
-  require(entries > 1)
-
-  io.count := 0.U
-
-  val do_flow = Wire(Bool())
-  val do_enq = io.enq.fire() && !do_flow
-  val do_deq = io.deq.fire() && !do_flow
-
-  val maybe_full = RegInit(false.B)
-  val enq_ptr = Counter(do_enq, entries)._1
-  val (deq_ptr, deq_done) = Counter(do_deq, entries)
-  when (do_enq =/= do_deq) { maybe_full := do_enq }
-
-  val ptr_match = enq_ptr === deq_ptr
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val atLeastTwo = full || enq_ptr - deq_ptr >= 2.U
-  do_flow := empty && io.deq.ready
-
-  val ram = Mem(entries, data)
-  when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
-
-  val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
-  val raddr = Mux(io.deq.valid, Mux(deq_done, 0.U, deq_ptr + 1.U), deq_ptr)
-  val ram_out_valid = RegNext(ren)
-
-  io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
-  io.enq.ready := !full
-  io.deq.bits := Mux(empty, io.enq.bits, RegEnable(ram.read(raddr), ren))
-}
-
-class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
-  val io = IO(new QueueIO(data, entries))
-
-  io.count := 0.U
-
-  val fq = Module(new BRAMFlowQueue(entries)(data))
-  fq.io.enq <> io.enq
-  io.deq <> Queue(fq.io.deq, 1, pipe = true)
-}
-
-object BRAMQueue {
-  def apply[T <: Data](enq: DecoupledIO[T], entries: Int) = {
-    val q = Module((new BRAMQueue(entries)) { enq.bits })
-    q.io.enq.valid := enq.valid // not using <> so that override is allowed
-    q.io.enq.bits := enq.bits
-    enq.ready := q.io.enq.ready
-    q.io.deq
-  }
-}
 
 class SplitSeqQueue(implicit p: Parameters) extends Module {
   /* hacks. the version of FIRRTL we're using can't handle >= 512-bit-wide
      stuff. there are a variety of reasons to not fix it this way, but I just
      want to keep building this
   */
-  val EXTERNAL_WIDTH = 512
   val io = IO(new Bundle {
-    val enq = Flipped(DecoupledIO(UInt(EXTERNAL_WIDTH.W)))
-    val deq = DecoupledIO(UInt(EXTERNAL_WIDTH.W))
+    val enq = Flipped(DecoupledIO(UInt(BIG_TOKEN_WIDTH.W)))
+    val deq = DecoupledIO(UInt(BIG_TOKEN_WIDTH.W))
   })
 
   val SPLITS = 1
-  val INTERNAL_WIDTH = EXTERNAL_WIDTH / SPLITS
-  val DEPTH = 6144
+  val INTERNAL_WIDTH = BIG_TOKEN_WIDTH / SPLITS
 
-  val voq = VecInit(Seq.fill(SPLITS)(Module((new BRAMQueue(DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
+  val voq = VecInit(Seq.fill(SPLITS)(Module((
+    new BRAMQueue(TOKEN_QUEUE_DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
 
   val enqHelper = new DecoupledHelper(
     io.enq.valid +: voq.map(_.enq.ready))
@@ -149,21 +101,20 @@ class NICToHostToken extends Bundle {
 class SimSimpleNIC extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: NICIOvonly =>
-      directionOf(channel.out.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.out.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new SimpleNICWidget()(p)
   override def widgetName = "SimpleNICWidget"
 }
 
-class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new NICIOvonly))
-  val dma = if (!p(LoopbackNIC)) {
+  override val dma = if (!p(LoopbackNIC)) {
     Some(Flipped(new NastiIO()(
       p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
   } else None
-  val address = if (!p(LoopbackNIC))
-    Some(AddressSet(0x00, BigInt("FFFFFFFF", 16))) else None
+  override val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 }
 
 

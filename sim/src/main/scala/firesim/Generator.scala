@@ -65,6 +65,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
       case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
       case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
       case "FireSimMemBlade" => LazyModule(new FireSimMemBlade()(params)).module
+      case "FireSimSupernode" => new FireSimSupernode()(params)
     }
   }
 
@@ -98,7 +99,7 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     val portList = target.getPorts flatMap {
       case Port(id: DebugIO, _) => None
       case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
-      case otherPort => Some(otherPort.id)
+      case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 
     generatorArgs.midasFlowKind match {
@@ -122,6 +123,17 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     fw.write(contents)
     fw.close
     f
+  }
+
+  // Capture FPGA-toolflow related verilog defines
+  def generateHostVerilogHeader() {
+    val headerName = "cl_firesim_generated_defines.vh"
+    val requestedFrequency = hostParams(DesiredHostFrequency)
+    val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
+    if (!availableFrequenciesMhz.contains(requestedFrequency)) {
+      throw new RuntimeException(s"Requested frequency (${requestedFrequency} MHz) is not available.\nAllowed options: ${availableFrequenciesMhz} MHz")
+    }
+    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
   }
 }
 
@@ -207,6 +219,7 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
 
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
+  generateHostVerilogHeader
 }
 
 // A runtime-configuration generation for memory models
