@@ -13,10 +13,9 @@ import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
 import junctions._
+
 import midas.{PrintPorts}
-import midas.core.{Endpoint, HostPort, DMANastiKey}
-
-
+import midas.core.{HostPort, DMANastiKey}
 
 class PrintRecord(es: Seq[(String, Int)]) extends Record {
   val elements = ListMap((es map {
