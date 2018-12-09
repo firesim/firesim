@@ -18,30 +18,37 @@ import junctions._
 import midas.{PrintPorts}
 import midas.core.{HostPort, DMANastiKey}
 
-class PrintRecord(argTypes: Seq[firrtl.ir.Type]) extends Record {
+
+class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
     case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)
     case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => SInt(width.width.toInt.W)
     case badType => throw new RuntimeException(s"Unexpected type in PrintBundle: ${badType}")
   }
-  val enable = Output(Bool())
-  val args: Seq[(String, Data)] =argTypes.zipWithIndex.map({ case (tpe, idx) =>
-    s"args_${idx}" -> Output(regenLeafType(tpe))
+
+  val args: Seq[(String, Data)] = portType.fields.collect({
+    case firrtl.ir.Field(name, _, tpe) if name != "enable" => (name -> Output(regenLeafType(tpe)))
   })
+
+  val enable = Output(Bool())
+
   val elements = ListMap((Seq("enable" -> enable) ++ args):_*)
-  override def cloneType = new PrintRecord(argTypes).asInstanceOf[this.type]
+  override def cloneType = new PrintRecord(portType, formatString).asInstanceOf[this.type]
+
+  // Gets the bit position of each argument after the record has been flattened to a UInt
+  def argumentOffsets() = args.foldLeft(Seq(enable.getWidth))({
+      case (offsets, (_, data)) => data.getWidth +: offsets}).tail.reverse
+
+  def argumentWidths(): Seq[Int] = args.map(_._2.getWidth)
 }
 
 
-class PrintRecordBag(prefix: String, printPorts: Seq[firrtl.ir.Port]) extends Record {
-  val ports: Seq[(String, PrintRecord)] = printPorts.collect({ 
-      case firrtl.ir.Port(_, name, _, firrtl.ir.BundleType(fields)) =>
-    val argTypes = fields.flatMap({_  match {
-      case firrtl.ir.Field(name, _, _) if name == "enable" => None
-      case firrtl.ir.Field(_, _, tpe) => Some(tpe)
-    }})
-    name.stripPrefix(prefix) -> new PrintRecord(argTypes)
+class PrintRecordBag(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
+  val ports: Seq[(String, PrintRecord)] = printPorts.collect({
+    case (firrtl.ir.Port(_, name, _, tpe @ firrtl.ir.BundleType(_)), formatString) =>
+      name.stripPrefix(prefix) -> new PrintRecord(tpe, formatString)
   })
+
   val elements = ListMap(ports:_*)
   override def cloneType = new PrintRecordBag(prefix, printPorts).asInstanceOf[this.type]
 
@@ -93,19 +100,28 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
 
-  //override def genHeader(base: BigInt, sb: StringBuilder) {
-  //  import CppGenerationUtils._
-  //  sb.append(genComment("Print Widget"))
-  //  sb.append(genMacro("PRINTS_NUM", UInt32(printPort.elements.size)))
-  //  sb.append(genMacro("PRINTS_CHUNKS", UInt32(prints.size)))
-  //  sb.append(genMacro("PRINTS_ENABLE", UInt32(base + enableAddr)))
-  //  sb.append(genMacro("PRINTS_COUNT_ADDR", UInt32(base + countAddrs.head)))
-  //  sb.append(genArray("PRINTS_WIDTHS", printPort.elements.toSeq map (x => UInt32(x._2.getWidth))))
-  //  if (!p(HasDMAChannel)) {
-  //    sb.append(genArray("PRINTS_DATA_ADDRS", printAddrs.toSeq map (x => UInt32(base + x))))
-  //  } else {
-  //    sb.append(genMacro("HAS_DMA_CHANNEL"))
-  //  }
-  //}
+
+  // The LSB corresponding to the enable bit of the print
+  val reservedBits = 1 // Just print-wide enable
+  val widths = (printRecord.elements.map(_._2.getWidth))
+
+  // C-types for emission
+  val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
+    UInt32(offsets.head.value + width) +: offsets}).tail.reverse
+
+  val argumentCounts  = printRecord.ports.map(_._2.args.size).map(UInt32(_))
+  val argumentWidths  = printRecord.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
+  val argumentOffsets = printRecord.ports.map(_._2.argumentOffsets.map(UInt32(_)))
+  val formatStrings   = printRecord.ports.map(_._2.formatString).map(CStrLit)
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    sb.append(genComment("Print Widget"))
+    sb.append(genConstStatic("print_count", UInt32(printRecord.ports.size)))
+    sb.append(genArray("print_offsets", baseOffsets))
+    sb.append(genArray("format_strings", formatStrings))
+    sb.append(genArray("argument_counts", argumentCounts))
+    sb.append(genArray("argument_widths", argumentWidths))
+  }
   genCRFile()
 }

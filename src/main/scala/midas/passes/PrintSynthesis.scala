@@ -20,7 +20,7 @@ import Utils._
 import midas.widgets.{PrintRecordBag}
 import midas.targetutils.SynthPrintfAnnotation
 
-case class AddedPrintfIoAnnotation(prefix: String, printPorts: Seq[Port]) extends AddedTargetIoAnnotation[PrintRecordBag]{
+case class AddedPrintfIoAnnotation(prefix: String, printPorts: Seq[(Port, String)]) extends AddedTargetIoAnnotation[PrintRecordBag]{
   def generateChiselIO(): (String, PrintRecordBag) = (prefix.stripSuffix("_"), new PrintRecordBag(prefix, printPorts))
   def update(renames: RenameMap): Seq[AddedPrintfIoAnnotation] = Seq(this)
 }
@@ -31,6 +31,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   override def name = "[MIDAS] Print Synthesis"
 
   private val printMods = new mutable.HashSet[ModuleTarget]()
+  private val formatStringMap = new mutable.HashMap[ReferenceTarget, String]()
 
   // Generates a bundle to aggregate
   def genPrintBundleType(print: Print): Type = BundleType(Seq(
@@ -85,8 +86,8 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
     def onStmt(annos: Seq[SynthPrintfAnnotation], modNamespace: Namespace)
               (s: Statement): Statement = s.map(onStmt(annos, modNamespace)) match {
-      case p @ Print(_,str,args,_,en) if annos.exists(_.format == str.string) =>
-        val associatedAnno = annos.find(_.format == str.string).get
+      case p @ Print(_,format,args,_,en) if annos.exists(_.format == format.string) =>
+        val associatedAnno = annos.find(_.format == format.string).get
         val printName = getPrintName(p, associatedAnno, modNamespace)
         // Generate an aggregate with all of our arguments; this will be wired out
         val wire = DefWire(NoInfo, printName, genPrintBundleType(p))
@@ -95,7 +96,10 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
           Connect(NoInfo,
                   wsub(WRef(wire), s"args_${idx}"),
                   arg)})
-        topWiringAnnos += TopWiringAnnotation(associatedAnno.mod.ref(printName), topWiringPrefix)
+
+        val printBundleTarget = associatedAnno.mod.ref(printName)
+        topWiringAnnos += TopWiringAnnotation(printBundleTarget, topWiringPrefix)
+        formatStringMap(printBundleTarget) = format.serialize
         Block(Seq(p, wire, enableConnect) ++ argumentConnects)
       case s => s
     }
@@ -105,11 +109,13 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       circuit = processedCircuit,
       annotations = state.annotations ++ topWiringAnnos))
 
-
     val topModule = wiredState.circuit.modules.find(_.name == wiredState.circuit.main).get
     val portMap: Map[String, Port] = topModule.ports.map(port => port.name -> port).toMap
-    val addedPrintPorts = topLevelOutputs.map({
-      case ((_,_,_,path,prefix),_) => portMap(prefix + path.mkString("_"))
+    val addedPrintPorts = topLevelOutputs.map({ case ((cname,_,_,path,prefix),_) =>
+      // Look up the format string by regenerating the referenceTarget to the original print bundle
+      val formatString = formatStringMap(cname)
+      val port = portMap(prefix + path.mkString("_"))
+      (port, formatString)
     })
 
     println(s"[MIDAS] total # of prints synthesized: ${addedPrintPorts.size}")
