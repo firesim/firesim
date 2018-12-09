@@ -7,7 +7,7 @@ import firrtl.analyses.InstanceGraph
 import firrtl.annotations.{ModuleTarget, ReferenceTarget, TargetToken}
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.transforms.fame._
+import fame._
 import Utils._
 
 import collection.mutable
