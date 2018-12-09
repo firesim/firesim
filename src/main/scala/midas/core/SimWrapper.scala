@@ -16,8 +16,8 @@ import chisel3.util._
 import chisel3.core.{Reset}
 import chisel3.experimental.{MultiIOModule, Direction}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.transforms.fame
-import firrtl.transforms.fame.{FAMEChannelAnnotation, DecoupledForwardChannel}
+import passes.fame
+import passes.fame.{FAMEChannelAnnotation, DecoupledForwardChannel}
 import firrtl.annotations.{ReferenceTarget}
 
 import scala.collection.immutable.ListMap
@@ -481,8 +481,8 @@ class SimWrapper(targetIo: Seq[(String, Data)],
 
   // Iterate through the channel annotations to generate channels
   chAnnos.foreach({ _ match {
-    case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.WireChannel,_,_) => genWireChannel(ch)
-    case ch @ FAMEChannelAnnotation(_,firrtl.transforms.fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
+    case ch @ FAMEChannelAnnotation(_,fame.WireChannel,_,_) => genWireChannel(ch)
+    case ch @ FAMEChannelAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
     case _ => Nil // Drop DecoupledReverseChannel annotations
   }})
 }

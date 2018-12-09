@@ -11,7 +11,6 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
-import firrtl.transforms.fame
 import Utils._
 import java.io.{File, FileWriter}
 

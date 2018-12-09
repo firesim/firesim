@@ -13,7 +13,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
-import firrtl.transforms.fame.{FAMEChannelAnnotation, FAMEChannelAnalysis, FAME1Transform}
+import fame.{FAMEChannelAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
