@@ -110,22 +110,12 @@ class RuntimeHWConfig:
         return basecommand
 
 
-    def get_supernode_boot_simulation_command(self,
-                                              slotid,
-                                              macaddr0, macaddr1,
-                                              macaddr2, macaddr3,
-                                              blkdev0, blkdev1,
-                                              blkdev2, blkdev3,
-                                              linklatency0, linklatency1,
-                                              linklatency2, linklatency3,
-                                              netbw0, netbw1, netbw2, netbw3,
-                                              profile_interval,
-                                              bootbin0, bootbin1,
-                                              bootbin2, bootbin3,
-                                              trace_enable, trace_start,
-                                              trace_end,
-                                              shmemportname0, shmemportname1,
-                                              shmemportname2, shmemportname3):
+    def get_supernode_boot_simulation_command(self, slotid, all_macs,
+                                              all_rootfses, all_linklatencies,
+                                              all_netbws, profile_interval,
+                                              all_bootbinaries, trace_enable,
+                                              trace_start, trace_end,
+                                              all_shmemportnames):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -138,17 +128,30 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency0} +linklatency1={linklatency1} +linklatency2={linklatency2} +linklatency3={linklatency3} +netbw0={netbw0} +netbw1={netbw1} +netbw2={netbw2} +netbw3={netbw3} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname0} +shmemportname1={shmemportname1} +shmemportname2={shmemportname2} +shmemportname3={shmemportname3} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
+
+        def array_to_plusargs(valuesarr, plusarg):
+            args = map(lambda ind_rootfs: """{}{}={}""".format(plusarg, ind_rootfs[0], ind_rootfs[1]), enumerate(valuesarr))
+            return " ".join(args) + " "
+
+        command_macs = array_to_plusargs(all_macs, "+macaddr")
+        command_rootfses = array_to_plusargs(all_rootfses, "+blkdev")
+        command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
+        command_netbws = array_to_plusargs(all_netbws, "+netbw")
+        command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
+
+        command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
+
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-            macaddr0=macaddr0, macaddr1=macaddr1,macaddr2=macaddr2,macaddr3=macaddr3,
-            blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3,
-            linklatency0=linklatency0, linklatency1=linklatency1,
-            linklatency2=linklatency2, linklatency3=linklatency3,
-            netbw0=netbw0, netbw1=netbw1, netbw2=netbw2, netbw3=netbw3,
+            command_macs=command_macs,
+            command_rootfses=command_rootfses,
+            command_linklatencies=command_linklatencies,
+            command_netbws=command_netbws,
             profile_interval=profile_interval,
-            shmemportname0=shmemportname0, shmemportname1=shmemportname1, shmemportname2=shmemportname2, shmemportname3=shmemportname3,
-            bootbin0=bootbin0, bootbin1=bootbin1, bootbin2=bootbin2, bootbin3=bootbin3, tracefile=tracefile,
-            trace_start=trace_start, trace_end=trace_end)
+            command_shmemportnames=command_shmemportnames,
+            command_bootbinaries=command_bootbinaries,
+            trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)
 
         return basecommand
 

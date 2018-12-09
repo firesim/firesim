@@ -48,6 +48,22 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     UARTWIDGET_3_substruct_create;
     add_endpoint(new uart_t(this, UARTWIDGET_3_substruct, 3));
     #endif
+    #ifdef UARTWIDGET_4_PRESENT
+    UARTWIDGET_4_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_4_substruct, 4));
+    #endif
+    #ifdef UARTWIDGET_5_PRESENT
+    UARTWIDGET_5_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_5_substruct, 5));
+    #endif
+    #ifdef UARTWIDGET_6_PRESENT
+    UARTWIDGET_6_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_6_substruct, 6));
+    #endif
+    #ifdef UARTWIDGET_7_PRESENT
+    UARTWIDGET_7_substruct_create;
+    add_endpoint(new uart_t(this, UARTWIDGET_7_substruct, 7));
+    #endif
 #endif
 
 
@@ -117,6 +133,66 @@ uint64_t host_mem_offset = -0x80000000LL;
      host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
 
+#ifdef MEMMODEL_4
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_4_R_num_registers,
+                    (const unsigned int*) MEMMODEL_4_R_addrs,
+                    (const char* const*) MEMMODEL_4_R_names,
+                    MEMMODEL_4_W_num_registers,
+                    (const unsigned int*) MEMMODEL_4_W_addrs,
+                    (const char* const*) MEMMODEL_4_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_4_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_5
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_5_R_num_registers,
+                    (const unsigned int*) MEMMODEL_5_R_addrs,
+                    (const char* const*) MEMMODEL_5_R_names,
+                    MEMMODEL_5_W_num_registers,
+                    (const unsigned int*) MEMMODEL_5_W_addrs,
+                    (const char* const*) MEMMODEL_5_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_5_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_6
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_6_R_num_registers,
+                    (const unsigned int*) MEMMODEL_6_R_addrs,
+                    (const char* const*) MEMMODEL_6_R_names,
+                    MEMMODEL_6_W_num_registers,
+                    (const unsigned int*) MEMMODEL_6_W_addrs,
+                    (const char* const*) MEMMODEL_6_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_6_target_addr_bits;
+#endif
+
+#ifdef MEMMODEL_7
+    fpga_models.push_back(new FpgaMemoryModel(
+                this,
+                // Casts are required for now since the emitted type can change...
+                AddressMap(MEMMODEL_7_R_num_registers,
+                    (const unsigned int*) MEMMODEL_7_R_addrs,
+                    (const char* const*) MEMMODEL_7_R_names,
+                    MEMMODEL_7_W_num_registers,
+                    (const unsigned int*) MEMMODEL_7_W_addrs,
+                    (const char* const*) MEMMODEL_7_W_names),
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+     host_mem_offsets.push_back(host_mem_offset);
+     host_mem_offset += 1ULL << MEMMODEL_7_target_addr_bits;
+#endif
+
 #ifdef SERIALWIDGET_struct_guard
     #ifdef SERIALWIDGET_0_PRESENT
     SERIALWIDGET_0_substruct_create;
@@ -133,6 +209,22 @@ uint64_t host_mem_offset = -0x80000000LL;
     #ifdef SERIALWIDGET_3_PRESENT
     SERIALWIDGET_3_substruct_create;
     add_endpoint(new serial_t(this, args, SERIALWIDGET_3_substruct, 3, host_mem_offsets[3]));
+    #endif
+    #ifdef SERIALWIDGET_4_PRESENT
+    SERIALWIDGET_4_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_4_substruct, 4, host_mem_offsets[4]));
+    #endif
+    #ifdef SERIALWIDGET_5_PRESENT
+    SERIALWIDGET_5_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_5_substruct, 5, host_mem_offsets[5]));
+    #endif
+    #ifdef SERIALWIDGET_6_PRESENT
+    SERIALWIDGET_6_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_6_substruct, 6, host_mem_offsets[6]));
+    #endif
+    #ifdef SERIALWIDGET_7_PRESENT
+    SERIALWIDGET_7_substruct_create;
+    add_endpoint(new serial_t(this, args, SERIALWIDGET_7_substruct, 7, host_mem_offsets[7]));
     #endif
 #endif
 
@@ -153,6 +245,22 @@ uint64_t host_mem_offset = -0x80000000LL;
     BLOCKDEVWIDGET_3_substruct_create;
     add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_3_num_trackers, BLOCKDEVWIDGET_3_latency_bits, BLOCKDEVWIDGET_3_substruct, 3));
     #endif
+    #ifdef BLOCKDEVWIDGET_4_PRESENT
+    BLOCKDEVWIDGET_4_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_4_num_trackers, BLOCKDEVWIDGET_4_latency_bits, BLOCKDEVWIDGET_4_substruct, 4));
+    #endif
+    #ifdef BLOCKDEVWIDGET_5_PRESENT
+    BLOCKDEVWIDGET_5_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_5_num_trackers, BLOCKDEVWIDGET_5_latency_bits, BLOCKDEVWIDGET_5_substruct, 5));
+    #endif
+    #ifdef BLOCKDEVWIDGET_6_PRESENT
+    BLOCKDEVWIDGET_6_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_6_num_trackers, BLOCKDEVWIDGET_6_latency_bits, BLOCKDEVWIDGET_6_substruct, 6));
+    #endif
+    #ifdef BLOCKDEVWIDGET_7_PRESENT
+    BLOCKDEVWIDGET_7_substruct_create;
+    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_7_num_trackers, BLOCKDEVWIDGET_7_latency_bits, BLOCKDEVWIDGET_7_substruct, 7));
+    #endif
 #endif
 
 #ifdef SIMPLENICWIDGET_struct_guard
@@ -172,6 +280,22 @@ uint64_t host_mem_offset = -0x80000000LL;
     SIMPLENICWIDGET_3_substruct_create;
     add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3, SIMPLENICWIDGET_3_DMA_ADDR));
     #endif
+    #ifdef SIMPLENICWIDGET_4_PRESENT
+    SIMPLENICWIDGET_4_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_4_substruct, 4, SIMPLENICWIDGET_4_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_5_PRESENT
+    SIMPLENICWIDGET_5_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_5_substruct, 5, SIMPLENICWIDGET_5_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_6_PRESENT
+    SIMPLENICWIDGET_6_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_6_substruct, 6, SIMPLENICWIDGET_6_DMA_ADDR));
+    #endif
+    #ifdef SIMPLENICWIDGET_7_PRESENT
+    SIMPLENICWIDGET_7_substruct_create;
+    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_7_substruct, 7, SIMPLENICWIDGET_7_DMA_ADDR));
+    #endif
 #endif
 
 #ifdef TRACERVWIDGET_struct_guard
@@ -190,6 +314,22 @@ uint64_t host_mem_offset = -0x80000000LL;
     #ifdef TRACERVWIDGET_3_PRESENT
     TRACERVWIDGET_3_substruct_create;
     add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3, TRACERVWIDGET_3_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_4_PRESENT
+    TRACERVWIDGET_4_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 4, TRACERVWIDGET_4_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_5_PRESENT
+    TRACERVWIDGET_5_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 5, TRACERVWIDGET_5_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_6_PRESENT
+    TRACERVWIDGET_6_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 6, TRACERVWIDGET_6_DMA_ADDR));
+    #endif
+    #ifdef TRACERVWIDGET_7_PRESENT
+    TRACERVWIDGET_7_substruct_create;
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 7, TRACERVWIDGET_7_DMA_ADDR));
     #endif
 #endif
 

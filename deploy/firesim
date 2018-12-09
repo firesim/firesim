@@ -298,10 +298,13 @@ if __name__ == '__main__':
     # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
     # unfortunately there's no proper way to do it with fabric
 
+    exitcode = 0
     try:
         main(args)
     except:
         # log all exceptions that make it this far
         rootLogger.exception("Fatal error.")
+        exitcode = 1
     finally:
         rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
+        exit(exitcode)

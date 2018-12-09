@@ -288,9 +288,23 @@ class FireSimServerNode(FireSimNode):
 class FireSimSuperNodeServerNode(FireSimServerNode):
     """ This is the main server node for supernode mode. This knows how to
     call out to dummy server nodes to get all the info to launch the one
-    command line to run the FPGA sim that has N > 1 sims on one fpga.
+    command line to run the FPGA sim that has N > 1 sims on one fpga."""
 
-    TODO: this is currently hardcoded to N=4"""
+    def supernode_get_num_siblings(self):
+        siblings = 0
+        count = False
+        for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
+            print(servernode)
+            print(self)
+            print(index)
+            if count:
+                if isinstance(servernode, FireSimDummyServerNode):
+                    count += 1
+                else:
+                    return count
+            elif self == servernode:
+                count = True
+        return count
 
     def supernode_get_sibling(self, siblingindex):
         """ return the sibling for supernode mode.
@@ -335,47 +349,23 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         Currently hardcoded to 4 nodes.
         """
-        sibling1mac = self.supernode_get_sibling_mac_address(1)
-        sibling2mac = self.supernode_get_sibling_mac_address(2)
-        sibling3mac = self.supernode_get_sibling_mac_address(3)
 
-        sibling1root = self.supernode_get_sibling_rootfs(1)
-        sibling2root = self.supernode_get_sibling_rootfs(2)
-        sibling3root = self.supernode_get_sibling_rootfs(3)
+        num_siblings = self.supernode_get_num_siblings()
 
-        sibling1bootbin = self.supernode_get_sibling_bootbin(1)
-        sibling2bootbin = self.supernode_get_sibling_bootbin(2)
-        sibling3bootbin = self.supernode_get_sibling_bootbin(3)
+        all_macs = [self.get_mac_address()] + [self.supernode_get_sibling_mac_address(x) for x in range(1, num_siblings)]
+        all_rootfses = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
+        all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling_bootbin(x) for x in range(1, num_siblings)]
+        all_linklatencies = [self.server_link_latency] + [self.supernode_get_sibling_link_latency(x) for x in range(1, num_siblings)]
+        all_maxbws = [self.server_bw_max] + [self.supernode_get_sibling_bw_max(x) for x in range(1, num_siblings)]
 
-        sibling1link_latency = self.supernode_get_sibling_link_latency(1)
-        sibling2link_latency = self.supernode_get_sibling_link_latency(2)
-        sibling3link_latency = self.supernode_get_sibling_link_latency(3)
-
-        sibling1bw_max = self.supernode_get_sibling_bw_max(1)
-        sibling2bw_max = self.supernode_get_sibling_bw_max(2)
-        sibling3bw_max = self.supernode_get_sibling_bw_max(3)
-
-        shmemportname0 = "default"
-        shmemportname1 = "default"
-        shmemportname2 = "default"
-        shmemportname3 = "default"
-
+        all_shmemportnames = ["default" for x in range(num_siblings)]
         if self.uplinks:
-            shmemportname0 = self.uplinks[0].get_global_link_id()
-            shmemportname1 = self.supernode_get_sibling_shmemportname(1)
-            shmemportname2 = self.supernode_get_sibling_shmemportname(2)
-            shmemportname3 = self.supernode_get_sibling_shmemportname(3)
+            all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling_shmemportname(x) for x in range(1, num_siblings)]
 
         return self.server_hardware_config.get_supernode_boot_simulation_command(
-            slotno,
-            self.get_mac_address(), sibling1mac, sibling2mac, sibling3mac,
-            self.get_rootfs_name(), sibling1root, sibling2root, sibling3root,
-            self.server_link_latency, sibling1link_latency, sibling2link_latency, sibling3link_latency,
-            self.server_bw_max, sibling1bw_max, sibling2bw_max, sibling3bw_max,
-            self.server_profile_interval,
-            self.get_bootbin_name(), sibling1bootbin, sibling2bootbin, sibling3bootbin,
-            self.trace_enable, self.trace_start, self.trace_end, 
-            shmemportname0, shmemportname1, shmemportname2, shmemportname3)
+            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
+            self.server_profile_interval, all_bootbins, self.trace_enable,
+            self.trace_start, self.trace_end, all_shmemportnames)
 
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as
@@ -390,22 +380,19 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         # todo handle none case
         all_paths.append([self.get_job().rootfs_path(),
                           self.get_rootfs_name()])
-        all_paths.append([self.supernode_get_sibling_rootfs_path(1),
-                          self.supernode_get_sibling_rootfs(1)])
-        all_paths.append([self.supernode_get_sibling_rootfs_path(2),
-                          self.supernode_get_sibling_rootfs(2)])
-        all_paths.append([self.supernode_get_sibling_rootfs_path(3),
-                          self.supernode_get_sibling_rootfs(3)])
 
+        num_siblings = self.supernode_get_num_siblings()
+
+        for x in range(1, num_siblings):
+            all_paths.append([self.supernode_get_sibling_rootfs_path(x),
+                              self.supernode_get_sibling_rootfs(x)])
 
         all_paths.append([self.get_job().bootbinary_path(),
                           self.get_bootbin_name()])
-        all_paths.append([self.supernode_get_sibling_bootbinary_path(1),
-                          self.supernode_get_sibling_bootbin(1)])
-        all_paths.append([self.supernode_get_sibling_bootbinary_path(2),
-                          self.supernode_get_sibling_bootbin(2)])
-        all_paths.append([self.supernode_get_sibling_bootbinary_path(3),
-                          self.supernode_get_sibling_bootbin(3)])
+
+        for x in range(1, num_siblings):
+            all_paths.append([self.supernode_get_sibling_bootbinary_path(x),
+                              self.supernode_get_sibling_bootbin(x)])
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
