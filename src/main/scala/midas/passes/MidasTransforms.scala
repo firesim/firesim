@@ -20,63 +20,48 @@ private[passes] class WCircuit(
   main: String,
   val sim: SimWrapperIO) extends Circuit(info, modules, main)
 
-object MidasAnnotation {
-  def apply(t: String, conf: File, json: File, lib: Option[File]) =
-    Annotation(CircuitName(t), classOf[MidasTransforms],
-               s"$conf $json %s".format(lib map (_.toString) getOrElse ""))
-  private val matcher = "([^ ]+) ([^ ]+) ([^ ]*)".r
-  def unapply(a: Annotation) = a match {
-    case Annotation(CircuitName(c), t, matcher(conf, json, lib))
-      if t == classOf[MidasTransforms] =>
-        Some(c, new File(conf), new File(json), if (lib.isEmpty) None else Some(new File(lib)))
-    case _ => None
-  }
-}
-
 private[midas] class MidasTransforms(
     io: Seq[(String, chisel3.Data)])
     (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
   val dir = param(OutputDir)
-  def execute(state: CircuitState) = (getMyAnnotations(state): @unchecked) match {
-    case Seq(MidasAnnotation(state.circuit.main, conf, json, lib)) =>
-      val xforms = Seq(
-        firrtl.passes.RemoveValidIf,
-        new firrtl.transforms.ConstantPropagation,
-        firrtl.passes.SplitExpressions,
-        firrtl.passes.CommonSubexpressionElimination,
-        new firrtl.transforms.DeadCodeElimination,
-        new ConfToJSON(conf, json),
-        new barstools.macros.MacroCompilerTransform,
-        // NB: Carelessly removing this pass will break the FireSim manager as we always
-        // need to generate the *.asserts file. Fix by baking into driver.
-        new AssertPass(dir),
-        new ResolveAndCheck,
-        new HighFirrtlToMiddleFirrtl,
-        new MiddleFirrtlToLowFirrtl,
-        new ChannelizeTargetIO(io),
-        new fame.WrapTop,
-        new ResolveAndCheck,
-        new fame.LabelSRAMModels,
-        new ResolveAndCheck,
-        new EmitFirrtl("post-sram-models.fir"),
-        new fame.ExtractModel,
-        new ResolveAndCheck,
-        new EmitFirrtl("post-extract-model.fir"),
-        new HighFirrtlToMiddleFirrtl,
-        new MiddleFirrtlToLowFirrtl,
-        new fame.FAMEDefaults,
-        new fame.ChannelExcision,
-        new EmitFirrtl("post-channel-excision.fir"),
-        new fame.FAMETransform,
-        new EmitFirrtl("post-fame-transform.fir"),
-        new ResolveAndCheck) ++
-        Seq(
-        new SimulationMapping(io),
-        new PlatformMapping(state.circuit.main, dir))
+  def execute(state: CircuitState) = {
+    val xforms = Seq(
+      firrtl.passes.RemoveValidIf,
+      new firrtl.transforms.ConstantPropagation,
+      firrtl.passes.SplitExpressions,
+      firrtl.passes.CommonSubexpressionElimination,
+      new firrtl.transforms.DeadCodeElimination,
+      // NB: Carelessly removing this pass will break the FireSim manager as we always
+      // need to generate the *.asserts file. Fix by baking into driver.
+      new AssertPass(dir),
+      new ResolveAndCheck,
+      new HighFirrtlToMiddleFirrtl,
+      new MiddleFirrtlToLowFirrtl,
+      new ChannelizeTargetIO(io),
+      new fame.WrapTop,
+      new ResolveAndCheck,
+      new EmitFirrtl("pre-sram-models.fir"),
+      new fame.LabelSRAMModels,
+      new ResolveAndCheck,
+      new EmitFirrtl("post-sram-models.fir"),
+      new fame.ExtractModel,
+      new ResolveAndCheck,
+      new EmitFirrtl("post-extract-model.fir"),
+      new HighFirrtlToMiddleFirrtl,
+      new MiddleFirrtlToLowFirrtl,
+      new fame.FAMEDefaults,
+      new fame.ChannelExcision,
+      new EmitFirrtl("post-channel-excision.fir"),
+      new fame.FAMETransform,
+      new EmitFirrtl("post-fame-transform.fir"),
+      new ResolveAndCheck) ++
+    Seq(
+      new SimulationMapping(io),
+      new PlatformMapping(state.circuit.main, dir))
       (xforms foldLeft state)((in, xform) =>
-        xform runTransform in).copy(form=outputForm)
+      xform runTransform in).copy(form=outputForm)
   }
 }
 

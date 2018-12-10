@@ -24,8 +24,7 @@ private class MidasCompiler extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
   def transforms =
     getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++
-    Seq(new InferReadWrite,
-        new ReplSeqMem) ++
+    Seq(new InferReadWrite) ++
     getLoweringTransforms(firrtl.MidForm, firrtl.LowForm)
 }
 
@@ -58,14 +57,9 @@ object MidasCompiler {
       hostTransforms: Seq[Transform]    // Run post-MIDAS transformations
     )
      (implicit p: Parameters): CircuitState = {
-    val conf = new File(dir, s"${chirrtl.main}.conf")
-    val json = new File(dir, s"${chirrtl.main}.macros.json")
     val midasAnnos = Seq(
       firrtl.TargetDirAnnotation(dir.getPath()),
-      InferReadWriteAnnotation,
-      ReplSeqMemAnnotation("", conf.getPath),
-      passes.MidasAnnotation(chirrtl.main, conf, json, lib),
-      MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
+      InferReadWriteAnnotation)
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
