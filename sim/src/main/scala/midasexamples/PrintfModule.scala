@@ -17,5 +17,17 @@ class PrintfModule extends MultiIOModule {
 
   printf(SynthesizePrintf("A: %d\n", cycle))
   when(b) { printf(SynthesizePrintf("B asserted\n")) } // Argument-less print
+  val childInst = Module(new PrintfModuleChild)
+  childInst.c := a
+  childInst.d := cycle
+}
+
+class PrintfModuleChild extends MultiIOModule {
+  val c = IO(Input(Bool()))
+  val d = IO(Input(UInt(16.W)))
+
+  when (c ^ d(0) && d > 16.U) {
+    printf(SynthesizePrintf("C: %b, D: %d\n", c, d))
+  }
 }
 
