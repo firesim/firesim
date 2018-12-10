@@ -7,6 +7,7 @@ import Mappers._
 import ir._
 import annotations._
 import collection.mutable.ArrayBuffer
+import midas.targetutils.FirrtlMemModelAnnotation
 
 class LabelSRAMModels extends Transform {
   def inputForm = HighForm
@@ -26,11 +27,14 @@ class LabelSRAMModels extends Transform {
     val moduleNS = Namespace(circ)
     val memModelAnnotations = new ArrayBuffer[FAMEModelAnnotation]
     val memModules = new ArrayBuffer[Module]
+    val annotatedMems = state.annotations.collect({
+      case FirrtlMemModelAnnotation(rt) => rt
+    }).toSet
     val transformedModules = circ.modules.map({
       case m: Module =>
         val mt = ModuleTarget(circ.main, m.name)
         def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
-          case mem: DefMemory =>
+          case mem: DefMemory if annotatedMems.contains(mt.ref(mem.name)) =>
             val wrapper = mem2Module(mem).copy(name = moduleNS.newName(mem.name))
             memModules += wrapper
             memModelAnnotations += FAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
