@@ -100,7 +100,6 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
 
-
   // The LSB corresponding to the enable bit of the print
   val reservedBits = 1 // Just print-wide enable
   val widths = (printRecord.elements.map(_._2.getWidth))
@@ -116,12 +115,13 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
-    sb.append(genComment("Print Widget"))
-    sb.append(genConstStatic("print_count", UInt32(printRecord.ports.size)))
-    sb.append(genArray("print_offsets", baseOffsets))
-    sb.append(genArray("format_strings", formatStrings))
-    sb.append(genArray("argument_counts", argumentCounts))
-    sb.append(genArray("argument_widths", argumentWidths))
+    val headerWidgetName = getWName.toUpperCase
+    super.genHeader(base, sb)
+    sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printRecord.ports.size)))
+    sb.append(genArray(s"${headerWidgetName}_print_offsets", baseOffsets))
+    sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
+    sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))
+    sb.append(genArray(s"${headerWidgetName}_argument_widths", argumentWidths))
   }
   genCRFile()
 }
