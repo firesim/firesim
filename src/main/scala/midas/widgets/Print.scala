@@ -85,17 +85,36 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   lazy val toHostCPUQueueDepth = 512 * 4 // 4 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(512 * 4)
 
+  val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
+  val startCycleH = genWOReg(Wire(UInt(32.W)), "startCycleH")
+  val endCycleL =   genWOReg(Wire(UInt(32.W)), "endCycleL")
+  val endCycleH =   genWOReg(Wire(UInt(32.W)), "endCycleH")
+
+  val startCycle = Cat(startCycleH, startCycleL)
+  val endCycle = Cat(endCycleH, endCycleL)
+  val currentCycle = RegInit(0.U(64.W))
+  // Gates writing tokens into the buffer if we are not in the RoI
+  val enable = (startCycle <= currentCycle) && (currentCycle <= endCycle)
+  val readyToEnqToken = !enable || outgoingPCISdat.io.enq.ready
+
   val printPort = io.hPort.hBits
   val totalPrintWidth = printPort.getWidth
   /* FIXME */ assert(totalPrintWidth + 1 <= dma.nastiXDataBits)
   val valid = printPort.hasEnabledPrint
   val data = Cat(printPort.asUInt, valid) | 0.U(dma.nastiXDataBits.W)
 
-  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid, io.tReset.valid, outgoingPCISdat.io.enq.ready)
+  val dummyPredicate = true.B
+  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid, io.tReset.valid, readyToEnqToken, dummyPredicate)
+  // Alternative of the mux below rejects the queue's ready as well
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)
   io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
+
   outgoingPCISdat.io.enq.bits := data
-  outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
+  outgoingPCISdat.io.enq.valid := tFireHelper.fire(readyToEnqToken) && enable
+
+  when (tFireHelper.fire(dummyPredicate)) {
+    currentCycle := currentCycle + 1.U
+  }
 
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
