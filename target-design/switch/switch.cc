@@ -81,7 +81,6 @@ uint64_t this_iter_cycles_start = 0;
 
 // TODO: replace these port mapping hacks with a mac -> port mapping,
 // could be hardcoded
-#define BROADCAST_ADJUSTED (0xffff)
 
 BasePort * ports[NUMPORTS];
 

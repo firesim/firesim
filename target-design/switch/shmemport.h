@@ -13,7 +13,7 @@ class ShmemPort : public BasePort {
         int currentround = 0;
 };
 
-ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(portNo) {
+ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(portNo, !uplink) {
 #define SHMEM_EXTRABYTES 1
 
     // create shared memory regions

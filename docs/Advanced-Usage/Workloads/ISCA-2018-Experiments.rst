@@ -35,7 +35,7 @@ Building Benchmark Binaries/Rootfses
 
 We include scripts to automatically build all of the benchmark rootfs images
 that will be used below. To build them, make sure you have already run
-``./build.sh`` in ``firesim/sw/firesim-software``, then run:
+``./sw-manager.py -c br-disk.json build`` in ``firesim/sw/firesim-software``, then run:
 
 .. code-block:: bash
 

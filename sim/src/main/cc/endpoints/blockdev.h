@@ -31,10 +31,11 @@ struct blkdev_write_tracker {
     uint64_t data[MAX_REQ_LEN * SECTOR_BEATS];
 };
 
+#ifdef BLOCKDEVWIDGET_struct_guard
 class blockdev_t: public endpoint_t
 {
     public:
-        blockdev_t(simif_t* sim, const std::vector<std::string>& args);
+        blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs, int blkdevno);
         ~blockdev_t();
 
         uint32_t nsectors(void) { return _nsectors; }
@@ -48,6 +49,7 @@ class blockdev_t: public endpoint_t
         virtual int exit_code() { return 0; }
 
     private:
+        BLOCKDEVWIDGET_struct * mmio_addrs;
         bool a_req_valid;
         bool a_req_ready;
         bool a_data_valid;
@@ -81,5 +83,6 @@ class blockdev_t: public endpoint_t
         uint32_t read_latency = 4096;
         uint32_t write_latency = 4096;
 };
+#endif // BLOCKDEVWIDGET_struct_guard
 
 #endif // __BLOCKDEV_H

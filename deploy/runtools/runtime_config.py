@@ -17,6 +17,7 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
+LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -44,12 +45,15 @@ class RuntimeHWConfig:
         rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
         self.deploytriplet = get_firesim_tagval_for_agfi(self.agfi,
                                                          'firesim-deploytriplet')
+    def get_design_name(self):
+        """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        my_design = my_deploytriplet.split("-")[0]
+        return my_design
 
     def get_local_driver_binaryname(self):
         """ Get the name of the driver binary. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        my_design = my_deploytriplet.split("-")[0]
-        return my_design + "-f1"
+        return self.get_design_name() + "-f1"
 
     def get_local_driver_path(self):
         """ return relative local path of the driver used to run this sim. """
@@ -73,6 +77,13 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
+    # TODO: Delete this and bake the assertion definitions into the Driver
+    def get_local_assert_def_path(self):
+        """ return relative local path of the synthesized assertion definitions. """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        gen_src_dir = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
+        assert_def_local = gen_src_dir + self.get_design_name() + ".asserts"
+        return assert_def_local
 
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
                                     linklatency, netbw, profile_interval, bootbin,
@@ -83,13 +94,13 @@ class RuntimeHWConfig:
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
 
-        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
+        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr={macaddr} +blkdev={blkdev} +slotid={slotid} +niclog=niclog {tracefile} +trace-start={trace_start} +trace-end={trace_end} +linklatency={linklatency} +netbw={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
                 slotid=slotid, driver=driver, runtimeconf=runtimeconf,
                 macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
                 netbw=netbw, profile_interval=profile_interval,
@@ -97,6 +108,51 @@ class RuntimeHWConfig:
                 trace_start=trace_start, trace_end=trace_end)
 
         return basecommand
+
+
+    def get_supernode_boot_simulation_command(self,
+                                              slotid,
+                                              macaddr0, macaddr1,
+                                              macaddr2, macaddr3,
+                                              blkdev0, blkdev1,
+                                              blkdev2, blkdev3,
+                                              linklatency0, linklatency1,
+                                              linklatency2, linklatency3,
+                                              netbw0, netbw1, netbw2, netbw3,
+                                              profile_interval,
+                                              bootbin0, bootbin1,
+                                              bootbin2, bootbin3,
+                                              trace_enable, trace_start,
+                                              trace_end,
+                                              shmemportname0, shmemportname1,
+                                              shmemportname2, shmemportname3):
+        """ return the command used to boot the simulation. this has to have
+        some external params passed to it, because not everything is contained
+        in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
+        pre-built runtime config? It kinda contains a mix of pre-built and
+        runtime parameters currently. """
+
+        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
+
+        # this monstrosity boots the simulator, inside screen, inside script
+        # the sed is in there to get rid of newlines in runtime confs
+        driver = self.get_local_driver_binaryname()
+        runtimeconf = self.get_local_runtimeconf_binaryname()
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency0} +linklatency1={linklatency1} +linklatency2={linklatency2} +linklatency3={linklatency3} +netbw0={netbw0} +netbw1={netbw1} +netbw2={netbw2} +netbw3={netbw3} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname0} +shmemportname1={shmemportname1} +shmemportname2={shmemportname2} +shmemportname3={shmemportname3} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
+            slotid=slotid, driver=driver, runtimeconf=runtimeconf,
+            macaddr0=macaddr0, macaddr1=macaddr1,macaddr2=macaddr2,macaddr3=macaddr3,
+            blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3,
+            linklatency0=linklatency0, linklatency1=linklatency1,
+            linklatency2=linklatency2, linklatency3=linklatency3,
+            netbw0=netbw0, netbw1=netbw1, netbw2=netbw2, netbw3=netbw3,
+            profile_interval=profile_interval,
+            shmemportname0=shmemportname0, shmemportname1=shmemportname1, shmemportname2=shmemportname2, shmemportname3=shmemportname3,
+            bootbin0=bootbin0, bootbin1=bootbin1, bootbin2=bootbin2, bootbin3=bootbin3, tracefile=tracefile,
+            trace_start=trace_start, trace_end=trace_end)
+
+        return basecommand
+
+
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
@@ -115,9 +171,16 @@ class RuntimeHWConfig:
         platform_config = triplet_pieces[2]
         rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
         with prefix('cd ../'), prefix('source sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
-            localcap = local("""make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config), capture=True)
+            localcap = None
+            with settings(warn_only=True):
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)
+                localcap = local(driverbuildcommand, capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
+            if localcap.failed:
+                rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
+                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
+                exit(1)
 
         self.driver_built = True
 

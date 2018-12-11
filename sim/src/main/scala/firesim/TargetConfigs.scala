@@ -6,6 +6,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
+import freechips.rocketchip.pfa.HasPFA
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
@@ -50,16 +51,14 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
     nRMemXacts = 64)
 })
 
-class WithLargeTLBs extends Config((site, here, up) => {
+class WithPFA extends Config((site, here, up) => {
+  case HasPFA => true
+})
+
+class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey) map (tile => tile.copy(
-    icache = tile.icache map (_.copy(
-      nTLBEntries = 32 // TLB reach = 32 * 4KB = 128KB
-    )),
-    dcache = tile.dcache map (_.copy(
-      nTLBEntries = 32 // TLB reach = 32 * 4KB = 128KB
-    )),
     core = tile.core.copy(
-      nL2TLBEntries = 1024 // TLB reach = 1024 * 4KB = 4MB
+      nL2TLBEntries = entries
     )
   ))
 })
@@ -70,11 +69,9 @@ class WithPerfCounters extends Config((site, here, up) => {
   ))
 })
 
-class BoomWithLargeTLBs extends Config((site, here, up) => {
+class WithBoomL2TLBs(entries: Int) extends Config((site, here, up) => {
   case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
-    core = tile.core.copy(
-      nL2TLBEntries = 1024 // TLB reach = 1024 * 4KB = 4MB
-    )
+    core = tile.core.copy(nL2TLBEntries = entries)
   ))
 })
 
@@ -84,6 +81,14 @@ class WithTraceRocket extends Config((site, here, up) => {
 
 class WithTraceBoom extends Config((site, here, up) => {
    case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
+})
+
+// This is strictly speakig a MIDAS config, but it's target dependent -> mix in to target config
+class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
+  case midas.ExcludeInstanceAsserts => Seq(
+    // Boom instantiates duplicates of these module(s) with the expectation
+    // the backend tool will optimize them away. FIXME.
+    ("NonBlockingDCache", "dtlb"))
 })
 
 /*******************************************************************************
@@ -104,9 +109,13 @@ class FireSimRocketChipConfig extends Config(
   new WithUARTKey ++
   new WithNICKey ++
   new WithBlockDevice ++
-  new WithLargeTLBs ++
+  new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
   new freechips.rocketchip.system.DefaultConfig)
+
+class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
+  case RocketTilesKey => List.tabulate(n)(i => up(RocketTilesKey).head.copy(hartId = i))
+})
 
 class FireSimRocketChipTracedConfig extends Config(
   new WithTraceRocket ++ new FireSimRocketChipConfig)
@@ -119,7 +128,7 @@ class FireSimRocketChipSingleCoreTracedConfig extends Config(
 
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(
-  new WithNBigCores(2) ++
+  new WithNDuplicatedRocketCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
 
 class FireSimRocketChipDualCoreTracedConfig extends Config(
@@ -127,7 +136,7 @@ class FireSimRocketChipDualCoreTracedConfig extends Config(
 
 // quad core config
 class FireSimRocketChipQuadCoreConfig extends Config(
-  new WithNBigCores(4) ++
+  new WithNDuplicatedRocketCores(4) ++
   new FireSimRocketChipSingleCoreConfig)
 
 class FireSimRocketChipQuadCoreTracedConfig extends Config(
@@ -135,7 +144,7 @@ class FireSimRocketChipQuadCoreTracedConfig extends Config(
 
 // hexa core config
 class FireSimRocketChipHexaCoreConfig extends Config(
-  new WithNBigCores(6) ++
+  new WithNDuplicatedRocketCores(6) ++
   new FireSimRocketChipSingleCoreConfig)
 
 class FireSimRocketChipHexaCoreTracedConfig extends Config(
@@ -143,7 +152,7 @@ class FireSimRocketChipHexaCoreTracedConfig extends Config(
 
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(
-  new WithNBigCores(8) ++
+  new WithNDuplicatedRocketCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
 class FireSimRocketChipOctaCoreTracedConfig extends Config(
@@ -161,6 +170,18 @@ class FireSimMemBladeDualCoreConfig extends Config(
 class FireSimMemBladeQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimMemBladeConfig)
 
+class FireSimMemBladePFAConfig extends Config(
+  new WithPFA ++ new FireSimMemBladeConfig)
+
+class FireSimMemBladePFASingleCoreConfig extends Config(
+  new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
+
+class FireSimMemBladePFADualCoreConfig extends Config(
+  new WithNBigCores(2) ++ new FireSimMemBladePFAConfig)
+
+class FireSimMemBladePFAQuadCoreConfig extends Config(
+  new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
+
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
@@ -169,9 +190,61 @@ class FireSimBoomConfig extends Config(
   new WithUARTKey ++
   new WithNICKey ++
   new WithBlockDevice ++
-  new BoomWithLargeTLBs ++
+  new WithBoomL2TLBs(1024) ++
+  new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)
 
+// A safer implementation than the one in BOOM in that it
+// duplicates whatever BOOMTileKey.head is present N times. This prevents
+// accidentally (and silently) blowing away configurations that may change the
+// tile in the "up" view
+class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
+  case BoomTilesKey => List.tabulate(n)(i => up(BoomTilesKey).head.copy(hartId = i))
+})
+
+class FireSimBoomDualCoreConfig extends Config(
+  new WithNDuplicatedBoomCores(2) ++
+  new FireSimBoomConfig)
+
 class FireSimBoomTracedConfig extends Config(
   new WithTraceBoom ++ new FireSimBoomConfig)
+
+
+//**********************************************************************************
+//* Supernode Configurations
+//*********************************************************************************/
+class WithNumNodes(n: Int) extends Config((pname, site, here) => {
+  case NumNodes => n
+})
+
+class SupernodeFireSimRocketChipConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipConfig)
+
+class SupernodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipSingleCoreConfig)
+
+class SupernodeFireSimRocketChipDualCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipDualCoreConfig)
+
+class SupernodeFireSimRocketChipQuadCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipQuadCoreConfig)
+
+class SupernodeFireSimRocketChipHexaCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipHexaCoreConfig)
+
+class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
+  new WithNumNodes(4) ++
+  new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipOctaCoreConfig)
+
