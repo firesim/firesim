@@ -45,6 +45,9 @@ synthesized_prints_t::synthesized_prints_t(
       }
   }
 
+  // Write to the widget to indicate when it should drop tokens
+  this->cur_cycle = this->start_cycle; // The first token we receive from the FPGA
+
   if (printfilename) {
       this->printfile.open(printfilename);
       if (!this->printfile.is_open()) {
@@ -103,6 +106,14 @@ synthesized_prints_t::~synthesized_prints_t() {
   }
 }
 
+void synthesized_prints_t::init() {
+  // Set the bounds in the widget
+  write(this->mmio_addrs->startCycleL, this->start_cycle);
+  write(this->mmio_addrs->startCycleH, this->start_cycle >> 32);
+  write(this->mmio_addrs->endCycleL, this->end_cycle);
+  write(this->mmio_addrs->endCycleH, this->end_cycle >> 32);
+}
+
 // Accepts the format string, and the masked arguments, and emits the formatted
 // print to the desired stream
 void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars) {
@@ -148,12 +159,12 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars) {
 bool has_enabled_print(char * buf) { return (buf[0] & 1); }
 
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
-void synthesized_prints_t::process_tokens() {
-  size_t batch_bytes = batch_beats * beat_bytes;
+void synthesized_prints_t::process_tokens(size_t beats) {
+  size_t batch_bytes = beats * beat_bytes;
   char buf[batch_bytes];
   pull(dma_address, (char*)buf, batch_bytes);
   for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
-    if (has_enabled_print(&buf[idx]) && cur_cycle >= start_cycle && cur_cycle <= end_cycle) {
+    if (has_enabled_print(&buf[idx])) {
       show_prints(&buf[idx]);
     }
     cur_cycle++;
@@ -197,9 +208,17 @@ void synthesized_prints_t::show_prints(char * buf) {
 void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
-  if ((read(mmio_addrs->outgoing_count) > batch_beats)) {
-    process_tokens();
+  size_t beats_available = read(mmio_addrs->outgoing_count);
+  if (beats_available > batch_beats) { 
+      process_tokens(batch_beats);
   }
+}
+
+// Pull in any remaining beats
+void synthesized_prints_t::flush() {
+  size_t beats_available = read(mmio_addrs->outgoing_count);
+  process_tokens(beats_available);
+  this->printstream->flush();
 }
 
 #endif // PRINTWIDGET_struct_guard

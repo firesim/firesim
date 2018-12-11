@@ -34,10 +34,12 @@ class synthesized_prints_t: public endpoint_t
                              const unsigned int* argument_widths,
                              unsigned int dma_address);
         ~synthesized_prints_t();
-        virtual void init() {};
+        virtual void init();
         virtual void tick();
         virtual bool terminate() { return false; };
         virtual int exit_code() { return 0; };
+        void flush();
+        void finish() { flush(); }; // This should be added to the endpoint IF?
     private:
         PRINTWIDGET_struct * mmio_addrs;
         const unsigned int print_count;
@@ -71,7 +73,7 @@ class synthesized_prints_t: public endpoint_t
         std::vector<size_t> bit_offset;
 
         bool current_print_enabled(gmp_align_t* buf, size_t offset);
-        void process_tokens();
+        void process_tokens(size_t beats);
         void show_prints(char * buf);
         void print_format(const char* fmt, print_vars_t* vars);
 };
