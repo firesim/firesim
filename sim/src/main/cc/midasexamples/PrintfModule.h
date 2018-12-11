@@ -9,7 +9,9 @@ public:
     synthesized_prints_t * print_endpoint;
     PrintfModule_t(int argc, char** argv) {
         PRINTWIDGET_0_substruct_create;
+        std::vector<std::string> args(argv + 1, argv + argc);
         print_endpoint = new synthesized_prints_t(this,
+                                                  args,
                                                   PRINTWIDGET_0_substruct,
                                                   PRINTWIDGET_0_print_count,
                                                   PRINTWIDGET_0_print_offsets,
@@ -32,5 +34,9 @@ public:
             print_endpoint->tick();
         }
         expect(false, "Flesh me out");
+    };
+
+    ~PrintfModule_t() {
+      delete print_endpoint;
     };
 };
