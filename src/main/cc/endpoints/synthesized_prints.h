@@ -3,8 +3,10 @@
 
 #ifdef PRINTWIDGET_struct_guard
 
-#include <gmp.h>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <gmp.h>
 
 #include "endpoint.h"
 
@@ -12,8 +14,8 @@ struct print_vars_t {
   std::vector<mpz_t*> data;
   ~print_vars_t() {
     for (auto& e: data) {
-      //mpz_clear(*e);
-      //free(e);
+      mpz_clear(*e);
+      free(e);
     }
   }
 };
@@ -23,14 +25,14 @@ class synthesized_prints_t: public endpoint_t
 
     public:
         synthesized_prints_t(simif_t* sim,
-                              PRINTWIDGET_struct * mmio_addrs,
-                              unsigned int print_count,
-                              const unsigned int* print_offsets,
-                              const char* const*  format_strings,
-                              const unsigned int* argument_counts,
-                              const unsigned int* argument_widths,
-                              unsigned int dma_address
-                              );
+                             std::vector<std::string> &args,
+                             PRINTWIDGET_struct * mmio_addrs,
+                             unsigned int print_count,
+                             const unsigned int* print_offsets,
+                             const char* const*  format_strings,
+                             const unsigned int* argument_counts,
+                             const unsigned int* argument_widths,
+                             unsigned int dma_address);
         ~synthesized_prints_t();
         virtual void init() {};
         virtual void tick();
@@ -45,21 +47,33 @@ class synthesized_prints_t: public endpoint_t
         const unsigned int* argument_widths;
         const unsigned int dma_address;
 
-        const size_t token_bytes = 64; // One beat of the PCIS AXI4 bus
-        const size_t batch_tokens = 16; // Number of tokens to pull each time
+        // DMA batching parameters
+        const size_t beat_bytes  = DMA_DATA_BITS / 8;
+        const size_t batch_beats = 16; // Number of DMA beats to pull each time
+        const size_t token_bytes = 64; // Bytes per-printf token
+
+        // Used to define the boundaries in the batch buffer at which we'll
+        // initalize GMP types
         using gmp_align_t = uint64_t;
         const size_t gmp_align_bits = sizeof(gmp_align_t) * 8;
+
+        // +arg driven members
+        std::ofstream printfile;   // Used only if the +printfile arg is provided
+        std::ostream* printstream; // Is set to std::cerr otherwise
+        uint64_t start_cycle, end_cycle; // Bounds between which prints will be emitted
+        uint64_t cur_cycle;
 
         std::vector<std::vector<size_t>> widths;
         std::vector<size_t> sizes;
         std::vector<print_vars_t*> masks;
 
-        std::vector<size_t> dw_aligned_offsets; //64 bit aligned
+        std::vector<size_t> aligned_offsets; // Aligned to gmp_align_t
         std::vector<size_t> bit_offset;
 
         bool current_print_enabled(gmp_align_t* buf, size_t offset);
-        void process_buffer(char * buf, size_t count);
+        void process_tokens();
         void show_prints(char * buf);
+        void print_format(const char* fmt, print_vars_t* vars);
 };
 
 #endif // PRINTWIDGET_struct_guard
