@@ -54,7 +54,6 @@ private[midas] class MidasTransforms(
         // need to generate the *.asserts file. Fix by baking into driver.
         new AssertPass(dir),
         new PrintSynthesis(dir),
-        new EmitFirrtl("PrintSynthesis.fir"),
         new Fame1Transform(Some(lib getOrElse json)),
         new strober.passes.StroberTransforms(dir, lib getOrElse json)) ++
       // Any subFields must be flattened out beforing linking in HighForm constructs must Lower 

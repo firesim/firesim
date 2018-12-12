@@ -20,10 +20,7 @@ case object SynthPrints extends Field[Boolean]
 // Exclude module instances from assertion and print synthesis
 // Tuple of Parent Module (where the instance is instantiated) and the instance name
 case object ExcludeInstanceAsserts extends Field[Seq[(String, String)]](Seq())
-case object ExcludeInstancePrints extends Field[Seq[(String, String)]](Seq())
-case object PrintPorts extends Field[Seq[(String, Int)]]
 // Excludes from synthesis prints whose message contains one of the following substrings
-case object PrintExcludes extends Field[Seq[(String)]](Seq())
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
