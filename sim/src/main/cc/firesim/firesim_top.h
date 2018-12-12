@@ -29,7 +29,9 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
 
+#ifdef PRINTWIDGET_struct_guard
         synthesized_prints_t * print_endpoint;
+#endif
 
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         uint64_t profile_interval = -1;
