@@ -13,14 +13,15 @@ public:
         PRINTWIDGET_0_substruct_create;
         std::vector<std::string> args(argv + 1, argv + argc);
         print_endpoint = std::unique_ptr<synthesized_prints_t>(new synthesized_prints_t(this,
-                                                                  args,
-                                                                  PRINTWIDGET_0_substruct,
-                                                                  PRINTWIDGET_0_print_count,
-                                                                  PRINTWIDGET_0_print_offsets,
-                                                                  PRINTWIDGET_0_format_strings,
-                                                                  PRINTWIDGET_0_argument_counts,
-                                                                  PRINTWIDGET_0_argument_widths,
-                                                                  PRINTWIDGET_0_DMA_ADDR));
+            args,
+            PRINTWIDGET_0_substruct,
+            PRINTWIDGET_0_print_count,
+            PRINTWIDGET_0_token_bytes,
+            PRINTWIDGET_0_print_offsets,
+            PRINTWIDGET_0_format_strings,
+            PRINTWIDGET_0_argument_counts,
+            PRINTWIDGET_0_argument_widths,
+            PRINTWIDGET_0_DMA_ADDR));
     };
 
     virtual void run() {
