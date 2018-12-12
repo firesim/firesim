@@ -8,6 +8,8 @@
 #include "endpoints/fpga_model.h"
 #include "systematic_scheduler.h"
 
+#include "endpoints/synthesized_prints.h"
+
 class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 {
     public:
@@ -26,6 +28,8 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         std::vector<std::unique_ptr<endpoint_t> > endpoints;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
+
+        synthesized_prints_t * print_endpoint;
 
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         uint64_t profile_interval = -1;
