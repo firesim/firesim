@@ -45,7 +45,7 @@ class MultiWidthFifo(inW: Int, outW: Int, n: Int) extends Module {
 
     io.out.valid := size > UInt(0)
     io.out.bits := rdata(tail)
-    io.in.ready := size < UInt(n)
+    io.in.ready := size < UInt(n - nBeats + 1)
     io.count := size
   } else {
     val nBeats = outW / inW
