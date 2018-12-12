@@ -7,6 +7,7 @@ synthesized_prints_t::synthesized_prints_t(
   std::vector<std::string> &args,
   PRINTWIDGET_struct * mmio_addrs,
   unsigned int print_count,
+  unsigned int token_bytes,
   const unsigned int* print_offsets,
   const char* const*  format_strings,
   const unsigned int* argument_counts,
@@ -15,11 +16,14 @@ synthesized_prints_t::synthesized_prints_t(
     endpoint_t(sim),
     mmio_addrs(mmio_addrs),
     print_count(print_count),
+    token_bytes(token_bytes),
     print_offsets(print_offsets),
     format_strings(format_strings),
     argument_counts(argument_counts),
     argument_widths(argument_widths),
     dma_address(dma_address) {
+  assert((token_bytes & (token_bytes - 1)) == 0);
+  assert(print_count > 0);
 
   const char *printfilename = NULL;
 
@@ -30,6 +34,13 @@ synthesized_prints_t::synthesized_prints_t(
   std::string printfile_arg  = std::string("+printfile=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
+
+  // Choose a multiple of token_bytes for the batch size
+  if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
+    this->batch_beats = token_bytes / beat_bytes;
+  } else {
+    this->batch_beats = desired_batch_beats;
+  }
 
   for (auto &arg: args) {
       if (arg.find(printfile_arg) == 0) {
@@ -112,11 +123,12 @@ void synthesized_prints_t::init() {
   write(this->mmio_addrs->startCycleH, this->start_cycle >> 32);
   write(this->mmio_addrs->endCycleL, this->end_cycle);
   write(this->mmio_addrs->endCycleH, this->end_cycle >> 32);
+  write(this->mmio_addrs->doneInit, 1);
 }
 
 // Accepts the format string, and the masked arguments, and emits the formatted
 // print to the desired stream
-void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars) {
+void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks) {
   size_t k = 0;
   while(*fmt) {
     if (*fmt == '%' && fmt[1] != '%') {
@@ -127,18 +139,18 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars) {
         v = (char*)mpz_export(NULL, &size, 1, sizeof(char), 0, 0, *value);
         for (size_t j = 0 ; j < size ; j++) printstream->put(v[j]);
         fmt++;
+        free(v);
       } else {
+        char buf[2048];
         switch(*(++fmt)) {
-          // TODO: exhaustive?
           case 'h':
-          case 'x': v = mpz_get_str(NULL, 16, *value); break;
-          case 'd': v = mpz_get_str(NULL, 10, *value); break;
-          case 'b': v = mpz_get_str(NULL, 2, *value); break;
-          default: break;
+          case 'x': gmp_sprintf(buf, "%0*Zx", mpz_sizeinbase(*(masks->data[k]), 16), *value); break;
+          case 'd': gmp_sprintf(buf, "%*Zd",  mpz_sizeinbase(*(masks->data[k]), 10), *value); break;
+          case 'b': gmp_sprintf(buf, "%0*Zb", mpz_sizeinbase(*(masks->data[k]), 2), *value); break;
+          default: assert(0); break;
         }
-        if (v) (*printstream) << v;
+        (*printstream) << buf;
       }
-      free(v);
       fmt++;
       k++;
     } else if (*fmt == '%') {
@@ -173,7 +185,7 @@ void synthesized_prints_t::process_tokens(size_t beats) {
 
 // Returns true if the print at the current offset is enabled in this cycle
 bool synthesized_prints_t::current_print_enabled(gmp_align_t * buf, size_t offset) {
-  return (buf[0] & (1 << (offset)));
+  return (buf[0] & (1LL << (offset)));
 }
 
 // Finds enabled prints in a token
@@ -197,9 +209,9 @@ void synthesized_prints_t::show_prints(char * buf) {
         mpz_and(*var, print, *mask);
         vars.data.push_back(var);
         // print = print >> width
-        mpz_fdiv_q_2exp(print, print,widths[i][arg]);
+        mpz_fdiv_q_2exp(print, print, widths[i][arg]);
       }
-      print_format(format_strings[i], &vars);
+      print_format(format_strings[i], &vars, masks[i]);
       mpz_clear(print);
     }
   }
@@ -209,7 +221,7 @@ void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
   size_t beats_available = read(mmio_addrs->outgoing_count);
-  if (beats_available > batch_beats) { 
+  if (beats_available > batch_beats) {
       process_tokens(batch_beats);
   }
 }

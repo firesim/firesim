@@ -9,15 +9,11 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 
-
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import junctions._
-
 import midas.{PrintPorts}
 import midas.core.{HostPort, DMANastiKey}
-
 
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
@@ -87,38 +83,59 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
 
   val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
   val startCycleH = genWOReg(Wire(UInt(32.W)), "startCycleH")
-  val endCycleL =   genWOReg(Wire(UInt(32.W)), "endCycleL")
-  val endCycleH =   genWOReg(Wire(UInt(32.W)), "endCycleH")
+  val endCycleL   = genWOReg(Wire(UInt(32.W)), "endCycleL")
+  val endCycleH   = genWOReg(Wire(UInt(32.W)), "endCycleH")
+  // Set after the start and end counters have been initialized; can begin consuming tokens
+  val doneInit    = genWORegInit(Wire(Bool()), "doneInit", false.B)
 
   val startCycle = Cat(startCycleH, startCycleL)
   val endCycle = Cat(endCycleH, endCycleL)
   val currentCycle = RegInit(0.U(64.W))
-  // Gates writing tokens into the buffer if we are not in the RoI
+
+  // Gate passing tokens of to software if we are not in the region of interest
   val enable = (startCycle <= currentCycle) && (currentCycle <= endCycle)
-  val readyToEnqToken = !enable || outgoingPCISdat.io.enq.ready
+  val bufferReady = Wire(Bool())
+  val readyToEnqToken = !enable || bufferReady
 
-  val printPort = io.hPort.hBits
-  val totalPrintWidth = printPort.getWidth
-  /* FIXME */ assert(totalPrintWidth + 1 <= dma.nastiXDataBits)
-  val valid = printPort.hasEnabledPrint
-  val data = Cat(printPort.asUInt, valid) | 0.U(dma.nastiXDataBits.W)
-
+  // Token control
   val dummyPredicate = true.B
-  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid, io.tReset.valid, readyToEnqToken, dummyPredicate)
+  val tFireHelper = DecoupledHelper(doneInit,
+                                    io.hPort.toHost.hValid,
+                                    io.tReset.valid,
+                                    readyToEnqToken,
+                                    dummyPredicate)
   // Alternative of the mux below rejects the queue's ready as well
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)
   io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
-
-  outgoingPCISdat.io.enq.bits := data
-  outgoingPCISdat.io.enq.valid := tFireHelper.fire(readyToEnqToken) && enable
+  // We don't generate tokens
+  io.hPort.fromHost.hValid := true.B
 
   when (tFireHelper.fire(dummyPredicate)) {
     currentCycle := currentCycle + 1.U
   }
 
-  // We don't generate tokens
-  io.hPort.fromHost.hValid := true.B
+  // PAYLOAD HANDLING
+  val printPort = io.hPort.hBits
+  val valid = printPort.hasEnabledPrint
+  // Pick a width that's a pow2 number of bytes, including enable bit
+  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + 1))
+  val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
 
+  if (pow2Bits == dma.nastiXDataBits) {
+    outgoingPCISdat.io.enq.bits := data
+    outgoingPCISdat.io.enq.valid := tFireHelper.fire(readyToEnqToken) && enable
+    bufferReady := outgoingPCISdat.io.enq.ready
+  } else {
+    // Pack or serialize narrow or wide printBundleBags if they do not match the size of the DMA bus
+    val mwFifoDepth = math.max(1, 1 * pow2Bits/dma.nastiXDataBits)
+    val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, dma.nastiXDataBits, mwFifoDepth))  
+    outgoingPCISdat.io.enq <> widthAdapter.io.out
+    widthAdapter.io.in.bits := data
+    widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable
+    bufferReady := widthAdapter.io.in.ready
+  }
+
+  // HEADER GENERATION
   // The LSB corresponding to the enable bit of the print
   val reservedBits = 1 // Just print-wide enable
   val widths = (printRecord.elements.map(_._2.getWidth))
@@ -137,6 +154,7 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
     val headerWidgetName = getWName.toUpperCase
     super.genHeader(base, sb)
     sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printRecord.ports.size)))
+    sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
     sb.append(genArray(s"${headerWidgetName}_print_offsets", baseOffsets))
     sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
     sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))

@@ -28,6 +28,7 @@ class synthesized_prints_t: public endpoint_t
                              std::vector<std::string> &args,
                              PRINTWIDGET_struct * mmio_addrs,
                              unsigned int print_count,
+                             unsigned int token_bytes,
                              const unsigned int* print_offsets,
                              const char* const*  format_strings,
                              const unsigned int* argument_counts,
@@ -43,6 +44,7 @@ class synthesized_prints_t: public endpoint_t
     private:
         PRINTWIDGET_struct * mmio_addrs;
         const unsigned int print_count;
+        const unsigned int  token_bytes;
         const unsigned int* print_offsets;
         const char* const*  format_strings;
         const unsigned int* argument_counts;
@@ -51,8 +53,11 @@ class synthesized_prints_t: public endpoint_t
 
         // DMA batching parameters
         const size_t beat_bytes  = DMA_DATA_BITS / 8;
-        const size_t batch_beats = 16; // Number of DMA beats to pull each time
-        const size_t token_bytes = 64; // Bytes per-printf token
+        // The number of DMA beats to pull off the FPGA on each invocation of tick()
+        // This will be set based on the ratio of token_size : desired_batch_beats
+        size_t batch_beats;
+        // This will be modified to be a multiple of the token size
+        const size_t desired_batch_beats = 16;
 
         // Used to define the boundaries in the batch buffer at which we'll
         // initalize GMP types
@@ -75,7 +80,7 @@ class synthesized_prints_t: public endpoint_t
         bool current_print_enabled(gmp_align_t* buf, size_t offset);
         void process_tokens(size_t beats);
         void show_prints(char * buf);
-        void print_format(const char* fmt, print_vars_t* vars);
+        void print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks);
 };
 
 #endif // PRINTWIDGET_struct_guard
