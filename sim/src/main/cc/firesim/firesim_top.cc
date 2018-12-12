@@ -348,7 +348,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 
 bool firesim_top_t::simulation_complete() {
     bool is_complete = false;
-    for (auto e: endpoints) {
+    for (auto &e: endpoints) {
         is_complete |= e->terminate();
     }
     return is_complete;
@@ -362,7 +362,7 @@ uint64_t firesim_top_t::profile_models(){
 }
 
 int firesim_top_t::exit_code(){
-    for (auto e: endpoints) {
+    for (auto &e: endpoints) {
         if (e->exit_code())
             return e->exit_code();
     }
@@ -371,11 +371,11 @@ int firesim_top_t::exit_code(){
 
 
 void firesim_top_t::run() {
-    for (auto e: fpga_models) {
+    for (auto &e: fpga_models) {
         e->init();
     }
 
-    for (auto e: endpoints) {
+    for (auto &e: endpoints) {
         e->init();
     }
 
@@ -394,7 +394,7 @@ void firesim_top_t::run() {
         run_scheduled_tasks();
         step(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
-            for (auto e: endpoints) e->tick();
+            for (auto &e: endpoints) e->tick();
         }
     }
 

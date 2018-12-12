@@ -1,6 +1,8 @@
 #ifndef __FIRESIM_TOP_H
 #define __FIRESIM_TOP_H
 
+#include <memory>
+
 #include "simif.h"
 #include "endpoints/endpoint.h"
 #include "endpoints/fpga_model.h"
@@ -16,12 +18,12 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 
     protected:
         void add_endpoint(endpoint_t* endpoint) {
-            endpoints.push_back(endpoint);
+            endpoints.push_back(std::unique_ptr<endpoint_t>(endpoint));
         }
 
     private:
         // Memory mapped endpoints bound to software models
-        std::vector<endpoint_t*> endpoints;
+        std::vector<std::unique_ptr<endpoint_t> > endpoints;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
 
