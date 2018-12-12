@@ -392,6 +392,6 @@ def applyFiles(img, files):
     finally:
         # run(['guestunmount', mnt])
         # run(['fusermount', '-u', mnt])
-        run(['sudo', 'umount', 'mnt'])
+        run(['sudo', 'umount', mnt])
 
 main()
