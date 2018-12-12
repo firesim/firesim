@@ -1,7 +1,0 @@
-Add whatever raw img and binary you want in this directory and call them "raw-bin" and "raw.img".
-
-You can launch qemu using:
-./sw-manager.py -c workloads/jenny-raw.json launch
-
-don't run build or anything (it probably won't do anything, but don't risk it).
-If you want to boot those images in firesim, just update the symlinks in your deploy/workloads/foo directory appropriately.
