@@ -62,15 +62,11 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     state
   }
 
-  def execute(state: CircuitState): CircuitState = {
+  def synthesizePrints(state: CircuitState, printfAnnos: Seq[SynthPrintfAnnotation]): CircuitState = {
     val c = state.circuit
 
     def mTarget(m: Module): ModuleTarget = ModuleTarget(c.main, m.name)
 
-    val printfAnnos = state.annotations.collect({
-      case a @ SynthPrintfAnnotation(_, mod, _, _) =>
-        printMods += mod; a
-    })
     val modToAnnos = printfAnnos.groupBy(_.mod)
 
     val topWiringAnnos = mutable.ArrayBuffer[Annotation](
@@ -126,5 +122,19 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     }
 
     wiredState.copy(annotations = wiredState.annotations ++ printRecordAnno)
+  }
+
+  def execute(state: CircuitState): CircuitState = {
+    val printfAnnos = state.annotations.collect({
+      case anno @ SynthPrintfAnnotation(_, mod, _, _) =>
+        printMods += mod
+        anno
+    })
+
+    if (printfAnnos.length > 0 && p(SynthPrints)) {
+      synthesizePrints(state, printfAnnos)
+    } else {
+      state
+    }
   }
 }

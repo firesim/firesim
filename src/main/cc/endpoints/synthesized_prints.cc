@@ -141,7 +141,7 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
         fmt++;
         free(v);
       } else {
-        char buf[2048];
+        char buf[1024];
         switch(*(++fmt)) {
           case 'h':
           case 'x': gmp_sprintf(buf, "%0*Zx", mpz_sizeinbase(*(masks->data[k]), 16), *value); break;
