@@ -10,10 +10,27 @@ import pathlib as pth
 root_dir = os.getcwd()
 image_dir = os.path.join(root_dir, "images")
 linux_dir = os.path.join(root_dir, "riscv-linux")
+log_dir = os.path.join(root_dir, "logs")
+res_dir = os.path.join(root_dir, "runOutput")
 mnt = os.path.join(root_dir, "disk-mount")
 commandScript = os.path.join(root_dir, "_command.sh")
-
 jlevel = "-j" + str(os.cpu_count())
+runName = ""
+
+# Create a unique run name
+def setRunName(args):
+    global runName
+    
+    timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
+    randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+
+    runName = os.path.splitext(os.path.basename(args.config_file))[0] + \
+            "-" + args.command + \
+            "-" + timeline + \
+            "-" +  randname
+
+def getRunName():
+    return runName
 
 # logging setup
 def initLogging(args):
@@ -21,12 +38,7 @@ def initLogging(args):
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
     # Create a unique log name
-    timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
-    randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
-
-    logPath = os.path.join(root_dir, "logs", os.path.splitext(os.path.basename(args.config_file))[0] +
-            "-" + timeline + "-" +
-            "-" +  randname + ".log")
+    logPath = os.path.join(log_dir, getRunName() + ".log")
     
     # formatting for log to file
     fileHandler = logging.FileHandler(str(logPath))

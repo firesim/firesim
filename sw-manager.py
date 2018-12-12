@@ -48,12 +48,8 @@ def main():
             help="Launch the specified job. Defaults to running the base image.")
     launch_parser.add_argument('-i', '--initramfs', action='store_true', help="Launch the initramfs version of this workload")
 
-    # # Init Command
-    # init_parser = subparsers.add_parser(
-    #         'init', help="Initialize workloads (using 'host_init' script)")
-    # init_parser.set_defaults(func=handleInit)
-
     args = parser.parse_args()
+    setRunName(args)
 
     args.workdir = os.path.abspath(args.workdir)
     # args.config_file = os.path.join(args.workdir, args.config_file)
@@ -220,16 +216,15 @@ def handleBuild(args, cfgs):
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
     doit.doit_cmd.DoitMain(loader).run(binList + imgList)
 
-def launchSpike(config, initramfs=False):
-    log = logging.getLogger()
+def getSpikeCmd(config, initramfs=False):
     if initramfs:
-        sp.check_call(['spike', '-p4', '-m4096', config['bin'] + '-initramfs'])
+        return ['spike', '-p4', '-m4096', config['bin'] + '-initramfs']
     elif 'img' not in config:
-        sp.check_call(['spike', '-p4', '-m4096', config['bin']])
+        return ['spike', '-p4', '-m4096', config['bin']]
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
-def launchQemu(config, initramfs=False):
+def getQemuCmd(config, initramfs=False):
     log = logging.getLogger()
 
     if initramfs:
@@ -251,9 +246,9 @@ def launchQemu(config, initramfs=False):
     if 'img' in config and not initramfs:
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
-        cmd = cmd + ['-append', 'ro root=/dev/vda']
+        cmd = cmd + ['-append', '"ro root=/dev/vda"']
 
-    sp.check_call(cmd)
+    return cmd
 
 def handleLaunch(args, cfgs):
     log = logging.getLogger()
@@ -264,24 +259,26 @@ def handleLaunch(args, cfgs):
     else:
         # Run the base image
         config = cfgs[args.config_file]
-    
+ 
+    runResDir = os.path.join(res_dir, getRunName(), config['name'])
+    uartLog = os.path.join(runResDir, "uartlog")
+    os.makedirs(runResDir)
+
     if args.spike:
         if 'img' in config and 'initramfs' not in config:
             sys.exit("Spike currently does not support disk-based " +
                     "configurations. Please use an initramfs based image.")
-        launchSpike(config, args.initramfs)
+        cmd = getSpikeCmd(config, args.initramfs)
     else:
-        launchQemu(config, args.initramfs)
+        cmd = getQemuCmd(config, args.initramfs)
 
-# def handleInit(args, cfgs):
-#     log = logging.getLogger()
-#     config = cfgs[args.config_file]
-#     if 'host-init' in config:
-#         log.info("Applying host-init: " + config['host-init'])
-#         if not os.path.exists(config['host-init']):
-#             raise ValueError("host-init script " + config['host-init'] + " not found.")
-#
-#         run([config['host-init']], cwd=config['workdir'])
+    sp.check_call(" ".join(cmd) + " | tee " + uartLog, shell=True)
+
+    if 'outputs' in config:
+        outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
+        copyImgFiles(config['img'], outputSpec, direction='out')
+
+    log.info("Run output available in: " + runResDir)
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
@@ -312,8 +309,6 @@ def makeBin(config, initramfs=False):
             shutil.copy('riscv-pk/build/bbl', config['bin'] + '-initramfs')
         else:
             shutil.copy('riscv-pk/build/bbl', config['bin'])
-    # elif config['distro'] != 'bare':
-        # raise ValueError("No linux config defined. This is only supported for workloads based on 'bare'")
 
 def makeImage(config):
     log = logging.getLogger()
@@ -330,7 +325,7 @@ def makeImage(config):
    
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
-        applyFiles(config['img'], config['files'])
+        copyImgFiles(config['img'], config['files'], 'in')
 
     if 'guest-init' in config:
         log.info("Applying init script: " + config['guest-init'])
@@ -366,10 +361,13 @@ def makeImage(config):
 # Note that all paths must be absolute
 def applyOverlay(img, overlay):
     log = logging.getLogger()
-    applyFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')])
+    copyImgFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')], 'in')
     
-# Copies a list of type FileSpec ('files') into the destination image (img)
-def applyFiles(img, files):
+# Copies a list of type FileSpec ('files') to/from the destination image (img)
+#   img - path to image file to use
+#   files - list of FileSpecs to use
+#   direction - "in" or "out" for copying files into or out of the image (respectively)
+def copyImgFiles(img, files, direction):
     log = logging.getLogger()
 
     if not os.path.exists(mnt):
@@ -388,7 +386,12 @@ def applyFiles(img, files):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             # run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
-            run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            if direction == 'in':
+                run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+            elif direction == 'out':
+                run('sudo rsync -a --chown=root:root ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+            else:
+                raise ValueError("direction option must be either 'in' or 'out'")
     finally:
         # run(['guestunmount', mnt])
         # run(['fusermount', '-u', mnt])

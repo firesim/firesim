@@ -25,8 +25,11 @@ configUser = [
         'host-init',
         # Path to folder containing overlay files to apply to img
         'overlay',
-        # List of tuples of files to add [(dest_dir, srcFile),...]
+        # List of tuples of files to add [(guest_dest, host_src),...]
         'files',
+        # List of files to copy out of the image after running it. Files will
+        # be flattened into results dir. [guest_src0, guest_src1, ...]
+        'outputs',
         # Path to script to run on the guest every time it boots
         'run',
         # An inline command to run at startup (cannot be set along with 'run')
@@ -56,7 +59,7 @@ configToAbs = ['guest-init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'linux-config', 'builder', 'distro']
+configInherit = ['runSpec', 'files', 'outputs', 'linux-config', 'builder', 'distro']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {

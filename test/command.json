@@ -1,5 +1,5 @@
 {
   "name" : "command",
   "base" : "br-base.json",
-  "command" : "echo I Ran!"
+  "command" : "echo Global: command >> /root/runOutput && cat /root/runOutput"
 }
