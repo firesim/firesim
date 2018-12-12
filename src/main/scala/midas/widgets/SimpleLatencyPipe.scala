@@ -112,7 +112,7 @@ class MidasLLC(key: MidasLLCParameters)(implicit p: Parameters) extends NastiMod
   }
 }
 
-class SimpleLatencyPipe(implicit val p: Parameters) extends NastiWidgetBase {
+class SimpleLatencyPipe(implicit p: Parameters) extends NastiWidgetBase {
   // Timing Model
   val rCycles = Module(new Queue(UInt(64.W), 8))
   val wCycles = Module(new Queue(UInt(64.W), 8))

@@ -154,10 +154,11 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           case _ =>
       }
       channels2Port(widget.io.hPort, endpoint(i)._2)
-    
 
-      if (widget.io.dma.nonEmpty)
-        dmaInfoBuffer += DmaInfo(widgetName, widget.io.dma.get, widget.io.dmaSize)
+      widget match {
+        case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
+        case _ => Nil
+      }
 
       // each widget should have its own reset queue
       val resetQueue = Module(new WireChannel(1, endpoint.clockRatio))
@@ -248,7 +249,4 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
-
 }
-
-

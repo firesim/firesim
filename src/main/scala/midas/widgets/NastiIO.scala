@@ -3,27 +3,17 @@
 package midas
 package widgets
 
-import core.{HostPort, HostPortIO, MemNastiKey}
+import core.{HostPort, MemNastiKey, IsRationalClockRatio, UnityClockRatio}
 import junctions._
+
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.amba.axi4.AXI4Bundle
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.diplomacy.AddressSet
+import chisel3.core.ActualDirection
+import chisel3.core.DataMirror.directionOf
 
-abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
-  val dma: Option[NastiIO] = None
-  // Specify the size that you want the address region to be in the DMA memory map
-  // For proper functioning, the region should be at least as big as the
-  // largest read/write request you plan to send over PCIS
-  val dmaSize: BigInt = BigInt(0)
-  val tReset = Flipped(Decoupled(Bool()))
-}
-
-abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
-  override def io: EndpointWidgetIO
-}
 
 abstract class MemModelConfig // TODO: delete it
 
@@ -42,6 +32,61 @@ abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
     sb.append(genMacro(this.getClass.getSimpleName))
   }
 }
+
+abstract class SimMemIO extends Endpoint {
+  // This is hideous, but we want some means to get the widths of the target
+  // interconnect so that we can pass that information to the widget the
+  // endpoint will instantiate.
+  var targetAXI4Widths = NastiParameters(0,0,0)
+  var initialized = false
+  override def add(name: String, channel: Data) {
+    initialized = true
+    super.add(name, channel)
+    targetAXI4Widths = channel match {
+      case axi4: AXI4Bundle => NastiParameters(axi4.r.bits.data.getWidth,
+                                               axi4.ar.bits.addr.getWidth,
+                                               axi4.ar.bits.id.getWidth)
+      case axi4: NastiIO => NastiParameters(axi4.r.bits.data.getWidth,
+                                            axi4.ar.bits.addr.getWidth,
+                                            axi4.ar.bits.id.getWidth)
+      case _ => throw new RuntimeException("Unexpected channel type passed to SimMemIO")
+    }
+  }
+
+  private def getChannelAXI4Parameters = {
+    scala.Predef.assert(initialized, "Widget instantiated without first binding a target channel.")
+    targetAXI4Widths
+  }
+
+  def widget(p: Parameters) = {
+    val param = p alterPartial ({ case NastiKey => getChannelAXI4Parameters })
+    (p(MemModelKey): @unchecked) match {
+      case Some(modelGen) => modelGen(param)
+      case None => new NastiWidget()(param)
+    }
+  }
+}
+
+class SimNastiMemIO(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio
+  ) extends SimMemIO {
+  def matchType(data: Data) = data match {
+    case channel: NastiIO =>
+      directionOf(channel.w.valid) == ActualDirection.Output
+    case _ => false
+  }
+}
+
+class SimAXI4MemIO(
+    override val clockRatio: IsRationalClockRatio = UnityClockRatio
+  ) extends SimMemIO {
+  def matchType(data: Data) = data match {
+    case channel: AXI4Bundle =>
+      directionOf(channel.w.valid) == ActualDirection.Output
+    case _ => false
+  }
+}
+
 
 abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
   val tNasti = io.hPort.hBits
@@ -111,7 +156,7 @@ abstract class NastiWidgetBase(implicit p: Parameters) extends MemModel {
 }
 
 // Widget to handle NastiIO efficiently when software memory timing models are used
-class NastiWidget(implicit val p: Parameters) extends NastiWidgetBase {
+class NastiWidget(implicit p: Parameters) extends NastiWidgetBase {
   /*** Timing information ***/
   // deltas from the simulation driver are kept in "deltaBuf"
   val deltaBuf = Module(new Queue(UInt(32.W), 2))
