@@ -216,14 +216,16 @@ def handleBuild(args, cfgs):
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
     doit.doit_cmd.DoitMain(loader).run(binList + imgList)
 
+# Returns a command string to luanch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, initramfs=False):
     if initramfs:
-        return ['spike', '-p4', '-m4096', config['bin'] + '-initramfs']
+        return 'spike -p4 -m4096 ' + config['bin'] + '-initramfs'
     elif 'img' not in config:
-        return ['spike', '-p4', '-m4096', config['bin']]
+        return 'spike -p4 -m4096 ' + config['bin']
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
+# Returns a command string to luanch the given config in qemu. Must be called with shell=True.
 def getQemuCmd(config, initramfs=False):
     log = logging.getLogger()
 
@@ -248,7 +250,7 @@ def getQemuCmd(config, initramfs=False):
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
         cmd = cmd + ['-append', '"ro root=/dev/vda"']
 
-    return cmd
+    return " ".join(cmd)
 
 def handleLaunch(args, cfgs):
     log = logging.getLogger()
@@ -272,7 +274,7 @@ def handleLaunch(args, cfgs):
     else:
         cmd = getQemuCmd(config, args.initramfs)
 
-    sp.check_call(" ".join(cmd) + " | tee " + uartLog, shell=True)
+    sp.check_call(cmd + " | tee " + uartLog, shell=True)
 
     if 'outputs' in config:
         outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
@@ -336,7 +338,7 @@ def makeImage(config):
         init_overlay = config['builder'].generateBootScriptOverlay(config['guest-init'])
         applyOverlay(config['img'], init_overlay)
         print("Launching: " + config['bin'])
-        launchQemu(config)
+        sp.check_call(getQemuCmd(config), shell=True)
 
         # Clear the init script
         run_overlay = config['builder'].generateBootScriptOverlay(None)

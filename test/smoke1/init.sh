@@ -1,7 +1,5 @@
 #!/bin/bash
-set -x
-
-echo "I only ran the first time!" >> /root/runOutput
+echo "Global : init" >> /root/runOutput
 cat /root/runOutput
 
 sync

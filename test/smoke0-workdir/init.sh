@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "global : init" >> /root/runOutput
+echo "Global : init" >> /root/runOutput
 cat /root/runOutput
 
 sync

@@ -4,5 +4,5 @@
   "base" : "br-base.json",
   "files" : [ [ "runOutput", "/root/" ] ],
   "guest-init" : "init.sh",
-  "command" : "echo global : command >> /root/runOutput; cat /root/runOutput"
+  "command" : "echo Global : command >> /root/runOutput; cat /root/runOutput"
 }

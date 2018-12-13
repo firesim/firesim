@@ -4,11 +4,11 @@
   "jobs" : [
     {
       "name" : "j0",
-      "command" : "echo j0 Ran!"
+      "command" : "echo j0 : run"
     },
     {
       "name" : "j1",
-      "command" : "echo j1 Ran!"
+      "command" : "echo j1 : run"
     }
   ]
 }

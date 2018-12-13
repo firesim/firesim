@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "I Ran!"
+echo "Global : run"
