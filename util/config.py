@@ -19,6 +19,8 @@ configUser = [
         'name',
         # Path to config to base off (or 'fedora'/'br' if deriving from a base config)
         'base',
+        # Path to riscv-linux source to use (defaults to the included linux)
+        'linux-src',
         # Path to linux configuration file to use
         'linux-config',
         # Path to script to run on host before building this config
@@ -55,11 +57,11 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['guest-init', 'run', 'overlay', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
+configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'outputs', 'linux-config', 'builder', 'distro']
+configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -113,6 +115,9 @@ class Config(collections.MutableMapping):
                 self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['workdir'])
         else:
             self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
+
+        if 'linux-src' not in self.cfg:
+            self.cfg['linux-src'] = linux_dir
 
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)

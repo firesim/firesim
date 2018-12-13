@@ -1,0 +1,7 @@
+{
+  "name" : "linux-src",
+  "base" : "br-base.json",
+  "host-init" : "copy-src.sh",
+  "linux-src" : "riscv-linux",
+  "command" : "echo Global: command" 
+}

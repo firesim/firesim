@@ -87,6 +87,17 @@ class doitLoader(doit.cmd_base.TaskLoader):
         config = {'verbosity': 2}
         return task_list, config
 
+# Checks if the linux kernel used by this config needs to be rebuilt
+# Note: this is intended to be used by the doit 'uptodate' feature
+# XXX Note: this doesn't actually work because linux unconditionally runs some
+#           rules (it always reports false).
+def checkLinuxUpToDate(config):
+    retcode = sp.call(['make', '-q', 'ARCH=riscv', 'vmlinux'], cwd=config['linux-src'])
+    if retcode == 0:
+        return True
+    else:
+        return False
+
 def addDep(loader, config):
 
     # Add a rule for the binary
@@ -100,7 +111,8 @@ def addDep(loader, config):
             'actions' : [(makeBin, [config])],
             'targets' : [config['bin']],
             'file_dep': file_deps,
-            'task_dep' : task_deps
+            'task_dep' : task_deps,
+            'uptodate' : [(checkLinuxUpToDate, [config])]
             })
 
     # Add a rule for the initramfs version if requested
@@ -186,9 +198,20 @@ def buildDepGraph(cfgs):
 
     return loader
 
+def handleHostInit(config):
+    log = logging.getLogger()
+    if 'host-init' in config:
+       log.info("Applying host-init: " + config['host-init'])
+       if not os.path.exists(config['host-init']):
+           raise ValueError("host-init script " + config['host-init'] + " not found.")
+
+       run([config['host-init']], cwd=config['workdir'])
+ 
 def handleBuild(args, cfgs):
     loader = buildDepGraph(cfgs)
     config = cfgs[args.config_file]
+
+    handleHostInit(config)
     binList = [config['bin']]
     imgList = []
     if 'img' in config:
@@ -200,6 +223,7 @@ def handleBuild(args, cfgs):
     if 'jobs' in config.keys():
         if args.job == 'all':
             for jCfg in config['jobs'].values():
+                handleHostInit(jCfg)
                 binList.append(jCfg['bin'])
                 if 'initramfs' in jCfg:
                     binList.append(jCfg['bin'] + '-initramfs')
@@ -207,6 +231,7 @@ def handleBuild(args, cfgs):
                     imgList.append(jCfg['img'])
         else:
             jCfg = config['jobs'][args.job]
+            handleHostInit(jCfg)
             binList.append(jCfg['bin'])
             if 'initramfs' in jCfg:
                 binList.append(jCfg['bin'] + '-initramfs')
@@ -288,23 +313,23 @@ def makeBin(config, initramfs=False):
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
-        linuxCfg = os.path.join(linux_dir, '.config')
+        linuxCfg = os.path.join(config['linux-src'], '.config')
         shutil.copy(config['linux-config'], linuxCfg)
 
         if initramfs:
             with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
                 toCpio(config, config['img'], tmpCpio.name)
                 convertInitramfsConfig(linuxCfg, tmpCpio.name)
-                run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=linux_dir)
-                run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
+                run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=config['linux-src'])
+                run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
         else: 
-            run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=linux_dir)
+            run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
 
         if not os.path.exists('riscv-pk/build'):
             os.mkdir('riscv-pk/build')
 
         run(['../configure', '--host=riscv64-unknown-elf',
-            '--with-payload=../../riscv-linux/vmlinux'], cwd='riscv-pk/build')
+            '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd='riscv-pk/build')
         run(['make', jlevel], cwd='riscv-pk/build')
 
         if initramfs:
@@ -318,13 +343,7 @@ def makeImage(config):
     if 'base-img' in config:
         shutil.copy(config['base-img'], config['img'])
 
-    if 'host-init' in config:
-       log.info("Applying host-init: " + config['host-init'])
-       if not os.path.exists(config['host-init']):
-           raise ValueError("host-init script " + config['host-init'] + " not found.")
-
-       run([config['host-init']], cwd=config['workdir'])
-   
+  
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         copyImgFiles(config['img'], config['files'], 'in')
