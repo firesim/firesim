@@ -3,7 +3,7 @@ package firesim.firesim
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
 import midas.{EndpointKey, MemModelKey}
-import midas.core.{SimAXI4MemIO, ReciprocalClockRatio, EndpointMap}
+import midas.widgets.{SimAXI4MemIO, EndpointMap}
 import midas.models._
 import midas.MemModelKey
 
@@ -50,14 +50,14 @@ class WithBlockDevWidget extends Config((site, here, up) => {
 
 class WithTracerVWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimTracerV))
+    EndpointMap(Seq(new SimTracerV))
 })
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(
-    new SimAXI4MemIO(ReciprocalClockRatio(clockDivision))))
+    new SimAXI4MemIO(midas.core.ReciprocalClockRatio(clockDivision))))
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
