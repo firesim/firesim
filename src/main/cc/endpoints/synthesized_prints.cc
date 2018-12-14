@@ -230,7 +230,7 @@ void synthesized_prints_t::tick() {
 // Pull in any remaining beats
 void synthesized_prints_t::flush() {
   size_t beats_available = read(mmio_addrs->outgoing_count);
-  process_tokens(beats_available);
+  if (beats_available) process_tokens(beats_available);
   this->printstream->flush();
 }
 
