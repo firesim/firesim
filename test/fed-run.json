@@ -1,5 +1,8 @@
 {
   "name" : "fed-run",
   "base" : "fedora-base.json",
-  "run" : "run.sh"
+  "run" : "run.sh",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
 }

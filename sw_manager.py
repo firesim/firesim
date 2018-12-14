@@ -49,13 +49,13 @@ def main():
     launch_parser.add_argument('-i', '--initramfs', action='store_true', help="Launch the initramfs version of this workload")
 
     args = parser.parse_args()
-    setRunName(args)
+    setRunName(args.config_file, args.command)
 
     args.workdir = os.path.abspath(args.workdir)
     # args.config_file = os.path.join(args.workdir, args.config_file)
     args.config_file = os.path.abspath(args.config_file)
 
-    initLogging(args)
+    initLogging(args.verbose)
     log = logging.getLogger()
 
     # Load all the configs from the workload directory
@@ -305,7 +305,7 @@ def handleLaunch(args, cfgs):
         outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
         copyImgFiles(config['img'], outputSpec, direction='out')
 
-    log.info("Run output available in: " + runResDir)
+    log.info("Run output available in: " + os.path.dirname(runResDir))
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
@@ -410,7 +410,8 @@ def copyImgFiles(img, files, direction):
             if direction == 'in':
                 run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             elif direction == 'out':
-                run('sudo rsync -a --chown=root:root ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                uid = os.getuid()
+                run('sudo rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
     finally:
@@ -418,4 +419,9 @@ def copyImgFiles(img, files, direction):
         # run(['fusermount', '-u', mnt])
         run(['sudo', 'umount', mnt])
 
-main()
+def testInclude():
+    print("HEYO!")
+    return 42
+
+if __name__ == "__main__":
+    main()

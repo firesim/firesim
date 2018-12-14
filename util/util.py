@@ -18,14 +18,14 @@ jlevel = "-j" + str(os.cpu_count())
 runName = ""
 
 # Create a unique run name
-def setRunName(args):
+def setRunName(configPath, operation):
     global runName
     
     timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
     randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
-    runName = os.path.splitext(os.path.basename(args.config_file))[0] + \
-            "-" + args.command + \
+    runName = os.path.splitext(os.path.basename(configPath))[0] + \
+            "-" + operation + \
             "-" + timeline + \
             "-" +  randname
 
@@ -33,7 +33,7 @@ def getRunName():
     return runName
 
 # logging setup
-def initLogging(args):
+def initLogging(verbose):
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
@@ -49,8 +49,8 @@ def initLogging(args):
 
     # log to stdout, without special formatting
     consoleHandler = logging.StreamHandler(stream=sys.stdout)
-    if args.verbose:
-        consoleHandler.setLevel(logging.NOTSET) # show only INFO and greater in console
+    if verbose:
+        consoleHandler.setLevel(logging.NOTSET) # show everything
     else:
         consoleHandler.setLevel(logging.INFO) # show only INFO and greater in console
 
