@@ -25,15 +25,15 @@ synthesized_prints_t::synthesized_prints_t(
   assert((token_bytes & (token_bytes - 1)) == 0);
   assert(print_count > 0);
 
-  const char *printfilename = NULL;
+  const char *printfilename = default_filename.c_str();
 
   this->start_cycle = 0;
-  this->cur_cycle = 0;
-  this->end_cycle = ULONG_MAX;
+  this->end_cycle = -1ULL;
 
   std::string printfile_arg  = std::string("+printfile=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
+  std::string humanreadable_arg   = std::string("+print-human-readable");
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
@@ -54,21 +54,18 @@ synthesized_prints_t::synthesized_prints_t(
           char *str = const_cast<char*>(arg.c_str()) + printend_arg.length();
           this->end_cycle = atol(str);
       }
-  }
-
-  // Write to the widget to indicate when it should drop tokens
-  this->cur_cycle = this->start_cycle; // The first token we receive from the FPGA
-
-  if (printfilename) {
-      this->printfile.open(printfilename);
-      if (!this->printfile.is_open()) {
-          fprintf(stderr, "Could not open print log file: %s\n", printfilename);
-          abort();
+      if (arg.find(humanreadable_arg) == 0) {
+          human_readable = true;
       }
-      this->printstream = &(this->printfile);
-  } else {
-      this->printstream = &std::cerr;
   }
+
+  this->printfile.open(printfilename, std::ios_base::out | std::ios_base::binary);
+  if (!this->printfile.is_open()) {
+      fprintf(stderr, "Could not open print log file: %s\n", printfilename);
+      abort();
+  }
+
+  this->printstream = &(this->printfile);
 
   widths.resize(print_count);
   // Used to reconstruct the relative position of arguments in the flattened argument_widths array
@@ -175,11 +172,15 @@ void synthesized_prints_t::process_tokens(size_t beats) {
   size_t batch_bytes = beats * beat_bytes;
   char buf[batch_bytes];
   pull(dma_address, (char*)buf, batch_bytes);
-  for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
-    if (has_enabled_print(&buf[idx])) {
-      show_prints(&buf[idx]);
+
+  if (human_readable) {
+    for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
+      if (has_enabled_print(&buf[idx])) {
+        show_prints(&buf[idx]);
+      }
     }
-    cur_cycle++;
+  } else {
+    printstream->write(buf, batch_bytes);
   }
 }
 

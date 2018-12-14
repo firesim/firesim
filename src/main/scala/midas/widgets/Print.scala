@@ -12,7 +12,6 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import midas.{PrintPorts}
 import midas.core.{HostPort, DMANastiKey}
 
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
