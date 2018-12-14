@@ -57,7 +57,7 @@ class synthesized_prints_t: public endpoint_t
         // This will be set based on the ratio of token_size : desired_batch_beats
         size_t batch_beats;
         // This will be modified to be a multiple of the token size
-        const size_t desired_batch_beats = 16;
+        const size_t desired_batch_beats = 2048;
 
         // Used to define the boundaries in the batch buffer at which we'll
         // initalize GMP types
@@ -66,9 +66,11 @@ class synthesized_prints_t: public endpoint_t
 
         // +arg driven members
         std::ofstream printfile;   // Used only if the +printfile arg is provided
+        std::string default_filename = "synthesized-prints.out";
+
         std::ostream* printstream; // Is set to std::cerr otherwise
         uint64_t start_cycle, end_cycle; // Bounds between which prints will be emitted
-        uint64_t cur_cycle;
+        bool human_readable = false;
 
         std::vector<std::vector<size_t>> widths;
         std::vector<size_t> sizes;

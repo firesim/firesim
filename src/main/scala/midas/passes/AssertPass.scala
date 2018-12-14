@@ -150,6 +150,11 @@ private[passes] class AssertPass(
   }
 
   def execute(state: CircuitState): CircuitState = {
-    if (p(SynthAsserts)) synthesizeAsserts(state) else state
+    if (p(SynthAsserts)) synthesizeAsserts(state) else {
+      // Still need to touch the file.
+      val f = new FileWriter(new File(dir, s"${state.circuit.main}.asserts"))
+      f.close
+      state
+    }
   }
 }
