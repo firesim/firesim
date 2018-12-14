@@ -77,7 +77,7 @@ class PrintWidgetIO(private val record: PrintRecordBag)(implicit p: Parameters) 
 class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends EndpointWidget()(p)
     with UnidirectionalDMAToHostCPU {
   val io = IO(new PrintWidgetIO(printRecord))
-  lazy val toHostCPUQueueDepth = 512 * 4 // 4 Ultrascale+ URAMs
+  lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(512 * 4)
 
   val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
