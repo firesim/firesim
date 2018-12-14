@@ -143,7 +143,7 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
           case 'h':
           case 'x': gmp_sprintf(buf, "%0*Zx", mpz_sizeinbase(*(masks->data[k]), 16), *value); break;
           case 'd': gmp_sprintf(buf, "%*Zd",  mpz_sizeinbase(*(masks->data[k]), 10), *value); break;
-          case 'b': gmp_sprintf(buf, "%0*Zb", mpz_sizeinbase(*(masks->data[k]), 2), *value); break;
+          case 'b': mpz_get_str(buf, 2, *value); break;
           default: assert(0); break;
         }
         (*printstream) << buf;
