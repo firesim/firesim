@@ -15,11 +15,11 @@ class PrintfModule extends MultiIOModule {
 
   when(a) { cycle := cycle + 1.U }
 
-  printf(SynthesizePrintf("A: %d\n", cycle))
-  when(b) { printf(SynthesizePrintf("B asserted\n")) } // Argument-less print
+  printf(SynthesizePrintf("SYNTHESIZED_PRINT A: %d\n", cycle))
+  when(b) { printf(SynthesizePrintf("SYNTHESIZED_PRINT B asserted\n")) } // Argument-less print
 
   val wideArgument = VecInit(Seq.fill(33)(WireInit(cycle))).asUInt
-  printf(SynthesizePrintf("wideArgument: %x\n", wideArgument)) // argument width > DMA width
+  printf(SynthesizePrintf("SYNTHESIZED_PRINT wideArgument: %x\n", wideArgument)) // argument width > DMA width
 
   val childInst = Module(new PrintfModuleChild)
   childInst.c := a
@@ -31,7 +31,7 @@ class PrintfModuleChild extends MultiIOModule {
   val d = IO(Input(UInt(16.W)))
 
   when (c ^ d(0) && d > 16.U) {
-    printf(SynthesizePrintf("C: %b, D: %d\n", c, d))
+    printf(SynthesizePrintf("SYNTHESIZED_PRINT C: %b, D: %d\n", c, d))
   }
 }
 

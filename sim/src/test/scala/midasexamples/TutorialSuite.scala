@@ -3,6 +3,7 @@ package firesim.midasexamples
 
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
+import scala.io.Source
 
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
@@ -90,4 +91,19 @@ class StackF1Test extends TutorialSuite("Stack", midas.F1, 8)
 class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
 class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)
-class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1)
+class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1,
+  simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
+
+  behavior of "synthesized print logs"
+  it should "match the logs produced by the verilated design" in {
+    def printLines(filename: File): Seq[String] = {
+      val lines = Source.fromFile(filename).getLines.toList
+      lines.filter(_.startsWith("SYNTHESIZED_PRINT"))
+    }
+
+    val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+    val synthPrintOutput = printLines(new File(genDir, "/synthprinttest.out"))
+    assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
+  }
+
+}
