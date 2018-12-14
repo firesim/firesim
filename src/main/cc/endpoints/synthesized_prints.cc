@@ -222,7 +222,7 @@ void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
   size_t beats_available = read(mmio_addrs->outgoing_count);
-  if (beats_available > batch_beats) {
+  if (beats_available >= batch_beats) {
       process_tokens(batch_beats);
   }
 }
