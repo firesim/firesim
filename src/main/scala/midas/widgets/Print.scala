@@ -115,7 +115,9 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
 
   // PAYLOAD HANDLING
   val printPort = io.hPort.hBits
-  val valid = printPort.hasEnabledPrint
+  // TODO: Gating the prints using reset should be done by the transformation,
+  // (using a predicate carried by the annotation(?))
+  val valid = printPort.hasEnabledPrint && !io.tReset.bits
   // Pick a width that's a pow2 number of bytes, including enable bit
   val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + 1))
   val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
