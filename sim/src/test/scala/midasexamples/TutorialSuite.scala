@@ -115,3 +115,7 @@ class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1,
   simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
+class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule", midas.F1,
+  simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
+  diffSynthesizedPrints("synthprinttest.out")
+}

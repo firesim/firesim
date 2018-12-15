@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import chisel3.util.LFSR16
 import chisel3.experimental.MultiIOModule
 
 import midas.targetutils.SynthesizePrintf
@@ -34,5 +35,16 @@ class PrintfModuleChild extends MultiIOModule {
 
   val lfsr = chisel3.util.LFSR16(c)
   printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d LFSR: %x\n", cycle, lfsr))
+
+  //when (lsfr(0)) {
+  //  printf(SynthesizePrintf(p"SYNTHESIZED_PRINT CYCLE: ${cycle} LFSR is odd"))
+  //}
 }
 
+class NarrowPrintfModule extends MultiIOModule {
+  val cycle = RegInit(0.U(12.W))
+  cycle := cycle + 1.U
+  when(LFSR16()(0) & LFSR16()(0)) {
+    printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle))
+  }
+}
