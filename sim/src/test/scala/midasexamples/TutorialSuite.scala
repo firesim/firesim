@@ -70,6 +70,26 @@ abstract class TutorialSuite(
       ignore should s"pass in ${testEnv}" in { }
     }
   }
+
+  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
+  // printfs from the RTL simulator
+  def diffSynthesizedPrints(synthPrintLog: String) {
+    behavior of "synthesized print log"
+    it should "match the logs produced by the verilated design" in {
+      def printLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
+      }
+
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
+      assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
+      for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
+        assert(vPrint == sPrint)
+      }
+    }
+  }
+
   clean
   mkdirs
   compile
@@ -93,17 +113,5 @@ class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
 class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1,
   simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
-
-  behavior of "synthesized print logs"
-  it should "match the logs produced by the verilated design" in {
-    def printLines(filename: File): Seq[String] = {
-      val lines = Source.fromFile(filename).getLines.toList
-      lines.filter(_.startsWith("SYNTHESIZED_PRINT"))
-    }
-
-    val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
-    val synthPrintOutput = printLines(new File(genDir, "/synthprinttest.out"))
-    assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
-  }
-
+  diffSynthesizedPrints("synthprinttest.out")
 }

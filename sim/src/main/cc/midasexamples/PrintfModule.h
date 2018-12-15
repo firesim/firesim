@@ -38,6 +38,9 @@ public:
         while (!done()) {
             print_endpoint->tick();
         }
+        // Add a couple extra flushes to capture tokens that are collected after done is asserted.
+        print_endpoint->flush();
+        print_endpoint->flush();
         print_endpoint->finish();
     };
 };

@@ -15,23 +15,24 @@ class PrintfModule extends MultiIOModule {
 
   when(a) { cycle := cycle + 1.U }
 
-  printf(SynthesizePrintf("SYNTHESIZED_PRINT A: %d\n", cycle))
-  when(b) { printf(SynthesizePrintf("SYNTHESIZED_PRINT B asserted\n")) } // Argument-less print
+  // Printf format strings must be prefixed with "SYNTHESIZED_PRINT CYCLE: %d"
+  // so they can be pulled out of RTL simulators log and sorted within a cycle
+  // As the printf order will be different betwen RTL simulator and synthesized stream
+  printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle))
 
   val wideArgument = VecInit(Seq.fill(33)(WireInit(cycle))).asUInt
-  printf(SynthesizePrintf("SYNTHESIZED_PRINT wideArgument: %x\n", wideArgument)) // argument width > DMA width
+  printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d wideArgument: %x\n", cycle, wideArgument)) // argument width > DMA width
 
   val childInst = Module(new PrintfModuleChild)
   childInst.c := a
-  childInst.d := cycle
+  childInst.cycle := cycle
 }
 
 class PrintfModuleChild extends MultiIOModule {
   val c = IO(Input(Bool()))
-  val d = IO(Input(UInt(16.W)))
+  val cycle = IO(Input(UInt(16.W)))
 
-  when (c ^ d(0) && d > 16.U) {
-    printf(SynthesizePrintf("SYNTHESIZED_PRINT C: %b, D: %d\n", c, d))
-  }
+  val lfsr = chisel3.util.LFSR16(c)
+  printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d LFSR: %x\n", cycle, lfsr))
 }
 
