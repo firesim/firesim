@@ -80,13 +80,27 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(512 * 4)
 
+  val printPort = io.hPort.hBits
+  // Pick a padded token width that's a power of 2 bytes, including enable bit
+  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + 1))
+  // The number of tokens that fill a single DMA beat
+  val packingRatio = if (pow2Bits < dma.nastiXDataBits) Some(dma.nastiXDataBits/pow2Bits) else None
+
+  // PROGRAMMABLE REGISTERS
   val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
   val startCycleH = genWOReg(Wire(UInt(32.W)), "startCycleH")
   val endCycleL   = genWOReg(Wire(UInt(32.W)), "endCycleL")
   val endCycleH   = genWOReg(Wire(UInt(32.W)), "endCycleH")
   // Set after the start and end counters have been initialized; can begin consuming tokens
   val doneInit    = genWORegInit(Wire(Bool()), "doneInit", false.B)
+  // Set at the end of simulation to flush an incomplete narrow packet
+  // Unused if printTokens >= DMA width
+  val flushNarrowPacket = WireInit(false.B)
+  Pulsify(genWORegInit(flushNarrowPacket, "flushNarrowPacket", false.B),
+          pulseLength = packingRatio.getOrElse(1))
 
+
+  // TOKEN CONTROL LOGIC
   val startCycle = Cat(startCycleH, startCycleL)
   val endCycle = Cat(endCycleH, endCycleL)
   val currentCycle = RegInit(0.U(64.W))
@@ -102,6 +116,7 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
                                     io.hPort.toHost.hValid,
                                     io.tReset.valid,
                                     readyToEnqToken,
+                                    ~flushNarrowPacket,
                                     dummyPredicate)
   // Alternative of the mux below rejects the queue's ready as well
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)
@@ -114,12 +129,9 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   }
 
   // PAYLOAD HANDLING
-  val printPort = io.hPort.hBits
   // TODO: Gating the prints using reset should be done by the transformation,
   // (using a predicate carried by the annotation(?))
   val valid = printPort.hasEnabledPrint && !io.tReset.bits
-  // Pick a width that's a pow2 number of bytes, including enable bit
-  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + 1))
   val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
 
   if (pow2Bits == dma.nastiXDataBits) {
@@ -127,12 +139,20 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
     outgoingPCISdat.io.enq.valid := tFireHelper.fire(readyToEnqToken) && enable
     bufferReady := outgoingPCISdat.io.enq.ready
   } else {
-    // Pack or serialize narrow or wide printBundleBags if they do not match the size of the DMA bus
+    // Pack narrow or serialize wide tokens if they do not match the size of the DMA bus
     val mwFifoDepth = math.max(1, 1 * pow2Bits/dma.nastiXDataBits)
-    val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, dma.nastiXDataBits, mwFifoDepth))  
+    val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, dma.nastiXDataBits, mwFifoDepth))
     outgoingPCISdat.io.enq <> widthAdapter.io.out
-    widthAdapter.io.in.bits := data
-    widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable
+    // If packing, we need to be able to flush an incomplete beat to the FIFO,
+    // or we'll lose [0, packingRatio - 1] tokens at the end of simulation
+    packingRatio match {
+      case None =>
+        widthAdapter.io.in.bits := data
+        widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable
+      case Some(_) =>
+        widthAdapter.io.in.bits := Mux(flushNarrowPacket, 0.U, data)
+        widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable || flushNarrowPacket
+    }
     bufferReady := widthAdapter.io.in.ready
   }
 

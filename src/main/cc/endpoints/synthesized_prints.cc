@@ -227,9 +227,32 @@ void synthesized_prints_t::tick() {
   }
 }
 
-// Pull in any remaining beats
+// This is a little hacky... however it'll probably work perfectly fine on the
+// FPGA as mmio read latency is 100+ ns.
+int synthesized_prints_t::beats_avaliable_stable() {
+  size_t prev_beats_available = 0;
+  size_t beats_avaliable = read(mmio_addrs->outgoing_count);
+  while (beats_avaliable > prev_beats_available) {
+    prev_beats_available = beats_avaliable;
+    beats_avaliable = read(mmio_addrs->outgoing_count);
+  }
+  return beats_avaliable;
+}
+
+// Pull in any remaining tokens and flush them to file
+// WARNING: may not function correctly if the simulator is actively running
 void synthesized_prints_t::flush() {
-  size_t beats_available = read(mmio_addrs->outgoing_count);
+  // Wait for the system to settle
+  size_t beats_available = beats_avaliable_stable();
+
+  // If multiple tokens are being packed into a single DMA beat, force the widget
+  // to write out any incomplete beat
+  if  (token_bytes < beat_bytes) {
+    write(mmio_addrs->flushNarrowPacket, 1);
+    while (read(mmio_addrs->outgoing_count) != (beats_available + 1));
+    beats_available++;
+  }
+
   if (beats_available) process_tokens(beats_available);
   this->printstream->flush();
 }
