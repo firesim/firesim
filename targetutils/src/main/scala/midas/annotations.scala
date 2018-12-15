@@ -35,7 +35,7 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
   }
 }
 
-case class SynthPrintfAnnotation(
+private [midas] case class SynthPrintfAnnotation(
     args: Seq[Seq[ReferenceTarget]], // These aren't currently used; here for future proofing
     mod: ModuleTarget,
     format: String,
@@ -63,7 +63,7 @@ private[midas] case class ChiselSynthPrintfAnnotation(
 // For now, this needs to be invoked on the arguments to printf, not on the printf itself
 // Eg. printf(SynthesizePrintf("True.B or False.B: Printfs can be annotated: %b\n", false.B))
 object SynthesizePrintf {
-  def generateAnnotations(format: String, args: Seq[Bits], name: Option[String]): Printable = {
+  private def generateAnnotations(format: String, args: Seq[Bits], name: Option[String]): Printable = {
     val thisModule = Module.currentModule.getOrElse(
       throw new RuntimeException("Cannot annotate a printf outside of a Module"))
     chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule, name))
@@ -75,31 +75,4 @@ object SynthesizePrintf {
   def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
 
   // TODO: Accept a printable -> need to somehow get the format string from it
-}
-
-private[midas] case class TraceAnnotation(
-    data: Seq[ReferenceTarget],
-    enable: Option[ReferenceTarget] = None) extends firrtl.annotations.Annotation {
-
-  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
-    val renamer = new ReferenceTargetRenamer(renames)
-    val renamedData = data.flatMap(renamer(_))
-    val renamedEnable = enable.map(renamer.exactRename)
-    Seq(this.copy(data = renamedData, enable = renamedEnable))
-  }
-}
-
-private[midas] case class ChiselTraceAnnotation(fields: Seq[Data], enable: Option[Bool]) extends chisel3.experimental.ChiselAnnotation {
-  def toFirrtl() = TraceAnnotation(fields.map(_.toNamed.toTarget),
-                                   enable = enable.map(_.toNamed.toTarget))
-}
-
-object Trace {
-  private def generateAnnotations(fields: Seq[Data], enable: Option[Bool]): Unit = {
-    chisel3.experimental.annotate(ChiselTraceAnnotation(fields, enable))
-    fields.foreach(dontTouch(_))
-    enable.foreach(dontTouch(_))
-  }
-  def apply(fields: Data*): Unit = generateAnnotations(fields, None)
-  def apply(fields: Seq[Data], enable: Bool): Unit = generateAnnotations(fields, Some(enable))
 }
