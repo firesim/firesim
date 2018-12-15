@@ -83,6 +83,8 @@ class synthesized_prints_t: public endpoint_t
         void process_tokens(size_t beats);
         void show_prints(char * buf);
         void print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks);
+        // Returns the number of beats available, once two successive reads return the same value
+        int beats_avaliable_stable();
 };
 
 #endif // PRINTWIDGET_struct_guard
