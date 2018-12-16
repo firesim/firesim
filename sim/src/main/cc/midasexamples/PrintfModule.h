@@ -17,6 +17,7 @@ class print_module_t: virtual simif_t
                 PRINTWIDGET_0_substruct,
                 PRINTWIDGET_0_print_count,
                 PRINTWIDGET_0_token_bytes,
+                PRINTWIDGET_0_idle_cycles_mask,
                 PRINTWIDGET_0_print_offsets,
                 PRINTWIDGET_0_format_strings,
                 PRINTWIDGET_0_argument_counts,
@@ -28,9 +29,6 @@ class print_module_t: virtual simif_t
             while (!done()) {
                 print_endpoint->tick();
             }
-            // Add a couple extra flushes to capture tokens that are collected after done is asserted.
-            print_endpoint->flush();
-            print_endpoint->flush();
             print_endpoint->finish();
         };
 };

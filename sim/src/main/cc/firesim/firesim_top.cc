@@ -351,6 +351,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTWIDGET_0_substruct,
                                           PRINTWIDGET_0_print_count,
                                           PRINTWIDGET_0_token_bytes,
+                                          PRINTWIDGET_0_idle_cycles_mask,
                                           PRINTWIDGET_0_print_offsets,
                                           PRINTWIDGET_0_format_strings,
                                           PRINTWIDGET_0_argument_counts,

@@ -42,9 +42,10 @@ class PrintfModuleChild extends MultiIOModule {
 }
 
 class NarrowPrintfModule extends MultiIOModule {
+  val enable = IO(Input(Bool()))
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
-  when(LFSR16()(0) & LFSR16()(0)) {
-    printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle))
+  when(LFSR16()(0) & LFSR16()(0) & enable) {
+    printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle(5,0)))
   }
 }
