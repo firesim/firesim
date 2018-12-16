@@ -29,6 +29,7 @@ class synthesized_prints_t: public endpoint_t
                              PRINTWIDGET_struct * mmio_addrs,
                              unsigned int print_count,
                              unsigned int token_bytes,
+                             unsigned int idle_cycles_mask,
                              const unsigned int* print_offsets,
                              const char* const*  format_strings,
                              const unsigned int* argument_counts,
@@ -45,6 +46,7 @@ class synthesized_prints_t: public endpoint_t
         PRINTWIDGET_struct * mmio_addrs;
         const unsigned int print_count;
         const unsigned int  token_bytes;
+        const unsigned int  idle_cycles_mask;
         const unsigned int* print_offsets;
         const char* const*  format_strings;
         const unsigned int* argument_counts;
@@ -64,12 +66,14 @@ class synthesized_prints_t: public endpoint_t
         using gmp_align_t = uint64_t;
         const size_t gmp_align_bits = sizeof(gmp_align_t) * 8;
 
+
         // +arg driven members
         std::ofstream printfile;   // Used only if the +printfile arg is provided
         std::string default_filename = "synthesized-prints.out";
 
         std::ostream* printstream; // Is set to std::cerr otherwise
         uint64_t start_cycle, end_cycle; // Bounds between which prints will be emitted
+        uint64_t current_cycle = 0;
         bool human_readable = false;
 
         std::vector<std::vector<size_t>> widths;

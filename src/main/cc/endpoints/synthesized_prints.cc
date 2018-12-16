@@ -8,6 +8,7 @@ synthesized_prints_t::synthesized_prints_t(
   PRINTWIDGET_struct * mmio_addrs,
   unsigned int print_count,
   unsigned int token_bytes,
+  unsigned int idle_cycles_mask,
   const unsigned int* print_offsets,
   const char* const*  format_strings,
   const unsigned int* argument_counts,
@@ -17,6 +18,7 @@ synthesized_prints_t::synthesized_prints_t(
     mmio_addrs(mmio_addrs),
     print_count(print_count),
     token_bytes(token_bytes),
+    idle_cycles_mask(idle_cycles_mask),
     print_offsets(print_offsets),
     format_strings(format_strings),
     argument_counts(argument_counts),
@@ -58,6 +60,7 @@ synthesized_prints_t::synthesized_prints_t(
           human_readable = true;
       }
   }
+  current_cycle = start_cycle; // We won't receive tokens until start_cycle; so fast-forward
 
   this->printfile.open(printfilename, std::ios_base::out | std::ios_base::binary);
   if (!this->printfile.is_open()) {
@@ -164,8 +167,12 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
   assert(k == vars->data.size());
 }
 
-// Returns true if at least one print in the buffer is enabled in this cycle
+// Returns true if at least one print in the token is enabled in this cycle
 bool has_enabled_print(char * buf) { return (buf[0] & 1); }
+// If the token has no enabled prints, return a number of idle cycles encoded in the msbs
+bool decode_idle_cycles(char * buf, uint32_t mask) {
+  return ((*((uint32_t*)buf)) & mask) >> 1;
+}
 
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
 void synthesized_prints_t::process_tokens(size_t beats) {
@@ -177,6 +184,9 @@ void synthesized_prints_t::process_tokens(size_t beats) {
     for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
       if (has_enabled_print(&buf[idx])) {
         show_prints(&buf[idx]);
+        current_cycle++;
+      } else {
+        current_cycle += decode_idle_cycles(buf, idle_cycles_mask);
       }
     }
   } else {
