@@ -82,7 +82,9 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
 
   val printPort = io.hPort.hBits
   // Pick a padded token width that's a power of 2 bytes, including enable bit
-  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + 1))
+  val reservedBits = 1 // Just print-wide enable
+  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + reservedBits))
+  val idleCycleBits = math.min(16, pow2Bits) - reservedBits
   // The number of tokens that fill a single DMA beat
   val packingRatio = if (pow2Bits < dma.nastiXDataBits) Some(dma.nastiXDataBits/pow2Bits) else None
 
@@ -104,6 +106,7 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   val startCycle = Cat(startCycleH, startCycleL)
   val endCycle = Cat(endCycleH, endCycleL)
   val currentCycle = RegInit(0.U(64.W))
+  val idleCycles =   RegInit(0.U(idleCycleBits.W))
 
   // Gate passing tokens of to software if we are not in the region of interest
   val enable = (startCycle <= currentCycle) && (currentCycle <= endCycle)
@@ -123,8 +126,9 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
+  val tFire = tFireHelper.fire(dummyPredicate)
 
-  when (tFireHelper.fire(dummyPredicate)) {
+  when (tFire) {
     currentCycle := currentCycle + 1.U
   }
 
@@ -134,9 +138,31 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   val valid = printPort.hasEnabledPrint && !io.tReset.bits
   val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
 
+  // Delay the valid token by a cycle so that we can first enqueue an idle-cycle-encoded token
+  val dataPipe = Module(new Queue(data.cloneType, 1, pipe = true))
+  dataPipe.io.enq.bits  := data
+  dataPipe.io.enq.valid := tFire && valid && enable
+  dataPipe.io.deq.ready := bufferReady
+
+  val idleCyclesRollover = idleCycles.andR
+  when ((tFire && valid && enable) || flushNarrowPacket) {
+    idleCycles := 0.U
+  }.elsewhen(tFire && enable) {
+    idleCycles := Mux(idleCyclesRollover, 1.U, idleCycles + 1.U)
+  }
+
+  val printToken = Mux(dataPipe.io.deq.valid,
+                       dataPipe.io.deq.bits,
+                       Cat(idleCycles, 0.U(reservedBits.W)))
+
+
+  val tokenValid = tFireHelper.fire(readyToEnqToken) && enable &&
+                      (valid && idleCycles =/= 0.U || idleCyclesRollover) ||
+                   dataPipe.io.deq.valid
+
   if (pow2Bits == dma.nastiXDataBits) {
-    outgoingPCISdat.io.enq.bits := data
-    outgoingPCISdat.io.enq.valid := tFireHelper.fire(readyToEnqToken) && enable
+    outgoingPCISdat.io.enq.bits := printToken
+    outgoingPCISdat.io.enq.valid := tokenValid
     bufferReady := outgoingPCISdat.io.enq.ready
   } else {
     // Pack narrow or serialize wide tokens if they do not match the size of the DMA bus
@@ -147,18 +173,17 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
     // or we'll lose [0, packingRatio - 1] tokens at the end of simulation
     packingRatio match {
       case None =>
-        widthAdapter.io.in.bits := data
-        widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable
+        widthAdapter.io.in.bits := printToken
+        widthAdapter.io.in.valid := tokenValid
       case Some(_) =>
-        widthAdapter.io.in.bits := Mux(flushNarrowPacket, 0.U, data)
-        widthAdapter.io.in.valid := tFireHelper.fire(readyToEnqToken) && enable || flushNarrowPacket
+        widthAdapter.io.in.bits :=  printToken
+        widthAdapter.io.in.valid := tokenValid || flushNarrowPacket
     }
     bufferReady := widthAdapter.io.in.ready
   }
 
   // HEADER GENERATION
   // The LSB corresponding to the enable bit of the print
-  val reservedBits = 1 // Just print-wide enable
   val widths = (printRecord.elements.map(_._2.getWidth))
 
   // C-types for emission
@@ -176,6 +201,8 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
     super.genHeader(base, sb)
     sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printRecord.ports.size)))
     sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
+    sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",
+                             UInt32(((1 << idleCycleBits) - 1) << reservedBits)))
     sb.append(genArray(s"${headerWidgetName}_print_offsets", baseOffsets))
     sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
     sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))
