@@ -1,0 +1,10 @@
+{
+  "name" : "spike",
+  "base" : "bare",
+  "host-init" : "build.sh",
+  "bin" : "hello",
+  "spike" : "riscv-isa-sim/build/spike",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}

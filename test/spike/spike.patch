@@ -1,0 +1,11 @@
+diff --git a/spike_main/spike.cc b/spike_main/spike.cc
+index eb57baf..f221d0f 100644
+--- a/spike_main/spike.cc
++++ b/spike_main/spike.cc
+@@ -174,5 +174,6 @@ int main(int argc, char** argv)
+   s.set_debug(debug);
+   s.set_log(log);
+   s.set_histogram(histogram);
++  printf("Global : spike\n");
+   return s.run();
+ }

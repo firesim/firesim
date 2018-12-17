@@ -19,6 +19,8 @@ configUser = [
         'name',
         # Path to config to base off (or 'fedora'/'br' if deriving from a base config)
         'base',
+        # Path to spike binary to use (use $PATH if this is omitted)
+        'spike',
         # Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
         # Path to linux configuration file to use
@@ -57,11 +59,11 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img']
+configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img', 'spike']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro']
+configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro', 'spike']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {

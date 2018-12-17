@@ -14,14 +14,18 @@ class doitLoader(doit.cmd_base.TaskLoader):
 
 # Checks if the linux kernel used by this config needs to be rebuilt
 # Note: this is intended to be used by the doit 'uptodate' feature
-# XXX Note: this doesn't actually work because linux unconditionally runs some
-#           rules (it always reports false).
 def checkLinuxUpToDate(config):
-    retcode = sp.call(['make', '-q', 'ARCH=riscv', 'vmlinux'], cwd=config['linux-src'])
-    if retcode == 0:
-        return True
-    else:
-        return False
+    # XXX There are a number of issues with doing this for real:
+    #   - The linux build system always reports that it's not uptodate
+    #     (make -q == False), so we'd have to come up with a more clever way
+    #   - Using the make -q method is nearly equivalent to makeBin, we need all
+    #     that logic (e.g. initramfs, baremetal, etc.).
+    #   
+    #   The result is that for now we'll always rebuild linux and hope the
+    #   makefiles make this not too bad (it adds a few seconds per image). This
+    #   function is left here to make it easier if/when we get around to doing
+    #   it right.
+    return True
 
 def addDep(loader, config):
 
@@ -164,6 +168,8 @@ def buildWorkload(cfgName, cfgs):
 def makeBin(config, initramfs=False):
     log = logging.getLogger()
 
+    print(config)
+    return
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
         linuxCfg = os.path.join(config['linux-src'], '.config')

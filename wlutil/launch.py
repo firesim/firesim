@@ -3,10 +3,15 @@ from .wlutil import *
 
 # Returns a command string to luanch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, initramfs=False):
+    if 'spike' in config:
+        spikeBin = config['spike']
+    else:
+        spikeBin = 'spike'
+
     if initramfs:
-        return 'spike -p4 -m4096 ' + config['bin'] + '-initramfs'
+        return spikeBin + ' -p4 -m4096 ' + config['bin'] + '-initramfs'
     elif 'img' not in config:
-        return 'spike -p4 -m4096 ' + config['bin']
+        return spikeBin + ' -p4 -m4096 ' + config['bin']
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
