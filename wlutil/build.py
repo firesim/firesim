@@ -4,6 +4,8 @@ from .wlutil import *
 from .config import *
 from .launch import *
 
+taskLoader = None
+
 class doitLoader(doit.cmd_base.TaskLoader):
     workloads = []
 
@@ -25,7 +27,7 @@ def checkLinuxUpToDate(config):
     #   makefiles make this not too bad (it adds a few seconds per image). This
     #   function is left here to make it easier if/when we get around to doing
     #   it right.
-    return True
+    return False 
 
 def addDep(loader, config):
 
@@ -136,31 +138,39 @@ def handleHostInit(config):
 
        run([config['host-init']], cwd=config['workdir'])
  
-# def buildWorkload(args, cfgs):
-def buildWorkload(cfgName, cfgs):
-    loader = buildDepGraph(cfgs)
+def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
+    # This should only be built once (multiple builds will mess up doit)
+    global taskLoader
+    if taskLoader == None:
+        taskLoader = buildDepGraph(cfgs)
+        
     config = cfgs[cfgName]
 
     handleHostInit(config)
-    binList = [config['bin']]
     imgList = []
-    if 'img' in config:
-        imgList.append(config['img'])
+    binList = []
 
-    if 'initramfs' in config:
-        binList.append(config['bin'] + '-initramfs')
+    if buildBin:
+        binList = [config['bin']]
+        if 'initramfs' in config:
+            binList.append(config['bin'] + '-initramfs')
+   
+    if 'img' in config and buildImg:
+        imgList.append(config['img'])
 
     if 'jobs' in config.keys():
         for jCfg in config['jobs'].values():
             handleHostInit(jCfg)
-            binList.append(jCfg['bin'])
-            if 'initramfs' in jCfg:
-                binList.append(jCfg['bin'] + '-initramfs')
-            if 'img' in jCfg:
+            if buildBin:
+                binList.append(jCfg['bin'])
+                if 'initramfs' in jCfg:
+                    binList.append(jCfg['bin'] + '-initramfs')
+
+            if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
-    ret = doit.doit_cmd.DoitMain(loader).run(binList + imgList)
+    ret = doit.doit_cmd.DoitMain(taskLoader).run(binList + imgList)
     if ret != 0:
         raise RuntimeError("Error while building workload")
 
@@ -168,8 +178,6 @@ def buildWorkload(cfgName, cfgs):
 def makeBin(config, initramfs=False):
     log = logging.getLogger()
 
-    print(config)
-    return
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
         linuxCfg = os.path.join(config['linux-src'], '.config')

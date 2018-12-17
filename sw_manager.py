@@ -24,6 +24,8 @@ def main():
     build_parser = subparsers.add_parser(
         'build', help='Build an image from the given configuration.')
     build_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    build_parser.add_argument('-B', '--binOnly', action='store_true', help="Only build the binary")
+    build_parser.add_argument('-I', '--imgOnly', action='store_true', help="Only build the image (may require an image if you have guest-init scripts)")
 
     # Launch command
     launch_parser = subparsers.add_parser(
@@ -40,6 +42,11 @@ def main():
     test_parser = subparsers.add_parser(
             'test', help="Test each workload.")
     test_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+
+    # Clean Command
+    clean_parser = subparsers.add_parser(
+            'clean', help="Removes build outputs of the provided config (img and bin). Does not affect logs or runOutputs.")
+    clean_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
 
     args = parser.parse_args()
     
@@ -68,7 +75,12 @@ def main():
                     j['initramfs'] = True
 
         if args.command == "build":
-            wlutil.buildWorkload(cfgPath, cfgs)
+            if args.binOnly or args.imgOnly:
+                # It's fine if they pass -IB, it just builds both
+                wlutil.buildWorkload(cfgPath, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
+            else:
+                wlutil.buildWorkload(cfgPath, cfgs)
+
         elif args.command == "launch":
             # job-configs are named special internally
             if args.job != 'all':
@@ -88,6 +100,17 @@ def main():
             elif res is wlutil.testResult.skip:
                 skipCount += 1
             log.info("")
+        elif args.command == 'clean':
+            if 'bin' in targetCfg and os.path.exists(targetCfg['bin']):
+                os.remove(targetCfg['bin'])
+            if 'img' in targetCfg and os.path.exists(targetCfg['img']):
+                os.remove(targetCfg['img'])
+            if 'jobs' in targetCfg:
+                for jCfg in targetCfg['jobs'].values():
+                    if 'bin' in jCfg and os.path.exists(jCfg['bin']):
+                        os.remove(jCfg['bin'])
+                    if 'img' in jCfg and os.path.exists(jCfg['img']):
+                        os.remove(jCfg['img'])
         else:
             log.error("No subcommand specified")
             sys.exit(1)
