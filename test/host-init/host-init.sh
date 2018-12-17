@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "Global : host-init" >> runOutput
+echo "Global : host-init" > runOutput

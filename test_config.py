@@ -19,6 +19,9 @@ import argparse
 import signal
 import textwrap
 import psutil
+import re
+import pathlib
+import traceback
 import multiprocessing as mp
 from contextlib import contextmanager
 from util.config import *
@@ -27,8 +30,8 @@ from util.check_output import *
 import sw_manager as sw
 
 # Default timeouts (in seconds)
-defBuildTimeout = 300
-defRunTimeout = 300
+defBuildTimeout = 900 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
+defRunTimeout = 300 # 5 min
 
 # adapted from https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
 def fileno(file_or_fd):
@@ -78,6 +81,52 @@ def runTimeout(func, timeout):
 
     return wrap
 
+# Fedora run output can be tricky to compare due to lots of non-deterministic
+# output (e.g. timestamps, pids) This function takes the entire uartlog from a
+# fedora run and returns only the output of auto-run scripts
+def stripFedoraUart(lines):
+    stripped = ""
+    pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
+    for l in lines:
+        match = pat.match(l)
+        if match:
+            stripped += match.group(1)
+
+    return stripped
+
+def stripBrUart(lines):
+    stripped = ""
+    inBody = False
+    for l in lines:
+        if not inBody:
+            if re.match("FIRESIM RUN START", l):
+                inBody = True
+        else:
+            if re.match("FIRESIM RUN END", l):
+                break
+            stripped += l
+
+    return stripped
+          
+def stripUartlog(config, outputPath):
+    outDir = pathlib.Path(outputPath)
+    for uartPath in outDir.glob("**/uartlog"):
+        with open(str(uartPath), 'r') as uFile:
+            uartlog = uFile.readlines()
+
+        if 'distro' in config:
+            if config['distro'] == 'fedora':
+                strippedUart = stripFedoraUart(uartlog)
+            elif config['distro'] == 'br':
+                strippedUart = stripBrUart(uartlog)
+            else:
+                strippedUart = "".join(uartlog)
+        else:
+            strippedUart = "".join(uartlog)
+
+        with open(str(uartPath), 'w') as uFile:
+            uFile.write(strippedUart)
+
 def main():
     parser = argparse.ArgumentParser(description="Tester for sw-manager.py")
     parser.add_argument('--workdir', help='Use a custom workload directory', default=os.path.join(root_dir, 'test'))
@@ -109,23 +158,37 @@ def main():
             testCfg['runTimeout'] = defRunTimeout
 
         cmdArgs = argparse.Namespace(config_file=cfgPath, job='all', initramfs=False, spike=False)
+        refPath = os.path.join(cfg['workdir'], testCfg['refDir'])
+        testPath = os.path.join(res_dir, getRunName())
         try:
             with stdout_redirected(cmdOut):
                 runTimeout(sw.handleBuild, testCfg['buildTimeout'])(cmdArgs, cfgs)
-                runTimeout(sw.handleLaunch, testCfg['runTimeout'])(cmdArgs, cfgs)
+                if 'jobs' in cfg:
+                    for jName in cfg['jobs'].keys():
+                        cmdArgs.job = jName
+                        runTimeout(sw.handleLaunch, testCfg['runTimeout'])(cmdArgs, cfgs)
+                else:
+                    runTimeout(sw.handleLaunch, testCfg['runTimeout'])(cmdArgs, cfgs)
                 
-            refPath = os.path.join(cfg['workdir'], testCfg['refDir'])
-            testPath = os.path.join(res_dir, getRunName())
+            if 'strip' in testCfg and testCfg['strip']:
+                stripUartlog(cfg, testPath)
+
             diff = cmpOutput(testPath, refPath)
             if diff is not None:
                 suitePass = False
                 print("Test " + os.path.basename(cfgPath) + " failure: output does not match reference")
                 print(textwrap.indent(diff, '\t'))
+                print("Output available in " + testPath + "\n")
                 continue
 
         except TimeoutError as e:
             suitePass = False
-            print("Test " + os.path.basename(cfgPath) + " failure: Timeout")
+            if e.args[0] == "handleBuild":
+                print("Test " + os.path.basename(cfgPath) + " failure: timeout while building")
+            elif e.args[0] == "handleLaunch":
+                print("Test " + os.path.basename(cfgPath) + " failure: timeout while running")
+            
+            print("Output available in " + testPath + "\n")
             continue
 
         except ChildProcessError as e:
@@ -134,15 +197,19 @@ def main():
                 print("Test " + os.path.basename(cfgPath) + " failure: Exception while building")
             elif e.args[0] == "handleLaunch":
                 print("Test " + os.path.basename(cfgPath) + " failure: Exception while running")
+            
+            print("Output available in " + testPath + "\n")
             continue
 
         except Exception as e:
             suitePass = False
             print("Test " + os.path.basename(cfgPath) + " failure: Exception encountered")
-            print("\t" + repr(e))
+            # print("\t" + repr(e))
+            traceback.print_exc()
+            print("Output available in " + testPath + "\n")
             continue
 
-        print("Success")
+        print("Success - output available in " + testPath + "\n")
 
     if suitePass:
         print("Suite Success")

@@ -3,6 +3,10 @@
   "workdir" : "smoke1",
   "base" : "br-base.json",
   "overlay" : "overlay",
-  "guest-init" : "guest-init.sh",
-  "run" : "run.sh"
+  "guest-init" : "init.sh",
+  "run" : "run.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
 }

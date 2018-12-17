@@ -1,6 +1,11 @@
 #!/bin/bash
-echo "Global : run" >> /root/runOutput
-cat /root/runOutput
+
+cd root
+
+if [[ $(tail -n 1 runOutput) != "Global : run" ]]; then
+  echo "Global : run" >> runOutput 
+fi
+cat runOutput
 
 sync
 poweroff -f

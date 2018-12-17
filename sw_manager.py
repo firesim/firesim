@@ -239,7 +239,9 @@ def handleBuild(args, cfgs):
                 imgList.append(jCfg['img'])
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
-    doit.doit_cmd.DoitMain(loader).run(binList + imgList)
+    ret = doit.doit_cmd.DoitMain(loader).run(binList + imgList)
+    if ret != 0:
+        raise RuntimeError("Error while building workload")
 
 # Returns a command string to luanch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, initramfs=False):
@@ -287,7 +289,8 @@ def handleLaunch(args, cfgs):
         # Run the base image
         config = cfgs[args.config_file]
  
-    runResDir = os.path.join(res_dir, getRunName(), config['name'])
+    baseResDir = os.path.join(res_dir, getRunName())
+    runResDir = os.path.join(baseResDir, config['name'])
     uartLog = os.path.join(runResDir, "uartlog")
     os.makedirs(runResDir)
 
@@ -304,6 +307,10 @@ def handleLaunch(args, cfgs):
     if 'outputs' in config:
         outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
         copyImgFiles(config['img'], outputSpec, direction='out')
+
+    if 'post_run_hook' in config:
+        log.info("Running post_run_hook script: " + config['post_run_hook'])
+        run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
 
     log.info("Run output available in: " + os.path.dirname(runResDir))
 
@@ -325,8 +332,10 @@ def makeBin(config, initramfs=False):
         else: 
             run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
 
-        if not os.path.exists('riscv-pk/build'):
-            os.mkdir('riscv-pk/build')
+        # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
+        if os.path.exists('riscv-pk/build'):
+            shutil.rmtree('riscv-pk/build')
+        os.mkdir('riscv-pk/build')
 
         run(['../configure', '--host=riscv64-unknown-elf',
             '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd='riscv-pk/build')

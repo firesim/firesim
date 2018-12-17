@@ -1,5 +1,9 @@
 {
   "name" : "run",
   "base" : "br-base.json",
-  "run" : "run.sh"
+  "run" : "run.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
 }

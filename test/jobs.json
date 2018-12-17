@@ -1,6 +1,10 @@
 {
   "name" : "jobs",
   "base" : "br-base.json",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  },
   "jobs" : [
     {
       "name" : "j0",

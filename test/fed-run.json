@@ -3,6 +3,7 @@
   "base" : "fedora-base.json",
   "run" : "run.sh",
   "testing" : {
-    "refDir" : "refOutput"
+    "refDir" : "refOutput",
+    "strip" : true
   }
 }

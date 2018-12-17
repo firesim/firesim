@@ -5,7 +5,7 @@ import pathlib as pl
 import difflib
 import pprint
 import os
-
+ 
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
 #   - Directory structures are compared directly (same folders in the same
@@ -16,9 +16,12 @@ import os
 #   - Files named "uartlog" in the reference output need only match a subset of
 #     the test output (the entire reference uartlog contents must exist somewhere
 #     in the test output).
-def cmpOutput(testDir, refDir):
+def cmpOutput(testDir, refDir, strip=False):
     testDir = pl.Path(testDir)
     refDir = pl.Path(refDir)
+    if not refDir.exists():
+        return "reference directory: " + str(refDir) + " does not exist"
+
     for rPath in refDir.glob("**/*"):
         # tPath = testDir / pl.Path(*rPath.parts[1:])
         tPath = testDir / rPath.relative_to(refDir)
@@ -32,6 +35,7 @@ def cmpOutput(testDir, refDir):
                     if rPath.name == "uartlog":
                         rLines = rFile.readlines()
                         tLines = tFile.readlines()
+                        
                         matcher = difflib.SequenceMatcher(None, rLines, tLines)
                         m = matcher.find_longest_match(0, len(rLines), 0, len(tLines))
                         if m.size != len(rLines):

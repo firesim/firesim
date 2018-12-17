@@ -5,7 +5,7 @@ SYSLOGD_ARGS=-n
 KLOGD_ARGS=-n
 
 start() {
-    /firesim.sh
+    echo "FIRESIM RUN START" && /firesim.sh && echo "FIRESIM RUN END"
 }
 
 case "$1" in

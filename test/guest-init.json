@@ -2,5 +2,9 @@
   "name" : "guest-init",
   "base" : "br-base.json",
   "guest-init" : "init.sh",
-  "command" : "echo 'Global : command' >> /root/runOutput && cat /root/runOutput"
+  "command" : "echo 'Global : command' >> /root/runOutput && cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
 }
