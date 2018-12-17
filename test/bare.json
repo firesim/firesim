@@ -1,6 +1,9 @@
 {
   "name" : "bare",
   "base" : "bare",
-  "host-guest-init" : "build.sh",
-  "bin" : "hello"
+  "host-init" : "build.sh",
+  "bin" : "hello",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
 }

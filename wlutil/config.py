@@ -7,7 +7,7 @@ import collections
 import json
 import pprint
 import logging
-from util.util import *
+from .wlutil import *
 import pathlib as pth
 
 # This is a comprehensive list of all user-defined config options
@@ -77,7 +77,6 @@ class RunSpec():
         if self.path and self.command:
             raise ValueError("'command' and 'run' options are mutually exclusive")
 
-FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
 class Config(collections.MutableMapping):
 
@@ -157,7 +156,6 @@ class Config(collections.MutableMapping):
             
             for jCfg in jList:
                 jCfg['workdir'] = self.cfg['workdir']
-                # jCfg['cfg-file'] = self.cfg['cfg-file']
                 # TODO come up with a better scheme here, name is used to
                 # derive the img and bin names, but naming jobs this way makes
                 # for ugly hacks later when looking them up. 
@@ -311,7 +309,6 @@ class ConfigManager(collections.MutableMapping):
         self.cfgs[key] = value
 
     def __delitem__(self, key):
-        print("I RAN!")
         del self.cfgs[key]
 
     def __iter__(self):

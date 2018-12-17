@@ -2,7 +2,8 @@ import os
 import subprocess as sp
 import shutil
 import logging
-from util.util import *
+import wlutil
+# from wlutil import *
 
 # Note: All argument paths are expected to be absolute paths
 
@@ -32,7 +33,7 @@ class Builder:
         # Buildroot complains about some common PERL configurations
         env = os.environ.copy()
         env.pop('PERL_MM_OPT', None)
-        run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+        wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
@@ -61,13 +62,13 @@ class Builder:
         # script at boot. We just overwrite this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            run(['cp', script, scriptDst])
+            wlutil.run(['cp', script, scriptDst])
         else:
-            run(['rm', scriptDst])
+            wlutil.run(['rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            run(['touch', scriptDst])
+            wlutil.run(['touch', scriptDst])
         
-        run(['chmod', '+x', scriptDst])
+        wlutil.run(['chmod', '+x', scriptDst])
         return overlay

@@ -1,7 +1,7 @@
 import os
 import subprocess as sp
 import shutil
-from util.util import *
+import wlutil
 
 # Some common directories for this module (all absolute paths)
 fed_dir=os.path.dirname(os.path.realpath(__file__))
@@ -20,7 +20,7 @@ class Builder:
                 }
 
     def buildBaseImage(self):
-        run(['make', "rootfs.img"], cwd=fed_dir)
+        wlutil.run(['make', "rootfs.img"], cwd=fed_dir)
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
@@ -39,14 +39,14 @@ class Builder:
         # can change the default boot behavior by changing this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            run(['cp', script, scriptDst])
+            wlutil.run(['cp', script, scriptDst])
         else:
-            run(['rm', scriptDst])
+            wlutil.run(['rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            run(['touch', scriptDst])
+            wlutil.run(['touch', scriptDst])
         
         # run(['sudo', 'chown', 'root:root', scriptDst])
-        run(['chmod', '+x', scriptDst])
+        wlutil.run(['chmod', '+x', scriptDst])
         return overlay
