@@ -42,7 +42,7 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, initramfs=False):
     baseConfig = cfgs[cfgName]
 
     # Bare-metal tests don't work on qemu yet
-    if baseConfig['distro'] == 'bare':
+    if baseConfig.get('distro') == 'bare':
         spike = True
 
     if 'jobs' in baseConfig.keys() and job != 'all':

@@ -11,10 +11,13 @@ import multiprocessing as mp
 import logging
 import traceback
 import textwrap
+from enum import Enum
 from .wlutil import *
 from .build import *
 from .launch import *
  
+testResult = Enum('testResult', ['success', 'failure', 'skip'])
+
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
 #   - Directory structures are compared directly (same folders in the same
@@ -161,6 +164,9 @@ def stripUartlog(config, outputPath):
         with open(str(uartPath), 'w') as uFile:
             uFile.write(strippedUart)
 
+# Build and run a workload and compare results against the testing spec
+# ('testing' field in config)
+# Returns wluitl.test.testResult
 def testWorkload(cfgName, cfgs, verbose=False):
     log = logging.getLogger()
 
@@ -171,8 +177,8 @@ def testWorkload(cfgName, cfgs, verbose=False):
 
     cfg = cfgs[cfgName]
     if 'testing' not in cfg:
-        log.info("Test " + os.path.basename(cfgName) + " failure: No 'testing' field in config")
-        return False
+        log.info("Test " + os.path.basename(cfgName) + " skipping: No 'testing' field in config")
+        return testResult.skip
 
     testCfg = cfg['testing']
         
@@ -204,7 +210,7 @@ def testWorkload(cfgName, cfgs, verbose=False):
             log.info("Test " + os.path.basename(cfgName) + " failure: output does not match reference")
             log.info(textwrap.indent(diff, '\t'))
             log.info("Output available in " + testPath)
-            return False
+            return testResult.failure
 
     except TimeoutError as e:
         suitePass = False
@@ -214,7 +220,7 @@ def testWorkload(cfgName, cfgs, verbose=False):
             log.info("Test " + os.path.basename(cfgName) + " failure: timeout while running")
         
         log.info("Output available in " + testPath)
-        return False
+        return testResult.failure
 
     except ChildProcessError as e:
         suitePass = False
@@ -224,17 +230,17 @@ def testWorkload(cfgName, cfgs, verbose=False):
             log.info("Test " + os.path.basename(cfgName) + " failure: Exception while running")
         
         log.info("Output available in " + testPath)
-        return False
+        return testResult.failure
 
     except Exception as e:
         suitePass = False
         log.info("Test " + os.path.basename(cfgName) + " failure: Exception encountered")
         traceback.print_exc()
         log.info("Output available in " + testPath)
-        return False
+        return testResult.failure
 
     log.info("Success - output available in " + testPath)
-    return True
+    return testResult.success
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check the outupt of a workload against a reference output. The reference directory should match the layout of test directory including any jobs, uartlogs, or file outputs. Reference uartlogs can be a subset of the full output (this will check only that the reference uartlog content exists somewhere in the test uartlog).")

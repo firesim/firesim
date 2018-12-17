@@ -80,9 +80,13 @@ def main():
     
             wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike, args.initramfs)
         elif args.command == "test":
+            skipCount = 0
             log.info("Running: " + cfgPath)
-            if not wlutil.testWorkload(cfgPath, cfgs, args.verbose):
+            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose)
+            if res is wlutil.testResult.failure:
                 suitePass = False
+            elif res is wlutil.testResult.skip:
+                skipCount += 1
             log.info("")
         else:
             log.error("No subcommand specified")
@@ -90,7 +94,7 @@ def main():
 
     if args.command == 'test':
         if suitePass:
-            log.info("SUCCESS: All Tests Passed")
+            log.info("SUCCESS: All Tests Passed (" + str(skipCount) + " tests skipped)")
             sys.exit(0)
         else:
             log.error("FAILURE: Some tests failed")
