@@ -3,7 +3,7 @@
   "base" : "bare",
   "host-init" : "build.sh",
   "bin" : "hello",
-  "spike" : "riscv-isa-sim/build/spike",
+  "spike" : "spike_local/bin/spike",
   "testing" : {
     "refDir" : "refOutput"
   }

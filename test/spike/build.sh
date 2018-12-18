@@ -1,4 +1,8 @@
 #!/bin/bash
+set -e
+
+SPIKE_INSTALL=$PWD/spike_local
+mkdir -p $SPIKE_INSTALL
 
 # Build test program (hello world)
 make hello
@@ -12,11 +16,15 @@ if [ ! -d riscv-isa-sim ]; then
 
   pushd riscv-isa-sim
   git apply ../spike.patch
+
   mkdir build
   pushd build
-  ../configure --with-fesvr=$RISCV
-  make -j16
+  ../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
   popd
   popd
-
 fi
+
+pushd riscv-isa-sim/build
+make -j16
+make install
+popd

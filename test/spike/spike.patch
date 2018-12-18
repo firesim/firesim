@@ -1,11 +1,12 @@
-diff --git a/spike_main/spike.cc b/spike_main/spike.cc
-index eb57baf..f221d0f 100644
---- a/spike_main/spike.cc
-+++ b/spike_main/spike.cc
-@@ -174,5 +174,6 @@ int main(int argc, char** argv)
-   s.set_debug(debug);
-   s.set_log(log);
-   s.set_histogram(histogram);
+diff --git a/riscv/sim.cc b/riscv/sim.cc
+index 04fbe3c..9925f16 100644
+--- a/riscv/sim.cc
++++ b/riscv/sim.cc
+@@ -33,6 +33,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
+     remote_bitbang(NULL),
+     debug_module(this, progsize, max_bus_master_bits, require_authentication)
+ {
 +  printf("Global : spike\n");
-   return s.run();
- }
+   signal(SIGINT, &handle_signal);
+ 
+   for (auto& x : mems)
