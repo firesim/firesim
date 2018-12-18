@@ -42,6 +42,8 @@ def main():
     test_parser = subparsers.add_parser(
             'test', help="Test each workload.")
     test_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    test_parser.add_argument('-s', '--spike', action='store_true',
+            help="Use the spike isa simulator instead of qemu")
 
     # Clean Command
     clean_parser = subparsers.add_parser(
@@ -90,11 +92,11 @@ def main():
                     log.error("Job " + args.job + " requested, but no jobs specified in config file\n")
                     parser.print_help()
     
-            wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike, args.initramfs)
+            wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
         elif args.command == "test":
             skipCount = 0
             log.info("Running: " + cfgPath)
-            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose)
+            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike)
             if res is wlutil.testResult.failure:
                 suitePass = False
             elif res is wlutil.testResult.skip:

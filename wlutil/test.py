@@ -167,7 +167,7 @@ def stripUartlog(config, outputPath):
 # Build and run a workload and compare results against the testing spec
 # ('testing' field in config)
 # Returns wluitl.test.testResult
-def testWorkload(cfgName, cfgs, verbose=False):
+def testWorkload(cfgName, cfgs, verbose=False, spike=False):
     log = logging.getLogger()
 
     if verbose:
@@ -199,7 +199,7 @@ def testWorkload(cfgName, cfgs, verbose=False):
                 for jName in cfg['jobs'].keys():
                     runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName)
             else:
-                runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs)
+                runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
             
         if 'strip' in testCfg and testCfg['strip']:
             stripUartlog(cfg, testPath)

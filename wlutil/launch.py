@@ -42,7 +42,7 @@ def getQemuCmd(config, initramfs=False):
 
     return " ".join(cmd)
 
-def launchWorkload(cfgName, cfgs, job='all', spike=False, initramfs=False):
+def launchWorkload(cfgName, cfgs, job='all', spike=False):
     log = logging.getLogger()
     baseConfig = cfgs[cfgName]
 
@@ -66,9 +66,9 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, initramfs=False):
         if 'img' in config and 'initramfs' not in config:
             sys.exit("Spike currently does not support disk-based " +
                     "configurations. Please use an initramfs based image.")
-        cmd = getSpikeCmd(config, initramfs)
+        cmd = getSpikeCmd(config, config['initramfs'])
     else:
-        cmd = getQemuCmd(config, initramfs)
+        cmd = getQemuCmd(config, config['initramfs'])
 
     sp.check_call(cmd + " | tee " + uartLog, shell=True)
 
@@ -80,6 +80,6 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, initramfs=False):
         log.info("Running post_run_hook script: " + config['post_run_hook'])
         run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
 
-    log.info("Run output available in: " + os.path.dirname(runResDir))
+    log.info("\nRun output available in: " + os.path.dirname(runResDir))
 
 
