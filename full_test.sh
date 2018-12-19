@@ -1,53 +1,38 @@
 #!/bin/bash
-
 # Enable extended globbing
 shopt -s extglob
 
-FAIL=0
+# Reset the test log
+echo "" > test.log
 
-echo "Running Clean Test"
-# This should succeed the first time you run it
-./sw_manager.py test test/clean.json
+# Run the specialized tests (tests that are too complicated for ./sw_manager.py
+# test)
+echo "Running clean test" | tee -a test.log
+./test/clean/test.py >> test.log 
 if [ $? != 0 ]; then
-  echo "Test Failed"
-  $FAIL=1
-else
-  # This should fail (clean keeps adding to it's output)
-  ./sw_manager.py test test/clean.json
-  if [ $? == 0 ]; then
-    echo "Test Failed"
-    $FAIL=1
-  else
-    # This should work after cleaning
-    ./sw_manager.py clean test/clean.json
-    ./sw_manager.py test test/clean.json
-    if [ $? != 0 ]; then
-      echo "Test Failed"
-      $FAIL=1
-    fi
-  fi
-fi
-
-echo "Running incremental build test"
-
-echo "Running regular tests"
-./sw_manager.py test test/!(br-base|fedora-base|incremental).json
-if [ $? != 0 ]; then
-  echo "Test Failed"
-  $FAIL=1
-fi
-
-echo "Running initramfs capable tests on spike"
-./sw_manager.py -i test -s test/!(hard|bare|br-base|fedora-base|incremental).json
-if [ $? != 0 ]; then
-  echo "Test Failed"
-  $FAIL=1
-fi
-
-if [ FAIL == 1 ]; then
-  echo "FULL TEST FAILURE: some tests failed"
+  echo "Failure" | tee -a test.log
   exit 1
-else
-  echo "FULL TEST SUCCESS: All tests passed"
-  exit 0
 fi
+
+echo "Running incremental test" | tee -a test.log
+./test/incremental/test.py >> test.log
+if [ $? != 0 ]; then
+  echo "Failure" | tee -a test.log
+  exit 1
+fi
+
+# Run the bulk tests (all work with the 'test' command)
+# Note the funny extended globbing, these are just lists of tests that
+# shouldn't be tested (e.g. we exclude the base configs and some specialized
+# tests)
+echo "Running regular tests" | tee -a test.log
+BULK_EXCLUDE="(br-base|fedora-base|incremental|clean)"
+./sw_manager.py test test/!$BULK_EXCLUDE.json | tee -a test.log
+
+# Run the initramfs versions on spike, we exclude a few tests that don't make
+# sense to use with initramfs and/or spike (e.g. bare-metal)
+echo "Running initramfs capable tests on spike" | tee -a test.log
+IS_EXCLUDE="(hard|bare|br-base|fedora-base|incremental|clean)"
+./sw_manager.py -i test -s test/!$IS_EXCLUDE.json | tee -a test.log
+
+echo "Full Test Success" | tee -a test.log

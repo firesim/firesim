@@ -1,0 +1,10 @@
+{
+  "name" : "incremental",
+  "base" : "br-base.json",
+  "files" : [["testFile", "/root/"]],
+  "outputs" : ["/root/runOutput", "/root/testFile"],
+  "command" : "echo Global : command >> /root/runOutput; cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}

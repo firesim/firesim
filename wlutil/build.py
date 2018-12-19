@@ -214,9 +214,10 @@ def makeBin(config, initramfs=False):
 def makeImage(config):
     log = logging.getLogger()
 
-    if 'base-img' in config:
-        shutil.copy(config['base-img'], config['img'])
-
+    # Incremental builds
+    if not os.path.exists(config['img']):
+        if 'base-img' in config:
+            shutil.copy(config['base-img'], config['img'])
   
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
