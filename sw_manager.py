@@ -103,16 +103,21 @@ def main():
                 skipCount += 1
             log.info("")
         elif args.command == 'clean':
-            if 'bin' in targetCfg and os.path.exists(targetCfg['bin']):
-                os.remove(targetCfg['bin'])
-            if 'img' in targetCfg and os.path.exists(targetCfg['img']):
-                os.remove(targetCfg['img'])
-            if 'jobs' in targetCfg:
-                for jCfg in targetCfg['jobs'].values():
-                    if 'bin' in jCfg and os.path.exists(jCfg['bin']):
-                        os.remove(jCfg['bin'])
-                    if 'img' in jCfg and os.path.exists(jCfg['img']):
-                        os.remove(jCfg['img'])
+            try:
+                if 'bin' in targetCfg:
+                    os.remove(targetCfg['bin'])
+                    os.remove(targetCfg['bin'] + '-initramfs')
+                if 'img' in targetCfg:
+                    os.remove(targetCfg['img'])
+                if 'jobs' in targetCfg:
+                    for jCfg in targetCfg['jobs'].values():
+                        if 'bin' in jCfg:
+                            os.remove(jCfg['bin'])
+                            os.remove(jCfg['bin'] + '-initramfs')
+                        if 'img' in jCfg:
+                            os.remove(jCfg['img'])
+            except FileNotFoundError:
+                pass
         else:
             log.error("No subcommand specified")
             sys.exit(1)
