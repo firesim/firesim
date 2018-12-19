@@ -50,9 +50,13 @@ def addDep(loader, config):
     # Add a rule for the initramfs version if requested
     # Note that we need both the regular bin and initramfs bin if the base
     # workload needs an init script
-    if 'initramfs' in config:
-        file_deps = [config['img']]
-        task_deps = [config['img']]
+    if config['initramfs']:
+        file_deps = []
+        task_deps = []
+        if 'img' in config:
+            file_deps = [config['img']]
+            task_deps = [config['img']]
+
         if 'linux-config' in config:
             file_deps.append(config['linux-config'])
 
@@ -153,7 +157,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     if buildBin:
         binList = [config['bin']]
-        if 'initramfs' in config:
+        if config['initramfs']:
             binList.append(config['bin'] + '-initramfs')
    
     if 'img' in config and buildImg:
@@ -164,7 +168,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             handleHostInit(jCfg)
             if buildBin:
                 binList.append(jCfg['bin'])
-                if 'initramfs' in jCfg:
+                if jCfg['initramfs']:
                     binList.append(jCfg['bin'] + '-initramfs')
 
             if 'img' in jCfg and buildImg:

@@ -63,7 +63,7 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
     os.makedirs(runResDir)
 
     if spike:
-        if 'img' in config and 'initramfs' not in config:
+        if 'img' in config and not config['initramfs']:
             sys.exit("Spike currently does not support disk-based " +
                     "configurations. Please use an initramfs based image.")
         cmd = getSpikeCmd(config, config['initramfs'])

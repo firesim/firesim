@@ -11,6 +11,7 @@ import multiprocessing as mp
 import logging
 import traceback
 import textwrap
+import psutil
 from enum import Enum
 from .wlutil import *
 from .build import *

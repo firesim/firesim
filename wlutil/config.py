@@ -55,6 +55,7 @@ configDerived = [
         'base-format', # The format of base-img
         'cfg-file', # Path to this workloads raw config file
         'distro', # Base linux distribution (either 'fedora' or 'br')
+        'initramfs' # boolean: should we use an initramfs with this config?
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -119,6 +120,10 @@ class Config(collections.MutableMapping):
 
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = linux_dir
+
+        if 'initramfs' not in self.cfg:
+            # Note that sw_manager may set this back to true if the user passes command line options
+            self.cfg['initramfs'] = False
 
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
