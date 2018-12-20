@@ -19,6 +19,12 @@ from .launch import *
  
 testResult = Enum('testResult', ['success', 'failure', 'skip'])
 
+# Default timeouts (in seconds)
+defBuildTimeout = 900 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
+defRunTimeout = 600 # 5 min
+# defBuildTimeout = 2 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
+# defRunTimeout = 600 # 5 min
+
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
 #   - Directory structures are compared directly (same folders in the same
@@ -66,10 +72,6 @@ def cmpOutput(testDir, refDir, strip=False):
                             return diffString
 
     return None
-
-# Default timeouts (in seconds)
-defBuildTimeout = 900 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
-defRunTimeout = 300 # 5 min
 
 # adapted from https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
 def fileno(file_or_fd):
@@ -149,7 +151,7 @@ def stripBrUart(lines):
 def stripUartlog(config, outputPath):
     outDir = pathlib.Path(outputPath)
     for uartPath in outDir.glob("**/uartlog"):
-        with open(str(uartPath), 'r') as uFile:
+        with open(str(uartPath), 'r', errors='ignore') as uFile:
             uartlog = uFile.readlines()
 
         if 'distro' in config:
@@ -215,20 +217,24 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False):
 
     except TimeoutError as e:
         suitePass = False
-        if e.args[0] == "handleBuild":
+        if e.args[0] == "buildWorkload":
             log.info("Test " + os.path.basename(cfgName) + " failure: timeout while building")
-        elif e.args[0] == "handleLaunch":
+        elif e.args[0] == "launchWorkload":
             log.info("Test " + os.path.basename(cfgName) + " failure: timeout while running")
+        else:
+            log.error("Internal tester error: timeout from unrecognized function: " + e.args[0])
         
         log.info("Output available in " + testPath)
         return testResult.failure
 
     except ChildProcessError as e:
         suitePass = False
-        if e.args[0] == "handleBuild":
+        if e.args[0] == "buildWorkload":
             log.info("Test " + os.path.basename(cfgName) + " failure: Exception while building")
-        elif e.args[0] == "handleLaunch":
+        elif e.args[0] == "launchWorkload":
             log.info("Test " + os.path.basename(cfgName) + " failure: Exception while running")
+        else:
+            log.error("Internal tester error: exception in unknown function: " + e.args[0])
         
         log.info("Output available in " + testPath)
         return testResult.failure

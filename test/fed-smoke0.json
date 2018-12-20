@@ -5,6 +5,8 @@
   "guest-init" : "init.sh",
   "run" : "run.sh",
   "testing" : {
+    "buildTimeout" : 1200,
+    "runTimeout" : 600,
     "refDir" : "refOutput",
     "strip" : true
   },

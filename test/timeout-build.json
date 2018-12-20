@@ -1,0 +1,10 @@
+{
+  "name" : "timeout-build",
+  "base" : "br-base.json",
+  "workdir" : "command",
+  "command" : "echo Global: command",
+  "testing" : {
+      "buildTimeout" : 1,
+      "refDir" : "refOutput"
+  }
+}

@@ -4,12 +4,15 @@ import argparse
 import os
 import logging
 import wlutil
+import contextlib
 
-# from wlutil.test import cmpOutput
-# print(cmpOutput("/data/repos/firesim/sw/firesim-software/runOutput/fed-run-test-2018-12-17--05-02-00-5WB1RF8OYAZUWBY3/", "/data/repos/firesim/sw/firesim-software/test/fed-run/refOutput/"))
-# sys.exit()
 if 'RISCV' not in os.environ:
     sys.exit("Please source firesim/sourceme-manager-f1.sh first\n")
+
+# Delete a file but don't throw an exception if it doesn't exist
+def deleteSafe(pth):
+    with contextlib.suppress(FileNotFoundError):
+        os.remove(pth)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -95,29 +98,33 @@ def main():
             wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
         elif args.command == "test":
             skipCount = 0
+            failCount = 0
             log.info("Running: " + cfgPath)
             res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike)
             if res is wlutil.testResult.failure:
+                print("Test Failed")
                 suitePass = False
+                failCount += 1
             elif res is wlutil.testResult.skip:
+                print("Test Skipped")
                 skipCount += 1
+            else:
+                print("Test Passed")
             log.info("")
         elif args.command == 'clean':
-            try:
+            # with contextlib.suppress(FileNotFoundError):
                 if 'bin' in targetCfg:
-                    os.remove(targetCfg['bin'])
-                    os.remove(targetCfg['bin'] + '-initramfs')
+                    deleteSafe(targetCfg['bin'])
+                    deleteSafe(targetCfg['bin'] + '-initramfs')
                 if 'img' in targetCfg:
-                    os.remove(targetCfg['img'])
+                    deleteSafe(targetCfg['img'])
                 if 'jobs' in targetCfg:
                     for jCfg in targetCfg['jobs'].values():
                         if 'bin' in jCfg:
-                            os.remove(jCfg['bin'])
-                            os.remove(jCfg['bin'] + '-initramfs')
+                            deleteSafe(jCfg['bin'])
+                            deleteSafe(jCfg['bin'] + '-initramfs')
                         if 'img' in jCfg:
-                            os.remove(jCfg['img'])
-            except FileNotFoundError:
-                pass
+                            deleteSafe(jCfg['img'])
         else:
             log.error("No subcommand specified")
             sys.exit(1)

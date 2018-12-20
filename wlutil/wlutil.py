@@ -6,8 +6,9 @@ import random
 import string
 import sys
 import collections
-import pathlib as pth
+import shutil
 
+wlutil_dir = os.path.normpath(os.path.dirname(__file__))
 root_dir = os.getcwd()
 image_dir = os.path.join(root_dir, "images")
 linux_dir = os.path.join(root_dir, "riscv-linux")
@@ -110,9 +111,14 @@ def toCpio(config, src, dst):
 
     run(['sudo', 'mount', '-o', 'loop', src, mnt])
     try:
+        # Fedora needs a special init in order to boot from initramfs
         run("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
     finally:
         run(['sudo', 'umount', mnt])
+
+    # fedora needs a special init to work
+    if config['distro'] == 'fedora':
+        sp.call("cat " + os.path.join(wlutil_dir, "fedora-initramfs-append.cpio") + " >> " + dst, shell=True)
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute
@@ -154,5 +160,3 @@ def copyImgFiles(img, files, direction):
         # run(['guestunmount', mnt])
         # run(['fusermount', '-u', mnt])
         run(['sudo', 'umount', mnt])
-
-

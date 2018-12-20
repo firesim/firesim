@@ -1,6 +1,10 @@
 import logging
 from .wlutil import *
 
+# The amount of memory to use when launching
+launch_mem = "16384"
+launch_cores = "4"
+
 # Returns a command string to luanch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, initramfs=False):
     if 'spike' in config:
@@ -9,9 +13,9 @@ def getSpikeCmd(config, initramfs=False):
         spikeBin = 'spike'
 
     if initramfs:
-        return spikeBin + ' -p4 -m4096 ' + config['bin'] + '-initramfs'
+        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-initramfs'
     elif 'img' not in config:
-        return spikeBin + ' -p4 -m4096 ' + config['bin']
+        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin']
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
@@ -26,9 +30,9 @@ def getQemuCmd(config, initramfs=False):
 
     cmd = ['qemu-system-riscv64',
            '-nographic',
-           '-smp', '4',
+           '-smp', launch_cores,
            '-machine', 'virt',
-           '-m', '4G',
+           '-m', launch_mem,
            '-kernel', exe,
            '-object', 'rng-random,filename=/dev/urandom,id=rng0',
            '-device', 'virtio-rng-device,rng=rng0',

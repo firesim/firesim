@@ -1,6 +1,6 @@
 #!/bin/bash
-echo "Global : init" >> /root/runOutput
-cat /root/runOutput
+echo "Global : init" >> /root/testFile
+cat /root/testFile
 
 sync
 poweroff -f
