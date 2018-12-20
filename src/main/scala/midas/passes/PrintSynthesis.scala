@@ -42,9 +42,9 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   def getPrintName(p: Print, anno: SynthPrintfAnnotation, ns: Namespace): String = {
     // If the user provided a name in the annotation use it; otherwise use the source locator
     val candidateName = anno.name.getOrElse(p.info match {
-      case i: FileInfo => i.info.string.replaceAll("[^A-Za-z0-9_]", "_")
+      case i: FileInfo => i.info.string
       case _ => throw new RuntimeException("Don't know how to generate a name for this printf")
-    })
+    }).replaceAll("[^A-Za-z0-9_]", "_")
     ns.newName(candidateName)
   }
 
