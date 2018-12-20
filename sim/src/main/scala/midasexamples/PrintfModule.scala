@@ -27,6 +27,8 @@ class PrintfModule extends MultiIOModule {
   val childInst = Module(new PrintfModuleChild)
   childInst.c := a
   childInst.cycle := cycle
+
+  printf(SynthesizePrintf("thi$!sn+taS/\neName", "SYNTHESIZED_PRINT CYCLE: %d constantArgument: %x\n", cycle, 1.U(8.W)))
 }
 
 class PrintfModuleChild extends MultiIOModule {
