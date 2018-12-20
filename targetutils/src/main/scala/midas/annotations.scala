@@ -7,7 +7,7 @@ import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
 
 import firrtl.{RenameMap}
 import firrtl.annotations.{SingleTargetAnnotation, ComponentName} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget}
+import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 
 // This is currently consumed by a transformation that runs after MIDAS's core
 // transformations In FireSim, targeting an F1 host, these are consumed by the
@@ -56,7 +56,16 @@ private[midas] case class ChiselSynthPrintfAnnotation(
     args: Seq[Bits],
     mod: BaseModule,
     name: Option[String]) extends ChiselAnnotation {
-  def toFirrtl() = SynthPrintfAnnotation(args.map(arg => Seq(arg.toNamed.toTarget)),
+  def getTargetsFromArg(arg: Bits): Seq[ReferenceTarget] = {
+    // To named throughs an exception on literals right now, so dumbly catch everything
+    try {
+      Seq(arg.toNamed.toTarget)
+    } catch {
+      case AnnotationException(_) => Seq()
+    }
+  }
+
+  def toFirrtl() = SynthPrintfAnnotation(args.map(getTargetsFromArg),
                                          mod.toNamed.toTarget, format, name)
 }
 
