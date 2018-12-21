@@ -53,6 +53,11 @@ def main():
             'clean', help="Removes build outputs of the provided config (img and bin). Does not affect logs or runOutputs.")
     clean_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
 
+    # Install Command
+    install_parser = subparsers.add_parser(
+            'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
+    install_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+
     args = parser.parse_args()
     
     # Load all the configs from the workload directory
@@ -125,6 +130,8 @@ def main():
                             deleteSafe(jCfg['bin'] + '-initramfs')
                         if 'img' in jCfg:
                             deleteSafe(jCfg['img'])
+        elif args.command == 'install':
+            wlutil.installWorkload(cfgPath, cfgs)
         else:
             log.error("No subcommand specified")
             sys.exit(1)

@@ -4,7 +4,7 @@ firesim-software
 This builds base images for several linux-based distros that work with qemu,
 spike, and firesim. 
 
-## How to use:
+# How to use:
 All builds are controlled through json files. For example, br-disk.json will
 build/run the disk-based buildroot distro.
 
@@ -28,6 +28,13 @@ Tl;Dr: images built with build.py will work on firesim, you just need to update
 the symlinks in workloads/deploy/ and then run them as normal. This will be
 intergrated more completely in future releases.
 
+## Requirements
+This project was written for python 3.4
+
+python-requirements.txt and centos-requirements.txt are incomplete lists of
+required packages for python3. If you find that you need a package not in those
+lists, please file an issue.
+
 # Gotcha's and potentially unintuitive behavior
 ## Incremental Builds
 It can be very frustrating to accidentally rebuild a complex workload from
@@ -42,3 +49,4 @@ This means that you can still *lose changes to files that were specified in
 your overlay of file list* if you rebuild the workload. You should also strive
 to make your guest-init script as idempotent as possible (to avoid long delays
 or destroying state on rebuild).
+
