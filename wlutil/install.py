@@ -19,21 +19,26 @@ def installWorkload(cfgName, cfgs):
         raise NotImplementedError("Initramfs-based builds not currently supported by the install command")
 
     fsTargetDir = fsWork / targetCfg['name']
+    if not fsTargetDir.exists():
+        fsTargetDir.mkdir()
 
     # Firesim config
     fsCfg = {
             "benchmark_name" : targetCfg['name'],
             "common_bootbinary" : os.path.relpath(targetCfg['bin'], start=str(fsTargetDir)),
-            "common_rootfs" : os.path.relpath(targetCfg['img'], start=str(fsTargetDir)),
-            "common_simulation_outputs" : ["uartlog"],
-    }
-    if 'outputs' in targetCfg:
-            fsCfg["common_outputs"] = targetCfg['outputs']
-    if 'post_run_hook' in targetCfg:
-            fsCfg["post_run_hook"] = os.path.relpath(targetCfg['post_run_hook'], start=str(fsTargetDir))
+            "common_simulation_outputs" : ["uartlog"]
+            }
+    if 'img' in targetCfg:
+        fsCfg["common_rootfs"] = os.path.relpath(targetCfg['img'], start=str(fsTargetDir))
+    else:
+        fsCfg["common_rootfs"] = "dummy.rootfs" 
+        if not (fsTargetDir / 'dummy.rootfs').exists():
+            (fsTargetDir / 'dummy.rootfs').symlink_to(Path(wlutil_dir) / 'dummy.rootfs')
 
-    if not fsTargetDir.exists():
-        fsTargetDir.mkdir()
+    if 'outputs' in targetCfg:
+        fsCfg["common_outputs"] = targetCfg['outputs']
+    if 'post_run_hook' in targetCfg:
+        fsCfg["post_run_hook"] = os.path.relpath(targetCfg['post_run_hook'], start=str(fsTargetDir))
 
     with open(str(fsTargetDir / "README"), 'w') as readme:
         readme.write(readmeTxt)
