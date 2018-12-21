@@ -134,7 +134,7 @@ def main():
             log.info("SUCCESS: All Tests Passed (" + str(skipCount) + " tests skipped)")
             sys.exit(0)
         else:
-            log.error("FAILURE: Some tests failed")
+            log.error("FAILURE: " + str(failCount) + " tests failed")
             sys.exit(1)
 
     sys.exit(0)

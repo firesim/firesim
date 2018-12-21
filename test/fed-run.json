@@ -3,6 +3,8 @@
   "base" : "fedora-base.json",
   "run" : "run.sh",
   "testing" : {
+    "buildTimeout" : 1200,
+    "launchTimeout" : 900,
     "refDir" : "refOutput",
     "strip" : true
   }

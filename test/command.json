@@ -3,8 +3,6 @@
   "base" : "br-base.json",
   "command" : "echo Global: command",
   "testing" : {
-      "buildTimeout" : 120,
-      "runTimeout" : 60,
       "refDir" : "refOutput"
   }
 }
