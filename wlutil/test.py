@@ -170,7 +170,7 @@ def stripUartlog(config, outputPath):
 # Build and run a workload and compare results against the testing spec
 # ('testing' field in config)
 # Returns wluitl.test.testResult
-def testWorkload(cfgName, cfgs, verbose=False, spike=False):
+def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
     log = logging.getLogger()
 
     if verbose:
@@ -191,18 +191,23 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False):
         testCfg['runTimeout'] = defRunTimeout
 
     refPath = os.path.join(cfg['workdir'], testCfg['refDir'])
-    testPath = os.path.join(res_dir, getRunName())
-    try:
-        with stdout_redirected(cmdOut):
-            # Build workload
-            runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
+    if cmp_only is None:
+        testPath = os.path.join(res_dir, getRunName())
+    else:
+        testPath = cmp_only
 
-            # Run every job (or just the workload itself if no jobs)
-            if 'jobs' in cfg:
-                for jName in cfg['jobs'].keys():
-                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName)
-            else:
-                runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
+    try:
+        if cmp_only is None:
+            with stdout_redirected(cmdOut):
+                # Build workload
+                runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
+
+                # Run every job (or just the workload itself if no jobs)
+                if 'jobs' in cfg:
+                    for jName in cfg['jobs'].keys():
+                        runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName)
+                else:
+                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
             
         if 'strip' in testCfg and testCfg['strip']:
             stripUartlog(cfg, testPath)

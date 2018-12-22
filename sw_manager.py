@@ -47,6 +47,7 @@ def main():
     test_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
     test_parser.add_argument('-s', '--spike', action='store_true',
             help="Use the spike isa simulator instead of qemu")
+    test_parser.add_argument('-m', '--manual', metavar='testDir', help="Manual test, don't build or run, just compare testDir against the reference output.")
 
     # Clean Command
     clean_parser = subparsers.add_parser(
@@ -105,7 +106,7 @@ def main():
             skipCount = 0
             failCount = 0
             log.info("Running: " + cfgPath)
-            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike)
+            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
                 print("Test Failed")
                 suitePass = False
