@@ -61,29 +61,33 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
         # Run the base image
         config = cfgs[cfgName]
  
-    baseResDir = os.path.join(res_dir, getRunName())
-    runResDir = os.path.join(baseResDir, config['name'])
-    uartLog = os.path.join(runResDir, "uartlog")
-    os.makedirs(runResDir)
+    print("Config: " + str(config))
+    if config['launch']:
+        baseResDir = os.path.join(res_dir, getRunName())
+        runResDir = os.path.join(baseResDir, config['name'])
+        uartLog = os.path.join(runResDir, "uartlog")
+        os.makedirs(runResDir)
 
-    if spike:
-        if 'img' in config and not config['initramfs']:
-            sys.exit("Spike currently does not support disk-based " +
-                    "configurations. Please use an initramfs based image.")
-        cmd = getSpikeCmd(config, config['initramfs'])
+        if spike:
+            if 'img' in config and not config['initramfs']:
+                sys.exit("Spike currently does not support disk-based " +
+                        "configurations. Please use an initramfs based image.")
+            cmd = getSpikeCmd(config, config['initramfs'])
+        else:
+            cmd = getQemuCmd(config, config['initramfs'])
+
+        sp.check_call(cmd + " | tee " + uartLog, shell=True)
+
+        if 'outputs' in config:
+            outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
+            copyImgFiles(config['img'], outputSpec, direction='out')
+
+        if 'post_run_hook' in config:
+            log.info("Running post_run_hook script: " + config['post_run_hook'])
+            run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
+
+        log.info("\nRun output available in: " + os.path.dirname(runResDir))
     else:
-        cmd = getQemuCmd(config, config['initramfs'])
-
-    sp.check_call(cmd + " | tee " + uartLog, shell=True)
-
-    if 'outputs' in config:
-        outputSpec = [ FileSpec(src=f, dst=runResDir + "/") for f in config['outputs']] 
-        copyImgFiles(config['img'], outputSpec, direction='out')
-
-    if 'post_run_hook' in config:
-        log.info("Running post_run_hook script: " + config['post_run_hook'])
-        run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
-
-    log.info("\nRun output available in: " + os.path.dirname(runResDir))
+        log.info("Workload launch skipped ('launch'=false in config)")
 
 

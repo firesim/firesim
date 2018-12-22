@@ -42,7 +42,9 @@ configUser = [
         'guest-init',
         # Path to directory for this workload, all user-provided paths will
         # be relative to this (but converted to absolute when loaded)
-        'workdir'
+        'workdir',
+        # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
+        'launch'
         ]
 
 # This is a comprehensive list of all options set during config parsing
@@ -55,7 +57,8 @@ configDerived = [
         'base-format', # The format of base-img
         'cfg-file', # Path to this workloads raw config file
         'distro', # Base linux distribution (either 'fedora' or 'br')
-        'initramfs' # boolean: should we use an initramfs with this config?
+        'initramfs', # boolean: should we use an initramfs with this config?
+        'jobs' # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -64,7 +67,7 @@ configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'hos
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro', 'spike']
+configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro', 'spike', 'launch', 'bin']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -159,7 +162,7 @@ class Config(collections.MutableMapping):
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
-            self.cfg['jobs'] = {}
+            self.cfg['jobs'] = collections.OrderedDict()
             
             for jCfg in jList:
                 jCfg['workdir'] = self.cfg['workdir']
@@ -167,6 +170,8 @@ class Config(collections.MutableMapping):
                 # derive the img and bin names, but naming jobs this way makes
                 # for ugly hacks later when looking them up. 
                 jCfg['name'] = self.cfg['name'] + '-' + jCfg['name']
+                jCfg['cfg-file'] = self.cfg['cfg-file']
+
                 # jobs can base off any workload, but default to the current workload
                 if 'base' not in jCfg:
                     jCfg['base'] = cfgFile
@@ -186,8 +191,22 @@ class Config(collections.MutableMapping):
             self.cfg['base-img'] = baseCfg['img']
             self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
 
-        if 'bin' not in self.cfg:
+        # if 'bin' not in self.cfg:
+        # We inherit the parent's binary for bare-metal configs, but not linux configs
+        # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
+        if 'linux-config' in self.cfg or 'bin' not in self.cfg:
+        # if 'linux-config' in self.cfg:
             self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")
+
+        if 'launch' not in self.cfg:
+            self.cfg['launch'] = True
+
+        # if 'bin' not in self.cfg:
+        #     print("WHOA THERE BUCKO!")
+        #     print(self.cfg)
+        #     sys.exit()
+        
+
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):

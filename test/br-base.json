@@ -1,6 +1,1 @@
-{
-  "name" : "br-base",
-  "base" : "br",
-  "linux-config" : "linux-config",
-  "rootfs-format" : "img"
-}
+../workloads/br-base.json

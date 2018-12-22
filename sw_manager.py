@@ -136,6 +136,7 @@ def main():
             log.error("No subcommand specified")
             sys.exit(1)
 
+    log.info("Log available at: " + os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
     if args.command == 'test':
         if suitePass:
             log.info("SUCCESS: All Tests Passed (" + str(skipCount) + " tests skipped)")

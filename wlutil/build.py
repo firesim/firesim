@@ -10,6 +10,11 @@ taskLoader = None
 class doitLoader(doit.cmd_base.TaskLoader):
     workloads = []
 
+    # Idempotent add (no duplicates)
+    def addTask(self, tsk):
+        if not any(t['name'] == tsk['name'] for t in self.workloads):
+            self.workloads.append(tsk)
+
     def load_tasks(self, cmd, opt_values, pos_args):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
         config = {'verbosity': 2}
@@ -37,8 +42,8 @@ def addDep(loader, config):
     task_deps = []
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
-
-    loader.workloads.append({
+    
+    loader.addTask({
             'name' : config['bin'],
             'actions' : [(makeBin, [config])],
             'targets' : [config['bin']],
@@ -60,7 +65,7 @@ def addDep(loader, config):
         if 'linux-config' in config:
             file_deps.append(config['linux-config'])
 
-        loader.workloads.append({
+        loader.addTask({
                 'name' : config['bin'] + '-initramfs',
                 'actions' : [(makeBin, [config], {'initramfs' : True})],
                 'targets' : [config['bin'] + '-initramfs'],
@@ -97,7 +102,7 @@ def addDep(loader, config):
         if 'cfg-file' in config:
             file_deps.append(config['cfg-file'])
         
-        loader.workloads.append({
+        loader.addTask({
             'name' : config['img'],
             'actions' : [(makeImage, [config])],
             'targets' : [config['img']],

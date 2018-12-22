@@ -1,0 +1,8 @@
+This workload just runs an infinite loop bare-metal. It's occasionally useful
+if you'd like to have a firesim node up and running, but not doing anything
+(maybe it's an accelerator that doesn't need SW). This may become uneccessary
+in the future.
+
+Note: 'launch' is set to false here, this prevents firesim-software from trying
+to run this workload (you'd have to kill it manually). Firesim itself will
+still run it.
