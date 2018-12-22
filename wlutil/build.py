@@ -43,19 +43,20 @@ def addDep(loader, config):
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
     
-    loader.addTask({
-            'name' : config['bin'],
-            'actions' : [(makeBin, [config])],
-            'targets' : [config['bin']],
-            'file_dep': file_deps,
-            'task_dep' : task_deps,
-            'uptodate' : [(checkLinuxUpToDate, [config])]
-            })
+    if 'bin' in config:
+        loader.addTask({
+                'name' : config['bin'],
+                'actions' : [(makeBin, [config])],
+                'targets' : [config['bin']],
+                'file_dep': file_deps,
+                'task_dep' : task_deps,
+                'uptodate' : [(checkLinuxUpToDate, [config])]
+                })
 
     # Add a rule for the initramfs version if requested
     # Note that we need both the regular bin and initramfs bin if the base
     # workload needs an init script
-    if config['initramfs']:
+    if config['initramfs'] and 'bin' in config:
         file_deps = []
         task_deps = []
         if 'img' in config:
@@ -160,7 +161,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     imgList = []
     binList = []
 
-    if buildBin:
+    if buildBin and 'bin' in config:
         binList = [config['bin']]
         if config['initramfs']:
             binList.append(config['bin'] + '-initramfs')

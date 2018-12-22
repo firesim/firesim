@@ -121,9 +121,6 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
 
-        if 'linux-src' not in self.cfg:
-            self.cfg['linux-src'] = linux_dir
-
         if 'initramfs' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
             self.cfg['initramfs'] = False
@@ -191,6 +188,9 @@ class Config(collections.MutableMapping):
             self.cfg['base-img'] = baseCfg['img']
             self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
 
+        if 'linux-src' not in self.cfg:
+            self.cfg['linux-src'] = linux_dir
+
         # if 'bin' not in self.cfg:
         # We inherit the parent's binary for bare-metal configs, but not linux configs
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
@@ -200,13 +200,6 @@ class Config(collections.MutableMapping):
 
         if 'launch' not in self.cfg:
             self.cfg['launch'] = True
-
-        # if 'bin' not in self.cfg:
-        #     print("WHOA THERE BUCKO!")
-        #     print(self.cfg)
-        #     sys.exit()
-        
-
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
