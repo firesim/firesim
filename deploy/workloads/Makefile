@@ -161,6 +161,11 @@ histo-local:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+fc-test:
+	cd ../../sw/network-benchmarks/fc-test && make
+	ln -sf ../../../sw/network-benchmarks/fc-test/fc-client.riscv $@/fc-client.riscv
+	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -168,4 +173,4 @@ histo-local:
 	allpaper checksum-test memblade-test memblade-page-bmark \
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
-	histo-local
+	histo-local fc-test

@@ -12,7 +12,7 @@ typedef struct switchpacket switchpacket;
 
 class BasePort {
     public:
-        BasePort(int portNo, bool throttle);
+        BasePort(int portNo, bool throttle, int fc_incredits, int fc_updatePeriod);
         void write_flits_to_output();
         virtual void tick() = 0; // some ports need to do management every switching loop
         virtual void tick_pre() = 0; // some ports need to do management every switching loop
@@ -35,14 +35,68 @@ class BasePort {
         std::queue<switchpacket*> inputqueue;
         std::queue<switchpacket*> outputqueue;
 
+        int fc_unassigned;
+        int fc_assigned;
+        int fc_available;
+        int fc_updatePeriod;
+        uint64_t fc_lastUpdate;
+
+        int push_input(switchpacket *sp);
+        switchpacket *pop_input(void);
+
     protected:
         int _portNo;
         bool _throttle;
 };
 
-BasePort::BasePort(int portNo, bool throttle)
+BasePort::BasePort(int portNo, bool throttle, int fc_incredits, int fc_updatePeriod)
     : _portNo(portNo), _throttle(throttle)
 {
+    this->fc_unassigned = fc_incredits;
+    this->fc_assigned = 0;
+    this->fc_available = 1;
+    this->fc_updatePeriod = fc_updatePeriod;
+    this->fc_lastUpdate = 0;
+
+#ifdef CREDIT_FLOWCONTROL
+    if (fc_updatePeriod > 0)
+        this->fc_available = 0;
+#endif
+}
+
+int BasePort::push_input(switchpacket *sp)
+{
+#ifdef CREDIT_FLOWCONTROL
+    // Check whether or not this is a credit update packet
+    // If so, update fc_available but don't add the packet to the input queue
+    uint16_t cred_update = sp->dat[0] & 0xffff;
+    if (sp->amtwritten == 1 && cred_update != 0) {
+        printf("port %d: got credit update %d @ %ld\n",
+                        _portNo, cred_update, sp->timestamp);
+        fc_available += cred_update;
+        free(sp);
+        return 0;
+    }
+#endif
+    inputqueue.push(sp);
+#ifdef CREDIT_FLOWCONTROL
+    if (fc_updatePeriod > 0)
+        this->fc_assigned--;
+#endif
+    return 1;
+}
+
+switchpacket *BasePort::pop_input(void)
+{
+    switchpacket * sp = inputqueue.front();
+    inputqueue.pop();
+
+#ifdef CREDIT_FLOWCONTROL
+    if (fc_updatePeriod > 0)
+        this->fc_unassigned++;
+#endif
+
+    return sp;
 }
 
 // assumes valid
@@ -61,6 +115,22 @@ void BasePort::write_flits_to_output() {
 
     bool empty_buf = true;
 
+#ifdef CREDIT_FLOWCONTROL
+    uint64_t timeElapsed = maxtime - fc_lastUpdate;
+    if (fc_updatePeriod > 0 && fc_unassigned > 0 && timeElapsed > fc_updatePeriod) {
+        printf("port %d send credit update %d @ %ld\n",
+                _portNo, fc_unassigned, basetime);
+        write_last_flit(current_output_buf, flitswritten, true);
+        write_valid_flit(current_output_buf, flitswritten);
+        write_flit(current_output_buf, flitswritten, fc_unassigned);
+        fc_assigned += fc_unassigned;
+        fc_unassigned = 0;
+        fc_lastUpdate = basetime + flitswritten;
+        flitswritten++;
+        empty_buf = false;
+    }
+#endif
+
     while (!(outputqueue.empty())) {
         switchpacket *thispacket = outputqueue.front();
         // first, check timing boundaries.
@@ -70,7 +140,7 @@ void BasePort::write_flits_to_output() {
 
         // confirm that a) we are allowed to send this out based on timestamp
         // b) we are allowed to send this out based on available space (TODO fix)
-        if (outputtimestamp < maxtime) {
+        if (fc_available > 0 && outputtimestamp < maxtime) {
 #ifdef LIMITED_BUFSIZE
             // output-buffer size-based throttling, based on input time of first flit
             int64_t diff = basetime + flitswritten - outputtimestamp;
@@ -89,8 +159,14 @@ void BasePort::write_flits_to_output() {
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
 
-            printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
             int i = thispacket->amtread;
+            if (i == 0) {
+                //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
+                //        outputtimestamp, basetime + flitswritten, 
+                //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
+                printf("packet timestamp: %ld, len: %ld, receiver: %d\n",
+                        basetime + flitswritten, thispacket->amtwritten, _portNo);
+            }
             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);
@@ -108,6 +184,10 @@ void BasePort::write_flits_to_output() {
                 // we finished sending this packet, so get rid of it
                 outputqueue.pop();
                 free(thispacket);
+#ifdef CREDIT_FLOWCONTROL
+                if (fc_updatePeriod > 0)
+                    fc_available--;
+#endif
             } else {
                 // we're not done sending this packet, so mark how much has been sent
                 // for the next time

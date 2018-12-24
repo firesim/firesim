@@ -43,11 +43,14 @@ int throttle_denom = 1;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
+#define CREDIT_FLOWCONTROL
 
 // size of output buffers, in # of flits
 // only if LIMITED BUFSIZE is set
 // TODO: expose in manager
 #define OUTPUT_BUF_SIZE (131072L)
+#define INPUT_BUF_PACKETS (4095)
+#define CREDIT_UPDATE_PERIOD (5760)
 
 // pull in # clients config
 #define NUMCLIENTSCONFIG
@@ -115,8 +118,12 @@ for (int port = 0; port < NUMPORTS; port++) {
 
             sp->dat[sp->amtwritten++] = flit;
             if (is_last_flit(input_port_buf, tokenno)) {
-                current_port->inputqueue.push(sp);
                 current_port->input_in_progress = NULL;
+                if (current_port->push_input(sp)) {
+                    printf("packet timestamp: %ld, len: %ld, sender: %d\n",
+                            this_iter_cycles_start + tokenno,
+                            sp->amtwritten, port);
+                }
             }
         }
     }
@@ -151,8 +158,7 @@ std::priority_queue<tspacket> pqueue;
 
 for (int i = 0; i < NUMPORTS; i++) {
     while (!(ports[i]->inputqueue.empty())) {
-        switchpacket * sp = ports[i]->inputqueue.front();
-        ports[i]->inputqueue.pop();
+        switchpacket * sp = ports[i]->pop_input();
         pqueue.push( tspacket { sp->timestamp, sp });
     }
 }
@@ -162,8 +168,8 @@ while (!pqueue.empty()) {
     switchpacket * tsp = pqueue.top().switchpack;
     pqueue.pop();
     uint16_t send_to_port = get_port_from_flit(tsp->dat[0], 0 /* junk remove arg */);
-    printf("packet for port: %x\n", send_to_port);
-    printf("packet timestamp: %ld\n", tsp->timestamp);
+    //printf("packet for port: %x\n", send_to_port);
+    //printf("packet timestamp: %ld\n", tsp->timestamp);
     if (send_to_port == BROADCAST_ADJUSTED) {
 #define ADDUPLINK (NUMUPLINKS > 0 ? 1 : 0)
         // this will only send broadcasts to the first (zeroeth) uplink.

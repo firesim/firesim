@@ -33,7 +33,10 @@ class WithUARTKey extends Config((site, here, up) => {
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
     inBufPackets = 64,
-    ctrlQueueDepth = 64)
+    ctrlQueueDepth = 64,
+    creditTracker = Some(CreditTrackerParams(
+      outMaxCredits = 4095,
+      updatePeriod = 32 * 180)))
 })
 
 class WithMemBladeKey extends Config((site, here, up) => {
