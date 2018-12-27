@@ -96,7 +96,7 @@ class GlobalBuildConfig:
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
         self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
-
+        self.before = global_build_configfile.get("aficleanup", "before")
 
     def launch_build_instances(self):
         """ Launch an instance for the builds we want to do """

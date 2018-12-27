@@ -1,5 +1,7 @@
 """ Tools to help manage afis. """
 
+import datetime
+import pytz
 import logging
 import boto3
 
@@ -124,6 +126,61 @@ def get_firesim_tagval_for_agfi(agfi_id, tagkey):
     """ Given an agfi_id and tagkey, return the tagval. """
     afi_id = get_afi_for_agfi(agfi_id)
     return get_firesim_tagval_for_afi(afi_id, tagkey)
+
+def get_customer_id():
+    client = boto3.client("sts")
+    account_id = client.get_caller_identity()["Account"]
+    return account_id
+
+def list_old_afis(before, account_id):
+    region = get_current_region()
+    client = boto3.client("ec2", region_name=region)
+    result = client.describe_fpga_images()
+    images = []
+
+    for image in result["FpgaImages"]:
+        # Skip public images or images owned by others
+        if image["Public"] or image["OwnerId"] != account_id:
+            continue
+
+        # Check if image is shared with others, and skip if so
+        attribute = client.describe_fpga_image_attribute(
+                FpgaImageId = image["FpgaImageId"],
+                Attribute = "loadPermission")
+        loadPermissions = attribute["FpgaImageAttribute"]["LoadPermissions"]
+        created = image["CreateTime"]
+
+        if not loadPermissions and created < before:
+            images.append(image)
+
+    return images
+
+def fpga_image_cleanup(global_build_config):
+    region = get_current_region()
+    client = boto3.client("ec2", region_name=region)
+
+    dateformat = "%Y-%m-%d"
+    before = datetime.datetime.strptime(global_build_config.before, dateformat)
+    before = before.replace(tzinfo=pytz.UTC)
+    
+    account_id = get_customer_id()
+    todelete = list_old_afis(before, account_id)
+    rootLogger.critical("Deleting {} images made before {}".format(
+        len(todelete), before.strftime(dateformat)))
+    rootLogger.critical([image["FpgaImageId"] for image in todelete])
+
+    proceed = raw_input("Sure you want to delete these? Type 'yes' to confirm: ")
+    if proceed != "yes":
+        return
+
+    for image in todelete:
+        afi = image["FpgaImageId"]
+        created = image["CreateTime"]
+        rootLogger.info("Deleting {} created {}".format(
+            afi, created.strftime(dateformat)))
+        result = client.delete_fpga_image(FpgaImageId = afi)
+        if not result["Return"]:
+            rootLogger.error("Failed to delete {}".format(afi))
 
 ## Note that there are no set_firesim_tagval functions, because applying tags is
 ## done at create-fpga-image time
