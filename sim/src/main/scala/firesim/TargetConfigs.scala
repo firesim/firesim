@@ -11,8 +11,9 @@ import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
-import memblade.{MemBladeKey, MemBladeParams, MemBladeQueueParams, RemoteMemClientKey, RemoteMemClientConfig}
-import memblade.RemoteMemConsts.RMEM_REQ_ETH_TYPE
+import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
+import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
+import memblade.cache.{DRAMCacheKey, DRAMCacheConfig}
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -36,7 +37,8 @@ class WithNICKey extends Config((site, here, up) => {
     ctrlQueueDepth = 64,
     creditTracker = Some(CreditTrackerParams(
       outMaxCredits = 4095,
-      updatePeriod = 32 * 180)))
+      updatePeriod = 32 * 180,
+      outTimeout = Some(25000))))
 })
 
 class WithMemBladeKey extends Config((site, here, up) => {
@@ -50,8 +52,22 @@ class WithMemBladeKey extends Config((site, here, up) => {
 
 class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig(
-    spanBytes = site(MemBladeKey).spanBytes,
-    nRMemXacts = 64)
+    spanBytes = 1024,
+    nRMemXacts = 64,
+    reqTimeout = Some(50000))
+})
+
+class WithDRAMCacheKey extends Config((site, here, up) => {
+  case DRAMCacheKey => DRAMCacheConfig(
+    nSets = 1 << 20,
+    nWays = 7,
+    baseAddr = BigInt(1) << 37,
+    nBanks = 8,
+    nChannels = 2,
+    spanBytes = 1024,
+    nRmemXacts = 64,
+    logAddrBits = 37,
+    outIdBits = 4)
 })
 
 class WithPFA extends Config((site, here, up) => {

@@ -27,6 +27,8 @@
 #include "Stack.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
+#elif defined DESIGNNAME_DRAMCacheTraceGen
+#include "DRAMCacheTraceGen.h"
 #endif
 
 class dut_emul_t:

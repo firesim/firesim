@@ -14,6 +14,8 @@ trait GeneratorUtils {
   def dut = targetName match {
     case "PointerChaser" =>
       new PointerChaser()((new PointerChaserConfig).toInstance)
+    case "DRAMCacheTraceGen" =>
+      new DRAMCacheTraceGen()((new DRAMCacheTraceGenConfig).toInstance)
     case _ =>
       Class.forName(s"firesim.midasexamples.${targetName}")
            .getConstructors.head
