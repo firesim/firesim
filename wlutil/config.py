@@ -27,6 +27,8 @@ configUser = [
         'linux-config',
         # Path to script to run on host before building this config
         'host-init',
+        # Script to run on results dir after running workload
+        'post_run_hook',
         # Path to folder containing overlay files to apply to img
         'overlay',
         # List of tuples of files to add [(guest_dest, host_src),...]

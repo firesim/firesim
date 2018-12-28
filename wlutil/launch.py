@@ -83,7 +83,11 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
 
         if 'post_run_hook' in config:
             log.info("Running post_run_hook script: " + config['post_run_hook'])
-            run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
+            try:
+                run(config['post_run_hook'] + " " + baseResDir, cwd=config['workdir'], shell=True)
+            except sp.CalledProcessError as e:
+                log.error("Post run hook failed:")
+                log.error(e.output)
 
         log.info("\nRun output available in: " + os.path.dirname(runResDir))
     else:
