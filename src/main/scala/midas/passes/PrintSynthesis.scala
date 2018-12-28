@@ -60,8 +60,9 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   }
 
   def synthesizePrints(state: CircuitState, printfAnnos: Seq[SynthPrintfAnnotation]): CircuitState = {
+    require(state.annotations.collect({ case t: TopWiringAnnotation => t }).isEmpty,
+      "CircuitState cannot have existing TopWiring annotations before PrintSynthesis.")
     val c = state.circuit
-
     def mTarget(m: Module): ModuleTarget = ModuleTarget(c.main, m.name)
 
     val modToAnnos = printfAnnos.groupBy(_.mod)
@@ -117,8 +118,12 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       case Nil   => Seq()
       case ports => Seq(AddedPrintfIoAnnotation(topWiringPrefix, addedPrintPorts))
     }
-
-    wiredState.copy(annotations = wiredState.annotations ++ printRecordAnno)
+    // Remove added TopWiringAnnotations to prevent being reconsumed by a downstream pass
+    val cleanedAnnotations = wiredState.annotations.flatMap({
+      case TopWiringAnnotation(_,_) => None
+      case otherAnno => Some(otherAnno)
+    })
+    wiredState.copy(annotations = cleanedAnnotations ++ printRecordAnno)
   }
 
   def execute(state: CircuitState): CircuitState = {
