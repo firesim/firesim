@@ -86,11 +86,15 @@ def main():
                     j['initramfs'] = True
 
         if args.command == "build":
-            if args.binOnly or args.imgOnly:
-                # It's fine if they pass -IB, it just builds both
-                wlutil.buildWorkload(cfgPath, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
-            else:
-                wlutil.buildWorkload(cfgPath, cfgs)
+            try:
+                if args.binOnly or args.imgOnly:
+                    # It's fine if they pass -IB, it just builds both
+                    wlutil.buildWorkload(cfgPath, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
+                else:
+                    wlutil.buildWorkload(cfgPath, cfgs)
+            except Exception as e:
+                log.error("Error while building workload: ")
+                log.error(str(e))
 
         elif args.command == "launch":
             # job-configs are named special internally
@@ -100,8 +104,13 @@ def main():
                 else:
                     log.error("Job " + args.job + " requested, but no jobs specified in config file\n")
                     parser.print_help()
-    
-            wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
+
+            try:
+                wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
+            except Exception as e:
+                log.error("Failed to launch workload:")
+                log.error(str(e))
+
         elif args.command == "test":
             skipCount = 0
             failCount = 0

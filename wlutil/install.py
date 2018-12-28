@@ -39,6 +39,7 @@ def installWorkload(cfgName, cfgs):
             }
 
     if 'post_run_hook' in targetCfg:
+        print("post_run_hook: " + targetCfg['post_run_hook'])
         fsCfg["post_run_hook"] = fullRel(fsTargetDir, targetCfg['post_run_hook'])
 
     if 'jobs' in targetCfg:
