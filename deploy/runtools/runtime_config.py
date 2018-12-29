@@ -159,7 +159,7 @@ class RuntimeHWConfig:
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
-        # Note that pkill only works for names <15 characters
+        # Note that pkill only works for names <=15 characters
         return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
