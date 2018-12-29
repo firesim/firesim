@@ -203,6 +203,10 @@ class Config(collections.MutableMapping):
         if 'launch' not in self.cfg:
             self.cfg['launch'] = True
 
+        if 'runSpec' not in self.cfg:
+            self.cfg['run'] = os.path.join(wlutil_dir, 'null_run.sh')
+            self.cfg['runSpec'] = RunSpec(self.cfg)
+
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
         return self.cfg[key]
