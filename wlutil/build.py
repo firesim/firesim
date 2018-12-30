@@ -71,7 +71,8 @@ def addDep(loader, config):
                 'actions' : [(makeBin, [config], {'initramfs' : True})],
                 'targets' : [config['bin'] + '-initramfs'],
                 'file_dep': file_deps,
-                'task_dep' : task_deps
+                'task_dep' : task_deps,
+                'uptodate' : [(checkLinuxUpToDate, [config])]
                 })
 
     # Add a rule for the image (if any)
