@@ -58,10 +58,11 @@ benchmark = $(notdir $(basename $(if $(LOADMEM),$(notdir $(LOADMEM)),$(DESIGN)))
 sample = $(if $(SAMPLE),$(abspath $(SAMPLE)),$(OUTPUT_DIR)/$(benchmark).sample)
 logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$(benchmark).$1.out)
 waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$(benchmark).$1.$2)
+runconf = $(GENERATED_DIR)/runtime.conf
 
 run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
-	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) +dramsim +sample=$(sample) \
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) `cat $(runconf)` +dramsim +sample=$(sample) \
 	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
 run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)

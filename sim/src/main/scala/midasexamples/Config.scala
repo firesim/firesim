@@ -37,7 +37,7 @@ class WithDRAMCacheTraceGen extends Config((site, here, up) => {
           }.flatten
         }.flatten
       },
-      maxRequests = 8192,
+      maxRequests = 1024,
       memStart = site(DRAMCacheKey).baseAddr,
       numGens = 2)
   }

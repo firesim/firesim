@@ -39,7 +39,7 @@ class DRAMCacheTraceGen(implicit val p: Parameters) extends Module {
   rlimit.period := 0.U
   rlimit.size := 8.U
 
-  val latency = 736 * 2
+  val latency = 128
   val qPackets = 64
   memblade.connectNet(groundtest.net, latency, qPackets)
   memblade.io.macAddr := (0x3 << 32).U(48.W)
