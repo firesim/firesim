@@ -17,7 +17,9 @@ import testchipip._
 import testchipip.SerialAdapter.SERIAL_IF_WIDTH
 import sifive.blocks.devices.uart._
 import java.io.File
-import memblade.{HasPeripheryMemBlade, HasPeripheryMemBladeModuleImpValidOnly}
+import memblade.cache.{HasPeripheryDRAMCache, HasPeripheryDRAMCacheModuleImpValidOnly}
+import memblade.client.{HasPeripheryRemoteMemClient, HasPeripheryRemoteMemClientModuleImpValidOnly}
+import memblade.manager.{HasPeripheryMemBlade, HasPeripheryMemBladeModuleImpValidOnly}
 
 /*******************************************************************************
 * Top level DESIGN configurations. These describe the basic instantiations of
@@ -182,6 +184,24 @@ class FireSimMemBlade(implicit p: Parameters) extends FireSimNoNIC
 class FireSimMemBladeModuleImp[+L <: FireSimMemBlade](l: L)
     extends FireSimNoNICModuleImp(l)
     with HasPeripheryMemBladeModuleImpValidOnly
+
+class FireSimRemoteMemClient(implicit p: Parameters) extends FireSimNoNIC
+    with HasPeripheryRemoteMemClient {
+  override lazy val module = new FireSimRemoteMemClientModuleImp(this)
+}
+
+class FireSimRemoteMemClientModuleImp[+L <: FireSimRemoteMemClient](l: L)
+    extends FireSimNoNICModuleImp(l)
+    with HasPeripheryRemoteMemClientModuleImpValidOnly
+
+class FireSimDRAMCache(implicit p: Parameters) extends FireSimNoNIC
+    with HasPeripheryDRAMCache {
+  override lazy val module = new FireSimDRAMCacheModuleImp(this)
+}
+
+class FireSimDRAMCacheModuleImp[+L <: FireSimDRAMCache](l: L)
+    extends FireSimNoNICModuleImp(l)
+    with HasPeripheryDRAMCacheModuleImpValidOnly
 
 case object NumNodes extends Field[Int]
 

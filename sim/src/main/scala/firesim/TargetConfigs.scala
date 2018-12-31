@@ -46,15 +46,15 @@ class WithMemBladeKey extends Config((site, here, up) => {
     spanBytes = 1024,
     nSpanTrackers = 2,
     nWordTrackers = 4,
-    spanQueue = MemBladeQueueParams(reqHeadDepth = 64),
-    wordQueue = MemBladeQueueParams(reqHeadDepth = 64))
+    spanQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32),
+    wordQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32))
 })
 
 class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig(
     spanBytes = 1024,
     nRMemXacts = 64,
-    reqTimeout = Some(50000))
+    reqTimeout = Some(1000000))
 })
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
@@ -178,28 +178,45 @@ class FireSimRocketChipOctaCoreTracedConfig extends Config(
   new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
 
 class FireSimMemBladeConfig extends Config(
-  new WithMemBladeKey ++ new WithRemoteMemClientKey ++ new FireSimRocketChipConfig)
+  new WithMemBladeKey ++ new FireSimRocketChipConfig)
 
-class FireSimMemBladeSingleCoreConfig extends Config(
-  new WithNBigCores(1) ++ new FireSimMemBladeConfig)
+class FireSimRemoteMemClientConfig extends Config(
+  new WithRemoteMemClientKey ++ new FireSimRocketChipConfig)
 
-class FireSimMemBladeDualCoreConfig extends Config(
-  new WithNBigCores(2) ++ new FireSimMemBladeConfig)
+class FireSimRemoteMemClientSingleCoreConfig extends Config(
+  new WithNBigCores(1) ++ new FireSimRemoteMemClientConfig)
 
-class FireSimMemBladeQuadCoreConfig extends Config(
-  new WithNBigCores(4) ++ new FireSimMemBladeConfig)
+class FireSimRemoteMemClientDualCoreConfig extends Config(
+  new WithNBigCores(2) ++ new FireSimRemoteMemClientConfig)
 
-class FireSimMemBladePFAConfig extends Config(
-  new WithPFA ++ new FireSimMemBladeConfig)
+class FireSimRemoteMemClientQuadCoreConfig extends Config(
+  new WithNBigCores(4) ++ new FireSimRemoteMemClientConfig)
 
-class FireSimMemBladePFASingleCoreConfig extends Config(
-  new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
+class FireSimDRAMCacheConfig extends Config(
+  new WithDRAMCacheKey ++
+  new WithExtMemSize(8L << 30) ++
+  new FireSimRocketChipConfig)
 
-class FireSimMemBladePFADualCoreConfig extends Config(
-  new WithNBigCores(2) ++ new FireSimMemBladePFAConfig)
+class FireSimDRAMCacheSingleCoreConfig extends Config(
+  new WithNBigCores(1) ++ new FireSimDRAMCacheConfig)
 
-class FireSimMemBladePFAQuadCoreConfig extends Config(
-  new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
+class FireSimDRAMCacheDualCoreConfig extends Config(
+  new WithNBigCores(2) ++ new FireSimDRAMCacheConfig)
+
+class FireSimDRAMCacheQuadCoreConfig extends Config(
+  new WithNBigCores(4) ++ new FireSimDRAMCacheConfig)
+
+//class FireSimMemBladePFAConfig extends Config(
+//  new WithPFA ++ new FireSimMemBladeConfig)
+//
+//class FireSimMemBladePFASingleCoreConfig extends Config(
+//  new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
+//
+//class FireSimMemBladePFADualCoreConfig extends Config(
+//  new WithNBigCores(2) ++ new FireSimMemBladePFAConfig)
+//
+//class FireSimMemBladePFAQuadCoreConfig extends Config(
+//  new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++

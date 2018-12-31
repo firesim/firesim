@@ -26,7 +26,7 @@ VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 submodules = . midas firrtl \
-	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks \
+	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks memory-blade \
 	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend))
 
 src_path = src/main/scala

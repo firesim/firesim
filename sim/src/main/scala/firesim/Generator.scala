@@ -65,6 +65,8 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
       case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
       case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
       case "FireSimMemBlade" => LazyModule(new FireSimMemBlade()(params)).module
+      case "FireSimRemoteMemClient" => LazyModule(new FireSimRemoteMemClient()(params)).module
+      case "FireSimDRAMCache" => LazyModule(new FireSimDRAMCache()(params)).module
       case "FireSimSupernode" => new FireSimSupernode()(params)
     }
   }
