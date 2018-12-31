@@ -118,16 +118,19 @@ void BasePort::write_flits_to_output() {
 #ifdef CREDIT_FLOWCONTROL
     uint64_t timeElapsed = maxtime - fc_lastUpdate;
     if (fc_updatePeriod > 0 && fc_unassigned > 0 && timeElapsed > fc_updatePeriod) {
+        switchpacket *cup = (switchpacket *) malloc(sizeof(switchpacket));
+        cup->timestamp = maxtime - 1;
+        cup->dat[0] = fc_unassigned;
+        cup->amtwritten = 1;
+        cup->amtread = 0;
+        cup->sender = -1;
+        outputqueue.push(cup);
+
         printf("port %d send credit update %d @ %ld\n",
-                _portNo, fc_unassigned, basetime);
-        write_last_flit(current_output_buf, flitswritten, true);
-        write_valid_flit(current_output_buf, flitswritten);
-        write_flit(current_output_buf, flitswritten, fc_unassigned);
+                _portNo, fc_unassigned, cup->timestamp);
         fc_assigned += fc_unassigned;
         fc_unassigned = 0;
-        fc_lastUpdate = basetime + flitswritten;
-        flitswritten++;
-        empty_buf = false;
+        fc_lastUpdate = maxtime;
     }
 #endif
 
@@ -185,7 +188,8 @@ void BasePort::write_flits_to_output() {
                 outputqueue.pop();
                 free(thispacket);
 #ifdef CREDIT_FLOWCONTROL
-                if (fc_updatePeriod > 0)
+	        // Don't decrement FC counter for FC update packet
+                if (fc_updatePeriod > 0 && thispacket->sender != -1)
                     fc_available--;
 #endif
             } else {
