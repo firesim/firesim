@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <cstdlib>
 
-//#define IGNORE_PRINTF
+#define IGNORE_PRINTF
 
 #ifdef IGNORE_PRINTF
 #define printf(fmt, ...) (0)
