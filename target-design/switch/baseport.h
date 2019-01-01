@@ -71,9 +71,9 @@ int BasePort::push_input(switchpacket *sp)
     // If so, update fc_available but don't add the packet to the input queue
     uint16_t cred_update = sp->dat[0] & 0xffff;
     if (sp->amtwritten == 1 && cred_update != 0) {
-        printf("port %d: got credit update %d @ %ld\n",
-                        _portNo, cred_update, sp->timestamp);
         fc_available += cred_update;
+        printf("port %d: got credit update %d -> %d @ %ld\n",
+                        _portNo, cred_update, fc_available, sp->timestamp);
         free(sp);
         return 0;
     }
@@ -163,7 +163,7 @@ void BasePort::write_flits_to_output() {
             flitswritten = std::max(flitswritten, timestampdiff);
 
             int i = thispacket->amtread;
-            if (i == 0) {
+            if (i == 0 && thispacket->sender != -1) {
                 //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
                 //        outputtimestamp, basetime + flitswritten, 
                 //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
@@ -184,14 +184,14 @@ void BasePort::write_flits_to_output() {
                     flitswritten++;
             }
             if (i == thispacket->amtwritten) {
-                // we finished sending this packet, so get rid of it
-                outputqueue.pop();
-                free(thispacket);
 #ifdef CREDIT_FLOWCONTROL
 	        // Don't decrement FC counter for FC update packet
                 if (fc_updatePeriod > 0 && thispacket->sender != -1)
                     fc_available--;
 #endif
+                // we finished sending this packet, so get rid of it
+                outputqueue.pop();
+                free(thispacket);
             } else {
                 // we're not done sending this packet, so mark how much has been sent
                 // for the next time
