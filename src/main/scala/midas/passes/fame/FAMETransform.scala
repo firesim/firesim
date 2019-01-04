@@ -154,7 +154,7 @@ object FAMEModuleTransformer {
 
     // Step 2: Find combinational dependencies
     val ccChecker = new firrtl.transforms.CheckCombLoops
-    val portDeps = ccChecker.analyzeModule(analysis.circuit, m)
+    val portDeps = analysis.connectivity(m.name)
     val ccDeps = new LinkedHashMap[FAME1OutputChannel, LinkedHashSet[FAME1InputChannel]]
     portDeps.getEdgeMap.collect({ case (o, iSet) if outChannelMap.contains(o) =>
       // Only add input channels, since output might depend on output RHS ref

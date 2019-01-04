@@ -4,7 +4,7 @@ package midas.passes.fame
 
 import firrtl._
 import ir._
-import Mappers._
+import traversals.Foreachers._
 import annotations.{ModuleTarget, ReferenceTarget}
 import analyses.InstanceGraph
 import collection.mutable
@@ -25,7 +25,7 @@ class TrivialChannelExcision extends Transform {
       case m: Module => m
     }).get
     val topChildren = new mutable.HashSet[WDefInstance]
-    topModule.body.map(InstanceGraph.collectInstances(topChildren))
+    topModule.body.foreach(InstanceGraph.collectInstances(topChildren))
     assert(topChildren.size == 1)
     val specialSignals = state.annotations.collect({
       case FAMEHostClock(rt) => rt.ref
