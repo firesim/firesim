@@ -6,6 +6,7 @@ import firrtl._
 import ir._
 import Utils._
 import Mappers._
+import transforms.CheckCombLoops
 import annotations._
 import graph.DiGraph
 import scala.collection
@@ -128,6 +129,8 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       })
     }
   })
+
+  lazy val connectivity = (new CheckCombLoops).analyze(state)
 
   val channels = new LinkedHashSet[String]
   val channelsByPort = new LinkedHashMap[ReferenceTarget, String]
