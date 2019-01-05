@@ -255,26 +255,42 @@ class UserTopologies(object):
                 level2switches[switchgroupno][switchno].add_downlinks(servers[switchgroupno][switchno])
 
     # Don't use this directly
-    def base_memblade_config(self, n, m):
+    def base_twohw_config(self, hw0, hw1, n, m):
         if (n + m) < 8:
             self.roots = [FireSimSwitchNode()]
-            clients = [FireSimServerNode("firesim-quadcore-rmc-ddr3-llc4mb") for x in range(n)]
-            memblades = [FireSimServerNode("firesim-singlecore-memblade-ddr3") for y in range(m)]
+            clients = [FireSimServerNode(hw0) for x in range(n)]
+            memblades = [FireSimServerNode(hw1) for y in range(m)]
             self.roots[0].add_downlinks(clients)
             self.roots[0].add_downlinks(memblades)
         elif n < 8 and m < 8:
             self.roots = [FireSimSwitchNode()]
             leafswitches = [FireSimSwitchNode() for x in range(2)]
-            clients = [FireSimServerNode("firesim-quadcore-rmc-ddr3-llc4mb") for x in range(n)]
-            memblades = [FireSimServerNode("firesim-singlecore-memblade-ddr3") for y in range(m)]
+            clients = [FireSimServerNode(hw0) for x in range(n)]
+            memblades = [FireSimServerNode(hw1) for y in range(m)]
             leafswitches[0].add_downlinks(clients)
             leafswitches[1].add_downlinks(memblades)
             self.roots[0].add_downlinks(leafswitches)
         else:
             raise Exception("Don't know how to create memblade config for {}x{}".format(n, m))
 
+    def base_memblade_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-quadcore-rmc-ddr3-llc4mb",
+                "firesim-singlecore-memblade-ddr3", n, m)
+
+    def base_dram_cache_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-quadcore-dram-cache-ddr3",
+                "firesim-singlecore-memblade-ddr3", n, m)
+
     def example_memblade_2config(self):
         self.base_memblade_config(1, 1)
+
+    def example_memblade_4config(self):
+        self.base_memblade_config(2, 2)
+
+    def example_dram_cache_2config(self):
+        self.base_dram_cache_config(1, 1)
 
     @staticmethod
     def supernode_flatten(arr):
