@@ -15,11 +15,14 @@ SPAN_FLITS=SPAN_BYTES/8
 
 Flit = namedtuple("Flit", ["data", "last", "sendrecv", "timestamp"])
 FlitGroup = namedtuple("Flit", ["data", "sendrecv", "timestamp"])
-CreditUpdate = namedtuple("CreditUpdate", ["count", "timestamp"])
+CreditUpdate = namedtuple("CreditUpdate", ["count", "sendrecv", "timestamp"])
 RemoteMemRequest = namedtuple("RemoteMemRequest",
-                        ["version", "opcode", "xactid", "spanid", "timestamp"])
+                        ["version", "opcode", "xactid", "spanid",
+                         "sendrecv", "timestamp"])
 RemoteMemResponse = namedtuple("RemoteMemResponse",
-                        ["version", "respcode", "xactid", "timestamp"])
+                        ["version", "respcode", "xactid",
+                         "sendrecv", "timestamp"])
+OtherPacket = namedtuple("OtherPacket", ["ethtype", "len", "sendrecv", "timestamp"])
 
 def parse_flits(stream):
     for line in stream:
@@ -79,7 +82,8 @@ def parse_packets(flitgroups):
     for group in flitgroups:
         if (group.data[0] & 0xffff) != 0:
             check_update(group.data)
-            yield CreditUpdate(group.data[0] & 0xffff, group.timestamp)
+            yield CreditUpdate(group.data[0] & 0xffff,
+                    group.sendrecv, group.timestamp)
         elif len(group.data) > 2:
             ethtype = (group.data[1] >> 48) & 0xffff
             if ethtype == RMEM_REQ_ETH_TYPE:
@@ -88,21 +92,51 @@ def parse_packets(flitgroups):
                 spanid = group.data[3]
                 check_request(opcode, group.data)
                 yield RemoteMemRequest(
-                        version, opcode, xactid, spanid, group.timestamp)
+                        version, opcode, xactid, spanid,
+                        group.sendrecv, group.timestamp)
             elif ethtype == RMEM_RESP_ETH_TYPE:
                 (version, respcode, xactid) = struct.unpack(
                         "<BBxxI", struct.pack("<q", group.data[2]))
                 check_response(respcode, group.data)
                 yield RemoteMemResponse(
-                        version, opcode, xactid, group.timestamp)
+                        version, opcode, xactid,
+                        group.sendrecv, group.timestamp)
+            else:
+                yield OtherPacket(
+                        ethtype, len(group.data) - 2,
+                        group.sendrecv, group.timestamp)
+
+def track_fc(packets):
+    in_avail = 0
+    out_avail = 0
+
+    for pkt in packets:
+        if isinstance(pkt, CreditUpdate):
+            if pkt.sendrecv:
+                in_avail += pkt.count
+                print("credit update {} -> {}".format(
+                    pkt.count, in_avail))
+            else:
+                out_avail += pkt.count
+        else:
+            if pkt.sendrecv:
+                out_avail -= 1
+            else:
+                in_avail -= 1
+
+    print("In packets available: {}".format(in_avail))
+    print("Out packets available: {}".format(out_avail))
+
 
 def format_log(f):
     flits = parse_flits(f)
     groups = group_flits(flits)
-    packets = parse_packets(groups)
+    packets = list(parse_packets(groups))
 
     for pkt in packets:
         print(pkt)
+
+    track_fc(packets)
 
 def main():
     if len(sys.argv) < 2:
