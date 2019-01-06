@@ -191,6 +191,24 @@ class UserTopologies(object):
         servers = [FireSimServerNode() for y in range(8)]
         self.roots[0].add_downlinks(servers)
 
+    def pairs_4config(self):
+        self.custom_mapper = 'mapping_use_one_f1_16xlarge'
+        self.roots = [FireSimSwitchNode() for y in range(2)]
+
+        servers = [FireSimServerNode() for y in range(4)]
+        self.roots[0].add_downlinks(servers[0:2])
+        self.roots[1].add_downlinks(servers[2:4])
+
+    def pairs_8config(self):
+        self.custom_mapper = 'mapping_use_one_f1_16xlarge'
+        self.roots = [FireSimSwitchNode() for y in range(4)]
+
+        servers = [FireSimServerNode() for y in range(8)]
+        self.roots[0].add_downlinks(servers[0:2])
+        self.roots[1].add_downlinks(servers[2:4])
+        self.roots[2].add_downlinks(servers[4:6])
+        self.roots[3].add_downlinks(servers[6:8])
+
     def example_16config(self):
         self.roots = [FireSimSwitchNode()]
         level2switches = [FireSimSwitchNode() for x in range(2)]
