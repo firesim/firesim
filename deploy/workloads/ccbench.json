@@ -1,0 +1,18 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "ccbench",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "ccbench",
+          "files" : ["caches", "run-test.sh"],
+          "command" : "/root/run-test.sh > /root/report.txt && poweroff",
+          "simulation_outputs": [],
+          "outputs": ["/root/report.txt"]
+      }
+  ]
+}

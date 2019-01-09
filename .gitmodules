@@ -31,3 +31,6 @@
 [submodule "sw/memblade-tests"]
 	path = sw/memblade-tests
 	url = git@bitbucket.org:zhemao/memblade-tests.git
+[submodule "sw/ccbench"]
+	path = sw/ccbench
+	url = git@github.com:firesim/ccbench.git

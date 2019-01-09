@@ -166,6 +166,15 @@ fc-test:
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-client.riscv $@/fc-client.riscv
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
 
+ccbench:
+	mkdir -p $@/overlay
+	cd ../../sw/ccbench/caches && make ARCH=riscv clean caches
+	cp ../../sw/ccbench/caches/caches $@/overlay
+	python $@/gen-run-script.py > $@/overlay/run-test.sh
+	chmod +x $@/overlay/run-test.sh
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -173,4 +182,4 @@ fc-test:
 	allpaper checksum-test memblade-test memblade-page-bmark \
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
-	histo-local fc-test
+	histo-local fc-test ccbench
