@@ -176,3 +176,8 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new midas.F1Config)
+
+class PicoRV32Config extends Config(
+  new WithUARTWidget ++
+  new midas.F1Config
+)

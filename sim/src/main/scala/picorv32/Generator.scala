@@ -37,7 +37,7 @@ trait FireSimGeneratorUtils {
 
     lazy val testDir = new File(targetDir)
 
-    def midasParams = (new Config(new firesim.firesim.FireSimConfig)).toInstance
+    def midasParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
 
     val lines = Source.fromFile("src/main/scala/picorv32/synth.fir").getLines()
     val chirrtl = firrtl.Parser.parse(lines)
