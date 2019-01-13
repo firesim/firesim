@@ -175,6 +175,13 @@ ccbench:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+dram-cache-test-linux:
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/memblade-tests/linux && make dram-cache-test.riscv
+	cp ../../sw/memblade-tests/linux/dram-cache-test.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -182,4 +189,4 @@ ccbench:
 	allpaper checksum-test memblade-test memblade-page-bmark \
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
-	histo-local fc-test ccbench
+	histo-local fc-test ccbench dram-cache-test-linux

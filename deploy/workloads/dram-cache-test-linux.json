@@ -1,0 +1,29 @@
+{
+  "benchmark_name" : "dram-cache-test-linux",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "dram-cache-test",
+          "bootbinary" : "bbl-vmlinux",
+          "files" : [
+              "run-cache-test.sh",
+              "dram-cache-test.riscv"
+          ],
+          "command" : "/root/run-cache-test.sh",
+          "simulation_outputs": [],
+          "outputs": []
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
+      }
+  ]
+}
