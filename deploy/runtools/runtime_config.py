@@ -159,7 +159,8 @@ class RuntimeHWConfig:
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
-        return """sudo pkill -SIGKILL {driver}""".format(driver=driver)
+        # Note that pkill only works for names <=15 characters
+        return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
     def build_fpga_driver(self):
