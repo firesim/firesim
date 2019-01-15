@@ -32,7 +32,7 @@ class WithSynthAsserts extends Config((site, here, up) => {
 })
 
 // Experimental: mixing this in will enable print synthesis
-class WithPrintSynthesis extends Config((site, here, up) => {
+class WithPrintfSynthesis extends Config((site, here, up) => {
   case midas.SynthPrints => true
   case EndpointKey => EndpointMap(Seq(new midas.widgets.PrintRecordEndpoint)) ++ up(EndpointKey)
 })
