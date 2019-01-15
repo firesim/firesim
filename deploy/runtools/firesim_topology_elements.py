@@ -250,8 +250,10 @@ class FireSimServerNode(FireSimNode):
         """ Return local paths of all stuff needed to run this simulation as
         an array. """
         all_paths = []
-        # todo handle none case
-        all_paths.append([self.get_job().rootfs_path(), ''])
+
+        if self.get_job().rootfs_path() is not None:
+            all_paths.append([self.get_job().rootfs_path(), ''])
+
         all_paths.append([self.get_job().bootbinary_path(), ''])
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
@@ -275,9 +277,12 @@ class FireSimServerNode(FireSimNode):
         return self.job.jobname
 
     def get_rootfs_name(self, dummyindex=0):
-        if dummyindex:
+        if self.get_job().rootfs_path() is None:
+            return None
+        elif dummyindex:
             return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().rootfs_path().split("/")[-1]
+        else:
+            return self.get_job().rootfs_path().split("/")[-1]
 
     def get_bootbin_name(self, dummyindex=0):
         if dummyindex:

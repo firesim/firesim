@@ -37,8 +37,10 @@ class JobConfig:
             # Explicit rootfs from parent (common_rootfs)
             self.rootfs = self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
         else:
-            # Default rootfs
-            self.rootfs = parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
+            self.rootfs = None
+        # else:
+        #     # Default rootfs
+        #     self.rootfs = parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
 
             
     def bootbinary_path(self):
