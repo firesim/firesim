@@ -30,15 +30,22 @@ class JobConfig:
         else:
             self.bootbinary = parent_workload.common_bootbinary
 
+        if singlejob_dict.get("rootfs") is not None:
+            # Explicit job-specific rootfs
+            self.rootfs = parent_workload.workload_input_base_dir + singlejob_dict['rootfs']
+        elif parent_workload.common_rootfs is not None:
+            # Explicit rootfs from parent (common_rootfs)
+            self.rootfs = self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
+        else:
+            # Default rootfs
+            self.rootfs = parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
+
+            
     def bootbinary_path(self):
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
     def rootfs_path(self):
-        if self.parent_workload.common_rootfs is not None:
-            return self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
-        else:
-            # assume the rootfs is named after the job
-            return self.parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
+        return self.rootfs
 
     def __str__(self):
         return self.jobname
