@@ -60,10 +60,10 @@ private[passes] class SimulationMapping(
 
     // Look up new IO than may have been added by instrumentation or debugging passes
     val newTargetIO = innerState.annotations.collect({
-      case a @ AddedTargetIoAnnotation(_,_) => a.generateChiselIO()
+      case a: AddedTargetIoAnnotation[_] => a.generateChiselIO()
     })
     val innerAnnos = innerState.annotations.flatMap({
-      case AddedTargetIoAnnotation(_,_) => None
+      case _: AddedTargetIoAnnotation[_] => None
       case a => Some(a)
     })
 

@@ -47,8 +47,7 @@ trait DMAToHostCPU extends HasDMA {
   attach(outgoingPCISdat.io.deq.valid, "pcis_out_valid", ReadOnly)
   attach(outgoingCount, "outgoing_count", ReadOnly)
 
-  // TODO, will these queues bottleneck us? - Biancolin: no. -> just read out of BRAM queue?
-  val ar_queue = Queue(dma.ar, 10)
+  val ar_queue = Queue(dma.ar)
 
   assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(dmaBytes).U)
 
@@ -100,8 +99,8 @@ trait DMAFromHostCPU extends HasDMA {
   attach(incomingPCISdat.io.deq.valid, "pcis_in_busy", ReadOnly)
   attach(incomingCount, "incoming_count", ReadOnly)
 
-  val aw_queue = Queue(dma.aw, 10)
-  val w_queue = Queue(dma.w, 10)
+  val aw_queue = Queue(dma.aw)
+  val w_queue = Queue(dma.w)
 
   assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(dmaBytes).U)
   assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(dmaBytes.W))
