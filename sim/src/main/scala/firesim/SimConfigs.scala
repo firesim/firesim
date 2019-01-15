@@ -31,6 +31,12 @@ class WithSynthAsserts extends Config((site, here, up) => {
   case EndpointKey => EndpointMap(Seq(new midas.widgets.AssertBundleEndpoint)) ++ up(EndpointKey)
 })
 
+// Experimental: mixing this in will enable print synthesis
+class WithPrintfSynthesis extends Config((site, here, up) => {
+  case midas.SynthPrints => true
+  case EndpointKey => EndpointMap(Seq(new midas.widgets.PrintRecordEndpoint)) ++ up(EndpointKey)
+})
+
 class WithSerialWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
 })
