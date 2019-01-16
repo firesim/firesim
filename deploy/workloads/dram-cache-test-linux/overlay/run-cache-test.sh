@@ -3,4 +3,4 @@
 mknod /dev/dram-cache-exttab c 254 0
 mknod /dev/dram-cache-mem    c 254 1
 
-/root/dram-cache-test.riscv -s 3
+/root/dram-cache-test.riscv -d 300 -s 8
