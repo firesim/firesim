@@ -175,6 +175,16 @@ ccbench:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+ccbench-dram-cache:
+	mkdir -p $@/overlay
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/ccbench/dc_caches && make ARCH=riscv clean caches
+	cp ../../sw/ccbench/dc_caches/caches $@/overlay
+	python $@/gen-run-script.py > $@/overlay/run-test.sh
+	chmod +x $@/overlay/run-test.sh
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 dram-cache-test-linux:
 	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
 	cd ../../sw/memblade-tests/linux && make dram-cache-test.riscv
@@ -189,4 +199,4 @@ dram-cache-test-linux:
 	allpaper checksum-test memblade-test memblade-page-bmark \
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
-	histo-local fc-test ccbench dram-cache-test-linux
+	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux

@@ -29,6 +29,8 @@ def parse_report(f):
 
 def main():
     parser = argparse.ArgumentParser(description="Parse ccbench report")
+    parser.add_argument("--wordsize", type=int, default=8,
+                        help="Number of bytes in a word")
     parser.add_argument("reportfile", help="Input report file")
     parser.add_argument("plotfile", help="Output plot PDF")
     args = parser.parse_args()
@@ -39,7 +41,7 @@ def main():
 
     with open(args.reportfile) as f:
         data = parse_report(f)
-        sizes = [int(size) * 4 for size in data["AppSize"]]
+        sizes = [int(size) * args.wordsize for size in data["AppSize"]]
         times = [float(time) for time in data["Time"]]
         ndatapoints = int(data["NumDataPointsPerSet"])
 

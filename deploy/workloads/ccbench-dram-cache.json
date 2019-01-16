@@ -1,6 +1,6 @@
 {
   "common_bootbinary" : "bbl-vmlinux",
-  "benchmark_name" : "ccbench",
+  "benchmark_name" : "ccbench-dram-cache",
   "deliver_dir" : "/root",
   "common_args" : [],
   "common_files" : [],
@@ -13,6 +13,14 @@
           "command" : "/root/run-test.sh | tee /root/report.txt && poweroff",
           "simulation_outputs": [],
           "outputs": ["/root/report.txt"]
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
       }
   ]
 }
