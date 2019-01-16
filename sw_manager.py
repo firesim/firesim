@@ -93,8 +93,7 @@ def main():
                 else:
                     wlutil.buildWorkload(cfgPath, cfgs)
             except Exception as e:
-                log.error("Error while building workload: ")
-                log.error(str(e))
+                log.exception("Error while building workload")
 
         elif args.command == "launch":
             # job-configs are named special internally
@@ -108,8 +107,7 @@ def main():
             try:
                 wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
             except Exception as e:
-                log.error("Failed to launch workload:")
-                log.error(str(e))
+                log.exception("Failed to launch workload:")
 
         elif args.command == "test":
             skipCount = 0

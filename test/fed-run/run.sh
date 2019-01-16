@@ -1,3 +1,3 @@
 #!/bin/bash
-echo "Global : run"
+echo "Global : run $1"
 poweroff

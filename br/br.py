@@ -3,13 +3,39 @@ import subprocess as sp
 import shutil
 import logging
 import wlutil
-# from wlutil import *
+import string
 
 # Note: All argument paths are expected to be absolute paths
 
 # Some common directories for this module (all absolute paths)
 br_dir = os.path.dirname(os.path.realpath(__file__))
 overlay = os.path.join(br_dir, 'firesim-overlay')
+
+initTemplate = string.Template("""#!/bin/sh
+
+SYSLOGD_ARGS=-n
+KLOGD_ARGS=-n
+
+start() {
+    echo "FIRESIM RUN START" && /firesim.sh $args && echo "FIRESIM RUN END"
+}
+
+case "$$1" in
+  start)
+  start
+  ;;
+  stop)
+  #stop
+  ;;
+  restart|reload)
+  start
+  ;;
+  *)
+  echo "Usage: $$0 {start|stop|restart}"
+  exit 1
+esac
+
+exit""")
 
 class Builder:
 
@@ -55,7 +81,7 @@ class Builder:
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
     @staticmethod
-    def generateBootScriptOverlay(script):
+    def generateBootScriptOverlay(script, args):
         # How this works:
         # The buildroot repo has a pre-built overlay with a custom S99run
         # script that init will run last. This script will run the /firesim.sh
@@ -71,4 +97,11 @@ class Builder:
             wlutil.run(['touch', scriptDst])
         
         wlutil.run(['chmod', '+x', scriptDst])
+
+        with open(os.path.join(overlay, 'etc/init.d/S99run'), 'w') as f:
+            if args == None:
+                f.write(initTemplate.substitute(args=''))
+            else:
+                f.write(initTemplate.substitute(args=args))
+        
         return overlay

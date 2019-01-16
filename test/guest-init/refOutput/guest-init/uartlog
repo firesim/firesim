@@ -1,2 +1,2 @@
-Global : init
+Global : init initArg
 Global : command

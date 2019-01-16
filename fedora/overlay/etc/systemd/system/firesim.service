@@ -5,5 +5,5 @@ Before=firesim.target
 Wants=firesim.target
 
 [Service]
-ExecStart=/firesim.sh
+ExecStart=/etc/firesim/firesim.sh runArg
 StandardOutput=journal+console

@@ -1,7 +1,7 @@
 {
   "name" : "fed-run",
   "base" : "fedora-base.json",
-  "run" : "run.sh",
+  "run" : "run.sh runArg",
   "testing" : {
     "buildTimeout" : 1200,
     "launchTimeout" : 900,

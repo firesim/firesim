@@ -79,15 +79,24 @@ distros = {
         }
 
 class RunSpec():
-    def __init__(self, cfg):
-        self.path = cfg.get('run')
-        self.command = cfg.get('command')
-        if self.path and self.command:
+    def __init__(self, script=None, command=None):
+        if script is not None and command is not None:
             raise ValueError("'command' and 'run' options are mutually exclusive")
 
+        self.args = None
+        self.path = None
+        self.command = None
+        if script is not None:
+            # Split the args from the script path
+            scriptParts = script.split(' ')
+            self.path = scriptParts[0]
+            if len(scriptParts) > 1:
+                self.args = ' '.join(scriptParts[1:])
+        elif command is not None:
+            # commands package their args into the script and have no additional args
+            self.command = command
 
 class Config(collections.MutableMapping):
-
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
     initialized = False
@@ -148,8 +157,13 @@ class Config(collections.MutableMapping):
                 self.cfg['base'] = os.path.join(cfgDir, self.cfg['base'])
         
         # This object handles setting up the 'run' and 'command' options
-        if 'run' in self.cfg or 'command' in self.cfg:
-            self.cfg['runSpec'] = RunSpec(self.cfg)
+        if 'run' in self.cfg:
+            self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
+        elif 'command' in self.cfg:
+            self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
+
+        if 'guest-init' in self.cfg:
+            self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
 
         # Convert overlay to file list (main program doesn't handle overlays directly)
         if 'overlay' in self.cfg:
@@ -205,7 +219,7 @@ class Config(collections.MutableMapping):
 
         if 'runSpec' not in self.cfg:
             self.cfg['run'] = os.path.join(wlutil_dir, 'null_run.sh')
-            self.cfg['runSpec'] = RunSpec(self.cfg)
+            self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):

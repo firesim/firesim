@@ -1,26 +1,25 @@
 #!/bin/sh
-#
 
 SYSLOGD_ARGS=-n
 KLOGD_ARGS=-n
 
 start() {
-    echo "FIRESIM RUN START" && /firesim.sh && echo "FIRESIM RUN END"
+    echo "FIRESIM RUN START" && /firesim.sh  && echo "FIRESIM RUN END"
 }
 
 case "$1" in
   start)
-	start
-	;;
+  start
+  ;;
   stop)
-	#stop
-	;;
+  #stop
+  ;;
   restart|reload)
-	start
-	;;
+  start
+  ;;
   *)
-	echo "Usage: $0 {start|stop|restart}"
-	exit 1
+  echo "Usage: $0 {start|stop|restart}"
+  exit 1
 esac
 
 exit

@@ -1,7 +1,7 @@
 {
   "name" : "run",
   "base" : "br-base.json",
-  "run" : "run.sh",
+  "run" : "run.sh runArg",
   "testing" : {
     "refDir" : "refOutput",
     "strip" : true

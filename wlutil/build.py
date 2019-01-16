@@ -97,7 +97,7 @@ def addDep(loader, config):
                     if not os.path.islink(fSpec.src):
                         file_deps.append(fSpec.src)			
         if 'guest-init' in config:
-            file_deps.append(config['guest-init'])
+            file_deps.append(config['guest-init'].path)
             task_deps.append(config['bin'])
         if 'runSpec' in config and config['runSpec'].path != None:
             file_deps.append(config['runSpec'].path)
@@ -231,18 +231,18 @@ def makeImage(config):
         copyImgFiles(config['img'], config['files'], 'in')
 
     if 'guest-init' in config:
-        log.info("Applying init script: " + config['guest-init'])
-        if not os.path.exists(config['guest-init']):
-            raise ValueError("Init script " + config['guest-init'] + " not found.")
+        log.info("Applying init script: " + config['guest-init'].path)
+        if not os.path.exists(config['guest-init'].path):
+            raise ValueError("Init script " + config['guest-init'].path + " not found.")
 
         # Apply and run the init script
-        init_overlay = config['builder'].generateBootScriptOverlay(config['guest-init'])
+        init_overlay = config['builder'].generateBootScriptOverlay(config['guest-init'].path, config['guest-init'].args)
         applyOverlay(config['img'], init_overlay)
         print("Launching: " + config['bin'])
         sp.check_call(getQemuCmd(config), shell=True)
 
         # Clear the init script
-        run_overlay = config['builder'].generateBootScriptOverlay(None)
+        run_overlay = config['builder'].generateBootScriptOverlay(None, None)
         applyOverlay(config['img'], run_overlay)
 
     if 'runSpec' in config:
@@ -257,6 +257,6 @@ def makeImage(config):
         if not os.path.exists(scriptPath):
             raise ValueError("Run script " + scriptPath + " not found.")
 
-        run_overlay = config['builder'].generateBootScriptOverlay(scriptPath)
+        run_overlay = config['builder'].generateBootScriptOverlay(scriptPath, spec.args)
         applyOverlay(config['img'], run_overlay)
 
