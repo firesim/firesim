@@ -16,7 +16,7 @@ To get the new default AGFI's you must run the manager initialization again by d
 Is there a good way to keep track of what AGFI corresponds to what FireSim commit?
 ----------------------------------------------------------------------------------
 
-When building an AGFI during `firesim buildafi`, FireSim keeps track of what FireSim repository commit was used to build the AGFI.
+When building an AGFI during ``firesim buildafi``, FireSim keeps track of what FireSim repository commit was used to build the AGFI.
 To view a list of AGFI's that you have built and what you have access to, you can run the following command:
 
 ::
@@ -25,7 +25,7 @@ To view a list of AGFI's that you have built and what you have access to, you ca
     source sourceme-f1-manager.sh
     aws ec2 describe-fpga-images --fpga-image-ids # List all AGFI images
 
-You can also view a specific AGFI image by giving the AGFI ID (found in `deploy/config_hwdb.ini`) through the following command:
+You can also view a specific AGFI image by giving the AGFI ID (found in ``deploy/config_hwdb.inii``) through the following command:
 
 ::
     
