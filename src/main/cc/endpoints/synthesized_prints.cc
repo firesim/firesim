@@ -178,7 +178,13 @@ bool decode_idle_cycles(char * buf, uint32_t mask) {
 void synthesized_prints_t::process_tokens(size_t beats) {
   size_t batch_bytes = beats * beat_bytes;
   char buf[batch_bytes];
-  pull(dma_address, (char*)buf, batch_bytes);
+  uint32_t bytes_received = pull(dma_address, (char*)buf, batch_bytes);
+  if (bytes_received != batch_bytes) {
+    printf("ERR MISMATCH! on reading print tokens. Read %d bytes, wanted %d bytes.\n",
+           bytes_received, batch_bytes);
+    printf("errno: %s\n", strerror(errno));
+    exit(1);
+  }
 
   if (human_readable) {
     for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
