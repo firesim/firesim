@@ -299,6 +299,11 @@ class UserTopologies(object):
             res = res + x
         return res
 
+    def supernode_example_6config(self):
+        self.roots = [FireSimSwitchNode()]
+        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(5)]
+        self.roots[0].add_downlinks(servers)
+
     def supernode_example_4config(self):
         self.roots = [FireSimSwitchNode()]
         servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
