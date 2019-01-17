@@ -1,5 +1,7 @@
 #ifdef PRINTWIDGET_struct_guard
 
+#include <iomanip>
+
 #include "synthesized_prints.h"
 
 synthesized_prints_t::synthesized_prints_t(
@@ -35,7 +37,10 @@ synthesized_prints_t::synthesized_prints_t(
   std::string printfile_arg  = std::string("+print-file=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
+  // Properly formats the printfs, before writing them to file
   std::string humanreadable_arg   = std::string("+print-human-readable");
+  // In human-readable mode, when set, prefixes each print with the cycle number
+  std::string cycleprefix_arg   = std::string("+print-cycle-prefix");
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
@@ -58,6 +63,9 @@ synthesized_prints_t::synthesized_prints_t(
       }
       if (arg.find(humanreadable_arg) == 0) {
           human_readable = true;
+      }
+      if (arg.find(cycleprefix_arg) == 0) {
+          print_cycle_prefix = true;
       }
   }
   current_cycle = start_cycle; // We won't receive tokens until start_cycle; so fast-forward
@@ -130,6 +138,9 @@ void synthesized_prints_t::init() {
 // print to the desired stream
 void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks) {
   size_t k = 0;
+  if (print_cycle_prefix) {
+    *printstream << "CYCLE:" << std::setw(13) << current_cycle << " ";
+  }
   while(*fmt) {
     if (*fmt == '%' && fmt[1] != '%') {
       mpz_t* value = vars->data[k];
