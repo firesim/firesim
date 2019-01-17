@@ -68,13 +68,14 @@ class synthesized_prints_t: public endpoint_t
 
 
         // +arg driven members
-        std::ofstream printfile;   // Used only if the +printfile arg is provided
+        std::ofstream printfile;   // Used only if the +print-file arg is provided
         std::string default_filename = "synthesized-prints.out";
 
         std::ostream* printstream; // Is set to std::cerr otherwise
         uint64_t start_cycle, end_cycle; // Bounds between which prints will be emitted
         uint64_t current_cycle = 0;
         bool human_readable = false;
+        bool print_cycle_prefix = false;
 
         std::vector<std::vector<size_t>> widths;
         std::vector<size_t> sizes;
