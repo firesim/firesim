@@ -41,7 +41,7 @@ endpoint driver, which will be automatically instantiated in FireSim driver.
 
 Runtime Arguments
 -----------------
-**+printfile**
+**+print-file**
     Specifies the file into which the synthesized printf log should written.
 
 **+print-start**
