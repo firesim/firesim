@@ -32,7 +32,7 @@ synthesized_prints_t::synthesized_prints_t(
   this->start_cycle = 0;
   this->end_cycle = -1ULL;
 
-  std::string printfile_arg  = std::string("+printfile=");
+  std::string printfile_arg  = std::string("+print-file=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
   std::string humanreadable_arg   = std::string("+print-human-readable");
