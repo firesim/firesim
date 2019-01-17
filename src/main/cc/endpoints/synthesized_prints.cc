@@ -181,8 +181,8 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
 // Returns true if at least one print in the token is enabled in this cycle
 bool has_enabled_print(char * buf) { return (buf[0] & 1); }
 // If the token has no enabled prints, return a number of idle cycles encoded in the msbs
-bool decode_idle_cycles(char * buf, uint32_t mask) {
-  return ((*((uint32_t*)buf)) & mask) >> 1;
+uint32_t decode_idle_cycles(char * buf, uint32_t mask) {
+  return (((*((uint32_t*)buf)) & mask) >> 1);
 }
 
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
