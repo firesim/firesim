@@ -17,11 +17,17 @@ case class FpgaDebugAnnotation(target: chisel3.Data) extends ChiselAnnotation {
   def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
 
-case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
+private [midas] case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
     SingleTargetAnnotation[ComponentName] {
   def duplicate(n: ComponentName) = this.copy(target = n)
 }
 
+object FpgaDebug {
+  def apply(targets: chisel3.Data*): Unit = {
+    targets.map({ t => chisel3.experimental.annotate(FpgaDebugAnnotation(t)) })
+    targets.map(dontTouch(_))
+  }
+}
 
 private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
   // TODO: determine order for multiple renames, or just check of == 1 rename?
