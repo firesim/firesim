@@ -78,7 +78,7 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
     with UnidirectionalDMAToHostCPU {
   val io = IO(new PrintWidgetIO(printRecord))
   lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
-  lazy val dmaSize = BigInt(512 * 4)
+  lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
 
   val printPort = io.hPort.hBits
   // Pick a padded token width that's a power of 2 bytes, including enable bit
