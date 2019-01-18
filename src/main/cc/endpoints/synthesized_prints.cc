@@ -188,7 +188,14 @@ uint32_t decode_idle_cycles(char * buf, uint32_t mask) {
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
 void synthesized_prints_t::process_tokens(size_t beats) {
   size_t batch_bytes = beats * beat_bytes;
-  char buf[batch_bytes];
+
+  // See FireSim issue #208
+  // This needs to be page aligned, as a DMA request that spans a page is
+  // fractured into a pair, and for reasons unknown, first beat of the second
+  // request is lost. Once aligned, qequests larger than a page will be fractured into
+  // page-size (64-beat) requests and these seem to behave correctly.
+  alignas(4096) char buf[batch_bytes];
+
   uint32_t bytes_received = pull(dma_address, (char*)buf, batch_bytes);
   if (bytes_received != batch_bytes) {
     printf("ERR MISMATCH! on reading print tokens. Read %d bytes, wanted %d bytes.\n",
