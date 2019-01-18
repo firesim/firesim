@@ -158,6 +158,7 @@ class FCFS16GBQuadRankLLC4MB extends Config(
 
 // DDR3 - First-Ready FCFS models
 class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
+  new WithFuncModelLimits(32,32) ++
   new WithDDR3FRFCFS(8, 8) ++
   new WithDefaultMemModel(clockDiv)
 )
