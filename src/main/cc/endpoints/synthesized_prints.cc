@@ -1,5 +1,7 @@
 #ifdef PRINTWIDGET_struct_guard
 
+#include <iomanip>
+
 #include "synthesized_prints.h"
 
 synthesized_prints_t::synthesized_prints_t(
@@ -32,10 +34,13 @@ synthesized_prints_t::synthesized_prints_t(
   this->start_cycle = 0;
   this->end_cycle = -1ULL;
 
-  std::string printfile_arg  = std::string("+printfile=");
+  std::string printfile_arg  = std::string("+print-file=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
+  // Properly formats the printfs, before writing them to file
   std::string humanreadable_arg   = std::string("+print-human-readable");
+  // In human-readable mode, when set, prefixes each print with the cycle number
+  std::string cycleprefix_arg   = std::string("+print-cycle-prefix");
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
@@ -58,6 +63,9 @@ synthesized_prints_t::synthesized_prints_t(
       }
       if (arg.find(humanreadable_arg) == 0) {
           human_readable = true;
+      }
+      if (arg.find(cycleprefix_arg) == 0) {
+          print_cycle_prefix = true;
       }
   }
   current_cycle = start_cycle; // We won't receive tokens until start_cycle; so fast-forward
@@ -130,6 +138,9 @@ void synthesized_prints_t::init() {
 // print to the desired stream
 void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks) {
   size_t k = 0;
+  if (print_cycle_prefix) {
+    *printstream << "CYCLE:" << std::setw(13) << current_cycle << " ";
+  }
   while(*fmt) {
     if (*fmt == '%' && fmt[1] != '%') {
       mpz_t* value = vars->data[k];
@@ -170,15 +181,28 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
 // Returns true if at least one print in the token is enabled in this cycle
 bool has_enabled_print(char * buf) { return (buf[0] & 1); }
 // If the token has no enabled prints, return a number of idle cycles encoded in the msbs
-bool decode_idle_cycles(char * buf, uint32_t mask) {
-  return ((*((uint32_t*)buf)) & mask) >> 1;
+uint32_t decode_idle_cycles(char * buf, uint32_t mask) {
+  return (((*((uint32_t*)buf)) & mask) >> 1);
 }
 
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
 void synthesized_prints_t::process_tokens(size_t beats) {
   size_t batch_bytes = beats * beat_bytes;
-  char buf[batch_bytes];
-  pull(dma_address, (char*)buf, batch_bytes);
+
+  // See FireSim issue #208
+  // This needs to be page aligned, as a DMA request that spans a page is
+  // fractured into a pair, and for reasons unknown, first beat of the second
+  // request is lost. Once aligned, qequests larger than a page will be fractured into
+  // page-size (64-beat) requests and these seem to behave correctly.
+  alignas(4096) char buf[batch_bytes];
+
+  uint32_t bytes_received = pull(dma_address, (char*)buf, batch_bytes);
+  if (bytes_received != batch_bytes) {
+    printf("ERR MISMATCH! on reading print tokens. Read %d bytes, wanted %d bytes.\n",
+           bytes_received, batch_bytes);
+    printf("errno: %s\n", strerror(errno));
+    exit(1);
+  }
 
   if (human_readable) {
     for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
