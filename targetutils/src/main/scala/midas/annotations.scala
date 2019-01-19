@@ -17,7 +17,7 @@ case class FpgaDebugAnnotation(target: chisel3.Data) extends ChiselAnnotation {
   def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
 
-private [midas] case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
+case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
     SingleTargetAnnotation[ComponentName] {
   def duplicate(n: ComponentName) = this.copy(target = n)
 }
