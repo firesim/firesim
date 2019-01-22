@@ -108,3 +108,9 @@ class RocketNICF1Tests extends FireSimTestSuite(
   FireSimGeneratorArgs("FireSim", "FireSimRocketChipConfig", "FireSimConfig")) {
   runSuite("verilator")(NICLoopbackTests)
 }
+
+class RamModelRocketF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "Midas2Config"))
+
+class RamModelBoomF1Tests extends FireSimTestSuite(
+  FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "Midas2Config"))

@@ -53,6 +53,11 @@ class WithTracerVWidget extends Config((site, here, up) => {
     midas.core.EndpointMap(Seq(new SimTracerV))
 })
 
+// MIDAS 2.0 Switches
+class WithMultiCycleRamModels extends Config((site, here, up) => {
+  case midas.GenerateMultiCycleRamModels => true
+})
+
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
@@ -261,3 +266,9 @@ class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)
+
+// Midas 2.0 Configs
+class Midas2Config extends Config(
+  new WithMultiCycleRamModels ++
+  new FireSimConfig)
+

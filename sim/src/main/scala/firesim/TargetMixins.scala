@@ -1,6 +1,8 @@
 package firesim.firesim
 
 import chisel3._
+import chisel3.experimental.annotate
+
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -10,6 +12,8 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.rocket.TracedInstruction
 import firesim.endpoints.TraceOutputTop
 import boom.system.BoomSubsystem
+
+import midas.targetutils.MemModelAnnotation
 
 /** Adds a port to the system intended to master an AXI4 DRAM controller. */
 trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
@@ -80,4 +84,21 @@ trait CanHaveBoomTraceIO extends LazyModuleImp {
   traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
 
   println(s"N tile traces: ${tile_traces.size}")
+}
+
+trait CanHaveBoomMultiCycleRegfileImp {
+  val outer: BoomSubsystem
+  val cores = outer.boomTiles.map(tile => tile.module.core)
+  cores.foreach({ core =>
+    core.iregfile match {
+      case irf: boom.exu.RegisterFileBehavorial => annotate(MemModelAnnotation(irf.regfile))
+      case _ => Nil
+    }
+
+    if (core.fp_pipeline != null) core.fp_pipeline.fregfile match {
+      case irf: boom.exu.RegisterFileBehavorial => annotate(MemModelAnnotation(irf.regfile))
+      case _ => Nil
+    }
+
+  })
 }

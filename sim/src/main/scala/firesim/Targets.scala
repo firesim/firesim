@@ -134,6 +134,7 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
+    with CanHaveBoomMultiCycleRegfileImp
 
 class FireBoomModuleImpTraced[+L <: FireBoom](l: L) extends FireBoomModuleImp(l)
     with CanHaveBoomTraceIO
@@ -169,6 +170,7 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+    with CanHaveBoomMultiCycleRegfileImp
 
 class FireBoomNoNICModuleImpTraced[+L <: FireBoomNoNIC](l: L) extends FireBoomNoNICModuleImp(l)
     with CanHaveBoomTraceIO
