@@ -6,7 +6,7 @@
 	url = https://github.com/firesim/firesim-software
 [submodule "sim/firrtl"]
 	path = sim/firrtl
-	url = git@github.com:albert-magyar/firrtl.git
+	url = https://github.com/freechipsproject/firrtl.git
 [submodule "sim/midas"]
 	path = sim/midas
 	url = https://github.com/ucb-bar/midas
