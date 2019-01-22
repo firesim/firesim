@@ -95,6 +95,8 @@ endif
 ifeq ($(PLATFORM),f1)
 top_module = F1Shim
 endif
+
+verilator_conf := rtlsim/ml-verilator-conf.vlt
 include rtlsim/Makefrag-verilator
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
