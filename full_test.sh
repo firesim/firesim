@@ -9,7 +9,7 @@ echo "" > test.log
 
 echo "Running launch timeout test (should timeout):" | tee -a test.log
 echo "This test will reset your terminal"
-./sw_manager.py test test/timeout-run.json | grep "timeout while running"
+./marshal test test/timeout-run.json | grep "timeout while running"
 res=$?
 reset
 echo "Ran launch timeout test (screen was reset)"
@@ -21,7 +21,7 @@ else
 fi
 
 echo "Running build timeout test (should timeout):" | tee -a test.log
-./sw_manager.py test test/timeout-build.json | grep "timeout while building"
+./marshal test test/timeout-build.json | grep "timeout while building"
 if [ $? != 0 ]; then
   echo "Failure" | tee -a test.log
   SUITE_PASS=false
@@ -29,7 +29,7 @@ else
   echo "Success" | tee -a test.log
 fi
 
-# Run the specialized tests (tests that are too complicated for ./sw_manager.py
+# Run the specialized tests (tests that are too complicated for ./marshal
 # test)
 echo "Running clean test" | tee -a test.log
 ./test/clean/test.py >> test.log 
@@ -52,8 +52,8 @@ fi
 # tests)
 echo "Running regular tests" | tee -a test.log
 BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run)"
-./sw_manager.py clean test/!$BULK_EXCLUDE.json | tee -a test.log
-./sw_manager.py test test/!$BULK_EXCLUDE.json | tee -a test.log
+./marshal clean test/!$BULK_EXCLUDE.json | tee -a test.log
+./marshal test test/!$BULK_EXCLUDE.json | tee -a test.log
 if [ $? != 0 ]; then
   echo "Failure" | tee -a test.log
   SUITE_PASS=false
@@ -67,8 +67,8 @@ echo "Running initramfs capable tests on spike" | tee -a test.log
 IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|spike|smoke0)"
 # ls test/$IS_INCLUDE.json
 # exit 0
-./sw_manager.py -i clean test/$IS_INCLUDE.json | tee -a test.log
-./sw_manager.py -i test -s test/$IS_INCLUDE.json | tee -a test.log
+./marshal -i clean test/$IS_INCLUDE.json | tee -a test.log
+./marshal -i test -s test/$IS_INCLUDE.json | tee -a test.log
 if [ $? != 0 ]; then
   echo "Failure" | tee -a test.log
   SUITE_PASS=false

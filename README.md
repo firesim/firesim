@@ -13,13 +13,13 @@ Be sure to update/init submodules. The following will require the riscv-tools
 on your path and a recent version of qemu.
 
 To build:
-    ./sw-manager.py -c CONFIG.json build
+    ./marshal.py -c CONFIG.json build
 
 To run on qemu:
-  ./sw-manager.py -c CONFIG.json launch
+  ./marshal.py -c CONFIG.json launch
 
 To run on spike:
-  ./sw-manager.py -c CONFIG.json launch -s
+  ./marshal.py -c CONFIG.json launch -s
 
 To run on FireSim:
 See the firesim documentation.
@@ -38,7 +38,7 @@ lists, please file an issue.
 # Gotcha's and potentially unintuitive behavior
 ## Incremental Builds
 It can be very frustrating to accidentally rebuild a complex workload from
-scratch, especially if you've modified it in some what. sw-manager tries to
+scratch, especially if you've modified it in some what. marshal tries to
 avoid this by performing incremental builds. Regardless of changes in the base
 workload, or changes in your workload config, your image will only be
 regenerated if you run 'clean' first. However, any image files ('overlay' or
