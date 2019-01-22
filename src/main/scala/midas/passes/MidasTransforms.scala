@@ -22,10 +22,18 @@ private[passes] class WCircuit(
 
 private[midas] class MidasTransforms(
     io: Seq[(String, chisel3.Data)])
-    (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
+    (implicit p: freechips.rocketchip.config.Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
-  val dir = param(OutputDir)
+  val dir = p(OutputDir)
+
+  // Optionally run if the GenerateMultiCycleRamModels parameter is set
+  val ramModelTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
+    new fame.LabelSRAMModels,
+    new ResolveAndCheck,
+    new EmitFirrtl("post-sram-models.fir"))
+  else Seq()
+
   def execute(state: CircuitState) = {
     val xforms = Seq(
       firrtl.passes.RemoveValidIf,
@@ -42,10 +50,9 @@ private[midas] class MidasTransforms(
       new ChannelizeTargetIO(io),
       new fame.WrapTop,
       new ResolveAndCheck,
-      new EmitFirrtl("pre-sram-models.fir"),
-      new fame.LabelSRAMModels,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-sram-models.fir"),
+      new EmitFirrtl("post-wrap-top.fir")) ++
+    ramModelTransforms ++
+    Seq(
       new fame.ExtractModel,
       new ResolveAndCheck,
       new EmitFirrtl("post-extract-model.fir"),

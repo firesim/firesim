@@ -30,6 +30,9 @@ class LabelSRAMModels extends Transform {
     val annotatedMems = state.annotations.collect({
       case FirrtlMemModelAnnotation(rt) => rt
     }).toSet
+
+    println(s"[MIDAS 2.0] RAM Models To Extract: ${annotatedMems.size}")
+
     val transformedModules = circ.modules.map({
       case m: Module =>
         val mt = ModuleTarget(circ.main, m.name)
