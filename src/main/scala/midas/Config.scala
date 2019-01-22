@@ -30,6 +30,9 @@ case object KeepSamplesInMem extends Field[Boolean]
 case object MemModelKey extends Field[Option[Parameters => MemModel]]
 case object EndpointKey extends Field[EndpointMap]
 
+// MIDAS 2.0 Switches
+case object GenerateMultiCycleRamModels extends Field[Boolean](false)
+
 class SimConfig extends Config((site, here, up) => {
   case TraceMaxLen      => 1024
   case SRAMChainNum     => 1
