@@ -1,3 +1,5 @@
+.. _running_simulations:
+
 Running FireSim Simulations
 ================================
 
