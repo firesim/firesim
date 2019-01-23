@@ -45,9 +45,10 @@ class WithUARTWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
 })
 
-class WithSimpleNICWidget extends Config((site, here, up) => {
+class WithSimpleNICWidget(netIfWidthBits: Int = 64) extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
+  case NICWidgetKey => SimpleNICWidgetConfig(TOKEN_WIDTH_BITS = netIfWidthBits)
 })
 
 class WithBlockDevWidget extends Config((site, here, up) => {
@@ -185,7 +186,7 @@ class FireSimConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel ++
   new WithTracerVWidget ++
@@ -207,7 +208,7 @@ class FireSimClockDivConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new WithDefaultMemModel(clockDivision = 2) ++
   new BasePlatformConfig)
@@ -216,7 +217,7 @@ class FireSimDDR3Config extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
   new BasePlatformConfig)
@@ -225,7 +226,7 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
   new BasePlatformConfig)
@@ -234,7 +235,7 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
   new BasePlatformConfig)
@@ -243,7 +244,7 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new BasePlatformConfig)
@@ -264,7 +265,7 @@ class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
-  new WithSimpleNICWidget ++
+  new WithSimpleNICWidget(netIfWidthBits = 256) ++
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)

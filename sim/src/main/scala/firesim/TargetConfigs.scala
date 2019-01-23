@@ -26,8 +26,9 @@ class WithUARTKey extends Config((site, here, up) => {
      nRxEntries = 256))
 })
 
-class WithNICKey extends Config((site, here, up) => {
+class WithNICKey(netIfWidthBits: Int = 64) extends Config((site, here, up) => {
   case NICKey => NICConfig(
+    NET_IF_WIDTH_BITS = netIfWidthBits,
     inBufPackets = 64,
     ctrlQueueDepth = 64)
 })
@@ -84,7 +85,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey ++
+  new WithNICKey(netIfWidthBits = 256) ++
   new WithBlockDevice ++
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
@@ -141,7 +142,7 @@ class FireSimBoomConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey ++
+  new WithNICKey(netIfWidthBits = 256) ++
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled

@@ -5,9 +5,6 @@
 #include "endpoints/endpoint.h"
 #include <vector>
 
-// TODO this should not be hardcoded here.
-#define MAX_BANDWIDTH 200
-
 #ifdef SIMPLENICWIDGET_struct_guard
 class simplenic_t: public endpoint_t
 {

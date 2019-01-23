@@ -13,14 +13,22 @@ import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
+import icenet.IceNetConsts._
+import icenet.IceNetConfig
 import junctions.{NastiIO, NastiKey}
 
 object TokenQueueConsts {
-  val TOKENS_PER_BIG_TOKEN = 7
-  val BIG_TOKEN_WIDTH = (TOKENS_PER_BIG_TOKEN + 1) * 64
+  val BIGTOKEN_WIDTH_BITS = 512
   val TOKEN_QUEUE_DEPTH = 6144
 }
 import TokenQueueConsts._
+
+case class SimpleNICWidgetConfig(TOKEN_WIDTH_BITS: Int = 64){
+  val TOKENS_PER_BIGTOKEN = (BIGTOKEN_WIDTH_BITS / (TOKEN_WIDTH_BITS + 3))
+  val BIGTOKEN_PADDING = (BIGTOKEN_WIDTH_BITS - (TOKENS_PER_BIGTOKEN * (TOKEN_WIDTH_BITS + 3)))
+}
+
+case object NICWidgetKey extends Field[SimpleNICWidgetConfig]
 
 case object LoopbackNIC extends Field[Boolean]
 
@@ -44,22 +52,28 @@ class ReadyValidLast extends Bundle {
   val valid = Bool()
 }
 
-class BIGToken extends Bundle {
-  val data = Vec(7, UInt(64.W))
-  val rvls = Vec(7, new ReadyValidLast())
-  val pad = UInt(43.W)
+class BIGToken(implicit p: Parameters) extends Bundle {
+  val data = Vec(p(NICWidgetKey).TOKENS_PER_BIGTOKEN, UInt(p(NICWidgetKey).TOKEN_WIDTH_BITS.W))
+  val rvls = Vec(p(NICWidgetKey).TOKENS_PER_BIGTOKEN, new ReadyValidLast())
+  val pad = UInt(p(NICWidgetKey).BIGTOKEN_PADDING.W)
+
+  override def cloneType: this.type = (new BIGToken).asInstanceOf[this.type]
 }
 
-class HostToNICToken extends Bundle {
-  val data_in = new StreamChannel(64)
+class HostToNICToken(implicit p: Parameters) extends Bundle {
+  val data_in = new StreamChannel(p(NICWidgetKey).TOKEN_WIDTH_BITS)
   val data_in_valid = Bool()
   val data_out_ready = Bool()
+
+  override def cloneType: this.type = (new HostToNICToken).asInstanceOf[this.type]
 }
 
-class NICToHostToken extends Bundle {
-  val data_out = new StreamChannel(64)
+class NICToHostToken(implicit p: Parameters) extends Bundle {
+  val data_out = new StreamChannel(p(NICWidgetKey).TOKEN_WIDTH_BITS)
   val data_out_valid = Bool()
   val data_in_ready = Bool()
+
+  override def cloneType: this.type = (new NICToHostToken).asInstanceOf[this.type]
 }
 
 class SimSimpleNIC extends Endpoint {
@@ -73,13 +87,20 @@ class SimSimpleNIC extends Endpoint {
 }
 
 class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new NICIOvonly))
+  val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = p(NICWidgetKey).TOKEN_WIDTH_BITS)
+  val hPort = Flipped(HostPort(new NICIOvonly(netConfig)))
 }
 
-class BigTokenToNICTokenAdapter extends Module {
+/**
+ * Take a BigToken, split it into individual tokens and return it one by one
+ */
+class BigTokenToNICTokenAdapter(implicit p: Parameters) extends Module {
+
+  val config = p(NICWidgetKey)
+
   val io = IO(new Bundle {
     val htnt = DecoupledIO(new HostToNICToken)
-    val pcie_in = Flipped(DecoupledIO(UInt(512.W)))
+    val pcie_in = Flipped(DecoupledIO(UInt(BIGTOKEN_WIDTH_BITS.W)))
   })
 
   val pcieBundled = (new BIGToken).fromBits(io.pcie_in.bits)
@@ -88,48 +109,54 @@ class BigTokenToNICTokenAdapter extends Module {
 
   val loopIter = RegInit(0.U(32.W))
   when (io.htnt.fire()) {
-    loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
+    loopIter := Mux(loopIter === (config.TOKENS_PER_BIGTOKEN - 1).U, 0.U, loopIter + 1.U)
   }
 
   io.htnt.bits.data_in.data := pcieBundled.data(loopIter)
-  io.htnt.bits.data_in.keep := 0xFF.U
+  io.htnt.bits.data_in.keep := ((BigInt(1) << (config.TOKEN_WIDTH_BITS/8)) - 1).U
   io.htnt.bits.data_in.last := pcieBundled.rvls(loopIter).data_last
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
   io.htnt.valid := xactHelper.fire(io.htnt.ready)
-  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === 6.U)
+  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === (config.TOKENS_PER_BIGTOKEN - 1).U)
 }
 
-class NICTokenToBigTokenAdapter extends Module {
+/**
+ * Take multiple NICTokens and convert them into a single BigToken to send over PCIE
+ */
+class NICTokenToBigTokenAdapter(implicit p: Parameters) extends Module {
+
+  val config = p(NICWidgetKey)
+
   val io = IO(new Bundle {
     val ntht = Flipped(DecoupledIO(new NICToHostToken))
-    val pcie_out = DecoupledIO(UInt(512.W))
+    val pcie_out = DecoupledIO(UInt(BIGTOKEN_WIDTH_BITS.W))
   })
 
-  // step one, buffer 7 elems into registers. note that the 7th element is here 
+  // step one, buffer config.TOKENS_PER_BIGTOKEN elems into registers. note that the last element is here 
   // just for convenience. in reality, it is not used since we're bypassing to
   // remove a cycle of latency
-  val NTHT_BUF = Reg(Vec(7, new NICToHostToken))
+  val NTHT_BUF = Reg(Vec(config.TOKENS_PER_BIGTOKEN, new NICToHostToken))
   val specialCounter = RegInit(0.U(32.W))
 
   when (io.ntht.valid) {
     NTHT_BUF(specialCounter) := io.ntht.bits
   }
 
-  io.ntht.ready := (specialCounter === 6.U && io.pcie_out.ready) || (specialCounter =/= 6.U)
-  io.pcie_out.valid := specialCounter === 6.U && io.ntht.valid
-  when ((specialCounter =/= 6.U) && io.ntht.valid) {
+  io.ntht.ready := (specialCounter === (config.TOKENS_PER_BIGTOKEN - 1).U && io.pcie_out.ready) || (specialCounter =/= (config.TOKENS_PER_BIGTOKEN - 1).U)
+  io.pcie_out.valid := specialCounter === (config.TOKENS_PER_BIGTOKEN - 1).U && io.ntht.valid
+  when ((specialCounter =/= (config.TOKENS_PER_BIGTOKEN - 1).U) && io.ntht.valid) {
     specialCounter := specialCounter + 1.U
-  } .elsewhen ((specialCounter === 6.U) && io.ntht.valid && io.pcie_out.ready) {
+  } .elsewhen ((specialCounter === (config.TOKENS_PER_BIGTOKEN - 1).U) && io.ntht.valid && io.pcie_out.ready) {
     specialCounter := 0.U
   } .otherwise {
     specialCounter := specialCounter
   }
-  // step two, connect 6 elems + latest one to output (7 items)
+  // step two, connect (config.TOKENS_PER_BIGTOKEN - 1) elems + latest one to output (config.TOKENS_PER_BIGTOKEN items)
   // TODO: attach pcie_out to data
 
   // debug check to help check we're not losing tokens somewhere
-  val token_trace_counter = RegInit(0.U(43.W))
+  val token_trace_counter = RegInit(0.U(config.BIGTOKEN_PADDING.W))
   when (io.pcie_out.fire()) {
     token_trace_counter := token_trace_counter + 1.U
   } .otherwise {
@@ -137,16 +164,16 @@ class NICTokenToBigTokenAdapter extends Module {
   }
 
   val out = Wire(new BIGToken)
-  for (i <- 0 until 6) {
+  for (i <- 0 until (config.TOKENS_PER_BIGTOKEN - 1)) {
     out.data(i) := NTHT_BUF(i).data_out.data
     out.rvls(i).data_last := NTHT_BUF(i).data_out.last
     out.rvls(i).ready := NTHT_BUF(i).data_in_ready
     out.rvls(i).valid := NTHT_BUF(i).data_out_valid
   }
-  out.data(6) := io.ntht.bits.data_out.data
-  out.rvls(6).data_last := io.ntht.bits.data_out.last
-  out.rvls(6).ready := io.ntht.bits.data_in_ready
-  out.rvls(6).valid := io.ntht.bits.data_out_valid
+  out.data((config.TOKENS_PER_BIGTOKEN - 1))           := io.ntht.bits.data_out.data
+  out.rvls((config.TOKENS_PER_BIGTOKEN - 1)).data_last := io.ntht.bits.data_out.last
+  out.rvls((config.TOKENS_PER_BIGTOKEN - 1)).ready     := io.ntht.bits.data_in_ready
+  out.rvls((config.TOKENS_PER_BIGTOKEN - 1)).valid     := io.ntht.bits.data_out_valid
   out.pad := token_trace_counter
 
   io.pcie_out.bits := out.asUInt
@@ -181,7 +208,7 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
   // Biancolin: Need to look into this
-  lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
+  lazy val dmaSize = BigInt((BIGTOKEN_WIDTH_BITS / 8) * TOKEN_QUEUE_DEPTH)
 
   val htnt_queue = Module(new Queue(new HostToNICToken, 10))
   val ntht_queue = Module(new Queue(new NICToHostToken, 10))
@@ -234,8 +261,9 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     val macAddrRegUpper = Reg(UInt(32.W))
     val macAddrRegLower = Reg(UInt(32.W))
     val rlimitSettings = Reg(UInt(32.W))
+    val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = p(NICWidgetKey).TOKEN_WIDTH_BITS)
 
-    target.rlimit := (new RateLimiterSettings).fromBits(rlimitSettings)
+    target.rlimit := (new RateLimiterSettings(netConfig)).fromBits(rlimitSettings)
     target.macAddr := Cat(macAddrRegUpper, macAddrRegLower)
 
     attach(macAddrRegUpper, "macaddr_upper", WriteOnly)

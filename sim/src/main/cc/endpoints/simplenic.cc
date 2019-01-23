@@ -12,14 +12,23 @@
 
 #include <sys/mman.h>
 
+// PARAMETERS FOR NETWORK SIZE
+// Note: These must all change at once AND change with the
+//       flit size in the RTL and switch code
+#define MAX_BANDWIDTH        (800) // This is FLIT_SIZE*PROC_SPEED rounded to the nearest 100
+#define MAX_BANDWIDTH_BITS    (10) // This is the amount of bits to hold the MAX_BANDWIDTH value
+#define FLIT_WIDTH_BITS      (256) // Size of the network interface
+
 // DO NOT MODIFY PARAMS BELOW THIS LINE
-#define TOKENS_PER_BIGTOKEN 7
-
-#define SIMLATENCY_BT (this->LINKLATENCY/TOKENS_PER_BIGTOKEN)
-
-#define BUFWIDTH (512/8)
-#define BUFBYTES (SIMLATENCY_BT*BUFWIDTH)
-#define EXTRABYTES 1
+#define PCIE_WIDTH_BITS                    (512) // Size of the PCIE interface
+#define PROC_SPEED_GHZ                     (3.2) // Assumed processor speed
+#define VAL_BITS                             (3) // Extra bits associated with a flit
+#define EXTRA_BYTES                          (1)
+#define FLIT_WIDTH_BYTES     (FLIT_WIDTH_BITS/8) // Size of the network interface
+#define BUF_WIDTH_BITS                      (64) // Size of the AXI4 interface
+#define TOKENS_PER_BIGTOKEN  (PCIE_WIDTH_BITS / (FLIT_WIDTH_BITS + VAL_BITS)) // Amount of smaller tokens per BigToken
+#define SIMLATENCY_BT        ((this->LINKLATENCY) / TOKENS_PER_BIGTOKEN)
+#define BUF_BYTES            (SIMLATENCY_BT * BUF_WIDTH_BITS)
 
 static void simplify_frac(int n, int d, int *nn, int *dd)
 {
@@ -120,6 +129,11 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     printf("using link latency: %d cycles\n", this->LINKLATENCY);
     printf("using netbw: %d\n", netbw);
     printf("using netburst: %d\n", netburst);
+    printf("using SIMLATENCY_BT: %d\n", SIMLATENCY_BT);
+    printf("using BUF_BYTES: %d\n", BUF_BYTES);
+    printf("using rlimit_inc: %d\n", rlimit_inc);
+    printf("using rlimit_period: %d\n", rlimit_period);
+    printf("using MAX_BANDWIDTH: %d\n", MAX_BANDWIDTH);
 
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");
@@ -140,20 +154,20 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
 
             printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-            pcis_read_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+            ftruncate(shmemfd, BUF_BYTES+EXTRA_BYTES);
+            pcis_read_bufs[j] = (char*)mmap(NULL, BUF_BYTES+EXTRA_BYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
 
             printf("Using non-slot-id associated shmemportname:\n");
             sprintf(name, "/port_stn%s_%d", shmemportname, j);
 
             printf("opening/creating shmem region\n%s\n", name);
             shmemfd = shm_open(name, O_RDWR | O_CREAT , S_IRWXU);
-            ftruncate(shmemfd, BUFBYTES+EXTRABYTES);
-            pcis_write_bufs[j] = (char*)mmap(NULL, BUFBYTES+EXTRABYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
+            ftruncate(shmemfd, BUF_BYTES+EXTRA_BYTES);
+            pcis_write_bufs[j] = (char*)mmap(NULL, BUF_BYTES+EXTRA_BYTES, PROT_READ | PROT_WRITE, MAP_SHARED, shmemfd, 0);
         }
     } else {
         for (int j = 0; j < 2; j++) {
-            pcis_read_bufs[j] = (char *) malloc(BUFBYTES + EXTRABYTES);
+            pcis_read_bufs[j] = (char *) malloc(BUF_BYTES + EXTRA_BYTES);
             pcis_write_bufs[j] = pcis_read_bufs[j];
         }
     }
@@ -167,8 +181,8 @@ simplenic_t::~simplenic_t() {
             free(pcis_read_bufs[j]);
     } else {
         for (int j = 0; j < 2; j++) {
-            munmap(pcis_read_bufs[j], BUFBYTES+EXTRABYTES);
-            munmap(pcis_write_bufs[j], BUFBYTES+EXTRABYTES);
+            munmap(pcis_read_bufs[j], BUF_BYTES+EXTRA_BYTES);
+            munmap(pcis_write_bufs[j], BUF_BYTES+EXTRA_BYTES);
         }
     }
     free(this->mmio_addrs);
@@ -180,11 +194,15 @@ void simplenic_t::init() {
     write(mmio_addrs->macaddr_upper, (mac_lendian >> 32) & 0xFFFF);
     write(mmio_addrs->macaddr_lower, mac_lendian & 0xFFFFFFFF);
     write(mmio_addrs->rlimit_settings,
-            (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
+            (rlimit_inc << (2*MAX_BANDWIDTH_BITS)) | ((rlimit_period - 1) << MAX_BANDWIDTH_BITS) | rlimit_size);
 
+    // check the initial state of the machine
     uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
     uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
-    if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
+
+    // note: output_token_available check is to cover case where if there is 1 small token for bigtoken
+    // then the initial token (given to the token queues on startup) propagates to the outgoing_count
+    if ((input_token_capacity != SIMLATENCY_BT) && (output_tokens_available != (TOKENS_PER_BIGTOKEN == 1))) {
         printf("FAIL. INCORRECT TOKENS ON BOOT. produced tokens available %d, input slots available %d\n", output_tokens_available, input_token_capacity);
         exit(1);
     }
@@ -194,20 +212,25 @@ void simplenic_t::init() {
     token_bytes_produced = push(
             dma_addr,
             pcis_write_bufs[1],
-            BUFWIDTH*input_token_capacity);
-    if (token_bytes_produced != input_token_capacity*BUFWIDTH) {
+            BUF_WIDTH_BITS*input_token_capacity);
+    if (token_bytes_produced != input_token_capacity*BUF_WIDTH_BITS) {
         printf("ERR MISMATCH!\n");
         exit(1);
     }
     return;
 }
 
-//#define TOKENVERIFY
 
 void simplenic_t::tick() {
     struct timespec tstart, tend;
 
     //#define DEBUG_NIC_PRINT
+    #define TOKENVERIFY
+    #ifdef TOKENVERIFY
+        #define niclog_printArray(in, amtpass) int amt = amtpass; \
+        while(--amt > 0){ niclog_printf("%02x.", *((unsigned char*)(in + amt))); }; \
+        niclog_printf("%02x", *((unsigned char*)(in)));
+    #endif
 
     while (true) { // break when we don't have 5k tokens
         uint32_t tokens_this_round = 0;
@@ -237,27 +260,33 @@ void simplenic_t::tick() {
         token_bytes_obtained_from_fpga = pull(
                 dma_addr,
                 pcis_read_bufs[currentround],
-                BUFWIDTH * tokens_this_round);
+                BUF_WIDTH_BITS * tokens_this_round);
 #ifdef DEBUG_NIC_PRINT
         niclog_printf("send iter %ld\n", iter);
 #endif
 
-        pcis_read_bufs[currentround][BUFBYTES] = 1;
+        pcis_read_bufs[currentround][BUF_BYTES] = 1;
 
 #ifdef TOKENVERIFY
         // the widget is designed to tag tokens with a 43 bit number,
         // incrementing for each sent token. verify that we are not losing
         // tokens over PCIS
         for (int i = 0; i < tokens_this_round; i++) {
-            uint64_t TOKENLRV_AND_COUNT = *(((uint64_t*)pcis_read_bufs[currentround])+i*8);
+
+            char* TOKENLRV_AND_COUNT_PTR = pcis_read_bufs[currentround] + i*(PCIE_WIDTH_BITS/8);
             uint8_t LAST;
-            for (int token_in_bigtoken = 0; token_in_bigtoken < 7; token_in_bigtoken++) {
-                if (TOKENLRV_AND_COUNT & (1L << (43+token_in_bigtoken*3))) {
-                    LAST = (TOKENLRV_AND_COUNT >> (45 + token_in_bigtoken*3)) & 0x1;
-                    niclog_printf("sending to other node, valid data chunk: "
-                                "%016lx, last %x, sendcycle: %016ld\n",
-                                *((((uint64_t*)pcis_read_bufs[currentround])+i*8)+1+token_in_bigtoken),
-                                LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
+            for (int token_in_bigtoken = 0; token_in_bigtoken < TOKENS_PER_BIGTOKEN; token_in_bigtoken++) {
+
+                uint64_t LRV = *((uint64_t*)(TOKENLRV_AND_COUNT_PTR + FLIT_WIDTH_BYTES - 8)) >> (64 - TOKENS_PER_BIGTOKEN*3);
+                if ( LRV & 0x1 ){
+                    LAST = (LRV >> 2) & 0x1;
+
+                    niclog_printf("sending to other node, valid data chunk: ");
+                    niclog_printArray( ( pcis_read_bufs[currentround] + i*(PCIE_WIDTH_BITS/8) ) + (1 + token_in_bigtoken)*(FLIT_WIDTH_BYTES),
+                                       FLIT_WIDTH_BYTES);
+                    niclog_printf(", last %x, sendcycle: %016ld\n",
+                                  LAST,
+                                  timeelapsed_cycles + i*TOKENS_PER_BIGTOKEN + token_in_bigtoken);
                 }
             }
 
@@ -270,8 +299,8 @@ void simplenic_t::tick() {
             next_token_from_fpga++;
         }
 #endif
-        if (token_bytes_obtained_from_fpga != tokens_this_round * BUFWIDTH) {
-            printf("ERR MISMATCH! on reading tokens out. actually read %d bytes, wanted %d bytes.\n", token_bytes_obtained_from_fpga, BUFWIDTH * tokens_this_round);
+        if (token_bytes_obtained_from_fpga != tokens_this_round * BUF_WIDTH_BITS) {
+            printf("ERR MISMATCH! on reading tokens out. actually read %d bytes, wanted %d bytes.\n", token_bytes_obtained_from_fpga, BUF_WIDTH_BITS * tokens_this_round);
             printf("errno: %s\n", strerror(errno));
             exit(1);
         }
@@ -285,7 +314,7 @@ void simplenic_t::tick() {
 #endif
 
         if (!loopback) {
-            volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUFBYTES);
+            volatile uint8_t * polladdr = (uint8_t*)(pcis_write_bufs[currentround] + BUF_BYTES);
             while (*polladdr == 0) { ; }
         }
 #ifdef DEBUG_NIC_PRINT
@@ -296,15 +325,21 @@ void simplenic_t::tick() {
         // this does not do tokenverify - it's just printing tokens
         // there should not be tokenverify on this interface
         for (int i = 0; i < tokens_this_round; i++) {
-            uint64_t TOKENLRV_AND_COUNT = *(((uint64_t*)pcis_write_bufs[currentround])+i*8);
+
+            char* TOKENLRV_AND_COUNT_PTR = pcis_read_bufs[currentround] + i*(PCIE_WIDTH_BITS/8);
             uint8_t LAST;
-            for (int token_in_bigtoken = 0; token_in_bigtoken < 7; token_in_bigtoken++) {
-                if (TOKENLRV_AND_COUNT & (1L << (43+token_in_bigtoken*3))) {
-                    LAST = (TOKENLRV_AND_COUNT >> (45 + token_in_bigtoken*3)) & 0x1;
-                    niclog_printf("from other node, valid data chunk: %016lx, "
-                                "last %x, recvcycle: %016ld\n",
-                                *((((uint64_t*)pcis_write_bufs[currentround])+i*8)+1+token_in_bigtoken),
-                                LAST, timeelapsed_cycles + i*7 + token_in_bigtoken);
+            for (int token_in_bigtoken = 0; token_in_bigtoken < TOKENS_PER_BIGTOKEN; token_in_bigtoken++) {
+
+                uint64_t LRV = *((uint64_t*)(TOKENLRV_AND_COUNT_PTR + FLIT_WIDTH_BYTES - 8)) >> (64 - TOKENS_PER_BIGTOKEN*3);
+                if ( LRV & 0x1 ){
+                    LAST = (LRV >> 2) & 0x1;
+
+                    niclog_printf("from other node, valid data chunk: ");
+                    niclog_printArray( ( pcis_write_bufs[currentround] + i*(PCIE_WIDTH_BITS/8) ) + (1 + token_in_bigtoken)*(FLIT_WIDTH_BYTES),
+                                       FLIT_WIDTH_BYTES);
+                    niclog_printf(", last %x, recvcycle: %016ld\n",
+                                  LAST,
+                                  timeelapsed_cycles + i*TOKENS_PER_BIGTOKEN + token_in_bigtoken);
                 }
             }
         }
@@ -313,10 +348,10 @@ void simplenic_t::tick() {
         token_bytes_sent_to_fpga = push(
                 dma_addr,
                 pcis_write_bufs[currentround],
-                BUFWIDTH * tokens_this_round);
-        pcis_write_bufs[currentround][BUFBYTES] = 0;
-        if (token_bytes_sent_to_fpga != tokens_this_round * BUFWIDTH) {
-            printf("ERR MISMATCH! on writing tokens in. actually wrote in %d bytes, wanted %d bytes.\n", token_bytes_sent_to_fpga, BUFWIDTH * tokens_this_round);
+                BUF_WIDTH_BITS * tokens_this_round);
+        pcis_write_bufs[currentround][BUF_BYTES] = 0;
+        if (token_bytes_sent_to_fpga != tokens_this_round * BUF_WIDTH_BITS) {
+            printf("ERR MISMATCH! on writing tokens in. actually wrote in %d bytes, wanted %d bytes.\n", token_bytes_sent_to_fpga, BUF_WIDTH_BITS * tokens_this_round);
             printf("errno: %s\n", strerror(errno));
             exit(1);
         }
