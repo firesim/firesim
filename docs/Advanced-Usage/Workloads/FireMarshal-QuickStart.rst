@@ -1,5 +1,7 @@
 Quick Start
 --------------------------------------
+All workload-generation related commands and code are in ``firesim/sw/firesim-software``.
+
 FireMarshal comes with a few basic workloads that you can build right out of
 the box (in ``workloads/``). In this example, we will build and test the
 buildroot-based linux distribution (called *br-base*). We begin by building the
@@ -34,6 +36,8 @@ It is typically not a good idea to modify the \*-base workloads directly since
 many other workloads might inherit those changes. To make sure that we've
 cleaned out any changes, let's clean and rebuild the workload:
 
+::
+
   ./marshal clean workloads/br-base.json
   ./marshal build workloads/br-base.json
 
@@ -49,6 +53,10 @@ must first install the workload:
 This command creates a firesim workload file at
 ``firesim/deploy/workloads/br-base.json``. You can now run this workload using
 the standard FireSim commands (e.g. :ref:`single-node-sim`, just change the
-workloadname option to "br-base.json" from "linux-uniform.json").
+``workloadname`` option to "br-base.json" from "linux-uniform.json"). 
 
-
+.. attention:: While the FireMarshal ``install`` command is the recommended way to create
+  firesim configurations, you can still hand-create firesim workloads if needed.
+  For example, the linux-uniform workload described in :ref:`single-node-sim` is
+  a manually created workload that uses the br-base-bin and br-base.img files
+  directly. 

@@ -10,12 +10,12 @@ all nodes in the system. Workloads are described by a json file and a
 corresponding workload directory and can inherit their definitions from
 existing workloads. Typically, workload configurations are kept in
 ``workloads`` although you can use any directory you like. We provide a few
-basic workloads to start with including a buildroot or Fedora-based linux
+basic workloads to start with including buildroot or Fedora-based linux
 distributions and bare-metal.
 
 Once you define a workload, the ``marshal`` command will produce a
 corresponding boot-binary and rootfs for each job in the workload. This binary
-and rootfs can then be launched on qemu or spike (for function simulation), or
+and rootfs can then be launched on qemu or spike (for functional simulation), or
 installed to firesim for running on real RTL.
 
 .. toctree::
@@ -27,5 +27,4 @@ installed to firesim for running on real RTL.
    FireMarshal-Config
 
    SPEC-2017
-   Booting-Fedora
    ISCA-2018-Experiments
