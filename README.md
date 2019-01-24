@@ -1,8 +1,12 @@
-firesim-software
+Fire Marshal
 ==================================
 
-This builds base images for several linux-based distros that work with qemu,
+This tool builds base images for several linux-based distros that work with qemu,
 spike, and firesim. 
+
+This is just a quick primer. To see full documentation, please see the official
+firesim documentation:
+https://docs.fires.im/en/latest/Advanced-Usage/Workloads/index.html
 
 # How to use:
 All builds are controlled through json files. For example, br-disk.json will

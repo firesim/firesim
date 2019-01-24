@@ -15,7 +15,7 @@ linux_dir = os.path.join(root_dir, "riscv-linux")
 log_dir = os.path.join(root_dir, "logs")
 res_dir = os.path.join(root_dir, "runOutput")
 mnt = os.path.join(root_dir, "disk-mount")
-commandScript = os.path.join(root_dir, "_command.sh")
+commandScript = os.path.join(wlutil_dir, "_command.sh")
 jlevel = "-j" + str(os.cpu_count())
 runName = ""
 

@@ -1,8 +1,8 @@
 import os
 import glob
-import br.br as br
-import fedora.fedora as fed
-import baremetal.bare as bare
+import wlutil.br.br as br
+import wlutil.fedora.fedora as fed
+import wlutil.baremetal.bare as bare
 import collections
 import json
 import pprint
