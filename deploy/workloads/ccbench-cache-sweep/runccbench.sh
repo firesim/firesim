@@ -1,6 +1,6 @@
 
 mkdir /output
-chmod +x /ccbench-cache-sweep/caches
+chmod +x /ccbench-cache-sweep/ccbench/caches/caches
 
 /ccbench-cache-sweep/ccbench/caches/caches 16 3000 1 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 32 3000 1 >> /output/RESULTSFILE
@@ -19,6 +19,12 @@ chmod +x /ccbench-cache-sweep/caches
 /ccbench-cache-sweep/ccbench/caches/caches 262144 3000 1 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 524288 3000 1 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 1048576 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 2097152 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 4194304 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 8388608 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 16777216 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 33554432 3000 1 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 67108864 3000 1 >> /output/RESULTSFILE
 
 /ccbench-cache-sweep/ccbench/caches/caches 16 3000 16 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 32 3000 16 >> /output/RESULTSFILE
@@ -37,6 +43,12 @@ chmod +x /ccbench-cache-sweep/caches
 /ccbench-cache-sweep/ccbench/caches/caches 262144 3000 16 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 524288 3000 16 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 1048576 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 2097152 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 4194304 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 8388608 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 16777216 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 33554432 3000 16 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 67108864 3000 16 >> /output/RESULTSFILE
 
 /ccbench-cache-sweep/ccbench/caches/caches 16 3000 0 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 32 3000 0 >> /output/RESULTSFILE
@@ -55,3 +67,10 @@ chmod +x /ccbench-cache-sweep/caches
 /ccbench-cache-sweep/ccbench/caches/caches 262144 3000 0 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 524288 3000 0 >> /output/RESULTSFILE
 /ccbench-cache-sweep/ccbench/caches/caches 1048576 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 2097152 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 4194304 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 8388608 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 16777216 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 33554432 3000 0 >> /output/RESULTSFILE
+/ccbench-cache-sweep/ccbench/caches/caches 67108864 3000 0 >> /output/RESULTSFILE
+

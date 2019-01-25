@@ -7,6 +7,7 @@ import pandas as pd
 #import re
 #import sys
 #from collections import OrderedDict
+import matplotlib.ticker as mticker
 
 f = open('/home/centos/firesim/deploy/results-workload/2019-01-24--20-34-43-ccbench-cache-sweep/ccbench-all/output/RESULTSFILE', 'r')
 q = f.readlines()
@@ -37,8 +38,8 @@ def data_from_full_dict(array_of_dict):
     times = []
     sizes = []
     for d in array_of_dict:
-        time = eval(d['Time'])
-        appsize = eval(d['AppSize'])
+        time = eval(d['Time'])[0]
+        appsize = eval(d['AppSize'])[0]
         times.append(time)
         sizes.append(appsize)
     return {'size': sizes, 'time': times}
@@ -68,7 +69,15 @@ series.append(ser)
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 ax.set_xlabel(r'Array Dimension', size='12')
 ax.set_ylabel(r'Execution Time (ns)', size='11')
-ax.set_xscale('log', basex=2)
+#ax.set_xscale('log', basex=2)
+print(cacheline_stride_bmark_data['size'])
+#plt.ticklabel_format(useOffset=False)
+ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+ax.xaxis.get_major_formatter().set_scientific(False)
+ax.xaxis.get_major_formatter().set_useOffset(False)
+plt.minorticks_off()
+
+ax.set_xticks(cacheline_stride_bmark_data['size'])
 ax.grid(linestyle='-', linewidth=0.3)
 plt.xticks(fontsize=8, rotation=90)
 fig = plt.gcf()
