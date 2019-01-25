@@ -41,14 +41,14 @@ sudo yum -y install bash-completion
 sudo yum -y install graphviz python-devel
 
 # these need to match what's in deploy/requirements.txt
-sudo pip install fabric==1.14.0
-sudo pip install boto3==1.6.2
-sudo pip install colorama==0.3.7
-sudo pip install argcomplete==1.9.3
-sudo pip install graphviz==0.8.3
+sudo pip2 install fabric==1.14.0
+sudo pip2 install boto3==1.6.2
+sudo pip2 install colorama==0.3.7
+sudo pip2 install argcomplete==1.9.3
+sudo pip2 install graphviz==0.8.3
 # for some of our workload plotting scripts
-sudo pip install matplotlib==2.2.2
-sudo pip install pandas==0.22.0
+sudo pip2 install matplotlib==2.2.2
+sudo pip2 install pandas==0.22.0
 
 sudo activate-global-python-argcomplete
 
