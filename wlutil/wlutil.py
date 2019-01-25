@@ -7,6 +7,7 @@ import string
 import sys
 import collections
 import shutil
+from contextlib import contextmanager
 
 wlutil_dir = os.path.normpath(os.path.dirname(__file__))
 root_dir = os.getcwd()
@@ -106,15 +107,59 @@ def genRunScript(command):
 
     return commandScript
 
+# XXX This isn't working with the initramfs option. Go back to requiring sudo
+# for now, I'll revisit later.
+
+# Frustratingly, the same commands don't work/exist on various platforms so we
+# need to figure out what mounting options are available to us:
+# if shutil.which('guestmount') is not None:
+#     # This is the preferred method because it doesn't require sudo
+#     @contextmanager
+#     def mountImg(imgPath, mntPath):
+#         run(['guestmount', '-a', imgPath, '-m', '/dev/sda', mntPath])
+#         try:
+#             yield mntPath
+#         finally:
+#             run(['guestunmount', mntPath])
+#
+# elif shutil.whcih('fuse-ext2') is not None:
+#     # Roughly the same as guestmount
+#     @contextmanager
+#     def mountImg(imgPath, mntPath):
+#         run(['fuse-ext2', '-o', 'rw+', imgPath, mntPath])
+#         try:
+#             yield mntPath
+#         finally:
+#             run(['fusermount', '-u', mntPath])
+#
+# elif shutil.which('mount') is not None:
+# # if True:
+#     # Should be available everywhere, requires sudo
+#     @contextmanager
+#     def mountImg(imgPath, mntPath):
+#         run(['sudo', 'mount', '-o', 'loop', imgPath, mntPath])
+#         try:
+#             yield mntPath
+#         finally:
+#             run(['sudo', 'umount', mntPath])
+#
+# else:
+#     raise ImportError("No compatible 'mount' command found")
+
+@contextmanager
+def mountImg(imgPath, mntPath):
+    run(['sudo', 'mount', '-o', 'loop', imgPath, mntPath])
+    try:
+        yield mntPath
+    finally:
+        run(['sudo', 'umount', mntPath])
+
 def toCpio(config, src, dst):
     log = logging.getLogger()
 
-    run(['sudo', 'mount', '-o', 'loop', src, mnt])
-    try:
+    with mountImg(src, mnt):
         # Fedora needs a special init in order to boot from initramfs
         run("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
-    finally:
-        run(['sudo', 'umount', mnt])
 
     # fedora needs a special init to work
     if config['distro'] == 'fedora':
@@ -136,19 +181,12 @@ def copyImgFiles(img, files, direction):
     if not os.path.exists(mnt):
         run(['mkdir', mnt])
 
-    # The guestmount options (and rsync without chown) are to avoid dependence
-    # on sudo, but they require libguestfs-tools to be installed. There are
-    # other sudo dependencies in fedora.py though.
-    # run(['guestmount', '-a', img, '-m', '/dev/sda', mnt])
-    # run(['fuse-ext2', '-o', 'rw+', img, mnt])
-    run(['sudo', 'mount', '-o', 'loop', img, mnt])
-    try:
+    with mountImg(img, mnt):
         for f in files:
             # Overlays may not be owned by root, but the filesystem must be.
             # Rsync lets us chown while copying.
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
-            # run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             if direction == 'in':
                 run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             elif direction == 'out':
@@ -156,7 +194,3 @@ def copyImgFiles(img, files, direction):
                 run('sudo rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
-    finally:
-        # run(['guestunmount', mnt])
-        # run(['fusermount', '-u', mnt])
-        run(['sudo', 'umount', mnt])

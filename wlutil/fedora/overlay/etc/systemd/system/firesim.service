@@ -1,9 +1,0 @@
-[Unit]
-Requires=multi-user.target
-After=multi-user.target
-Before=firesim.target
-Wants=firesim.target
-
-[Service]
-ExecStart=/etc/firesim/firesim.sh runArg
-StandardOutput=journal+console
