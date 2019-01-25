@@ -27,6 +27,10 @@
 #include "Stack.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
+#elif defined DESIGNNAME_PrintfModule
+#include "PrintfModule.h"
+#elif defined DESIGNNAME_NarrowPrintfModule
+#include "NarrowPrintfModule.h"
 #endif
 
 class dut_emul_t:
