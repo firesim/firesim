@@ -78,9 +78,9 @@ random_array_time = list(random_ccbench_df['time'])
 
 
 fig, ax = plt.subplots()
-ser1, = plt.semilogx(random_array_dim, random_array_time, linestyle='--', marker='*', c='0.4', label='Random Stride')
+ser1, = plt.semilogx(random_array_dim, random_array_time, linestyle='--', marker='*', c='0.1', label='Random Stride')
 ser, = plt.semilogx(cacheline_array_dim, cacheline_array_time, linestyle='--', marker='^', c='0.7', label='Cacheline Stride')
-ser2, = plt.semilogx(unit_array_dim, unit_array_time, linestyle='--', marker='x', c='0.1', label='Unit Stride')
+ser2, = plt.semilogx(unit_array_dim, unit_array_time, linestyle='--', marker='x', c='0.4', label='Unit Stride')
 
 series.append(ser)
 series.append(ser1)
