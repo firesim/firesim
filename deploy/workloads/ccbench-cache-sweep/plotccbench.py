@@ -9,7 +9,9 @@ import pandas as pd
 #from collections import OrderedDict
 import matplotlib.ticker as mticker
 
-f = open('/home/centos/firesim/deploy/results-workload/2019-01-24--20-34-43-ccbench-cache-sweep/ccbench-all/output/RESULTSFILE', 'r')
+fname = '/home/centos/firesim/deploy/results-workload/2019-01-25--07-44-19-ccbench-cache-sweep/ccbench-all/output/RESULTSFILE'
+
+f = open(fname, 'r')
 q = f.readlines()
 f.close()
 #print(q)
@@ -39,7 +41,7 @@ def data_from_full_dict(array_of_dict):
     sizes = []
     for d in array_of_dict:
         time = eval(d['Time'])[0]
-        appsize = eval(d['AppSize'])[0]
+        appsize = eval(d['AppSize'])[0] * 4
         times.append(time)
         sizes.append(appsize)
     return {'size': sizes, 'time': times}
@@ -68,7 +70,7 @@ series.append(ser)
 #matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 ax.set_xlabel(r'Array Dimension', size='12')
-ax.set_ylabel(r'Execution Time (ns)', size='11')
+ax.set_ylabel(r'Execution Time (cycles)', size='11')
 #ax.set_xscale('log', basex=2)
 print(cacheline_stride_bmark_data['size'])
 #plt.ticklabel_format(useOffset=False)
