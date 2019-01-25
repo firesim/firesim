@@ -1,12 +1,7 @@
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
-#import numpy as np
-#import re
-#import sys
-#from collections import OrderedDict
 import matplotlib.ticker as mticker
 import sys
 
@@ -60,8 +55,6 @@ unit_ccbench_df = pd.DataFrame(data=unit_stride_bmark_data)
 random_ccbench_df = pd.DataFrame(data=random_bmark_data)
 
 
-#ccbench_df = pd.read_csv('ccbench.csv')
-#ccbench_df['size'] = ccbench_df['size'].astype(int)
 cacheline_ccbench_df = cacheline_ccbench_df.sort_values(by=['size'])
 unit_ccbench_df = unit_ccbench_df.sort_values(by=['size'])
 random_ccbench_df = random_ccbench_df.sort_values(by=['size'])
@@ -88,13 +81,10 @@ series.append(ser)
 series.append(ser1)
 series.append(ser2)
 
-#matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 ax.set_xlabel(r'Array Dimension', size='12')
 ax.set_ylabel(r'Execution Time (cycles)', size='11')
-#ax.set_xscale('log', basex=2)
 print(cacheline_stride_bmark_data['size'])
-#plt.ticklabel_format(useOffset=False)
 ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
 ax.xaxis.get_major_formatter().set_scientific(False)
 ax.xaxis.get_major_formatter().set_useOffset(False)
@@ -106,5 +96,3 @@ plt.xticks(fontsize=8, rotation=90)
 fig = plt.gcf()
 fig.tight_layout()
 fig.savefig(outputpath, format='pdf')
-
-
