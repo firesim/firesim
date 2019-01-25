@@ -25,20 +25,21 @@ import sifive.blocks.devices.uart.UARTPortIO
 import firrtl.annotations.Annotation
 
 trait FireSimGeneratorUtils extends HasTestSuites {
-  def elaborateAndCompileWithMidas(targetDir: String) {
-    val targetTransforms = Seq(
-      // firesim.passes.AsyncResetRegPass,
-      // firesim.passes.PlusArgReaderPass
-    )
+  val targetTransforms = Seq(
+    // firesim.passes.AsyncResetRegPass,
+    // firesim.passes.PlusArgReaderPass
+  )
 
-    lazy val hostTransforms = Seq(
-      new firesim.passes.ILATopWiringTransform(testDir)
-    )
+  lazy val hostTransforms = Seq(
+    new firesim.passes.ILATopWiringTransform(testDir)
+  )
 
-    lazy val testDir = new File(targetDir)
+  val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-PicoRV32Config-FireSimConfig/"
+  lazy val testDir = new File(targetDir)
 
-    def midasParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
+  def midasParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
 
+  def elaborateAndCompileWithMidas {
     val lines = Source.fromFile("src/main/scala/picorv32/synth.fir").getLines()
     val chirrtl = firrtl.Parser.parse(lines)
 
@@ -46,31 +47,30 @@ trait FireSimGeneratorUtils extends HasTestSuites {
     val annos = dut.annotations.map(_.toFirrtl)
     val portList = dut.components.find(_.name == "UARTWrapper").get.ports.flatMap(p => Some(p.id))
 
-    println(dut.components.find(_.name == "UARTWrapper").get.ports.find(_.id.instanceName == "uart").get)
-   
     midas.MidasCompiler(
       chirrtl, annos, portList, testDir, None, targetTransforms, hostTransforms
       )(midasParams)
     // Need replay
   }
 
-  def generateTestSuiteMakefrags(params: Config, testDir: String) {
-    addTestSuites(params)
-    // writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag, testDir) // Subsystem-specific test suites
+  def generateTestSuiteMakefrags {
+    addTestSuites(midasParams)
+    writeOutputFile("PicoRV32.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
-  // def writeOutputFile(fname: String, contents: String, testDir: String): File = {
-  //   val f = new File(testDir, fname)
-  //   val fw = new FileWriter(f)
-  //   fw.write(contents)
-  //   fw.close
-  //   f
-  // }
+  def writeOutputFile(fname: String, contents: String): File = {
+    val f = new File(testDir, fname)
+    val fw = new FileWriter(f)
+    fw.write(contents)
+    fw.close
+    f
+  }
 }
 
 object FireSimGenerator extends App with FireSimGeneratorUtils {
   require (args.size == 1, "Command line arg must be output directory!")
-  elaborateAndCompileWithMidas(args(0))
+  elaborateAndCompileWithMidas
+  generateTestSuiteMakefrags
 }
 
 class UARTWrapper extends MultiIOModule {
