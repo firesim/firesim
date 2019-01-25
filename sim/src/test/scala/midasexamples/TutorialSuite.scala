@@ -112,10 +112,10 @@ class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
 class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1,
-  simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
+  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule", midas.F1,
-  simulationArgs = Seq("+print-human-readable", "+printfile=synthprinttest.out")) {
+  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }

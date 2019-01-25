@@ -19,23 +19,21 @@ appropriately sized ILA instance.
 Annotating Signals
 ------------------------
 
-In order to annotate a signal, we must import ``midas.targetutils.FpgaDebugAnnotation``.
-We then simply add a relevant ``FpgaDebugAnnotation(<selected_signal>)`` with the
-desired signal as an argument.
-
-Example:
+In order to annotate a signal, we must import the
+``midas.targetutils.FpgaDebug`` annotator. FpgaDebug's apply method accepts a
+vararg of chisel3.Data. Invoke it as follows:
 
 ::
 
-    import midas.targetutils.FpgaDebugAnnotation
+    import midas.targetutils.FpgaDebug
 
     class SomeModuleIO(implicit p: Parameters) extends SomeIO()(p){
        val out1 = Output(Bool())
        val in1 = Input(Bool())
-       chisel3.experimental.annotate(FpgaDebugAnnotation(out1))
+       FpgaDebug(out1, in1)
     }
 
-These annotations can be used throughout FireSim, including in MIDAS and
+You can annotate signals throughout FireSim, including in MIDAS and
 Rocket-Chip Chisel sources, with the only exception being the Chisel3 sources
 themselves (eg. in Chisel3.util.Queue).
 
