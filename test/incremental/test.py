@@ -10,12 +10,12 @@ import re
 testSrc = pth.Path(__file__).parent
 testCfg = testSrc.parent / "incremental.json"
 
-# Should be the directory containing sw_manager
-managerPath = pth.Path(os.getcwd()) / "sw_manager.py"
+# Should be the directory containing marshal
+managerPath = pth.Path(os.getcwd()) / "marshal"
 if not managerPath.exists:
-    managerPath = pth.Path(os.getcwd()) / "../../sw_manager.py"
+    managerPath = pth.Path(os.getcwd()) / "../../marshal"
     if not managerPath.exists:
-        print("Can't find sw_manager.py, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
+        print("Can't find marshal, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
 
 # Reset the test, just in case it was left in a weird state
 sp.check_call(str(managerPath) + " clean " + str(testCfg), shell=True)

@@ -10,12 +10,12 @@ import re
 testSrc = pth.Path(__file__).parent
 testCfg = testSrc.parent / "clean.json"
 
-# Should be the directory containing sw_manager
-managerPath = pth.Path(os.getcwd()) / "sw_manager.py"
+# Should be the directory containing marshal
+managerPath = pth.Path(os.getcwd()) / "marshal"
 if not managerPath.exists:
-    managerPath = pth.Path(os.getcwd()) / "../../sw_manager.py"
+    managerPath = pth.Path(os.getcwd()) / "../../marshal"
     if not managerPath.exists:
-        print("Can't find sw_manager.py, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
+        print("Can't find marshal, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
         sys.exit(1)
 
 # Safety first kids: Always clean before you test

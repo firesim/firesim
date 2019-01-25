@@ -64,7 +64,7 @@ fi
 # Run the initramfs versions on spike, initramfs runs have many restrictions,
 # we only run a few tests here to test basic capabilities
 echo "Running initramfs capable tests on spike" | tee -a test.log
-IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|spike|smoke0)"
+IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|smoke0)"
 # ls test/$IS_INCLUDE.json
 # exit 0
 ./marshal -i clean test/$IS_INCLUDE.json | tee -a test.log
