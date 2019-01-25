@@ -227,7 +227,7 @@ void simplenic_t::tick() {
     struct timespec tstart, tend;
 
     //#define DEBUG_NIC_PRINT
-    #define TOKENVERIFY
+    //#define TOKENVERIFY
     #ifdef TOKENVERIFY
         #define niclog_printArray(in, amtpass) int amt = amtpass; \
         while(--amt > 0){ niclog_printf("%02x.", *((unsigned char*)(in + amt))); }; \

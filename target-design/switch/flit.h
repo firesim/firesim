@@ -44,7 +44,6 @@ void printArray(uint8_t* in, uint64_t amt){
 uint8_t* get_flit(uint8_t * recv_buf, int tokenid) {
     int base = tokenid / TOKENS_PER_BIGTOKEN;
     int offset = tokenid % TOKENS_PER_BIGTOKEN;
-    //printf("    gf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
     return (recv_buf + (base * BIGTOKEN_SIZE_BYTES) + (FLIT_SIZE_BYTES * (offset + 1)));
 }
 
@@ -58,7 +57,6 @@ uint8_t* get_flit(uint8_t * recv_buf, int tokenid) {
 void write_flit(uint8_t * send_buf, int tokenid, uint8_t * flit_buf) {
     int base = tokenid / TOKENS_PER_BIGTOKEN;
     int offset = tokenid % TOKENS_PER_BIGTOKEN;
-    //printf("    wf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
     memcpy( send_buf + (base * BIGTOKEN_SIZE_BYTES) + (FLIT_SIZE_BYTES * (offset + 1)), flit_buf, FLIT_SIZE_BYTES );
 }
 
@@ -74,31 +72,8 @@ void write_valid_flit(uint8_t * send_buf, int tokenid) {
 
     uint8_t* bigtoken_ptr = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + (offset * 3);
-    //printf("    NEW:\n");
-    //printf("    wvf: flit: (");
-    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    //printf(") offset(%d) bitoffset(%d)\n",
-    //        offset,
-    //        tokenbitoffset);
     
     *(bigtoken_ptr + (tokenbitoffset / 8)) |= (1 << (tokenbitoffset % 8));
-
-    //printf("        after: flit: (");
-    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    //printf(")\n");
-
-    //uint8_t* lrv = send_buf + (base * BIGTOKEN_SIZE_BYTES);
-    //int bitoffset = 43 + (offset * 3);
-    //printf("    ORIG:\n");
-    //printf("    wvf: flit: (");
-    //printArray(lrv, FLIT_SIZE_BYTES);
-    //printf(") offset(%d) bitoffset(%d)\n",
-    //        offset,
-    //        bitoffset);
-    //*(lrv + (bitoffset / 8)) |= (1 << (bitoffset % 8));
-    //printf("        after: flit: (");
-    //printArray(lrv, FLIT_SIZE_BYTES);
-    //printf(")\n");
 }
 
 /**
@@ -114,31 +89,8 @@ int write_last_flit(uint8_t * send_buf, int tokenid, bool is_last) {
     
     uint8_t* bigtoken_ptr = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + 2 + (offset * 3);
-    //printf("    NEW:\n");
-    //printf("    wlf: flit: (");
-    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    //printf(") offset(%d) bitoffset(%d)\n",
-    //        offset,
-    //        tokenbitoffset);
 
     *(bigtoken_ptr + (tokenbitoffset / 8)) |= (is_last << (tokenbitoffset % 8));
-
-    //printf("        after: flit: (");
-    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    //printf(")\n");
-
-    //uint8_t* lrv = send_buf + (base * BIGTOKEN_SIZE_BYTES);
-    //int bitoffset = 45 + (offset * 3);
-    //printf("    ORIG:\n");
-    //printf("    wlf: flit: (");
-    //printArray(lrv, FLIT_SIZE_BYTES);
-    //printf(") offset(%d) bitoffset(%d)\n",
-    //        offset,
-    //        bitoffset);
-    //*(lrv + (bitoffset / 8)) |= (is_last << (bitoffset % 8));
-    //printf("        after: flit: (");
-    //printArray(lrv, FLIT_SIZE_BYTES);
-    //printf(")\n");
 }
 
 /**
@@ -154,21 +106,8 @@ bool is_valid_flit(uint8_t * recv_buf, int tokenid) {
 
     uint8_t* bigtoken_ptr = recv_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + (offset * 3);
+
     return (*(bigtoken_ptr + (tokenbitoffset / 8)) >> (tokenbitoffset % 8)) & 0x1;
-
-    //uint8_t* lrv = recv_buf + (base * BIGTOKEN_SIZE_BYTES);
-    //int bitoffset = 43 + (offset * 3);
-
-    ////printf("    ivf: isvflit(%d) <- item3(0x%x) item2(0x%x) item1(0x%x) item0(0x%x) offset(%d) bitoff(%d)\n",
-    ////        (*(lrv + (bitoffset / 8)) >> (bitoffset % 8)) & 0x1,
-    ////        *((uint64_t*)(lrv + (3 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (2 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (1 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (0 * FLIT_SIZE_BYTES))),
-    ////        offset,
-    ////        bitoffset);
-
-    //return (*(lrv + (bitoffset / 8)) >> (bitoffset % 8)) & 0x1;
 }
 
 /**
@@ -184,21 +123,8 @@ bool is_last_flit(uint8_t * recv_buf, int tokenid) {
 
     uint8_t* bigtoken_ptr = recv_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + 2 + (offset * 3);
+
     return (*(bigtoken_ptr + (tokenbitoffset / 8)) >> (tokenbitoffset % 8)) & 0x1;
-
-    //uint8_t* lrv = recv_buf + (base * BIGTOKEN_SIZE_BYTES);
-    //int bitoffset = 45 + (offset * 3);
-
-    ////printf("    ilf: islflit(%d) <- item3(0x%x) item2(0x%x) item1(0x%x) item0(0x%x) offset(%d) bitoff(%d)\n",
-    ////        (*(lrv + (bitoffset / 8)) >> (bitoffset % 8)) & 0x1,
-    ////        *((uint64_t*)(lrv + (3 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (2 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (1 * FLIT_SIZE_BYTES))),
-    ////        *((uint64_t*)(lrv + (0 * FLIT_SIZE_BYTES))),
-    ////        offset,
-    ////        bitoffset);
-
-    //return (*(lrv + (bitoffset / 8)) >> (bitoffset % 8)) & 0x1;
 }
 
 /**
@@ -210,11 +136,6 @@ bool is_last_flit(uint8_t * recv_buf, int tokenid) {
  */
 uint16_t get_port_from_flit(uint8_t* flit_buf, int current_port) {
 
-    //printf("    gpff: flit: (");
-    //printArray(flit_buf, FLIT_SIZE_BYTES);
-    //printf(")\n");
-
-    // TODO: AJG: Check where in the flit the dest mac is
     uint16_t is_multicast = (*((uint64_t*)flit_buf) >> 16) & 0x1;
     uint16_t flit_low = (*((uint64_t*)flit_buf) >> 48) & 0xFFFF; // indicates dest
     uint16_t sendport = (__builtin_bswap16(flit_low));

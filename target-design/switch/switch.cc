@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <cstdlib>
 
-//#define IGNORE_PRINTF
+#define IGNORE_PRINTF
 
 #ifdef IGNORE_PRINTF
 #define printf(fmt, ...) (0)
@@ -111,13 +111,8 @@ for (int port = 0; port < NUMPORTS; port++) {
         if (is_valid_flit(input_port_buf, tokenno)) {
             uint8_t* flit = get_flit(input_port_buf, tokenno);
 
-            //printf("PORT[%d]: inbuf_ptr(%p) postprocess flit: (", port, input_port_buf);
-            //printArray(flit, FLIT_SIZE_BYTES);
-            //printf(")\n");
-
             switchpacket * sp;
             if (!(current_port->input_in_progress)) {
-                //printf("PORT[%d]: current_port->input_in_progress is setup as current flit\n", port);
                 sp = (switchpacket*)calloc(sizeof(switchpacket), 1);
                 sp->dat = (uint8_t*)calloc(FLIT_SIZE_BYTES, ETH_MAX_WORDS + ETH_EXTRA_FLITS);
                 current_port->input_in_progress = sp;
@@ -130,7 +125,6 @@ for (int port = 0; port < NUMPORTS; port++) {
 
             memcpy( sp->dat + ((sp->amtwritten++) * FLIT_SIZE_BYTES), flit, FLIT_SIZE_BYTES);
             if (is_last_flit(input_port_buf, tokenno)) {
-                //printf("switch(%d): last flit, push to inputqueue\n", port);
                 current_port->inputqueue.push(sp);
                 current_port->input_in_progress = NULL;
             }
@@ -167,7 +161,6 @@ std::priority_queue<tspacket> pqueue;
 
 for (int i = 0; i < NUMPORTS; i++) {
     while (!(ports[i]->inputqueue.empty())) {
-        //printf("PORT[%d]: inputqueue to pqueue\n", i);
         switchpacket * sp = ports[i]->inputqueue.front();
         ports[i]->inputqueue.pop();
         pqueue.push( tspacket { sp->timestamp, sp });
@@ -177,36 +170,22 @@ for (int i = 0; i < NUMPORTS; i++) {
 // next, put back into individual output queues
 while (!pqueue.empty()) {
     switchpacket * tsp = pqueue.top().switchpack;
-    //printf("PORT[None]: pqueue tsp: timestamp(%ld) dat_ptr(%p) amtwritten(%d) amtread(%d) sender(%d)\n",
-    //       tsp->timestamp,
-    //       tsp->dat,
-    //       tsp->amtwritten,
-    //       tsp->amtread,
-    //       tsp->sender);
     pqueue.pop();
     uint16_t send_to_port = get_port_from_flit(tsp->dat, 0 /* junk remove arg */);
-    //printf("packet for port: %x\n", send_to_port);
-    //printf("packet timestamp: %ld\n", tsp->timestamp);
+    printf("[SWITCH] packet for port: %x\n", send_to_port);
+    printf("[SWITCH] packet timestamp: %ld\n", tsp->timestamp);
     if (send_to_port == BROADCAST_ADJUSTED) {
 #define ADDUPLINK (NUMUPLINKS > 0 ? 1 : 0)
-        printf("[SWITCH]: Broadcast\n");
+        //printf("[SWITCH]: Broadcast\n");
         // this will only send broadcasts to the first (zeroeth) uplink.
         // on a switch receiving broadcast packet from an uplink, this should
         // automatically prevent switch from sending the broadcast to any uplink
         for (int i = 0; i < NUMDOWNLINKS + ADDUPLINK; i++) {
-            //printf("PORT[%d]: numdownlinks(%d), numuplinks(%d), iter(%d)\n", i, NUMDOWNLINKS, ADDUPLINK, i);
             if (i != tsp->sender) {
                 switchpacket * tsp2 = (switchpacket*)malloc(sizeof(switchpacket));
                 memcpy(tsp2, tsp, sizeof(switchpacket));
                 tsp2->dat = (uint8_t*)malloc(FLIT_SIZE_BYTES*(ETH_MAX_WORDS + ETH_EXTRA_FLITS));
                 memcpy(tsp2->dat, tsp->dat, FLIT_SIZE_BYTES*(ETH_MAX_WORDS + ETH_EXTRA_FLITS));
-                //printf("PORT[%d]: outputqueue tsp2: timestamp(%ld) dat_ptr(%p) amtwritten(%d) amtread(%d) sender(%d)\n",
-                //       i,
-                //       tsp2->timestamp,
-                //       tsp2->dat,
-                //       tsp2->amtwritten,
-                //       tsp2->amtread,
-                //       tsp2->sender);
                 ports[i]->outputqueue.push(tsp2);
                 //printf("[SWITCH]: Switch packet sent from PORT %d to PORT %d\n", tsp->sender, i);
             }
