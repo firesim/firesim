@@ -18,7 +18,8 @@ TARGET_PROJECT_MAKEFRAG ?= src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 default: compile
 
 SBT ?= sbt
-SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G ++2.12.4
+JVM_MEMORY ?= 16G
+SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++2.12.4
 
 firesim_base_dir := $(abspath .)
 
