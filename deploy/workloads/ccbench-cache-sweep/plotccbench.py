@@ -46,26 +46,45 @@ def data_from_full_dict(array_of_dict):
         sizes.append(appsize)
     return {'size': sizes, 'time': times}
 
-cacheline_stride_bmark_data = data_from_full_dict(arr_to_dict(random_bmark))
 
-ccbench_df = pd.DataFrame(data=cacheline_stride_bmark_data)
-print(ccbench_df)
+
+
+cacheline_stride_bmark_data = data_from_full_dict(arr_to_dict(cacheline_stride_bmark))
+unit_stride_bmark_data = data_from_full_dict(arr_to_dict(unit_stride_bmark))
+random_bmark_data = data_from_full_dict(arr_to_dict(random_bmark))
+
+cacheline_ccbench_df = pd.DataFrame(data=cacheline_stride_bmark_data)
+unit_ccbench_df = pd.DataFrame(data=unit_stride_bmark_data)
+random_ccbench_df = pd.DataFrame(data=random_bmark_data)
+
 
 #ccbench_df = pd.read_csv('ccbench.csv')
 #ccbench_df['size'] = ccbench_df['size'].astype(int)
-ccbench_df = ccbench_df.sort_values(by=['size'])
-print(ccbench_df)
+cacheline_ccbench_df = cacheline_ccbench_df.sort_values(by=['size'])
+unit_ccbench_df = unit_ccbench_df.sort_values(by=['size'])
+random_ccbench_df = random_ccbench_df.sort_values(by=['size'])
 
 
 series = []
-array_dim = list(ccbench_df['size'])
+cacheline_array_dim = list(cacheline_ccbench_df['size'])
+cacheline_array_time = list(cacheline_ccbench_df['time'])
 
-array_time = list(ccbench_df['time'])
+unit_array_dim = list(unit_ccbench_df['size'])
+unit_array_time = list(unit_ccbench_df['time'])
+
+random_array_dim = list(random_ccbench_df['size'])
+random_array_time = list(random_ccbench_df['time'])
+
+
 
 fig, ax = plt.subplots()
-ser, = plt.semilogx(array_dim, array_time, linestyle='--', marker='^', c='0.7')
-series.append(ser)
+ser1, = plt.semilogx(random_array_dim, random_array_time, linestyle='--', marker='*', c='0.4', label='Random Stride')
+ser, = plt.semilogx(cacheline_array_dim, cacheline_array_time, linestyle='--', marker='^', c='0.7', label='Cacheline Stride')
+ser2, = plt.semilogx(unit_array_dim, unit_array_time, linestyle='--', marker='x', c='0.1', label='Unit Stride')
 
+series.append(ser)
+series.append(ser1)
+series.append(ser2)
 
 #matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
@@ -78,7 +97,7 @@ ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
 ax.xaxis.get_major_formatter().set_scientific(False)
 ax.xaxis.get_major_formatter().set_useOffset(False)
 plt.minorticks_off()
-
+ax.legend()
 ax.set_xticks(cacheline_stride_bmark_data['size'])
 ax.grid(linestyle='-', linewidth=0.3)
 plt.xticks(fontsize=8, rotation=90)
