@@ -8,13 +8,15 @@ import pandas as pd
 #import sys
 #from collections import OrderedDict
 import matplotlib.ticker as mticker
+import sys
 
-fname = '/home/centos/firesim/deploy/results-workload/2019-01-25--07-44-19-ccbench-cache-sweep/ccbench-all/output/RESULTSFILE'
+starterpath = sys.argv[1]
+fname = starterpath + '/ccbench-all/uartlog'
+outputpath = starterpath + '/outputplot.pdf'
 
 f = open(fname, 'r')
 q = f.readlines()
 f.close()
-#print(q)
 
 
 q = filter(lambda x: x.startswith('App:'), q)
@@ -103,7 +105,6 @@ ax.grid(linestyle='-', linewidth=0.3)
 plt.xticks(fontsize=8, rotation=90)
 fig = plt.gcf()
 fig.tight_layout()
-fig.savefig('yolo.pdf', format='pdf')
-#plt.show() 
+fig.savefig(outputpath, format='pdf')
 
 
