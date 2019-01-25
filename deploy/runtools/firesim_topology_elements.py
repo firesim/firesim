@@ -436,6 +436,8 @@ class FireSimSwitchNode(FireSimNode):
         self.switch_link_latency = link_latency
         self.switch_switching_latency = switching_latency
         self.switch_bandwidth = bandwidth
+        self.switch_flit_width = None
+        self.switch_max_bandwidth = None
 
         # switch_builder is a class designed to emit a particular switch model.
         # it should take self and then be able to emit a particular switch model's

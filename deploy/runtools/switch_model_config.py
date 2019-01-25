@@ -63,6 +63,7 @@ class AbstractSwitchToSwitchConfig:
         constructedstring += self.get_numclientsconfig()
         constructedstring += self.get_portsetup()
         constructedstring += self.get_mac2port()
+        constructedstring += self.get_networkparameters()
         return constructedstring
 
     # produce mac2port array portion of config
@@ -105,6 +106,17 @@ class AbstractSwitchToSwitchConfig:
     #define NUMDOWNLINKS {}
     #define NUMUPLINKS {}
     #endif""".format(totalports, numdownlinks, numuplinks)
+        return retstr
+
+    def get_networkparameters(self):
+        """ emit flit width and max bandwidth for switch """
+        flitwidth = self.fsimswitchnode.switch_flit_width
+        maxbandwidth = self.fsimswitchnode.switch_max_bandwidth
+
+        retstr = """
+    #define FLIT_SIZE_BITS ({})
+    #define MAX_BW ({})
+    """.format(flitwidth, maxbandwidth)
         return retstr
 
     def get_portsetup(self):

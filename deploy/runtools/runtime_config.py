@@ -245,6 +245,7 @@ class InnerRuntimeConfiguration:
         self.no_net_num_nodes = int(runtime_dict['targetconfig']['no_net_num_nodes'])
         self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
         self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
+        self.flitwidth = int(runtime_dict['targetconfig']['flitwidth'])
         self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
         self.profileinterval = int(runtime_dict['targetconfig']['profileinterval'])
         # Default values
@@ -302,7 +303,7 @@ class RuntimeConfig:
             self.innerconf.topology, self.innerconf.no_net_num_nodes,
             self.runfarm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
-            self.innerconf.switchinglatency, self.innerconf.netbandwidth,
+            self.innerconf.switchinglatency, self.innerconf.flitwidth, self.innerconf.netbandwidth,
             self.innerconf.profileinterval, self.innerconf.trace_enable,
             self.innerconf.trace_start, self.innerconf.trace_end,
             self.innerconf.terminateoncompletion)

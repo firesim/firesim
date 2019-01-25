@@ -184,8 +184,7 @@ class SupernodeIO(
     val serial = Vec(nNodes, new SerialIO(serialWidth))
     val mem_axi = Vec(nNodes, bagPrototype.cloneType)
     val bdev = Vec(nNodes, new BlockDeviceIO)
-    val netConfig = new IceNetConfig(NET_IF_WIDTH_BITS = p(NICKey).NET_IF_WIDTH_BITS)
-    val net = Vec(nNodes, new NICIOvonly(netConfig))
+    val net = Vec(nNodes, new NICIOvonly(p(NICKey).NET_IF_WIDTH_BITS))
     val uart = Vec(nNodes, new UARTPortIO)
 
     override def cloneType = new SupernodeIO(nNodes, serialWidth, bagPrototype).asInstanceOf[this.type]

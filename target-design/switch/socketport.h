@@ -40,6 +40,8 @@ SocketClientPort::SocketClientPort(int portNo, char * serverip, int hostport) : 
         sleep(1);
     }
 
+    fprintf(stdout, "Connection success\n");
+
 
     // setup "current" bufs. tick will swap for shmem passing
     current_input_buf = (uint8_t*)calloc(BUFSIZE_BYTES, 1);

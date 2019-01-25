@@ -58,7 +58,7 @@ static int tuntap_alloc(const char *dev, int flags) {
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
 SSHPort::SSHPort(int portNo) : BasePort(portNo, false) {
-    printf("SSHPort: Construct\n");
+    //printf("SSHPort: Construct\n");
     char * slotid = NULL; // placeholder for multiple SSH port support if we need it later
     char devname[DEVNAME_BYTES+1];
     devname[0] = '\0';
@@ -83,13 +83,13 @@ SSHPort::SSHPort(int portNo) : BasePort(portNo, false) {
 }
 
 SSHPort::~SSHPort() {
-    printf("SSHPort: Deconstruct\n");
+    //printf("SSHPort: Deconstruct\n");
     free(tap_send_buffer);
     free(tap_recv_buffer);
 }
 
 void SSHPort::send() {
-    printf("SSHPort: Send\n");
+    //printf("SSHPort: Send\n");
     // here, we take data that was written to the port by the switch
     // (data is in current_output_buf)
     // and push it into queues to send into the TAP
@@ -141,7 +141,7 @@ void SSHPort::send() {
 }
 
 void SSHPort::recv() {
-    printf("SSHPort: Recv\n");
+    //printf("SSHPort: Recv\n");
     // clear the input buf leftover from previous cycle
     memset(current_input_buf, 0x0, BUFSIZE_BYTES);
 

@@ -143,6 +143,64 @@ As above, but with an 4 MiB (max capacity) last-level-cache model
 
     make PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig
 
+----------------------------------
+Changing The Max Network Bandwidth
+----------------------------------
+
+By default, FireSim supports up to 200Gbps bandwidth for the NIC's and switches.
+However, FireSim can also support up to 800Gbps through a parameterizable flit width.
+By changing the flit width, the network can change the maximum bandwidth at the cost of
+being able to simulate shorter link latencies. To change the default 64b to another size
+for a larger network bandwidth, you have to change two files. First in your workload
+config.ini you change the ``flitsize`` parameter in the ``[targetconfig]`` section to 64/128/256 which corresponds to a max
+network bandwidth of 200/400/800 respectively. The change would look something like this:
+
+::
+
+    [targetconfig]
+    topology=example_2config
+    no_net_num_nodes=2
+    linklatency=5760
+    switchinglatency=10
+    flitwidth=256
+    netbandwidth=800
+    profileinterval=-1
+
+This change affects the switch configuration (``target-design/switch/*``).
+
+Additionally, you must also change the flit width in target configuration located at 
+``sim/src/main/scala/firesim/TargetConfigs.scala``. The change would look something like this:
+
+::
+
+    class FireSimRocketChipConfig extends Config(
+      new WithBootROM ++
+      new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+      new WithExtMemSize(0x400000000L) ++ // 16GB
+      new WithoutTLMonitors ++
+      new WithUARTKey ++
+      new WithNICKey(netIfWidthBits = 256) ++
+      new WithBlockDevice ++
+      new WithRocketL2TLBs(1024) ++
+      new WithPerfCounters ++
+      new freechips.rocketchip.system.DefaultConfig)
+
+This change affects the simulation/target scala and C files (``sim/src/main/scala/endpoints/SimpleNICWidget.scala`` and
+``sim/src/main/cc/endpoints/simplenic.cc``). Thus, you must rebuild an AFI with the changes.
+
+Note that with increasing flit size (and thus max network bandwidth) you have decreasing
+max link latency that you can simulate. To increase the amount of link latency that you
+can simulate, you must increase the NICTokenQueueDepth parameter located in 
+``sim/src/main/scala/firesim/SimConfigs.scala``. Here is the
+equation based on flit sizes that you can use to determine the max link latency in cycles.
+
+========= ===============================================
+Flit Size Equation
+========= ===============================================
+64        NIC_TOKEN_QUEUE_DEPTH * 7 = MAX_LINK_LAT_CYCLES
+128       NIC_TOKEN_QUEUE_DEPTH * 3 = MAX_LINK_LAT_CYCLES
+256       NIC_TOKEN_QUEUE_DEPTH * 1 = MAX_LINK_LAT_CYCLES
+========= ===============================================
 
 Midas Examples (midasexamples project)
 --------------------------------------------------

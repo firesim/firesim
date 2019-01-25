@@ -13,11 +13,11 @@
 #include <sys/mman.h>
 
 // PARAMETERS FOR NETWORK SIZE
-// Note: These must all change at once AND change with the
-//       flit size in the RTL and switch code
-#define MAX_BANDWIDTH        (800) // This is FLIT_SIZE*PROC_SPEED rounded to the nearest 100
-#define MAX_BANDWIDTH_BITS    (10) // This is the amount of bits to hold the MAX_BANDWIDTH value
-#define FLIT_WIDTH_BITS      (256) // Size of the network interface
+// Note: This is configured by SimpleNICWidget.scala
+//       which in turn determines these params from TargetConfig.scala
+// MAX_BANDWIDTH     : This is FLIT_SIZE*PROC_SPEED rounded to the nearest 100
+// MAX_BANDWIDTH_BITS: This is the amount of bits to hold the MAX_BANDWIDTH value
+// FLIT_WIDTH_BITS   : Size of the network interface
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
 #define PCIE_WIDTH_BITS                    (512) // Size of the PCIE interface
@@ -134,6 +134,8 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     printf("using rlimit_inc: %d\n", rlimit_inc);
     printf("using rlimit_period: %d\n", rlimit_period);
     printf("using MAX_BANDWIDTH: %d\n", MAX_BANDWIDTH);
+    printf("using MAX_BANDWIDTH_BITS: %d\n", MAX_BANDWIDTH_BITS);
+    printf("using FLIT_WIDTH_BITS: %d\n", FLIT_WIDTH_BITS);
 
     if (niclogfile) {
         this->niclog = fopen(niclogfile, "w");

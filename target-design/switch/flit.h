@@ -20,12 +20,10 @@ class NetworkFlit {
 
 NetworkFlit::NetworkFlit()
     : last(false) {
-    printf("NetworkFlit Constructed\n");
     this->data_buffer = (uint8_t*) malloc(FLIT_SIZE_BYTES);
 }
 
 NetworkFlit::~NetworkFlit() {
-    printf("NetworkFlit Deconstructed\n");
     free(this->data_buffer);
 }
 
@@ -46,7 +44,7 @@ void printArray(uint8_t* in, uint64_t amt){
 uint8_t* get_flit(uint8_t * recv_buf, int tokenid) {
     int base = tokenid / TOKENS_PER_BIGTOKEN;
     int offset = tokenid % TOKENS_PER_BIGTOKEN;
-    printf("    gf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
+    //printf("    gf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
     return (recv_buf + (base * BIGTOKEN_SIZE_BYTES) + (FLIT_SIZE_BYTES * (offset + 1)));
 }
 
@@ -60,7 +58,7 @@ uint8_t* get_flit(uint8_t * recv_buf, int tokenid) {
 void write_flit(uint8_t * send_buf, int tokenid, uint8_t * flit_buf) {
     int base = tokenid / TOKENS_PER_BIGTOKEN;
     int offset = tokenid % TOKENS_PER_BIGTOKEN;
-    printf("    wf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
+    //printf("    wf: tokenid(%d) base(%d) offset(%d)\n", tokenid, base, offset);
     memcpy( send_buf + (base * BIGTOKEN_SIZE_BYTES) + (FLIT_SIZE_BYTES * (offset + 1)), flit_buf, FLIT_SIZE_BYTES );
 }
 
@@ -76,16 +74,18 @@ void write_valid_flit(uint8_t * send_buf, int tokenid) {
 
     uint8_t* bigtoken_ptr = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + (offset * 3);
-    printf("    NEW:\n");
-    printf("    wvf: flit: (");
-    printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    printf(") offset(%d) bitoffset(%d)\n",
-            offset,
-            tokenbitoffset);
+    //printf("    NEW:\n");
+    //printf("    wvf: flit: (");
+    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
+    //printf(") offset(%d) bitoffset(%d)\n",
+    //        offset,
+    //        tokenbitoffset);
+    
     *(bigtoken_ptr + (tokenbitoffset / 8)) |= (1 << (tokenbitoffset % 8));
-    printf("        after: flit: (");
-    printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    printf(")\n");
+
+    //printf("        after: flit: (");
+    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
+    //printf(")\n");
 
     //uint8_t* lrv = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     //int bitoffset = 43 + (offset * 3);
@@ -114,16 +114,18 @@ int write_last_flit(uint8_t * send_buf, int tokenid, bool is_last) {
     
     uint8_t* bigtoken_ptr = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     int tokenbitoffset = (FLIT_SIZE_BITS - (TOKENS_PER_BIGTOKEN * 3)) + 2 + (offset * 3);
-    printf("    NEW:\n");
-    printf("    wlf: flit: (");
-    printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    printf(") offset(%d) bitoffset(%d)\n",
-            offset,
-            tokenbitoffset);
+    //printf("    NEW:\n");
+    //printf("    wlf: flit: (");
+    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
+    //printf(") offset(%d) bitoffset(%d)\n",
+    //        offset,
+    //        tokenbitoffset);
+
     *(bigtoken_ptr + (tokenbitoffset / 8)) |= (is_last << (tokenbitoffset % 8));
-    printf("        after: flit: (");
-    printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
-    printf(")\n");
+
+    //printf("        after: flit: (");
+    //printArray(bigtoken_ptr, FLIT_SIZE_BYTES);
+    //printf(")\n");
 
     //uint8_t* lrv = send_buf + (base * BIGTOKEN_SIZE_BYTES);
     //int bitoffset = 45 + (offset * 3);
@@ -208,9 +210,9 @@ bool is_last_flit(uint8_t * recv_buf, int tokenid) {
  */
 uint16_t get_port_from_flit(uint8_t* flit_buf, int current_port) {
 
-    printf("    gpff: flit: (");
-    printArray(flit_buf, FLIT_SIZE_BYTES);
-    printf(")\n");
+    //printf("    gpff: flit: (");
+    //printArray(flit_buf, FLIT_SIZE_BYTES);
+    //printf(")\n");
 
     // TODO: AJG: Check where in the flit the dest mac is
     uint16_t is_multicast = (*((uint64_t*)flit_buf) >> 16) & 0x1;
@@ -221,7 +223,7 @@ uint16_t get_port_from_flit(uint8_t* flit_buf, int current_port) {
         return BROADCAST_ADJUSTED;
 
     sendport = sendport & 0xFFFF;
-    printf("    gpff: mac: %04x\n", sendport);
+    //printf("    gpff: mac: %04x\n", sendport);
 
     // At this point, we know the MAC address is not a broadcast address,
     // so we can just look up the port in the mac2port table
@@ -231,10 +233,10 @@ uint16_t get_port_from_flit(uint8_t* flit_buf, int current_port) {
         // this has been mapped to "any uplink", so pick one
         int randval = rand() % NUMUPLINKS;
         sendport = randval + NUMDOWNLINKS;
-        printf("    gpff: sending to random uplink.\n");
-        printf("    gpff: port: %04x\n", sendport);
+        //printf("    gpff: sending to random uplink.\n");
+        //printf("    gpff: port: %04x\n", sendport);
     }
-    printf("    gpff: port: %04x\n", sendport);
+    //printf("    gpff: port: %04x\n", sendport);
     return sendport;
 }
 

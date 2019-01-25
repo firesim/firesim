@@ -16,6 +16,10 @@ fi
 ORIGDIR=$(pwd)
 
 latencies=( 70 3199 6405 9597 12803 16002 19201 22400 25599 28798 31997 )
+
+# for 256b flit testing (bounded by 6144 token queue depth):
+#latencies=( 70 800 1603 3199 6000 )
+
 # for script testing:
 # latencies=( 31997 )
 

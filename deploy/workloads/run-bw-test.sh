@@ -14,9 +14,10 @@ if [ "$1" == "withlaunch" ]; then
 fi
 
 ORIGDIR=$(pwd)
-cd ../../
-git apply $ORIGDIR/bw-test-two-instances/switchpatch.patch
-cd $ORIGDIR
+
+#cd ../../
+#git apply $ORIGDIR/bw-test-two-instances/switchpatch.patch
+#cd $ORIGDIR
 
 bandwidths=( 1 10 40 100 )
 
@@ -42,9 +43,9 @@ done
 
 python $ORIGDIR/bw-test-two-instances/bw-test-graph.py $(pwd)/$resultsdir
 
-cd $ORIGDIR
-cd ../../
-git apply -R $ORIGDIR/bw-test-two-instances/switchpatch.patch
+#cd $ORIGDIR
+#cd ../../
+#git apply -R $ORIGDIR/bw-test-two-instances/switchpatch.patch
 
 firesim terminaterunfarm -c workloads/bw-test-config.ini --forceterminate
 

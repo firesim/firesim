@@ -33,7 +33,7 @@ class FireSimTopologyWithPasses:
 
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
-                 defaultnetbandwidth, defaultprofileinterval,
+                 defaultflitwidth, defaultnetbandwidth, defaultprofileinterval,
                  defaulttraceenable, defaulttracestart, defaulttraceend,
                  terminateoncompletion):
         self.passes_used = []
@@ -46,6 +46,7 @@ class FireSimTopologyWithPasses:
         self.defaulthwconfig = defaulthwconfig
         self.defaultlinklatency = defaultlinklatency
         self.defaultswitchinglatency = defaultswitchinglatency
+        self.defaultflitwidth = defaultflitwidth
         self.defaultnetbandwidth = defaultnetbandwidth
         self.defaultprofileinterval = defaultprofileinterval
         self.defaulttraceenable = defaulttraceenable
@@ -276,6 +277,12 @@ class FireSimTopologyWithPasses:
             if isinstance(node, FireSimSwitchNode):
                 if node.switch_link_latency is None:
                     node.switch_link_latency = self.defaultlinklatency
+                if node.switch_flit_width is None:
+                    flitWidth = self.defaultflitwidth
+                    procSpeed = 3.2 # Assumed speed of the processor running on FSim
+                    node.switch_flit_width = flitWidth
+                    # flitWidth*procSpeed rounded to nearest 100
+                    node.switch_max_bandwidth = int((flitWidth*procSpeed) - ((flitWidth*procSpeed) % 100))
                 if node.switch_switching_latency is None:
                     node.switch_switching_latency = self.defaultswitchinglatency
                 if node.switch_bandwidth is None:

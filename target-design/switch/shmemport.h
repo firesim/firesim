@@ -34,24 +34,26 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
     }
 
     if (uplink) {
-        fprintf(stdout, "Uplink Port\n");
+        fprintf(stdout, "[SHMEM_PORT %d]: Creating Uplink Port\n", portNo);
         recvdirection = "stn";
         senddirection = "nts";
     } else {
-        fprintf(stdout, "Downlink Port\n");
+        fprintf(stdout, "[SHMEM_PORT %d]: Creating Downlink Port\n", portNo);
         recvdirection = "nts";
         senddirection = "stn";
     }
 
     for (int j = 0; j < 2; j++) {
+        // create the shared mem for the recvbuf
         if (shmemportname) {
-            fprintf(stdout, "Using non-slot-id associated shmemportname:\n");
+            fprintf(stdout, "[SHMEM_PORT %d]: Using non-slot-id associated shmemportname\n", portNo);
             sprintf(name, "/port_%s%s_%d", recvdirection, shmemportname, j);
         } else {
-            fprintf(stdout, "Using slot-id associated shmemportname:\n");
+            fprintf(stdout, "[SHMEM_PORT %d]: Using slot-id associated shmemportname\n", portNo);
             sprintf(name, "/port_%s%d_%d", recvdirection, _portNo, j);
         }
-        fprintf(stdout, "opening/creating shmem region\n%s\n", name);
+        fprintf(stdout, "[SHMEM_PORT %d]: Opening/creating shmem region:\n", portNo);
+        fprintf(stdout, "[SHMEM_PORT %d]:     %s\n", portNo, name);
         shmemfd = shm_open(name, shm_flags, S_IRWXU);
 
         while (shmemfd == -1) {
@@ -84,14 +86,16 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
             memset(recvbufs[j], 0, BUFSIZE_BYTES+SHMEM_EXTRABYTES);
         }
 
+        // create the shared mem for the sendbuf
         if (shmemportname) {
-            fprintf(stdout, "Using non-slot-id associated shmemportname:\n");
+            fprintf(stdout, "[SHMEM_PORT %d]: Using non-slot-id associated shmemportname:\n", portNo);
             sprintf(name, "/port_%s%s_%d", senddirection, shmemportname, j);
         } else {
-            fprintf(stdout, "Using slot-id associated shmemportname:\n");
+            fprintf(stdout, "[SHMEM_PORT %d]: Using slot-id associated shmemportname:\n", portNo);
             sprintf(name, "/port_%s%d_%d", senddirection, _portNo, j);
         }
-        fprintf(stdout, "opening/creating shmem region\n%s\n", name);
+        fprintf(stdout, "[SHMEM_PORT %d]: Opening/creating shmem region\n", portNo);
+        fprintf(stdout, "[SHMEM_PORT %d]:     %s\n", portNo, name);
         shmemfd = shm_open(name, shm_flags, S_IRWXU);
 
         while (shmemfd == -1) {
@@ -128,6 +132,8 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
     // setup "current" bufs. tick will swap for shmem passing
     current_input_buf = recvbufs[0];
     current_output_buf = sendbufs[0];
+
+    fprintf(stdout, "[SHMEM_PORT %d]: Done creating port\n", portNo);
 }
 
 void ShmemPort::send() {

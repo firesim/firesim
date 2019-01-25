@@ -85,7 +85,7 @@ class FireSimRocketChipConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(netIfWidthBits = 256) ++
+  new WithNICKey(netIfWidthBits = 64) ++
   new WithBlockDevice ++
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
@@ -142,7 +142,7 @@ class FireSimBoomConfig extends Config(
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
-  new WithNICKey(netIfWidthBits = 256) ++
+  new WithNICKey(netIfWidthBits = 64) ++
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled

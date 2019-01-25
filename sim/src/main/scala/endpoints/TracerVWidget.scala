@@ -16,7 +16,9 @@ import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
-import TokenQueueConsts._
+import PCIeConsts._
+
+case object TracerVTokenQueueDepth extends Field[Int]
 
 class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
   val traces = Vec(numTraces, new TracedInstruction)
@@ -50,8 +52,8 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
   val io = IO(new TracerVWidgetIO(tracerParams, num_traces))
 
   // DMA mixin parameters
-  lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
-  lazy val dmaSize = BigInt((BIGTOKEN_WIDTH_BITS  / 8) * TOKEN_QUEUE_DEPTH)
+  lazy val toHostCPUQueueDepth  = p(TracerVTokenQueueDepth)
+  lazy val dmaSize = BigInt((BIGTOKEN_WIDTH_BITS  / 8) * p(TracerVTokenQueueDepth))
 
   val uint_traces = io.hPort.hBits.traces map (trace => trace.asUInt)
   outgoingPCISdat.io.enq.bits := Cat(uint_traces) //io.hPort.hBits.traces(0).asUInt
