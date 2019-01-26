@@ -325,12 +325,17 @@ class InstanceDeployManager:
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
                 '/home/centos/edma/', mirror_local_mode=True)
             with cd('/home/centos/edma/linux_kernel_drivers/xdma/'):
+                run('make clean')
                 run('make')
 
     def unload_edma(self):
         self.instance_logger("Unloading EDMA Driver Kernel Module.")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('sudo rmmod xdma')
+            # fpga mgmt tools seem to force load xocl after a flash now...
+            # so we just remove everything for good measure:
+            run('sudo rmmod xocl')
+            run('sudo rmmod edma')
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
@@ -380,6 +385,11 @@ class InstanceDeployManager:
 
     def load_edma(self):
         """ load the edma kernel module. """
+        # fpga mgmt tools seem to force load xocl after a flash now...
+        # xocl conflicts with the xdma driver, which we actually want to use
+        # so we just remove everything for good measure before loading xdma:
+        self.unload_edma()
+        # now load xdma
         self.instance_logger("Loading EDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
