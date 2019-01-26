@@ -23,6 +23,8 @@ To Remote Desktop into your manager instance, you must do the following:
     curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
     sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
     /home/centos/src/scripts/setup_gui.sh
+    # keep manager paramiko compatibility
+    sudo pip2 uninstall gssapi
 
 
 See
