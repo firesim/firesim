@@ -316,10 +316,10 @@ class InstanceDeployManager:
             run('source sdk_setup.sh')
 
     def fpga_node_xdma(self):
-        """ Copy EDMA infra to remote node. This assumes that the driver was
+        """ Copy XDMA infra to remote node. This assumes that the driver was
         already built and that a binary exists in the directory on this machine
         """
-        self.instance_logger("""Copying AWS FPGA EDMA driver to remote node.""")
+        self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
@@ -329,7 +329,7 @@ class InstanceDeployManager:
                 run('make')
 
     def unload_xdma(self):
-        self.instance_logger("Unloading EDMA Driver Kernel Module.")
+        self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('sudo rmmod xdma')
             # fpga mgmt tools seem to force load xocl after a flash now...
@@ -390,7 +390,7 @@ class InstanceDeployManager:
         # so we just remove everything for good measure before loading xdma:
         self.unload_xdma()
         # now load xdma
-        self.instance_logger("Loading EDMA Driver Kernel Module.")
+        self.instance_logger("Loading XDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
@@ -512,7 +512,7 @@ class InstanceDeployManager:
             self.clear_fpgas()
             self.flash_fpgas()
 
-            # re-load EDMA
+            # re-load XDMA
             self.load_xdma()
 
             #restart (or start form scratch) ila server
