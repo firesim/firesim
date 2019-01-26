@@ -137,7 +137,10 @@ class RuntimeHWConfig:
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
         def array_to_plusargs(valuesarr, plusarg):
-            args = map(lambda ind_rootfs: """{}{}={}""".format(plusarg, ind_rootfs[0], ind_rootfs[1]), enumerate(valuesarr))
+            args = []
+            for index, arg in enumerate(valuesarr):
+                if arg is not None:
+                    args.append("""{}{}={}""".format(plusarg, index, arg))
             return " ".join(args) + " "
 
         command_macs = array_to_plusargs(all_macs, "+macaddr")

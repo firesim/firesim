@@ -383,15 +383,17 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             return [filepath, get_path_trailing(filepath) + str(index)]
 
         all_paths = []
-        # todo handle none case
-        all_paths.append([self.get_job().rootfs_path(),
-                          self.get_rootfs_name()])
+        if self.get_job().rootfs_path() is not None:
+            all_paths.append([self.get_job().rootfs_path(),
+                              self.get_rootfs_name()])
 
         num_siblings = self.supernode_get_num_siblings()
 
         for x in range(1, num_siblings):
-            all_paths.append([self.supernode_get_sibling_rootfs_path(x),
-                              self.supernode_get_sibling_rootfs(x)])
+            sibling_rootfs_path = self.supernode_get_sibling_rootfs_path(x)
+            if sibling_rootfs_path is not None:
+                all_paths.append([sibling_rootfs_path,
+                                  self.supernode_get_sibling_rootfs(x)])
 
         all_paths.append([self.get_job().bootbinary_path(),
                           self.get_bootbin_name()])
@@ -406,9 +408,12 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         return all_paths
 
     def get_rootfs_name(self, dummyindex=0):
-        if dummyindex:
+        if self.get_job().rootfs_path() is None:
+            return None
+        elif dummyindex:
             return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().rootfs_path().split("/")[-1]
+        else:
+            return self.get_job().rootfs_path().split("/")[-1]
 
     def get_bootbin_name(self, dummyindex=0):
         if dummyindex:
