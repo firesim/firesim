@@ -2,6 +2,7 @@ package firesim.firesim
 
 import chisel3._
 import freechips.rocketchip.config.{Parameters, Config}
+import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
@@ -14,6 +15,7 @@ import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
 import memblade.cache.{DRAMCacheKey, DRAMCacheConfig}
+import memblade.prefetcher.PrefetchRoCC
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -59,7 +61,7 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
   case DRAMCacheKey => DRAMCacheConfig(
-    nSets = 1 << 20,
+    nSets = 1 << 19,
     nWays = 7,
     baseAddr = BigInt(1) << 37,
     nBanks = 8,
@@ -72,6 +74,14 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
 
 class WithPFA extends Config((site, here, up) => {
   case HasPFA => true
+})
+
+class WithPrefetchRoCC extends Config((site, here, up) => {
+  case BuildRoCC => Seq((q: Parameters) => {
+    implicit val p = q
+    implicit val valName = ValName("FireSim")
+    LazyModule(new PrefetchRoCC(OpcodeSet.custom2))
+  })
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
@@ -192,9 +202,23 @@ class FireSimRemoteMemClientDualCoreConfig extends Config(
 class FireSimRemoteMemClientQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimRemoteMemClientConfig)
 
+class FireSimPrefetcherConfig extends Config(
+  new WithPrefetchRoCC ++
+  new FireSimRocketChipConfig)
+
+class FireSimPrefetcherSingleCoreConfig extends Config(
+  new WithNBigCores(1) ++ new FireSimPrefetcherConfig)
+
+class FireSimPrefetcherDualCoreConfig extends Config(
+  new WithNBigCores(2) ++ new FireSimPrefetcherConfig)
+
+class FireSimPrefetcherQuadCoreConfig extends Config(
+  new WithNBigCores(4) ++ new FireSimPrefetcherConfig)
+
 class FireSimDRAMCacheConfig extends Config(
+  new WithPrefetchRoCC ++
   new WithDRAMCacheKey ++
-  new WithExtMemSize(8L << 30) ++
+  new WithExtMemSize(12L << 30) ++
   new FireSimRocketChipConfig)
 
 class FireSimDRAMCacheSingleCoreConfig extends Config(

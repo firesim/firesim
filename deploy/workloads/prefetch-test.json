@@ -1,0 +1,20 @@
+{
+  "benchmark_name" : "prefetch-test",
+  "common_rootfs" : "dummy.ext2",
+  "common_simulation_outputs" : ["uartlog"],
+
+  "workloads" : [
+    {
+      "name" : "prefetch-test",
+      "bootbinary" : "prefetch-test.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy",
+      "bootbinary" : "memblade-dummy.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

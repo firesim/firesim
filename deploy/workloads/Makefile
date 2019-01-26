@@ -192,6 +192,19 @@ dram-cache-test-linux:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+saxpy:
+	cd ../../sw/memblade-tests/linux && make saxpy{,-pf}.riscv
+	cp ../../sw/memblade-tests/linux/saxpy{,-pf}.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+saxpy-dc:
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/memblade-tests/linux && make saxpy-dc{,-pf}.riscv
+	cp ../../sw/memblade-tests/linux/saxpy-dc{,-pf}.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -199,4 +212,5 @@ dram-cache-test-linux:
 	allpaper checksum-test memblade-test memblade-page-bmark \
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
-	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux
+	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
+	saxpy saxpy-dc
