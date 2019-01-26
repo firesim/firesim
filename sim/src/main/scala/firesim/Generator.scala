@@ -7,7 +7,7 @@ import chisel3.internal.firrtl.{Circuit, Port}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug.DebugIO
-import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
+import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames, ElaborationArtefacts}
 import freechips.rocketchip.system.DefaultTestSuites._
 import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
@@ -134,6 +134,13 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     }
     writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
   }
+
+  // Output miscellaneous files produced as a side-effect of elaboration
+  def generateArtefacts {
+    ElaborationArtefacts.files.foreach { case (extension, contents) =>
+      writeOutputFile(s"${longName}.${extension}", contents ())
+    }
+  }
 }
 
 trait HasTestSuites {
@@ -219,6 +226,7 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
   generateHostVerilogHeader
+  generateArtefacts
 }
 
 // A runtime-configuration generation for memory models
