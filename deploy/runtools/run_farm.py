@@ -315,20 +315,20 @@ class InstanceDeployManager:
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
-    def fpga_node_edma(self):
+    def fpga_node_xdma(self):
         """ Copy EDMA infra to remote node. This assumes that the driver was
         already built and that a binary exists in the directory on this machine
         """
         self.instance_logger("""Copying AWS FPGA EDMA driver to remote node.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run('mkdir -p /home/centos/edma/')
+            run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                '/home/centos/edma/', mirror_local_mode=True)
-            with cd('/home/centos/edma/linux_kernel_drivers/xdma/'):
+                '/home/centos/xdma/', mirror_local_mode=True)
+            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
                 run('make clean')
                 run('make')
 
-    def unload_edma(self):
+    def unload_xdma(self):
         self.instance_logger("Unloading EDMA Driver Kernel Module.")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('sudo rmmod xdma')
@@ -383,17 +383,17 @@ class InstanceDeployManager:
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
 
-    def load_edma(self):
-        """ load the edma kernel module. """
+    def load_xdma(self):
+        """ load the xdma kernel module. """
         # fpga mgmt tools seem to force load xocl after a flash now...
         # xocl conflicts with the xdma driver, which we actually want to use
         # so we just remove everything for good measure before loading xdma:
-        self.unload_edma()
+        self.unload_xdma()
         # now load xdma
         self.instance_logger("Loading EDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/edma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
+            run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
@@ -503,17 +503,17 @@ class InstanceDeployManager:
                 self.copy_sim_slot_infrastructure(slotno)
 
             self.get_and_install_aws_fpga_sdk()
-            # unload any existing edma
-            self.unload_edma()
-            # copy edma driver
-            self.fpga_node_edma()
+            # unload any existing edma/xdma/xocl
+            self.unload_xdma()
+            # copy xdma driver
+            self.fpga_node_xdma()
 
             # clear/flash fpgas
             self.clear_fpgas()
             self.flash_fpgas()
 
             # re-load EDMA
-            self.load_edma()
+            self.load_xdma()
 
             #restart (or start form scratch) ila server
             self.kill_ila_server()
