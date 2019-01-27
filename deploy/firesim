@@ -11,6 +11,7 @@ import argparse
 from time import sleep, strftime, gmtime
 import logging
 import random
+import pdb
 
 import argcomplete
 from fabric.api import *
@@ -25,6 +26,11 @@ from buildtools.buildafi import *
 from buildtools.buildconfig import GlobalBuildConfig
 
 from util.streamlogger import StreamLogger
+
+# registered later as handler for SIGQUIT (Ctrl + \) to drop into pdb shell
+# if manager hangs
+def pdb_handler(signum, frame):
+    pdb.set_trace()
 
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
@@ -256,6 +262,9 @@ if __name__ == '__main__':
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
+
+    # for debugging hangs, SIGQUIT (Ctrl+\) will drop into pdb shell
+    signal.signal(signal.SIGQUIT, pdb_handler)
 
     # parse args BEFORE setting up logs, otherwise argcomplete will cause
     # junk log files to be created. also lets us use args.task in the logfile
