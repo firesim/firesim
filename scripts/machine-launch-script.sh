@@ -47,6 +47,7 @@ sudo pip2 install colorama==0.3.7
 sudo pip2 install argcomplete==1.9.3
 sudo pip2 install graphviz==0.8.3
 # for some of our workload plotting scripts
+sudo pip2 install --upgrade --ignore-installed pyparsing
 sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
 
