@@ -67,7 +67,7 @@ To launch a manager instance, follow these steps:
 10. On the "Configure Security Group" page, select the ``firesim``
     security group that was automatically created for you earlier.
 11. On the review page, click the button to launch your instance.
-    Make sure you select the ``firesim`` key pair that we setup earlier.
+    **Make sure you select the ``firesim`` key pair that we setup earlier.**
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
