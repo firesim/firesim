@@ -100,12 +100,19 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-                macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, profile_interval=profile_interval,
-                shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
-                trace_start=trace_start, trace_end=trace_end)
+
+        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
+                slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
+                linklatency=linklatency, netbw=netbw,
+                profile_interval=profile_interval, shmemportname=shmemportname,
+                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
+                trace_end=trace_end)
+
+        if blkdev is not None:
+            driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
+                slotid=slotid, driver=driver, driverArgs=driverArgs)
 
         return basecommand
 
@@ -130,7 +137,10 @@ class RuntimeHWConfig:
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
         def array_to_plusargs(valuesarr, plusarg):
-            args = map(lambda ind_rootfs: """{}{}={}""".format(plusarg, ind_rootfs[0], ind_rootfs[1]), enumerate(valuesarr))
+            args = []
+            for index, arg in enumerate(valuesarr):
+                if arg is not None:
+                    args.append("""{}{}={}""".format(plusarg, index, arg))
             return " ".join(args) + " "
 
         command_macs = array_to_plusargs(all_macs, "+macaddr")
