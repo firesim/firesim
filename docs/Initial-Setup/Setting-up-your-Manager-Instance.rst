@@ -11,22 +11,37 @@ Since we will deploy the heavy lifting to separate ``c4.4xlarge`` and
 we will use a ``c4.4xlarge``,
 running the AWS FPGA Developer AMI (be sure to subscribe if you have not done so. See :ref:`ami-subscription`).
 
-Head to the `EC2 Management
-Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
-right corner, ensure that the correct region is selected.
+.. Head to the `EC2 Management
+.. Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
+.. right corner, ensure that the correct region is selected.
 
 To launch a manager instance, follow these steps:
 
-1. From the main page of the EC2 Management Console, click
+1. Head to the FPGA Developer AMI Page on AWS Marketplace:
+   `https://aws.amazon.com/marketplace/pp/B06VVYBLZZ <https://aws.amazon.com/marketplace/pp/B06VVYBLZZ>`__
+2. Click the ``Continue to Subscribe`` button in the top-right.
+3. On the following page, select ``Continue to Configuration``.
+4. On the following page, you will be presented with several dropdown menus:
+
+   1. Do not change ``Fulfillment Option``.
+   2. For ``Software Version``, select ``1.4.0 (May 08, 2018)``. You MUST use this version. **DO NOT USE ANY OTHER VERSION.**
+   3. For ``Region``, select your desired region.
+   4. Click ``Continue to Launch`` in the top-right.
+
+5. On the following page, in the ``Choose Action`` dropdown, select ``Launch
+   through EC2``. Upon doing this, the options after this dropdown will
+   disappear and you will be presented with a ``Launch`` button, which you
+   should click.
+.. 1. From the main page of the EC2 Management Console, click
    ``Launch Instance``. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
-2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
+.. 6. When prompted to select an AMI, search in the ``Community AMIs`` tab for
    "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.4.0``.
    **DO NOT USE ANY OTHER VERSION.**
-3. When prompted to choose an instance type, select the instance type of
+6. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c4.4xlarge``.
-4. On the "Configure Instance Details" page:
+7. On the "Configure Instance Details" page:
 
    1. First make sure that the ``firesim`` VPC is selected in the
       drop-down box next to "Network". Any subnet within the ``firesim``
@@ -44,15 +59,15 @@ To launch a manager instance, follow these steps:
 
       This will pre-install all of the dependencies needed to run FireSim on your instance.
 
-5. On the next page ("Add Storage"), increase the size of the root EBS
+8. On the next page ("Add Storage"), increase the size of the root EBS
    volume to ~300GB. The default of 150GB can quickly become tight as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
    and large root filesystems for simulations. You can get rid of the
    small (5GB) secondary volume that is added by default.
-6. You can skip the "Add Tags" page, unless you want tags.
-7. On the "Configure Security Group" page, select the ``firesim``
+9. You can skip the "Add Tags" page, unless you want tags.
+10. On the "Configure Security Group" page, select the ``firesim``
    security group that was automatically created for you earlier.
-8. On the review page, click the button to launch your instance.
+11. On the review page, click the button to launch your instance.
 
 Make sure you select the ``firesim`` key pair that we setup earlier.
 
