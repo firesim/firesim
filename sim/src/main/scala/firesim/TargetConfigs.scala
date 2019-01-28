@@ -7,7 +7,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-import freechips.rocketchip.pfa.HasPFA
+//import freechips.rocketchip.pfa.HasPFA
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
@@ -72,9 +72,9 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
     outIdBits = 4)
 })
 
-class WithPFA extends Config((site, here, up) => {
-  case HasPFA => true
-})
+//class WithPFA extends Config((site, here, up) => {
+//  case HasPFA => true
+//})
 
 class WithPrefetchRoCC extends Config((site, here, up) => {
   case BuildRoCC => Seq((q: Parameters) => {
