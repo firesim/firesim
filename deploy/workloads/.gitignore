@@ -8,3 +8,4 @@ iperf3
 check-rtc-linux
 bw-test-one-instance/*.riscv
 bw-test-two-instances/*.riscv
+unittest/STRESSRUNS
