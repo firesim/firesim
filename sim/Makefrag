@@ -38,7 +38,7 @@ CONF_NAME ?= runtime.conf
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
 ################################################################
-TIMEOUT_CYCLES = 100000000
+TIMEOUT_CYCLES = 100 #100000000
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
 COMMON_SIM_ARGS ?= $(mem_model_args)

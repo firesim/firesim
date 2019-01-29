@@ -17,6 +17,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.rocket.{RocketCoreParams, MulDivParams}
 
 import boom.system.{BoomTilesKey, BoomTestSuites}
 
@@ -54,7 +55,7 @@ trait FireSimGeneratorUtils extends HasTestSuites {
   }
 
   def generateTestSuiteMakefrags {
-    addTestSuites(midasParams)
+    addTestSuites
     writeOutputFile("PicoRV32.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
@@ -125,14 +126,17 @@ trait HasTestSuites {
       "rv32mi-p-sbreak",
       "rv32ui-p-sll")
 
-  def addTestSuites(params: Parameters) {
-    val coreParams =
-      if (params(RocketTilesKey).nonEmpty) {
-        params(RocketTilesKey).head.core
-      } else {
-        params(BoomTilesKey).head.core
-      }
-    val xlen = params(XLen)
+  def addTestSuites {
+    // val names = ParsedInputNames("/home/generated-src/f1/PicoRV32-PicoRV32Config-FireSimConfig", "firesim.picorv32", "PicoRV32", "firesim.firesim", "PicoRV32Config")
+    // val params = getParameters(names.fullConfigClasses)
+    // val coreParams =
+    //   if (params(RocketTilesKey).nonEmpty) {
+    //     params(RocketTilesKey).head.core
+    //   } else {
+    //     params(BoomTilesKey).head.core
+    //   }
+    val coreParams = RocketCoreParams(useVM = false, fpu = None, mulDiv = Some(MulDivParams(mulUnroll = 8)))
+    val xlen = 32 //params(XLen)
     val vm = coreParams.useVM
     val env = if (vm) List("p","v") else List("p")
     coreParams.fpu foreach { case cfg =>
@@ -149,10 +153,10 @@ trait HasTestSuites {
     }
     if (coreParams.useAtomics)    TestGeneration.addSuites(env.map(if (xlen == 64) rv64ua else rv32ua))
     if (coreParams.useCompressed) TestGeneration.addSuites(env.map(if (xlen == 64) rv64uc else rv32uc))
-    val (rvi, rvu) =
-      if (params(BoomTilesKey).nonEmpty) ((if (vm) BoomTestSuites.rv64i else BoomTestSuites.rv64pi), rv64u)
-      else if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
-      else            ((if (vm) rv32i else rv32pi), rv32u)
+    val (rvi, rvu) = (rv32pi, rv32u)
+      // if (params(BoomTilesKey).nonEmpty) ((if (vm) BoomTestSuites.rv64i else BoomTestSuites.rv64pi), rv64u)
+      // else if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
+      // else            ((if (vm) rv32i else rv32pi), rv32u)
 
     TestGeneration.addSuites(rvi.map(_("p")))
     TestGeneration.addSuites((if (vm) List("v") else List()).flatMap(env => rvu.map(_(env))))
