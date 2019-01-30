@@ -167,8 +167,8 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info("Resulting AFI: " + str(afi))
 
     rootLogger.info("Waiting for create-fpga-image completion.")
-
-    with lcd("""{}/results-build/{}/""".format(ddir, builddir)), StreamLogger('stdout'), StreamLogger('stderr'):
+    results_build_dir = """{}/results-build/{}/""".format(ddir, builddir)
+    with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
         checkstate = "pending"
         while checkstate == "pending":
             imagestate = local("""aws ec2 describe-fpga-images --fpga-image-id {} | tee AGFI_INFO""".format(afi), capture=True)
@@ -197,7 +197,13 @@ def aws_build(global_build_config, bypass=False):
     with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
         outputfile.write(agfi_entry)
 
-
+    if global_build_config.post_build_hook is not None:
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            localcap = local("""{} {}""".format(global_build_config.post_build_hook,
+                                                results_build_dir,
+                                                capture=True))
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
     rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
     rootLogger.info("Terminating the build instance now.")
