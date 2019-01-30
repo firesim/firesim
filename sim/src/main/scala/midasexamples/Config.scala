@@ -10,6 +10,7 @@ import junctions._
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class DefaultF1Config extends Config(new Config((site, here, up) => {
+    case firesim.firesim.DesiredHostFrequency => 75
     case SynthAsserts => true
     case SynthPrints => true
 }) ++ new Config(new firesim.firesim.WithDefaultMemModel ++ new midas.F1Config))

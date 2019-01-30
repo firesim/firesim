@@ -29,13 +29,6 @@ trait GeneratorUtils extends HasTargetAgnosticUtilites {
 object Generator extends App with GeneratorUtils {
   lazy val generatorArgs = GeneratorArgs(args)
   lazy val genDir = new File(names.targetDir)
-
-  //lazy val targetName = args(1)
-  //lazy val genDir = new File(args(2))
-  //lazy val platform = args(3) match {
-  //  case "f1" => midas.F1
-  //  case x => throw new RuntimeException(s"${x} platform is not supported in FireSim")
-  //}
   compile
   generateHostVerilogHeader
 }

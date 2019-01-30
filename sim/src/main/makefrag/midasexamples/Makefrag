@@ -26,11 +26,14 @@ src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+CONF_NAME ?= runtime.conf
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	# Remove once runtime conf generation is generalized, and something is always emitted
+	touch $(GENERATED_DIR)/$(CONF_NAME)
 
 ##########################
 # Driver Sources & Flags #
