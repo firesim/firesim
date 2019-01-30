@@ -102,7 +102,14 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
     make DESIGN=FireSimNoNIC
     make DESIGN=FireSimNoNIC -j run-asm-tests
     make DESIGN=FireSimNoNIC -j run-bmark-tests
+    
+Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
 
+::
+
+    make DESIGN=FireSimNoNIC verilator-debug
+    make DESIGN=FireSimNoNIC -j run-asm-tests-debug
+    make DESIGN=FireSimNoNIC -j run-bmark-tests-debug
 
 Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
 
