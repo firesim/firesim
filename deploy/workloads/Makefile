@@ -63,6 +63,8 @@ simperf-test-scale: simperf-test
 
 simperf-test-latency: simperf-test
 
+flash-stress: simperf-test-latency
+
 iperf3: iperf3.json
 	mkdir -p $@
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
@@ -90,4 +92,4 @@ ccbench-cache-sweep:
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
-	ccbench-cache-sweep
+	ccbench-cache-sweep flash-stress

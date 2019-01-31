@@ -21,6 +21,7 @@ date >> STRESSRUNS
 while [ $COUNTER -gt 0 ]; do
     firesim launchrunfarm -c workloads/unittest/flash-stress-config.ini
     firesim infrasetup -c workloads/unittest/flash-stress-config.ini
+    firesim runworkload -c workloads/unittest/flash-stress-config.ini
     firesim terminaterunfarm -c workloads/unittest/flash-stress-config.ini --forceterminate
     echo "done $COUNTER"
     echo "done $COUNTER" >> STRESSRUNS
