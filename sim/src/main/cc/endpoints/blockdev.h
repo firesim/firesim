@@ -63,7 +63,7 @@ class blockdev_t: public endpoint_t
         simif_t* sim;
         uint32_t _ntags;
         uint32_t _nsectors;
-        FILE *_file;
+        FILE *_file, *logfile;
         char * filename = NULL;
         std::queue<blkdev_request> requests;
         std::queue<blkdev_data> req_data;

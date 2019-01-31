@@ -16,6 +16,7 @@
 /* Uncomment to get DEBUG printing
  * TODO: better logging mechanism so that we don't need this */
 //#define BLKDEV_DEBUG
+#define blkdev_printf(...) if (this->logfile) { fprintf(this->logfile, __VA_ARGS__); fflush(this->logfile); }
 
 /* Block Dev software driver constructor.
  * Setup software driver state:
@@ -27,6 +28,7 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
     long size;
     long mem_filesize = 0;
 
+    const char *logname;
 
     // construct arg parsing strings here. We basically append the endpoint
     // number to each of these base strings, to get args like +blkdev0 etc.
@@ -36,6 +38,7 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
     std::string blkdevinmem_arg =    std::string("+blkdev-in-mem") + num_equals;
     std::string blkdevwlatency_arg = std::string("+blkdev-wlatency") + num_equals;
     std::string blkdevrlatency_arg = std::string("+blkdev-rlatency") + num_equals;
+    std::string blkdevlog_arg      = std::string("+blkdev-log") + num_equals;
 
     for (auto &arg: args) {
         if (arg.find(blkdev_arg) == 0) {
@@ -51,6 +54,9 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
         if (arg.find(blkdevrlatency_arg) == 0) {
             read_latency = atoi(const_cast<char*>(arg.c_str()) + blkdevrlatency_arg.length());
         }
+        if (arg.find(blkdevlog_arg) == 0) {
+            logname = const_cast<char*>(arg.c_str()) + blkdevlog_arg.length();
+        }
     }
 
     uint32_t max_latency = (1UL << latency_bits) - 1;
@@ -64,6 +70,14 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
         fprintf(stderr, "Requested blockdev read latency (%u) exceeds HW limit (%u).\n",
                 read_latency, max_latency);
         abort();
+    }
+
+    if (logname) {
+        logfile = fopen(logname, "w");
+        if (logfile == NULL) {
+            fprintf(stderr, "Could not open %s\n", logname);
+            abort();
+        }
     }
 
     if (filename) {
@@ -101,6 +115,8 @@ blockdev_t::~blockdev_t() {
     if (filename) {
         fclose(_file);
     }
+    if (logfile)
+        fclose(logfile);
 }
 
 /* "init" for blockdev widget that gets called right before target_reset.
@@ -267,7 +283,7 @@ void blockdev_t::recv() {
         write(this->mmio_addrs->bdev_req_ready, true);
         requests.push(req);
 #ifdef BLKDEV_DEBUG
-        fprintf(stderr, "[disk] got req. write %x, offset %x, len %x, tag %x\n",
+       blkdev_printf("[disk] got req. write %x, offset %x, len %x, tag %x\n",
                 req.write, req.offset, req.len, req.tag);
 #endif
     }
@@ -282,7 +298,7 @@ void blockdev_t::recv() {
         write(this->mmio_addrs->bdev_data_ready, true);
         req_data.push(data);
 #ifdef BLKDEV_DEBUG
-        fprintf(stderr, "[disk] got data. data %llx, tag %x\n", data.data, data.tag);
+        blkdev_printf("[disk] got data. data %llx, tag %x\n", data.data, data.tag);
 #endif
     }
 }
@@ -297,7 +313,7 @@ void blockdev_t::send() {
         write(this->mmio_addrs->bdev_wack_tag, tag);
         write(this->mmio_addrs->bdev_wack_valid, true);
 #ifdef BLKDEV_DEBUG
-        fprintf(stderr, "[disk] sending W ack. tag %x\n", tag);
+        blkdev_printf("[disk] sending W ack. tag %x\n", tag);
 #endif
         write_acks.pop();
     }
@@ -311,7 +327,7 @@ void blockdev_t::send() {
         write(this->mmio_addrs->bdev_rresp_tag, resp.tag);
         write(this->mmio_addrs->bdev_rresp_valid, true);
 #ifdef BLKDEV_DEBUG
-        fprintf(stderr, "[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
+        blkdev_printf("[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
 #endif
         read_responses.pop();
     }
