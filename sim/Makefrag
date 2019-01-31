@@ -110,6 +110,7 @@ verif_dir      := $(fpga_work_dir)/verif
 fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
 ila_work_dir   := $(fpga_work_dir)/design/ila_files/
 fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
+repo_state     := $(fpga_work_dir)/design/repo_state
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
@@ -117,6 +118,7 @@ $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	touch $@
 
 $(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
+	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 	cp -f $< $@
 	sed -i "s/\$$random/64'b0/g" $@
 	sed -i 's/fatal/fatal(0, "")/g' $@
