@@ -39,7 +39,7 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 gapbs: input = test
 
 $(GAP_DIR)/overlay/$(input):
-	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input) --json-ini
+	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
  
 
 gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
