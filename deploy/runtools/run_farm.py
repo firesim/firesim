@@ -7,8 +7,13 @@ from awstools.awstools import *
 from fabric.api import *
 from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
+import time
 
 rootLogger = logging.getLogger()
+
+def remote_kmsg(message):
+    commd = """echo '{}' | sudo tee /dev/kmsg""".format(message)
+    run(commd, shell=True)
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
@@ -330,23 +335,35 @@ class InstanceDeployManager:
 
     def unload_xdma(self):
         self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
+
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-            run('sudo rmmod xdma')
             # fpga mgmt tools seem to force load xocl after a flash now...
             # so we just remove everything for good measure:
+            remote_kmsg("removing_xdma_start")
             run('sudo rmmod xocl')
+            run('sudo rmmod xdma')
             run('sudo rmmod edma')
+            remote_kmsg("removing_xdma_end")
+
+        #self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
+        #time.sleep(10)
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
                 run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+                remote_kmsg("""done_clearing_fpga{}""".format(slotno))
+
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
+                remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
+
 
     def flash_fpgas(self):
         dummyagfi = None
@@ -507,6 +524,8 @@ class InstanceDeployManager:
             self.unload_xdma()
             # copy xdma driver
             self.fpga_node_xdma()
+            # load xdma
+            self.load_xdma()
 
             # clear/flash fpgas
             self.clear_fpgas()
