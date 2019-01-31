@@ -24,7 +24,7 @@ spec17_suites = intrate intspeed
 spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
 
 #Default to ref input size for SPEC17
-input=ref
+spec17-%: input = ref
 
 $(SPECKLE_DIR)/build/overlay/%/$(input):
 	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
@@ -35,12 +35,14 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
 
+#Default to test input size for GAPBS
+gapbs: input = test
+
 $(GAP_DIR)/overlay/$(input):
 	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input) --json-ini
  
 
 gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
-	cp $(GAP_DIR)/overlay/$(input)/gapbs.{json,ini} .
 	mkdir -p $@
 	cp $(BASE_LINUX) $@/bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
