@@ -229,6 +229,7 @@ For a complete run, you should expect output like the following:
 	[172.30.2.174] Installing AWS FPGA SDK on remote nodes.
 	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
 	[172.30.2.174] Copying AWS FPGA XDMA driver to remote node.
+	[172.30.2.174] Loading XDMA Driver Kernel Module.
 	[172.30.2.174] Clearing FPGA Slot 0.
 	[172.30.2.174] Flashing FPGA Slot: 0 with agfi: agfi-0eaa90f6bb893c0f7.
 	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
