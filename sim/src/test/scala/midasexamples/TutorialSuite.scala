@@ -3,6 +3,7 @@ package firesim.midasexamples
 
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
+import scala.io.Source
 
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
@@ -69,6 +70,26 @@ abstract class TutorialSuite(
       ignore should s"pass in ${testEnv}" in { }
     }
   }
+
+  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
+  // printfs from the RTL simulator
+  def diffSynthesizedPrints(synthPrintLog: String) {
+    behavior of "synthesized print log"
+    it should "match the logs produced by the verilated design" in {
+      def printLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
+      }
+
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
+      assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
+      for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
+        assert(vPrint == sPrint)
+      }
+    }
+  }
+
   clean
   mkdirs
   compile
@@ -90,3 +111,11 @@ class StackF1Test extends TutorialSuite("Stack", midas.F1, 8)
 class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
 class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)
+class PrintfModuleF1Test extends TutorialSuite("PrintfModule", midas.F1,
+  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
+  diffSynthesizedPrints("synthprinttest.out")
+}
+class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule", midas.F1,
+  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
+  diffSynthesizedPrints("synthprinttest.out")
+}

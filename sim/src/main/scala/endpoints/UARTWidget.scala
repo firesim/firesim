@@ -1,7 +1,7 @@
 package firesim
 package endpoints
 
-import midas.core._
+import midas.core.{HostPort}
 import midas.widgets._
 
 import chisel3._

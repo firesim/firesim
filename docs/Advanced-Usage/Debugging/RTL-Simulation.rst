@@ -102,14 +102,21 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
     make DESIGN=FireSimNoNIC
     make DESIGN=FireSimNoNIC -j run-asm-tests
     make DESIGN=FireSimNoNIC -j run-bmark-tests
+    
+Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
 
+::
+
+    make DESIGN=FireSimNoNIC verilator-debug
+    make DESIGN=FireSimNoNIC -j run-asm-tests-debug
+    make DESIGN=FireSimNoNIC -j run-bmark-tests-debug
 
 Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
 
 ::
 
     make DESIGN=FireSimNoNIC
-    make $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.out
+    make DESIGN=FireSimNoNIC $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.out
 
 Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
 
@@ -117,7 +124,7 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
 
 
     make DESIGN=FireSimNoNIC vcs-debug
-    make EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.vpd
+    make DESIGN=FireSimNoNIC EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.vpd
 
 
 FPGA-Level Simulation

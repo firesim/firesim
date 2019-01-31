@@ -31,3 +31,6 @@
 [submodule "deploy/workloads/gapbs"]
 	path = deploy/workloads/runscripts/gapbs-scripts/gapbs
 	url = https://github.com/sbeamer/gapbs.git
+[submodule "deploy/workloads/ccbench-cache-sweep/ccbench"]
+	path = deploy/workloads/ccbench-cache-sweep/ccbench
+	url = https://github.com/ucb-bar/ccbench
