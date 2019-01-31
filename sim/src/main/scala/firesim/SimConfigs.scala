@@ -74,6 +74,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     maxReadLength = 8,
     maxWriteLength = 8,
     beatCounters = true,
+    stallEventCounters = true,
     llcKey = site(LlcKey))
 
 	case MemModelKey => Some((p: Parameters) => new MidasMemModel(new
@@ -158,10 +159,12 @@ class FCFS16GBQuadRankLLC4MB extends Config(
 
 // DDR3 - First-Ready FCFS models
 class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
+  new WithFuncModelLimits(32,32) ++
   new WithDDR3FRFCFS(8, 8) ++
   new WithDefaultMemModel(clockDiv)
 )
 class FRFCFS16GBQuadRankLLC4MB extends Config(
+  new WithFuncModelLimits(32,32) ++
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank
 )
