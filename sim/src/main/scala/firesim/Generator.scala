@@ -44,7 +44,7 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites with HasTes
 
     val portList = target.getPorts flatMap {
       case Port(id: DebugIO, _) => None
-      case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
+      case Port(id: AutoBundle, _) => None
       case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 

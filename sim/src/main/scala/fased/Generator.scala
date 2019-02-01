@@ -2,8 +2,11 @@
 
 package firesim.fased
 
+import chisel3.internal.firrtl.{Port}
+
 import midas._
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.diplomacy.{AutoBundle}
 import java.io.File
 
 import firesim.util.{GeneratorArgs, HasTargetAgnosticUtilites}
@@ -19,16 +22,28 @@ trait GeneratorUtils extends HasTargetAgnosticUtilites {
     new firesim.passes.ILATopWiringTransform(genDir)
   )
 
-  def compile() { MidasCompiler(target, genDir, hostTransforms = hostTransforms)(hostParams) }
-  def compileWithSnaptshotting() {
-    MidasCompiler(target, genDir, hostTransforms = hostTransforms)(
-      hostParams alterPartial { case midas.EnableSnapshot => true })
+  def elaborateAndCompileWithMidas() {
+    val c3circuit = chisel3.Driver.elaborate(() => target)
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
+    val annos = c3circuit.annotations.map(_.toFirrtl)
+
+    val portList = target.getPorts flatMap {
+      case Port(id: AutoBundle, _) => None
+      case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
+    }
+
+    generatorArgs.midasFlowKind match {
+      case "midas" | "strober" =>
+        midas.MidasCompiler(
+          chirrtl, annos, portList, genDir, None, Seq(), hostTransforms
+        )(hostParams alterPartial {case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
+    }
   }
 }
 
 object Generator extends App with GeneratorUtils {
   lazy val generatorArgs = GeneratorArgs(args)
   lazy val genDir = new File(names.targetDir)
-  compile
+  elaborateAndCompileWithMidas
   generateHostVerilogHeader
 }

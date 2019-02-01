@@ -13,7 +13,7 @@ class test_harness_endpoint_t: public endpoint_t
         simif_t * sim;
 
     public:
-        test_harness_endpoint_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim) {};
+        test_harness_endpoint_t(simif_t* sim, const std::vector<std::string>& args): endpoint_t(sim), sim(sim) {};
         virtual ~test_harness_endpoint_t() {};
         virtual void init() {};
         virtual void tick();
