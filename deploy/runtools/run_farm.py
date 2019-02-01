@@ -12,6 +12,9 @@ import time
 rootLogger = logging.getLogger()
 
 def remote_kmsg(message):
+    """ This will let you write whatever is passed as message into the kernel
+    log of the remote machine.  Useful for figuring what the manager is doing
+    w.r.t output from kernel stuff on the remote node. """
     commd = """echo '{}' | sudo tee /dev/kmsg""".format(message)
     run(commd, shell=True)
 
