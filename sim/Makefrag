@@ -151,7 +151,7 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 #############################
 
 # Run XSIM DUT
-xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
+xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
 
 # Compile XSIM Driver #
