@@ -9,6 +9,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.MultiIOModule
 
 // From MIDAS
 import midas.widgets.{D2V, V2D, SkidRegister}
@@ -733,4 +734,16 @@ class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
   assert(!readValid || readCount === expectedCount)
 
   io.finished := state === s_done
+}
+
+// Checks AXI4 transactions to ensure they conform to the bounds
+// set in the memory model configuration eg. Max burst lengths respected
+// NOTE: For use only in a FAME1 context
+class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends MultiIOModule {
+  val axi4 = IO(Input(new NastiIO))
+
+  assert(!axi4.ar.fire || axi4.ar.bits.len < cfg.maxReadLength.U,
+    s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+  assert(!axi4.aw.fire || axi4.aw.bits.len < cfg.maxWriteLength.U,
+    s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
 }
