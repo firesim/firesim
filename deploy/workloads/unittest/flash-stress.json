@@ -1,0 +1,7 @@
+{
+  "benchmark_name" : "simperf-test-latency",
+  "common_bootbinary" : "bbl-vmlinux",
+  "common_rootfs"     : "poweroffnode.ext2",
+  "common_outputs"    : [],
+  "common_simulation_outputs" : ["uartlog"]
+}

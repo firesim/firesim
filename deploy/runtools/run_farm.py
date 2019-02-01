@@ -7,8 +7,16 @@ from awstools.awstools import *
 from fabric.api import *
 from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
+import time
 
 rootLogger = logging.getLogger()
+
+def remote_kmsg(message):
+    """ This will let you write whatever is passed as message into the kernel
+    log of the remote machine.  Useful for figuring what the manager is doing
+    w.r.t output from kernel stuff on the remote node. """
+    commd = """echo '{}' | sudo tee /dev/kmsg""".format(message)
+    run(commd, shell=True)
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
@@ -307,7 +315,7 @@ class InstanceDeployManager:
         # TODO: we checkout a specific version of aws-fpga here, in case upstream
         # master is bumped. But now we have to remember to change AWS_FPGA_FIRESIM_UPSTREAM_VERSION
         # when we bump our stuff. Need a better way to do this.
-        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "2fdf23ffad944cb94f98d09eed0f34c220c522fe"
+        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "e5b68dd8d432c746f7094b54abf35334bc51b9d1"
         self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(AWS_FPGA_FIRESIM_UPSTREAM_VERSION))
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
@@ -315,33 +323,50 @@ class InstanceDeployManager:
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
-    def fpga_node_edma(self):
-        """ Copy EDMA infra to remote node. This assumes that the driver was
+    def fpga_node_xdma(self):
+        """ Copy XDMA infra to remote node. This assumes that the driver was
         already built and that a binary exists in the directory on this machine
         """
-        self.instance_logger("""Copying AWS FPGA EDMA driver to remote node.""")
+        self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run('mkdir -p /home/centos/edma/')
+            run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                '/home/centos/edma/', mirror_local_mode=True)
-            with cd('/home/centos/edma/linux_kernel_drivers/xdma/'):
+                '/home/centos/xdma/', mirror_local_mode=True)
+            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
+                run('make clean')
                 run('make')
 
-    def unload_edma(self):
-        self.instance_logger("Unloading EDMA Driver Kernel Module.")
+    def unload_xdma(self):
+        self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
+
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            # fpga mgmt tools seem to force load xocl after a flash now...
+            # so we just remove everything for good measure:
+            remote_kmsg("removing_xdma_start")
+            run('sudo rmmod xocl')
             run('sudo rmmod xdma')
+            run('sudo rmmod edma')
+            remote_kmsg("removing_xdma_end")
+
+        #self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
+        #time.sleep(10)
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
                 run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+                remote_kmsg("""done_clearing_fpga{}""".format(slotno))
+
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
+                remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
+
 
     def flash_fpgas(self):
         dummyagfi = None
@@ -378,12 +403,17 @@ class InstanceDeployManager:
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
 
-    def load_edma(self):
-        """ load the edma kernel module. """
-        self.instance_logger("Loading EDMA Driver Kernel Module.")
+    def load_xdma(self):
+        """ load the xdma kernel module. """
+        # fpga mgmt tools seem to force load xocl after a flash now...
+        # xocl conflicts with the xdma driver, which we actually want to use
+        # so we just remove everything for good measure before loading xdma:
+        self.unload_xdma()
+        # now load xdma
+        self.instance_logger("Loading XDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/edma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
+            run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
@@ -493,17 +523,19 @@ class InstanceDeployManager:
                 self.copy_sim_slot_infrastructure(slotno)
 
             self.get_and_install_aws_fpga_sdk()
-            # unload any existing edma
-            self.unload_edma()
-            # copy edma driver
-            self.fpga_node_edma()
+            # unload any existing edma/xdma/xocl
+            self.unload_xdma()
+            # copy xdma driver
+            self.fpga_node_xdma()
+            # load xdma
+            self.load_xdma()
 
             # clear/flash fpgas
             self.clear_fpgas()
             self.flash_fpgas()
 
-            # re-load EDMA
-            self.load_edma()
+            # re-load XDMA
+            self.load_xdma()
 
             #restart (or start form scratch) ila server
             self.kill_ila_server()

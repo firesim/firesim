@@ -227,11 +227,13 @@ For a complete run, you should expect output like the following:
 	[172.30.2.174] Executing task 'infrasetup_node_wrapper'
 	[172.30.2.174] Copying FPGA simulation infrastructure for slot: 0.
 	[172.30.2.174] Installing AWS FPGA SDK on remote nodes.
-	[172.30.2.174] Unloading EDMA Driver Kernel Module.
-	[172.30.2.174] Copying AWS FPGA EDMA driver to remote node.
+	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+	[172.30.2.174] Copying AWS FPGA XDMA driver to remote node.
+	[172.30.2.174] Loading XDMA Driver Kernel Module.
 	[172.30.2.174] Clearing FPGA Slot 0.
 	[172.30.2.174] Flashing FPGA Slot: 0 with agfi: agfi-0eaa90f6bb893c0f7.
-	[172.30.2.174] Loading EDMA Driver Kernel Module.
+	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+	[172.30.2.174] Loading XDMA Driver Kernel Module.
 	The full log of this run is:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-32-02-infrasetup-9DJJCX29PF4GAIVL.log
 

@@ -162,6 +162,12 @@ To run a simulation you need to make both the DUT and driver targets by typing:
     make run-xsim SIM_BINARY=<PATH/TO/BINARY/FOR/TARGET/TO/RUN> # Launch the driver
 
 
+When following this process, you should wait until ``make xsim-dut`` prints
+``opening driver to xsim`` before running ``make run-xsim`` (getting these prints from
+``make xsim-dut`` will take a while). Additionally, you will want to use
+``DESIGN=FireSimNoNIC``, since the XSim scripts included with ``aws-fpga`` do
+not support DMA PCIS.
+
 Once both processes are running, you should see:
 
 ::
