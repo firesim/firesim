@@ -91,7 +91,7 @@ run-vcs: $(vcs)
 	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS)
 
 run-vcs-debug: $(vcs_debug)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=waves.vpd
 
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS)
