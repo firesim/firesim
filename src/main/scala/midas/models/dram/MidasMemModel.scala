@@ -5,6 +5,7 @@ package models
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.amba.axi4.{AXI4EdgeParameters}
 import junctions._
 
 import chisel3._
@@ -70,6 +71,22 @@ abstract class BaseConfig(
   val params: BaseParams
 ) extends MemModelConfig {
 
+  // Returns (maxReadLength, maxWriteLength)
+  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
+    val beatBytes = e.slave.beatBytes
+    val readXferSize  = e.slave.slaves.head.supportsRead.max
+    val writeXferSize = e.slave.slaves.head.supportsWrite.max
+    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
+  }
+  // Returns max ID reuse
+  private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
+      case _ => None // At least one master reuses IDs infinitely
+    })
+  }
+
   def getMaxPerID(modelMaxXactions: Int, userMax: Option[Int]): Int = {
     min(userMax.getOrElse(modelMaxXactions), modelMaxXactions)
   }
@@ -77,13 +94,28 @@ abstract class BaseConfig(
   def maxWrites = params.maxWrites
   def maxReads = params.maxReads
 
-  def maxReadLength = params.maxReadLength
-  def maxWriteLength = params.maxWriteLength
+  def maxReadLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => getMaxTransferFromEdge(e)._1
+    case _ => params.maxReadLength
+  }
 
+  def maxWriteLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => getMaxTransferFromEdge(e)._2
+    case _ => params.maxWriteLength
+  }
+
+  // TODO: Should just be able to count the IDs from the masters in the edge
   def numNastiIDs(implicit p: Parameters) = 1 << p(NastiKey).idBits
 
-  def maxWritesPerID(implicit p: Parameters) =  getMaxPerID(maxWrites, params.maxWritesPerID)
-  def maxReadsPerID(implicit p: Parameters) =  getMaxPerID(maxReads, params.maxReadsPerID)
+  def maxWritesPerID(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => getIDReuseFromEdge(e).getOrElse(maxWrites)
+    case _ => getMaxPerID(maxWrites, params.maxWritesPerID)
+  }
+
+  def maxReadsPerID(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => getIDReuseFromEdge(e).getOrElse(maxReads)
+    case _ => getMaxPerID(maxReads, params.maxReadsPerID)
+  }
 
   def useLLCModel = params.llcKey != None
 
@@ -439,6 +471,10 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     println("Generating a Midas Memory Model")
     println("  Max Read Requests: " + cfg.maxReads)
     println("  Max Write Requests: " + cfg.maxReads)
+    println("  Max Read Length: " + cfg.maxReadLength)
+    println("  Max Write Length: " + cfg.maxWriteLength)
+    println("  Max Read ID Reuse: " + cfg.maxReadsPerID)
+    println("  Max Write ID Reuse: " + cfg.maxWritesPerID)
 
     println("\nTiming Model Parameters")
     model.printGenerationConfig
