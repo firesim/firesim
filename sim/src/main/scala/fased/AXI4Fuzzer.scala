@@ -15,13 +15,13 @@ import midas.widgets.AXI4BundleWithEdge
 // TODO: Handle errors and reinstatiate the TLErrorEvaluator
 class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val nMemoryChannels = 1
-  val fuzz  = LazyModule(new TLFuzzer(10000, overrideAddress = Some(fuzzAddr)))
+  val fuzz  = LazyModule(new TLFuzzer(p(NumTransactions), p(MaxFlight), overrideAddress = Some(fuzzAddr)))
   val model = LazyModule(new TLRAMModel("AXI4FuzzMaster"))
   val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i => p(AXI4SlavePort) })
 
   (slave
     := AXI4UserYanker()
-    := AXI4Deinterleaver(64)
+    := AXI4IdIndexer(p(IDBits))
     := TLToAXI4()
     := TLDelayer(0.1)
     := TLBuffer(BufferParams.flow)
