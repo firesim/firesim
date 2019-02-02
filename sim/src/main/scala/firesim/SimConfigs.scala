@@ -71,8 +71,8 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
   case BaseParamsKey => new BaseParams(
     maxReads = 16,
     maxWrites = 16,
-    maxReadLength = 8,
-    maxWriteLength = 8,
+    maxReadLength = 16,
+    maxWriteLength = 16,
     beatCounters = true,
     llcKey = site(LlcKey))
 
