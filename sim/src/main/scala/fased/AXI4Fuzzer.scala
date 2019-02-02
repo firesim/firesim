@@ -7,28 +7,25 @@ import chisel3.experimental.MultiIOModule
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
-
-class AXI4Fuzzer(implicit p: Parameters) extends LazyModule {
-
+// TODO: Handle errors and reinstatiate the TLErrorEvaluator
+class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val nMemoryChannels = 1
-  val master = LazyModule(new AXI4FuzzMaster(10000)) // txns
-  val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels) { channel =>
-    val base = Seq(AddressSet(BigInt(0), BigInt(0xFF)))
+  val fuzz  = LazyModule(new TLFuzzer(10000, overrideAddress = Some(fuzzAddr)))
+  val model = LazyModule(new TLRAMModel("AXI4FuzzMaster"))
+  val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i => p(AXI4SlavePort) })
 
-    AXI4SlavePortParameters(
-      slaves = Seq(AXI4SlaveParameters(
-        address       = base,
-        regionType    = RegionType.UNCACHED,   // cacheable
-        executable    = true,
-        supportsWrite = TransferSizes(1, 128),
-        supportsRead  = TransferSizes(1, 128),
-        interleavedId = Some(0))),
-      beatBytes = 16)
-  })
-
-  slave := master.node
+  (slave
+    := AXI4UserYanker()
+    := AXI4Deinterleaver(64)
+    := TLToAXI4()
+    := TLDelayer(0.1)
+    := TLBuffer(BufferParams.flow)
+    := TLDelayer(0.1)
+    := model.node
+    := fuzz.node)
 
   lazy val module = new LazyModuleImp(this) {
     val axi4 = IO(slave.in.head._1.cloneType)
@@ -36,7 +33,7 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule {
     val error = IO(Output(Bool()))
 
     axi4 <> slave.in.head._1
-    done := master.module.io.finished
+    done := fuzz.module.io.finished
     error := false.B
   }
 }
