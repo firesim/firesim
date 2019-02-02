@@ -365,7 +365,7 @@ user-provided target project.
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.ini
    :code: ini
 
 
