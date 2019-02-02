@@ -33,6 +33,7 @@ import midas.widgets.{SatUpDownCounter}
 
 trait IngressModuleParameters {
   val cfg: BaseConfig
+  implicit val p: Parameters
   // In general the only consequence of undersizing these are more wasted
   // host cycles the model waits to drain these
   val ingressAWQdepth = cfg.maxWrites
