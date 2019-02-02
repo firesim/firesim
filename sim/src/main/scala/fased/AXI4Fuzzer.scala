@@ -10,6 +10,8 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
+import midas.widgets.AXI4BundleWithEdge
+
 // TODO: Handle errors and reinstatiate the TLErrorEvaluator
 class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val nMemoryChannels = 1
@@ -28,7 +30,7 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
     := fuzz.node)
 
   lazy val module = new LazyModuleImp(this) {
-    val axi4 = IO(slave.in.head._1.cloneType)
+    val axi4 = IO(AXI4BundleWithEdge(slave.in.head))
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 
