@@ -93,7 +93,7 @@ class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) =
 // Changes the default DRAM memory organization.
 class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
     extends Config((site, here, up) => {
-  case DramOrganizationKey => up(DramOrganizationKey).copy(
+  case DramOrganizationKey => up(DramOrganizationKey, site).copy(
     maxBanks = maxBanks,
     maxRanks = maxRanks,
     dramSize = dramSize
@@ -124,7 +124,7 @@ class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, her
 
 // Changes the functional model capacity limits
 class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, here, up) => {
-  case BaseParamsKey => up(BaseParamsKey).copy(
+  case BaseParamsKey => up(BaseParamsKey, site).copy(
     maxReads = maxReads,
     maxWrites = maxWrites
   )
