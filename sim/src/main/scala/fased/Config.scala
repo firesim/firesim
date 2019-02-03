@@ -39,11 +39,5 @@ class DefaultF1Config extends Config(
   new midas.F1Config)
 
 class DDR3Config extends Config(
-  // THE FOLLOWING CONFIG IS BROKEN AF.
-  //new firesim.firesim.FRFCFS16GBQuadRankLLC4MB3Div ++
-  // Splay it out instead
-  new firesim.firesim.WithFuncModelLimits(32,32) ++
-  new firesim.firesim.WithLLCModel(4096, 8) ++
-  new firesim.firesim.WithDDR3FRFCFS(8, 8) ++
-  new firesim.firesim.WithDefaultMemModel(3) ++
+  new firesim.firesim.FRFCFS16GBQuadRankLLC4MB3Div ++
   new DefaultF1Config)
