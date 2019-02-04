@@ -53,11 +53,16 @@ Runtime Arguments
     Specifies the target cycle at which to stop pulling the synthesized print
     trace from the simulator.
 
-**+print-human-readable**
-    By default, a captured printf trace will be written to file as a raw,
-    unformatted binary, as properly formatting the printf further slows the
-    simulator.  Setting this will properly format the print data before writing
-    it to file.
+**+print-binary**
+    By default, a captured printf trace will be written to file formatted
+    as it would be emitted by a software RTL simulator. Setting this dumps the
+    raw binary coming off the FPGA instead, improving simulation rate.
+
+**+print-no-cycle-prefix**
+    (Formatted output only) This removes the cycle prefix from each printf to
+    save bandwidth in cases where the printf already includes a cycle field. In
+    binary-output mode, since the target cycle is implicit in the token stream,
+    this flag has no effect.
 
 Related Publications
 --------------------
