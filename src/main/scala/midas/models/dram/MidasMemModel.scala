@@ -67,9 +67,7 @@ case class BaseParams(
   addrRangeCounters: BigInt = BigInt(0)
 )
 
-abstract class BaseConfig(
-  val params: BaseParams
-) extends MemModelConfig {
+abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) extends MemModelConfig {
 
   // Returns (maxReadLength, maxWriteLength)
   private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
@@ -78,52 +76,61 @@ abstract class BaseConfig(
     val writeXferSize = e.slave.slaves.head.supportsWrite.max
     ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
   }
-  // Returns max ID reuse
+
+  // Returns max ID reuse; None -> unbounded
   private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
     val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
     maxFlightPerMaster.reduce( (_,_) match {
       case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
-      case _ => None // At least one master reuses IDs infinitely
+      case _ => None
     })
   }
 
-  def getMaxPerID(modelMaxXactions: Int, userMax: Option[Int]): Int = {
-    min(userMax.getOrElse(modelMaxXactions), modelMaxXactions)
+  // Sums up the maximum number of requests that can be inflight across all masters
+  // None -> unbounded
+  private def getMaxTotalFlightFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(prev + cur)
+      case _ => None
+    })
   }
 
-  def maxWrites = params.maxWrites
-  def maxReads = params.maxReads
+  private def getMaxPerID(e: Option[AXI4EdgeParameters], modelMaxXactions: Int, userMax: Option[Int]): Int = {
+    e.flatMap(getIDReuseFromEdge)
+     .getOrElse(min(userMax.getOrElse(modelMaxXactions), modelMaxXactions))
+  }
 
-  def maxReadLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+  def maxReadLength = p(FasedAXI4Edge) match {
     case Some(e) => getMaxTransferFromEdge(e)._1
     case _ => params.maxReadLength
   }
 
-  def maxWriteLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+  def maxWriteLength = p(FasedAXI4Edge) match {
     case Some(e) => getMaxTransferFromEdge(e)._2
     case _ => params.maxWriteLength
   }
 
-  // TODO: Should just be able to count the IDs from the masters in the edge
-  def numNastiIDs(implicit p: Parameters) = 1 << p(NastiKey).idBits
+  def maxWritesPerID = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
+  def maxReadsPerID = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
 
-  def maxWritesPerID(implicit p: Parameters) = p(FasedAXI4Edge) match {
-    case Some(e) => getIDReuseFromEdge(e).getOrElse(maxWrites)
-    case _ => getMaxPerID(maxWrites, params.maxWritesPerID)
+  def maxWrites = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxWrites)
+    min(params.maxWrites, maxFromEdge)
   }
 
-  def maxReadsPerID(implicit p: Parameters) = p(FasedAXI4Edge) match {
-    case Some(e) => getIDReuseFromEdge(e).getOrElse(maxReads)
-    case _ => getMaxPerID(maxReads, params.maxReadsPerID)
+  def maxReads = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxReads)
+    min(params.maxReads, maxFromEdge)
   }
 
   def useLLCModel = params.llcKey != None
 
   // Timing model classes implement this function to elaborate the correct module
-  def elaborate()(implicit p: Parameters): TimingModel
+  def elaborate(): TimingModel
 
-  val maxWritesBits = log2Up(maxWrites)
-  val maxReadsBits = log2Up(maxReads)
+  def maxWritesBits = log2Up(maxWrites)
+  def maxReadsBits = log2Up(maxReads)
 }
 
 

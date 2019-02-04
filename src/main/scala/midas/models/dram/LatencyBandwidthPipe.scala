@@ -10,8 +10,9 @@ import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
 
-case class LatencyPipeConfig(baseParams: BaseParams) extends BaseConfig(baseParams) {
-  def elaborate()(implicit p:Parameters): LatencyPipe = Module(new LatencyPipe(this))
+case class LatencyPipeConfig(baseParams: BaseParams)(implicit p: Parameters)
+    extends BaseConfig(baseParams)(p) {
+  def elaborate(): LatencyPipe = Module(new LatencyPipe(this))
 }
 
 class LatencyPipeMMRegIO(cfg: BaseConfig) extends SplitTransactionMMRegIO(cfg){
