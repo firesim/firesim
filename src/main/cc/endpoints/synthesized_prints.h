@@ -74,8 +74,8 @@ class synthesized_prints_t: public endpoint_t
         std::ostream* printstream; // Is set to std::cerr otherwise
         uint64_t start_cycle, end_cycle; // Bounds between which prints will be emitted
         uint64_t current_cycle = 0;
-        bool human_readable = false;
-        bool print_cycle_prefix = false;
+        bool human_readable = true;
+        bool print_cycle_prefix = true;
 
         std::vector<std::vector<size_t>> widths;
         std::vector<size_t> sizes;
