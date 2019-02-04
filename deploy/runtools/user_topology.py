@@ -275,22 +275,25 @@ class UserTopologies(object):
 
     def base_memblade_config(self, n, m):
         self.base_twohw_config(
-                "firesim-quadcore-rmc-ddr3-llc4mb",
+                "firesim-quadcore-rdma-l2-nic-ddr3",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
     def base_dram_cache_config(self, n, m):
         self.base_twohw_config(
-                "firesim-quadcore-dram-cache-ddr3",
+                "firesim-quadcore-dramcache-l2-nic-ddr3",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
-    def example_memblade_2config(self):
+    def example_memblade_1x1config(self):
         self.base_memblade_config(1, 1)
 
-    def example_memblade_4config(self):
+    def example_memblade_2x2config(self):
         self.base_memblade_config(2, 2)
 
-    def example_dram_cache_2config(self):
+    def example_dram_cache_1x1config(self):
         self.base_dram_cache_config(1, 1)
+
+    def example_dram_cache_1x2config(self):
+        self.base_dram_cache_config(1, 2)
 
     @staticmethod
     def supernode_flatten(arr):

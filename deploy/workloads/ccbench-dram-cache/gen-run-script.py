@@ -9,7 +9,8 @@ def main():
     parser.add_argument("--maxsize",   type=int, default=1 << 33)
     parser.add_argument("--iters",     type=int, default=1000000)
     parser.add_argument("--macsuffix", type=int, default=3 << 8)
-    parser.add_argument("--startspan", type=int, default=8)
+    parser.add_argument("--startext", type=int, default=1)
+    parser.add_argument("--nservers",  type=int, default=2)
     args = parser.parse_args()
 
     linewords = args.linesize / args.wordsize
@@ -28,8 +29,9 @@ def main():
 
     for typ in types:
         for size in sizes:
-            print("/root/caches {} {} {} {} {}".format(
-                size, args.iters, typ, args.macsuffix, args.startspan))
+            print("/root/caches {} {} {} {} {} {}".format(
+                size, args.iters, typ,
+                args.macsuffix, args.startext, args.nservers))
 
 if __name__ == "__main__":
     main()

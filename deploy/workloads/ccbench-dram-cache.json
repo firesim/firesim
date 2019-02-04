@@ -21,6 +21,14 @@
           "command" : "",
           "simulation_outputs" : [],
           "outputs" : []
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
       }
   ]
 }
