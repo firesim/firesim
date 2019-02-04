@@ -59,8 +59,7 @@ private[midas] class MidasTransforms(
       // Any subFields must be flattened out beforing linking in HighForm constructs must Lower 
       firrtl.CompilerUtils.getLoweringTransforms(HighForm, LowForm) ++ Seq(
         new SimulationMapping(io),
-        new PlatformMapping(state.circuit.main, dir),
-        new EmitFirrtl("post-platform-mapping.fir")
+        new PlatformMapping(state.circuit.main, dir)
       )
       (xforms foldLeft state)((in, xform) =>
         xform runTransform in).copy(form=outputForm)
