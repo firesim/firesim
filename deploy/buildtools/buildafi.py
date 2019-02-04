@@ -186,7 +186,7 @@ def aws_build(global_build_config, bypass=False):
     with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
         outputfile.write(agfi_entry)
 
-    if global_build_config.post_build_hook is not None:
+    if global_build_config.post_build_hook:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             localcap = local("""{} {}""".format(global_build_config.post_build_hook,
                                                 results_build_dir,
