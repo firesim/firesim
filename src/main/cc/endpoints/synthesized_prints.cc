@@ -37,10 +37,10 @@ synthesized_prints_t::synthesized_prints_t(
   std::string printfile_arg  = std::string("+print-file=");
   std::string printstart_arg = std::string("+print-start=");
   std::string printend_arg   = std::string("+print-end=");
-  // Properly formats the printfs, before writing them to file
-  std::string humanreadable_arg   = std::string("+print-human-readable");
-  // In human-readable mode, when set, prefixes each print with the cycle number
-  std::string cycleprefix_arg   = std::string("+print-cycle-prefix");
+  // Does not format the printfs, before writing them to file
+  std::string binary_arg   = std::string("+print-binary");
+  // Removes the cycle prefix from human-readable output
+  std::string cycleprefix_arg   = std::string("+print-no-cycle-prefix");
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
@@ -61,11 +61,11 @@ synthesized_prints_t::synthesized_prints_t(
           char *str = const_cast<char*>(arg.c_str()) + printend_arg.length();
           this->end_cycle = atol(str);
       }
-      if (arg.find(humanreadable_arg) == 0) {
-          human_readable = true;
+      if (arg.find(binary_arg) == 0) {
+          human_readable = false;
       }
       if (arg.find(cycleprefix_arg) == 0) {
-          print_cycle_prefix = true;
+          print_cycle_prefix = false;
       }
   }
   current_cycle = start_cycle; // We won't receive tokens until start_cycle; so fast-forward
