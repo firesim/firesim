@@ -1,6 +1,6 @@
 //See LICENSE for license details.
 
-package firesim.fased
+package firesim.fasedtests
 
 import chisel3._
 import chisel3.experimental.MultiIOModule

@@ -10,11 +10,11 @@
 
 #include "endpoints/synthesized_prints.h"
 
-class fased_top_t: virtual simif_t, public systematic_scheduler_t
+class fasedtests_top_t: virtual simif_t, public systematic_scheduler_t
 {
     public:
-        fased_top_t(int argc, char** argv);
-        ~fased_top_t() { }
+        fasedtests_top_t(int argc, char** argv);
+        ~fasedtests_top_t() { }
         void run();
 
     protected:

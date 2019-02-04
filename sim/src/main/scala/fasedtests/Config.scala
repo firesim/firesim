@@ -1,6 +1,6 @@
 //See LICENSE for license details.
 
-package firesim.fased
+package firesim.fasedtests
 
 import freechips.rocketchip.config.{Field, Config}
 import freechips.rocketchip.subsystem.WithoutTLMonitors

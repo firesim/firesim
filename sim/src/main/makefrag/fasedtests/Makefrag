@@ -1,16 +1,16 @@
 # These point at the main class of the target's Chisel generator
-DESIGN_PACKAGE ?= firesim.fased
+DESIGN_PACKAGE ?= firesim.fasedtests
 DESIGN ?= AXI4Fuzzer
 
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
-TARGET_CONFIG_PACKAGE ?= firesim.fased
+TARGET_CONFIG_PACKAGE ?= firesim.fasedtests
 TARGET_CONFIG ?= DefaultConfig
 # TARGET_CONFIG ?= FireSimBoomConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
-PLATFORM_CONFIG_PACKAGE ?= firesim.fased
+PLATFORM_CONFIG_PACKAGE ?= firesim.fasedtests
 PLATFORM_CONFIG ?= DefaultF1Config
 
 base_dir = $(abspath .)
@@ -43,9 +43,9 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fased/* firesim/systematic_scheduler)))
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fasedtests/* firesim/systematic_scheduler)))
 
-TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/fased -I$(RISCV)/include
+TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/fasedtests -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
 ####################################

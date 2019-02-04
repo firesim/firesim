@@ -1,12 +1,12 @@
 //See LICENSE for license details.
-#include "fased_top.h"
+#include "fasedtests_top.h"
 #include "test_harness_endpoint.h"
 // MIDAS-defined endpoints
 #include "endpoints/fpga_memory_model.h"
 #include "endpoints/synthesized_assertions.h"
 #include "endpoints/synthesized_prints.h"
 
-fased_top_t::fased_top_t(int argc, char** argv)
+fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 {
     std::vector<std::string> args(argv + 1, argv + argc);
     max_cycles = -1;
@@ -121,7 +121,7 @@ uint64_t host_mem_offset = -0x80000000LL;
     add_endpoint(new test_harness_endpoint_t(this, args));
 }
 
-bool fased_top_t::simulation_complete() {
+bool fasedtests_top_t::simulation_complete() {
     bool is_complete = false;
     for (auto &e: endpoints) {
         is_complete |= e->terminate();
@@ -129,14 +129,14 @@ bool fased_top_t::simulation_complete() {
     return is_complete;
 }
 
-uint64_t fased_top_t::profile_models(){
+uint64_t fasedtests_top_t::profile_models(){
     for (auto mod: fpga_models) {
         mod->profile();
     }
     return profile_interval;
 }
 
-int fased_top_t::exit_code(){
+int fasedtests_top_t::exit_code(){
     for (auto &e: endpoints) {
         if (e->exit_code())
             return e->exit_code();
@@ -145,7 +145,7 @@ int fased_top_t::exit_code(){
 }
 
 
-void fased_top_t::run() {
+void fasedtests_top_t::run() {
     for (auto &e: fpga_models) {
         e->init();
     }
