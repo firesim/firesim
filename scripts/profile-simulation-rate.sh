@@ -34,6 +34,7 @@ export DESIGN=FireSimNoNIC
 export TARGET_CONFIG=FireSimRocketChipConfig
 export PLATFORM_CONFIG=FireSimConfig
 export SIM_ARGS=+verbose
+export TIME="%C %E real, %U user, %S sys"
 
 ## Verilator
 cd $firesim_root/target-design/firechip/verisim
@@ -69,26 +70,32 @@ tail waves.log >> $REPORT_FILE
 ml_output_dir=$firesim_root/sim/output/f1/$DESIGN-$TARGET_CONFIG-$PLATFORM_CONFIG
 test_symlink=$ml_output_dir/$TEST
 
-cd $firesim_root/sim
-make -j$MAKE_THREADS verilator
-make -j$MAKE_THREADS verilator-debug
-make -j$MAKE_THREADS vcs
-make -j$MAKE_THREADS vcs-debug
-mkdir -p $ml_output_dir
+for optlevel in 0 1 2
+do
+    echo -e "\nMIDAS-level Simulation, -O${optlevel}\n" >> $REPORT_FILE
+    cd $firesim_root/sim
+    make clean
+    make -j$MAKE_THREADS
+    /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS VERILATOR_CXXOPTS=-O${optlevel} verilator
+    /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS VERILATOR_CXXOPTS=-O${optlevel} verilator-debug
+    /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS VCS_CXXOPTS=-O${optlevel} vcs
+    /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS VCS_CXXOPTS=-O${optlevel} vcs-debug
+    mkdir -p $ml_output_dir
 
-# Symlink it twice so we have unique targets for vcs and verilator
-ln -sf $test_path $ml_output_dir/$TEST
-ln -sf $test_path $ml_output_dir/$TEST-vcs
+    # Symlink it twice so we have unique targets for vcs and verilator
+    ln -sf $test_path $ml_output_dir/$TEST
+    ln -sf $test_path $ml_output_dir/$TEST-vcs
 
-echo -e "\nMIDAS-level Waves Off\n" >> $REPORT_FILE
-make EMUL=vcs ${test_symlink}-vcs.out
-make ${test_symlink}.out
-grep -Eo "simulation speed = .*" $ml_output_dir/*out >> $REPORT_FILE
+    echo -e "\nWaves Off, -O${optlevel}\n" >> $REPORT_FILE
+    make EMUL=vcs ${test_symlink}-vcs.out
+    make ${test_symlink}.out
+    grep -Eo "simulation speed = .*" $ml_output_dir/*out >> $REPORT_FILE
 
-echo -e "\nMIDAS-level Waves On\n" >> $REPORT_FILE
-make EMUL=vcs ${test_symlink}-vcs.vpd
-make ${test_symlink}.vpd
-grep -Eo "simulation speed = .*" $ml_output_dir/*out >> $REPORT_FILE
+    echo -e "\nWaves On, -O${optlevel}\n" >> $REPORT_FILE
+    make EMUL=vcs ${test_symlink}-vcs.vpd
+    make ${test_symlink}.vpd
+    grep -Eo "simulation speed = .*" $ml_output_dir/*out >> $REPORT_FILE
+done
 
 ################################################################################
 # FPGA level
