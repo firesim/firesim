@@ -71,13 +71,11 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
   case BaseParamsKey => new BaseParams(
     maxReads = 16,
     maxWrites = 16,
-    maxReadLength = 8,
-    maxWriteLength = 8,
     beatCounters = true,
     llcKey = site(LlcKey))
 
 	case MemModelKey => Some((p: Parameters) => new MidasMemModel(new
-		LatencyPipeConfig(site(BaseParamsKey)))(p))
+		LatencyPipeConfig(site(BaseParamsKey))(p))(p))
 })
 
 
@@ -95,7 +93,7 @@ class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) =
 // Changes the default DRAM memory organization.
 class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
     extends Config((site, here, up) => {
-  case DramOrganizationKey => site(DramOrganizationKey).copy(
+  case DramOrganizationKey => up(DramOrganizationKey, site).copy(
     maxBanks = maxBanks,
     maxRanks = maxRanks,
     dramSize = dramSize
@@ -109,7 +107,7 @@ class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
     new FIFOMASConfig(
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey)))(p))
+      baseParams = site(BaseParamsKey))(p))(p))
 })
 
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
@@ -120,13 +118,13 @@ class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, her
       schedulerWindowSize = windowSize,
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey)))(p))
+      baseParams = site(BaseParamsKey))(p))(p))
   }
 )
 
 // Changes the functional model capacity limits
 class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, here, up) => {
-  case BaseParamsKey => up(BaseParamsKey).copy(
+  case BaseParamsKey => up(BaseParamsKey, site).copy(
     maxReads = maxReads,
     maxWrites = maxWrites
   )
