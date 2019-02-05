@@ -36,19 +36,27 @@ export PLATFORM_CONFIG=FireSimConfig
 export SIM_ARGS=+verbose
 export TIME="%C %E real, %U user, %S sys"
 
-## Verilator
-cd $firesim_root/target-design/firechip/verisim
-sim=simulator-example-DefaultExampleConfig
-make -j$MAKE_THREADS
-make -j$MAKE_THREADS debug
+for optlevel in 0 1 2
+do
 
-/usr/bin/time -a -o nowaves.log ./$sim $SIM_ARGS $test_path &> nowaves.log
-/usr/bin/time -a -o waves.log ./$sim-debug $SIM_ARGS -vtest.vcd $test_path &> waves.log
+    echo -e "\nVerilator TARGET-level Simulation, -O${optlevel}\n" >> $REPORT_FILE
+    ## Verilator
+    cd $firesim_root/target-design/firechip/verisim
+    sim=simulator-example-DefaultExampleConfig
 
-echo -e "\nTarget-level Verilator\n" >> $REPORT_FILE
-tail nowaves.log >> $REPORT_FILE
-echo -e "\nTarget-level Verilator -- Waves Enabled\n" >> $REPORT_FILE
-tail waves.log >> $REPORT_FILE
+    # Hack...
+    sed -i "'s/-O[0-3]/-O${optlevel}/'" Makefile
+    make -j$MAKE_THREADS
+    make -j$MAKE_THREADS debug
+
+    /usr/bin/time -a -o nowaves.log ./$sim $SIM_ARGS $test_path &> nowaves.log
+    /usr/bin/time -a -o waves.log ./$sim-debug $SIM_ARGS -vtest.vcd $test_path &> waves.log
+
+    echo -e "\nNo Waves\n" >> $REPORT_FILE
+    tail nowaves.log >> $REPORT_FILE
+    echo -e "\nWaves Enabled\n" >> $REPORT_FILE
+    tail waves.log >> $REPORT_FILE
+done
 
 ## VCS
 cd $firesim_root/target-design/firechip/vsim/
