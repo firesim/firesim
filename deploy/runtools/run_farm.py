@@ -102,6 +102,16 @@ class F1_16(F1_Instance):
         self.instance_id = F1_16.instance_counter
         F1_16.instance_counter += 1
 
+class F1_4(F1_Instance):
+    instance_counter = 0
+    FPGA_SLOTS = 2
+
+    def __init__(self):
+        super(F1_4, self).__init__()
+        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
+        self.instance_id = F1_4.instance_counter
+        F1_4.instance_counter += 1
+
 class F1_2(F1_Instance):
     instance_counter = 0
     FPGA_SLOTS = 1
@@ -127,10 +137,11 @@ class RunFarm:
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
 
-    def __init__(self, num_f1_16, num_f1_2, num_m4_16, runfarmtag,
+    def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
                  spot_max_price):
         self.f1_16s = [F1_16() for x in range(num_f1_16)]
+        self.f1_4s = [F1_4() for x in range(num_f1_4)]
         self.f1_2s = [F1_2() for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
 
@@ -143,6 +154,9 @@ class RunFarm:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
         for index in range(len(self.f1_16s)):
             self.f1_16s[index].assign_boto3_instance_object(MockBoto3Instance())
+
+        for index in range(len(self.f1_4s)):
+            self.f1_4s[index].assign_boto3_instance_object(MockBoto3Instance())
 
         for index in range(len(self.f1_2s)):
             self.f1_2s[index].assign_boto3_instance_object(MockBoto3Instance())
@@ -157,6 +171,8 @@ class RunFarm:
         # we always sort by private IP when handling instances
         available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
             self.runfarmtag, 'f1.16xlarge'))
+        available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+            self.runfarmtag, 'f1.4xlarge'))
         available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
             self.runfarmtag, 'm4.16xlarge'))
         available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
@@ -166,6 +182,8 @@ class RunFarm:
         # confirm that we have the correct number of instances
         if not (len(available_f1_16_instances) >= len(self.f1_16s)):
             rootLogger.warning(message.format("f1.16xlarges"))
+        if not (len(available_f1_4_instances) >= len(self.f1_4s)):
+            rootLogger.warning(message.format("f1.4xlarges"))
         if not (len(available_f1_2_instances) >= len(self.f1_2s)):
             rootLogger.warning(message.format("f1.2xlarges"))
         if not (len(available_f1_16_instances) >= len(self.f1_16s)):
@@ -178,6 +196,9 @@ class RunFarm:
         # assign boto3 instance objects to our instance objects
         for index, instance in enumerate(available_f1_16_instances):
             self.f1_16s[index].assign_boto3_instance_object(instance)
+
+        for index, instance in enumerate(available_f1_4_instances):
+            self.f1_4s[index].assign_boto3_instance_object(instance)
 
         for index, instance in enumerate(available_m4_16_instances):
             self.m4_16s[index].assign_boto3_instance_object(instance)
@@ -194,6 +215,7 @@ class RunFarm:
         spotmaxprice = self.spot_max_price
 
         num_f1_16xlarges = len(self.f1_16s)
+        num_f1_4xlarges = len(self.f1_4s)
         num_f1_2xlarges = len(self.f1_2s)
         num_m4_16xlarges = len(self.m4_16s)
 
@@ -201,6 +223,9 @@ class RunFarm:
         f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
+        f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
+                                     runinstancemarket, spotinterruptionbehavior,
+                                     spotmaxprice)
         m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
@@ -212,11 +237,12 @@ class RunFarm:
         # TODO: maybe we shouldn't do this, but just let infrasetup block. That
         # way we get builds out of the way while waiting for instances to launch
         wait_on_instance_launches(f1_16s, 'f1.16xlarges')
+        wait_on_instance_launches(f1_4s, 'f1.4xlarges')
         wait_on_instance_launches(m4_16s, 'm4.16xlarges')
         wait_on_instance_launches(f1_2s, 'f1.2xlarges')
 
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         runfarmtag = self.runfarmtag
 
@@ -224,26 +250,36 @@ class RunFarm:
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
+        f1_4_instances = instances_sorted_by_avail_ip(
+            get_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
+        f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)
         m4_16_instance_ids = get_instance_ids_for_instances(m4_16_instances)
         f1_2_instance_ids = get_instance_ids_for_instances(f1_2_instances)
 
         argsupplied_f116 = terminatesomef1_16 != -1
+        argsupplied_f14 = terminatesomef1_4 != -1
         argsupplied_f12 = terminatesomef1_2 != -1
         argsupplied_m416 = terminatesomem4_16 != -1
 
-        if argsupplied_f116 or argsupplied_f12 or argsupplied_m416:
+        if argsupplied_f116 or argsupplied_f14 or argsupplied_f12 or argsupplied_m416:
             # In this mode, only terminate instances that are specifically supplied.
             if argsupplied_f116 and terminatesomef1_16 != 0:
                 # grab the last N instances to terminate
                 f1_16_instance_ids = f1_16_instance_ids[-terminatesomef1_16:]
             else:
                 f1_16_instance_ids = []
+
+            if argsupplied_f14 and terminatesomef1_4 != 0:
+                # grab the last N instances to terminate
+                f1_4_instance_ids = f1_4_instance_ids[-terminatesomef1_4:]
+            else:
+                f1_4_instance_ids = []
 
             if argsupplied_f12 and terminatesomef1_2 != 0:
                 # grab the last N instances to terminate
@@ -260,6 +296,8 @@ class RunFarm:
         rootLogger.critical("IMPORTANT!: This will terminate the following instances:")
         rootLogger.critical("f1.16xlarges")
         rootLogger.critical(f1_16_instance_ids)
+        rootLogger.critical("f1.4xlarges")
+        rootLogger.critical(f1_4_instance_ids)
         rootLogger.critical("m4.16xlarges")
         rootLogger.critical(m4_16_instance_ids)
         rootLogger.critical("f1.2xlarges")
@@ -274,6 +312,8 @@ class RunFarm:
         if userconfirm == "yes":
             if len(f1_16_instance_ids) != 0:
                 terminate_instances(f1_16_instance_ids, False)
+            if len(f1_4_instance_ids) != 0:
+                terminate_instances(f1_4_instance_ids, False)
             if len(m4_16_instance_ids) != 0:
                 terminate_instances(m4_16_instance_ids, False)
             if len(f1_2_instance_ids) != 0:
@@ -285,7 +325,7 @@ class RunFarm:
     def get_all_host_nodes(self):
         """ Get objects for all host nodes in the run farm that are bound to
         a real instance. """
-        allinsts = self.f1_16s + self.f1_2s + self.m4_16s
+        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
         return [inst for inst in allinsts if inst.boto3_instance_object is not None]
 
     def lookup_by_ip_addr(self, ipaddr):

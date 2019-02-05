@@ -40,8 +40,8 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
-``f1_16xlarges``, ``m4_16xlarges``, ``f1_2xlarges``
-""""""""""""""""""""""""""""""""""""""""""""""""""""
+``f1_16xlarges``, ``m4_16xlarges``, ``f1_4xlarges``, ``f1_2xlarges``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Set these three values respectively based on the number and types of instances
 you need. While we could automate this setting, we choose not to, so that
