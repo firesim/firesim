@@ -22,7 +22,7 @@ class TargetToHostAXI4Converter (
     mMaxTransfer: Int = 128)
   (implicit p: Parameters) extends LazyModule
 {
-  implicit val roflname = ValName("AXI4GhettoWidthAdapter")
+  implicit val valname = ValName("FASEDWidthAdapter")
   val m   = AXI4MasterNode(Seq(AXI4MasterPortParameters(
     masters = Seq(AXI4MasterParameters(
       name = "widthAdapter",

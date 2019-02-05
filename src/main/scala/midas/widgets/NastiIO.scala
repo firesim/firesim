@@ -6,8 +6,8 @@ package widgets
 import core.{HostPort, MemNastiKey, IsRationalClockRatio, UnityClockRatio}
 import junctions._
 
-import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.amba.axi4.AXI4Bundle
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.amba.axi4._
 
 import chisel3._
 import chisel3.util._
@@ -33,16 +33,37 @@ abstract class MemModel(implicit p: Parameters) extends EndpointWidget()(p){
   }
 }
 
+// A workaround for passing more information about the diplomatic graph to the
+// memory model This drops the edge parameters into the bundle, which can be
+// consumed by the endpoint
+class AXI4BundleWithEdge(params: AXI4BundleParameters, val edge: AXI4EdgeParameters)
+    extends AXI4Bundle(params) {
+  override def cloneType() = new AXI4BundleWithEdge(params, edge).asInstanceOf[this.type]
+}
+
+object AXI4BundleWithEdge {
+  // this is type returned by a diplomatic nodes's in() and out() methods
+  def apply(tuple: (AXI4Bundle, AXI4EdgeParameters)) = tuple match {
+    case (b, e) => new AXI4BundleWithEdge(b.params, e)
+  }
+}
+// Will drive memory model settings if set
+object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
+
 abstract class SimMemIO extends Endpoint {
   // This is hideous, but we want some means to get the widths of the target
   // interconnect so that we can pass that information to the widget the
   // endpoint will instantiate.
   var targetAXI4Widths = NastiParameters(0,0,0)
+  var targetAXI4Edge: Option[AXI4EdgeParameters] = None
   var initialized = false
   override def add(name: String, channel: Data) {
     initialized = true
     super.add(name, channel)
     targetAXI4Widths = channel match {
+      case axi4: AXI4BundleWithEdge => NastiParameters(axi4.r.bits.data.getWidth,
+                                               axi4.ar.bits.addr.getWidth,
+                                               axi4.ar.bits.id.getWidth)
       case axi4: AXI4Bundle => NastiParameters(axi4.r.bits.data.getWidth,
                                                axi4.ar.bits.addr.getWidth,
                                                axi4.ar.bits.id.getWidth)
@@ -50,6 +71,10 @@ abstract class SimMemIO extends Endpoint {
                                             axi4.ar.bits.addr.getWidth,
                                             axi4.ar.bits.id.getWidth)
       case _ => throw new RuntimeException("Unexpected channel type passed to SimMemIO")
+    }
+    targetAXI4Edge = channel match {
+      case b: AXI4BundleWithEdge => Some(b.edge)
+      case _ => None
     }
   }
 
@@ -59,7 +84,10 @@ abstract class SimMemIO extends Endpoint {
   }
 
   def widget(p: Parameters) = {
-    val param = p alterPartial ({ case NastiKey => getChannelAXI4Parameters })
+    val param = p.alterPartial({
+      case NastiKey => getChannelAXI4Parameters
+      case FasedAXI4Edge => targetAXI4Edge
+    })
     (p(MemModelKey): @unchecked) match {
       case Some(modelGen) => modelGen(param)
       case None => new NastiWidget()(param)
