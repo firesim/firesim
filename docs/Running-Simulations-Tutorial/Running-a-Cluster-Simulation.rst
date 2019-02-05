@@ -127,6 +127,7 @@ You should expect output like the following:
 
     Waiting for instance boots: f1.16xlarges
     i-09e5491cce4d5f92d booted!
+    Waiting for instance boots: f1.4xlarges
     Waiting for instance boots: m4.16xlarges
     Waiting for instance boots: f1.2xlarges
     The full log of this run is:
@@ -516,6 +517,8 @@ Which should present you with the following:
 	IMPORTANT!: This will terminate the following instances:
 	f1.16xlarges
 	['i-09e5491cce4d5f92d']
+	f1.4xlarges
+	[]
 	m4.16xlarges
 	[]
 	f1.2xlarges

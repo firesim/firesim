@@ -243,9 +243,10 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         self.runfarmtag = runtime_dict['runfarm']['runfarmtag']
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges'])
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges'])
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges'])
+        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
@@ -300,6 +301,7 @@ class RuntimeConfig:
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
+                               self.innerconf.f1_4xlarges_requested,
                                self.innerconf.f1_2xlarges_requested,
                                self.innerconf.m4_16xlarges_requested,
                                self.innerconf.runfarmtag,
@@ -321,10 +323,10 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                         terminatesomem4_16, forceterminate)
 
     def infrasetup(self):
