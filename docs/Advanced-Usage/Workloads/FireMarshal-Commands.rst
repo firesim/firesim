@@ -1,3 +1,5 @@
+.. _firemarshal-commands:
+
 FireMarshal Commands
 =======================
 

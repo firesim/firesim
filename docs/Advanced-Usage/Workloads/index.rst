@@ -25,6 +25,7 @@ installed to firesim for running on real RTL.
    FireMarshal-QuickStart
    FireMarshal-Commands
    FireMarshal-Config
+   Booting-Fedora
 
    SPEC-2017
    ISCA-2018-Experiments

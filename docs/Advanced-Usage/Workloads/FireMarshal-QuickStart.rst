@@ -22,7 +22,7 @@ These are the boot-binary (linux + boot loader) and root filesystem
 
   ./marshal launch workloads/br-base.json
 
-You should now see linux booting and be presented with a login promt. Sign in
+You should now see linux booting and be presented with a login prompt. Sign in
 as 'root' with password 'firesim'. From here you can manipulate files, run
 commands, and generally use the image as if it had booted on real hardware. Any
 changes you make here will be persistent between reboots. Once you are done
