@@ -195,6 +195,7 @@ class FireSimRemoteMemClientModuleImp[+L <: FireSimRemoteMemClient](l: L)
     with HasPeripheryRemoteMemClientModuleImpValidOnly
 
 class FireSimDRAMCache(implicit p: Parameters) extends FireSimNoNIC
+    with HasPeripheryMemBench
     with HasPeripheryDRAMCache {
   override lazy val module = new FireSimDRAMCacheModuleImp(this)
 }

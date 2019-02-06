@@ -9,7 +9,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
 //import freechips.rocketchip.pfa.HasPFA
 import boom.system.BoomTilesKey
-import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
+import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig, MemBenchKey, MemBenchParams}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
@@ -57,6 +57,10 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
     spanBytes = 1024,
     nRMemXacts = 64,
     reqTimeout = Some(1000000))
+})
+
+class WithMemBenchKey extends Config((site, here, up) => {
+  case MemBenchKey => MemBenchParams()
 })
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
@@ -217,6 +221,7 @@ class FireSimPrefetcherQuadCoreConfig extends Config(
 
 class FireSimDRAMCacheConfig extends Config(
   new WithPrefetchRoCC ++
+  new WithMemBenchKey ++
   new WithDRAMCacheKey ++
   new WithExtMemSize(12L << 30) ++
   new FireSimRocketChipConfig)
