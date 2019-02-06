@@ -27,8 +27,7 @@ blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint3
     _ntags = num_trackers;
     long size;
     long mem_filesize = 0;
-
-    const char *logname;
+    const char *logname = NULL;
 
     // construct arg parsing strings here. We basically append the endpoint
     // number to each of these base strings, to get args like +blkdev0 etc.
