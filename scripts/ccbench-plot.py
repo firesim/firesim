@@ -57,7 +57,7 @@ def main():
         plt.plot(xnew, f(xnew), label=label)
 
     plt.xscale("log")
-    #plt.yscale("log")
+    plt.yscale("log")
     plt.xlabel("Array Size (bytes)")
     plt.ylabel(data["TimeUnits"][0])
     plt.legend()
