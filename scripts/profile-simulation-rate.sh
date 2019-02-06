@@ -45,34 +45,34 @@ do
     sim=simulator-example-DefaultExampleConfig
 
     # Hack...
-    sed -i "'s/-O[0-3]/-O${optlevel}/'" Makefile
-    make -j$MAKE_THREADS
-    make -j$MAKE_THREADS debug
+    sed -i "s/-O[0-3]/-O${optlevel}/" Makefile
+    make clean
+    /usr/bin/time -a -o $REPORT_FILE make
+    /usr/bin/time -a -o $REPORT_FILE make debug
 
-    /usr/bin/time -a -o nowaves.log ./$sim $SIM_ARGS $test_path &> nowaves.log
-    /usr/bin/time -a -o waves.log ./$sim-debug $SIM_ARGS -vtest.vcd $test_path &> waves.log
 
     echo -e "\nNo Waves\n" >> $REPORT_FILE
+    /usr/bin/time -a -o $REPORT_FILE ./$sim $SIM_ARGS $test_path &> nowaves.log
     tail nowaves.log >> $REPORT_FILE
+    /usr/bin/time -a -o $REPORT_FILE ./$sim-debug $SIM_ARGS -vtest.vcd $test_path &> waves.log
     echo -e "\nWaves Enabled\n" >> $REPORT_FILE
     tail waves.log >> $REPORT_FILE
 done
 
-## VCS
+echo -e "\nTarget-level VCS\n" >> $REPORT_FILE
 cd $firesim_root/target-design/firechip/vsim/
 sim=simv-example-DefaultExampleConfig
-make -j$MAKE_THREADS
-make -j$MAKE_THREADS debug
+/usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS
+/usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS debug
 
-./$sim $SIM_ARGS $test_path &> nowaves.log
-./$sim-debug $SIM_ARGS $test_path &> waves.log
-
-echo -e "\nTarget-level VCS\n" >> $REPORT_FILE
+echo -e "\nNo Waves\n" >> $REPORT_FILE
+/usr/bin/time -a -o $REPORT_FILE ./$sim $SIM_ARGS $test_path &> nowaves.log
 tail nowaves.log >> $REPORT_FILE
-echo -e "\nTarget-level VCS -- Waves Enabled\n" >> $REPORT_FILE
+echo -e "\nWaves Enabled\n" >> $REPORT_FILE
+/usr/bin/time -a -o $REPORT_FILE ./$sim-debug $SIM_ARGS $test_path &> waves.log
 tail waves.log >> $REPORT_FILE
 
-#################################################################################
+################################################################################
 ## MIDAS level
 ################################################################################
 ml_output_dir=$firesim_root/sim/output/f1/$DESIGN-$TARGET_CONFIG-$PLATFORM_CONFIG
