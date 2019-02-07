@@ -60,7 +60,7 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
 })
 
 class WithMemBenchKey extends Config((site, here, up) => {
-  case MemBenchKey => MemBenchParams()
+  case MemBenchKey => MemBenchParams(nXacts = 256)
 })
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
