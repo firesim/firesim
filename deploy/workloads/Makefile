@@ -153,6 +153,15 @@ pagerank-remote2:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+pagerank-dram-cache:
+	mkdir -p $@/overlay
+	cd ../../sw/memblade-tests/linux && make pagerank-dram-cache.riscv
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cp ../../sw/memblade-tests/linux/pagerank-dram-cache.riscv $@/overlay
+	cp ../../sw/memblade-tests/data/* $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 histo-local:
 	mkdir -p $@/overlay
 	cd ../../sw/memblade-tests/linux && make histo-local.riscv
@@ -213,4 +222,4 @@ saxpy-dc:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc
+	saxpy saxpy-dc pagerank-dram-cache
