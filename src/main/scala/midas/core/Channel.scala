@@ -155,6 +155,42 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
   val host = new HostReadyValid
   override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
+
+  def fwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
+    val hValidPrev = RegNext(host.hValid, false.B)
+    val hReadyPrev = RegNext(host.hReady)
+    val hFirePrev = hValidPrev && hReadyPrev
+    val tPrev = RegNext(target)
+    val prefix = suggestedName match {
+      case Some(name) => name + ": "
+      case None => ""
+    }
+    assert(!hValidPrev || hFirePrev || host.hValid,
+      s"${prefix}hValid de-asserted without handshake, violating fwd token irrevocability")
+    assert(!hValidPrev || hFirePrev || tPrev.valid === target.valid,
+      s"${prefix}tValid transitioned without host handshake, violating fwd token irrevocability")
+    assert(!hValidPrev || hFirePrev || tPrev.bits.asUInt() === target.bits.asUInt(),
+      s"${prefix}tBits transitioned without host handshake, violating fwd token irrevocability")
+    assert(!hFirePrev  || tPrev.fire || !tPrev.valid,
+      s"${prefix}tValid deasserted without prior target handshake, violating target-queue irrevocability")
+    assert(!hFirePrev  || tPrev.fire || !tPrev.valid || tPrev.bits.asUInt() === target.bits.asUInt(),
+      s"${prefix}tBits transitioned without prior target handshake, violating target-queue irrevocability")
+  }
+
+  def revIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
+    val prefix = suggestedName match {
+      case Some(name) => name + ": "
+      case None => ""
+    }
+    val hReadyPrev = RegNext(host.hReady, false.B)
+    val hValidPrev = RegNext(host.hValid)
+    val tReadyPrev = RegNext(target.ready)
+    val hFirePrev = hReadyPrev && hValidPrev
+    assert(hFirePrev || !hReadyPrev || host.hReady,
+      s"${prefix}hReady de-asserted, violating token irrevocability")
+    assert(hFirePrev || !hReadyPrev || tReadyPrev === target.ready,
+      s"${prefix}tReady de-asserted, violating token irrevocability")
+  }
 }
 
 object SimReadyValid {
@@ -326,6 +362,8 @@ class ReadyValidChannelUnitTest(
   dut.io.traceLen := DontCare
   dut.io.trace.ready := DontCare
 
+  // Check that the queue's backpressure is queue-like
+  dut.io.enq.revIrrevocabilityAssertions(Some("Decoupled Channel Enq"))
 
   when (dut.io.enq.host.fire) {
     inputTokenNum := inputTokenNum + 1.U
