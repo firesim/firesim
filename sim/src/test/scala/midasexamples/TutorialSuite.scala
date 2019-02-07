@@ -128,10 +128,10 @@ class RiscF1Test extends TutorialSuite("Risc")
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
-  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
-  simulationArgs = Seq("+print-human-readable", "+print-file=synthprinttest.out")) {
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
