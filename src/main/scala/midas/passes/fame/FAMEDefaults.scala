@@ -22,17 +22,17 @@ class FAMEDefaults extends Transform {
     val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
     val topModule = state.circuit.modules.find(_.name == state.circuit.main).get.asInstanceOf[Module]
     val globalSignals = state.annotations.collect({ case g: FAMEGlobalSignal => g.target.ref }).toSet
-    val channelNames = state.annotations.collect({ case fca: FAMEChannelAnnotation => fca.name })
+    val channelNames = state.annotations.collect({ case fca: FAMEChannelConnectionAnnotation => fca.globalName })
     val channelNS = Namespace(channelNames)
     def isGlobal(topPort: Port) = globalSignals.contains(topPort.name)
     def isBound(topPort: Port) = analysis.channelsByPort.contains(analysis.topTarget.ref(topPort.name))
     val defaultExtChannelAnnos = topModule.ports.filterNot(isGlobal).filterNot(isBound).flatMap({
       case Port(_, _, _, ClockType) => None // FIXME: Reject the clock in RC's debug interface
-      case Port(_, name, Input, _)  => Some(FAMEChannelAnnotation(channelNS.newName(name), WireChannel, None, Some(Seq(analysis.topTarget.ref(name)))))
-      case Port(_, name, Output, _) => Some(FAMEChannelAnnotation(channelNS.newName(name), WireChannel, Some(Seq(analysis.topTarget.ref(name))), None))
+      case Port(_, name, Input, _)  => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, None, Some(Seq(analysis.topTarget.ref(name)))))
+      case Port(_, name, Output, _) => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, Some(Seq(analysis.topTarget.ref(name))), None))
     })
     val channelModules = new LinkedHashSet[String] // TODO: find modules to absorb into channels, don't label as FAME models
-    val defaultLoopbackAnnos = new ArrayBuffer[FAMEChannelAnnotation]
+    val defaultLoopbackAnnos = new ArrayBuffer[FAMEChannelConnectionAnnotation]
     val defaultModelAnnos = new ArrayBuffer[FAMETransformAnnotation]
     val topTarget = ModuleTarget(state.circuit.main, topModule.name)
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
@@ -41,7 +41,7 @@ class FAMEDefaults extends Transform {
         wi
       case c @ Connect(_, WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, _, _), WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
         if (c.loc.tpe != ClockType && c.expr.tpe != ClockType) {
-          defaultLoopbackAnnos += FAMEChannelAnnotation(
+          defaultLoopbackAnnos += FAMEChannelConnectionAnnotation(
             channelNS.newName(s"${rhsiname}_${rhspname}__to__${lhsiname}_${lhspname}"),
             WireChannel,
             Some(Seq(topTarget.ref(rhsiname).field(rhspname))),

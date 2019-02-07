@@ -38,39 +38,39 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
     def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)
 
     def wireSinkAnno(chName: String) =
-      FAMEChannelAnnotation(chName, WireChannel, None, Some(Seq(portRefTarget(chName))))
+      FAMEChannelConnectionAnnotation(chName, WireChannel, None, Some(Seq(portRefTarget(chName))))
     def wireSourceAnno(chName: String) =
-      FAMEChannelAnnotation(chName, WireChannel, Some(Seq(portRefTarget(chName))), None)
+      FAMEChannelConnectionAnnotation(chName, WireChannel, Some(Seq(portRefTarget(chName))), None)
 
     def decoupledRevSinkAnno(name: String, readyTarget: ReferenceTarget) =
-      FAMEChannelAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, None, Some(Seq(readyTarget)))
+      FAMEChannelConnectionAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, None, Some(Seq(readyTarget)))
     def decoupledRevSourceAnno(name: String, readyTarget: ReferenceTarget) =
-      FAMEChannelAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, Some(Seq(readyTarget)), None)
+      FAMEChannelConnectionAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, Some(Seq(readyTarget)), None)
 
     def decoupledFwdSinkAnno(chName: String,
                              validTarget: ReferenceTarget,
                              readyTarget: ReferenceTarget,
-                             leaves: Seq[ReferenceTarget]): FAMEChannelAnnotation =  {
+                             leaves: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =  {
 
       val chInfo = DecoupledForwardChannel(
         validSink   = Some(validTarget),
         readySource = Some(readyTarget),
         validSource = None,
         readySink   = None)
-      FAMEChannelAnnotation(prefixWith(chName, "fwd"), chInfo, None, Some(leaves))
+      FAMEChannelConnectionAnnotation(prefixWith(chName, "fwd"), chInfo, None, Some(leaves))
     }
 
     def decoupledFwdSourceAnno(chName: String,
                                validTarget: ReferenceTarget,
                                readyTarget: ReferenceTarget,
-                               leaves: Seq[ReferenceTarget]): FAMEChannelAnnotation =  {
+                               leaves: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =  {
 
       val chInfo = DecoupledForwardChannel(
         validSource = Some(validTarget),
         readySink   = Some(readyTarget),
         validSink   = None,
         readySource = None)
-      FAMEChannelAnnotation(prefixWith(chName, "fwd"), chInfo, Some(leaves), None)
+      FAMEChannelConnectionAnnotation(prefixWith(chName, "fwd"), chInfo, Some(leaves), None)
     }
 
     // Generate ReferenceTargets for the leaves in an RV payload
@@ -91,13 +91,13 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
       (validTarget, readyTarget, Seq(validTarget) ++ payloadTargets)
     }
 
-    def rvSinkAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
+    def rvSinkAnnos(chTuple: RVChTuple): Seq[FAMEChannelConnectionAnnotation] = chTuple match {
       case (port, name) =>
       val (vT, rT, pTs) = getRVTargets(port.bits, name)
       Seq(decoupledFwdSinkAnno(name, vT, rT, pTs), decoupledRevSourceAnno(name, rT))
     }
 
-    def rvSourceAnnos(chTuple: RVChTuple): Seq[FAMEChannelAnnotation] = chTuple match {
+    def rvSourceAnnos(chTuple: RVChTuple): Seq[FAMEChannelConnectionAnnotation] = chTuple match {
       case (port, name) =>
       val (vT, rT, pTs) = getRVTargets(port.bits, name)
       Seq(decoupledFwdSourceAnno(name, vT, rT, pTs), decoupledRevSinkAnno(name, rT))
