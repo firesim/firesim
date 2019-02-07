@@ -9,7 +9,6 @@ import ir._
 import Mappers._
 import Utils._
 import firrtl.passes.MemPortUtils
-import transforms.{PromoteSubmodule, PromoteSubmoduleAnnotation}
 import annotations.{InstanceTarget, Annotation, SingleTargetAnnotation}
 
 import scala.collection.mutable

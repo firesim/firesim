@@ -13,79 +13,18 @@ import scala.collection
 import collection.mutable
 import collection.mutable.{LinkedHashSet, LinkedHashMap, MultiMap}
 
-abstract class FAMEChannelInfo {
-  def update(renames: RenameMap): FAMEChannelInfo = this
-}
-
-case object WireChannel extends FAMEChannelInfo
-case object DecoupledReverseChannel extends FAMEChannelInfo
-
-/*
- * These reference targets point to the associated ready/valid ports
- * readySink: sink port component of the corresponding reverse channel
- * validSource: valid port component from this channel's sources
- * readySource: source port component of the corresponding reverse channel
- * validSink: valid port component from this channel's sinks
- * (readySink, validSource) are on one model, (readySource, validSink) on the other
- */
-case class DecoupledForwardChannel(
-  readySink: Option[ReferenceTarget],
-  validSource: Option[ReferenceTarget],
-  readySource: Option[ReferenceTarget],
-  validSink: Option[ReferenceTarget]) extends FAMEChannelInfo {
-  override def update(renames: RenameMap): DecoupledForwardChannel = {
-    val renamer = new ReferenceTargetRenamer(renames)
-    DecoupledForwardChannel(
-      readySink.map(renamer.exactRename(_)),
-      validSource.map(renamer.exactRename(_)),
-      readySource.map(renamer.exactRename(_)),
-      validSink.map(renamer.exactRename(_)))
-  }
-}
-
-case class FAMEChannelAnnotation(name: String, channelInfo: FAMEChannelInfo, sources: Option[Seq[ReferenceTarget]], sinks: Option[Seq[ReferenceTarget]]) extends Annotation {
-  def update(renames: RenameMap): Seq[Annotation] = {
-    val renamer = new ReferenceTargetRenamer(renames)
-    Seq(this.copy(channelInfo = channelInfo.update(renames), sources = sources.map(s => s.map(renamer.exactRename(_))), sinks = sinks.map(s => s.map(renamer.exactRename(_)))))
-  }
-  override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten
-}
-
-case class FAMEModelAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
-  def targets = Seq(target)
-  def duplicate(n: InstanceTarget) = this.copy(n)
-}
-
-abstract class FAMETransformType
-case object FAME1Transform extends FAMETransformType
-case class FAMETransformAnnotation(transformType: FAMETransformType, target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
-  def targets = Seq(target)
-  def duplicate(n: ModuleTarget) = this.copy(transformType, n)
-}
-
-abstract class FAMEGlobalSignal extends SingleTargetAnnotation[ReferenceTarget] {
-  val target: ReferenceTarget
-  def targets = Seq(target)
-  def duplicate(n: ReferenceTarget): FAMEGlobalSignal
-}
-
-case class FAMEHostClock(target: ReferenceTarget) extends FAMEGlobalSignal {
-  def duplicate(t: ReferenceTarget): FAMEHostClock = this.copy(t)
-}
-
-case class FAMEHostReset(target: ReferenceTarget) extends FAMEGlobalSignal {
-  def duplicate(t: ReferenceTarget): FAMEHostReset = this.copy(t)
-}
-
-private[fame] class ReferenceTargetRenamer(renames: RenameMap) {
+object RTRenamer {
   // TODO: determine order for multiple renames, or just check of == 1 rename?
-  def exactRename(rt: ReferenceTarget): ReferenceTarget = {
-    val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
-    assert(renameMatches.length == 1)
-    renameMatches.head
+  def exact(renames: RenameMap): (ReferenceTarget => ReferenceTarget) = {
+    { rt =>
+      val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
+      assert(renameMatches.length == 1)
+      renameMatches.head
+    }
   }
-  def apply(rt: ReferenceTarget): Seq[ReferenceTarget] = {
-    renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
+
+  def apply(renames: RenameMap): (ReferenceTarget => Seq[ReferenceTarget]) = {
+    { rt => renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt }) }
   }
 }
 
@@ -138,10 +77,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   state.annotations.collect({
     case fta @ FAMETransformAnnotation(tpe, mt) if (tpe == fameType) =>
       transformedModules += mt
-    case fca: FAMEChannelAnnotation =>
-      channels += fca.name
-      fca.sinks.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.name })
-      fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.name })
+    case fca: FAMEChannelConnectionAnnotation =>
+      channels += fca.globalName
+      fca.sinks.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
+      fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
   })
 
   val topTarget = ModuleTarget(circuit.main, circuit.main)
@@ -181,22 +120,22 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   val sourcePorts = new LinkedHashMap[String, Seq[ReferenceTarget]]
   val staleTopPorts = new LinkedHashSet[ReferenceTarget]
   state.annotations.collect({
-    case fca: FAMEChannelAnnotation =>
-      channels += fca.name
+    case fca: FAMEChannelConnectionAnnotation =>
+      channels += fca.globalName
       val sinks = fca.sinks.toSeq.flatten
-      sinkPorts(fca.name) = sinks
+      sinkPorts(fca.globalName) = sinks
       sinks.headOption.filter(rt => transformedModules.contains(ModuleTarget(rt.circuit, topConnects(rt).encapsulatingModule))).foreach({ rt =>
         assert(!topConnects(rt).isLocal) // need instance info
-        sinkModel(fca.name) = topConnects(rt).targetParent.asInstanceOf[InstanceTarget]
-        transformedSinks += fca.name
+        sinkModel(fca.globalName) = topConnects(rt).targetParent.asInstanceOf[InstanceTarget]
+        transformedSinks += fca.globalName
         staleTopPorts ++= sinks
       })
       val sources = fca.sources.toSeq.flatten
-      sourcePorts(fca.name) = sources
+      sourcePorts(fca.globalName) = sources
       sources.headOption.filter(rt => transformedModules.contains(ModuleTarget(rt.circuit, topConnects(rt).encapsulatingModule))).foreach({ rt =>
         assert(!topConnects(rt).isLocal) // need instance info
-        sourceModel(fca.name) = topConnects(rt).targetParent.asInstanceOf[InstanceTarget]
-        transformedSources += fca.name
+        sourceModel(fca.globalName) = topConnects(rt).targetParent.asInstanceOf[InstanceTarget]
+        transformedSources += fca.globalName
         staleTopPorts ++= sources
       })
   })

@@ -32,11 +32,11 @@ class WrapTop extends Transform {
     val newCircuit = Circuit(state.circuit.info, topWrapper +: state.circuit.modules, topWrapperName)
     // Make channel annotations point at top-level ports
     val updatedAnnotations = state.annotations.map({
-      case fca: FAMEChannelAnnotation =>
+      case fca: FAMEChannelConnectionAnnotation =>
         fca.copy(sinks = fca.sinks.map(_.map(_.copy(module = topWrapperName))), sources = fca.sources.map(_.map(_.copy(module = topWrapperName))))
       case a => a
     }).map({ // Also update targets in info fields
-      case fca @ FAMEChannelAnnotation(_,info@DecoupledForwardChannel(_,_,_,_),_,_) =>
+      case fca @ FAMEChannelConnectionAnnotation(_,info@DecoupledForwardChannel(_,_,_,_),_,_) =>
         fca.copy(channelInfo = info.copy(
           readySink   = info.readySink.  map(_.copy(module = topWrapperName)),
           validSource = info.validSource.map(_.copy(module = topWrapperName)),

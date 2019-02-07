@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
-package firrtl
-package transforms
+package midas.passes.fame
 
+import firrtl._
 import ir._
 import Utils._
 import Mappers._
@@ -11,12 +11,6 @@ import analyses.InstanceGraph
 import graph.DiGraph
 import scala.collection.mutable
 import firrtl.passes.{InlineInstances,PassException}
-
-/** Tags an annotation to be consumed by this transform */
-case class PromoteSubmoduleAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
-  def targets = Seq(target)
-  def duplicate(n: InstanceTarget) = this.copy(n)
-}
 
 /**
  * Takes PromoteSubmodule annotations for instantiations and causes

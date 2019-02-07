@@ -13,7 +13,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
-import fame.{FAMEChannelAnnotation, FAMEChannelAnalysis, FAME1Transform}
+import fame.{FAMEChannelConnectionAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
@@ -75,7 +75,7 @@ private[passes] class SimulationMapping(
 
     // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
     // SimWrapper generation. We want the targets to point at un-lowered ports
-    val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelAnnotation => ch })
+    val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
     // Generate a port map to look up the types of the IO of the channels
     val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
 
@@ -109,7 +109,7 @@ private[passes] class SimulationMapping(
 
     // FIXME: Renamer complains if i leave these in
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
-      case ch: FAMEChannelAnnotation => false
+      case ch: FAMEChannelConnectionAnnotation => false
       case AddedTargetIoAnnotation(_,_) => false
       case _ => true
     })
