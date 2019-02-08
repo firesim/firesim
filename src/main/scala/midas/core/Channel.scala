@@ -280,10 +280,10 @@ class SyncReadyValidChannel[T <: Data](
   // queue is full. When the deq domain advances, it may dequeue some entries
   io.enq.host.hReady  := !(enqAhead && !target.io.enq.ready)
   // tReady can always be asserted except for two cases
-  // 1) the deq domain is ahead, and the target queue was full on the previous deq-cycle, or is still full
+  // 1) the deq domain is ahead, and the target queue was full on the previous deq-cycle
   // 2) the domains are in the same cycle and the target queue is full
-  io.enq.target.ready := !((deqAhead && (tQWasFull || !target.io.enq.ready)) ||
-                           (coupled  &&  !target.io.enq.ready))
+  io.enq.target.ready := !((deqAhead && tQWasFull) ||
+                           (coupled  && !target.io.enq.ready))
 
   // The enq domain is easier. Dequeue target-valid tokens on handshakes
   target.io.deq.ready := io.deq.target.ready && tValid && io.deq.host.fire
