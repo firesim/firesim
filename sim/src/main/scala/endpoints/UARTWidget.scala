@@ -18,9 +18,10 @@ class SimUART extends Endpoint {
     case _ => false
   }
   def widget(p: Parameters) = {
-    val frequency = 1000000000 //p(PeripheryBusKey).frequency
-    val baudrate = 3686400 //p(PeripheryUARTKey).head.initBaudRate
-    val div = (frequency / baudrate).toInt // (p(PeripheryBusKey).frequency / baudrate).toInt
+    // val frequency = 1000000000 //p(PeripheryBusKey).frequency
+    // val baudrate = 3686400 //p(PeripheryUARTKey).head.initBaudRate
+    // val div = (frequency / baudrate).toInt // (p(PeripheryBusKey).frequency / baudrate).toInt
+    val div = 272
     new UARTWidget(div)(p)
   }
   override def widgetName = "UARTWidget"
