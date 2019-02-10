@@ -1,12 +1,12 @@
 package firesim
 package endpoints
 
-import midas.core._
+import midas.core.{HostPort}
 import midas.widgets._
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
@@ -14,7 +14,7 @@ import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 class SimUART extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: UARTPortIO =>
-      directionOf(channel.txd) == ActualDirection.Output
+      DataMirror.directionOf(channel.txd) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = {
@@ -29,7 +29,6 @@ class SimUART extends Endpoint {
 
 class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new UARTPortIO))
-  val dma = None
 }
 
 class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
@@ -39,9 +38,7 @@ class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val rxfifo = Module(new Queue(UInt(8.W), 128))
 
   val target = io.hPort.hBits
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
-  val stall = !txfifo.io.enq.ready
-  val fire = tFire && !stall
+  val fire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid & txfifo.io.enq.ready
   val targetReset = fire & io.tReset.bits
   rxfifo.reset := reset.toBool || targetReset
   txfifo.reset := reset.toBool || targetReset
@@ -128,9 +125,6 @@ class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   genWOReg(rxfifo.io.enq.bits, "in_bits")
   Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
   genROReg(rxfifo.io.enq.ready, "in_ready")
-
-  genROReg(!tFire, "done")
-  genROReg(stall, "stall")
 
   genCRFile()
 }

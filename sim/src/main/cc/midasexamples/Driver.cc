@@ -25,6 +25,12 @@
 #include "ShiftRegister.h"
 #elif defined DESIGNNAME_Stack
 #include "Stack.h"
+#elif defined DESIGNNAME_AssertModule
+#include "AssertModule.h"
+#elif defined DESIGNNAME_PrintfModule
+#include "PrintfModule.h"
+#elif defined DESIGNNAME_NarrowPrintfModule
+#include "NarrowPrintfModule.h"
 #endif
 
 class dut_emul_t:
@@ -36,8 +42,13 @@ class dut_emul_t:
   public DESIGNDRIVERCLASS
 {
 public:
+#ifdef RTLSIM
   dut_emul_t(int argc, char** argv):
     DESIGNDRIVERCLASS(argc, argv) { }
+#else
+  dut_emul_t(int argc, char** argv): simif_f1_t(argc, argv), DESIGNDRIVERCLASS(argc, argv) { }
+#endif
+
 };
 
 int main(int argc, char** argv)

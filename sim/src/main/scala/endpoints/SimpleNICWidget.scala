@@ -1,122 +1,28 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import chisel3.Module
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
-import midas.core._
+import midas.core.{HostPort}
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 
+object TokenQueueConsts {
+  val TOKENS_PER_BIG_TOKEN = 7
+  val BIG_TOKEN_WIDTH = (TOKENS_PER_BIG_TOKEN + 1) * 64
+  val TOKEN_QUEUE_DEPTH = 6144
+}
+import TokenQueueConsts._
+
 case object LoopbackNIC extends Field[Boolean]
-
-class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
-  val io = IO(new QueueIO(data, entries))
-  require(entries > 1)
-
-  io.count := 0.U
-
-  val do_flow = Wire(Bool())
-  val do_enq = io.enq.fire() && !do_flow
-  val do_deq = io.deq.fire() && !do_flow
-
-  val maybe_full = RegInit(false.B)
-  val enq_ptr = Counter(do_enq, entries)._1
-  val (deq_ptr, deq_done) = Counter(do_deq, entries)
-  when (do_enq =/= do_deq) { maybe_full := do_enq }
-
-  val ptr_match = enq_ptr === deq_ptr
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val atLeastTwo = full || enq_ptr - deq_ptr >= 2.U
-  do_flow := empty && io.deq.ready
-
-  val ram = Mem(entries, data)
-  when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
-
-  val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
-  val raddr = Mux(io.deq.valid, Mux(deq_done, 0.U, deq_ptr + 1.U), deq_ptr)
-  val ram_out_valid = RegNext(ren)
-
-  io.deq.valid := Mux(empty, io.enq.valid, ram_out_valid)
-  io.enq.ready := !full
-  io.deq.bits := Mux(empty, io.enq.bits, RegEnable(ram.read(raddr), ren))
-}
-
-class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
-  val io = IO(new QueueIO(data, entries))
-
-  io.count := 0.U
-
-  val fq = Module(new BRAMFlowQueue(entries)(data))
-  fq.io.enq <> io.enq
-  io.deq <> Queue(fq.io.deq, 1, pipe = true)
-}
-
-object BRAMQueue {
-  def apply[T <: Data](enq: DecoupledIO[T], entries: Int) = {
-    val q = Module((new BRAMQueue(entries)) { enq.bits })
-    q.io.enq.valid := enq.valid // not using <> so that override is allowed
-    q.io.enq.bits := enq.bits
-    enq.ready := q.io.enq.ready
-    q.io.deq
-  }
-}
-
-class SplitSeqQueue(implicit p: Parameters) extends Module {
-  /* hacks. the version of FIRRTL we're using can't handle >= 512-bit-wide
-     stuff. there are a variety of reasons to not fix it this way, but I just
-     want to keep building this
-  */
-  val EXTERNAL_WIDTH = 512
-  val io = IO(new Bundle {
-    val enq = Flipped(DecoupledIO(UInt(EXTERNAL_WIDTH.W)))
-    val deq = DecoupledIO(UInt(EXTERNAL_WIDTH.W))
-  })
-
-  val SPLITS = 1
-  val INTERNAL_WIDTH = EXTERNAL_WIDTH / SPLITS
-  val DEPTH = 6144
-
-  val voq = VecInit(Seq.fill(SPLITS)(Module((new BRAMQueue(DEPTH)){ UInt(INTERNAL_WIDTH.W) } ).io))
-
-  def fire_enq(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.enq.valid
-    )
-    val qs = voq.map(_.enq.ready)
-    val allstuff = rvs ++ qs
-    (allstuff.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
-
-  io.enq.ready := fire_enq(io.enq.valid)
-
-  for (i <- 0 until SPLITS) {
-    voq(i).enq.valid := fire_enq(voq(i).enq.ready)
-    voq(i).enq.bits := io.enq.bits((i+1)*INTERNAL_WIDTH-1, i*INTERNAL_WIDTH)
-  }
-
-  def fire_deq(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.deq.ready
-    )
-    val qs = voq.map(_.deq.valid)
-    val allstuff = rvs ++ qs
-    (allstuff.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
-  for (i <- 0 until SPLITS) {
-    voq(i).deq.ready := fire_deq(voq(i).deq.valid)
-  }
-  io.deq.bits := Cat(voq.map(_.deq.bits).reverse)
-  io.deq.valid := fire_deq(io.deq.ready)
-}
 
 /* on a NIC token transaction:
  * 1) simulation driver feeds an empty token to start:
@@ -159,21 +65,16 @@ class NICToHostToken extends Bundle {
 class SimSimpleNIC extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: NICIOvonly =>
-      directionOf(channel.out.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.out.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new SimpleNICWidget()(p)
   override def widgetName = "SimpleNICWidget"
 }
 
-class SimpleNICWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new NICIOvonly))
-  val dma = if (!p(LoopbackNIC)) {
-    Some(Flipped(new NastiIO()(
-      p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
-  } else None
 }
-
 
 class BigTokenToNICTokenAdapter extends Module {
   val io = IO(new Bundle {
@@ -183,21 +84,11 @@ class BigTokenToNICTokenAdapter extends Module {
 
   val pcieBundled = (new BIGToken).fromBits(io.pcie_in.bits)
 
-  def fire_xact(exclude: Bool, includes: Bool*) = {
-    val rvs = Array (
-      io.htnt.ready,
-      io.pcie_in.valid
-    )
-    (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-  }
+  val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
   val loopIter = RegInit(0.U(32.W))
-  when (fire_xact(false.B, loopIter === 6.U)) {
-    loopIter := 0.U
-  } .elsewhen (fire_xact(false.B)) {
-    loopIter := loopIter + 1.U
-  } .otherwise {
-    loopIter := loopIter
+  when (io.htnt.fire()) {
+    loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
   }
 
   io.htnt.bits.data_in.data := pcieBundled.data(loopIter)
@@ -205,8 +96,8 @@ class BigTokenToNICTokenAdapter extends Module {
   io.htnt.bits.data_in.last := pcieBundled.rvls(loopIter).data_last
   io.htnt.bits.data_in_valid := pcieBundled.rvls(loopIter).valid
   io.htnt.bits.data_out_ready := pcieBundled.rvls(loopIter).ready
-  io.htnt.valid := fire_xact(io.htnt.ready)
-  io.pcie_in.ready := fire_xact(io.pcie_in.valid, loopIter === 6.U)
+  io.htnt.valid := xactHelper.fire(io.htnt.ready)
+  io.pcie_in.ready := xactHelper.fire(io.pcie_in.valid, loopIter === 6.U)
 }
 
 class NICTokenToBigTokenAdapter extends Module {
@@ -282,41 +173,21 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
+class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
+    with BidirectionalDMA {
   val io = IO(new SimpleNICWidgetIO)
+
+  // DMA mixin parameters
+  lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
+  lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
+  // Biancolin: Need to look into this
+  lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
   val htnt_queue = Module(new Queue(new HostToNICToken, 10))
   val ntht_queue = Module(new Queue(new NICToHostToken, 10))
 
   val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
-
-  val incomingPCISdat = Module(new SplitSeqQueue)
-  val outgoingPCISdat = Module(new SplitSeqQueue)
-
-  // incoming/outgoing queue counts to replace ready/valid for batching
-  val incomingCount = RegInit(0.U(32.W))
-  val outgoingCount = RegInit(0.U(32.W))
-
-  when (incomingPCISdat.io.enq.fire() && incomingPCISdat.io.deq.fire()) {
-    incomingCount := incomingCount
-  } .elsewhen (incomingPCISdat.io.enq.fire()) {
-    incomingCount := incomingCount + 1.U
-  } .elsewhen (incomingPCISdat.io.deq.fire()) {
-    incomingCount := incomingCount - 1.U
-  } .otherwise {
-    incomingCount := incomingCount
-  }
-
-  when (outgoingPCISdat.io.enq.fire() && outgoingPCISdat.io.deq.fire()) {
-    outgoingCount := outgoingCount
-  } .elsewhen (outgoingPCISdat.io.enq.fire()) {
-    outgoingCount := outgoingCount + 1.U
-  } .elsewhen (outgoingPCISdat.io.deq.fire()) {
-    outgoingCount := outgoingCount - 1.U
-  } .otherwise {
-    outgoingCount := outgoingCount
-  }
 
   val target = io.hPort.hBits
   val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
@@ -372,113 +243,7 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p) {
     attach(rlimitSettings, "rlimit_settings", WriteOnly)
   }
 
-  // check to see if pcis has valid output instead of waiting for timeouts
-  attach(outgoingPCISdat.io.deq.valid, "pcis_out_valid", ReadOnly)
-  // check to see if pcis is ready to accept data instead of forcing writes
-  attach(incomingPCISdat.io.deq.valid, "pcis_in_busy", ReadOnly)
-
-  attach(outgoingCount, "outgoing_count", ReadOnly)
-  attach(incomingCount, "incoming_count", ReadOnly)
-
   genROReg(!tFire, "done")
 
   genCRFile()
-
-  val PCIS_BYTES = 64
-
-  io.dma.map { dma =>
-    // TODO, will these queues bottleneck us?
-    val aw_queue = Queue(dma.aw, 10)
-    val w_queue = Queue(dma.w, 10)
-    val ar_queue = Queue(dma.ar, 10)
-
-    assert(!ar_queue.valid || ar_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-    assert(!aw_queue.valid || aw_queue.bits.size === log2Ceil(PCIS_BYTES).U)
-    assert(!w_queue.valid  || w_queue.bits.strb === ~0.U(PCIS_BYTES.W))
-
-    def fire_write(exclude: Bool, includes: Bool*) = {
-      val rvs = Array (
-        aw_queue.valid,
-        w_queue.valid,
-        dma.b.ready,
-        incomingPCISdat.io.enq.ready
-      )
-      (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-    }
-
-    def fire_read(exclude: Bool, includes: Bool*) = {
-      val rvs = Array (
-        ar_queue.valid,
-        dma.r.ready,
-        outgoingPCISdat.io.deq.valid
-      )
-      (rvs.filter(_ ne exclude) ++ includes).reduce(_ && _)
-    }
-
-    val writeBeatCounter = RegInit(0.U(9.W))
-    when (fire_write(true.B, writeBeatCounter === aw_queue.bits.len)) {
-      //printf("resetting writeBeatCounter\n")
-      writeBeatCounter := 0.U
-    } .elsewhen(fire_write(true.B)) {
-      //printf("incrementing writeBeatCounter\n")
-      writeBeatCounter := writeBeatCounter + 1.U
-    } .otherwise {
-      writeBeatCounter := writeBeatCounter
-    }
-
-    val readBeatCounter = RegInit(0.U(9.W))
-    when (fire_read(true.B, readBeatCounter === ar_queue.bits.len)) {
-      //printf("resetting readBeatCounter\n")
-      readBeatCounter := 0.U
-    } .elsewhen(fire_read(true.B)) {
-      //printf("incrementing readBeatCounter\n")
-      readBeatCounter := readBeatCounter + 1.U
-    } .otherwise {
-      readBeatCounter := readBeatCounter
-    }
-
-    dma.b.bits.resp := 0.U(2.W)
-    dma.b.bits.id := aw_queue.bits.id
-    dma.b.bits.user := aw_queue.bits.user
-    dma.b.valid := fire_write(dma.b.ready, writeBeatCounter === aw_queue.bits.len)
-    aw_queue.ready := fire_write(aw_queue.valid, writeBeatCounter === aw_queue.bits.len)
-    w_queue.ready := fire_write(w_queue.valid)
-
-    //when (fire_write(false.B)) {
-    //  printf("firing write\n")
-    //}
-
-    incomingPCISdat.io.enq.valid := fire_write(incomingPCISdat.io.enq.ready)
-    incomingPCISdat.io.enq.bits := w_queue.bits.data
-
-    //when (fire_read(false.B)) {
-    //  printf("firing read\n")
-    //}
-
-    outgoingPCISdat.io.deq.ready := fire_read(outgoingPCISdat.io.deq.valid)
-
-    dma.r.valid := fire_read(dma.r.ready)
-    dma.r.bits.data := outgoingPCISdat.io.deq.bits
-    dma.r.bits.resp := 0.U(2.W)
-    dma.r.bits.last := readBeatCounter === ar_queue.bits.len
-    dma.r.bits.id := ar_queue.bits.id
-    dma.r.bits.user := ar_queue.bits.user
-    ar_queue.ready := fire_read(ar_queue.valid, readBeatCounter === ar_queue.bits.len)
-  }
-
-  //when (outgoingPCISdat.io.enq.fire()) {
-  //  printf("outgoing ENQ FIRE\n")
-  //}
-
-  //when (outgoingPCISdat.io.deq.fire()) {
-  //  printf("outgoing DEQ FIRE\n")
-  //}
-
-  //when (incomingPCISdat.io.enq.fire()) {
-  //  printf("incoming ENQ FIRE\n")
-  //}
-
-  //when (incomingPCISdat.io.deq.fire()) {
-  //  printf("incoming DEQ FIRE\n")
-  //}
 }

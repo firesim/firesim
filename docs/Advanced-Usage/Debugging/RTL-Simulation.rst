@@ -22,26 +22,37 @@ the design/abstraction hierarchy. Ordered from least to most detailed, they are:
   simulation flow provided by AWS. Supported simulators: VCS, Vivado XSIM.
 
 
-Generally, MIDAS-level simulations are only slightly slower than simulating at
-target-RTL. Moving to FPGA-Level is very expensive. This illustrated in the
-chart below.
+Generally, MIDAS-level simulations are only slightly slower than target-level
+ones. Moving to FPGA-Level is very expensive. This illustrated in the chart
+below.
 
-====== ===== =======  ========= =======
-Level  Waves VCS      Verilator XSIM
-====== ===== =======  ========= =======
-Target Off   4.8 kHz  6.2 kHz   N/A
-Target On    0.8 kHz  4.8 kHz   N/A
-MIDAS  Off   3.8 kHz  2.0 kHz   N/A
-MIDAS  On    2.9 kHz  1.0 kHz   N/A
-FPGA   On    2.3  Hz  N/A       0.56 Hz
-====== ===== =======  ========= =======
+====== ===== =======  ========= ============= ============= =======
+Level  Waves VCS      Verilator Verilator -O1 Verilator -O2 XSIM
+====== ===== =======  ========= ============= ============= =======
+Target Off   4.8 kHz  3.9 kHz   6.6 kHz       N/A           N/A
+Target On    0.8 kHz  3.0 kHz   5.1 kHz       N/A           N/A
+MIDAS  Off   3.8 kHz  2.4 kHz   4.5 kHz       5.3 KHz       N/A
+MIDAS  On    2.9 kHz  1.5 kHz   2.7 kHz       3.4 KHz       N/A
+FPGA   On    2.3  Hz  N/A       N/A           N/A           0.56 Hz
+====== ===== =======  ========= ============= ============= =======
 
-Notes: Default configurations of a single-core Rocket Chip instance running
-rv64ui-v-add.  Frequencies are given in target-Hz. Presently, the default
+Note that using more agressive optimization levels when compiling the
+Verilated-design dramatically lengths compile time:
+
+====== ===== =======  ========= ============= =============
+Level  Waves VCS      Verilator Verilator -O1 Verilator -O2
+====== ===== =======  ========= ============= =============
+MIDAS  Off   35s      48s       3m32s         4m35s
+MIDAS  On    35s      49s       5m27s         6m33s
+====== ===== =======  ========= ============= =============
+
+Notes: Default configurations of a single-core, Rocket-based instance running
+rv64ui-v-add. Frequencies are given in target-Hz. Presently, the default
 compiler flags passed to Verilator and VCS differ from level to level. Hence,
-these numbers are only intended to ball park simulation speeds with FireSim's
-out-of-the-box settings, not provide a scientific comparison between
-simulators.
+these numbers are only intended to ball park simulation speeds, not provide a
+scientific comparison between simulators. VCS numbers collected on Millenium,
+Verilator numbers collected on a c4.4xlarge. (ML verilator version: 4.002, TL
+verilator version: 3.904)
 
 Target-Level Simulation
 --------------------------
@@ -102,14 +113,21 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
     make DESIGN=FireSimNoNIC
     make DESIGN=FireSimNoNIC -j run-asm-tests
     make DESIGN=FireSimNoNIC -j run-bmark-tests
+    
+Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
 
+::
+
+    make DESIGN=FireSimNoNIC verilator-debug
+    make DESIGN=FireSimNoNIC -j run-asm-tests-debug
+    make DESIGN=FireSimNoNIC -j run-bmark-tests-debug
 
 Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
 
 ::
 
     make DESIGN=FireSimNoNIC
-    make $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.out
+    make DESIGN=FireSimNoNIC $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.out
 
 Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
 
@@ -117,7 +135,7 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
 
 
     make DESIGN=FireSimNoNIC vcs-debug
-    make EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.vpd
+    make DESIGN=FireSimNoNIC EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.vpd
 
 
 FPGA-Level Simulation
@@ -154,6 +172,12 @@ To run a simulation you need to make both the DUT and driver targets by typing:
     make xsim-dut <VCS=1> & # Launch the DUT
     make run-xsim SIM_BINARY=<PATH/TO/BINARY/FOR/TARGET/TO/RUN> # Launch the driver
 
+
+When following this process, you should wait until ``make xsim-dut`` prints
+``opening driver to xsim`` before running ``make run-xsim`` (getting these prints from
+``make xsim-dut`` will take a while). Additionally, you will want to use
+``DESIGN=FireSimNoNIC``, since the XSim scripts included with ``aws-fpga`` do
+not support DMA PCIS.
 
 Once both processes are running, you should see:
 

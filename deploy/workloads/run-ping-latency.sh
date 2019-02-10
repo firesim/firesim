@@ -17,7 +17,7 @@ ORIGDIR=$(pwd)
 
 latencies=( 70 3199 6405 9597 12803 16002 19201 22400 25599 28798 31997 )
 # for script testing:
-#latencies=( 31997 )
+# latencies=( 31997 )
 
 cd ../results-workload
 

@@ -11,8 +11,6 @@ from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
-BASEPORT = 10000
-
 class AbstractSwitchToSwitchConfig:
     """ This class is responsible for providing functions that take a FireSimSwitchNode
     and emit the correct config header to produce an actual switch simulator binary
@@ -28,37 +26,35 @@ class AbstractSwitchToSwitchConfig:
         self.build_disambiguate = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(64))
 
     def emit_init_for_uplink(self, uplinkno):
-        """ Emit an init for a switch to talk to it's uplink.
+        """ Emit an init for a switch to talk to it's uplink."""
 
-        TODO: currently, we only support one uplink. """
-        assert uplinkno < 1, "Only 1 uplink is currently supported."
-        downlinkno = None
-        iterno = 0
-        for downlink in self.fsimswitchnode.uplinks[uplinkno].downlinks:
-            if self.fsimswitchnode == downlink:
-                downlinkno = iterno
-                break
-            iterno += 1
-        assert self.fsimswitchnode.host_instance.is_bound_to_real_instance(), "Instances must be bound to private IP to emit switches with uplinks. i.e. you must have a running Run Farm."
-        # TODO: remove the requirement from the above assert by passing IPs
-        # as cmd line arguments.
-        uplinkip = self.fsimswitchnode.uplinks[uplinkno].host_instance.get_private_ip()
-        return "new SocketClientPort(" + str(len(self.fsimswitchnode.downlinks)+uplinkno) +  \
-                ", \"" + uplinkip + "\", " + str(BASEPORT + downlinkno) + ");\n"
+        linkobj = self.fsimswitchnode.uplinks[uplinkno]
+        upperswitch = linkobj.get_uplink_side()
+
+        target_local_portno = len(self.fsimswitchnode.downlinks) + uplinkno
+        if linkobj.link_crosses_hosts():
+            uplinkhostip = linkobj.link_hostserver_ip() #upperswitch.host_instance.get_private_ip()
+            uplinkhostport = linkobj.link_hostserver_port()
+
+            return "new SocketClientPort(" + str(target_local_portno) +  \
+                    ", \"" + uplinkhostip + "\", " + str(uplinkhostport) + ");\n"
+
+        else:
+            linkbasename = linkobj.get_global_link_id()
+            return "new ShmemPort(" + str(target_local_portno) + ', "' + linkbasename + '", true);\n'
 
     def emit_init_for_downlink(self, downlinkno):
         """ emit an init for the specified downlink. """
-        downlink = self.fsimswitchnode.downlinks[downlinkno]
-        # this must be here to avoid circular deps
-        # TODO: for real fix, need to refactor the abstract switch / implementation
-        # interface
-        from runtools.firesim_topology_elements import FireSimSwitchNode
-        if isinstance(downlink, FireSimSwitchNode):
+        downlinkobj = self.fsimswitchnode.downlinks[downlinkno]
+        downlink = downlinkobj.get_downlink_side()
+        if downlinkobj.link_crosses_hosts():
+            hostport = downlinkobj.link_hostserver_port()
             # create a SocketServerPort
             return "new SocketServerPort(" + str(downlinkno) + ", " + \
-                    str(BASEPORT + downlinkno)  + ");\n"
+                    str(hostport)  + ");\n"
         else:
-            return "new ShmemPort(" + str(downlinkno) + ");\n"
+            linkbasename = downlinkobj.get_global_link_id()
+            return "new ShmemPort(" + str(downlinkno) + ', "' + linkbasename + '", false);\n'
 
     def emit_switch_configfile(self):
         """ Produce a config file for the switch generator for this switch """
@@ -99,12 +95,16 @@ class AbstractSwitchToSwitchConfig:
 
     def get_numclientsconfig(self):
         """ Emit constants for num ports. """
-        totalports = len(self.fsimswitchnode.downlinks) + len(self.fsimswitchnode.uplinks)
+        numdownlinks = len(self.fsimswitchnode.downlinks)
+        numuplinks = len(self.fsimswitchnode.uplinks)
+        totalports = numdownlinks + numuplinks
 
         retstr = """
     #ifdef NUMCLIENTSCONFIG
     #define NUMPORTS {}
-    #endif""".format(totalports)
+    #define NUMDOWNLINKS {}
+    #define NUMUPLINKS {}
+    #endif""".format(totalports, numdownlinks, numuplinks)
         return retstr
 
     def get_portsetup(self):
@@ -166,7 +166,9 @@ class AbstractSwitchToSwitchConfig:
         """ Return the command to boot the switch."""
         switchlatency = self.fsimswitchnode.switch_switching_latency
         linklatency = self.fsimswitchnode.switch_link_latency
-        return """screen -S {} -d -m bash -c "script -f -c './{} {} {}' switchlog"; sleep 1""".format(self.switch_binary_name(), self.switch_binary_name(), linklatency, switchlatency)
+        bandwidth = self.fsimswitchnode.switch_bandwidth
+        # insert gdb -ex run --args between sudo and ./ below to start switches in gdb
+        return """screen -S {} -d -m bash -c "script -f -c 'sudo ./{} {} {} {}' switchlog"; sleep 1""".format(self.switch_binary_name(), self.switch_binary_name(), linklatency, switchlatency, bandwidth)
 
     def kill_switch_simulation_command(self):
         """ Return the command to kill the switch. """

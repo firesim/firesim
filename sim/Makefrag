@@ -35,25 +35,16 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 CONF_NAME ?= runtime.conf
 
-################################################################
-# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
-################################################################
-TIMEOUT_CYCLES = 100000 #100000000
-SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
-mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args)
-
-# Arguments used only in MIDAS-level (ML) RTL simulation
-MIDAS_LEVEL_SIM_ARGS ?= +dramsim
-
 ####################################
 # Verilator MIDAS-Level Simulators #
 ####################################
 
+VERILATOR_CXXOPTS ?= -O0
+
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
-$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D RTLSIM
+$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
@@ -70,10 +61,13 @@ verilator-debug: $(verilator_debug)
 ##############################
 # VCS MIDAS-Level Simulators #
 ##############################
+
+VCS_CXXOPTS ?= -O2
+
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 
-$(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(VCS_HOME)/include -D RTLSIM
+$(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VCS_CXXOPTS) -I$(VCS_HOME)/include -D RTLSIM
 $(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
@@ -90,6 +84,8 @@ vcs-debug: $(vcs_debug)
 ############################
 # Master Simulation Driver #
 ############################
+DRIVER_CXXOPTS ?= -O2
+
 $(OUTPUT_DIR)/$(DESIGN).chain: $(VERILOG)
 	mkdir -p $(OUTPUT_DIR)
 	$(if $(wildcard $(GENERATED_DIR)/$(DESIGN).chain),cp $(GENERATED_DIR)/$(DESIGN).chain $@,)
@@ -99,7 +95,7 @@ $(PLATFORM): $($(PLATFORM)) $(OUTPUT_DIR)/$(DESIGN).chain
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
-$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 
@@ -120,6 +116,8 @@ build_dir      := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
 ila_work_dir   := $(fpga_work_dir)/design/ila_files/
+fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
+repo_state     := $(fpga_work_dir)/design/repo_state
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
@@ -127,9 +125,13 @@ $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	touch $@
 
 $(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
+	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 	cp -f $< $@
 	sed -i "s/\$$random/64'b0/g" $@
 	sed -i 's/fatal/fatal(0, "")/g' $@
+
+$(fpga_vh): $(VERILOG) $(fpga_work_dir)/stamp
+	cp -f $(GENERATED_DIR)/$(@F) $@
 
 .PHONY: $(ila_work_dir)
 $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
@@ -139,7 +141,8 @@ $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
 
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_v) $(ila_work_dir)
+replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh)
+
 .PHONY: replace-rtl
 
 $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/stamp
@@ -156,10 +159,8 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 # FPGA-level RTL Simulation #
 #############################
 
-FPGA_LEVEL_SIM_ARGS ?= $(COMMON_SIM_ARGS)
-
 # Run XSIM DUT
-xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
+xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
 
 # Compile XSIM Driver #
@@ -173,9 +174,27 @@ $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 xsim: $(xsim)
 
-run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<)  +permissive $(FPGA_LEVEL_SIM_ARGS) \
-	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))
+#########################
+# MIDAS Unit Tests      #
+#########################
+UNITTEST_CONFIG ?= AllUnitTests
+
+rocketchip_dir := $(base_dir)/target-rtl/firechip/rocket-chip
+unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
+unittest_args = \
+		BASE_DIR=$(base_dir) \
+		EMUL=$(EMUL) \
+		ROCKETCHIP_DIR=$(rocketchip_dir) \
+		GEN_DIR=$(unittest_generated_dir) \
+		SBT="$(SBT) $(SBT_FLAGS)" \
+		CONFIG=$(UNITTEST_CONFIG)
+
+run-midas-unittests: $(chisel_srcs)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
+
+run-midas-unittests-debug: $(chisel_srcs)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
+
 
 cleanfpga:
 	rm -rf $(fpga_work_dir)

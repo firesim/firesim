@@ -11,13 +11,13 @@ case object MemSize extends Field[Int]
 case object NMemoryChannels extends Field[Int]
 case object CacheBlockBytes extends Field[Int]
 case object CacheBlockOffsetBits extends Field[Int]
+case object Seed extends Field[Long]
 
 // This module computes the sum of a simple singly linked-list, where each
 // node consists of a pointer to the next node and a 64 bit SInt
 // Inputs: (Decoupled) start address: the location of the first node in memory
 // Outputs: (Decoupled) result: The sum of the list
-class PointerChaser(seed: Long = System.currentTimeMillis)
-                   (implicit val p: Parameters) extends Module with HasNastiParameters {
+class PointerChaser(implicit val p: Parameters) extends Module with HasNastiParameters {
   val io = IO(new Bundle {
     val nasti = new NastiIO
     val result = Decoupled(SInt(nastiXDataBits.W))
@@ -83,7 +83,7 @@ class PointerChaser(seed: Long = System.currentTimeMillis)
   memoryIF.ar.valid := arValid
   memoryIF.r.ready := true.B
 
-  val rnd = new scala.util.Random(seed)
+  val rnd = new scala.util.Random(p(Seed))
   memoryIF.aw.bits := NastiWriteAddressChannel(
     id = rnd.nextInt(1 << nastiWIdBits).U,
     len = rnd.nextInt(1 << nastiXLenBits).U,

@@ -1,7 +1,8 @@
 usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-r BUILDRECIPESCONFIGFILE] [-a HWDBCONFIGFILE]
                [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
-               [-g TERMINATESOMEF12] [-m TERMINATESOMEM416] [-q]
+               [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
+               [-m TERMINATESOMEM416] [-q]
                
                {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
 
@@ -35,6 +36,9 @@ optional arguments:
   -g TERMINATESOMEF12, --terminatesomef12 TERMINATESOMEF12
                         Only used by terminatesome. Terminates this many of
                         the previously launched f1.2xlarges.
+  -i TERMINATESOMEF14, --terminatesomef14 TERMINATESOMEF14
+                        Only used by terminatesome. Terminates this many of
+                        the previously launched f1.4xlarges.
   -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
                         Only used by terminatesome. Terminates this many of
                         the previously launched m4.16xlarges.
