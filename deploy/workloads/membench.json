@@ -1,0 +1,20 @@
+{
+  "benchmark_name" : "membench",
+  "common_rootfs" : "dummy.ext2",
+  "common_simulation_outputs" : ["uartlog"],
+
+  "workloads" : [
+    {
+      "name" : "membench",
+      "bootbinary" : "membench.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "memblade-dummy",
+      "bootbinary" : "memblade-dummy.riscv",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}
