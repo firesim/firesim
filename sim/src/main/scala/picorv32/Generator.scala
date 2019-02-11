@@ -46,7 +46,7 @@ trait FireSimGeneratorUtils extends HasTestSuites {
 
     val dut = chisel3.Driver.elaborate(() => new UARTWrapper)
     val annos = dut.annotations.map(_.toFirrtl)
-    val portList = dut.components.find(_.name == "UARTWrapper").get.ports.flatMap(p => Some(p.id))
+    val portList = dut.components.find(_.name == "UARTWrapper").get.ports.flatMap(p => Some(p.id.instanceName -> p.id))
 
     midas.MidasCompiler(
       chirrtl, annos, portList, testDir, None, targetTransforms, hostTransforms

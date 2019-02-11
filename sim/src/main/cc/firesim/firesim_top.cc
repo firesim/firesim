@@ -1,7 +1,7 @@
 #include "firesim_top.h"
 
 // FireSim-defined endpoints
-// #include "endpoints/serial.h"
+#include "endpoints/serial.h"
 #include "endpoints/uart.h"
 #include "endpoints/simplenic.h"
 #include "endpoints/blockdev.h"
