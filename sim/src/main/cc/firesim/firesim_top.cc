@@ -31,6 +31,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
     }
 
+
 #ifdef UARTWIDGET_struct_guard
     #ifdef UARTWIDGET_0_PRESENT
     UARTWIDGET_0_substruct_create;
@@ -65,6 +66,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     add_endpoint(new uart_t(this, UARTWIDGET_7_substruct, 7));
     #endif
 #endif
+
 
 #ifdef NASTIWIDGET_0
     endpoints.push_back(new sim_mem_t(this, argc, argv));
