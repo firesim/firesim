@@ -69,7 +69,9 @@ TIMEOUT_CYCLES = 100000000
 NET_SLOT ?= 0
 NET_LINK_LATENCY ?= 6405
 NET_BW ?= 100
-nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
+NET_SHMEMPORTNAME ?= $(shell printf '%0100d' $(NET_SLOT))
+NET_LOOPBACK ?= +nic-loopback0
+nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
