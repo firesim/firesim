@@ -184,6 +184,16 @@ class SupernodeFireSimRocketChipSingleCoreConfig extends Config(
   new WithExtMemSize(0x200000000L) ++ // 8GB
   new FireSimRocketChipSingleCoreConfig)
 
+class SupernodeSixNodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(6) ++
+  new WithExtMemSize(0x40000000L) ++ // 1GB
+  new FireSimRocketChipSingleCoreConfig)
+
+class SupernodeEightNodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(8) ++
+  new WithExtMemSize(0x40000000L) ++ // 1GB
+  new FireSimRocketChipSingleCoreConfig)
+
 class SupernodeFireSimRocketChipDualCoreConfig extends Config(
   new WithNumNodes(4) ++
   new WithExtMemSize(0x200000000L) ++ // 8GB

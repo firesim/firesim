@@ -6,6 +6,7 @@ import logging
 import boto3
 import botocore
 from botocore import exceptions
+from fabric.api import local
 
 rootLogger = logging.getLogger()
 
@@ -13,7 +14,7 @@ rootLogger = logging.getLogger()
 keyname = 'firesim'
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.4.0 - pre8-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0335b86e84e820e8d.4"
+f1_ami_name = "FPGA Developer AMI - 1.5.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-06cecb61c79496e0d.4"
 
 # users are instructed to create these in the setup instructions
 securitygroupname = 'firesim'
@@ -29,10 +30,17 @@ def get_f1_ami_id():
     return response['Images'][0]['ImageId']
 
 def get_aws_userid():
-    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit
-    """
+    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit.
+    The previous method to do this was:
+
     client = boto3.client('iam')
     return client.get_user()['User']['UserId'].lower()
+
+    But it seems that by default many accounts do not have permission to run this,
+    so instead we get it from instance metadata.
+    """
+    res = local("""curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")'""", capture=True)
+    return res.stdout.lower()
 
 def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
     """ construct the dictionary necessary to configure instance market selection

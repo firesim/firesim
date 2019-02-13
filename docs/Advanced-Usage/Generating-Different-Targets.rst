@@ -1,5 +1,5 @@
 Targets
-================
+=======
 
 FireSim generates SoC models by transforming RTL emitted by a Chisel
 generator, such as the Rocket SoC generator. Subject to
@@ -20,6 +20,8 @@ transformed and thus used in FireSim:
 4. Asynchronous reset must only be implemented using Rocket Chip's black box async reset. 
    These are replaced with synchronously reset registers using a FIRRTL transformation.
 
+
+.. _generating-different-targets:
 
 Generating Different Target-RTL
 ---------------------------------

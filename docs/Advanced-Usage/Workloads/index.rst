@@ -13,3 +13,4 @@ This section describes workload definitions in FireSim.
    SPEC-2017
    Booting-Fedora
    ISCA-2018-Experiments
+   GAP-Benchmark-Suite

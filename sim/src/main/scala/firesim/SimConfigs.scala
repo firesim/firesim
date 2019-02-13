@@ -3,7 +3,7 @@ package firesim.firesim
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
 import midas.{EndpointKey, MemModelKey}
-import midas.core.{SimAXI4MemIO, ReciprocalClockRatio, EndpointMap}
+import midas.widgets.{SimAXI4MemIO, EndpointMap}
 import midas.models._
 import midas.MemModelKey
 
@@ -31,6 +31,12 @@ class WithSynthAsserts extends Config((site, here, up) => {
   case EndpointKey => EndpointMap(Seq(new midas.widgets.AssertBundleEndpoint)) ++ up(EndpointKey)
 })
 
+// Experimental: mixing this in will enable print synthesis
+class WithPrintfSynthesis extends Config((site, here, up) => {
+  case midas.SynthPrints => true
+  case EndpointKey => EndpointMap(Seq(new midas.widgets.PrintRecordEndpoint)) ++ up(EndpointKey)
+})
+
 class WithSerialWidget extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
 })
@@ -50,14 +56,14 @@ class WithBlockDevWidget extends Config((site, here, up) => {
 
 class WithTracerVWidget extends Config((site, here, up) => {
   case midas.EndpointKey => up(midas.EndpointKey) ++
-    midas.core.EndpointMap(Seq(new SimTracerV))
+    EndpointMap(Seq(new SimTracerV))
 })
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
   case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(
-    new SimAXI4MemIO(ReciprocalClockRatio(clockDivision))))
+    new SimAXI4MemIO(midas.core.ReciprocalClockRatio(clockDivision))))
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
@@ -65,13 +71,11 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
   case BaseParamsKey => new BaseParams(
     maxReads = 16,
     maxWrites = 16,
-    maxReadLength = 8,
-    maxWriteLength = 8,
     beatCounters = true,
     llcKey = site(LlcKey))
 
 	case MemModelKey => Some((p: Parameters) => new MidasMemModel(new
-		LatencyPipeConfig(site(BaseParamsKey)))(p))
+		LatencyPipeConfig(site(BaseParamsKey))(p))(p))
 })
 
 
@@ -89,7 +93,7 @@ class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) =
 // Changes the default DRAM memory organization.
 class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
     extends Config((site, here, up) => {
-  case DramOrganizationKey => site(DramOrganizationKey).copy(
+  case DramOrganizationKey => up(DramOrganizationKey, site).copy(
     maxBanks = maxBanks,
     maxRanks = maxRanks,
     dramSize = dramSize
@@ -103,7 +107,7 @@ class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
     new FIFOMASConfig(
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey)))(p))
+      baseParams = site(BaseParamsKey))(p))(p))
 })
 
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
@@ -114,13 +118,13 @@ class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, her
       schedulerWindowSize = windowSize,
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey)))(p))
+      baseParams = site(BaseParamsKey))(p))(p))
   }
 )
 
 // Changes the functional model capacity limits
 class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, here, up) => {
-  case BaseParamsKey => up(BaseParamsKey).copy(
+  case BaseParamsKey => up(BaseParamsKey, site).copy(
     maxReads = maxReads,
     maxWrites = maxWrites
   )
@@ -152,6 +156,7 @@ class FCFS16GBQuadRankLLC4MB extends Config(
 
 // DDR3 - First-Ready FCFS models
 class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
+  new WithFuncModelLimits(32,32) ++
   new WithDDR3FRFCFS(8, 8) ++
   new WithDefaultMemModel(clockDiv)
 )

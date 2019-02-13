@@ -17,13 +17,14 @@ allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-
 
 # Default to the submodule
 SPECKLE_DIR=Speckle
+GAP_DIR=runscripts/gapbs-scripts
 
 #TODO: Provide runscripts for fp{speed, rate}
 spec17_suites = intrate intspeed
 spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
 
 #Default to ref input size for SPEC17
-input=ref
+spec17-%: input = ref
 
 $(SPECKLE_DIR)/build/overlay/%/$(input):
 	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
@@ -33,6 +34,19 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	cp $(BASE_LINUX) $@/bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
+
+#Default to test input size for GAPBS
+gapbs: input = test
+
+$(GAP_DIR)/overlay/$(input):
+	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
+ 
+
+gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
+	mkdir -p $@
+	cp $(BASE_LINUX) $@/bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
+		-s $(GAP_DIR)/overlay/$(input) \
 
 memcached-thread-imbalance:
 	mkdir -p $@
@@ -63,6 +77,8 @@ simperf-test-scale: simperf-test
 
 simperf-test-latency: simperf-test
 
+flash-stress: simperf-test-latency
+
 iperf3: iperf3.json
 	mkdir -p $@
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
@@ -86,8 +102,12 @@ fc-test:
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-client.riscv $@/fc-client.riscv
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
 
+ccbench-cache-sweep:
+	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
-	fc-test
+	fc-test ccbench-cache-sweep flash-stress
