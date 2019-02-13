@@ -29,10 +29,7 @@ class WithUARTKey extends Config((site, here, up) => {
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
     inBufPackets = 64,
-    ctrlQueueDepth = 64,
-    creditTracker = Some(CreditTrackerParams(
-      outMaxCredits = 4095,
-      updatePeriod = 32 * 180)))
+    ctrlQueueDepth = 64)
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {

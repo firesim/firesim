@@ -43,7 +43,9 @@ int throttle_denom = 1;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
-#define CREDIT_FLOWCONTROL
+
+// uncomment for credit-based flow control
+//#define CREDIT_FLOWCONTROL
 
 // size of output buffers, in # of flits
 // only if LIMITED BUFSIZE is set
