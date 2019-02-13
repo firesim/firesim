@@ -325,11 +325,11 @@ class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, 
       }
       // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
       val flipped = directionOf(rvInterface.valid) == ActualDirection.Input
-      val channel = Module(new ReadyValidChannel(
+      val channel = ReadyValidChannel(
         rvInterface.bits.cloneType,
         flipped,
         clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio  
-      ))
+      )
 
       channel suggestName s"ReadyValidChannel_$name"
 
