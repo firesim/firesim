@@ -25,20 +25,22 @@ import sifive.blocks.devices.uart.UARTPortIO
 
 import firrtl.annotations.Annotation
 
-trait FireSimGeneratorUtils extends HasTestSuites {
+import firesim.util.{GeneratorArgs,HasTargetAgnosticUtilites}
+
+trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites {
   val targetTransforms = Seq(
     // firesim.passes.AsyncResetRegPass,
     // firesim.passes.PlusArgReaderPass
   )
 
   lazy val hostTransforms = Seq(
-    new firesim.passes.ILATopWiringTransform(testDir)
+    new firesim.passes.ILATopWiringTransform(genDir)
   )
 
   val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-PicoRV32Config-FireSimConfig/"
-  lazy val testDir = new File(targetDir)
+  lazy val genDir = new File(targetDir)
 
-  def midasParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
+  def hostParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
 
   def elaborateAndCompileWithMidas {
     val lines = Source.fromFile("src/main/scala/picorv32/synth.fir").getLines()
@@ -49,8 +51,8 @@ trait FireSimGeneratorUtils extends HasTestSuites {
     val portList = dut.components.find(_.name == "UARTWrapper").get.ports.flatMap(p => Some(p.id.instanceName -> p.id))
 
     midas.MidasCompiler(
-      chirrtl, annos, portList, testDir, None, targetTransforms, hostTransforms
-      )(midasParams)
+      chirrtl, annos, portList, genDir, None, targetTransforms, hostTransforms
+      )(hostParams)
     // Need replay
   }
 
@@ -59,19 +61,27 @@ trait FireSimGeneratorUtils extends HasTestSuites {
     writeOutputFile("PicoRV32.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
-  def writeOutputFile(fname: String, contents: String): File = {
-    val f = new File(testDir, fname)
-    val fw = new FileWriter(f)
-    fw.write(contents)
-    fw.close
-    f
-  }
+  // def generateArtefacts {
+  //   ElaborationArtefacts.files.foreach { case (extension, contents) =>
+  //     writeOutputFile(s"PicoRV32.${extension}", contents ())
+  //   }
+  // }
+
+  // def writeOutputFile(fname: String, contents: String): File = {
+  //   val f = new File(genDir, fname)
+  //   val fw = new FileWriter(f)
+  //   fw.write(contents)
+  //   fw.close
+  //   f
+  // }
 }
 
 object FireSimGenerator extends App with FireSimGeneratorUtils {
   require (args.size == 1, "Command line arg must be output directory!")
+  lazy val generatorArgs = GeneratorArgs(args)
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
+  generateHostVerilogHeader
 }
 
 class UARTWrapper extends MultiIOModule {

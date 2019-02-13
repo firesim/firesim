@@ -38,6 +38,8 @@ $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(GENERATED_DIR)"
+	# Remove once runtime conf generation is generalized, and something is always emitted
+	touch $(GENERATED_DIR)/$(CONF_NAME)
 
 ##########################
 # Driver Sources & Flags #
