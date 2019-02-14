@@ -4,7 +4,7 @@
   "deliver_dir" : "gapbs",
   "common_args" : [],
   "common_files" : ["gapbs.sh"],
-  "common_simulation_outputs": ["uartlog"],
+  "common_simulation_outputs": ["uartlog", "memory_stats.csv"],
   "common_outputs" : ["/output"],
   "workloads" : [
     {
