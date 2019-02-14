@@ -67,7 +67,12 @@ TIMEOUT_CYCLES = 100000000
 NET_SLOT ?= 0
 NET_LINK_LATENCY ?= 6405
 NET_BW ?= 100
-nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
+NET_SHMEMPORTNAME ?= $(shell printf '%0100d' $(NET_SLOT))
+NET_LOOPBACK ?= +nic-loopback0
+NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
+nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
+	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
+	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile0=TRACEFILE
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
