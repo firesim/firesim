@@ -2,9 +2,8 @@
 
 # This is some sugar around:
 # ./firesim -c <ini> {launchrunfarm && infrasetup && runworkload && terminaterunfarm}
-
-# "Simple" workloads are simply those that don't need to make any other calls beyond 
-# the four above.
+# And thus will only work for workloads that do not need run other applications
+# between firesim calls
 
 # Defaults
 withlaunch=0
@@ -12,7 +11,7 @@ terminate=1
 
 function usage
 {
-    echo "usage: run-simple-workload.sh <workload.ini> [-H | -h | --help] [--noterminate] [--withlaunch]"
+    echo "usage: run-workload.sh <workload.ini> [-H | -h | --help] [--noterminate] [--withlaunch]"
     echo "   workload.ini:  the workload you'd like to run."
     echo "   --withlaunch:  (Optional) will spin up a runfarm based on the ini"
     echo "   --noterminate: (Optional) will not forcibly terminate runfarm instances after runworkload"
