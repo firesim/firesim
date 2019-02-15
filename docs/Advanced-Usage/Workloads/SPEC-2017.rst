@@ -50,10 +50,7 @@ To Run:
 
 .. code-block:: bash
 
-    firesim launchrunfarm    -c workloads/spec17-intspeed.ini
-    firesim infrasetup       -c workloads/spec17-intspeed.ini
-    firesim runworkload      -c workloads/spec17-intspeed.ini
-    firesim terminaterunfarm -c workloads/spec17-intspeed.ini
+    workloads/run-workload.sh workloads/spec17-intspeed.ini --withlaunch
 
 On a single-core rocket-based SoC with a DDR3 + 256 KiB LLC model, with a 160
 MHz host clock, the longest benchmarks (xz, mcf) complete in about 1
@@ -86,10 +83,7 @@ To Run:
 
 .. code-block:: bash
 
-    firesim launchrunfarm    -c workloads/spec17-intrate.ini
-    firesim infrasetup       -c workloads/spec17-intrate.ini
-    firesim runworkload      -c workloads/spec17-intrate.ini
-    firesim terminaterunfarm -c workloads/spec17-intrate.ini
+    workloads/run-workload.sh workloads/spec17-intrate.ini --withlaunch
 
 
 Simulation times are host and target dependent. For reference, on a

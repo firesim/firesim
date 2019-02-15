@@ -35,11 +35,7 @@ To Run:
 
 .. code-block:: bash
 
-    firesim launchrunfarm    -c workloads/gapbs.ini
-    firesim infrasetup       -c workloads/gapbs.ini
-    firesim runworkload      -c workloads/gapbs.ini
-    firesim terminaterunfarm -c workloads/gapbs.ini
-
+    workloads/run-workload.sh workloads/gapbs.ini --withlaunch
 
 Simulation times are host and target dependent. For reference, on a
 four-core rocket-based SoC with a DDR3 + 1 MiB LLC model, with a 90
