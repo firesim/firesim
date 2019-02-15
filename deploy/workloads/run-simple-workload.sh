@@ -12,14 +12,15 @@ terminate=1
 
 function usage
 {
-    echo "usage: run-simple-workload.sh <workload.ini> [-H | -h | --help] [--noterminate]"
-    echo "   workload.ini: the workload you'd like to run."
-    echo "   withlaunch: will spin up a runfarm based on the ini"
-    echo "   noterminate: will not forcibly terminate runfarm instances after runworkload"
+    echo "usage: run-simple-workload.sh <workload.ini> [-H | -h | --help] [--noterminate] [--withlaunch]"
+    echo "   workload.ini:  the workload you'd like to run."
+    echo "   --withlaunch:  (Optional) will spin up a runfarm based on the ini"
+    echo "   --noterminate: (Optional) will not forcibly terminate runfarm instances after runworkload"
 }
 
 if [ $# -eq 0 -o "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
-    usage exit 3
+    usage
+    exit 3
 fi
 
 ini=$1
