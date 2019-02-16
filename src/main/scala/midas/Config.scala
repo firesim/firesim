@@ -5,10 +5,12 @@ package midas
 import core._
 import widgets._
 import platform._
+import models._
 import strober.core._
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.UnitTests
+
 
 trait PlatformType
 case object Zynq extends PlatformType
@@ -24,7 +26,6 @@ case object ExcludeInstanceAsserts extends Field[Seq[(String, String)]](Seq())
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
-case object MemModelKey extends Field[Option[Parameters => MemModel]]
 case object EndpointKey extends Field[EndpointMap]
 
 class SimConfig extends Config((site, here, up) => {
@@ -40,10 +41,9 @@ class SimConfig extends Config((site, here, up) => {
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case EndpointKey      => EndpointMap(Seq(
-    new SimNastiMemIO, new SimAXI4MemIO, new AssertBundleEndpoint, new PrintRecordEndpoint))
-  case MemModelKey      => Some((p: Parameters) => new SimpleLatencyPipe()(p))
+    new FASEDNastiEndpoint, new FASEDAXI4Endpoint, new AssertBundleEndpoint, new PrintRecordEndpoint))
+  case MemModelKey      => (p: Parameters) => new FASEDMemoryTimingModel(LatencyPipeConfig(BaseParams(16,16))(p))(p)
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
-  case MidasLLCKey      => None
   case AXIDebugPrint    => false
   case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
   case HostMemNumChannels => 1
