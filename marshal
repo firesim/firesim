@@ -6,8 +6,8 @@ import logging
 import wlutil
 import contextlib
 
-if 'RISCV' not in os.environ:
-    sys.exit("Please source firesim/sourceme-manager-f1.sh first\n")
+# if 'RISCV' not in os.environ:
+#     sys.exit("Please source firesim/sourceme-manager-f1.sh first\n")
 
 # Delete a file but don't throw an exception if it doesn't exist
 def deleteSafe(pth):
