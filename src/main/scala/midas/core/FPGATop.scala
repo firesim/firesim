@@ -35,7 +35,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Simulation Target
   val sim = Module(new SimBox(simIoType))
   val simIo = sim.io.io
-  val memIoSize = (simIo.endpoints collect { case x: SimMemIO => x } foldLeft 0)(_ + _.size)
   // This reset is used to return the emulation to time 0.
   val simReset = Wire(Bool())
 
@@ -135,15 +134,11 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Instantiate endpoint widgets
   defaultIOWidget.io.tReset.ready := (simIo.endpoints foldLeft true.B) { (resetReady, endpoint) =>
     ((0 until endpoint.size) foldLeft resetReady) { (ready, i) =>
-      val widgetName = (endpoint, p(MemModelKey)) match {
-          case (_: SimMemIO, Some(_)) => s"MemModel_$i"
-          case (_: SimMemIO, None) => s"NastiWidget_$i"
-          case _ => s"${endpoint.widgetName}_$i"
-      }
+      val widgetName = s"${endpoint.widgetName}_$i"
       val widget = addWidget(endpoint.widget(p), widgetName)
       widget.reset := reset.toBool || simReset
       widget match {
-        case model: MemModel =>
+        case model: midas.models.FASEDMemoryTimingModel =>
           memPorts += model.io.host_mem
           model.io.tNasti.hBits.aw.bits.user := DontCare
           model.io.tNasti.hBits.aw.bits.region := DontCare
@@ -176,11 +171,9 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Masters = Target memory channels + loadMemWidget
   val numMemModels = memPorts.length
   val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-  if (p(MemModelKey) != None) {
-    val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
-    loadMem.reset := reset.toBool || simReset
-    memPorts += loadMem.io.toSlaveMem
-  }
+  val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
+  loadMem.reset := reset.toBool || simReset
+  memPorts += loadMem.io.toSlaveMem
 
   val channelSize = BigInt(1) << p(HostMemChannelNastiKey).addrBits
   val hostMemAddrMap = new AddrMap(Seq.tabulate(p(HostMemNumChannels))(i =>

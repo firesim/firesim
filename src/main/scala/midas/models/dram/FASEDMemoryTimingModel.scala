@@ -1,3 +1,4 @@
+// See LICENSE for license details.
 package midas
 package models
 
@@ -67,7 +68,7 @@ case class BaseParams(
   addrRangeCounters: BigInt = BigInt(0)
 )
 
-abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) extends MemModelConfig {
+abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) {
 
   // Returns (maxReadLength, maxWriteLength)
   private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
@@ -149,10 +150,18 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
   }
 }
 
-class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
+class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
+  // The default NastiKey is expected to be that of the target
+  val tNasti = Flipped(HostPort(new NastiIO, false))
+  val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
+  def hPort = tNasti
+}
+
+class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends EndpointWidget()(p) {
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
   )
+  val io = IO(new MemModelIO)
 
   val model = cfg.elaborate()
   printGenerationConfig
