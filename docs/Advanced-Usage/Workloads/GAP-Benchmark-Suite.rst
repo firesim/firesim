@@ -35,7 +35,7 @@ To Run:
 
 .. code-block:: bash
 
-    workloads/run-workload.sh workloads/gapbs.ini --withlaunch
+    ./run-workload.sh workloads/gapbs.ini --withlaunch
 
 Simulation times are host and target dependent. For reference, on a
 four-core rocket-based SoC with a DDR3 + 1 MiB LLC model, with a 90

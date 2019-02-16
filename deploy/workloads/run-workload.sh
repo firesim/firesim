@@ -12,7 +12,8 @@ terminate=1
 function usage
 {
     echo "usage: run-workload.sh <workload.ini> [-H | -h | --help] [--noterminate] [--withlaunch]"
-    echo "   workload.ini:  the workload you'd like to run."
+    echo "   workload.ini:  the firesim-relative path to the workload you'd like to run"
+    echo "                  e.g. workloads/gapbs.ini"
     echo "   --withlaunch:  (Optional) will spin up a runfarm based on the ini"
     echo "   --noterminate: (Optional) will not forcibly terminate runfarm instances after runworkload"
 }
