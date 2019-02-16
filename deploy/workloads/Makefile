@@ -36,7 +36,7 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
 
 #Default to test input size for GAPBS
-gapbs: input = test
+gapbs: input = graph500
 
 $(GAP_DIR)/overlay/$(input):
 	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
