@@ -1,4 +1,4 @@
-# MIDAS Beta v0.1
+# MIDAS
 
 MIDAS is a Chisel & FIRRTL library for generating FPGA-accelerated simulators
 automatically from Chisel-based RTL design, and is the basis for simulator
@@ -16,11 +16,11 @@ descriptions that follow are obselete, but the general flow remains mostly uncha
 
 ## Publications
 
-* Donggyu Kim, Adam Izraelevitz, Christopher Celio, Hokeun Kim, Brian Zimmer, Yunsup Lee, Jonathan Bachrach, and Krste Asanović, **"Strober: Fast and Accurate Sample-Based Energy Simulation for Arbitrary RTL"**, International Symposium on Computer Architecture (ISCA-2016), Seoul, Korea, June 2016. ([Paper](https://dl.acm.org/citation.cfm?id=3001151), [Slides](http://isca2016.eecs.umich.edu/wp-content/uploads/2016/07/2B-2.pdf))
-* Donggyu Kim, Christopher Celio, David Biancolin, Jonathan Bachrach, and Krste Asanović, **"Evaluation of RISC-V RTL with FPGA-Accelerated Simulation"**, The First Workshop on Computer Architecture Research with RISC-V (CARRV 2017), Boston, MA, USA, Oct 2017. ([Paper](doc/papers/carrv-2017.pdf), [Slides]())
-* Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing Huang, Kyle Kovacs, Borivoje Nikolić, Randy Katz, Jonathan Bachrach, and Krste Asanović, “FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud”, In proceedings of the 45th ACM/IEEE International Symposium on Computer Architecture (ISCA 2018), Los Angeles, June 2018.  Selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”. 
-* Donggyu Kim, Christopher Celio, Sagar Karandikar, David Biancolin, Jonathan Bachrach, and Krste Asanović, “DESSERT: Debugging RTL Effectively with State Snapshotting for Error Replays across Trillions of cycles”, In proceedings of the 28th International Conference on Field Programmable Logic & Applications (FPL 2018), Dublin, Ireland, August 2018. ([Paper](https://ieeexplore.ieee.org/abstract/document/8533471))
-* David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, “FASED: FPGA-Accelerated Simulation and Evaluation of DRAM”, In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays, Seaside, CA, February 2018
+* Donggyu Kim, Adam Izraelevitz, Christopher Celio, Hokeun Kim, Brian Zimmer, Yunsup Lee, Jonathan Bachrach, and Krste Asanović, **"Strober: Fast and Accurate Sample-Based Energy Simulation for Arbitrary RTL"**, International Symposium on Computer Architecture (ISCA-2016), Seoul, Korea, June 2016. ([ACM DL](https://dl.acm.org/citation.cfm?id=3001151), [Slides](http://isca2016.eecs.umich.edu/wp-content/uploads/2016/07/2B-2.pdf))
+* Donggyu Kim, Christopher Celio, David Biancolin, Jonathan Bachrach, and Krste Asanović, **"Evaluation of RISC-V RTL with FPGA-Accelerated Simulation"**, The First Workshop on Computer Architecture Research with RISC-V (CARRV 2017), Boston, MA, USA, Oct 2017. ([Paper PDF](doc/papers/carrv-2017.pdf))
+* Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing Huang, Kyle Kovacs, Borivoje Nikolić, Randy Katz, Jonathan Bachrach, and Krste Asanović, **“FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud”**, In proceedings of the 45th ACM/IEEE International Symposium on Computer Architecture (ISCA 2018), Los Angeles, June 2018. ([Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf), [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816)) **Selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”.** 
+* Donggyu Kim, Christopher Celio, Sagar Karandikar, David Biancolin, Jonathan Bachrach, and Krste Asanović, **“DESSERT: Debugging RTL Effectively with State Snapshotting for Error Replays across Trillions of cycles”**, In proceedings of the 28th International Conference on Field Programmable Logic & Applications (FPL 2018), Dublin, Ireland, August 2018. ([IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8533471))
+* David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, **“FASED: FPGA-Accelerated Simulation and Evaluation of DRAM”**, In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays, Seaside, CA, February 2018. ([Paper PDF](https://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf))
 
 ## Host vs Target
 
