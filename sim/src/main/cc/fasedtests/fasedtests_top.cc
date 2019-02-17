@@ -1,4 +1,10 @@
 //See LICENSE for license details.
+#ifndef RTLSIM
+#include "simif_f1.h"
+#else
+#include "simif_emul.h"
+#endif
+
 #include "fasedtests_top.h"
 #include "test_harness_endpoint.h"
 // MIDAS-defined endpoints
@@ -205,3 +211,26 @@ void fasedtests_top_t::run() {
 #endif
 }
 
+
+// top for RTL sim
+class fasedtests_driver_t:
+#ifdef RTLSIM
+    public simif_emul_t, public fasedtests_top_t
+#else
+    public simif_f1_t, public fasedtests_top_t
+#endif
+{
+    public:
+#ifdef RTLSIM
+        fasedtests_driver_t(int argc, char** argv): fasedtests_top_t(argc, argv) {};
+#else
+        fasedtests_driver_t(int argc, char** argv): simif_f1_t(argc, argv), fasedtests_top_t(argc, argv) {};
+#endif
+};
+
+int main(int argc, char** argv) {
+    fasedtests_driver_t driver(argc, argv);
+    driver.init(argc, argv);
+    driver.run();
+    return driver.finish();
+}

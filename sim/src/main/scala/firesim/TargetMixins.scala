@@ -11,7 +11,7 @@ import freechips.rocketchip.rocket.TracedInstruction
 import firesim.endpoints.TraceOutputTop
 import boom.system.BoomSubsystem
 
-import midas.widgets.AXI4BundleWithEdge
+import midas.models.AXI4BundleWithEdge
 
 /** Adds a port to the system intended to master an AXI4 DRAM controller. */
 trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>

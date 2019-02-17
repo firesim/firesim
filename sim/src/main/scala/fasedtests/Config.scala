@@ -18,7 +18,7 @@ object MaxFlight extends Field[Int](128)
 class WithSlavePortParams extends Config((site, here, up) => {
     case AXI4SlavePort => AXI4SlavePortParameters(
       slaves = Seq(AXI4SlaveParameters(
-        address       = Seq(AddressSet(BigInt(0), BigInt(0xFFFF))),
+        address       = Seq(AddressSet(BigInt(0), BigInt(0x3FFFF))),
         regionType    = RegionType.UNCACHED,
         executable    = true,
         supportsWrite = TransferSizes(1, site(MaxTransferSize)),
@@ -32,12 +32,24 @@ class DefaultConfig extends Config(
   new WithSlavePortParams
 )
 
+class WithNTransactions(num: Int) extends Config((site, here, up) => {
+  case NumTransactions => num
+})
+
+class NT10e5 extends WithNTransactions(100000)
+class NT10e6 extends WithNTransactions(1000000)
+class NT10e7 extends WithNTransactions(10000000)
+
 // Platform Configs
 
 class DefaultF1Config extends Config(
   new firesim.firesim.WithDefaultMemModel ++
   new midas.F1Config)
 
-class DDR3Config extends Config(
-  new firesim.firesim.FRFCFS16GBQuadRankLLC4MB3Div ++
+class FCFSConfig extends Config(
+  new firesim.firesim.FCFS16GBQuadRankLLC4MB ++
+  new DefaultF1Config)
+
+class FRFCFSConfig extends Config(
+  new firesim.firesim.FRFCFS16GBQuadRankLLC4MB ++
   new DefaultF1Config)
