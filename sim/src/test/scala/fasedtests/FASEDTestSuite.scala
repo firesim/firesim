@@ -13,7 +13,7 @@ import freechips.rocketchip.system.DefaultTestSuites._
 
 import firesim.util.GeneratorArgs
 
-abstract class FireSimTestSuite(
+abstract class FASEDTest(
     topModuleClass: String,
     targetConfigs: String,
     platformConfigs: String,
@@ -61,7 +61,7 @@ abstract class FireSimTestSuite(
   //runTest("vcs", true)
 }
 
-class AXI4FuzzerLBPTest extends FireSimTestSuite("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
-class AXI4FuzzerFCFSTest extends FireSimTestSuite("AXI4Fuzzer", "DefaultConfig", "FCFSConfig")
-class AXI4FuzzerFRFCFSTest extends FireSimTestSuite("AXI4Fuzzer", "DefaultConfig", "FRFCFSConfig")
-class AXI4FuzzerLLCDRAMTest extends FireSimTestSuite("AXI4Fuzzer", "DefaultConfig", "LLCDRAMConfig")
+class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
+class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FCFSConfig")
+class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FRFCFSConfig")
+class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "LLCDRAMConfig")
