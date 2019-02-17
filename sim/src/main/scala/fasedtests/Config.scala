@@ -47,9 +47,13 @@ class DefaultF1Config extends Config(
   new midas.F1Config)
 
 class FCFSConfig extends Config(
-  new firesim.firesim.FCFS16GBQuadRankLLC4MB ++
+  new firesim.firesim.FCFS16GBQuadRank ++
   new DefaultF1Config)
 
 class FRFCFSConfig extends Config(
+  new firesim.firesim.FRFCFS16GBQuadRank ++
+  new DefaultF1Config)
+
+class LLCDRAMConfig extends Config(
   new firesim.firesim.FRFCFS16GBQuadRankLLC4MB ++
   new DefaultF1Config)
