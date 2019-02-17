@@ -1,14 +1,22 @@
 // See LICENSE for license details.
 
-#ifndef __FPGA_MEMORY_MODEL_H
-#define __FPGA_MEMORY_MODEL_H
+#ifndef __FASED_MEMORY_TIMING_MODEL_H
+#define __FASED_MEMORY_TIMING_MODEL_H
+
+/* This is the widget driver for FASED memory-timing models
+ *
+ * FASED instances are FPGA-hosted and only rely on this driver to:
+ * 1) set runtime-configurable timing parameters before simulation commences
+ * 2) poll instrumentation registers
+ *
+ */
 
 #include <unordered_map>
 #include <set>
 #include <fstream>
 
 #include "fpga_model.h"
-// Driver for the midas memory model
+
 
 // MICRO HACKS.
 constexpr int HISTOGRAM_SIZE = 1024;
@@ -54,10 +62,10 @@ private:
   std::string addr = name   + "Hist_addr";
 };
 
-class FpgaMemoryModel: public FpgaModel
+class FASEDMemoryTimingModel: public FpgaModel
 {
 public:
-  FpgaMemoryModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
+  FASEDMemoryTimingModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
                   std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset);
   void init();
   void profile();
@@ -103,4 +111,4 @@ private:
   uint64_t mem_host_offset;
 };
 
-#endif // __FPGA_MEMORY_MODEL_H
+#endif // __FASED_MEMORY_TIMING_MODEL_H
