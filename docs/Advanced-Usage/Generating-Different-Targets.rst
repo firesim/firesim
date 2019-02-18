@@ -119,12 +119,13 @@ Single-core BOOM, no network interface
     make DESIGN=FireBoomNoNIC TARGET_CONFIG=FireSimBoomConfig
 
 
------------------------
-Changing The DRAM Model
------------------------
+----------------------------------------------------------
+Generating A Different FASED Memory-Timing Model Instance
+----------------------------------------------------------
 
-MIDAS can generate a space of different DRAM model instances: we give some
-typical ones here. These targets use the Makefile-defined defaults of
+MIDAS's memory-timing model generator, FASED, can elaborate a space of
+different DRAM model instances: we give some typical ones here. These targets
+use the Makefile-defined defaults of
 ``DESIGN=FireSim TARGET_CONFIG=FireSimRocketChipConfig``.
 
 Quad-rank DDR3 first-come first-served memory access scheduler
@@ -140,7 +141,7 @@ Quad-rank DDR3 first-ready, first-come first-served memory access scheduler
     make PLATFORM_CONFIG=FireSimDDR3FRFCFSConfig
 
 
-As above, but with an 4 MiB (max capacity) last-level-cache model
+As above, but with a 4 MiB (maximum simulatable capacity) last-level-cache model
 
 ::
 
