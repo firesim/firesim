@@ -1,8 +1,14 @@
 //See LICENSE for license details.
+#ifndef RTLSIM
+#include "simif_f1.h"
+#else
+#include "simif_emul.h"
+#endif
+
 #include "fasedtests_top.h"
 #include "test_harness_endpoint.h"
 // MIDAS-defined endpoints
-#include "endpoints/fpga_memory_model.h"
+#include "endpoints/fased_memory_timing_model.h"
 #include "endpoints/synthesized_assertions.h"
 #include "endpoints/synthesized_prints.h"
 
@@ -28,7 +34,7 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_0_R_num_registers,
@@ -37,13 +43,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats0.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
 #endif
 
 #ifdef MEMMODEL_1
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_1_R_num_registers,
@@ -58,7 +64,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 #endif
 
 #ifdef MEMMODEL_2
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_2_R_num_registers,
@@ -73,7 +79,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 #endif
 
 #ifdef MEMMODEL_3
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_3_R_num_registers,
@@ -205,3 +211,26 @@ void fasedtests_top_t::run() {
 #endif
 }
 
+
+// top for RTL sim
+class fasedtests_driver_t:
+#ifdef RTLSIM
+    public simif_emul_t, public fasedtests_top_t
+#else
+    public simif_f1_t, public fasedtests_top_t
+#endif
+{
+    public:
+#ifdef RTLSIM
+        fasedtests_driver_t(int argc, char** argv): fasedtests_top_t(argc, argv) {};
+#else
+        fasedtests_driver_t(int argc, char** argv): simif_f1_t(argc, argv), fasedtests_top_t(argc, argv) {};
+#endif
+};
+
+int main(int argc, char** argv) {
+    fasedtests_driver_t driver(argc, argv);
+    driver.init(argc, argv);
+    driver.run();
+    return driver.finish();
+}

@@ -16,7 +16,7 @@ import icenet._
 import testchipip._
 import testchipip.SerialAdapter.SERIAL_IF_WIDTH
 import sifive.blocks.devices.uart._
-import midas.widgets.AXI4BundleWithEdge
+import midas.models.AXI4BundleWithEdge
 import java.io.File
 
 /*******************************************************************************
