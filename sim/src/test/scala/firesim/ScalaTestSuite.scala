@@ -11,12 +11,26 @@ import freechips.rocketchip.system.{RocketTestSuite, BenchmarkTestSuite}
 import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
+import firesim.util.GeneratorArgs
+
 abstract class FireSimTestSuite(
-    val generatorArgs: FireSimGeneratorArgs,
+    topModuleClass: String,
+    targetConfigs: String,
+    platformConfigs: String,
     N: Int = 8
   ) extends firesim.midasexamples.TestSuiteCommon with HasFireSimGeneratorUtilities {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
+
+  lazy val generatorArgs = GeneratorArgs(
+    midasFlowKind = "midas",
+    targetDir = "generated-src",
+    topModuleProject = "firesim.firesim",
+    topModuleClass = topModuleClass,
+    targetConfigProject = "firesim.firesim",
+    targetConfigs = targetConfigs,
+    platformConfigProject = "firesim.firesim",
+    platformConfigs = platformConfigs)
 
   // From HasFireSimGeneratorUtilities
   // For the firesim utilities to use the same directory as the test suite
@@ -95,16 +109,9 @@ abstract class FireSimTestSuite(
   runSuite("verilator")(FastBlockdevTests)
 }
 
-class RocketF1Tests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig"))
-
-class RocketF1ClockDivTests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimClockDivConfig"))
-
-class BoomF1Tests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "FireSimConfig"))
-
-class RocketNICF1Tests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireSim", "FireSimRocketChipConfig", "FireSimConfig")) {
+class RocketF1Tests extends FireSimTestSuite("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimConfig")
+class RocketF1ClockDivTests extends FireSimTestSuite("FireSimNoNIC", "FireSimRocketChipConfig", "FireSimClockDivConfig")
+class BoomF1Tests extends FireSimTestSuite("FireBoomNoNIC", "FireSimBoomConfig", "FireSimConfig")
+class RocketNICF1Tests extends FireSimTestSuite("FireSim", "FireSimRocketChipConfig", "FireSimConfig") {
   runSuite("verilator")(NICLoopbackTests)
 }

@@ -31,3 +31,4 @@ installed to firesim for running on real RTL.
 
    SPEC-2017
    ISCA-2018-Experiments
+   GAP-Benchmark-Suite

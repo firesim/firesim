@@ -1,0 +1,100 @@
+# These point at the main class of the target's Chisel generator
+DESIGN_PACKAGE ?= firesim.fasedtests
+DESIGN ?= AXI4Fuzzer
+
+# These guide chisel elaboration of the target design specified above.
+# See src/main/scala/SimConfigs.scala
+TARGET_CONFIG_PACKAGE ?= firesim.fasedtests
+TARGET_CONFIG ?= DefaultConfig
+# TARGET_CONFIG ?= FireSimBoomConfig
+
+# These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
+# See src/main/scala/SimConfigs.scala
+PLATFORM_CONFIG_PACKAGE ?= firesim.fasedtests
+PLATFORM_CONFIG ?= DefaultF1Config
+
+base_dir = $(abspath .)
+name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+##################
+# RTL Generation #
+##################
+VERILOG := $(GENERATED_DIR)/FPGATop.v
+HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
+
+submodules = . midas firrtl \
+	$(addprefix target-rtl/firechip/, $(addprefix rocket-chip/, . chisel3 chisel3/chiselFrontend))
+
+src_path = src/main/scala
+chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
+
+common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+
+$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+	mkdir -p $(@D)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+
+##########################
+# Driver Sources & Flags #
+##########################
+
+driver_dir = $(firesim_base_dir)/src/main/cc
+DRIVER_H = $(shell find $(driver_dir) -name "*.h")
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fasedtests/* firesim/systematic_scheduler)))
+
+TARGET_CXX_FLAGS := -g -O2 -I$(driver_dir) -I$(driver_dir)/fasedtests -I$(RISCV)/include
+TARGET_LD_FLAGS :=
+
+####################################
+# Runtime-Configuraiton Generation #
+####################################
+CONF_NAME ?= runtime.conf
+#.PHONY: conf
+#conf:
+#	mkdir -p $(GENERATED_DIR)
+#	$(SBT) $(SBT_FLAGS) \
+#	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+
+################################################################
+# SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
+################################################################
+TIMEOUT_CYCLES = 1000000000
+
+SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
+mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
+COMMON_SIM_ARGS ?= $(mem_model_args)
+
+# Arguments used only at a particular simulation abstraction
+MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
+FPGA_LEVEL_SIM_ARGS ?=
+
+############################################
+# Midas-Level Simulation Execution Recipes #
+############################################
+
+verilator = $(GENERATED_DIR)/V$(DESIGN)
+verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
+vcs = $(GENERATED_DIR)/$(DESIGN)
+vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
+xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
+
+run-verilator: $(verilator)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+
+run-verilator-debug: $(verilator_debug)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+
+run-vcs: $(vcs)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+
+run-vcs-debug: $(vcs_debug)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=waves.vpd 2> err
+
+run-xsim: $(xsim)
+	cd $(dir $<) && ./$(notdir $<)  $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS)
+
+# The desired RTL simulator. supported options: {vcs, verilator}
+EMUL ?= verilator

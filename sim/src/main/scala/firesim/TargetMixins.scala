@@ -11,6 +11,8 @@ import freechips.rocketchip.rocket.TracedInstruction
 import firesim.endpoints.TraceOutputTop
 import boom.system.BoomSubsystem
 
+import midas.models.AXI4BundleWithEdge
+
 /** Adds a port to the system intended to master an AXI4 DRAM controller. */
 trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
   val module: CanHaveMisalignedMasterAXI4MemPortModuleImp
@@ -49,7 +51,7 @@ trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
 trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
   val outer: CanHaveMisalignedMasterAXI4MemPort
 
-  val mem_axi4 = IO(HeterogeneousBag.fromNode(outer.memAXI4Node.in))
+  val mem_axi4 = IO(new HeterogeneousBag(outer.memAXI4Node.in map AXI4BundleWithEdge.apply))
   (mem_axi4 zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) => io <> bundle }
 
   def connectSimAXIMem() {
