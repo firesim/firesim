@@ -107,9 +107,6 @@ def genRunScript(command):
 
     return commandScript
 
-# XXX This isn't working with the initramfs option. Go back to requiring sudo
-# for now, I'll revisit later.
-
 # Frustratingly, the same commands don't work/exist on various platforms so we
 # need to figure out what mounting options are available to us:
 if shutil.which('guestmount') is not None:
@@ -132,34 +129,19 @@ elif shutil.whcih('fuse-ext2') is not None:
         finally:
             run(['fusermount', '-u', mntPath])
 
-# elif shutil.which('mount') is not None:
-# # if True:
-#     # Should be available everywhere, requires sudo
-#     @contextmanager
-#     def mountImg(imgPath, mntPath):
-#         run(['sudo', 'mount', '-o', 'loop', imgPath, mntPath])
-#         try:
-#             yield mntPath
-#         finally:
-#             run(['sudo', 'umount', mntPath])
-
 else:
-    raise ImportError("No compatible 'mount' command found")
-
-# @contextmanager
-# def mountImg(imgPath, mntPath):
-#     run(['sudo', 'mount', '-o', 'loop', imgPath, mntPath])
-#     try:
-#         yield mntPath
-#     finally:
-#         run(['sudo', 'umount', mntPath])
+    # Note: we don't support the 'mount' option because it requires sudo. By
+    # itself that isn't an issue, but several other commands (like cpio and
+    # rsync) would also require sudo and that complicates the code too much.
+    # This feature could be added back if people really want it.
+    raise ImportError("No compatible 'mount' command found: Please install either guestmount or fuse-ext2")
 
 def toCpio(config, src, dst):
     log = logging.getLogger()
 
     with mountImg(src, mnt):
         # Fedora needs a special init in order to boot from initramfs
-        run("sudo find -print0 | sudo cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
 
     # fedora needs a special init to work
     if config['distro'] == 'fedora':
@@ -188,11 +170,9 @@ def copyImgFiles(img, files, direction):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                # run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
-                run('rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                run('sudo rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             elif direction == 'out':
                 uid = os.getuid()
-                # run('sudo rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
-                run('rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                run('sudo rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
