@@ -33,13 +33,14 @@ resides in ``sim/``.
 
 These projects are:
 
-1. **firesim** (Default): Rocket-chip-based targets. These include targets with
+1. **firesim** (Default): rocket chip-based targets. These include targets with
    either BOOM or rocket pipelines, and should be your starting point if you're
-   building an SoC with the Rocket-Chip generator.
-2. **midasexamples**: Contains the `MIDAS example designs
+   building an SoC with the Rocket Chip generator.
+2. **midasexamples**: the `MIDAS example designs
    <https://github.com/ucb-bar/midas-examples>`_, a set of simple chisel
    circuits like GCD, that demonstrate how to use MIDAS.  These are useful test
    cases for bringing up new MIDAS features.
+3. **fasedtests**: designs to do integration testing of FASED memory-system timing models.
 
 Projects have the following directory structure:
 
@@ -176,3 +177,27 @@ Generate the GCD midas-example
 ::
 
     make DESIGN=GCD TARGET_PROJECT=midasexamples
+
+FASED Tests (fasedtests project)
+--------------------------------------------------
+This project generates target designs capable of driving considerably more
+bandwidth to an AXI4-memory slave than current FireSim-targets. Used used to do
+integration and stress testing of FASED instances.
+
+--------
+Examples
+--------
+
+Generate a synthesizable AXI4Fuzzer (based off of Rocket Chip's TL fuzzer), driving a
+DDR3 FR-FCFS-based FASED instance.
+
+::
+
+    make TARGET_PROJECT=midasexamples DESIGN=AXI4Fuzzer PLATFORM_CONFIG=FRFCFSConfig
+
+As above, but with a fuzzer configue to drive 10 million transactions through
+the instance.
+
+::
+
+    make TARGET_PROJECT=midasexamples DESIGN=AXI4Fuzzer PLATFORM_CONFIG=NT10e7_FRFCFSConfig
