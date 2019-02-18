@@ -1,4 +1,4 @@
-Fire Marshal
+Fire Marshal (firesim-software)
 ==================================
 
 This tool builds base images for several linux-based distros that work with qemu,
@@ -17,7 +17,7 @@ Be sure to update/init submodules. The following will require the riscv-tools
 on your path and a recent version of qemu.
 
 To build:
-    ./marshal.py -c CONFIG.json build
+  ./marshal.py -c CONFIG.json build
 
 To run on qemu:
   ./marshal.py -c CONFIG.json launch
