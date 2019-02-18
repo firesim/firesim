@@ -96,6 +96,7 @@ cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
 make
 
 # Set up firesim-software
+cd $RDIR
 sudo pip3 install -r sw/firesim-software/python-requirements.txt
 
 # commands to run only on EC2
