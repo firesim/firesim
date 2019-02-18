@@ -13,5 +13,4 @@ make f1
 
 # build target software
 cd ../sw/firesim-software
-./marshal.py -c br-disk.json build
-
+./marshal build workloads/br-base.json
