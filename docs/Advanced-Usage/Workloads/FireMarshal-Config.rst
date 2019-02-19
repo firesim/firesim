@@ -151,18 +151,18 @@ drivers to work properly.
 
 host-init
 ^^^^^^^^^^^^^^
-A script to run natively on your host from the workload source directory each
-time you explicitly build this workload.
+A script to run natively on your host (i.e., your manager instance where you
+invoked FireMarshal) from the workload source directory each time you
+explicitly build this workload.
 
 *Non-heritable*
 
 guest-init
-^^^^^^^^^^^^^^^
-A script to run natively on the guest exactly once while building. The guest
-init script will be run from the root directory with root privileges. This
-script should end with a call to ``poweroff`` to make the build process fully
-automated. Otherwise, the user will need to log in and shut down manually on
-each build.
+^^^^^^^^^^^^^^^ A script to run natively on the guest (i.e., your workload
+running in qemu) exactly once while building. The guest init script will be run
+from the root directory with root privileges. This script should end with a
+call to ``poweroff`` to make the build process fully automated. Otherwise, the
+user will need to log in and shut down manually on each build.
 
 post_run_hook
 ^^^^^^^^^^^^^^^^^

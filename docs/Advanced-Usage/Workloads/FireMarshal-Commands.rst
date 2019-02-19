@@ -102,6 +102,8 @@ workload test.
 
 install
 --------------------------------------
+.. _firemarshal-install:
+
 Creates a firesim workload definition file in ``firesim/deploy/workloads`` with
 all appropriate links to the generated workload. This allows you to launch the
 workload in firesim using standard commands (see :ref:`running_simulations`).

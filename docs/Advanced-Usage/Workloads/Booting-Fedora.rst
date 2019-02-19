@@ -1,3 +1,5 @@
+.. _booting-fedora:
+
 Running Fedora on FireSim
 =====================================
 All workload-generation related commands and code are in ``firesim/sw/firesim-software``.

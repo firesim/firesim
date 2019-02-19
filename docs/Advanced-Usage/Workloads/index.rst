@@ -1,7 +1,7 @@
 .. _defining-custom-workloads:
 
 Workload Generation (FireMarshal)
-================
+=======================================
 Workload generation in FireSim is handled by a tool called **FireMarshal** in
 ``firesim/sw/firesim-software/``.
 
