@@ -81,16 +81,37 @@ def initLogging(verbose):
 # The arguments are identical to those for subprocess.call()
 # level - The logging level to use
 # check - Throw an error on non-zero return status?
+# def run(*args, level=logging.DEBUG, check=True, **kwargs):
+#     log = logging.getLogger()
+#
+#     try:
+#         out = sp.check_output(*args, universal_newlines=True, stderr=sp.STDOUT, **kwargs)
+#         log.log(level, out)
+#     except sp.CalledProcessError as e:
+#         log.log(level, e.output)
+#         if check:
+#             raise
 def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
-    try:
-        out = sp.check_output(*args, universal_newlines=True, stderr=sp.STDOUT, **kwargs)
-        log.log(level, out)
-    except sp.CalledProcessError as e:
-        log.log(level, e.output)
-        if check:
-            raise
+    if isinstance(args[0], str):
+        prettyCmd = args[0]
+    else:
+        prettyCmd = ' '.join(args[0])
+
+    if 'cwd' in kwargs:
+        log.log(level, 'Running: "' + prettyCmd + '" in ' + kwargs['cwd'])
+    else:
+        log.log(level, 'Running: "' + prettyCmd + '" in ' + os.getcwd())
+
+    p = sp.Popen(*args, universal_newlines=True, stderr=sp.STDOUT, stdout=sp.PIPE, **kwargs)
+    for line in iter(p.stdout.readline, ''):
+        log.log(level, line.strip())
+    p.wait()
+
+    if check == True and p.returncode != 0:
+            raise sp.CalledProcessError(p.returncode, prettyCmd)
+
 # Convert a linux configuration file to use an initramfs that points to the correct cpio
 # This will modify linuxCfg in place
 def convertInitramfsConfig(cfgPath, cpioPath):
