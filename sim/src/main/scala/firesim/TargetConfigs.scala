@@ -9,6 +9,7 @@ import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
+import chisel3.util.isPow2
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -33,21 +34,55 @@ class WithNICKey extends Config((site, here, up) => {
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
-  case RocketTilesKey => up(RocketTilesKey) map (tile => tile.copy(
+  case RocketTilesKey => up(RocketTilesKey, site).map(tile => tile.copy(
     core = tile.core.copy(
       nL2TLBEntries = entries
     )
   ))
 })
 
-class WithPerfCounters extends Config((site, here, up) => {
+class WithRocketL1TLBEntries(entries: Int) extends Config((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey) map (tile => tile.copy(
+    icache = tile.icache.map(_.copy(
+      nTLBEntries = entries
+    )),
+    dcache = tile.dcache.map(_.copy(
+      nTLBEntries = entries
+    )),
+  ))
+})
+
+class WithL1DCache(capacity: Int, ways: Int) extends Config((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    require(isPow2(capacity))
+    require(isPow2(ways))
+    require(site(CacheBlockBytes) == 64) // To prevent myself from breaking flat configs
+    val sets = capacity / (ways * site(CacheBlockBytes))
+    r.copy(dcache = r.dcache.map(_.copy(nSets = sets,
+                                        nWays = ways)))
+  }
+})
+
+class WithL1ICache(capacity: Int, ways: Int) extends Config((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    require(isPow2(capacity))
+    require(isPow2(ways))
+    require(site(CacheBlockBytes) == 64) // To prevent myself from breaking flat configs
+    val sets = capacity / (ways * site(CacheBlockBytes))
+    r.copy(icache = r.icache.map(_.copy(nSets = sets,
+                                        nWays = ways)))
+  }
+})
+
+class WithPerfCounters extends Config((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site).map(tile => tile.copy(
     core = tile.core.copy(nPerfCounters = 29)
   ))
 })
 
+
 class WithBoomL2TLBs(entries: Int) extends Config((site, here, up) => {
-  case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
+  case BoomTilesKey => up(BoomTilesKey, site).map(tile => tile.copy(
     core = tile.core.copy(nL2TLBEntries = entries)
   ))
 })
@@ -80,7 +115,7 @@ class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
 *******************************************************************************/
 class FireSimRocketChipConfig extends Config(
   new WithBootROM ++
-  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithPeripheryBusFrequency(BigInt(1000000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
@@ -211,3 +246,54 @@ class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
   new WithExtMemSize(0x200000000L) ++ // 8GB
   new FireSimRocketChipOctaCoreConfig)
 
+/*******************************************************************************
+* CS152 Configs
+*******************************************************************************/
+class L1D32K8W extends WithL1DCache(0x8000, 8)
+class L1D16K8W extends WithL1DCache(0x4000, 8)
+class L1D16K4W extends WithL1DCache(0x4000, 4)
+class L1D8K8W  extends WithL1DCache(0x2000, 8)
+class L1D8K4W  extends WithL1DCache(0x2000, 4)
+class L1D8K2W  extends WithL1DCache(0x2000, 2)
+class L1D4K8W  extends WithL1DCache(0x1000, 8)
+class L1D4K4W  extends WithL1DCache(0x1000, 4)
+class L1D4K2W  extends WithL1DCache(0x1000, 2)
+class L1D4K1W  extends WithL1DCache(0x1000, 1)
+
+class L1I32K8W extends WithL1ICache(0x8000, 8)
+class L1I16K8W extends WithL1ICache(0x4000, 8)
+class L1I16K4W extends WithL1ICache(0x4000, 4)
+class L1I8K8W  extends WithL1ICache(0x2000, 8)
+class L1I8K4W  extends WithL1ICache(0x2000, 4)
+class L1I8K2W  extends WithL1ICache(0x2000, 2)
+class L1I4K8W  extends WithL1ICache(0x1000, 8)
+class L1I4K4W  extends WithL1ICache(0x1000, 4)
+class L1I4K2W  extends WithL1ICache(0x1000, 2)
+class L1I4K1W  extends WithL1ICache(0x1000, 1)
+
+class L2TLB0    extends WithRocketL2TLBs(0)
+class L2TLB64   extends WithRocketL2TLBs(64)
+class L2TLB256  extends WithRocketL2TLBs(256)
+class L2TLB1024 extends WithRocketL2TLBs(1024)
+
+class L1TLB8W  extends WithRocketL1TLBEntries(8)
+class L1TLB16W extends WithRocketL1TLBEntries(16)
+class L1TLB32W extends WithRocketL1TLBEntries(32)
+
+class Toy256KL1s extends Config(
+  new WithL1DCache(0x40000, 64) ++
+  new WithL1ICache(0x40000, 64))
+
+class Toy256L1TLBs extends WithRocketL2TLBs(256)
+
+class CS152BaseTConfig extends Config(
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithExtMemSize(0x400000000L) ++ // 16GB
+  new WithoutTLMonitors ++
+  new WithRocketL2TLBs(64) ++
+  new WithUARTKey ++
+  new WithNICKey ++
+  new WithBlockDevice ++
+  new WithPerfCounters ++
+  new freechips.rocketchip.system.DefaultConfig)

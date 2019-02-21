@@ -265,3 +265,18 @@ class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)
+
+/*******************************************************************************
+* CS152 Configs
+*******************************************************************************/
+class LBPBaseConfig extends FireSimConfig160MHz
+class DRAMBaseConfig extends Config(new WithDesiredHostFrequency(160) ++ new FireSimDDR3Config)
+class LLCDRAMBaseConfig extends Config(new WithDesiredHostFrequency(160) ++ new FireSimDDR3LLC4MBConfig)
+class LLCFRFCFSBaseConfig extends Config(new WithDesiredHostFrequency(160) ++ new FireSimDDR3FRFCFSConfig)
+class ToyPlatformConfig extends Config(
+  new WithDesiredHostFrequency(75) ++
+  new WithLLCModel(0x8000, 64) ++ // 128M capacity with 64 byte lines, 65 ways
+  new FireSimDDR3LLC4MBConfig)
+
+
+
