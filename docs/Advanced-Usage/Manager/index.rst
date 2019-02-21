@@ -10,7 +10,6 @@ Manager Usage (the ``firesim`` command)
    Manager-Command-Line-Args
    Manager-Tasks
    Manager-Configuration-Files
-   Manager-Workload-Configuration
    Manager-Topology-Definitions
    AGFI-Tagging
 

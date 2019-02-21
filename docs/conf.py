@@ -167,15 +167,16 @@ texinfo_documents = [
 # -- handle re-directs for pages that move
 # taken from https://tech.signavio.com/2017/managing-sphinx-redirects
 
-redirect_files = [ 'Advanced-Usage/Workloads/Defining-Custom-Workloads.html' ]
+redirect_files = [ ]
 
 def copy_legacy_redirects(app, docname): # Sphinx expects two arguments
     if app.builder.name == 'html':
         for html_src_path in redirect_files:
             target_path = app.outdir + '/' + html_src_path
             src_path = app.srcdir + '/' + html_src_path
-        if os.path.isfile(src_path):
-            shutil.copyfile(src_path, target_path)
+
+            if os.path.isfile(src_path):
+                shutil.copyfile(src_path, target_path)
 
 def setup(app):
     app.connect('build-finished', copy_legacy_redirects)
