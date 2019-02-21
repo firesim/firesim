@@ -1,0 +1,18 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "cs152-interactive",
+  "deliver_dir" : "/cs152/",
+  "common_files" : ["example-script.sh"],
+  "common_args": [""],
+  "common_outputs" : ["/hpm_data", "/output"],
+  "common_simulation_outputs" : ["uartlog", "memory_stats.csv"],
+  "workloads" : [
+    {
+      "name": "cs152-interactive-all",
+      "files": [],
+      "command": "",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}
