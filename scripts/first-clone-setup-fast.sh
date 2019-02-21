@@ -13,4 +13,4 @@ make f1
 
 # build target software
 cd ../sw/firesim-software
-./marshal build workloads/br-base.json
+./marshal -v build workloads/br-base.json
