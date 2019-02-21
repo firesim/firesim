@@ -53,6 +53,6 @@ fedora distribution, we will use the pre-made firesim config at
 booting a workload (e.g. :ref:`single-node-sim` or :ref:`cluster-sim`).
 
 .. attention:: For the standard distributions we provide pre-built firesim
-   workloads. In general, FireMarshal can derive a FireSim configuration from
+   workloads. In general, FireMarshal can derive a FireSim workload from
    the FireMarshal configuration using the ``install`` command (see
    :ref:`firemarshal-commands`)
