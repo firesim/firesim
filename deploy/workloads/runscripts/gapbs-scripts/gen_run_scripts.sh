@@ -56,7 +56,7 @@ then
     overlay_dir="../overlay/$input_type"
     cd gapbs
     make converter
-    CXX=${RISCV}/bin/riscv64-unknown-linux-gnu-g++ CXX_FLAGS+=--static make
+    CXX=${RISCV}/bin/riscv64-unknown-linux-gnu-g++ CXX_FLAGS+="--static -march=rv64imafdc" make
     mkdir -p $overlay_dir/benchmark/graphs
     cp $SUITE $overlay_dir/
     ./converter $KRON_ARGS -wb $overlay_dir/benchmark/graphs/kron.wsg
