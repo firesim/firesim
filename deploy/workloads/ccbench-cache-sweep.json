@@ -4,8 +4,8 @@
   "deliver_dir" : "/ccbench-cache-sweep/",
   "common_files" : ["runccbench.sh", "ccbench/caches/caches"],
   "common_args" : "",
-  "common_outputs" : [],
-  "common_simulation_outputs" : ["uartlog"],
+  "common_outputs" : ["/hpm_data"],
+  "common_simulation_outputs" : ["uartlog", "memory_stats.csv"],
   "post_run_hook": "python plotccbench.py",
   "workloads" : [
     {

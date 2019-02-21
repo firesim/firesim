@@ -82,7 +82,7 @@ series.append(ser1)
 series.append(ser2)
 
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-ax.set_xlabel(r'Array Dimension', size='12')
+ax.set_xlabel(r'Array Size (Bytes)', size='12')
 ax.set_ylabel(r'Execution Time (cycles)', size='11')
 print(cacheline_stride_bmark_data['size'])
 ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
