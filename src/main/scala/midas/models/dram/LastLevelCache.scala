@@ -147,7 +147,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val maxTagBits = llcKey.maxTagBits(nastiXAddrBits)
   val way_addr_mask = Reverse(MaskGen((llcKey.ways.max - 1).U, io.settings.wayBits, llcKey.ways.max))
 
-  // Behold: this is why it sucks to be a hardware model
+  // Rely on intialization of BRAM to 0 during programming to unset all valid bits the md_array
   val md_array = SyncReadMem(llcKey.sets.max, Vec(llcKey.ways.max, new BlockMetadata(maxTagBits)))
   val d_array_busy = Module(new DownCounter(8))
   d_array_busy.io.set.valid := false.B
@@ -179,8 +179,8 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val read_start   = WireInit(false.B)
   val write_start  = WireInit(false.B)
 
-  val set_addr = Mux(can_deq_write, write_set, read_set)
-  val tag_addr = io.settings.maskTag(Mux(can_deq_write, writes.bits.addr, reads.bits.addr))
+  val set_addr = Mux(write_start, write_set, read_set)
+  val tag_addr = io.settings.maskTag(Mux(write_start, writes.bits.addr, reads.bits.addr))
 
   // S1 = Tag matches, replacement candidate selection, and replacement policy update
   val s1_tag_addr = RegNext(tag_addr)
@@ -222,11 +222,14 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
       }
       when(state === llc_w_mdaccess) {
         next.dirty := true.B
+      // This also assumes that all md fields in invalid ways are initialized
+      // to zero during programming. Otherwise we'd need to unset the dirty bit
+      // on a compulsory miss
       }.elsewhen(state === llc_r_mdaccess && do_evict) {
         next.dirty := false.B
       }
       when(do_evict || fill_empty_way) {
-        next.tag := tag_addr
+        next.tag := s1_tag_addr
       }
     }
     next
