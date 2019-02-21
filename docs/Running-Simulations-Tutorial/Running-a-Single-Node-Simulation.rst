@@ -22,7 +22,7 @@ distribution. You can do this like so:
 ::
 
     cd firesim/sw/firesim-software
-    ./marshal build workloads/br-base.json
+    ./marshal -v build workloads/br-base.json
 
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
