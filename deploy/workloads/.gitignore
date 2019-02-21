@@ -9,3 +9,5 @@ bw-test-one-instance/*.riscv
 bw-test-two-instances/*.riscv
 unittest/STRESSRUNS
 /gapbs
+cs152-interactive
+cs152-automated
