@@ -308,6 +308,22 @@ def send_firesim_notification(subject, body):
         Subject=subject
     )
 
+# CS152: Students are running all simulations locally on the manager instance which is a f1.2xlarge
+# The tag is set on launch
+def get_localhost_runfarmtag():
+    """ Gets the runfarmtag bound to the localhost """
+    client = boto3.client('ec2')
+    instance_id = local("""curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="instanceId" : ")[^"]*(?=")'""", capture=True)
+
+    print(instance_id)
+    response = client.describe_tags(Filters=[
+        {'Name': 'resource-id', 'Values': [instance_id]},
+        {'Name': 'key', 'Values': ['fsimcluster']}])
+
+    assert len(response['Tags']) == 1
+    return response['Tags'][0]['Value']
+
+
 if __name__ == '__main__':
     #""" Example usage """
     #instanceobjs = launch_instances('c4.4xlarge', 2)
@@ -321,4 +337,5 @@ if __name__ == '__main__':
     """ Test SNS """
     #subscribe_to_firesim_topic("sagark@eecs.berkeley.edu")
 
-    send_firesim_notification("test subject", "test message")
+    #send_firesim_notification("test subject", "test message")
+    #get_localhost_runfarmtag()

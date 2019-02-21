@@ -242,7 +242,7 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        self.runfarmtag = runtime_dict['runfarm']['runfarmtag']
+        self.runfarmtag = get_localhost_runfarmtag()
         self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
         self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
         self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
