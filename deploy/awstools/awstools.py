@@ -315,7 +315,6 @@ def get_localhost_runfarmtag():
     client = boto3.client('ec2')
     instance_id = local("""curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="instanceId" : ")[^"]*(?=")'""", capture=True)
 
-    print(instance_id)
     response = client.describe_tags(Filters=[
         {'Name': 'resource-id', 'Values': [instance_id]},
         {'Name': 'key', 'Values': ['fsimcluster']}])
