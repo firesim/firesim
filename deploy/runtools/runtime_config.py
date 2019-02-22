@@ -30,8 +30,8 @@ class RuntimeHWConfig:
         self.agfi = hwconfig_dict['agfi']
         self.deploytriplet = hwconfig_dict['deploytripletoverride']
         self.deploytriplet = self.deploytriplet if self.deploytriplet != "None" else None
-        if self.deploytriplet is not None:
-            rootLogger.warning("Your config_hwdb.ini file is overriding a deploytriplet. Make sure you understand why!")
+        #if self.deploytriplet is not None:
+        #    rootLogger.warning("Your config_hwdb.ini file is overriding a deploytriplet. Make sure you understand why!")
         self.customruntimeconfig = hwconfig_dict['customruntimeconfig']
         self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
         # note whether we've built a copy of the simulation driver for this hwconf
