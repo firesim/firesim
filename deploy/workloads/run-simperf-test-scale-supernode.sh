@@ -46,7 +46,7 @@ loopfunc () {
     firesim infrasetup -c workloads/simperf-test-scale-supernode-config.ini --overrideconfigdata "targetconfig topology supernode_example_$1config"
     firesim runworkload -c workloads/simperf-test-scale-supernode-config.ini --overrideconfigdata "targetconfig topology supernode_example_$1config"
     # rename the output directory with the ping latency
-    files=(*simperf-test-scale-supernode*)
+    files=(*simperf-test-scale*)
     originalfilename=${files[-1]}
     mv $originalfilename $resultsdir/$1
 
