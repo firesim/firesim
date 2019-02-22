@@ -173,13 +173,10 @@ def construct_firesim_argparser():
     parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=[
-                            'managerinit',
                             'buildafi',
-                            'launchrunfarm',
                             'infrasetup',
                             'boot',
                             'kill',
-                            'terminaterunfarm',
                             'runworkload',
                             'shareagfi',
                             'runcheck'
@@ -234,20 +231,6 @@ def main(args):
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
     # tasks that have a special config/dispatch setup
-    if args.task == 'managerinit':
-        managerinit()
-
-    if args.task == 'buildafi' or args.task == 'shareagfi':
-        buildconfig = GlobalBuildConfig(args)
-        globals()[args.task](buildconfig)
-
-    if args.task == 'terminaterunfarm':
-        runtime_conf = RuntimeConfig(args)
-        terminaterunfarm(runtime_conf, args.terminatesomef116,
-                         args.terminatesomef14,
-                         args.terminatesomef12, args.terminatesomem416,
-                         args.forceterminate)
-
     if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
         # construct simulation config
         simconf = RuntimeConfig(args)
