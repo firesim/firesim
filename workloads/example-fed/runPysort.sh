@@ -6,6 +6,6 @@ set -x
 # be extracted later. Also note that we call poweroff at the end, if you would
 # prefer to interact with the workload after it's booted, you can leave that off. 
 
-cd root/spamBench
-/usr/bin/time -f "%S,%M,%F" ./bm_spambayes.py 2> ../run_result.csv
+cd root/pySort
+/usr/bin/time -f "%S,%M,%F" python sort.py 2> ../run_result.csv
 poweroff
