@@ -64,13 +64,20 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):
-        # XXX There's something wrong with buildroots makefile, it throws an
-        # error and never reports being up to date.
-        # XXX DONT COMMIT THIS CHANGE YOUR DEFNITELY GOING TO FORGET TO UNDO THIS
+        # There's something wrong with buildroot's makefile, it throws an error
+        # and never reports being up to date. This is a compromise: marshal
+        # will build everything the first time, but never rebuild buildroot
+        # (e.g. if you change the buildroot config). This should be
+        # extremely rare (it's not even possible for Fedora). The alternative
+        # is to have all buildroot-based workloads rebuild the entire
+        # dependency chain every time.
         if os.path.exists(os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")):
             return True
         else: 
             return False
+
+        # This is here in case we ever want to switch to "always rebuild" or
+        # find a way to fix the br dependency checking
         # makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
         # cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
         # if makeStatus == 0 and cfgDiff == 0:
