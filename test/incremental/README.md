@@ -1,7 +1,7 @@
 Tests the incremental building capabilities of the system. The test procedure
 is fairly specific, so it's best to always use the test.py script to test this. 
 
-Incremental builds means that sw\_manager won't rebuild images from the base
+Incremental builds means that FireMarshal won't rebuild images from the base
 unless it's the first time building it. All subsequent builds will copy over
 any files in the overlay or file list and re-run the guest-init.
 
