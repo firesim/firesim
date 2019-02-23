@@ -17,7 +17,7 @@ SYSLOGD_ARGS=-n
 KLOGD_ARGS=-n
 
 start() {
-    echo "FIRESIM RUN START" && /firesim.sh $args && echo "FIRESIM RUN END"
+    echo "launching firesim workload run/command" && /firesim.sh $args && echo "firesim workload run/command done"
 }
 
 case "$$1" in

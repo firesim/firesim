@@ -139,10 +139,10 @@ def stripBrUart(lines):
     inBody = False
     for l in lines:
         if not inBody:
-            if re.match("FIRESIM RUN START", l):
+            if re.match("launching firesim workload run/command", l):
                 inBody = True
         else:
-            if re.match("FIRESIM RUN END", l):
+            if re.match("firesim workload run/command done", l):
                 break
             stripped += l
 
