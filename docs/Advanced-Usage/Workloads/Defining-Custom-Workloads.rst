@@ -56,8 +56,8 @@ There is also a corresponding directory named after this workload/file:
 	total 4
 	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
 	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 linux-uniform-bin -> ../../../sw/firesim-software/images/br-base-bin
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 linux-uniform.img -> ../../../sw/firesim-software/images/br-base.img
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base-bin -> ../../../sw/firesim-software/images/br-base-bin
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base.img -> ../../../sw/firesim-software/images/br-base.img
 
 We will elaborate on this later.
 
@@ -132,7 +132,7 @@ AFTER the workload is built:
 	total 15203216
 	drwxrwxr-x  3 centos centos       4096 May 18 07:45 .
 	drwxrwxr-x 13 centos centos       4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../linux-uniform/linux-uniform-bin 
+	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../linux-uniform/br-base-bin
 	-rw-rw-r--  1 centos centos          7 May 17 21:58 .gitignore
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-1.ext2
 	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-2.ext2
