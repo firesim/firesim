@@ -1,0 +1,17 @@
+{
+  "name" : "example-fed",
+  "base" : "fedora-base.json",
+  "overlay" : "overlay",
+  "guest-init" : "guest-init.sh",
+  "host-init" : "host-init.sh",
+  "jobs" : [
+    {
+      "name" : "qsort",
+      "run" : "runQsort.sh"
+    },
+    {
+      "name" : "spamBench",
+      "run" : "runSpam.sh"
+    }
+  ]
+}

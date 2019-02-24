@@ -300,9 +300,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         siblings = 0
         count = False
         for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
-            print(servernode)
-            print(self)
-            print(index)
             if count:
                 if isinstance(servernode, FireSimDummyServerNode):
                     count += 1

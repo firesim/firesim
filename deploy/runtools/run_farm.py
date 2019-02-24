@@ -186,12 +186,14 @@ class RunFarm:
             rootLogger.warning(message.format("f1.4xlarges"))
         if not (len(available_f1_2_instances) >= len(self.f1_2s)):
             rootLogger.warning(message.format("f1.2xlarges"))
-        if not (len(available_f1_16_instances) >= len(self.f1_16s)):
+        if not (len(available_m4_16_instances) >= len(self.m4_16s)):
             rootLogger.warning(message.format("m4.16xlarges"))
 
-        #self.f1_16x_ips = get_private_ips_for_instances(f1_16_instances)
-        #self.m4_16x_ips = get_private_ips_for_instances(m4_16_instances)
-        #self.f1_2x_ips = get_private_ips_for_instances(f1_2_instances)
+        ipmessage = """Using {} instances with IPs:\n{}"""
+        rootLogger.debug(ipmessage.format("f1.16xlarge", str(get_private_ips_for_instances(available_f1_16_instances))))
+        rootLogger.debug(ipmessage.format("f1.4xlarge", str(get_private_ips_for_instances(available_f1_4_instances))))
+        rootLogger.debug(ipmessage.format("f1.2xlarge", str(get_private_ips_for_instances(available_f1_2_instances))))
+        rootLogger.debug(ipmessage.format("m4.16xlarge", str(get_private_ips_for_instances(available_m4_16_instances))))
 
         # assign boto3 instance objects to our instance objects
         for index, instance in enumerate(available_f1_16_instances):
