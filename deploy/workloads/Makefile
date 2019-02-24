@@ -51,8 +51,8 @@ gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input)
 memcached-thread-imbalance:
 	mkdir -p $@
 	sudo yum -y install gengetopt
-	sudo pip install matplotlib
-	sudo pip install pandas
+	sudo pip2 install matplotlib
+	sudo pip2 install pandas
 	cd $@ && git submodule update --init mutilate-loadgen-riscv-release
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
