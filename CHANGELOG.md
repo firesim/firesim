@@ -2,6 +2,67 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.5.0] - 2019-02-24
+
+A more detailed account of everything included is included in the dev->master PR for this release: https://github.com/firesim/firesim/pull/168
+
+### Added
+
+* Supernode support now mainlined
+    * Resolves #11 
+    * Includes support for using all 4 host memory channels and connecting them to N targets
+* FPGA Frequency now configurable in Chisel Config
+* Printf Synthesis support. See Docs for more info.
+* Generate elaboration artifacts
+* Add ccbench workload
+* Preliminary [GAP Benchmark Suite](https://github.com/sbeamer/gapbs) workload support
+* PR #223. Adds post_build_hook, dumps `git diff --submodule` into build dir
+* PR #225. Adds support for building `TARGET_PROJECT` =/= firesim (ex. midasexamples) in the manager
+* PR #234. Adds support for f1.4xlarge instances
+* PR #231. fasedtests as a `TARGET_PROJECT` for testing memory models & backing host memory sys.
+* PR #212. New (alpha) workload generation system "FireMarshal" added
+
+### Changed
+
+* PR #218. Bump aws-fpga/FPGA Dev AMI support to 1.4.6 / 1.5.0 respectively.
+    * Resolves #170 
+    * According to AWS, this should still work for users on the 1.4.0 AMI
+* Switch to XDMA from EDMA for DMA transfers. Improves performance ~20% in single-instance cases. 
+    * Resolves #51
+* Only request build-farm instances after successful replace-rtl
+    * Resolves #100 
+* SBT project reworked; FIRRTL provided as an unmanaged dep; target-land annotations pulled into separate project.
+  * Resolves #175 
+* Common DMA RTL factored out into Widget Traits in MIDAS
+* Boom bumped with RVC Support
+    * Resolves #202 
+* PR #232. Adds separate optimization flags RTL-simulators/driver 
+
+### Fixed
+
+* Properly generate exit codes in the manager
+    * Resolves #194 
+* Catch build error on infrasetup and log it to file + advise the user to run make command manually
+    * Resolves #69 
+* Fix mem-model bug due to FRFCFS having an under-provisioned functional model
+* PR #199. Targets with long names can now be killed automatically by firesim
+    * Resolves #56 
+* PR #193. Fedora networking now works in FireSim 
+    * Address assignment fixed (gets assigned IP addresses in slot-order on firesim)
+* PR #204. Fix support for heterogenous rootfs's - each job can have its own rootfs, or no rootfs at all
+
+### Deprecated
+
+* None
+
+### Removed
+
+* None
+
+### Security
+
+* None
+
 ## [1.4.0] - 2018-11-13
 
 This is a large release. A much more detailed account of everything included is included in the PR: https://github.com/firesim/firesim/pull/114
