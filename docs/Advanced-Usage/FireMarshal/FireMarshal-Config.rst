@@ -2,6 +2,13 @@
 
 Workload Specification
 =================================
+
+.. attention::
+
+   FireMarshal is still in alpha. You are encouraged to try it out and use it
+   for new workloads. The old-style workload generation is still supported (see
+   :ref:`defining-custom-workloads` for details).
+
 Workloads are defined by a configuration file and corresponding workload source
 directory, both typically in the ``firesim/sw/firesim-software/workloads/``
 directory. Most paths in the configuration file are assumed to be relative to

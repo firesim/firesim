@@ -1,10 +1,10 @@
 .. _firemarshal:
 
-FireMarshal (beta)
+FireMarshal (alpha)
 =======================================
 .. attention::
 
-   FireMarshal is still in beta. You are encouraged to try it out and use it
+   FireMarshal is still in alpha. You are encouraged to try it out and use it
    for new workloads. The old-style workload generation is still supported (see
    :ref:`defining-custom-workloads` for details).
 

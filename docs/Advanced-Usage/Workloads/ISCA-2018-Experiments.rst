@@ -119,7 +119,8 @@ To Run:
     ./run-simperf-test-scale.sh withlaunch
 
 
-Notes: Excludes supernode since it is still in beta and not merged on master.
+A similar benchmark is also provided for supernode mode, see ``run-simperf-test-scale-supernode.sh``.
+
 
 Figure 9: Simulation Rate vs. Link Latency
 ---------------------------------------------
@@ -140,7 +141,7 @@ To Run:
     ./run-simperf-test-latency.sh withlaunch
 
 
-Notes: Excludes supernode since it is still in beta and not merged on master.
+A similar benchmark for supernode mode will be provided soon. See https://github.com/firesim/firesim/issues/244
 
 
 Running all experiments at once
