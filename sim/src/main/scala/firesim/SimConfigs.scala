@@ -250,7 +250,7 @@ class PicoRV32Config extends Config(
   new WithUARTWidget ++
   new WithDesiredHostFrequency(75) ++
   new WithDefaultMemModel ++
-  new midas.F1Config)
+  new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSLLC4MBConfig160MHz extends Config(
   new WithDesiredHostFrequency(160) ++
