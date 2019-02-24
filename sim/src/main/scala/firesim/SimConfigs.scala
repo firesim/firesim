@@ -249,6 +249,7 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
 class PicoRV32Config extends Config(
   new WithUARTWidget ++
   new WithDesiredHostFrequency(75) ++
+  new WithDefaultMemModel ++
   new midas.F1Config)
 
 class FireSimDDR3FRFCFSLLC4MBConfig160MHz extends Config(

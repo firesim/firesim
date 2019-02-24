@@ -18,6 +18,8 @@ import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
 import freechips.rocketchip.config.Config
 import freechips.rocketchip.rocket.{RocketCoreParams, MulDivParams}
+import freechips.rocketchip.util.HeterogeneousBag
+import freechips.rocketchip.amba.axi4.{AXI4BundleParameters,AXI4Bundle}
 
 import boom.system.{BoomTilesKey, BoomTestSuites}
 
@@ -66,14 +68,6 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
   //     writeOutputFile(s"PicoRV32.${extension}", contents ())
   //   }
   // }
-
-  // def writeOutputFile(fname: String, contents: String): File = {
-  //   val f = new File(genDir, fname)
-  //   val fw = new FileWriter(f)
-  //   fw.write(contents)
-  //   fw.close
-  //   f
-  // }
 }
 
 object FireSimGenerator extends App with FireSimGeneratorUtils {
@@ -86,6 +80,7 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
 
 class UARTWrapper extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
+	val mem_axi4 = IO(HeterogeneousBag(Seq(AXI4Bundle(new AXI4BundleParameters(addrBits=32, dataBits=32, idBits=1, userBits=0, wcorrupt=false)))))
 
         val txFromVerilog = Wire(Bool())
         val rxFromVerilog = Wire(Bool())
@@ -93,6 +88,37 @@ class UARTWrapper extends MultiIOModule {
         txFromVerilog := DontCare
         uart(0).txd := txFromVerilog
         rxFromVerilog := uart(0).rxd
+
+	mem_axi4(0).aw.bits.id := DontCare
+	mem_axi4(0).aw.bits.addr := DontCare
+	mem_axi4(0).aw.bits.len := DontCare
+	mem_axi4(0).aw.bits.size := DontCare
+	mem_axi4(0).aw.bits.burst := DontCare
+	mem_axi4(0).aw.bits.lock := DontCare
+	mem_axi4(0).aw.bits.cache := DontCare
+	mem_axi4(0).aw.bits.prot := DontCare
+	mem_axi4(0).aw.bits.qos := DontCare
+	mem_axi4(0).aw.valid := DontCare
+
+	mem_axi4(0).ar.bits.id := DontCare
+        mem_axi4(0).ar.bits.addr := DontCare
+        mem_axi4(0).ar.bits.len := DontCare
+        mem_axi4(0).ar.bits.size := DontCare
+        mem_axi4(0).ar.bits.burst := DontCare
+        mem_axi4(0).ar.bits.lock := DontCare
+        mem_axi4(0).ar.bits.cache := DontCare
+        mem_axi4(0).ar.bits.prot := DontCare
+	mem_axi4(0).ar.bits.qos := DontCare
+	mem_axi4(0).ar.valid := DontCare
+
+        mem_axi4(0).w.bits.data := DontCare
+        mem_axi4(0).w.bits.strb := DontCare
+        mem_axi4(0).w.bits.last := DontCare
+	mem_axi4(0).w.valid := DontCare
+
+	mem_axi4(0).b.ready := DontCare
+
+	mem_axi4(0).r.ready := DontCare
 }
 
 object UARTWrapperDriver extends App {

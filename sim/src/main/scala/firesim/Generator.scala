@@ -48,6 +48,8 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites with HasTes
       case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 
+    println(portList)
+
     generatorArgs.midasFlowKind match {
       case "midas" | "strober" =>
         midas.MidasCompiler(

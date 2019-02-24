@@ -153,3 +153,11 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
+##########################
+# UARTWrapper Generation #
+##########################
+uartwrapper: /home/centos/firesim/sim/src/main/scala/picorv32/Generator.scala
+	$(SBT) $(SBT_FLAGS) "runMain firesim.picorv32.UARTWrapperDriver"
+	mv UARTWrapper.fir src/main/scala/picorv32
+	mv UARTWrapper.v src/main/scala/picorv32
+	mv UARTWrapper.anno.json src/main/scala/picorv32
