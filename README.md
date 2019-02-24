@@ -1,29 +1,19 @@
-firesim-software
+FireMarshal (firesim-software)
 ==================================
 
-This builds base images for several linux-based distros that work with qemu,
+This tool builds base images for several linux-based distros that work with qemu,
 spike, and firesim. 
 
-## How to use:
-All builds are controlled through json files. For example, br-disk.json will
-build/run the disk-based buildroot distro.
+This is just a quick primer. To see full documentation, please see the official
+firesim documentation. Find pre-built documentation for the latest FireSim here:
+https://docs.fires.im/en/latest/Advanced-Usage/FireMarshal/index.html
 
-Prereq/Init:
-Be sure to update/init submodules. The following will require the riscv-tools
-on your path and a recent version of qemu.
+You can also find the latest FireSim source at:
+https://github.com/firesim/firesim
 
-To build:
-    ./sw-manager.py -c CONFIG.json build
+## Requirements
+This project was written for python 3.4
 
-To run on qemu:
-  ./sw-manager.py -c CONFIG.json launch
-
-To run on spike:
-  ./sw-manager.py -c CONFIG.json launch -s
-
-To run on FireSim:
-See the firesim documentation.
-
-Tl;Dr: images built with build.py will work on firesim, you just need to update
-the symlinks in workloads/deploy/ and then run them as normal. This will be
-intergrated more completely in future releases.
+python-requirements.txt and centos-requirements.txt are incomplete lists of
+required packages for python3. If you find that you need a package not in those
+lists, please file an issue.

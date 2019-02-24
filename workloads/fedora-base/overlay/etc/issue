@@ -1,0 +1,24 @@
+Welcome to the Fedora/RISC-V disk image
+https://fedoraproject.org/wiki/Architectures/RISC-V
+
+Build date: Mon Oct 15 17:13:58 UTC 2018
+
+Kernel \r on an \m (\l)
+
+The root password is ‘firesim’.
+
+To install new packages use 'dnf install ...'
+
+To upgrade disk image use 'dnf upgrade --best'
+
+If DNS isn’t working, try editing ‘/etc/yum.repos.d/fedora-riscv.repo’.
+
+For updates and latest information read:
+https://fedorapeople.org/groups/risc-v/disk-images/readme.txt
+
+Fedora/RISC-V
+-------------
+Koji:               http://fedora-riscv.tranquillity.se/koji/
+SCM:                http://fedora-riscv.tranquillity.se:3000/
+Distribution rep.:  http://fedora-riscv.tranquillity.se/repos-dist/
+Koji internal rep.: http://fedora-riscv.tranquillity.se/repos/

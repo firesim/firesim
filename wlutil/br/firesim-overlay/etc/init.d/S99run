@@ -1,0 +1,25 @@
+#!/bin/sh
+
+SYSLOGD_ARGS=-n
+KLOGD_ARGS=-n
+
+start() {
+    echo "launching firesim workload run/command" && /firesim.sh  && echo "firesim workload run/command done"
+}
+
+case "$1" in
+  start)
+  start
+  ;;
+  stop)
+  #stop
+  ;;
+  restart|reload)
+  start
+  ;;
+  *)
+  echo "Usage: $0 {start|stop|restart}"
+  exit 1
+esac
+
+exit

@@ -1,0 +1,12 @@
+{
+  "name" : "smoke0",
+  "workdir" : "smoke0-workdir",
+  "base" : "br-base.json",
+  "files" : [ [ "testFile", "/root/" ] ],
+  "guest-init" : "init.sh",
+  "command" : "echo Global : command > /root/runOutput; cat /root/testFile; cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

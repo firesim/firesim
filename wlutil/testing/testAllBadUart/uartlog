@@ -1,0 +1,199 @@
+[    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[    0.000000] Linux version 4.15.0-rc6-31587-gcae6324 (xarc@xarc0) (gcc version 7.2.0 (GCC)) #65 SMP Thu Dec 13 14:02:41 EST 2018
+[    0.000000] bootconsole [early0] enabled
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000080200000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000017fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080200000-0x000000017fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x000000017fffffff]
+[    0.000000] elf_hwcap is 0x112d
+[    0.000000] percpu: Embedded 14 pages/cpu @        (ptrval) s24664 r0 d32680 u57344
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1033735
+[    0.000000] Kernel command line: root=/dev/generic-blkdev rw ro root=/dev/vda
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+[    0.000000] Sorting __ex_table...
+[    0.000000] Memory: 4123824K/4192256K available (3038K kernel code, 162K rwdata, 582K rodata, 148K init, 762K bss, 68432K reserved, 0K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] 	RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=4.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 0, nr_irqs: 0, preallocated irqs: 0
+[    0.000000] riscv,cpu_intc,0: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,1: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,2: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,3: 64l local interrupts mapped
+[    0.000000] ------------[ cut here ]------------
+[    0.000000] WARNING: CPU: 1 PID: 0 at drivers/irqchip/irq-riscv-intc.c:159 riscv_irq_enable+0xc8/0xcc
+[    0.000000] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 4.15.0-rc6-31587-gcae6324 #65
+[    0.000000] Call Trace:
+[    0.000000] [<        (ptrval)>] walk_stackframe+0x0/0x100
+[    0.000000] [<        (ptrval)>] show_stack+0x38/0x50
+[    0.000000] [<        (ptrval)>] dump_stack+0x80/0xac
+[    0.000000] [<        (ptrval)>] __warn+0x110/0x128
+[    0.000000] [<        (ptrval)>] warn_slowpath_null+0x4c/0x6c
+[    0.000000] [<        (ptrval)>] riscv_irq_enable+0xc4/0xcc
+[    0.000000] [<        (ptrval)>] irq_enable+0x64/0xbc
+[    0.000000] [<        (ptrval)>] __irq_startup+0xd4/0xe0
+[    0.000000] [<        (ptrval)>] irq_startup+0x7c/0x148
+[    0.000000] [<        (ptrval)>] irq_activate_and_startup+0x2c/0x40
+[    0.000000] [<        (ptrval)>] __irq_do_set_handler+0xa0/0x1b8
+[    0.000000] [<        (ptrval)>] irq_set_chained_handler_and_data+0x4c/0x7c
+[    0.000000] [<        (ptrval)>] plic_init+0x268/0x3e0
+[    0.000000] [<        (ptrval)>] of_irq_init+0x194/0x2fc
+[    0.000000] [<        (ptrval)>] irqchip_init+0x18/0x2c
+[    0.000000] [<        (ptrval)>] init_IRQ+0x10/0x24
+[    0.000000] [<        (ptrval)>] start_kernel+0x254/0x340
+[    0.000000] [<        (ptrval)>] _sinittext+0x60/0x68
+[    0.000000] random: get_random_bytes called from print_oops_end_marker+0x58/0x7c with crng_init=0
+[    0.000000] ---[ end trace 4487b6dd5cdd9667 ]---
+[    0.000000] riscv,plic0,c000000: mapped 10 interrupts to 4/8 handlers
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.000000] console [hvc0] enabled
+[    0.000000] console [hvc0] enabled
+[    0.000000] bootconsole [early0] disabled
+[    0.000000] bootconsole [early0] disabled
+[    0.000000] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
+[    0.000000] pid_max: default: 32768 minimum: 301
+[    0.004000] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.004000] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.024000] Hierarchical SRCU implementation.
+[    0.028000] smp: Bringing up secondary CPUs ...
+[    0.028000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.032000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.036000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.036000] smp: Brought up 1 node, 4 CPUs
+[    0.080000] devtmpfs: initialized
+[    0.084000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.084000] futex hash table entries: 1024 (order: 4, 65536 bytes)
+[    0.088000] NET: Registered protocol family 16
+[    0.104000] vgaarb: loaded
+[    0.108000] clocksource: Switched to clocksource riscv_clocksource
+[    0.112000] NET: Registered protocol family 2
+[    0.116000] TCP established hash table entries: 32768 (order: 6, 262144 bytes)
+[    0.120000] TCP bind hash table entries: 32768 (order: 7, 524288 bytes)
+[    0.120000] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.124000] UDP hash table entries: 2048 (order: 4, 65536 bytes)
+[    0.124000] UDP-Lite hash table entries: 2048 (order: 4, 65536 bytes)
+[    0.124000] NET: Registered protocol family 1
+[    0.132000] workingset: timestamp_bits=62 max_order=20 bucket_order=0
+[    0.136000] random: fast init done
+[    0.164000] io scheduler noop registered
+[    0.164000] io scheduler cfq registered (default)
+[    0.164000] io scheduler mq-deadline registered
+[    0.164000] io scheduler kyber registered
+[    0.340000] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.348000] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 13, base_baud = 230400) is a 16550A
+[    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[    0.000000] Linux version 4.15.0-rc6-31587-gcae6324 (xarc@xarc0) (gcc version 7.2.0 (GCC)) #65 SMP Thu Dec 13 14:02:41 EST 2018
+[    0.000000] bootconsole [early0] enabled
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000080200000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000017fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080200000-0x000000017fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x000000017fffffff]
+[    0.000000] elf_hwcap is 0x112d
+[    0.000000] percpu: Embedded 14 pages/cpu @        (ptrval) s24664 r0 d32680 u57344
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1033735
+[    0.000000] Kernel command line: root=/dev/generic-blkdev rw ro root=/dev/vda
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+[    0.000000] Sorting __ex_table...
+[    0.000000] Memory: 4123824K/4192256K available (3038K kernel code, 162K rwdata, 582K rodata, 148K init, 762K bss, 68432K reserved, 0K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] 	RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=4.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 0, nr_irqs: 0, preallocated irqs: 0
+[    0.000000] riscv,cpu_intc,0: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,1: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,2: 64l local interrupts mapped
+[    0.000000] riscv,cpu_intc,3: 64l local interrupts mapped
+[    0.000000] ------------[ cut here ]------------
+[    0.000000] WARNING: CPU: 1 PID: 0 at drivers/irqchip/irq-riscv-intc.c:159 riscv_irq_enable+0xc8/0xcc
+[    0.000000] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 4.15.0-rc6-31587-gcae6324 #65
+[    0.000000] Call Trace:
+[    0.000000] [<        (ptrval)>] walk_stackframe+0x0/0x100
+[    0.000000] [<        (ptrval)>] show_stack+0x38/0x50
+[    0.000000] [<        (ptrval)>] dump_stack+0x80/0xac
+[    0.000000] [<        (ptrval)>] __warn+0x110/0x128
+[    0.000000] [<        (ptrval)>] warn_slowpath_null+0x4c/0x6c
+[    0.000000] [<        (ptrval)>] riscv_irq_enable+0xc4/0xcc
+[    0.000000] [<        (ptrval)>] irq_enable+0x64/0xbc
+[    0.000000] [<        (ptrval)>] __irq_startup+0xd4/0xe0
+[    0.000000] [<        (ptrval)>] irq_startup+0x7c/0x148
+[    0.000000] [<        (ptrval)>] irq_activate_and_startup+0x2c/0x40
+[    0.000000] [<        (ptrval)>] __irq_do_set_handler+0xa0/0x1b8
+[    0.000000] [<        (ptrval)>] irq_set_chained_handler_and_data+0x4c/0x7c
+[    0.000000] [<        (ptrval)>] plic_init+0x268/0x3e0
+[    0.000000] [<        (ptrval)>] of_irq_init+0x194/0x2fc
+[    0.000000] [<        (ptrval)>] irqchip_init+0x18/0x2c
+[    0.000000] [<        (ptrval)>] init_IRQ+0x10/0x24
+[    0.000000] [<        (ptrval)>] start_kernel+0x254/0x340
+[    0.000000] [<        (ptrval)>] _sinittext+0x60/0x68
+[    0.000000] random: get_random_bytes called from print_oops_end_marker+0x58/0x7c with crng_init=0
+[    0.000000] ---[ end trace 4487b6dd5cdd9667 ]---
+[    0.000000] riscv,plic0,c000000: mapped 10 interrupts to 4/8 handlers
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.000000] console [hvc0] enabled
+[    0.000000] bootconsole [early0] disabled
+[    0.000000] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
+[    0.000000] pid_max: default: 32768 minimum: 301
+[    0.004000] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.004000] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.024000] Hierarchical SRCU implementation.
+[    0.028000] smp: Bringing up secondary CPUs ...
+[    0.028000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.032000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.036000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.036000] smp: Brought up 1 node, 4 CPUs
+[    0.080000] devtmpfs: initialized
+[    0.084000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.084000] futex hash table entries: 1024 (order: 4, 65536 bytes)
+[    0.088000] NET: Registered protocol family 16
+[    0.104000] vgaarb: loaded
+[    0.108000] clocksource: Switched to clocksource riscv_clocksource
+[    0.112000] NET: Registered protocol family 2
+[    0.116000] TCP established hash table entries: 32768 (order: 6, 262144 bytes)
+[    0.120000] TCP bind hash table entries: 32768 (order: 7, 524288 bytes)
+[    0.120000] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.124000] UDP hash table entries: 2048 (order: 4, 65536 bytes)
+[    0.124000] UDP-Lite hash table entries: 2048 (order: 4, 65536 bytes)
+[    0.124000] NET: Registered protocol family 1
+[    0.132000] workingset: timestamp_bits=62 max_order=20 bucket_order=0
+[    0.136000] random: fast init done
+[    0.164000] io scheduler noop registered
+[    0.164000] io scheduler cfq registered (default)
+[    0.164000] io scheduler mq-deadline registered
+[    0.164000] io scheduler kyber registered
+[    0.340000] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.348000] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 13, base_baud = 230400) is a 16550A
+[    0.368000] console [ttyS0] enabled
+[    0.368000] console [ttyS0] enabled
+[    0.428000] VFS: Mounted root (ext2 filesystem) readonly on device 254:0.
+[    0.428000] VFS: Mounted root (ext2 filesystem) readonly on device 254:0.
+[    0.432000] devtmpfs: mounted
+[    0.432000] devtmpfs: mounted
+[    0.448000] Freeing unused kernel memory: 148K
+[    0.448000] Freeing unused kernel memory: 148K
+[    0.448000] This architecture does not have kernel memory protection.
+[    0.448000] This architecture does not have kernel memory protection.
+[    0.712000] EXT2-fs (vda): warning: mounting unchecked fs, running e2fsck is recommended
+[    0.712000] EXT2-fs (vda): warning: mounting unchecked fs, running e2fsck is recommended
+mount: mounting sysfs on /sys failed: No such device
+Starting logging: OK
+Starting mdev...
+mdev: /sys/dev: No such file or directory
+modprobe: can't change directory to '/lib/modules': No such file or directory
+Initializing random number generator... done.
+Starting network: ip: SIOCGIFFLAGS: No such device
+ip: can't find device 'eth0'
+FAIL
+Starting dropbear sshd: OK
+[    4.560000] reboot: Power down
+[    4.560000] reboot: Power down
+Power off

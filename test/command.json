@@ -1,0 +1,8 @@
+{
+  "name" : "command",
+  "base" : "br-base.json",
+  "command" : "echo Global: command",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

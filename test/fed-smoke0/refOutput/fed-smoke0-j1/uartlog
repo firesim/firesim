@@ -1,0 +1,8 @@
+J1 Running:
+Global output:
+Global : file
+Global : init
+Job output:
+j1 : file
+j1 : init
+j1 : run

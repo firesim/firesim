@@ -1,0 +1,18 @@
+{
+  "name" : "jobs",
+  "base" : "br-base.json",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  },
+  "jobs" : [
+    {
+      "name" : "j0",
+      "command" : "echo j0 : run"
+    },
+    {
+      "name" : "j1",
+      "command" : "echo j1 : run"
+    }
+  ]
+}

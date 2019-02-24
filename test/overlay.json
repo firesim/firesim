@@ -1,0 +1,10 @@
+{
+  "name" : "overlay",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "command" : "cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}
