@@ -1,0 +1,10 @@
+{
+  "name" : "guest-init",
+  "base" : "br-base.json",
+  "guest-init" : "init.sh initArg",
+  "command" : "echo 'Global : command' >> /root/runOutput && cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

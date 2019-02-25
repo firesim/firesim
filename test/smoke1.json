@@ -1,0 +1,12 @@
+{
+  "name" : "smoke1",
+  "workdir" : "smoke1",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "guest-init" : "init.sh",
+  "run" : "run.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

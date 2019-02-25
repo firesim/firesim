@@ -1,0 +1,12 @@
+diff --git a/riscv/sim.cc b/riscv/sim.cc
+index 04fbe3c..9925f16 100644
+--- a/riscv/sim.cc
++++ b/riscv/sim.cc
+@@ -33,6 +33,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
+     remote_bitbang(NULL),
+     debug_module(this, progsize, max_bus_master_bits, require_authentication)
+ {
++  printf("Global : spike\n");
+   signal(SIGINT, &handle_signal);
+ 
+   for (auto& x : mems)

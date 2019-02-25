@@ -1,0 +1,19 @@
+{
+  "name" : "example-fed",
+  "base" : "fedora-base.json",
+  "overlay" : "overlay",
+  "host-init" : "host-init.sh",
+  "guest-init" : "guest-init.sh",
+  "jobs" : [
+    {
+      "name" : "qsort",
+      "outputs" : [ "/root/run_result.csv" ],
+      "run" : "runQsort.sh"
+    },
+    {
+      "name" : "pySort",
+      "outputs" : [ "/root/run_result.csv" ],
+      "run" : "runPysort.sh"
+    }
+  ]
+}

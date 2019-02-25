@@ -1,0 +1,9 @@
+{
+  "name" : "post_run_hook",
+  "base" : "br-base.json",
+  "command" : "echo Global: command",
+  "post_run_hook" : "./post_run_hook.sh",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

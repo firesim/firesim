@@ -1,0 +1,10 @@
+{
+  "name" : "flist",
+  "base" : "br-base.json",
+  "files" : [["runOutput", "/root/"]],
+  "command" : "cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

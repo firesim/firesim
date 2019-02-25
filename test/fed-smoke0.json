@@ -1,0 +1,29 @@
+{
+  "name" : "fed-smoke0",
+  "base" : "fedora-base.json",
+  "overlay" : "overlay",
+  "guest-init" : "init.sh",
+  "run" : "run.sh",
+  "testing" : {
+    "buildTimeout" : 2400,
+    "runTimeout" : 1200,
+    "refDir" : "refOutput",
+    "strip" : true
+  },
+  "jobs" : [
+    {
+      "name" : "j0",
+      "files" : [ ["j0_output", "/root/"] ],
+      "outputs" : [ "/root/j0_output" ],
+      "guest-init" : "init0.sh",
+      "run" : "run0.sh"
+    },
+    {
+      "name" : "j1",
+      "files" : [ ["j1_output", "/root/"] ],
+      "outputs" : [ "/root/j1_output" ],
+      "guest-init" : "init1.sh",
+      "run" : "run1.sh"
+    }
+  ]
+}

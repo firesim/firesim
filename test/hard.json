@@ -1,0 +1,10 @@
+{
+  "name" : "hard",
+  "bin" : "hard-bin",
+  "img" : "hard.img",
+  "host-init" : "copy-files.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

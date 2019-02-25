@@ -1,0 +1,28 @@
+{
+  "name" : "smoke2",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "guest-init" : "init.sh",
+  "outputs" : [ "/root/runOutput" ],
+  "run" : "run.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  },
+  "jobs" : [
+    {
+      "name" : "j0",
+      "files" : [ ["j0_output", "/root/"] ],
+      "guest-init" : "init0.sh",
+      "outputs" : [ "/root/j0_output", "/root/runOutput" ],
+      "run" : "run0.sh"
+    },
+    {
+      "name" : "j1",
+      "files" : [ ["j1_output", "/root/"] ],
+      "outputs" : [ "/root/j1_output", "/root/runOutput" ],
+      "guest-init" : "init1.sh",
+      "run" : "run1.sh"
+    }
+  ]
+}

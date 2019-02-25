@@ -1,0 +1,10 @@
+{
+  "name" : "spike",
+  "base" : "bare",
+  "host-init" : "build.sh",
+  "bin" : "hello",
+  "spike" : "spike_local/bin/spike",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}

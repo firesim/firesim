@@ -1,0 +1,6 @@
+{
+  "name" : "fedora-base",
+  "base" : "fedora",
+  "overlay" : "overlay",
+  "linux-config" : "linux-config"
+}

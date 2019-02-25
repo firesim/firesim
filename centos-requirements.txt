@@ -1,0 +1,4 @@
+python34
+python34-devel
+python34-pip
+rsync
