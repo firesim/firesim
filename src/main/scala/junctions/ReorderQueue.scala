@@ -46,7 +46,7 @@ class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
 
     val roq_data = Reg(Vec(actualSize, dType))
     val roq_tags = Reg(Vec(actualSize, UInt(width = tagWidth - smallTagSize)))
-    val roq_free = Reg(init = Vec.fill(actualSize)(Bool(true)))
+    val roq_free = Reg(init = Vec.fill(actualSize)(true.B))
     val roq_enq_addr = io.enq.bits.tag(smallTagSize-1, 0)
 
     io.enq.ready := roq_free(roq_enq_addr)
@@ -54,7 +54,7 @@ class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
     when (io.enq.valid && io.enq.ready) {
       roq_data(roq_enq_addr) := io.enq.bits.data
       roq_tags(roq_enq_addr) := io.enq.bits.tag >> smallTagSize.U
-      roq_free(roq_enq_addr) := Bool(false)
+      roq_free(roq_enq_addr) := false.B
     }
 
     io.deq.foreach { deq =>
@@ -64,18 +64,18 @@ class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
       deq.matches := !roq_free(roq_deq_addr) && roq_tags(roq_deq_addr) === (deq.tag >> smallTagSize.U)
 
       when (deq.valid) {
-        roq_free(roq_deq_addr) := Bool(true)
+        roq_free(roq_deq_addr) := true.B
       }
     }
   } else if (tagSpaceSize == actualSize) {
     val roq_data = Mem(tagSpaceSize, dType)
-    val roq_free = Reg(init = Vec.fill(tagSpaceSize)(Bool(true)))
+    val roq_free = Reg(init = Vec.fill(tagSpaceSize)(true.B))
 
     io.enq.ready := roq_free(io.enq.bits.tag)
 
     when (io.enq.valid && io.enq.ready) {
       roq_data(io.enq.bits.tag) := io.enq.bits.data
-      roq_free(io.enq.bits.tag) := Bool(false)
+      roq_free(io.enq.bits.tag) := false.B
     }
 
     io.deq.foreach { deq =>
@@ -83,7 +83,7 @@ class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
       deq.matches := !roq_free(deq.tag)
 
       when (deq.valid) {
-        roq_free(deq.tag) := Bool(true)
+        roq_free(deq.tag) := true.B
       }
     }
   } else {
@@ -94,8 +94,8 @@ class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
       Module(new Queue(dType, qDepth))
     }
 
-    io.enq.ready := Bool(false)
-    io.deq.foreach(_.matches := Bool(false))
+    io.enq.ready := false.B
+    io.deq.foreach(_.matches := false.B)
     io.deq.foreach(_.data := dType.fromBits(UInt(0)))
 
     for ((q, i) <- queues.zipWithIndex) {

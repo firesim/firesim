@@ -57,7 +57,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
   std::string loadmem;
   bool fastloadmem = false;
   bool dramsim = false;
-  uint64_t memsize = 1L << 32;
+  uint64_t memsize = 1L << MEM_ADDR_BITS;
   for (auto arg: args) {
     if (arg.find("+waveform=") == 0) {
       waveform = arg.c_str() + 10;

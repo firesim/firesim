@@ -45,7 +45,7 @@ class MultiWidthFifo(inW: Int, outW: Int, n: Int) extends Module {
 
     io.out.valid := size > UInt(0)
     io.out.bits := rdata(tail)
-    io.in.ready := size < UInt(n)
+    io.in.ready := size < UInt(n - nBeats + 1)
     io.count := size
   } else {
     val nBeats = outW / inW
@@ -83,12 +83,12 @@ class MultiWidthFifoTest extends UnitTest {
   val big2little = Module(new MultiWidthFifo(16, 8, 8))
   val little2big = Module(new MultiWidthFifo(8, 16, 4))
 
-  val bl_send = Reg(init = Bool(false))
-  val lb_send = Reg(init = Bool(false))
-  val bl_recv = Reg(init = Bool(false))
-  val lb_recv = Reg(init = Bool(false))
-  val bl_finished = Reg(init = Bool(false))
-  val lb_finished = Reg(init = Bool(false))
+  val bl_send = Reg(init = false.B)
+  val lb_send = Reg(init = false.B)
+  val bl_recv = Reg(init = false.B)
+  val lb_recv = Reg(init = false.B)
+  val bl_finished = Reg(init = false.B)
+  val lb_finished = Reg(init = false.B)
 
   val bl_data = Vec.tabulate(4){i => UInt((2 * i + 1) * 256 + 2 * i, 16)}
   val lb_data = Vec.tabulate(8){i => UInt(i, 8)}
@@ -117,28 +117,28 @@ class MultiWidthFifoTest extends UnitTest {
     lb_data(Cat(lb_recv_cnt, UInt(0, 1))))
 
   when (io.start) {
-    bl_send := Bool(true)
-    lb_send := Bool(true)
+    bl_send := true.B
+    lb_send := true.B
   }
 
   when (bl_send_done) {
-    bl_send := Bool(false)
-    bl_recv := Bool(true)
+    bl_send := false.B
+    bl_recv := true.B
   }
 
   when (lb_send_done) {
-    lb_send := Bool(false)
-    lb_recv := Bool(true)
+    lb_send := false.B
+    lb_recv := true.B
   }
 
   when (bl_recv_done) {
-    bl_recv := Bool(false)
-    bl_finished := Bool(true)
+    bl_recv := false.B
+    bl_finished := true.B
   }
 
   when (lb_recv_done) {
-    lb_recv := Bool(false)
-    lb_finished := Bool(true)
+    lb_recv := false.B
+    lb_finished := true.B
   }
 
   io.finished := bl_finished && lb_finished

@@ -3,11 +3,13 @@ package models
 
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.util.{ParameterizedBundle, GenericParameterizedBundle}
+import freechips.rocketchip.util.{ParameterizedBundle, GenericParameterizedBundle, UIntIsOneOf}
+import freechips.rocketchip.unittest.UnitTest
 import junctions._
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.MultiIOModule
 
 // From MIDAS
 import midas.widgets.{D2V, V2D, SkidRegister}
@@ -407,12 +409,57 @@ class AddressCollisionChecker(numReads: Int, numWrites: Int, addrWidth: Int)(imp
 }
 
 
-class HistogramReadoutIO(val binAddrBits: Int) extends Bundle {
+class CounterReadoutIO(val addrBits: Int) extends Bundle {
   val enable = Input(Bool()) // Set when the simulation memory bus whishes to read out the values
-  val addr = Input(UInt(binAddrBits.W))
+  val addr = Input(UInt(addrBits.W))
   val dataL = Output(UInt(32.W))
   val dataH = Output(UInt(32.W))
 }
+
+class CounterIncrementIO(val addrBits: Int, val dataBits: Int) extends Bundle {
+  val enable = Input(Bool())
+  val addr = Input(UInt(addrBits.W))
+  // Pass data 2 cycles after enable
+  val data = Input(UInt(dataBits.W))
+}
+
+class CounterTable(addrBits: Int, dataBits: Int) extends Module {
+  val io = IO(new Bundle {
+    val incr = new CounterIncrementIO(addrBits, dataBits)
+    val readout = new CounterReadoutIO(addrBits)
+  })
+
+  require(dataBits > 32)
+  val memDepth = 1 << addrBits
+
+  val counts = Mem(memDepth, UInt(dataBits.W))
+
+  val s0_readAddr = Mux(io.readout.enable, io.readout.addr, io.incr.addr)
+  val s1_readAddr = RegNext(s0_readAddr)
+  val s1_readData = counts.read(s1_readAddr)
+  val s1_valid = RegNext(io.incr.enable, false.B)
+  val s1_readout = RegNext(io.readout.enable)
+
+  val s2_valid = RegNext(s1_valid && !s1_readout)
+  val s2_writeAddr = RegNext(s1_readAddr)
+  val s2_readData = RegNext(s1_readData)
+  val s2_writeData = Wire(UInt(dataBits.W))
+
+  val s3_valid = RegNext(s2_valid)
+  val s3_writeData = RegNext(s2_writeData)
+  val s3_writeAddr = RegNext(s2_writeAddr)
+
+  val doBypass = s2_valid && s3_valid && s2_writeAddr === s3_writeAddr
+  s2_writeData := Mux(doBypass, s3_writeData, s2_readData) + io.incr.data
+
+  when (s2_valid) {
+    counts(s2_writeAddr) := s2_writeData
+  }
+
+  io.readout.dataL := s2_readData(31, 0)
+  io.readout.dataH := s2_readData(dataBits-1, 32)
+}
+
 // Stores a histogram of host latencies in BRAM
 // Setting io.readoutEnable ties a read port of the BRAM to a read address that
 //   can be driven by the simulation bus
@@ -424,7 +471,7 @@ class HostLatencyHistogramIO(val idBits: Int, val binAddrBits: Int) extends Bund
   val reqId = Flipped(ValidIO(UInt(idBits.W)))
   val respId = Flipped(ValidIO(UInt(idBits.W)))
   val cycleCountEnable = Input(Bool()) // Indicates which cycles the counter should be incremented
-  val readout = new HistogramReadoutIO(binAddrBits)
+  val readout = new CounterReadoutIO(binAddrBits)
 }
 
 // Defaults Will fit in a 36K BRAM
@@ -436,8 +483,6 @@ class HostLatencyHistogram (
   val binSize = 36
   // Need a queue for each ID to track the host cycle a request was issued.
   val queues = Seq.fill(1 << idBits)(Module(new Queue(UInt(cycleCountBits.W), 1)))
-
-  val histogram = SyncReadMem(1 << cycleCountBits, UInt(binSize.W))
 
   val cycle = RegInit(0.U(cycleCountBits.W))
   when (io.cycleCountEnable) { cycle := cycle + 1.U }
@@ -456,20 +501,12 @@ class HostLatencyHistogram (
     assert(deq.valid || !deq.ready, "Received an unexpected response")
   })
 
-  val readAddr = cycle - reqCycle
-  val s1_readAddr = RegNext(readAddr)
-  val s1_valid    = RegNext(io.respId.valid)
-  val s1_histReadData = histogram.read(Mux(io.readout.enable, io.readout.addr, readAddr))
-  val s2_binValue = Reg(UInt(binSize.W))
+  val histogram = Module(new CounterTable(cycleCountBits, binSize))
+  histogram.io.incr.enable := io.respId.valid
+  histogram.io.incr.addr := cycle - reqCycle
+  histogram.io.incr.data := 1.U
 
-  // Avoid R-on-W difficulties
-  val doBypass = s1_valid && io.respId.valid && s1_readAddr === readAddr
-  val s1_binUpdate = Mux(doBypass, s2_binValue,  s1_histReadData) + 1.U
-  s2_binValue := s1_binUpdate
-  when(s1_valid && !io.readout.enable) { histogram(s1_readAddr) := s1_binUpdate }
-
-  io.readout.dataL := s1_histReadData(31,0)
-  io.readout.dataH := s1_histReadData(binSize-1,32)
+  io.readout <> histogram.io.readout
 }
 
 object HostLatencyHistogram {
@@ -479,7 +516,7 @@ object HostLatencyHistogram {
       respValid: UInt,
       respId: UInt,
       cycleCountEnable: Bool = true.B,
-      binAddrBits: Int = 10): HistogramReadoutIO = {
+      binAddrBits: Int = 10): CounterReadoutIO = {
     require(reqId.getWidth == respId.getWidth)
     val histogram = Module(new HostLatencyHistogram(reqId.getWidth, binAddrBits))
     histogram.io.reqId.bits := reqId
@@ -491,9 +528,222 @@ object HostLatencyHistogram {
   }
 }
 
+// Pick out the relevant parts of NastiReadAddressChannel or NastiWriteAddressChannel
+class AddressRangeCounterRequest(implicit p: Parameters) extends NastiBundle {
+  val addr = UInt(nastiXAddrBits.W)
+  val len  = UInt(nastiXLenBits.W)
+  val size = UInt(nastiXSizeBits.W)
+}
+
+// Stores count of #bytes requested from each range in BRAM.
+// Setting io.readout.enable ties a read port of the BRAM to a read address
+//   that can be driven by the simulation bus
+//
+// WARNING: Will drop range updates if attempting to read values when host
+// transactions issued
+
+class AddressRangeCounter(nRanges: BigInt)(implicit p: Parameters) extends NastiModule {
+  val io = IO(new Bundle {
+    val req = Flipped(ValidIO(new AddressRangeCounterRequest))
+    val readout = new CounterReadoutIO(log2Ceil(nRanges))
+  })
+
+  require(nRanges > 1)
+  require(nRanges < (1L << 32))
+  require(isPow2(nRanges))
+
+  val counterBits = 48
+  val addrMSB = nastiXAddrBits - 1
+  val addrLSB = nastiXAddrBits - log2Ceil(nRanges)
+
+  val s1_len = RegNext(io.req.bits.len)
+  val s1_size = RegNext(io.req.bits.size)
+  val s1_bytes = (s1_len + 1.U) << s1_size
+  val s2_bytes = RegNext(s1_bytes)
+
+  val counters = Module(new CounterTable(log2Ceil(nRanges), counterBits))
+  counters.io.incr.enable := io.req.valid
+  counters.io.incr.addr := io.req.bits.addr(addrMSB, addrLSB)
+  counters.io.incr.data := s2_bytes
+  io.readout <> counters.io.readout
+}
+
+object AddressRangeCounter {
+  def apply[T <: NastiAddressChannel](
+      n: BigInt, req: DecoupledIO[T], en: Bool)(implicit p: Parameters) = {
+    val counter = Module(new AddressRangeCounter(n))
+    counter.io.req.valid := req.fire() && en
+    counter.io.req.bits.addr := req.bits.addr
+    counter.io.req.bits.len := req.bits.len
+    counter.io.req.bits.size := req.bits.size
+    counter.io.readout
+  }
+}
+
 object AddressCollisionCheckMain extends App {
   implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
   chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))
 }
 
+class CounterTableUnitTest extends UnitTest {
+  val addrBits = 10
+  val dataBits = 48
+  val counters = Module(new CounterTable(addrBits, dataBits))
 
+  val (s_start :: s_readInit :: s_incr :: s_readout :: s_done :: Nil) = Enum(5)
+  val state = RegInit(s_start)
+
+  val incrAddrs = VecInit(Seq(0, 0, 4, 0, 4, 16).map(_.U(addrBits.W)))
+  val incrData = VecInit(Seq(1, 2, 5, 1, 3, 7).map(_.U(dataBits.W)))
+  val (incrIdx, incrDone) = Counter(state === s_incr, incrAddrs.size)
+
+  val readAddrs = VecInit(Seq(0, 4, 8, 16).map(_.U(addrBits.W)))
+  val readExpected = VecInit(Seq(4, 8, 0, 7).map(_.U(dataBits.W)))
+  val (readIdx, readDone) = Counter(state.isOneOf(s_readInit, s_readout), readAddrs.size)
+  val initValues = Reg(Vec(readExpected.size, UInt(dataBits.W)))
+
+  counters.io.incr.enable := state === s_incr
+  counters.io.incr.addr := incrAddrs(incrIdx)
+  counters.io.incr.data := RegNext(RegNext(incrData(incrIdx)))
+
+  counters.io.readout.enable := state.isOneOf(s_readInit, s_readout)
+  counters.io.readout.addr := readAddrs(readIdx)
+
+  val readData = Cat(counters.io.readout.dataH, counters.io.readout.dataL)
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
+  val initWriteIdx = RegNext(RegNext(readIdx))
+
+  when (initValid) { initValues(initWriteIdx) := readData }
+
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
+
+  assert(!readValid || readCount === expectedCount)
+
+  when (state === s_start && io.start) { state := s_readInit }
+  when (state === s_readInit && readDone) { state := s_incr }
+  when (incrDone) { state := s_readout }
+  when (state === s_readout && readDone) { state := s_done }
+
+  io.finished := state === s_done
+}
+
+class LatencyHistogramUnitTest extends UnitTest {
+  val addrBits = 8
+  val histogram = Module(new HostLatencyHistogram(2, addrBits))
+  val dataBits = histogram.binSize
+
+  val (s_start :: s_readInit :: s_run :: s_readout :: s_done :: Nil) = Enum(5)
+  val state = RegInit(s_start)
+
+  // The second response comes a cycle after the first,
+  // with the same amount of time (2 cycles) after the request.
+  // Therefore, it will require a bypass.
+  // The third response comes a cycle after the second, but since the number
+  // of cycles is 1 instead of 2, it will not require a bypass.
+  // The fourth response also comes 2 cycles after the request,
+  // but since several cycles have elapsed since last update, no bypass needed
+  val cycleReq = VecInit(Seq(true.B, true.B, false.B, true.B, true.B, false.B, false.B))
+  val cycleResp = VecInit(Seq(false.B, false.B, true.B, true.B, true.B, false.B, true.B))
+
+  val (runIdx, runDone) = Counter(state === s_run, cycleReq.size)
+  val (reqId, _) = Counter(histogram.io.reqId.valid, 4)
+  val (respId, _) = Counter(histogram.io.respId.valid, 4)
+
+  val readAddrs = VecInit(Seq(1.U(addrBits.W), 2.U(addrBits.W)))
+  val readExpected = VecInit(Seq(1.U(dataBits.W), 3.U(dataBits.W)))
+  val (readIdx, readDone) = Counter(state.isOneOf(s_readInit, s_readout), readAddrs.size)
+
+  histogram.io.reqId.valid := state === s_run && cycleReq(runIdx)
+  histogram.io.reqId.bits := reqId
+  histogram.io.respId.valid := state === s_run && cycleResp(runIdx)
+  histogram.io.respId.bits := respId
+  histogram.io.cycleCountEnable := true.B
+  histogram.io.readout.enable := state.isOneOf(s_readInit, s_readout)
+  histogram.io.readout.addr := readAddrs(readIdx)
+
+  val initValues = Reg(Vec(readExpected.size, UInt(dataBits.W)))
+  val initWriteIdx = RegNext(RegNext(readIdx))
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
+  val readData = Cat(histogram.io.readout.dataH, histogram.io.readout.dataL)
+
+  when (initValid) { initValues(initWriteIdx) := readData }
+
+  when (state === s_start && io.start) { state := s_readInit }
+  when (state === s_readInit && readDone) { state := s_run }
+  when (runDone) { state := s_readout }
+  when (state === s_readout && readDone) { state := s_done }
+
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
+
+  assert(!readValid || readCount === expectedCount)
+
+  io.finished := state === s_done
+}
+
+class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
+  val nCounters = 8
+  val nastiP = p.alterPartial({
+    case NastiKey => NastiParameters(64, 16, 4)
+  })
+  val counters = Module(new AddressRangeCounter(nCounters)(nastiP))
+
+  val (s_start :: s_readInit :: s_run :: s_readout :: s_done :: Nil) = Enum(5)
+  val state = RegInit(s_start)
+
+  val reqAddrs = VecInit(Seq(
+    0x00000, 0x2000, 0x4000, 0x6000,
+    0x4000,  0x2000, 0x0000, 0x6000).map(_.U(16.W)))
+  val reqSizes = VecInit(Seq(3, 2, 3, 1, 0, 1, 2, 3).map(_.U(3.W)))
+  val reqLens  = VecInit(Seq(0, 4, 5, 3, 1, 9, 4, 6).map(_.U(8.W)))
+
+  def computeExpected(idx: Int) = (reqLens(idx) + 1.U) << reqSizes(idx)
+
+  val readExpected = VecInit(Seq((0, 6), (1, 5), (2, 4), (3, 7)).map {
+    case (a, b) => computeExpected(a) + computeExpected(b)
+  })
+
+  val (readIdx, readDone) = Counter(state.isOneOf(s_readInit, s_readout), readExpected.size)
+  val (runIdx, runDone) = Counter(state === s_run, reqAddrs.size)
+
+  val initValues = Reg(Vec(readExpected.size, UInt(counters.counterBits.W)))
+  val initWriteIdx = RegNext(RegNext(readIdx))
+  val initValid = RegNext(RegNext(state === s_readInit, false.B), false.B)
+  val readData = Cat(counters.io.readout.dataH, counters.io.readout.dataL)
+
+  counters.io.req.valid := state === s_run
+  counters.io.req.bits.addr := reqAddrs(runIdx)
+  counters.io.req.bits.len  := reqLens(runIdx)
+  counters.io.req.bits.size := reqSizes(runIdx)
+  counters.io.readout.enable := state.isOneOf(s_readInit, s_readout)
+  counters.io.readout.addr := readIdx
+
+  when (initValid) { initValues(initWriteIdx) := readData }
+  when (state === s_start && io.start) { state := s_readInit }
+  when (state === s_readInit && readDone) { state := s_run }
+  when (runDone) { state := s_readout }
+  when (state === s_readout && readDone) { state := s_done }
+
+  val expectedCount = RegNext(RegNext(readExpected(readIdx)))
+  val readValid = RegNext(RegNext(state === s_readout, false.B), false.B)
+  val readCount = readData - RegNext(RegNext(initValues(readIdx)))
+
+  assert(!readValid || readCount === expectedCount)
+
+  io.finished := state === s_done
+}
+
+// Checks AXI4 transactions to ensure they conform to the bounds
+// set in the memory model configuration eg. Max burst lengths respected
+// NOTE: For use only in a FAME1 context
+class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends MultiIOModule {
+  val axi4 = IO(Input(new NastiIO))
+
+  assert(!axi4.ar.fire || axi4.ar.bits.len < cfg.maxReadLength.U,
+    s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+  assert(!axi4.aw.fire || axi4.aw.bits.len < cfg.maxWriteLength.U,
+    s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+}

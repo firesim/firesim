@@ -5,6 +5,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.{MultiIOModule}
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import junctions._
@@ -26,16 +27,18 @@ object WidgetMMIO {
 }
 
 // All widgets must implement this interface
+// NOTE: Changing ParameterizedBundle -> Bundle breaks PeekPokeWidgetIO when
+// outNum = 0
 abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 
-abstract class Widget(implicit p: Parameters) extends Module {
+abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
   private var _finalized = false
   protected val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs
 
-  override def io: WidgetIO
+  def io: WidgetIO
 
   val customSize: Option[BigInt] = None
   // Default case we set the region to be large enough to hold the CRs

@@ -13,6 +13,7 @@ class endpoint_t
 {
 public:
   endpoint_t(simif_t* s): sim(s) { }
+  virtual ~endpoint_t() {};
   // Initialize FPGA-hosted endpoint state -- this can't be done in the constructor
   virtual void init() = 0;
   // Does work that allows the endpoint to advance in simulation time (one or more cycles)

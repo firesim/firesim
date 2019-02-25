@@ -3,43 +3,60 @@
 package midas
 package widgets
 
+import scala.collection.immutable.ListMap
+
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 
-import scala.collection.immutable.ListMap
-
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import junctions._
-import midas.{PrintPorts}
-import midas.core.{Endpoint, HostPort, DMANastiKey}
+import midas.core.{HostPort, DMANastiKey}
 
+class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
+  def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
+    case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)
+    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => SInt(width.width.toInt.W)
+    case badType => throw new RuntimeException(s"Unexpected type in PrintBundle: ${badType}")
+  }
 
+  val args: Seq[(String, Data)] = portType.fields.collect({
+    case firrtl.ir.Field(name, _, tpe) if name != "enable" => (name -> Output(regenLeafType(tpe)))
+  })
 
-class PrintRecord(es: Seq[(String, Int)]) extends Record {
-  val elements = ListMap((es map {
-    case (name, width) => name -> Output(UInt(width.W))
-  }):_*)
-  def cloneType = new PrintRecord(es).asInstanceOf[this.type]
+  val enable = Output(Bool())
+
+  val elements = ListMap((Seq("enable" -> enable) ++ args):_*)
+  override def cloneType = new PrintRecord(portType, formatString).asInstanceOf[this.type]
+
+  // Gets the bit position of each argument after the record has been flattened to a UInt
+  def argumentOffsets() = args.foldLeft(Seq(enable.getWidth))({
+      case (offsets, (_, data)) => data.getWidth +: offsets}).tail.reverse
+
+  def argumentWidths(): Seq[Int] = args.map(_._2.getWidth)
 }
 
-object PrintRecord {
-  def apply(port: firrtl.ir.Port): PrintRecord = {
-    val fields = port.tpe match {
-      case firrtl.ir.BundleType(fs) => fs map (f => f.name -> firrtl.bitWidth(f.tpe).toInt)
-    }
-    new PrintRecord(fields)
-  }
+
+class PrintRecordBag(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
+  val ports: Seq[(String, PrintRecord)] = printPorts.collect({
+    case (firrtl.ir.Port(_, name, _, tpe @ firrtl.ir.BundleType(_)), formatString) =>
+      name.stripPrefix(prefix) -> new PrintRecord(tpe, formatString)
+  })
+
+  val elements = ListMap(ports:_*)
+  override def cloneType = new PrintRecordBag(prefix, printPorts).asInstanceOf[this.type]
+
+  // Generates a Bool indicating if at least one Printf has it's enable set on this cycle
+  def hasEnabledPrint(): Bool = elements.map(_._2.enable).foldLeft(false.B)(_ || _)
 }
 
 class PrintRecordEndpoint extends Endpoint {
   var initialized = false
-  var printRecordGen: PrintRecord = new PrintRecord(Seq())
+  var printRecordGen: PrintRecordBag = new PrintRecordBag("dummy", Seq())
 
   def matchType(data: Data) = data match {
-    case channel: PrintRecord =>
+    case channel: PrintRecordBag =>
       require(DataMirror.directionOf(channel) == Direction.Output, "PrintRecord has unexpected direction")
       initialized = true
       printRecordGen = channel.cloneType
@@ -53,108 +70,143 @@ class PrintRecordEndpoint extends Endpoint {
   override def widgetName = "PrintWidget"
 }
 
-class PrintWidgetIO(private val record: PrintRecord)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class PrintWidgetIO(private val record: PrintRecordBag)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(record))
-  val dma = if (p(HasDMAChannel)) {
-    Some(Flipped(new NastiIO()( p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
-  } else {
-    None
-  }
-  val address = if (p(HasDMAChannel)) {
-    throw new RuntimeException("Damn it Howie.")
-  } else {
-    None
-  }
 }
 
-class PrintWidget(printRecord: PrintRecord)(implicit p: Parameters) extends EndpointWidget()(p) with HasChannels {
+class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends EndpointWidget()(p)
+    with UnidirectionalDMAToHostCPU {
   val io = IO(new PrintWidgetIO(printRecord))
+  lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
+  lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
+
   val printPort = io.hPort.hBits
-  val fire = Wire(Bool())
-  val cycles = Reg(UInt(48.W))
-  val enable = RegInit(false.B)
-  val enableAddr = attach(enable, "enable")
-  val printAddrs = collection.mutable.ArrayBuffer[Int]()
-  val countAddrs = collection.mutable.ArrayBuffer[Int]()
-  val channelWidth = if (p(HasDMAChannel)) io.dma.get.nastiXDataBits else io.ctrl.nastiXDataBits
-  val printWidth = (printPort.elements foldLeft 56)(_ + _._2.getWidth - 1)
-  val valid = (printPort.elements foldLeft false.B)( _ || _._2(0))
-  val ps = printPort.elements.toSeq map (_._2 >> 1)
-  val vs = printPort.elements.toSeq map (_._2(0))
-  val data = Cat(Cat(ps.reverse), Cat(vs.reverse) | 0.U(8.W), cycles)
-  /* FIXME */ if (p(HasDMAChannel)) assert(printWidth <= channelWidth)
+  // Pick a padded token width that's a power of 2 bytes, including enable bit
+  val reservedBits = 1 // Just print-wide enable
+  val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + reservedBits))
+  val idleCycleBits = math.min(16, pow2Bits) - reservedBits
+  // The number of tokens that fill a single DMA beat
+  val packingRatio = if (pow2Bits < dma.nastiXDataBits) Some(dma.nastiXDataBits/pow2Bits) else None
 
-  val prints = (0 until printWidth by channelWidth).zipWithIndex map { case (off, i) =>
-    val width = channelWidth min (printWidth - off)
-    val wires = Wire(Decoupled(UInt(width.W)))
-    // val queue = Queue(wires, 8 * 1024)
-    val queue = BRAMQueue(wires, 8 * 1024)
-    wires.bits  := data(width + off - 1, off)
-    wires.valid := fire && enable && valid
-    if (countAddrs.isEmpty) {
-      val count = RegInit(0.U(24.W))
-      count suggestName "count"
-      when (wires.fire() === queue.fire()) {
-      }.elsewhen(wires.fire()) {
-        count := count + 1.U
-      }.elsewhen(queue.fire()) {
-        count := count - 1.U
-      }
-      countAddrs += attach(count, "prints_count", ReadOnly)
-    }
+  // PROGRAMMABLE REGISTERS
+  val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
+  val startCycleH = genWOReg(Wire(UInt(32.W)), "startCycleH")
+  val endCycleL   = genWOReg(Wire(UInt(32.W)), "endCycleL")
+  val endCycleH   = genWOReg(Wire(UInt(32.W)), "endCycleH")
+  // Set after the start and end counters have been initialized; can begin consuming tokens
+  val doneInit    = genWORegInit(Wire(Bool()), "doneInit", false.B)
+  // Set at the end of simulation to flush an incomplete narrow packet
+  // Unused if printTokens >= DMA width
+  val flushNarrowPacket = WireInit(false.B)
+  Pulsify(genWORegInit(flushNarrowPacket, "flushNarrowPacket", false.B),
+          pulseLength = packingRatio.getOrElse(1))
 
-    if (p(HasDMAChannel)) {
-      io.dma.foreach({ dma =>
-        val arQueue   = Queue(dma.ar, 10)
-        val readBeats = RegInit(0.U(9.W))
-        readBeats suggestName "readBeats"
-        when(dma.r.fire()) {
-          readBeats := Mux(dma.r.bits.last, 0.U, readBeats + 1.U)
-        }
 
-        queue.ready := dma.r.ready && arQueue.valid
-        dma.r.valid := queue.valid && arQueue.valid
-        dma.r.bits.data := queue.bits
-        dma.r.bits.last := arQueue.bits.len === readBeats
-        dma.r.bits.id   := arQueue.bits.id
-        dma.r.bits.user := arQueue.bits.user
-        dma.r.bits.resp := 0.U
-        arQueue.ready := dma.r.fire() && dma.r.bits.last
+  // TOKEN CONTROL LOGIC
+  val startCycle = Cat(startCycleH, startCycleL)
+  val endCycle = Cat(endCycleH, endCycleL)
+  val currentCycle = RegInit(0.U(64.W))
+  val idleCycles =   RegInit(0.U(idleCycleBits.W))
 
-        // No write
-        dma.aw.ready := false.B
-        dma.w.ready := false.B
-        dma.b.valid := false.B
-        dma.b.bits := DontCare
-      })
-    } else {
-      printAddrs += attachDecoupledSource(queue, s"prints_data_$i")
-    }
-    wires.ready || !valid
-  }
-  fire := (prints foldLeft (io.hPort.toHost.hValid && io.tReset.valid))(_ && _)
-  io.tReset.ready := fire
-  io.hPort.toHost.hReady := fire
+  // Gate passing tokens of to software if we are not in the region of interest
+  val enable = (startCycle <= currentCycle) && (currentCycle <= endCycle)
+  val bufferReady = Wire(Bool())
+  val readyToEnqToken = !enable || bufferReady
+
+  // Token control
+  val dummyPredicate = true.B
+  val tFireHelper = DecoupledHelper(doneInit,
+                                    io.hPort.toHost.hValid,
+                                    io.tReset.valid,
+                                    readyToEnqToken,
+                                    ~flushNarrowPacket,
+                                    dummyPredicate)
+  // Alternative of the mux below rejects the queue's ready as well
+  io.tReset.ready := tFireHelper.fire(io.tReset.valid)
+  io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
-  when (fire) {
-    cycles := Mux(io.tReset.bits, 0.U, cycles + 1.U)
+  val tFire = tFireHelper.fire(dummyPredicate)
+
+  when (tFire) {
+    currentCycle := currentCycle + 1.U
   }
+
+  // PAYLOAD HANDLING
+  // TODO: Gating the prints using reset should be done by the transformation,
+  // (using a predicate carried by the annotation(?))
+  val valid = printPort.hasEnabledPrint && !io.tReset.bits
+  val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
+
+  // Delay the valid token by a cycle so that we can first enqueue an idle-cycle-encoded token
+  val dataPipe = Module(new Queue(data.cloneType, 1, pipe = true))
+  dataPipe.io.enq.bits  := data
+  dataPipe.io.enq.valid := tFire && valid && enable
+  dataPipe.io.deq.ready := bufferReady
+
+  val idleCyclesRollover = idleCycles.andR
+  when ((tFire && valid && enable) || flushNarrowPacket) {
+    idleCycles := 0.U
+  }.elsewhen(tFire && enable) {
+    idleCycles := Mux(idleCyclesRollover, 1.U, idleCycles + 1.U)
+  }
+
+  val printToken = Mux(dataPipe.io.deq.valid,
+                       dataPipe.io.deq.bits,
+                       Cat(idleCycles, 0.U(reservedBits.W)))
+
+
+  val tokenValid = tFireHelper.fire(readyToEnqToken) && enable &&
+                      (valid && idleCycles =/= 0.U || idleCyclesRollover) ||
+                   dataPipe.io.deq.valid
+
+  if (pow2Bits == dma.nastiXDataBits) {
+    outgoingPCISdat.io.enq.bits := printToken
+    outgoingPCISdat.io.enq.valid := tokenValid
+    bufferReady := outgoingPCISdat.io.enq.ready
+  } else {
+    // Pack narrow or serialize wide tokens if they do not match the size of the DMA bus
+    val mwFifoDepth = math.max(1, 1 * pow2Bits/dma.nastiXDataBits)
+    val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, dma.nastiXDataBits, mwFifoDepth))
+    outgoingPCISdat.io.enq <> widthAdapter.io.out
+    // If packing, we need to be able to flush an incomplete beat to the FIFO,
+    // or we'll lose [0, packingRatio - 1] tokens at the end of simulation
+    packingRatio match {
+      case None =>
+        widthAdapter.io.in.bits := printToken
+        widthAdapter.io.in.valid := tokenValid
+      case Some(_) =>
+        widthAdapter.io.in.bits :=  printToken
+        widthAdapter.io.in.valid := tokenValid || flushNarrowPacket
+    }
+    bufferReady := widthAdapter.io.in.ready
+  }
+
+  // HEADER GENERATION
+  // The LSB corresponding to the enable bit of the print
+  val widths = (printRecord.elements.map(_._2.getWidth))
+
+  // C-types for emission
+  val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
+    UInt32(offsets.head.value + width) +: offsets}).tail.reverse
+
+  val argumentCounts  = printRecord.ports.map(_._2.args.size).map(UInt32(_))
+  val argumentWidths  = printRecord.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
+  val argumentOffsets = printRecord.ports.map(_._2.argumentOffsets.map(UInt32(_)))
+  val formatStrings   = printRecord.ports.map(_._2.formatString).map(CStrLit)
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
-    sb.append(genComment("Print Widget"))
-    sb.append(genMacro("PRINTS_NUM", UInt32(printPort.elements.size)))
-    sb.append(genMacro("PRINTS_CHUNKS", UInt32(prints.size)))
-    sb.append(genMacro("PRINTS_ENABLE", UInt32(base + enableAddr)))
-    sb.append(genMacro("PRINTS_COUNT_ADDR", UInt32(base + countAddrs.head)))
-    sb.append(genArray("PRINTS_WIDTHS", printPort.elements.toSeq map (x => UInt32(x._2.getWidth))))
-    if (!p(HasDMAChannel)) {
-      sb.append(genArray("PRINTS_DATA_ADDRS", printAddrs.toSeq map (x => UInt32(base + x))))
-    } else {
-      sb.append(genMacro("HAS_DMA_CHANNEL"))
-    }
+    val headerWidgetName = getWName.toUpperCase
+    super.genHeader(base, sb)
+    sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printRecord.ports.size)))
+    sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
+    sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",
+                             UInt32(((1 << idleCycleBits) - 1) << reservedBits)))
+    sb.append(genArray(s"${headerWidgetName}_print_offsets", baseOffsets))
+    sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
+    sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))
+    sb.append(genArray(s"${headerWidgetName}_argument_widths", argumentWidths))
   }
-
   genCRFile()
 }

@@ -1,46 +1,54 @@
 // See LICENSE for license details.
 
-package midas
-package core
+package midas.models
 
-import freechips.rocketchip.amba.axi4.AXI4Bundle
-import freechips.rocketchip.config.Parameters
+import midas.core.{HostPort, MemNastiKey, IsRationalClockRatio, UnityClockRatio}
+import midas.widgets._
+import junctions._
+
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.amba.axi4._
 
 import chisel3._
 import chisel3.util._
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
-import widgets._
-import junctions.{NastiIO, NastiKey, NastiParameters}
-import scala.collection.mutable.{ArrayBuffer, HashSet}
 
-trait Endpoint {
-  protected val channels = ArrayBuffer[(String, Record)]()
-  protected val wires = HashSet[Bits]()
-  def clockRatio: IsRationalClockRatio = UnityClockRatio
-  def matchType(data: Data): Boolean
-  def widget(p: Parameters): EndpointWidget
-  def widgetName: String = getClass.getSimpleName
-  final def size = channels.size
-  final def apply(wire: Bits) = wires(wire)
-  final def apply(i: Int) = channels(i)
-  def add(name: String, channel: Data) {
-    val (ins, outs) = SimUtils.parsePorts(channel)
-    wires ++= (ins ++ outs).unzip._1
-    channels += (name -> channel.asInstanceOf[Record])
+// Note: NASTI -> legacy rocket chip implementation of AXI4
+case object MemModelKey extends Field[Parameters => FASEDMemoryTimingModel]
+case object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
+
+// A workaround for passing more information about the diplomatic graph to the
+// memory model This drops the edge parameters into the bundle, which can be
+// consumed by the endpoint
+class AXI4BundleWithEdge(params: AXI4BundleParameters, val edge: AXI4EdgeParameters)
+    extends AXI4Bundle(params) {
+  override def cloneType() = new AXI4BundleWithEdge(params, edge).asInstanceOf[this.type]
+}
+
+object AXI4BundleWithEdge {
+  // this is type returned by a diplomatic nodes's in() and out() methods
+  def apply(tuple: (AXI4Bundle, AXI4EdgeParameters)) = tuple match {
+    case (b, e) => new AXI4BundleWithEdge(b.params, e)
   }
 }
 
+
 abstract class SimMemIO extends Endpoint {
+  override def widgetName = "MemModel"
   // This is hideous, but we want some means to get the widths of the target
   // interconnect so that we can pass that information to the widget the
   // endpoint will instantiate.
   var targetAXI4Widths = NastiParameters(0,0,0)
+  var targetAXI4Edge: Option[AXI4EdgeParameters] = None
   var initialized = false
   override def add(name: String, channel: Data) {
     initialized = true
     super.add(name, channel)
     targetAXI4Widths = channel match {
+      case axi4: AXI4BundleWithEdge => NastiParameters(axi4.r.bits.data.getWidth,
+                                               axi4.ar.bits.addr.getWidth,
+                                               axi4.ar.bits.id.getWidth)
       case axi4: AXI4Bundle => NastiParameters(axi4.r.bits.data.getWidth,
                                                axi4.ar.bits.addr.getWidth,
                                                axi4.ar.bits.id.getWidth)
@@ -49,6 +57,10 @@ abstract class SimMemIO extends Endpoint {
                                             axi4.ar.bits.id.getWidth)
       case _ => throw new RuntimeException("Unexpected channel type passed to SimMemIO")
     }
+    targetAXI4Edge = channel match {
+      case b: AXI4BundleWithEdge => Some(b.edge)
+      case _ => None
+    }
   }
 
   private def getChannelAXI4Parameters = {
@@ -56,16 +68,16 @@ abstract class SimMemIO extends Endpoint {
     targetAXI4Widths
   }
 
-  def widget(p: Parameters) = {
-    val param = p alterPartial ({ case NastiKey => getChannelAXI4Parameters })
-    (p(MemModelKey): @unchecked) match {
-      case Some(modelGen) => modelGen(param)
-      case None => new NastiWidget()(param)
-    }
+  def widget(p: Parameters): FASEDMemoryTimingModel = {
+    val param = p.alterPartial({
+      case NastiKey => getChannelAXI4Parameters
+      case FasedAXI4Edge => targetAXI4Edge
+    })
+    p(MemModelKey)(param)
   }
 }
 
-class SimNastiMemIO(
+class FASEDNastiEndpoint(
     override val clockRatio: IsRationalClockRatio = UnityClockRatio
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
@@ -75,7 +87,7 @@ class SimNastiMemIO(
   }
 }
 
-class SimAXI4MemIO(
+class FASEDAXI4Endpoint(
     override val clockRatio: IsRationalClockRatio = UnityClockRatio
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
@@ -83,9 +95,4 @@ class SimAXI4MemIO(
       directionOf(channel.w.valid) == ActualDirection.Output
     case _ => false
   }
-}
-
-case class EndpointMap(endpoints: Seq[Endpoint]) {
-  def get(data: Data) = endpoints find (_ matchType data)
-  def ++(x: EndpointMap) = EndpointMap(endpoints ++ x.endpoints) 
 }

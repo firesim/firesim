@@ -6,28 +6,29 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
-import midas.core.DMANastiKey
+
+import midas.core.{DMANastiKey, HostMemNumChannels, HostMemChannelNastiKey}
 
 case object AXIDebugPrint extends Field[Boolean]
 
-class F1ShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
+class F1ShimIO(implicit val p: Parameters) extends Bundle {
   val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-  val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(SlaveNastiKey) }))
+  val slave  = Vec(p(HostMemNumChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
 class F1Shim(simIo: midas.core.SimWrapperIO)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new F1ShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
-  val headerConsts = List(
+  val headerConsts = List[(String, Long)](
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
-    "MEM_WIDTH"  -> p(SlaveNastiKey).dataBits / 8,
+    "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8,
     "DMA_WIDTH"  -> p(DMANastiKey).dataBits / 8
   ) ++ top.headerConsts
 
-  val cyclecount = Reg(init = UInt(0, width=64.W))
-  cyclecount := cyclecount + UInt(1)
+  val cyclecount = RegInit(0.U(64.W))
+  cyclecount := cyclecount + 1.U
 
   if (p(AXIDebugPrint)) {
     // print all transactions
@@ -156,80 +157,84 @@ class F1Shim(simIo: midas.core.SimWrapperIO)
         io.dma.r.bits.user)
     }
 
-    when (io.slave.aw.fire()) {
-      printf("[slave,awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
-        cyclecount,
+  when (io.slave(0).aw.fire()) {
+    printf("[slave,awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
+      cyclecount,
 
-        io.slave.aw.bits.addr,
-        io.slave.aw.bits.len,
-        io.slave.aw.bits.size,
-        io.slave.aw.bits.burst,
-        io.slave.aw.bits.lock,
-        io.slave.aw.bits.cache,
-        io.slave.aw.bits.prot,
-        io.slave.aw.bits.qos,
-        io.slave.aw.bits.region,
-        io.slave.aw.bits.id,
-        io.slave.aw.bits.user
-        )
-    }
-
-    when (io.slave.w.fire()) {
-      printf("[slave,wfire,%x] data %x, last %x, id %x, strb %x, user %x\n",
-        cyclecount,
-
-        io.slave.w.bits.data,
-        io.slave.w.bits.last,
-        io.slave.w.bits.id,
-        io.slave.w.bits.strb,
-        io.slave.w.bits.user
-        )
-    }
-
-    when (io.slave.b.fire()) {
-      printf("[slave,bfire,%x] resp %x, id %x, user %x\n",
-        cyclecount,
-
-        io.slave.b.bits.resp,
-        io.slave.b.bits.id,
-        io.slave.b.bits.user
-        )
-    }
-
-    when (io.slave.ar.fire()) {
-      printf("[slave,arfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
-        cyclecount,
-
-        io.slave.ar.bits.addr,
-        io.slave.ar.bits.len,
-        io.slave.ar.bits.size,
-        io.slave.ar.bits.burst,
-        io.slave.ar.bits.lock,
-        io.slave.ar.bits.cache,
-        io.slave.ar.bits.prot,
-        io.slave.ar.bits.qos,
-        io.slave.ar.bits.region,
-        io.slave.ar.bits.id,
-        io.slave.ar.bits.user
-        )
-    }
-
-    when (io.slave.r.fire()) {
-      printf("[slave,rfire,%x] resp %x, data %x, last %x, id %x, user %x\n",
-        cyclecount,
-
-        io.slave.r.bits.resp,
-        io.slave.r.bits.data,
-        io.slave.r.bits.last,
-        io.slave.r.bits.id,
-        io.slave.r.bits.user
-        )
-    }
+      io.slave(0).aw.bits.addr,
+      io.slave(0).aw.bits.len,
+      io.slave(0).aw.bits.size,
+      io.slave(0).aw.bits.burst,
+      io.slave(0).aw.bits.lock,
+      io.slave(0).aw.bits.cache,
+      io.slave(0).aw.bits.prot,
+      io.slave(0).aw.bits.qos,
+      io.slave(0).aw.bits.region,
+      io.slave(0).aw.bits.id,
+      io.slave(0).aw.bits.user
+      )
   }
+
+  when (io.slave(0).w.fire()) {
+    printf("[slave(0),wfire,%x] data %x, last %x, id %x, strb %x, user %x\n",
+      cyclecount,
+
+      io.slave(0).w.bits.data,
+      io.slave(0).w.bits.last,
+      io.slave(0).w.bits.id,
+      io.slave(0).w.bits.strb,
+      io.slave(0).w.bits.user
+      )
+  }
+
+  when (io.slave(0).b.fire()) {
+    printf("[slave(0),bfire,%x] resp %x, id %x, user %x\n",
+      cyclecount,
+
+      io.slave(0).b.bits.resp,
+      io.slave(0).b.bits.id,
+      io.slave(0).b.bits.user
+      )
+  }
+
+  when (io.slave(0).ar.fire()) {
+    printf("[slave(0),arfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, region %x, id %x, user %x\n",
+      cyclecount,
+
+      io.slave(0).ar.bits.addr,
+      io.slave(0).ar.bits.len,
+      io.slave(0).ar.bits.size,
+      io.slave(0).ar.bits.burst,
+      io.slave(0).ar.bits.lock,
+      io.slave(0).ar.bits.cache,
+      io.slave(0).ar.bits.prot,
+      io.slave(0).ar.bits.qos,
+      io.slave(0).ar.bits.region,
+      io.slave(0).ar.bits.id,
+      io.slave(0).ar.bits.user
+      )
+  }
+
+  when (io.slave(0).r.fire()) {
+    printf("[slave(0),rfire,%x] resp %x, data %x, last %x, id %x, user %x\n",
+      cyclecount,
+
+      io.slave(0).r.bits.resp,
+      io.slave(0).r.bits.data,
+      io.slave(0).r.bits.last,
+      io.slave(0).r.bits.id,
+      io.slave(0).r.bits.user
+      )
+  }
+ }
+
 
   top.io.ctrl <> io.master
   top.io.dma  <> io.dma
-  io.slave <> top.io.mem
+  //io.slave <> top.io.mem
+  io.slave.zip(top.io.mem).foreach {
+    case (slave_i, top_mem_i) => slave_i <> top_mem_i
+  }
 
   val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 4097)
   top.io.ctrl.aw.bits.id := wCounterValue

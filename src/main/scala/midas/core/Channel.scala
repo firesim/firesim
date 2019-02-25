@@ -92,7 +92,7 @@ class WireChannel(
     io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
     io.trace := DontCare
-    io.trace.valid := Bool(false)
+    io.trace.valid := false.B
   }
 }
 
@@ -155,6 +155,42 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
   val host = new HostReadyValid
   override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
+
+  def fwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
+    val hValidPrev = RegNext(host.hValid, false.B)
+    val hReadyPrev = RegNext(host.hReady)
+    val hFirePrev = hValidPrev && hReadyPrev
+    val tPrev = RegNext(target)
+    val prefix = suggestedName match {
+      case Some(name) => name + ": "
+      case None => ""
+    }
+    assert(!hValidPrev || hFirePrev || host.hValid,
+      s"${prefix}hValid de-asserted without handshake, violating fwd token irrevocability")
+    assert(!hValidPrev || hFirePrev || tPrev.valid === target.valid,
+      s"${prefix}tValid transitioned without host handshake, violating fwd token irrevocability")
+    assert(!hValidPrev || hFirePrev || tPrev.bits.asUInt() === target.bits.asUInt(),
+      s"${prefix}tBits transitioned without host handshake, violating fwd token irrevocability")
+    assert(!hFirePrev  || tPrev.fire || !tPrev.valid,
+      s"${prefix}tValid deasserted without prior target handshake, violating target-queue irrevocability")
+    assert(!hFirePrev  || tPrev.fire || !tPrev.valid || tPrev.bits.asUInt() === target.bits.asUInt(),
+      s"${prefix}tBits transitioned without prior target handshake, violating target-queue irrevocability")
+  }
+
+  def revIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
+    val prefix = suggestedName match {
+      case Some(name) => name + ": "
+      case None => ""
+    }
+    val hReadyPrev = RegNext(host.hReady, false.B)
+    val hValidPrev = RegNext(host.hValid)
+    val tReadyPrev = RegNext(target.ready)
+    val hFirePrev = hReadyPrev && hValidPrev
+    assert(hFirePrev || !hReadyPrev || host.hReady,
+      s"${prefix}hReady de-asserted, violating token irrevocability")
+    assert(hFirePrev || !hReadyPrev || tReadyPrev === target.ready,
+      s"${prefix}tReady de-asserted, violating token irrevocability")
+  }
 }
 
 object SimReadyValid {
@@ -181,16 +217,126 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
   override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
-class ReadyValidChannel[T <: Data](
+abstract class ReadyValidChannel[T <: Data](gen: T)(implicit p: Parameters) extends Module {
+  val io = IO(new ReadyValidChannelIO(gen))
+}
+
+object ReadyValidChannel {
+  def apply[T <: Data](
+    gen: T,
+    flipped: Boolean,
+    n: Int = 2,
+    clockRatio: IsRationalClockRatio = UnityClockRatio)(implicit p: Parameters): ReadyValidChannel[T] = {
+    if (clockRatio.isUnity) {
+      Module(new SyncReadyValidChannel(gen, flipped, n))
+    } else {
+      Module(new CDCReadyValidChannel(gen, flipped, n, clockRatio))
+    }
+  }
+}
+class SyncReadyValidChannel[T <: Data](
     gen: T,
     flipped: Boolean,
     n: Int = 2, // Target queue depth
     // Clock ratio (N/M) of deq interface (N) vs enq interface (M)
     clockRatio: IsRationalClockRatio = UnityClockRatio
-  )(implicit p: Parameters) extends Module {
+  )(implicit p: Parameters) extends ReadyValidChannel(gen)(p) {
   require(clockRatio.isReciprocal || clockRatio.isIntegral)
+  require(p(ChannelLen) > 1)
+  require(n > 1, "Single entry RVChannels have not been tested.")
 
-  val io = IO(new ReadyValidChannelIO(gen))
+  // Stores tokens with valid target-data that have been successfully enqueued
+  val target = Module(new Queue(gen, n))
+  // Stores a bit indicating if a given token contained valid target-data
+  // 1 = there was a target handshake; 0 = no target handshake
+  val tokens = Module(new Queue(Bool(), p(ChannelLen)))
+
+  target.reset := io.targetReset.bits && io.targetReset.valid
+  io.targetReset.ready := true.B // TODO: is it ok?
+
+  // If there are no token available, the deq-side has advanced ahead 1 (local) target-cycle
+  val deqAhead = tokens.io.count === 0.U
+  // If there are N > 1 tokens available, the enq has advanced ahead N-1 (local) target-cycles
+  val enqAhead = tokens.io.count  > 1.U
+  val coupled = !deqAhead && !enqAhead
+
+  target.io.enq.bits  := io.enq.target.bits
+  target.io.enq.valid := io.enq.host.fire && io.enq.target.fire
+  tokens.io.enq.bits  := io.enq.target.fire
+  tokens.io.enq.valid := io.enq.host.fire // Warning: unneeded dependency on tokens.io.enq.ready
+
+  // Track the number of tokens with valid target-data that should be visible
+  // to the dequeuer. This allows the enq-side model to advance ahead of the deq-side model
+  val numTValid = RegInit(0.U(log2Ceil(n+1).W))
+  val tValid = tokens.io.deq.bits || numTValid =/= 0.U
+  val newTValid = tokens.io.deq.fire && tokens.io.deq.bits
+  val tValidConsumed = io.deq.host.fire && io.deq.target.fire
+
+  // The deq-domain can also advance ahead of the enq domain by a cycle; record if there was a target-land
+  // handshake, so we can expose the right target-ready value in the enq-ready token
+  val tQWasFull = RegEnable(!target.io.enq.ready, false.B, io.deq.host.fire)
+  // The only case where we don't know the value of tReady (and thus, can't
+  // assert hReady), is when the enq domain has slipped ahead and the target
+  // queue is full. When the deq domain advances, it may dequeue some entries
+  io.enq.host.hReady  := !(enqAhead && !target.io.enq.ready)
+  // tReady can always be asserted except for two cases
+  // 1) the deq domain is ahead, and the target queue was full on the previous deq-cycle
+  // 2) the domains are in the same cycle and the target queue is full
+  io.enq.target.ready := !((deqAhead && tQWasFull) ||
+                           (coupled  && !target.io.enq.ready))
+
+  // The enq domain is easier. Dequeue target-valid tokens on handshakes
+  target.io.deq.ready := io.deq.target.ready && tValid && io.deq.host.fire
+  io.deq.target.bits  := target.io.deq.bits
+  // Don't present valid target-payloads that were enqueued in the "future" (when the
+  // enq domain has slipped ahead) (see tValid)
+  io.deq.target.valid := target.io.deq.valid && tValid
+
+  when(newTValid && !tValidConsumed) {
+    numTValid := numTValid + 1.U
+  }.elsewhen(!newTValid && tValidConsumed) {
+    numTValid := numTValid - 1.U
+  }
+
+  // Enqueuing and dequeuing domains have the same frequency
+  // The token queue can be directly coupled between domains
+  io.deq.host.hValid := tokens.io.deq.valid
+  tokens.io.deq.ready := io.deq.host.hReady
+
+  if (p(EnableSnapshot)) {
+    val wires = Wire(ReadyValidTrace(gen))
+    val targetFace = if (flipped) io.deq.target else io.enq.target
+    val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
+    val readyTraceFull = Wire(Bool())
+    val validTraceFull = Wire(Bool())
+    wires.bits.bits  := targetFace.bits
+    wires.bits.valid := tokensFace.valid && targetFace.valid && !readyTraceFull && !validTraceFull
+    wires.bits.ready := tokensFace.ready
+    io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
+    wires.valid.bits  := targetFace.valid
+    wires.valid.valid := tokensFace.valid
+    wires.valid.ready := tokensFace.ready
+    io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace", Some(validTraceFull))
+    wires.ready.bits  := targetFace.ready
+    wires.ready.valid := tokensFace.valid
+    wires.ready.ready := tokensFace.ready
+    io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
+  } else {
+    io.trace := DontCare
+    io.trace.bits.valid  := false.B
+    io.trace.valid.valid := false.B
+    io.trace.ready.valid := false.B
+  }
+}
+class CDCReadyValidChannel[T <: Data](
+    gen: T,
+    flipped: Boolean,
+    n: Int = 2, // Target queue depth
+    // Clock ratio (N/M) of deq interface (N) vs enq interface (M)
+    clockRatio: IsRationalClockRatio
+  )(implicit p: Parameters) extends ReadyValidChannel(gen)(p) {
+  require(!clockRatio.isUnity)
+
   // Stores tokens with valid target-data that have been successfully enqueued
   val target = Module(new Queue(gen, n))
   // Stores a bit indicating if a given token contained valid target-data
@@ -226,14 +372,10 @@ class ReadyValidChannel[T <: Data](
 
   // Enqueuing and dequeuing domains have the same frequency
   // The token queue can be directly coupled between domains
-  if (clockRatio.isUnity) {
-    io.deq.host.hValid := tokens.io.deq.valid
-    tokens.io.deq.ready := io.deq.host.hReady
-  }
   // Dequeuing domain is faster
   // Each token in the "token" queue represents a token in the slow domain
   // Issue N output tokens per entry in the token queue
-  else if (clockRatio.isIntegral) {
+  if (clockRatio.isIntegral) {
     val deqTokenCount = RegInit((clockRatio.numerator - 1).U(log2Ceil(clockRatio.numerator).W))
     deqTokenCount.suggestName("deqTokenCount")
     tokens.io.deq.ready := false.B
@@ -261,33 +403,12 @@ class ReadyValidChannel[T <: Data](
                                 enqTokensRemaining - 1.U)
     }
   }
-
-
-  if (p(EnableSnapshot)) {
-    val wires = Wire(ReadyValidTrace(gen))
-    val targetFace = if (flipped) io.deq.target else io.enq.target
-    val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
-    val readyTraceFull = Wire(Bool())
-    val validTraceFull = Wire(Bool())
-    wires.bits.bits  := targetFace.bits
-    wires.bits.valid := tokensFace.valid && targetFace.valid && !readyTraceFull && !validTraceFull
-    wires.bits.ready := tokensFace.ready
-    io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
-    wires.valid.bits  := targetFace.valid
-    wires.valid.valid := tokensFace.valid
-    wires.valid.ready := tokensFace.ready
-    io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace", Some(validTraceFull))
-    wires.ready.bits  := targetFace.ready
-    wires.ready.valid := tokensFace.valid
-    wires.ready.ready := tokensFace.ready
-    io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
-  } else {
-    io.trace := DontCare
-    io.trace.bits.valid  := Bool(false)
-    io.trace.valid.valid := Bool(false)
-    io.trace.ready.valid := Bool(false)
-  }
+  io.trace := DontCare
+  io.trace.bits.valid  := false.B
+  io.trace.valid.valid := false.B
+  io.trace.ready.valid := false.B
 }
+
 
 class ReadyValidChannelUnitTest(
     clockRatio: IsRationalClockRatio = UnityClockRatio,
@@ -300,7 +421,14 @@ class ReadyValidChannelUnitTest(
 
   val payloadWidth = log2Ceil(numNonEmptyTokens + 1)
 
-  val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), flipped = false, clockRatio = clockRatio))
+  val dut = if (clockRatio.isUnity) {
+    val syncRVCh = Module(new SyncReadyValidChannel(UInt(payloadWidth.W), flipped = false))
+    // Check that the queue's backpressure is queue-like
+    syncRVCh.io.enq.revIrrevocabilityAssertions(Some("Decoupled Channel Enq"))
+    syncRVCh
+  } else {
+    Module(new CDCReadyValidChannel(UInt(payloadWidth.W), flipped = false, clockRatio = clockRatio))
+  }
   // Count host-level handshakes on tokens
   val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))
   val outputTokenNum     = RegInit(0.U(log2Ceil(timeout).W))

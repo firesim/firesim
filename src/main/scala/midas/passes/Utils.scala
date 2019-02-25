@@ -67,11 +67,43 @@ object Utils {
     c copy (modules = modules map (_ map updateModNames), main = nameMap(c.main))
   }
 
+  // Takes a circuit state and writes it out to the target-directory by selecting
+  // an appropriate emitter for its form
+  def writeState(state: CircuitState, name: String) {
+    val td = state.annotations.collectFirst({ case TargetDirAnnotation(value) => value })
+    val file = td match {
+      case Some(dir) => new File(dir, name)
+      case None      => new File(name)
+    }
+    val writer = new java.io.FileWriter(file)
+    val emitter = state.form match {
+      case LowForm  => new LowFirrtlEmitter
+      case MidForm  => new MiddleFirrtlEmitter
+      case HighForm => new HighFirrtlEmitter
+      case        _ => throw new RuntimeException("Cannot select emitter for unrecognized form.")
+    }
+    emitter.emit(state, writer)
+    writer.close
+  }
+
   // Takes a circuitState that has been emitted and writes the result to file
   def writeEmittedCircuit(state: CircuitState, file: File) {
     val f = new FileWriter(file)
     f.write(state.getEmittedCircuit.value)
     f.close
+  }
+}
+
+// Writes out the circuit to a file for debugging
+class EmitFirrtl(fileName: String) extends firrtl.Transform {
+
+  def inputForm = HighForm
+  def outputForm = HighForm
+  override def name = s"[MIDAS] Debugging Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    Utils.writeState(state, fileName)
+    state
   }
 }
 

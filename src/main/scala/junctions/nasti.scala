@@ -161,7 +161,7 @@ object NastiWriteAddressChannel {
     aw.len := len
     aw.size := size
     aw.burst := burst
-    aw.lock := Bool(false)
+    aw.lock := false.B
     aw.cache := CACHE_DEVICE_NOBUF
     aw.prot := AXPROT(false, false, false)
     aw.qos := UInt("b0000")
@@ -181,7 +181,7 @@ object NastiReadAddressChannel {
     ar.len := len
     ar.size := size
     ar.burst := burst
-    ar.lock := Bool(false)
+    ar.lock := false.B
     ar.cache := CACHE_DEVICE_NOBUF
     ar.prot := AXPROT(false, false, false)
     ar.qos := UInt(0)
@@ -193,7 +193,7 @@ object NastiReadAddressChannel {
 
 object NastiWriteDataChannel {
   def apply(data: UInt, strb: Option[UInt] = None,
-            last: Bool = Bool(true), id: UInt = UInt(0))
+            last: Bool = true.B, id: UInt = UInt(0))
            (implicit p: Parameters): NastiWriteDataChannel = {
     val w = Wire(new NastiWriteDataChannel)
     w.strb := strb.getOrElse(Fill(w.nastiWStrobeBits, UInt(1, 1)))
@@ -206,7 +206,7 @@ object NastiWriteDataChannel {
 }
 
 object NastiReadDataChannel {
-  def apply(id: UInt, data: UInt, last: Bool = Bool(true), resp: UInt = UInt(0))(
+  def apply(id: UInt, data: UInt, last: Bool = true.B, resp: UInt = UInt(0))(
       implicit p: Parameters) = {
     val r = Wire(new NastiReadDataChannel)
     r.id := id
@@ -267,15 +267,15 @@ class NastiArbiter(val arbN: Int)(implicit p: Parameters) extends NastiModule {
     val aw_arb = Module(new RRArbiter(new NastiWriteAddressChannel, arbN))
 
     val w_chosen = Reg(UInt(width = arbIdBits))
-    val w_done = Reg(init = Bool(true))
+    val w_done = Reg(init = true.B)
 
     when (aw_arb.io.out.fire()) {
       w_chosen := aw_arb.io.chosen
-      w_done := Bool(false)
+      w_done := false.B
     }
 
     when (io.slave.w.fire() && io.slave.w.bits.last) {
-      w_done := Bool(true)
+      w_done := true.B
     }
 
     val queueSize = min((1 << nastiXIdBits) * arbN, 64)
@@ -360,11 +360,11 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
   val r_queue = Module(new Queue(new NastiReadAddressChannel, 1))
   r_queue.io.enq <> io.ar
 
-  val responding = Reg(init = Bool(false))
+  val responding = Reg(init = false.B)
   val beats_left = Reg(init = UInt(0, nastiXLenBits))
 
   when (!responding && r_queue.io.deq.valid) {
-    responding := Bool(true)
+    responding := true.B
     beats_left := r_queue.io.deq.bits.len
   }
 
@@ -378,17 +378,17 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
 
   when (io.r.fire()) {
     when (beats_left === UInt(0)) {
-      responding := Bool(false)
+      responding := false.B
     } .otherwise {
       beats_left := beats_left - UInt(1)
     }
   }
 
-  val draining = Reg(init = Bool(false))
+  val draining = Reg(init = false.B)
   io.w.ready := draining
 
-  when (io.aw.fire()) { draining := Bool(true) }
-  when (io.w.fire() && io.w.bits.last) { draining := Bool(false) }
+  when (io.aw.fire()) { draining := true.B }
+  when (io.w.fire() && io.w.bits.last) { draining := false.B }
 
   val b_queue = Module(new Queue(UInt(width = nastiWIdBits), 1))
   b_queue.io.enq.valid := io.aw.valid && !draining
@@ -419,9 +419,9 @@ class NastiRouter(nSlaves: Int, routeSel: UInt => UInt)(implicit p: Parameters)
   val ar_route = routeSel(io.master.ar.bits.addr)
   val aw_route = routeSel(io.master.aw.bits.addr)
 
-  val ar_ready = Wire(init = Bool(false))
-  val aw_ready = Wire(init = Bool(false))
-  val w_ready = Wire(init = Bool(false))
+  val ar_ready = Wire(init = false.B)
+  val aw_ready = Wire(init = false.B)
+  val w_ready = Wire(init = false.B)
 
   val queueSize = min((1 << nastiXIdBits) * nSlaves, 64)
 
@@ -514,19 +514,18 @@ class NastiRouter(nSlaves: Int, routeSel: UInt => UInt)(implicit p: Parameters)
   val all_slaves = io.slave :+ err_slave.io
 
   for (i <- 0 to nSlaves) {
-    val b_match = aw_queue.io.deq(i).matches && aw_queue.io.deq(i).data === UInt(i)
-    b_arb.io.in(i).valid := all_slaves(i).b.valid && b_match
-    b_arb.io.in(i).bits := all_slaves(i).b.bits
-    all_slaves(i).b.ready := b_arb.io.in(i).ready && b_match
+    b_arb.io.in(i) <> all_slaves(i).b
     aw_queue.io.deq(i).valid := all_slaves(i).b.fire()
     aw_queue.io.deq(i).tag := all_slaves(i).b.bits.id
 
-    val r_match = ar_queue.io.deq(i).matches && ar_queue.io.deq(i).data === UInt(i)
-    r_arb.io.in(i).valid := all_slaves(i).r.valid && r_match
-    r_arb.io.in(i).bits := all_slaves(i).r.bits
-    all_slaves(i).r.ready := r_arb.io.in(i).ready && r_match
+    r_arb.io.in(i) <> all_slaves(i).r
     ar_queue.io.deq(i).valid := all_slaves(i).r.fire() && all_slaves(i).r.bits.last
     ar_queue.io.deq(i).tag := all_slaves(i).r.bits.id
+
+    assert(!aw_queue.io.deq(i).valid || aw_queue.io.deq(i).matches,
+      s"aw_queue $i tried to dequeue untracked transaction")
+    assert(!ar_queue.io.deq(i).valid || ar_queue.io.deq(i).matches,
+      s"ar_queue $i tried to dequeue untracked transaction")
   }
 
   io.master.b <> b_arb.io.out
