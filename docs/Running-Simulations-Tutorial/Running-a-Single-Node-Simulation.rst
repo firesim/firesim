@@ -22,7 +22,7 @@ distribution. You can do this like so:
 ::
 
     cd firesim/sw/firesim-software
-    ./sw-manager.py -c br-disk.json build
+    ./marshal -v build workloads/br-base.json
 
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
@@ -55,7 +55,7 @@ We'll need to modify a couple of these lines.
 First, let's tell the manager to use the correct numbers and types of instances.
 You'll notice that in the ``[runfarm]`` section, the manager is configured to
 launch a Run Farm named ``mainrunfarm``, consisting of one ``f1.16xlarge`` and
-no ``m4.16xlarge``\ s or ``f1.2xlarge``\ s. The tag specified here allows the
+no ``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s. The tag specified here allows the
 manager to differentiate amongst many parallel run farms (each running
 a workload) that you may be operating -- but more on that later.
 
@@ -68,6 +68,7 @@ Since we only want to simulate a single node, let's switch to using one
     # per aws restrictions, this tag cannot be longer than 255 chars
     runfarmtag=mainrunfarm
     f1_16xlarges=0
+    f1_4xlarges=0
     m4_16xlarges=0
     f1_2xlarges=1
 
@@ -122,6 +123,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	runfarmtag=mainrunfarm
 
 	f1_16xlarges=0
+	f1_4xlarges=1
 	m4_16xlarges=0
 	f1_2xlarges=1
 
@@ -181,6 +183,7 @@ You should expect output like the following:
 	Running: launchrunfarm
 
 	Waiting for instance boots: f1.16xlarges
+	Waiting for instance boots: f1.4xlarges
 	Waiting for instance boots: m4.16xlarges
 	Waiting for instance boots: f1.2xlarges
 	i-0d6c29ac507139163 booted!
@@ -227,11 +230,13 @@ For a complete run, you should expect output like the following:
 	[172.30.2.174] Executing task 'infrasetup_node_wrapper'
 	[172.30.2.174] Copying FPGA simulation infrastructure for slot: 0.
 	[172.30.2.174] Installing AWS FPGA SDK on remote nodes.
-	[172.30.2.174] Unloading EDMA Driver Kernel Module.
-	[172.30.2.174] Copying AWS FPGA EDMA driver to remote node.
+	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+	[172.30.2.174] Copying AWS FPGA XDMA driver to remote node.
+	[172.30.2.174] Loading XDMA Driver Kernel Module.
 	[172.30.2.174] Clearing FPGA Slot 0.
 	[172.30.2.174] Flashing FPGA Slot: 0 with agfi: agfi-0eaa90f6bb893c0f7.
-	[172.30.2.174] Loading EDMA Driver Kernel Module.
+	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+	[172.30.2.174] Loading XDMA Driver Kernel Module.
 	The full log of this run is:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-32-02-infrasetup-9DJJCX29PF4GAIVL.log
 
@@ -464,6 +469,8 @@ Which should present you with the following:
 
 	IMPORTANT!: This will terminate the following instances:
 	f1.16xlarges
+	[]
+	f1.4xlarges
 	[]
 	m4.16xlarges
 	[]

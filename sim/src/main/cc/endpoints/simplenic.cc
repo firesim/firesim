@@ -39,7 +39,8 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 #define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
-        SIMPLENICWIDGET_struct *mmio_addrs, int simplenicno): endpoint_t(sim)
+        SIMPLENICWIDGET_struct *mmio_addrs, int simplenicno,
+        long dma_addr): endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
 
@@ -51,6 +52,7 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     this->niclog = NULL;
     this->mac_lendian = 0;
     this->LINKLATENCY = 0;
+    this->dma_addr = dma_addr;
 
 
     // construct arg parsing strings here. We basically append the endpoint
@@ -190,7 +192,7 @@ void simplenic_t::init() {
     printf("On init, %d token slots available on input.\n", input_token_capacity);
     uint32_t token_bytes_produced = 0;
     token_bytes_produced = push(
-            0x0,
+            dma_addr,
             pcis_write_bufs[1],
             BUFWIDTH*input_token_capacity);
     if (token_bytes_produced != input_token_capacity*BUFWIDTH) {
@@ -202,31 +204,12 @@ void simplenic_t::init() {
 
 //#define TOKENVERIFY
 
-// checking for token loss
-uint32_t next_token_from_fpga = 0x0;
-uint32_t next_token_from_socket = 0x0;
-
-uint64_t iter = 0;
-
-int currentround = 0;
-int nextround = 1;
-
-#ifdef TOKENVERIFY
-uint64_t timeelapsed_cycles = 0;
-#endif
-
 void simplenic_t::tick() {
     struct timespec tstart, tend;
-
-    uint32_t token_bytes_obtained_from_fpga = 0;
-    uint32_t token_bytes_sent_to_fpga = 0;
 
     //#define DEBUG_NIC_PRINT
 
     while (true) { // break when we don't have 5k tokens
-        token_bytes_obtained_from_fpga = 0;
-        token_bytes_sent_to_fpga = 0;
-
         uint32_t tokens_this_round = 0;
 
         uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
@@ -250,8 +233,9 @@ void simplenic_t::tick() {
         iter++;
         niclog_printf("read fpga iter %ld\n", iter);
 #endif
+        uint32_t token_bytes_obtained_from_fpga = 0;
         token_bytes_obtained_from_fpga = pull(
-                0x0,
+                dma_addr,
                 pcis_read_bufs[currentround],
                 BUFWIDTH * tokens_this_round);
 #ifdef DEBUG_NIC_PRINT
@@ -325,8 +309,9 @@ void simplenic_t::tick() {
             }
         }
 #endif
+        uint32_t token_bytes_sent_to_fpga = 0;
         token_bytes_sent_to_fpga = push(
-                0x0,
+                dma_addr,
                 pcis_write_bufs[currentround],
                 BUFWIDTH * tokens_this_round);
         pcis_write_bufs[currentround][BUFBYTES] = 0;
@@ -337,8 +322,6 @@ void simplenic_t::tick() {
         }
 
         currentround = (currentround + 1) % 2;
-        nextround = (nextround + 1) % 2;
-
     }
 }
 

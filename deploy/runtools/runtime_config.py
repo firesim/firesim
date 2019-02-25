@@ -100,18 +100,77 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval=-1 +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off {bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-                macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, profile_interval=profile_interval,
-                shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
-                trace_start=trace_start, trace_end=trace_end)
+
+        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
+                slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
+                linklatency=linklatency, netbw=netbw,
+                profile_interval=profile_interval, shmemportname=shmemportname,
+                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
+                trace_end=trace_end)
+
+        if blkdev is not None:
+            driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
+                slotid=slotid, driver=driver, driverArgs=driverArgs)
 
         return basecommand
 
+
+    def get_supernode_boot_simulation_command(self, slotid, all_macs,
+                                              all_rootfses, all_linklatencies,
+                                              all_netbws, profile_interval,
+                                              all_bootbinaries, trace_enable,
+                                              trace_start, trace_end,
+                                              all_shmemportnames):
+        """ return the command used to boot the simulation. this has to have
+        some external params passed to it, because not everything is contained
+        in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
+        pre-built runtime config? It kinda contains a mix of pre-built and
+        runtime parameters currently. """
+
+        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
+
+        # this monstrosity boots the simulator, inside screen, inside script
+        # the sed is in there to get rid of newlines in runtime confs
+        driver = self.get_local_driver_binaryname()
+        runtimeconf = self.get_local_runtimeconf_binaryname()
+
+        def array_to_plusargs(valuesarr, plusarg):
+            args = []
+            for index, arg in enumerate(valuesarr):
+                if arg is not None:
+                    args.append("""{}{}={}""".format(plusarg, index, arg))
+            return " ".join(args) + " "
+
+        command_macs = array_to_plusargs(all_macs, "+macaddr")
+        command_rootfses = array_to_plusargs(all_rootfses, "+blkdev")
+        command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
+        command_netbws = array_to_plusargs(all_netbws, "+netbw")
+        command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
+
+        command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
+
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+            slotid=slotid, driver=driver, runtimeconf=runtimeconf,
+            command_macs=command_macs,
+            command_rootfses=command_rootfses,
+            command_linklatencies=command_linklatencies,
+            command_netbws=command_netbws,
+            profile_interval=profile_interval,
+            command_shmemportnames=command_shmemportnames,
+            command_bootbinaries=command_bootbinaries,
+            trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)
+
+        return basecommand
+
+
+
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
-        return """sudo pkill -SIGKILL {driver}""".format(driver=driver)
+        # Note that pkill only works for names <=15 characters
+        return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
     def build_fpga_driver(self):
@@ -126,9 +185,16 @@ class RuntimeHWConfig:
         platform_config = triplet_pieces[2]
         rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
         with prefix('cd ../'), prefix('source sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
-            localcap = local("""make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config), capture=True)
+            localcap = None
+            with settings(warn_only=True):
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)
+                localcap = local(driverbuildcommand, capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
+            if localcap.failed:
+                rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
+                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
+                exit(1)
 
         self.driver_built = True
 
@@ -177,9 +243,10 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         self.runfarmtag = runtime_dict['runfarm']['runfarmtag']
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges'])
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges'])
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges'])
+        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
@@ -234,6 +301,7 @@ class RuntimeConfig:
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
+                               self.innerconf.f1_4xlarges_requested,
                                self.innerconf.f1_2xlarges_requested,
                                self.innerconf.m4_16xlarges_requested,
                                self.innerconf.runfarmtag,
@@ -255,10 +323,10 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                         terminatesomem4_16, forceterminate)
 
     def infrasetup(self):

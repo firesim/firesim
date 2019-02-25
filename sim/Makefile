@@ -18,22 +18,28 @@ TARGET_PROJECT_MAKEFRAG ?= src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 default: compile
 
 SBT ?= sbt
-SBT_FLAGS ?= -J-Xmx16G -J-Xss8M -J-XX:MaxPermSize=256M -J-XX:MaxMetaspaceSize=512M -J-XX:ReservedCodeCacheSize=1G ++2.12.4
+JVM_MEMORY ?= 16G
+SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++2.12.4
 
-sbt:
-	$(SBT) $(SBT_FLAGS) shell
-test:
-	$(SBT) $(SBT_FLAGS) test
-
-########################
-# Timestamp & Patching #
-########################
 firesim_base_dir := $(abspath .)
-timestamps = $(addprefix $(firesim_base_dir)/, $(addsuffix .timestamp, firrtl))
 
-$(firesim_base_dir)/firrtl.timestamp: $(shell find $(firesim_base_dir)/firrtl/$(src_path) -name "*.scala")
-	cd $(firesim_base_dir)/firrtl && $(SBT) $(SBT_FLAGS) publishLocal
-	touch $@
+# Manage the FIRRTL dependency manually
+FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/firrtl
+FIRRTL_JAR ?= $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
+$(FIRRTL_JAR): $(shell find $(FIRRTL_SUBMODULE_DIR)/src/main/scala -iname "*.scala")
+	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT) $(SBT_FLAGS)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
+	touch $(FIRRTL_JAR)
+	mkdir -p $(firesim_base_dir)/lib
+	cp -p $(FIRRTL_JAR) $(firesim_base_dir)/lib/
+
+firrtl: $(FIRRTL_JAR)
+.PHONY: firrtl
+
+# Phony targets for launching the sbt shell and running scalatests
+sbt: $(FIRRTL_JAR)
+	$(SBT) $(SBT_FLAGS) shell
+test: $(FIRRTL_JAR)
+	$(SBT) $(SBT_FLAGS) test
 
 PLATFORM := f1
 

@@ -2,7 +2,7 @@
 
 package firesim.passes
 
-import midas.passes.FirrtlFpgaDebugAnnotation
+import midas.targetutils.FirrtlFpgaDebugAnnotation
 
 import firrtl._
 import firrtl.ir._
@@ -38,6 +38,11 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
     val wiresOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_wires.v" ))
     //output verilog 'include' file with ila instantiation
     val ilaInstOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_inst.v" ))
+
+    // vivado >2017.4 encrypt chokes on empty .v files, so put something there...
+    portsOutputFile.append(s" \n \n \n")
+    wiresOutputFile.append(s" \n \n \n")
+    ilaInstOutputFile.append(s" \n \n \n")
 
     //vivado tcl prologue
     tclOutputFile.append(s"create_project managed_ip_project $$CL_DIR/ip/firesim_ila_ip/managed_ip_project -part xcvu9p-flgb2104-2-i -ip -force\n")

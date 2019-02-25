@@ -1,13 +1,13 @@
 package firesim
 package endpoints
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
-import midas.core._
+import midas.core.{HostPort, IsRationalClockRatio, UnityClockRatio}
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
@@ -17,17 +17,15 @@ class SimBlockDev(
   extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: BlockDeviceIO =>
-      directionOf(channel.req.valid) == ActualDirection.Output
+      DataMirror.directionOf(channel.req.valid) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = new BlockDevWidget()(p)
   override def widgetName = "BlockDevWidget"
 }
 
-class BlockDevWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+class BlockDevWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new BlockDeviceIO))
-  val dma = None
-  val address = None
 }
 
 class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {

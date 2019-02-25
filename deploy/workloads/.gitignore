@@ -1,6 +1,5 @@
 spec17-intrate
 spec17-intspeed
-gapbs
 build
 fedora-uniform/stage4-disk.img
 fedora-uniform/QEMU-ONLY-bbl
@@ -8,3 +7,5 @@ iperf3
 check-rtc-linux
 bw-test-one-instance/*.riscv
 bw-test-two-instances/*.riscv
+unittest/STRESSRUNS
+/gapbs

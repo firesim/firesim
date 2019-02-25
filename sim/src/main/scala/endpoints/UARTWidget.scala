@@ -1,12 +1,12 @@
 package firesim
 package endpoints
 
-import midas.core._
+import midas.core.{HostPort}
 import midas.widgets._
 
-import chisel3.core._
+import chisel3._
 import chisel3.util._
-import DataMirror.directionOf
+import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
@@ -14,7 +14,7 @@ import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 class SimUART extends Endpoint {
   def matchType(data: Data) = data match {
     case channel: UARTPortIO =>
-      directionOf(channel.txd) == ActualDirection.Output
+      DataMirror.directionOf(channel.txd) == Direction.Output
     case _ => false
   }
   def widget(p: Parameters) = {
@@ -28,8 +28,6 @@ class SimUART extends Endpoint {
 
 class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new UARTPortIO))
-  val dma = None
-  val address = None
 }
 
 class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {

@@ -19,6 +19,8 @@
  *
  * Reset to zero once consumed.
  */
+
+// This is fine for multiple UARTs because UARTs > uart 0 will use pty, not stdio
 char specialchar = 0;
 
 void sighand(int s) {
@@ -70,7 +72,7 @@ uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoi
         // also, for these we want to log output to file here.
         std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
         printf("UART logfile is being written to %s\n", uartlogname.c_str());
-        this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT);
+        this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT, 0644);
     }
 
     // Don't block on reads if there is nothing typed in

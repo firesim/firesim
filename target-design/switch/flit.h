@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#define BROADCAST_ADJUSTED (0xffff)
+
 /* ----------------------------------------------------
  * buffer flit operations
  *
@@ -58,13 +60,20 @@ int write_last_flit(uint8_t * send_buf, int tokenid, int is_last) {
 
 /* get dest mac from flit, then get port from mac */
 uint16_t get_port_from_flit(uint64_t flit, int current_port) {
+    uint16_t is_multicast = (flit >> 16) & 0x1;
     uint16_t flit_low = (flit >> 48) & 0xFFFF; // indicates dest
     uint16_t sendport = (__builtin_bswap16(flit_low));
+
+    if (is_multicast)
+	return BROADCAST_ADJUSTED;
+
     sendport = sendport & 0xFFFF;
     //printf("mac: %04x\n", sendport);
-    if (sendport != 0xffff) {
-        sendport = mac2port[sendport];
-    }
+
+    // At this point, we know the MAC address is not a broadcast address,
+    // so we can just look up the port in the mac2port table
+    sendport = mac2port[sendport];
+
     if (sendport == NUMDOWNLINKS) {
         // this has been mapped to "any uplink", so pick one
         int randval = rand() % NUMUPLINKS;

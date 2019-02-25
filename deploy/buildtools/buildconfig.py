@@ -12,6 +12,7 @@ class BuildConfig:
     """ This represents a SINGLE build configuration. """
     def __init__(self, name, buildconfigdict, launch_time):
         self.name = name
+        self.TARGET_PROJECT = buildconfigdict.get('TARGET_PROJECT')
         self.DESIGN = buildconfigdict['DESIGN']
         self.TARGET_CONFIG = buildconfigdict['TARGET_CONFIG']
         self.PLATFORM_CONFIG = buildconfigdict['PLATFORM_CONFIG']
@@ -24,8 +25,7 @@ class BuildConfig:
         return "BuildConfig obj:\n" + pprint.pformat(vars(self), indent=10)
 
     def get_chisel_triplet(self):
-        return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG,
-                                     self.PLATFORM_CONFIG)
+        return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
 
     def launch_build_instance(self, build_instance_market,
                           spot_interruption_behavior, spot_max_price):
@@ -55,6 +55,15 @@ class BuildConfig:
         return """{}-{}-{}""".format(self.launch_time,
                                      self.get_chisel_triplet(), self.name)
 
+    # Builds up a string for a make invocation using the tuple variables
+    def make_recipe(self, recipe):
+        return """make {} DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""".format(
+            "" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT,
+            self.DESIGN,
+            self.TARGET_CONFIG,
+            self.PLATFORM_CONFIG,
+            recipe)
+
 class GlobalBuildConfig:
     """ Configuration class for builds. This is the "global" configfile, i.e.
     sample_config_build.ini """
@@ -76,6 +85,7 @@ class GlobalBuildConfig:
             global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
         self.spot_max_price = \
                      global_build_configfile.get('afibuild', 'spotmaxprice')
+        self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
 
         # this is a list of actual builds to run
         builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))

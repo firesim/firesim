@@ -1,219 +1,46 @@
 {
-  "common_bootbinary": "bbl-vmlinux",
+  "common_bootbinary" : "bbl-vmlinux",
   "benchmark_name" : "gapbs",
-  "deliver_dir" : "gabps",
-  "common_args" : ["1"],
-  "common_files" : ["gapbs.sh", "run"],
-  "common_outputs" : ["/hpm_data"],
-  "common_simulation_outputs" : ["uartlog"],
+  "deliver_dir" : "gapbs",
+  "common_args" : [],
+  "common_files" : ["gapbs.sh"],
+  "common_simulation_outputs": ["uartlog", "memory_stats.csv"],
+  "common_outputs" : ["/output"],
   "workloads" : [
     {
-      "name": "bfs-twitter",
-      "files": ["bfs", "benchmark/graphs/twitter.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bfs-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "pr-twitter",
-      "files": ["pr", "benchmark/graphs/twitter.sg"],
-      "command": "cd /gapbs && ./gapbs.sh pr-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "cc-twitter",
-      "files": ["cc", "benchmark/graphs/twitter.sg"],
-      "command": "cd /gapbs && ./gapbs.sh cc-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bc-twitter",
-      "files": ["bc", "benchmark/graphs/twitter.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bc-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bfs-web",
-      "files": ["bfs", "benchmark/graphs/web.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bfs-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "pr-web",
-      "files": ["pr", "benchmark/graphs/web.sg"],
-      "command": "cd /gapbs && ./gapbs.sh pr-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "cc-web",
-      "files": ["cc", "benchmark/graphs/web.sg"],
-      "command": "cd /gapbs && ./gapbs.sh cc-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bc-web",
-      "files": ["bc", "benchmark/graphs/web.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bc-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bfs-road",
-      "files": ["bfs", "benchmark/graphs/road.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bfs-road",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "pr-road",
-      "files": ["pr", "benchmark/graphs/road.sg"],
-      "command": "cd /gapbs && ./gapbs.sh pr-road",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "cc-road",
-      "files": ["cc", "benchmark/graphs/road.sg"],
-      "command": "cd /gapbs && ./gapbs.sh cc-road",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bc-road",
-      "files": ["bc", "benchmark/graphs/road.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bc-road",
-      "simulation_outputs": [],
+      "name": "bc-kron",
+      "files": ["bc", "run/bc-kron.sh", "benchmark/graphs/kron.sg"],
+      "command": "cd /gapbs && ./gapbs.sh bc-kron",
       "outputs": []
     },
     {
       "name": "bfs-kron",
-      "files": ["bfs", "benchmark/graphs/kron.sg"],
+      "files": ["bfs", "run/bfs-kron.sh", "benchmark/graphs/kron.sg"],
       "command": "cd /gapbs && ./gapbs.sh bfs-kron",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "pr-kron",
-      "files": ["pr", "benchmark/graphs/kron.sg"],
-      "command": "cd /gapbs && ./gapbs.sh pr-kron",
-      "simulation_outputs": [],
       "outputs": []
     },
     {
       "name": "cc-kron",
-      "files": ["cc", "benchmark/graphs/kron.sg"],
+      "files": ["cc", "run/cc-kron.sh", "benchmark/graphs/kron.sg"],
       "command": "cd /gapbs && ./gapbs.sh cc-kron",
-      "simulation_outputs": [],
       "outputs": []
     },
     {
-      "name": "bc-kron",
-      "files": ["bc", "benchmark/graphs/kron.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bc-kron",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "tc-kron",
-      "files": ["tc", "benchmark/graphs/kronU.sg"],
-      "command": "cd /gapbs && ./gapbs.sh tc-kron",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bfs-urand",
-      "files": ["bfs", "benchmark/graphs/urand.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bfs-urand",
-      "outputs": []
-    },
-    {
-      "name": "pr-urand",
-      "files": ["pr", "benchmark/graphs/urand.sg"],
-      "command": "cd /gapbs && ./gapbs.sh pr-urand",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "cc-urand",
-      "files": ["cc", "benchmark/graphs/urand.sg"],
-      "command": "cd /gapbs && ./gapbs.sh cc-urand",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "bc-urand",
-      "files": ["bc", "benchmark/graphs/urand.sg"],
-      "command": "cd /gapbs && ./gapbs.sh bc-urand",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "tc-urand",
-      "files": ["tc", "benchmark/graphs/urandU.sg"],
-      "command": "cd /gapbs && ./gapbs.sh tc-urand",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "sssp-twitter",
-      "files": ["sssp", "benchmark/graphs/twitter.wsg"],
-      "command": "cd /gapbs && ./gapbs.sh sssp-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "sssp-web",
-      "files": ["sssp", "benchmark/graphs/web.wsg"],
-      "command": "cd /gapbs && ./gapbs.sh sssp-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "sssp-road",
-      "files": ["sssp", "benchmark/graphs/road.wsg"],
-      "command": "cd /gapbs && ./gapbs.sh sssp-road",
-      "simulation_outputs": [],
+      "name": "pr-kron",
+      "files": ["pr", "run/pr-kron.sh", "benchmark/graphs/kron.sg"],
+      "command": "cd /gapbs && ./gapbs.sh pr-kron",
       "outputs": []
     },
     {
       "name": "sssp-kron",
-      "files": ["sssp", "benchmark/graphs/kron.wsg"],
+      "files": ["sssp", "run/sssp-kron.sh", "benchmark/graphs/kron.wsg"],
       "command": "cd /gapbs && ./gapbs.sh sssp-kron",
-      "simulation_outputs": [],
       "outputs": []
     },
     {
-      "name": "sssp-urand",
-      "files": ["sssp", "benchmark/graphs/urand.wsg"],
-      "command": "cd /gapbs && ./gapbs.sh sssp-urand",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "tc-twitter",
-      "files": ["tc", "benchmark/graphs/twitterU.sg"],
-      "command": "cd /gapbs && ./gapbs.sh tc-twitter",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "tc-web",
-      "files": ["tc", "benchmark/graphs/webU.sg"],
-      "command": "cd /gapbs && ./gapbs.sh tc-web",
-      "simulation_outputs": [],
-      "outputs": []
-    },
-    {
-      "name": "tc-road",
-      "files": ["tc", "benchmark/graphs/roadU.sg"],
-      "command": "cd /gapbs && ./gapbs.sh tc-road",
-      "simulation_outputs": [],
+      "name": "tc-kron",
+      "files": ["tc", "run/tc-kron.sh", "benchmark/graphs/kronU.sg"],
+      "command": "cd /gapbs && ./gapbs.sh tc-kron",
       "outputs": []
     }
   ]

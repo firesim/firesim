@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
 #include "simif.h"
-#include "endpoints/sim_mem.h"
-#include "endpoints/fpga_memory_model.h"
+#include "endpoints/endpoint.h"
+#include "endpoints/fased_memory_timing_model.h"
 
 class PointerChaser_t: virtual simif_t
 {
@@ -24,12 +24,10 @@ public:
         mpz_set_ui(result, atoll(arg.c_str() + 9));
       }
     }
-#ifdef NASTIWIDGET_0
-    endpoints.push_back(new sim_mem_t(this, argc, argv));
-#endif
 
 #ifdef MEMMODEL_0
-    fpga_models.push_back(new FpgaMemoryModel(
+    uint64_t host_mem_offset = 0x00000000LL;
+    fpga_models.push_back(new FASEDMemoryTimingModel(
         this,
         // Casts are required for now since the emitted type can change...
         AddressMap(MEMMODEL_0_R_num_registers,
@@ -38,7 +36,7 @@ public:
                    MEMMODEL_0_W_num_registers,
                    (const unsigned int*) MEMMODEL_0_W_addrs,
                    (const char* const*) MEMMODEL_0_W_names),
-        argc, argv, "memory_stats.csv"));
+        argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
 #endif
   }
 

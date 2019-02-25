@@ -7,8 +7,16 @@ from awstools.awstools import *
 from fabric.api import *
 from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
+import time
 
 rootLogger = logging.getLogger()
+
+def remote_kmsg(message):
+    """ This will let you write whatever is passed as message into the kernel
+    log of the remote machine.  Useful for figuring what the manager is doing
+    w.r.t output from kernel stuff on the remote node. """
+    commd = """echo '{}' | sudo tee /dev/kmsg""".format(message)
+    run(commd, shell=True)
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
@@ -94,6 +102,16 @@ class F1_16(F1_Instance):
         self.instance_id = F1_16.instance_counter
         F1_16.instance_counter += 1
 
+class F1_4(F1_Instance):
+    instance_counter = 0
+    FPGA_SLOTS = 2
+
+    def __init__(self):
+        super(F1_4, self).__init__()
+        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
+        self.instance_id = F1_4.instance_counter
+        F1_4.instance_counter += 1
+
 class F1_2(F1_Instance):
     instance_counter = 0
     FPGA_SLOTS = 1
@@ -119,10 +137,11 @@ class RunFarm:
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
 
-    def __init__(self, num_f1_16, num_f1_2, num_m4_16, runfarmtag,
+    def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
                  spot_max_price):
         self.f1_16s = [F1_16() for x in range(num_f1_16)]
+        self.f1_4s = [F1_4() for x in range(num_f1_4)]
         self.f1_2s = [F1_2() for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
 
@@ -135,6 +154,9 @@ class RunFarm:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
         for index in range(len(self.f1_16s)):
             self.f1_16s[index].assign_boto3_instance_object(MockBoto3Instance())
+
+        for index in range(len(self.f1_4s)):
+            self.f1_4s[index].assign_boto3_instance_object(MockBoto3Instance())
 
         for index in range(len(self.f1_2s)):
             self.f1_2s[index].assign_boto3_instance_object(MockBoto3Instance())
@@ -149,6 +171,8 @@ class RunFarm:
         # we always sort by private IP when handling instances
         available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
             self.runfarmtag, 'f1.16xlarge'))
+        available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+            self.runfarmtag, 'f1.4xlarge'))
         available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
             self.runfarmtag, 'm4.16xlarge'))
         available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
@@ -158,18 +182,25 @@ class RunFarm:
         # confirm that we have the correct number of instances
         if not (len(available_f1_16_instances) >= len(self.f1_16s)):
             rootLogger.warning(message.format("f1.16xlarges"))
+        if not (len(available_f1_4_instances) >= len(self.f1_4s)):
+            rootLogger.warning(message.format("f1.4xlarges"))
         if not (len(available_f1_2_instances) >= len(self.f1_2s)):
             rootLogger.warning(message.format("f1.2xlarges"))
-        if not (len(available_f1_16_instances) >= len(self.f1_16s)):
+        if not (len(available_m4_16_instances) >= len(self.m4_16s)):
             rootLogger.warning(message.format("m4.16xlarges"))
 
-        #self.f1_16x_ips = get_private_ips_for_instances(f1_16_instances)
-        #self.m4_16x_ips = get_private_ips_for_instances(m4_16_instances)
-        #self.f1_2x_ips = get_private_ips_for_instances(f1_2_instances)
+        ipmessage = """Using {} instances with IPs:\n{}"""
+        rootLogger.debug(ipmessage.format("f1.16xlarge", str(get_private_ips_for_instances(available_f1_16_instances))))
+        rootLogger.debug(ipmessage.format("f1.4xlarge", str(get_private_ips_for_instances(available_f1_4_instances))))
+        rootLogger.debug(ipmessage.format("f1.2xlarge", str(get_private_ips_for_instances(available_f1_2_instances))))
+        rootLogger.debug(ipmessage.format("m4.16xlarge", str(get_private_ips_for_instances(available_m4_16_instances))))
 
         # assign boto3 instance objects to our instance objects
         for index, instance in enumerate(available_f1_16_instances):
             self.f1_16s[index].assign_boto3_instance_object(instance)
+
+        for index, instance in enumerate(available_f1_4_instances):
+            self.f1_4s[index].assign_boto3_instance_object(instance)
 
         for index, instance in enumerate(available_m4_16_instances):
             self.m4_16s[index].assign_boto3_instance_object(instance)
@@ -186,6 +217,7 @@ class RunFarm:
         spotmaxprice = self.spot_max_price
 
         num_f1_16xlarges = len(self.f1_16s)
+        num_f1_4xlarges = len(self.f1_4s)
         num_f1_2xlarges = len(self.f1_2s)
         num_m4_16xlarges = len(self.m4_16s)
 
@@ -193,6 +225,9 @@ class RunFarm:
         f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
+        f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
+                                     runinstancemarket, spotinterruptionbehavior,
+                                     spotmaxprice)
         m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
@@ -204,11 +239,12 @@ class RunFarm:
         # TODO: maybe we shouldn't do this, but just let infrasetup block. That
         # way we get builds out of the way while waiting for instances to launch
         wait_on_instance_launches(f1_16s, 'f1.16xlarges')
+        wait_on_instance_launches(f1_4s, 'f1.4xlarges')
         wait_on_instance_launches(m4_16s, 'm4.16xlarges')
         wait_on_instance_launches(f1_2s, 'f1.2xlarges')
 
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         runfarmtag = self.runfarmtag
 
@@ -216,26 +252,36 @@ class RunFarm:
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
+        f1_4_instances = instances_sorted_by_avail_ip(
+            get_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
             get_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
+        f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)
         m4_16_instance_ids = get_instance_ids_for_instances(m4_16_instances)
         f1_2_instance_ids = get_instance_ids_for_instances(f1_2_instances)
 
         argsupplied_f116 = terminatesomef1_16 != -1
+        argsupplied_f14 = terminatesomef1_4 != -1
         argsupplied_f12 = terminatesomef1_2 != -1
         argsupplied_m416 = terminatesomem4_16 != -1
 
-        if argsupplied_f116 or argsupplied_f12 or argsupplied_m416:
+        if argsupplied_f116 or argsupplied_f14 or argsupplied_f12 or argsupplied_m416:
             # In this mode, only terminate instances that are specifically supplied.
             if argsupplied_f116 and terminatesomef1_16 != 0:
                 # grab the last N instances to terminate
                 f1_16_instance_ids = f1_16_instance_ids[-terminatesomef1_16:]
             else:
                 f1_16_instance_ids = []
+
+            if argsupplied_f14 and terminatesomef1_4 != 0:
+                # grab the last N instances to terminate
+                f1_4_instance_ids = f1_4_instance_ids[-terminatesomef1_4:]
+            else:
+                f1_4_instance_ids = []
 
             if argsupplied_f12 and terminatesomef1_2 != 0:
                 # grab the last N instances to terminate
@@ -252,6 +298,8 @@ class RunFarm:
         rootLogger.critical("IMPORTANT!: This will terminate the following instances:")
         rootLogger.critical("f1.16xlarges")
         rootLogger.critical(f1_16_instance_ids)
+        rootLogger.critical("f1.4xlarges")
+        rootLogger.critical(f1_4_instance_ids)
         rootLogger.critical("m4.16xlarges")
         rootLogger.critical(m4_16_instance_ids)
         rootLogger.critical("f1.2xlarges")
@@ -266,6 +314,8 @@ class RunFarm:
         if userconfirm == "yes":
             if len(f1_16_instance_ids) != 0:
                 terminate_instances(f1_16_instance_ids, False)
+            if len(f1_4_instance_ids) != 0:
+                terminate_instances(f1_4_instance_ids, False)
             if len(m4_16_instance_ids) != 0:
                 terminate_instances(m4_16_instance_ids, False)
             if len(f1_2_instance_ids) != 0:
@@ -277,7 +327,7 @@ class RunFarm:
     def get_all_host_nodes(self):
         """ Get objects for all host nodes in the run farm that are bound to
         a real instance. """
-        allinsts = self.f1_16s + self.f1_2s + self.m4_16s
+        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
         return [inst for inst in allinsts if inst.boto3_instance_object is not None]
 
     def lookup_by_ip_addr(self, ipaddr):
@@ -307,7 +357,7 @@ class InstanceDeployManager:
         # TODO: we checkout a specific version of aws-fpga here, in case upstream
         # master is bumped. But now we have to remember to change AWS_FPGA_FIRESIM_UPSTREAM_VERSION
         # when we bump our stuff. Need a better way to do this.
-        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "2fdf23ffad944cb94f98d09eed0f34c220c522fe"
+        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "e5b68dd8d432c746f7094b54abf35334bc51b9d1"
         self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(AWS_FPGA_FIRESIM_UPSTREAM_VERSION))
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
@@ -315,54 +365,97 @@ class InstanceDeployManager:
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
-    def fpga_node_edma(self):
-        """ Copy EDMA infra to remote node. This assumes that the driver was
+    def fpga_node_xdma(self):
+        """ Copy XDMA infra to remote node. This assumes that the driver was
         already built and that a binary exists in the directory on this machine
         """
-        self.instance_logger("""Copying AWS FPGA EDMA driver to remote node.""")
+        self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run('mkdir -p /home/centos/edma/')
+            run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                '/home/centos/edma/', mirror_local_mode=True)
-            with cd('/home/centos/edma/linux_kernel_drivers/edma/'):
+                '/home/centos/xdma/', mirror_local_mode=True)
+            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
+                run('make clean')
                 run('make')
 
-    def unload_edma(self):
-        self.instance_logger("Unloading EDMA Driver Kernel Module.")
+    def unload_xdma(self):
+        self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
+
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-            run('sudo rmmod edma-drv')
+            # fpga mgmt tools seem to force load xocl after a flash now...
+            # so we just remove everything for good measure:
+            remote_kmsg("removing_xdma_start")
+            run('sudo rmmod xocl')
+            run('sudo rmmod xdma')
+            run('sudo rmmod edma')
+            remote_kmsg("removing_xdma_end")
+
+        #self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
+        #time.sleep(10)
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
                 run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+                remote_kmsg("""done_clearing_fpga{}""".format(slotno))
+
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
+                remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
+
 
     def flash_fpgas(self):
+        dummyagfi = None
         for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
             if firesimservernode is not None:
                 agfi = firesimservernode.get_agfi()
+                dummyagfi = agfi
                 self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
                 with StreamLogger('stdout'), StreamLogger('stderr'):
                     run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
                         slotno, agfi))
+
+        # We only do this because XDMA hangs if some of the FPGAs on the instance
+        # are left in the cleared state. So, if you're only using some of the
+        # FPGAs on an instance, we flash the rest with one of your images
+        # anyway. Since the only interaction we have with an FPGA right now
+        # is over PCIe where the software component is mastering, this can't
+        # break anything.
+        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Flashing FPGA Slot: {} with dummy agfi: {}.""".format(slotno, dummyagfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
+                    slotno, dummyagfi))
+
         for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
             if firesimservernode is not None:
                 self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
                 with StreamLogger('stdout'), StreamLogger('stderr'):
                     run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
-    def load_edma(self):
-        """ load the edma kernel module. """
-        self.instance_logger("Loading EDMA Driver Kernel Module.")
+        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+            self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, dummyagfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+
+
+    def load_xdma(self):
+        """ load the xdma kernel module. """
+        # fpga mgmt tools seem to force load xocl after a flash now...
+        # xocl conflicts with the xdma driver, which we actually want to use
+        # so we just remove everything for good measure before loading xdma:
+        self.unload_xdma()
+        # now load xdma
+        self.instance_logger("Loading XDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/edma/linux_kernel_drivers/edma/edma-drv.ko single_transaction_size=65536 transient_buffer_size=67108864 edma_queue_depth=1024 poll_mode=1")
+            run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
@@ -396,9 +489,10 @@ class InstanceDeployManager:
 
         files_to_copy = serv.get_required_files_local_paths()
         for filename in files_to_copy:
+            # here, filename is a pair of (local path, remote path)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 # -z --inplace
-                rsync_cap = rsync_project(local_dir=filename, remote_dir=remote_sim_rsync_dir,
+                rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
                               ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
@@ -471,17 +565,19 @@ class InstanceDeployManager:
                 self.copy_sim_slot_infrastructure(slotno)
 
             self.get_and_install_aws_fpga_sdk()
-            # unload any existing edma
-            self.unload_edma()
-            # copy edma driver
-            self.fpga_node_edma()
+            # unload any existing edma/xdma/xocl
+            self.unload_xdma()
+            # copy xdma driver
+            self.fpga_node_xdma()
+            # load xdma
+            self.load_xdma()
 
             # clear/flash fpgas
             self.clear_fpgas()
             self.flash_fpgas()
 
-            # re-load EDMA
-            self.load_edma()
+            # re-load XDMA
+            self.load_xdma()
 
             #restart (or start form scratch) ila server
             self.kill_ila_server()

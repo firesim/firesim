@@ -1,41 +1,41 @@
 Debugging Using FPGA Integrated Logic Analyzers (ILA)
 =====================================================
 
-Sometimes it takes too long to simulate FireSim on RTL simulators, and 
+Sometimes it takes too long to simulate FireSim on RTL simulators, and
 in some occasions we would also like to debug the simulation infrastructure
 itself. For these purposes, we can use the Xilinx Integrated Logic Analyzer
-resources on the FPGA. 
+resources on the FPGA.
 
-ILAs allows real time sampling of pre-selected signals during FPGA runtime, 
+ILAs allows real time sampling of pre-selected signals during FPGA runtime,
 and provided and interface for setting trigger and viewing samples waveforms
 from the FPGA. For more information about ILAs, please refer to the Xilinx
-guide on the topic
+guide on the topic.
 
-Midas provides custom Chisel annotations which allow annotating signals in the
-Chisel source code, which will automatically generate custom ILA IP for the
-fpga, and then transforme and wire the relevant signals to the ILA.
-
-ILAs consume FPGA resources, and therefore it is recommended not to annotate a
-large number of signals.
+MIDAS, in its ``targetutils`` package, provides annotations for labeling
+signals directly in the Chisel source. These will be consumed by a downstream
+FIRRTL pass which wires out the annotated signals, and binds them to an
+appropriately sized ILA instance.
 
 Annotating Signals
 ------------------------
 
-In order to annotate a signal, we must import ``midas.passes.FpgaDebugAnnotation``.
-We then simply add a relevant ``FpgaDebugAnnotation(<selected_signal>)`` with the
-desired signal as an argument.
-
-Example:
+In order to annotate a signal, we must import the
+``midas.targetutils.FpgaDebug`` annotator. FpgaDebug's apply method accepts a
+vararg of chisel3.Data. Invoke it as follows:
 
 ::
 
-    import midas.passes.FpgaDebugAnnotation
+    import midas.targetutils.FpgaDebug
 
     class SomeModuleIO(implicit p: Parameters) extends SomeIO()(p){
        val out1 = Output(Bool())
        val in1 = Input(Bool())
-       chisel3.experimental.annotate(FpgaDebugAnnotation(out1))
+       FpgaDebug(out1, in1)
     }
+
+You can annotate signals throughout FireSim, including in MIDAS and
+Rocket-Chip Chisel sources, with the only exception being the Chisel3 sources
+themselves (eg. in Chisel3.util.Queue).
 
 Note: In case the module with the annotated signal is instantiated multiple times,
 all instatiations of the annotated signal will be wired to the ILA.
@@ -68,7 +68,7 @@ Follow the instructions in the `AWS-FPGA guide for connecting xilinx hardware ma
 
 where ``<hostname or IP address>`` is the internal IP of the simulation instance (not
 the manager instance. i.e. The IP starting with 192.168.X.X).
-The probes file can be found in the manager instance under the path 
+The probes file can be found in the manager instance under the path
 ``firesim/deploy/results-build/<build_identifier>/cl_firesim/build/checkpoints/<probes_file.ltx>``
 
 Select the ILA with the description of `WRAPPER_INST/CL/CL_FIRESIM_DEBUG_WIRING_TRANSFORM`, and you may now use the ILA just as if it was on

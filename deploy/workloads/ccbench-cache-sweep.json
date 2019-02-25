@@ -1,0 +1,19 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "ccbench-cache-sweep",
+  "deliver_dir" : "/ccbench-cache-sweep/",
+  "common_files" : ["runccbench.sh", "ccbench/caches/caches"],
+  "common_args" : "",
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "post_run_hook": "python plotccbench.py",
+  "workloads" : [
+    {
+      "name": "ccbench-all",
+      "files": [],
+      "command": "cd /ccbench-cache-sweep/ && ./runccbench.sh",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

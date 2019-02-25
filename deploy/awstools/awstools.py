@@ -14,7 +14,7 @@ rootLogger = logging.getLogger()
 keyname = 'firesim'
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.4.0 - pre8-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0335b86e84e820e8d.4"
+f1_ami_name = "FPGA Developer AMI - 1.5.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-06cecb61c79496e0d.4"
 
 # users are instructed to create these in the setup instructions
 securitygroupname = 'firesim'

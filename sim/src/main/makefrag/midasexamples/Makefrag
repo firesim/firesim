@@ -1,9 +1,15 @@
 # These point at the main class of the target's Chisel generator
-PROJECT ?= firesim.midasexamples
+DESIGN_PACKAGE ?= firesim.midasexamples
 DESIGN ?= GCD
 
+TARGET_CONFIG_PACKAGE ?= firesim.midasexamples
+TARGET_CONFIG ?= NoConfig
+
+PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
+PLATFORM_CONFIG ?= DefaultF1Config
+
 base_dir = $(abspath .)
-name_tuple = $(DESIGN)
+name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 
@@ -19,12 +25,15 @@ submodules = . midas \
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
 
+common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+CONF_NAME ?= runtime.conf
 
-common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(PROJECT) $(DESIGN) $(TARGET_PROJECT) $(TARGET_CONFIG) $(PLATFORM_PROJECT) $(PLATFORM_CONFIG)
-
-$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
-	cd $(base_dir) && $(SBT) $(SBT_FLAGS) \
-	"runMain $(PROJECT).Generator midas $(DESIGN) $(patsubst $(base_dir)/%,%,$(dir $@)) $(PLATFORM) $(macro_lib)"
+$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+	mkdir -p $(@D)
+	$(SBT) $(SBT_FLAGS) \
+	"runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	# Remove once runtime conf generation is generalized, and something is always emitted
+	touch $(GENERATED_DIR)/$(CONF_NAME)
 
 ##########################
 # Driver Sources & Flags #
@@ -34,7 +43,7 @@ driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc
 
-TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(driver_dir)/midasexamples
+TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(driver_dir)/midasexamples -g
 TARGET_LD_FLAGS :=
 
 ##########################

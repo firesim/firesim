@@ -25,12 +25,12 @@
 #define CAUSE_WID 8
 #define TVAL_WID 40
 #define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
-#define TRACERV_ADDR 0x100000000L
 
 tracerv_t::tracerv_t(
-    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracerno) : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracerno, long dma_addr) : endpoint_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
+    this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
 
     this->tracefile = NULL;
@@ -86,14 +86,14 @@ void tracerv_t::tick() {
     uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
 
     #define QUEUE_DEPTH 6144
-    
-    uint64_t OUTBUF[QUEUE_DEPTH * 8];
+
+    alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
 
     if (outfull) {
         int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
 
         // TODO. as opt can mmap file and just load directly into it.
-        pull(TRACERV_ADDR, (char*)OUTBUF, QUEUE_DEPTH * 64);
+        pull(dma_addr, (char*)OUTBUF, QUEUE_DEPTH * 64);
         if (this->tracefile && can_write) {
 #ifdef HUMAN_READABLE
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
