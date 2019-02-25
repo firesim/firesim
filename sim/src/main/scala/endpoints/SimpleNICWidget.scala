@@ -234,13 +234,20 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     val macAddrRegUpper = Reg(UInt(32.W))
     val macAddrRegLower = Reg(UInt(32.W))
     val rlimitSettings = Reg(UInt(32.W))
+    val pauseThreshold = Reg(UInt(32.W))
+    val pauseTimes = Reg(UInt(32.W))
 
     target.rlimit := (new RateLimiterSettings).fromBits(rlimitSettings)
     target.macAddr := Cat(macAddrRegUpper, macAddrRegLower)
+    target.pauser.threshold := pauseThreshold(15, 0)
+    target.pauser.quanta := pauseTimes(15, 0)
+    target.pauser.refresh := pauseTimes(31, 16)
 
     attach(macAddrRegUpper, "macaddr_upper", WriteOnly)
     attach(macAddrRegLower, "macaddr_lower", WriteOnly)
     attach(rlimitSettings, "rlimit_settings", WriteOnly)
+    attach(pauseThreshold, "pause_threshold", WriteOnly)
+    attach(pauseTimes, "pause_times", WriteOnly)
   }
 
   genROReg(!tFire, "done")

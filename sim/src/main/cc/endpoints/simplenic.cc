@@ -21,6 +21,11 @@
 #define BUFBYTES (SIMLATENCY_BT*BUFWIDTH)
 #define EXTRABYTES 1
 
+#define FLIT_BITS 64
+#define PACKET_MAX_FLITS 190
+#define BITTIME_PER_QUANTA 512
+#define CYCLES_PER_QUANTA (BITTIME_PER_QUANTA / FLIT_BITS)
+
 static void simplify_frac(int n, int d, int *nn, int *dd)
 {
     int a = n, b = d;
@@ -116,6 +121,9 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
     rlimit_size = netburst;
+    pause_threshold = PACKET_MAX_FLITS + this->LINKLATENCY;
+    pause_quanta = pause_threshold / CYCLES_PER_QUANTA;
+    pause_refresh = this->LINKLATENCY;
 
     printf("using link latency: %d cycles\n", this->LINKLATENCY);
     printf("using netbw: %d\n", netbw);
@@ -181,6 +189,9 @@ void simplenic_t::init() {
     write(mmio_addrs->macaddr_lower, mac_lendian & 0xFFFFFFFF);
     write(mmio_addrs->rlimit_settings,
             (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
+    write(mmio_addrs->pause_threshold, pause_threshold);
+    write(mmio_addrs->pause_times,
+            (pause_refresh << 16) | (pause_quanta & 0xffff));
 
     uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
     uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);

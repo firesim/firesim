@@ -28,7 +28,7 @@ class WithUARTKey extends Config((site, here, up) => {
 
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
-    inBufPackets = 64,
+    inBufFlits = 8192,
     ctrlQueueDepth = 64)
 })
 

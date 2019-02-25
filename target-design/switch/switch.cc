@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <omp.h>
 #include <cstdlib>
+#include <arpa/inet.h>
 
 #define IGNORE_PRINTF
 
