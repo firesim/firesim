@@ -5,14 +5,14 @@ DESIGN ?= PicoRV32
 
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
-TARGET_CONFIG_PACKAGE ?= firesim.picorv32
-TARGET_CONFIG ?= PicoRV32Config
+TARGET_CONFIG_PACKAGE ?= 
+TARGET_CONFIG ?= EmptyConfig
 # TARGET_CONFIG ?= FireSimBoomConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
-PLATFORM_CONFIG ?= FireSimConfig
+PLATFORM_CONFIG ?= PicoRV32Config
 
 base_dir = $(abspath .)
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)

@@ -211,3 +211,4 @@ class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
   new WithExtMemSize(0x200000000L) ++ // 8GB
   new FireSimRocketChipOctaCoreConfig)
 
+

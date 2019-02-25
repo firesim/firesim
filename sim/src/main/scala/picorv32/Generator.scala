@@ -10,7 +10,7 @@ import chisel3.experimental.MultiIOModule
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug.DebugIO
-import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
+import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames, HeterogeneousBag}
 import freechips.rocketchip.system.DefaultTestSuites._
 import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
@@ -18,7 +18,6 @@ import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
 import freechips.rocketchip.config.Config
 import freechips.rocketchip.rocket.{RocketCoreParams, MulDivParams}
-import freechips.rocketchip.util.HeterogeneousBag
 import freechips.rocketchip.amba.axi4.{AXI4BundleParameters,AXI4Bundle}
 
 import boom.system.{BoomTilesKey, BoomTestSuites}
@@ -31,15 +30,15 @@ import firesim.util.{GeneratorArgs,HasTargetAgnosticUtilites}
 
 trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites {
   val targetTransforms = Seq(
-    // firesim.passes.AsyncResetRegPass,
-    // firesim.passes.PlusArgReaderPass
+    firesim.passes.AsyncResetRegPass,
+    firesim.passes.PlusArgReaderPass
   )
 
   lazy val hostTransforms = Seq(
     new firesim.passes.ILATopWiringTransform(genDir)
   )
 
-  val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-PicoRV32Config-FireSimConfig/"
+  val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-EmptyConfig-PicoRV32Config/"
   lazy val genDir = new File(targetDir)
 
   def hostParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
