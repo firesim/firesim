@@ -77,8 +77,8 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     stallEventCounters = true,
     llcKey = site(LlcKey))
 
-	case MemModelKey => Some((p: Parameters) => new MidasMemModel(new
-		LatencyPipeConfig(site(BaseParamsKey)))(p))
+  case MemModelKey => Seq((p: Parameters) => new MidasMemModel(new
+          LatencyPipeConfig(site(BaseParamsKey)))(p))
 })
 
 
@@ -106,7 +106,7 @@ class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
 
 // Instantiates a DDR3 model with a FCFS memory access scheduler
 class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => Some((p: Parameters) => new MidasMemModel(
+  case MemModelKey => Seq((p: Parameters) => new MidasMemModel(
     new FIFOMASConfig(
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
@@ -116,7 +116,7 @@ class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
 // windowSize = Maximum number of references the MAS can schedule across
 class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => Some((p: Parameters) => new MidasMemModel(
+  case MemModelKey => Seq((p: Parameters) => new MidasMemModel(
     new FirstReadyFCFSConfig(
       schedulerWindowSize = windowSize,
       transactionQueueDepth = queueDepth,
