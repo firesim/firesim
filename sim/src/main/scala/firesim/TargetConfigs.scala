@@ -297,3 +297,13 @@ class CS152BaseTConfig extends Config(
   new WithBlockDevice ++
   new WithPerfCounters ++
   new freechips.rocketchip.system.DefaultConfig)
+
+class CS152MysteryTConfig extends Config(
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithExtMemSize(0x400000000L) ++ // 16GB
+  new WithoutTLMonitors ++
+  new WithUARTKey ++
+  new WithNICKey ++
+  new WithBlockDevice ++
+  new freechips.rocketchip.system.DefaultConfig)

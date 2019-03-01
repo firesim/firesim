@@ -15,6 +15,9 @@ object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
 object DesiredHostFrequency extends Field[Int](190) // In MHz
 
+object LLCHWSettings extends Field[Option[LLCHardwiredSettings]](None)
+object DramHWSettings extends Field[Option[DramHardwiredSettings]](None)
+
 class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
     case DesiredHostFrequency => freq
 })
@@ -71,7 +74,10 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     maxReads = 16,
     maxWrites = 16,
     beatCounters = true,
-    llcKey = site(LlcKey))
+    llcKey = site(LlcKey),
+    hardWiredSettings = site(DramHWSettings),
+    hardWiredLLCSettings = site(LLCHWSettings)
+  )
 
 	case MemModelKey => (p: Parameters) => new FASEDMemoryTimingModel(new
 		LatencyPipeConfig(site(BaseParamsKey))(p))(p)
@@ -128,6 +134,15 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
     maxWrites = maxWrites
   )
 })
+
+class WithMysteryMemoryModel(
+    dramSettings: DramHardwiredSettings,
+    llcSettings: LLCHardwiredSettings
+  ) extends Config((site, here, up) => {
+  case LLCHWSettings => Some(llcSettings)
+  case DramHWSettings => Some(dramSettings)
+})
+
 
 /*******************************************************************************
 * Complete Memory-Timing Model Configurations
@@ -278,5 +293,23 @@ class ToyPlatformConfig extends Config(
   new WithLLCModel(0x8000, 64) ++ // 128M capacity with 64 byte lines, 65 ways
   new FireSimDDR3LLC4MBConfig)
 
+class TestMysteryConfig extends Config(
+  new WithMysteryMemoryModel(
+    DramHardwiredSettings(
+      pagePolicy = true,
+      addrAssignment = AddressAssignmentSetting(
+        bankAddrMask = 7,
+        bankAddrOffset = 13,
+        rankAddrMask = 3,
+        rankAddrOffset = 16,
+        rowAddrOffset = 65535,
+        rowAddrMask = 18),
+      timings = Seq( 0, 14, 1, 10, 4, 25, 33, 7800, 47, 14, 260, 5, 14, 8, 2, 15, 8)),
+    LLCHardwiredSettings(
+      wayBits = 2,
+      setBits = 12,
+      blockBits = 6)
+    ) ++ new LLCDRAMBaseConfig
+)
 
 
