@@ -55,6 +55,8 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
     setUnboundSettings()
     getSettings()
   }
+
+  def hardWireSettings(settings: DramHardwiredSettings): Unit = {}
 }
 
 abstract class TimingModelIO(implicit val p: Parameters) extends Bundle {

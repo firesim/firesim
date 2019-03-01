@@ -101,6 +101,10 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
     }
   }
 
+  def hardWireSettings(settings: Seq[Int]): Unit = {
+    registers.unzip._1.zip(settings).foreach({ case (reg, setting) => reg := setting.U })
+  }
+
   override def cloneType = new DRAMProgrammableTimings().asInstanceOf[this.type]
 
 }
@@ -111,6 +115,22 @@ abstract class DRAMBaseConfig extends BaseConfig with HasDRAMMASConstants {
   def dramKey: DramOrganizationParams
   def backendKey: DRAMBackendKey
 }
+
+
+case class AddressAssignmentSetting(
+  bankAddrMask: Int,
+  bankAddrOffset: Int,
+  rankAddrMask: Int,
+  rankAddrOffset: Int,
+  rowAddrMask: Int,
+  rowAddrOffset: Int)
+
+case class DramHardwiredSettings(
+    pagePolicy: Boolean,
+    addrAssignment: AddressAssignmentSetting,
+    schedulerWindowSize: Int,
+    transactionQueueDepth: Int,
+    timings: Seq[Int])
 
 abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with HasConsoleUtils {
 
@@ -270,6 +290,18 @@ abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with Ha
     val pageSize = ((BigInt(1) << lut("COL_BITS").value.toInt) * devicesPerRank * dqWidth ) / 8
     val numRows = BigInt(1) << lut("ROW_BITS").value.toInt
     getAddressScheme(numRanks, numBanks,  numRows, lineSize, pageSize)
+  }
+
+  override def hardWireSettings(hwSettings: DramHardwiredSettings): Unit = {
+    dramTimings.hardWireSettings(hwSettings.timings)
+    backendLatency := 2.U
+    openPagePolicy := hwSettings.pagePolicy.B
+    bankAddr.mask := hwSettings.addrAssignment.bankAddrMask.U
+    bankAddr.offset := hwSettings.addrAssignment.bankAddrOffset.U
+    rankAddr.mask := hwSettings.addrAssignment.rankAddrMask.U
+    rankAddr.offset := hwSettings.addrAssignment.rankAddrOffset.U
+    rowAddr.mask := hwSettings.addrAssignment.rowAddrMask.U
+    rowAddr.offset := hwSettings.addrAssignment.rowAddrOffset.U
   }
 }
 

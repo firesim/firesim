@@ -64,7 +64,11 @@ case class BaseParams(
   // Number of xactions in flight in a given cycle. Bin N contains the range
   // (occupancyHistograms[N-1], occupancyHistograms[N]]
   occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
-  addrRangeCounters: BigInt = BigInt(0)
+  addrRangeCounters: BigInt = BigInt(0),
+
+  // Hacks for CS152
+  hardWiredSettings: Option[DramHardwiredSettings] = None,
+  hardWiredLLCSettings: Option[LLCHardwiredSettings] = None
 )
 // A serializable summary of the diplomatic edge
 case class AXI4EdgeSummary(
@@ -492,7 +496,12 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     io.host_mem.b.bits.resp =/= 0.U && io.host_mem.b.fire)
 
   // Generate the configuration registers and tie them to the ctrl bus
-  attachIO(model.io.mmReg)
+  cfg.params.hardWiredSettings match {
+    case Some(settings) => model.io.mmReg.hardWireSettings(settings)
+    case None => attachIO(model.io.mmReg)
+  }
+  cfg.params.hardWiredLLCSettings.foreach({settings => model.io.mmReg.llc.get.hardWireSettings(settings) })
+
   attachIO(funcModelRegs)
   attach(rrespError, "rrespError", ReadOnly)
   attach(brespError, "brespError", ReadOnly)

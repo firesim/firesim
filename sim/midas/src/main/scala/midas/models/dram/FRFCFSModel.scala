@@ -43,6 +43,12 @@ class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMReg
     Console.println(s"Configuring First-Ready First-Come First Serve Model")
     setBaseDRAMSettings()
   }
+
+  override def hardWireSettings(hwSettings: DramHardwiredSettings): Unit = {
+    super.hardWireSettings(hwSettings)
+    schedulerWindowSize := hwSettings.schedulerWindowSize.U
+    transactionQueueDepth := hwSettings.transactionQueueDepth.U
+  }
 }
 
 class FirstReadyFCFSIO(val cfg: FirstReadyFCFSConfig)(implicit p: Parameters) extends TimingModelIO()(p){
