@@ -6,6 +6,7 @@
   "common_args" : [""],
   "common_outputs" : ["/hpm_data", "/output", "/cs152/hello.out"],
   "common_simulation_outputs" : ["uartlog", "memory_stats.csv"],
+  "post_run_hook": "./process-all.py -b ",
   "workloads" : [
     {
       "name": "cs152-automated-all",
