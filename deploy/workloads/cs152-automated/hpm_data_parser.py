@@ -84,7 +84,8 @@ def process_workload(workload_dir, name):
     print "Parsing workload " + name
     counter_files = glob.glob("{}/{}".format(workload_dir, COUNTER_FILES_GLOB))
     for counter_file in counter_files:
-        print "Parsing counter file: {}".format(counter_file.split('/')[-1])
+        basename = counter_file.split('/')[-1]
+        print "Parsing counter file: {}".format(basename)
         with open (counter_file, 'rb') as f:
             lines = f.readlines()
 
