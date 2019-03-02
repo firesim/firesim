@@ -5,6 +5,7 @@
 # 2) Removes samples that occur prior to HPM counters start
 
 import csv
+import sys
 import os
 import numpy as np
 import re
@@ -14,8 +15,8 @@ from post_process_utils import *
 MEMORY_STATS_FILENAME = "memory_stats.csv"
 UARTLOG_FILENAME = "uartlog"
 # Relative to workload directory
-OUTPUT_FILE = "memory_stats_processed.csv"
-SUMMARY_FILENAME = "memory_stats.summary"
+OUTPUT_FILE = "memory_stats_processed"
+SUMMARY_FILENAME = "memory_stats"
 # Width of the counters in the memory model
 COUNTER_WIDTH = 32
 
@@ -60,8 +61,6 @@ def get_profile_interval(uartlog_filename):
 
     raise Exception('Could determine the profile-interval')
 
-# Looks at the rank address mask to calculate how many ranks were used.
-# Encoded as (num ranks - 1)
 def get_num_ranks(column_headers, first_row):
     num_ranks = 0
     for (i, column) in enumerate(column_headers):
@@ -70,14 +69,21 @@ def get_num_ranks(column_headers, first_row):
 
     return num_ranks
 
-
 # HPM counters dumps out the target cycle at which it first tared it's measurements
 # We use this to coarsely align the memory models stats with the HPM counter stats
-def get_application_start(hpm_counters_filename):
+def get_application_interval(hpm_counters_filename):
     with open (hpm_counters_filename, 'rb') as f:
         line = f.readline()
         assert line.find("##  T0CYCLES = ") != -1
-        return int(line.strip().split("=")[1])
+        start_cycle = int(line.strip().split("=")[1])
+
+        last_cycle_line = ""
+        for line in f.readlines() :
+            if line.find("##  Cycles = ") != -1 :
+                last_cycle_line = line
+
+        execution_length = int(last_cycle_line.strip().split("=")[1])
+        return (start_cycle, start_cycle + execution_length)
 
 def unroll(num_rollovers, lsbs):
     return (long(1)<<COUNTER_WIDTH) * num_rollovers + int(lsbs)
@@ -103,12 +109,17 @@ def get_valid_columns(header):
 
     return (valid_idxs, valid_headers)
 
-def get_processed_data(reader, valid_idxs, first_row, profile_interval, hpm_start_cycle):
+def get_processed_data(reader, valid_idxs, first_row, profile_interval, hpm_start_cycle, hpm_end_cycle):
     prev_data = [first_row[i] for i in valid_idxs]
     rollovers = [0] * len(valid_idxs)
     tare_values = [0] * len(valid_idxs)
     current_cycle = 0
     processed_data = []
+    if hpm_start_cycle is None:
+        hpm_start_cycle = 0
+        hpm_end_cycle = sys.maxint
+
+    assert (hpm_start_cycle  + profile_interval) < hpm_end_cycle
 
     for row in reader:
         data = [int(row[idx]) for idx in valid_idxs]
@@ -117,6 +128,8 @@ def get_processed_data(reader, valid_idxs, first_row, profile_interval, hpm_star
                 rollovers[i] += 1
         if current_cycle <= hpm_start_cycle and (current_cycle + profile_interval) > hpm_start_cycle:
             tare_values = list(map(tare, zip(rollovers, data, tare_values)))
+        elif current_cycle > (hpm_end_cycle + profile_interval/2):
+            break
         elif current_cycle > hpm_start_cycle:
             raw_processed = list(map(tare, zip(rollovers, data, tare_values)))
             processed_data += [[current_cycle - hpm_start_cycle] + raw_processed]
@@ -206,16 +219,27 @@ def generate_summary(output_file, headers, data_vals, num_ranks):
         f.write(summary_string)
 
 
-def process_memory_stats(workload_dir, name):
+def process_memory_stats(workload_dir, name, hpm_counters_filename = None):
     print "Parsing memory_stats.csv file for workload " + name
+    if hpm_counters_filename:
+        print "   WRT to hpm_counters file: " + hpm_counters_filename
+
+    counter_suffix = "-" + hpm_counters_filename.split("/")[-1] if hpm_counters_filename else ""
+
     memory_stats_filename = "{}/{}".format(workload_dir, MEMORY_STATS_FILENAME)
     uartlog_filename = "{}/{}".format(workload_dir, UARTLOG_FILENAME)
-    hpm_start_cycle = 0
+    if hpm_counters_filename:
+        (hpm_start_cycle, hpm_end_cycle) = get_application_interval(hpm_counters_filename)
+        print "   Start Cycle: {}, End Cycle: {}".format(hpm_start_cycle, hpm_end_cycle)
+    else :
+        hpm_start_cycle = None
+        hpm_end_cycle = None
+
     profile_interval = get_profile_interval(uartlog_filename)
 
     output_dir = "{}/{}".format(workload_dir, POST_PROCESS_DIR)
     mkdir_p(output_dir)
-    output_filename = "{}/{}".format(output_dir, OUTPUT_FILE)
+    output_filename = "{}/{}{}.csv".format(output_dir, OUTPUT_FILE, counter_suffix)
 
     with open (memory_stats_filename, 'rb') as f:
         reader = csv.reader(f, delimiter=',',quotechar='|')
@@ -227,7 +251,7 @@ def process_memory_stats(workload_dir, name):
         (valid_idxs, valid_column_header) = get_valid_columns(header)
         valid_column_header = ["Cycle Count"] + valid_column_header
 
-        processed_data =  get_processed_data(reader, valid_idxs, first_row, profile_interval, hpm_start_cycle)
+        processed_data =  get_processed_data(reader, valid_idxs, first_row, profile_interval, hpm_start_cycle, hpm_end_cycle)
         #(derived_headers, derived_stats) = calculate_derived_stats(valid_column_header, processed_data)
 
     with open(output_filename, 'wb') as of:
@@ -238,7 +262,9 @@ def process_memory_stats(workload_dir, name):
         for row in processed_data:
             writer.writerow(row)
 
-    summary_file="{}/{}".format(output_dir, SUMMARY_FILENAME)
+    counter_suffix = "-" + hpm_counters_filename.split("/")[-1] if hpm_counters_filename else ""
+    summary_file="{}/{}{}.summary".format(output_dir, SUMMARY_FILENAME, counter_suffix)
+
     generate_summary(summary_file, valid_column_header, processed_data[-1], num_ranks)
 
 if __name__ == '__main__':
