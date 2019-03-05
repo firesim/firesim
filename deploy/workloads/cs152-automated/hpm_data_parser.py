@@ -46,7 +46,7 @@ def generate_summary(output_file, data):
     summary_string = ""
     summary_string += "Total Cycles        : {}\n".format(total_cycle)
     summary_string += "Total Instructions  : {}\n".format(total_instret)
-    summary_string += "Total CPI           : %6.3f\n" % (total_cycle / float(total_instret))
+    summary_string += "CPI                 : %6.3f\n" % (total_cycle / float(total_instret))
     summary_string += "D$ MPKI             : %6.3f\n" % (1000 * (total_dcache_misses) / float(total_instret))
     summary_string += "I$ MPKI             : %6.3f\n" % (1000 * (total_icache_misses) / float(total_instret))
     summary_string += "D$ Miss %%           : %6.3f\n" % (100 * (total_dcache_misses / float(total_loads + total_stores)))
