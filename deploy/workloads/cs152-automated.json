@@ -2,7 +2,7 @@
   "common_bootbinary" : "bbl-vmlinux",
   "benchmark_name" : "cs152-automated",
   "deliver_dir" : "/cs152/",
-  "common_files" : ["example-script.sh"],
+  "common_files" : ["example-script.sh", "run-gapbs.sh", "run-spec.sh"],
   "common_args" : [""],
   "common_outputs" : ["/hpm_data", "/output", "/cs152/hello.out"],
   "common_simulation_outputs" : ["uartlog", "memory_stats.csv"],
