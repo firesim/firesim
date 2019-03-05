@@ -71,7 +71,6 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
     nBanks = 8,
     nChannels = 1,
     spanBytes = 1024,
-    nRmemXacts = 64,
     logAddrBits = 37,
     outIdBits = 4)
 })
