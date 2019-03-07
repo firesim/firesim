@@ -64,7 +64,7 @@ class RuntimeHWConfig:
 
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
-        return "runtime.conf" if self.customruntimeconfig is None else self.customruntimeconfig
+        return "runtime.conf" if self.customruntimeconfig is None else self.customruntimeconfig.split("/")[-1]
 
     def get_local_runtime_conf_path(self):
         """ return relative local path of the runtime conf used to run this sim. """
