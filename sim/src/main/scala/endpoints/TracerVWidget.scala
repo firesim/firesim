@@ -18,9 +18,6 @@ import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
 
-class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
-  val traces = Vec(numTraces, new TracedInstruction)
-}
 
 class SimTracerV extends Endpoint {
 
