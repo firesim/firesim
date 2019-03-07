@@ -41,7 +41,16 @@ private[passes] class AssertPass(
                          (parentMod: String, inst: String): Boolean =
     excludes.exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
 
-  private def excludeInstAsserts = excludeInst(p(ExcludeInstanceAsserts)) _
+
+  private def excludeInstAsserts = {
+       
+    val exassertannos = state.annotations.collect {
+      case a @ (_: FirrtlExcludeInstanceAssertsAnnotation) => a
+    }
+
+    excludeInst(exassertannos match { case p => p.map { case FirrtlExcludeInstanceAssertsAnnotation(target) => target } })  _
+  }
+  //private def excludeInstAsserts = excludeInst(p(ExcludeInstanceAsserts)) _
 
 
   // Matches all on all stop statements, registering the enable predicate
@@ -94,8 +103,13 @@ private[passes] class AssertPass(
       case m: Module =>
         val ports = collection.mutable.ArrayBuffer[Port]()
         val stmts = collection.mutable.ArrayBuffer[Statement]()
+
+        val exassertannos = state.annotations.collect {
+           case a @ (_: FirrtlExcludeInstanceAssertsAnnotation) => a
+        }
         // Connect asserts
-        val assertChildren = getChildren(assertPorts, p(ExcludeInstanceAsserts))
+        //val assertChildren = getChildren(assertPorts, p(ExcludeInstanceAsserts))
+        val assertChildren = getChildren(assertPorts, exassertannos match { case p => p.map { case FirrtlExcludeInstanceAssertsAnnotation(target) => target } })
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
