@@ -39,7 +39,7 @@ def generate_summary(output_file, data):
     total_dcache_misses          = long(data["D$ miss"][-1])
     total_itlb_misses            = long(data["ITLB miss"][-1])
     total_dtlb_misses            = long(data["DTLB miss"][-1])
-    total_l2tlb_misses           = long(data["L2 TLB miss"][-1])
+    total_l2tlb_misses           = long(data["L2 TLB miss"][-1]) if data["L2 TLB miss"] else None
     total_branches               = long(data["Branches"][-1])
     total_branch_mispredictions  = long(data["Branches Misprediction"][-1])
 
@@ -52,7 +52,8 @@ def generate_summary(output_file, data):
     summary_string += "D$ Miss %%           : %6.3f\n" % (100 * (total_dcache_misses / float(total_loads + total_stores)))
     summary_string += "ITLB MPKI           : %6.3f\n" % (1000 * (total_itlb_misses) / float(total_instret))
     summary_string += "DTLB MPKI           : %6.3f\n" % (1000 * (total_dtlb_misses) / float(total_instret))
-    summary_string += "L2 TLB MPKI         : %6.3f\n" % (1000 * (total_l2tlb_misses) / float(total_instret))
+    if total_l2tlb_misses:
+        summary_string += "L2 TLB MPKI         : %6.3f\n" % (1000 * (total_l2tlb_misses) / float(total_instret))
     summary_string += "Branch Prediction %% : %6.3f\n" % (100 * (1 - (float(total_branch_mispredictions) / float(total_branches))))
     summary_string += "Branch MPKI         : %6.3f\n" % (1000 * (total_branch_mispredictions) / float(total_instret))
 
