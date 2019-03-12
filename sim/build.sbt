@@ -54,14 +54,15 @@ val fireChipDir  = file("target-rtl/firechip")
 
 // Subproject definitions begin
 // NB: FIRRTL dependency is unmanaged (and dropped in sim/lib)
-lazy val chisel  = (project in rocketChipDir / "chisel3")
+//lazy val chisel  = (project in rocketChipDir / "chisel3")
 
 // Contains annotations & firrtl passes you may wish to use in rocket-chip without
 // introducing a circular dependency between RC and MIDAS
+/*
 lazy val midasTargetUtils = (project in file("midas/targetutils"))
   .settings(commonSettings)
   .dependsOn(chisel)
-
+*/
 // Rocket-chip dependencies (subsumes making RC a RootProject)
 /*
 lazy val hardfloat  = (project in rocketChipDir / "hardfloat")
@@ -87,8 +88,10 @@ lazy val rocketchip = (project in rocketChipDir / "src")
 // Target-specific dependencies
 //lazy val firechip = (project in fireChipDir)
 lazy val firechip = ProjectRef(fireChipDir, "firechip")
+/*
 lazy val firechip_plus = (project in fireChipDir / ".firechip-dummy")
   .dependsOn(midasTargetUtils, firechip)
+*/
 //lazy val targetdesignproject = (project in file(fireChipDir_f.toString))
 
 // MIDAS-specific dependencies
@@ -96,11 +99,12 @@ lazy val mdf        = RootProject(file("barstools/mdf/scalalib"))
 lazy val barstools  = (project in file("barstools/macros"))
   .settings(commonSettings)
   .dependsOn(mdf, firechip)
+
 lazy val midas      = (project in file("midas"))
   .settings(commonSettings)
-  .dependsOn(barstools, firechip_plus)
+  .dependsOn(barstools, firechip)
 
 // Finally the root project
 lazy val firesim    = (project in file("."))
   .settings(commonSettings)
-  .dependsOn(midas, firechip_plus)
+  .dependsOn(midas, firechip)
