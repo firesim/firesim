@@ -44,7 +44,6 @@ MATCH_EXACT = ["writeMaxReqs",
                ]
 
 RANK_INSTRUMENTATION_PREFIX = "rankPower"
-ACTIVE_RANKS_MASK_NAME = "rankAddr_mask"
 
 def get_profile_interval(uartlog_filename):
     with open(uartlog_filename, 'rb') as f:
@@ -61,13 +60,19 @@ def get_profile_interval(uartlog_filename):
 
     raise Exception('Could determine the profile-interval')
 
-def get_num_ranks(column_headers, first_row):
-    num_ranks = 0
-    for (i, column) in enumerate(column_headers):
-        if column.find("allPreCycles") != -1:
-            num_ranks += 1
+# Looks up the number of active ranks in this particular simulation by parsing
+# the uartlog
+def get_num_ranks(uartlog_filename):
+    num_hw_ranks = 0
+    with open(uartlog_filename, 'rb') as f:
+        lines = f.readlines()
+        for line in lines:
+            m = re.search('\+mm_rankAddr_mask=([-0-9]*)', line)
+            if m:
+                rank_mask = int(m.group(1))
+                return (rank_mask + 1)
 
-    return num_ranks
+    return 0
 
 # HPM counters dumps out the target cycle at which it first tared it's measurements
 # We use this to coarsely align the memory models stats with the HPM counter stats
@@ -245,7 +250,7 @@ def process_memory_stats(workload_dir, name, hpm_counters_filename = None):
         reader = csv.reader(f, delimiter=',',quotechar='|')
         header = next(reader)[:-1]
         first_row = next(reader)[:-1]
-        num_ranks = get_num_ranks(header, first_row)
+        num_ranks = get_num_ranks(uartlog_filename)
 
         # Exclude some garbage columns spat out by earlier models
         (valid_idxs, valid_column_header) = get_valid_columns(header)
