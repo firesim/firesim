@@ -15,7 +15,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
 import midas.widgets.AssertBundle
-
+import midas.targetutils.ExcludeInstanceAssertsAnnotation
 
 case class AddedAssertIoAnnotation(port: Port) extends AddedTargetIoAnnotation[AssertBundle]{
   def generateChiselIO(): (String, AssertBundle) = (port.name, new AssertBundle(firrtl.bitWidth(port.tpe).toInt))
@@ -35,22 +35,12 @@ private[passes] class AssertPass(
   private val asserts = collection.mutable.HashMap[String, Asserts]()
   private val messages = collection.mutable.HashMap[String, Messages]()
   private val assertPorts = collection.mutable.HashMap[String, Port]()
+  private val excludeInstAsserts = collection.mutable.HashSet[(String, String)]()
 
   // Helper method to filter out module instances
   private def excludeInst(excludes: Seq[(String, String)])
                          (parentMod: String, inst: String): Boolean =
     excludes.exists({case (exMod, exInst) => parentMod == exMod && inst == exInst })
-
-
-  private def excludeInstAsserts = {
-       
-    val exassertannos = state.annotations.collect {
-      case a @ (_: FirrtlExcludeInstanceAssertsAnnotation) => a
-    }
-
-    excludeInst(exassertannos match { case p => p.map { case FirrtlExcludeInstanceAssertsAnnotation(target) => target } })  _
-  }
-  //private def excludeInstAsserts = excludeInst(p(ExcludeInstanceAsserts)) _
 
 
   // Matches all on all stop statements, registering the enable predicate
@@ -86,9 +76,10 @@ private[passes] class AssertPass(
     asserts(m.name) = new Asserts
     messages(m.name) = new Messages
 
-    def getChildren(ports: collection.mutable.Map[String, Port], instExcludes: Seq[(String, String)]) = {
+    def getChildren(ports: collection.mutable.Map[String, Port], 
+                    instExcludes: collection.mutable.HashSet[(String, String)]) = {
       (meta.childInsts(m.name)
-           .filterNot(instName => excludeInst(instExcludes)(m.name, instName))
+           .filterNot(instName => excludeInst(instExcludes.toSeq)(m.name, instName))
            .foldRight(Seq[(String, Port)]())((x, res) =>
              ports get meta.instModMap(x -> m.name) match {
                case None    => res
@@ -103,13 +94,8 @@ private[passes] class AssertPass(
       case m: Module =>
         val ports = collection.mutable.ArrayBuffer[Port]()
         val stmts = collection.mutable.ArrayBuffer[Statement]()
-
-        val exassertannos = state.annotations.collect {
-           case a @ (_: FirrtlExcludeInstanceAssertsAnnotation) => a
-        }
         // Connect asserts
-        //val assertChildren = getChildren(assertPorts, p(ExcludeInstanceAsserts))
-        val assertChildren = getChildren(assertPorts, exassertannos match { case p => p.map { case FirrtlExcludeInstanceAssertsAnnotation(target) => target } })
+        val assertChildren = getChildren(assertPorts, excludeInstAsserts)
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
@@ -136,12 +122,17 @@ private[passes] class AssertPass(
         assertNum += 1
       }
       meta.childInsts(mod)
-          .filterNot(inst => excludeInstAsserts(mod, inst))
+          .filterNot(inst => excludeInstAsserts((mod, inst)))
           .foreach(child => dump(writer, meta, meta.instModMap(child, mod), s"${path}.${child}"))
 
   }
   def synthesizeAsserts(state: CircuitState): CircuitState = {
     val c = state.circuit
+
+    state.annotations.collect {
+      case a @ (_: ExcludeInstanceAssertsAnnotation) => excludeInstAsserts += a.target
+    }
+
     val meta = StroberMetaData(c)
     val mods = postorder(c, meta)(transform(meta))
     val f = new FileWriter(new File(dir, s"${c.main}.asserts"))

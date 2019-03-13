@@ -92,11 +92,14 @@ object SynthesizePrintf {
   // TODO: Accept a printable -> need to somehow get the format string from it
 }
 
-case class FirrtlExcludeInstanceAssertsAnnotation(target: (String, String)) extends
+case class ExcludeInstanceAssertsAnnotation(target: (String, String)) extends
     firrtl.annotations.NoTargetAnnotation {
   def duplicate(n: (String, String)) = this.copy(target = n)
 }
-
-case class ExcludeInstanceAssertsAnnotation(target: (String, String)) extends ChiselAnnotation {
-  def toFirrtl = FirrtlExcludeInstanceAssertsAnnotation(target)
+// TODO: Actually use a real target and not strings.
+object ExcludeInstanceAsserts {
+  def apply(target: (String, String)): ChiselAnnotation =
+    new ChiselAnnotation {
+      def toFirrtl = ExcludeInstanceAssertsAnnotation(target)
+    }
 }
