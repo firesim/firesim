@@ -9,15 +9,12 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.rocket.TracedInstruction
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
+import firechip.TraceOutputTop
 
 import midas.core.{HostPort}
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
-import icenet.{NICIOvonly, RateLimiterSettings}
-import icenet.IceNIC._
-import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
-
 
 class SimTracerV extends Endpoint {
 

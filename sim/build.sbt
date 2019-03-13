@@ -21,78 +21,13 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
 
 testGrouping in Test := isolateAllTests( (definedTests in Test).value )
 
-//firesim as a library vs standalone firesim
-def findFirstDirectory(dirs: Seq[String]): java.io.File = {
-  for (d <- dirs) {
-    val f = new java.io.File(d)
-    if (f.exists() && f.isDirectory()) {
-      return f
-    }
-  }
-
-  throw new Exception("Oh no!")
-}
-
-def findFirstBuildSBTDirectory(dirs: Seq[String]): java.io.File = {
-  for (d <- dirs) {
-    val f = new java.io.File(d)
-    val fs = new java.io.File(d,"build.sbt")
-    if (fs.exists() && f.isDirectory()) {
-      print(f)
-      return f
-    }
-  }
-
-  throw new Exception("Oh no!")
-}
-
-val rocketChipDir = file("target-rtl/firechip/rocket-chip")
-val fireChipDir  = file("target-rtl/firechip")
-//lazy val fireChipDir_f = findFirstBuildSBTDirectory(Seq("../", "target-rtl/firechip"))
-//lazy val fireChipDir = RootProject(findFirstBuildSBTDirectory(Seq("../", "target-rtl/firechip")))
-//lazy val rocketChipDir = file(fireChipDir_f.toString ++ "/rocket-chip")
-
-// Subproject definitions begin
-// NB: FIRRTL dependency is unmanaged (and dropped in sim/lib)
-//lazy val chisel  = (project in rocketChipDir / "chisel3")
-
-// Contains annotations & firrtl passes you may wish to use in rocket-chip without
-// introducing a circular dependency between RC and MIDAS
-/*
-lazy val midasTargetUtils = (project in file("midas/targetutils"))
-  .settings(commonSettings)
-  .dependsOn(chisel)
-*/
-// Rocket-chip dependencies (subsumes making RC a RootProject)
-/*
-lazy val hardfloat  = (project in rocketChipDir / "hardfloat")
-  .settings(
-    commonSettings,
-    crossScalaVersions := Seq("2.11.12", "2.12.4"))
-  .dependsOn(chisel, midasTargetUtils)
-lazy val macros     = (project in rocketChipDir / "macros")
-  .settings(commonSettings)
-*/
-// HACK: I'm strugging to override settings in rocket-chip's build.sbt (i want
-// the subproject to register a new library dependendency on midas's targetutils library)
-// So instead, avoid the existing build.sbt altogether and specify the project's root at src/
-/*
-lazy val rocketchip = (project in rocketChipDir / "src")
-  .settings(
-    commonSettings,
-    scalaSource in Compile := baseDirectory.value / "main" / "scala",
-    resourceDirectory in Compile := baseDirectory.value / "main" / "resources")
-  .dependsOn(chisel, hardfloat, macros, midasTargetUtils)
-*/
+val fireChipDir = file("target-rtl/firechip")
 
 // Target-specific dependencies
-//lazy val firechip = (project in fireChipDir)
-lazy val firechip = ProjectRef(fireChipDir, "firechip")
-/*
-lazy val firechip_plus = (project in fireChipDir / ".firechip-dummy")
-  .dependsOn(midasTargetUtils, firechip)
-*/
-//lazy val targetdesignproject = (project in file(fireChipDir_f.toString))
+lazy val firechip = (project in fireChipDir)
+  .settings(
+    commonSettings,
+  )
 
 // MIDAS-specific dependencies
 lazy val mdf        = RootProject(file("barstools/mdf/scalalib"))

@@ -1,11 +1,11 @@
 # These point at the main class of the target's Chisel generator
-DESIGN_PACKAGE ?= firesim.firesim
+DESIGN_PACKAGE ?= firechip
 DESIGN ?= FireSim
 # DESIGN ?= FireBoom
 
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
-TARGET_CONFIG_PACKAGE ?= firesim.firesim
+TARGET_CONFIG_PACKAGE ?= firechip
 TARGET_CONFIG ?= FireSimRocketChipConfig
 # TARGET_CONFIG ?= FireSimBoomConfig
 
@@ -37,7 +37,7 @@ common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKA
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	"runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
 ##########################
 # Driver Sources & Flags #
@@ -59,7 +59,7 @@ CONF_NAME ?= runtime.conf
 conf:
 	mkdir -p $(GENERATED_DIR)
 	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+	"runMain firesim.firesim.FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
