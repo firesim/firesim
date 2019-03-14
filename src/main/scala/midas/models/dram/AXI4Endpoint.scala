@@ -14,6 +14,8 @@ import chisel3.util._
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 
+import scala.collection.mutable.ArrayBuffer
+
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object MemModelKey extends Field[Parameters => FASEDMemoryTimingModel]
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
@@ -39,13 +41,14 @@ abstract class SimMemIO extends Endpoint {
   // This is hideous, but we want some means to get the widths of the target
   // interconnect so that we can pass that information to the widget the
   // endpoint will instantiate.
-  var targetAXI4Widths = NastiParameters(0,0,0)
-  var targetAXI4Edge: Option[AXI4EdgeParameters] = None
+  val targetAXI4Widths = new ArrayBuffer[NastiParameters]()
+  val targetAXI4Edges = new ArrayBuffer[Option[AXI4EdgeParameters]]()
   var initialized = false
+  var widgetIdx = 0
   override def add(name: String, channel: Data) {
     initialized = true
     super.add(name, channel)
-    targetAXI4Widths = channel match {
+    targetAXI4Widths += (channel match {
       case axi4: AXI4BundleWithEdge => NastiParameters(axi4.r.bits.data.getWidth,
                                                axi4.ar.bits.addr.getWidth,
                                                axi4.ar.bits.id.getWidth)
@@ -56,23 +59,25 @@ abstract class SimMemIO extends Endpoint {
                                             axi4.ar.bits.addr.getWidth,
                                             axi4.ar.bits.id.getWidth)
       case _ => throw new RuntimeException("Unexpected channel type passed to SimMemIO")
-    }
-    targetAXI4Edge = channel match {
+    })
+    targetAXI4Edges += (channel match {
       case b: AXI4BundleWithEdge => Some(b.edge)
       case _ => None
-    }
+    })
   }
 
-  private def getChannelAXI4Parameters = {
+  private def getChannelAXI4Parameters(idx: Int) = {
     scala.Predef.assert(initialized, "Widget instantiated without first binding a target channel.")
-    targetAXI4Widths
+    targetAXI4Widths(idx)
   }
 
   def widget(p: Parameters): FASEDMemoryTimingModel = {
+    val curIdx = widgetIdx
     val param = p.alterPartial({
-      case NastiKey => getChannelAXI4Parameters
-      case FasedAXI4Edge => targetAXI4Edge
+      case NastiKey => getChannelAXI4Parameters(curIdx)
+      case FasedAXI4Edge => targetAXI4Edges(curIdx)
     })
+    widgetIdx += 1
     p(MemModelKey)(param)
   }
 }
