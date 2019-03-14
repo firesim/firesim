@@ -141,7 +141,7 @@ def launchrunfarm(runtime_conf):
     runtime_conf.runfarm.launch_run_farm()
 
 
-def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_2,
+def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                      terminatesomem4_16, forceterminate):
     """ Terminate instances in the runfarm.
 
@@ -154,7 +154,7 @@ def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_2,
        that many instances of the specified types and leave all others
        untouched.
     """
-    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                     terminatesomem4_16, forceterminate)
 
 def shareagfi(buildconf):
@@ -208,6 +208,9 @@ def construct_firesim_argparser():
     parser.add_argument('-g', '--terminatesomef12', type=int,
                         help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
                         default=-1)
+    parser.add_argument('-i', '--terminatesomef14', type=int,
+                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
+                        default=-1)
     parser.add_argument('-m', '--terminatesomem416', type=int,
                         help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
@@ -244,6 +247,7 @@ def main(args):
     if args.task == 'terminaterunfarm':
         runtime_conf = RuntimeConfig(args)
         terminaterunfarm(runtime_conf, args.terminatesomef116,
+                         args.terminatesomef14,
                          args.terminatesomef12, args.terminatesomem416,
                          args.forceterminate)
 

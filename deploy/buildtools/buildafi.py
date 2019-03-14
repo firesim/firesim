@@ -31,24 +31,13 @@ def replace_rtl(conf, buildconfig):
     rootLogger.info("Running replace-rtl to generate verilog for " + str(buildconfig.get_chisel_triplet()))
 
     with prefix('cd ' + ddir + '/../'), prefix('source sourceme-f1-manager.sh'), prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
-        run("""make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} replace-rtl""".format(
-        buildconfig.DESIGN, buildconfig.TARGET_CONFIG, buildconfig.PLATFORM_CONFIG))
+        run(buildconfig.make_recipe("replace-rtl"))
         run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
         run("""cp $CL_DIR/design/cl_firesim_generated.sv {}/results-build/{}/cl_firesim_generated.sv""".format(ddir, builddir))
 
     # build the fpga driver that corresponds with this version of the RTL
-    build_fpga_driver(buildconfig.get_chisel_triplet())
-
-def build_fpga_driver(triplet):
-    """ Build FPGA driver for running simulation """
-    # TODO there is a duplicate of this in runtools
-    ddir = get_deploy_dir()
-    triplet_pieces = triplet.split("-")
-    design = triplet_pieces[0]
-    target_config = triplet_pieces[1]
-    platform_config = triplet_pieces[2]
     with prefix('cd ' + ddir + '/../'), prefix('source sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
-        run("""make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config))
+        run(buildconfig.make_recipe("f1"))
 
 @parallel
 def aws_build(global_build_config, bypass=False):
@@ -167,8 +156,8 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info("Resulting AFI: " + str(afi))
 
     rootLogger.info("Waiting for create-fpga-image completion.")
-
-    with lcd("""{}/results-build/{}/""".format(ddir, builddir)), StreamLogger('stdout'), StreamLogger('stderr'):
+    results_build_dir = """{}/results-build/{}/""".format(ddir, builddir)
+    with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
         checkstate = "pending"
         while checkstate == "pending":
             imagestate = local("""aws ec2 describe-fpga-images --fpga-image-id {} | tee AGFI_INFO""".format(afi), capture=True)
@@ -197,7 +186,13 @@ def aws_build(global_build_config, bypass=False):
     with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
         outputfile.write(agfi_entry)
 
-
+    if global_build_config.post_build_hook:
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            localcap = local("""{} {}""".format(global_build_config.post_build_hook,
+                                                results_build_dir,
+                                                capture=True))
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
     rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
     rootLogger.info("Terminating the build instance now.")

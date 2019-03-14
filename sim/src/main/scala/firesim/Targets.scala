@@ -16,6 +16,7 @@ import icenet._
 import testchipip._
 import testchipip.SerialAdapter.SERIAL_IF_WIDTH
 import sifive.blocks.devices.uart._
+import midas.models.AXI4BundleWithEdge
 import java.io.File
 import memblade.cache.{HasPeripheryDRAMCache, HasPeripheryDRAMCacheModuleImpValidOnly}
 import memblade.client.{HasPeripheryRemoteMemClient, HasPeripheryRemoteMemClientModuleImpValidOnly}
@@ -209,7 +210,7 @@ case object NumNodes extends Field[Int]
 class SupernodeIO(
       nNodes: Int,
       serialWidth: Int,
-      bagPrototype: HeterogeneousBag[AXI4Bundle])(implicit p: Parameters)
+      bagPrototype: HeterogeneousBag[AXI4BundleWithEdge])(implicit p: Parameters)
     extends Bundle {
 
     val serial = Vec(nNodes, new SerialIO(serialWidth))

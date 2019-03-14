@@ -8,8 +8,7 @@
 #include "endpoints/tracerv.h"
 // MIDAS-defined endpoints
 #include "endpoints/fpga_model.h"
-#include "endpoints/sim_mem.h"
-#include "endpoints/fpga_memory_model.h"
+#include "endpoints/fased_memory_timing_model.h"
 #include "endpoints/synthesized_assertions.h"
 #include "endpoints/synthesized_prints.h"
 
@@ -67,15 +66,10 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #endif
 #endif
 
-
-#ifdef NASTIWIDGET_0
-    endpoints.push_back(new sim_mem_t(this, argc, argv));
-#endif
-
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_0_R_num_registers,
@@ -90,7 +84,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 #endif
 
 #ifdef MEMMODEL_1
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_1_R_num_registers,
@@ -99,13 +93,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_1_W_num_registers,
                     (const unsigned int*) MEMMODEL_1_W_addrs,
                     (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_1_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats1.csv", 1L << MEMMODEL_1_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_2
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_2_R_num_registers,
@@ -114,13 +108,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_2_W_num_registers,
                     (const unsigned int*) MEMMODEL_2_W_addrs,
                     (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_2_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats2.csv", 1L << MEMMODEL_2_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_3
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_3_R_num_registers,
@@ -129,13 +123,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_3_W_num_registers,
                     (const unsigned int*) MEMMODEL_3_W_addrs,
                     (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_3_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats3.csv", 1L << MEMMODEL_3_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_4
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_4_R_num_registers,
@@ -144,13 +138,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_4_W_num_registers,
                     (const unsigned int*) MEMMODEL_4_W_addrs,
                     (const char* const*) MEMMODEL_4_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_4_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats4.csv", 1L << MEMMODEL_4_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_4_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_5
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_5_R_num_registers,
@@ -159,13 +153,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_5_W_num_registers,
                     (const unsigned int*) MEMMODEL_5_W_addrs,
                     (const char* const*) MEMMODEL_5_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_5_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats5.csv", 1L << MEMMODEL_5_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_5_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_6
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_6_R_num_registers,
@@ -174,13 +168,13 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_6_W_num_registers,
                     (const unsigned int*) MEMMODEL_6_W_addrs,
                     (const char* const*) MEMMODEL_6_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_6_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats6.csv", 1L << MEMMODEL_6_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_6_target_addr_bits;
 #endif
 
 #ifdef MEMMODEL_7
-    fpga_models.push_back(new FpgaMemoryModel(
+    fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
                 AddressMap(MEMMODEL_7_R_num_registers,
@@ -189,7 +183,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_7_W_num_registers,
                     (const unsigned int*) MEMMODEL_7_W_addrs,
                     (const char* const*) MEMMODEL_7_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_7_target_addr_bits, host_mem_offset));
+                argc, argv, "memory_stats7.csv", 1L << MEMMODEL_7_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_7_target_addr_bits;
 #endif
