@@ -58,8 +58,10 @@ int BasePort::push_input(switchpacket *sp)
     int ethtype, ctrl, quanta;
 
     // Packets smaller than three flits are too small to be valid
-    if (sp->amtwritten < 3)
+    if (sp->amtwritten < 3) {
+        printf("Warning: dropped packet with only %d flits\n", sp->amtwritten);
         return 0;
+    }
 
     ethtype = ntohs((sp->dat[1] >> 48) & 0xffff);
     ctrl = ntohs(sp->dat[2] & 0xffff);
