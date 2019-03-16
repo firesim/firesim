@@ -21,25 +21,34 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
 
 testGrouping in Test := isolateAllTests( (definedTests in Test).value )
 
-val fireChipDir = file("target-rtl/firechip")
+lazy val firesimAsLibrary = sys.env.get("FIRESIM_IS_TOP") == None
 
-// Target-specific dependencies
-lazy val firechip = (project in fireChipDir)
-  .settings(
-    commonSettings,
-  )
-
+//def mayDependOnFirechip(project: Project, fireChip: =>Project): Project = {
+//  if (firesimAsLibrary) project.dependsOn(fireChip) else project
+//}
+//
+lazy val fireChipDir = if(firesimAsLibrary) {
+  file("../../")
+} else {
+  file("target-rtl/firechip")
+}
+//
+//// Target-specific dependencies
+lazy val rocketchip    = ProjectRef(fireChipDir, "rocketchip")
+lazy val testchipip    = ProjectRef(fireChipDir, "testchipip")
+lazy val boom          = ProjectRef(fireChipDir, "boom")
+lazy val sifive_blocks = ProjectRef(fireChipDir, "sifive_blocks")
+lazy val firechip      = ProjectRef(fireChipDir, "firechip")
 // MIDAS-specific dependencies
-lazy val mdf        = RootProject(file("barstools/mdf/scalalib"))
+lazy val mdf        = project in file("barstools/mdf/scalalib")
 lazy val barstools  = (project in file("barstools/macros"))
   .settings(commonSettings)
-  .dependsOn(mdf, firechip)
+  .dependsOn(mdf, rocketchip)
 
 lazy val midas      = (project in file("midas"))
-  .settings(commonSettings)
-  .dependsOn(barstools, firechip)
-
+  .settings(commonSettings).dependsOn(barstools, rocketchip)
+//
 // Finally the root project
 lazy val firesim    = (project in file("."))
   .settings(commonSettings)
-  .dependsOn(midas, firechip)
+  .dependsOn(firechip)
