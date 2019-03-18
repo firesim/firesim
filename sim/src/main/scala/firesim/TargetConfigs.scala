@@ -65,14 +65,16 @@ class WithMemBenchKey extends Config((site, here, up) => {
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
   case DRAMCacheKey => DRAMCacheConfig(
-    nSets = 1 << 19,
+    nSets = 1 << 17,
     nWays = 7,
     baseAddr = BigInt(1) << 37,
     nBanks = 8,
     nChannels = 1,
+    nSecondaryRequests = 7,
     spanBytes = 1024,
     logAddrBits = 37,
-    outIdBits = 4)
+    outIdBits = 4,
+    zeroMetadata = false)
 })
 
 //class WithPFA extends Config((site, here, up) => {
@@ -222,7 +224,7 @@ class FireSimDRAMCacheConfig extends Config(
   new WithPrefetchRoCC ++
   new WithMemBenchKey ++
   new WithDRAMCacheKey ++
-  new WithExtMemSize(12L << 30) ++
+  new WithExtMemSize(15L << 30) ++
   new FireSimRocketChipConfig)
 
 class FireSimDRAMCacheSingleCoreConfig extends Config(
