@@ -136,8 +136,6 @@ def format_log(f):
     for pkt in packets:
         print(pkt)
 
-    track_fc(packets)
-
 def main():
     if len(sys.argv) < 2:
         format_log(sys.stdin)
