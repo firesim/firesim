@@ -241,6 +241,11 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new FRFCFS16GBQuadRank ++
   new BasePlatformConfig)
 
+class FireSimDDR3FRFCFSConfigAsserts extends Config(
+  new WithSynthAsserts ++
+  //new WithPrintfSynthesis ++
+  new FireSimDDR3FRFCFSConfig)
+
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
   new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
