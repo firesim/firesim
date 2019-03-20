@@ -18,7 +18,7 @@ abstract class FASEDTest(
     targetConfigs: String,
     platformConfigs: String,
     N: Int = 8
-  ) extends firesim.midasexamples.TestSuiteCommon with GeneratorUtils {
+  ) extends firesim.TestSuiteCommon with GeneratorUtils {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 

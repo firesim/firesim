@@ -23,10 +23,6 @@ testGrouping in Test := isolateAllTests( (definedTests in Test).value )
 
 lazy val firesimAsLibrary = sys.env.get("FIRESIM_IS_TOP") == None
 
-//def mayDependOnFirechip(project: Project, fireChip: =>Project): Project = {
-//  if (firesimAsLibrary) project.dependsOn(fireChip) else project
-//}
-//
 lazy val fireChipDir = if(firesimAsLibrary) {
   file("../../")
 } else {
@@ -47,8 +43,12 @@ lazy val barstools  = (project in file("barstools/macros"))
 
 lazy val midas      = (project in file("midas"))
   .settings(commonSettings).dependsOn(barstools, rocketchip)
-//
-// Finally the root project
+
+lazy val common     = (project in file("common"))
+  .settings(commonSettings).dependsOn(midas)
+
+lazy val rebar      = RootProject(fireChipDir)
+
 lazy val firesim    = (project in file("."))
   .settings(commonSettings)
-  .dependsOn(firechip)
+  .dependsOn(rebar, common % "test->test;compile->compile")

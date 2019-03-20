@@ -8,6 +8,8 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy.{AddressSet, RegionType, TransferSizes}
 import freechips.rocketchip.tilelink._
 
+import firesim.configs._
+
 object AXI4SlavePort extends Field[AXI4SlavePortParameters]
 object MaxTransferSize extends Field[Int](64)
 object BeatBytes extends Field[Int](8)
@@ -43,17 +45,17 @@ class NT10e7 extends WithNTransactions(10000000)
 // Platform Configs
 
 class DefaultF1Config extends Config(
-  new firesim.firesim.WithDefaultMemModel ++
+  new WithDefaultMemModel ++
   new midas.F1Config)
 
 class FCFSConfig extends Config(
-  new firesim.firesim.FCFS16GBQuadRank ++
+  new FCFS16GBQuadRank ++
   new DefaultF1Config)
 
 class FRFCFSConfig extends Config(
-  new firesim.firesim.FRFCFS16GBQuadRank ++
+  new FRFCFS16GBQuadRank ++
   new DefaultF1Config)
 
 class LLCDRAMConfig extends Config(
-  new firesim.firesim.FRFCFS16GBQuadRankLLC4MB ++
+  new FRFCFS16GBQuadRankLLC4MB ++
   new DefaultF1Config)
