@@ -19,8 +19,7 @@ TARGET_PROJECT ?= firesim
 # that submodules firesim or source sim/Makefrag directly
 TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 
-FIRESIM_AS_LIBRARY:=1
-ifneq ($(FIRESIM_AS_LIBRARY), 1)
+ifdef FIRESIM_STANDALONE
 
 $(info Firesim standalone)
 
