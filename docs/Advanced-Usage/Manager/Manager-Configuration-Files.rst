@@ -40,8 +40,8 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
-``f1_16xlarges``, ``m4_16xlarges``, ``f1_2xlarges``
-""""""""""""""""""""""""""""""""""""""""""""""""""""
+``f1_16xlarges``, ``m4_16xlarges``, ``f1_4xlarges``, ``f1_2xlarges``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Set these three values respectively based on the number and types of instances
 you need. While we could automate this setting, we choose not to, so that
@@ -330,6 +330,7 @@ This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
 These are defined in ``firesim/sim/src/main/scala/firesim/SimConfigs.scala``.
 
+
 ``instancetype``
 """""""""""""""""""
 
@@ -347,6 +348,16 @@ you should leave this set to ``None``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
 users of the simulator.
 
+``TARGET_PROJECT`` `(Optional)`
+"""""""""""""""""""""""""""""""
+
+This specifies the target project in which the target is defined (this is described
+in greater detail :ref:`here<generating-different-targets>`).  If
+``TARGET_PROJECT`` is undefined the manager will default to ``firesim``.
+Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
+(``TARGET_PROJECT=midasexamples``) with the manager, or for building a
+user-provided target project.
+
 .. _config-hwdb:
 
 ``config_hwdb.ini``
@@ -354,7 +365,7 @@ users of the simulator.
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
+.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.ini
    :code: ini
 
 

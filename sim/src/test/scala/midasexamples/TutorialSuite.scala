@@ -3,17 +3,33 @@ package firesim.midasexamples
 
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
+import scala.io.Source
+
+import firesim.util.GeneratorArgs
 
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
-    val platform: midas.PlatformType, // See TestSuiteCommon
+    targetConfigs: String = "NoConfig",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
   ) extends TestSuiteCommon with GeneratorUtils {
 
+  lazy val generatorArgs = GeneratorArgs(
+    midasFlowKind = "midas",
+    targetDir = "generated-src",
+    topModuleProject = "firesim.midasexamples",
+    topModuleClass = targetName,
+    targetConfigProject = "firesim.midasexamples",
+    targetConfigs = targetConfigs,
+    platformConfigProject = "firesim.midasexamples",
+    platformConfigs = "DefaultF1Config")
+
   val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
-  val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples", s"DESIGN=$targetName")
-  val targetTuple = targetName
+  val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
+                           s"DESIGN=$targetName",
+                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}")
+  val targetTuple = generatorArgs.tupleName
+  override lazy val platform = hostParams(midas.Platform)
 
   //implicit val p = (platform match {
   //  case midas.F1 => new midas.F1Config
@@ -69,6 +85,26 @@ abstract class TutorialSuite(
       ignore should s"pass in ${testEnv}" in { }
     }
   }
+
+  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
+  // printfs from the RTL simulator
+  def diffSynthesizedPrints(synthPrintLog: String) {
+    behavior of "synthesized print log"
+    it should "match the logs produced by the verilated design" in {
+      def printLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
+      }
+
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
+      assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
+      for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
+        assert(vPrint == sPrint)
+      }
+    }
+  }
+
   clean
   mkdirs
   compile
@@ -76,17 +112,26 @@ abstract class TutorialSuite(
   runTest("vcs", true)
 }
 
-class PointerChaserF1Test extends TutorialSuite("PointerChaser", midas.F1, 8, Seq("`cat runtime.conf`"))
-class GCDF1Test extends TutorialSuite("GCD", midas.F1, 3)
+class PointerChaserF1Test extends TutorialSuite(
+  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
+class GCDF1Test extends TutorialSuite("GCD")
 // Hijack Parity to test all of the Midas-level backends
-class ParityF1Test extends TutorialSuite("Parity", midas.F1) {
+class ParityF1Test extends TutorialSuite("Parity") {
   runTest("verilator", true)
   runTest("vcs")
 }
-class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister", midas.F1)
-class ResetShiftRegisterF1Test extends TutorialSuite("ResetShiftRegister", midas.F1)
-class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister", midas.F1)
-class StackF1Test extends TutorialSuite("Stack", midas.F1, 8)
-class RiscF1Test extends TutorialSuite("Risc", midas.F1, 64)
-class RiscSRAMF1Test extends TutorialSuite("RiscSRAM", midas.F1, 64)
-class AssertModuleF1Test extends TutorialSuite("AssertModule", midas.F1)
+class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister")
+class ResetShiftRegisterF1Test extends TutorialSuite("ResetShiftRegister")
+class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister")
+class StackF1Test extends TutorialSuite("Stack")
+class RiscF1Test extends TutorialSuite("Risc")
+class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
+class AssertModuleF1Test extends TutorialSuite("AssertModule")
+class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  diffSynthesizedPrints("synthprinttest.out")
+}
+class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  diffSynthesizedPrints("synthprinttest.out")
+}

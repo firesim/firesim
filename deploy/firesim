@@ -105,12 +105,12 @@ def buildafi(globalbuildconf):
 
     signal.signal(signal.SIGINT, terminate_instances_handler)
 
+    for buildconf in globalbuildconf.get_builds_list():
+        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
     globalbuildconf.launch_build_instances()
-
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
 
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
@@ -139,7 +139,7 @@ def launchrunfarm(runtime_conf):
     runtime_conf.runfarm.launch_run_farm()
 
 
-def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_2,
+def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                      terminatesomem4_16, forceterminate):
     """ Terminate instances in the runfarm.
 
@@ -152,7 +152,7 @@ def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_2,
        that many instances of the specified types and leave all others
        untouched.
     """
-    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                     terminatesomem4_16, forceterminate)
 
 def shareagfi(buildconf):
@@ -205,6 +205,9 @@ def construct_firesim_argparser():
     parser.add_argument('-g', '--terminatesomef12', type=int,
                         help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
                         default=-1)
+    parser.add_argument('-i', '--terminatesomef14', type=int,
+                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
+                        default=-1)
     parser.add_argument('-m', '--terminatesomem416', type=int,
                         help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
@@ -241,6 +244,7 @@ def main(args):
     if args.task == 'terminaterunfarm':
         runtime_conf = RuntimeConfig(args)
         terminaterunfarm(runtime_conf, args.terminatesomef116,
+                         args.terminatesomef14,
                          args.terminatesomef12, args.terminatesomem416,
                          args.forceterminate)
 
@@ -298,10 +302,13 @@ if __name__ == '__main__':
     # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
     # unfortunately there's no proper way to do it with fabric
 
+    exitcode = 0
     try:
         main(args)
     except:
         # log all exceptions that make it this far
         rootLogger.exception("Fatal error.")
+        exitcode = 1
     finally:
         rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
+        exit(exitcode)

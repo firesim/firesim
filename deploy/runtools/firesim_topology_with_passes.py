@@ -166,6 +166,7 @@ class FireSimTopologyWithPasses:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
         f1_2s_used = 0
+        f1_4s_used = 0
         f1_16s_used = 0
         m4_16s_used = 0
 
@@ -184,6 +185,11 @@ class FireSimTopologyWithPasses:
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
                     self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
                     f1_2s_used += 1
+                elif (len(downlinknodes) == 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
+                    self.run_farm.f1_4s[f1_4s_used].add_switch(switch)
+                    for server in downlinknodes:
+                        self.run_farm.f1_4s[f1_4s_used].add_simulation(server)
+                    f1_4s_used += 1
                 else:
                     self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
                     for server in downlinknodes:
@@ -349,12 +355,20 @@ class FireSimTopologyWithPasses:
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
-    def boot_simulation_passes(self, use_mock_instances_for_testing):
-        """ Passes that setup for boot and boot the simulation. """
-        if use_mock_instances_for_testing:
-            self.run_farm.bind_mock_instances_to_objects()
-        else:
-            self.run_farm.bind_real_instances_to_objects()
+    def boot_simulation_passes(self, use_mock_instances_for_testing, skip_instance_binding=False):
+        """ Passes that setup for boot and boot the simulation.
+        skip instance binding lets users not call the binding pass on the run_farm
+        again, e.g. if this was called by runworkload (because runworkload calls
+        boot_simulation_passes internally)
+        TODO: the reason we need this is that somehow we're getting
+        garbage results if the AWS EC2 API gets called twice by accident
+        (e.g.  incorrect private IPs)
+        """
+        if not skip_instance_binding:
+            if use_mock_instances_for_testing:
+                self.run_farm.bind_mock_instances_to_objects()
+            else:
+                self.run_farm.bind_real_instances_to_objects()
 
         @parallel
         def boot_switch_wrapper(runfarm):
@@ -428,7 +442,7 @@ class FireSimTopologyWithPasses:
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # boot up as usual
-        self.boot_simulation_passes(False)
+        self.boot_simulation_passes(False, skip_instance_binding=True)
 
         @parallel
         def monitor_jobs_wrapper(runfarm, completed_jobs, teardown, terminateoncompletion, job_results_dir):

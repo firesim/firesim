@@ -34,7 +34,7 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submo
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(timestamps)
+$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
@@ -70,10 +70,11 @@ NET_SLOT ?= 0
 NET_LINK_LATENCY ?= 6405
 NET_BW ?= 100
 nic_args = +slotid=$(NET_SLOT) +niclog0=niclog +linklatency0=$(NET_LINK_LATENCY) +netbw0=$(NET_BW) +netburst0=8 +nic-loopback0
+tracer_args = +tracefile0=TRACEFILE
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args)
+COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
@@ -137,16 +138,16 @@ endif
 # the binary name. These are captured with $($*_ARGS)
 $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 

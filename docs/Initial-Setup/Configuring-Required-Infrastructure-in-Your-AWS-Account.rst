@@ -36,7 +36,7 @@ Check your EC2 Instance Limits
 
 AWS limits access to particular instance types for new/infrequently used
 accounts to protect their infrastructure. You should make sure that your
-account has access to ``f1.2xlarge``, ``f1.16xlarge``,
+account has access to ``f1.2xlarge``, ``f1.4xlarge``, ``f1.16xlarge``,
 ``m4.16xlarge``, and ``c4.4xlarge`` instances by looking at the "Limits" page
 in the EC2 panel, which you can access
 `here <https://console.aws.amazon.com/ec2/v2/home#Limits:>`__. The

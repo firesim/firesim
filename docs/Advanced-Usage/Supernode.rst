@@ -12,7 +12,7 @@ supernode designs. Supernode is currently only enabled for RocketChip designs
 with NICs. More details about supernode can be found in the `FireSim ISCA 2018
 Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
-Introduction 
+Introduction
 --------------
 
 By default, supernode packs 4 identical designs into a single FPGA, and
@@ -24,7 +24,7 @@ action a single node could: run different programs, interact with each other
 over the network, utilize different block device images, etc. In the networked
 case, 4 separate network links are presented to the switch-side.
 
-Building Supernode Designs 
+Building Supernode Designs
 ----------------------------
 
 Here, we outline some of the changes between supernode and regular simulations
@@ -63,7 +63,7 @@ configurations.  For example:
 
     DESIGN=FireSimSupernode
     TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
-    PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz 
+    PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz
     instancetype=c4.4xlarge
     deploytriplet=None
 
@@ -75,8 +75,8 @@ contraints, Supernode target may require lower host clock frequencies.
 host clock frequencies can be configured as parts of the PLATFORM_CONFIG in
 ``config_build_recipes.ini``.
 
-Running Supernode simulations
---------------------
+Running Supernode Simulations
+-----------------------------
 
 Running FireSim in supernode mode follows the same process as in
 "regular" mode. Currently, the only difference is that the main simulation
