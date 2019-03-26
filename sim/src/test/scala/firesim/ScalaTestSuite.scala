@@ -110,7 +110,7 @@ class RocketNICF1Tests extends FireSimTestSuite(
 }
 
 class RamModelRocketF1Tests extends FireSimTestSuite(
-  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipConfig", "Midas2Config"))
+  FireSimGeneratorArgs("FireSimNoNIC", "FireSimRocketChipDualCoreConfig", "Midas2Config"))
 
 class RamModelBoomF1Tests extends FireSimTestSuite(
   FireSimGeneratorArgs("FireBoomNoNIC", "FireSimBoomConfig", "Midas2Config"))

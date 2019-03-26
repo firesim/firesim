@@ -10,6 +10,7 @@ import junctions._
 // This is incomplete and must be mixed into a complete platform config
 class DefaultMIDASConfig extends Config(new Config((site, here, up) => {
     case SynthAsserts => true
+    case midas.GenerateMultiCycleRamModels => true
 }) ++ new Config(new firesim.firesim.WithDefaultMemModel))
 
 class PointerChaserConfig extends Config((site, here, up) => {

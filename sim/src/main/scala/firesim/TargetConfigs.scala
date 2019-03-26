@@ -135,7 +135,8 @@ class FireSimRocketChipOctaCoreConfig extends Config(
 class FireSimRocketChipOctaCoreTracedConfig extends Config(
   new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
 
-class FireSimBoomConfig extends Config(
+
+class FireSimDefaultBoomConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithExtMemSize(0x400000000L) ++ // 16GB
@@ -145,8 +146,13 @@ class FireSimBoomConfig extends Config(
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
-  // Using a small config because it has 64-bit system bus, and compiles quickly
-  new boom.system.SmallBoomConfig)
+  new boom.system.BoomConfig)
+
+// The canonical boom config uses SmallConfig for now given V
+// Using a small config because it has 64-bit system bus, and compiles quickly
+class FireSimBoomConfig extends Config(
+  new boom.common.WithSmallBooms ++
+  new FireSimBoomConfig)
 
 // A safer implementation than the one in BOOM in that it
 // duplicates whatever BOOMTileKey.head is present N times. This prevents
@@ -154,7 +160,13 @@ class FireSimBoomConfig extends Config(
 // tile in the "up" view
 class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => List.tabulate(n)(i => up(BoomTilesKey).head.copy(hartId = i))
+  case freechips.rocketchip.tile.MaxHartIdBits => chisel3.util.log2Up(site(BoomTilesKey).size)
 })
+
+class DBC extends WithNDuplicatedBoomCores(2)
+class QBC extends WithNDuplicatedBoomCores(4)
+
+class MBoom extends boom.common.WithMegaBooms
 
 class FireSimBoomDualCoreConfig extends Config(
   new WithNDuplicatedBoomCores(2) ++
@@ -162,7 +174,6 @@ class FireSimBoomDualCoreConfig extends Config(
 
 class FireSimBoomTracedConfig extends Config(
   new WithTraceBoom ++ new FireSimBoomConfig)
-
 
 //**********************************************************************************
 //* Supernode Configurations

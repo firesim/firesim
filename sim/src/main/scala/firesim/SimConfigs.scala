@@ -57,6 +57,8 @@ class WithTracerVWidget extends Config((site, here, up) => {
 class WithMultiCycleRamModels extends Config((site, here, up) => {
   case midas.GenerateMultiCycleRamModels => true
 })
+// Short name alias for above
+class MCRams extends WithMultiCycleRamModels
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
