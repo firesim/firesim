@@ -137,13 +137,15 @@ object FAMEModuleTransformer {
     val finishing = DefWire(NoInfo, ns.newName(triggerName), Utils.BoolType)
 
     // Step 1: Build channels
-    val inChannels = analysis.inputPortsByChannel(m).map({
-      case (cName, ports) => new FAME1InputChannel(cName, ports)
+    val mTarget = ModuleTarget(analysis.circuit.main, m.name)
+    val inChannels = (analysis.modelInputChannelPortMap(mTarget)).map({
+      case(cName, ports) => new FAME1InputChannel(cName, ports)
     })
     val inChannelMap = new LinkedHashMap[String, FAME1InputChannel] ++
       (inChannels.flatMap(c => c.ports.map(p => (p.name, c))))
-    val outChannels = analysis.outputPortsByChannel(m).map({
-      case (cName, ports) =>
+
+    val outChannels = analysis.modelOutputChannelPortMap(mTarget).map({
+      case(cName, ports) =>
         val firedReg = createHostReg(name = ns.newName(s"${cName}_fired"))
         new FAME1OutputChannel(cName, ports, firedReg)
     })
@@ -236,8 +238,8 @@ class FAMETransform extends Transform {
         analysis.transformedSinks.map(c => Port(NoInfo, s"${c}_sink", Input, analysis.getSinkHostDecoupledChannelType(c))) ++
         analysis.transformedSources.map(c => Port(NoInfo, s"${c}_source", Output, analysis.getSourceHostDecoupledChannelType(c)))
       val transformedStmts = Seq(body.map(updateNonChannelConnects(analysis))) ++
-        analysis.transformedSinks.map({c => Connect(NoInfo, WSubField(WRef(analysis.sinkModel(c).instance), s"${c}_sink"), WRef(s"${c}_sink"))}) ++
-        analysis.transformedSources.map({c => Connect(NoInfo, WRef(s"${c}_source"), WSubField(WRef(analysis.sourceModel(c).instance), s"${c}_source"))})
+        analysis.transformedSinks.map({c => Connect(NoInfo, analysis.wsubToSinkPort(c), WRef(s"${c}_sink"))}) ++
+        analysis.transformedSources.map({c => Connect(NoInfo, WRef(s"${c}_source"), analysis.wsubToSourcePort(c))})
       Module(info, name, transformedPorts, Block(transformedStmts))
   }
 

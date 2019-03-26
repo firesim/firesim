@@ -142,19 +142,40 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
 
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
 
-  def inputPortsByChannel(m: DefModule): Map[String, Seq[Port]] = {
-    val iChannels = inputChannels.get(ModuleTarget(circuit.main, m.name)).toSet.flatten
+  def inputPortsByChannel(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+    val iChannels = inputChannels.get(mTarget).toSet.flatten
     iChannels.map({
       cname => (cname, sinkPorts(cname).map(topConnects(_).pathlessTarget).map(portNodes(_)))
     }).toMap
   }
 
-  def outputPortsByChannel(m: DefModule): Map[String, Seq[Port]] = {
-    val oChannels = outputChannels.get(ModuleTarget(circuit.main, m.name)).toSet.flatten
+  def outputPortsByChannel(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+    val oChannels = outputChannels.get(mTarget).toSet.flatten
     oChannels.map({
       cname => (cname, sourcePorts(cname).map(topConnects(_).pathlessTarget).map(portNodes(_)))
     }).toMap
   }
+
+  lazy val modelPorts = {
+    val mPorts = new LinkedHashMap[ModuleTarget, mutable.Set[FAMEChannelPortsAnnotation]] with MultiMap[ModuleTarget, FAMEChannelPortsAnnotation]
+    state.annotations.collect({
+      case fcp@FAMEChannelPortsAnnotation(_, port :: ps) => mPorts.addBinding(port.moduleTarget, fcp)
+    })
+    mPorts
+  }
+
+  // Looks up all FAMEChannelPortAnnotations bound to a model module, to generate a Map
+  // from channel name to port list
+  private def genModelChannelPortMap(direction: Option[Direction])(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+    modelPorts(mTarget).collect({
+      case FAMEChannelPortsAnnotation(name, ports) if direction == None || portNodes(ports.head).direction == direction.get =>
+        (name, ports.map(portNodes(_)))
+    }).toMap
+  }
+
+  def modelInputChannelPortMap: ModuleTarget => Map[String, Seq[Port]]  = genModelChannelPortMap(Some(Input))
+  def modelOutputChannelPortMap: ModuleTarget => Map[String, Seq[Port]] = genModelChannelPortMap(Some(Output))
+  def modelChannelPortMap: ModuleTarget => Map[String, Seq[Port]]       = genModelChannelPortMap(None)
 
   def getSinkHostDecoupledChannelType(cName: String): Type = {
     FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sinkPorts(cName).map(portNodes(_)))
@@ -164,6 +185,48 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
     FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sourcePorts(cName).map(portNodes(_)))
   }
 
+  // Coalesces channel connectivity annotations to produce a single port list
+  // - Used to produce port annotations in InferModelPorts
+  // - Reran to look up port names on model instances
+  class ModulePortDeduper(val mTarget: ModuleTarget) {
+    val visitedLeafPort = new LinkedHashSet[Port]()
+    val visitedChannel = new LinkedHashMap[Seq[Port], String]()
+    val channelDedups = new LinkedHashMap[String, String]
+    def channelSharesPorts(ps: Seq[Port]): Boolean = ps.map(visitedLeafPort).reduce(_ || _)
+    def channelIsDuplicate(ps: Seq[Port]): Boolean = visitedChannel.contains(ps)
+
+    def dedupPortLists(pList: Map[String, Seq[Port]]): Map[String, Seq[Port]] = pList.flatMap({
+      case (_, ports) if channelSharesPorts(ports) && !channelIsDuplicate(ports) =>
+        throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
+      case (cName, ports) if channelIsDuplicate(ports) =>
+        println(s"${cName} -> ${visitedChannel(ports)}")
+        channelDedups(cName) = visitedChannel(ports)
+        None
+      case (cName, ports) =>
+        visitedChannel(ports) = cName
+        visitedLeafPort ++= ports
+        channelDedups(cName) = cName
+        Some(cName, ports)
+      }).toMap
+
+    val inputPortMap = dedupPortLists(inputPortsByChannel(mTarget))
+    val outputPortMap = dedupPortLists(outputPortsByChannel(mTarget))
+    val completePortMap = inputPortMap ++ outputPortMap
+  }
+
+  lazy val modulePortDedupers = transformedModules.map((mT: ModuleTarget) => new ModulePortDeduper(mT))
+  lazy val portDedups: Map[ModuleTarget, Map[String, String]] =
+    modulePortDedupers.map(mD => mD.mTarget -> mD.channelDedups.toMap).toMap
+
+  // Generates WSubField node pointing at a model instance from the channel name
+  // and an iTarget to  model instance
+  private def wsubToPort(modelInstLookup: String => InstanceTarget, suffix: String)
+                        (cName: String): WSubField = {
+    val modelInst = modelInstLookup(cName)
+    val portName = portDedups(modelInst.ofModuleTarget)(cName)
+    WSubField(WRef(modelInst.instance), s"${portName}${suffix}"),
+  }
+
+  def wsubToSinkPort: String => WSubField = wsubToPort(sinkModel, "_sink")
+  def wsubToSourcePort: String => WSubField = wsubToPort(sourceModel, "_source")
 }
-
-

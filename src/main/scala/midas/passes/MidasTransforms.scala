@@ -60,6 +60,7 @@ private[midas] class MidasTransforms(
       new MiddleFirrtlToLowFirrtl,
       new fame.FAMEDefaults,
       new fame.ChannelExcision,
+      new fame.InferModelPorts,
       new EmitFirrtl("post-channel-excision.fir"),
       new fame.FAMETransform,
       new EmitFirrtl("post-fame-transform.fir"),
