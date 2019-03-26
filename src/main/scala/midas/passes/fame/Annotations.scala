@@ -35,11 +35,11 @@ case class FAMEChannelPortsAnnotation(
 }
 
 /**
-  * An annotation that describes how the top-level connectivty of
+  * An annotation that describes the top-level connectivity of
   * channels on different model instances.
-  * 
+  *
   * @param globalName  a globally unique name for this channel connection
-  * 
+  *
   * @param channelInfo  describes the type of the channel (Wire, Forward/Reverse
   *  Decoupled)
   */
@@ -63,7 +63,7 @@ sealed trait FAMEChannelInfo {
   def update(renames: RenameMap): FAMEChannelInfo = this
 }
 
-/** 
+/**
   * Indicates that a channel connection is a standard wire channel.
   */
 case object WireChannel extends FAMEChannelInfo
@@ -107,18 +107,7 @@ case class DecoupledForwardChannel(
 
 
 /**
-  * Indicates that a particular instance 
-  * a decoupled target connection.
-  * 
-  * @param target  an InstanceTarget pointing to the module that 
-  * 
-  * @param validSource  valid port component from this channel's sources
-  * 
-  * @param readySource  source port component of the corresponding reverse channel
-  * 
-  * @param validSink  valid port component from this channel's sinks
-  * 
-  * @note  (readySink, validSource) are on one model, (readySource, validSink) on the other
+  * Indicates that a particular instance is a FAME Model
   */
 case class FAMEModelAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
   def targets = Seq(target)
@@ -142,11 +131,11 @@ case object FAME1Transform extends FAMETransformType
 /**
   * Indicates that a particular target module from the "AQB" canonical
   * form should be transformed to a FAME model.
-  * 
+  *
   * @param transformType  Describes which variant of the FAME transform
   *  should be applied to the target module. Currently, the
   *  FAME1Transform object is the only value that this can take.
-  * 
+  *
   * @param target  Points to the target module to be transformed. Since
   *  this is a ModuleTarget, all instances at the top level will be
   *  transformed identically.
