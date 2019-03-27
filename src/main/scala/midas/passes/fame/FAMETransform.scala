@@ -25,7 +25,8 @@ trait FAME1Channel {
   def direction: Direction
   def ports: Seq[Port]
   def tpe: Type = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
-  def asPort: Port
+  def portName: String
+  def asPort: Port = Port(NoInfo, portName, direction, tpe)
   def isReady: Expression = WSubField(WRef(asPort), "ready", Utils.BoolType)
   def isValid: Expression = WSubField(WRef(asPort), "valid", Utils.BoolType)
   def isFiring: Expression = Reduce.and(Seq(isReady, isValid))
@@ -40,7 +41,7 @@ trait FAME1Channel {
 
 case class FAME1InputChannel(val name: String, val ports: Seq[Port]) extends FAME1Channel {
   val direction = Input
-  def asPort: Port = Port(NoInfo, s"${name}_sink", Input, tpe)
+  val portName = s"${name}_sink"
   def genTokenLogic(finishing: WRef): Seq[Statement] = {
     Seq(Connect(NoInfo, isReady, finishing))
   }
@@ -48,9 +49,9 @@ case class FAME1InputChannel(val name: String, val ports: Seq[Port]) extends FAM
 
 case class FAME1OutputChannel(val name: String, val ports: Seq[Port], val firedReg: DefRegister) extends FAME1Channel {
   val direction = Output
+  val portName = s"${name}_source"
   val isFired = WRef(firedReg)
   val isFiredOrFiring = Reduce.or(Seq(isFired, isFiring))
-  def asPort: Port = Port(NoInfo, s"${name}_source", Output, tpe)
   def genTokenLogic(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Seq[Statement] = {
     val regUpdate = Connect(
       NoInfo,
@@ -215,6 +216,7 @@ class FAMETransform extends Transform {
   }
 
   def hostDecouplingRenames(analysis: FAMEChannelAnalysis): RenameMap = {
+    // Handle renames at the top-level to new channelized names
     val renames = RenameMap()
     val sinkRenames = analysis.transformedSinks.flatMap({c =>
       if (analysis.sinkPorts(c).size == 1)
@@ -228,7 +230,26 @@ class FAMETransform extends Transform {
       else
         analysis.sourcePorts(c).map(rt => (rt, rt.copy(ref = s"${c}_source").field("bits").field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1)))
     })
-    (sinkRenames ++ sourceRenames).foreach({ case (old, decoupled) => renames.record(old, decoupled) })
+
+    def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, Seq[Port]])
+                   (mT: ModuleTarget): Seq[(ReferenceTarget, ReferenceTarget)] = {
+        lookup(mT).toSeq.flatMap({ case (cName, pList) =>
+          pList.map({ port =>
+            val decoupledTarget = mT.ref(s"${cName}${suffix}").field("bits")
+            if (pList.size == 1)
+              (mT.ref(port.name), decoupledTarget)
+            else
+              (mT.ref(port.name), decoupledTarget.field(FAMEChannelAnalysis.removeCommonPrefix(port.name, cName)._1))
+          })
+        })
+    }
+    def renameModelInputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_sink", analysis.modelInputChannelPortMap)
+    def renameModelOutputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_sink", analysis.modelOutputChannelPortMap)
+
+    val modelPortRenames = analysis.transformedModules.flatMap(renameModelInputs) ++
+                           analysis.transformedModules.flatMap(renameModelOutputs)
+
+    (sinkRenames ++ sourceRenames ++ modelPortRenames).foreach({ case (old, decoupled) => renames.record(old, decoupled) })
     renames
   }
 

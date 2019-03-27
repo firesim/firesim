@@ -28,7 +28,7 @@ private[midas] class MidasTransforms(
   val dir = p(OutputDir)
 
   // Optionally run if the GenerateMultiCycleRamModels parameter is set
-  val ramModelTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
+  val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
     new fame.LabelSRAMModels,
     new ResolveAndCheck,
     new EmitFirrtl("post-sram-models.fir"))
@@ -51,7 +51,7 @@ private[midas] class MidasTransforms(
       new fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++
-    ramModelTransforms ++
+    optionalTargetTransforms ++
     Seq(
       new fame.ExtractModel,
       new ResolveAndCheck,
@@ -64,6 +64,9 @@ private[midas] class MidasTransforms(
       new EmitFirrtl("post-channel-excision.fir"),
       new fame.FAMETransform,
       new EmitFirrtl("post-fame-transform.fir"),
+      new ResolveAndCheck,
+      new fame.EmitAndWrapRAMModels,
+      new EmitFirrtl("post-ram-models.fir"),
       new ResolveAndCheck) ++
     Seq(
       new SimulationMapping(io),
