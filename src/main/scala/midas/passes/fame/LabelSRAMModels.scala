@@ -25,7 +25,7 @@ class LabelSRAMModels extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val circ = state.circuit
     val moduleNS = Namespace(circ)
-    val memModelAnnotations = new ArrayBuffer[FAMEModelAnnotation]
+    val memModelAnnotations = new ArrayBuffer[Annotation]
     val memModules = new ArrayBuffer[Module]
     val annotatedMems = state.annotations.collect({
       case FirrtlMemModelAnnotation(rt) => rt
@@ -39,8 +39,12 @@ class LabelSRAMModels extends Transform {
         def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
           case mem: DefMemory if annotatedMems.contains(mt.ref(mem.name)) =>
             val wrapper = mem2Module(mem).copy(name = moduleNS.newName(mem.name))
+            val wrapperTarget = ModuleTarget(circ.main, wrapper.name)
             memModules += wrapper
             memModelAnnotations += FAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
+            memModelAnnotations ++= mem.readers.map(rp => ModelReadPort(wrapperTarget.ref(rp)))
+            memModelAnnotations ++= mem.writers.map(rp => ModelWritePort(wrapperTarget.ref(rp)))
+            memModelAnnotations ++= mem.readwriters.map(rp => ModelReadWritePort(wrapperTarget.ref(rp)))
             WDefInstance(mem.info, mem.name, wrapper.name, UnknownType)
           case s => s
         }

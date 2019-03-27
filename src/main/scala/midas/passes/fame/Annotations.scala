@@ -180,6 +180,15 @@ abstract class MemPortAnnotation extends Annotation {
   val addr: ReferenceTarget
 }
 
+object ModelReadPort {
+  def apply(rpt: ReferenceTarget) =
+    new ModelReadPort(
+      rpt.field("data"),
+      rpt.field("addr"),
+      rpt.field("en"),
+      rpt.field("clk"))
+}
+
 case class ModelReadPort(
   data: ReferenceTarget,
   addr: ReferenceTarget,
@@ -190,6 +199,16 @@ case class ModelReadPort(
     Seq(ModelReadPort(renamer(data), renamer(addr), renamer(en), renamer(clk)))
   }
   override def getTargets: Seq[ReferenceTarget] = Seq(data, addr, en, clk)
+}
+
+object ModelWritePort {
+  def apply(rpt: ReferenceTarget) =
+    new ModelWritePort(
+      rpt.field("data"),
+      rpt.field("mask"),
+      rpt.field("addr"),
+      rpt.field("en"),
+      rpt.field("clk"))
 }
 
 case class ModelWritePort(
@@ -203,6 +222,18 @@ case class ModelWritePort(
     Seq(ModelWritePort(renamer(data), renamer(mask), renamer(addr), renamer(en), renamer(clk)))
   }
   override def getTargets: Seq[ReferenceTarget] = Seq(data, mask, addr, en, clk)
+}
+
+object ModelReadWritePort {
+  def apply(rpt: ReferenceTarget) =
+    new ModelReadWritePort(
+      rpt.field("wmode"),
+      rpt.field("rdata"),
+      rpt.field("wdata"),
+      rpt.field("wmask"),
+      rpt.field("addr"),
+      rpt.field("en"),
+      rpt.field("clk"))
 }
 
 case class ModelReadWritePort(
