@@ -51,6 +51,7 @@ In order to use the ILA, we must enable the GUI interface on our manager instanc
 This can be done by running the following commands:
 
 ::
+
   curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
   sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
   /home/centos/src/scripts/setup_gui.sh
