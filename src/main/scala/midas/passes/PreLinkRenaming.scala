@@ -3,7 +3,7 @@
 package midas.passes
 
 import firrtl._
-import firrtl.annotations.{CircuitName, ModuleName}
+import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import Utils._
@@ -51,3 +51,24 @@ private[passes] class PreLinkRenaming(childNamespace: Namespace) extends firrtl.
                renames = Some(renameMap))
   }
 }
+
+// A simpler version of the above
+class SingleModulePrelinkRename(newCName: String, newMName: String) extends firrtl.Transform {
+  def inputForm = HighForm
+  def outputForm = HighForm
+  override def name = s"[MIDAS 2.0] SingleModulePrelinkRename"
+
+  def execute(state: CircuitState) = {
+    val oldName = state.circuit.main
+    state.copy(
+      circuit = state.circuit.copy(
+        main = newCName,
+        modules = state.circuit.modules.map({
+          case m: ExtModule if m.name == oldName => m.copy(name = newMName)
+          case m: Module    if m.name == oldName => m.copy(name = newMName)
+        })),
+      renames = Some(RenameMap.create(Map(
+        ModuleTarget(oldName, oldName) -> Seq(ModuleTarget(newCName, newMName))))))
+  }
+}
+

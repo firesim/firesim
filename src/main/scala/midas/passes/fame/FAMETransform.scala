@@ -244,7 +244,7 @@ class FAMETransform extends Transform {
         })
     }
     def renameModelInputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_sink", analysis.modelInputChannelPortMap)
-    def renameModelOutputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_sink", analysis.modelOutputChannelPortMap)
+    def renameModelOutputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_source", analysis.modelOutputChannelPortMap)
 
     val modelPortRenames = analysis.transformedModules.flatMap(renameModelInputs) ++
                            analysis.transformedModules.flatMap(renameModelOutputs)

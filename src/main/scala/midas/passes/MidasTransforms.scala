@@ -9,6 +9,7 @@ import chisel3.core.DataMirror.directionOf
 import firrtl._
 import firrtl.annotations._
 import firrtl.ir._
+import logger._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
 import Utils._
@@ -31,9 +32,10 @@ private[midas] class MidasTransforms(
   val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
     new fame.LabelSRAMModels,
     new ResolveAndCheck,
-    new EmitFirrtl("post-sram-models.fir"))
+    new EmitFirrtl("post-wrap-sram-models.fir"))
   else Seq()
 
+  //Logger.setLevel(LogLevel.Info)
   def execute(state: CircuitState) = {
     val xforms = Seq(
       firrtl.passes.RemoveValidIf,
@@ -66,7 +68,7 @@ private[midas] class MidasTransforms(
       new EmitFirrtl("post-fame-transform.fir"),
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
-      new EmitFirrtl("post-ram-models.fir"),
+      new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++
     Seq(
       new SimulationMapping(io),
