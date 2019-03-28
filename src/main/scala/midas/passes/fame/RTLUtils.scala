@@ -28,6 +28,18 @@ object IsDecoupled {
   }
 }
 
+class Decoupled(inst: Expression) {
+  def valid = WSubField(inst, "valid")
+  def ready = WSubField(inst, "ready")
+  def bits(field: String = "") = {
+    if (field != "")
+      WSubField(WSubField(inst, "bits"), field)
+    else
+      WSubField(inst, "bits")
+  }
+}
+
+
 object Negate {
   def apply(arg: Expression): Expression = DoPrim(PrimOps.Not, Seq(arg), Seq.empty, arg.tpe)
 }

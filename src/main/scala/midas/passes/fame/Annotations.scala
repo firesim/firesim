@@ -175,7 +175,6 @@ case class FAMEHostReset(target: ReferenceTarget) extends FAMEGlobalSignal {
 }
 
 abstract class MemPortAnnotation extends Annotation {
-  val clk: ReferenceTarget
   val en: ReferenceTarget
   val addr: ReferenceTarget
 }
@@ -185,20 +184,18 @@ object ModelReadPort {
     new ModelReadPort(
       rpt.field("data"),
       rpt.field("addr"),
-      rpt.field("en"),
-      rpt.field("clk"))
+      rpt.field("en"))
 }
 
 case class ModelReadPort(
   data: ReferenceTarget,
   addr: ReferenceTarget,
-  en: ReferenceTarget,
-  clk: ReferenceTarget) extends MemPortAnnotation {
+  en: ReferenceTarget) extends MemPortAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(ModelReadPort(renamer(data), renamer(addr), renamer(en), renamer(clk)))
+    Seq(ModelReadPort(renamer(data), renamer(addr), renamer(en)))
   }
-  override def getTargets: Seq[ReferenceTarget] = Seq(data, addr, en, clk)
+  override def getTargets: Seq[ReferenceTarget] = Seq(data, addr, en)
 }
 
 object ModelWritePort {
@@ -207,21 +204,19 @@ object ModelWritePort {
       rpt.field("data"),
       rpt.field("mask"),
       rpt.field("addr"),
-      rpt.field("en"),
-      rpt.field("clk"))
+      rpt.field("en"))
 }
 
 case class ModelWritePort(
   data: ReferenceTarget,
   mask: ReferenceTarget,
   addr: ReferenceTarget,
-  en: ReferenceTarget,
-  clk: ReferenceTarget) extends MemPortAnnotation {
+  en: ReferenceTarget) extends MemPortAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(ModelWritePort(renamer(data), renamer(mask), renamer(addr), renamer(en), renamer(clk)))
+    Seq(ModelWritePort(renamer(data), renamer(mask), renamer(addr), renamer(en)))
   }
-  override def getTargets: Seq[ReferenceTarget] = Seq(data, mask, addr, en, clk)
+  override def getTargets: Seq[ReferenceTarget] = Seq(data, mask, addr, en)
 }
 
 object ModelReadWritePort {
@@ -232,8 +227,7 @@ object ModelReadWritePort {
       rpt.field("wdata"),
       rpt.field("wmask"),
       rpt.field("addr"),
-      rpt.field("en"),
-      rpt.field("clk"))
+      rpt.field("en"))
 }
 
 case class ModelReadWritePort(
@@ -242,11 +236,10 @@ case class ModelReadWritePort(
   wdata: ReferenceTarget,
   wmask: ReferenceTarget,
   addr: ReferenceTarget,
-  en: ReferenceTarget,
-  clk: ReferenceTarget) extends MemPortAnnotation {
+  en: ReferenceTarget) extends MemPortAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(ModelReadWritePort(renamer(wmode), renamer(rdata), renamer(wdata), renamer(wmask), renamer(addr), renamer(en), renamer(clk)))
+    Seq(ModelReadWritePort(renamer(wmode), renamer(rdata), renamer(wdata), renamer(wmask), renamer(addr), renamer(en)))
   }
-  override def getTargets: Seq[ReferenceTarget] = Seq(wmode, rdata, wdata, wmask, addr, en, clk)
+  override def getTargets: Seq[ReferenceTarget] = Seq(wmode, rdata, wdata, wmask, addr, en)
 }
