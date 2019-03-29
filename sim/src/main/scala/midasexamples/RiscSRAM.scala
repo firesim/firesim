@@ -45,7 +45,7 @@ class RiscSRAM extends Module {
 
   val file_wen = state === rc_write && rci =/= 255.U
   val file_addr = Mux(state === decode, rai, rbi)
-  val file = fileMem.read(file_addr, !file_wen)
+  val file = fileMem.read(file_addr)//, !file_wen)
   when(file_wen) {
     fileMem.write(rci, io.out)
   }
