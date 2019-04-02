@@ -145,7 +145,7 @@ $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +loadmem=/home/centos/firesim/sim/src/main/scala/picorv32/basicfw.hex $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug

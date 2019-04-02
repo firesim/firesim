@@ -28,6 +28,8 @@ import firrtl.annotations.Annotation
 
 import firesim.util.{GeneratorArgs,HasTargetAgnosticUtilites}
 
+import midas.targetutils.FpgaDebug
+
 trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites {
   val targetTransforms = Seq(
     firesim.passes.AsyncResetRegPass,
@@ -47,9 +49,9 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
     val lines = Source.fromFile("src/main/scala/picorv32/synth.fir").getLines()
     val chirrtl = firrtl.Parser.parse(lines)
 
-    val dut = chisel3.Driver.elaborate(() => new UARTWrapper)
+    val dut = chisel3.Driver.elaborate(() => new PicoRV32)
     val annos = dut.annotations.map(_.toFirrtl)
-    val portList = dut.components.find(_.name == "UARTWrapper").get.ports.flatMap(p => Some(p.id.instanceName -> p.id))
+    val portList = dut.components.find(_.name == "PicoRV32").get.ports.flatMap(p => Some(p.id.instanceName -> p.id))
 
     midas.MidasCompiler(
       chirrtl, annos, portList, genDir, None, targetTransforms, hostTransforms
@@ -77,7 +79,7 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
   generateHostVerilogHeader
 }
 
-class UARTWrapper extends MultiIOModule {
+class PicoRV32 extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
 	val mem_axi4 = IO(HeterogeneousBag(Seq(AXI4Bundle(new AXI4BundleParameters(addrBits=32, dataBits=32, idBits=1, userBits=0, wcorrupt=false)))))
 
@@ -100,7 +102,7 @@ class UARTWrapper extends MultiIOModule {
 	mem_axi4(0).aw.valid := DontCare
 
 	mem_axi4(0).ar.bits.id := DontCare
-        mem_axi4(0).ar.bits.addr := DontCare
+	mem_axi4(0).ar.bits.addr := DontCare
         mem_axi4(0).ar.bits.len := DontCare
         mem_axi4(0).ar.bits.size := DontCare
         mem_axi4(0).ar.bits.burst := DontCare
@@ -118,10 +120,26 @@ class UARTWrapper extends MultiIOModule {
 	mem_axi4(0).b.ready := DontCare
 
 	mem_axi4(0).r.ready := DontCare
+
+	FpgaDebug(	mem_axi4(0).aw.bits.addr, 
+			mem_axi4(0).aw.valid, 
+			mem_axi4(0).aw.ready, 
+			mem_axi4(0).ar.bits.addr, 
+			mem_axi4(0).ar.valid, 
+			mem_axi4(0).ar.ready, 
+			mem_axi4(0).w.bits.data, 
+			mem_axi4(0).w.valid, 
+			mem_axi4(0).w.ready, 
+			mem_axi4(0).b.bits.data, 
+			mem_axi4(0).b.valid, 
+			mem_axi4(0).b.ready, 
+			mem_axi4(0).r.bits.data,
+			mem_axi4(0).r.valid, 
+			mem_axi4(0).r.ready)
 }
 
 object UARTWrapperDriver extends App {
-        chisel3.Driver.execute(args, () => new UARTWrapper)
+        chisel3.Driver.execute(args, () => new PicoRV32)
 }
 
 trait HasTestSuites {

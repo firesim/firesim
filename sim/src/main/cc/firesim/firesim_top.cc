@@ -415,6 +415,7 @@ void firesim_top_t::run() {
         step(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
             for (auto &e: endpoints) e->tick();
+	    //fprintf(stderr, "Target cycles = %d\n", actual_tcycle());
         }
     }
 
