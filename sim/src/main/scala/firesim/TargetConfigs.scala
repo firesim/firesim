@@ -1,6 +1,6 @@
 package firesim.firesim
 
-import chisel3.util.{log2Ceil}
+import chisel3.util.{log2Up}
 import freechips.rocketchip.config.{Parameters, Config}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
@@ -155,7 +155,7 @@ class FireSimBoomConfig extends Config(
 // tile in the "up" view
 class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => List.tabulate(n)(i => up(BoomTilesKey).head.copy(hartId = i))
-  case MaxHartIdBits => log2Ceil(site(BoomTilesKey).size)
+  case MaxHartIdBits => log2Up(site(BoomTilesKey).size)
 })
 
 class FireSimBoomDualCoreConfig extends Config(
