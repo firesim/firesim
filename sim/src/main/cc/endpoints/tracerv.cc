@@ -27,6 +27,17 @@
 #define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
 #define TRACERV_ADDR 0x100000000L
 
+// Layout
+// OUTBUF[i+1]  (y)                         OUTBUF[i]  (x)
+// +--+-+------------------+-------------+  +------------+-------+-+-+------------+----------------+
+// |  |v|   iaddr[39:0]    | insn[31:11] |  | insn[10:0] |pr[2:0]|e|i| cause[7:0] |   tval[39:0]   |
+// +--+-+------------------+-------------+  +------------+-------+-+-+------------+----------------+
+
+#define GET_VALID(x,y) ((y >> 61) & 0x1)
+#define GET_INST(x,y) (((x >> 53) & 0x7ff) + ((y & 0x1fffff) << 11))
+#define GET_IADDR(x,y) ((y >> 21) & 0xffffffffff)
+#define GET_PRIV(x,y) ((x >> 50) & 0x7)
+
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracerno) : endpoint_t(sim)
 {
@@ -82,8 +93,10 @@ void tracerv_t::init() {
 // undefining this stores as bin (e.g. open with vim hex mode)
 #define HUMAN_READABLE
 
-#define START_MARKER 0xe000251d4c
-#define END_MARKER 0xe000251fa8
+#define START_MARKER	0x12fdc // main start of test-runner.riscv
+#define END_MARKER	  0x13100 // main end of test-runner.riscv
+//#define START_MARKER 0xe000251d4c
+//#define END_MARKER 0xe000251fa8
 
 static bool should_trace = false;
 
@@ -103,8 +116,10 @@ void tracerv_t::tick() {
 #ifdef HUMAN_READABLE
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                 // Assume one hart
-                int val = (OUTBUF[i+1] >> 61) & 0x1;
-                uint64_t iaddr = (OUTBUF[i+1] >> 21) & 0xffffffffff;
+                int val = GET_VALID(OUTBUF[i], OUTBUF[i+1]);
+                uint64_t iaddr = GET_IADDR(OUTBUF[i], OUTBUF[i+1]);
+								uint64_t insn = GET_INST(OUTBUF[i], OUTBUF[i+1]);
+								int priv = GET_PRIV(OUTBUF[i], OUTBUF[i+1]);
 
 								mini_cycle ++;
                 
@@ -112,10 +127,10 @@ void tracerv_t::tick() {
                    if (!should_trace) {
                        should_trace = true;
                        fprintf(this->tracefile, "========================== TRACE START ==========================\n");
-                       fprintf(this->tracefile, "Cycle            PC                   Instruction\n");
+                       fprintf(this->tracefile, "Cycle           PC               Instruction     Priv\n");
                    }
-                   uint64_t insn = ((OUTBUF[i] >> 53) & 0x7ff) + ((OUTBUF[i+1] & 0x1fffff) << 11);
-                   fprintf(this->tracefile, "%ld,   %016llx,   %016llx\n", cur_cycle + mini_cycle, iaddr, insn);
+                   
+									 fprintf(this->tracefile, "%ld, %016llx, %016llx, %d\n", cur_cycle + mini_cycle, iaddr, insn, priv);
 								}
 
                 if (val && iaddr == END_MARKER && should_trace) {
