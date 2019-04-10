@@ -24,6 +24,8 @@ The manager gets configuration information from several places:
 
 - Configuration Files
 
+- Environment Variables
+
 - Topology definitions for networked simulations (``user_topology.py``)
 
 The following sections detail these inputs. Hit Next to continue.
@@ -38,3 +40,4 @@ encounter issues. The logs contain more detailed output than the manager
 sends to stdout/stderr during normal operation, so it's also useful if you
 want to take a peek at the detailed commands manager is running to facilitate
 builds and simulations. Logs are stored in ``firesim/deploy/logs/``.
+
