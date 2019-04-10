@@ -5,8 +5,6 @@ Manager Environment Variables
 
 This page contains a centralized reference for the environment variables used
 by the manager.
-in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,
-and ``config_hwdb.ini``.
 
 .. _config-runtime:
 
