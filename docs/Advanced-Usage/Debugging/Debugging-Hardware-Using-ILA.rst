@@ -48,11 +48,15 @@ Using the ILA at Runtime
 Prerequisite: Make sure that ports 3121 and 10201 are enabled in the firesim AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
-This can be done by running the command:
+This can be done by running the following commands:
 
 ::
 
+  curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
+  sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
   /home/centos/src/scripts/setup_gui.sh
+  # keep manager paramiko compatibility
+  sudo pip2 uninstall gssapi
 
 When the command will finish running, a temporary password will be printed out. This
 password will be used to access the GUI interface of the master instance. We will
