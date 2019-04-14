@@ -1,13 +1,13 @@
 package firesim.firesim
 
-import java.io.{File, FileWriter}
+import java.io.{File}
 
 import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.{Circuit, Port}
 
-import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomacy.{ValName, AutoBundle}
 import freechips.rocketchip.devices.debug.DebugIO
-import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
+import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames, ElaborationArtefacts}
 import freechips.rocketchip.system.DefaultTestSuites._
 import freechips.rocketchip.system.{TestGeneration, RegressionTestSuite}
 import freechips.rocketchip.config.Parameters
@@ -15,83 +15,26 @@ import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.XLen
 
 import boom.system.{BoomTilesKey, BoomTestSuites}
+import firesim.util.{GeneratorArgs, HasTargetAgnosticUtilites}
 
-case class FireSimGeneratorArgs(
-  midasFlowKind: String = "midas", // "midas", "strober", "replay"
-  targetDir: String, // Where generated files should be emitted
-  topModuleProject: String = "firesim.firesim",
-  topModuleClass: String,
-  targetConfigProject: String = "firesim.firesim",
-  targetConfigs: String,
-  platformConfigProject: String = "firesim.firesim",
-  platformConfigs: String) {
-
-  def targetNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs)
-
-  def platformNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs)
-
-  def tupleName(): String = s"$topModuleClass-$targetConfigs-$platformConfigs"
-}
-
-object FireSimGeneratorArgs {
-  def apply(a: Seq[String]): FireSimGeneratorArgs = {
-    require(a.size == 8, "Usage: sbt> run [midas | strober | replay] " +
-      "TargetDir TopModuleProjectName TopModuleName ConfigProjectName ConfigNameString HostConfig")
-    FireSimGeneratorArgs(a(0), a(1), a(2), a(3), a(4), a(5), a(6), a(7))
-  }
-
-  // Shortform useful when all classes are local to the firesim.firesim package
-  def apply(targetName: String, targetConfig: String, platformConfig: String): FireSimGeneratorArgs =
-  FireSimGeneratorArgs(
-    targetDir = "generated-src/",
-    topModuleClass = targetName,
-    targetConfigs = targetConfig,
-    platformConfigs = platformConfig
-  )
-}
-
-trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSuites {
-  // We reuse this trait in the scala tests and in a top-level App, where this
-  // this structure will be populated with CML arguments
-  def generatorArgs: FireSimGeneratorArgs
-
-  def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
-    implicit val valName = ValName(targetNames.topModuleClass)
-    targetNames.topModuleClass match {
-      case "FireSim"  => LazyModule(new FireSim()(params)).module
-      case "FireBoom" => LazyModule(new FireBoom()(params)).module
-      case "FireSimNoNIC"  => LazyModule(new FireSimNoNIC()(params)).module
-      case "FireBoomNoNIC" => LazyModule(new FireBoomNoNIC()(params)).module
-      case "FireSimMemBlade" => LazyModule(new FireSimMemBlade()(params)).module
-      case "FireSimRemoteMemClient" => LazyModule(new FireSimRemoteMemClient()(params)).module
-      case "FireSimDRAMCache" => LazyModule(new FireSimDRAMCache()(params)).module
-      case "FireSimSupernode" => new FireSimSupernode()(params)
-    }
-  }
-
+trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites with HasTestSuites {
   lazy val names = generatorArgs.targetNames
   lazy val longName = names.topModuleClass
   // Use a second parsedInputNames to reuse RC's handy config lookup functions
   lazy val hostNames = generatorArgs.platformNames
   lazy val targetParams = getParameters(names.fullConfigClasses)
   lazy val target = getGenerator(names, targetParams)
-  lazy val testDir = new File(names.targetDir)
+  // For HasTestSuites
+  lazy val testDir = genDir
   val targetTransforms = Seq(
     firesim.passes.AsyncResetRegPass,
     firesim.passes.PlusArgReaderPass
   )
   lazy val hostTransforms = Seq(
-    new firesim.passes.ILATopWiringTransform(testDir)
+    new firesim.passes.ILATopWiringTransform(genDir)
   )
 
-  // While this is called the HostConfig, it does also include configurations
-  // that control what models are instantiated
-  lazy val hostParams = getParameters(
-    hostNames.fullConfigClasses ++
-    names.fullConfigClasses
-  ).alterPartial({ case midas.OutputDir => testDir })
+  lazy val hostParams = getHostParameters(names, hostNames)
 
   def elaborateAndCompileWithMidas() {
     val c3circuit = chisel3.Driver.elaborate(() => target)
@@ -100,14 +43,14 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
 
     val portList = target.getPorts flatMap {
       case Port(id: DebugIO, _) => None
-      case Port(id: AutoBundle, _) => None // What the hell is AutoBundle?
+      case Port(id: AutoBundle, _) => None
       case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }
 
     generatorArgs.midasFlowKind match {
       case "midas" | "strober" =>
         midas.MidasCompiler(
-          chirrtl, annos, portList, testDir, None, targetTransforms, hostTransforms
+          chirrtl, annos, portList, genDir, None, targetTransforms, hostTransforms
         )(hostParams alterPartial {case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
     // Need replay
     }
@@ -119,23 +62,11 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
     writeOutputFile(s"$longName.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
 
-  def writeOutputFile(fname: String, contents: String): File = {
-    val f = new File(testDir, fname)
-    val fw = new FileWriter(f)
-    fw.write(contents)
-    fw.close
-    f
-  }
-
-  // Capture FPGA-toolflow related verilog defines
-  def generateHostVerilogHeader() {
-    val headerName = "cl_firesim_generated_defines.vh"
-    val requestedFrequency = hostParams(DesiredHostFrequency)
-    val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
-    if (!availableFrequenciesMhz.contains(requestedFrequency)) {
-      throw new RuntimeException(s"Requested frequency (${requestedFrequency} MHz) is not available.\nAllowed options: ${availableFrequenciesMhz} MHz")
+  // Output miscellaneous files produced as a side-effect of elaboration
+  def generateArtefacts {
+    ElaborationArtefacts.files.foreach { case (extension, contents) =>
+      writeOutputFile(s"${longName}.${extension}", contents ())
     }
-    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
   }
 }
 
@@ -217,11 +148,12 @@ trait HasTestSuites {
 }
 
 object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
-  lazy val generatorArgs = FireSimGeneratorArgs(args)
-
+  lazy val generatorArgs = GeneratorArgs(args)
+  lazy val genDir = new File(names.targetDir)
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
   generateHostVerilogHeader
+  generateArtefacts
 }
 
 // A runtime-configuration generation for memory models
@@ -230,24 +162,15 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
 //   1: Output directory (same as above)
 //   Remaining argments are the same as above
 object FireSimRuntimeConfGenerator extends App with HasFireSimGeneratorUtilities {
-  lazy val generatorArgs = FireSimGeneratorArgs(args)
+  lazy val generatorArgs = GeneratorArgs(args)
+  lazy val genDir = new File(names.targetDir)
   // We need the scala instance of an elaborated memory-model, so that settings
   // may be legalized against the generated hardware. TODO: Currently these
   // settings aren't dependent on the target-AXI4 widths (~bug); this will need
   // to be an optional post-generation step in MIDAS
-  lazy val modelParams = hostParams.alterPartial {
-    case junctions.NastiKey => junctions.NastiParameters(64, 32, 4) // Related note ^
-  }
-  lazy val memModel = hostParams(midas.MemModelKey).map(fn => fn(modelParams))
-  memModel.foreach(m => chisel3.Driver.elaborate(() => m))
-
+  lazy val memModel = (hostParams(midas.models.MemModelKey))(hostParams alterPartial {
+      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
+  chisel3.Driver.elaborate(() => memModel)
   val confFileName = args(0)
-  memModel.foreach {
-    case model: midas.models.MidasMemModel => {
-      model.getSettings(confFileName)(hostParams)
-    }
-    // TODO: Support other model types;
-    case _ => throw new RuntimeException(
-      "This memory model does not support runtime-configuration generation")
-  }
+  memModel.getSettings(confFileName)(hostParams)
 }

@@ -86,8 +86,8 @@ void tracerv_t::tick() {
     uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
 
     #define QUEUE_DEPTH 6144
-    
-    uint64_t OUTBUF[QUEUE_DEPTH * 8];
+
+    alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
 
     if (outfull) {
         int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;

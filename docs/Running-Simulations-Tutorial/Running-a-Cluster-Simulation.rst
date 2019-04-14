@@ -37,7 +37,7 @@ this like so:
 ::
 
     cd firesim/sw/firesim-software
-    ./sw-manager.py -c br-disk.json build
+    ./marshal -v build workloads/br-base.json
 
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
@@ -127,6 +127,7 @@ You should expect output like the following:
 
     Waiting for instance boots: f1.16xlarges
     i-09e5491cce4d5f92d booted!
+    Waiting for instance boots: f1.4xlarges
     Waiting for instance boots: m4.16xlarges
     Waiting for instance boots: f1.2xlarges
     The full log of this run is:
@@ -181,8 +182,9 @@ For a complete run, you should expect output like the following:
     [172.30.2.178] Copying FPGA simulation infrastructure for slot: 6.
     [172.30.2.178] Copying FPGA simulation infrastructure for slot: 7.
     [172.30.2.178] Installing AWS FPGA SDK on remote nodes.
-    [172.30.2.178] Unloading EDMA Driver Kernel Module.
-    [172.30.2.178] Copying AWS FPGA EDMA driver to remote node.
+    [172.30.2.178] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+    [172.30.2.178] Copying AWS FPGA XDMA driver to remote node.
+    [172.30.2.178] Loading XDMA Driver Kernel Module.
     [172.30.2.178] Clearing FPGA Slot 0.
     [172.30.2.178] Clearing FPGA Slot 1.
     [172.30.2.178] Clearing FPGA Slot 2.
@@ -199,7 +201,8 @@ For a complete run, you should expect output like the following:
     [172.30.2.178] Flashing FPGA Slot: 5 with agfi: agfi-09e85ffabe3543903.
     [172.30.2.178] Flashing FPGA Slot: 6 with agfi: agfi-09e85ffabe3543903.
     [172.30.2.178] Flashing FPGA Slot: 7 with agfi: agfi-09e85ffabe3543903.
-    [172.30.2.178] Loading EDMA Driver Kernel Module.
+    [172.30.2.178] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
+    [172.30.2.178] Loading XDMA Driver Kernel Module.
     [172.30.2.178] Copying switch simulation infrastructure for switch slot: 0.
     The full log of this run is:
     /home/centos/firesim-new/deploy/logs/2018-05-19--06-07-33-infrasetup-2Z7EBCBIF2TSI66Q.log
@@ -514,6 +517,8 @@ Which should present you with the following:
 	IMPORTANT!: This will terminate the following instances:
 	f1.16xlarges
 	['i-09e5491cce4d5f92d']
+	f1.4xlarges
+	[]
 	m4.16xlarges
 	[]
 	f1.2xlarges

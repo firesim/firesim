@@ -1,7 +1,7 @@
 {
   "benchmark_name" : "fedora-uniform",
-  "common_bootbinary" : "fedora-disk-bin",
-  "common_rootfs"     : "fedora-disk.img",
+  "common_bootbinary" : "fedora-base-bin",
+  "common_rootfs"     : "fedora-base.img",
   "common_outputs"    : ["/etc/os-release"],
   "common_simulation_outputs" : ["uartlog"]
 }

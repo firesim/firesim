@@ -30,15 +30,30 @@ class JobConfig:
         else:
             self.bootbinary = parent_workload.common_bootbinary
 
+        if 'rootfs' in singlejob_dict:
+            if singlejob_dict['rootfs'] is None:
+                # Don't include a rootfs
+                self.rootfs = None
+            else:
+                # Explicit per-job rootfs
+                self.rootfs = parent_workload.workload_input_base_dir + singlejob_dict['rootfs']
+        else:
+            # No explicit per-job rootfs, inherit from workload
+            if parent_workload.derive_rootfs:
+                # No explicit workload rootfs, derive path from job name
+                self.rootfs = self.parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
+            elif parent_workload.common_rootfs is None:
+                # Don't include a rootfs
+                self.rootfs = None
+            else:
+                # Explicit rootfs path from workload
+                self.rootfs = self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
+
     def bootbinary_path(self):
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
     def rootfs_path(self):
-        if self.parent_workload.common_rootfs is not None:
-            return self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
-        else:
-            # assume the rootfs is named after the job
-            return self.parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
+        return self.rootfs
 
     def __str__(self):
         return self.jobname
@@ -60,7 +75,13 @@ class WorkloadConfig:
         with open(self.workloadfilename) as json_data:
             workloadjson = json.load(json_data)
 
-        self.common_rootfs = workloadjson.get("common_rootfs")
+        if 'common_rootfs' in workloadjson:
+            self.common_rootfs = workloadjson["common_rootfs"]
+            self.derive_rootfs = False
+        else:
+            self.common_rootfs = None
+            self.derive_rootfs = True
+
         self.common_bootbinary = workloadjson.get("common_bootbinary")
         self.workload_name = workloadjson.get("benchmark_name")
         #self.rootfs_base = workloadjson.get("deliver_dir")

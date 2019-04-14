@@ -100,12 +100,19 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog +blkdev-log0=blkdev-log {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-                macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, profile_interval=profile_interval,
-                shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
-                trace_start=trace_start, trace_end=trace_end)
+
+        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
+                slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
+                linklatency=linklatency, netbw=netbw,
+                profile_interval=profile_interval, shmemportname=shmemportname,
+                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
+                trace_end=trace_end)
+
+        if blkdev is not None:
+            driverArgs += """ +blkdev0={blkdev} +blkdev-log0=blkdev-log""".format(blkdev=blkdev)
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
+                slotid=slotid, driver=driver, driverArgs=driverArgs)
 
         return basecommand
 
@@ -130,7 +137,10 @@ class RuntimeHWConfig:
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
         def array_to_plusargs(valuesarr, plusarg):
-            args = map(lambda ind_rootfs: """{}{}={}""".format(plusarg, ind_rootfs[0], ind_rootfs[1]), enumerate(valuesarr))
+            args = []
+            for index, arg in enumerate(valuesarr):
+                if arg is not None:
+                    args.append("""{}{}={}""".format(plusarg, index, arg))
             return " ".join(args) + " "
 
         command_macs = array_to_plusargs(all_macs, "+macaddr")
@@ -233,9 +243,10 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         self.runfarmtag = runtime_dict['runfarm']['runfarmtag']
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges'])
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges'])
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges'])
+        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
@@ -290,6 +301,7 @@ class RuntimeConfig:
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
+                               self.innerconf.f1_4xlarges_requested,
                                self.innerconf.f1_2xlarges_requested,
                                self.innerconf.m4_16xlarges_requested,
                                self.innerconf.runfarmtag,
@@ -311,10 +323,10 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                         terminatesomem4_16, forceterminate)
 
     def infrasetup(self):

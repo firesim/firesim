@@ -1,7 +1,7 @@
 
-# All the tests in here right now are based off the br-disk image.
-BASE_IMAGE:=../../sw/firesim-software/images/br-disk.img
-BASE_LINUX:=../../sw/firesim-software/images/br-disk-bin
+# All the tests in here right now are based off the br-baseimage.
+BASE_IMAGE:=../../sw/firesim-software/images/br-base.img
+BASE_LINUX:=../../sw/firesim-software/images/br-base-bin
 
 # TODO: ideally we want to restructure this so that:
 # Proprietary benchmarks (e.g. spec) are available as separate disks that can
@@ -17,13 +17,14 @@ allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-
 
 # Default to the submodule
 SPECKLE_DIR=Speckle
+GAP_DIR=runscripts/gapbs-scripts
 
 #TODO: Provide runscripts for fp{speed, rate}
 spec17_suites = intrate intspeed
 spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
 
 #Default to ref input size for SPEC17
-input=ref
+spec17-%: input = ref
 
 $(SPECKLE_DIR)/build/overlay/%/$(input):
 	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
@@ -34,11 +35,24 @@ spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
 	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
 
+#Default to test input size for GAPBS
+gapbs: input = graph500
+
+$(GAP_DIR)/overlay/$(input):
+	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
+ 
+
+gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
+	mkdir -p $@
+	cp $(BASE_LINUX) $@/bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
+		-s $(GAP_DIR)/overlay/$(input) \
+
 memcached-thread-imbalance:
 	mkdir -p $@
 	sudo yum -y install gengetopt
-	sudo pip install matplotlib
-	sudo pip install pandas
+	sudo pip2 install matplotlib
+	sudo pip2 install pandas
 	cd $@ && git submodule update --init mutilate-loadgen-riscv-release
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
@@ -62,6 +76,8 @@ simperf-test:
 simperf-test-scale: simperf-test
 
 simperf-test-latency: simperf-test
+
+flash-stress: simperf-test-latency
 
 iperf3: iperf3.json
 	mkdir -p $@
@@ -214,6 +230,10 @@ saxpy-dc:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+ccbench-cache-sweep:
+	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -222,4 +242,5 @@ saxpy-dc:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc pagerank-dram-cache
+	saxpy saxpy-dc pagerank-dram-cache \
+	ccbench-cache-sweep flash-stress
