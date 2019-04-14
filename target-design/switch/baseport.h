@@ -1,3 +1,9 @@
+#define FLIT_BITS 64
+#define BITTIME_PER_QUANTA 512
+#define CYCLES_PER_QUANTA (BITTIME_PER_QUANTA / FLIT_BITS)
+
+#define MAC_ETHTYPE 0x8808
+#define PAUSE_CONTROL 0x0001
 
 struct switchpacket {
     uint64_t timestamp;
@@ -12,7 +18,7 @@ typedef struct switchpacket switchpacket;
 
 class BasePort {
     public:
-        BasePort(int portNo, bool throttle, int fc_incredits, int fc_updatePeriod);
+        BasePort(int portNo, bool throttle);
         void write_flits_to_output();
         virtual void tick() = 0; // some ports need to do management every switching loop
         virtual void tick_pre() = 0; // some ports need to do management every switching loop
@@ -26,7 +32,7 @@ class BasePort {
         uint8_t * current_input_buf; // current input buf
         uint8_t * current_output_buf; // current output buf
 
-
+        int pauseCycles = 0;
         int recv_buf_port_map = -1; // used when frame crosses batching boundary. the last port that fed this port's send buf
 
         switchpacket * input_in_progress = NULL;
@@ -34,12 +40,6 @@ class BasePort {
 
         std::queue<switchpacket*> inputqueue;
         std::queue<switchpacket*> outputqueue;
-
-        int fc_unassigned;
-        int fc_assigned;
-        int fc_available;
-        int fc_updatePeriod;
-        uint64_t fc_lastUpdate;
 
         int push_input(switchpacket *sp);
         switchpacket *pop_input(void);
@@ -49,41 +49,9 @@ class BasePort {
         bool _throttle;
 };
 
-BasePort::BasePort(int portNo, bool throttle, int fc_incredits, int fc_updatePeriod)
+BasePort::BasePort(int portNo, bool throttle)
     : _portNo(portNo), _throttle(throttle)
 {
-    this->fc_unassigned = fc_incredits;
-    this->fc_assigned = 0;
-    this->fc_available = 1;
-    this->fc_updatePeriod = fc_updatePeriod;
-    this->fc_lastUpdate = 0;
-
-#ifdef CREDIT_FLOWCONTROL
-    if (fc_updatePeriod > 0)
-        this->fc_available = 0;
-#endif
-}
-
-int BasePort::push_input(switchpacket *sp)
-{
-#ifdef CREDIT_FLOWCONTROL
-    // Check whether or not this is a credit update packet
-    // If so, update fc_available but don't add the packet to the input queue
-    uint16_t cred_update = sp->dat[0] & 0xffff;
-    if (sp->amtwritten == 1 && cred_update != 0) {
-        fc_available += cred_update;
-        printf("port %d: got credit update %d -> %d @ %ld\n",
-                        _portNo, cred_update, fc_available, sp->timestamp);
-        free(sp);
-        return 0;
-    }
-#endif
-    inputqueue.push(sp);
-#ifdef CREDIT_FLOWCONTROL
-    if (fc_updatePeriod > 0)
-        this->fc_assigned--;
-#endif
-    return 1;
 }
 
 switchpacket *BasePort::pop_input(void)
@@ -91,12 +59,31 @@ switchpacket *BasePort::pop_input(void)
     switchpacket * sp = inputqueue.front();
     inputqueue.pop();
 
-#ifdef CREDIT_FLOWCONTROL
-    if (fc_updatePeriod > 0)
-        this->fc_unassigned++;
-#endif
-
     return sp;
+}
+
+int BasePort::push_input(switchpacket *sp)
+{
+    int ethtype, ctrl, quanta;
+
+    // Packets smaller than three flits are too small to be valid
+    if (sp->amtwritten < 3) {
+        printf("Warning: dropped packet with only %d flits\n", sp->amtwritten);
+        return 0;
+    }
+
+    ethtype = ntohs((sp->dat[1] >> 48) & 0xffff);
+    ctrl = ntohs(sp->dat[2] & 0xffff);
+    quanta = ntohs((sp->dat[2] >> 16) & 0xffff);
+
+    if (ethtype == MAC_ETHTYPE && ctrl == PAUSE_CONTROL) {
+        this->pauseCycles = quanta * CYCLES_PER_QUANTA;
+        printf("Pause %d for %d cycles\n", _portNo, pauseCycles);
+        return 0;
+    }
+
+    inputqueue.push(sp);
+    return 1;
 }
 
 // assumes valid
@@ -109,30 +96,12 @@ void BasePort::write_flits_to_output() {
     // things off of its front until we can no longer fit them (either due
     // to congestion, crossing a batch boundary (TODO fix this), or timing.
 
-    uint64_t flitswritten = 0;
+    uint64_t flitswritten = std::min(this->pauseCycles, LINKLATENCY);
     uint64_t basetime = this_iter_cycles_start;
     uint64_t maxtime = this_iter_cycles_start + LINKLATENCY;
-
     bool empty_buf = true;
 
-#ifdef CREDIT_FLOWCONTROL
-    uint64_t timeElapsed = maxtime - fc_lastUpdate;
-    if (fc_updatePeriod > 0 && fc_unassigned > 0 && timeElapsed > fc_updatePeriod) {
-        switchpacket *cup = (switchpacket *) malloc(sizeof(switchpacket));
-        cup->timestamp = maxtime - 1;
-        cup->dat[0] = fc_unassigned;
-        cup->amtwritten = 1;
-        cup->amtread = 0;
-        cup->sender = -1;
-        outputqueue.push(cup);
-
-        printf("port %d send credit update %d @ %ld\n",
-                _portNo, fc_unassigned, cup->timestamp);
-        fc_assigned += fc_unassigned;
-        fc_unassigned = 0;
-        fc_lastUpdate = maxtime;
-    }
-#endif
+    this->pauseCycles -= flitswritten;
 
     while (!(outputqueue.empty())) {
         switchpacket *thispacket = outputqueue.front();
@@ -143,7 +112,7 @@ void BasePort::write_flits_to_output() {
 
         // confirm that a) we are allowed to send this out based on timestamp
         // b) we are allowed to send this out based on available space (TODO fix)
-        if (fc_available > 0 && outputtimestamp < maxtime) {
+        if (outputtimestamp < maxtime) {
 #ifdef LIMITED_BUFSIZE
             // output-buffer size-based throttling, based on input time of first flit
             int64_t diff = basetime + flitswritten - outputtimestamp;
@@ -163,7 +132,7 @@ void BasePort::write_flits_to_output() {
             flitswritten = std::max(flitswritten, timestampdiff);
 
             int i = thispacket->amtread;
-            if (i == 0 && thispacket->sender != -1) {
+            if (i == 0) {
                 //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
                 //        outputtimestamp, basetime + flitswritten, 
                 //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
@@ -184,11 +153,6 @@ void BasePort::write_flits_to_output() {
                     flitswritten++;
             }
             if (i == thispacket->amtwritten) {
-#ifdef CREDIT_FLOWCONTROL
-	        // Don't decrement FC counter for FC update packet
-                if (fc_updatePeriod > 0 && thispacket->sender != -1)
-                    fc_available--;
-#endif
                 // we finished sending this packet, so get rid of it
                 outputqueue.pop();
                 free(thispacket);

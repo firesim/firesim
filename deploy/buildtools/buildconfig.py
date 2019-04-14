@@ -35,6 +35,15 @@ class BuildConfig:
                           num_instances, build_instance_market,
                           spot_interruption_behavior,
                           spot_max_price,
+                          blockdevices=[
+                              {
+                                  'DeviceName': '/dev/sda1',
+                                  'Ebs': {
+                                      'VolumeSize': 100,
+                                      'VolumeType': 'gp2',
+                                  },
+                              },
+                          ],
                           randomsubnet=True)[0]
 
     def get_launched_instance_object(self):

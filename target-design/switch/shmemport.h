@@ -14,8 +14,7 @@ class ShmemPort : public BasePort {
 };
 
 ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink)
-        : BasePort(portNo, !uplink, INPUT_BUF_PACKETS,
-                   (uplink) ? 0 : CREDIT_UPDATE_PERIOD) {
+        : BasePort(portNo, !uplink) {
 #define SHMEM_EXTRABYTES 1
 
     // create shared memory regions

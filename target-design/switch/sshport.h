@@ -60,7 +60,7 @@ static int tuntap_alloc(const char *dev, int flags) {
 #define DEVNAME_BYTES 128
 #define ceil_div(n, d) (((n) - 1) / (d) + 1)
 
-SSHPort::SSHPort(int portNo) : BasePort(portNo, false, 0, 0) {
+SSHPort::SSHPort(int portNo) : BasePort(portNo, false) {
     char * slotid = NULL; // placeholder for multiple SSH port support if we need it later
     char devname[DEVNAME_BYTES+1];
     devname[0] = '\0';

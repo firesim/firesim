@@ -242,5 +242,4 @@ ccbench-cache-sweep:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc pagerank-dram-cache \
-	ccbench-cache-sweep flash-stress
+	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress

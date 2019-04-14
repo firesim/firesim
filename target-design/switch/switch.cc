@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <omp.h>
 #include <cstdlib>
+#include <arpa/inet.h>
 
 #define IGNORE_PRINTF
 
@@ -43,14 +44,12 @@ int throttle_denom = 1;
 
 // uncomment to use a limited output buffer size, OUTPUT_BUF_SIZE
 //#define LIMITED_BUFSIZE
-#define CREDIT_FLOWCONTROL
 
 // size of output buffers, in # of flits
 // only if LIMITED BUFSIZE is set
 // TODO: expose in manager
 #define OUTPUT_BUF_SIZE (131072L)
 #define INPUT_BUF_PACKETS (4095)
-#define CREDIT_UPDATE_PERIOD (5760)
 
 // pull in # clients config
 #define NUMCLIENTSCONFIG

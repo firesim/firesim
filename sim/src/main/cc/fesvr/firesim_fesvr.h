@@ -25,7 +25,7 @@ struct fesvr_loadmem_t {
 class firesim_fesvr_t : public htif_t
 {
     public:
-        firesim_fesvr_t(const std::vector<std::string>& args);
+        firesim_fesvr_t(const std::vector<std::string> args);
         ~firesim_fesvr_t(){};
         bool busy() { return is_busy; }
         bool data_available();

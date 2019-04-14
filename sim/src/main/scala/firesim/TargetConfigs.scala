@@ -1,6 +1,7 @@
 package firesim.firesim
 
 import chisel3._
+import chisel3.util.{log2Up}
 import freechips.rocketchip.config.{Parameters, Config}
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 import freechips.rocketchip.tile._
@@ -35,12 +36,9 @@ class WithUARTKey extends Config((site, here, up) => {
 
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
-    inBufPackets = 64,
+    inBufFlits = 8192,
     ctrlQueueDepth = 64,
-    creditTracker = Some(CreditTrackerParams(
-      outMaxCredits = 4095,
-      updatePeriod = 32 * 180,
-      outTimeout = Some(25000))))
+    usePauser = true)
 })
 
 class WithMemBladeKey extends Config((site, here, up) => {
@@ -267,10 +265,15 @@ class FireSimBoomConfig extends Config(
 // tile in the "up" view
 class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => List.tabulate(n)(i => up(BoomTilesKey).head.copy(hartId = i))
+  case MaxHartIdBits => log2Up(site(BoomTilesKey).size)
 })
 
 class FireSimBoomDualCoreConfig extends Config(
   new WithNDuplicatedBoomCores(2) ++
+  new FireSimBoomConfig)
+
+class FireSimBoomQuadCoreConfig extends Config(
+  new WithNDuplicatedBoomCores(4) ++
   new FireSimBoomConfig)
 
 class FireSimBoomTracedConfig extends Config(
