@@ -90,26 +90,26 @@ class PicoRV32 extends MultiIOModule {
         uart(0).txd := txFromVerilog
         rxFromVerilog := uart(0).rxd
 
-	mem_axi4(0).aw.bits.id := DontCare
+	mem_axi4(0).aw.bits.id := 0.U
 	mem_axi4(0).aw.bits.addr := DontCare
-	mem_axi4(0).aw.bits.len := DontCare
-	mem_axi4(0).aw.bits.size := DontCare
-	mem_axi4(0).aw.bits.burst := DontCare
-	mem_axi4(0).aw.bits.lock := DontCare
-	mem_axi4(0).aw.bits.cache := DontCare
+	mem_axi4(0).aw.bits.len := 0.U
+	mem_axi4(0).aw.bits.size := 2.U // 4 bytes
+	mem_axi4(0).aw.bits.burst := 1.U
+	mem_axi4(0).aw.bits.lock := 0.U
+	mem_axi4(0).aw.bits.cache := 0.U
 	mem_axi4(0).aw.bits.prot := DontCare
-	mem_axi4(0).aw.bits.qos := DontCare
+	mem_axi4(0).aw.bits.qos := 0.U
 	mem_axi4(0).aw.valid := DontCare
 
-	mem_axi4(0).ar.bits.id := DontCare
+	mem_axi4(0).ar.bits.id := 0.U
 	mem_axi4(0).ar.bits.addr := DontCare
-        mem_axi4(0).ar.bits.len := DontCare
-        mem_axi4(0).ar.bits.size := DontCare
-        mem_axi4(0).ar.bits.burst := DontCare
-        mem_axi4(0).ar.bits.lock := DontCare
-        mem_axi4(0).ar.bits.cache := DontCare
+        mem_axi4(0).ar.bits.len := 0.U
+        mem_axi4(0).ar.bits.size := 2.U // 4 bytes
+        mem_axi4(0).ar.bits.burst := 1.U
+        mem_axi4(0).ar.bits.lock := 0.U
+        mem_axi4(0).ar.bits.cache := 0.U
         mem_axi4(0).ar.bits.prot := DontCare
-	mem_axi4(0).ar.bits.qos := DontCare
+	mem_axi4(0).ar.bits.qos := 0.U
 	mem_axi4(0).ar.valid := DontCare
 
         mem_axi4(0).w.bits.data := DontCare
@@ -121,21 +121,21 @@ class PicoRV32 extends MultiIOModule {
 
 	mem_axi4(0).r.ready := DontCare
 
-	FpgaDebug(	mem_axi4(0).aw.bits.addr, 
-			mem_axi4(0).aw.valid, 
-			mem_axi4(0).aw.ready, 
-			mem_axi4(0).ar.bits.addr, 
-			mem_axi4(0).ar.valid, 
-			mem_axi4(0).ar.ready, 
-			mem_axi4(0).w.bits.data, 
-			mem_axi4(0).w.valid, 
-			mem_axi4(0).w.ready, 
-			mem_axi4(0).b.bits.data, 
-			mem_axi4(0).b.valid, 
-			mem_axi4(0).b.ready, 
-			mem_axi4(0).r.bits.data,
-			mem_axi4(0).r.valid, 
-			mem_axi4(0).r.ready)
+	// FpgaDebug(	mem_axi4(0).aw.bits.addr, 
+	// 		mem_axi4(0).aw.valid, 
+	// 		mem_axi4(0).aw.ready, 
+	// 		mem_axi4(0).ar.bits.addr, 
+	// 		mem_axi4(0).ar.valid, 
+	// 		mem_axi4(0).ar.ready, 
+	// 		mem_axi4(0).w.bits.data, 
+	// 		mem_axi4(0).w.valid, 
+	// 		mem_axi4(0).w.ready, 
+	// 		mem_axi4(0).b.bits.data, 
+	// 		mem_axi4(0).b.valid, 
+	// 		mem_axi4(0).b.ready, 
+	// 		mem_axi4(0).r.bits.data,
+	// 		mem_axi4(0).r.valid, 
+	// 		mem_axi4(0).r.ready)
 }
 
 object UARTWrapperDriver extends App {
