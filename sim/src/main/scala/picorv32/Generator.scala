@@ -40,6 +40,7 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
     new firesim.passes.ILATopWiringTransform(genDir)
   )
 
+  // We're dealing with a FIRRTL source rather than Chisel, so there are no configs to worry about. All of this is hardcoded.
   val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-EmptyConfig-PicoRV32Config/"
   lazy val genDir = new File(targetDir)
 
@@ -51,7 +52,7 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
 
     val dut = chisel3.Driver.elaborate(() => new PicoRV32)
     val annos = dut.annotations.map(_.toFirrtl)
-    val portList = dut.components.find(_.name == "PicoRV32").get.ports.flatMap(p => Some(p.id.instanceName -> p.id))
+    val portList = dut.components.find(_.name == "PicoRV32").get.ports.flatMap(p => Some(p.id.instanceName -> p.id)) // name here should be the name of the top-level wrapper
 
     midas.MidasCompiler(
       chirrtl, annos, portList, genDir, None, targetTransforms, hostTransforms
@@ -63,12 +64,6 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
     addTestSuites
     writeOutputFile("PicoRV32.d", TestGeneration.generateMakefrag) // Subsystem-specific test suites
   }
-
-  // def generateArtefacts {
-  //   ElaborationArtefacts.files.foreach { case (extension, contents) =>
-  //     writeOutputFile(s"PicoRV32.${extension}", contents ())
-  //   }
-  // }
 }
 
 object FireSimGenerator extends App with FireSimGeneratorUtils {
@@ -78,6 +73,8 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
   generateTestSuiteMakefrags
   generateHostVerilogHeader
 }
+
+// This is what glues everything together - the top-level wrapper. This contains the UART wrapper that talks to the FireSim/MIDAS UART endpoint and the AXI4 master port that talks to DRAM. You don't need to worry about this for this design, as everything's been wired together in synth.fir, but for your own design you'll have to emit FIRRTL for your wrapper (using something like UARTWrapperDriver), then tie all the lines together by hand. See the PicoRV32 module in synth.fir for an example of how this is done. Some lines here are hardcoded to fixed values, as the PicoRV32 has an AXI4Lite interface rather than full AXI4.
 
 class PicoRV32 extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
@@ -120,28 +117,13 @@ class PicoRV32 extends MultiIOModule {
 	mem_axi4(0).b.ready := DontCare
 
 	mem_axi4(0).r.ready := DontCare
-
-	// FpgaDebug(	mem_axi4(0).aw.bits.addr, 
-	// 		mem_axi4(0).aw.valid, 
-	// 		mem_axi4(0).aw.ready, 
-	// 		mem_axi4(0).ar.bits.addr, 
-	// 		mem_axi4(0).ar.valid, 
-	// 		mem_axi4(0).ar.ready, 
-	// 		mem_axi4(0).w.bits.data, 
-	// 		mem_axi4(0).w.valid, 
-	// 		mem_axi4(0).w.ready, 
-	// 		mem_axi4(0).b.bits.data, 
-	// 		mem_axi4(0).b.valid, 
-	// 		mem_axi4(0).b.ready, 
-	// 		mem_axi4(0).r.bits.data,
-	// 		mem_axi4(0).r.valid, 
-	// 		mem_axi4(0).r.ready)
 }
 
 object UARTWrapperDriver extends App {
         chisel3.Driver.execute(args, () => new PicoRV32)
 }
 
+// Most of these aren't necessary, but are present to avoid completely rewriting the Rocket generator for FireSim. Don't worry too much about anything that follows.
 trait HasTestSuites {
   val rv64RegrTestNames = collection.mutable.LinkedHashSet(
       "rv64ud-v-fcvt",
@@ -180,14 +162,6 @@ trait HasTestSuites {
       "rv32ui-p-sll")
 
   def addTestSuites {
-    // val names = ParsedInputNames("/home/generated-src/f1/PicoRV32-PicoRV32Config-FireSimConfig", "firesim.picorv32", "PicoRV32", "firesim.firesim", "PicoRV32Config")
-    // val params = getParameters(names.fullConfigClasses)
-    // val coreParams =
-    //   if (params(RocketTilesKey).nonEmpty) {
-    //     params(RocketTilesKey).head.core
-    //   } else {
-    //     params(BoomTilesKey).head.core
-    //   }
     val coreParams = RocketCoreParams(useVM = false, fpu = None, mulDiv = Some(MulDivParams(mulUnroll = 8)))
     val xlen = 32 //params(XLen)
     val vm = coreParams.useVM
