@@ -127,12 +127,19 @@ trait HasFireSimGeneratorUtilities extends HasGeneratorUtilities with HasTestSui
   // Capture FPGA-toolflow related verilog defines
   def generateHostVerilogHeader() {
     val headerName = "cl_firesim_generated_defines.vh"
+    writeOutputFile(headerName, s"\n")
+  }
+
+  // Emit TCL variables to control the FPGA compilation flow
+  def generateTclEnvFile() {
+    val headerName = "cl_firesim_generated_env.tcl"
     val requestedFrequency = hostParams(DesiredHostFrequency)
-    val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
-    if (!availableFrequenciesMhz.contains(requestedFrequency)) {
-      throw new RuntimeException(s"Requested frequency (${requestedFrequency} MHz) is not available.\nAllowed options: ${availableFrequenciesMhz} MHz")
-    }
-    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
+    val buildStrategy      = hostParams(BuildStrategy)
+    val constraints = s"""# FireSim Generated Environment Variables
+set desired_host_frequency ${requestedFrequency}
+${buildStrategy.emitTcl}
+"""
+    writeOutputFile(headerName, constraints)
   }
 }
 
@@ -219,6 +226,7 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
   generateHostVerilogHeader
+  generateTclEnvFile
 }
 
 // A runtime-configuration generation for memory models
