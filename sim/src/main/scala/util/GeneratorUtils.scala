@@ -6,11 +6,50 @@ import java.io.{File, FileWriter}
 
 import chisel3.experimental.RawModule
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Config, Parameters}
 import freechips.rocketchip.diplomacy.{ValName, LazyModule}
 import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
-import firesim.firesim.DesiredHostFrequency
+object HostFPGAConfigs {
+  object DesiredHostFrequency extends Field[Int](190) // In MHz
+  object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing) // In MHz
+
+  class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
+      case DesiredHostFrequency => freq
+  })
+
+  object BuildStrategies {
+    trait IsBuildStrategy {
+      def flowString: String
+      def emitTcl =  "set strategy \"" + flowString + "\"\n"
+    }
+    object Basic extends IsBuildStrategy { val flowString = "BASIC" }
+    // This is the default strategy AWS sets in "aws_build_dcp_from_cl.sh"
+    object Timing extends IsBuildStrategy { val flowString = "TIMING" }
+    object Explore extends IsBuildStrategy { val flowString = "EXPLORE" }
+    object Congestion extends IsBuildStrategy { val flowString = "CONGESTION" }
+    // This is the strategy AWS uses if you give it a bogus strategy string
+    object Default extends IsBuildStrategy { val flowString = "DEFAULT" }
+  }
+
+  // Overrides the AWS default strategy with a desired one
+  class WithBuildStategy(strategy: BuildStrategies.IsBuildStrategy) extends Config((site, here, up) => {
+    case BuildStrategy => strategy
+  })
+
+  class F160 extends WithDesiredHostFrequency(160)
+  class F150 extends WithDesiredHostFrequency(150)
+  class F135 extends WithDesiredHostFrequency(135)
+  class F100 extends WithDesiredHostFrequency(100)
+  class F90 extends WithDesiredHostFrequency(90)
+  class F80 extends WithDesiredHostFrequency(80)
+  class F70 extends WithDesiredHostFrequency(70)
+  class F65 extends WithDesiredHostFrequency(65)
+  class F60 extends WithDesiredHostFrequency(60)
+  class F50 extends WithDesiredHostFrequency(50)
+
+  class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
+}
 
 // Contains FireSim generator utilities that can be reused in MIDAS examples
 trait HasTargetAgnosticUtilites extends HasGeneratorUtilities {
@@ -29,12 +68,19 @@ trait HasTargetAgnosticUtilites extends HasGeneratorUtilities {
   // Capture FPGA-toolflow related verilog defines
   def generateHostVerilogHeader() {
     val headerName = "cl_firesim_generated_defines.vh"
-    val requestedFrequency = hostParams(DesiredHostFrequency)
-    val availableFrequenciesMhz = Seq(190, 175, 160, 90, 85, 75)
-    if (!availableFrequenciesMhz.contains(requestedFrequency)) {
-      throw new RuntimeException(s"Requested frequency (${requestedFrequency} MHz) is not available.\nAllowed options: ${availableFrequenciesMhz} MHz")
-    }
-    writeOutputFile(headerName, s"`define SELECTED_FIRESIM_CLOCK ${requestedFrequency}\n")
+    writeOutputFile(headerName, s"\n")
+  }
+
+  // Emit TCL variables to control the FPGA compilation flow
+  def generateTclEnvFile() {
+    val headerName = "cl_firesim_generated_env.tcl"
+    val requestedFrequency = hostParams(HostFPGAConfigs.DesiredHostFrequency)
+    val buildStrategy      = hostParams(HostFPGAConfigs.BuildStrategy)
+    val constraints = s"""# FireSim Generated Environment Variables
+set desired_host_frequency ${requestedFrequency}
+${buildStrategy.emitTcl}
+"""
+    writeOutputFile(headerName, constraints)
   }
 
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {

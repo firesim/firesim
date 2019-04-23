@@ -9,15 +9,11 @@ import midas.models._
 import testchipip.{WithBlockDevice}
 
 import firesim.endpoints._
+import firesim.util.HostFPGAConfigs._
 
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
-object DesiredHostFrequency extends Field[Int](190) // In MHz
-
-class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
-    case DesiredHostFrequency => freq
-})
 
 // Removes default endpoints from the MIDAS-provided config
 class BasePlatformConfig extends Config(new Config((site, here, up) => {
@@ -265,3 +261,4 @@ class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new BasePlatformConfig)
+
