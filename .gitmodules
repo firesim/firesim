@@ -34,3 +34,6 @@
 [submodule "deploy/workloads/ccbench-cache-sweep/ccbench"]
 	path = deploy/workloads/ccbench-cache-sweep/ccbench
 	url = https://github.com/ucb-bar/ccbench
+[submodule "sim/src/main/verilog/picorv32"]
+	path = sim/src/main/verilog/picorv32
+	url = https://github.com/dnshp/picorv32.git
