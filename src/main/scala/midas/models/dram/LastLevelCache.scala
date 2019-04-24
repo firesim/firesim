@@ -9,7 +9,7 @@ import midas.core._
 import midas.widgets._
 
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.{ParameterizedBundle, MaskGen}
+import freechips.rocketchip.util.{ParameterizedBundle, MaskGen, UIntToOH1}
 
 import chisel3._
 import chisel3.util._
@@ -23,11 +23,25 @@ import java.io.{File, FileWriter}
 class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
   val set_addr = UInt(llcKey.sets.maxBits.W)
   val xaction = new TransactionMetaData
-  val wb_in_flight = Bool()
+  val wb_in_flight =  Bool()
   val acq_in_flight = Bool()
+  val enabled       = Bool() // Set by a runtime configuration register
 
-  def valid(): Bool = wb_in_flight || acq_in_flight
-  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid()
+  def valid(): Bool = (wb_in_flight || acq_in_flight) && enabled
+  def available(): Bool = !valid && enabled
+  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid 
+
+  // Call on a MSHR register; sets all pertinent fields (leaving enabled untouched)
+  def allocate(
+      new_xaction: TransactionMetaData,
+      new_set_addr: UInt,
+      do_acq: Bool,
+      do_wb: Bool = false.B)(implicit p: Parameters): Unit = {
+    set_addr := new_set_addr
+    wb_in_flight := do_wb
+    acq_in_flight := do_acq
+    xaction := new_xaction
+  }
 
   override def cloneType = new MSHR(llcKey)(p).asInstanceOf[this.type]
 }
@@ -37,21 +51,10 @@ object MSHR {
     val w = Wire(new MSHR(llcKey))
     w.wb_in_flight := false.B
     w.acq_in_flight := false.B
+    // Initialize to enabled to play nice with assertions
+    w.enabled := true.B
     w.xaction := DontCare
     w.set_addr := DontCare
-    w
-  }
-  def apply(
-      llcKey: LLCParams,
-      xaction: TransactionMetaData,
-      set_addr: UInt,
-      do_acq: Bool,
-      do_wb: Bool = false.B)(implicit p: Parameters): MSHR = {
-    val w = Wire(new MSHR(llcKey))
-    w.set_addr := set_addr
-    w.wb_in_flight := do_wb
-    w.acq_in_flight := do_acq
-    w.xaction := xaction
     w
   }
 }
@@ -65,9 +68,10 @@ class BlockMetadata(tagBits: Int) extends Bundle {
 
 class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
     with HasProgrammableRegisters with HasConsoleUtils {
-  val wayBits    = Input(UInt(log2Ceil(llcKey.ways.maxBits).W))
-  val setBits    = Input(UInt(log2Ceil(llcKey.sets.maxBits).W))
-  val blockBits  = Input(UInt(log2Ceil(llcKey.blockBytes.maxBits).W))
+  val wayBits     = Input(UInt(log2Ceil(llcKey.ways.maxBits).W))
+  val setBits     = Input(UInt(log2Ceil(llcKey.sets.maxBits).W))
+  val blockBits   = Input(UInt(log2Ceil(llcKey.blockBytes.maxBits).W))
+  val activeMSHRs = Input(UInt(log2Ceil(llcKey.mshrs.max + 1).W))
 
   // Instrumentation
   val misses     = Output(UInt(32.W)) // Total accesses is provided by (totalReads + totalWrites)
@@ -76,9 +80,10 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
   // Note short-burst writes will produce a refill, whereas releases from caches will not
 
   val registers = Seq(
-    wayBits   -> RuntimeSetting(3, "Log2(ways per set)"),
-    setBits   -> RuntimeSetting(9, "Log2(sets per bank"),
-    blockBits -> RuntimeSetting(6, "Log2(cache-block bytes")
+    wayBits     -> RuntimeSetting(3, "Log2(ways per set)"),
+    setBits     -> RuntimeSetting(9, "Log2(sets per bank"),
+    blockBits   -> RuntimeSetting(6, "Log2(cache-block bytes"),
+    activeMSHRs -> RuntimeSetting(llcKey.mshrs.max, "Number of MSHRs", min = 1, max = Some(llcKey.mshrs.max))
   )
 
   def maskTag(addr: UInt): UInt = (addr >> (blockBits +& setBits))
@@ -144,6 +149,8 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val llcKey = cfg.params.llcKey.get
   val io = IO(new LLCModelIO(llcKey))
 
+  require(log2Ceil(llcKey.mshrs.max) <= nastiXIdBits, "Can have at most one MSHR per AXI ID")
+
   val maxTagBits = llcKey.maxTagBits(nastiXAddrBits)
   val way_addr_mask = Reverse(MaskGen((llcKey.ways.max - 1).U, io.settings.wayBits, llcKey.ways.max))
 
@@ -154,9 +161,20 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   d_array_busy.io.set.bits := DontCare
   d_array_busy.io.decr := false.B
 
+  val mshr_mask_vec = UIntToOH1(io.settings.activeMSHRs, llcKey.mshrs.max).toBools
   val mshrs =  RegInit(VecInit(Seq.fill(llcKey.mshrs.max)(MSHR(llcKey))))
-  val mshr_available = mshrs.exists({ m: MSHR => !m.valid() })
-  val mshr_next_idx = mshrs.indexWhere({ m: MSHR => !m.valid() })
+  // Enable only active MSHRs as requested in the runtime configuration
+  mshrs.zipWithIndex.foreach({ case (m, idx) => m.enabled := mshr_mask_vec(idx) })
+
+  val mshr_available = mshrs.exists({m: MSHR => m.available() })
+  val mshr_next_idx = mshrs.indexWhere({ m: MSHR => m.available() })
+
+  // TODO: Put this on a switch
+  val mshrs_allocated = mshrs.count({m: MSHR => m.valid})
+  assert((mshrs_allocated < io.settings.activeMSHRs) || !mshr_available,
+    "Too many runtime MSHRs exposed given runtime programmable limit")
+  assert((mshrs_allocated === io.settings.activeMSHRs) || mshr_available,
+    "Too few runtime MSHRs exposed given runtime programmable limit")
 
   val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel, 2))
   val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel, 2))
@@ -252,12 +270,11 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val allocate_mshr = need_refill || need_writeback
 
   when(allocate_mshr) {
-    mshrs(mshr_next_idx) := MSHR(
-      llcKey,
-      xaction  = Mux(state === llc_r_mdaccess,
-                    TransactionMetaData(reads.bits),
-                    TransactionMetaData(writes.bits)),
-      set_addr = s1_set_addr,
+    mshrs(mshr_next_idx).allocate(
+      new_xaction  = Mux(state === llc_r_mdaccess,
+                     TransactionMetaData(reads.bits),
+                     TransactionMetaData(writes.bits)),
+      new_set_addr = s1_set_addr,
       do_acq   = need_refill,
       do_wb    = need_writeback)
   }
