@@ -16,7 +16,7 @@ import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
 import memblade.cache.{DRAMCacheKey, DRAMCacheConfig}
-import memblade.prefetcher.PrefetchRoCC
+import memblade.prefetcher.{PrefetchRoCC, PrefetchConfig}
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -83,7 +83,8 @@ class WithPrefetchRoCC extends Config((site, here, up) => {
   case BuildRoCC => Seq((q: Parameters) => {
     implicit val p = q
     implicit val valName = ValName("FireSim")
-    LazyModule(new PrefetchRoCC(OpcodeSet.custom2))
+    LazyModule(new PrefetchRoCC(
+      OpcodeSet.custom2, new PrefetchConfig(useGetPut = true)))
   })
 })
 
