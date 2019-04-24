@@ -37,3 +37,6 @@
 [submodule "sim/src/main/verilog/picorv32"]
 	path = sim/src/main/verilog/picorv32
 	url = https://github.com/dnshp/picorv32.git
+[submodule "sim/yosys"]
+	path = sim/yosys
+	url = https://github.com/YosysHQ/yosys.git
