@@ -5,6 +5,7 @@ import java.io.File
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
+import scala.util.Random
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.system.{RocketTestSuite, BenchmarkTestSuite}
@@ -12,6 +13,7 @@ import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
 import firesim.util.GeneratorArgs
+import firesim.firesim.LlcKey
 
 abstract class FASEDTest(
     topModuleClass: String,
@@ -21,6 +23,7 @@ abstract class FASEDTest(
   ) extends firesim.midasexamples.TestSuiteCommon with GeneratorUtils {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
+
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
@@ -40,28 +43,42 @@ abstract class FASEDTest(
                            s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
   override lazy val platform = hostParams(midas.Platform)
 
-  def invokeMlSimulator(backend: String, debug: Boolean) = {
-    make(s"run-${backend}%s".format(if (debug) "-debug" else ""))
+  def invokeMlSimulator(backend: String, debug: Boolean, args: Seq[String]) = {
+    make((s"run-${backend}%s".format(if (debug) "-debug" else "") +: args):_*)
   }
 
-  def runTest(backend: String, debug: Boolean) = {
-    behavior of s"when running on ${backend} in MIDAS-level simulation"
+  def runTest(backend: String, debug: Boolean, args: Seq[String] = Nil, name: String = "pass") = {
     compileMlSimulator(backend, debug)
     if (isCmdAvailable(backend)) {
-      it should s"pass" in {
-        assert(invokeMlSimulator(backend, debug) == 0)
+      it should name in {
+        assert(invokeMlSimulator(backend, debug, args) == 0)
       }
     }
+  }
+  def runTests() {
+    runTest("verilator", false)
   }
 
   clean
   mkdirs
   elaborateAndCompileWithMidas
-  runTest("verilator", false)
-  //runTest("vcs", true)
+  behavior of s"FASED Instance configured with ${platformConfigs} driven by target: ${topModuleClass}"
+  runTests()
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FCFSConfig")
 class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FRFCFSConfig")
-class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "LLCDRAMConfig")
+class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "LLCDRAMConfig") {
+  override def runTests = {
+    // Check that the memory model uses the correct number of MSHRs
+    val maxMSHRs = hostParams(LlcKey).get.mshrs.max
+    val runtimeValues = Set((maxMSHRs +: Seq.fill(3)(Random.nextInt(maxMSHRs - 1) + 1)):_*).toSeq
+    runtimeValues.foreach({ runtimeMSHRs: Int =>
+      val plusArgs = Seq(s"+mm_llc_activeMSHRs=${runtimeMSHRs}",
+                     s"+expect_llc_peakMSHRsUsed=${runtimeMSHRs}")
+      val extraSimArgs = Seq(s"""EXTRA_SIM_ARGS='${plusArgs.mkString(" ")}' """)
+      runTest("verilator", false, args = extraSimArgs, name = s"correctly execute and use at most ${runtimeMSHRs} MSHRs")
+     })
+  }
+}
