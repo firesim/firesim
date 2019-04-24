@@ -53,11 +53,9 @@ sudo pip2 install pandas==0.22.0
 
 sudo activate-global-python-argcomplete
 
-# install yosys
+# install yosys dependencies
 sudo yum -y install readline-devel
 sudo yum -y install libffi-devel
-cd ~/firesim/sim/yosys
-make config-gcc && make && sudo make install
 
 # get a regular prompt
 echo "PS1='\u@\H:\w\\$ '" >> /home/centos/.bashrc
