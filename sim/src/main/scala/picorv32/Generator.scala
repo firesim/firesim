@@ -74,10 +74,14 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
   generateHostVerilogHeader
 }
 
-// This is what glues everything together - the top-level wrapper. This contains the UART wrapper that talks to the FireSim/MIDAS UART endpoint and the AXI4 master port that talks to DRAM. You don't need to worry about this for this design, as everything's been wired together in synth.fir, but for your own design you'll have to emit FIRRTL for your wrapper (using something like UARTWrapperDriver), then tie all the lines together by hand. See the PicoRV32 module in synth.fir for an example of how this is done. Some lines here are hardcoded to fixed values, as the PicoRV32 has an AXI4Lite interface rather than full AXI4.
+// This is what glues everything together - the top-level wrapper. This contains the UART wrapper that talks to the FireSim/MIDAS UART endpoint and the AXI4 master port that talks to DRAM. You don't need to worry about this for this design, as everything's been wired together in synth.fir, but for your own design you'll have to emit FIRRTL for your wrapper (using something like WrapperDriver), then tie all the lines together by hand. See the PicoRV32 module in synth.fir for an example of how this is done. Some lines here are hardcoded to fixed values, as the PicoRV32 has an AXI4Lite interface rather than full AXI4.
 
 class PicoRV32_BB extends BlackBox {
 	val io = IO(new Bundle {
+		// clock and reset
+		val clk = Input(UInt(1.W))
+		val resetn = Input(UInt(1.W))
+
 		// AXI4 interface
 		val mem_axi_awvalid = Output(UInt(1.W))
 		val mem_axi_awready = Input(UInt(1.W))
@@ -107,11 +111,11 @@ class PicoRV32 extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
 	val mem_axi4 = IO(HeterogeneousBag(Seq(AXI4Bundle(new AXI4BundleParameters(addrBits=32, dataBits=32, idBits=1, userBits=0, wcorrupt=false)))))
 
-	val soc = new PicoRV32_BB
+	val soc = Module(new PicoRV32_BB)
 
 	// explicit clock and reset
 	soc.io.clk := clock.asUInt
-	soc.io.resetn := ~reset
+	soc.io.resetn := ~(reset.asUInt)
 
 	// AXI4 interface
 	soc.io.mem_axi_awready := mem_axi4(0).aw.ready
@@ -150,47 +154,9 @@ class PicoRV32 extends MultiIOModule {
 	// UART interface
 	uart(0).txd := soc.io.ser_tx
 	soc.io.ser_rx := uart(0).rxd
-
-        // val txFromVerilog = Wire(Bool())
-        // val rxFromVerilog = Wire(Bool())
-
-        // txFromVerilog := DontCare
-        // uart(0).txd := txFromVerilog
-        // rxFromVerilog := uart(0).rxd
-
-	// mem_axi4(0).aw.bits.id := 0.U
-	// mem_axi4(0).aw.bits.addr := DontCare
-	// mem_axi4(0).aw.bits.len := 0.U
-	// mem_axi4(0).aw.bits.size := 2.U // 4 bytes
-	// mem_axi4(0).aw.bits.burst := 1.U
-	// mem_axi4(0).aw.bits.lock := 0.U
-	// mem_axi4(0).aw.bits.cache := 0.U
-	// mem_axi4(0).aw.bits.prot := DontCare
-	// mem_axi4(0).aw.bits.qos := 0.U
-	// mem_axi4(0).aw.valid := DontCare
-
-	// mem_axi4(0).ar.bits.id := 0.U
-	// mem_axi4(0).ar.bits.addr := DontCare
-        // mem_axi4(0).ar.bits.len := 0.U
-        // mem_axi4(0).ar.bits.size := 2.U // 4 bytes
-        // mem_axi4(0).ar.bits.burst := 1.U
-        // mem_axi4(0).ar.bits.lock := 0.U
-        // mem_axi4(0).ar.bits.cache := 0.U
-        // mem_axi4(0).ar.bits.prot := DontCare
-	// mem_axi4(0).ar.bits.qos := 0.U
-	// mem_axi4(0).ar.valid := DontCare
-
-        // mem_axi4(0).w.bits.data := DontCare
-        // mem_axi4(0).w.bits.strb := DontCare
-        // mem_axi4(0).w.bits.last := DontCare
-	// mem_axi4(0).w.valid := DontCare
-
-	// mem_axi4(0).b.ready := DontCare
-
-	// mem_axi4(0).r.ready := DontCare
 }
 
-object UARTWrapperDriver extends App {
+object WrapperDriver extends App {
         chisel3.Driver.execute(args, () => new PicoRV32)
 }
 
