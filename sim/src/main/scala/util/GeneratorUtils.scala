@@ -12,7 +12,7 @@ import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
 object HostFPGAConfigs {
   object DesiredHostFrequency extends Field[Int](190) // In MHz
-  object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing) // In MHz
+  object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing)
 
   class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
       case DesiredHostFrequency => freq
@@ -37,16 +37,17 @@ object HostFPGAConfigs {
     case BuildStrategy => strategy
   })
 
-  class F160 extends WithDesiredHostFrequency(160)
-  class F150 extends WithDesiredHostFrequency(150)
-  class F135 extends WithDesiredHostFrequency(135)
-  class F100 extends WithDesiredHostFrequency(100)
-  class F90 extends WithDesiredHostFrequency(90)
-  class F80 extends WithDesiredHostFrequency(80)
-  class F70 extends WithDesiredHostFrequency(70)
-  class F65 extends WithDesiredHostFrequency(65)
-  class F60 extends WithDesiredHostFrequency(60)
-  class F50 extends WithDesiredHostFrequency(50)
+  class F160MHz extends WithDesiredHostFrequency(160)
+  class F150MHz extends WithDesiredHostFrequency(150)
+  class F135MHz extends WithDesiredHostFrequency(135)
+  class F100MHz extends WithDesiredHostFrequency(100)
+  class  F90MHz extends WithDesiredHostFrequency(90)
+  class  F85MHz extends WithDesiredHostFrequency(85)
+  class  F80MHz extends WithDesiredHostFrequency(80)
+  class  F70MHz extends WithDesiredHostFrequency(70)
+  class  F65MHz extends WithDesiredHostFrequency(65)
+  class  F60MHz extends WithDesiredHostFrequency(60)
+  class  F50MHz extends WithDesiredHostFrequency(50)
 
   class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
 }
