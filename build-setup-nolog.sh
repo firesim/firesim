@@ -112,7 +112,7 @@ cd $RDIR
 # install yosys
 cd sim/yosys
 make config-gcc && make && sudo make install
-cd ../..
+cd ~/firesim
 
 echo "Setup complete!"
 echo "To use the manager to deploy builds/simulations, source sourceme-f1-manager.sh to setup your environment."
