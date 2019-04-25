@@ -34,63 +34,19 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
 #ifdef MEMMODEL_0
+    // Casts are required for now since the emitted type can change...
+    AddressMap fased_addr_map = AddressMap(MEMMODEL_0_R_num_registers,
+                                           (const unsigned int*) MEMMODEL_0_R_addrs,
+                                           (const char* const*) MEMMODEL_0_R_names,
+                                           MEMMODEL_0_W_num_registers,
+                                           (const unsigned int*) MEMMODEL_0_W_addrs,
+                                           (const char* const*) MEMMODEL_0_W_names);
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_0_R_num_registers,
-                    (const unsigned int*) MEMMODEL_0_R_addrs,
-                    (const char* const*) MEMMODEL_0_R_names,
-                    MEMMODEL_0_W_num_registers,
-                    (const unsigned int*) MEMMODEL_0_W_addrs,
-                    (const char* const*) MEMMODEL_0_W_names),
+                fased_addr_map,
                 argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
-#endif
-
-#ifdef MEMMODEL_1
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_1_R_num_registers,
-                    (const unsigned int*) MEMMODEL_1_R_addrs,
-                    (const char* const*) MEMMODEL_1_R_names,
-                    MEMMODEL_1_W_num_registers,
-                    (const unsigned int*) MEMMODEL_1_W_addrs,
-                    (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
-#endif
-
-#ifdef MEMMODEL_2
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_2_R_num_registers,
-                    (const unsigned int*) MEMMODEL_2_R_addrs,
-                    (const char* const*) MEMMODEL_2_R_names,
-                    MEMMODEL_2_W_num_registers,
-                    (const unsigned int*) MEMMODEL_2_W_addrs,
-                    (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
-#endif
-
-#ifdef MEMMODEL_3
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_3_R_num_registers,
-                    (const unsigned int*) MEMMODEL_3_R_addrs,
-                    (const char* const*) MEMMODEL_3_R_names,
-                    MEMMODEL_3_W_num_registers,
-                    (const unsigned int*) MEMMODEL_3_W_addrs,
-                    (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
 
 // There can only be one instance of assert and print widgets as their IO is
@@ -124,7 +80,7 @@ uint64_t host_mem_offset = -0x80000000LL;
         register_task([this](){ return this->profile_models();}, 0);
     }
     // Test harness
-    add_endpoint(new test_harness_endpoint_t(this, args));
+    add_endpoint(new test_harness_endpoint_t(this, fased_addr_map, args));
 }
 
 bool fasedtests_top_t::simulation_complete() {
