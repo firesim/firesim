@@ -76,47 +76,118 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
 
 // This is what glues everything together - the top-level wrapper. This contains the UART wrapper that talks to the FireSim/MIDAS UART endpoint and the AXI4 master port that talks to DRAM. You don't need to worry about this for this design, as everything's been wired together in synth.fir, but for your own design you'll have to emit FIRRTL for your wrapper (using something like UARTWrapperDriver), then tie all the lines together by hand. See the PicoRV32 module in synth.fir for an example of how this is done. Some lines here are hardcoded to fixed values, as the PicoRV32 has an AXI4Lite interface rather than full AXI4.
 
+class PicoRV32_BB extends BlackBox {
+	val io = IO(new Bundle {
+		// AXI4 interface
+		val mem_axi_awvalid = Output(UInt(1.W))
+		val mem_axi_awready = Input(UInt(1.W))
+		val mem_axi_awaddr = Output(UInt(32.W))
+		val mem_axi_awprot = Output(UInt(3.W))
+		val mem_axi_wvalid = Output(UInt(1.W))
+		val mem_axi_wready = Input(UInt(1.W))
+		val mem_axi_wdata = Output(UInt(32.W))
+		val mem_axi_wstrb = Output(UInt(4.W))
+		val mem_axi_bvalid = Input(UInt(1.W))
+		val mem_axi_bready = Output(UInt(1.W))
+		val mem_axi_arvalid = Output(UInt(1.W))
+		val mem_axi_arready = Input(UInt(1.W))
+		val mem_axi_araddr = Output(UInt(32.W))
+		val mem_axi_arprot = Output(UInt(3.W))
+		val mem_axi_rvalid = Input(UInt(1.W))
+		val mem_axi_rready = Output(UInt(1.W))
+		val mem_axi_rdata = Input(UInt(32.W))
+
+		// UART interface
+		val ser_tx = Output(UInt(1.W))
+		val ser_rx = Input(UInt(1.W))
+	})
+}	
+
 class PicoRV32 extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
 	val mem_axi4 = IO(HeterogeneousBag(Seq(AXI4Bundle(new AXI4BundleParameters(addrBits=32, dataBits=32, idBits=1, userBits=0, wcorrupt=false)))))
 
-        val txFromVerilog = Wire(Bool())
-        val rxFromVerilog = Wire(Bool())
+	val soc = new PicoRV32_BB
 
-        txFromVerilog := DontCare
-        uart(0).txd := txFromVerilog
-        rxFromVerilog := uart(0).rxd
+	// explicit clock and reset
+	soc.io.clk := clock.asUInt
+	soc.io.resetn := ~reset
 
+	// AXI4 interface
+	soc.io.mem_axi_awready := mem_axi4(0).aw.ready
+	soc.io.mem_axi_arready := mem_axi4(0).ar.ready
+	soc.io.mem_axi_bvalid := mem_axi4(0).b.valid
+	soc.io.mem_axi_rdata := mem_axi4(0).r.bits.data
+	soc.io.mem_axi_rvalid := mem_axi4(0).r.valid
+	soc.io.mem_axi_wready := mem_axi4(0).w.ready
 	mem_axi4(0).aw.bits.id := 0.U
-	mem_axi4(0).aw.bits.addr := DontCare
+	mem_axi4(0).aw.bits.addr := soc.io.mem_axi_awaddr
 	mem_axi4(0).aw.bits.len := 0.U
-	mem_axi4(0).aw.bits.size := 2.U // 4 bytes
+	mem_axi4(0).aw.bits.size := 2.U
 	mem_axi4(0).aw.bits.burst := 1.U
 	mem_axi4(0).aw.bits.lock := 0.U
 	mem_axi4(0).aw.bits.cache := 0.U
-	mem_axi4(0).aw.bits.prot := DontCare
+	mem_axi4(0).aw.bits.prot := soc.io.mem_axi_awprot
 	mem_axi4(0).aw.bits.qos := 0.U
-	mem_axi4(0).aw.valid := DontCare
-
+	mem_axi4(0).aw.valid := soc.io.mem_axi_awvalid
 	mem_axi4(0).ar.bits.id := 0.U
-	mem_axi4(0).ar.bits.addr := DontCare
-        mem_axi4(0).ar.bits.len := 0.U
-        mem_axi4(0).ar.bits.size := 2.U // 4 bytes
-        mem_axi4(0).ar.bits.burst := 1.U
-        mem_axi4(0).ar.bits.lock := 0.U
-        mem_axi4(0).ar.bits.cache := 0.U
-        mem_axi4(0).ar.bits.prot := DontCare
+	mem_axi4(0).ar.bits.addr := soc.io.mem_axi_araddr
+	mem_axi4(0).ar.bits.len := 0.U
+	mem_axi4(0).ar.bits.size := 2.U
+	mem_axi4(0).ar.bits.burst := 1.U
+	mem_axi4(0).ar.bits.lock := 0.U
+	mem_axi4(0).ar.bits.cache := 0.U
+	mem_axi4(0).ar.bits.prot := soc.io.mem_axi_arprot
 	mem_axi4(0).ar.bits.qos := 0.U
-	mem_axi4(0).ar.valid := DontCare
+	mem_axi4(0).ar.valid := soc.io.mem_axi_arvalid
+	mem_axi4(0).w.bits.data := soc.io.mem_axi_wdata
+	mem_axi4(0).w.bits.strb := soc.io.mem_axi_wstrb
+	mem_axi4(0).w.bits.last := 1.U
+	mem_axi4(0).w.valid := soc.io.mem_axi_wvalid
+	mem_axi4(0).b.ready := soc.io.mem_axi_bready
+	mem_axi4(0).r.ready := soc.io.mem_axi_rready
 
-        mem_axi4(0).w.bits.data := DontCare
-        mem_axi4(0).w.bits.strb := DontCare
-        mem_axi4(0).w.bits.last := DontCare
-	mem_axi4(0).w.valid := DontCare
+	// UART interface
+	uart(0).txd := soc.io.ser_tx
+	soc.io.ser_rx := uart(0).rxd
 
-	mem_axi4(0).b.ready := DontCare
+        // val txFromVerilog = Wire(Bool())
+        // val rxFromVerilog = Wire(Bool())
 
-	mem_axi4(0).r.ready := DontCare
+        // txFromVerilog := DontCare
+        // uart(0).txd := txFromVerilog
+        // rxFromVerilog := uart(0).rxd
+
+	// mem_axi4(0).aw.bits.id := 0.U
+	// mem_axi4(0).aw.bits.addr := DontCare
+	// mem_axi4(0).aw.bits.len := 0.U
+	// mem_axi4(0).aw.bits.size := 2.U // 4 bytes
+	// mem_axi4(0).aw.bits.burst := 1.U
+	// mem_axi4(0).aw.bits.lock := 0.U
+	// mem_axi4(0).aw.bits.cache := 0.U
+	// mem_axi4(0).aw.bits.prot := DontCare
+	// mem_axi4(0).aw.bits.qos := 0.U
+	// mem_axi4(0).aw.valid := DontCare
+
+	// mem_axi4(0).ar.bits.id := 0.U
+	// mem_axi4(0).ar.bits.addr := DontCare
+        // mem_axi4(0).ar.bits.len := 0.U
+        // mem_axi4(0).ar.bits.size := 2.U // 4 bytes
+        // mem_axi4(0).ar.bits.burst := 1.U
+        // mem_axi4(0).ar.bits.lock := 0.U
+        // mem_axi4(0).ar.bits.cache := 0.U
+        // mem_axi4(0).ar.bits.prot := DontCare
+	// mem_axi4(0).ar.bits.qos := 0.U
+	// mem_axi4(0).ar.valid := DontCare
+
+        // mem_axi4(0).w.bits.data := DontCare
+        // mem_axi4(0).w.bits.strb := DontCare
+        // mem_axi4(0).w.bits.last := DontCare
+	// mem_axi4(0).w.valid := DontCare
+
+	// mem_axi4(0).b.ready := DontCare
+
+	// mem_axi4(0).r.ready := DontCare
 }
 
 object UARTWrapperDriver extends App {
