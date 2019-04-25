@@ -74,9 +74,10 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
   val activeMSHRs = Input(UInt(log2Ceil(llcKey.mshrs.max + 1).W))
 
   // Instrumentation
-  val misses     = Output(UInt(32.W)) // Total accesses is provided by (totalReads + totalWrites)
-  val writebacks = Output(UInt(32.W)) // Number of dirty lines returned to DRAM
-  val refills    = Output(UInt(32.W)) // Number of clean lines requested from DRAM
+  val misses         = Output(UInt(32.W)) // Total accesses is provided by (totalReads + totalWrites)
+  val writebacks     = Output(UInt(32.W)) // Number of dirty lines returned to DRAM
+  val refills        = Output(UInt(32.W)) // Number of clean lines requested from DRAM
+  val peakMSHRsUsed  = Output(UInt(log2Ceil(llcKey.mshrs.max+1).W)) // Peak number of MSHRs used
   // Note short-burst writes will produce a refill, whereas releases from caches will not
 
   val registers = Seq(
@@ -427,5 +428,9 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val refill_count = RegInit(0.U(32.W))
   when (state === llc_r_mdaccess && !hit_valid) { refill_count := refill_count + 1.U }
   io.settings.refills := refill_count
+
+  val peak_mshrs_used = RegInit(0.U(log2Ceil(llcKey.mshrs.max + 1).W))
+  when (peak_mshrs_used < mshrs_allocated) { peak_mshrs_used := mshrs_allocated }
+  io.settings.peakMSHRsUsed := peak_mshrs_used
 
 }
