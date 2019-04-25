@@ -7,7 +7,7 @@ curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm
 sudo yum install -y sbt texinfo gengetopt
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 # deps for poky
-sudo yum install -y python34 patch diffstat texi2html texinfo subversion chrpath git wget
+sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
 # deps for qemu
 sudo yum install -y gtk3-devel
 # install DTC. it's not available in repos in FPGA AMI
