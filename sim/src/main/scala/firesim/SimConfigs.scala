@@ -9,7 +9,6 @@ import midas.models._
 import testchipip.{WithBlockDevice}
 
 import firesim.endpoints._
-import firesim.util.HostFPGAConfigs._
 
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
@@ -175,7 +174,6 @@ class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
 * determine which driver to build.
 *******************************************************************************/
 class FireSimConfig extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -185,7 +183,6 @@ class FireSimConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimClockDivConfig extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -194,7 +191,6 @@ class FireSimClockDivConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3Config extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -203,7 +199,6 @@ class FireSimDDR3Config extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3LLC4MBConfig extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -212,7 +207,6 @@ class FireSimDDR3LLC4MBConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimDDR3FRFCFSConfig extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
@@ -220,8 +214,15 @@ class FireSimDDR3FRFCFSConfig extends Config(
   new FRFCFS16GBQuadRank ++
   new BasePlatformConfig)
 
+class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
+  new WithSerialWidget ++
+  new WithUARTWidget ++
+  new WithSimpleNICWidget ++
+  new WithBlockDevWidget ++
+  new FRFCFS16GBQuadRankLLC4MB ++
+  new BasePlatformConfig)
+
 class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
-  new WithDesiredHostFrequency(90) ++
   new WithSerialWidget ++
   new WithUARTWidget ++
   new WithSimpleNICWidget ++
