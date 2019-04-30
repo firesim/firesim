@@ -161,7 +161,7 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 ##########################
 # UARTWrapper Generation #
 ##########################
-$(scala_src_path)/Wrapper.fir: $(base_dir)/src/main/scala/picorv32/Generator.scala
+$(scala_src_path)/Wrapper.fir: $(scala_src_path)/Generator.scala
 	$(SBT) $(SBT_FLAGS) "runMain firesim.picorv32.WrapperDriver"
 	mv PicoRV32.fir src/main/scala/picorv32/Wrapper.fir
 	rm PicoRV32.v
@@ -171,4 +171,4 @@ $(scala_src_path)/$(DESIGN).fir: $(scala_src_path)/synth.fir $(scala_src_path)/W
 	python3 $(python_src_path)/make_fir.py $(scala_src_path)/Wrapper.fir $(scala_src_path)/$(DESIGN).fir $(scala_src_path)/synth.fir $(DESIGN)
 
 clean-fir:
-	rm -f $(base_dir)/src/main/scala/picorv32/Wrapper.fir $(base_dir)/src/main/scala/picorv32/PicoRV32.fir
+	rm -f $(scala_src_path)/Wrapper.fir $(scala_src_path)/PicoRV32.fir
