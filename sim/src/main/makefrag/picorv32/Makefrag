@@ -158,8 +158,14 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 ##########################
 # UARTWrapper Generation #
 ##########################
-chiselwrapper: /home/centos/firesim/sim/src/main/scala/picorv32/Generator.scala
+chisel_wrapper: $(base_dir)/src/main/scala/picorv32/Generator.scala
 	$(SBT) $(SBT_FLAGS) "runMain firesim.picorv32.WrapperDriver"
-	mv PicoRV32.fir src/main/scala/picorv32
-	mv PicoRV32.v src/main/scala/picorv32
-	mv PicoRV32.anno.json src/main/scala/picorv32
+	mv PicoRV32.fir src/main/scala/picorv32/Wrapper.fir
+	rm PicoRV32.v
+	rm PicoRV32.anno.json
+
+target_firrtl: $(base_dir)/src/main/scala/picorv32/synth.fir
+	python3 $(base_dir)/src/main/python/picorv32/make_fir.py $(base_dir)/src/main/scala/picorv32/Wrapper.fir $(base_dir)/src/main/scala/picorv32/PicoRV32.fir $(base_dir)/src/main/scala/picorv32/synth.fir $(DESIGN)
+
+clean-fir:
+	rm -f $(base_dir)/src/main/scala/picorv32/Wrapper.fir $(base_dir)/src/main/scala/picorv32/PicoRV32.fir

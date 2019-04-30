@@ -47,7 +47,7 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
   def hostParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
 
   def elaborateAndCompileWithMidas {
-    val lines = Source.fromFile("src/main/scala/picorv32/synth.fir").getLines()
+    val lines = Source.fromFile("src/main/scala/picorv32/PicoRV32.fir").getLines()
     val chirrtl = firrtl.Parser.parse(lines)
 
     val dut = chisel3.Driver.elaborate(() => new PicoRV32)
@@ -76,7 +76,7 @@ object FireSimGenerator extends App with FireSimGeneratorUtils {
 
 // This is what glues everything together - the top-level wrapper. This contains the UART wrapper that talks to the FireSim/MIDAS UART endpoint and the AXI4 master port that talks to DRAM. You don't need to worry about this for this design, as everything's been wired together in synth.fir, but for your own design you'll have to emit FIRRTL for your wrapper (using something like WrapperDriver), then tie all the lines together by hand. See the PicoRV32 module in synth.fir for an example of how this is done. Some lines here are hardcoded to fixed values, as the PicoRV32 has an AXI4Lite interface rather than full AXI4.
 
-class PicoRV32_BB extends BlackBox {
+class picosoc_axi extends BlackBox {
 	val io = IO(new Bundle {
 		// clock and reset
 		val clk = Input(UInt(1.W))
@@ -104,6 +104,15 @@ class PicoRV32_BB extends BlackBox {
 		// UART interface
 		val ser_tx = Output(UInt(1.W))
 		val ser_rx = Input(UInt(1.W))
+
+		// Other stuff we don't need - we'll tie these off later
+                val irq_5 = Input(UInt(1.W))
+                val flash_io3_di = Input(UInt(1.W))
+                val flash_io1_di = Input(UInt(1.W))
+                val irq_7 = Input(UInt(1.W))
+                val flash_io2_di = Input(UInt(1.W))
+                val flash_io0_di = Input(UInt(1.W))
+                val irq_6 = Input(UInt(1.W))
 	})
 }	
 
@@ -111,7 +120,7 @@ class PicoRV32 extends MultiIOModule {
         val uart = IO(Vec(1, new UARTPortIO()))
 	val mem_axi4 = IO(HeterogeneousBag(Seq(AXI4Bundle(new AXI4BundleParameters(addrBits=32, dataBits=32, idBits=1, userBits=0, wcorrupt=false)))))
 
-	val soc = Module(new PicoRV32_BB)
+	val soc = Module(new picosoc_axi)
 
 	// explicit clock and reset
 	soc.io.clk := clock.asUInt
@@ -154,6 +163,15 @@ class PicoRV32 extends MultiIOModule {
 	// UART interface
 	uart(0).txd := soc.io.ser_tx
 	soc.io.ser_rx := uart(0).rxd
+	
+	// Tying off other stuff we don't need
+	soc.io.irq_5 := 0.U
+	soc.io.flash_io3_di := 0.U
+	soc.io.flash_io1_di := 0.U
+	soc.io.irq_7 := 0.U
+	soc.io.flash_io2_di := 0.U
+	soc.io.flash_io0_di := 0.U
+	soc.io.irq_6 := 0.U
 }
 
 object WrapperDriver extends App {

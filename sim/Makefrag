@@ -203,7 +203,12 @@ mostlyclean:
 	rm -rf $(verilator) $(verilator_debug) $(vcs) $(vcs_debug) $($(PLATFORM)) $(OUTPUT_DIR)
 
 clean:
+ifeq ($(TARGET_PROJECT), picorv32)
 	rm -rf $(GENERATED_DIR) $(OUTPUT_DIR)
+	make clean-fir
+else
+	rm -rf $(GENERATED_DIR) $(OUTPUT_DIR)
+endif
 
 veryclean:
 	rm -rf generated-src output
