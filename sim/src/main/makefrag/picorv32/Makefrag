@@ -34,7 +34,10 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submo
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+scala_src_path = $(base_dir)/$(src_path)/$(TARGET_PROJECT)
+python_src_path = $(base_dir)/src/main/python/$(TARGET_PROJECT)
+
+$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR) $(scala_src_path)/$(DESIGN).fir
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
 	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(GENERATED_DIR)"
@@ -158,14 +161,14 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 ##########################
 # UARTWrapper Generation #
 ##########################
-chisel_wrapper: $(base_dir)/src/main/scala/picorv32/Generator.scala
+$(scala_src_path)/Wrapper.fir: $(base_dir)/src/main/scala/picorv32/Generator.scala
 	$(SBT) $(SBT_FLAGS) "runMain firesim.picorv32.WrapperDriver"
 	mv PicoRV32.fir src/main/scala/picorv32/Wrapper.fir
 	rm PicoRV32.v
 	rm PicoRV32.anno.json
 
-target_firrtl: $(base_dir)/src/main/scala/picorv32/synth.fir
-	python3 $(base_dir)/src/main/python/picorv32/make_fir.py $(base_dir)/src/main/scala/picorv32/Wrapper.fir $(base_dir)/src/main/scala/picorv32/PicoRV32.fir $(base_dir)/src/main/scala/picorv32/synth.fir $(DESIGN)
+$(scala_src_path)/$(DESIGN).fir: $(scala_src_path)/synth.fir $(scala_src_path)/Wrapper.fir
+	python3 $(python_src_path)/make_fir.py $(scala_src_path)/Wrapper.fir $(scala_src_path)/$(DESIGN).fir $(scala_src_path)/synth.fir $(DESIGN)
 
 clean-fir:
 	rm -f $(base_dir)/src/main/scala/picorv32/Wrapper.fir $(base_dir)/src/main/scala/picorv32/PicoRV32.fir
