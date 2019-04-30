@@ -74,11 +74,11 @@ To generate a specific instance of a target, the build system leverages four Mak
 2. ``DESIGN``: the name of the top-level Chisel module to generate (a Scala class name). For the default firesim target project,
    a common set of top-level modules is captured in ``sim/src/main/scala/firesim/Targets.scala``.
 
-3. ``TARGET_CONFIG``: specifies a ``Parameters`` instance that is consumed by the target design's
+3. ``TARGET_CONFIG``: specifies a ``Config`` instance that is consumed by the target design's
    generator. For the default firesim target project, predefined configs are described in
    ``sim/src/main/scala/firesim/TargetConfigs.scala``).
 
-4. ``PLATFORM_CONFIG``: specifies a ``Parameters`` instance that is consumed by MIDAS and specifies simulation-land
+4. ``PLATFORM_CONFIG``: specifies a ``Config`` instance that is consumed by MIDAS and specifies simulation-land
    parameters, such as whether to enable assertion synthesis, how to assign
    endpoints to target I/O, and what sorts of endpoints to generate (ex. the
    specific FASED timing model instance to generate.).
@@ -86,11 +86,11 @@ To generate a specific instance of a target, the build system leverages four Mak
    ``sim/src/main/scala/firesim/SimConfigs.scala``)
 
 ``TARGET_CONFIG`` and ``PLATFORM_CONFIG`` are strings that are used to construct a
-``Parameters`` instance (derives from RocketChip's parameterization system, ``Config``, see 
+``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see 
 `freechips.rocketchip.config
 <https://github.com/freechipsproject/rocket-chip/blob/master/src/main/scala/config/Config.scala>`_). These strings are of the form
 "ClassName{_ClassName2}{_ClassName3}{_...}". Only the first class name is
-compulsory, successive classnames are prepended to the first to create a
+compulsory, successive class names are prepended to the first to create a
 compound Config instance. See the example below:
 
 .. code-block:: scala
@@ -105,7 +105,7 @@ compound Config instance. See the example below:
     // Can specify undefined classes this way. ex: TARGET_CONFIG=Base_Override2
 
 With this scheme, you don't need to define a Config class for every instance you
-which to generate. We use this scheme to specify FPGA frequencies (eg.
+wish to generate. We use this scheme to specify FPGA frequencies (eg.
 FireSimConfig_F90MHz) in manager build recipes, but it's also very useful for doing
 sweeping over a parameterization space.
 
