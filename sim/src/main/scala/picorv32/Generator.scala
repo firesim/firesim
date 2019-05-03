@@ -25,6 +25,7 @@ import boom.system.{BoomTilesKey, BoomTestSuites}
 import sifive.blocks.devices.uart.UARTPortIO
 
 import firrtl.annotations.Annotation
+import firrtl.transforms.DontCheckCombLoopsAnnotation
 
 import firesim.util.{GeneratorArgs,HasTargetAgnosticUtilites}
 
@@ -55,7 +56,7 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
     val portList = dut.components.find(_.name == "PicoRV32").get.ports.flatMap(p => Some(p.id.instanceName -> p.id)) // name here should be the name of the top-level wrapper
 
     midas.MidasCompiler(
-      chirrtl, annos, portList, genDir, None, targetTransforms, hostTransforms
+      chirrtl, annos ++ Seq(DontCheckCombLoopsAnnotation), portList, genDir, None, targetTransforms, hostTransforms
       )(hostParams)
     // Need replay
   }

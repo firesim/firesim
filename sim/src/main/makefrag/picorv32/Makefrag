@@ -36,6 +36,7 @@ common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKA
 
 scala_src_path = $(base_dir)/$(src_path)/$(TARGET_PROJECT)
 python_src_path = $(base_dir)/src/main/python/$(TARGET_PROJECT)
+verilog_src_path = src/main/verilog/picorv32/picosoc
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR) $(scala_src_path)/$(DESIGN).fir
 	mkdir -p $(@D)
@@ -171,4 +172,14 @@ $(scala_src_path)/$(DESIGN).fir: $(scala_src_path)/synth.fir $(scala_src_path)/W
 	python3 $(python_src_path)/make_fir.py $(scala_src_path)/Wrapper.fir $(scala_src_path)/$(DESIGN).fir $(scala_src_path)/synth.fir $(DESIGN)
 
 clean-fir:
-	rm -f $(scala_src_path)/Wrapper.fir $(scala_src_path)/PicoRV32.fir
+	rm -f $(scala_src_path)/Wrapper.fir $(scala_src_path)/PicoRV32.fir $(verilog_src_path)/synth.v
+
+############################
+# PicoRV32 Verilog Sources #
+############################
+$(scala_src_path)/synth.fir: $(verilog_src_path)/synth.v
+	cd $(verilog_src_path) && yosys -p 'read_verilog synth.v; prep; write_firrtl synth.fir'
+	mv $(verilog_src_path)/synth.fir $(scala_src_path)
+
+$(verilog_src_path)/synth.v: $(verilog_src_path)/picosoc.v $(verilog_src_path)/../picorv32.v $(verilog_src_path)/simpleuart.v
+	cd $(verilog_src_path) && yosys -p 'read_verilog picosoc.v ../picorv32.v spimemio.v simpleuart.v; prep -top picosoc_axi; synth; write_verilog synth.v'
