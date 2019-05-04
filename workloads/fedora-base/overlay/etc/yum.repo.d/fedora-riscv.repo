@@ -1,0 +1,21 @@
+[fedora-riscv]
+name=Fedora RISC-V
+baseurl=http://fedora-riscv.tranquillity.se/repos-dist/f29/latest/riscv64/ https://dl.fedoraproject.org/pub/alt/risc-v/repo/fedora/29/latest/riscv64/ https://mirror.math.princeton.edu/pub/alt/risc-v/repo/fedora/29/latest/riscv64/
+enabled=1
+gpgcheck=0
+
+[fedora-riscv-debuginfo]
+name=Fedora RISC-V - Debug
+baseurl=http://fedora-riscv.tranquillity.se/repos-dist/f29/latest/riscv64/debug/
+#baseurl=https://dl.fedoraproject.org/pub/alt/risc-v/repo/fedora/29/latest/riscv64/debug/
+#baseurl=https://mirror.math.princeton.edu/pub/alt/risc-v/repo/fedora/29/latest/riscv64/debug/
+enabled=0
+gpgcheck=0
+
+[fedora-riscv-source]
+name=Fedora RISC-V - Source
+baseurl=http://fedora-riscv.tranquillity.se/repos-dist/f29/latest/src/
+#baseurl=https://dl.fedoraproject.org/pub/alt/risc-v/repo/fedora/29/latest/src/
+#baseurl=https://mirror.math.princeton.edu/pub/alt/risc-v/repo/fedora/29/latest/src/
+enabled=0
+gpgcheck=0
