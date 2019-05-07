@@ -112,7 +112,7 @@ run-vcs-debug: $(vcs_debug)
 
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
-	+sample=/home/centos/firesim/sim/output/f1/PicoRV32-EmptyConfig-PicoRV32Config/mt-matmul.riscv.sample.sample +loadmem=/home/centos/firesim/sim/src/main/scala/picorv32/basicfw_short.hex $($*_ARGS)  +permissive-off $(abspath $(SIM_BINARY))
+	+sample=/home/centos/firesim/sim/output/f1/PicoRV32-EmptyConfig-PicoRV32Config/mt-matmul.riscv.sample.sample +loadmem=$(base_dir)/src/main/scala/picorv32/basicfw.hex $($*_ARGS)  +permissive-off $(abspath $(SIM_BINARY))
 
 ############################################
 # Midas-Level Simulation Execution Recipes #
@@ -151,12 +151,12 @@ $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample +loadmem=/home/centos/firesim/sim/src/main/scala/picorv32/basicfw.hex $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample +loadmem=$(base_dir)/src/main/scala/picorv32/basicfw.hex $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +loadmem=/home/centos/firesim/sim/src/main/scala/picorv32/basicfw.hex +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +loadmem=$(base_dir)/src/main/scala/picorv32/basicfw.hex +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
 ##########################
@@ -177,7 +177,7 @@ clean-fir:
 ############################
 # PicoRV32 Verilog Sources #
 ############################
-$(scala_src_path)/synth.fir: $(verilog_src_path)/synth.v
+$(scala_src_path)/synth.fir: #$(verilog_src_path)/synth.v
 	cd $(verilog_src_path) && yosys -p 'read_verilog synth.v; prep; write_firrtl synth.fir'
 	mv $(verilog_src_path)/synth.fir $(scala_src_path)
 
