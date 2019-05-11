@@ -126,12 +126,14 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
   val wDataQ = Module(new MultiWidthFifo(cWidth, hWidth, maxBurst))
   attachDecoupledSink(wDataQ.io.in, "W_DATA")
 
-  val extMem = p(ExtMem).getOrElse(
-    MasterPortParams(
+  val extMem = p(ExtMem) match {
+    case Some(memPortParams) => memPortParams.master
+    case None => MasterPortParams(
       base = BigInt(0),
       size = BigInt(1L << p(hKey).addrBits),
       beatBytes = hWidth/8,
-      idBits = p(hKey).idBits))
+      idBits = p(hKey).idBits)
+  }
 
   val reqArb = Module(new Arbiter(new LoadMemWriteRequest()(hAlterP), 2))
   reqArb.io.in(0) <> wAddrQ.io.deq
