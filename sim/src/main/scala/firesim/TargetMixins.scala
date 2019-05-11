@@ -17,33 +17,31 @@ import midas.models.AXI4BundleWithEdge
 trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
   val module: CanHaveMisalignedMasterAXI4MemPortModuleImp
 
-  private val memPortParamsOpt = p(ExtMem)
-  private val portName = "axi4"
-  private val device = new MemoryDevice
-  val nMemoryChannels: Int
+  val memAXI4Node = p(ExtMem).map { case MemoryPortParams(memPortParams, nMemoryChannels) =>
+    val portName = "axi4"
+    val device = new MemoryDevice
 
-  val memAXI4Node = AXI4SlaveNode(Seq.tabulate(nMemoryChannels) { channel =>
-    val params = memPortParamsOpt.get
-    val base = AddressSet.misaligned(params.base, params.size)
+    val memAXI4Node = AXI4SlaveNode(Seq.tabulate(nMemoryChannels) { channel =>
+      val base = AddressSet.misaligned(memPortParams.base, memPortParams.size)
+      val filter = AddressSet(channel * mbus.blockBytes, ~((nMemoryChannels-1) * mbus.blockBytes))
 
-    AXI4SlavePortParameters(
-      slaves = Seq(AXI4SlaveParameters(
-        address       = base,
-        resources     = device.reg,
-        regionType    = RegionType.UNCACHED,   // cacheable
-        executable    = true,
-        supportsWrite = TransferSizes(1, cacheBlockBytes),
-        supportsRead  = TransferSizes(1, cacheBlockBytes),
-        interleavedId = Some(0))),             // slave does not interleave read responses
-      beatBytes = params.beatBytes)
-  })
+      AXI4SlavePortParameters(
+        slaves = Seq(AXI4SlaveParameters(
+          address       = base.flatMap(_.intersect(filter)),
+          resources     = device.reg,
+          regionType    = RegionType.UNCACHED, // cacheable
+          executable    = true,
+          supportsWrite = TransferSizes(1, mbus.blockBytes),
+          supportsRead  = TransferSizes(1, mbus.blockBytes),
+          interleavedId = Some(0))), // slave does not interleave read responses
+        beatBytes = memPortParams.beatBytes)
+    })
 
-  memPortParamsOpt.foreach { params =>
-    memBuses.map { m =>
-       memAXI4Node := m.toDRAMController(Some(portName)) {
-        (AXI4UserYanker() := AXI4IdIndexer(params.idBits) := TLToAXI4())
-      }
+    memAXI4Node := mbus.toDRAMController(Some(portName)) {
+      AXI4UserYanker() := AXI4IdIndexer(memPortParams.idBits) := TLToAXI4()
     }
+
+    memAXI4Node
   }
 }
 
@@ -51,35 +49,42 @@ trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
 trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
   val outer: CanHaveMisalignedMasterAXI4MemPort
 
-  val mem_axi4 = IO(new HeterogeneousBag(outer.memAXI4Node.in map AXI4BundleWithEdge.apply))
-  (mem_axi4 zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) => io <> bundle }
+  val mem_axi4 = outer.memAXI4Node.map(x => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(x.in))))
+  (mem_axi4 zip outer.memAXI4Node) foreach { case (io, node) =>
+    (io zip node.in).foreach { case (io, (bundle, _)) => io <> bundle }
+  }
 
   def connectSimAXIMem() {
-    (mem_axi4 zip outer.memAXI4Node.in).foreach { case (io, (_, edge)) =>
-      val mem = LazyModule(new SimAXIMem(edge, size = p(ExtMem).get.size))
-      Module(mem.module).io.axi4.head <> io
+    (mem_axi4 zip outer.memAXI4Node).foreach { case (io, node) =>
+      (io zip node.in).foreach { case (io, (_, edge)) =>
+        val mem = LazyModule(new SimAXIMem(edge, size = p(ExtMem).get.master.size))
+        Module(mem.module).io.axi4.head <> io
+      }
     }
   }
 }
 
+///* Deploy once we bump to RC's unaligned support */
+//trait CanHaveFASEDCompatibleAXI4MemPortModuleImp extends CanHaveMasterAXI4MemPortModuleImp {
+//  val outer: CanHaveMasterAXI4MemPort
+//
+//  // :nohacks: JANK :nohacks:- --------------V
+//  override val mem_axi4 = outer.memAXI4Node.map(x => Wire(HeterogeneousBag.fromNode(x.in)))
+//
+//  val mem_axi4_with_edge = outer.memAXI4Node.map(n => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(n.in)))) 
+//  mem_axi4_with_edge.get <> mem_axi4.get
+//
+//}
+
 trait CanHaveRocketTraceIO extends LazyModuleImp {
-  val outer: RocketSubsystem
+  val outer: HasTiles
 
-  val traced_params = outer.rocketTiles(0).p
-  val tile_traces = outer.rocketTiles flatMap (tile => tile.module.trace.getOrElse(Nil))
-  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
-  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
+  val tracedParams = outer.tiles(0).p
+  val tileTraceNodes = outer.tiles.map(tile => tile.traceNode)
+  val traceIO = IO(Output(new TraceOutputTop(tileTraceNodes.length)(tracedParams)))
+  traceIO.traces zip tileTraceNodes foreach ({ case (ioconnect, trace) => ioconnect := trace.in.head._1 })
 
-  println(s"N tile traces: ${tile_traces.size}")
+  println(s"N tile traces: ${tileTraceNodes.size}")
 }
 
-trait CanHaveBoomTraceIO extends LazyModuleImp {
-  val outer: BoomSubsystem
-
-  val traced_params = outer.boomTiles(0).p
-  val tile_traces = outer.boomTiles flatMap (tile => tile.module.trace.getOrElse(Nil))
-  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
-  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
-
-  println(s"N tile traces: ${tile_traces.size}")
-}
+trait CanHaveBoomTraceIO extends CanHaveRocketTraceIO

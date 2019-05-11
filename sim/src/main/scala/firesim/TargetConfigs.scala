@@ -54,11 +54,11 @@ class WithBoomL2TLBs(entries: Int) extends Config((site, here, up) => {
 })
 
 class WithTraceRocket extends Config((site, here, up) => {
-   case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(trace = true) }
+   case RocketTilesKey => up(RocketTilesKey, site)
 })
 
 class WithTraceBoom extends Config((site, here, up) => {
-   case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
+   case BoomTilesKey => up(BoomTilesKey, site)
 })
 
 // This is strictly speakig a MIDAS config, but it's target dependent -> mix in to target config
@@ -82,7 +82,7 @@ class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
 class FireSimRocketChipConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
-  new WithExtMemSize(0x400000000L) ++ // 16GB
+  new WithExtMemSize(0x80000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
   new WithNICKey ++
