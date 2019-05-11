@@ -56,7 +56,6 @@ class WithL1DCache(capacity: Int, ways: Int) extends Config((site, here, up) => 
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
     require(isPow2(capacity))
     require(isPow2(ways))
-    require(site(CacheBlockBytes) == 64) // To prevent myself from breaking flat configs
     val sets = capacity / (ways * site(CacheBlockBytes))
     r.copy(dcache = r.dcache.map(_.copy(nSets = sets,
                                         nWays = ways)))
@@ -65,9 +64,7 @@ class WithL1DCache(capacity: Int, ways: Int) extends Config((site, here, up) => 
 
 class WithL1ICache(capacity: Int, ways: Int) extends Config((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-    require(isPow2(capacity))
-    require(isPow2(ways))
-    require(site(CacheBlockBytes) == 64) // To prevent myself from breaking flat configs
+    require(isPow2(capacity/ways))
     val sets = capacity / (ways * site(CacheBlockBytes))
     r.copy(icache = r.icache.map(_.copy(nSets = sets,
                                         nWays = ways)))
@@ -249,36 +246,66 @@ class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
 /*******************************************************************************
 * CS152 Configs
 *******************************************************************************/
-class L1D32K8W extends WithL1DCache(0x8000, 8)
-class L1D16K8W extends WithL1DCache(0x4000, 8)
-class L1D16K4W extends WithL1DCache(0x4000, 4)
-class L1D8K8W  extends WithL1DCache(0x2000, 8)
-class L1D8K4W  extends WithL1DCache(0x2000, 4)
-class L1D8K2W  extends WithL1DCache(0x2000, 2)
-class L1D4K8W  extends WithL1DCache(0x1000, 8)
-class L1D4K4W  extends WithL1DCache(0x1000, 4)
-class L1D4K2W  extends WithL1DCache(0x1000, 2)
-class L1D4K1W  extends WithL1DCache(0x1000, 1)
+class L1D32K4W extends WithL1DCache(0x8000, 4)
 
-class L1I32K8W extends WithL1ICache(0x8000, 8)
-class L1I16K8W extends WithL1ICache(0x4000, 8)
-class L1I16K4W extends WithL1ICache(0x4000, 4)
-class L1I8K8W  extends WithL1ICache(0x2000, 8)
-class L1I8K4W  extends WithL1ICache(0x2000, 4)
-class L1I8K2W  extends WithL1ICache(0x2000, 2)
-class L1I4K8W  extends WithL1ICache(0x1000, 8)
-class L1I4K4W  extends WithL1ICache(0x1000, 4)
-class L1I4K2W  extends WithL1ICache(0x1000, 2)
-class L1I4K1W  extends WithL1ICache(0x1000, 1)
+class L1D256K64W extends WithL1DCache(0x40000,64) // Doesn't meet timing at @160 MHz
+class L1D128K32W extends WithL1DCache(0x20000,32)
+class L1D64K16W extends WithL1DCache(0x10000,16)
+class L1D32K16W extends WithL1DCache(0x8000, 16)
+class L1D32K8W  extends WithL1DCache(0x8000, 8)
+class L1D16K32W  extends WithL1DCache(0x4000,32)
+class L1D16K16W  extends WithL1DCache(0x4000,16)
+class L1D16K8W  extends WithL1DCache(0x4000, 8)
+class L1D16K4W  extends WithL1DCache(0x4000, 4)
+class L1D8K8W   extends WithL1DCache(0x2000, 8)
+class L1D8K4W   extends WithL1DCache(0x2000, 4)
+class L1D8K2W   extends WithL1DCache(0x2000, 2)
+class L1D4K8W   extends WithL1DCache(0x1000, 8)
+class L1D4K4W   extends WithL1DCache(0x1000, 4)
+class L1D4K2W   extends WithL1DCache(0x1000, 2)
+class L1D4K1W   extends WithL1DCache(0x1000, 1)
+
+class L1I256K64W extends WithL1ICache(0x40000,64)
+class L1I128K32W extends WithL1ICache(0x20000,32)
+class L1I64K16W extends WithL1ICache(0x10000,16)
+class L1I48K12W extends WithL1ICache(0xC000, 12)
+class L1I32K16W extends WithL1ICache(0x8000, 16)
+class L1I32K8W  extends WithL1ICache(0x8000, 8)
+class L1I16K32W  extends WithL1ICache(0x4000,32)
+class L1I16K16W  extends WithL1ICache(0x4000,16)
+class L1I16K8W  extends WithL1ICache(0x4000, 8)
+class L1I16K4W  extends WithL1ICache(0x4000, 4)
+class L1I8K8W   extends WithL1ICache(0x2000, 8)
+class L1I8K4W   extends WithL1ICache(0x2000, 4)
+class L1I8K2W   extends WithL1ICache(0x2000, 2)
+class L1I4K8W   extends WithL1ICache(0x1000, 8)
+class L1I4K4W   extends WithL1ICache(0x1000, 4)
+class L1I4K2W   extends WithL1ICache(0x1000, 2)
+class L1I4K1W   extends WithL1ICache(0x1000, 1)
 
 class L2TLB0    extends WithRocketL2TLBs(0)
 class L2TLB64   extends WithRocketL2TLBs(64)
 class L2TLB256  extends WithRocketL2TLBs(256)
+class L2TLB512  extends WithRocketL2TLBs(512)
 class L2TLB1024 extends WithRocketL2TLBs(1024)
+class L2TLB2048 extends WithRocketL2TLBs(2048)
+class L2TLB4096 extends WithRocketL2TLBs(4096)
+class L2TLB8192 extends WithRocketL2TLBs(8192)
+class L2TLB16384 extends WithRocketL2TLBs(16384)
+class L2TLB32K extends WithRocketL2TLBs(0x8000)
 
 class L1TLB8W  extends WithRocketL1TLBEntries(8)
 class L1TLB16W extends WithRocketL1TLBEntries(16)
 class L1TLB32W extends WithRocketL1TLBEntries(32)
+class L1TLB64W extends WithRocketL1TLBEntries(64)
+class L1TLB128W extends WithRocketL1TLBEntries(128)
+class L1TLB256W extends WithRocketL1TLBEntries(256)
+class L1TLB512W extends WithRocketL1TLBEntries(512)
+
+class L1BSize32 extends WithCacheBlockBytes(32)
+class L1BSize64 extends WithCacheBlockBytes(64)
+//class L1BSize128 extends WithCacheBlockBytes(128)
+//class L1BSize256 extends WithCacheBlockBytes(256)
 
 class Toy256KL1s extends Config(
   new WithL1DCache(0x40000, 64) ++
@@ -307,3 +334,27 @@ class CS152MysteryTConfig extends Config(
   new WithNICKey ++
   new WithBlockDevice ++
   new freechips.rocketchip.system.DefaultConfig)
+
+class MysteryTConfig0 extends Config(
+  new L1D32K8W ++
+  new L1I16K4W ++
+  new L1TLB16W ++
+  new L2TLB256 ++
+  new CS152MysteryTConfig
+)
+
+class MysteryTConfig1 extends Config(
+  new L1D4K1W ++
+  new L1I4K1W ++
+  new L1TLB8W ++
+  new L2TLB0 ++
+  new CS152MysteryTConfig
+)
+
+class MysteryTConfig2 extends Config(
+  new L1D16K4W ++
+  new L1D16K4W ++
+  new L1TLB32W ++
+  new L2TLB1024 ++
+  new CS152MysteryTConfig
+)

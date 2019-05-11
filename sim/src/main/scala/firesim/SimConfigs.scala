@@ -88,10 +88,11 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
 * Memory-timing model configuration modifiers
 *******************************************************************************/
 // Adds a LLC model with at most <maxSets> sets with <maxWays> ways
-class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) => {
+class WithLLCModel(maxSets: Int, maxWays: Int, maxBlockSize: Int = 128) extends Config((site, here, up) => {
   case LlcKey => Some(LLCParams().copy(
     ways = WRange(1, maxWays),
-    sets = WRange(1, maxSets)
+    sets = WRange(1, maxSets),
+    blockBytes = WRange(8, maxBlockSize)
   ))
 })
 
@@ -165,7 +166,7 @@ class LBP32R32W3Div extends Config(
 // DDR3 - FCFS models.
 class FCFS16GBQuadRank extends Config(new WithDDR3FIFOMAS(8) ++ new FireSimConfig)
 class FCFS16GBQuadRankLLC4MB extends Config(
-  new WithLLCModel(4096, 8) ++
+  new WithLLCModel(4096, 32, 1024) ++
   new FCFS16GBQuadRank)
 
 // DDR3 - First-Ready FCFS models
@@ -308,8 +309,68 @@ class TestMysteryConfig extends Config(
     LLCHardwiredSettings(
       wayBits = 2,
       setBits = 12,
-      blockBits = 6)
+      blockBits = 6) 
     ) ++ new LLCDRAMBaseConfig
 )
 
+class MysteryConfig0 extends Config(
+  new WithMysteryMemoryModel(
+    DramHardwiredSettings(
+      pagePolicy = true,
+      addrAssignment = AddressAssignmentSetting(
+        bankAddrMask = 7,
+        bankAddrOffset = 13,
+        rankAddrMask = 3,
+        rankAddrOffset = 16,
+        rowAddrMask = (1 << 16) - 1,
+        rowAddrOffset = 18),
+      timings = Seq( 0, 14, 1, 10, 4, 25, 33, 7800, 47, 14, 260, 5, 14, 8, 2, 15, 8)),
+    LLCHardwiredSettings(
+      wayBits = 3,
+      setBits = 10,
+      blockBits = 6) /// 512
+    ) ++ new LLCDRAMBaseConfig
+)
 
+class MysteryConfig1 extends Config(
+  new WithMysteryMemoryModel(
+    DramHardwiredSettings(
+      pagePolicy = true,
+      addrAssignment = AddressAssignmentSetting(
+        bankAddrMask = 7,
+        bankAddrOffset = 14,
+        rankAddrMask = 0,
+        rankAddrOffset = 16,
+        rowAddrMask = (1 << 17) - 1,
+        rowAddrOffset = 17),
+        //DDR3-1066
+      timings = Seq(0, 8, 1, 6, 4, 19, 19, 3900, 27, 8, 130, 4, 8, 4, 2, 8, 4)),
+    LLCHardwiredSettings(
+      wayBits = 2,
+      setBits = 8,
+      blockBits = 6) // 64K
+    ) ++ new LLCDRAMBaseConfig
+)
+
+class MysteryConfig2 extends Config(
+  new WithMysteryMemoryModel(
+    DramHardwiredSettings(
+      pagePolicy = false,
+      addrAssignment = AddressAssignmentSetting(
+        bankAddrMask = 7,
+        bankAddrOffset = 6,
+        rankAddrMask = 3,
+        rankAddrOffset = 9,
+        rowAddrMask = (1 << 16) - 1,
+        rowAddrOffset = 18),
+      // DDR3-160// 512K
+      timings = Seq(0, 11, 1, 8, 4, 24, 28, 6240, 39, 11, 208, 5, 11, 6, 2, 12, 6)),
+    LLCHardwiredSettings(
+      wayBits = 3,
+      setBits = 12,
+      blockBits = 6) // 2M
+    ) ++ new LLCDRAMBaseConfig
+)
+
+// Frequency configs
+class F90MHz extends WithDesiredHostFrequency(90)
