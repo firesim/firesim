@@ -32,8 +32,7 @@ import java.io.File
 
 class FireSim(implicit p: Parameters) extends RocketSubsystem
     with HasDefaultBusConfiguration
-    //with CanHaveMisalignedMasterAXI4MemPort
-    with CanHaveMasterAXI4MemPort
+    with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     // with HasSyncExtInterrupts
     with HasNoDebug
@@ -48,8 +47,7 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    //with CanHaveMisalignedMasterAXI4MemPortModuleImp
-    with CanHaveMasterAXI4MemPortModuleImp
+    with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
@@ -141,7 +139,7 @@ case object NumNodes extends Field[Int]
 class SupernodeIO(
       nNodes: Int,
       serialWidth: Int,
-      bagPrototype: HeterogeneousBag[AXI4Bundle])(implicit p: Parameters)
+      bagPrototype: HeterogeneousBag[AXI4BundleWithEdge])(implicit p: Parameters)
     extends Bundle {
 
     val serial = Vec(nNodes, new SerialIO(serialWidth))

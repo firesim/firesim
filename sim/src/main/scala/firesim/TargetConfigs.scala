@@ -88,7 +88,7 @@ class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
 class FireSimRocketChipConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
-  new WithExtMemSize(0x80000000L) ++ // 16GB
+  new WithExtMemSize(0x400000000L) ++ // 16GB
   new WithoutTLMonitors ++
   new WithUARTKey ++
   new WithNICKey ++

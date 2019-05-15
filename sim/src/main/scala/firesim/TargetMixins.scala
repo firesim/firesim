@@ -14,8 +14,7 @@ import boom.system.BoomSubsystem
 
 import midas.models.AXI4BundleWithEdge
 
-// Ties together Subsystem buses in the same fashion done in the example top
-// of Rocket Chip
+/** Ties together Subsystem buses in the same fashion done in the example top of Rocket Chip */
 trait HasDefaultBusConfiguration {
   this: BaseSubsystem =>
   // The sbus masters the cbus; here we convert TL-UH -> TL-UL
@@ -90,7 +89,7 @@ trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
   }
 }
 
-///* Deploy once we bump to RC's unaligned support */
+///* Deploy once we bump to RC's misaligned support */
 //trait CanHaveFASEDCompatibleAXI4MemPortModuleImp extends CanHaveMasterAXI4MemPortModuleImp {
 //  val outer: CanHaveMasterAXI4MemPort
 //
