@@ -101,21 +101,26 @@ trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
 //
 //}
 
-trait CanHaveRocketTraceIO {
+/* Wires out tile trace ports to the top; and wraps them in a Bundle that the
+ * TracerV endpoint can match on.
+ */
+trait HasTraceIO {
   this: HasTiles =>
-  val module: CanHaveRocketTraceIOImp
+  val module: HasTraceIOImp
 
   val tracedParams = tiles(0).p
+  // Bind all the trace nodes to a BB; we'll use this to generate the IO in the imp
   val traceNexus = BundleBridgeNexus[Vec[TracedInstruction]]
   val tileTraceNodes = tiles.map(tile => tile.traceNode)
   println(s"N tile traces: ${tileTraceNodes.size}")
   tileTraceNodes foreach { traceNexus := _ }
 }
 
-trait CanHaveRocketTraceIOImp extends LazyModuleImp {
-  val outer: CanHaveRocketTraceIO
-
+trait HasTraceIOImp extends LazyModuleImp {
+  val outer: HasTraceIO
+  // This *will* break for heterogenous tiles, but as will other stuff
   val traceIO = IO(Output(new TraceOutputTop(outer.traceNexus.edges.in.length)(outer.tracedParams)))
-  //traceIO.traces zip tileTraceNodes foreach ({ case (ioconnect, trace) => ioconnect := trace.in.head._1 })
+  (traceIO.traces zip outer.traceNexus.out).foreach({ case (port, (tileTrace, params)) =>
+    port := tileTrace
+  })
 }
-

@@ -34,13 +34,12 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
     with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
-    with CanHaveRocketTraceIO
+    with HasTraceIO
 {
   override lazy val module = new FireSimModuleImp(this)
 }
@@ -49,25 +48,23 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveRocketTraceIOImp
+    with HasTraceIOImp
 
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryBlockDevice
-    with CanHaveRocketTraceIO
+    with HasTraceIO
 {
   override lazy val module = new FireSimNoNICModuleImp(this)
 }
@@ -76,24 +73,23 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveRocketTraceIOImp
+    with HasTraceIOImp
 
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
   override lazy val module = new FireBoomModuleImp(this)
 }
@@ -102,23 +98,22 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
-    //with CanHaveBoomTraceIO
+    with HasTraceIOImp
 
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
   override lazy val module = new FireBoomNoNICModuleImp(this)
 }
@@ -127,12 +122,11 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
-    //with CanHaveBoomTraceIO
+    with HasTraceIOImp
 
 case object NumNodes extends Field[Int]
 
