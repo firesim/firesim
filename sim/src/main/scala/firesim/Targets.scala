@@ -31,6 +31,7 @@ import java.io.File
 *******************************************************************************/
 
 class FireSim(implicit p: Parameters) extends RocketSubsystem
+    with HasDefaultBusConfiguration
     //with CanHaveMisalignedMasterAXI4MemPort
     with CanHaveMasterAXI4MemPort
     with HasPeripheryBootROM
@@ -40,28 +41,8 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryUART
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
+    with CanHaveRocketTraceIO
 {
-  //val error = LazyModule(new TLError(DevNullParams(List(AddressSet(0x3000, 0xfff)), maxAtomic=8, maxTransfer=4096), sbus.beatBytes))
-  //// always buffer the error device because no one cares about its latency
-  //sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ }
-  // The sbus masters the cbus; here we convert TL-UH -> TL-UL
-  sbus.crossToBus(cbus, NoCrossing)
-
-  // The cbus masters the pbus; which might be clocked slower
-  cbus.crossToBus(pbus, SynchronousCrossing())
-
-  // The fbus masters the sbus; both are TL-UH or TL-C
-  FlipRendering { implicit p =>
-    sbus.crossFromBus(fbus, SynchronousCrossing())
-  }
-
-  // The sbus masters the mbus; here we convert TL-C -> TL-UH
-  private val BankedL2Params(nBanks, coherenceManager) = p(BankedL2Key)
-  private val (in, out, halt) = coherenceManager(this)
-  if (nBanks != 0) {
-    sbus.coupleTo("coherence_manager") { in :*= _ }
-    mbus.coupleFrom("coherence_manager") { _ :=* BankBinder(mbus.blockBytes * (nBanks-1)) :*= out }
-  }
   override lazy val module = new FireSimModuleImp(this)
 }
 
@@ -76,10 +57,11 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveRocketTraceIO
+    with CanHaveRocketTraceIOImp
 
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
+    with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     // with HasSyncExtInterrupts
@@ -87,6 +69,7 @@ class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryBlockDevice
+    with CanHaveRocketTraceIO
 {
   override lazy val module = new FireSimNoNICModuleImp(this)
 }
@@ -100,10 +83,11 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveRocketTraceIO
+    with CanHaveRocketTraceIOImp
 
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
+    with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     // with HasSyncExtInterrupts
@@ -126,9 +110,10 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveBoomTraceIO
+    //with CanHaveBoomTraceIO
 
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
+    with HasDefaultBusConfiguration
     with CanHaveMisalignedMasterAXI4MemPort
     with HasPeripheryBootROM
     // with HasSyncExtInterrupts
@@ -149,7 +134,7 @@ class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemMod
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
-    with CanHaveBoomTraceIO
+    //with CanHaveBoomTraceIO
 
 case object NumNodes extends Field[Int]
 

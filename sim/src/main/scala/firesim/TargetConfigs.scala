@@ -6,6 +6,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
+import freechips.rocketchip.devices.debug.DebugModuleParams
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
@@ -61,6 +62,11 @@ class WithTraceBoom extends Config((site, here, up) => {
    case BoomTilesKey => up(BoomTilesKey, site)
 })
 
+// Disables clock-gating; doesn't play nice with our FAME-1 pass
+class WithoutClockGating extends Config((site, here, up) => {
+  case DebugModuleParams => up(DebugModuleParams, site).copy(clockGate = false)
+})
+
 // This is strictly speakig a MIDAS config, but it's target dependent -> mix in to target config
 class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
   case midas.ExcludeInstanceAsserts => Seq(
@@ -89,6 +95,7 @@ class FireSimRocketChipConfig extends Config(
   new WithBlockDevice ++
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
+  new WithoutClockGating ++
   new freechips.rocketchip.system.DefaultConfig)
 
 class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
@@ -145,6 +152,7 @@ class FireSimBoomConfig extends Config(
   new WithNICKey ++
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
+  new WithoutClockGating ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)

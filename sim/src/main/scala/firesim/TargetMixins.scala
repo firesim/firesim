@@ -7,11 +7,37 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.util._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.rocket.TracedInstruction
 import firesim.endpoints.TraceOutputTop
 import boom.system.BoomSubsystem
 
 import midas.models.AXI4BundleWithEdge
+
+// Ties together Subsystem buses in the same fashion done in the example top
+// of Rocket Chip
+trait HasDefaultBusConfiguration {
+  this: BaseSubsystem =>
+  // The sbus masters the cbus; here we convert TL-UH -> TL-UL
+  sbus.crossToBus(cbus, NoCrossing)
+
+  // The cbus masters the pbus; which might be clocked slower
+  cbus.crossToBus(pbus, SynchronousCrossing())
+
+  // The fbus masters the sbus; both are TL-UH or TL-C
+  FlipRendering { implicit p =>
+    sbus.crossFromBus(fbus, SynchronousCrossing())
+  }
+
+  // The sbus masters the mbus; here we convert TL-C -> TL-UH
+  private val BankedL2Params(nBanks, coherenceManager) = p(BankedL2Key)
+  private val (in, out, halt) = coherenceManager(this)
+  if (nBanks != 0) {
+    sbus.coupleTo("coherence_manager") { in :*= _ }
+    mbus.coupleFrom("coherence_manager") { _ :=* BankBinder(mbus.blockBytes * (nBanks-1)) :*= out }
+  }
+}
+
 
 /** Adds a port to the system intended to master an AXI4 DRAM controller. */
 trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
@@ -68,7 +94,7 @@ trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
 //trait CanHaveFASEDCompatibleAXI4MemPortModuleImp extends CanHaveMasterAXI4MemPortModuleImp {
 //  val outer: CanHaveMasterAXI4MemPort
 //
-//  // :nohacks: JANK :nohacks:- --------------V
+//  // :nohacks: JANK :nohacks:---------- --------------V
 //  override val mem_axi4 = outer.memAXI4Node.map(x => Wire(HeterogeneousBag.fromNode(x.in)))
 //
 //  val mem_axi4_with_edge = outer.memAXI4Node.map(n => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(n.in)))) 
@@ -76,15 +102,21 @@ trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
 //
 //}
 
-trait CanHaveRocketTraceIO extends LazyModuleImp {
-  val outer: HasTiles
+trait CanHaveRocketTraceIO {
+  this: HasTiles =>
+  val module: CanHaveRocketTraceIOImp
 
-  val tracedParams = outer.tiles(0).p
-  val tileTraceNodes = outer.tiles.map(tile => tile.traceNode)
-  val traceIO = IO(Output(new TraceOutputTop(tileTraceNodes.length)(tracedParams)))
-  traceIO.traces zip tileTraceNodes foreach ({ case (ioconnect, trace) => ioconnect := trace.in.head._1 })
-
+  val tracedParams = tiles(0).p
+  val traceNexus = BundleBridgeNexus[Vec[TracedInstruction]]
+  val tileTraceNodes = tiles.map(tile => tile.traceNode)
   println(s"N tile traces: ${tileTraceNodes.size}")
+  tileTraceNodes foreach { traceNexus := _ }
 }
 
-trait CanHaveBoomTraceIO extends CanHaveRocketTraceIO
+trait CanHaveRocketTraceIOImp extends LazyModuleImp {
+  val outer: CanHaveRocketTraceIO
+
+  val traceIO = IO(Output(new TraceOutputTop(outer.traceNexus.edges.in.length)(outer.tracedParams)))
+  //traceIO.traces zip tileTraceNodes foreach ({ case (ioconnect, trace) => ioconnect := trace.in.head._1 })
+}
+
