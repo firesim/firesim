@@ -32,7 +32,7 @@ import java.io.File
 
 class FireSim(implicit p: Parameters) extends RocketSubsystem
     with HasDefaultBusConfiguration
-    with CanHaveMisalignedMasterAXI4MemPort
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasNoDebug
     with HasPeripherySerial
@@ -46,7 +46,7 @@ class FireSim(implicit p: Parameters) extends RocketSubsystem
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
@@ -58,7 +58,7 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
     with HasDefaultBusConfiguration
-    with CanHaveMisalignedMasterAXI4MemPort
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasNoDebug
     with HasPeripherySerial
@@ -71,7 +71,7 @@ class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
 
 class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
@@ -82,7 +82,7 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
     with HasDefaultBusConfiguration
-    with CanHaveMisalignedMasterAXI4MemPort
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasNoDebug
     with HasPeripherySerial
@@ -96,7 +96,7 @@ class FireBoom(implicit p: Parameters) extends BoomSubsystem
 
 class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
@@ -107,7 +107,7 @@ class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModuleImp(l)
 
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
     with HasDefaultBusConfiguration
-    with CanHaveMisalignedMasterAXI4MemPort
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
     with HasNoDebug
     with HasPeripherySerial
@@ -120,7 +120,7 @@ class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
 
 class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp

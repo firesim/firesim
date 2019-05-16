@@ -38,9 +38,11 @@ trait HasDefaultBusConfiguration {
 }
 
 
-/** Adds a port to the system intended to master an AXI4 DRAM controller. */
-trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
-  val module: CanHaveMisalignedMasterAXI4MemPortModuleImp
+/** Copied from RC and modified to change the IO type of the Imp to include the Diplomatic edges
+  *  associated with each port. This drives FASED functional model sizing
+  */
+trait CanHaveFASEDOptimizedMasterAXI4MemPort { this: BaseSubsystem =>
+  val module: CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
 
   val memAXI4Node = p(ExtMem).map { case MemoryPortParams(memPortParams, nMemoryChannels) =>
     val portName = "axi4"
@@ -71,8 +73,8 @@ trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
 }
 
 /** Actually generates the corresponding IO in the concrete Module */
-trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
-  val outer: CanHaveMisalignedMasterAXI4MemPort
+trait CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp extends LazyModuleImp {
+  val outer: CanHaveFASEDOptimizedMasterAXI4MemPort
 
   val mem_axi4 = outer.memAXI4Node.map(x => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(x.in))))
   (mem_axi4 zip outer.memAXI4Node) foreach { case (io, node) =>
@@ -88,18 +90,6 @@ trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
     }
   }
 }
-
-///* Deploy once we bump to RC's misaligned support */
-//trait CanHaveFASEDCompatibleAXI4MemPortModuleImp extends CanHaveMasterAXI4MemPortModuleImp {
-//  val outer: CanHaveMasterAXI4MemPort
-//
-//  // :nohacks: JANK :nohacks:---------- --------------V
-//  override val mem_axi4 = outer.memAXI4Node.map(x => Wire(HeterogeneousBag.fromNode(x.in)))
-//
-//  val mem_axi4_with_edge = outer.memAXI4Node.map(n => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(n.in)))) 
-//  mem_axi4_with_edge.get <> mem_axi4.get
-//
-//}
 
 /* Wires out tile trace ports to the top; and wraps them in a Bundle that the
  * TracerV endpoint can match on.
