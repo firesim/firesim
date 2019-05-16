@@ -11,7 +11,7 @@ import freechips.rocketchip.util.{HeterogeneousBag}
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.LazyModule
-import boom.system.{BoomSubsystem, BoomSubsystemModule}
+import boom.system.{BoomSubsystem, BoomSubsystemModuleImp}
 import icenet._
 import testchipip._
 import testchipip.SerialAdapter.SERIAL_IF_WIDTH
@@ -94,7 +94,7 @@ class FireBoom(implicit p: Parameters) extends BoomSubsystem
   override lazy val module = new FireBoomModuleImp(this)
 }
 
-class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
+class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
@@ -118,7 +118,7 @@ class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
   override lazy val module = new FireBoomNoNICModuleImp(this)
 }
 
-class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModule(l)
+class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
     with CanHaveMisalignedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp

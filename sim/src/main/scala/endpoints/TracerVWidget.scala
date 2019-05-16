@@ -18,43 +18,79 @@ import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
 
-class TraceOutputTop(val numTraces: Int)(implicit val p: Parameters) extends Bundle {
-  val traces = Vec(numTraces, new TracedInstruction)
+// Hack: In a457f658a, RC added the Clocked trait to TracedInstruction, which breaks midas
+// I/O token handling. The non-Clock fields of this Bundle should be factored out in rocket chip.
+// For now, we create second Bundle with Clock (of type Clock) and Reset removed
+class DeclockedTracedInstruction(private val proto: TracedInstruction) extends Bundle {
+  val valid = Bool()
+  val iaddr = UInt(proto.iaddr.getWidth.W)
+  val insn  = UInt(proto.insn.getWidth.W)
+  val priv  = UInt(proto.priv.getWidth.W)
+  val exception = Bool()
+  val interrupt = Bool()
+  val cause = UInt(proto.cause.getWidth.W)
+  val tval = UInt(proto.tval.getWidth.W)
+}
+
+object DeclockedTracedInstruction {
+  // Generates a hardware Vec of declockedInsns
+  def fromVec(clockedVec: Vec[TracedInstruction]): Vec[DeclockedTracedInstruction] = {
+    val declockedVec = clockedVec.map(insn => Wire(new DeclockedTracedInstruction(insn.cloneType)))
+    declockedVec.zip(clockedVec).foreach({ case (declocked, clocked) =>
+      declocked.valid := clocked.valid
+      declocked.iaddr := clocked.iaddr
+      declocked.insn := clocked.insn
+      declocked.priv := clocked.priv
+      declocked.exception := clocked.exception
+      declocked.interrupt := clocked.interrupt
+      declocked.cause := clocked.cause
+      declocked.tval := clocked.tval
+    })
+    VecInit(declockedVec)
+  }
+
+  // Generates a Chisel type from that returned by a Diplomatic node's in() or .out() methods
+  def fromNode(ports: Seq[(Vec[TracedInstruction], Any)]): Seq[Vec[DeclockedTracedInstruction]] = ports.map({
+    case (bundle, _) => Vec(bundle.length, new DeclockedTracedInstruction(bundle.head.cloneType))
+  })
+}
+
+// The IO matched on by the TracerV endpoint: a wrapper around a heterogenous
+// bag of vectors. Each entry is Vec of committed instructions
+class TraceOutputTop(private val traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bundle {
+  val traces = HeterogeneousBag(traceProto.map(_.cloneType))
+  def getProto() = traceProto
 }
 
 class SimTracerV extends Endpoint {
-
-  // this is questionable ...
-  // but I can't see a better way to do this for now. getting sharedMemoryTLEdge is the problem.
-  var tracer_param = Parameters.empty
-  var num_traces = 0
+  // Copy the chisel type of the TraceOutputTop bundle to pass as an argument
+  // to the widget Constructor
+  var traceProto: Seq[Vec[DeclockedTracedInstruction]] = Nil
   def matchType(data: Data) = data match {
     case channel: TraceOutputTop => {
-      // this is questionable ...
-      tracer_param = channel.traces(0).p
-      num_traces = channel.traces.length
+      traceProto = channel.getProto
       true
     }
     case _ => false
   }
-  def widget(p: Parameters) = new TracerVWidget(tracer_param, num_traces)(p)
+  def widget(p: Parameters) = new TracerVWidget(traceProto)(p)
   override def widgetName = "TracerVWidget"
 }
 
-class TracerVWidgetIO(val tracerParams: Parameters, val num_traces: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new TraceOutputTop(num_traces)(tracerParams)))
+class TracerVWidgetIO(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p: Parameters) extends EndpointWidgetIO()(p) {
+  val hPort = Flipped(HostPort(Output(new TraceOutputTop(traceProto))))
 }
 
-class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Parameters) extends EndpointWidget()(p)
+class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p: Parameters) extends EndpointWidget()(p)
     with UnidirectionalDMAToHostCPU {
-  val io = IO(new TracerVWidgetIO(tracerParams, num_traces))
+  val io = IO(new TracerVWidgetIO(traceProto))
 
   // DMA mixin parameters
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
   val uint_traces = io.hPort.hBits.traces map (trace => trace.asUInt)
-  outgoingPCISdat.io.enq.bits := Cat(uint_traces) //io.hPort.hBits.traces(0).asUInt
+  outgoingPCISdat.io.enq.bits := Cat(uint_traces)
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
     io.hPort.toHost.hValid, io.hPort.fromHost.hReady, io.tReset.valid)
@@ -66,16 +102,20 @@ class TracerVWidget(tracerParams: Parameters, num_traces: Int)(implicit p: Param
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
 
   when (outgoingPCISdat.io.enq.fire()) {
-    for (i <- 0 until io.hPort.hBits.traces.length) {
-      printf("trace %d, valid: %x\n", i.U, io.hPort.hBits.traces(i).valid)
-      printf("trace %d, iaddr: %x\n", i.U, io.hPort.hBits.traces(i).iaddr)
-      printf("trace %d, insn: %x\n", i.U, io.hPort.hBits.traces(i).insn)
-      printf("trace %d, priv: %x\n", i.U, io.hPort.hBits.traces(i).priv)
-      printf("trace %d, exception: %x\n", i.U, io.hPort.hBits.traces(i).exception)
-      printf("trace %d, interrupt: %x\n", i.U, io.hPort.hBits.traces(i).interrupt)
-      printf("trace %d, cause: %x\n", i.U, io.hPort.hBits.traces(i).cause)
-      printf("trace %d, tval: %x\n", i.U, io.hPort.hBits.traces(i).tval)
-    }
+    io.hPort.hBits.traces.zipWithIndex.foreach({ case (bundle, bIdx) =>
+      printf("Tile %d Trace Bundle\n", bIdx.U)
+      bundle.zipWithIndex.foreach({ case (insn, insnIdx) =>
+        printf(p"insn ${insnIdx}: ${insn}\n")
+        //printf(b"insn ${insnIdx}, valid: ${insn.valid}")
+        //printf(b"insn ${insnIdx}, iaddr: ${insn.iaddr}")
+        //printf(b"insn ${insnIdx}, insn: ${insn.insn}")
+        //printf(b"insn ${insnIdx}, priv:  ${insn.priv}")
+        //printf(b"insn ${insnIdx}, exception: ${insn.exception}")
+        //printf(b"insn ${insnIdx}, interrupt: ${insn.interrupt}")
+        //printf(b"insn ${insnIdx}, cause: ${insn.cause}")
+        //printf(b"insn ${insnIdx}, tval: ${insn.tval}")
+      })
+    })
   }
   attach(outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready, "tracequeuefull", ReadOnly)
   genCRFile()

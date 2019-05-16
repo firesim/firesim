@@ -9,7 +9,7 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.rocket.TracedInstruction
-import firesim.endpoints.TraceOutputTop
+import firesim.endpoints.{TraceOutputTop, DeclockedTracedInstruction}
 import boom.system.BoomSubsystem
 
 import midas.models.AXI4BundleWithEdge
@@ -108,19 +108,18 @@ trait HasTraceIO {
   this: HasTiles =>
   val module: HasTraceIOImp
 
-  val tracedParams = tiles(0).p
   // Bind all the trace nodes to a BB; we'll use this to generate the IO in the imp
   val traceNexus = BundleBridgeNexus[Vec[TracedInstruction]]
   val tileTraceNodes = tiles.map(tile => tile.traceNode)
-  println(s"N tile traces: ${tileTraceNodes.size}")
   tileTraceNodes foreach { traceNexus := _ }
 }
 
 trait HasTraceIOImp extends LazyModuleImp {
   val outer: HasTraceIO
-  // This *will* break for heterogenous tiles, but as will other stuff
-  val traceIO = IO(Output(new TraceOutputTop(outer.traceNexus.edges.in.length)(outer.tracedParams)))
-  (traceIO.traces zip outer.traceNexus.out).foreach({ case (port, (tileTrace, params)) =>
-    port := tileTrace
+
+  val traceIO = IO(Output(new TraceOutputTop(
+    DeclockedTracedInstruction.fromNode(outer.traceNexus.in))))
+  (traceIO.traces zip outer.traceNexus.in).foreach({ case (port, (tileTrace, _)) =>
+    port := DeclockedTracedInstruction.fromVec(tileTrace)
   })
 }
