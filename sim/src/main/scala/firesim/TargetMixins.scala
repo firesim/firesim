@@ -70,6 +70,10 @@ trait CanHaveRocketTraceIO extends LazyModuleImp {
   val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
   traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
 
+  printf("TRACEPORT: ")
+  val traceprint = Wire(UInt(512.W))
+  traceprint := tile_traces.asUInt
+  printf("%x\n", traceprint)
   println(s"N tile traces: ${tile_traces.size}")
 }
 

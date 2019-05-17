@@ -9,6 +9,7 @@
 #include "systematic_scheduler.h"
 
 #include "endpoints/synthesized_prints.h"
+#include "endpoints/tracerv.h"
 
 class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 {
@@ -32,7 +33,30 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 #ifdef PRINTWIDGET_struct_guard
         synthesized_prints_t * print_endpoint;
 #endif
-
+#ifdef TRACERVWIDGET_0_PRESENT
+        tracerv_t * tracerv_endpoint_0;
+#endif
+#ifdef TRACERVWIDGET_1_PRESENT
+        tracerv_t * tracerv_endpoint_1;
+#endif
+#ifdef TRACERVWIDGET_2_PRESENT
+        tracerv_t * tracerv_endpoint_2;
+#endif
+#ifdef TRACERVWIDGET_3_PRESENT
+        tracerv_t * tracerv_endpoint_3;
+#endif
+#ifdef TRACERVWIDGET_4_PRESENT
+        tracerv_t * tracerv_endpoint_4;
+#endif
+#ifdef TRACERVWIDGET_5_PRESENT
+        tracerv_t * tracerv_endpoint_5;
+#endif
+#ifdef TRACERVWIDGET_6_PRESENT
+        tracerv_t * tracerv_endpoint_6;
+#endif
+#ifdef TRACERVWIDGET_7_PRESENT
+        tracerv_t * tracerv_endpoint_7;
+#endif
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         uint64_t profile_interval = -1;
         uint64_t profile_models();

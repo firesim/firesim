@@ -16,6 +16,9 @@ class tracerv_t: public endpoint_t
         virtual void tick();
         virtual bool terminate() { return false; }
         virtual int exit_code() { return 0; }
+        void flush();
+        void test();
+        void finish() { flush(); test(); };
 
     private:
         TRACERVWIDGET_struct * mmio_addrs;
@@ -23,6 +26,9 @@ class tracerv_t: public endpoint_t
         FILE * tracefile;
         uint64_t start_cycle, end_cycle, cur_cycle;
 	long dma_addr;
+        int beats_avaliable_stable();
+        std::string tracefilename;
+        std::string testfilename;
 };
 #endif // TRACERVWIDGET_struct_guard
 
