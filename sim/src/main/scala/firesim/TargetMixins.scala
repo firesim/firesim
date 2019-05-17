@@ -94,6 +94,8 @@ trait CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp extends LazyModuleImp {
 /* Wires out tile trace ports to the top; and wraps them in a Bundle that the
  * TracerV endpoint can match on.
  */
+object PrintTracePort extends Field[Boolean](false)
+
 trait HasTraceIO {
   this: HasTiles =>
   val module: HasTraceIOImp
@@ -112,4 +114,11 @@ trait HasTraceIOImp extends LazyModuleImp {
   (traceIO.traces zip outer.traceNexus.in).foreach({ case (port, (tileTrace, _)) =>
     port := DeclockedTracedInstruction.fromVec(tileTrace)
   })
+
+  // Enabled to test TracerV trace capture
+  if (p(PrintTracePort)) {
+    val traceprint = Wire(UInt(512.W))
+    traceprint := traceIO.asUInt
+    printf("TRACEPORT: %x\n", traceprint)
+  }
 }

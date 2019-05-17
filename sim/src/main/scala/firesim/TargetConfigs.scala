@@ -75,6 +75,12 @@ class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
     ("NonBlockingDCache", "dtlb"))
 })
 
+// Testing configurations
+// This enables printfs used in testing
+class WithScalaTestFeatures extends Config((site, here, up) => {
+    case PrintTracePort => true
+})
+
 /*******************************************************************************
 * Full TARGET_CONFIG configurations. These set parameters of the target being
 * simulated.
