@@ -43,7 +43,7 @@ For each config, the build process entails:
 
 4. [Locally] Emit Verilog to run through the AWS FPGA Flow
 
-5. Launch an FPGA Dev AMI build instance for each configuration you want built.
+5. Launch an FireSim Base AMI build instance for each configuration you want built.
 
 6. [Local/Remote] Prep build instances, copy generated verilog for hardware configuration to build instance.
 

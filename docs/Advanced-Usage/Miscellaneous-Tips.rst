@@ -13,7 +13,7 @@ which FireSim run farm an instance belongs to.
 To do so, click the gear in the top right of the AWS management console. From
 there, you should see a checkbox for ``fsimcluster``. Enable it to see the column.
 
-FPGA Dev AMI Remote Desktop Setup
+FPGA Dev AMI / FireSim Base AMI Remote Desktop Setup
 -----------------------------------
 
 To Remote Desktop into your manager instance, you must do the following:
