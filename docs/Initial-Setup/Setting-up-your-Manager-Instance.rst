@@ -36,6 +36,7 @@ To launch a manager instance, follow these steps:
       manager instance from being terminated by accident. You will need
       to disable this setting before being able to terminate the
       instance using usual methods.
+<!--
    3. Also on this page, expand "Advanced Details" and in the resulting
       text box, paste the following:
 
@@ -43,16 +44,16 @@ To launch a manager instance, follow these steps:
          :code: bash
 
       This will pre-install all of the dependencies needed to run FireSim on your instance.
-
-5. On the next page ("Add Storage"), increase the size of the root EBS
+-->
+4. On the next page ("Add Storage"), increase the size of the root EBS
    volume to ~300GB. The default of 150GB can quickly become tight as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
-   and large root filesystems for simulations. You can get rid of the
-   small (5GB) secondary volume that is added by default.
-6. You can skip the "Add Tags" page, unless you want tags.
-7. On the "Configure Security Group" page, select the ``firesim``
+   and large root filesystems for simulations. <!-- You can get rid of the
+   small (5GB) secondary volume that is added by default. -->
+5. You can skip the "Add Tags" page, unless you want tags.
+6. On the "Configure Security Group" page, select the ``firesim``
    security group that was automatically created for you earlier.
-8. On the review page, click the button to launch your instance.
+7. On the review page, click the button to launch your instance.
 
 Make sure you select the ``firesim`` key pair that we setup earlier.
 
