@@ -22,7 +22,7 @@ To launch a manager instance, follow these steps:
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.6.0``.
+   "FireSim Base" and select the option that starts with ``FireSim Base AMI 1.6.0``.
    **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c4.4xlarge``.
@@ -62,7 +62,9 @@ Access your instance
 We **HIGHLY** recommend using `mosh <https://mosh.org/>`__ instead
 of ``ssh`` or using ``ssh`` with a screen/tmux session running on your
 manager instance to ensure that long-running jobs are not killed by a
-bad network connection to your manager instance. On this instance, the
+bad network connection to your manager instance. 
+<!--
+On this instance, the
 ``mosh`` server is installed as part of the setup script we pasted
 before, so we need to first ssh into the instance and make sure the
 setup is complete.
@@ -78,6 +80,8 @@ In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOU
 
 Once this line appears, exit and re-``ssh`` into the system. If you want
 to use ``mosh``, ``mosh`` back into the system.
+-->
+Now, ``ssh`` or ``mosh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``).
 
 Key Setup, Part 2
 ~~~~~~~~~~~~~~~~~
