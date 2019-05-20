@@ -13,7 +13,9 @@ rootLogger = logging.getLogger()
 # users are instructed to create a key named `firesim` in the wiki
 keyname = 'firesim'
 
-# this needs to be updated whenever the FireSim Base AMI or FPGA Dev AMI changes
+# this needs to be updated whenever the FireSim Base AMI or FPGA Dev AMI changes.
+# Run AMI and build AMI are separated since a build currently fails in the FireSim Base AMI 
+# (likely due to tools licensing issues) 
 f1_ami_name_run = "FireSim Base AMI 1.6.0-1febcaa0-2602-4690-99b9-62bfd3998066-ami-043bd8d76d14e6b3d.4"
 f1_ami_name_build = "FPGA Developer AMI - 1.6.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0b1edf08d56c2da5c.4"
 

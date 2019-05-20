@@ -2,14 +2,18 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.6.0]
+## [1.6.0] - 2019-05-20
 
-A more detailed account of everything included is included in the dev->master PR for this release: https://github.com/firesim/firesim/pull/XXX
+A more detailed account of everything included is included in the dev->master PR for this release: https://github.com/firesim/firesim/pull/262
 
 ### Added
 * PR #250 Add support for flow control via Ethernet pause frames.
 * Adds support for runtime-configurable MSHRs.
 * Support for custom FireSim Base AMI (instead of generic FPGA Developer AMI)
+* PR #280. Add support for a FIRESIM_RUNFARM_PREFIX env var to differentiate between runfarms for multiple clones of firesim. 
+    * Resolves #263
+* PR #286 Add support for arbitrary host frequency selection (by synthesizing a new PLL). 
+    * Resolves #252
 
 ### Changed
 * PR #261 Print out that post run hook is running, so it doesn't look like simulation termination is stuck.
@@ -19,11 +23,7 @@ A more detailed account of everything included is included in the dev->master PR
     * Increased to 100GB
     * Resolves #274
     * Resolves #265
-* PR #280. Add support for a FIRESIM_RUNFARM_PREFIX env var to differentiate between runfarms for multiple clones of firesim. 
-    * Resolves #263
-* PR #286 Add support for arbitrary host frequency selection (by synthesizing a new PLL). 
-    * Resolves #252
-* PR #287 Fixes FASED LLC timing model bug;,
+* PR #287 Fixes FASED LLC timing model bug.
 
 ### Deprecated
 
