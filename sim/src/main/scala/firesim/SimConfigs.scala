@@ -183,50 +183,26 @@ class FireSimConfig extends Config(
   new BasePlatformConfig)
 
 class FireSimClockDivConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new WithDefaultMemModel(clockDivision = 2) ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
 class FireSimDDR3Config extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new FCFS16GBQuadRank ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
 class FireSimDDR3LLC4MBConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new FCFS16GBQuadRankLLC4MB ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
 class FireSimDDR3FRFCFSConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new FRFCFS16GBQuadRank ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
 class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
 class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
-  new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
   new FRFCFS16GBQuadRankLLC4MB3Div ++
-  new BasePlatformConfig)
+  new FireSimConfig)
 
