@@ -83,26 +83,23 @@ else
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
     cd $RDIR
-    cd sw
-    ./install-qemu.sh
-    cd $RDIR
 fi
 
 echo "export RISCV=$RISCV" > env.sh
 echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
 echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 
-cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-make
-
-# Set up firesim-software
-cd $RDIR
-sudo pip3 install -r sw/firesim-software/python-requirements.txt
-
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
+    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+    make
+
+    # Install firesim-software python libraries
+    cd $RDIR
+    sudo pip3 install -r sw/firesim-software/python-requirements.txt
+
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
     # worker instances
