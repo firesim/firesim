@@ -112,10 +112,10 @@ class MultiQueueIO[T <: Data](private val gen: T, val numQueues: Int, entries: I
 class MultiQueue[T <: Data](
     gen: T,
     val numQueues: Int,
-    val entries: Int
+    requestedEntries: Int
     ) extends Module {
 
-  require(isPow2(entries))
+  val entries = 1 << log2Ceil(requestedEntries)
   val io = IO(new MultiQueueIO(gen, numQueues, entries))
   io.count := DontCare
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
