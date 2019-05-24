@@ -41,7 +41,7 @@ class synthesized_prints_t: public endpoint_t
         virtual bool terminate() { return false; };
         virtual int exit_code() { return 0; };
         void flush();
-        void finish() { flush(); }; // This should be added to the endpoint IF?
+        void finish() { flush(); };
     private:
         PRINTWIDGET_struct * mmio_addrs;
         const unsigned int print_count;
