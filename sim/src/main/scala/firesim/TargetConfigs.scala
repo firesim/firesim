@@ -54,14 +54,6 @@ class WithBoomL2TLBs(entries: Int) extends Config((site, here, up) => {
   ))
 })
 
-class WithTraceRocket extends Config((site, here, up) => {
-   case RocketTilesKey => up(RocketTilesKey, site)
-})
-
-class WithTraceBoom extends Config((site, here, up) => {
-   case BoomTilesKey => up(BoomTilesKey, site)
-})
-
 // Disables clock-gating; doesn't play nice with our FAME-1 pass
 class WithoutClockGating extends Config((site, here, up) => {
   case DebugModuleParams => up(DebugModuleParams, site).copy(clockGate = false)
@@ -108,46 +100,28 @@ class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => List.tabulate(n)(i => up(RocketTilesKey).head.copy(hartId = i))
 })
 
-class FireSimRocketChipTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipConfig)
-
 // single core config
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
-
-class FireSimRocketChipSingleCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipSingleCoreConfig)
 
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(
   new WithNDuplicatedRocketCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
 
-class FireSimRocketChipDualCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipDualCoreConfig)
-
 // quad core config
 class FireSimRocketChipQuadCoreConfig extends Config(
   new WithNDuplicatedRocketCores(4) ++
   new FireSimRocketChipSingleCoreConfig)
-
-class FireSimRocketChipQuadCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipQuadCoreConfig)
 
 // hexa core config
 class FireSimRocketChipHexaCoreConfig extends Config(
   new WithNDuplicatedRocketCores(6) ++
   new FireSimRocketChipSingleCoreConfig)
 
-class FireSimRocketChipHexaCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipHexaCoreConfig)
-
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(
   new WithNDuplicatedRocketCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
-
-class FireSimRocketChipOctaCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
@@ -179,10 +153,6 @@ class FireSimBoomDualCoreConfig extends Config(
 class FireSimBoomQuadCoreConfig extends Config(
   new WithNDuplicatedBoomCores(4) ++
   new FireSimBoomConfig)
-
-class FireSimBoomTracedConfig extends Config(
-  new WithTraceBoom ++ new FireSimBoomConfig)
-
 
 //**********************************************************************************
 //* Supernode Configurations
