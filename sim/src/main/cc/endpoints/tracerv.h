@@ -16,8 +16,7 @@ class tracerv_t: public endpoint_t
         virtual void tick();
         virtual bool terminate() { return false; }
         virtual int exit_code() { return 0; }
-        void flush();
-        void finish() { flush(); };
+        virtual void finish() { flush(); };
 
     private:
         TRACERVWIDGET_struct * mmio_addrs;
@@ -28,6 +27,7 @@ class tracerv_t: public endpoint_t
         // Used in unit testing to check TracerV is correctly pulling instuctions off the target
         bool test_output = false;
         long dma_addr;
+        void flush();
         int beats_available_stable();
         std::string tracefilename;
 };

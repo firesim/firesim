@@ -30,6 +30,7 @@ class serial_t: public endpoint_t
         virtual void tick();
         virtual bool terminate(){ return fesvr->done(); }
         virtual int exit_code(){ return fesvr->exit_code(); }
+        virtual void finish() {};
 
     private:
         SERIALWIDGET_struct * mmio_addrs;

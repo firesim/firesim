@@ -14,6 +14,7 @@ class uart_t: public endpoint_t
         void recv();
         virtual void init() {};
         virtual void tick();
+        virtual void finish() {};
         virtual bool terminate() { return false; }
         virtual int exit_code() { return 0; }
 

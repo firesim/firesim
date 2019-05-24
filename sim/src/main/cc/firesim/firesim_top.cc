@@ -444,14 +444,12 @@ void firesim_top_t::run() {
     fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 
-    for (auto e: fpga_models) {
+    for (auto &e: fpga_models) {
         e->finish();
     }
-#ifdef PRINTWIDGET_0_PRESENT
-    print_endpoint->finish();
-#endif
-#ifdef TRACERVWIDGET_0_PRESENT
-    tracerv_endpoint_0->finish();
-#endif
+
+    for (auto &e: endpoints) {
+        e->finish();
+    }
 }
 
