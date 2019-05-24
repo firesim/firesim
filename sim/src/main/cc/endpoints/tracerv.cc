@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
-#include <sstream>
-#include <iostream>
-#include <fstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>

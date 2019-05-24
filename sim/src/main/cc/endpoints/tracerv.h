@@ -9,7 +9,7 @@ class tracerv_t: public endpoint_t
 {
     public:
         tracerv_t(simif_t *sim, std::vector<std::string> &args,
-		TRACERVWIDGET_struct * mmio_addrs, int tracervno, long dma_addr);
+        TRACERVWIDGET_struct * mmio_addrs, int tracervno, long dma_addr);
         ~tracerv_t();
 
         virtual void init();
@@ -27,7 +27,7 @@ class tracerv_t: public endpoint_t
         bool human_readable = false;
         // Used in unit testing to check TracerV is correctly pulling instuctions off the target
         bool test_output = false;
-	    long dma_addr;
+        long dma_addr;
         int beats_available_stable();
         std::string tracefilename;
 };
