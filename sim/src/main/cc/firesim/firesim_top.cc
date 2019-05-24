@@ -296,43 +296,35 @@ uint64_t host_mem_offset = -0x80000000LL;
 #ifdef TRACERVWIDGET_struct_guard
     #ifdef TRACERVWIDGET_0_PRESENT
     TRACERVWIDGET_0_substruct_create;
-    tracerv_endpoint_0 = new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0, TRACERVWIDGET_0_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_0);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0, TRACERVWIDGET_0_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_1_PRESENT
     TRACERVWIDGET_1_substruct_create;
-    tracerv_endpoint_1 = new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 0, TRACERVWIDGET_1_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_1);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 0, TRACERVWIDGET_1_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_2_PRESENT
     TRACERVWIDGET_2_substruct_create;
-    tracerv_endpoint_2 = new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 0, TRACERVWIDGET_2_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_2);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 0, TRACERVWIDGET_2_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_3_PRESENT
     TRACERVWIDGET_3_substruct_create;
-    tracerv_endpoint_3 = new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 0, TRACERVWIDGET_3_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_3);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 0, TRACERVWIDGET_3_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_4_PRESENT
     TRACERVWIDGET_4_substruct_create;
-    tracerv_endpoint_4 = new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 0, TRACERVWIDGET_4_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_4);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 0, TRACERVWIDGET_4_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_5_PRESENT
     TRACERVWIDGET_5_substruct_create;
-    tracerv_endpoint_5 = new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 0, TRACERVWIDGET_5_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_5);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 0, TRACERVWIDGET_5_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_6_PRESENT
     TRACERVWIDGET_6_substruct_create;
-    tracerv_endpoint_6 = new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 0, TRACERVWIDGET_6_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_6);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 0, TRACERVWIDGET_6_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_7_PRESENT
     TRACERVWIDGET_7_substruct_create;
-    tracerv_endpoint_7 = new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 0, TRACERVWIDGET_7_DMA_ADDR); 
-    add_endpoint(tracerv_endpoint_7);
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 0, TRACERVWIDGET_7_DMA_ADDR));
     #endif
 #endif
 
@@ -348,7 +340,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 #ifdef PRINTWIDGET_struct_guard
     #ifdef PRINTWIDGET_0_PRESENT
     PRINTWIDGET_0_substruct_create;
-    print_endpoint = new synthesized_prints_t(this,
+    add_endpoint(new synthesized_prints_t(this,
                                           args,
                                           PRINTWIDGET_0_substruct,
                                           PRINTWIDGET_0_print_count,
@@ -358,8 +350,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTWIDGET_0_format_strings,
                                           PRINTWIDGET_0_argument_counts,
                                           PRINTWIDGET_0_argument_widths,
-                                          PRINTWIDGET_0_DMA_ADDR);
-    add_endpoint(print_endpoint);
+                                          PRINTWIDGET_0_DMA_ADDR));
     #endif
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
