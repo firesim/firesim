@@ -300,31 +300,31 @@ uint64_t host_mem_offset = -0x80000000LL;
     #endif
     #ifdef TRACERVWIDGET_1_PRESENT
     TRACERVWIDGET_1_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 0, TRACERVWIDGET_1_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1, TRACERVWIDGET_1_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_2_PRESENT
     TRACERVWIDGET_2_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 0, TRACERVWIDGET_2_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2, TRACERVWIDGET_2_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_3_PRESENT
     TRACERVWIDGET_3_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 0, TRACERVWIDGET_3_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3, TRACERVWIDGET_3_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_4_PRESENT
     TRACERVWIDGET_4_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 0, TRACERVWIDGET_4_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 4, TRACERVWIDGET_4_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_5_PRESENT
     TRACERVWIDGET_5_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 0, TRACERVWIDGET_5_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 5, TRACERVWIDGET_5_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_6_PRESENT
     TRACERVWIDGET_6_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 0, TRACERVWIDGET_6_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 6, TRACERVWIDGET_6_DMA_ADDR));
     #endif
     #ifdef TRACERVWIDGET_7_PRESENT
     TRACERVWIDGET_7_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 0, TRACERVWIDGET_7_DMA_ADDR));
+    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 7, TRACERVWIDGET_7_DMA_ADDR));
     #endif
 #endif
 
