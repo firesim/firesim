@@ -24,8 +24,10 @@ OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
-submodules = . midas firrtl \
-	$(addprefix target-rtl/firechip/, $(addprefix rocket-chip/, . chisel3 chisel3/chiselFrontend))
+submodules = . midas midas/targetutils firesim-lib \
+    $(addprefix target-rtl/firechip/, \
+		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
+		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
 
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
