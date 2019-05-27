@@ -11,7 +11,6 @@ import firrtl.{Transform, CircuitState}
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
-import barstools.macros._
 import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
 
@@ -23,8 +22,7 @@ private class MidasCompiler extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
   def transforms =
     getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++
-    Seq(new InferReadWrite,
-        new ReplSeqMem) ++
+    Seq(new InferReadWrite) ++
     getLoweringTransforms(firrtl.MidForm, firrtl.LowForm)
 }
 
@@ -61,9 +59,7 @@ object MidasCompiler {
     val json = new File(dir, s"${chirrtl.main}.macros.json")
     val midasAnnos = Seq(
       InferReadWriteAnnotation,
-      ReplSeqMemAnnotation("", conf.getPath),
-      passes.MidasAnnotation(chirrtl.main, conf, json, lib),
-      MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
+      passes.MidasAnnotation(chirrtl.main, conf, json, lib))
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
