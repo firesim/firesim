@@ -30,7 +30,7 @@ lazy val rebarDir = if(firesimAsLibrary) {
 }
 
 lazy val chisel        = ProjectRef(rebarDir, "chisel")
-lazy val rocketchip    = ProjectRef(rebarDir, "rebarRocketchip")
+lazy val rocketchip    = ProjectRef(rebarDir, "rocketchip")
 lazy val barstools     = ProjectRef(rebarDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(rebarDir, "icenet")
 lazy val testchipip    = ProjectRef(rebarDir, "testchipip")
