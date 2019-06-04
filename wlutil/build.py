@@ -239,7 +239,7 @@ def makeImage(config):
         init_overlay = config['builder'].generateBootScriptOverlay(config['guest-init'].path, config['guest-init'].args)
         applyOverlay(config['img'], init_overlay)
         print("Launching: " + config['bin'])
-        sp.check_call(getQemuCmd(config), shell=True)
+        run(getQemuCmd(config), shell=True, level=logging.INFO)
 
         # Clear the init script
         run_overlay = config['builder'].generateBootScriptOverlay(None, None)

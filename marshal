@@ -76,6 +76,9 @@ def main():
         wlutil.initLogging(args.verbose)
 
         log = logging.getLogger()
+        if not args.verbose:
+            print("To check on progress, either call marshal with '-v' or see the live output at: ")
+            print(os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
 
         targetCfg = cfgs[cfgPath]
    

@@ -7,3 +7,4 @@ fedora/Fedora-Developer-Rawhide-20181015.n.0-sda.raw.xz
 fedora/rootfs.cpio
 *__pycache__
 _command.sh
+.doit.db
