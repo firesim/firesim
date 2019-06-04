@@ -67,7 +67,7 @@ def cmpOutput(testDir, refDir, strip=False):
                     else:
                         # I'm not 100% sure what will happen with a binary file
                         diffString = "".join(difflib.unified_diff(rFile.readlines(),
-                                tFile.readlines(), fromfile=rPath, tofile=tPath))
+                                tFile.readlines(), fromfile=str(rPath), tofile=str(tPath)))
                         if diffString is not "":
                             return diffString
 
