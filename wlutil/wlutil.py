@@ -128,34 +128,13 @@ def genRunScript(command):
 
     return commandScript
 
-# Frustratingly, the same commands don't work/exist on various platforms so we
-# need to figure out what mounting options are available to us:
-if shutil.which('fuse-ext2') is not None:
-    # Roughly the same as guestmount
-    @contextmanager
-    def mountImg(imgPath, mntPath):
-        run(['fuse-ext2', '-o', 'rw+', imgPath, mntPath])
-        try:
-            yield mntPath
-        finally:
-            run(['fusermount', '-u', mntPath])
-
-elif shutil.which('guestmount') is not None:
-    # This is the preferred method because it doesn't require sudo
-    @contextmanager
-    def mountImg(imgPath, mntPath):
-        run(['guestmount', '-a', imgPath, '-m', '/dev/sda', mntPath])
-        try:
-            yield mntPath
-        finally:
-            run(['guestunmount', mntPath])
-
-else:
-    # Note: we don't support the 'mount' option because it requires sudo. By
-    # itself that isn't an issue, but several other commands (like cpio and
-    # rsync) would also require sudo and that complicates the code too much.
-    # This feature could be added back if people really want it.
-    raise ImportError("No compatible 'mount' command found: Please install either guestmount or fuse-ext2")
+@contextmanager
+def mountImg(imgPath, mntPath):
+    run(['guestmount', '-a', imgPath, '-m', '/dev/sda', mntPath])
+    try:
+        yield mntPath
+    finally:
+        run(['guestunmount', mntPath])
 
 def toCpio(config, src, dst):
     log = logging.getLogger()
@@ -192,13 +171,13 @@ def copyImgFiles(img, files, direction):
     with mountImg(img, mnt):
         for f in files:
             # Overlays may not be owned by root, but the filesystem must be.
-            # Rsync lets us chown while copying.
+            # The FUSE mount automatically handles the chown from root to user
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                run('rsync -a --chown=root:root ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             elif direction == 'out':
                 uid = os.getuid()
-                run('rsync -a --chown=' + str(uid) + ':' + str(uid) + ' ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                run('cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")

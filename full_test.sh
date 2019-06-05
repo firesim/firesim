@@ -30,23 +30,6 @@ else
   echo "Success" | tee -a $LOGNAME
 fi
 
-# Run the specialized tests (tests that are too complicated for ./marshal
-# test)
-echo "Running clean test" | tee -a $LOGNAME
-./test/clean/test.py >> $LOGNAME 
-if [ ${PIPESTATUS[0]} != 0 ]; then
-  echo "Failure" | tee -a $LOGNAME
-  SUITE_PASS=false
-fi
-
-echo "Running incremental test" | tee -a $LOGNAME
-./test/incremental/test.py >> $LOGNAME
-if [ ${PIPESTATUS[0]} != 0 ]; then
-  echo "Failure" | tee -a $LOGNAME
-  SUITE_PASS=false
-  exit 1
-fi
-
 # Run the bulk tests (all work with the 'test' command)
 # Note the funny extended globbing, these are just lists of tests that
 # shouldn't be tested (e.g. we exclude the base configs and some specialized
@@ -75,6 +58,23 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
 else
   echo "Success" | tee -a $LOGNAME
+fi
+
+# Run the specialized tests (tests that are too complicated for ./marshal
+# test)
+echo "Running clean test" | tee -a $LOGNAME
+./test/clean/test.py >> $LOGNAME 
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+fi
+
+echo "Running incremental test" | tee -a $LOGNAME
+./test/incremental/test.py >> $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
 fi
 
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
