@@ -15,7 +15,7 @@ import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
-import memblade.cache.{DRAMCacheKey, DRAMCacheConfig}
+import memblade.cache.{DRAMCacheKey, DRAMCacheConfig, RemoteAccessDepths, WritebackDepths, MemoryQueueParams}
 import memblade.prefetcher.{PrefetchRoCC, PrefetchConfig}
 
 class WithBootROM extends Config((site, here, up) => {
@@ -43,8 +43,8 @@ class WithNICKey extends Config((site, here, up) => {
 
 class WithMemBladeKey extends Config((site, here, up) => {
   case MemBladeKey => MemBladeParams(
-    spanBytes = 1024,
-    nSpanTrackers = 2,
+    spanBytes = site(CacheBlockBytes),
+    nSpanTrackers = 4,
     nWordTrackers = 4,
     spanQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32),
     wordQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32))
@@ -52,26 +52,31 @@ class WithMemBladeKey extends Config((site, here, up) => {
 
 class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig(
-    spanBytes = 1024,
+    spanBytes = site(CacheBlockBytes),
     nRMemXacts = 64,
     reqTimeout = Some(1000000))
 })
 
 class WithMemBenchKey extends Config((site, here, up) => {
-  case MemBenchKey => MemBenchParams(nXacts = 256)
+  case MemBenchKey => MemBenchParams(nXacts = 32)
 })
 
 class WithDRAMCacheKey extends Config((site, here, up) => {
   case DRAMCacheKey => DRAMCacheConfig(
-    nSets = 1 << 17,
+    nSets = 1 << 21,
     nWays = 7,
     baseAddr = BigInt(1) << 37,
-    nBanks = 8,
-    nChannels = 1,
-    nSecondaryRequests = 7,
-    spanBytes = 1024,
+    nTrackersPerBank = 4,
+    nBanksPerChannel = 2,
+    nChannels = 4,
+    nSecondaryRequests = 1,
+    spanBytes = site(CacheBlockBytes),
+    chunkBytes = site(CacheBlockBytes),
     logAddrBits = 37,
     outIdBits = 4,
+    remAccessQueue = RemoteAccessDepths(1, 2, 1, 2),
+    wbQueue = WritebackDepths(1, 1),
+    memInQueue = MemoryQueueParams(2, 2, 1, 8, 2, 1),
     zeroMetadata = false)
 })
 
