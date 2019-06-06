@@ -12,6 +12,7 @@ import junctions._
 import firesim.firesim.{WithDRAMCacheKey, WithNICKey, WithMemBladeKey}
 import memblade.cache.DRAMCacheKey
 import icenet.IceNetConsts.{NET_IF_WIDTH, NET_IF_BYTES}
+import scala.math.min
 
 class WithDRAMCacheTraceGen extends Config((site, here, up) => {
   case GroundTestTilesKey => Seq.fill(2) {
@@ -24,8 +25,9 @@ class WithDRAMCacheTraceGen extends Config((site, here, up) => {
         val nWays = site(DRAMCacheKey).nWays
         val spanBytes = site(DRAMCacheKey).spanBytes
         val chunkBytes = site(DRAMCacheKey).chunkBytes
-        val nChunks = 2
-        val nSpans = site(DRAMCacheKey).nBanks
+        val nChunks = min(spanBytes/chunkBytes, 2)
+        val nChannels = site(DRAMCacheKey).nChannels
+        val nSpans = site(DRAMCacheKey).nBanksPerChannel * nChannels
         List.tabulate(nWays + 1) { i =>
           Seq.tabulate(nChunks) { j =>
             Seq.tabulate(nSpans) { k =>
