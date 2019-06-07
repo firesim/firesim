@@ -27,7 +27,7 @@ DD_BS=1048576
 
 # Get the offset of the first partition within the image so we can strip it out
 # output of parted looks like "###B ####B ###B ..." we cast it to an array here
-PART_INFO=(`sudo parted -s $RAWIMG unit B print | tail -2`)
+PART_INFO=(`parted -s $RAWIMG unit B print | tail -2`)
 
 # The output at index 1 and 2 are the partition start and end byte offset. The : : -1 strips the "B" suffix.
 # Also convert to units of 1MB blocks (I'd do that above, but parted output is weird)
