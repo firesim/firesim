@@ -25,6 +25,7 @@ class test_harness_endpoint_t: public endpoint_t
     virtual void tick();
     virtual bool terminate() { return done || error != 0; };
     virtual int exit_code() { return error; };
+    virtual void finish() {};
 };
 
 #endif // __TEST_HARNESS_ENDPOINT_H
