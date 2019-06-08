@@ -43,7 +43,7 @@ elif [ "$1" = "submodules-only" ]; then
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
-    git checkout 85eb89490a730915a28eca3c25d4496193951565
+    git checkout 499867f3f2da4648ddaecf4dd7b1a59554c9d477
     PREBUILTHASH="$(cat HASH)"
     cd ../target-design/firechip
     git submodule update --init riscv-tools
