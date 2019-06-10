@@ -214,6 +214,7 @@ class Config(collections.MutableMapping):
         # if 'linux-config' in self.cfg:
             self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")
 
+        # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:
             self.cfg['launch'] = True
 
@@ -330,6 +331,10 @@ class ConfigManager(collections.MutableMapping):
                     self._initializeFromBase(baseCfg)
 
                 cfg.applyBase(baseCfg)
+            else:
+                # Some defaults need to occur, even if you don't have a base
+                if 'launch' not in cfg:
+                    cfg['launch'] = True
 
             # must set initialized to True before handling jobs because jobs
             # will reference this config (we'd infinite loop without memoization)
