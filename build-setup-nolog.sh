@@ -43,19 +43,20 @@ elif [ "$1" = "submodules-only" ]; then
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
-    git checkout 4a2f79d5c5a8a93f3e6a83bd32a0926cdb8983c5
-    PREBUILTHASH="$(cat HASH)"
-    cd ../target-design/firechip
-    git submodule update --init riscv-tools
-    cd riscv-tools
-    GITHASH="$(git rev-parse HEAD)"
-    echo "prebuilt hash: $PREBUILTHASH"
-    echo "git      hash: $GITHASH"
+    # git checkout 4a2f79d5c5a8a93f3e6a83bd32a0926cdb8983c5
+    git checkout db68e61662d1ad1ba622165f7be50e5606f5ec58
+    # PREBUILTHASH="$(cat HASH)"
+    # cd ../target-design/firechip
+    # git submodule update --init riscv-tools
+    # cd riscv-tools
+    # GITHASH="$(git rev-parse HEAD)"
+    # echo "prebuilt hash: $PREBUILTHASH"
+    # echo "git      hash: $GITHASH"
     cd $RDIR
-    if [ "$PREBUILTHASH" = "$GITHASH" ]; then
-        echo "using fast install for riscv-tools"
-        FASTINSTALL=true
-    fi
+    # if [ "$PREBUILTHASH" = "$GITHASH" ]; then
+    #     echo "using fast install for riscv-tools"
+    #     FASTINSTALL=true
+    # fi
 fi
 
 if [ "$FASTINSTALL" = true ]; then
