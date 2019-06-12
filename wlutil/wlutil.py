@@ -7,6 +7,8 @@ import string
 import sys
 import collections
 import shutil
+import psutil
+import errno
 from contextlib import contextmanager
 
 wlutil_dir = os.path.normpath(os.path.dirname(__file__))
@@ -128,13 +130,33 @@ def genRunScript(command):
 
     return commandScript
 
+# This is like os.waitpid, but it works for non-child processes
+def waitpid(pid):
+    done = False
+    while not done:
+        try:
+            os.kill(pid, 0)
+        except OSError as err:
+            if err.errno == errno.ESRCH:
+                done = True
+                break
+        time.sleep(0.25)
+
 @contextmanager
 def mountImg(imgPath, mntPath):
-    run(['guestmount', '-a', imgPath, '-m', '/dev/sda', mntPath])
+    run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
     try:
+        with open('./guestmount.pid', 'r') as pidFile:
+            mntPid = int(pidFile.readline())
         yield mntPath
     finally:
         run(['guestunmount', mntPath])
+        os.remove('./guestmount.pid')
+
+    # There is a race-condition in guestmount where a background task keeps
+    # modifying the image for a period after unmount. This is the documented
+    # best-practice (see man guestmount).
+    waitpid(mntPid)
 
 def toCpio(config, src, dst):
     log = logging.getLogger()
