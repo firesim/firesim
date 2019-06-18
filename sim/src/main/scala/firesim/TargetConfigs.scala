@@ -165,6 +165,16 @@ class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
 
 class DBC extends WithNDuplicatedBoomCores(2)
 class QBC extends WithNDuplicatedBoomCores(4)
+class PBC extends WithNDuplicatedBoomCores(5)
+class HBC extends WithNDuplicatedBoomCores(6)
+
+class QRC extends WithNDuplicatedRocketCores(4)
+class PRC extends WithNDuplicatedRocketCores(5)
+class HRC extends WithNDuplicatedRocketCores(6)
+
+class RC16 extends WithNDuplicatedRocketCores(16)
+class RC20 extends WithNDuplicatedRocketCores(20)
+class RC24 extends WithNDuplicatedRocketCores(24)
 
 class MBoom extends boom.common.WithMegaBooms
 
