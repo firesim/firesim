@@ -43,7 +43,7 @@ elif [ "$1" = "submodules-only" ]; then
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
-    git checkout db68e61662d1ad1ba622165f7be50e5606f5ec58
+    git checkout 5fee18421a32058ab339572128201f4904354aaa
     PREBUILTHASH="$(cat HASH)"
     cd ../target-design/firechip
     git submodule update --init riscv-tools
@@ -82,6 +82,9 @@ else
     cd $RDIR
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
+    cd $RDIR
+    cd sw
+    ./install-qemu.sh
     cd $RDIR
 fi
 
