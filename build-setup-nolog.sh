@@ -74,17 +74,31 @@ else
     git submodule update --init --recursive riscv-tools #--jobs 8
     cd riscv-tools
     export MAKEFLAGS="-j16"
-    ./build.sh
+    # Copied from riscv-tools build.sh
+    source build.common
+    echo "Starting RISC-V Toolchain build process"
+    build_project riscv-fesvr --prefix=$RISCV
+    build_project riscv-isa-sim --prefix=$RISCV --with-fesvr=$RISCV
+    build_project riscv-gnu-toolchain --prefix=$RISCV
+    CC= CXX= build_project riscv-pk --prefix=$RISCV --host=riscv64-unknown-elf
+    build_project riscv-tests --prefix=$RISCV/riscv64-unknown-elf
+    echo -e "\\nRISC-V Toolchain installation completed!"
+
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh
-    # build linux toolchain
     cd $RDIR
+
+    # build linux toolchain
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
     cd $RDIR
-    cd sw
-    ./install-qemu.sh
+
+    # build QEMU
+    cd sw/qemu
+    ./configure --target-list=riscv64-softmmu --prefix=$RISCV
+    make -j16
+    make install
     cd $RDIR
 fi
 
