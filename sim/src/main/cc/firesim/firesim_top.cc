@@ -340,7 +340,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 #ifdef PRINTWIDGET_struct_guard
     #ifdef PRINTWIDGET_0_PRESENT
     PRINTWIDGET_0_substruct_create;
-    print_endpoint = new synthesized_prints_t(this,
+    add_endpoint(new synthesized_prints_t(this,
                                           args,
                                           PRINTWIDGET_0_substruct,
                                           PRINTWIDGET_0_print_count,
@@ -350,8 +350,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTWIDGET_0_format_strings,
                                           PRINTWIDGET_0_argument_counts,
                                           PRINTWIDGET_0_argument_widths,
-                                          PRINTWIDGET_0_DMA_ADDR);
-    add_endpoint(print_endpoint);
+                                          PRINTWIDGET_0_DMA_ADDR));
     #endif
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
@@ -436,11 +435,12 @@ void firesim_top_t::run() {
     fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 
-    for (auto e: fpga_models) {
+    for (auto &e: fpga_models) {
         e->finish();
     }
-#ifdef PRINTWIDGET_0_PRESENT
-    print_endpoint->finish();
-#endif
+
+    for (auto &e: endpoints) {
+        e->finish();
+    }
 }
 

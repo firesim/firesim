@@ -136,4 +136,4 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   diffSynthesizedPrints("synthprinttest.out")
 }
 // MIDAS 2.0 compiler tests
-class WireInterconnectF1Test extends TutorialSuite("WireInterconnect", midas.F1)
+class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")

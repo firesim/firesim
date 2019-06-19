@@ -9,82 +9,121 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.util._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.rocket.TracedInstruction
-import firesim.endpoints.TraceOutputTop
+import firesim.endpoints.{TraceOutputTop, DeclockedTracedInstruction}
 import boom.system.BoomSubsystem
 
 import midas.targetutils.MemModelAnnotation
 import midas.models.AXI4BundleWithEdge
 
-/** Adds a port to the system intended to master an AXI4 DRAM controller. */
-trait CanHaveMisalignedMasterAXI4MemPort { this: BaseSubsystem =>
-  val module: CanHaveMisalignedMasterAXI4MemPortModuleImp
+/** Ties together Subsystem buses in the same fashion done in the example top of Rocket Chip */
+trait HasDefaultBusConfiguration {
+  this: BaseSubsystem =>
+  // The sbus masters the cbus; here we convert TL-UH -> TL-UL
+  sbus.crossToBus(cbus, NoCrossing)
 
-  private val memPortParamsOpt = p(ExtMem)
-  private val portName = "axi4"
-  private val device = new MemoryDevice
-  val nMemoryChannels: Int
+  // The cbus masters the pbus; which might be clocked slower
+  cbus.crossToBus(pbus, SynchronousCrossing())
 
-  val memAXI4Node = AXI4SlaveNode(Seq.tabulate(nMemoryChannels) { channel =>
-    val params = memPortParamsOpt.get
-    val base = AddressSet.misaligned(params.base, params.size)
+  // The fbus masters the sbus; both are TL-UH or TL-C
+  FlipRendering { implicit p =>
+    sbus.crossFromBus(fbus, SynchronousCrossing())
+  }
 
-    AXI4SlavePortParameters(
-      slaves = Seq(AXI4SlaveParameters(
-        address       = base,
-        resources     = device.reg,
-        regionType    = RegionType.UNCACHED,   // cacheable
-        executable    = true,
-        supportsWrite = TransferSizes(1, cacheBlockBytes),
-        supportsRead  = TransferSizes(1, cacheBlockBytes),
-        interleavedId = Some(0))),             // slave does not interleave read responses
-      beatBytes = params.beatBytes)
-  })
+  // The sbus masters the mbus; here we convert TL-C -> TL-UH
+  private val BankedL2Params(nBanks, coherenceManager) = p(BankedL2Key)
+  private val (in, out, halt) = coherenceManager(this)
+  if (nBanks != 0) {
+    sbus.coupleTo("coherence_manager") { in :*= _ }
+    mbus.coupleFrom("coherence_manager") { _ :=* BankBinder(mbus.blockBytes * (nBanks-1)) :*= out }
+  }
+}
 
-  memPortParamsOpt.foreach { params =>
-    memBuses.map { m =>
-       memAXI4Node := m.toDRAMController(Some(portName)) {
-        (AXI4UserYanker() := AXI4IdIndexer(params.idBits) := TLToAXI4())
+
+/** Copied from RC and modified to change the IO type of the Imp to include the Diplomatic edges
+  *  associated with each port. This drives FASED functional model sizing
+  */
+trait CanHaveFASEDOptimizedMasterAXI4MemPort { this: BaseSubsystem =>
+  val module: CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
+
+  val memAXI4Node = p(ExtMem).map { case MemoryPortParams(memPortParams, nMemoryChannels) =>
+    val portName = "axi4"
+    val device = new MemoryDevice
+
+    val memAXI4Node = AXI4SlaveNode(Seq.tabulate(nMemoryChannels) { channel =>
+      val base = AddressSet.misaligned(memPortParams.base, memPortParams.size)
+      val filter = AddressSet(channel * mbus.blockBytes, ~((nMemoryChannels-1) * mbus.blockBytes))
+
+      AXI4SlavePortParameters(
+        slaves = Seq(AXI4SlaveParameters(
+          address       = base.flatMap(_.intersect(filter)),
+          resources     = device.reg,
+          regionType    = RegionType.UNCACHED, // cacheable
+          executable    = true,
+          supportsWrite = TransferSizes(1, mbus.blockBytes),
+          supportsRead  = TransferSizes(1, mbus.blockBytes),
+          interleavedId = Some(0))), // slave does not interleave read responses
+        beatBytes = memPortParams.beatBytes)
+    })
+
+    memAXI4Node := mbus.toDRAMController(Some(portName)) {
+      AXI4UserYanker() := AXI4IdIndexer(memPortParams.idBits) := TLToAXI4()
+    }
+
+    memAXI4Node
+  }
+}
+
+/** Actually generates the corresponding IO in the concrete Module */
+trait CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp extends LazyModuleImp {
+  val outer: CanHaveFASEDOptimizedMasterAXI4MemPort
+
+  val mem_axi4 = outer.memAXI4Node.map(x => IO(HeterogeneousBag(AXI4BundleWithEdge.fromNode(x.in))))
+  (mem_axi4 zip outer.memAXI4Node) foreach { case (io, node) =>
+    (io zip node.in).foreach { case (io, (bundle, _)) => io <> bundle }
+  }
+
+  def connectSimAXIMem() {
+    (mem_axi4 zip outer.memAXI4Node).foreach { case (io, node) =>
+      (io zip node.in).foreach { case (io, (_, edge)) =>
+        val mem = LazyModule(new SimAXIMem(edge, size = p(ExtMem).get.master.size))
+        Module(mem.module).io.axi4.head <> io
       }
     }
   }
 }
 
-/** Actually generates the corresponding IO in the concrete Module */
-trait CanHaveMisalignedMasterAXI4MemPortModuleImp extends LazyModuleImp {
-  val outer: CanHaveMisalignedMasterAXI4MemPort
+/* Wires out tile trace ports to the top; and wraps them in a Bundle that the
+ * TracerV endpoint can match on.
+ */
+object PrintTracePort extends Field[Boolean](false)
 
-  val mem_axi4 = IO(new HeterogeneousBag(outer.memAXI4Node.in map AXI4BundleWithEdge.apply))
-  (mem_axi4 zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) => io <> bundle }
+trait HasTraceIO {
+  this: HasTiles =>
+  val module: HasTraceIOImp
 
-  def connectSimAXIMem() {
-    (mem_axi4 zip outer.memAXI4Node.in).foreach { case (io, (_, edge)) =>
-      val mem = LazyModule(new SimAXIMem(edge, size = p(ExtMem).get.size))
-      Module(mem.module).io.axi4.head <> io
-    }
+  // Bind all the trace nodes to a BB; we'll use this to generate the IO in the imp
+  val traceNexus = BundleBridgeNexus[Vec[TracedInstruction]]
+  val tileTraceNodes = tiles.map(tile => tile.traceNode)
+  tileTraceNodes foreach { traceNexus := _ }
+}
+
+trait HasTraceIOImp extends LazyModuleImp {
+  val outer: HasTraceIO
+
+  val traceIO = IO(Output(new TraceOutputTop(
+    DeclockedTracedInstruction.fromNode(outer.traceNexus.in))))
+  (traceIO.traces zip outer.traceNexus.in).foreach({ case (port, (tileTrace, _)) =>
+    port := DeclockedTracedInstruction.fromVec(tileTrace)
+  })
+
+  // Enabled to test TracerV trace capture
+  if (p(PrintTracePort)) {
+    val traceprint = Wire(UInt(512.W))
+    traceprint := traceIO.asUInt
+    printf("TRACEPORT: %x\n", traceprint)
   }
-}
-
-trait CanHaveRocketTraceIO extends LazyModuleImp {
-  val outer: RocketSubsystem
-
-  val traced_params = outer.rocketTiles(0).p
-  val tile_traces = outer.rocketTiles flatMap (tile => tile.module.trace.getOrElse(Nil))
-  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
-  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
-
-  println(s"N tile traces: ${tile_traces.size}")
-}
-
-trait CanHaveBoomTraceIO extends LazyModuleImp {
-  val outer: BoomSubsystem
-
-  val traced_params = outer.boomTiles(0).p
-  val tile_traces = outer.boomTiles flatMap (tile => tile.module.trace.getOrElse(Nil))
-  val traceIO = IO(Output(new TraceOutputTop(tile_traces.length)(traced_params)))
-  traceIO.traces zip tile_traces foreach ({ case (ioconnect, trace) => ioconnect := trace })
-
-  println(s"N tile traces: ${tile_traces.size}")
 }
 
 trait CanHaveBoomMultiCycleRegfileImp {
@@ -92,12 +131,12 @@ trait CanHaveBoomMultiCycleRegfileImp {
   val cores = outer.boomTiles.map(tile => tile.module.core)
   cores.foreach({ core =>
     core.iregfile match {
-      case irf: boom.exu.RegisterFileBehavorial => annotate(MemModelAnnotation(irf.regfile))
+      case irf: boom.exu.RegisterFileSynthesizable => annotate(MemModelAnnotation(irf.regfile))
       case _ => Nil
     }
 
     if (core.fp_pipeline != null) core.fp_pipeline.fregfile match {
-      case irf: boom.exu.RegisterFileBehavorial => annotate(MemModelAnnotation(irf.regfile))
+      case irf: boom.exu.RegisterFileSynthesizable => annotate(MemModelAnnotation(irf.regfile))
       case _ => Nil
     }
 

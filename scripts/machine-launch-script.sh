@@ -7,11 +7,11 @@ curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm
 sudo yum install -y sbt texinfo gengetopt
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 # deps for poky
-sudo yum install -y python34 patch diffstat texi2html texinfo subversion chrpath git wget
+sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
 # deps for qemu
 sudo yum install -y gtk3-devel
 # deps for firesim-software (note that rsync is installed but too old)
-sudo yum install -y python34-pip python34-devel rsync
+sudo yum install -y python36-pip python36-devel rsync
 # install DTC. it's not available in repos in FPGA AMI
 DTCversion=dtc-1.4.4
 wget https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/$DTCversion.tar.gz
@@ -54,6 +54,8 @@ sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
 # this is explicitly installed to downgrade it to a version without deprec warnings
 sudo pip2 install cryptography==2.2.2
+# new awscli on 1.6.0 AMI is broken with our versions of boto3
+sudo pip2 install awscli==1.15.76
 
 sudo activate-global-python-argcomplete
 

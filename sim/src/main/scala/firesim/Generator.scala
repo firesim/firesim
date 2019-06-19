@@ -154,8 +154,8 @@ object FireSimGenerator extends App with HasFireSimGeneratorUtilities {
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
   generateHostVerilogHeader
-  generateTclEnvFile
   generateArtefacts
+  generateTclEnvFile
 }
 
 // A runtime-configuration generation for memory models
