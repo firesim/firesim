@@ -35,7 +35,7 @@ Building Benchmark Binaries/Rootfses
 
 We include scripts to automatically build all of the benchmark rootfs images
 that will be used below. To build them, make sure you have already run
-``./sw-manager.py -c br-disk.json build`` in ``firesim/sw/firesim-software``, then run:
+``./marshal build workloads/br-base.json`` in ``firesim/sw/firesim-software``, then run:
 
 .. code-block:: bash
 
@@ -119,7 +119,8 @@ To Run:
     ./run-simperf-test-scale.sh withlaunch
 
 
-Notes: Excludes supernode since it is still in beta and not merged on master.
+A similar benchmark is also provided for supernode mode, see ``run-simperf-test-scale-supernode.sh``.
+
 
 Figure 9: Simulation Rate vs. Link Latency
 ---------------------------------------------
@@ -140,7 +141,7 @@ To Run:
     ./run-simperf-test-latency.sh withlaunch
 
 
-Notes: Excludes supernode since it is still in beta and not merged on master.
+A similar benchmark for supernode mode will be provided soon. See https://github.com/firesim/firesim/issues/244
 
 
 Running all experiments at once

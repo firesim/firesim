@@ -39,10 +39,12 @@ CONF_NAME ?= runtime.conf
 # Verilator MIDAS-Level Simulators #
 ####################################
 
+VERILATOR_CXXOPTS ?= -O0
+
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
-$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D RTLSIM
+$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
@@ -59,10 +61,13 @@ verilator-debug: $(verilator_debug)
 ##############################
 # VCS MIDAS-Level Simulators #
 ##############################
+
+VCS_CXXOPTS ?= -O2
+
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 
-$(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(VCS_HOME)/include -D RTLSIM
+$(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VCS_CXXOPTS) -I$(VCS_HOME)/include -D RTLSIM
 $(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
@@ -79,6 +84,8 @@ vcs-debug: $(vcs_debug)
 ############################
 # Master Simulation Driver #
 ############################
+DRIVER_CXXOPTS ?= -O2
+
 $(OUTPUT_DIR)/$(DESIGN).chain: $(VERILOG)
 	mkdir -p $(OUTPUT_DIR)
 	$(if $(wildcard $(GENERATED_DIR)/$(DESIGN).chain),cp $(GENERATED_DIR)/$(DESIGN).chain $@,)
@@ -88,7 +95,7 @@ $(PLATFORM): $($(PLATFORM)) $(OUTPUT_DIR)/$(DESIGN).chain
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
-$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 
@@ -157,7 +164,7 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 #############################
 
 # Run XSIM DUT
-xsim-dut: $(fpga_v) $(fpga_work_dir)/stamp
+xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
 
 # Compile XSIM Driver #

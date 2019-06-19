@@ -12,3 +12,4 @@ This section describes methods of debugging the target design and the simulation
    Debugging-Hardware-Using-ILA.rst
    TracerV.rst
    DESSERT.rst
+   printf-synthesis.rst

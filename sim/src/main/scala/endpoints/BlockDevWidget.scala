@@ -7,7 +7,7 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
-import midas.core._
+import midas.core.{HostPort, IsRationalClockRatio, UnityClockRatio}
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}

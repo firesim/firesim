@@ -100,32 +100,29 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +blkdev0={blkdev} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-                macaddr=macaddr, blkdev=blkdev, linklatency=linklatency,
-                netbw=netbw, profile_interval=profile_interval,
-                shmemportname=shmemportname, bootbin=bootbin, tracefile=tracefile,
-                trace_start=trace_start, trace_end=trace_end)
+
+        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
+                slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
+                linklatency=linklatency, netbw=netbw,
+                profile_interval=profile_interval, shmemportname=shmemportname,
+                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
+                trace_end=trace_end)
+
+        if blkdev is not None:
+            driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
+                slotid=slotid, driver=driver, driverArgs=driverArgs)
 
         return basecommand
 
 
-    def get_supernode_boot_simulation_command(self,
-                                              slotid,
-                                              macaddr0, macaddr1,
-                                              macaddr2, macaddr3,
-                                              blkdev0, blkdev1,
-                                              blkdev2, blkdev3,
-                                              linklatency0, linklatency1,
-                                              linklatency2, linklatency3,
-                                              netbw0, netbw1, netbw2, netbw3,
-                                              profile_interval,
-                                              bootbin0, bootbin1,
-                                              bootbin2, bootbin3,
-                                              trace_enable, trace_start,
-                                              trace_end,
-                                              shmemportname0, shmemportname1,
-                                              shmemportname2, shmemportname3):
+    def get_supernode_boot_simulation_command(self, slotid, all_macs,
+                                              all_rootfses, all_linklatencies,
+                                              all_netbws, profile_interval,
+                                              all_bootbinaries, trace_enable,
+                                              trace_start, trace_end,
+                                              all_shmemportnames):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -138,17 +135,33 @@ class RuntimeHWConfig:
         # the sed is in there to get rid of newlines in runtime confs
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr0} +macaddr1={macaddr1} +macaddr2={macaddr2} +macaddr3={macaddr3} +blkdev0={blkdev0} +blkdev1={blkdev1} +blkdev2={blkdev2} +blkdev3={blkdev3} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency0} +linklatency1={linklatency1} +linklatency2={linklatency2} +linklatency3={linklatency3} +netbw0={netbw0} +netbw1={netbw1} +netbw2={netbw2} +netbw3={netbw3} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname0} +shmemportname1={shmemportname1} +shmemportname2={shmemportname2} +shmemportname3={shmemportname3} +permissive-off +prog0={bootbin0} +prog1={bootbin1} +prog2={bootbin2} +prog3={bootbin3} && stty intr ^c' uartlog"; sleep 1""".format(
+
+        def array_to_plusargs(valuesarr, plusarg):
+            args = []
+            for index, arg in enumerate(valuesarr):
+                if arg is not None:
+                    args.append("""{}{}={}""".format(plusarg, index, arg))
+            return " ".join(args) + " "
+
+        command_macs = array_to_plusargs(all_macs, "+macaddr")
+        command_rootfses = array_to_plusargs(all_rootfses, "+blkdev")
+        command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
+        command_netbws = array_to_plusargs(all_netbws, "+netbw")
+        command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
+
+        command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
+
+
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
-            macaddr0=macaddr0, macaddr1=macaddr1,macaddr2=macaddr2,macaddr3=macaddr3,
-            blkdev0=blkdev0, blkdev1=blkdev1, blkdev2=blkdev2, blkdev3=blkdev3,
-            linklatency0=linklatency0, linklatency1=linklatency1,
-            linklatency2=linklatency2, linklatency3=linklatency3,
-            netbw0=netbw0, netbw1=netbw1, netbw2=netbw2, netbw3=netbw3,
+            command_macs=command_macs,
+            command_rootfses=command_rootfses,
+            command_linklatencies=command_linklatencies,
+            command_netbws=command_netbws,
             profile_interval=profile_interval,
-            shmemportname0=shmemportname0, shmemportname1=shmemportname1, shmemportname2=shmemportname2, shmemportname3=shmemportname3,
-            bootbin0=bootbin0, bootbin1=bootbin1, bootbin2=bootbin2, bootbin3=bootbin3, tracefile=tracefile,
-            trace_start=trace_start, trace_end=trace_end)
+            command_shmemportnames=command_shmemportnames,
+            command_bootbinaries=command_bootbinaries,
+            trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)
 
         return basecommand
 
@@ -156,7 +169,8 @@ class RuntimeHWConfig:
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
-        return """sudo pkill -SIGKILL {driver}""".format(driver=driver)
+        # Note that pkill only works for names <=15 characters
+        return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
     def build_fpga_driver(self):
@@ -229,9 +243,10 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         self.runfarmtag = runtime_dict['runfarm']['runfarmtag']
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges'])
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges'])
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges'])
+        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
@@ -286,6 +301,7 @@ class RuntimeConfig:
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
+                               self.innerconf.f1_4xlarges_requested,
                                self.innerconf.f1_2xlarges_requested,
                                self.innerconf.m4_16xlarges_requested,
                                self.innerconf.runfarmtag,
@@ -307,10 +323,10 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_2,
+    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_2,
+        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                         terminatesomem4_16, forceterminate)
 
     def infrasetup(self):

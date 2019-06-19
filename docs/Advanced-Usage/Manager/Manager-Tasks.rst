@@ -96,7 +96,7 @@ that someone else owns and gave you access to.
 ---------------------------
 
 This command launches a Run Farm on which you run simulations. Run Farms
-consist of ``f1.16xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
+consist of ``f1.16xlarge``, ``f1.4xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
 Before you run the command, you define the number of each that you want in
 ``config_runtime.ini``.
 
@@ -155,8 +155,9 @@ RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
 
 There a few additional commandline arguments that let you terminate only
 some of the instances in a particular Run Farm: ``--terminatesomef116 INT``,
-``--terminatesomef12 INT``, and ``--terminatesomem416 INT``, which will terminate
-ONLY as many of each type of instance as you specify.
+``--terminatesomef14 INT``, ``--terminatesomef12 INT``, and
+``--terminatesomem416 INT``, which will terminate ONLY as many of each type of
+instance as you specify.
 
 Here are some examples:
 

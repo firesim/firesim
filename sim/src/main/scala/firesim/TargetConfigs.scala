@@ -1,5 +1,6 @@
 package firesim.firesim
 
+import chisel3.util.{log2Up}
 import freechips.rocketchip.config.{Parameters, Config}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
@@ -28,7 +29,7 @@ class WithUARTKey extends Config((site, here, up) => {
 
 class WithNICKey extends Config((site, here, up) => {
   case NICKey => NICConfig(
-    inBufPackets = 64,
+    inBufFlits = 8192,
     ctrlQueueDepth = 64)
 })
 
@@ -158,7 +159,7 @@ class FireSimBoomConfig extends Config(new FireSimDefaultBoomConfig)
 // tile in the "up" view
 class WithNDuplicatedBoomCores(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => List.tabulate(n)(i => up(BoomTilesKey).head.copy(hartId = i))
-  case freechips.rocketchip.tile.MaxHartIdBits => chisel3.util.log2Up(site(BoomTilesKey).size)
+  case MaxHartIdBits => log2Up(site(BoomTilesKey).size)
 })
 
 class DBC extends WithNDuplicatedBoomCores(2)
@@ -180,6 +181,10 @@ class FireSimBoomDualCoreConfig extends Config(
   new WithNDuplicatedBoomCores(2) ++
   new FireSimBoomConfig)
 
+class FireSimBoomQuadCoreConfig extends Config(
+  new WithNDuplicatedBoomCores(4) ++
+  new FireSimBoomConfig)
+
 class FireSimBoomTracedConfig extends Config(
   new WithTraceBoom ++ new FireSimBoomConfig)
 
@@ -198,6 +203,16 @@ class SupernodeFireSimRocketChipConfig extends Config(
 class SupernodeFireSimRocketChipSingleCoreConfig extends Config(
   new WithNumNodes(4) ++
   new WithExtMemSize(0x200000000L) ++ // 8GB
+  new FireSimRocketChipSingleCoreConfig)
+
+class SupernodeSixNodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(6) ++
+  new WithExtMemSize(0x40000000L) ++ // 1GB
+  new FireSimRocketChipSingleCoreConfig)
+
+class SupernodeEightNodeFireSimRocketChipSingleCoreConfig extends Config(
+  new WithNumNodes(8) ++
+  new WithExtMemSize(0x40000000L) ++ // 1GB
   new FireSimRocketChipSingleCoreConfig)
 
 class SupernodeFireSimRocketChipDualCoreConfig extends Config(
