@@ -150,9 +150,7 @@ class FireSimDefaultBoomConfig extends Config(
 
 // The canonical boom config uses SmallConfig for now given V
 // Using a small config because it has 64-bit system bus, and compiles quickly
-class FireSimBoomConfig extends Config(
-  new boom.common.WithSmallBooms ++
-  new FireSimBoomConfig)
+class FireSimBoomConfig extends Config(new FireSimDefaultBoomConfig)
 
 // A safer implementation than the one in BOOM in that it
 // duplicates whatever BOOMTileKey.head is present N times. This prevents

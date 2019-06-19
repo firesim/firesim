@@ -9,7 +9,7 @@
 	url = https://github.com/freechipsproject/firrtl.git
 [submodule "sim/midas"]
 	path = sim/midas
-	url = git@github.com:firesim/midas-private.git
+	url = https://github.com/ucb-bar/midas.git
 [submodule "sim/barstools"]
 	path = sim/barstools
 	url = https://github.com/ucb-bar/barstools.git
