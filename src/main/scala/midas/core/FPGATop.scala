@@ -36,7 +36,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   // Simulation Target
   val sim = Module(new SimBox(simIoType.cloneType))
   val simIo = sim.io.channelPorts
-  val memIoSize = (simIo.endpoints collect { case x: SimMemIO => x } foldLeft 0)(_ + _.size)
   // This reset is used to return the emulation to time 0.
   val master = addWidget(new EmulationMaster, "Master")
   val simReset = master.io.simReset
@@ -125,7 +124,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           valid += channel.valid
         case _ => throw new RuntimeException(s"Unexpected Bits direction: ${directionOf(wire)}")
       }
-      case _ => throw new RuntimeException("Uexpected type tuple in channels2Port")
+      case (t: Clock, c: Clock) => throw new RuntimeException(s"Unexpected Clock in token channels: $c")
     }
 
     loop(port.hBits -> wires)
@@ -142,11 +141,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   //                      Valid, Ready
   val resetEnqTuples: Seq[(Bool, Bool)] = (simIo.endpoints flatMap { endpoint =>
     Seq.tabulate(endpoint.size)({ i =>
-      val widgetName = (endpoint, p(MemModelKey)) match {
-          case (_: SimMemIO, Some(_)) => s"MemModel_$i"
-          case (_: SimMemIO, None) => s"NastiWidget_$i"
-          case _ => s"${endpoint.widgetName}_$i"
-      }
+      val widgetName = s"${endpoint.widgetName}_$i"
       val widget = addWidget(endpoint.widget(p), widgetName)
       widget.reset := reset.toBool || simReset
       widget match {

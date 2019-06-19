@@ -110,7 +110,7 @@ private[passes] class SimulationMapping(
     // FIXME: Renamer complains if i leave these in
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case ch: FAMEChannelConnectionAnnotation => false
-      case AddedTargetIoAnnotation(_,_) => false
+      case _: AddedTargetIoAnnotation[_] => false
       case _ => true
     })
 

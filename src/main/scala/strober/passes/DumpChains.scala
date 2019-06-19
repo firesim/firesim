@@ -70,7 +70,7 @@ class DumpChains(
                 case ChainType.RegFile =>
                   chainFile write s"$id $path.$name $width ${s.depth}\n"
                   width
-                case ChainType.Regs => (((0 until s.depth) foldLeft 0){ (sum, i) =>
+                case ChainType.Regs => (((0 until s.depth.toInt) foldLeft 0){ (sum, i) =>
                   chainFile write s"$id $path.$name[$i] $width -1\n"
                   sum + width
                 })

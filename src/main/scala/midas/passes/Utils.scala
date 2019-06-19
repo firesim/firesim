@@ -106,18 +106,6 @@ class IntermediateLoweringCompiler(inputForm: CircuitForm, outputForm: CircuitFo
   def transforms = firrtl.CompilerUtils.getLoweringTransforms(inputForm, outputForm)
 }
 
-class EmitFirrtl(fileName: String) extends firrtl.Transform {
-
-  def inputForm = HighForm
-  def outputForm = HighForm
-  override def name = s"[MIDAS] Debugging Emission Pass: $fileName"
-
-  def execute(state: CircuitState) = {
-    Utils.writeState(state, fileName)
-    state
-  }
-}
-
 // Writes out the circuit to a file for debugging
 class EmitFirrtl(fileName: String) extends firrtl.Transform {
 

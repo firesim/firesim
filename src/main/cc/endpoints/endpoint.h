@@ -24,6 +24,10 @@ public:
   // If the endpoint calls for termination, encode a cause here. 0 = PASS All other
   // codes are endpoint-implementation defined
   virtual int exit_code() = 0;
+  // The analog of init(), this provides a final opportunity to interact with
+  // the FPGA before destructors are called at the end of simulation. Useful
+  // for doing end-of-simulation clean up that requires calling simif->{read,write,push,pull}.
+  virtual void finish() = 0;
 
 protected:
   void write(size_t addr, data_t data) {
