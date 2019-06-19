@@ -22,7 +22,7 @@ To launch a manager instance, follow these steps:
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   "FireSim Base" and select the option that starts with ``FireSim Base AMI 1.6.0``.
+   "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.6.0``.
    **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c4.4xlarge``.
@@ -36,14 +36,23 @@ To launch a manager instance, follow these steps:
       manager instance from being terminated by accident. You will need
       to disable this setting before being able to terminate the
       instance using usual methods.
-4. On the next page ("Add Storage"), increase the size of the root EBS
+   3. Also on this page, expand "Advanced Details" and in the resulting
+      text box, paste the following:
+
+      .. include:: /../scripts/machine-launch-script.sh
+         :code: bash
+
+      This will pre-install all of the dependencies needed to run FireSim on your instance.
+
+5. On the next page ("Add Storage"), increase the size of the root EBS
    volume to ~300GB. The default of 150GB can quickly become tight as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
-   and large root filesystems for simulations.
-5. You can skip the "Add Tags" page, unless you want tags.
-6. On the "Configure Security Group" page, select the ``firesim``
+   and large root filesystems for simulations. You can get rid of the
+   small (5GB) secondary volume that is added by default.
+6. You can skip the "Add Tags" page, unless you want tags.
+7. On the "Configure Security Group" page, select the ``firesim``
    security group that was automatically created for you earlier.
-7. On the review page, click the button to launch your instance.
+8. On the review page, click the button to launch your instance.
 
 Make sure you select the ``firesim`` key pair that we setup earlier.
 
@@ -53,8 +62,22 @@ Access your instance
 We **HIGHLY** recommend using `mosh <https://mosh.org/>`__ instead
 of ``ssh`` or using ``ssh`` with a screen/tmux session running on your
 manager instance to ensure that long-running jobs are not killed by a
-bad network connection to your manager instance. 
-Now, ``ssh`` or ``mosh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``).
+bad network connection to your manager instance. On this instance, the
+``mosh`` server is installed as part of the setup script we pasted
+before, so we need to first ssh into the instance and make sure the
+setup is complete.
+
+In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
+``~/machine-launchstatus`` file contains all the following text:
+
+::
+
+    centos@ip-172-30-2-140.us-west-2.compute.internal:~$ cat machine-launchstatus
+    machine launch script started
+    machine launch script completed!
+
+Once this line appears, exit and re-``ssh`` into the system. If you want
+to use ``mosh``, ``mosh`` back into the system.
 
 Key Setup, Part 2
 ~~~~~~~~~~~~~~~~~

@@ -139,12 +139,4 @@ AMI <https://aws.amazon.com/marketplace/pp/B06VVYBLZZ>`__. Click the
 button to subscribe to the FPGA Dev AMI (it should be free) and follow
 the prompts to accept the EULA (but do not launch any instances).
 
-Subscribe to FireSim Base AMI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Go to the `AWS Marketplace page for the FireSim Base
-AMI <https://aws.amazon.com/marketplace/pp/B07RP9L1R5>`__. Click the
-button to subscribe to the FireSim Base AMI (it should be free) and follow
-the prompts to accept the EULA (but do not launch any instances).
-
-
 Now, hit next to continue on to setting up our Manager Instance.
