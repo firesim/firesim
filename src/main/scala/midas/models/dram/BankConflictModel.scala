@@ -13,10 +13,10 @@ import Console.{UNDERLINED, RESET}
 case class BankConflictConfig(
     maxBanks: Int,
     maxLatencyBits: Int = 12, // 4K cycles
-    baseParams: BaseParams)
-  extends BaseConfig(baseParams) {
+    baseParams: BaseParams)(implicit p: Parameters)
+  extends BaseConfig(baseParams)(p) {
 
-  def elaborate()(implicit p: Parameters): BankConflictModel = Module(new BankConflictModel(this))
+  def elaborate(): BankConflictModel = Module(new BankConflictModel(this))
 }
 
 class BankConflictMMRegIO(cfg: BankConflictConfig) extends SplitTransactionMMRegIO(cfg: BaseConfig){

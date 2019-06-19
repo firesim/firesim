@@ -90,6 +90,8 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   val wResp = Wire(Decoupled(new WriteResponseMetaData))
   val rResp = Wire(Decoupled(new ReadResponseMetaData))
 
+  val monitor = Module(new MemoryModelMonitor(cfg))
+  monitor.axi4 := io.tNasti
 
   val tCycle = RegInit(0.U(64.W))
   tCycle := tCycle + 1.U

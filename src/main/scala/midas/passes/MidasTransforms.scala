@@ -46,6 +46,7 @@ private[midas] class MidasTransforms(
       // NB: Carelessly removing this pass will break the FireSim manager as we always
       // need to generate the *.asserts file. Fix by baking into driver.
       new AssertPass(dir),
+      new PrintSynthesis(dir),
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
@@ -110,8 +111,6 @@ class Fame1Instances extends Transform {
  * inner circuit to do linking (if the wrapping circuit is LowForm), and thus the target
  *  will have lost its subFields when we go to regenerate the ChiselIO.
  */
-case class AddedTargetIoAnnotation[T <: chisel3.Data](port: Port, gen: Port => T) extends NoTargetAnnotation {
-  def generateChiselIO(): Tuple2[String, T] = {
-    (port.name, gen(port))
-  }
+trait AddedTargetIoAnnotation[T <: chisel3.Data] extends Annotation {
+  def generateChiselIO(): Tuple2[String, T]
 }

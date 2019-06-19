@@ -81,7 +81,7 @@ private[passes] class SimulationMapping(
 
     // Look up new IO than may have been added by instrumentation or debugging passes
     val newTargetIO = innerState.annotations.collect({
-      case a @ AddedTargetIoAnnotation(_,_) => a.generateChiselIO()
+      case a: AddedTargetIoAnnotation[_] => a.generateChiselIO()
     })
 
     // Now lower the inner circuit in preparation for linking
