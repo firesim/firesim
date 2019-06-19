@@ -117,7 +117,7 @@ class AddDaisyChains(
       case (sum, s: DefRegister) =>
         sum + bitWidth(s.tpe).toInt
       case (sum, s: DefMemory) if s.readLatency == 0 && !bigRegFile(s) =>
-        sum + bitWidth(s.dataType).toInt * s.depth
+        sum + bitWidth(s.dataType).toInt * s.depth.toInt
       case (sum, s: DefMemory) if s.readLatency == 1 =>
         sum + bitWidth(s.dataType).toInt * (s.readers.size + s.readwriters.size)
       case (sum, s: WDefInstance) =>
@@ -173,7 +173,7 @@ class AddDaisyChains(
         case s: DefRegister => create_exps(s.name, s.tpe)
         case s: DefMemory => chainType match {
           case ChainType.Regs =>
-            val rs = (0 until s.depth) map (i => s"scan_$i")
+            val rs = (0 until s.depth.toInt) map (i => s"scan_$i")
             val mem = s.copy(readers = s.readers ++ rs)
             val exps = rs map (r => create_exps(memPortField(mem, r, "data")))
             readers(s.name) = rs
@@ -204,7 +204,7 @@ class AddDaisyChains(
     def sumWidths(stmts: Statements) = (stmts foldLeft (0, 0, 0)){
       case ((sum, max, depth), s: DefMemory) =>
         val width = bitWidth(s.dataType).toInt
-        (sum + width, max max width, depth max s.depth)
+        (sum + width, max max width, depth max s.depth.toInt)
       case ((sum, max, depth), s: WDefInstance) =>
         val sram = srams(s.module)
         (sum + sram.width, max max sram.width, depth max sram.depth)
@@ -394,7 +394,7 @@ class AddDaisyChains(
       case Some(rs) =>
         val mem = s.copy(readers = s.readers ++ rs)
         Block(mem +: (rs.zipWithIndex flatMap { case (r, i) =>
-          val addr = UIntLiteral(i, IntWidth(chisel3.util.log2Up(s.depth)))
+          val addr = UIntLiteral(i, IntWidth(chisel3.util.log2Up(s.depth.toInt)))
           Seq(Connect(NoInfo, memPortField(mem, r, "clk"), clock.get),
               Connect(NoInfo, memPortField(mem, r, "en"), one),
               Connect(NoInfo, memPortField(mem, r, "addr"), addr))

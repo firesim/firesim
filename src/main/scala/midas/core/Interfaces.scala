@@ -23,9 +23,8 @@ object HostDecoupled {
   def apply[T <: Data](gen: T): HostDecoupledIO[T] = new HostDecoupledIO(gen)
 }
 
-
 class HostReadyValid extends Bundle {
-  val hReady= Input(Bool())
+  val hReady = Input(Bool())
   val hValid = Output(Bool())
   def fire(): Bool = hReady && hValid
 }
@@ -45,7 +44,7 @@ class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
 {
   val fromHost = Flipped(new HostReadyValid)
   val toHost = new HostReadyValid
-  val hBits  = if (tokenFlip) Flipped(gen.cloneType) else gen.cloneType
+  val hBits  = if (tokenFlip) Flipped(gen) else gen
   override def cloneType: this.type =
     new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
 }

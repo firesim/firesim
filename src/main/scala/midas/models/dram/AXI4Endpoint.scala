@@ -28,22 +28,19 @@ class AXI4BundleWithEdge(params: AXI4BundleParameters, val edge: AXI4EdgeParamet
 
 object AXI4BundleWithEdge {
   // this is type returned by a diplomatic nodes's in() and out() methods
-  def apply(tuple: (AXI4Bundle, AXI4EdgeParameters)) = tuple match {
-    case (b, e) => new AXI4BundleWithEdge(b.params, e)
->>>>>>> dev:src/main/scala/midas/models/dram/AXI4Endpoint.scala
-  }
-
-  // Finds all of the target ReadyValid bundles sourced or sunk by the target
-  // input => sunk by the target
-  private def findRVChannels(dir: Direction): Seq[(String, ReadyValidIO[Data])] =
-    channels.flatMap({ case (prefix, data) => data.elements.toSeq.collect({
-        case (name, rv: ReadyValidIO[_]) if directionOf(rv.valid) == dir => s"${prefix}_${name}" -> rv
-      })
+  def fromNode(ports: Seq[(AXI4Bundle, AXI4EdgeParameters)]): Seq[AXI4BundleWithEdge] = ports.map({ 
+    case (bundle, edge) => new AXI4BundleWithEdge(bundle.params, edge)
   })
-
-  lazy val readyValidOutputs = findRVChannels(Direction.Output)
-  lazy val readyValidInputs = findRVChannels(Direction.Input)
-
+//  // Finds all of the target ReadyValid bundles sourced or sunk by the target
+//  // input => sunk by the target
+//  private def findRVChannels(dir: Direction): Seq[(String, ReadyValidIO[Data])] =
+//    channels.flatMap({ case (prefix, data) => data.elements.toSeq.collect({
+//        case (name, rv: ReadyValidIO[_]) if directionOf(rv.valid) == dir => s"${prefix}_${name}" -> rv
+//      })
+//  })
+//
+//  lazy val readyValidOutputs = findRVChannels(Direction.Output)
+//  lazy val readyValidInputs = findRVChannels(Direction.Input)
 }
 
 
