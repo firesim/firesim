@@ -5,7 +5,7 @@
 #include <exception>
 #include <stdio.h>
 
-#include "fpga_memory_model.h"
+#include "fased_memory_timing_model.h"
 
 void Histogram::init() {
   // Read out the initial values
@@ -50,7 +50,7 @@ void AddrRangeCounter::finish() {
   write(enable, 0);
 }
 
-FpgaMemoryModel::FpgaMemoryModel(
+FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     simif_t* sim, AddressMap addr_map, int argc,char** argv,
     std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset)
   : FpgaModel(sim, addr_map), mem_size(mem_size), mem_host_offset(mem_host_offset) {
@@ -104,14 +104,14 @@ FpgaMemoryModel::FpgaMemoryModel(
   }
 }
 
-void FpgaMemoryModel::profile() {
+void FASEDMemoryTimingModel::profile() {
   for (auto addr: profile_reg_addrs) {
     stats_file << read(addr) << ",";
   }
   stats_file << std::endl;
 }
 
-void FpgaMemoryModel::init() {
+void FASEDMemoryTimingModel::init() {
   for (auto &pair: addr_map.w_registers) {
     auto value_it = model_configuration.find(pair.first);
     if (value_it != model_configuration.end()) {
@@ -143,7 +143,7 @@ void FpgaMemoryModel::init() {
   for (auto &rctr: rangectrs)  { rctr.init(); }
 }
 
-void FpgaMemoryModel::finish() {
+void FASEDMemoryTimingModel::finish() {
   for (auto &hist: histograms) { hist.finish(); }
   for (auto &rctr: rangectrs)  { rctr.finish(); }
 

@@ -1,3 +1,4 @@
+// See LICENSE for license details.
 package midas
 package models
 
@@ -5,6 +6,7 @@ package models
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.amba.axi4.{AXI4EdgeParameters}
 import junctions._
 
 import chisel3._
@@ -66,32 +68,70 @@ case class BaseParams(
   addrRangeCounters: BigInt = BigInt(0)
 )
 
-abstract class BaseConfig(
-  val params: BaseParams
-) extends MemModelConfig {
+abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) {
 
-  def getMaxPerID(modelMaxXactions: Int, userMax: Option[Int]): Int = {
-    min(userMax.getOrElse(modelMaxXactions), modelMaxXactions)
+  // Returns (maxReadLength, maxWriteLength)
+  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
+    val beatBytes = e.slave.beatBytes
+    val readXferSize  = e.slave.slaves.head.supportsRead.max
+    val writeXferSize = e.slave.slaves.head.supportsWrite.max
+    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
   }
 
-  def maxWrites = params.maxWrites
-  def maxReads = params.maxReads
+  // Returns max ID reuse; None -> unbounded
+  private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
+      case _ => None
+    })
+  }
 
-  def maxReadLength = params.maxReadLength
-  def maxWriteLength = params.maxWriteLength
+  // Sums up the maximum number of requests that can be inflight across all masters
+  // None -> unbounded
+  private def getMaxTotalFlightFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(prev + cur)
+      case _ => None
+    })
+  }
 
-  def numNastiIDs(implicit p: Parameters) = 1 << p(NastiKey).idBits
+  private def getMaxPerID(e: Option[AXI4EdgeParameters], modelMaxXactions: Int, userMax: Option[Int]): Int = {
+    e.flatMap(getIDReuseFromEdge)
+     .getOrElse(min(userMax.getOrElse(modelMaxXactions), modelMaxXactions))
+  }
 
-  def maxWritesPerID(implicit p: Parameters) =  getMaxPerID(maxWrites, params.maxWritesPerID)
-  def maxReadsPerID(implicit p: Parameters) =  getMaxPerID(maxReads, params.maxReadsPerID)
+  def maxReadLength = p(FasedAXI4Edge) match {
+    case Some(e) => getMaxTransferFromEdge(e)._1
+    case _ => params.maxReadLength
+  }
+
+  def maxWriteLength = p(FasedAXI4Edge) match {
+    case Some(e) => getMaxTransferFromEdge(e)._2
+    case _ => params.maxWriteLength
+  }
+
+  def maxWritesPerID = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
+  def maxReadsPerID = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
+
+  def maxWrites = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxWrites)
+    min(params.maxWrites, maxFromEdge)
+  }
+
+  def maxReads = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxReads)
+    min(params.maxReads, maxFromEdge)
+  }
 
   def useLLCModel = params.llcKey != None
 
   // Timing model classes implement this function to elaborate the correct module
-  def elaborate()(implicit p: Parameters): TimingModel
+  def elaborate(): TimingModel
 
-  val maxWritesBits = log2Up(maxWrites)
-  val maxReadsBits = log2Up(maxReads)
+  def maxWritesBits = log2Up(maxWrites)
+  def maxReadsBits = log2Up(maxReads)
 }
 
 
@@ -110,10 +150,18 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
   }
 }
 
-class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
+class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
+  // The default NastiKey is expected to be that of the target
+  val tNasti = Flipped(HostPort(new NastiIO, false))
+  val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
+  def hPort = tNasti
+}
+
+class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends EndpointWidget()(p) {
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
   )
+  val io = IO(new MemModelIO)
 
   val model = cfg.elaborate()
   printGenerationConfig
@@ -441,6 +489,10 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
     println("Generating a Midas Memory Model")
     println("  Max Read Requests: " + cfg.maxReads)
     println("  Max Write Requests: " + cfg.maxReads)
+    println("  Max Read Length: " + cfg.maxReadLength)
+    println("  Max Write Length: " + cfg.maxWriteLength)
+    println("  Max Read ID Reuse: " + cfg.maxReadsPerID)
+    println("  Max Write ID Reuse: " + cfg.maxWritesPerID)
 
     println("\nTiming Model Parameters")
     model.printGenerationConfig

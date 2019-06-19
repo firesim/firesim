@@ -107,7 +107,8 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
 
 case class DRAMBackendKey(writeDepth: Int, readDepth: Int, latencyBits: Int)
 
-abstract class DRAMBaseConfig( baseParams: BaseParams) extends BaseConfig(baseParams) with HasDRAMMASConstants {
+abstract class DRAMBaseConfig( baseParams: BaseParams)(implicit p: Parameters)
+    extends BaseConfig(baseParams)(p) with HasDRAMMASConstants {
   def dramKey: DramOrganizationParams
   def backendKey: DRAMBackendKey
 }

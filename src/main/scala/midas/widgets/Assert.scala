@@ -11,19 +11,13 @@ import scala.collection.immutable.ListMap
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
-
 import junctions._
-import midas.core.{Endpoint, HostPort}
+
+import midas.core.{HostPort}
 
 
 class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
-}
-
-object AssertBundle {
-  def apply(port: firrtl.ir.Port): AssertBundle = {
-    new AssertBundle(firrtl.bitWidth(port.tpe).toInt)
-  }
 }
 
 class AssertWidgetIO(val numAsserts: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
