@@ -43,7 +43,7 @@ elif [ "$1" = "submodules-only" ]; then
 elif [ "$1" = "fast" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
-    git checkout 4a2f79d5c5a8a93f3e6a83bd32a0926cdb8983c5
+    git checkout 5fee18421a32058ab339572128201f4904354aaa
     PREBUILTHASH="$(cat HASH)"
     cd ../target-design/firechip
     git submodule update --init riscv-tools
@@ -74,17 +74,31 @@ else
     git submodule update --init --recursive riscv-tools #--jobs 8
     cd riscv-tools
     export MAKEFLAGS="-j16"
-    ./build.sh
+    # Copied from riscv-tools build.sh
+    source build.common
+    echo "Starting RISC-V Toolchain build process"
+    build_project riscv-fesvr --prefix=$RISCV
+    build_project riscv-isa-sim --prefix=$RISCV --with-fesvr=$RISCV
+    build_project riscv-gnu-toolchain --prefix=$RISCV
+    CC= CXX= build_project riscv-pk --prefix=$RISCV --host=riscv64-unknown-elf
+    build_project riscv-tests --prefix=$RISCV/riscv64-unknown-elf
+    echo -e "\\nRISC-V Toolchain installation completed!"
+
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh
-    # build linux toolchain
     cd $RDIR
+
+    # build linux toolchain
     cd target-design/firechip/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
     cd $RDIR
-    cd sw
-    ./install-qemu.sh
+
+    # build QEMU
+    cd sw/qemu
+    ./configure --target-list=riscv64-softmmu --prefix=$RISCV
+    make -j16
+    make install
     cd $RDIR
 fi
 
@@ -92,17 +106,17 @@ echo "export RISCV=$RISCV" > env.sh
 echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
 echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 
-cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-make
-
-# Set up firesim-software
-cd $RDIR
-sudo pip3 install -r sw/firesim-software/python-requirements.txt
-
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
+    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+    make
+
+    # Install firesim-software python libraries
+    cd $RDIR
+    sudo pip3 install -r sw/firesim-software/python-requirements.txt
+
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
     # worker instances

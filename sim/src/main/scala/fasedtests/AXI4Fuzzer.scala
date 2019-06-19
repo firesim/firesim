@@ -75,7 +75,7 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
     := fuzz.node)
 
   lazy val module = new LazyModuleImp(this) {
-    val axi4 = IO(AXI4BundleWithEdge(slave.in.head))
+    val axi4 = IO(AXI4BundleWithEdge.fromNode(slave.in).head)
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 

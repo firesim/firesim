@@ -5,6 +5,7 @@ import java.io.File
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
+import scala.io.Source
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.system.{RocketTestSuite, BenchmarkTestSuite}
@@ -28,7 +29,7 @@ abstract class FireSimTestSuite(
     topModuleProject = "firesim.firesim",
     topModuleClass = topModuleClass,
     targetConfigProject = "firesim.firesim",
-    targetConfigs = targetConfigs,
+    targetConfigs = targetConfigs ++ "_WithScalaTestFeatures",
     platformConfigProject = "firesim.firesim",
     platformConfigs = platformConfigs)
 
@@ -43,18 +44,18 @@ abstract class FireSimTestSuite(
                            s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
   override lazy val platform = hostParams(midas.Platform)
 
-  def invokeMlSimulator(backend: String, name: String, debug: Boolean) = {
-    make(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"),
-         s"EMUL=${backend}"
-         )
+  def invokeMlSimulator(backend: String, name: String, debug: Boolean, additionalArgs: Seq[String] = Nil) = {
+    make((Seq(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"),
+              s"EMUL=${backend}")
+         ++ additionalArgs):_*)
   }
 
-  def runTest(backend: String, name: String, debug: Boolean) = {
+  def runTest(backend: String, name: String, debug: Boolean, additionalArgs: Seq[String] = Nil) = {
     behavior of s"${name} running on ${backend} in MIDAS-level simulation"
     compileMlSimulator(backend, debug)
     if (isCmdAvailable(backend)) {
       it should s"pass" in {
-        assert(invokeMlSimulator(backend, name, debug) == 0)
+        assert(invokeMlSimulator(backend, name, debug, additionalArgs) == 0)
       }
     }
   }
@@ -100,11 +101,31 @@ abstract class FireSimTestSuite(
     }
   }
 
+  // Checks the collected trace log matches the behavior of a chisel printf
+  def diffTracelog(verilatedLog: String) {
+    behavior of "captured instruction trace"
+    it should s"match the chisel printf in ${verilatedLog}" in {
+      def getLines(file: File, dropLines: Int = 0): Seq[String] = {
+        val lines = Source.fromFile(file).getLines.toList
+        lines.filter(_.startsWith("TRACEPORT")).drop(dropLines)
+      }
+      val resetLength = 50
+      val verilatedOutput  = getLines(new File(outDir,  s"/${verilatedLog}"))
+      val synthPrintOutput = getLines(new File(genDir, s"/TRACEFILE"), resetLength + 1)
+      assert(verilatedOutput.size == synthPrintOutput.size, "Outputs differ in length")
+      assert(verilatedOutput.nonEmpty)
+      for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
+        assert(vPrint == sPrint)
+      }
+    }
+  }
+
   clean
   mkdirs
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
-  runTest("verilator", "rv64ui-p-simple", false)
+  runTest("verilator", "rv64ui-p-simple", false, Seq(s"""EXTRA_SIM_ARGS=+trace-test-output0"""))
+  diffTracelog("rv64ui-p-simple.out")
   runSuite("verilator")(benchmarks)
   runSuite("verilator")(FastBlockdevTests)
 }
