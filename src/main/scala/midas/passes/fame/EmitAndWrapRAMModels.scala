@@ -187,7 +187,7 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
 
   def elaborateModel(parentCircuitName: String): (DefModule, Seq[Annotation]) = {
     val c3circuit = chisel3.Driver.elaborate(() =>
-      new midas.models.sram.AsyncMemModelGen(depth.toInt, dataWidth).emitModel())
+      new midas.models.sram.AsyncMemChiselModel(depth.toInt, dataWidth, readPorts.size, writePorts.size))
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
     val transforms = Seq(new SingleModulePrelinkRename(parentCircuitName, name))

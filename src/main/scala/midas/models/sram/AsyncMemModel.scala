@@ -14,13 +14,24 @@ class AsyncMemModelGen(val depth: Int, val dataWidth: Int) extends ModelGenerato
   val emitRTLImpl = () => new AsyncMemChiselRTL(depth, dataWidth)
 }
 
-class AsyncMemChiselRTL(val depth: Int, val dataWidth: Int) extends MultiIOModule {
-  val channels = IO(new RegfileRTLIO(depth, dataWidth, 1, 1))
+class AsyncMemChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends MultiIOModule {
+  val channels = IO(new RegfileRTLIO(depth, dataWidth, nReads, nWrites))
   val data = Mem(depth, UInt(dataWidth.W))
 
-  channels.read_resps(0) := data.read(channels.read_cmds(0).addr)
-  when (channels.write_cmds(0).active && !reset.toBool()) {
-    data.write(channels.write_cmds(0).addr, channels.write_cmds(0).data)
+  for (i <- 0 until nReads) {
+    channels.read_resps(i) := data.read(channels.read_cmds(i).addr)
+  }
+
+  for (i <- 0 until nWrites) {
+    val write_cmd = channels.write_cmds(i)
+    def collides(c: WriteCmd) = c.active && write_cmd.active && (c.addr === write_cmd.addr)
+    val collision_detected = channels.write_cmds.drop(i+1).foldLeft(false.B) {
+      case (detected, cmd) => detected || collides(cmd)
+    }
+
+    when (write_cmd.active && !reset.toBool() && !collision_detected) {
+      data.write(write_cmd.addr, write_cmd.data)
+    }
   }
 }
 
@@ -33,48 +44,117 @@ object AsyncMemChiselModel {
   }
 }
 
-class AsyncMemChiselModel(val depth: Int, val dataWidth: Int) extends MultiIOModule {
+class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends MultiIOModule {
+
+  // FSM states and helper functions
+  //import AsyncMemChiselModel.ReadState
   import AsyncMemChiselModel.ReadState._
+  val tupleAND = (vals: (Bool, Bool)) => vals._1 && vals._2
+  val tupleOR = (vals: (Bool, Bool)) => vals._1 || vals._2
 
-  val channels = IO(new RegfileModelIO(depth, dataWidth, 1, 1))
-  dontTouch(channels)
-  val data = SyncReadMem(depth, UInt(dataWidth.W))
-  val read_data = data.read(channels.read_cmds(0).bits.addr)
+  // Channelized IO
+  val channels = IO(new RegfileModelIO(depth, dataWidth, nReads, nWrites))
 
-  val read_state = RegInit(start)
-  val read_resp_data = Reg(UInt(dataWidth.W))
-  val read_access_granted = read_state === start && channels.read_cmds(0).valid
-  val outputs_responded_or_firing = read_state === responded || channels.read_resps(0).fire
-  channels.read_resps(0).bits := Mux(read_state === active, read_data, read_resp_data)
-  channels.read_resps(0).valid := read_state === active || read_state === generated
+  // Target reset logic
+  val target_reset_fired = Reg(Bool())
+  val target_reset_available = target_reset_fired || channels.reset.valid
+  val target_reset_reg = Reg(Bool())
+  val target_reset_value = Mux(target_reset_fired, target_reset_reg, channels.reset.bits)
 
-  val write_complete = RegInit(false.B)
-  val write_access_granted = outputs_responded_or_firing && !write_complete && channels.write_cmds(0).valid && channels.reset.valid
-  val advance_cycle = write_complete || write_access_granted
-
-  channels.reset.ready := write_access_granted
-  channels.read_cmds(0).ready := read_access_granted
-  channels.write_cmds(0).ready := write_access_granted
-
-  when (advance_cycle) {
-    read_state := start
-  } .elsewhen (read_state === start && read_access_granted) {
-    read_state := active
-  } .elsewhen (read_state === active) {
-    read_state := Mux(channels.read_resps(0).fire, responded, generated)
-    read_resp_data := read_data
-  } .elsewhen (read_state === generated && channels.read_resps(0).fire) {
-    read_state := responded
+  // Host memory implementation
+  val data = Mem(depth, UInt(dataWidth.W))
+  val active_read_addr = Wire(UInt())
+  val active_write_addr = Wire(UInt())
+  val active_write_data = Wire(UInt())
+  val active_write_en = Wire(Bool())
+  val read_data_async = data.read(active_read_addr)
+  val read_data = RegNext(read_data_async)
+  when (active_write_en && !target_reset_value && !reset.toBool()) {
+    data.write(active_write_addr, active_write_data)
   }
 
-  when (advance_cycle) {
-    write_complete := false.B
-  } .elsewhen (write_access_granted) {
-    write_complete := true.B
+
+  // Read request management and response data buffering
+  val read_state = Reg(Vec(nReads, start.cloneType))
+  val read_resp_data = Reg(Vec(nReads, UInt(dataWidth.W)))
+  val read_access_req = (read_state zip channels.read_cmds) map { case (s, cmd) => s === start && cmd.valid }
+
+  // Don't use priority encoder because bools catted to ints considered hard to QED
+  val read_access_available = read_access_req.scanLeft(true.B)({ case (open, claim) => open && !claim }).init
+  val read_access_granted = (read_access_req zip read_access_available) map tupleAND
+
+  // Have all reads actually been performed?
+  val reads_done = read_state.foldLeft(true.B) { case (others_done, s) => others_done && s =/= start }
+
+  // This is used to overlap last read and first write -- depends on READ_FIRST implementation
+  val reads_finishing = (read_state zip channels.read_cmds).foldLeft(true.B) {
+    case (finishing, (s, cmd)) => finishing && (s =/= start || cmd.fire)
   }
 
-  when (write_access_granted && channels.write_cmds(0).bits.active && !channels.reset.bits && !reset.toBool()) {
-    data.write(channels.write_cmds(0).bits.addr, channels.write_cmds(0).bits.data)
+  // Are all reads done or finishing this cycle?
+  val outputs_responded_or_firing = (read_state zip channels.read_resps).foldLeft(true.B) {
+    case (res, (s, resp)) => res && (s === responded || resp.fire)
+  }
+
+  // Write request management
+  val write_complete = Reg(Vec(nWrites, Bool()))
+
+  // Order writes for determinism
+  val write_prereqs_met = (true.B +: write_complete.init) map { case p => p && reads_done && target_reset_available }
+
+  // Are all writes done or finishing this cycle?
+  val writes_done_or_finishing = (write_complete zip channels.write_cmds).foldLeft(true.B) {
+    case (res, (complete, cmd)) => res && (complete || cmd.fire)
+  }
+
+  val advance_cycle = outputs_responded_or_firing && writes_done_or_finishing
+
+  // Target reset state management
+  channels.reset.ready := !target_reset_fired
+  when (advance_cycle || reset.toBool()) {
+    target_reset_fired := false.B
+  } .elsewhen (channels.reset.fire) {
+    target_reset_fired := true.B
+    target_reset_reg := channels.reset.bits
+  }
+
+  // Read state management
+  active_read_addr := channels.read_cmds(0).bits.addr
+  for (i <- 0 until nReads) {
+    when (read_access_granted(i)) { active_read_addr := channels.read_cmds(i).bits.addr }
+
+    channels.read_cmds(i).ready := read_state(i) === start && read_access_available(i)
+    channels.read_resps(i).bits := Mux(read_state(i) === active, read_data, read_resp_data(i))
+    channels.read_resps(i).valid := read_state(i) === active || read_state(i) === generated
+
+    when (advance_cycle || reset.toBool()) {
+      read_state(i) := start
+    } .elsewhen (read_state(i) === start && read_access_granted(i)) {
+      read_state(i) := active
+    } .elsewhen (read_state(i) === active) {
+      read_state(i) := Mux(channels.read_resps(i).fire, responded, generated)
+      read_resp_data(i) := read_data
+    } .elsewhen (read_state(i) === generated && channels.read_resps(i).fire) {
+      read_state(i) := responded
+    }
+  }
+
+  // Write state management
+  active_write_addr := channels.write_cmds(0).bits.addr
+  active_write_data := channels.write_cmds(0).bits.data
+  active_write_en := false.B
+  for (i <- 0 until nWrites) {
+    channels.write_cmds(i).ready := write_prereqs_met(i) && !write_complete(i)
+    when (advance_cycle || reset.toBool()) {
+      write_complete(i) := false.B
+    } .elsewhen (channels.write_cmds(i).fire) {
+      write_complete(i) := true.B
+    }
+    when (channels.write_cmds(i).fire) {
+      active_write_addr := channels.write_cmds(i).bits.addr
+      active_write_data := channels.write_cmds(i).bits.data
+      active_write_en := channels.write_cmds(i).bits.active
+    }
   }
 
 }
