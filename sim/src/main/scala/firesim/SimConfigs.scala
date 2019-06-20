@@ -212,3 +212,8 @@ class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
 class FireSimDDR3FRFCFSLLC4MB3ClockDivConfig extends Config(
   new FRFCFS16GBQuadRankLLC4MB3Div ++
   new FireSimConfig)
+
+//Midas 2.0 Configs
+class Midas2Config extends Config(
+   new WithMultiCycleRamModels ++
+   new FireSimConfig)
