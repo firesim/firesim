@@ -243,7 +243,7 @@ class ReadyValidChannel[T <: Data](
     // Clock ratio (N/M) of deq interface (N) vs enq interface (M)
     clockRatio: IsRationalClockRatio = UnityClockRatio
   )(implicit p: Parameters) extends Module {
-  require(!clockRatio.isUnity)
+  require(clockRatio.isUnity, "CDC is not currently implemented")
 
   val io = IO(new ReadyValidChannelIO(gen))
   // Stores tokens with valid target-data that have been successfully enqueued
