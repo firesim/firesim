@@ -123,7 +123,9 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
                                     dummyPredicate)
   // Alternative of the mux below rejects the queue's ready as well
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)
-  io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
+  // Hack: include toHost.hValid to prevent individual wire channels from dequeuing before
+  // all sub-channels have valid tokens
+  io.hPort.toHost.hReady := tFireHelper.fire
   // We don't generate tokens
   io.hPort.fromHost.hValid := true.B
   val tFire = tFireHelper.fire(dummyPredicate)
