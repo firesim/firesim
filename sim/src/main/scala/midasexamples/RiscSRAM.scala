@@ -16,8 +16,10 @@ class RiscSRAM extends Module {
     val out    = Output(UInt(32.W))
   })
   val fileMem = SeqMem(256, UInt(32.W))
-  chisel3.experimental.annotate(MemModelAnnotation(fileMem))
+  // We only support combinational mems for now
+  //chisel3.experimental.annotate(MemModelAnnotation(fileMem))
   val codeMem = SeqMem(128, UInt(32.W))
+  //chisel3.experimental.annotate(MemModelAnnotation(codeMem))
 
   val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(UInt(), 6)
   val state = RegInit(idle)
