@@ -83,11 +83,13 @@ object PatientMemTransformer {
     val preserveReads = syncReadPorts.flatMap {
       case rpName =>
         val addrWidth = IntWidth(ceilLog2(mem.depth) max 1)
+        val dummyReset = DefWire(NoInfo, ns.newName(s"${mem.name}_${rpName}_dummyReset"), Utils.BoolType)
+        val tieOff = Connect(NoInfo, WRef(dummyReset), UIntLiteral(0))
         val addrReg = new DefRegister(NoInfo, ns.newName(s"${mem.name}_${rpName}"),
-          UIntType(addrWidth), memClock, UIntLiteral(0), UIntLiteral(0, addrWidth))
+          UIntType(addrWidth), memClock, WRef(dummyReset), UIntLiteral(0, addrWidth))
         val updateReg = Connect(NoInfo, WRef(addrReg), WSubField(WSubField(WRef(shim), rpName), "addr"))
         val useReg = Connect(NoInfo, MemPortUtils.memPortField(newMem, rpName, "addr"), WRef(addrReg))
-        Seq(addrReg, Conditionally(NoInfo, finishing, updateReg, useReg))
+        Seq(dummyReset, tieOff, addrReg, Conditionally(NoInfo, finishing, updateReg, useReg))
     }
     val gateWrites = (newMem.writers ++ newMem.readwriters).map {
       case wpName =>
