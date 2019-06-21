@@ -10,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import junctions.NastiIO
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
@@ -479,10 +480,36 @@ class SimWrapper(targetIo: Seq[(String, Data)],
       channel
   }
 
-  // Iterate through the channel annotations to generate channels
-  chAnnos.foreach({ _ match {
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.WireChannel,_,_) => genWireChannel(ch)
+  // Generate all ready-valid channels
+  val rvChannels = chAnnos.collect({
     case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
-    case _ => Nil // Drop DecoupledReverseChannel annotations
-  }})
+  })
+
+  // Generate all wire channels, excluding reset
+  chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != "reset"  => genWireChannel(ch)
+  })
+
+  val resetChannel = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == "reset"  => genWireChannel(ch)
+  }).get
+
+  val resetPort = channelPorts.wireName2port("reset")
+  // Fan out targetReset tokens to all target-stateful channels
+  val tResetQueues = rvChannels.map(_ => Module(new Queue(Bool(), 2)))
+  val tResetHelper = DecoupledHelper((
+    tResetQueues.map(_.io.enq.ready) :+
+    resetChannel.io.in.ready :+
+    resetPort.valid):_*)
+
+  (rvChannels.zip(tResetQueues)).foreach({ case (channel, resetQueue) =>
+    channel.io.targetReset <> resetQueue.io.deq
+    resetQueue.io.enq.bits := resetPort.bits
+    resetQueue.io.enq.valid := tResetHelper.fire
+  })
+  // Override the connections generated in genWireChannel which assume the
+  // reset token is not fanning out
+  resetChannel.io.in.valid := tResetHelper.fire
+  resetPort.ready := tResetHelper.fire(resetPort.valid)
+
 }

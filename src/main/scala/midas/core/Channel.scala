@@ -252,29 +252,30 @@ class ReadyValidChannel[T <: Data](
   // 1 = there was a target handshake; 0 = no target handshake
   val tokens = Module(new Queue(Bool(), p(ChannelLen)))
 
-  target.reset := reset.toBool || io.targetReset.bits && io.targetReset.valid
-  io.targetReset.ready := true.B // TODO: is it ok?
-
-  // FIXME: This couples fwd and rev token channels
-  val dummy = true.B
-
-  val enqFwdHelper = DecoupledHelper(
-    tokens.io.enq.ready,
-    io.enq.fwd.hValid,
-    dummy)
-
-  // ENQ DOMAIN LOGIC
-  // Enq-fwd token control
-  target.io.enq.valid := enqFwdHelper.fire(dummy) & io.enq.target.valid
-  target.io.enq.bits  := io.enq.target.bits
-  tokens.io.enq.valid := enqFwdHelper.fire(tokens.io.enq.ready)
-  tokens.io.enq.bits  := io.enq.target.valid && target.io.enq.ready
 
   // Consume the enq-fwd token if:
   //  1) the target queue isn't empty -> enq and deq sides can decouple in target-time 
   //  2) the target queue is full but token queue is empty -> enq & deq sides have lost decoupling
   //     and we know this payload will not be enqueued in target-land
-  io.enq.fwd.hReady := target.io.enq.ready || !tokens.io.deq.valid
+  val doFwdEnq = target.io.enq.ready || !tokens.io.deq.valid
+
+  // NB: This creates an extraenous dep between enq.fwd and reset
+  val enqFwdHelper = DecoupledHelper(
+    io.targetReset.valid,
+    tokens.io.enq.ready,
+    io.enq.fwd.hValid,
+    doFwdEnq)
+
+  target.reset := reset.toBool || enqFwdHelper.fire && io.targetReset.bits
+  // ENQ DOMAIN LOGIC
+  // Enq-fwd token control
+  target.io.enq.valid := enqFwdHelper.fire && io.enq.target.valid
+  target.io.enq.bits  := io.enq.target.bits
+  tokens.io.enq.valid := enqFwdHelper.fire(tokens.io.enq.ready)
+  tokens.io.enq.bits  := io.enq.target.valid && target.io.enq.ready && !io.targetReset.bits
+
+  io.enq.fwd.hReady := enqFwdHelper.fire(io.enq.fwd.hValid)
+  io.targetReset.ready := enqFwdHelper.fire(io.targetReset.valid)
 
   // Enq-rev token control
   // Assumptions: model a queue with flow = false
@@ -282,7 +283,7 @@ class ReadyValidChannel[T <: Data](
 
   // Capture ready tokens that would be dropped
   val readyTokens = Module(new Queue(Bool(), n, flow = false))
-  readyTokens.io.enq.valid := enqFwdHelper.fire(dummy) && !io.enq.rev.hReady
+  readyTokens.io.enq.valid := enqFwdHelper.fire && !io.enq.rev.hReady
   readyTokens.io.enq.bits  := target.io.enq.ready
 
   io.enq.rev.hValid   := true.B
