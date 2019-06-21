@@ -2,41 +2,44 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.6.0] - 2019-05-20
+## [1.6.0] - 2019-06-23
 
 A more detailed account of everything included is included in the dev->master PR for this release: https://github.com/firesim/firesim/pull/262
+The primary change in this release is a Rocket-Chip bump in FireChip and associated submodules (Chisel, FIRRTL, RISC-V tools)
 
 ### Added
-* PR #250 Add support for flow control via Ethernet pause frames.
-* Adds support for runtime-configurable MSHRs.
-* Support for custom FireSim Base AMI (instead of generic FPGA Developer AMI)
-* PR #280. Add support for a FIRESIM_RUNFARM_PREFIX env var to differentiate between runfarms for multiple clones of firesim. 
+* PR #250. Add support for flow control via Ethernet pause frames. 
+* PR #280. Add support for a FIRESIM_RUNFARM_PREFIX env var to differentiate between runfarms for multiple clones of firesim.
     * Resolves #263
-* PR #286 Add support for arbitrary host frequency selection (by synthesizing a new PLL). 
+* PR #286 Add support for arbitrary host frequency selection (by synthesizing a new PLL).
     * Resolves #252
+* PR #287 Add support for runtime-configurable MSHR in FASED
+* PR #290 Add endpoint::finish() to let endpoints run code before simulation teardown
 
 ### Changed
 * PR #261 Print out that post run hook is running, so it doesn't look like simulation termination is stuck.
+* PR #290 Bumps RocketChip from 50bb13d (Sept 25th, '18) to b8baef6 (May 10th, '19)  
+  * Bumps Buildroot in firesim-software; points at upstream
+  * Bumps RISC-V tools; RISC-V toolchain is built directly from build-setup.sh
+    * Resolves #217 
+  * Enables TracerV support by default
 
 ### Fixed
 * PR #275. Fix small root volume size for build instances. 
-    * Increased to 100GB
+    * Increased to 200GB
     * Resolves #274
     * Resolves #265
 * PR #287 Fixes FASED LLC timing model bug.
+* PR #301 Fixes a bug in synthesizable printf cycle prefixes
 
 ### Deprecated
-
 * None
 
 ### Removed
-
 * None
 
 ### Security
-
 * None
-
 
 ## [1.5.0] - 2019-02-24
 
