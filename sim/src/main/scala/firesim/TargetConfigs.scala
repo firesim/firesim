@@ -103,6 +103,11 @@ class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
 // single core config
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
 
+// single core config with L2
+class FireSimRocketChipSingleCoreL2Config extends Config(
+  new WithInclusiveCache ++
+  new FireSimRocketChipSingleCoreConfig)
+
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(
   new WithNDuplicatedRocketCores(2) ++
