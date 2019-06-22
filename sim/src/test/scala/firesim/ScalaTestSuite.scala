@@ -111,8 +111,12 @@ abstract class FireSimTestSuite(
       }
       val resetLength = 50
       val verilatedOutput  = getLines(new File(outDir,  s"/${verilatedLog}"))
-      val synthPrintOutput = getLines(new File(genDir, s"/TRACEFILE"), resetLength + 1)
-      assert(verilatedOutput.size == synthPrintOutput.size, "Outputs differ in length")
+      val synthPrintOutput = getLines(new File(genDir, s"/TRACEFILE"), resetLength)
+      // We allow one extra token in the synthesized log since it may slip
+      // ahead of the rest of the model by a single cycle
+      assert(((verilatedOutput.size + 1) == synthPrintOutput.size)||
+             verilatedOutput.size == synthPrintOutput.size,
+             "Outputs differ in length")
       assert(verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
         assert(vPrint == sPrint)
