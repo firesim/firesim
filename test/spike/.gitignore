@@ -1,3 +1,4 @@
 *.o
 riscv-isa-sim
 spike_local
+hello
