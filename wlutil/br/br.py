@@ -71,10 +71,11 @@ class Builder:
         # extremely rare (it's not even possible for Fedora). The alternative
         # is to have all buildroot-based workloads rebuild the entire
         # dependency chain every time.
-        if os.path.exists(os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")):
-            return True
-        else: 
-            return False
+        return False
+        # if os.path.exists(os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")):
+        #     return True
+        # else: 
+        #     return False
 
         # This is here in case we ever want to switch to "always rebuild" or
         # find a way to fix the br dependency checking
