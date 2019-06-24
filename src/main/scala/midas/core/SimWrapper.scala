@@ -397,11 +397,11 @@ class SimWrapper(targetIo: Seq[(String, Data)],
     target.io.wireTypeMap(chAnno)
   }
 
-  def genWireChannel(chAnno: FAMEChannelConnectionAnnotation): WireChannel[ChLeafType] = {
+  def genWireChannel(chAnno: FAMEChannelConnectionAnnotation, latency: Int = 1): WireChannel[ChLeafType] = {
     require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
     require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
 
-    val channel = Module(new WireChannel(getWireChannelType(chAnno)))
+    val channel = Module(new WireChannel(getWireChannelType(chAnno), latency))
     channel suggestName s"WireChannel_${chAnno.globalName}"
 
     val (srcPort, sinkPort) = target.io.wirePortMap(chAnno)
@@ -491,7 +491,7 @@ class SimWrapper(targetIo: Seq[(String, Data)],
   })
 
   val resetChannel = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == "reset"  => genWireChannel(ch)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == "reset"  => genWireChannel(ch, 0)
   }).get
 
   val resetPort = channelPorts.wireName2port("reset")
