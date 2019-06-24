@@ -109,14 +109,10 @@ abstract class FireSimTestSuite(
         val lines = Source.fromFile(file).getLines.toList
         lines.filter(_.startsWith("TRACEPORT")).drop(dropLines)
       }
-      val resetLength = 50
+      val resetLength = 51
       val verilatedOutput  = getLines(new File(outDir,  s"/${verilatedLog}"))
       val synthPrintOutput = getLines(new File(genDir, s"/TRACEFILE"), resetLength)
-      // We allow one extra token in the synthesized log since it may slip
-      // ahead of the rest of the model by a single cycle
-      assert(((verilatedOutput.size + 1) == synthPrintOutput.size)||
-             verilatedOutput.size == synthPrintOutput.size,
-             "Outputs differ in length")
+      assert(verilatedOutput.size == synthPrintOutput.size, "Outputs differ in length")
       assert(verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
         assert(vPrint == sPrint)
@@ -128,7 +124,7 @@ abstract class FireSimTestSuite(
   mkdirs
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
-  runTest("verilator", "rv64ui-p-simple", false, Seq(s"""EXTRA_SIM_ARGS=+trace-test-output0"""))
+  runTest("vcs", "rv64ui-p-simple", true, Seq(s"""EXTRA_SIM_ARGS=+trace-test-output0"""))
   diffTracelog("rv64ui-p-simple.out")
   runSuite("verilator")(benchmarks)
   runSuite("verilator")(FastBlockdevTests)
