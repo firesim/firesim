@@ -55,39 +55,23 @@ class WireChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bun
 
 class WireChannel[T <: ChLeafType](
     val gen: T,
+    latency: Int,
     clockRatio: IsRationalClockRatio = UnityClockRatio
   )(implicit p: Parameters) extends Module {
 
-  require(clockRatio.isReciprocal || clockRatio.isIntegral)
-  require(p(ChannelLen) >= clockRatio.denominator)
+  require(clockRatio.isUnity)
+  require(latency == 0 || latency == 1)
 
   val io = IO(new WireChannelIO(gen))
   val tokens = Module(new Queue(gen, p(ChannelLen)))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
 
-  // Dequeuing domain is faster; duplicate tokens by dequeuing from the token
-  // queue every N handshakes
-  if (clockRatio.isIntegral && !clockRatio.isUnity) {
-    val deqTokenCount = RegInit((clockRatio.numerator - 1).U(log2Ceil(clockRatio.numerator).W))
-    deqTokenCount.suggestName("deqTokenCount")
-    tokens.io.deq.ready := false.B
-    when (io.out.fire && deqTokenCount =/= 0.U) {
-      deqTokenCount := deqTokenCount - 1.U
-    }.elsewhen(io.out.fire && deqTokenCount === 0.U) {
-      deqTokenCount := (clockRatio.numerator - 1).U
-      tokens.io.deq.ready := true.B
-    }
-  // Dequeuing domain is slower; drop enqueued tokens by ignoring M-1 enqueue handshakes
-  } else if (clockRatio.isReciprocal && !clockRatio.isUnity) {
-    val enqTokenCount = RegInit(0.U(log2Ceil(clockRatio.denominator).W))
-    enqTokenCount.suggestName("enqTokenCount")
-    tokens.io.enq.valid := false.B
-    when (io.in.fire && enqTokenCount =/= 0.U) {
-      enqTokenCount := enqTokenCount - 1.U
-    }.elsewhen(io.in.fire && enqTokenCount === 0.U) {
-      enqTokenCount := (clockRatio.denominator - 1).U
+  if (latency == 1) {
+    val initializing = RegNext(reset.toBool)
+    when(initializing) {
       tokens.io.enq.valid := true.B
+      io.in.ready := false.B
     }
   }
 
@@ -110,7 +94,7 @@ class WireChannelUnitTest(
 
   val payloadWidth = numTokens * clockRatio.numerator
 
-  val dut = Module(new WireChannel(UInt(payloadWidth.W), clockRatio))
+  val dut = Module(new WireChannel(UInt(payloadWidth.W), 1, UnityClockRatio))
   val inputTokenNum       = RegInit(0.U(payloadWidth.W))
   val outputTokenNum      = RegInit(0.U(payloadWidth.W))
   val expectedOutputToken = RegInit(0.U(payloadWidth.W))
@@ -252,6 +236,8 @@ class ReadyValidChannel[T <: Data](
   // 1 = there was a target handshake; 0 = no target handshake
   val tokens = Module(new Queue(Bool(), p(ChannelLen)))
 
+  // Use an additional cycle to populate initial tokens
+  val initializing = RegNext(reset.toBool)
 
   // Consume the enq-fwd token if:
   //  1) the target queue isn't empty -> enq and deq sides can decouple in target-time 
@@ -266,23 +252,23 @@ class ReadyValidChannel[T <: Data](
     io.enq.fwd.hValid,
     doFwdEnq)
 
-  target.reset := reset.toBool || enqFwdHelper.fire && io.targetReset.bits
+  target.reset := reset.toBool || initializing || enqFwdHelper.fire && io.targetReset.bits
   // ENQ DOMAIN LOGIC
   // Enq-fwd token control
   target.io.enq.valid := enqFwdHelper.fire && io.enq.target.valid
   target.io.enq.bits  := io.enq.target.bits
-  tokens.io.enq.valid := enqFwdHelper.fire(tokens.io.enq.ready)
-  tokens.io.enq.bits  := io.enq.target.valid && target.io.enq.ready && !io.targetReset.bits
+  tokens.io.enq.valid := initializing || enqFwdHelper.fire(tokens.io.enq.ready)
+  tokens.io.enq.bits  := !initializing && io.enq.target.valid && target.io.enq.ready && !io.targetReset.bits
 
-  io.enq.fwd.hReady := enqFwdHelper.fire(io.enq.fwd.hValid)
-  io.targetReset.ready := enqFwdHelper.fire(io.targetReset.valid)
+  io.enq.fwd.hReady := !initializing && enqFwdHelper.fire(io.enq.fwd.hValid)
+  io.targetReset.ready := !initializing && enqFwdHelper.fire(io.targetReset.valid)
 
   // Enq-rev token control
   // Assumptions: model a queue with flow = false
   // Simplifications: Only let rev-tokens slip behind fwd-tokens for now.
 
   // Capture ready tokens that would be dropped
-  val readyTokens = Module(new Queue(Bool(), n, flow = false))
+  val readyTokens = Module(new Queue(Bool(), n))
   readyTokens.io.enq.valid := enqFwdHelper.fire && !io.enq.rev.hReady
   readyTokens.io.enq.bits  := target.io.enq.ready
 
@@ -310,7 +296,7 @@ class ReadyValidChannel[T <: Data](
   tokens.io.deq.ready := io.deq.fwd.hReady
   io.deq.fwd.hValid := tokens.io.deq.valid
   io.deq.target.valid := tValid
-  io.deq.rev.hReady := !deqRevSlip
+  io.deq.rev.hReady := !initializing && !deqRevSlip
   io.deq.target.bits  := target.io.deq.bits // fixme: exercise more caution when exposing bits field
 
   val tValidConsumed = io.deq.fwd.fire && tValid &&
