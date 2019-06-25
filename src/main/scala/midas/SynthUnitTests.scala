@@ -19,24 +19,8 @@ class WithAllUnitTests extends Config((site, here, up) => {
     implicit val p = q
     val timeout = 2000000
     Seq(
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
-      Module(new WireChannelUnitTest),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
-      Module(new ReadyValidChannelUnitTest),
+      Module(new WireChannelUnitTest(latency = 0, timeout = timeout)),
+      Module(new WireChannelUnitTest(latency = 1, timeout = timeout)),
       Module(new CounterTableUnitTest),
       Module(new LatencyHistogramUnitTest),
       Module(new AddressRangeCounterUnitTest))
@@ -48,7 +32,7 @@ class WithTimeOutCheck extends Config((site, here, up) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
     Seq(
-      Module(new WireChannelUnitTest(timeout = 100, clockRatio = ReciprocalClockRatio(2))),
+      Module(new WireChannelUnitTest(timeout = 100)),
     )
   }
 })
