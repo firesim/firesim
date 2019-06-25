@@ -113,7 +113,7 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
     make
 
-    # Install firesim-software python libraries
+    # Install firesim-software dependencies 
     cd $RDIR
     sudo pip3 install -r sw/firesim-software/python-requirements.txt
     cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
