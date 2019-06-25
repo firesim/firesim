@@ -1,4 +1,5 @@
 FireMarshal (firesim-software)
+Version 1.6
 ==================================
 
 This tool builds base images for several linux-based distros that work with qemu,
@@ -18,7 +19,8 @@ is not required. To run Firemarshal independently, you will need the following
 dependencies:
 
 ## Standard Packages
-centos-requirements.txt is a list of packages for centos7 that are needed by marshal. You can install these with:
+centos-requirements.txt is a list of packages for centos7 that are needed by
+marshal. You can install these with:
 ```
 cat centos-requirements.txt | sudo xargs yum install -y
 ```
