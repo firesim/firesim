@@ -27,9 +27,9 @@ distribution. You can do this like so:
 This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-disk-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-disk.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated

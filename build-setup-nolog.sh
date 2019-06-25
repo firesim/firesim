@@ -116,6 +116,7 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     # Install firesim-software python libraries
     cd $RDIR
     sudo pip3 install -r sw/firesim-software/python-requirements.txt
+    cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
 
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
