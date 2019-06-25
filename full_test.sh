@@ -40,9 +40,23 @@ fi
 # shouldn't be tested (e.g. we exclude the base configs and some specialized
 # tests)
 echo "Running regular tests" | tee -a $LOGNAME
-BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run)"
+BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike)"
 ./marshal clean test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 ./marshal test test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+else
+  echo "Success" | tee -a $LOGNAME
+fi
+
+# These tests need to run on spike, but not with the initramfs option
+echo "Running bare-metal tests" | tee -a $LOGNAME
+IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs)"
+./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
+# This is a temporary workaround for bug #38
+./marshal build test/spike.json
+./marshal test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
@@ -54,8 +68,6 @@ fi
 # we only run a few tests here to test basic capabilities
 echo "Running initramfs capable tests on spike" | tee -a $LOGNAME
 IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|smoke0)"
-# ls test/$IS_INCLUDE.json
-# exit 0
 ./marshal -i clean test/$IS_INCLUDE.json | tee -a $LOGNAME
 ./marshal -i test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
