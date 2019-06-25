@@ -7,6 +7,8 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 A more detailed account of everything included is included in the dev to master PR for this release: https://github.com/firesim/firesim/pull/262
 The primary change in this release is a Rocket-Chip bump in FireChip and associated submodules (Chisel, FIRRTL, RISC-V tools)
 
+The release also updates firesim-software, see the changelog at sw/firesim-software/CHANGELOG.md for details (PR #303).
+
 ### Added
 * PR #250. Add support for flow control via Ethernet pause frames.
 * PR #280. Add support for a FIRESIM_RUNFARM_PREFIX env var to differentiate between runfarms for multiple clones of firesim.
@@ -15,9 +17,7 @@ The primary change in this release is a Rocket-Chip bump in FireChip and associa
     * Resolves #252
 * PR #287 Add support for runtime-configurable MSHR in FASED
 * PR #290 Add endpoint::finish() to let endpoints run code before simulation teardown
-* firesim-software
-    * PR firesim/firesim-software#31 allows firesim-software to work outside of a firesim environment without the need for sudo (just riscv-tools, qemu, and a few package requirements).
-    * PR firesim/firesim-software#24 adds support for parallel 'launch' or 'test' commands.
+* firesim-software PR firesim/firesim-software#31 allows firesim-software to work outside of a firesim environment without the need for sudo (just riscv-tools, qemu, and a few package requirements).
 
 ### Changed
 * PR #261 Print out that post run hook is running, so it doesn't look like simulation termination is stuck.
@@ -26,10 +26,7 @@ The primary change in this release is a Rocket-Chip bump in FireChip and associa
   * Bumps RISC-V tools; RISC-V toolchain is built directly from build-setup.sh
     * Resolves #217
   * Enables TracerV support by default
-* firesim-software
-  * PR firesim/firesim-software#25 updates buildroot to a more recent version in order to support a more recent version of riscv-tools (as needed by firesim).
-    * PR firesim/firesim-software#32 finalizes the riscv-tools at gcc 7.2
-  * PR firesim/firesim-software#22 enables multiple repository mirrors in the default fedora image
+* firesim-software PR firesim/firesim-software#25 updates buildroot to a more recent version in order to support a more recent version of riscv-tools to match the updated tools in this firesim release.
 
 ### Fixed
 * PR #275. Fix small root volume size for build instances.
@@ -38,11 +35,6 @@ The primary change in this release is a Rocket-Chip bump in FireChip and associa
     * Resolves #265
 * PR #287 Fixes FASED LLC timing model bug.
 * PR #301 Fixes a bug in synthesizable printf cycle prefixes
-* firesim-software
-  * PR firesim/firesim-software#34 resolves firesim/firesim-software#33
-  * PR firesim/firesim-software#29 fixes a number of issues with the full_test.sh script (bug firesim/firesim-software#26 )
-  * PR firesim/firesim-software#28 fixes an incompatibility with python36
-    * Note that firesim/firesim-software#31 officially updated the python version to 3.6, but firesim de facto updated it in an earlier release.
 
 ### Deprecated
 * None
