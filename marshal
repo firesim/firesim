@@ -5,6 +5,10 @@ import os
 import logging
 import wlutil
 import contextlib
+import shutil
+
+if not shutil.which('riscv64-unknown-linux-gnu-gcc'):
+    sys.exit("No riscv toolchain detected. Please install riscv-tools.")
 
 # Delete a file but don't throw an exception if it doesn't exist
 def deleteSafe(pth):
