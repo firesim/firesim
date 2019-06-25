@@ -1,4 +1,5 @@
-python34
-python34-devel
-python34-pip
+python36
+python36-devel
+python36-pip
 rsync
+libguestfs-tools

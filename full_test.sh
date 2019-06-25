@@ -7,6 +7,11 @@ LOGNAME=$(mktemp results_full_test.XXXX)
 
 echo "Running Full Test. Results available in $LOGNAME"
 
+# We pre-build to avoid potential timeouts on a fresh clone
+echo "Pre-building base workloads" | tee -a $LOGNAME
+./marshal build test/br-base.json
+./marshal build test/fedora-base.json
+
 echo "Running launch timeout test (should timeout):" | tee -a $LOGNAME
 echo "This test will reset your terminal"
 ./marshal test test/timeout-run.json | grep "timeout while running"
@@ -28,23 +33,6 @@ if [ ${PIPESTATUS[1]} != 0 ]; then
   SUITE_PASS=false
 else
   echo "Success" | tee -a $LOGNAME
-fi
-
-# Run the specialized tests (tests that are too complicated for ./marshal
-# test)
-echo "Running clean test" | tee -a $LOGNAME
-./test/clean/test.py >> $LOGNAME 
-if [ ${PIPESTATUS[0]} != 0 ]; then
-  echo "Failure" | tee -a $LOGNAME
-  SUITE_PASS=false
-fi
-
-echo "Running incremental test" | tee -a $LOGNAME
-./test/incremental/test.py >> $LOGNAME
-if [ ${PIPESTATUS[0]} != 0 ]; then
-  echo "Failure" | tee -a $LOGNAME
-  SUITE_PASS=false
-  exit 1
 fi
 
 # Run the bulk tests (all work with the 'test' command)
@@ -75,6 +63,23 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
 else
   echo "Success" | tee -a $LOGNAME
+fi
+
+# Run the specialized tests (tests that are too complicated for ./marshal
+# test)
+echo "Running clean test" | tee -a $LOGNAME
+./test/clean/test.py >> $LOGNAME 
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+fi
+
+echo "Running incremental test" | tee -a $LOGNAME
+./test/incremental/test.py >> $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
 fi
 
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
