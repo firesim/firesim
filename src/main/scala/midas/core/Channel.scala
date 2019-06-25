@@ -10,6 +10,7 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.{dontTouch, chiselName}
 
 import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}
@@ -45,8 +46,8 @@ case class IntegralClockRatio(numerator: Int) extends IsRationalClockRatio {
 }
 
 class WireChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
-  val in    = Flipped(Decoupled(gen))
-  val out   = Decoupled(gen)
+  val in    = Flipped(Irrevocable(gen))
+  val out   = Irrevocable(gen)
   val trace = Decoupled(gen)
   val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
   override def cloneType = new WireChannelIO(gen)(p).asInstanceOf[this.type]
@@ -83,64 +84,125 @@ class WireChannel[T <: ChLeafType](
   }
 }
 
+case class IChannelDesc(
+  name: String,
+  reference: Data,
+  modelChannel: IrrevocableIO[Data]) {
+
+  private def tokenSequenceGenerator(typ: Data): Data =
+    Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
+
+  // Generate the testing hardware for a single input channel of a model
+  @chiselName
+  def genEnvironment(testLength: Int): Unit = {
+    val inputGen = tokenSequenceGenerator(reference.cloneType)
+
+    // Drive a new input to the reference on every cycle
+    reference := inputGen
+
+    // Drive tokenzied inputs to the model
+    val inputTokenQueue = Module(new Queue(reference.cloneType, testLength, flow = true))
+    inputTokenQueue.io.enq.bits := reference
+    inputTokenQueue.io.enq.valid := true.B
+
+    // This provides an irrevocable input token stream
+    val stickyTokenValid = Reg(Bool())
+    modelChannel <> inputTokenQueue.io.deq
+    modelChannel.valid := stickyTokenValid && inputTokenQueue.io.deq.valid
+    inputTokenQueue.io.deq.ready := stickyTokenValid && modelChannel.ready
+
+    when (modelChannel.fire || ~stickyTokenValid) {
+      stickyTokenValid := LFSR64()(1)
+    }
+  }
+}
+
+case class OChannelDesc(
+  name: String,
+  reference: Data,
+  modelChannel: IrrevocableIO[Data],
+  comparisonFunc: (Data, IrrevocableIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
+
+  // Generate the testing hardware for a single output channel of a model
+  @chiselName
+  def genEnvironment(testLength: Int): Bool = {
+    val refOutputs = Module(new Queue(reference.cloneType, testLength, flow = true))
+    val refIdx   = RegInit(0.U(log2Ceil(testLength + 1).W))
+    val modelIdx = RegInit(0.U(log2Ceil(testLength + 1).W))
+
+    val hValidPrev = RegNext(modelChannel.valid, false.B)
+    val hReadyPrev = RegNext(modelChannel.ready)
+    val hFirePrev = hValidPrev && hReadyPrev
+    val prefix = ""
+    //suggestedName match {
+    //  case Some(name) => name + ": "
+    //  case None => ""
+    //}
+
+    // Collect outputs from the reference RTL
+    refOutputs.io.enq.valid := true.B
+    refOutputs.io.enq.bits := reference
+
+    // Check output channel conditions
+    assert(!hValidPrev || hFirePrev || modelChannel.valid,
+      s"${prefix}hValid de-asserted without handshake, violating output token irrevocability")
+
+    assert(comparisonFunc(refOutputs.io.deq.bits, modelChannel), "Output token traces did not match")
+
+    val modelChannelDone = modelIdx === testLength.U
+    when (modelChannel.fire) { modelIdx := modelIdx + 1.U }
+    refOutputs.io.deq.ready := modelChannel.fire
+
+    // Fuzz backpressure on the token channel
+    modelChannel.ready := LFSR64()(1) & !modelChannelDone
+
+    // Return the done signal
+    modelChannelDone
+  }
+}
+
+object DirectedLIBDNTestHelper{
+  def ignoreNTokens(numTokens: Int)(ref: Data, ch: IrrevocableIO[Data]): Bool = {
+    val count = RegInit(0.U(32.W))
+    when (ch.fire) { count := count + 1.U }
+    !ch.fire || count < numTokens.U || ref.asUInt === ch.bits.asUInt
+  }
+
+  @chiselName
+  def apply(
+      inputChannelMapping:  Seq[IChannelDesc],
+      outputChannelMapping: Seq[OChannelDesc],
+      testLength: Int = 4096): Bool = {
+    inputChannelMapping.foreach(_.genEnvironment(testLength))
+    val finished = outputChannelMapping.map(_.genEnvironment(testLength)).foldLeft(true.B)(_ && _)
+    finished
+  }
+}
+
 class WireChannelUnitTest(
-    clockRatio: IsRationalClockRatio = UnityClockRatio,
+    latency: Int = 0,
     numTokens: Int = 4096,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
 
-  require(clockRatio.isReciprocal || clockRatio.isIntegral)
-  override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+  override val testName = "WireChannel Unit Test"
+  val payloadWidth = 8
+  val dut = Module(new WireChannel(UInt(payloadWidth.W), latency, UnityClockRatio))
+  val referenceInput  = Wire(UInt(payloadWidth.W))
+  val referenceOutput = ShiftRegister(referenceInput, latency)
 
-  val payloadWidth = numTokens * clockRatio.numerator
+  val inputChannelMapping = Seq(IChannelDesc("in", referenceInput, dut.io.in))
+  val outputChannelMapping = Seq(OChannelDesc("out", referenceOutput, dut.io.out, DirectedLIBDNTestHelper.ignoreNTokens(1)))
 
-  val dut = Module(new WireChannel(UInt(payloadWidth.W), 1, UnityClockRatio))
-  val inputTokenNum       = RegInit(0.U(payloadWidth.W))
-  val outputTokenNum      = RegInit(0.U(payloadWidth.W))
-  val expectedOutputToken = RegInit(0.U(payloadWidth.W))
-  val outputDuplicatesRemaining = RegInit((clockRatio.numerator - 1).U)
-
-  val outputReadyFuzz = LFSR64()(0)
-  val inputValidFuzz = LFSR64()(0)
-
-  val finished = RegInit(false.B)
-
-  dut.io.in.bits := inputTokenNum
-  dut.io.in.valid  := inputValidFuzz
-  dut.io.out.ready := outputReadyFuzz && !finished
+  io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 
   dut.io.traceLen := DontCare
   dut.io.trace.ready := DontCare
-
-
-  when (dut.io.in.fire) {
-    inputTokenNum := inputTokenNum + 1.U
-  }
-
-  when (dut.io.out.fire) {
-    assert(finished || dut.io.out.bits === expectedOutputToken, "Output token does not match expected value")
-
-    outputTokenNum := outputTokenNum + 1.U
-    outputDuplicatesRemaining := Mux(outputDuplicatesRemaining === 0.U,
-                                     (clockRatio.numerator-1).U,
-                                     outputDuplicatesRemaining - 1.U)
-    if (clockRatio.isIntegral) {
-      expectedOutputToken := Mux(outputDuplicatesRemaining === 0.U,
-                                 expectedOutputToken + 1.U,
-                                 expectedOutputToken)
-    } else {
-      expectedOutputToken := expectedOutputToken + clockRatio.denominator.U
-    }
-
-    finished := finished || outputTokenNum === (numTokens-1).U
-  }
-
-  io.finished := finished
 }
 
 // A bidirectional token channel wrapping a target-decoupled (ready-valid) interface
 // Structurally, this keeps the target bundle intact however it should really be thought of as:
-// two *independent*token channels
+// two *independent* token channels
 // fwd: DecoupledIO (carries a combined valid-and-payload token)
 //  - valid -> fwd.hValid
 //  - ready -> fwd.hReady
@@ -390,14 +452,13 @@ class ReadyValidChannelUnitTest(
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
 
-  // TODO: FIXME
+  require(clockRatio.isUnity)
+  override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+
+  val payloadWidth = log2Ceil(numNonEmptyTokens + 1)
+
   io.finished := true.B
-  //require(clockRatio.isReciprocal || clockRatio.isIntegral)
-  //override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
-
-  //val payloadWidth = log2Ceil(numNonEmptyTokens + 1)
-
-  //val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), flipped = false, clockRatio = clockRatio))
+  //val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), clockRatio = clockRatio))
   //// Count host-level handshakes on tokens
   //val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))
   //val outputTokenNum     = RegInit(0.U(log2Ceil(timeout).W))
@@ -415,72 +476,29 @@ class ReadyValidChannelUnitTest(
   //val inputTokenPayload   = RegInit(0.U(payloadWidth.W))
   //val expectedOutputPayload = RegInit(0.U(payloadWidth.W))
 
-  //val outputHReadyFuzz = LFSR64()(0) // Payload & valid token ready
-  //val outputHValidFuzz = LFSR64()(0) // Ready token valid
-  //val outputTReadyFuzz = LFSR64()(0) // Ready token value
-  //val inputHValidFuzz  = LFSR64()(0) // Payload & valid token valid
-  //val inputTValidFuzz  = LFSR64()(0) // Valid-token value
-  //val inputHReadyFuzz  = LFSR64()(0) // Ready-token ready
+  //val outputFwdHReadyFuzz = LFSR64()(0) // Payload & valid token ready
+  //val outputRevHValidFuzz = LFSR64()(0) // Ready token valid
+  //val outputRevTReadyFuzz = LFSR64()(0) // Ready token value
+  //val inputFwdHValidFuzz  = LFSR64()(0) // Payload & valid token valid
+  //val inputFwdTValidFuzz  = LFSR64()(0) // Valid-token value
+  //val inputRevHReadyFuzz  = LFSR64()(0) // Ready-token ready
 
   //val finished = RegInit(false.B)
 
-  //dut.io.enq.fwd.hValid    := inputHValidFuzz
-  //dut.io.enq.rev.hReady    := inputHReadyFuzz
-  //dut.io.enq.target.valid  := inputTValidFuzz
-  //dut.io.enq.target.bits   := inputTokenPayload
-
-  //dut.io.deq.fwd.hReady   := outputHReadyFuzz && !finished
-  //dut.io.deq.rev.hValid   := outputHValidFuzz && !finished
-  //dut.io.deq.target.ready := outputTReadyFuzz && !finished
-
-  //dut.io.traceLen := DontCare
-  //dut.io.trace.ready := DontCare
-
-  //when (dut.io.enq.fwd.fire) {
-  //  inputTokenNum := inputTokenNum + 1.U
-
-  //  when ( dut.io.enq.target.fire) {
-  //    inputTokenPayload := inputTokenPayload + 1.U
-  //  }
-  //}
-
-  //val (lowerTokenBound, upperTokenBound) = if (clockRatio.isIntegral) {
-  //  val lB = Mux( inputTokenNum > p(ChannelLen).U,
-  //               (inputTokenNum - p(ChannelLen).U)  * clockRatio.numerator.U,
-  //                0.U)
-  //  val uB = inputTokenNum * clockRatio.numerator.U
-  //  (lB, uB)
-  //} else {
-  //  // The channel requires only a single input token after reset to produce its output token
-  //  val uB = (inputTokenNum + (clockRatio.denominator - 1).U) / clockRatio.denominator.U 
-  //  val lB = Mux(uB > p(ChannelLen).U,
-  //               uB - p(ChannelLen).U,
-  //               0.U)
-  //  (lB, uB)
-  //}
-
-  //when (dut.io.deq.fwd.fire) {
-  //  outputTokenNum := outputTokenNum + 1.U
-
-  //  assert(finished || outputTokenNum <= upperTokenBound, "Received too many output tokens.")
-  //  assert(finished || outputTokenNum >= lowerTokenBound, "Received too few output tokens.")
-
-  //  // Check the target-data
-  //  when (dut.io.deq.fwdtarget.fire) {
-  //    assert(finished || dut.io.deq.target.bits === expectedOutputPayload, "Output token does not match expected value")
-  //    expectedOutputPayload := expectedOutputPayload + 1.U //clockRatio.denominator.U
-
-  //    finished := finished || expectedOutputPayload === (numNonEmptyTokens - 1).U
-  //  }
-  //}
+  //dut.io.deq.fwdIrrevocabilityAssertions(Some("deq."))
+  //dut.io.enq.fwdIrrevocabilityAssertions(Some("enq."))
+  //dut.io.deq.revIrrevocabilityAssertions(Some("deq."))
+  //dut.io.enq.revIrrevocabilityAssertions(Some("enq."))
 
   //io.finished := finished
 
-  //dut.io.traceLen := DontCare
-  //dut.io.traceLen := DontCare
   //// TODO: FIXME
   //dut.io.targetReset.valid := reset.toBool()
   //dut.io.targetReset.bits := reset.toBool()
+
+
+  //dut.io.traceLen := DontCare
+  //dut.io.traceLen := DontCare
   //dut.io.trace.ready.ready := DontCare
   //dut.io.trace.valid.ready := DontCare
   //dut.io.trace.bits.ready := DontCare
