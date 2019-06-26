@@ -18,7 +18,7 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink)
 #define SHMEM_EXTRABYTES 1
 
     // create shared memory regions
-    char name[100];
+    char name[120];
     int shmemfd;
 
     char * recvdirection;
