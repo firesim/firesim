@@ -10,7 +10,7 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{dontTouch, chiselName}
+import chisel3.experimental.{dontTouch, chiselName, MultiIOModule}
 
 import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}
@@ -46,8 +46,8 @@ case class IntegralClockRatio(numerator: Int) extends IsRationalClockRatio {
 }
 
 class WireChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
-  val in    = Flipped(Irrevocable(gen))
-  val out   = Irrevocable(gen)
+  val in    = Flipped(Decoupled(gen))
+  val out   = Decoupled(gen)
   val trace = Decoupled(gen)
   val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
   override def cloneType = new WireChannelIO(gen)(p).asInstanceOf[this.type]
@@ -87,7 +87,7 @@ class WireChannel[T <: ChLeafType](
 case class IChannelDesc(
   name: String,
   reference: Data,
-  modelChannel: IrrevocableIO[Data]) {
+  modelChannel: DecoupledIO[Data]) {
 
   private def tokenSequenceGenerator(typ: Data): Data =
     Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
@@ -120,8 +120,8 @@ case class IChannelDesc(
 case class OChannelDesc(
   name: String,
   reference: Data,
-  modelChannel: IrrevocableIO[Data],
-  comparisonFunc: (Data, IrrevocableIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
+  modelChannel: DecoupledIO[Data],
+  comparisonFunc: (Data, DecoupledIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
 
   // Generate the testing hardware for a single output channel of a model
   @chiselName
@@ -133,7 +133,6 @@ case class OChannelDesc(
     val hValidPrev = RegNext(modelChannel.valid, false.B)
     val hReadyPrev = RegNext(modelChannel.ready)
     val hFirePrev = hValidPrev && hReadyPrev
-    val prefix = ""
     //suggestedName match {
     //  case Some(name) => name + ": "
     //  case None => ""
@@ -143,11 +142,10 @@ case class OChannelDesc(
     refOutputs.io.enq.valid := true.B
     refOutputs.io.enq.bits := reference
 
-    // Check output channel conditions
+    assert(comparisonFunc(refOutputs.io.deq.bits, modelChannel),
+      s"${name} Channel: Output token traces did not match")
     assert(!hValidPrev || hFirePrev || modelChannel.valid,
-      s"${prefix}hValid de-asserted without handshake, violating output token irrevocability")
-
-    assert(comparisonFunc(refOutputs.io.deq.bits, modelChannel), "Output token traces did not match")
+      s"${name} Channel: hValid de-asserted without handshake, violating output token irrevocability")
 
     val modelChannelDone = modelIdx === testLength.U
     when (modelChannel.fire) { modelIdx := modelIdx + 1.U }
@@ -162,7 +160,7 @@ case class OChannelDesc(
 }
 
 object DirectedLIBDNTestHelper{
-  def ignoreNTokens(numTokens: Int)(ref: Data, ch: IrrevocableIO[Data]): Bool = {
+  def ignoreNTokens(numTokens: Int)(ref: Data, ch: DecoupledIO[Data]): Bool = {
     val count = RegInit(0.U(32.W))
     when (ch.fire) { count := count + 1.U }
     !ch.fire || count < numTokens.U || ref.asUInt === ch.bits.asUInt
@@ -256,6 +254,50 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
       s"${prefix}hReady de-asserted, violating token irrevocability")
     assert(hFirePrev || !hReadyPrev || tReadyPrev === target.ready,
       s"${prefix}tReady de-asserted, violating token irrevocability")
+  }
+
+  // Returns two directioned objects driven by this SimReadyValidIO hw instance
+  def bifurcate(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
+    // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
+    class BifurcationModule[T <: Data](gen: T) extends MultiIOModule {
+      val fwd = IO(Decoupled(Valid(gen)))
+      val rev = IO(Flipped(DecoupledIO(Bool())))
+      val coupled = IO(Flipped(cloneType))
+      // Forward channel
+      fwd.bits.bits  := coupled.target.bits
+      fwd.bits.valid := coupled.target.valid
+      fwd.valid      := coupled.fwd.hValid
+      coupled.fwd.hReady := fwd.ready
+      // Reverse channel
+      rev.ready := coupled.rev.hReady
+      coupled.target.ready := rev.bits
+      coupled.rev.hValid   := rev.valid
+    }
+    val bifurcator = Module(new BifurcationModule(gen))
+    bifurcator.coupled <> this
+    (bifurcator.fwd, bifurcator.rev)
+  }
+
+  // Returns two directioned objects which will drive this SimReadyValidIO hw instance
+  def combine(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
+    // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
+    class CombiningModule[T <: Data](gen: T) extends MultiIOModule {
+      val fwd = IO(Flipped(DecoupledIO(Valid(gen))))
+      val rev = IO((Decoupled(Bool())))
+      val coupled = IO(cloneType)
+      // Forward channel
+      coupled.target.bits := fwd.bits.bits
+      coupled.target.valid := fwd.bits.valid
+      coupled.fwd.hValid := fwd.valid
+      fwd.ready := coupled.fwd.hReady
+      // Reverse channel
+      coupled.rev.hReady := rev.ready
+      rev.bits := coupled.target.ready
+      rev.valid := coupled.rev.hValid
+    }
+    val combiner = Module(new CombiningModule(gen))
+    this <> combiner.coupled
+    (combiner.fwd, combiner.rev)
   }
 }
 
@@ -447,19 +489,39 @@ class ReadyValidChannel[T <: Data](
 }
 
 class ReadyValidChannelUnitTest(
-    clockRatio: IsRationalClockRatio = UnityClockRatio,
-    numNonEmptyTokens: Int = 2048,
+    numTokens: Int = 4096,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
-
-  require(clockRatio.isUnity)
   override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
 
-  val payloadWidth = log2Ceil(numNonEmptyTokens + 1)
+  val payloadType = UInt(8.W)
 
-  io.finished := true.B
-  //val dut = Module(new ReadyValidChannel(UInt(payloadWidth.W), clockRatio = clockRatio))
+  val dut = Module(new ReadyValidChannel(payloadType))
+  val reference = Module(new Queue(payloadType, 2))
+
+  val (deqFwd, deqRev) = dut.io.deq.bifurcate()
+  val (enqFwd, enqRev) = dut.io.enq.combine()
+
+  val refDeqFwd = Wire(Valid(payloadType))
+  refDeqFwd.bits := reference.io.deq.bits
+  refDeqFwd.valid := reference.io.deq.valid
+  val refEnqFwd = Wire(Valid(payloadType))
+  reference.io.enq.bits := refEnqFwd.bits
+  reference.io.enq.valid := refEnqFwd.valid
+
+  val inputChannelMapping = Seq(IChannelDesc("enqFwd", refEnqFwd, enqFwd),
+                                IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
+                                IChannelDesc("reset" , reference.reset.toBool, dut.io.targetReset))
+
+  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd),
+                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev))
+
+  io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
+
+  dut.io.traceLen := DontCare
+  dut.io.trace.ready := DontCare
   //// Count host-level handshakes on tokens
+  //
   //val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))
   //val outputTokenNum     = RegInit(0.U(log2Ceil(timeout).W))
 
