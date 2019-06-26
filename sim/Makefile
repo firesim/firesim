@@ -19,7 +19,7 @@ default: compile
 
 SBT ?= sbt
 JVM_MEMORY ?= 16G
-SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++2.12.4
+SBT_FLAGS := -J-Xmx$(JVM_MEMORY) $(SBT_FLAGS) ++2.12.4
 
 firesim_base_dir := $(abspath .)
 
