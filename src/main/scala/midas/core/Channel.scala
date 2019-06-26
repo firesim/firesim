@@ -87,7 +87,8 @@ class WireChannel[T <: ChLeafType](
 case class IChannelDesc(
   name: String,
   reference: Data,
-  modelChannel: DecoupledIO[Data]) {
+  modelChannel: DecoupledIO[Data],
+  tokenGenFunc: Option[() => Data] = None) {
 
   private def tokenSequenceGenerator(typ: Data): Data =
     Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
@@ -95,7 +96,7 @@ case class IChannelDesc(
   // Generate the testing hardware for a single input channel of a model
   @chiselName
   def genEnvironment(testLength: Int): Unit = {
-    val inputGen = tokenSequenceGenerator(reference.cloneType)
+    val inputGen = tokenGenFunc.getOrElse(() => tokenSequenceGenerator(reference.cloneType))()
 
     // Drive a new input to the reference on every cycle
     reference := inputGen
@@ -495,9 +496,18 @@ class ReadyValidChannelUnitTest(
   override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
 
   val payloadType = UInt(8.W)
+  val resetLength = 4
 
   val dut = Module(new ReadyValidChannel(payloadType))
   val reference = Module(new Queue(payloadType, 2))
+
+  // Generates target-reset tokens
+  def resetTokenGen(): Bool = {
+    val resetCount = RegInit(0.U(log2Ceil(resetLength + 1).W))
+    val outOfReset = resetCount === resetLength.U
+    resetCount := Mux(outOfReset, resetCount, resetCount + 1.U)
+    !outOfReset
+  }
 
   val (deqFwd, deqRev) = dut.io.deq.bifurcate()
   val (enqFwd, enqRev) = dut.io.enq.combine()
@@ -511,15 +521,19 @@ class ReadyValidChannelUnitTest(
 
   val inputChannelMapping = Seq(IChannelDesc("enqFwd", refEnqFwd, enqFwd),
                                 IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
-                                IChannelDesc("reset" , reference.reset.toBool, dut.io.targetReset))
+                                IChannelDesc("reset" , reference.reset, dut.io.targetReset, Some(resetTokenGen)))
 
-  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd),
-                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev))
+  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, DirectedLIBDNTestHelper.ignoreNTokens(resetLength)),
+                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev, DirectedLIBDNTestHelper.ignoreNTokens(resetLength)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 
   dut.io.traceLen := DontCare
-  dut.io.trace.ready := DontCare
+  dut.io.traceLen := DontCare
+  dut.io.trace.ready.ready := DontCare
+  dut.io.trace.valid.ready := DontCare
+  dut.io.trace.bits.ready := DontCare
+  dut.io.traceLen := DontCare
   //// Count host-level handshakes on tokens
   //
   //val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))

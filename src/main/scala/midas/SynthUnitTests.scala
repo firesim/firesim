@@ -21,6 +21,7 @@ class WithAllUnitTests extends Config((site, here, up) => {
     Seq(
       Module(new WireChannelUnitTest(latency = 0, timeout = timeout)),
       Module(new WireChannelUnitTest(latency = 1, timeout = timeout)),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout)),
       Module(new CounterTableUnitTest),
       Module(new LatencyHistogramUnitTest),
       Module(new AddressRangeCounterUnitTest))
