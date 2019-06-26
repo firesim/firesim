@@ -13,6 +13,7 @@ import freechips.rocketchip.devices.debug.DebugModuleParams
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig, MemBenchKey, MemBenchParams}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
+import sifive.blocks.inclusivecache.InclusiveCachePortParameters
 import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
@@ -224,6 +225,11 @@ class FireSimPrefetcherDualCoreConfig extends Config(
 class FireSimPrefetcherQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimPrefetcherConfig)
 
+class WithInclusiveCacheInnerExteriorBuffer(cfg: InclusiveCachePortParameters)
+  extends Config((site, here, up) => {
+    case InclusiveCacheKey => up(InclusiveCacheKey).copy(bufInnerExterior=cfg)
+  })
+
 class FireSimDRAMCacheConfig extends Config(
   new WithPrefetchRoCC ++
   new WithMemBenchKey ++
@@ -233,6 +239,13 @@ class FireSimDRAMCacheConfig extends Config(
     nBanks = 4,
     capacityKB = 1024,
     outerLatencyCycles = 50) ++
+  new WithInclusiveCacheInnerExteriorBuffer(
+    InclusiveCachePortParameters(
+      a = BufferParams(8),
+      b = BufferParams.none,
+      c = BufferParams.none,
+      d = BufferParams.flow,
+      e = BufferParams.none)) ++
   new FireSimRocketChipConfig)
 
 class FireSimDRAMCacheSingleCoreConfig extends Config(
