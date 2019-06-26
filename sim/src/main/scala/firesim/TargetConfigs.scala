@@ -3,9 +3,10 @@ package firesim.firesim
 import chisel3._
 import chisel3.util.{log2Up}
 import freechips.rocketchip.config.{Parameters, Config}
-import freechips.rocketchip.diplomacy.{LazyModule, ValName}
+import freechips.rocketchip.diplomacy.{LazyModule, ValName, BufferParams}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem.WithInclusiveCache
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.devices.debug.DebugModuleParams
@@ -16,7 +17,7 @@ import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
 import memblade.cache.{DRAMCacheKey, DRAMCacheConfig, RemoteAccessDepths, WritebackDepths, MemoryQueueParams}
-import memblade.prefetcher.{PrefetchRoCC, PrefetchConfig}
+import memblade.prefetcher.{PrefetchRoCC, PrefetchConfig, StreamBufferConfig}
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -74,9 +75,16 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
     chunkBytes = site(CacheBlockBytes),
     logAddrBits = 37,
     outIdBits = 4,
+    prefetch = Some(StreamBufferConfig(
+      nBuffers = 4,
+      nBlocks = 16,
+      hitThreshold = 1,
+      reqQueue = 4,
+      timeoutPeriod = 4096)),
     remAccessQueue = RemoteAccessDepths(1, 2, 1, 2),
     wbQueue = WritebackDepths(1, 1),
-    memInQueue = MemoryQueueParams(2, 2, 1, 8, 2, 1),
+    memInQueue = MemoryQueueParams(8, 2, 8, 2, 8, 2),
+    memOutQueue = MemoryQueueParams(2, 2, 2, 2, 2, 2),
     zeroMetadata = false)
 })
 
@@ -89,7 +97,8 @@ class WithPrefetchRoCC extends Config((site, here, up) => {
     implicit val p = q
     implicit val valName = ValName("FireSim")
     LazyModule(new PrefetchRoCC(
-      OpcodeSet.custom2, new PrefetchConfig(useGetPut = true)))
+      OpcodeSet.custom2,
+      PrefetchConfig(nMemXacts = 32, nBackends = 2)))
   })
 })
 
@@ -220,6 +229,10 @@ class FireSimDRAMCacheConfig extends Config(
   new WithMemBenchKey ++
   new WithDRAMCacheKey ++
   new WithExtMemSize(15L << 30) ++
+  new WithInclusiveCache(
+    nBanks = 4,
+    capacityKB = 1024,
+    outerLatencyCycles = 50) ++
   new FireSimRocketChipConfig)
 
 class FireSimDRAMCacheSingleCoreConfig extends Config(
@@ -308,4 +321,3 @@ class SupernodeFireSimRocketChipOctaCoreConfig extends Config(
   new WithNumNodes(4) ++
   new WithExtMemSize(0x200000000L) ++ // 8GB
   new FireSimRocketChipOctaCoreConfig)
-
