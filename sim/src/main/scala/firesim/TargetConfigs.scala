@@ -187,9 +187,6 @@ class FireSimRocketChipOctaCoreConfig extends Config(
   new WithNDuplicatedRocketCores(8) ++
   new FireSimRocketChipSingleCoreConfig)
 
-class FireSimRocketChipOctaCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipOctaCoreConfig)
-
 class FireSimMemBladeConfig extends Config(
   new WithMemBladeKey ++ new FireSimRocketChipConfig)
 
