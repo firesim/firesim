@@ -91,6 +91,7 @@ verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
+vcs_args = +vcs+initreg+0
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 
@@ -106,12 +107,12 @@ run-verilator-debug: $(verilator_debug)
 
 run-vcs: $(vcs)
 	cd $(dir $<) && \
-	$(vcs) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(vcs) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
 
 run-vcs-debug: $(vcs_debug)
 	cd $(dir $<) && \
-	$(vcs_debug) +permissive +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
 
 run-xsim: $(xsim)
