@@ -119,7 +119,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           channels foreach (_.ready := port.toHost.hReady)
           valid ++= channels map (_.valid)
       }
-      case _ => throw new RuntimeException("Uexpected type tuple in channels2Port")
+      case (t: Clock, c: Clock) => throw new RuntimeException(s"Unexpected Clock in token channels: $c")
     }
 
     loop(port.hBits -> wires)

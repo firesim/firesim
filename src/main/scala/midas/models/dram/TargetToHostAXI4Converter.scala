@@ -45,7 +45,7 @@ class TargetToHostAXI4Converter (
   } else {
     // Otherwise we need to convert to TL2 and back
     val xbar = LazyModule(new TLXbar)
-    val error = LazyModule(new TLError(ErrorParams(
+    val error = LazyModule(new TLError(DevNullParams(
       Seq(AddressSet(BigInt(1) << mWidths.addrBits, 0xff)), maxAtomic = 1, maxTransfer = 128),
       beatBytes = sWidths.dataBits/8))
 

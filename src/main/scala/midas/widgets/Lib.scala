@@ -112,10 +112,10 @@ class MultiQueueIO[T <: Data](private val gen: T, val numQueues: Int, entries: I
 class MultiQueue[T <: Data](
     gen: T,
     val numQueues: Int,
-    val entries: Int
+    requestedEntries: Int
     ) extends Module {
 
-  require(isPow2(entries))
+  val entries = 1 << log2Ceil(requestedEntries)
   val io = IO(new MultiQueueIO(gen, numQueues, entries))
   io.count := DontCare
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
@@ -368,9 +368,10 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   }
 
   io.mcr.write foreach { w => w.valid := false.B; w.bits := wData }
-  io.mcr.read foreach { _.ready := false.B }
   io.mcr.write(wAddr).valid := awFired && wFired && ~wCommited
-  io.mcr.read(rAddr).ready := arFired && io.nasti.r.ready
+  io.mcr.read.zipWithIndex foreach { case (decoupled, idx: Int) =>
+    decoupled.ready := (rAddr === idx.U) && arFired && io.nasti.r.ready
+  }
 
   io.nasti.r.bits := NastiReadDataChannel(rId, io.mcr.read(rAddr).bits)
   io.nasti.r.valid := arFired && io.mcr.read(rAddr).valid
