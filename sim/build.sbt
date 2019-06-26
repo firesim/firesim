@@ -61,7 +61,9 @@ lazy val sifiveip   = (project in fireChipDir / "sifive-blocks")
   .settings(commonSettings)
   .dependsOn(rocketchip)
 lazy val sifivecache = (project in fireChipDir / "block-inclusivecache-sifive")
-  .settings(commonSettings)
+  .settings(
+    commonSettings,
+    scalaSource in Compile := baseDirectory.value / "craft")
   .dependsOn(rocketchip)
 lazy val testchipip = (project in fireChipDir / "testchipip")
   .settings(commonSettings)

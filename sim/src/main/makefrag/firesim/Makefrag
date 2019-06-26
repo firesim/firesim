@@ -31,7 +31,7 @@ submodules = . midas firrtl \
 
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
-chisel_srcs += $(shell find target-rtl/block-inclusivecache-sifive/craft/inclusivecache/src -name "*.scala")
+chisel_srcs += $(shell find target-rtl/firechip/block-inclusivecache-sifive/craft/inclusivecache/src -name "*.scala")
 
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
