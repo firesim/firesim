@@ -6,7 +6,7 @@ import numpy as np
 import re
 import sys
 
-DATA_RE = re.compile(r"^packet timestamp: (\d+), len: (\d+)\r$")
+DATA_RE = re.compile(r"^packet timestamp: (\d+), len: (\d+), receiver: (\d+)\r$")
 TIME_STEP = 100000
 CYCLES_PER_NANO = 3.2
 CYCLES_PER_MILLI = CYCLES_PER_NANO * 1e6
@@ -20,7 +20,7 @@ def parse_log(f):
     for line in f:
         match = DATA_RE.match(line)
         if match:
-            tss, lens = match.groups()
+            tss, lens = match.group(1, 2)
             yield (int(tss), int(lens))
 
 def compute_bw(packet_data):

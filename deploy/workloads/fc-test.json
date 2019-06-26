@@ -1,0 +1,19 @@
+{
+  "benchmark_name" : "fc-test",
+  "common_simulation_outputs" : ["uartlog"],
+  "common_rootfs" : null,
+  "workloads" : [
+    {
+      "name" : "fc-client",
+      "bootbinary" : "fc-client.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    },
+    {
+      "name" : "fc-server",
+      "bootbinary" : "fc-server.riscv",
+      "simulation_outputs": [],
+      "outputs" : []
+    }
+  ]
+}

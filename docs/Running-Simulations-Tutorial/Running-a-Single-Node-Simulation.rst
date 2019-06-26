@@ -123,7 +123,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	runfarmtag=mainrunfarm
 
 	f1_16xlarges=0
-	f1_4xlarges=1
+	f1_4xlarges=0
 	m4_16xlarges=0
 	f1_2xlarges=1
 

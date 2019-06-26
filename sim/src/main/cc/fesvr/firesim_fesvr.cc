@@ -15,7 +15,7 @@ int firesim_fesvr_t::host_thread(void *arg)
     return 0;
 }
 
-firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string>& args) : htif_t(args)
+firesim_fesvr_t::firesim_fesvr_t(const std::vector<std::string> args) : htif_t(args)
 {
     is_loadmem = false;
     is_busy = false;

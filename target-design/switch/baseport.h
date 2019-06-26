@@ -1,3 +1,9 @@
+#define FLIT_BITS 64
+#define BITTIME_PER_QUANTA 512
+#define CYCLES_PER_QUANTA (BITTIME_PER_QUANTA / FLIT_BITS)
+
+#define MAC_ETHTYPE 0x8808
+#define PAUSE_CONTROL 0x0001
 
 struct switchpacket {
     uint64_t timestamp;
@@ -26,7 +32,7 @@ class BasePort {
         uint8_t * current_input_buf; // current input buf
         uint8_t * current_output_buf; // current output buf
 
-
+        int pauseCycles = 0;
         int recv_buf_port_map = -1; // used when frame crosses batching boundary. the last port that fed this port's send buf
 
         switchpacket * input_in_progress = NULL;
@@ -34,6 +40,8 @@ class BasePort {
 
         std::queue<switchpacket*> inputqueue;
         std::queue<switchpacket*> outputqueue;
+
+        int push_input(switchpacket *sp);
 
     protected:
         int _portNo;
@@ -43,6 +51,30 @@ class BasePort {
 BasePort::BasePort(int portNo, bool throttle)
     : _portNo(portNo), _throttle(throttle)
 {
+}
+
+int BasePort::push_input(switchpacket *sp)
+{
+    int ethtype, ctrl, quanta;
+
+    // Packets smaller than three flits are too small to be valid
+    if (sp->amtwritten < 3) {
+        printf("Warning: dropped packet with only %d flits\n", sp->amtwritten);
+        return 0;
+    }
+
+    ethtype = ntohs((sp->dat[1] >> 48) & 0xffff);
+    ctrl = ntohs(sp->dat[2] & 0xffff);
+    quanta = ntohs((sp->dat[2] >> 16) & 0xffff);
+
+    if (ethtype == MAC_ETHTYPE && ctrl == PAUSE_CONTROL) {
+        this->pauseCycles = quanta * CYCLES_PER_QUANTA;
+        printf("Pause %d for %d cycles\n", _portNo, pauseCycles);
+        return 0;
+    }
+
+    inputqueue.push(sp);
+    return 1;
 }
 
 // assumes valid
@@ -55,11 +87,12 @@ void BasePort::write_flits_to_output() {
     // things off of its front until we can no longer fit them (either due
     // to congestion, crossing a batch boundary (TODO fix this), or timing.
 
-    uint64_t flitswritten = 0;
+    uint64_t flitswritten = std::min(this->pauseCycles, LINKLATENCY);
     uint64_t basetime = this_iter_cycles_start;
     uint64_t maxtime = this_iter_cycles_start + LINKLATENCY;
-
     bool empty_buf = true;
+
+    this->pauseCycles -= flitswritten;
 
     while (!(outputqueue.empty())) {
         switchpacket *thispacket = outputqueue.front();
@@ -89,8 +122,14 @@ void BasePort::write_flits_to_output() {
             uint64_t timestampdiff = outputtimestamp > basetime ? outputtimestamp - basetime : 0L;
             flitswritten = std::max(flitswritten, timestampdiff);
 
-            printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", outputtimestamp, basetime + flitswritten, (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
             int i = thispacket->amtread;
+            if (i == 0) {
+                //printf("intended timestamp: %ld, actual timestamp: %ld, diff %ld\n", 
+                //        outputtimestamp, basetime + flitswritten, 
+                //        (int64_t)(basetime + flitswritten) - (int64_t)(outputtimestamp));
+                printf("packet timestamp: %ld, len: %ld, receiver: %d\n",
+                        basetime + flitswritten, thispacket->amtwritten, _portNo);
+            }
             for (;(i < thispacket->amtwritten) && (flitswritten < LINKLATENCY); i++) {
                 write_last_flit(current_output_buf, flitswritten, i == (thispacket->amtwritten-1));
                 write_valid_flit(current_output_buf, flitswritten);

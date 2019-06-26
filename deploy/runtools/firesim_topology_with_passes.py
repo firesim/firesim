@@ -581,6 +581,7 @@ class FireSimTopologyWithPasses:
 
         # run post-workload hook, if one exists
         if self.workload.post_run_hook is not None:
+            rootLogger.info("Running post_run_hook...")
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 localcap = local("""cd {} && {} {}""".format(self.workload.workload_input_base_dir,
                                                   self.workload.post_run_hook,

@@ -3,15 +3,15 @@ package firesim.firesim
 import chisel3._
 import freechips.rocketchip._
 import freechips.rocketchip.subsystem._
-import freechips.rocketchip.diplomacy.LazyModule
-import freechips.rocketchip.tilelink._     
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.HeterogeneousBag
+import freechips.rocketchip.util.{HeterogeneousBag}
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.LazyModule
-import boom.system.{BoomSubsystem, BoomSubsystemModule}
+import boom.system.{BoomSubsystem, BoomSubsystemModuleImp}
 import icenet._
 import testchipip._
 import testchipip.SerialAdapter.SERIAL_IF_WIDTH
@@ -31,148 +31,102 @@ import java.io.File
 *******************************************************************************/
 
 class FireSim(implicit p: Parameters) extends RocketSubsystem
-    with CanHaveMisalignedMasterAXI4MemPort
+    with HasDefaultBusConfiguration
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
-//    with HasSystemErrorSlave
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
-  val hasTraces = rocketTiles.map(_.rocketParams.trace).reduce(_ || _)
-
-  override lazy val module =
-    if (hasTraces) new FireSimModuleImpTraced(this)
-    else new FireSimModuleImp(this)
-
-  // Error device used for testing and to NACK invalid front port transactions
-  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
-  // always buffer the error device because no one cares about its latency
-  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
+  override lazy val module = new FireSimModuleImp(this)
 }
 
 class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
+    with HasTraceIOImp
 
-class FireSimModuleImpTraced[+L <: FireSim](l: L) extends FireSimModuleImp(l)
-    with CanHaveRocketTraceIO
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
-    with CanHaveMisalignedMasterAXI4MemPort
+    with HasDefaultBusConfiguration
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
-//    with HasSystemErrorSlave
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
-  val hasTraces = rocketTiles.map(_.rocketParams.trace).reduce(_ || _)
-
-  override lazy val module =
-    if (hasTraces) new FireSimNoNICModuleImpTraced(this)
-    else new FireSimNoNICModuleImp(this)
-
-  // Error device used for testing and to NACK invalid front port transactions
-  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
-  // always buffer the error device because no one cares about its latency
-  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
+  override lazy val module = new FireSimNoNICModuleImp(this)
 }
 
 class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
+    with HasTraceIOImp
 
-class FireSimNoNICModuleImpTraced[+L <: FireSimNoNIC](l: L) extends FireSimNoNICModuleImp(l)
-    with CanHaveRocketTraceIO
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
-    with CanHaveMisalignedMasterAXI4MemPort
+    with HasDefaultBusConfiguration
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
-//    with HasSystemErrorSlave
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryIceNIC
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
-  val hasTraces = boomTiles.map(_.boomParams.trace).reduce(_ || _)
-
-  override lazy val module = 
-    if (hasTraces) new FireBoomModuleImpTraced(this)
-    else new FireBoomModuleImp(this)
-
-  // Error device used for testing and to NACK invalid front port transactions
-  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
-  // always buffer the error device because no one cares about its latency
-  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
+  override lazy val module = new FireBoomModuleImp(this)
 }
 
-class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModule(l)
+class FireBoomModuleImp[+L <: FireBoom](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
-
-class FireBoomModuleImpTraced[+L <: FireBoom](l: L) extends FireBoomModuleImp(l)
-    with CanHaveBoomTraceIO
+    with HasTraceIOImp
 
 class FireBoomNoNIC(implicit p: Parameters) extends BoomSubsystem
-    with CanHaveMisalignedMasterAXI4MemPort
+    with HasDefaultBusConfiguration
+    with CanHaveFASEDOptimizedMasterAXI4MemPort
     with HasPeripheryBootROM
-//    with HasSystemErrorSlave
-    // with HasSyncExtInterrupts
     with HasNoDebug
     with HasPeripherySerial
     with HasPeripheryUART
     with HasPeripheryBlockDevice
+    with HasTraceIO
 {
-  val hasTraces = boomTiles.map(_.boomParams.trace).reduce(_ || _)
-
-  override lazy val module = 
-    if (hasTraces) new FireBoomNoNICModuleImpTraced(this)
-    else new FireBoomNoNICModuleImp(this)
-
-  // Error device used for testing and to NACK invalid front port transactions
-  val error = LazyModule(new TLError(p(ErrorDeviceKey), sbus.beatBytes))
-  // always buffer the error device because no one cares about its latency
-  sbus.coupleTo("slave_named_error"){ error.node := TLBuffer() := _ } 
+  override lazy val module = new FireBoomNoNICModuleImp(this)
 }
 
-class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModule(l)
+class FireBoomNoNICModuleImp[+L <: FireBoomNoNIC](l: L) extends BoomSubsystemModuleImp(l)
     with HasRTCModuleImp
-    with CanHaveMisalignedMasterAXI4MemPortModuleImp
+    with CanHaveFASEDOptimizedMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
-    // with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
     with HasPeripherySerialModuleImp
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
-
-class FireBoomNoNICModuleImpTraced[+L <: FireBoomNoNIC](l: L) extends FireBoomNoNICModuleImp(l)
-    with CanHaveBoomTraceIO
+    with HasTraceIOImp
 
 case object NumNodes extends Field[Int]
 
@@ -198,10 +152,10 @@ class FireSimSupernode(implicit p: Parameters) extends Module {
     Module(LazyModule(new FireSim).module)
   }
 
-  val io = IO(new SupernodeIO(nNodes, SERIAL_IF_WIDTH, nodes(0).mem_axi4))
+  val io = IO(new SupernodeIO(nNodes, SERIAL_IF_WIDTH, nodes(0).mem_axi4.get))
 
   io.mem_axi.zip(nodes.map(_.mem_axi4)).foreach {
-    case (out, mem_axi4) => out <> mem_axi4
+    case (out, mem_axi4) => out <> mem_axi4.get
   }
   io.serial <> nodes.map(_.serial)
   io.bdev <> nodes.map(_.bdev)

@@ -52,6 +52,8 @@ sudo pip2 install graphviz==0.8.3
 sudo pip2 install --upgrade --ignore-installed pyparsing
 sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
+# new awscli on 1.6.0 AMI is broken with our versions of boto3
+sudo pip2 install awscli==1.15.76
 
 sudo activate-global-python-argcomplete
 

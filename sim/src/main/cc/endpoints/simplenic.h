@@ -21,6 +21,7 @@ class simplenic_t: public endpoint_t
         virtual void tick();
         virtual bool terminate() { return false; };
         virtual int exit_code() { return 0; }
+        virtual void finish() {};
 
     private:
         simif_t* sim;
@@ -28,6 +29,7 @@ class simplenic_t: public endpoint_t
         char * pcis_read_bufs[2];
         char * pcis_write_bufs[2];
         int rlimit_inc, rlimit_period, rlimit_size;
+	int pause_threshold, pause_quanta, pause_refresh;
 
         // link latency in cycles
         // assuming 3.2 GHz, this number / 3.2 = link latency in ns
