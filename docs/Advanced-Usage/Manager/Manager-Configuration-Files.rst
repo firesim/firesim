@@ -313,14 +313,18 @@ you made up). Such a section must contain the following fields:
 This specifies the basic target design that will be built. Unless you
 are defining a custom system, this should either be ``FireSim``, for
 systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
-are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``.
+are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``. We
+describe this in greater detail in :ref:`Generating Different
+Targets<generating-different-targets>`).
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
-This specifies the hardware configuration of the target being simulation. Some
+This specifies the hardware configuration of the target being simulated. Some
 examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
 These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
+We describe this in greater detail in :ref:`Generating Different
+Targets<generating-different-targets>`).
 
 
 ``PLATFORM_CONFIG``
@@ -329,6 +333,11 @@ These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
 This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
 These are defined in ``firesim/sim/src/main/scala/firesim/SimConfigs.scala``.
+We specify the host FPGA frequency in the ``PLATFORM_CONFIG`` by appending a frequency
+``Config`` with an underscore (ex. FireSimConfig_F160MHz).
+We describe this in greater detail in :ref:`Generating Different
+Targets<generating-different-targets>`).
+
 
 
 ``instancetype``

@@ -39,7 +39,7 @@ class BuildConfig:
                               {
                                   'DeviceName': '/dev/sda1',
                                   'Ebs': {
-                                      'VolumeSize': 100,
+                                      'VolumeSize': 200,
                                       'VolumeType': 'gp2',
                                   },
                               },

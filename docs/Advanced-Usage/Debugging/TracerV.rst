@@ -19,7 +19,20 @@ In TargetConfigs.scala:
 
     class FireSimRocketChipQuadCoreTracedConfig extends Config(
       new WithTraceRocket ++ new FireSimRocketChipQuadCoreConfig)
-    
+
+In SimConfigs.scala:
+
+.. code-block:: scala
+
+    class FireSimDDR3FRFCFSLLC4MBConfig extends Config(
+      new WithSerialWidget ++
+      new WithUARTWidget ++
+      new WithSimpleNICWidget ++
+      new WithBlockDevWidget ++
+      new FRFCFS16GBQuadRankLLC4MB ++
+      new WithTracerVWidget ++ // <--- add this
+      new BasePlatformConfig)
+
 In config_build_recipes.ini:
 
 .. code-block:: ini

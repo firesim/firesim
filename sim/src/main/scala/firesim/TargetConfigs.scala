@@ -8,7 +8,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-//import freechips.rocketchip.pfa.HasPFA
+import freechips.rocketchip.devices.debug.DebugModuleParams
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig, MemBenchKey, MemBenchParams}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
@@ -113,12 +113,9 @@ class WithBoomL2TLBs(entries: Int) extends Config((site, here, up) => {
   ))
 })
 
-class WithTraceRocket extends Config((site, here, up) => {
-   case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(trace = true) }
-})
-
-class WithTraceBoom extends Config((site, here, up) => {
-   case BoomTilesKey => up(BoomTilesKey, site) map { r => r.copy(trace = true) }
+// Disables clock-gating; doesn't play nice with our FAME-1 pass
+class WithoutClockGating extends Config((site, here, up) => {
+  case DebugModuleParams => up(DebugModuleParams, site).copy(clockGate = false)
 })
 
 // This is strictly speakig a MIDAS config, but it's target dependent -> mix in to target config
@@ -127,6 +124,12 @@ class WithBoomSynthAssertExcludes extends Config((site, here, up) => {
     // Boom instantiates duplicates of these module(s) with the expectation
     // the backend tool will optimize them away. FIXME.
     ("NonBlockingDCache", "dtlb"))
+})
+
+// Testing configurations
+// This enables printfs used in testing
+class WithScalaTestFeatures extends Config((site, here, up) => {
+    case PrintTracePort => true
 })
 
 /*******************************************************************************
@@ -149,44 +152,35 @@ class FireSimRocketChipConfig extends Config(
   new WithBlockDevice ++
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
+  new WithoutClockGating ++
   new freechips.rocketchip.system.DefaultConfig)
 
 class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => List.tabulate(n)(i => up(RocketTilesKey).head.copy(hartId = i))
 })
 
-class FireSimRocketChipTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipConfig)
-
 // single core config
 class FireSimRocketChipSingleCoreConfig extends Config(new FireSimRocketChipConfig)
 
-class FireSimRocketChipSingleCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipSingleCoreConfig)
+// single core config with L2
+class FireSimRocketChipSingleCoreL2Config extends Config(
+  new WithInclusiveCache ++
+  new FireSimRocketChipSingleCoreConfig)
 
 // dual core config
 class FireSimRocketChipDualCoreConfig extends Config(
   new WithNDuplicatedRocketCores(2) ++
   new FireSimRocketChipSingleCoreConfig)
 
-class FireSimRocketChipDualCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipDualCoreConfig)
-
 // quad core config
 class FireSimRocketChipQuadCoreConfig extends Config(
   new WithNDuplicatedRocketCores(4) ++
   new FireSimRocketChipSingleCoreConfig)
 
-class FireSimRocketChipQuadCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipQuadCoreConfig)
-
 // hexa core config
 class FireSimRocketChipHexaCoreConfig extends Config(
   new WithNDuplicatedRocketCores(6) ++
   new FireSimRocketChipSingleCoreConfig)
-
-class FireSimRocketChipHexaCoreTracedConfig extends Config(
-  new WithTraceRocket ++ new FireSimRocketChipHexaCoreConfig)
 
 // octa core config
 class FireSimRocketChipOctaCoreConfig extends Config(
@@ -240,18 +234,6 @@ class FireSimDRAMCacheDualCoreConfig extends Config(
 class FireSimDRAMCacheQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimDRAMCacheConfig)
 
-//class FireSimMemBladePFAConfig extends Config(
-//  new WithPFA ++ new FireSimMemBladeConfig)
-//
-//class FireSimMemBladePFASingleCoreConfig extends Config(
-//  new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
-//
-//class FireSimMemBladePFADualCoreConfig extends Config(
-//  new WithNBigCores(2) ++ new FireSimMemBladePFAConfig)
-//
-//class FireSimMemBladePFAQuadCoreConfig extends Config(
-//  new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
-
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
@@ -261,6 +243,7 @@ class FireSimBoomConfig extends Config(
   new WithNICKey ++
   new WithBlockDevice ++
   new WithBoomL2TLBs(1024) ++
+  new WithoutClockGating ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
   // Using a small config because it has 64-bit system bus, and compiles quickly
   new boom.system.SmallBoomConfig)
@@ -281,10 +264,6 @@ class FireSimBoomDualCoreConfig extends Config(
 class FireSimBoomQuadCoreConfig extends Config(
   new WithNDuplicatedBoomCores(4) ++
   new FireSimBoomConfig)
-
-class FireSimBoomTracedConfig extends Config(
-  new WithTraceBoom ++ new FireSimBoomConfig)
-
 
 //**********************************************************************************
 //* Supernode Configurations

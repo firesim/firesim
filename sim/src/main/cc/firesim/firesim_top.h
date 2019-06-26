@@ -9,6 +9,7 @@
 #include "systematic_scheduler.h"
 
 #include "endpoints/synthesized_prints.h"
+#include "endpoints/tracerv.h"
 
 class firesim_top_t: virtual simif_t, public systematic_scheduler_t
 {
@@ -29,10 +30,6 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
 
-#ifdef PRINTWIDGET_struct_guard
-        synthesized_prints_t * print_endpoint;
-#endif
-
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
         uint64_t profile_interval = -1;
         uint64_t profile_models();
@@ -44,7 +41,6 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         bool simulation_complete();
         // Returns the error code of the first endpoint for which it is non-zero
         int exit_code();
-
 };
 
 #endif // __FIRESIM_TOP_H
