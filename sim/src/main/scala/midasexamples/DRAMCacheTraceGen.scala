@@ -23,13 +23,13 @@ class DRAMCacheTraceGen(implicit val p: Parameters) extends Module {
   val memblade = Module(LazyModule(new TestMemBlade).module)
 
   val io = IO(new Bundle {
-    val mem_axi4 = groundtest.mem_axi4.cloneType
+    val mem_axi4 = groundtest.mem_axi4.get.cloneType
     val cache_axi4 = groundtest.cache_axi4.cloneType
     val mb_mem_axi4 = memblade.mem_axi4.cloneType
     val success = Output(Bool())
   })
 
-  io.mem_axi4 <> groundtest.mem_axi4
+  io.mem_axi4 <> groundtest.mem_axi4.get
   io.cache_axi4 <> groundtest.cache_axi4
   io.mb_mem_axi4 <> memblade.mem_axi4
   io.success := groundtest.success
