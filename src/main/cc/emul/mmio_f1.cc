@@ -414,6 +414,8 @@ void tick(
   vc_put4stVector(dma_aw_bits_id, dd);
   dd[0].c = 0;
   dd[0].d = d->aw_addr();
+  dd[1].c = 0;
+  dd[1].d = d->aw_addr() >> 32;
   vc_put4stVector(dma_aw_bits_addr, dd);
   dd[0].c = 0;
   dd[0].d = d->aw_size();
@@ -426,6 +428,8 @@ void tick(
   vc_put4stVector(dma_ar_bits_id, dd);
   dd[0].c = 0;
   dd[0].d = d->ar_addr();
+  dd[1].c = 0;
+  dd[1].d = d->ar_addr() >> 32;
   vc_put4stVector(dma_ar_bits_addr, dd);
   dd[0].c = 0;
   dd[0].d = d->ar_size();
