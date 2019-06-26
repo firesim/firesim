@@ -6,4 +6,4 @@
 	url = https://github.com/firesim/riscv-pk.git
 [submodule "br/buildroot"]
 	path = wlutil/br/buildroot
-	url = https://github.com/sifive/buildroot.git
+	url = https://git.buildroot.net/buildroot

@@ -67,7 +67,7 @@ def cmpOutput(testDir, refDir, strip=False):
                     else:
                         # I'm not 100% sure what will happen with a binary file
                         diffString = "".join(difflib.unified_diff(rFile.readlines(),
-                                tFile.readlines(), fromfile=rPath, tofile=tPath))
+                                tFile.readlines(), fromfile=str(rPath), tofile=str(tPath)))
                         if diffString is not "":
                             return diffString
 
@@ -205,7 +205,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
                 # Run every job (or just the workload itself if no jobs)
                 if 'jobs' in cfg:
                     for jName in cfg['jobs'].keys():
-                        runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName)
+                        runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName, spike=spike)
                 else:
                     runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
             

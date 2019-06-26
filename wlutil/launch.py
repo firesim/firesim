@@ -1,9 +1,18 @@
+import socket
 import logging
 from .wlutil import *
 
 # The amount of memory to use when launching
 launch_mem = "16384"
 launch_cores = "4"
+
+# Kinda hacky (technically not guaranteed to give a free port, just very likely)
+def get_free_tcp_port():
+	tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	tcp.bind(('', 0))
+	addr, port = tcp.getsockname()
+	tcp.close()
+	return str(port)
 
 # Returns a command string to luanch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, initramfs=False):
@@ -23,6 +32,8 @@ def getSpikeCmd(config, initramfs=False):
 def getQemuCmd(config, initramfs=False):
     log = logging.getLogger()
 
+    launch_port = get_free_tcp_port()
+
     if initramfs:
         exe = config['bin'] + '-initramfs'
     else:
@@ -37,7 +48,7 @@ def getQemuCmd(config, initramfs=False):
            '-object', 'rng-random,filename=/dev/urandom,id=rng0',
            '-device', 'virtio-rng-device,rng=rng0',
            '-device', 'virtio-net-device,netdev=usernet',
-           '-netdev', 'user,id=usernet,hostfwd=tcp::10000-:22']
+           '-netdev', 'user,id=usernet,hostfwd=tcp::' + launch_port + '-:22']
 
     if 'img' in config and not initramfs:
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
@@ -51,8 +62,8 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
     baseConfig = cfgs[cfgName]
 
     # Bare-metal tests don't work on qemu yet
-    if baseConfig.get('distro') == 'bare':
-        spike = True
+    if baseConfig.get('distro') == 'bare' and spike != True:
+        raise RuntimeError("Bare-metal workloads do not currently support Qemu. Please run this workload under spike.")
 
     if 'jobs' in baseConfig.keys() and job != 'all':
         # Run the specified job

@@ -5,7 +5,10 @@ from pathlib import Path
 from .wlutil import *
 
 # firesim workloads directory
-fsWork = (Path(root_dir) / "../../deploy/workloads").resolve()
+try:
+    fsWork = (Path(root_dir) / "../../deploy/workloads").resolve()
+except:
+    fsWork = None
 
 readmeTxt="""This workload was generated using firesim-software. See the following config
 and workload directory for details:
@@ -18,6 +21,9 @@ def fullRel(base, target):
     return os.path.relpath(str(target), start=str(base))
 
 def installWorkload(cfgName, cfgs):
+    if fsWork == None:
+        raise RuntimeError("The install command is not supported when firesim-software is checked out standalone (i.e. not a submodule of firesim).")
+
     targetCfg = cfgs[cfgName]
     # if 'jobs' in targetCfg:
     #     raise NotImplementedError("Jobs not currently supported by the install command")
