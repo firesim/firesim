@@ -335,162 +335,61 @@ class ReadyValidChannel[T <: Data](
   require(clockRatio.isUnity, "CDC is not currently implemented")
 
   val io = IO(new ReadyValidChannelIO(gen))
-  // Stores tokens with valid target-data that have been successfully enqueued
-  val target = Module(new Queue(gen, n))
-  // Stores a bit indicating if a given token contained valid target-data
-  // 1 = there was a target handshake; 0 = no target handshake
-  val tokens = Module(new Queue(Bool(), p(ChannelLen)))
+  val enqFwdQ = Module(new Queue(ValidIO(gen), 2, flow = true))
+  enqFwdQ.io.enq.bits.valid := io.enq.target.valid
+  enqFwdQ.io.enq.bits.bits := io.enq.target.bits
+  enqFwdQ.io.enq.valid := io.enq.fwd.hValid
+  io.enq.fwd.hReady := enqFwdQ.io.enq.ready
 
-  // Use an additional cycle to populate initial tokens
-  val initializing = RegNext(reset.toBool)
+  val deqRevQ = Module(new Queue(Bool(), 2, flow = true))
+  deqRevQ.io.enq.bits  := io.deq.target.ready
+  deqRevQ.io.enq.valid := io.deq.rev.hValid
+  io.deq.rev.hReady    := deqRevQ.io.enq.ready
 
-  // Consume the enq-fwd token if:
-  //  1) the target queue isn't empty -> enq and deq sides can decouple in target-time 
-  //  2) the target queue is full but token queue is empty -> enq & deq sides have lost decoupling
-  //     and we know this payload will not be enqueued in target-land
-  val doFwdEnq = target.io.enq.ready || !tokens.io.deq.valid
+  val reference = Module(new Queue(gen, n))
+  val deqFwdFired = RegInit(false.B)
+  val enqRevFired = RegInit(false.B)
 
-  // NB: This creates an extraenous dep between enq.fwd and reset
-  val enqFwdHelper = DecoupledHelper(
+  val finishing = DecoupledHelper(
     io.targetReset.valid,
-    tokens.io.enq.ready,
-    io.enq.fwd.hValid,
-    doFwdEnq)
+    enqFwdQ.io.deq.valid,
+    deqRevQ.io.deq.valid,
+    (enqRevFired || io.enq.rev.hReady),
+    (deqFwdFired || io.deq.fwd.hReady))
 
-  target.reset := reset.toBool || initializing || enqFwdHelper.fire && io.targetReset.bits
-  // ENQ DOMAIN LOGIC
-  // Enq-fwd token control
-  target.io.enq.valid := enqFwdHelper.fire && io.enq.target.valid
-  target.io.enq.bits  := io.enq.target.bits
-  tokens.io.enq.valid := initializing || enqFwdHelper.fire(tokens.io.enq.ready)
-  tokens.io.enq.bits  := !initializing && io.enq.target.valid && target.io.enq.ready && !io.targetReset.bits
+  val targetFire = finishing.fire()
+  val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
+  // enqRev
+  io.enq.rev.hValid := !enqRevFired
+  io.enq.target.ready := reference.io.enq.ready
 
-  io.enq.fwd.hReady := !initializing && enqFwdHelper.fire(io.enq.fwd.hValid)
-  io.targetReset.ready := !initializing && enqFwdHelper.fire(io.targetReset.valid)
+  // deqFwd
+  io.deq.fwd.hValid := !deqFwdFired
+  io.deq.target.bits := reference.io.deq.bits
+  io.deq.target.valid := reference.io.deq.valid
 
-  // Enq-rev token control
-  // Assumptions: model a queue with flow = false
-  // Simplifications: Only let rev-tokens slip behind fwd-tokens for now.
+  io.targetReset.ready := finishing.fire(io.targetReset.valid)
+  enqFwdQ.io.deq.ready := finishing.fire(enqFwdQ.io.deq.valid)
+  deqRevQ.io.deq.ready := finishing.fire(deqRevQ.io.deq.valid)
 
-  // Capture ready tokens that would be dropped
-  val readyTokens = Module(new Queue(Bool(), n))
-  readyTokens.io.enq.valid := enqFwdHelper.fire && !io.enq.rev.hReady
-  readyTokens.io.enq.bits  := target.io.enq.ready
+  reference.reset := reset.toBool || targetFire && io.targetReset.bits
+  reference.io.enq.valid := targetFire && enqFwdQ.io.deq.bits.valid
+  reference.io.enq.bits  := Mux(targetFire, enqFwdQ.io.deq.bits.bits, enqBitsLast)
+  reference.io.deq.ready := targetFire && deqRevQ.io.deq.bits
 
-  io.enq.rev.hValid   := true.B
-  io.enq.target.ready := Mux(readyTokens.io.deq.valid, readyTokens.io.deq.bits, target.io.enq.ready)
-  readyTokens.io.deq.ready := io.enq.rev.hReady
+  deqFwdFired := Mux(targetFire, false.B, deqFwdFired || io.deq.fwd.hReady)
+  enqRevFired := Mux(targetFire, false.B, enqRevFired || io.enq.rev.hReady)
 
-  // Check simplificaiton
-  assert(!readyTokens.io.enq.valid || !io.enq.rev.fire || io.enq.fwd.fire,
-    "Enq-rev channel would advance ahead of enq-fwd channel")
-
-  // DEQ-DOMAIN LOGIC
-  // Track the number of tokens with valid target-data that should be visible
-  // to the dequeuer. This allows the enq-side model to advance ahead of the deq-side model
-  val numTValid = RegInit(0.U(log2Ceil(p(ChannelLen) + 1).W))
-  val tValid = tokens.io.deq.bits || numTValid =/= 0.U
-  val newTValid = tokens.io.deq.fire && tokens.io.deq.bits
-
-  // Simplification: only let the deq-rev tokens slip ahead of deq-fwd tokens
-  // We let this happen since the LI-BDN fame pass consumes all of its input tokens
-  // simultaenously as the last rule to fire
-  val deqRevSlip  = RegInit(false.B) // True if deq-rev tokens have decoupled from deq-fwd
-  val deqRevLast = RegInit(false.B)  // The last deq-rev token target-ready, if slipped
-
-  tokens.io.deq.ready := io.deq.fwd.hReady
-  io.deq.fwd.hValid := tokens.io.deq.valid
-  io.deq.target.valid := tValid
-  io.deq.rev.hReady := !initializing && !deqRevSlip
-  io.deq.target.bits  := target.io.deq.bits // fixme: exercise more caution when exposing bits field
-
-  val tValidConsumed = io.deq.fwd.fire && tValid &&
-                      (io.deq.rev.hValid && io.deq.target.ready ||
-                       deqRevSlip && deqRevLast)
-
-  target.io.deq.ready := tValidConsumed
-
-  when (io.deq.rev.fire && !io.deq.fwd.fire) {
-    deqRevSlip  := true.B
-    deqRevLast  := io.deq.target.ready
-  }.elsewhen(io.deq.fwd.fire) {
-    deqRevSlip  := false.B
-  }
-
-  when(newTValid && !tValidConsumed) {
-    numTValid := numTValid + 1.U
-  }.elsewhen(!newTValid && tValidConsumed) {
-    numTValid := numTValid - 1.U
-  }
-
-  // Enqueuing and dequeuing domains have the same frequency
-  // The token queue can be directly coupled between domains
-  //if (clockRatio.isUnity) {
-  //  io.deq.fwd.hValid := deqHelper.fire(io.deq.fwd.hReady)
-  //  io.deq.rev.hReady := deqHelper.fire(io.deq.rev.hValid)
-  //  tokens.io.deq.ready := deqHelper.fire(tokens.io.deq.valid)
-  //}
-  // Dequeuing domain is faster
-  // Each token in the "token" queue represents a token in the slow domain
-  // Issue N output tokens per entry in the token queue
-  //else if (clockRatio.isIntegral) {
-  //  val deqTokenCount = RegInit((clockRatio.numerator - 1).U(log2Ceil(clockRatio.numerator).W))
-  //  deqTokenCount.suggestName("deqTokenCount")
-  //  tokens.io.deq.ready := false.B
-  //  io.deq.host.hValid := tokens.io.deq.valid
-
-  //  when (io.deq.host.fire && deqTokenCount =/= 0.U) {
-  //    deqTokenCount := deqTokenCount - 1.U
-  //  }.elsewhen(io.deq.host.fire && deqTokenCount === 0.U) {
-  //    deqTokenCount := (clockRatio.numerator - 1).U
-  //    tokens.io.deq.ready := true.B
-  //  }
-  //}
-  // Dequeuing domain is slower
-  // Each entry in the "token" queue represents a token in the slow domain
-  // Every M tokens received in the fast domain, enqueue a single entry into the "tokens" queue
-  //else if (clockRatio.isReciprocal) {
-  //  val enqTokensRemaining = RegInit((clockRatio.denominator - 1).U(log2Ceil(clockRatio.denominator).W))
-  //  enqTokensRemaining.suggestName("enqTokensRemaining")
-  //  tokens.io.deq.ready := enqTokensRemaining =/= 0.U || io.deq.host.hReady
-  //  io.deq.host.hValid := tokens.io.deq.valid && enqTokensRemaining === 0.U
-
-  //  when (tokens.io.deq.fire) {
-  //    enqTokensRemaining := Mux(enqTokensRemaining === 0.U,
-  //                              (clockRatio.denominator - 1).U,
-  //                              enqTokensRemaining - 1.U)
-  //  }
-  //}
-
-
-  //if (p(EnableSnapshot)) {
-  //  val wires = Wire(ReadyValidTrace(gen))
-  //  val targetFace = if (flipped) io.deq.target else io.enq.target
-  //  val tokensFace = if (flipped) tokens.io.deq else tokens.io.enq
-  //  val readyTraceFull = Wire(Bool())
-  //  val validTraceFull = Wire(Bool())
-  //  wires.bits.bits  := targetFace.bits
-  //  wires.bits.valid := tokensFace.valid && targetFace.valid && !readyTraceFull && !validTraceFull
-  //  wires.bits.ready := tokensFace.ready
-  //  io.trace.bits <> TraceQueue(wires.bits, io.traceLen, "bits_trace")
-  //  wires.valid.bits  := targetFace.valid
-  //  wires.valid.valid := tokensFace.valid
-  //  wires.valid.ready := tokensFace.ready
-  //  io.trace.valid <> TraceQueue(wires.valid, io.traceLen, "valid_trace", Some(validTraceFull))
-  //  wires.ready.bits  := targetFace.ready
-  //  wires.ready.valid := tokensFace.valid
-  //  wires.ready.ready := tokensFace.ready
-  //  io.trace.ready <> TraceQueue(wires.ready, io.traceLen, "ready_trace", Some(readyTraceFull))
-  //} else {
   io.trace := DontCare
   io.trace.bits.valid  := false.B
   io.trace.valid.valid := false.B
   io.trace.ready.valid := false.B
-  //}
 }
 
+@chiselName
 class ReadyValidChannelUnitTest(
     numTokens: Int = 4096,
+    queueDepth: Int = 2,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
   override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
@@ -499,7 +398,7 @@ class ReadyValidChannelUnitTest(
   val resetLength = 4
 
   val dut = Module(new ReadyValidChannel(payloadType))
-  val reference = Module(new Queue(payloadType, 2))
+  val reference = Module(new Queue(payloadType, queueDepth))
 
   // Generates target-reset tokens
   def resetTokenGen(): Bool = {
@@ -507,6 +406,37 @@ class ReadyValidChannelUnitTest(
     val outOfReset = resetCount === resetLength.U
     resetCount := Mux(outOfReset, resetCount, resetCount + 1.U)
     !outOfReset
+  }
+
+  // This will ensure that the bits field of deq matches even if target valid
+  // is not asserted. To workaround random initialization of the queue's
+  // mem, it neglects all target-invalid output tokens until all entries of
+  // the mem has been written once.
+  //
+  // TODO: Consider initializing all memories to zero even in the unittests as
+  // that will more closely the FPGA
+  val enqCount = RegInit(0.U(log2Ceil(queueDepth + 1).W))
+  val memFullyDefined = enqCount === queueDepth.U
+  enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.toBool, enqCount + 1.U, enqCount)
+
+  // Track the target cycle at which all entries are known
+  val memFullyDefinedCycle = RegInit(1.U(log2Ceil(2*timeout).W))
+  memFullyDefinedCycle := Mux(!memFullyDefined, memFullyDefinedCycle + 1.U, memFullyDefinedCycle)
+
+  def strictPayloadCheck(ref: Data, ch: DecoupledIO[Data]): Bool = {
+    // hack: fix the types
+    val refTyped = ref.asTypeOf(refDeqFwd)
+    val modelTyped = ref.asTypeOf(refDeqFwd)
+
+    val deqCount = RegInit(0.U(log2Ceil(numTokens + 1).W))
+    when (ch.fire) { deqCount := deqCount + 1.U }
+
+    // Neglect a comparison if: 1) still under reset 2) mem contents still undefined
+    val exempt = deqCount < resetLength.U ||
+      !refTyped.valid && !modelTyped.valid && (deqCount < memFullyDefinedCycle)
+    val matchExact = ref.asUInt === ch.bits.asUInt
+
+    !ch.fire || exempt || matchExact
   }
 
   val (deqFwd, deqRev) = dut.io.deq.bifurcate()
@@ -523,7 +453,7 @@ class ReadyValidChannelUnitTest(
                                 IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
                                 IChannelDesc("reset" , reference.reset, dut.io.targetReset, Some(resetTokenGen)))
 
-  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, DirectedLIBDNTestHelper.ignoreNTokens(resetLength)),
+  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
                                  OChannelDesc("enqRev", reference.io.enq.ready, enqRev, DirectedLIBDNTestHelper.ignoreNTokens(resetLength)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)

@@ -80,7 +80,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   //  simIo.traceLen := traceWidget.io.traceLen
   //}
 
-  val simResetNext = RegNext(simReset)
   private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
     val valid = ArrayBuffer[Bool]()
     val ready = ArrayBuffer[Bool]()
@@ -91,8 +90,8 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
           case ActualDirection.Input =>
             import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
             channel.target <> target
-            channel.fwd.hValid := port.fromHost.hValid || simResetNext
-            channel.rev.hReady := port.toHost.hReady || simResetNext
+            channel.fwd.hValid := port.fromHost.hValid
+            channel.rev.hReady := port.toHost.hReady
             ready += channel.fwd.hReady
             valid += channel.rev.hValid
           case ActualDirection.Output =>
@@ -115,7 +114,7 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case ActualDirection.Input =>
           val channel = simIo(wire)
           channel.bits  := target
-          channel.valid := port.fromHost.hValid || simResetNext
+          channel.valid := port.fromHost.hValid
           ready += channel.ready
         case ActualDirection.Output =>
           val channel = simIo(wire)
