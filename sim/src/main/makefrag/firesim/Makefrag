@@ -27,9 +27,9 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/firechip/}firechip
+	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}chipyard
 else
-	firesim_sbt_project := firechip
+	firesim_sbt_project := chipyard
 endif
 
 $(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
@@ -120,9 +120,9 @@ run-xsim: $(xsim)
 EMUL ?= verilator
 
 # Firechip Tests
-fc_test_dir = $(base_dir)/target-rtl/firechip/tests
-fc_test_srcs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
-fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
+fc_test_dir = $(base_dir)/target-rtl/chipyard/tests
+fc_test_srcs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
+fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
 
 $(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
 	make -C $(fc_test_dir)

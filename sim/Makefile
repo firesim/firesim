@@ -35,8 +35,8 @@ JVM_MEMORY ?= 16G
 SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++2.12.4
 
 # Manage the FIRRTL dependency manually
-FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/firechip/tools/firrtl
-FIRRTL_JAR ?= $(firesim_base_dir)/target-rtl/firechip/lib/firrtl.jar
+FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
+FIRRTL_JAR ?= $(firesim_base_dir)/target-rtl/chipyard/lib/firrtl.jar
 $(FIRRTL_JAR): $(shell find $(FIRRTL_SUBMODULE_DIR)/src/main/scala -iname "*.scala")
 	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT) $(SBT_FLAGS)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
 	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar

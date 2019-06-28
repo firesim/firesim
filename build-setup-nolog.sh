@@ -69,7 +69,7 @@ git config --global submodule.riscv-tools.update none
 git config --global submodule.experimental-blocks.update none
 git config --global submodule.sims/firesim.update none
 # Disable the REBAR submodule initially, and enable if we're not in library mode
-git config submodule.sim/firechip.update none
+git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8
 # unignore riscv-tools,catapult-shell2 globally
 git config --global --unset submodule.sims/firesim.update
@@ -77,9 +77,9 @@ git config --global --unset submodule.riscv-tools.update
 git config --global --unset submodule.experimental-blocks.update
 
 if [ "$IS_LIBRARY" = false ]; then
-    git config --unset submodule.sim/firechip.update
-    git submodule update --init target-design/firechip
-    cd $RDIR/target-design/firechip
+    git config --unset submodule.target-design/chipyard.update
+    git submodule update --init target-design/chipyard
+    cd $RDIR/target-design/chipyard
     ./scripts/init-submodules-no-riscv-tools.sh
     cd $RDIR
 fi
@@ -92,14 +92,14 @@ fi
 # A lazy way to get fast riscv-tools installs for most users:
 # 1) If user runs ./build-setup.sh fast :
 #   a) clone the prebuilt risc-v tools repo
-#   b) check if HASH in that repo matches the hash of target-design/firechip/riscv-tools
+#   b) check if HASH in that repo matches the hash of target-design/chipyard/riscv-tools
 #   c) if so, just copy it into riscv-tools-install, otherwise croak forcing
 #   the user to rerun this script without --fast
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
     target_toolchain_dir=$RDIR/../../toolchains/
 else
-    target_toolchain_dir=$RDIR/target-design/firechip/toolchains/
+    target_toolchain_dir=$RDIR/target-design/chipyard/toolchains/
 fi
 
 if [ "$FASTINSTALL" = "true" ]; then

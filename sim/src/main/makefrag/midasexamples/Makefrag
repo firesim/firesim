@@ -20,7 +20,7 @@ VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 submodules = . midas midas/targetutils firesim-lib \
-    $(addprefix target-rtl/firechip/, \
+    $(addprefix target-rtl/chipyard/, \
 		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
 		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
 

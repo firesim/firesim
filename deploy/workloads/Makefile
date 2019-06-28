@@ -95,7 +95,7 @@ check-rtc-linux:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 checksum-test:
-	cd ../../target-design/firechip/tests && make checksum.riscv
+	cd ../../target-design/chipyard/tests && make checksum.riscv
 
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv

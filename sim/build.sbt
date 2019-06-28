@@ -26,7 +26,7 @@ lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
 lazy val rebarDir = if(firesimAsLibrary) {
   file("../../../")
 } else {
-  file("target-rtl/firechip")
+  file("target-rtl/chipyard")
 }
 
 lazy val chisel        = ProjectRef(rebarDir, "chisel")
@@ -35,7 +35,7 @@ lazy val barstools     = ProjectRef(rebarDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(rebarDir, "icenet")
 lazy val testchipip    = ProjectRef(rebarDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(rebarDir, "sifive_blocks")
-lazy val firechip      = ProjectRef(rebarDir, "firechip")
+lazy val chipyard      = ProjectRef(rebarDir, "chipyard")
 
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
@@ -50,4 +50,4 @@ lazy val firesimLib = (project in file("firesim-lib"))
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
   .settings(commonSettings).dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile")
-  .aggregate(firechip)
+  .aggregate(chipyard)

@@ -7,8 +7,8 @@
 [submodule "sim/midas"]
 	path = sim/midas
 	url = https://github.com/ucb-bar/midas
-[submodule "sim/firechip"]
-	path = target-design/firechip
+[submodule "target-design/chipyard"]
+	path = target-design/chipyard
 	url = https://github.com/ucb-bar/project-template
 [submodule "sw/network-benchmarks"]
 	path = sw/network-benchmarks
