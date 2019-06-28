@@ -27,9 +27,9 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}chipyard
+	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}firechip
 else
-	firesim_sbt_project := chipyard
+	firesim_sbt_project := firechip
 endif
 
 $(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
