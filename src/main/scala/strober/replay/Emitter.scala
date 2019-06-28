@@ -13,7 +13,7 @@ object StroberMacroEmitter {
     val tab = " "
     val addrWidth = chisel3.util.log2Ceil(sram.depth) max 1
     val portdefs = sram.ports flatMap (port => Seq(
-      Seq(tab, "input", port.clock.name),
+      Seq(tab, "input", port.clock.get.name),
       Seq(tab, s"input[${addrWidth-1}:0]", port.address.name)) ++
       (port.writeEnable map (p => Seq(tab, "input", p.name))) ++
       (port.readEnable map (p => Seq(tab, "input", p.name))) ++
@@ -54,7 +54,7 @@ object StroberMacroEmitter {
         case (None, Some(re)) => inv(re.name, re.polarity)
         case (None, None) => "1'b1"
       }
-      port.clock.name -> Seq(Seq(tab, tab, s"if (${enable})", s"${p.name}_reg <= ram[${port.address.name}];"))
+      port.clock.get.name -> Seq(Seq(tab, tab, s"if (${enable})", s"${p.name}_reg <= ram[${port.address.name}];"))
     })) ++ (sram.ports flatMap (port => port.input map { p =>
       val enable = (port.chipEnable, port.writeEnable) match {
         case (Some(ce), Some(we)) =>
@@ -63,7 +63,7 @@ object StroberMacroEmitter {
         case (None, Some(we)) => inv(we.name, we.polarity)
         case (None, None) => "1'b1"
       }
-      port.clock.name -> (((port.maskPort, port.maskGran): @unchecked) match {
+      port.clock.get.name -> (((port.maskPort, port.maskGran): @unchecked) match {
         case (None, None) => Seq(
           Seq(tab, tab, s"if (${enable})", s"ram[${port.address.name}] <= ${p.name};"))
         case (Some(maskPort), Some(maskGran)) => (0 until (sram.width / maskGran)) map { k =>

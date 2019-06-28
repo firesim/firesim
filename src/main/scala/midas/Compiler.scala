@@ -11,7 +11,6 @@ import firrtl.{Transform, CircuitState}
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
-import barstools.macros._
 import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
 
@@ -23,8 +22,7 @@ private class MidasCompiler extends firrtl.Compiler {
   def emitter = new firrtl.LowFirrtlEmitter
   def transforms =
     getLoweringTransforms(firrtl.ChirrtlForm, firrtl.MidForm) ++
-    Seq(new InferReadWrite,
-        new ReplSeqMem) ++
+    Seq(new InferReadWrite) ++
     getLoweringTransforms(firrtl.MidForm, firrtl.LowForm)
 }
 
@@ -52,18 +50,11 @@ object MidasCompiler {
       targetAnnos: Seq[Annotation],
       io: Seq[(String, Data)],
       dir: File,
-      lib: Option[File],
       targetTransforms: Seq[Transform], // Run pre-MIDAS transforms, on the target RTL
       hostTransforms: Seq[Transform]    // Run post-MIDAS transformations
     )
      (implicit p: Parameters): CircuitState = {
-    val conf = new File(dir, s"${chirrtl.main}.conf")
-    val json = new File(dir, s"${chirrtl.main}.macros.json")
-    val midasAnnos = Seq(
-      InferReadWriteAnnotation,
-      ReplSeqMemAnnotation("", conf.getPath),
-      passes.MidasAnnotation(chirrtl.main, conf, json, lib),
-      MacroCompilerAnnotation(json.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Synflops, useCompiler = false))
+    val midasAnnos = Seq(InferReadWriteAnnotation)
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
@@ -81,7 +72,6 @@ object MidasCompiler {
   def apply[T <: chisel3.core.UserModule](
       w: => T,
       dir: File,
-      libFile: Option[File] = None,
       targetTransforms: Seq[Transform] = Seq.empty,
       hostTransforms: Seq[Transform] = Seq.empty
     )
@@ -91,6 +81,6 @@ object MidasCompiler {
     val circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val io = target.getPorts map (p => p.id.instanceName -> p.id)
-    apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, libFile, targetTransforms, hostTransforms)
+    apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, targetTransforms, hostTransforms)
   }
 }
