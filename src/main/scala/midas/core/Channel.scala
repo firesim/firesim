@@ -84,99 +84,6 @@ class WireChannel[T <: ChLeafType](
   }
 }
 
-case class IChannelDesc(
-  name: String,
-  reference: Data,
-  modelChannel: DecoupledIO[Data],
-  tokenGenFunc: Option[() => Data] = None) {
-
-  private def tokenSequenceGenerator(typ: Data): Data =
-    Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
-
-  // Generate the testing hardware for a single input channel of a model
-  @chiselName
-  def genEnvironment(testLength: Int): Unit = {
-    val inputGen = tokenGenFunc.getOrElse(() => tokenSequenceGenerator(reference.cloneType))()
-
-    // Drive a new input to the reference on every cycle
-    reference := inputGen
-
-    // Drive tokenzied inputs to the model
-    val inputTokenQueue = Module(new Queue(reference.cloneType, testLength, flow = true))
-    inputTokenQueue.io.enq.bits := reference
-    inputTokenQueue.io.enq.valid := true.B
-
-    // This provides an irrevocable input token stream
-    val stickyTokenValid = Reg(Bool())
-    modelChannel <> inputTokenQueue.io.deq
-    modelChannel.valid := stickyTokenValid && inputTokenQueue.io.deq.valid
-    inputTokenQueue.io.deq.ready := stickyTokenValid && modelChannel.ready
-
-    when (modelChannel.fire || ~stickyTokenValid) {
-      stickyTokenValid := LFSR64()(1)
-    }
-  }
-}
-
-case class OChannelDesc(
-  name: String,
-  reference: Data,
-  modelChannel: DecoupledIO[Data],
-  comparisonFunc: (Data, DecoupledIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
-
-  // Generate the testing hardware for a single output channel of a model
-  @chiselName
-  def genEnvironment(testLength: Int): Bool = {
-    val refOutputs = Module(new Queue(reference.cloneType, testLength, flow = true))
-    val refIdx   = RegInit(0.U(log2Ceil(testLength + 1).W))
-    val modelIdx = RegInit(0.U(log2Ceil(testLength + 1).W))
-
-    val hValidPrev = RegNext(modelChannel.valid, false.B)
-    val hReadyPrev = RegNext(modelChannel.ready)
-    val hFirePrev = hValidPrev && hReadyPrev
-    //suggestedName match {
-    //  case Some(name) => name + ": "
-    //  case None => ""
-    //}
-
-    // Collect outputs from the reference RTL
-    refOutputs.io.enq.valid := true.B
-    refOutputs.io.enq.bits := reference
-
-    assert(comparisonFunc(refOutputs.io.deq.bits, modelChannel),
-      s"${name} Channel: Output token traces did not match")
-    assert(!hValidPrev || hFirePrev || modelChannel.valid,
-      s"${name} Channel: hValid de-asserted without handshake, violating output token irrevocability")
-
-    val modelChannelDone = modelIdx === testLength.U
-    when (modelChannel.fire) { modelIdx := modelIdx + 1.U }
-    refOutputs.io.deq.ready := modelChannel.fire
-
-    // Fuzz backpressure on the token channel
-    modelChannel.ready := LFSR64()(1) & !modelChannelDone
-
-    // Return the done signal
-    modelChannelDone
-  }
-}
-
-object DirectedLIBDNTestHelper{
-  def ignoreNTokens(numTokens: Int)(ref: Data, ch: DecoupledIO[Data]): Bool = {
-    val count = RegInit(0.U(32.W))
-    when (ch.fire) { count := count + 1.U }
-    !ch.fire || count < numTokens.U || ref.asUInt === ch.bits.asUInt
-  }
-
-  @chiselName
-  def apply(
-      inputChannelMapping:  Seq[IChannelDesc],
-      outputChannelMapping: Seq[OChannelDesc],
-      testLength: Int = 4096): Bool = {
-    inputChannelMapping.foreach(_.genEnvironment(testLength))
-    val finished = outputChannelMapping.map(_.genEnvironment(testLength)).foldLeft(true.B)(_ && _)
-    finished
-  }
-}
 
 class WireChannelUnitTest(
     latency: Int = 0,
@@ -191,7 +98,7 @@ class WireChannelUnitTest(
   val referenceOutput = ShiftRegister(referenceInput, latency)
 
   val inputChannelMapping = Seq(IChannelDesc("in", referenceInput, dut.io.in))
-  val outputChannelMapping = Seq(OChannelDesc("out", referenceOutput, dut.io.out, DirectedLIBDNTestHelper.ignoreNTokens(1)))
+  val outputChannelMapping = Seq(OChannelDesc("out", referenceOutput, dut.io.out, TokenComparisonFunctions.ignoreNTokens(1)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 
@@ -454,7 +361,7 @@ class ReadyValidChannelUnitTest(
                                 IChannelDesc("reset" , reference.reset, dut.io.targetReset, Some(resetTokenGen)))
 
   val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
-                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev, DirectedLIBDNTestHelper.ignoreNTokens(resetLength)))
+                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev, TokenComparisonFunctions.ignoreNTokens(resetLength)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 
@@ -464,49 +371,4 @@ class ReadyValidChannelUnitTest(
   dut.io.trace.valid.ready := DontCare
   dut.io.trace.bits.ready := DontCare
   dut.io.traceLen := DontCare
-  //// Count host-level handshakes on tokens
-  //
-  //val inputTokenNum      = RegInit(0.U(log2Ceil(timeout).W))
-  //val outputTokenNum     = RegInit(0.U(log2Ceil(timeout).W))
-
-  //val enqTReadyCredits = Module(new Queue(new DecoupledIO(Bool()), p(ChannelLen), flow = true))
-  //enqTReadyCredits.io.enq.valid := dut.io.enq.rev.fire
-  //enqTReadyCredits.io.enq.bits  := dut.io.enq.target.ready
-
-  //val deqTReadyCredits = Module(new Queue(new DecoupledIO(Bool()), p(ChannelLen), flow = true))
-  //deqTReadyCredits.io.enq.valid := dut.io.deq.rev.fire
-  //deqTReadyCredits.io.enq.bits  := dut.io.deq.target.ready
-
-
-  //// For driving the values of non-empty tokens
-  //val inputTokenPayload   = RegInit(0.U(payloadWidth.W))
-  //val expectedOutputPayload = RegInit(0.U(payloadWidth.W))
-
-  //val outputFwdHReadyFuzz = LFSR64()(0) // Payload & valid token ready
-  //val outputRevHValidFuzz = LFSR64()(0) // Ready token valid
-  //val outputRevTReadyFuzz = LFSR64()(0) // Ready token value
-  //val inputFwdHValidFuzz  = LFSR64()(0) // Payload & valid token valid
-  //val inputFwdTValidFuzz  = LFSR64()(0) // Valid-token value
-  //val inputRevHReadyFuzz  = LFSR64()(0) // Ready-token ready
-
-  //val finished = RegInit(false.B)
-
-  //dut.io.deq.fwdIrrevocabilityAssertions(Some("deq."))
-  //dut.io.enq.fwdIrrevocabilityAssertions(Some("enq."))
-  //dut.io.deq.revIrrevocabilityAssertions(Some("deq."))
-  //dut.io.enq.revIrrevocabilityAssertions(Some("enq."))
-
-  //io.finished := finished
-
-  //// TODO: FIXME
-  //dut.io.targetReset.valid := reset.toBool()
-  //dut.io.targetReset.bits := reset.toBool()
-
-
-  //dut.io.traceLen := DontCare
-  //dut.io.traceLen := DontCare
-  //dut.io.trace.ready.ready := DontCare
-  //dut.io.trace.valid.ready := DontCare
-  //dut.io.trace.bits.ready := DontCare
-  //dut.io.traceLen := DontCare
 }
