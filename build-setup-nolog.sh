@@ -105,7 +105,7 @@ fi
 if [ "$FASTINSTALL" = "true" ]; then
     git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
     cd firesim-riscv-tools-prebuilt
-    git checkout 85eb89490a730915a28eca3c25d4496193951565
+    git checkout 5fee18421a32058ab339572128201f4904354aaa
     PREBUILTHASH="$(cat HASH)"
     cd $target_toolchain_dir
     git submodule update --init riscv-tools
@@ -138,14 +138,30 @@ else
     git submodule update --init --recursive riscv-tools #--jobs 8
     cd riscv-tools
     export MAKEFLAGS="-j16"
-    ./build.sh
+    # Copied from riscv-tools build.sh
+    source build.common
+    echo "Starting RISC-V Toolchain build process"
+    build_project riscv-fesvr --prefix=$RISCV
+    build_project riscv-isa-sim --prefix=$RISCV --with-fesvr=$RISCV
+    build_project riscv-gnu-toolchain --prefix=$RISCV
+    CC= CXX= build_project riscv-pk --prefix=$RISCV --host=riscv64-unknown-elf
+    build_project riscv-tests --prefix=$RISCV/riscv64-unknown-elf
+    echo -e "\\nRISC-V Toolchain installation completed!"
+
     # build static libfesvr library for linking into driver
     cd riscv-fesvr/build
     $RDIR/scripts/build-static-libfesvr.sh
-    # build linux toolchain
     cd $RDIR
+    # build linux toolchain
     cd $target_toolchain_dir/riscv-tools/riscv-gnu-toolchain/build
     make -j16 linux
+    cd $RDIR
+
+    # build QEMU
+    cd sw/qemu
+    ./configure --target-list=riscv64-softmmu --prefix=$RISCV
+    make -j16
+    make install
     cd $RDIR
 fi
 
@@ -165,9 +181,10 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
     make
 
-    # Install firesim-software python libraries
+    # Install firesim-software dependencies 
     cd $RDIR
     sudo pip3 install -r sw/firesim-software/python-requirements.txt
+    cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
 
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
