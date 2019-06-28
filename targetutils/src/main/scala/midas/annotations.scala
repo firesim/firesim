@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
 
 import firrtl.{RenameMap}
-import firrtl.annotations.{SingleTargetAnnotation, ComponentName} // Deprecated
+import firrtl.annotations.{NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 
 // This is currently consumed by a transformation that runs after MIDAS's core
@@ -90,4 +90,16 @@ object SynthesizePrintf {
   def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
 
   // TODO: Accept a printable -> need to somehow get the format string from it
+}
+
+case class ExcludeInstanceAssertsAnnotation(target: (String, String)) extends
+    firrtl.annotations.NoTargetAnnotation {
+  def duplicate(n: (String, String)) = this.copy(target = n)
+}
+// TODO: Actually use a real target and not strings.
+object ExcludeInstanceAsserts {
+  def apply(target: (String, String)): ChiselAnnotation =
+    new ChiselAnnotation {
+      def toFirrtl = ExcludeInstanceAssertsAnnotation(target)
+    }
 }
