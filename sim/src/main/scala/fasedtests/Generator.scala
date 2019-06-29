@@ -35,7 +35,7 @@ trait GeneratorUtils extends HasTargetAgnosticUtilites {
     generatorArgs.midasFlowKind match {
       case "midas" | "strober" =>
         midas.MidasCompiler(
-          chirrtl, annos, portList, genDir, None, Seq(), hostTransforms
+          chirrtl, annos, portList, genDir, Seq(), hostTransforms
         )(hostParams alterPartial {case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
     }
   }

@@ -4,18 +4,12 @@
 [submodule "sw/firesim-software"]
 	path = sw/firesim-software
 	url = https://github.com/firesim/firesim-software
-[submodule "sim/firrtl"]
-	path = sim/firrtl
-	url = https://github.com/ucb-bar/firrtl
 [submodule "sim/midas"]
 	path = sim/midas
 	url = https://github.com/ucb-bar/midas
-[submodule "sim/barstools"]
-	path = sim/barstools
-	url = https://github.com/ucb-bar/barstools.git
-[submodule "sim/firechip"]
-	path = target-design/firechip
-	url = https://github.com/firesim/firechip
+[submodule "target-design/chipyard"]
+	path = target-design/chipyard
+	url = https://github.com/ucb-bar/project-template
 [submodule "sw/network-benchmarks"]
 	path = sw/network-benchmarks
 	url = https://github.com/firesim/network-benchmarks.git

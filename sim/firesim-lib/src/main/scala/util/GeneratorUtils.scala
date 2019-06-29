@@ -5,9 +5,11 @@ package firesim.util
 import java.io.{File, FileWriter}
 
 import chisel3.experimental.RawModule
+import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.config.{Config, Parameters}
-import freechips.rocketchip.diplomacy.{ValName, LazyModule}
+import freechips.rocketchip.devices.debug.DebugIO
+import freechips.rocketchip.diplomacy.{ValName, LazyModule, AutoBundle}
 import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
 // Contains FireSim generator utilities that can be reused in MIDAS examples
@@ -127,4 +129,65 @@ object GeneratorArgs {
       "TargetDir TopModuleProjectName TopModuleName ConfigProjectName ConfigNameString HostConfig")
     GeneratorArgs(a(0), a(1), a(2), a(3), a(4), a(5), a(6), a(7))
   }
+}
+
+// Can mix this into a Rocket Chip-style generatorApp
+trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites {
+  lazy val names = generatorArgs.targetNames
+  lazy val longName = names.topModuleClass
+  // Use a second parsedInputNames to reuse RC's handy config lookup functions
+  lazy val hostNames = generatorArgs.platformNames
+  lazy val targetParams = getParameters(names.fullConfigClasses)
+  lazy val target = getGenerator(names, targetParams)
+  // For HasTestSuites
+  lazy val testDir = genDir
+  val targetTransforms = Seq(
+    firesim.passes.AsyncResetRegPass,
+    firesim.passes.PlusArgReaderPass
+  )
+  lazy val hostTransforms = Seq(
+    new firesim.passes.ILATopWiringTransform(genDir)
+  )
+
+   lazy val hostParams = getHostParameters(names, hostNames)
+
+   def elaborateAndCompileWithMidas() {
+    val c3circuit = chisel3.Driver.elaborate(() => target)
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(c3circuit))
+    val annos = c3circuit.annotations.map(_.toFirrtl)
+
+     val portList = target.getPorts flatMap {
+      // TODO: BOth of these need to be removed before rebar release
+      case Port(id: DebugIO, _) => None
+      case Port(id: AutoBundle, _) => None
+      case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
+    }
+
+     generatorArgs.midasFlowKind match {
+      case "midas" | "strober" =>
+        midas.MidasCompiler(
+          chirrtl, annos, portList, genDir, targetTransforms, hostTransforms
+        )(hostParams alterPartial {case midas.EnableSnapshot => generatorArgs.midasFlowKind == "strober" })
+    // Need replay
+    }
+  }
+}
+
+ // A runtime-configuration generation for memory models
+// Args
+//   0: filename (basename)
+//   1: Output directory (same as above)
+//   Remaining argments are the same as above
+object FireSimRuntimeConfGenerator extends App with HasFireSimGeneratorUtilities {
+  lazy val generatorArgs = GeneratorArgs(args)
+  lazy val genDir = new File(names.targetDir)
+  // We need the scala instance of an elaborated memory-model, so that settings
+  // may be legalized against the generated hardware. TODO: Currently these
+  // settings aren't dependent on the target-AXI4 widths (~bug); this will need
+  // to be an optional post-generation step in MIDAS
+  lazy val memModel = (hostParams(midas.models.MemModelKey))(hostParams alterPartial {
+      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
+  chisel3.Driver.elaborate(() => memModel)
+  val confFileName = args(0)
+  memModel.getSettings(confFileName)(hostParams)
 }
