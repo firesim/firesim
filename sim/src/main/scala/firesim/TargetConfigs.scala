@@ -18,7 +18,7 @@ import icenet._
 import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
 import memblade.cache.{DRAMCacheKey, DRAMCacheConfig, RemoteAccessDepths, WritebackDepths, MemoryQueueParams}
-import memblade.prefetcher.{PrefetchRoCC, PrefetchConfig, StreamBufferConfig}
+import memblade.prefetcher.{PrefetchRoCC, SoftPrefetchConfig, AutoPrefetchConfig, StreamBufferConfig}
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -76,12 +76,6 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
     chunkBytes = site(CacheBlockBytes),
     logAddrBits = 37,
     outIdBits = 4,
-    prefetch = Some(StreamBufferConfig(
-      nBuffers = 4,
-      nBlocks = 16,
-      hitThreshold = 1,
-      reqQueue = 4,
-      timeoutPeriod = 4096)),
     remAccessQueue = RemoteAccessDepths(1, 2, 1, 2),
     wbQueue = WritebackDepths(1, 1),
     memInQueue = MemoryQueueParams(8, 2, 8, 2, 8, 2),
@@ -98,8 +92,13 @@ class WithPrefetchRoCC extends Config((site, here, up) => {
     implicit val p = q
     implicit val valName = ValName("FireSim")
     LazyModule(new PrefetchRoCC(
-      OpcodeSet.custom2,
-      PrefetchConfig(nMemXacts = 32, nBackends = 2)))
+      opcodes = OpcodeSet.custom2,
+      soft = Some(SoftPrefetchConfig(nMemXacts = 32, nBackends = 2)),
+      auto = Some(AutoPrefetchConfig(
+        nWays = 4,
+        nBlocks = 28,
+        hitThreshold = 1,
+        timeoutPeriod = 4096))))
   })
 })
 
