@@ -28,7 +28,7 @@ function usage
     echo "            as a library submodule"
 }
 
-if [ $# -eq 0 -o "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
+if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
     usage
     exit 3
 fi
