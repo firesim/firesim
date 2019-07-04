@@ -200,9 +200,9 @@ def makeBin(config, initramfs=False):
                 toCpio(config, config['img'], tmpCpio.name)
                 convertInitramfsConfig(linuxCfg, tmpCpio.name)
                 run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=config['linux-src'])
-                run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
+                run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
         else: 
-            run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
+            run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
         if os.path.exists('riscv-pk/build'):
