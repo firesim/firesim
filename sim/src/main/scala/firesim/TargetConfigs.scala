@@ -199,7 +199,19 @@ class FireSimMemBladeConfig extends Config(
   new WithMemBladeKey ++ new FireSimRocketChipConfig)
 
 class FireSimRemoteMemClientConfig extends Config(
-  new WithRemoteMemClientKey ++ new FireSimRocketChipConfig)
+  new WithRemoteMemClientKey ++
+  new WithInclusiveCache(
+    nBanks = 4,
+    capacityKB = 1024,
+    outerLatencyCycles = 50) ++
+  new WithInclusiveCacheInnerExteriorBuffer(
+    InclusiveCachePortParameters(
+      a = BufferParams(8),
+      b = BufferParams.none,
+      c = BufferParams.none,
+      d = BufferParams.flow,
+      e = BufferParams.none)) ++
+  new FireSimRocketChipConfig)
 
 class FireSimRemoteMemClientSingleCoreConfig extends Config(
   new WithNBigCores(1) ++ new FireSimRemoteMemClientConfig)
