@@ -7,7 +7,7 @@ import midas.widgets._
 import freechips.rocketchip.config.{Config, Parameters}
 import freechips.rocketchip.groundtest._
 import freechips.rocketchip.rocket.{DCacheParams}
-import freechips.rocketchip.subsystem.{WithExtMemSize, WithoutTLMonitors}
+import freechips.rocketchip.subsystem.{WithExtMemSize, WithoutTLMonitors, CacheBlockBytes}
 import junctions._
 import firesim.firesim.{WithDRAMCacheKey, WithNICKey, WithMemBladeKey}
 import memblade.cache.DRAMCacheKey
@@ -21,19 +21,20 @@ class WithDRAMCacheTraceGen extends Config((site, here, up) => {
       wordBits = NET_IF_WIDTH,
       addrBits = 40,
       addrBag = {
-        val nSets = site(DRAMCacheKey).nSets
-        val nWays = site(DRAMCacheKey).nWays
-        val spanBytes = site(DRAMCacheKey).spanBytes
-        val chunkBytes = site(DRAMCacheKey).chunkBytes
-        val nChunks = min(spanBytes/chunkBytes, 2)
-        val nChannels = site(DRAMCacheKey).nChannels
-        val nSpans = site(DRAMCacheKey).nBanksPerChannel * nChannels
+        val cacheKey = site(DRAMCacheKey)
+        val nSets = cacheKey.nSets
+        val nWays = cacheKey.nWays
+        val spanBytes = cacheKey.spanBytes
+        val blockBytes = site(CacheBlockBytes)
+        val nBlocks = min(spanBytes/blockBytes, 2)
+        val nChannels = cacheKey.nChannels
+        val nSpans = cacheKey.nBanksPerChannel * nChannels
         List.tabulate(nWays + 1) { i =>
-          Seq.tabulate(nChunks) { j =>
+          Seq.tabulate(nBlocks) { j =>
             Seq.tabulate(nSpans) { k =>
               BigInt(
                 (k * spanBytes) +
-                (j * chunkBytes) +
+                (j * blockBytes) +
                 (i * nSets * spanBytes))
             }
           }.flatten
