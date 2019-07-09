@@ -31,7 +31,7 @@ class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
 
 // Platform agnostic wrapper of the simulation models for FPGA 
 // TODO: Tilelink2 Port
-class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module with HasWidgets {
+class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Module with HasWidgets {
   val io = IO(new FPGATopIO)
   // Simulation Target
   val sim = Module(new SimBox(simIoType.cloneType))
@@ -82,54 +82,54 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   //}
 
   private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
-    val valid = ArrayBuffer[Bool]()
-    val ready = ArrayBuffer[Bool]()
-    def loop[T <: Data](arg: (T, T)): Unit = arg match {
-      case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
-        val channel = simIo(rv)
-        directionOf(channel.fwd.hValid) match {
-          case ActualDirection.Input =>
-            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-            channel.target <> target
-            channel.fwd.hValid := port.fromHost.hValid
-            channel.rev.hReady := port.toHost.hReady
-            ready += channel.fwd.hReady
-            valid += channel.rev.hValid
-          case ActualDirection.Output =>
-            import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-            target <> channel.target
-            channel.fwd.hReady := port.toHost.hReady
-            channel.rev.hValid := port.fromHost.hValid
-            ready += channel.rev.hReady
-            valid += channel.fwd.hValid
-          case _ => throw new RuntimeException(s"Unexpected valid direction: ${directionOf(channel.fwd.hValid)}")
-        }
-      case (target: Record, b: Record) =>
-        b.elements.toList foreach { case (name, wire) =>
-          loop(target.elements(name), wire)
-        }
-      case (target: Vec[_], v: Vec[_]) =>
-        require(target.size == v.size)
-        (target.zip(v)).foreach(loop)
-      case (target: Bits, wire: Bits) => directionOf(wire) match {
-        case ActualDirection.Input =>
-          val channel = simIo(wire)
-          channel.bits  := target
-          channel.valid := port.fromHost.hValid
-          ready += channel.ready
-        case ActualDirection.Output =>
-          val channel = simIo(wire)
-          target := channel.bits
-          channel.ready := port.toHost.hReady
-          valid += channel.valid
-        case _ => throw new RuntimeException(s"Unexpected Bits direction: ${directionOf(wire)}")
-      }
-      case (t: Clock, c: Clock) => throw new RuntimeException(s"Unexpected Clock in token channels: $c")
-    }
+    //val valid = ArrayBuffer[Bool]()
+    //val ready = ArrayBuffer[Bool]()
+    //def loop[T <: Data](arg: (T, T)): Unit = arg match {
+    //  case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
+    //    val channel = simIo(rv)
+    //    directionOf(channel.fwd.hValid) match {
+    //      case ActualDirection.Input =>
+    //        import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
+    //        channel.target <> target
+    //        channel.fwd.hValid := port.fromHost.hValid
+    //        channel.rev.hReady := port.toHost.hReady
+    //        ready += channel.fwd.hReady
+    //        valid += channel.rev.hValid
+    //      case ActualDirection.Output =>
+    //        import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
+    //        target <> channel.target
+    //        channel.fwd.hReady := port.toHost.hReady
+    //        channel.rev.hValid := port.fromHost.hValid
+    //        ready += channel.rev.hReady
+    //        valid += channel.fwd.hValid
+    //      case _ => throw new RuntimeException(s"Unexpected valid direction: ${directionOf(channel.fwd.hValid)}")
+    //    }
+    //  case (target: Record, b: Record) =>
+    //    b.elements.toList foreach { case (name, wire) =>
+    //      loop(target.elements(name), wire)
+    //    }
+    //  case (target: Vec[_], v: Vec[_]) =>
+    //    require(target.size == v.size)
+    //    (target.zip(v)).foreach(loop)
+    //  case (target: Bits, wire: Bits) => directionOf(wire) match {
+    //    case ActualDirection.Input =>
+    //      val channel = simIo(wire)
+    //      channel.bits  := target
+    //      channel.valid := port.fromHost.hValid
+    //      ready += channel.ready
+    //    case ActualDirection.Output =>
+    //      val channel = simIo(wire)
+    //      target := channel.bits
+    //      channel.ready := port.toHost.hReady
+    //      valid += channel.valid
+    //    case _ => throw new RuntimeException(s"Unexpected Bits direction: ${directionOf(wire)}")
+    //  }
+    //  case (t: Clock, c: Clock) => throw new RuntimeException(s"Unexpected Clock in token channels: $c")
+    //}
 
-    loop(port.hBits -> wires)
-    port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
-    port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
+    //loop(port.hBits -> wires)
+    //port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
+    //port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
   val memPorts = new ListBuffer[NastiIO]
@@ -138,33 +138,28 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
 
   // Instantiate endpoint widgets. Keep a tuple of each endpoint's reset channel enq.valid and enq.ready
   //                      Valid, Ready
-  (simIo.endpoints flatMap { endpoint =>
-    Seq.tabulate(endpoint.size)({ i =>
-      val widgetName = s"${endpoint.widgetName}_$i"
-      val widget = addWidget(endpoint.widget(p), widgetName)
-      widget.reset := reset.toBool || simReset
-      widget match {
-        case model: midas.models.FASEDMemoryTimingModel =>
-          memPorts += model.io.host_mem
-          model.io.tNasti.hBits.aw.bits.user := DontCare
-          model.io.tNasti.hBits.aw.bits.region := DontCare
-          model.io.tNasti.hBits.ar.bits.user := DontCare
-          model.io.tNasti.hBits.ar.bits.region := DontCare
-          model.io.tNasti.hBits.w.bits.id := DontCare
-          model.io.tNasti.hBits.w.bits.user := DontCare
-          case _ =>
-      }
-      channels2Port(widget.io.hPort, endpoint(i)._2)
+  simIo.endpointAnnos.map({ anno =>
+    val widgetName = s"${anno.target.ref}"
+    val widget = addWidget(anno.widget(p), widgetName)
+    widget.reset := reset.toBool || simReset
+    widget match {
+      case model: midas.models.FASEDMemoryTimingModel =>
+        memPorts += model.io.host_mem
+        model.io.tNasti.hBits.aw.bits.user := DontCare
+        model.io.tNasti.hBits.aw.bits.region := DontCare
+        model.io.tNasti.hBits.ar.bits.user := DontCare
+        model.io.tNasti.hBits.ar.bits.region := DontCare
+        model.io.tNasti.hBits.w.bits.id := DontCare
+        model.io.tNasti.hBits.w.bits.user := DontCare
+        case _ =>
+    }
+    //channels2Port(widget.io.hPort, endpoint(i)._2)
 
-      widget match {
-        case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
-        case _ => Nil
-      }
-
-    })
-  // HACK: Need to add the tranformed-RTL channel as well
+    widget match {
+      case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
+      case _ => Nil
+    }
   })
-
 
   // Host Memory Channels
   // Masters = Target memory channels + loadMemWidget

@@ -9,7 +9,7 @@ import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
 
-import midas.core.HostMemChannelNastiKey
+import midas.core.{HostMemChannelNastiKey, ChannelWidth}
 
 abstract class PlatformShim(implicit p: Parameters) extends Module {
   def top: midas.core.FPGATop
@@ -22,8 +22,8 @@ abstract class PlatformShim(implicit p: Parameters) extends Module {
       sb append(genMacro("ENABLE_SNAPSHOT"))
       if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
     }
-    sb.append(genMacro("data_t", "uint%d_t".format(top.sim.channelWidth)))
-    top.genHeader(sb)(top.sim.channelWidth)
+    sb.append(genMacro("data_t", "uint%d_t".format(p(ChannelWidth))))
+    top.genHeader(sb)(p(ChannelWidth))
     sb.append("\n// Simulation Constants\n")
     headerConsts map { case (name, value) =>
       genMacro(name, widgets.UInt32(value)) } addString sb
@@ -37,7 +37,7 @@ class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) }))
 }
 
-class ZynqShim(simIo: midas.core.SimWrapperIO)
+class ZynqShim(simIo: midas.core.SimWrapperChannels)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new ZynqShimIO)
   val top = Module(new midas.core.FPGATop(simIo))
