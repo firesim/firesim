@@ -17,7 +17,7 @@ class F1ShimIO(implicit val p: Parameters) extends Bundle {
   val slave  = Vec(p(HostMemNumChannels), new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
-class F1Shim(simIo: midas.core.SimWrapperIO)
+class F1Shim(simIo: midas.core.SimWrapperChannels)
               (implicit p: Parameters) extends PlatformShim {
   val io = IO(new F1ShimIO)
   val top = Module(new midas.core.FPGATop(simIo))

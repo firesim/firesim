@@ -8,6 +8,7 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.chiselName
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 import freechips.rocketchip.config.Parameters
@@ -166,16 +167,36 @@ class PeekPokeIOWidget(
 }
 
 class PeekPokeEndpointIO(private val targetIO: Record) extends ChannelizedHostPort(targetIO) {
+  // NB: Directions of targetIO are WRT to the endpoint, but "ins" and "outs" WRT to the target RTL
   val (targetInputs, targetOutputs, _, _) = parsePorts(targetIO)
-  val ins  = targetInputs.map({ case (field, name) => name -> InputChannel(field) })
-  val outs = targetOutputs.map({ case (field, name) => name -> OutputChannel(field) })
+  val outs  = targetInputs.map({ case (field, name) => name -> InputChannel(field) })
+  val ins = targetOutputs.map({ case (field, name) => name -> OutputChannel(field) })
   override val elements = ListMap((ins ++ outs):_*)
   override def cloneType = new PeekPokeEndpointIO(targetIO).asInstanceOf[this.type]
 }
 
-class PeekPokeEndpoint[T <: Record](gen: T) extends BlackBox with IsEndpoint {
-  val io = IO(gen)
+class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extends Record {
+  val reset = if (withReset) Some(Output(Bool())) else None
+  override val elements = ListMap((
+    reset.map("reset" -> _).toSeq ++
+    targetIO.map({ case (name, field) => name -> Flipped(field.chiselCloneType) })
+  ):_*)
+  override def cloneType = new PeekPokeTargetIO(targetIO, withReset).asInstanceOf[this.type]
+}
+
+class PeekPokeEndpoint(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox with IsEndpoint {
+  val io = IO(new PeekPokeTargetIO(targetIO, reset != None))
   val endpointIO = new PeekPokeEndpointIO(io)
   def widget = (p: Parameters) => new PeekPokeIOWidget(endpointIO)(p)
   generateAnnotations()
+}
+
+object PeekPokeEndpoint {
+  @chiselName
+  def apply(reset: Bool, ioList: (String, Data)*): PeekPokeEndpoint = {
+    val peekPokeEndpoint = Module(new PeekPokeEndpoint(ioList, Some(reset)))
+    ioList.foreach({ case (name, field) => field <> peekPokeEndpoint.io.elements(name) })
+    reset := peekPokeEndpoint.io.reset.get
+    peekPokeEndpoint
+  }
 }

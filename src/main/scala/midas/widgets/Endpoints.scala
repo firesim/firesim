@@ -123,10 +123,11 @@ trait IsEndpoint {
         FAMEChannelConnectionAnnotation(
           globalName = chName,
           channelInfo = WireChannel,
-          // This is an input to the endpoint, and thus sourced by the target-RTL
+          // This is an input to the endpoint, and thus it is sink of tokens from the target RTL
           sources = Some(Seq(field.toNamed.toTarget)),
-          sinks = None) }
-      )
+          sinks = None
+        )
+      })
     }
 
     for ((field, chName) <- endpointIO.outputWireChannels) {
@@ -134,9 +135,11 @@ trait IsEndpoint {
         FAMEChannelConnectionAnnotation(
           globalName = chName,
           channelInfo = WireChannel,
+          // This is an output from the endpoint, and thus source of tokens to the target RTL
           sources = None,
-          sinks = Some(Seq(field.toNamed.toTarget))) }
-      )
+          sinks = Some(Seq(field.toNamed.toTarget))
+        )
+      })
     }
   }
 }

@@ -58,6 +58,7 @@ case class FAMEChannelConnectionAnnotation(
   def moveFromEndpoint(portName: String): FAMEChannelConnectionAnnotation = {
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
     copy(
+      globalName = s"${portName}_${globalName}",
       sources = sources.map(_.map(updateRT)),
       sinks   = sinks.map(_.map(updateRT))
     )

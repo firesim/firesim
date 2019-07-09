@@ -18,6 +18,7 @@ import Utils._
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimWrapper
+import midas.widgets.EndpointIOAnnotation
 
 private[passes] object ReferenceTargetToPortMap {
   def apply(state: CircuitState): Map[ReferenceTarget, Port] = {
@@ -76,6 +77,7 @@ private[passes] class SimulationMapping(
     // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
     // SimWrapper generation. We want the targets to point at un-lowered ports
     val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
+    val endpointAnnos = innerState.annotations.collect({ case ep: EndpointIOAnnotation => ep })
     // Generate a port map to look up the types of the IO of the channels
     val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
 
@@ -89,7 +91,7 @@ private[passes] class SimulationMapping(
     val loweredInnerState = new IntermediateLoweringCompiler(innerState.form, LowForm).compile(innerState, Seq())
     val innerCircuit = loweredInnerState.circuit
 
-    lazy val sim = new SimWrapper(io, newTargetIO, chAnnos, portTypeMap)
+    lazy val sim = new SimWrapper(chAnnos, endpointAnnos, portTypeMap)
 
     val c3circuit = chisel3.Driver.elaborate(() => sim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
@@ -109,7 +111,8 @@ private[passes] class SimulationMapping(
 
     // FIXME: Renamer complains if i leave these in
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
-      case ch: FAMEChannelConnectionAnnotation => false
+      case _: FAMEChannelConnectionAnnotation => false
+      case _: EndpointIOAnnotation => false
       case _: AddedTargetIoAnnotation[_] => false
       case _ => true
     })

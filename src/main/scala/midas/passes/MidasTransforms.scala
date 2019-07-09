@@ -19,7 +19,7 @@ private[passes] class WCircuit(
   info: Info,
   modules: Seq[DefModule],
   main: String,
-  val sim: SimWrapperIO) extends Circuit(info, modules, main)
+  val sim: SimWrapperChannels) extends Circuit(info, modules, main)
 
 private[midas] class MidasTransforms(
     io: Seq[(String, chisel3.Data)])
@@ -35,7 +35,7 @@ private[midas] class MidasTransforms(
     new EmitFirrtl("post-wrap-sram-models.fir"))
   else Seq()
 
-  //Logger.setLevel(LogLevel.Info)
+  Logger.setLevel(LogLevel.Debug)
   def execute(state: CircuitState) = {
     val xforms = Seq(
       firrtl.passes.RemoveValidIf,
@@ -51,6 +51,8 @@ private[midas] class MidasTransforms(
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new EndpointExtraction,
+      new ResolveAndCheck,
+      new MiddleFirrtlToLowFirrtl,
       new fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++
