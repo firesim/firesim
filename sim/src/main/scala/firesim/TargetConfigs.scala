@@ -19,6 +19,7 @@ import memblade.manager.{MemBladeKey, MemBladeParams, MemBladeQueueParams}
 import memblade.client.{RemoteMemClientKey, RemoteMemClientConfig}
 import memblade.cache.{DRAMCacheKey, DRAMCacheConfig, RemoteAccessDepths, WritebackDepths, MemoryQueueParams}
 import memblade.prefetcher.{PrefetchRoCC, SoftPrefetchConfig, AutoPrefetchConfig, StreamBufferConfig}
+import scala.math.max
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -46,17 +47,22 @@ class WithNICKey extends Config((site, here, up) => {
 class WithMemBladeKey extends Config((site, here, up) => {
   case MemBladeKey => MemBladeParams(
     spanBytes = site(CacheBlockBytes),
-    nSpanTrackers = 4,
+    nSpanTrackers = 6,
     nWordTrackers = 4,
     spanQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32),
     wordQueue = MemBladeQueueParams(reqHeadDepth = 32, respHeadDepth = 32))
 })
 
+class WithMemBladeSpanBytes(spanBytes: Int) extends Config((site, here, up) => {
+  case MemBladeKey => up(MemBladeKey).copy(
+    spanBytes = spanBytes,
+    nSpanTrackers = max(384 / spanBytes, 2))
+})
+
 class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig(
-    spanBytes = site(CacheBlockBytes),
-    nSequencers = 8,
-    nRMemXacts = 384)
+    spanBytes = 1024,
+    nRMemXacts = 32)
 })
 
 class WithMemBenchKey extends Config((site, here, up) => {
@@ -197,6 +203,9 @@ class FireSimRocketChipOctaCoreConfig extends Config(
 
 class FireSimMemBladeConfig extends Config(
   new WithMemBladeKey ++ new FireSimRocketChipConfig)
+
+class FireSimMemBladeConfig1024 extends Config(
+  new WithMemBladeSpanBytes(1024) ++ new FireSimMemBladeConfig)
 
 class FireSimRemoteMemClientConfig extends Config(
   new WithRemoteMemClientKey ++
