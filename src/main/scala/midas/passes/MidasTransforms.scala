@@ -50,7 +50,7 @@ private[midas] class MidasTransforms(
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
-      new ChannelizeTargetIO(io),
+      new EndpointExtraction,
       new fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++

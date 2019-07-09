@@ -8,53 +8,31 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._
+import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
+import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimUtils._
 import midas.core.{SimReadyValid, SimReadyValidIO}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
-class ChannelRecord(channels: Seq[ChTuple]) extends Record {
-  val elements = ListMap((channels map { case (elm, name) =>
-    name -> Decoupled(elm.cloneType)
-  }):_*)
-  def cloneType = new ChannelRecord(channels).asInstanceOf[this.type]
-}
-
-class RVChannelRecord(channels: Seq[RVChTuple]) extends Record {
-  val elements = ListMap((channels map { case (elm, name) =>
-    name -> SimReadyValid(elm.bits.cloneType)
-  }):_*)
-  def cloneType = new RVChannelRecord(channels).asInstanceOf[this.type]
-}
-
-class PeekPokeIOWidgetIO(
-  val inputs: Seq[ChTuple],
-  val outputs: Seq[ChTuple],
-  val rvInputs: Seq[RVChTuple],
-  val rvOutputs: Seq[RVChTuple]) (implicit p: Parameters) extends WidgetIO()(p) {
+class PeekPokeIOWidgetIO(private val peekPokeEndpointIO: PeekPokeEndpointIO)(implicit val p: Parameters)
+    extends WidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
-  // Place for a heterogenous seq
-  val ins  = new ChannelRecord(inputs)
-  val outs = Flipped(new ChannelRecord(outputs))
-  val rvins  = new RVChannelRecord(rvInputs)
-  val rvouts = Flipped(new RVChannelRecord(rvOutputs))
+  val hPort = peekPokeEndpointIO.cloneType
 
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val idle = Output(Bool())
 }
-
 // The interface to this widget is temporary, and matches the Vec of channels
 // the sim wrapper produces. Ultimately, the wrapper should have more coarsely
 // tokenized IOs.
 // Maximum channel decoupling puts a bound on the number of cycles the fastest
 // channel can advance ahead of the slowest channel
 class PeekPokeIOWidget(
-    inputs: Seq[ChTuple],
-    outputs: Seq[ChTuple],
-    rvInputs: Seq[RVChTuple],
-    rvOutputs: Seq[RVChTuple],
+    peekPokeIO: PeekPokeEndpointIO,
     maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends Widget()(p) {
-  val io = IO(new PeekPokeIOWidgetIO(inputs, outputs, rvInputs, rvOutputs))
+  val io = IO(new PeekPokeIOWidgetIO(peekPokeIO))
 
   require(maxChannelDecoupling > 1, "A smaller channel decoupling could FMR")
   // Tracks the number of tokens the slowest channel has to produce or consume
@@ -97,7 +75,7 @@ class PeekPokeIOWidget(
     val advanceViaPoke = wordsReceived === reg.size.U
 
     when (poke) {
-      wordsReceived := wordsReceived + 1.U 
+      wordsReceived := wordsReceived + 1.U
     }.elsewhen(channel.fire) {
       wordsReceived := 0.U
     }
@@ -134,25 +112,8 @@ class PeekPokeIOWidget(
     reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
   }
 
-  // Hacks
-  def bindRVInputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
-    channel.fwd.hValid := true.B
-    channel.rev.hReady := true.B
-    channel.target.valid := false.B
-    channel.target.bits := DontCare
-  }
-
-  def bindRVOutputs(name: String, channel: SimReadyValidIO[Data]): Unit = {
-    channel.rev.hValid := true.B
-    channel.fwd.hReady := true.B
-    channel.target.ready := false.B
-  }
-
-
-  val inputAddrs = io.ins.elements.map(elm => bindInputs(elm._1, elm._2))
-  val outputAddrs = io.outs.elements.map(elm => bindOutputs(elm._1, elm._2))
-  io.rvins.elements.foreach(elm => bindRVInputs(elm._1, elm._2))
-  io.rvouts.elements.foreach(elm => bindRVOutputs(elm._1, elm._2))
+  val inputAddrs = io.hPort.ins.map(elm => bindInputs(elm._1, elm._2))
+  val outputAddrs = io.hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
   tCycleAdvancing := channelDecouplingFlags.reduce(_ && _)
   // tCycleAdvancing can be asserted if all inputs have been poked; but only increment
@@ -186,6 +147,7 @@ class PeekPokeIOWidget(
       case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
     super.genHeader(base, sb)
+    val inputs = io.hPort.targetInputs
     sb.append(genComment("Pokeable target inputs"))
     sb.append(genMacro("POKE_SIZE", UInt64(inputs.size)))
     genOffsets(inputs.unzip._2)
@@ -193,6 +155,7 @@ class PeekPokeIOWidget(
     sb.append(genArray("INPUT_NAMES", inputs.unzip._2 map CStrLit))
     sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
 
+    val outputs = io.hPort.targetOutputs
     sb.append(genComment("Peekable target outputs"))
     sb.append(genMacro("PEEK_SIZE", UInt64(outputs.size)))
     genOffsets(outputs.unzip._2)
@@ -200,4 +163,19 @@ class PeekPokeIOWidget(
     sb.append(genArray("OUTPUT_NAMES", outputs.unzip._2 map CStrLit))
     sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
   }
+}
+
+class PeekPokeEndpointIO(private val targetIO: Record) extends ChannelizedHostPort(targetIO) {
+  val (targetInputs, targetOutputs, _, _) = parsePorts(targetIO)
+  val ins  = targetInputs.map({ case (field, name) => name -> InputChannel(field) })
+  val outs = targetOutputs.map({ case (field, name) => name -> OutputChannel(field) })
+  override val elements = ListMap((ins ++ outs):_*)
+  override def cloneType = new PeekPokeEndpointIO(targetIO).asInstanceOf[this.type]
+}
+
+class PeekPokeEndpoint[T <: Record](gen: T) extends BlackBox with IsEndpoint {
+  val io = IO(gen)
+  val endpointIO = new PeekPokeEndpointIO(io)
+  def widget = (p: Parameters) => new PeekPokeIOWidget(endpointIO)(p)
+  generateAnnotations()
 }

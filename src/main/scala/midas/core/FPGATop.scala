@@ -44,22 +44,23 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
 
-  val defaultIOWidget = addWidget(new PeekPokeIOWidget(
-    simIo.pokedInputs,
-    simIo.peekedOutputs,
-    simIo.pokedReadyValidInputs,
-    simIo.peekedReadyValidOutputs),
-    "DefaultIOWidget")
-  defaultIOWidget.io.step <> master.io.step
-  master.io.done := defaultIOWidget.io.idle
-  defaultIOWidget.reset := reset.toBool || simReset
+  //val defaultIOWidget = addWidget(new PeekPokeIOWidget(
+  //  simIo.pokedInputs,
+  //  simIo.peekedOutputs,
+  //  simIo.pokedReadyValidInputs,
+  //  simIo.peekedReadyValidOutputs),
+  //  "DefaultIOWidget")
+  //defaultIOWidget.io.step <> master.io.step
+  //master.io.done := defaultIOWidget.io.idle
+  //defaultIOWidget.reset := reset.toBool || simReset
+  
 
   // Note we are connecting up target reset here; we override part of this
   // assignment below when connecting the memory models to this same reset
-  simIo.pokedInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.ins.elements(name) })
-  simIo.peekedOutputs.foreach({case (wire, name) => defaultIOWidget.io.outs.elements(name) <> simIo.elements(name)})
-  simIo.pokedReadyValidInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.rvins.elements(name) })
-  simIo.peekedReadyValidOutputs.foreach({case (wire, name) => defaultIOWidget.io.rvouts.elements(name) <> simIo.elements(name)})
+  //simIo.pokedInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.ins.elements(name) })
+  //simIo.peekedOutputs.foreach({case (wire, name) => defaultIOWidget.io.outs.elements(name) <> simIo.elements(name)})
+  //simIo.pokedReadyValidInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.rvins.elements(name) })
+  //simIo.peekedReadyValidOutputs.foreach({case (wire, name) => defaultIOWidget.io.rvouts.elements(name) <> simIo.elements(name)})
 
   //if (p(EnableSnapshot)) {
   //  val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
@@ -131,14 +132,13 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
     port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
   }
 
-  val tResetChannel = defaultIOWidget.io.ins.elements("reset")
   val memPorts = new ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
   val dmaInfoBuffer = new ListBuffer[DmaInfo]
 
   // Instantiate endpoint widgets. Keep a tuple of each endpoint's reset channel enq.valid and enq.ready
   //                      Valid, Ready
-  val resetEnqTuples: Seq[(Bool, Bool)] = (simIo.endpoints flatMap { endpoint =>
+  (simIo.endpoints flatMap { endpoint =>
     Seq.tabulate(endpoint.size)({ i =>
       val widgetName = s"${endpoint.widgetName}_$i"
       val widget = addWidget(endpoint.widget(p), widgetName)
@@ -161,24 +161,9 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
         case _ => Nil
       }
 
-      // each widget should have its own reset queue
-      val resetQueue = Module(new WireChannel(Bool(), 0, endpoint.clockRatio))
-      resetQueue.suggestName(s"resetQueue_${widgetName}")
-      resetQueue.io.traceLen := DontCare
-      resetQueue.io.trace.ready := DontCare
-      resetQueue.reset := reset.toBool || simReset
-      widget.io.tReset <> resetQueue.io.out
-      resetQueue.io.in.bits := tResetChannel.bits
-      resetQueue.io.in.valid := tResetChannel.valid
-      (resetQueue.io.in.valid, resetQueue.io.in.ready)
     })
   // HACK: Need to add the tranformed-RTL channel as well
-  }) ++ Seq((simIo.wirePortMap("reset").valid, simIo.wirePortMap("reset").ready))
-
-  // Note: This is not LI-BDN compliant... Should implement a forking decoupled helper
-  val tResetHelper = DecoupledHelper((resetEnqTuples.map(_._2) ++ Seq(tResetChannel.valid)):_*)
-  tResetChannel.ready := tResetHelper.fire(tResetChannel.valid)
-  resetEnqTuples.foreach({ case (enqValid, enqReady) => enqValid := tResetHelper.fire(enqReady) })
+  })
 
 
   // Host Memory Channels
