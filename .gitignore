@@ -6,3 +6,7 @@ target-design/switch/switchconfig.h
 sim[0-9]
 build-setup-log
 tags
+.Xil
+vivado*.jou
+vivado*.log
+awsver.txt
