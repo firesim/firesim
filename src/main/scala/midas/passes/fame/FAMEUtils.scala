@@ -201,7 +201,6 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       case (_, ports) if channelSharesPorts(ports) && !channelIsDuplicate(ports) =>
         throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
       case (cName, ports) if channelIsDuplicate(ports) =>
-        println(s"${cName} -> ${visitedChannel(ports)}")
         channelDedups(cName) = visitedChannel(ports)
         None
       case (cName, ports) =>

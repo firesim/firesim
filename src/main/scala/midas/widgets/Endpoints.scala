@@ -4,15 +4,19 @@ package midas
 package widgets
 
 import midas.core.{IsRationalClockRatio, UnityClockRatio, HostPort, HostPortIO, SimUtils}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
 import freechips.rocketchip.config.Parameters
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.Direction
+import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
+import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
+import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 
-import scala.collection.mutable.{ArrayBuffer, HashSet}
+import scala.collection.mutable
+import scala.collection.immutable.ListMap
 
 /* Endpoint
  *
@@ -42,8 +46,8 @@ abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
 
 
 trait Endpoint {
-  protected val channels = ArrayBuffer[(String, Record)]()
-  protected val wires = HashSet[Bits]()
+  protected val channels = mutable.ArrayBuffer[(String, Record)]()
+  protected val wires = mutable.HashSet[Bits]()
   def clockRatio: IsRationalClockRatio = UnityClockRatio
   def matchType(data: Data): Boolean
   def widget(p: Parameters): EndpointWidget
@@ -87,4 +91,120 @@ trait Endpoint {
 case class EndpointMap(endpoints: Seq[Endpoint]) {
   def get(data: Data) = endpoints find (_ matchType data)
   def ++(x: EndpointMap) = EndpointMap(endpoints ++ x.endpoints) 
+}
+
+case class EndpointAnnotation(
+  val target: ModuleTarget,
+  widget: (Parameters) => Widget)
+    extends SingleTargetAnnotation[ModuleTarget] {
+  def duplicate(n: ModuleTarget) = this.copy(target)
+  def toIOAnnotation(port: String) =
+    EndpointIOAnnotation(target.copy(module = target.circuit).ref(port), widget)
+}
+
+private[midas] case class EndpointIOAnnotation(
+  val target: ReferenceTarget,
+  widget: (Parameters) => Widget)
+    extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget) = this.copy(target)
+}
+
+trait IsEndpoint {
+  self: BlackBox =>
+  def endpointIO: ChannelizedHostPort
+  def widget: (Parameters) => Widget
+  def generateAnnotations(): Unit = {
+    // Generate the endpoint annotation
+    annotate(new ChiselAnnotation { def toFirrtl = EndpointAnnotation(self.toNamed.toTarget, widget) })
+
+    // Emit all channel annotations
+    for ((field, chName) <- endpointIO.inputWireChannels) {
+      annotate(new ChiselAnnotation { def toFirrtl =
+        FAMEChannelConnectionAnnotation(
+          globalName = chName,
+          channelInfo = WireChannel,
+          // This is an input to the endpoint, and thus sourced by the target-RTL
+          sources = Some(Seq(field.toNamed.toTarget)),
+          sinks = None) }
+      )
+    }
+
+    for ((field, chName) <- endpointIO.outputWireChannels) {
+      annotate(new ChiselAnnotation { def toFirrtl =
+        FAMEChannelConnectionAnnotation(
+          globalName = chName,
+          channelInfo = WireChannel,
+          sources = None,
+          sinks = Some(Seq(field.toNamed.toTarget))) }
+      )
+    }
+  }
+}
+
+
+abstract class ChannelizedHostPort(private val gen: Record) extends Record {
+  private val _inputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
+  private val _outputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
+  lazy val channelMapping = Map((_inputWireChannels ++ _outputWireChannels):_*)
+
+  private def getLeafDirs(token: Data): Seq[Direction] = token match {
+    case c: Clock => Seq()
+    case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
+    case v: Vec[_] => v.flatMap(getLeafDirs)
+    case b: Bits => Seq(directionOf(b))
+  }
+  // Simplifying assumption: if the user wants to aggregate a bunch of wires
+  // into a single channel they should aggregate them into a Bundle on their record
+  private def channel[T <: Data](direction: Direction)(field: T): DecoupledIO[T] = {
+    val directions = getLeafDirs(field)
+    val isUnidirectional = directions.zip(directions.tail).map({ case (a, b) => a == b })
+                                                          .foldLeft(true)(_ && _)
+    require(isUnidirectional, "Token channels must have a unidirectioned payload")
+    require(directions.head == direction)
+
+    directions.head match {
+      case Direction.Input => {
+        val ch = Flipped(Decoupled(field.cloneType))
+        _inputWireChannels += (field -> ch)
+        ch
+      }
+      case Direction.Output => {
+        val ch = Decoupled(field.cloneType)
+        _outputWireChannels += (field -> ch)
+        ch
+      }
+    }
+  }
+
+  def InputChannel[T <: Data](field: T) = channel(Direction.Input)(field)
+  def OutputChannel[T <: Data](field: T) = channel(Direction.Output)(field)
+
+  private def checkAllFieldsAssignedToChannels(): Unit = {
+    def prefixWith(prefix: String, base: Any): String =
+      if (prefix != "")  s"${prefix}.${base}" else base.toString
+
+    def loop(name: String, field: Data): Seq[(String, Boolean)] = field match {
+      case c: Clock => Seq(name -> true)
+      case b: Record if channelMapping.isDefinedAt(b) => Seq(name -> true)
+      case b: Record => b.elements.flatMap({ case (n, e) => loop(prefixWith(name, n), e) }).toSeq
+      case v: Vec[_] if channelMapping.isDefinedAt(v) => Seq(name -> true)
+      case v: Vec[_] => (v.zipWithIndex).flatMap({ case (e, i) => loop(s"${name}_$i", e) })
+      case b: Bits => Seq(name -> channelMapping.isDefinedAt(b))
+    }
+    val messages = loop("", gen).collect({ case (name, assigned) if !assigned =>
+      "Field ${name} of endpoint IO is not assigned to a channel"})
+    assert(messages.isEmpty, messages.mkString("\n"))
+  }
+
+  def inputWireChannels: Seq[(Data, String)] = {
+    checkAllFieldsAssignedToChannels()
+    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
+    _inputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
+  }
+
+  def outputWireChannels: Seq[(Data, String)] = {
+    checkAllFieldsAssignedToChannels()
+    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
+    _outputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
+  }
 }

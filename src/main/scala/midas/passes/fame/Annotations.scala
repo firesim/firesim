@@ -52,6 +52,16 @@ case class FAMEChannelConnectionAnnotation(
     val renamer = RTRenamer.exact(renames)
     Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
   }
+
+  def getEndpointModule(): String = sources.getOrElse(sinks.get).head.module
+
+  def moveFromEndpoint(portName: String): FAMEChannelConnectionAnnotation = {
+    def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
+    copy(
+      sources = sources.map(_.map(updateRT)),
+      sinks   = sinks.map(_.map(updateRT))
+    )
+  }
   override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten
 }
 
