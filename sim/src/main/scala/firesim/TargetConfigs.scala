@@ -75,16 +75,17 @@ class WithDRAMCacheKey extends Config((site, here, up) => {
     nWays = 7,
     baseAddr = BigInt(1) << 37,
     nTrackersPerBank = 4,
-    nBanksPerChannel = 4,
-    nChannels = 2,
+    nBanksPerChannel = 8,
+    nChannels = 1,
     nSecondaryRequests = 1,
     spanBytes = site(CacheBlockBytes),
     logAddrBits = 37,
     outIdBits = 4,
+    nWritebackRemXacts = 32,
     remAccessQueue = RemoteAccessDepths(1, 8, 1, 8),
     wbQueue = WritebackDepths(1, 1),
-    memInQueue = MemoryQueueParams(8, 2, 8, 2, 8, 2),
-    memOutQueue = MemoryQueueParams(2, 2, 2, 2, 2, 2),
+    memInQueue = MemoryQueueParams(0, 0, 8, 2, 8, 2),
+    memOutQueue = MemoryQueueParams(0, 0, 2, 2, 2, 2),
     zeroMetadata = false)
 })
 
