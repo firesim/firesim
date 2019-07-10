@@ -44,24 +44,6 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
 
-  //val defaultIOWidget = addWidget(new PeekPokeIOWidget(
-  //  simIo.pokedInputs,
-  //  simIo.peekedOutputs,
-  //  simIo.pokedReadyValidInputs,
-  //  simIo.peekedReadyValidOutputs),
-  //  "DefaultIOWidget")
-  //defaultIOWidget.io.step <> master.io.step
-  //master.io.done := defaultIOWidget.io.idle
-  //defaultIOWidget.reset := reset.toBool || simReset
-  
-
-  // Note we are connecting up target reset here; we override part of this
-  // assignment below when connecting the memory models to this same reset
-  //simIo.pokedInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.ins.elements(name) })
-  //simIo.peekedOutputs.foreach({case (wire, name) => defaultIOWidget.io.outs.elements(name) <> simIo.elements(name)})
-  //simIo.pokedReadyValidInputs.foreach({case (wire, name) => simIo.elements(name) <> defaultIOWidget.io.rvins.elements(name) })
-  //simIo.peekedReadyValidOutputs.foreach({case (wire, name) => defaultIOWidget.io.rvouts.elements(name) <> simIo.elements(name)})
-
   //if (p(EnableSnapshot)) {
   //  val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
   //  daisyController.reset := reset.toBool || simReset
@@ -140,7 +122,7 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   //                      Valid, Ready
   simIo.endpointAnnos.map({ anno =>
     val widgetName = s"${anno.target.ref}"
-    val widget = addWidget(anno.widget(p), widgetName)
+    val widget: EndpointWidget = addWidget(anno.widget(p), widgetName)
     widget.reset := reset.toBool || simReset
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
@@ -151,9 +133,22 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
         model.io.tNasti.hBits.ar.bits.region := DontCare
         model.io.tNasti.hBits.w.bits.id := DontCare
         model.io.tNasti.hBits.w.bits.user := DontCare
-        case _ =>
+      case peekPoke: PeekPokeIOWidget =>
+        peekPoke.io.step <> master.io.step
+        master.io.done := peekPoke.io.idle
+      case _ =>
     }
-    //channels2Port(widget.io.hPort, endpoint(i)._2)
+    widget.io.hPort match {
+      case hPort: ChannelizedHostPortIO => {
+        widget.io.tReset <> DontCare
+        hPort.inputChannelNames.foreach(chName =>
+          hPort.elements(chName) <> simIo.elements(s"${widgetName}_${chName}_source")
+        )
+        hPort.outputChannelNames.foreach(chName =>
+          simIo.elements(s"${widgetName}_${chName}_sink") <> hPort.elements(chName)
+        )
+      }
+    }
 
     widget match {
       case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
