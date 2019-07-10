@@ -190,7 +190,7 @@ unittest_args = \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT) $(SBT_FLAGS)" \
+		SBT="$(SBT)" \
 		CONFIG=$(UNITTEST_CONFIG)
 
 run-midas-unittests: $(chisel_srcs)

@@ -34,8 +34,8 @@ endif
 
 $(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	cd $(base_dir) && $(SBT) $(SBT_FLAGS) \
-	"project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && \
+	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
 ##########################
 # Driver Sources & Flags #
@@ -56,8 +56,8 @@ CONF_NAME ?= runtime.conf
 .PHONY: conf
 conf:
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && $(SBT) $(SBT_FLAGS) \
-	"project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+	cd $(base_dir) && \
+	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #

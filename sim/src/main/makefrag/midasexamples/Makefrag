@@ -32,8 +32,7 @@ CONF_NAME ?= runtime.conf
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	$(SBT) "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 

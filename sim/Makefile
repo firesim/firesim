@@ -30,15 +30,16 @@ ifdef FIRESIM_STANDALONE
 
 base_dir := $(firesim_base_dir)
 
-SBT ?= sbt
 JVM_MEMORY ?= 16G
-SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++2.12.4
+SCALA_VERSION ?= 2.12.4
+SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY) ++$(SCALA_VERSION)
+SBT ?= sbt $(SBT_FLAGS)
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
 FIRRTL_JAR ?= $(firesim_base_dir)/target-rtl/chipyard/lib/firrtl.jar
 $(FIRRTL_JAR): $(shell find $(FIRRTL_SUBMODULE_DIR)/src/main/scala -iname "*.scala")
-	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT) $(SBT_FLAGS)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
+	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
 	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
 	mkdir -p $(@D)
 	cp -p $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar $@
@@ -62,9 +63,9 @@ compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 sbt: $(FIRRTL_JAR)
-	cd $(base_dir) && $(SBT) $(SBT_FLAGS) shell
+	cd $(base_dir) && $(SBT) shell
 test: $(FIRRTL_JAR)
-	cd $(base_dir) && $(SBT) $(SBT_FLAGS) test
+	cd $(base_dir) && $(SBT) test
 
 
 # All target-agnostic firesim recipes are defined here
