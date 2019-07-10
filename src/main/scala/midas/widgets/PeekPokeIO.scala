@@ -18,7 +18,7 @@ import midas.core.{SimReadyValid, SimReadyValidIO}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
 class PeekPokeIOWidgetIO(private val peekPokeEndpointIO: PeekPokeEndpointIO)(implicit val p: Parameters)
-    extends WidgetIO()(p) {
+    extends EndpointWidgetIO()(p) {
   // Channel width == width of simulation MMIO bus
   val hPort = peekPokeEndpointIO.cloneType
 
@@ -32,8 +32,10 @@ class PeekPokeIOWidgetIO(private val peekPokeEndpointIO: PeekPokeEndpointIO)(imp
 // channel can advance ahead of the slowest channel
 class PeekPokeIOWidget(
     peekPokeIO: PeekPokeEndpointIO,
-    maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends Widget()(p) {
+    maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new PeekPokeIOWidgetIO(peekPokeIO))
+  // TODO: Remove me
+  io.tReset.ready := true.B
 
   require(maxChannelDecoupling > 1, "A smaller channel decoupling could FMR")
   // Tracks the number of tokens the slowest channel has to produce or consume
@@ -166,11 +168,11 @@ class PeekPokeIOWidget(
   }
 }
 
-class PeekPokeEndpointIO(private val targetIO: Record) extends ChannelizedHostPort(targetIO) {
+class PeekPokeEndpointIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
   // NB: Directions of targetIO are WRT to the endpoint, but "ins" and "outs" WRT to the target RTL
-  val (targetInputs, targetOutputs, _, _) = parsePorts(targetIO)
-  val outs  = targetInputs.map({ case (field, name) => name -> InputChannel(field) })
-  val ins = targetOutputs.map({ case (field, name) => name -> OutputChannel(field) })
+  val (targetOutputs, targetInputs, _, _) = parsePorts(targetIO)
+  val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
+  val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
   override val elements = ListMap((ins ++ outs):_*)
   override def cloneType = new PeekPokeEndpointIO(targetIO).asInstanceOf[this.type]
 }

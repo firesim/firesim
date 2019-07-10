@@ -25,8 +25,8 @@ simif_t::simif_t() {
   LOADMEM_0_substruct_create;
   this->loadmem_mmio_addrs = LOADMEM_0_substruct;
 #endif
-  DEFAULTIOWIDGET_substruct_create;
-  this->defaultiowidget_mmio_addrs = DEFAULTIOWIDGET_substruct;
+  PEEKPOKEENDPOINT_substruct_create;
+  this->defaultiowidget_mmio_addrs = PEEKPOKEENDPOINT_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {

@@ -36,7 +36,7 @@ import scala.collection.immutable.ListMap
  */
 
 abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: HostPortIO[Data] // Tokenized port moving between the endpoint the target-RTL
+  def hPort: Record with HasEndpointChannels // Tokenized port moving between the endpoint the target-RTL
   val tReset = Flipped(Decoupled(Bool()))
 }
 
@@ -95,27 +95,33 @@ case class EndpointMap(endpoints: Seq[Endpoint]) {
 
 case class EndpointAnnotation(
   val target: ModuleTarget,
-  widget: (Parameters) => Widget)
+  widget: (Parameters) => EndpointWidget,
+  channelNames: Seq[String])
     extends SingleTargetAnnotation[ModuleTarget] {
   def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String) =
-    EndpointIOAnnotation(target.copy(module = target.circuit).ref(port), widget)
+  def toIOAnnotation(port: String) = {
+    val updatedChannels = channelNames.map(oldName => s"${port}_$oldName")
+    EndpointIOAnnotation(target.copy(module = target.circuit).ref(port), widget, updatedChannels)
+  }
 }
 
 private[midas] case class EndpointIOAnnotation(
   val target: ReferenceTarget,
-  widget: (Parameters) => Widget)
+  widget: (Parameters) => EndpointWidget,
+  channelNames: Seq[String])
     extends SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(n: ReferenceTarget) = this.copy(target)
 }
 
 trait IsEndpoint {
   self: BlackBox =>
-  def endpointIO: ChannelizedHostPort
-  def widget: (Parameters) => Widget
+  def endpointIO: HasEndpointChannels
+  def widget: (Parameters) => EndpointWidget
   def generateAnnotations(): Unit = {
     // Generate the endpoint annotation
-    annotate(new ChiselAnnotation { def toFirrtl = EndpointAnnotation(self.toNamed.toTarget, widget) })
+    annotate(new ChiselAnnotation { def toFirrtl =
+      EndpointAnnotation(self.toNamed.toTarget, widget, endpointIO.allChannelNames)
+    })
 
     // Emit all channel annotations
     for ((field, chName) <- endpointIO.inputWireChannels) {
@@ -144,8 +150,17 @@ trait IsEndpoint {
   }
 }
 
+trait HasEndpointChannels {
+  def outputWireChannels: Seq[(Data, String)]
+  def inputWireChannels: Seq[(Data, String)]
 
-abstract class ChannelizedHostPort(private val gen: Record) extends Record {
+  def inputChannelNames: Seq[String] = inputWireChannels.map(_._2)
+  def outputChannelNames: Seq[String] = outputWireChannels.map(_._2)
+  def allChannelNames: Seq[String] = inputChannelNames ++ outputChannelNames
+
+}
+
+abstract class ChannelizedHostPortIO(private val gen: Data) extends Record with HasEndpointChannels {
   private val _inputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
   private val _outputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
   lazy val channelMapping = Map((_inputWireChannels ++ _outputWireChannels):_*)

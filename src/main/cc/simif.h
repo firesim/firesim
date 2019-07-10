@@ -42,7 +42,7 @@ class simif_t
 #ifdef LOADMEM_0
     LOADMEM_struct * loadmem_mmio_addrs;
 #endif
-    DEFAULTIOWIDGET_struct * defaultiowidget_mmio_addrs;
+    PEEKPOKEENDPOINT_struct * defaultiowidget_mmio_addrs;
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {

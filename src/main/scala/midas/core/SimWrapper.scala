@@ -429,9 +429,7 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
     case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
   })
 
-  chAnnos.foreach(println)
   // Generate all wire channels, excluding reset
-
   // TODO: This longstanding hack needs to be removed by doing channel excision on target-stateful channels
   // the appropriate reset for that channel will then be plumbed out with the rest of the queue.
   val resetChannelName = "PeekPokeEndpoint_reset"

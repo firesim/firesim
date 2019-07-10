@@ -50,7 +50,7 @@ private[passes] class EndpointExtraction extends firrtl.Transform {
     val c = state.circuit
     val iGraph  =  new firrtl.analyses.InstanceGraph(c)
     // Collect all endpoint modules
-    val endpointAnnos = state.annotations.collect({ case EndpointAnnotation(mT, _) => mT })
+    val endpointAnnos = state.annotations.collect({ case EndpointAnnotation(mT, _, _) => mT })
     val endpointModules = endpointAnnos.map(_.module)
 
     // Get a list of all endpoint instances using iGraph

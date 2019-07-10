@@ -40,13 +40,16 @@ class HostReadyValid extends Bundle {
   * be expressed as HostPort((new NastiIO), tokenFlip = true)
   */
 
-class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle
-{
+class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle with midas.widgets.HasEndpointChannels {
   val fromHost = Flipped(new HostReadyValid)
   val toHost = new HostReadyValid
   val hBits  = if (tokenFlip) Flipped(gen) else gen
   override def cloneType: this.type =
     new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
+
+  private val (ins, outs, _, _) = SimUtils.parsePorts(hBits)
+  def inputWireChannels(): Seq[(Data, String)] = ins
+  def outputWireChannels(): Seq[(Data, String)] = outs
 }
 
 object HostPort {
