@@ -183,14 +183,14 @@ xsim: $(xsim)
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
 
-rocketchip_dir := $(base_dir)/target-rtl/firechip/rocket-chip
+rocketchip_dir := $(base_dir)/target-rtl/chipyard/generators/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
 		BASE_DIR=$(base_dir) \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT) $(SBT_FLAGS)" \
+		SBT="$(SBT)" \
 		CONFIG=$(UNITTEST_CONFIG)
 
 run-midas-unittests: $(chisel_srcs)

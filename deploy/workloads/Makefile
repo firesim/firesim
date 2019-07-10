@@ -99,7 +99,7 @@ check-rtc-linux:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 checksum-test:
-	cd ../../target-design/firechip/tests && make checksum.riscv
+	cd ../../target-design/chipyard/tests && make checksum.riscv
 
 memblade-test:
 	cd ../../sw/memblade-tests/baremetal && make memblade-test.riscv memblade-dummy.riscv

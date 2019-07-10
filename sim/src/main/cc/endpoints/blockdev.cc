@@ -8,7 +8,7 @@
 /* Block Device Endpoint Driver
  *
  * This works in conjunction with
- * firechip/testchipip/src/main/scala/BlockDevice.scala (Block Device RTL)
+ * chipyard/testchipip/src/main/scala/BlockDevice.scala (Block Device RTL)
  * and
  * src/main/scala/endpoints/BlockDevWidget.scala
  */

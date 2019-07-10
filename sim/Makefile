@@ -1,3 +1,11 @@
+ifndef FIRESIM_ENV_SOURCED
+$(error You must source sourceme-f1-manager.sh or env.sh to use this Makefile)
+endif
+
+firesim_base_dir := $(abspath .)
+
+default: compile
+
 ##################
 #   Parameters   #
 ##################
@@ -13,35 +21,40 @@ TARGET_PROJECT ?= firesim
 
 # Users can override this to point at a makefrag defined in a parent project
 # that submodules firesim or source sim/Makefrag directly
-TARGET_PROJECT_MAKEFRAG ?= src/main/makefrag/$(TARGET_PROJECT)/Makefrag
+TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 
-default: compile
+# The host-platform type (currently only f1 supported)
+PLATFORM ?= f1
 
-SBT ?= sbt
+ifdef FIRESIM_STANDALONE
+
+base_dir := $(firesim_base_dir)
+rocketchip_dir := $(firesim_base_dir)/target-rtl/chipyard/generators/rocket-chip
+
 JVM_MEMORY ?= 16G
-SBT_FLAGS := -J-Xmx$(JVM_MEMORY) $(SBT_FLAGS) ++2.12.4
-
-firesim_base_dir := $(abspath .)
+SCALA_VERSION ?= 2.12.4
+SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY)
+SBT ?= java $(SBT_FLAGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 
 # Manage the FIRRTL dependency manually
-FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/firrtl
-FIRRTL_JAR ?= $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
+FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
+FIRRTL_JAR ?= $(firesim_base_dir)/target-rtl/chipyard/lib/firrtl.jar
 $(FIRRTL_JAR): $(shell find $(FIRRTL_SUBMODULE_DIR)/src/main/scala -iname "*.scala")
-	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT) $(SBT_FLAGS)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
-	touch $(FIRRTL_JAR)
-	mkdir -p $(firesim_base_dir)/lib
-	cp -p $(FIRRTL_JAR) $(firesim_base_dir)/lib/
+	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
+	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
+	mkdir -p $(@D)
+	cp -p $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar $@
 
 firrtl: $(FIRRTL_JAR)
 .PHONY: firrtl
 
-# Phony targets for launching the sbt shell and running scalatests
-sbt: $(FIRRTL_JAR)
-	$(SBT) $(SBT_FLAGS) shell
-test: $(FIRRTL_JAR)
-	$(SBT) $(SBT_FLAGS) test
-
-PLATFORM := f1
+else
+# REBAR make variables
+base_dir := $(abspath ../../..)
+sim_dir := $(firesim_base_dir)
+include $(base_dir)/variables.mk
+include $(base_dir)/common.mk
+endif
 
 # Include target-specific sources and input generation recipes
 include $(TARGET_PROJECT_MAKEFRAG)
@@ -49,6 +62,13 @@ include $(TARGET_PROJECT_MAKEFRAG)
 verilog: $(VERILOG)
 compile: $(VERILOG)
 
+# Phony targets for launching the sbt shell and running scalatests
+sbt: $(FIRRTL_JAR)
+	cd $(base_dir) && $(SBT) shell
+test: $(FIRRTL_JAR)
+	cd $(base_dir) && $(SBT) test
+
+
 # All target-agnostic firesim recipes are defined here
-include Makefrag
+include target-agnostic.mk
 

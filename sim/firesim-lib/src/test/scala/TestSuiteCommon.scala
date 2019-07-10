@@ -1,5 +1,5 @@
 //See LICENSE for license details.
-package firesim.midasexamples
+package firesim
 
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
@@ -14,16 +14,27 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
   val replayBackends = Seq("rtl")
   val platformMakeArgs = Seq(s"PLATFORM=$platformName")
 
+  // Check if we are running out of REBAR by checking for the existence of a firesim/sim directory
+  val firesimDir = {
+    val cwd = System.getProperty("user.dir")
+    val firesimAsLibDir = new File(cwd, "sims/firesim/sim")
+    if (firesimAsLibDir.exists()) {
+      firesimAsLibDir
+    } else {
+      new File(cwd)
+    }
+  }
+
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for
-  lazy val genDir  = new File(s"generated-src/${platformName}/${targetTuple}")
-  lazy val outDir = new File(s"output/${platformName}/${targetTuple}")
+  lazy val genDir  = new File(firesimDir, s"generated-src/${platformName}/${targetTuple}")
+  lazy val outDir  = new File(firesimDir, s"output/${platformName}/${targetTuple}")
 
   implicit def toStr(f: File): String = f.toString replace (File.separator, "/")
 
   // Runs make passing default args to specify the right target design, project and platform
   def make(makeArgs: String*): Int = {
-    val cmd = Seq("make") ++ makeArgs.toSeq ++ commonMakeArgs ++ platformMakeArgs
+    val cmd = Seq("make", "-C", s"$firesimDir") ++ makeArgs.toSeq ++ commonMakeArgs ++ platformMakeArgs
     println("Running: %s".format(cmd mkString " "))
     cmd.!
   }

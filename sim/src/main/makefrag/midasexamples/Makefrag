@@ -19,8 +19,10 @@ OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
-submodules = . midas \
-	$(addprefix target-rtl/firechip/rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend)
+submodules = . midas midas/targetutils firesim-lib \
+    $(addprefix target-rtl/chipyard/, \
+		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
+		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
 
 src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
@@ -30,8 +32,7 @@ CONF_NAME ?= runtime.conf
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	$(SBT) "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 

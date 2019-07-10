@@ -14,10 +14,9 @@ TARGET_CONFIG ?= FireSimRocketChipConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
 PLATFORM_CONFIG ?= FireSimConfig
 
-base_dir = $(abspath .)
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
-GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
-OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
 ##################
 # RTL Generation #
@@ -25,20 +24,18 @@ OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
-submodules = . midas firrtl \
-	$(addprefix target-rtl/firechip/, testchipip icenet sifive-blocks memory-blade \
-	$(addprefix rocket-chip/, . hardfloat chisel3 chisel3/chiselFrontend))
-
-src_path = src/main/scala
-chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
-chisel_srcs += $(shell find target-rtl/firechip/block-inclusivecache-sifive/craft/inclusivecache/src -name "*.scala")
-
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+ifdef FIRESIM_STANDALONE
+	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}firechip
+else
+	firesim_sbt_project := firechip
+endif
+
+$(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && \
+	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
 ##########################
 # Driver Sources & Flags #
@@ -59,8 +56,8 @@ CONF_NAME ?= runtime.conf
 .PHONY: conf
 conf:
 	mkdir -p $(GENERATED_DIR)
-	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
+	cd $(base_dir) && \
+	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
@@ -129,11 +126,9 @@ run-xsim: $(xsim)
 EMUL ?= verilator
 
 # Firechip Tests
-fc_test_dir = $(base_dir)/target-rtl/firechip/tests
-fc_test_srcs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
-fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/firechip/tests/*.cc)
-
-$(info $(fc_test_srcs))
+fc_test_dir = $(base_dir)/target-rtl/chipyard/tests
+fc_test_srcs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
+fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
 
 $(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
 	make -C $(fc_test_dir)
