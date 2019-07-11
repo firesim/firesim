@@ -78,7 +78,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_0_W_num_registers,
                     (const unsigned int*) MEMMODEL_0_W_addrs,
                     (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+                argc, argv, "memory_stats.csv", 1L << MEMMODEL_0_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
 #endif
@@ -93,7 +93,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_1_W_num_registers,
                     (const unsigned int*) MEMMODEL_1_W_addrs,
                     (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats1.csv", 1L << MEMMODEL_1_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
 #endif
@@ -108,7 +108,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_2_W_num_registers,
                     (const unsigned int*) MEMMODEL_2_W_addrs,
                     (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats2.csv", 1L << MEMMODEL_2_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
 #endif
@@ -123,7 +123,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_3_W_num_registers,
                     (const unsigned int*) MEMMODEL_3_W_addrs,
                     (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats3.csv", 1L << MEMMODEL_3_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
 #endif
@@ -138,7 +138,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_4_W_num_registers,
                     (const unsigned int*) MEMMODEL_4_W_addrs,
                     (const char* const*) MEMMODEL_4_W_names),
-                argc, argv, "memory_stats4.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats4.csv", 1L << MEMMODEL_4_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_4_target_addr_bits;
 #endif
@@ -153,7 +153,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_5_W_num_registers,
                     (const unsigned int*) MEMMODEL_5_W_addrs,
                     (const char* const*) MEMMODEL_5_W_names),
-                argc, argv, "memory_stats5.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats5.csv", 1L << MEMMODEL_5_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_5_target_addr_bits;
 #endif
@@ -168,7 +168,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_6_W_num_registers,
                     (const unsigned int*) MEMMODEL_6_W_addrs,
                     (const char* const*) MEMMODEL_6_W_names),
-                argc, argv, "memory_stats6.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats6.csv", 1L << MEMMODEL_6_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_6_target_addr_bits;
 #endif
@@ -183,7 +183,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     MEMMODEL_7_W_num_registers,
                     (const unsigned int*) MEMMODEL_7_W_addrs,
                     (const char* const*) MEMMODEL_7_W_names),
-                argc, argv, "memory_stats7.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats7.csv", 1L << MEMMODEL_7_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << MEMMODEL_7_target_addr_bits;
 #endif
