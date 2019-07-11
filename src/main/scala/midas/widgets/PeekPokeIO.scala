@@ -18,13 +18,10 @@ import midas.core.{SimReadyValid, SimReadyValidIO}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
 class PeekPokeIOWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
-
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val idle = Output(Bool())
 }
-// The interface to this widget is temporary, and matches the Vec of channels
-// the sim wrapper produces. Ultimately, the wrapper should have more coarsely
-// tokenized IOs.
+
 // Maximum channel decoupling puts a bound on the number of cycles the fastest
 // channel can advance ahead of the slowest channel
 class PeekPokeIOWidget(
@@ -39,7 +36,7 @@ class PeekPokeIOWidget(
   val cycleHorizon = RegInit(0.U(ctrlWidth.W))
   val tCycleName = "tCycle"
   val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
-  val tCycleAdvancing = Wire(Bool())
+  val tCycleAdvancing = WireInit(false.B)
 
   val hCycleName = "hCycle"
   val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
@@ -57,6 +54,7 @@ class PeekPokeIOWidget(
   val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
   val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
+  @chiselName
   def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
     // Track local-channel decoupling
@@ -67,8 +65,9 @@ class PeekPokeIOWidget(
 
     // If a channel is being poked, allow it to enqueue it's output token
     // This lets us peek outputs that depend combinationally on inputs we poke
-    // Asserted when a memory-mapped register associated with channel is being written to
-    val poke = Wire(Bool())
+    // poke will be asserted when a memory-mapped register associated with
+    // this channel is being written to
+    val poke = Wire(Bool()).suggestName(s"${name}_poke")
     // Handle the fields > 32 bits
     val wordsReceived = RegInit(0.U(log2Ceil(reg.size + 1).W))
     val advanceViaPoke = wordsReceived === reg.size.U
@@ -80,7 +79,7 @@ class PeekPokeIOWidget(
     }
 
     channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
-    channel.valid := cyclesAhead.value < cycleHorizon || advanceViaPoke
+    channel.valid := !cyclesAhead.full && cyclesAhead.value < cycleHorizon || advanceViaPoke
 
     val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
     channelDecouplingFlags += isAhead
@@ -88,6 +87,7 @@ class PeekPokeIOWidget(
     regAddrs
   }
 
+  @chiselName
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
     // Track local-channel decoupling
@@ -96,9 +96,10 @@ class PeekPokeIOWidget(
     cyclesAhead.inc := channel.fire
     cyclesAhead.dec := tCycleAdvancing
 
-    // Let token sinks accept one additional token that sources can produce (if
-    // they aren't poked) This, to allow, us to peek outputs that depend
-    // combinationally on inputs
+    // Let token sinks accept one more token than sources can produce (if
+    // they aren't poked) This enables peeking outputs that depend
+    // combinationally on other input channels (these channels may not
+    // necessarily sourced (poked) by this endpoint)
     channel.ready := cyclesAhead.value < (cycleHorizon + 1.U)
     when (channel.fire) {
       reg.zipWithIndex.foreach({ case (reg, i) =>
@@ -114,12 +115,13 @@ class PeekPokeIOWidget(
   val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))
   val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
-  tCycleAdvancing := channelDecouplingFlags.reduce(_ && _)
+  val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
   // tCycleAdvancing can be asserted if all inputs have been poked; but only increment
   // tCycle if we've been asked to step (cycleHorizon > 0.U)
-  when (tCycleAdvancing && cycleHorizon > 0.U) {
+  when (tCycleWouldAdvance && cycleHorizon > 0.U) {
     tCycle := tCycle + 1.U
     cycleHorizon := cycleHorizon - 1.U
+    tCycleAdvancing := true.B
   }
 
   hCycle := hCycle + 1.U
@@ -127,8 +129,7 @@ class PeekPokeIOWidget(
   when (io.step.fire) {
     cycleHorizon := io.step.bits
   }
-  // For now do now, do not allow the block to be stepped further, unless
-  // it has gone idle
+  // Do not allow the block to be stepped further, unless it has gone idle
   io.step.ready := io.idle
 
   val crFile = genCRFile()
