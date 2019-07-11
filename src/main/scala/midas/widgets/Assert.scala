@@ -20,10 +20,6 @@ class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
 }
 
-class AssertWidgetIO(val numAsserts: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new AssertBundle(numAsserts)))
-}
-
 class AssertBundleEndpoint extends Endpoint {
   var numAsserts = 0
   var initialized = false
@@ -45,28 +41,24 @@ class AssertBundleEndpoint extends Endpoint {
 }
 
 class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new AssertWidgetIO(numAsserts))
+  val io = IO(new WidgetIO())
+  val hPort = IO(Flipped(HostPort(new AssertBundle(numAsserts))))
   val resume = WireInit(false.B)
   val cycles = RegInit(0.U(64.W))
-  val tResetAsserted = RegInit(false.B)
-  val asserts = io.hPort.hBits.asserts
+  val asserts = hPort.hBits.asserts
   val assertId = PriorityEncoder(asserts)
-  val assertFire = asserts.orR && tResetAsserted && !io.tReset.bits
+  val assertFire = asserts.orR
 
   val stallN = (!assertFire || resume)
   val dummyPredicate = true.B
 
-  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid, io.tReset.valid, stallN, dummyPredicate)
-  val targetFire = tFireHelper.fire(dummyPredicate) // FIXME: On next RC bump
-  io.tReset.ready := tFireHelper.fire(io.tReset.valid)
-  io.hPort.toHost.hReady := tFireHelper.fire(io.hPort.toHost.hValid)
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN, dummyPredicate)
+  val targetFire = tFireHelper.fire() // FIXME: On next RC bump
+  hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
   // We only sink tokens, so tie off the return channel
-  io.hPort.fromHost.hValid := true.B
+  hPort.fromHost.hValid := true.B
   when (targetFire) {
     cycles := cycles + 1.U
-    when (io.tReset.bits) {
-      tResetAsserted := true.B
-    }
   }
 
   genROReg(assertId, "id")

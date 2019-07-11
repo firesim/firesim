@@ -29,7 +29,7 @@ object WidgetMMIO {
 // All widgets must implement this interface
 // NOTE: Changing ParameterizedBundle -> Bundle breaks PeekPokeWidgetIO when
 // outNum = 0
-abstract class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
+class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 

@@ -29,29 +29,19 @@ class HostReadyValid extends Bundle {
   def fire(): Bool = hReady && hValid
 }
 
-/**
-  * Hack: A note on tokenFlip:
-  * Previously we had difficulties generating hostPortIOs with flipped
-  * aggregates of aggregates. We thus had to manually flip the subfields of the
-  * aggregate in a new class (ex. the FlipNastiIO). tokenFlip captures
-  * whether hBits should be flipped when it is cloned.
-  *
-  * thus what would ideally be expressed as HostPort(Flipped(new NastiIO)) must
-  * be expressed as HostPort((new NastiIO), tokenFlip = true)
-  */
+// For use in the interface of EndpointWidgets
+class HostPortIO[+T <: Data](gen: T) extends Bundle with midas.widgets.HasEndpointChannels {
+  val fromHost = new HostReadyValid
+  val toHost = Flipped(new HostReadyValid)
+  val hBits  = gen
 
-class HostPortIO[+T <: Data](gen: T, tokenFlip: Boolean) extends Bundle with midas.widgets.HasEndpointChannels {
-  val fromHost = Flipped(new HostReadyValid)
-  val toHost = new HostReadyValid
-  val hBits  = if (tokenFlip) Flipped(gen) else gen
-  override def cloneType: this.type =
-    new HostPortIO(gen, tokenFlip).asInstanceOf[this.type]
+  override def cloneType: this.type = new HostPortIO(gen).asInstanceOf[this.type]
 
-  private val (ins, outs, _, _) = SimUtils.parsePorts(hBits)
+  private lazy val (ins, outs, _, _) = SimUtils.parsePorts(hBits)
   def inputWireChannels(): Seq[(Data, String)] = ins
   def outputWireChannels(): Seq[(Data, String)] = outs
 }
 
 object HostPort {
-  def apply[T <: Data](gen: T, tokenFlip : Boolean = false): HostPortIO[T] = new HostPortIO(gen, tokenFlip)
+  def apply[T <: Data](gen: T): HostPortIO[T] = new HostPortIO(gen)
 }

@@ -150,11 +150,14 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
   }
 }
 
-class MemModelIO(implicit val p: Parameters) extends EndpointWidgetIO()(p){
+class FASEDTargetIO(implicit val p: Parameters) extends Bundle {
+  val axi4 = Flipped(new NastiIO)
+  val reset = Input(Bool())
+}
+
+class MemModelIO(implicit val p: Parameters) extends WidgetIO()(p){
   // The default NastiKey is expected to be that of the target
-  val tNasti = Flipped(HostPort(new NastiIO, false))
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
-  def hPort = tNasti
 }
 
 class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends EndpointWidget()(p) {
@@ -162,6 +165,9 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
   )
   val io = IO(new MemModelIO)
+  val hPort = IO(HostPort(new FASEDTargetIO))
+  val tNasti = hPort.hBits.axi4
+  val tReset = hPort.hBits.reset
 
   val model = cfg.elaborate()
   printGenerationConfig
@@ -241,35 +247,34 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
   val rReady = readEgress.io.resp.hValid
   // 4: Egress unit has produced the payloads for write response channel
   val bReady = writeEgress.io.resp.hValid
-  // 5: We have a reset token, and if it's asserted the host-memory system must first settle
-  val tResetReady = io.tReset.valid && (!io.tReset.bits || host_mem_idle)
+  // 5: If targetReset is asserted the host-memory system must first settle
+  val tResetReady = (!tReset || host_mem_idle)
 
   // decoupled helper fire currently doesn't support directly passing true/false.B as exclude
   val temp_true_B = true.B
-  val tFireHelper = DecoupledHelper(io.tNasti.toHost.hValid,
-                                    io.tNasti.fromHost.hReady,
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
+                                    hPort.fromHost.hReady,
                                     ingressReady, bReady, rReady, tResetReady, temp_true_B)
 
   // HACK: Feeding valid back on ready and ready back on valid until we figure out
   // channel tokenization
-  io.tNasti.toHost.hReady := tFireHelper.fire(temp_true_B)
-  io.tNasti.fromHost.hValid := tFireHelper.fire(temp_true_B)
-  io.tReset.ready := tFireHelper.fire(tResetReady)
+  hPort.toHost.hReady := tFireHelper.fire(temp_true_B)
+  hPort.fromHost.hValid := tFireHelper.fire(temp_true_B)
   ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
-  model.io.tNasti <> io.tNasti.hBits
-  model.reset := io.tReset.bits
+  model.tNasti <> tNasti
+  model.reset := tReset
   // Connect up aw to ingress and model
-  ingress.io.nastiInputs.hBits.aw.valid := io.tNasti.hBits.aw.fire()
-  ingress.io.nastiInputs.hBits.aw.bits := io.tNasti.hBits.aw.bits
+  ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire()
+  ingress.io.nastiInputs.hBits.aw.bits := tNasti.aw.bits
 
   // Connect ar to ingress and model
-  ingress.io.nastiInputs.hBits.ar.valid := io.tNasti.hBits.ar.fire()
-  ingress.io.nastiInputs.hBits.ar.bits := io.tNasti.hBits.ar.bits
+  ingress.io.nastiInputs.hBits.ar.valid := tNasti.ar.fire()
+  ingress.io.nastiInputs.hBits.ar.bits := tNasti.ar.bits
 
   // Connect w to ingress and model
-  ingress.io.nastiInputs.hBits.w.valid := io.tNasti.hBits.w.fire()
-  ingress.io.nastiInputs.hBits.w.bits := io.tNasti.hBits.w.bits
+  ingress.io.nastiInputs.hBits.w.valid := tNasti.w.fire()
+  ingress.io.nastiInputs.hBits.w.bits := tNasti.w.bits
 
   // Connect target-level signals between egress and model
   readEgress.io.req.t := model.io.egressReq.r
@@ -282,9 +287,9 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
   writeEgress.io.resp.tReady := model.io.egressResp.bReady
   model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
-  ingress.reset     := reset.toBool || io.tReset.bits && tFireHelper.fire(ingressReady)
-  readEgress.reset  := reset.toBool || io.tReset.bits && tFireHelper.fire(temp_true_B)
-  writeEgress.reset := reset.toBool || io.tReset.bits && tFireHelper.fire(temp_true_B)
+  ingress.reset     := reset.toBool || tReset && tFireHelper.fire(ingressReady)
+  readEgress.reset  := reset.toBool || tReset && tFireHelper.fire(temp_true_B)
+  writeEgress.reset := reset.toBool || tReset && tFireHelper.fire(temp_true_B)
 
   val targetFire = tFireHelper.fire(temp_true_B)// dummy arg
 
@@ -306,7 +311,7 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     }
 
     val tokenStalls = RegInit(0.U(32.W))
-    when(!(tResetReady && io.tNasti.toHost.hValid && io.tNasti.fromHost.hReady)) {
+    when(!(tResetReady && hPort.toHost.hValid && hPort.fromHost.hReady)) {
       tokenStalls := tokenStalls + 1.U
     }
 
@@ -329,12 +334,12 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     val discardedMSBs = 6
     val collision_checker = Module(new AddressCollisionChecker(
       cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs))
-    collision_checker.io.read_req.valid  := targetFire && io.tNasti.hBits.ar.fire
-    collision_checker.io.read_req.bits   := io.tNasti.hBits.ar.bits.addr >> discardedMSBs
+    collision_checker.io.read_req.valid  := targetFire && tNasti.ar.fire
+    collision_checker.io.read_req.bits   := tNasti.ar.bits.addr >> discardedMSBs
     collision_checker.io.read_done       := io.host_mem.r.fire && io.host_mem.r.bits.last
 
-    collision_checker.io.write_req.valid := targetFire && io.tNasti.hBits.aw.fire
-    collision_checker.io.write_req.bits  := io.tNasti.hBits.aw.bits.addr >> discardedMSBs
+    collision_checker.io.write_req.valid := targetFire && tNasti.aw.fire
+    collision_checker.io.write_req.bits  := tNasti.aw.bits.addr >> discardedMSBs
     collision_checker.io.write_done      := io.host_mem.b.fire
 
     val collision_addr = RegEnable(collision_checker.io.collision_addr.bits,
@@ -381,45 +386,45 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     // Measure latency from reception of first read data beat; need
     // some state to track when a beat corresponds to the start of a new xaction
     when (targetFire) {
-      when (model.io.tNasti.r.fire && model.io.tNasti.r.bits.last) {
+      when (model.tNasti.r.fire && model.tNasti.r.bits.last) {
         newTRead := true.B
-      }.elsewhen (model.io.tNasti.r.fire) {
+      }.elsewhen (model.tNasti.r.fire) {
         newTRead := false.B
       }
     }
 
     val tReadLatencyHist = HostLatencyHistogram(
-      model.io.tNasti.ar.fire && targetFire,
-      model.io.tNasti.ar.bits.id,
-      model.io.tNasti.r.fire && targetFire && newTRead,
-      model.io.tNasti.r.bits.id,
+      model.tNasti.ar.fire && targetFire,
+      model.tNasti.ar.bits.id,
+      model.tNasti.r.fire && targetFire && newTRead,
+      model.tNasti.r.bits.id,
       cycleCountEnable = targetFire
     )
     attachIO(tReadLatencyHist, "targetReadLatencyHist_")
 
     val tWriteLatencyHist = HostLatencyHistogram(
-      model.io.tNasti.aw.fire && targetFire,
-      model.io.tNasti.aw.bits.id,
-      model.io.tNasti.b.fire && targetFire,
-      model.io.tNasti.b.bits.id,
+      model.tNasti.aw.fire && targetFire,
+      model.tNasti.aw.bits.id,
+      model.tNasti.b.fire && targetFire,
+      model.tNasti.b.bits.id,
       cycleCountEnable = targetFire
     )
     attachIO(tWriteLatencyHist, "targetWriteLatencyHist_")
 
     // Total host-latency of transactions
     val totalReadLatencyHist = HostLatencyHistogram(
-      model.io.tNasti.ar.fire && targetFire,
-      model.io.tNasti.ar.bits.id,
-      model.io.tNasti.r.fire && targetFire && newTRead,
-      model.io.tNasti.r.bits.id
+      model.tNasti.ar.fire && targetFire,
+      model.tNasti.ar.bits.id,
+      model.tNasti.r.fire && targetFire && newTRead,
+      model.tNasti.r.bits.id
     )
     attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
 
     val totalWriteLatencyHist = HostLatencyHistogram(
-      model.io.tNasti.aw.fire && targetFire,
-      model.io.tNasti.aw.bits.id,
-      model.io.tNasti.b.fire && targetFire,
-      model.io.tNasti.b.bits.id
+      model.tNasti.aw.fire && targetFire,
+      model.tNasti.aw.bits.id,
+      model.tNasti.b.fire && targetFire,
+      model.tNasti.b.bits.id
     )
     attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
 
@@ -443,8 +448,8 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
 
   if (cfg.params.addrRangeCounters > 0) {
     val n = cfg.params.addrRangeCounters
-    val readRanges = AddressRangeCounter(n, model.io.tNasti.ar, targetFire)
-    val writeRanges = AddressRangeCounter(n, model.io.tNasti.aw, targetFire)
+    val readRanges = AddressRangeCounter(n, model.tNasti.ar, targetFire)
+    val writeRanges = AddressRangeCounter(n, model.tNasti.aw, targetFire)
     val numRanges = n.U(32.W)
 
     attachIO(readRanges, "readRanges_")
@@ -480,7 +485,7 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
 
-    val targetAddrBits = model.io.tNasti.nastiXAddrBits
+    val targetAddrBits = model.tNasti.nastiXAddrBits
     sb.append(genMacro("TARGET_MEM_ADDR_BITS", UInt32(targetAddrBits)))
   }
 
@@ -524,4 +529,11 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     val timingModelSettings = model.io.mmReg.getDefaults()
     emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
   }
+}
+
+class FASEDEndpoint(cfg: BaseConfig)(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(new FASEDTargetIO)
+  val endpointIO = HostPort(io)
+  def widget = (hostP: Parameters) => new FASEDMemoryTimingModel(cfg)(p ++ hostP)
+  generateAnnotations()
 }
