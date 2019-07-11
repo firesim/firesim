@@ -25,17 +25,17 @@ public:
       }
     }
 
-#ifdef MEMMODEL_0
+#ifdef FASEDENDPOINT
     uint64_t host_mem_offset = 0x00000000LL;
     fpga_models.push_back(new FASEDMemoryTimingModel(
         this,
         // Casts are required for now since the emitted type can change...
-        AddressMap(MEMMODEL_0_R_num_registers,
-                   (const unsigned int*) MEMMODEL_0_R_addrs,
-                   (const char* const*) MEMMODEL_0_R_names,
-                   MEMMODEL_0_W_num_registers,
-                   (const unsigned int*) MEMMODEL_0_W_addrs,
-                   (const char* const*) MEMMODEL_0_W_names),
+        AddressMap(FASEDENDPOINT_R_num_registers,
+                   (const unsigned int*) FASEDENDPOINT_R_addrs,
+                   (const char* const*) FASEDENDPOINT_R_names,
+                   FASEDENDPOINT_W_num_registers,
+                   (const unsigned int*) FASEDENDPOINT_W_addrs,
+                   (const char* const*) FASEDENDPOINT_W_names),
         argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
 #endif
   }
@@ -44,14 +44,13 @@ public:
     for (auto e: fpga_models) {
       e->init();
     }
-    target_reset(0);
+    target_reset();
     int current_cycle = 0;
-
     poke(io_startAddr_bits, address);
     poke(io_startAddr_valid, 1);
-    do {
+    while (!peek(io_startAddr_ready)) {
       step(1);
-    } while (!peek(io_startAddr_ready));
+    }
     poke(io_startAddr_valid, 0);
     poke(io_result_ready, 0);
     do {
