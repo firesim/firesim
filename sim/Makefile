@@ -33,8 +33,8 @@ rocketchip_dir := $(firesim_base_dir)/target-rtl/chipyard/generators/rocket-chip
 
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.4
-SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY)
-SBT ?= java $(SBT_FLAGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
+JAVA_ARGS ?= -J-Xmx$(JVM_MEMORY)
+SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
