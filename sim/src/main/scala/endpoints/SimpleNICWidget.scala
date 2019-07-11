@@ -72,8 +72,9 @@ class SimSimpleNIC extends Endpoint {
   override def widgetName = "SimpleNICWidget"
 }
 
-class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new NICIOvonly))
+class SimpleNICEndpointTargetIO extends Bundle {
+  val nic = Flipped(new NICIOvonly)
+  val reset = Input(Bool())
 }
 
 class BigTokenToNICTokenAdapter extends Module {
@@ -175,8 +176,8 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
 
 class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     with BidirectionalDMA {
-  val io = IO(new SimpleNICWidgetIO)
-
+  val io = IO(new WidgetIO)
+  val hPort = IO(HostPort(Flipped(new NICIOvonly)))
   // DMA mixin parameters
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
@@ -189,14 +190,10 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
 
-  val target = io.hPort.hBits
-  val fixMeOnNextRocketBump = true.B // Need a dummy predicate to exclude for now
-  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid,
-                                    io.hPort.fromHost.hReady,
-                                    io.tReset.valid,
-                                    fixMeOnNextRocketBump)
-  val tFire = tFireHelper.fire(fixMeOnNextRocketBump)
-  io.tReset.ready := true.B // This is unused
+  val target = hPort.hBits
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
+                                    hPort.fromHost.hReady)
+  val tFire = tFireHelper.fire
 
 //  htnt_queue.reset  := reset //|| targetReset
 //  ntht_queue.reset := reset //|| targetReset
@@ -213,14 +210,14 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     htnt_queue.io.enq <> bigtokenToNIC.io.htnt
   }
 
-  io.hPort.toHost.hReady := ntht_queue.io.enq.ready
-  ntht_queue.io.enq.valid := io.hPort.toHost.hValid
+  hPort.toHost.hReady := ntht_queue.io.enq.ready
+  ntht_queue.io.enq.valid := hPort.toHost.hValid
   ntht_queue.io.enq.bits.data_out := target.out.bits
   ntht_queue.io.enq.bits.data_out_valid := target.out.valid
   ntht_queue.io.enq.bits.data_in_ready := true.B //target.in.ready
 
-  io.hPort.fromHost.hValid := htnt_queue.io.deq.valid
-  htnt_queue.io.deq.ready := io.hPort.fromHost.hReady
+  hPort.fromHost.hValid := htnt_queue.io.deq.valid
+  htnt_queue.io.deq.ready := hPort.fromHost.hReady
   target.in.bits := htnt_queue.io.deq.bits.data_in
   target.in.valid := htnt_queue.io.deq.bits.data_in_valid
   //target.out.ready := htnt_queue.io.deq.bits.data_out_ready

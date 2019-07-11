@@ -26,25 +26,26 @@ class SimUART extends Endpoint {
   override def widgetName = "UARTWidget"
 }
 
-class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new UARTPortIO))
+class UARTEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+  val uart = Flipped(new UARTPortIO)
+  val reset = Input(Bool())
 }
 
 class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new UARTWidgetIO)
+  val io = IO(new WidgetIO())
+  val hPort = IO(HostPort(new UARTEndpointTargetIO))
 
   val txfifo = Module(new Queue(UInt(8.W), 128))
   val rxfifo = Module(new Queue(UInt(8.W), 128))
 
-  val target = io.hPort.hBits
-  val fire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid & txfifo.io.enq.ready
-  val targetReset = fire & io.tReset.bits
+  val target = hPort.hBits.uart
+  val fire = hPort.toHost.hValid && hPort.fromHost.hReady && txfifo.io.enq.ready
+  val targetReset = fire & hPort.hBits.reset
   rxfifo.reset := reset.toBool || targetReset
   txfifo.reset := reset.toBool || targetReset
 
-  io.hPort.toHost.hReady := fire
-  io.hPort.fromHost.hValid := fire
-  io.tReset.ready := fire
+  hPort.toHost.hReady := fire
+  hPort.fromHost.hValid := fire
 
   val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(UInt(), 4)
   val txState = RegInit(sTxIdle)

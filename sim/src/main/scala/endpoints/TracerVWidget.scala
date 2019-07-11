@@ -77,33 +77,29 @@ class SimTracerV extends Endpoint {
   override def widgetName = "TracerVWidget"
 }
 
-class TracerVWidgetIO(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(Output(new TraceOutputTop(traceProto))))
-}
-
 class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p: Parameters) extends EndpointWidget()(p)
     with UnidirectionalDMAToHostCPU {
-  val io = IO(new TracerVWidgetIO(traceProto))
+  val io = IO(new WidgetIO)
+  val hPort = IO(HostPort(Flipped(new TraceOutputTop(traceProto))))
 
   // DMA mixin parameters
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
-  val uint_traces = io.hPort.hBits.traces map (trace => trace.asUInt)
+  val uint_traces = hPort.hBits.traces map (trace => trace.asUInt)
   outgoingPCISdat.io.enq.bits := Cat(uint_traces)
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
-    io.hPort.toHost.hValid, io.hPort.fromHost.hReady, io.tReset.valid)
+    hPort.toHost.hValid, hPort.fromHost.hReady)
 
-  io.tReset.ready := tFireHelper.fire(io.tReset.valid)
-  io.hPort.fromHost.hValid := tFireHelper.fire(io.hPort.fromHost.hReady)
-  io.hPort.toHost.hReady := tFireHelper.fire
+  hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
+  hPort.toHost.hReady := tFireHelper.fire
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
 
   // This need to go on a debug switch
   //when (outgoingPCISdat.io.enq.fire()) {
-  //  io.hPort.hBits.traces.zipWithIndex.foreach({ case (bundle, bIdx) =>
+  //  hPort.hBits.traces.zipWithIndex.foreach({ case (bundle, bIdx) =>
   //    printf("Tile %d Trace Bundle\n", bIdx.U)
   //    bundle.zipWithIndex.foreach({ case (insn, insnIdx) =>
   //      printf(p"insn ${insnIdx}: ${insn}\n")
