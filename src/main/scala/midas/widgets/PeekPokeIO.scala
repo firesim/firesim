@@ -116,7 +116,7 @@ class PeekPokeIOWidget(
   val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
   val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
-  // tCycleAdvancing can be asserted if all inputs have been poked; but only increment
+  // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment
   // tCycle if we've been asked to step (cycleHorizon > 0.U)
   when (tCycleWouldAdvance && cycleHorizon > 0.U) {
     tCycle := tCycle + 1.U
