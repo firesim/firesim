@@ -97,9 +97,9 @@ fi
 #   the user to rerun this script without --fast
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
-    target_toolchain_dir=$RDIR/../../toolchains/
+    chipyard_dir=$RDIR/../../
 else
-    target_toolchain_dir=$RDIR/target-design/chipyard/toolchains/
+    chipyard_dir=$RDIR/target-design/chipyard/
 fi
 
 if [ "$FASTINSTALL" = "true" ]; then
@@ -107,9 +107,9 @@ if [ "$FASTINSTALL" = "true" ]; then
     cd firesim-riscv-tools-prebuilt
     git checkout 5fee18421a32058ab339572128201f4904354aaa
     PREBUILTHASH="$(cat HASH)"
-    cd $target_toolchain_dir
-    git submodule update --init riscv-tools
-    cd riscv-tools
+    cd $chipyard_dir
+    git submodule update --init toolchains/riscv-tools
+    cd toolchains/riscv-tools
     GITHASH="$(git rev-parse HEAD)"
     echo "prebuilt hash: $PREBUILTHASH"
     echo "git      hash: $GITHASH"
