@@ -35,13 +35,8 @@ import scala.collection.immutable.ListMap
  * by token
  */
 
-abstract class EndpointWidgetIO(implicit p: Parameters) extends WidgetIO()(p) {
-  def hPort: Record with HasEndpointChannels // Tokenized port moving between the endpoint the target-RTL
-  val tReset = Flipped(Decoupled(Bool()))
-}
-
 abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
-  override def io: EndpointWidgetIO
+  def hPort: Record with HasEndpointChannels // Tokenized port moving between the endpoint the target-RTL
 }
 
 
@@ -154,9 +149,9 @@ trait HasEndpointChannels {
   def outputWireChannels: Seq[(Data, String)]
   def inputWireChannels: Seq[(Data, String)]
 
-  def inputChannelNames: Seq[String] = inputWireChannels.map(_._2)
-  def outputChannelNames: Seq[String] = outputWireChannels.map(_._2)
-  def allChannelNames: Seq[String] = inputChannelNames ++ outputChannelNames
+  def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
+  def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
+  def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames
 
 }
 

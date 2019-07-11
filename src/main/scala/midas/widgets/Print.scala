@@ -70,17 +70,15 @@ class PrintRecordEndpoint extends Endpoint {
   override def widgetName = "PrintWidget"
 }
 
-class PrintWidgetIO(private val record: PrintRecordBag)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(record))
-}
-
 class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends EndpointWidget()(p)
     with UnidirectionalDMAToHostCPU {
-  val io = IO(new PrintWidgetIO(printRecord))
+  val io = IO(new WidgetIO())
+  val hPort = IO(Flipped(HostPort(printRecord)))
+
   lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
 
-  val printPort = io.hPort.hBits
+  val printPort = hPort.hBits
   // Pick a padded token width that's a power of 2 bytes, including enable bit
   val reservedBits = 1 // Just print-wide enable
   val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + reservedBits))
@@ -116,18 +114,15 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   // Token control
   val dummyPredicate = true.B
   val tFireHelper = DecoupledHelper(doneInit,
-                                    io.hPort.toHost.hValid,
-                                    io.tReset.valid,
+                                    hPort.toHost.hValid,
                                     readyToEnqToken,
                                     ~flushNarrowPacket,
                                     dummyPredicate)
-  // Alternative of the mux below rejects the queue's ready as well
-  io.tReset.ready := tFireHelper.fire(io.tReset.valid)
   // Hack: include toHost.hValid to prevent individual wire channels from dequeuing before
   // all sub-channels have valid tokens
-  io.hPort.toHost.hReady := tFireHelper.fire
+  hPort.toHost.hReady := tFireHelper.fire
   // We don't generate tokens
-  io.hPort.fromHost.hValid := true.B
+  hPort.fromHost.hValid := true.B
   val tFire = tFireHelper.fire(dummyPredicate)
 
   when (tFire) {
@@ -137,7 +132,7 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
   // PAYLOAD HANDLING
   // TODO: Gating the prints using reset should be done by the transformation,
   // (using a predicate carried by the annotation(?))
-  val valid = printPort.hasEnabledPrint && !io.tReset.bits
+  val valid = printPort.hasEnabledPrint
   val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
 
   // Delay the valid token by a cycle so that we can first enqueue an idle-cycle-encoded token

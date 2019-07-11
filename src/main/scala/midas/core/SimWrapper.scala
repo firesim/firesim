@@ -434,28 +434,28 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   // the appropriate reset for that channel will then be plumbed out with the rest of the queue.
   val resetChannelName = "PeekPokeEndpoint_reset"
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != resetChannelName  => genWireChannel(ch)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != resetChannelName  => genWireChannel(ch, 0)
   })
 
   val resetChannel = chAnnos.collectFirst({
     case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genWireChannel(ch, 0)
   }).get
 
-  val resetPort = channelPorts.elements(resetChannelName + "_sink")
-  // Fan out targetReset tokens to all target-stateful channels
-  val tResetQueues = rvChannels.map(_ => Module(new Queue(Bool(), 2)))
-  val tResetHelper = DecoupledHelper((
-    tResetQueues.map(_.io.enq.ready) :+
-    resetChannel.io.in.ready :+
-    resetPort.valid):_*)
+  //val resetPort = channelPorts.elements(resetChannelName + "_sink")
+  //// Fan out targetReset tokens to all target-stateful channels
+  //val tResetQueues = rvChannels.map(_ => Module(new Queue(Bool(), 2)))
+  //val tResetHelper = DecoupledHelper((
+  //  tResetQueues.map(_.io.enq.ready) :+
+  //  resetChannel.io.in.ready :+
+  //  resetPort.valid):_*)
 
-  (rvChannels.zip(tResetQueues)).foreach({ case (channel, resetQueue) =>
-    channel.io.targetReset <> resetQueue.io.deq
-    resetQueue.io.enq.bits := resetPort.bits
-    resetQueue.io.enq.valid := tResetHelper.fire
-  })
-  // Override the connections generated in genWireChannel which assume the
-  // reset token is not fanning out
-  resetChannel.io.in.valid := tResetHelper.fire
-  resetPort.ready := tResetHelper.fire(resetPort.valid)
+  //(rvChannels.zip(tResetQueues)).foreach({ case (channel, resetQueue) =>
+  //  channel.io.targetReset <> resetQueue.io.deq
+  //  resetQueue.io.enq.bits := resetPort.bits
+  //  resetQueue.io.enq.valid := tResetHelper.fire
+  //})
+  //// Override the connections generated in genWireChannel which assume the
+  //// reset token is not fanning out
+  //resetChannel.io.in.valid := tResetHelper.fire
+  //resetPort.ready := tResetHelper.fire(resetPort.valid)
 }

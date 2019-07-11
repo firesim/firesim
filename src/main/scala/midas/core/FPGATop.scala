@@ -63,63 +63,41 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   //  simIo.traceLen := traceWidget.io.traceLen
   //}
 
-  private def channels2Port[T <: Data](port: HostPortIO[T], wires: T): Unit = {
-    //val valid = ArrayBuffer[Bool]()
-    //val ready = ArrayBuffer[Bool]()
-    //def loop[T <: Data](arg: (T, T)): Unit = arg match {
-    //  case (target: ReadyValidIO[_], rv: ReadyValidIO[_]) =>
-    //    val channel = simIo(rv)
-    //    directionOf(channel.fwd.hValid) match {
-    //      case ActualDirection.Input =>
-    //        import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-    //        channel.target <> target
-    //        channel.fwd.hValid := port.fromHost.hValid
-    //        channel.rev.hReady := port.toHost.hReady
-    //        ready += channel.fwd.hReady
-    //        valid += channel.rev.hValid
-    //      case ActualDirection.Output =>
-    //        import chisel3.core.ExplicitCompileOptions.NotStrict // to connect nasti & axi4
-    //        target <> channel.target
-    //        channel.fwd.hReady := port.toHost.hReady
-    //        channel.rev.hValid := port.fromHost.hValid
-    //        ready += channel.rev.hReady
-    //        valid += channel.fwd.hValid
-    //      case _ => throw new RuntimeException(s"Unexpected valid direction: ${directionOf(channel.fwd.hValid)}")
-    //    }
-    //  case (target: Record, b: Record) =>
-    //    b.elements.toList foreach { case (name, wire) =>
-    //      loop(target.elements(name), wire)
-    //    }
-    //  case (target: Vec[_], v: Vec[_]) =>
-    //    require(target.size == v.size)
-    //    (target.zip(v)).foreach(loop)
-    //  case (target: Bits, wire: Bits) => directionOf(wire) match {
-    //    case ActualDirection.Input =>
-    //      val channel = simIo(wire)
-    //      channel.bits  := target
-    //      channel.valid := port.fromHost.hValid
-    //      ready += channel.ready
-    //    case ActualDirection.Output =>
-    //      val channel = simIo(wire)
-    //      target := channel.bits
-    //      channel.ready := port.toHost.hReady
-    //      valid += channel.valid
-    //    case _ => throw new RuntimeException(s"Unexpected Bits direction: ${directionOf(wire)}")
-    //  }
-    //  case (t: Clock, c: Clock) => throw new RuntimeException(s"Unexpected Clock in token channels: $c")
-    //}
+  private def channels2Port(port: HostPortIO[Data], widgetName: String): Unit = {
+    // Aggregate input tokens into a single larger token
+    val toHostChannels: Seq[ReadyValidIO[Data]] =
+      for ((field, name) <- port.inputWireChannels) yield {
+        val tokenChannel = simIo.elements(s"${widgetName}_${name}_source")
+        field := tokenChannel.bits;
+        tokenChannel
+      }
 
-    //loop(port.hBits -> wires)
-    //port.toHost.hValid := valid.foldLeft(true.B)(_ && _)
-    //port.fromHost.hReady := ready.foldLeft(true.B)(_ && _)
+    // Break apart output tokens into channels
+    val fromHostChannels: Seq[ReadyValidIO[Data]] =
+      for ((field, name) <- port.outputWireChannels) yield {
+        val tokenChannel = simIo.elements(s"${widgetName}_${name}_sink")
+        tokenChannel.bits := field
+        tokenChannel
+      }
+
+    port.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
+    port.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
+
+    // Dequeue from toHost channels only if all toHost tokens are available,
+    // and the endpoint consumes it
+    val toHostHelper   = DecoupledHelper((port.toHost.hReady +: toHostChannels.map(_.valid)):_*)
+    toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
+
+    // Enqueue into the toHost channels only once all toHost channels can accept the token
+    val fromHostHelper = DecoupledHelper((port.fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
+    fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
   }
 
   val memPorts = new ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
   val dmaInfoBuffer = new ListBuffer[DmaInfo]
 
-  // Instantiate endpoint widgets. Keep a tuple of each endpoint's reset channel enq.valid and enq.ready
-  //                      Valid, Ready
+  // Instantiate endpoint widgets.
   simIo.endpointAnnos.map({ anno =>
     val widgetName = s"${anno.target.ref}"
     val widget: EndpointWidget = addWidget(anno.widget(p), widgetName)
@@ -127,20 +105,21 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
         memPorts += model.io.host_mem
-        model.io.tNasti.hBits.aw.bits.user := DontCare
-        model.io.tNasti.hBits.aw.bits.region := DontCare
-        model.io.tNasti.hBits.ar.bits.user := DontCare
-        model.io.tNasti.hBits.ar.bits.region := DontCare
-        model.io.tNasti.hBits.w.bits.id := DontCare
-        model.io.tNasti.hBits.w.bits.user := DontCare
+        model.hPort.hBits.axi4.aw.bits.user := DontCare
+        model.hPort.hBits.axi4.aw.bits.region := DontCare
+        model.hPort.hBits.axi4.ar.bits.user := DontCare
+        model.hPort.hBits.axi4.ar.bits.region := DontCare
+        model.hPort.hBits.axi4.w.bits.id := DontCare
+        model.hPort.hBits.axi4.w.bits.user := DontCare
       case peekPoke: PeekPokeIOWidget =>
         peekPoke.io.step <> master.io.step
         master.io.done := peekPoke.io.idle
       case _ =>
     }
-    widget.io.hPort match {
+    widget.hPort match {
+      // For this form of HostPort, the endpoint binds 1:1 to each channel
+      // presented by the simulation wrapper.
       case hPort: ChannelizedHostPortIO => {
-        widget.io.tReset <> DontCare
         hPort.inputChannelNames.foreach(chName =>
           hPort.elements(chName) <> simIo.elements(s"${widgetName}_${chName}_source")
         )
@@ -148,6 +127,8 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
           simIo.elements(s"${widgetName}_${chName}_sink") <> hPort.elements(chName)
         )
       }
+      // For a HostPortIO channels are aggregated into a single input and output token
+      case hPort: HostPortIO[Data] => channels2Port(hPort, widgetName)
     }
 
     widget match {

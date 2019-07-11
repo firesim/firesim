@@ -17,10 +17,7 @@ import midas.core.SimUtils._
 import midas.core.{SimReadyValid, SimReadyValidIO}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
-class PeekPokeIOWidgetIO(private val peekPokeEndpointIO: PeekPokeEndpointIO)(implicit val p: Parameters)
-    extends EndpointWidgetIO()(p) {
-  // Channel width == width of simulation MMIO bus
-  val hPort = peekPokeEndpointIO.cloneType
+class PeekPokeIOWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
 
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val idle = Output(Bool())
@@ -33,11 +30,10 @@ class PeekPokeIOWidgetIO(private val peekPokeEndpointIO: PeekPokeEndpointIO)(imp
 class PeekPokeIOWidget(
     peekPokeIO: PeekPokeEndpointIO,
     maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new PeekPokeIOWidgetIO(peekPokeIO))
-  // TODO: Remove me
-  io.tReset.ready := true.B
+  val io = IO(new PeekPokeIOWidgetIO)
+  val hPort = IO(peekPokeIO.cloneType)
 
-  require(maxChannelDecoupling > 1, "A smaller channel decoupling could FMR")
+  require(maxChannelDecoupling > 1, "A smaller channel decoupling could affect FMR")
   // Tracks the number of tokens the slowest channel has to produce or consume
   // before we reach the desired target cycle
   val cycleHorizon = RegInit(0.U(ctrlWidth.W))
@@ -115,8 +111,8 @@ class PeekPokeIOWidget(
     reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
   }
 
-  val inputAddrs = io.hPort.ins.map(elm => bindInputs(elm._1, elm._2))
-  val outputAddrs = io.hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
+  val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))
+  val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
   tCycleAdvancing := channelDecouplingFlags.reduce(_ && _)
   // tCycleAdvancing can be asserted if all inputs have been poked; but only increment
@@ -150,7 +146,7 @@ class PeekPokeIOWidget(
       case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
     super.genHeader(base, sb)
-    val inputs = io.hPort.targetInputs
+    val inputs = hPort.targetInputs
     sb.append(genComment("Pokeable target inputs"))
     sb.append(genMacro("POKE_SIZE", UInt64(inputs.size)))
     genOffsets(inputs.unzip._2)
@@ -158,7 +154,7 @@ class PeekPokeIOWidget(
     sb.append(genArray("INPUT_NAMES", inputs.unzip._2 map CStrLit))
     sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
 
-    val outputs = io.hPort.targetOutputs
+    val outputs = hPort.targetOutputs
     sb.append(genComment("Peekable target outputs"))
     sb.append(genMacro("PEEK_SIZE", UInt64(outputs.size)))
     genOffsets(outputs.unzip._2)
