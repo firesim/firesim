@@ -43,9 +43,7 @@ class SimConfig extends Config((site, here, up) => {
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case DMANastiKey      => NastiParameters(512, 64, 6)
-  case EndpointKey      => EndpointMap(Seq(
-    new FASEDNastiEndpoint, new FASEDAXI4Endpoint, new AssertBundleEndpoint, new PrintRecordEndpoint))
-  case MemModelKey      => (p: Parameters) => new FASEDMemoryTimingModel(LatencyPipeConfig(BaseParams(16,16))(p))(p)
+  case EndpointKey      => EndpointMap(Seq(new AssertBundleEndpoint, new PrintRecordEndpoint))
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
   case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
