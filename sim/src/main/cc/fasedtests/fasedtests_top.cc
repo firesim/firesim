@@ -44,7 +44,7 @@ uint64_t host_mem_offset = -0x80000000LL;
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 fased_addr_map,
-                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+                argc, argv, "memory_stats.csv", 1L << MEMMODEL_0_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
 #endif
