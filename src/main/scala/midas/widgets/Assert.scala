@@ -42,10 +42,10 @@ class AssertBundleEndpoint extends Endpoint {
 
 class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new WidgetIO())
-  val hPort = IO(Flipped(HostPort(new AssertBundle(numAsserts))))
+  val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
   val resume = WireInit(false.B)
   val cycles = RegInit(0.U(64.W))
-  val asserts = hPort.hBits.asserts
+  val asserts = hPort.hBits
   val assertId = PriorityEncoder(asserts)
   val assertFire = asserts.orR
 

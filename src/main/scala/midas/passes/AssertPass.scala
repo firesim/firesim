@@ -4,7 +4,7 @@ package passes
 import java.io.{File, FileWriter, Writer}
 
 import firrtl._
-import firrtl.annotations.{CircuitName, ModuleName, ComponentName}
+import firrtl.annotations.{CircuitName, ModuleName, ComponentName, ModuleTarget}
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
@@ -14,13 +14,9 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
-import midas.widgets.AssertBundle
+import midas.widgets.{EndpointIOAnnotation, AssertBundle, AssertWidget}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 
-
-case class AddedAssertIoAnnotation(port: Port) extends AddedTargetIoAnnotation[AssertBundle]{
-  def generateChiselIO(): (String, AssertBundle) = (port.name, new AssertBundle(firrtl.bitWidth(port.tpe).toInt))
-  def update(renames: RenameMap): Seq[AddedAssertIoAnnotation] = Seq(this)
-}
 
 private[passes] class AssertPass(
      dir: File)
@@ -99,11 +95,10 @@ private[passes] class AssertPass(
         val assertWidth = asserts(m.name).size + ((assertChildren foldLeft 0)(
           (res, x) => res + firrtl.bitWidth(x._2.tpe).toInt))
         if (assertWidth > 0) {
-          // Hack: Put the UInt in a bundle so that we can type match on it in SimMapping
-          val tpe = BundleType(Seq(Field("asserts", Default, UIntType(IntWidth(assertWidth)))))
+          val tpe = UIntType(IntWidth(assertWidth))
           val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
-          val stmt = Connect(NoInfo, wsub(WRef(port.name), "asserts"), cat(
-            (assertChildren map (x => wsub(wsub(wref(x._1), x._2.name), "asserts"))) ++
+          val stmt = Connect(NoInfo, WRef(port.name), cat(
+            (assertChildren map (x => wsub(wref(x._1), x._2.name))) ++
             (asserts(m.name).values.toSeq sortWith (_._1 > _._1) map (x => wref(x._2)))))
           assertPorts(m.name) = port
           ports += port
@@ -137,8 +132,22 @@ private[passes] class AssertPass(
     println(s"[MIDAS] total # of assertions synthesized: $assertNum")
 
     val mName = ModuleName(c.main, CircuitName(c.main))
-    val assertAnno = if (assertNum > 0) {
-      Seq(AddedAssertIoAnnotation(assertPorts(c.main)))
+    val assertAnnos = if (assertNum > 0) {
+      val portName = assertPorts(c.main).name
+      val portRT = ModuleTarget(c.main, c.main).ref(portName)
+      val fcca = FAMEChannelConnectionAnnotation(
+        globalName = portName,
+        channelInfo = WireChannel,
+        sources = Some(Seq(portRT)),
+        sinks = None)
+
+      val endpointAnno = EndpointIOAnnotation(
+        target = portRT,
+        widget = (p: Parameters) => new AssertWidget(assertNum)(p),
+        channelNames = Seq(portName)
+      )
+
+      Seq(fcca, endpointAnno)
     } else {
       Seq()
     }
@@ -146,7 +155,7 @@ private[passes] class AssertPass(
     state.copy(
       circuit = c.copy(modules = mods),
       form    = HighForm,
-      annotations = state.annotations ++ assertAnno)
+      annotations = state.annotations ++ assertAnnos)
   }
 
   def execute(state: CircuitState): CircuitState = {

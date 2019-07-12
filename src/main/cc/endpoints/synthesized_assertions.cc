@@ -1,4 +1,4 @@
-#ifdef ASSERTIONWIDGET_struct_guard
+#ifdef MIDASASSERTS_struct_guard
 
 #include "synthesized_assertions.h"
 #include <iostream>
@@ -6,7 +6,7 @@
 
 
 synthesized_assertions_t::synthesized_assertions_t(simif_t* sim,
-        ASSERTIONWIDGET_struct * mmio_addrs): endpoint_t(sim) {
+        MIDASASSERTS_struct * mmio_addrs): endpoint_t(sim) {
     this->mmio_addrs = mmio_addrs;
 };
 
@@ -43,4 +43,4 @@ void synthesized_assertions_t::resume() {
   write(this->mmio_addrs->resume, 1);
 }
 
-#endif // ASSERTIONWIDGET_struct_guard
+#endif // MIDASASSERTS_struct_guard
