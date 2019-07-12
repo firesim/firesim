@@ -23,13 +23,11 @@ class BasePlatformConfig extends Config(new Config((site, here, up) => {
 // Experimental: mixing this in will enable assertion synthesis
 class WithSynthAsserts extends Config((site, here, up) => {
   case midas.SynthAsserts => true
-  case EndpointKey => EndpointMap(Seq(new midas.widgets.AssertBundleEndpoint)) ++ up(EndpointKey)
 })
 
 // Experimental: mixing this in will enable print synthesis
 class WithPrintfSynthesis extends Config((site, here, up) => {
   case midas.SynthPrints => true
-  case EndpointKey => EndpointMap(Seq(new midas.widgets.PrintRecordEndpoint)) ++ up(EndpointKey)
 })
 
 class WithSerialWidget extends Config((site, here, up) => {

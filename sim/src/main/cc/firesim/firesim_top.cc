@@ -337,20 +337,20 @@ uint64_t host_mem_offset = -0x80000000LL;
     #endif
 #endif
 
-#ifdef PRINTWIDGET_struct_guard
-    #ifdef PRINTWIDGET_0_PRESENT
-    PRINTWIDGET_0_substruct_create;
+#ifdef SYNTHESIZEDPRINT_struct_guard
+    #ifdef SYNTHESIZEDPRINT_PRESENT
+    SYNTHESIZEDPRINT_substruct_create;
     add_endpoint(new synthesized_prints_t(this,
                                           args,
-                                          PRINTWIDGET_0_substruct,
-                                          PRINTWIDGET_0_print_count,
-                                          PRINTWIDGET_0_token_bytes,
-                                          PRINTWIDGET_0_idle_cycles_mask,
-                                          PRINTWIDGET_0_print_offsets,
-                                          PRINTWIDGET_0_format_strings,
-                                          PRINTWIDGET_0_argument_counts,
-                                          PRINTWIDGET_0_argument_widths,
-                                          PRINTWIDGET_0_DMA_ADDR));
+                                          SYNTHESIZEDPRINT_substruct,
+                                          SYNTHESIZEDPRINT_print_count,
+                                          SYNTHESIZEDPRINT_token_bytes,
+                                          SYNTHESIZEDPRINT_idle_cycles_mask,
+                                          SYNTHESIZEDPRINT_print_offsets,
+                                          SYNTHESIZEDPRINT_format_strings,
+                                          SYNTHESIZEDPRINT_argument_counts,
+                                          SYNTHESIZEDPRINT_argument_widths,
+                                          SYNTHESIZEDPRINT_DMA_ADDR));
     #endif
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
