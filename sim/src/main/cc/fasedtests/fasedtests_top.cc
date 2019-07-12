@@ -33,20 +33,20 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
-#ifdef MEMMODEL_0
+#ifdef FASEDENDPOINT
     // Casts are required for now since the emitted type can change...
-    AddressMap fased_addr_map = AddressMap(MEMMODEL_0_R_num_registers,
-                                           (const unsigned int*) MEMMODEL_0_R_addrs,
-                                           (const char* const*) MEMMODEL_0_R_names,
-                                           MEMMODEL_0_W_num_registers,
-                                           (const unsigned int*) MEMMODEL_0_W_addrs,
-                                           (const char* const*) MEMMODEL_0_W_names);
+    AddressMap fased_addr_map = AddressMap(FASEDENDPOINT_R_num_registers,
+                                           (const unsigned int*) FASEDENDPOINT_R_addrs,
+                                           (const char* const*) FASEDENDPOINT_R_names,
+                                           FASEDENDPOINT_W_num_registers,
+                                           (const unsigned int*) FASEDENDPOINT_W_addrs,
+                                           (const char* const*) FASEDENDPOINT_W_names);
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 fased_addr_map,
                 argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
+     host_mem_offset += (1ULL << FASEDENDPOINT_target_addr_bits);
 #endif
 
 // There can only be one instance of assert and print widgets as their IO is
@@ -125,7 +125,7 @@ void fasedtests_top_t::run() {
     uint64_t start_time = timestamp();
 
     // Assert reset T=0 -> 50
-    target_reset(0, 50);
+    target_reset(50);
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();

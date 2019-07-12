@@ -170,9 +170,10 @@ object FireSimRuntimeConfGenerator extends App with HasFireSimGeneratorUtilities
   // may be legalized against the generated hardware. TODO: Currently these
   // settings aren't dependent on the target-AXI4 widths (~bug); this will need
   // to be an optional post-generation step in MIDAS
-  lazy val memModel = (hostParams(midas.models.MemModelKey))(hostParams alterPartial {
-      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
-  chisel3.Driver.elaborate(() => memModel)
-  val confFileName = args(0)
-  memModel.getSettings(confFileName)(hostParams)
+  require(1==0, "See Midas #132")
+  //lazy val memModel = (targetParams(MemModelKey))(hostParams alterPartial {
+  //    case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
+  //chisel3.Driver.elaborate(() => memModel)
+  //val confFileName = args(0)
+  //memModel.getSettings(confFileName)(hostParams)
 }

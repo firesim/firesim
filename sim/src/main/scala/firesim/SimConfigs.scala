@@ -13,6 +13,7 @@ import firesim.endpoints._
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
+case object MemModelKey extends Field[Parameters => FASEDEndpoint]
 
 // Removes default endpoints from the MIDAS-provided config
 class BasePlatformConfig extends Config(new Config((site, here, up) => {
@@ -63,8 +64,6 @@ class MCRams extends WithMultiCycleRamModels
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(
-    new FASEDAXI4Endpoint(midas.core.ReciprocalClockRatio(clockDivision))))
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
@@ -75,8 +74,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     beatCounters = true,
     llcKey = site(LlcKey))
 
-	case MemModelKey => (p: Parameters) => new FASEDMemoryTimingModel(new
-		LatencyPipeConfig(site(BaseParamsKey))(p))(p)
+	case MemModelKey => (p: Parameters) => new FASEDEndpoint(new LatencyPipeConfig(site(BaseParamsKey))(p))(p)
 })
 
 
@@ -104,7 +102,7 @@ class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
 
 // Instantiates a DDR3 model with a FCFS memory access scheduler
 class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FASEDMemoryTimingModel(
+  case MemModelKey => (p: Parameters) => new FASEDEndpoint(
     new FIFOMASConfig(
       transactionQueueDepth = queueDepth,
       dramKey = site(DramOrganizationKey),
@@ -114,7 +112,7 @@ class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
 // windowSize = Maximum number of references the MAS can schedule across
 class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FASEDMemoryTimingModel(
+  case MemModelKey => (p: Parameters) => new FASEDEndpoint(
     new FirstReadyFCFSConfig(
       schedulerWindowSize = windowSize,
       transactionQueueDepth = queueDepth,

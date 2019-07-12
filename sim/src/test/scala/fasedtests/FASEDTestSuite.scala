@@ -57,6 +57,7 @@ abstract class FASEDTest(
   }
   def runTests() {
     runTest("verilator", false)
+    //runTest("vcs", true)
   }
 
   clean
@@ -67,9 +68,9 @@ abstract class FASEDTest(
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
-class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FCFSConfig")
-class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "FRFCFSConfig")
-class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "LLCDRAMConfig") {
+class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
+class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
+class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "DefaultF1Config") {
   override def runTests = {
     // Check that the memory model uses the correct number of MSHRs
     val maxMSHRs = hostParams(LlcKey).get.mshrs.max
