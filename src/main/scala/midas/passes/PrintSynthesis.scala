@@ -17,13 +17,8 @@ import logger.{Logger, LogLevel}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
-import midas.widgets.{PrintRecordBag}
+import midas.widgets.{PrintRecordBag, EndpointIOAnnotation, PrintWidget}
 import midas.targetutils.SynthPrintfAnnotation
-
-case class AddedPrintfIoAnnotation(prefix: String, printPorts: Seq[(Port, String)]) extends AddedTargetIoAnnotation[PrintRecordBag]{
-  def generateChiselIO(): (String, PrintRecordBag) = (prefix.stripSuffix("_"), new PrintRecordBag(prefix, printPorts))
-  def update(renames: RenameMap): Seq[AddedPrintfIoAnnotation] = Seq(this)
-}
 
 private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends firrtl.Transform {
   def inputForm = MidForm
@@ -116,7 +111,18 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
     val printRecordAnno =  addedPrintPorts match {
       case Nil   => Seq()
-      case ports => Seq(AddedPrintfIoAnnotation(topWiringPrefix, addedPrintPorts))
+      case ports => {
+        // TODO: Generate sensible channel annotations once we can aggregate wire channels
+        val portName = topWiringPrefix.stripSuffix("_")
+        val portRT = ModuleTarget(c.main, c.main).ref(portName)
+
+        val endpointAnno = EndpointIOAnnotation(
+          target = portRT,
+          widget = (p: Parameters) => new PrintWidget(topWiringPrefix, addedPrintPorts)(p),
+          channelNames = Seq(portName)
+        )
+        Seq(endpointAnno)
+      }
     }
     // Remove added TopWiringAnnotations to prevent being reconsumed by a downstream pass
     val cleanedAnnotations = wiredState.annotations.flatMap({

@@ -1,7 +1,7 @@
 #ifndef __SYNTHESIZED_PRINTS_H
 #define __SYNTHESIZED_PRINTS_H
 
-#ifdef PRINTWIDGET_struct_guard
+#ifdef SYNTHESIZEDPRINT_struct_guard
 
 #include <vector>
 #include <iostream>
@@ -26,7 +26,7 @@ class synthesized_prints_t: public endpoint_t
     public:
         synthesized_prints_t(simif_t* sim,
                              std::vector<std::string> &args,
-                             PRINTWIDGET_struct * mmio_addrs,
+                             SYNTHESIZEDPRINT_struct * mmio_addrs,
                              unsigned int print_count,
                              unsigned int token_bytes,
                              unsigned int idle_cycles_mask,
@@ -43,7 +43,7 @@ class synthesized_prints_t: public endpoint_t
         void flush();
         void finish() { flush(); };
     private:
-        PRINTWIDGET_struct * mmio_addrs;
+        SYNTHESIZEDPRINT_struct * mmio_addrs;
         const unsigned int print_count;
         const unsigned int  token_bytes;
         const unsigned int  idle_cycles_mask;
@@ -92,6 +92,6 @@ class synthesized_prints_t: public endpoint_t
         int beats_avaliable_stable();
 };
 
-#endif // PRINTWIDGET_struct_guard
+#endif // SYNTHESIZEDPRINT_struct_guard
 
 #endif //__SYNTHESIZED_PRINTS_H
