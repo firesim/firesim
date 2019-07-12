@@ -30,7 +30,7 @@ class PeekPokeIOWidget(
   val io = IO(new PeekPokeIOWidgetIO)
   val hPort = IO(peekPokeIO.cloneType)
 
-  require(maxChannelDecoupling > 1, "A smaller channel decoupling could affect FMR")
+  require(maxChannelDecoupling > 1, "A smaller channel decoupling will affect FMR")
   // Tracks the number of tokens the slowest channel has to produce or consume
   // before we reach the desired target cycle
   val cycleHorizon = RegInit(0.U(ctrlWidth.W))

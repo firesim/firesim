@@ -48,6 +48,7 @@ private[midas] class MidasTransforms(
       new AssertPass(dir),
       new PrintSynthesis(dir),
       new ResolveAndCheck,
+      new EnsureNoTargetIO,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new EndpointExtraction,
