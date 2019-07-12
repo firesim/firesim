@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 import midas.targetutils._
 
-class RiscSRAM extends Module {
+class RiscSRAMDUT extends Module {
   val io = IO(new Bundle {
     val isWr   = Input(Bool())
     val wrAddr = Input(UInt(8.W))
@@ -81,3 +81,5 @@ class RiscSRAM extends Module {
     }
   }
 }
+
+class RiscSRAM extends PeekPokeMidasExampleEnvironment(() => new RiscSRAMDUT)

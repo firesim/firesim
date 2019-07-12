@@ -8,7 +8,7 @@ import chisel3.experimental.{withClock, RawModule}
 
 import midas.widgets.PeekPokeEndpoint
 
-class GCDTarget extends Module {
+class GCDDUT extends Module {
   val io = IO(new Bundle {
     val a  = Input(UInt(16.W))
     val b  = Input(UInt(16.W))
@@ -28,12 +28,4 @@ class GCDTarget extends Module {
   printf("X: %d, Y:%d\n", x, y)
 }
 
-class GCD extends RawModule {
-  val clock = IO(Input(Clock()))
-  val reset = WireInit(false.B)
-
-  withClockAndReset(clock, reset) {
-    val gcd = Module(new GCDTarget)
-    val peekPokeEndpoint = PeekPokeEndpoint(reset, ("io", gcd.io))
-  }
-}
+class GCD extends PeekPokeMidasExampleEnvironment(() => new GCDDUT)
