@@ -51,29 +51,10 @@ class PrintRecordBag(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)]) 
   def hasEnabledPrint(): Bool = elements.map(_._2.enable).foldLeft(false.B)(_ || _)
 }
 
-class PrintRecordEndpoint extends Endpoint {
-  var initialized = false
-  var printRecordGen: PrintRecordBag = new PrintRecordBag("dummy", Seq())
-
-  def matchType(data: Data) = data match {
-    case channel: PrintRecordBag =>
-      require(DataMirror.directionOf(channel) == Direction.Output, "PrintRecord has unexpected direction")
-      initialized = true
-      printRecordGen = channel.cloneType
-      true
-    case _ => false
-  }
-  def widget(p: Parameters) = {
-    require(initialized, "Attempted to generate an PrintWidget before inspecting input data bundle")
-    new PrintWidget(printRecordGen)(p)
-  }
-  override def widgetName = "PrintWidget"
-}
-
-class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends EndpointWidget()(p)
+class PrintWidget(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters) extends EndpointWidget()(p)
     with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO())
-  val hPort = IO(Flipped(HostPort(printRecord)))
+  val hPort = IO(HostPort(Flipped(new PrintRecordBag(prefix, printPorts))))
 
   lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
@@ -181,22 +162,22 @@ class PrintWidget(printRecord: PrintRecordBag)(implicit p: Parameters) extends E
 
   // HEADER GENERATION
   // The LSB corresponding to the enable bit of the print
-  val widths = (printRecord.elements.map(_._2.getWidth))
+  val widths = (printPort.elements.map(_._2.getWidth))
 
   // C-types for emission
   val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
     UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
-  val argumentCounts  = printRecord.ports.map(_._2.args.size).map(UInt32(_))
-  val argumentWidths  = printRecord.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
-  val argumentOffsets = printRecord.ports.map(_._2.argumentOffsets.map(UInt32(_)))
-  val formatStrings   = printRecord.ports.map(_._2.formatString).map(CStrLit)
+  val argumentCounts  = printPort.ports.map(_._2.args.size).map(UInt32(_))
+  val argumentWidths  = printPort.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
+  val argumentOffsets = printPort.ports.map(_._2.argumentOffsets.map(UInt32(_)))
+  val formatStrings   = printPort.ports.map(_._2.formatString).map(CStrLit)
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
     val headerWidgetName = getWName.toUpperCase
     super.genHeader(base, sb)
-    sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printRecord.ports.size)))
+    sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printPort.ports.size)))
     sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
     sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",
                              UInt32(((1 << idleCycleBits) - 1) << reservedBits)))
