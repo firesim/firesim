@@ -67,15 +67,17 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
     // Aggregate input tokens into a single larger token
     val toHostChannels: Seq[ReadyValidIO[Data]] =
       for ((field, name) <- port.inputWireChannels) yield {
-        val tokenChannel = simIo.elements(s"${widgetName}_${name}_source")
-        field := tokenChannel.bits;
+        val portName = s"${widgetName}%s_source".format(if (name != "") s"_${name}" else "")
+        val tokenChannel = simIo.elements(portName)
+        field := tokenChannel.bits
         tokenChannel
       }
 
     // Break apart output tokens into channels
     val fromHostChannels: Seq[ReadyValidIO[Data]] =
       for ((field, name) <- port.outputWireChannels) yield {
-        val tokenChannel = simIo.elements(s"${widgetName}_${name}_sink")
+        val portName = s"${widgetName}%s_sink".format(if (name != "") s"_${name}" else "")
+        val tokenChannel = simIo.elements(portName)
         tokenChannel.bits := field
         tokenChannel
       }

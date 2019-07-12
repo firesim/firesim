@@ -43,12 +43,12 @@ private[midas] class MidasTransforms(
       firrtl.passes.SplitExpressions,
       firrtl.passes.CommonSubexpressionElimination,
       new firrtl.transforms.DeadCodeElimination,
+      new EnsureNoTargetIO,
       // NB: Carelessly removing this pass will break the FireSim manager as we always
       // need to generate the *.asserts file. Fix by baking into driver.
       new AssertPass(dir),
       new PrintSynthesis(dir),
       new ResolveAndCheck,
-      new EnsureNoTargetIO,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new EndpointExtraction,
