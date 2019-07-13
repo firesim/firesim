@@ -33,20 +33,20 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
-#ifdef FASEDENDPOINT
+#ifdef FASEDMEMORYTIMINGMODEL_0_PRESENT
     // Casts are required for now since the emitted type can change...
-    AddressMap fased_addr_map = AddressMap(FASEDENDPOINT_R_num_registers,
-                                           (const unsigned int*) FASEDENDPOINT_R_addrs,
-                                           (const char* const*) FASEDENDPOINT_R_names,
-                                           FASEDENDPOINT_W_num_registers,
-                                           (const unsigned int*) FASEDENDPOINT_W_addrs,
-                                           (const char* const*) FASEDENDPOINT_W_names);
+    AddressMap fased_addr_map = AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
+                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
+                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
+                                           FASEDMEMORYTIMINGMODEL_0_W_num_registers,
+                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
+                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names);
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 fased_addr_map,
                 argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << FASEDENDPOINT_target_addr_bits);
+     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
 #endif
 
 // There can only be one instance of assert and print widgets as their IO is

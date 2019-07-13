@@ -68,124 +68,124 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
-#ifdef MEMMODEL_0
+#ifdef FASEDMEMORYTIMINGMODEL_0
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_0_R_num_registers,
-                    (const unsigned int*) MEMMODEL_0_R_addrs,
-                    (const char* const*) MEMMODEL_0_R_names,
-                    MEMMODEL_0_W_num_registers,
-                    (const unsigned int*) MEMMODEL_0_W_addrs,
-                    (const char* const*) MEMMODEL_0_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
+                    FASEDMEMORYTIMINGMODEL_0_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
                 argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
+     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
 #endif
 
-#ifdef MEMMODEL_1
+#ifdef FASEDMEMORYTIMINGMODEL_1
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_1_R_num_registers,
-                    (const unsigned int*) MEMMODEL_1_R_addrs,
-                    (const char* const*) MEMMODEL_1_R_names,
-                    MEMMODEL_1_W_num_registers,
-                    (const unsigned int*) MEMMODEL_1_W_addrs,
-                    (const char* const*) MEMMODEL_1_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_1_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_R_names,
+                    FASEDMEMORYTIMINGMODEL_1_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_W_names),
                 argc, argv, "memory_stats1.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_1_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_2
+#ifdef FASEDMEMORYTIMINGMODEL_2
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_2_R_num_registers,
-                    (const unsigned int*) MEMMODEL_2_R_addrs,
-                    (const char* const*) MEMMODEL_2_R_names,
-                    MEMMODEL_2_W_num_registers,
-                    (const unsigned int*) MEMMODEL_2_W_addrs,
-                    (const char* const*) MEMMODEL_2_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_2_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_R_names,
+                    FASEDMEMORYTIMINGMODEL_2_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_W_names),
                 argc, argv, "memory_stats2.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_2_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_3
+#ifdef FASEDMEMORYTIMINGMODEL_3
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_3_R_num_registers,
-                    (const unsigned int*) MEMMODEL_3_R_addrs,
-                    (const char* const*) MEMMODEL_3_R_names,
-                    MEMMODEL_3_W_num_registers,
-                    (const unsigned int*) MEMMODEL_3_W_addrs,
-                    (const char* const*) MEMMODEL_3_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_3_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_R_names,
+                    FASEDMEMORYTIMINGMODEL_3_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_W_names),
                 argc, argv, "memory_stats3.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_3_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_4
+#ifdef FASEDMEMORYTIMINGMODEL_4
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_4_R_num_registers,
-                    (const unsigned int*) MEMMODEL_4_R_addrs,
-                    (const char* const*) MEMMODEL_4_R_names,
-                    MEMMODEL_4_W_num_registers,
-                    (const unsigned int*) MEMMODEL_4_W_addrs,
-                    (const char* const*) MEMMODEL_4_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_4_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_R_names,
+                    FASEDMEMORYTIMINGMODEL_4_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_W_names),
                 argc, argv, "memory_stats4.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_4_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_4_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_5
+#ifdef FASEDMEMORYTIMINGMODEL_5
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_5_R_num_registers,
-                    (const unsigned int*) MEMMODEL_5_R_addrs,
-                    (const char* const*) MEMMODEL_5_R_names,
-                    MEMMODEL_5_W_num_registers,
-                    (const unsigned int*) MEMMODEL_5_W_addrs,
-                    (const char* const*) MEMMODEL_5_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_5_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_R_names,
+                    FASEDMEMORYTIMINGMODEL_5_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_W_names),
                 argc, argv, "memory_stats5.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_5_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_5_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_6
+#ifdef FASEDMEMORYTIMINGMODEL_6
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_6_R_num_registers,
-                    (const unsigned int*) MEMMODEL_6_R_addrs,
-                    (const char* const*) MEMMODEL_6_R_names,
-                    MEMMODEL_6_W_num_registers,
-                    (const unsigned int*) MEMMODEL_6_W_addrs,
-                    (const char* const*) MEMMODEL_6_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_6_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_R_names,
+                    FASEDMEMORYTIMINGMODEL_6_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_W_names),
                 argc, argv, "memory_stats6.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_6_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_6_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_7
+#ifdef FASEDMEMORYTIMINGMODEL_7
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_7_R_num_registers,
-                    (const unsigned int*) MEMMODEL_7_R_addrs,
-                    (const char* const*) MEMMODEL_7_R_names,
-                    MEMMODEL_7_W_num_registers,
-                    (const unsigned int*) MEMMODEL_7_W_addrs,
-                    (const char* const*) MEMMODEL_7_W_names),
+                AddressMap(FASEDMEMORYTIMINGMODEL_7_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_R_names,
+                    FASEDMEMORYTIMINGMODEL_7_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_W_names),
                 argc, argv, "memory_stats7.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_7_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_7_target_addr_bits;
 #endif
 
 #ifdef SERIALWIDGET_struct_guard
@@ -330,28 +330,24 @@ uint64_t host_mem_offset = -0x80000000LL;
 
 // There can only be one instance of assert and print widgets as their IO is
 // uniquely generated by a FIRRTL transform
-#ifdef MIDASASSERTS_struct_guard
-    #ifdef MIDASASSERTS_PRESENT
-    MIDASASSERTS_substruct_create;
-    add_endpoint(new synthesized_assertions_t(this, MIDASASSERTS_substruct));
-    #endif
+#ifdef ASSERTWIDGET_0_PRESENT
+    ASSERTWIDGET_0_substruct_create
+    add_endpoint(new synthesized_assertions_t(this, ASSERTWIDGET_0_substruct));
 #endif
 
-#ifdef SYNTHESIZEDPRINT_struct_guard
-    #ifdef SYNTHESIZEDPRINT_PRESENT
-    SYNTHESIZEDPRINT_substruct_create;
+#ifdef PRINTWIDGET_0_PRESENT
+    PRINTWIDGET_0_substruct_create;
     add_endpoint(new synthesized_prints_t(this,
                                           args,
-                                          SYNTHESIZEDPRINT_substruct,
-                                          SYNTHESIZEDPRINT_print_count,
-                                          SYNTHESIZEDPRINT_token_bytes,
-                                          SYNTHESIZEDPRINT_idle_cycles_mask,
-                                          SYNTHESIZEDPRINT_print_offsets,
-                                          SYNTHESIZEDPRINT_format_strings,
-                                          SYNTHESIZEDPRINT_argument_counts,
-                                          SYNTHESIZEDPRINT_argument_widths,
-                                          SYNTHESIZEDPRINT_DMA_ADDR));
-    #endif
+                                          PRINTWIDGET_0_substruct,
+                                          PRINTWIDGET_0_print_count,
+                                          PRINTWIDGET_0_token_bytes,
+                                          PRINTWIDGET_0_idle_cycles_mask,
+                                          PRINTWIDGET_0_print_offsets,
+                                          PRINTWIDGET_0_format_strings,
+                                          PRINTWIDGET_0_argument_counts,
+                                          PRINTWIDGET_0_argument_widths,
+                                          PRINTWIDGET_0_DMA_ADDR));
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
