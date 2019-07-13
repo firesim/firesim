@@ -29,39 +29,19 @@ class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val mem  = Vec(4, new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) })))
 }
 
-// Platform agnostic wrapper of the simulation models for FPGA 
-// TODO: Tilelink2 Port
+// Platform agnostic wrapper of the simulation models for FPGA
 class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Module with HasWidgets {
   val io = IO(new FPGATopIO)
   // Simulation Target
   val sim = Module(new SimBox(simIoType.cloneType))
   val simIo = sim.io.channelPorts
-  // This reset is used to return the emulation to time 0.
-  val master = addWidget(new EmulationMaster, "Master")
+  // This reset is used to return the simulation to time 0.
+  val master = addWidget(new SimulationMaster)
   val simReset = master.io.simReset
 
   sim.io.clock     := clock
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
-
-  //if (p(EnableSnapshot)) {
-  //  val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
-  //  daisyController.reset := reset.toBool || simReset
-  //  daisyController.io.daisy <> simIo.daisy
-  // KElvin was here
-  //  val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
-  //    simIo.wireInputs map SimUtils.getChunks,
-  //    simIo.wireOutputs map SimUtils.getChunks,
-  //    simIo.readyValidInputs,
-  //    simIo.readyValidOutputs),
-  //    "IOTraces")
-  //  traceWidget.reset := reset.toBool || simReset
-  //  traceWidget.io.wireIns <> simIo.wireInTraces
-  //  traceWidget.io.wireOuts <> simIo.wireOutTraces
-  //  traceWidget.io.readyValidIns <> simIo.readyValidInTraces
-  //  traceWidget.io.readyValidOuts <> simIo.readyValidOutTraces
-  //  simIo.traceLen := traceWidget.io.traceLen
-  //}
 
   private def channels2Port(port: HostPortIO[Data], widgetName: String): Unit = {
     // Aggregate input tokens into a single larger token
@@ -101,8 +81,8 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
 
   // Instantiate endpoint widgets.
   simIo.endpointAnnos.map({ anno =>
-    val widgetName = s"${anno.target.ref}"
-    val widget: EndpointWidget = addWidget(anno.widget(p), widgetName)
+    val widgetChannelPrefix = s"${anno.target.ref}"
+    val widget: EndpointWidget = addWidget(anno.widget(p))
     widget.reset := reset.toBool || simReset
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
@@ -123,18 +103,18 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
       // presented by the simulation wrapper.
       case hPort: ChannelizedHostPortIO => {
         hPort.inputChannelNames.foreach(chName =>
-          hPort.elements(chName) <> simIo.elements(s"${widgetName}_${chName}_source")
+          hPort.elements(chName) <> simIo.elements(s"${widgetChannelPrefix}_${chName}_source")
         )
         hPort.outputChannelNames.foreach(chName =>
-          simIo.elements(s"${widgetName}_${chName}_sink") <> hPort.elements(chName)
+          simIo.elements(s"${widgetChannelPrefix}_${chName}_sink") <> hPort.elements(chName)
         )
       }
       // For a HostPortIO channels are aggregated into a single input and output token
-      case hPort: HostPortIO[Data] => channels2Port(hPort, widgetName)
+      case hPort: HostPortIO[Data] => channels2Port(hPort, widgetChannelPrefix)
     }
 
     widget match {
-      case widget: HasDMA => dmaInfoBuffer += DmaInfo(widgetName, widget.dma, widget.dmaSize)
+      case widget: HasDMA => dmaInfoBuffer += DmaInfo(widget.getWName, widget.dma, widget.dmaSize)
       case _ => Nil
     }
   })
@@ -143,7 +123,7 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   // Masters = Target memory channels + loadMemWidget
   val numMemModels = memPorts.length
   val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
-  val loadMem = addWidget(new LoadMemWidget(MemNastiKey), s"LOADMEM_0")
+  val loadMem = addWidget(new LoadMemWidget(MemNastiKey))
   loadMem.reset := reset.toBool || simReset
   memPorts += loadMem.io.toSlaveMem
 
