@@ -19,14 +19,12 @@ simif_t::simif_t() {
   t = 0;
   fail_t = 0;
   seed = time(NULL); // FIXME: better initail seed?
-  MASTER_substruct_create;
-  this->master_mmio_addrs = MASTER_substruct;
-#ifdef LOADMEM_0
-  LOADMEM_0_substruct_create;
-  this->loadmem_mmio_addrs = LOADMEM_0_substruct;
-#endif
-  PEEKPOKEENDPOINT_substruct_create;
-  this->defaultiowidget_mmio_addrs = PEEKPOKEENDPOINT_substruct;
+  SIMULATIONMASTER_0_substruct_create;
+  this->master_mmio_addrs = SIMULATIONMASTER_0_substruct;
+  LOADMEMWIDGET_0_substruct_create;
+  this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
+  PEEKPOKEIOWIDGET_0_substruct_create;
+  this->defaultiowidget_mmio_addrs = PEEKPOKEIOWIDGET_0_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
@@ -51,11 +49,9 @@ void simif_t::init(int argc, char** argv, bool log) {
   }
   gen.seed(seed);
   fprintf(stderr, "random min: 0x%llx, random max: 0x%llx\n", gen.min(), gen.max());
-#ifdef LOADMEM_0
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
-#endif
 
 #ifdef ENABLE_SNAPSHOT
   init_sampling(argc, argv);
@@ -158,7 +154,6 @@ void simif_t::step(uint32_t n, bool blocking) {
   t += n;
 }
 
-#ifdef LOADMEM_0
 void simif_t::load_mem(std::string filename) {
   fprintf(stdout, "[loadmem] start loading\n");
   std::ifstream file(filename.c_str());
@@ -226,4 +221,3 @@ void simif_t::zero_out_dram() {
   write(this->loadmem_mmio_addrs->ZERO_OUT_DRAM, 1);
   while(!read(this->loadmem_mmio_addrs->ZERO_FINISHED));
 }
-#endif // LOADMEM_0

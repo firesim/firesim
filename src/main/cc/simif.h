@@ -38,20 +38,16 @@ class simif_t
     // random numbers
     uint64_t seed;
     std::mt19937_64 gen;
-    MASTER_struct * master_mmio_addrs;
-#ifdef LOADMEM_0
-    LOADMEM_struct * loadmem_mmio_addrs;
-#endif
-    PEEKPOKEENDPOINT_struct * defaultiowidget_mmio_addrs;
+    SIMULATIONMASTER_struct * master_mmio_addrs;
+    LOADMEMWIDGET_struct * loadmem_mmio_addrs;
+    PEEKPOKEIOWIDGET_struct * defaultiowidget_mmio_addrs;
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {
       write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
-#ifdef LOADMEM_0
     virtual void load_mem(std::string filename);
-#endif
 
   public:
     // Simulation APIs
@@ -98,12 +94,11 @@ class simif_t
     void peek(size_t id, mpz_t& value);
     bool expect(size_t id, mpz_t& expected);
 
-#ifdef LOADMEM_0
+    // LOADMEM functions
     void read_mem(size_t addr, mpz_t& value);
     void write_mem(size_t addr, mpz_t& value);
     void write_mem_chunk(size_t addr, mpz_t& value, size_t bytes);
     void zero_out_dram();
-#endif
 
     uint64_t get_seed() { return seed; };
 

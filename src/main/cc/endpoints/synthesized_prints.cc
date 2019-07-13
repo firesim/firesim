@@ -1,4 +1,4 @@
-#ifdef SYNTHESIZEDPRINT_struct_guard
+#ifdef PRINTWIDGET_struct_guard
 
 #include <iomanip>
 
@@ -7,7 +7,7 @@
 synthesized_prints_t::synthesized_prints_t(
   simif_t* sim,
   std::vector<std::string> &args,
-  SYNTHESIZEDPRINT_struct * mmio_addrs,
+  PRINTWIDGET_struct * mmio_addrs,
   unsigned int print_count,
   unsigned int token_bytes,
   unsigned int idle_cycles_mask,
@@ -291,4 +291,4 @@ void synthesized_prints_t::flush() {
   this->printstream->flush();
 }
 
-#endif // SYNTHESIZEDPRINT_struct_guard
+#endif // PRINTWIDGET_struct_guard

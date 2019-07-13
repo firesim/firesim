@@ -12,7 +12,7 @@ import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.ParameterizedBundle
 
-import scala.collection.mutable.{HashMap, ArrayBuffer}
+import scala.collection.mutable
 
 case object CtrlNastiKey extends Field[NastiParameters]
 
@@ -172,10 +172,21 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
 // TODO: Need to handle names better; try and stick ctrl IO elaboration in here,
 // instead of relying on the widget writer
 object Widget {
-  def apply[T <: Widget](m: =>T, wName: String): T = {
+  private val widgetInstCount = mutable.HashMap[String, Int]().withDefaultValue(0)
+  def apply[T <: Widget](m: =>T): T = {
     val w = Module(m)
+    // Assign stable widget names by using the class name and suffix using the
+    // number of other instances.
+    // We could let the user specify this in their endpoint --> we'd need to consider:
+    // 1) Name collisions for embedded endpoints
+    // 2) We currently rely on having fixed widget names based on the class
+    //    name, in the simulation driver.
+    val widgetBasename = w.getClass.getSimpleName
+    val idx = widgetInstCount(widgetBasename)
+    val wName = widgetBasename + "_" + idx
+    widgetInstCount(widgetBasename) = idx + 1
     w suggestName wName
-    w setWidgetName wName
+    w setWidgetName wName // TODO: This can be removed; just use the module name
     w._finalized = true
     w
   }
@@ -190,8 +201,8 @@ object WidgetRegion {
 
 trait HasWidgets {
   private var _finalized = false
-  private val widgets = ArrayBuffer[Widget]()
-  private val name2inst = HashMap[String, Widget]()
+  private val widgets = mutable.ArrayBuffer[Widget]()
+  private val name2inst = mutable.HashMap[String, Widget]()
   private lazy val addrMap = new AddrMap({
     val (_, entries) = (sortedWidgets foldLeft (BigInt(0), Seq[AddrMapEntry]())){
       case ((start, es), w) =>
@@ -202,11 +213,10 @@ trait HasWidgets {
     entries
   })
 
-  def addWidget[T <: Widget](m: => T, wName: String): T = {
-    val w = Widget(m, wName)
-    assert(!name2inst.contains(wName), "Widget name: $wName already allocated")
+  def addWidget[T <: Widget](m: => T): T = {
+    val w = Widget(m)
     widgets += w
-    name2inst += (wName -> w)
+    name2inst += (w.getWName -> w)
     w
   }
 
