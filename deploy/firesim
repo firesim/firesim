@@ -121,9 +121,6 @@ def buildafi(globalbuildconf):
     # run builds, then terminate instances
     execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
 
-def cleanupafi(globalbuildconf):
-    execute(fpga_image_cleanup, globalbuildconf)
-
 def runcheck(runtime_conf):
     """ Do nothing, just let the config process run. """
     pass
@@ -184,7 +181,6 @@ def construct_firesim_argparser():
                             'terminaterunfarm',
                             'runworkload',
                             'shareagfi',
-                            'cleanupafi',
                             'runcheck'
                             ])
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
@@ -240,7 +236,7 @@ def main(args):
     if args.task == 'managerinit':
         managerinit()
 
-    if args.task == 'buildafi' or args.task == 'shareagfi' or args.task == 'cleanupafi':
+    if args.task == 'buildafi' or args.task == 'shareagfi':
         buildconfig = GlobalBuildConfig(args)
         globals()[args.task](buildconfig)
 
