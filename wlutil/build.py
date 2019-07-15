@@ -193,7 +193,17 @@ def makeBin(config, initramfs=False):
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
         linuxCfg = os.path.join(config['linux-src'], '.config')
-        shutil.copy(config['linux-config'], linuxCfg)
+        defCfg = os.path.join(config['linux-src'], 'defconfig')
+        # Create a defconfig to use as reference
+        if not os.path.isfile(defCfg):
+            run(['make', 'ARCH=riscv', 'defconfig'], cwd=config['linux-src'])
+            shutil.copy(linuxCfg, defCfg)
+
+        # Create a config from the user fragments
+        kconfigEnv = os.environ.copy()
+        kconfigEnv['ARCH'] = 'riscv'
+        run([os.path.join(config['linux-src'], 'scripts/kconfig/merge_config.sh'),
+            defCfg, config['linux-config']], env=kconfigEnv, cwd=config['linux-src']) 
 
         if initramfs:
             with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
