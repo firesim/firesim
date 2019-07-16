@@ -1,0 +1,7 @@
+{
+  "benchmark_name" : "linux-uniform-systolic",
+  "common_bootbinary" : "systolic-tests-bin",
+  "common_rootfs"     : "systolic-tests.img",
+  "common_outputs"    : ["/etc/os-release"],
+  "common_simulation_outputs" : ["uartlog", "memory_stats.csv"]
+}
