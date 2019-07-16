@@ -102,77 +102,91 @@ else
     target_toolchain_dir=$RDIR/target-design/chipyard/toolchains/
 fi
 
-if [ "$FASTINSTALL" = "true" ]; then
-    git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
-    cd firesim-riscv-tools-prebuilt
-    git checkout 5fee18421a32058ab339572128201f4904354aaa
-    PREBUILTHASH="$(cat HASH)"
-    cd $target_toolchain_dir
-    git submodule update --init riscv-tools
-    cd riscv-tools
-    GITHASH="$(git rev-parse HEAD)"
-    echo "prebuilt hash: $PREBUILTHASH"
-    echo "git      hash: $GITHASH"
+if [ "$IS_LIBRARY" = true ]; then
+    echo "Using the Chipyard toolchain"
     cd $RDIR
-    if [ "$PREBUILTHASH" = "$GITHASH" ]; then
-        echo "using fast install for riscv-tools"
-    else
-        echo "Error: hash of precompiled toolchain doesn't match the riscv-tools submodule hash."
-        exit
+    #need to check if the toolchain has already been built
+    if [[ -z "${CHIPYARD_TOOLCHAIN_SOURCED}" ]]; then 
+        $RDIR/../../../scripts/build-toolchains --firesim
+    fi
+    cd $RDIR
+    cat $RDIR/../../../env.sh > env.sh
+    echo "export FIRESIM_STANDALONE=1" >> env.sh
+    echo "export FIRESIM_ENV_SOURCED=1" > env.sh
+    cd $RDIR
+else
+    if [ "$FASTINSTALL" = "true" ]; then
+        git clone https://github.com/firesim/firesim-riscv-tools-prebuilt.git
+        cd firesim-riscv-tools-prebuilt
+        git checkout 5fee18421a32058ab339572128201f4904354aaa
+        PREBUILTHASH="$(cat HASH)"
+        cd $target_toolchain_dir
+        git submodule update --init riscv-tools
+        cd riscv-tools
+        GITHASH="$(git rev-parse HEAD)"
+        echo "prebuilt hash: $PREBUILTHASH"
+        echo "git      hash: $GITHASH"
+        cd $RDIR
+        if [ "$PREBUILTHASH" = "$GITHASH" ]; then
+            echo "using fast install for riscv-tools"
+        else
+            echo "Error: hash of precompiled toolchain doesn't match the riscv-tools submodule hash."
+            exit
+        fi
     fi
 fi
 
-if [ "$FASTINSTALL" = true ]; then
-    cd firesim-riscv-tools-prebuilt
-    ./installrelease.sh
-    mv distrib ../riscv-tools-install
-    # copy HASH in case user wants it later
-    cp HASH ../riscv-tools-install/
-    cd $RDIR
-    rm -rf firesim-riscv-tools-prebuilt
-else
-    # install risc-v tools
-    mkdir -p riscv-tools-install
-    export RISCV="$RISCV"
-    cd $target_toolchain_dir
-    git submodule update --init --recursive riscv-tools #--jobs 8
-    cd riscv-tools
-    export MAKEFLAGS="-j16"
-    # Copied from riscv-tools build.sh
-    source build.common
-    echo "Starting RISC-V Toolchain build process"
-    build_project riscv-fesvr --prefix=$RISCV
-    build_project riscv-isa-sim --prefix=$RISCV --with-fesvr=$RISCV
-    build_project riscv-gnu-toolchain --prefix=$RISCV
-    CC= CXX= build_project riscv-pk --prefix=$RISCV --host=riscv64-unknown-elf
-    build_project riscv-tests --prefix=$RISCV/riscv64-unknown-elf
-    echo -e "\\nRISC-V Toolchain installation completed!"
 
-    # build static libfesvr library for linking into driver
-    cd riscv-fesvr/build
-    $RDIR/scripts/build-static-libfesvr.sh
-    cd $RDIR
-    # build linux toolchain
-    cd $target_toolchain_dir/riscv-tools/riscv-gnu-toolchain/build
-    make -j16 linux
-    cd $RDIR
-
-    # build QEMU
-    cd sw/qemu
-    ./configure --target-list=riscv64-softmmu --prefix=$RISCV
-    make -j16
-    make install
-    cd $RDIR
+if [ "$IS_LIBRARY" = false ]; then
+    if [ "$FASTINSTALL" = true ]; then
+        cd firesim-riscv-tools-prebuilt
+        ./installrelease.sh
+        mv distrib ../riscv-tools-install
+        # copy HASH in case user wants it later
+        cp HASH ../riscv-tools-install/
+        cd $RDIR
+        rm -rf firesim-riscv-tools-prebuilt
+    else
+        # install risc-v tools
+        mkdir -p riscv-tools-install
+        export RISCV="$RISCV"
+        cd $target_toolchain_dir
+        git submodule update --init --recursive riscv-tools #--jobs 8
+        cd riscv-tools
+        export MAKEFLAGS="-j16"
+        # Copied from riscv-tools build.sh
+        source build.common
+        echo "Starting RISC-V Toolchain build process"
+        build_project riscv-fesvr --prefix=$RISCV
+        build_project riscv-isa-sim --prefix=$RISCV --with-fesvr=$RISCV
+        build_project riscv-gnu-toolchain --prefix=$RISCV
+        CC= CXX= build_project riscv-pk --prefix=$RISCV --host=riscv64-unknown-elf
+        build_project riscv-tests --prefix=$RISCV/riscv64-unknown-elf
+        echo -e "\\nRISC-V Toolchain installation completed!"
+    
+        # build static libfesvr library for linking into driver
+        cd riscv-fesvr/build
+        $RDIR/scripts/build-static-libfesvr.sh
+        cd $RDIR
+        # build linux toolchain
+        cd $target_toolchain_dir/riscv-tools/riscv-gnu-toolchain/build
+        make -j16 linux
+        cd $RDIR
+    
+        # build QEMU
+        cd sw/qemu
+        ./configure --target-list=riscv64-softmmu --prefix=$RISCV
+        make -j16
+        make install
+        cd $RDIR
+    fi
+    
+    echo "export FIRESIM_ENV_SOURCED=1" > env.sh
+    echo "export RISCV=$RISCV" >> env.sh
+    echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
+    echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 fi
-
-echo "export FIRESIM_ENV_SOURCED=1" > env.sh
-echo "export RISCV=$RISCV" >> env.sh
-echo "export PATH=$RISCV/bin:$RDIR/$DTCversion:\$PATH" >> env.sh
-echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
-
-if  [ "$IS_LIBRARY" = false ]; then
-    echo "export FIRESIM_STANDALONE=1" >> env.sh
-fi
+    
 
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
