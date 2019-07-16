@@ -15,7 +15,10 @@ import firesim.endpoints.{TraceOutputTop, DeclockedTracedInstruction}
 import boom.system.BoomSubsystem
 
 import midas.targetutils.MemModelAnnotation
-import midas.models.AXI4BundleWithEdge
+import midas.models.{AXI4BundleWithEdge, FASEDEndpoint}
+import midas.widgets.IsEndpoint
+
+import firesim.util.MemModelKey
 
 /** Ties together Subsystem buses in the same fashion done in the example top of Rocket Chip */
 trait HasDefaultBusConfiguration {

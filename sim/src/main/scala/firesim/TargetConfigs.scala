@@ -1,16 +1,20 @@
 package firesim.firesim
 
 import chisel3.util.{log2Up}
-import freechips.rocketchip.config.{Parameters, Config}
+import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.devices.debug.DebugModuleParams
 import boom.system.BoomTilesKey
-import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
+import testchipip.{BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
 import icenet._
+
+import firesim.endpoints._
+import firesim.util._
+
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -22,13 +26,33 @@ class WithPeripheryBusFrequency(freq: BigInt) extends Config((site, here, up) =>
 })
 
 class WithUARTKey extends Config((site, here, up) => {
-   case PeripheryUARTKey => List(UARTParams(
+  case EndpointKey => up(EndpointKey) ++ Seq(UARTEndpoint)
+  case PeripheryUARTKey => List(UARTParams(
      address = BigInt(0x54000000L),
      nTxEntries = 256,
      nRxEntries = 256))
 })
 
+class WithSerialEndpoint extends Config((site, here, up) => {
+  case EndpointKey => up(EndpointKey) ++ Seq(SerialEndpoint)
+})
+
+class WithTracerVEndpoint extends Config((site, here, up) => {
+  case EndpointKey => up(EndpointKey) ++ Seq(TracerVEndpoint)
+})
+
+class WithBlockDevice extends Config(
+  new Config((site, here, up) => {
+    case EndpointKey => up(EndpointKey) ++ Seq(BlockDevEndpoint, firesim.util.FASEDEndpointMatcher)
+  }) ++ new testchipip.WithBlockDevice
+)
+
+class WithTieOffDebug extends Config((site, here, up) => {
+  case EndpointKey => up(EndpointKey) ++ Seq(TieOffDebug)
+})
+
 class WithNICKey extends Config((site, here, up) => {
+  //case EndpointKey => up(EndpointKey) ++ Seq(NICEndpoint)
   case NICKey => NICConfig(
     inBufFlits = 8192,
     ctrlQueueDepth = 64)
@@ -94,6 +118,10 @@ class FireSimRocketChipConfig extends Config(
   new WithRocketL2TLBs(1024) ++
   new WithPerfCounters ++
   new WithoutClockGating ++
+  new WithDefaultMemModel ++
+  new WithSerialEndpoint ++
+  new WithTracerVEndpoint ++
+  new WithTieOffDebug ++
   new freechips.rocketchip.system.DefaultConfig)
 
 class WithNDuplicatedRocketCores(n: Int) extends Config((site, here, up) => {
@@ -134,6 +162,9 @@ class FireSimBoomConfig extends Config(
   new WithBoomL2TLBs(1024) ++
   new WithoutClockGating ++
   new WithBoomSynthAssertExcludes ++ // Will do nothing unless assertion synth is enabled
+  new WithDefaultMemModel ++
+  new WithSerialEndpoint ++
+  new WithTracerVEndpoint ++
   new boom.system.SmallBoomConfig)
 
 // A safer implementation than the one in BOOM in that it

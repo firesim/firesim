@@ -1,5 +1,4 @@
-package firesim
-package endpoints
+package firesim.endpoints
 
 import midas.core.{HostPort}
 import midas.widgets._
@@ -11,14 +10,20 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
 
-class SimSerialIO extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: SerialIO =>
-      DataMirror.directionOf(channel.out.valid) == Direction.Output
-    case _ => false
+class SerialEndpoint extends BlackBox with IsEndpoint {
+  val io = IO(new SerialEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => new SerialWidget()(p)
+  generateAnnotations()
+}
+
+object SerialEndpoint extends firesim.util.EndpointIOMatcher[SerialIO, SerialEndpoint] {
+  def checkPort(channel: SerialIO): Boolean = DataMirror.directionOf(channel.out.valid) == Direction.Output
+  def apply(port: SerialIO)(implicit p: Parameters): Seq[SerialEndpoint] = {
+    val ep = Module(new SerialEndpoint)
+    ep.io.serial <> port
+    Seq(ep)
   }
-  def widget(p: Parameters) = new SerialWidget()(p)
-  override def widgetName = "SerialWidget"
 }
 
 class SerialEndpointTargetIO extends Bundle {

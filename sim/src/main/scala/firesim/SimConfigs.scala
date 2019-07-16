@@ -2,23 +2,16 @@ package firesim.firesim
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
-import midas.{EndpointKey}
-import midas.widgets.{EndpointMap}
 import midas.models._
-
 import testchipip.{WithBlockDevice}
-
 import firesim.endpoints._
+import firesim.util.MemModelKey
 
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
-case object MemModelKey extends Field[Parameters => FASEDEndpoint]
 
-// Removes default endpoints from the MIDAS-provided config
-class BasePlatformConfig extends Config(new Config((site, here, up) => {
-    case EndpointKey => EndpointMap(Seq.empty)
-}) ++ new midas.F1Config)
+class BasePlatformConfig extends Config(new midas.F1Config)
 
 // Experimental: mixing this in will enable assertion synthesis
 class WithSynthAsserts extends Config((site, here, up) => {
@@ -30,27 +23,26 @@ class WithPrintfSynthesis extends Config((site, here, up) => {
   case midas.SynthPrints => true
 })
 
-class WithSerialWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
-})
-
-class WithUARTWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
-})
+//class WithSerialWidget extends Config((site, here, up) => {
+//  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSerialIO))
+//})
+//
+//class WithUARTWidget extends Config((site, here, up) => {
+//  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimUART))
+//})
 
 class WithSimpleNICWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
+//  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimSimpleNIC))
   case LoopbackNIC => false
 })
 
-class WithBlockDevWidget extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimBlockDev))
-})
-
-class WithTracerVWidget extends Config((site, here, up) => {
-  case midas.EndpointKey => up(midas.EndpointKey) ++
-    EndpointMap(Seq(new SimTracerV))
-})
+//class WithBlockDevWidget extends Config((site, here, up) => {
+//  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(new SimBlockDev))
+//})
+//
+//class WithTracerVWidget extends Config((site, here, up) => {
+//  case midas.EndpointKey => up(midas.EndpointKey) ++ EndpointMap(Seq(new SimTracerV))
+//})
 
 // MIDAS 2.0 Switches
 class WithMultiCycleRamModels extends Config((site, here, up) => {
@@ -73,6 +65,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     llcKey = site(LlcKey))
 
 	case MemModelKey => (p: Parameters) => new FASEDEndpoint(new LatencyPipeConfig(site(BaseParamsKey))(p))(p)
+  case firesim.util.EndpointKey  => up(firesim.util.EndpointKey) ++ Seq(firesim.util.FASEDEndpointMatcher)
 })
 
 
@@ -177,12 +170,7 @@ class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
 * determine which driver to build.
 *******************************************************************************/
 class FireSimConfig extends Config(
-  new WithSerialWidget ++
-  new WithUARTWidget ++
   new WithSimpleNICWidget ++
-  new WithBlockDevWidget ++
-  new WithDefaultMemModel ++
-  new WithTracerVWidget ++
   new BasePlatformConfig)
 
 class FireSimClockDivConfig extends Config(

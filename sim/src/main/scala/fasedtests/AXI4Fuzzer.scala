@@ -94,7 +94,7 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
-    val fasedInstance =  Module(p(firesim.firesim.MemModelKey)(p))
+    val fasedInstance =  Module(p(firesim.util.MemModelKey)(p))
 
     {
       import chisel3.core.ExplicitCompileOptions.NotStrict

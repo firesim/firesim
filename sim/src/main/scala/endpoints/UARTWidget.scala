@@ -1,5 +1,6 @@
-package firesim
-package endpoints
+package firesim.endpoints
+
+import firesim.util.{EndpointIOMatcher}
 
 import midas.core.{HostPort}
 import midas.widgets._
@@ -11,19 +12,23 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
-class SimUART extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: UARTPortIO =>
-      DataMirror.directionOf(channel.txd) == Direction.Output
-    case _ => false
+class UARTEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(new UARTEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  val frequency = p(PeripheryBusKey).frequency
+  val baudrate = 3686400L
+  val div = (p(PeripheryBusKey).frequency / baudrate).toInt
+  def widget = (p: Parameters) => new UARTWidget(div)(p)
+  generateAnnotations()
+}
+
+object UARTEndpoint extends EndpointIOMatcher[UARTPortIO, UARTEndpoint] {
+  def checkPort(port: UARTPortIO): Boolean = DataMirror.directionOf(port.txd) == Direction.Output
+  def apply(uart: UARTPortIO)(implicit p: Parameters): Seq[UARTEndpoint] = {
+    val ep = Module(new UARTEndpoint)
+    ep.io.uart <> uart
+    Seq(ep)
   }
-  def widget(p: Parameters) = {
-    val frequency = p(PeripheryBusKey).frequency
-    val baudrate = 3686400L
-    val div = (p(PeripheryBusKey).frequency / baudrate).toInt
-    new UARTWidget(div)(p)
-  }
-  override def widgetName = "UARTWidget"
 }
 
 class UARTEndpointTargetIO(implicit val p: Parameters) extends Bundle {

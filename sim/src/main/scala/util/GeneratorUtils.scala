@@ -4,6 +4,7 @@ package firesim.util
 
 import java.io.{File, FileWriter}
 
+import chisel3.Module
 import chisel3.experimental.RawModule
 
 import freechips.rocketchip.config.{Config, Parameters}
@@ -54,8 +55,8 @@ ${buildStrategy.emitTcl}
       case e: java.lang.NoSuchMethodException => cls.getConstructor().newInstance()
     }
     inst match {
-      case m: RawModule => m
-      case l: LazyModule => LazyModule(l).module
+      case m: RawModule => new IOMatchingMIDASEnvironment(() => m)
+      case l: LazyModule => new IOMatchingMIDASEnvironment(() => LazyModule(l).module)
     }
   }
 

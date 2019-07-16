@@ -1,5 +1,4 @@
-package firesim
-package endpoints
+package firesim.endpoints
 
 import chisel3._
 import chisel3.util._
@@ -17,6 +16,7 @@ import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
+import firesim.util.EndpointIOMatcher
 
 // Hack: In a457f658a, RC added the Clocked trait to TracedInstruction, which breaks midas
 // I/O token handling. The non-Clock fields of this Bundle should be factored out in rocket chip.
@@ -58,23 +58,24 @@ object DeclockedTracedInstruction {
 // The IO matched on by the TracerV endpoint: a wrapper around a heterogenous
 // bag of vectors. Each entry is Vec of committed instructions
 class TraceOutputTop(private val traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bundle {
-  val traces = HeterogeneousBag(traceProto.map(_.cloneType))
+  val traces = Output(HeterogeneousBag(traceProto.map(_.cloneType)))
   def getProto() = traceProto
 }
 
-class SimTracerV extends Endpoint {
-  // Copy the chisel type of the TraceOutputTop bundle to pass as an argument
-  // to the widget Constructor
-  var traceProto: Seq[Vec[DeclockedTracedInstruction]] = Nil
-  def matchType(data: Data) = data match {
-    case channel: TraceOutputTop => {
-      traceProto = channel.getProto
-      true
-    }
-    case _ => false
+class TracerVEndpoint(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox with IsEndpoint {
+  val io = IO(Flipped(new TraceOutputTop(traceProto)))
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => new TracerVWidget(traceProto)(p)
+  generateAnnotations()
+}
+
+object TracerVEndpoint extends EndpointIOMatcher[TraceOutputTop, TracerVEndpoint] {
+  def checkPort(port: TraceOutputTop): Boolean = true
+  def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[TracerVEndpoint] = {
+    val ep = Module(new TracerVEndpoint(port.getProto))
+    ep.io <> port
+    Seq(ep)
   }
-  def widget(p: Parameters) = new TracerVWidget(traceProto)(p)
-  override def widgetName = "TracerVWidget"
 }
 
 class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p: Parameters) extends EndpointWidget()(p)

@@ -1,5 +1,4 @@
-package firesim
-package endpoints
+package firesim.endpoints
 
 import chisel3._
 import chisel3.util._
@@ -12,21 +11,29 @@ import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
 
-class SimBlockDev(
-    override val clockRatio: IsRationalClockRatio = UnityClockRatio)
-  extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: BlockDeviceIO =>
-      DataMirror.directionOf(channel.req.valid) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = new BlockDevWidget()(p)
-  override def widgetName = "BlockDevWidget"
-}
+import firesim.util.{EndpointIOMatcher}
 
 class BlockDevEndpointTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
   val reset = Input(Bool())
+}
+
+class BlockDevEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(new BlockDevEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => { new BlockDevWidget()(p) }
+  generateAnnotations()
+}
+
+object BlockDevEndpoint extends EndpointIOMatcher[BlockDeviceIO, BlockDevEndpoint] {
+  def checkPort(channel: BlockDeviceIO): Boolean =
+    DataMirror.directionOf(channel.req.valid) == Direction.Output
+
+  def apply(blkdevIO: BlockDeviceIO)(implicit p: Parameters): Seq[BlockDevEndpoint] = {
+    val ep = Module(new BlockDevEndpoint)
+    ep.io.bdev <> blkdevIO
+    Seq(ep)
+  }
 }
 
 class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
