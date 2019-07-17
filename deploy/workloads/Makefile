@@ -73,6 +73,10 @@ simperf-test:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+linux-immediate-poweroff:
+	mkdir -p $@
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+
 simperf-test-scale: simperf-test
 
 simperf-test-latency: simperf-test
