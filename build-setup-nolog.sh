@@ -107,10 +107,10 @@ if [ "$IS_LIBRARY" = true ]; then
     cd $RDIR
     #need to check if the toolchain has already been built
     if [[ -z "${CHIPYARD_TOOLCHAIN_SOURCED}" ]]; then 
-        $RDIR/../../../scripts/build-toolchains --firesim
+        $RDIR/../../scripts/build-toolchains.sh --firesim
     fi
     cd $RDIR
-    cat $RDIR/../../../env.sh > env.sh
+    cat $RDIR/../../env.sh > env.sh
     echo "export FIRESIM_STANDALONE=1" >> env.sh
     echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
     cd $RDIR
