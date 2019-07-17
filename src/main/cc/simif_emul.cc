@@ -74,6 +74,9 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
     if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
+    if (arg.find("+fuzz-host-timing=") == 0) {
+      maximum_host_delay = atoi(arg.c_str() + 18);
+    }
   }
 
   void* mems[1];
@@ -118,24 +121,23 @@ int simif_emul_t::finish() {
   return exitcode;
 }
 
-void simif_emul_t::wait_write(std::unique_ptr<mmio_t>& mmio) {
-  while(!mmio->write_resp()) {
+void simif_emul_t::advance_target() {
+    int cycles_to_wait = rand_next(maximum_host_delay) + 1;
+    for (int i = 0; i < cycles_to_wait; i++) {
 #ifdef VCS
-    target.switch_to();
+        target.switch_to();
 #else
-    ::tick();
+        ::tick();
 #endif
-  }
+    }
+}
+
+void simif_emul_t::wait_write(std::unique_ptr<mmio_t>& mmio) {
+  while(!mmio->write_resp()) advance_target();
 }
 
 void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
-  while(!mmio->read_resp(data)) {
-#ifdef VCS
-    target.switch_to();
-#else
-    ::tick();
-#endif
-  }
+  while(!mmio->read_resp(data)) advance_target();
 }
 
 void simif_emul_t::write(size_t addr, data_t data) {
