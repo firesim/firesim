@@ -112,7 +112,7 @@ if [ "$IS_LIBRARY" = true ]; then
     cd $RDIR
     cat $RDIR/../../../env.sh > env.sh
     echo "export FIRESIM_STANDALONE=1" >> env.sh
-    echo "export FIRESIM_ENV_SOURCED=1" > env.sh
+    echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
     cd $RDIR
 else
     if [ "$FASTINSTALL" = "true" ]; then
