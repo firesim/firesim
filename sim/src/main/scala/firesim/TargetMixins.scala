@@ -142,3 +142,10 @@ trait CanHaveBoomMultiCycleRegfileImp {
 
   })
 }
+trait CanHaveRocketMultiCycleRegfileImp {
+  val outer: RocketSubsystem
+  outer.rocketTiles.foreach({ tile =>
+    annotate(MemModelAnnotation(tile.module.core.rocketImpl.rf.rf))
+    tile.module.fpuOpt.foreach(fpu => annotate(MemModelAnnotation(fpu.fpuImpl.regfile)))
+  })
+}

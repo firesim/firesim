@@ -54,6 +54,7 @@ class FireSimModuleImp[+L <: FireSim](l: L) extends RocketSubsystemModuleImp(l)
     with HasPeripheryIceNICModuleImpValidOnly
     with HasPeripheryBlockDeviceModuleImp
     with HasTraceIOImp
+    with CanHaveRocketMultiCycleRegfileImp
 
 
 class FireSimNoNIC(implicit p: Parameters) extends RocketSubsystem
@@ -78,6 +79,7 @@ class FireSimNoNICModuleImp[+L <: FireSimNoNIC](l: L) extends RocketSubsystemMod
     with HasPeripheryUARTModuleImp
     with HasPeripheryBlockDeviceModuleImp
     with HasTraceIOImp
+    with CanHaveRocketMultiCycleRegfileImp
 
 
 class FireBoom(implicit p: Parameters) extends BoomSubsystem
