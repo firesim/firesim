@@ -97,9 +97,9 @@ fi
 #   the user to rerun this script without --fast
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
-    target_toolchain_dir=$RDIR/../../toolchains/
+    target_toolchain_dir=$RDIR/../../toolchains
 else
-    target_toolchain_dir=$RDIR/target-design/chipyard/toolchains/
+    target_toolchain_dir=$RDIR/target-design/chipyard/toolchains
 fi
 
 if [ "$IS_LIBRARY" = true ]; then
@@ -113,15 +113,16 @@ if [ "$IS_LIBRARY" = true ]; then
     cd $RDIR
     echo "source $RDIR/../../env.sh" > env.sh
     echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
-    cd $RDIR
 else
+    cd $target_toolchain_dir/../
     if [ "$FASTINSTALL" = "true" ]; then
       $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast --firesim
     else
       $target_toolchain_dir/../scripts/build-toolchains.sh --firesim
     fi
-    echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
     cd $RDIR
+    echo "source $target_toolchain_dir/../env.sh" > env.sh
+    echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
 fi
 
 # build QEMU
