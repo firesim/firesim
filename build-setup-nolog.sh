@@ -116,9 +116,9 @@ if [ "$IS_LIBRARY" = true ]; then
     cd $RDIR
 else
     if [ "$FASTINSTALL" = "true" ]; then
-      $target_toolchain_dir/scripts/build-toolchains.sh --ec2fast --firesim
+      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast --firesim
     else
-      $target_toolchain_dir/scripts/build-toolchains.sh --firesim
+      $target_toolchain_dir/../scripts/build-toolchains.sh --firesim
     fi
     echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
     cd $RDIR
