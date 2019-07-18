@@ -102,28 +102,21 @@ else
     target_toolchain_dir=$RDIR/target-design/chipyard/toolchains
 fi
 
-if [ "$IS_LIBRARY" = true ]; then
-    echo "Using the Chipyard toolchain"
-    cd $RDIR
-    #need to check if the toolchain has already been built
-    if [[ -z "${CHIPYARD_TOOLCHAIN_SOURCED}" ]]; then
-      echo "Error: You may have forgot to build or source your Chipyard env.sh file"
-      exit
-    fi
-    cd $RDIR
-    echo ". source $RDIR/../../env.sh" > env.sh
-    echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
+#build the toolchain through chipyard (whether as top or as library)
+cd $target_toolchain_dir/../
+if [ "$FASTINSTALL" = "true" ]; then
+  $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast
 else
-    cd $target_toolchain_dir/../
-    if [ "$FASTINSTALL" = "true" ]; then
-      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast
-    else
-      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2
-    fi
-    cd $RDIR
-    echo ". source $target_toolchain_dir/../env.sh" > env.sh
-    echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
+  $target_toolchain_dir/../scripts/build-toolchains.sh
 fi
+cd $RDIR
+#generate env.sh file which sources the chipyard env.sh file
+echo "if [ -f \"$target_toolchain_dir/../env.sh\" ]; then" > env.sh
+echo "  . source $target_toolchain_dir/../env.sh" >> env.sh
+echo "  export FIRESIM_ENV_SOURCED=1" >> env.sh
+echo "else" >> env.sh
+echo "  echo \"Error: You may have forgot to build or source the toolchains (build them independantly in firesim-as-a-library mode)\"" >> env.sh
+echo "fi" >> env.sh
 
 # build QEMU
 echo "Building QEMU"
