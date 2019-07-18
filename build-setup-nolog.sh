@@ -116,9 +116,9 @@ if [ "$IS_LIBRARY" = true ]; then
 else
     cd $target_toolchain_dir/../
     if [ "$FASTINSTALL" = "true" ]; then
-      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast --firesim
+      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast
     else
-      $target_toolchain_dir/../scripts/build-toolchains.sh --firesim
+      $target_toolchain_dir/../scripts/build-toolchains.sh --ec2
     fi
     cd $RDIR
     echo "source $target_toolchain_dir/../env.sh" > env.sh
