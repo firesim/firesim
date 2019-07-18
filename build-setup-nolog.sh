@@ -111,7 +111,7 @@ if [ "$IS_LIBRARY" = true ]; then
       exit
     fi
     cd $RDIR
-    echo "source $RDIR/../../env.sh" > env.sh
+    echo ". source $RDIR/../../env.sh" > env.sh
     echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
 else
     cd $target_toolchain_dir/../
@@ -121,7 +121,7 @@ else
       $target_toolchain_dir/../scripts/build-toolchains.sh --ec2
     fi
     cd $RDIR
-    echo "source $target_toolchain_dir/../env.sh" > env.sh
+    echo ". source $target_toolchain_dir/../env.sh" > env.sh
     echo "export FIRESIM_ENV_SOURCED=1" >> env.sh
 fi
 
