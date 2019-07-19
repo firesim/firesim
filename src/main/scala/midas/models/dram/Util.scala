@@ -121,6 +121,7 @@ class DynamicLatencyPipe[T <: Data] (
   ) extends Module with HasFIFOPointers {
   val io = IO(new DynamicLatencyPipeIO(gen, entries, countBits))
 
+  assert(io.latency =/= 0.U, "DynamicLatencyPipe only supports latencies > 0")
   val ram = Mem(entries, gen)
   do_enq := io.enq.fire()
   do_deq := io.deq.fire()
@@ -144,17 +145,19 @@ class DynamicLatencyPipe[T <: Data] (
   }
 
   val latencies = Reg(Vec(entries, UInt(countBits.W)))
-  val pending = RegInit(VecInit(Seq.fill(entries)(false.B)))
-  latencies.zip(pending) foreach { case (lat, pending) =>
-    when (lat === io.tCycle) { pending := false.B }
-  }
+  val pendingReg = RegInit(VecInit(Seq.fill(entries)(false.B)))
+  val done = Vec(latencies.zip(pendingReg) map { case (lat, pendingReg) =>
+    val cycleMatch = lat === io.tCycle
+    when (cycleMatch) { pendingReg := false.B }
+    cycleMatch || !pendingReg
+  })
 
-  when (do_enq && io.latency > 1.U) {
+  when (do_enq) {
     latencies(enq_ptr.value) := io.tCycle + io.latency
-    pending(enq_ptr.value) := true.B
+    pendingReg(enq_ptr.value) := io.latency != 1.U
   }
 
-  io.deq.valid := !empty && !pending(deq_ptr.value)
+  io.deq.valid := !empty && done(deq_ptr.value)
 }
 
 // Counts down from a set value; If the set value is less than the present value 
