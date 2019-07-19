@@ -34,7 +34,7 @@ rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.4
-JAVA_ARGS ?= -J-Xmx$(JVM_MEMORY)
+JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 
 # Manage the FIRRTL dependency manually
