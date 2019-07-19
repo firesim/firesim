@@ -65,7 +65,7 @@ done
 # ignore riscv-tools for submodule init recursive
 # you must do this globally (otherwise riscv-tools deep
 # in the submodule tree will get pulled anyway
-git config --global submodule.toolchains/riscv-tools.update none
+git config submodule.toolchains/riscv-tools.update none
 git config --global submodule.experimental-blocks.update none
 git config --global submodule.sims/firesim.update none
 # Disable the REBAR submodule initially, and enable if we're not in library mode
@@ -73,7 +73,7 @@ git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8
 # unignore riscv-tools,catapult-shell2 globally
 git config --global --unset submodule.sims/firesim.update
-git config --global --unset submodule.toolchains/riscv-tools.update
+git config --unset submodule.toolchains/riscv-tools.update
 git config --global --unset submodule.experimental-blocks.update
 
 if [ "$IS_LIBRARY" = false ]; then
@@ -97,26 +97,30 @@ fi
 #   the user to rerun this script without --fast
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
-    target_toolchain_dir=$RDIR/../../toolchains
+    target_chipyard_dir=$RDIR/../..
 else
-    target_toolchain_dir=$RDIR/target-design/chipyard/toolchains
+    target_chipyard_dir=$RDIR/target-design/chipyard
 fi
 
 #build the toolchain through chipyard (whether as top or as library)
-cd $target_toolchain_dir/../
+cd $target_chipyard_dir
 if [ "$FASTINSTALL" = "true" ]; then
-  $target_toolchain_dir/../scripts/build-toolchains.sh --ec2fast
+  $target_chipyard_dir/scripts/build-toolchains.sh --ec2fast
 else
-  $target_toolchain_dir/../scripts/build-toolchains.sh
+  $target_chipyard_dir/scripts/build-toolchains.sh
 fi
 cd $RDIR
 #generate env.sh file which sources the chipyard env.sh file
-echo "if [ -f \"$target_toolchain_dir/../env.sh\" ]; then" > env.sh
-echo "  source $target_toolchain_dir/../env.sh" >> env.sh
+echo "if [ -f \"$target_chipyard_dir/env.sh\" ]; then" > env.sh
+echo "  source $target_chipyard_dir/env.sh" >> env.sh
 echo "  export FIRESIM_ENV_SOURCED=1" >> env.sh
 echo "else" >> env.sh
-echo "  echo \"Error: You may have forgot to build or source the toolchains (build them independantly in firesim-as-a-library mode)\"" >> env.sh
+echo "  echo \"Error: You may have forgot to build or source the toolchains (build them independently in firesim-as-a-library mode)\"" >> env.sh
 echo "fi" >> env.sh
+
+if  [ "$IS_LIBRARY" = false ]; then
+    echo "export FIRESIM_STANDALONE=1" >> env.sh
+fi
 
 # build QEMU
 echo "Building QEMU"
