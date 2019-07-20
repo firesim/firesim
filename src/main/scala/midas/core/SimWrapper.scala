@@ -161,8 +161,8 @@ class TargetBoxIO(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   }).toMap
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.WireChannel,Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.WireChannel,_,Some(sinks)) => ch -> regenWireType(sinks)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(sinks)) => ch -> regenWireType(sinks)
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
@@ -173,7 +173,7 @@ class TargetBoxIO(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   type WirePortTuple = (Option[ReadyValidIO[Data]], Option[ReadyValidIO[Data]])
 
   val wirePortMap: Map[FAMEChannelConnectionAnnotation, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.WireChannel,sources,sinks) => {
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.PipeChannel(_),sources,sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -487,11 +487,11 @@ class SimWrapper(targetIo: Seq[(String, Data)],
 
   // Generate all wire channels, excluding reset
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != "reset"  => genWireChannel(ch)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_) if name != "reset"  => genWireChannel(ch, latency)
   })
 
   val resetChannel = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == "reset"  => genWireChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(_),_,_) if name == "reset"  => genWireChannel(ch, 0)
   }).get
 
   val resetPort = channelPorts.wireName2port("reset")

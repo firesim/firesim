@@ -63,10 +63,14 @@ sealed trait FAMEChannelInfo {
   def update(renames: RenameMap): FAMEChannelInfo = this
 }
 
+
 /**
-  * Indicates that a channel connection is a standard wire channel.
+  * Indicates that a channel connection is a pipe with <latency> register stages
+  * Setting latency = 0 models a wire
+  *
+  * TODO: How to handle registers that are reset? Add an Option[RT]?
   */
-case object WireChannel extends FAMEChannelInfo
+case class PipeChannel(val latency: Int) extends FAMEChannelInfo
 
 /** 
   * Indicates that a channel connection is the reverse (ready) half of
