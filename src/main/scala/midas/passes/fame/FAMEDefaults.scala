@@ -28,8 +28,8 @@ class FAMEDefaults extends Transform {
     def isBound(topPort: Port) = analysis.channelsByPort.contains(analysis.topTarget.ref(topPort.name))
     val defaultExtChannelAnnos = topModule.ports.filterNot(isGlobal).filterNot(isBound).flatMap({
       case Port(_, _, _, ClockType) => None // FIXME: Reject the clock in RC's debug interface
-      case Port(_, name, Input, _)  => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), PipeChannel(0), None, Some(Seq(analysis.topTarget.ref(name)))))
-      case Port(_, name, Output, _) => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), PipeChannel(0), Some(Seq(analysis.topTarget.ref(name))), None))
+      case Port(_, name, Input, _)  => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, None, Some(Seq(analysis.topTarget.ref(name)))))
+      case Port(_, name, Output, _) => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, Some(Seq(analysis.topTarget.ref(name))), None))
     })
     val channelModules = new LinkedHashSet[String] // TODO: find modules to absorb into channels, don't label as FAME models
     val defaultLoopbackAnnos = new ArrayBuffer[FAMEChannelConnectionAnnotation]
@@ -43,7 +43,7 @@ class FAMEDefaults extends Transform {
         if (c.loc.tpe != ClockType && c.expr.tpe != ClockType) {
           defaultLoopbackAnnos += FAMEChannelConnectionAnnotation(
             channelNS.newName(s"${rhsiname}_${rhspname}__to__${lhsiname}_${lhspname}"),
-            PipeChannel(0),
+            WireChannel,
             Some(Seq(topTarget.ref(rhsiname).field(rhspname))),
             Some(Seq(topTarget.ref(lhsiname).field(lhspname))))
         }
