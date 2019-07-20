@@ -89,20 +89,21 @@ FPGA_LEVEL_SIM_ARGS ?=
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
+verilator_args =
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
-vcs_args = +vcs+initreg+0
+vcs_args = +vcs+initreg+0 +vcs+initmem+0
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 
 run-verilator: $(verilator)
 	cd $(dir $<) && \
-	$(verilator) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(verilator) +permissive $(verilator_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
 
 run-verilator-debug: $(verilator_debug)
 	cd $(dir $<) && \
-	$(verilator_debug) +permissive +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(verilator_debug) +permissive $(verilator_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
 
 run-vcs: $(vcs)
@@ -149,16 +150,16 @@ endif
 # the binary name. These are captured with $($*_ARGS)
 $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
-	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
