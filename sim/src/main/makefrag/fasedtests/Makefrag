@@ -23,6 +23,12 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
+ifdef FIRESIM_STANDALONE
+	firesim_sbt_project := firesim
+else
+	firesim_sbt_project := {file:${firesim_base_dir}/sim/}firesim
+endif
+
 submodules = \
     $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
     $(addprefix $(chipyard_dir)/, \
@@ -36,7 +42,7 @@ common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESI
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
 ##########################
 # Driver Sources & Flags #
