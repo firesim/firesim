@@ -210,7 +210,7 @@ void synthesized_prints_t::process_tokens(size_t beats) {
         show_prints(&buf[idx]);
         current_cycle++;
       } else {
-        current_cycle += decode_idle_cycles(buf, idle_cycles_mask);
+        current_cycle += decode_idle_cycles(&buf[idx], idle_cycles_mask);
       }
     }
   } else {

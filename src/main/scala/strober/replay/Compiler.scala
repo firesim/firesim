@@ -15,9 +15,6 @@ private class Compiler(conf: File, json: File, lib: File, macros: File, paths: F
     getLoweringTransforms(ChirrtlForm, MidForm) ++
     Seq(new InferReadWrite, new ReplSeqMem) ++
     getLoweringTransforms(MidForm, LowForm) ++
-    Seq(new midas.passes.ConfToJSON(conf, json),
-        new MacroCompilerTransform) ++
-    getLoweringTransforms(HighForm, LowForm) ++
     Seq(new LowFirrtlOptimization)
   def emitter = new StroberVerilogEmitter(lib, macros, paths)
 }
@@ -31,8 +28,7 @@ object Compiler {
     val pathFile = new File(dir, s"${chirrtl.main}.macros.path")
     val annotations = Seq(
       InferReadWriteAnnotation,
-      ReplSeqMemAnnotation(chirrtl.main, confFile.getPath),
-      MacroCompilerAnnotation(jsonFile.toString, lib map (_.toString), CostMetric.default, MacroCompilerAnnotation.Default, useCompiler = false))
+      ReplSeqMemAnnotation(chirrtl.main, confFile.getPath))
     val verilog = new FileWriter(new File(dir, s"${chirrtl.main}.v"))
     val result = new Compiler(confFile, jsonFile, lib getOrElse jsonFile, macroFile, pathFile) compile (
       CircuitState(chirrtl, ChirrtlForm, annotations), verilog)
