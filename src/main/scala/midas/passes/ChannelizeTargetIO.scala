@@ -38,9 +38,9 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
     def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)
 
     def wireSinkAnno(chName: String) =
-      FAMEChannelConnectionAnnotation(chName, WireChannel, None, Some(Seq(portRefTarget(chName))))
+      FAMEChannelConnectionAnnotation(chName, PipeChannel(1), None, Some(Seq(portRefTarget(chName))))
     def wireSourceAnno(chName: String) =
-      FAMEChannelConnectionAnnotation(chName, WireChannel, Some(Seq(portRefTarget(chName))), None)
+      FAMEChannelConnectionAnnotation(chName, PipeChannel(1), Some(Seq(portRefTarget(chName))), None)
 
     def decoupledRevSinkAnno(name: String, readyTarget: ReferenceTarget) =
       FAMEChannelConnectionAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, None, Some(Seq(readyTarget)))
