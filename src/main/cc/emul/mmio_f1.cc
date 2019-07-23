@@ -346,48 +346,6 @@ void tick(
     slave_3_w_data[i] = vc_4stVectorRef(slave_3_w_bits_data)[i].d;
   }
 
-  vc_putScalar(master_aw_valid, m->aw_valid());
-  vc_putScalar(master_ar_valid, m->ar_valid());
-  vc_putScalar(master_w_valid, m->w_valid());
-  vc_putScalar(master_w_bits_last, m->w_last());
-  vc_putScalar(master_r_ready, m->r_ready());
-  vc_putScalar(master_b_ready, m->b_ready());
-
-  vec32 md[MASTER_DATA_SIZE];
-  md[0].c = 0;
-  md[0].d = m->aw_id();
-  vc_put4stVector(master_aw_bits_id, md);
-  md[0].c = 0;
-  md[0].d = m->aw_addr();
-  vc_put4stVector(master_aw_bits_addr, md);
-  md[0].c = 0;
-  md[0].d = m->aw_size();
-  vc_put4stVector(master_aw_bits_size, md);
-  md[0].c = 0;
-  md[0].d = m->aw_len();
-  vc_put4stVector(master_aw_bits_len, md);
-  md[0].c = 0;
-  md[0].d = m->ar_id();
-  vc_put4stVector(master_ar_bits_id, md);
-  md[0].c = 0;
-  md[0].d = m->ar_addr();
-  vc_put4stVector(master_ar_bits_addr, md);
-  md[0].c = 0;
-  md[0].d = m->ar_size();
-  vc_put4stVector(master_ar_bits_size, md);
-  md[0].c = 0;
-  md[0].d = m->ar_len();
-  vc_put4stVector(master_ar_bits_len, md);
-  md[0].c = 0;
-  md[0].d = m->w_strb();
-  vc_put4stVector(master_w_bits_strb, md);
-
-  for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
-    md[i].c = 0;
-    md[i].d = ((uint32_t*) m->w_data())[i];
-  }
-  vc_put4stVector(master_w_bits_data, md);
-
   m->tick(
     vcs_rst,
     vc_getScalar(master_ar_ready),
@@ -400,52 +358,6 @@ void tick(
     vc_4stVectorRef(master_b_bits_id)->d,
     vc_getScalar(master_b_valid)
   );
-
-  vc_putScalar(dma_aw_valid, d->aw_valid());
-  vc_putScalar(dma_ar_valid, d->ar_valid());
-  vc_putScalar(dma_w_valid, d->w_valid());
-  vc_putScalar(dma_w_bits_last, d->w_last());
-  vc_putScalar(dma_r_ready, d->r_ready());
-  vc_putScalar(dma_b_ready, d->b_ready());
-
-  vec32 dd[DMA_DATA_SIZE];
-  dd[0].c = 0;
-  dd[0].d = d->aw_id();
-  vc_put4stVector(dma_aw_bits_id, dd);
-  dd[0].c = 0;
-  dd[0].d = d->aw_addr();
-  vc_put4stVector(dma_aw_bits_addr, dd);
-  dd[0].c = 0;
-  dd[0].d = d->aw_size();
-  vc_put4stVector(dma_aw_bits_size, dd);
-  dd[0].c = 0;
-  dd[0].d = d->aw_len();
-  vc_put4stVector(dma_aw_bits_len, dd);
-  dd[0].c = 0;
-  dd[0].d = d->ar_id();
-  vc_put4stVector(dma_ar_bits_id, dd);
-  dd[0].c = 0;
-  dd[0].d = d->ar_addr();
-  vc_put4stVector(dma_ar_bits_addr, dd);
-  dd[0].c = 0;
-  dd[0].d = d->ar_size();
-  vc_put4stVector(dma_ar_bits_size, dd);
-  dd[0].c = 0;
-  dd[0].d = d->ar_len();
-  vc_put4stVector(dma_ar_bits_len, dd);
-
-  auto strb = d->w_strb();
-  for (size_t i = 0 ; i < DMA_STRB_SIZE ; i++) {
-    dd[i].c = 0;
-    dd[i].d = ((uint32_t*)(&strb))[i];
-  }
-  vc_put4stVector(dma_w_bits_strb, dd);
-
-  for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
-    dd[i].c = 0;
-    dd[i].d = ((uint32_t*) d->w_data())[i];
-  }
-  vc_put4stVector(dma_w_bits_data, dd);
 
   d->tick(
     vcs_rst,
@@ -506,7 +418,6 @@ void tick(
     vc_getScalar(slave_1_b_ready)
   );
 
-
   slave[2]->tick(
     vcs_rst,
     vc_getScalar(slave_2_ar_valid),
@@ -530,7 +441,6 @@ void tick(
     vc_getScalar(slave_2_b_ready)
   );
 
-
   slave[3]->tick(
     vcs_rst,
     vc_getScalar(slave_3_ar_valid),
@@ -553,6 +463,101 @@ void tick(
     vc_getScalar(slave_3_r_ready),
     vc_getScalar(slave_3_b_ready)
   );
+
+  if (!vcs_fin) host->switch_to();
+  else vcs_fin = false;
+
+  vc_putScalar(master_aw_valid, m->aw_valid());
+  vc_putScalar(master_ar_valid, m->ar_valid());
+  vc_putScalar(master_w_valid, m->w_valid());
+  vc_putScalar(master_w_bits_last, m->w_last());
+  vc_putScalar(master_r_ready, m->r_ready());
+  vc_putScalar(master_b_ready, m->b_ready());
+
+  vec32 md[MASTER_DATA_SIZE];
+  md[0].c = 0;
+  md[0].d = m->aw_id();
+  vc_put4stVector(master_aw_bits_id, md);
+  md[0].c = 0;
+  md[0].d = m->aw_addr();
+  vc_put4stVector(master_aw_bits_addr, md);
+  md[0].c = 0;
+  md[0].d = m->aw_size();
+  vc_put4stVector(master_aw_bits_size, md);
+  md[0].c = 0;
+  md[0].d = m->aw_len();
+  vc_put4stVector(master_aw_bits_len, md);
+  md[0].c = 0;
+  md[0].d = m->ar_id();
+  vc_put4stVector(master_ar_bits_id, md);
+  md[0].c = 0;
+  md[0].d = m->ar_addr();
+  vc_put4stVector(master_ar_bits_addr, md);
+  md[0].c = 0;
+  md[0].d = m->ar_size();
+  vc_put4stVector(master_ar_bits_size, md);
+  md[0].c = 0;
+  md[0].d = m->ar_len();
+  vc_put4stVector(master_ar_bits_len, md);
+  md[0].c = 0;
+  md[0].d = m->w_strb();
+  vc_put4stVector(master_w_bits_strb, md);
+
+  for (size_t i = 0 ; i < MASTER_DATA_SIZE ; i++) {
+    md[i].c = 0;
+    md[i].d = ((uint32_t*) m->w_data())[i];
+  }
+  vc_put4stVector(master_w_bits_data, md);
+
+  vc_putScalar(dma_aw_valid, d->aw_valid());
+  vc_putScalar(dma_ar_valid, d->ar_valid());
+  vc_putScalar(dma_w_valid, d->w_valid());
+  vc_putScalar(dma_w_bits_last, d->w_last());
+  vc_putScalar(dma_r_ready, d->r_ready());
+  vc_putScalar(dma_b_ready, d->b_ready());
+
+  vec32 dd[DMA_DATA_SIZE];
+  dd[0].c = 0;
+  dd[0].d = d->aw_id();
+  vc_put4stVector(dma_aw_bits_id, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_addr();
+  dd[1].c = 0;
+  dd[1].d = d->aw_addr() >> 32;
+  vc_put4stVector(dma_aw_bits_addr, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_size();
+  vc_put4stVector(dma_aw_bits_size, dd);
+  dd[0].c = 0;
+  dd[0].d = d->aw_len();
+  vc_put4stVector(dma_aw_bits_len, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_id();
+  vc_put4stVector(dma_ar_bits_id, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_addr();
+  dd[1].c = 0;
+  dd[1].d = d->ar_addr() >> 32;
+  vc_put4stVector(dma_ar_bits_addr, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_size();
+  vc_put4stVector(dma_ar_bits_size, dd);
+  dd[0].c = 0;
+  dd[0].d = d->ar_len();
+  vc_put4stVector(dma_ar_bits_len, dd);
+
+  auto strb = d->w_strb();
+  for (size_t i = 0 ; i < DMA_STRB_SIZE ; i++) {
+    dd[i].c = 0;
+    dd[i].d = ((uint32_t*)(&strb))[i];
+  }
+  vc_put4stVector(dma_w_bits_strb, dd);
+
+  for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
+    dd[i].c = 0;
+    dd[i].d = ((uint32_t*) d->w_data())[i];
+  }
+  vc_put4stVector(dma_w_bits_data, dd);
 
   vc_putScalar(slave_0_aw_ready, slave[0]->aw_ready());
   vc_putScalar(slave_0_ar_ready, slave[0]->ar_ready());
@@ -658,8 +663,6 @@ void tick(
 
   main_time++;
 
-  if (!vcs_fin) host->switch_to();
-  else vcs_fin = false;
 }
 }
 

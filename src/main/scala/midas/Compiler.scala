@@ -11,7 +11,6 @@ import firrtl.{Transform, CircuitState}
 import firrtl.annotations.Annotation
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
-import barstools.macros._
 import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
 import logger._
@@ -53,7 +52,6 @@ object MidasCompiler {
       targetAnnos: Seq[Annotation],
       io: Seq[(String, Data)],
       dir: File,
-      lib: Option[File],
       targetTransforms: Seq[Transform], // Run pre-MIDAS transforms, on the target RTL
       hostTransforms: Seq[Transform]    // Run post-MIDAS transformations
     )
@@ -78,7 +76,6 @@ object MidasCompiler {
   def apply[T <: chisel3.core.UserModule](
       w: => T,
       dir: File,
-      libFile: Option[File] = None,
       targetTransforms: Seq[Transform] = Seq.empty,
       hostTransforms: Seq[Transform] = Seq.empty
     )
@@ -88,6 +85,6 @@ object MidasCompiler {
     val circuit = chisel3.Driver.elaborate(() => target)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val io = target.getPorts map (p => p.id.instanceName -> p.id)
-    apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, libFile, targetTransforms, hostTransforms)
+    apply(chirrtl, circuit.annotations.map(_.toFirrtl), io, dir, targetTransforms, hostTransforms)
   }
 }
