@@ -18,7 +18,7 @@ class ChannelExcision extends Transform {
   def outputForm = LowForm
 
   val addedChannelAnnos = new mutable.ArrayBuffer[FAMEModelAnnotation]()
-  val wireChannels = new mutable.HashMap[(ReferenceTarget, ReferenceTarget), String]()
+  val pipeChannels = new mutable.HashMap[(ReferenceTarget, ReferenceTarget), String]()
 
 
   override def execute(state: CircuitState): CircuitState = {
@@ -33,7 +33,7 @@ class ChannelExcision extends Transform {
                           rhs @ WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
         val lhsTarget = subfieldTarget(lhsiname, lhspname)
         val rhsTarget = subfieldTarget(rhsiname, rhspname)
-        wireChannels.get((lhsTarget, rhsTarget)) match {
+        pipeChannels.get((lhsTarget, rhsTarget)) match {
           case Some(chName) =>
             val srcP = Port(NoInfo, s"${rhsiname}_${rhspname}_source", Output, lhs.tpe)
             val sinkP = Port(NoInfo, s"${lhsiname}_${lhspname}_sink", Input, rhs.tpe)
@@ -57,7 +57,7 @@ class ChannelExcision extends Transform {
     // Step 1: Analysis -> build a map from reference targets to channel name
     state.annotations.collect({
       case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), Some(srcs), Some(sinks)) =>
-      sinks.zip(srcs).foreach({ wireChannels(_) = name })
+      sinks.zip(srcs).foreach({ pipeChannels(_) = name })
     })
 
     // Step 2: Generate new ports, find and replace connections
