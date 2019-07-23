@@ -26,7 +26,7 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := firesim
 else
-	firesim_sbt_project := {file:${firesim_base_dir}/sim/}firesim
+	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 endif
 
 submodules = \

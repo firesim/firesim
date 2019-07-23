@@ -183,14 +183,20 @@ xsim: $(xsim)
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
 
-rocketchip_dir := $(base_dir)/target-rtl/chipyard/generators/rocket-chip
+ifdef FIRESIM_STANDALONE
+	firesimLib_sbt_project := firesim
+else
+	firesimLib_sbt_project := {file:${firesim_base_dir}/}firesimLib
+endif
+
+rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
 		BASE_DIR=$(base_dir) \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT)" \
+		SBT="$(SBT) \"project $(firesimLib_sbt_project)\" " \
 		CONFIG=$(UNITTEST_CONFIG)
 
 run-midas-unittests: $(chisel_srcs)
