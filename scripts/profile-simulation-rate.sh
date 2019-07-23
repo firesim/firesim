@@ -41,7 +41,7 @@ do
 
     echo -e "\nVerilator TARGET-level Simulation, -O${optlevel}\n" >> $REPORT_FILE
     ## Verilator
-    cd $firesim_root/target-design/firechip/verisim
+    cd $firesim_root/target-design/chipyard/verisim
     sim=simulator-example-DefaultExampleConfig
 
     # Hack...
@@ -60,7 +60,7 @@ do
 done
 
 echo -e "\nTarget-level VCS\n" >> $REPORT_FILE
-cd $firesim_root/target-design/firechip/vsim/
+cd $firesim_root/target-design/chipyard/vsim/
 sim=simv-example-DefaultExampleConfig
 /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS
 /usr/bin/time -a -o $REPORT_FILE make -j$MAKE_THREADS debug
