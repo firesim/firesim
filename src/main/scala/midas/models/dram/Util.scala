@@ -145,8 +145,8 @@ class DynamicLatencyPipe[T <: Data] (
   }
 
   val latencies = Reg(Vec(entries, UInt(countBits.W)))
-  val pendingReg = RegInit(VecInit(Seq.fill(entries)(false.B)))
-  val done = Vec(latencies.zip(pendingReg) map { case (lat, pendingReg) =>
+  val pendingRegisters = RegInit(VecInit(Seq.fill(entries)(false.B)))
+  val done = Vec(latencies.zip(pendingRegisters) map { case (lat, pendingReg) =>
     val cycleMatch = lat === io.tCycle
     when (cycleMatch) { pendingReg := false.B }
     cycleMatch || !pendingReg
@@ -154,7 +154,7 @@ class DynamicLatencyPipe[T <: Data] (
 
   when (do_enq) {
     latencies(enq_ptr.value) := io.tCycle + io.latency
-    pendingReg(enq_ptr.value) := io.latency != 1.U
+    pendingRegisters(enq_ptr.value) := io.latency != 1.U
   }
 
   io.deq.valid := !empty && done(deq_ptr.value)
