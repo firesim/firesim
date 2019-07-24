@@ -169,8 +169,3 @@ class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank(3)
 )
-
-////Midas 2.0 Configs
-//class Midas2Config extends Config(
-//   new WithMultiCycleRamModels ++
-//   new FireSimConfig)

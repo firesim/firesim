@@ -87,13 +87,14 @@ ${buildStrategy.emitTcl}
 
   // For host configurations, look up configs in one of three places:
   // 1) The user specified project (eg. firesim.firesim)
-  // 2) firesim.util  -> this has a bunch of target agnostic configurations, like host frequency
-  // 3) midas -> This has debug features, etc
+  // 2) firesim.configs -> Legacy SimConfigs
+  // 3) firesim.util  -> this has a bunch of target agnostic configurations, like host frequency
+  // 4) midas -> This has debug features, etc
   // Allows the user to concatenate configs together from different packages
   // without needing to fully specify the class name for each config
   // eg. FireSimConfig_F90MHz maps to: firesim.util.F90MHz ++ firesim.firesim.FiresimConfig
   def getHostParameters(targetNames: ParsedInputNames, hostNames: ParsedInputNames): Parameters = {
-    val packages = hostNames.configProject +: Seq("firesim.util", "midas")
+    val packages = hostNames.configProject +: Seq("firesim.configs", "firesim.util", "midas")
     val hParams = new Config(
       getConfigWithFallback(packages, hostNames.configClasses) ++
       getConfig(targetNames.fullConfigClasses)).toInstance
