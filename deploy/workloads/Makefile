@@ -119,4 +119,5 @@ coremark:
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
-	ccbench-cache-sweep flash-stress fc-test coremark
+	ccbench-cache-sweep flash-stress fc-test coremark \
+	linux-immediate-poweroff
