@@ -1,16 +1,16 @@
 {
-  "benchmark_name" : "linux-uniform-systolic",
+  "benchmark_name" : "systolic-tests",
   "common_bootbinary" : "systolic-tests-bin",
   "common_rootfs"     : "systolic-tests.img",
   "common_outputs"    : ["/etc/os-release"],
-  "common_simulation_outputs" : ["uartlog", "memory_stats.csv"]
+  "common_simulation_outputs" : ["uartlog", "memory_stats.csv"],
   "workloads" : [
     {
       "name": "systolic-test",
       "files": [],
-      "command": "/root/systolic-rocc-tests/run-tests.sh",
+      "command": "/root/systolic-rocc-tests/run-tests.sh && poweroff -f",
       "simulation_outputs": [],
       "outputs": []
-    },
-
+    }
+  ]
 }
