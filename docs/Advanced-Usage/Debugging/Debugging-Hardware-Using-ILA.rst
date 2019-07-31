@@ -40,6 +40,19 @@ themselves (eg. in Chisel3.util.Queue).
 Note: In case the module with the annotated signal is instantiated multiple times,
 all instatiations of the annotated signal will be wired to the ILA.
 
+Setting a ILA Depth
+-------------------
+
+The ILA depth parameter specifies the duration in cycles to capture annotated signals
+after a trigger. Increasing this parameter may ease debugging, but will also increase
+FPGA resource utilization. The default depth is 1024 cycles. The desired depth can be
+configured much like the desired HostFrequency by appending a mixin to the 
+`PLATFORM_CONFIG`.
+
+::
+
+   PLATFORM_CONFIG=FireSimConfig_ILA8192
+
 
 
 Using the ILA at Runtime
