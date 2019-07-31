@@ -48,8 +48,12 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig()
 })
 
-class WithPFA(qDepth: Int) extends Config((site, here, up) => {
-  case PFAKey => Some(PFAConfig(qDepth = qDepth))
+class WithPFAKey extends Config((site, here, up) => {
+  case PFAKey => Some(PFAConfig())
+})
+
+class WithPFAQueueDepth(depth: Int) extends Config((site, here, up) => {
+  case PFAKey => up(PFAKey).map(_.copy(qDepth = depth))
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
@@ -168,7 +172,7 @@ class FireSimMemBladeQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimMemBladeConfig)
 
 class FireSimMemBladePFAConfig extends Config(
-  new WithPFA(64) ++ new FireSimMemBladeConfig)
+  new WithPFAKey ++ new FireSimMemBladeConfig)
 
 class FireSimMemBladePFASingleCoreConfig extends Config(
   new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
@@ -178,6 +182,12 @@ class FireSimMemBladePFADualCoreConfig extends Config(
 
 class FireSimMemBladePFAQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
+
+class FireSimMemBladePFA128QuadCoreConfig extends Config(
+  new WithPFAQueueDepth(128) ++ new FireSimMemBladePFAQuadCoreConfig)
+
+class FireSimMemBladePFA256QuadCoreConfig extends Config(
+  new WithPFAQueueDepth(256) ++ new FireSimMemBladePFAQuadCoreConfig)
 
 class FireSimBoomConfig extends Config(
   new WithBootROM ++
