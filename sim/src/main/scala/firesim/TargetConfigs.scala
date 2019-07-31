@@ -6,7 +6,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-import freechips.rocketchip.pfa.HasPFA
+import freechips.rocketchip.pfa.{PFAKey, PFAConfig}
 import boom.system.BoomTilesKey
 import testchipip.{WithBlockDevice, BlockDeviceKey, BlockDeviceConfig}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
@@ -48,8 +48,8 @@ class WithRemoteMemClientKey extends Config((site, here, up) => {
   case RemoteMemClientKey => RemoteMemClientConfig()
 })
 
-class WithPFA extends Config((site, here, up) => {
-  case HasPFA => true
+class WithPFA(qDepth: Int) extends Config((site, here, up) => {
+  case PFAKey => Some(PFAConfig(qDepth = qDepth))
 })
 
 class WithRocketL2TLBs(entries: Int) extends Config((site, here, up) => {
@@ -168,7 +168,7 @@ class FireSimMemBladeQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimMemBladeConfig)
 
 class FireSimMemBladePFAConfig extends Config(
-  new WithPFA ++ new FireSimMemBladeConfig)
+  new WithPFA(64) ++ new FireSimMemBladeConfig)
 
 class FireSimMemBladePFASingleCoreConfig extends Config(
   new WithNBigCores(1) ++ new FireSimMemBladePFAConfig)
