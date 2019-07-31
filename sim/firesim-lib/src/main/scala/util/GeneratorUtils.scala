@@ -145,11 +145,14 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites {
     firesim.passes.AsyncResetRegPass,
     firesim.passes.PlusArgReaderPass
   )
+
+  lazy val hostParams = getHostParameters(names, hostNames)
+
   lazy val hostTransforms = Seq(
-    new firesim.passes.ILATopWiringTransform(genDir)
+    new firesim.passes.ILATopWiringTransform(genDir, hostParams(ILADepth))
   )
 
-   lazy val hostParams = getHostParameters(names, hostNames)
+
 
    def elaborateAndCompileWithMidas() {
     val c3circuit = chisel3.Driver.elaborate(() => target)

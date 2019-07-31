@@ -8,10 +8,15 @@ import chisel3.experimental.RawModule
 import freechips.rocketchip.config.{Field, Config}
 
 object DesiredHostFrequency extends Field[Int](90) // Host FPGA frequency, in MHz
+object ILADepth extends Field[Int](1024) // Depth of ILA traces
 object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing)
 
 class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
     case DesiredHostFrequency => freq
+})
+
+class WithILADepth(depth: Int) extends Config((site, here, up) => {
+    case ILADepth => depth
 })
 
 object BuildStrategies {
@@ -53,5 +58,17 @@ class  F65MHz extends WithDesiredHostFrequency(65)
 class  F60MHz extends WithDesiredHostFrequency(60)
 class  F55MHz extends WithDesiredHostFrequency(50)
 class  F50MHz extends WithDesiredHostFrequency(50)
+class  F45MHz extends WithDesiredHostFrequency(45)
+class  F40MHz extends WithDesiredHostFrequency(40)
+class  F35MHz extends WithDesiredHostFrequency(35)
+class  F30MHz extends WithDesiredHostFrequency(30)
+
+class  ILA1024 extends WithILADepth(1024)
+class  ILA2048 extends WithILADepth(2048)
+class  ILA4096 extends WithILADepth(4096)
+class  ILA8192 extends WithILADepth(8192)
+class ILA16384 extends WithILADepth(16384)
+
+
 
 class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
