@@ -180,6 +180,12 @@ class FireSimMemBladePFASingleCoreConfig extends Config(
 class FireSimMemBladePFADualCoreConfig extends Config(
   new WithNBigCores(2) ++ new FireSimMemBladePFAConfig)
 
+class FireSimMemBladePFA64DualCoreConfig extends Config(
+  new WithPFAQueueDepth(64) ++ new FireSimMemBladePFADualCoreConfig)
+
+class FireSimMemBladePFA256DualCoreConfig extends Config(
+  new WithPFAQueueDepth(256) ++ new FireSimMemBladePFADualCoreConfig)
+
 class FireSimMemBladePFAQuadCoreConfig extends Config(
   new WithNBigCores(4) ++ new FireSimMemBladePFAConfig)
 
