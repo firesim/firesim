@@ -29,12 +29,13 @@ PLATFORM ?= f1
 ifdef FIRESIM_STANDALONE
 
 base_dir := $(firesim_base_dir)
-rocketchip_dir := $(firesim_base_dir)/target-rtl/chipyard/generators/rocket-chip
+chipyard_dir := $(firesim_base_dir)/target-rtl/chipyard
+rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.4
-SBT_FLAGS ?= -J-Xmx$(JVM_MEMORY)
-SBT ?= java $(SBT_FLAGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
+JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
+SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
@@ -52,6 +53,7 @@ else
 # REBAR make variables
 base_dir := $(abspath ../../..)
 sim_dir := $(firesim_base_dir)
+chipyard_dir := $(base_dir)
 include $(base_dir)/variables.mk
 include $(base_dir)/common.mk
 endif

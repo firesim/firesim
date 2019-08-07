@@ -8,10 +8,9 @@ TARGET_CONFIG ?= NoConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
 PLATFORM_CONFIG ?= DefaultF1Config
 
-base_dir = $(abspath .)
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
-GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
-OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
+GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
 ##########################
 # RTL Generation         #
@@ -19,16 +18,22 @@ OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
-submodules = . midas midas/targetutils firesim-lib \
-    $(addprefix target-rtl/chipyard/, \
+submodules = \
+    $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
+    $(addprefix $(chipyard_dir)/, \
 		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
 		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
 
 src_path = src/main/scala
-chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(base_dir)/$(submodule)/$(src_path) -name "*.scala"))
+chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_path) -name "*.scala"))
 
-common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 CONF_NAME ?= runtime.conf
+
+SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
+mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
+COMMON_SIM_ARGS ?= $(mem_model_args)
+vcs_args = +vcs+initreg+0
 
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
@@ -72,10 +77,12 @@ runconf = $(GENERATED_DIR)/runtime.conf
 
 run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
-	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) `cat $(runconf)` +dramsim +sample=$(sample) \
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(COMMON_SIM_ARGS) $(ARGS) \
+	$(loadmem) +dramsim +sample=$(sample) \
 	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
 run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
-	cd $(GENERATED_DIR) && ./$(notdir $<) $(ARGS) $(loadmem) +dramsim +sample=$(sample) \
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(vcs_args) $(COMMON_SIM_ARGS) $(ARGS) \
+	$(loadmem) +dramsim +sample=$(sample) \
 	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)
