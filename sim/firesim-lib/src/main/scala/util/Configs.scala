@@ -63,11 +63,11 @@ class  F40MHz extends WithDesiredHostFrequency(40)
 class  F35MHz extends WithDesiredHostFrequency(35)
 class  F30MHz extends WithDesiredHostFrequency(30)
 
-class  ILA1024 extends WithILADepth(1024)
-class  ILA2048 extends WithILADepth(2048)
-class  ILA4096 extends WithILADepth(4096)
-class  ILA8192 extends WithILADepth(8192)
-class ILA16384 extends WithILADepth(16384)
+class  ILADepth1024 extends WithILADepth(1024)
+class  ILADepth2048 extends WithILADepth(2048)
+class  ILADepth4096 extends WithILADepth(4096)
+class  ILADepth8192 extends WithILADepth(8192)
+class ILADepth16384 extends WithILADepth(16384)
 
 
 

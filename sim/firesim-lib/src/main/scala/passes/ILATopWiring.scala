@@ -19,7 +19,7 @@ import firrtl.transforms.TopWiring._
     This also has an option to pass a function as a parmeter to generate custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class ILATopWiringTransform(dir: File = new File("/tmp/"), depth: Int = 1024) extends Transform {
+class ILATopWiringTransform(dir: File = new File("/tmp/"), datadepth: Int = 1024) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] ILA Top Wiring Transform"
@@ -96,7 +96,7 @@ class ILATopWiringTransform(dir: File = new File("/tmp/"), depth: Int = 1024) ex
     //vivado tcl epilogue
     val numprobes = if (mapping.size > 0) {mapping.size} else {1}
     tclOutputFile.append(s"CONFIG.C_NUM_OF_PROBES {$numprobes} ")
-    tclOutputFile.append(s"CONFIG.C_DATA_DEPTH {$depth} ")
+    tclOutputFile.append(s"CONFIG.C_DATA_DEPTH {$datadepth} ")
     tclOutputFile.append(s"CONFIG.C_TRIGOUT_EN {false} ")
     tclOutputFile.append(s"CONFIG.C_EN_STRG_QUAL {1} ")
     tclOutputFile.append(s"CONFIG.C_ADV_TRIGGER {true} ")

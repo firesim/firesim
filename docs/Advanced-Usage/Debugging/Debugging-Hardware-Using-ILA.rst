@@ -44,13 +44,15 @@ Setting a ILA Depth
 -------------------
 
 The ILA depth parameter specifies the duration in cycles to capture annotated signals
-after a trigger. Increasing this parameter may ease debugging, but will also increase
+around a trigger. Increasing this parameter may ease debugging, but will also increase
 FPGA resource utilization. The default depth is 1024 cycles. The desired depth can be
 configured much like the desired HostFrequency by appending a mixin to the 
-`PLATFORM_CONFIG`.
+`PLATFORM_CONFIG`. See :ref:`Generating-Different-Targets` for details on `PLATFORM_CONFIG`.
+
+Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` config file.
 
 ::
-
+   
    PLATFORM_CONFIG=FireSimConfig_ILA8192
 
 
