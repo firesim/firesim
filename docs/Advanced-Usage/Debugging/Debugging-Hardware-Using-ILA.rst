@@ -53,7 +53,7 @@ Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` co
 
 ::
    
-   PLATFORM_CONFIG=FireSimConfig_ILA8192
+   PLATFORM_CONFIG=FireSimConfig_ILADepth8192
 
 
 
