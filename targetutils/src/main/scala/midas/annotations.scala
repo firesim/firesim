@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
 
 import firrtl.{RenameMap}
-import firrtl.annotations.{SingleTargetAnnotation, ComponentName} // Deprecated
+import firrtl.annotations.{NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 
 // This is currently consumed by a transformation that runs after MIDAS's core
@@ -101,4 +101,16 @@ case class MemModelAnnotation[T <: chisel3.Data](target: chisel3.MemBase[T])
 case class FirrtlMemModelAnnotation(target: ReferenceTarget) extends
     SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(rt: ReferenceTarget) = this.copy(target = rt)
+}
+
+case class ExcludeInstanceAssertsAnnotation(target: (String, String)) extends
+    firrtl.annotations.NoTargetAnnotation {
+  def duplicate(n: (String, String)) = this.copy(target = n)
+}
+// TODO: Actually use a real target and not strings.
+object ExcludeInstanceAsserts {
+  def apply(target: (String, String)): ChiselAnnotation =
+    new ChiselAnnotation {
+      def toFirrtl = ExcludeInstanceAssertsAnnotation(target)
+    }
 }

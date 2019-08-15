@@ -479,9 +479,6 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
-
-    val targetAddrBits = model.io.tNasti.nastiXAddrBits
-    sb.append(genMacro("TARGET_MEM_ADDR_BITS", UInt32(targetAddrBits)))
   }
 
   // Prints out key elaboration time settings

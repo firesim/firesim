@@ -250,7 +250,6 @@ class EmitAndWrapRAMModels extends Transform {
     val renames = RenameMap.create(addedModules.map(m =>
       ModuleTarget(m.name, m.name) -> Seq(CircuitTarget(c.main))).toMap)
 
-    addedAnnotations foreach println
     state.copy(circuit = newCircuit.copy(modules = newCircuit.modules ++ addedModules),
                annotations = state.annotations ++ addedAnnotations,
                renames = Some(renames))
