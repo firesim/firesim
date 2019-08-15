@@ -54,4 +54,6 @@ class  F60MHz extends WithDesiredHostFrequency(60)
 class  F55MHz extends WithDesiredHostFrequency(50)
 class  F50MHz extends WithDesiredHostFrequency(50)
 
+class Asserts extends firesim.configs.WithSynthAsserts
+
 class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
