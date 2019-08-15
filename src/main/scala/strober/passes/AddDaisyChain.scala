@@ -57,7 +57,7 @@ class AddDaisyChains(
   type ChainModSet = collection.mutable.HashSet[String]
 
   private def bigRegFile(s: DefMemory) =
-    s.readLatency == 0 && s.depth >= 32 && bitWidth(s.dataType) >= 32
+    s.readLatency == 0 && s.depth.toInt >= 32 && bitWidth(s.dataType) >= 32
 
   private def collect(chainType: ChainType.Value, chains: Statements)(s: Statement): Statement = {
     chainType match {
@@ -207,7 +207,7 @@ class AddDaisyChains(
         (sum + width, max max width, depth max s.depth.toInt)
       case ((sum, max, depth), s: WDefInstance) =>
         val sram = srams(s.module)
-        (sum + sram.width, max max sram.width, depth max sram.depth)
+        (sum + sram.width, max max sram.width, depth max sram.depth.toInt)
     }
     def daisyConnect(stmts: Statements)(elem: (Statement, Int)): Expression = {
       val (data, addr, ce, re) = (elem._1: @unchecked) match {

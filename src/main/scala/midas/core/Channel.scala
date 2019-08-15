@@ -45,16 +45,16 @@ case class IntegralClockRatio(numerator: Int) extends IsRationalClockRatio {
   def inverse = ReciprocalClockRatio(denominator = numerator)
 }
 
-class WireChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
+class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
   val trace = Decoupled(gen)
   val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
-  override def cloneType = new WireChannelIO(gen)(p).asInstanceOf[this.type]
+  override def cloneType = new PipeChannelIO(gen)(p).asInstanceOf[this.type]
 
 }
 
-class WireChannel[T <: ChLeafType](
+class PipeChannel[T <: ChLeafType](
     val gen: T,
     latency: Int,
     clockRatio: IsRationalClockRatio = UnityClockRatio
@@ -63,7 +63,7 @@ class WireChannel[T <: ChLeafType](
   require(clockRatio.isUnity)
   require(latency == 0 || latency == 1)
 
-  val io = IO(new WireChannelIO(gen))
+  val io = IO(new PipeChannelIO(gen))
   val tokens = Module(new Queue(gen, p(ChannelLen)))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
@@ -85,15 +85,15 @@ class WireChannel[T <: ChLeafType](
 }
 
 
-class WireChannelUnitTest(
+class PipeChannelUnitTest(
     latency: Int = 0,
     numTokens: Int = 4096,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
 
-  override val testName = "WireChannel Unit Test"
+  override val testName = "PipeChannel Unit Test"
   val payloadWidth = 8
-  val dut = Module(new WireChannel(UInt(payloadWidth.W), latency, UnityClockRatio))
+  val dut = Module(new PipeChannel(UInt(payloadWidth.W), latency, UnityClockRatio))
   val referenceInput  = Wire(UInt(payloadWidth.W))
   val referenceOutput = ShiftRegister(referenceInput, latency)
 
@@ -299,7 +299,7 @@ class ReadyValidChannelUnitTest(
     queueDepth: Int = 2,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
-  override val testName = "WireChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+  override val testName = "PipeChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
 
   val payloadType = UInt(8.W)
   val resetLength = 4
