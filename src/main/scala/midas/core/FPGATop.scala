@@ -65,7 +65,6 @@ class FPGATop(simIoType: SimWrapperIO)(implicit p: Parameters) extends Module wi
   //  val daisyController = addWidget(new strober.widgets.DaisyController(simIo.daisy), "DaisyChainController")
   //  daisyController.reset := reset.toBool || simReset
   //  daisyController.io.daisy <> simIo.daisy
-  // KElvin was here
   //  val traceWidget = addWidget(new strober.widgets.IOTraceWidget(
   //    simIo.wireInputs map SimUtils.getChunks,
   //    simIo.wireOutputs map SimUtils.getChunks,
