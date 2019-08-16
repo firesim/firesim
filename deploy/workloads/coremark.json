@@ -1,0 +1,19 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "coremark",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["coremark.riscv"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "NOpost_run_hook": "python process-data.py",
+  "workloads" : [
+    {
+      "name": "coremark",
+      "files": [],
+      "command": "/coremark.riscv",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

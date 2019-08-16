@@ -6,14 +6,18 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.4",
   traceLevel   := 15,
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.3",
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases"),
+    Resolver.mavenLocal)
 )
 
 // Fork each scala test for now, to work around persistent mutable state
-// in Rocket-Chip based generators when testing the same DESIGN
+// in Rocket-Chip based generators
 def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
       val options = ForkOptions()
       new Group(test.name, Seq(test), SubProcess(options))
@@ -21,62 +25,33 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
 
 testGrouping in Test := isolateAllTests( (definedTests in Test).value )
 
-val rocketChipDir = file("target-rtl/firechip/rocket-chip")
-val fireChipDir  = file("target-rtl/firechip")
+lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
 
-// Subproject definitions begin
-// NB: FIRRTL dependency is unmanaged (and dropped in sim/lib)
-lazy val chisel  = (project in rocketChipDir / "chisel3")
+lazy val chipyardDir = if(firesimAsLibrary) {
+  file("../../../")
+} else {
+  file("target-rtl/chipyard")
+}
 
-// Contains annotations & firrtl passes you may wish to use in rocket-chip without
-// introducing a circular dependency between RC and MIDAS
-lazy val midasTargetUtils = (project in file("midas/targetutils"))
+lazy val chisel        = ProjectRef(chipyardDir, "chisel")
+lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
+lazy val barstools     = ProjectRef(chipyardDir, "barstoolsMacros")
+lazy val icenet        = ProjectRef(chipyardDir, "icenet")
+lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
+lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
+lazy val firechip      = ProjectRef(chipyardDir, "firechip")
+
+lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
   .dependsOn(chisel)
 
-// Rocket-chip dependencies (subsumes making RC a RootProject)
-lazy val hardfloat  = (project in rocketChipDir / "hardfloat")
-  .settings(
-    commonSettings,
-    crossScalaVersions := Seq("2.11.12", "2.12.4"))
-  .dependsOn(chisel, midasTargetUtils)
-lazy val macros     = (project in rocketChipDir / "macros")
-  .settings(commonSettings)
-
-// HACK: I'm strugging to override settings in rocket-chip's build.sbt (i want
-// the subproject to register a new library dependendency on midas's targetutils library)
-// So instead, avoid the existing build.sbt altogether and specify the project's root at src/
-lazy val rocketchip = (project in rocketChipDir / "src")
-  .settings(
-    commonSettings,
-    scalaSource in Compile := baseDirectory.value / "main" / "scala",
-    resourceDirectory in Compile := baseDirectory.value / "main" / "resources")
-  .dependsOn(chisel, hardfloat, macros, midasTargetUtils)
-
-// Target-specific dependencies
-lazy val boom       = (project in fireChipDir / "boom")
-  .settings(commonSettings)
-  .dependsOn(rocketchip)
-lazy val sifiveip   = (project in fireChipDir / "sifive-blocks")
-  .settings(commonSettings)
-  .dependsOn(rocketchip)
-lazy val testchipip = (project in fireChipDir / "testchipip")
-  .settings(commonSettings)
-  .dependsOn(rocketchip)
-lazy val icenet     = (project in fireChipDir / "icenet")
-  .settings(commonSettings)
-  .dependsOn(rocketchip, testchipip)
-
-// MIDAS-specific dependencies
-lazy val mdf        = RootProject(file("barstools/mdf/scalalib"))
-lazy val barstools  = (project in file("barstools/macros"))
-  .settings(commonSettings)
-  .dependsOn(mdf, rocketchip)
 lazy val midas      = (project in file("midas"))
-  .settings(commonSettings)
-  .dependsOn(barstools)
+  .settings(commonSettings).dependsOn(barstools, rocketchip)
 
-// Finally the root project
+lazy val firesimLib = (project in file("firesim-lib"))
+  .settings(commonSettings).dependsOn(midas, icenet, testchipip, sifive_blocks)
+
+// Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
-  .settings(commonSettings)
-  .dependsOn(rocketchip, midas, boom, icenet, sifiveip)
+  .settings(commonSettings).dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile")
+  .aggregate(firechip)

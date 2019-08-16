@@ -12,7 +12,7 @@ abstract class TutorialSuite(
     targetConfigs: String = "NoConfig",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
-  ) extends TestSuiteCommon with GeneratorUtils {
+  ) extends firesim.TestSuiteCommon with GeneratorUtils {
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
