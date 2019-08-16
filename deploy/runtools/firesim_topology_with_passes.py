@@ -185,7 +185,7 @@ class FireSimTopologyWithPasses:
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
                     self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
                     f1_2s_used += 1
-                elif (len(downlinknodes) == 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
+                elif (len(downlinknodes) <= 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
                     self.run_farm.f1_4s[f1_4s_used].add_switch(switch)
                     for server in downlinknodes:
                         self.run_farm.f1_4s[f1_4s_used].add_simulation(server)

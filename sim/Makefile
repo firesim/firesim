@@ -66,10 +66,9 @@ compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 sbt: $(FIRRTL_JAR)
-	cd $(base_dir) && $(SBT) shell
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "shell"
 test: $(FIRRTL_JAR)
-	cd $(base_dir) && $(SBT) test
-
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"
 
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
