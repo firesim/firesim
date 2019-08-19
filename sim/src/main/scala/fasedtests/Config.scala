@@ -1,5 +1,4 @@
 //See LICENSE for license details.
-
 package firesim.fasedtests
 
 import freechips.rocketchip.config.{Field, Config}
@@ -7,6 +6,8 @@ import freechips.rocketchip.subsystem.WithoutTLMonitors
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy.{AddressSet, RegionType, TransferSizes}
 import freechips.rocketchip.tilelink._
+
+import firesim.configs._
 
 object AXI4SlavePort extends Field[AXI4SlavePortParameters]
 object MaxTransferSize extends Field[Int](64)
@@ -40,22 +41,21 @@ class NT10e7 extends WithNTransactions(10000000)
 class DefaultConfig extends Config(
   new WithoutTLMonitors ++
   new WithSlavePortParams ++
-  new firesim.firesim.WithDefaultMemModel
+  new WithDefaultMemModel
 )
 
 class FCFSConfig extends Config(
-  new firesim.firesim.FCFS16GBQuadRank ++
+  new FCFS16GBQuadRank ++
   new DefaultConfig)
 
 class FRFCFSConfig extends Config(
-  new firesim.firesim.FRFCFS16GBQuadRank ++
+  new FRFCFS16GBQuadRank ++
   new DefaultConfig)
 
 class LLCDRAMConfig extends Config(
-  new firesim.firesim.FRFCFS16GBQuadRankLLC4MB ++
+  new FRFCFS16GBQuadRankLLC4MB ++
   new DefaultConfig)
 
+
 // Platform Configs
-
 class DefaultF1Config extends Config(new midas.F1Config)
-

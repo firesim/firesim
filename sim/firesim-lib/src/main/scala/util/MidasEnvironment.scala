@@ -10,6 +10,7 @@ import chisel3.experimental.{RawModule, DataMirror, Direction}
 
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.devices.debug.{ClockedDMIIO}
+import freechips.rocketchip.diplomacy.{ValName}
 
 import midas.widgets.{PeekPokeEndpoint, IsEndpoint}
 import midas.models.{FASEDEndpoint, AXI4BundleWithEdge}
@@ -60,9 +61,9 @@ object TieOffDebug extends IOMatcher {
 }
 
 class IOMatchingMIDASEnvironment(dutGen: () => RawModule)(implicit val p: Parameters) extends RawModule {
+  implicit val valName = ValName(this.getClass.getSimpleName)
   val clock = IO(Input(Clock()))
   val reset = WireInit(false.B)
-
 
   withClockAndReset(clock, reset) {
     val target = Module(dutGen())

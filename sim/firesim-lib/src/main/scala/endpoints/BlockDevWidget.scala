@@ -171,6 +171,9 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
     when (tFire) {
       when (done || idle) {
+        readRespBeatsLeft := 0.U
+        returnWrite := false.B
+
         // If a write-response is waiting, return it first
         when(writeLatencyPipe.io.deq.valid) {
           returnWrite := true.B
@@ -178,9 +181,6 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
         }.elsewhen(readLatencyPipe.io.deq.valid) {
           readRespBeatsLeft := readLatencyPipe.io.deq.bits * dataBeats.U
           readLatencyPipe.io.deq.ready := true.B
-        }.otherwise {
-          readRespBeatsLeft := 0.U
-          returnWrite := false.B
         }
       }.elsewhen(readRespBusy && target.resp.fire) {
         readRespBeatsLeft := readRespBeatsLeft - 1.U

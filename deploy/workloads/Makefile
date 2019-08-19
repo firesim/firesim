@@ -73,6 +73,10 @@ simperf-test:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+linux-immediate-poweroff:
+	mkdir -p $@
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+
 simperf-test-scale: simperf-test
 
 simperf-test-latency: simperf-test
@@ -95,7 +99,7 @@ check-rtc-linux:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 checksum-test:
-	cd ../../target-design/firechip/tests && make checksum.riscv
+	cd ../../target-design/chipyard/tests && make checksum.riscv
 
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
@@ -106,8 +110,14 @@ fc-test:
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-client.riscv $@/fc-client.riscv
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
 
+coremark:
+	cd coremark/riscv-coremark/coremark && make CC=riscv64-unknown-linux-gnu-gcc compile
+	mv coremark/riscv-coremark/coremark/coremark.exe coremark/overlay/coremark.riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
-	ccbench-cache-sweep flash-stress fc-test
+	ccbench-cache-sweep flash-stress fc-test coremark \
+	linux-immediate-poweroff

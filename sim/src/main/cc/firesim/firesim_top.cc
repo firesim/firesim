@@ -78,7 +78,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_0_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS , host_mem_offset));
+                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
 #endif
@@ -93,7 +93,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_1_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats1.csv", 1L << FASEDMEMORYTIMINGMODEL_1_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_1_target_addr_bits;
 #endif
@@ -108,7 +108,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_2_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats2.csv", 1L << FASEDMEMORYTIMINGMODEL_2_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_2_target_addr_bits;
 #endif
@@ -123,7 +123,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_3_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats3.csv", 1L << FASEDMEMORYTIMINGMODEL_3_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_3_target_addr_bits;
 #endif
@@ -138,7 +138,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_4_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_4_W_names),
-                argc, argv, "memory_stats4.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats4.csv", 1L << FASEDMEMORYTIMINGMODEL_4_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_4_target_addr_bits;
 #endif
@@ -153,7 +153,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_5_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_5_W_names),
-                argc, argv, "memory_stats5.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats5.csv", 1L << FASEDMEMORYTIMINGMODEL_5_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_5_target_addr_bits;
 #endif
@@ -168,7 +168,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_6_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_6_W_names),
-                argc, argv, "memory_stats6.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats6.csv", 1L << FASEDMEMORYTIMINGMODEL_6_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_6_target_addr_bits;
 #endif
@@ -183,7 +183,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_7_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_7_W_names),
-                argc, argv, "memory_stats7.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+                argc, argv, "memory_stats7.csv", 1L << FASEDMEMORYTIMINGMODEL_7_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
      host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_7_target_addr_bits;
 #endif

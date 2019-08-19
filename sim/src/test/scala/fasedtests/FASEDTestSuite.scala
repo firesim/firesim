@@ -13,14 +13,14 @@ import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
 import firesim.util.GeneratorArgs
-import firesim.firesim.LlcKey
+import firesim.configs.LlcKey
 
 abstract class FASEDTest(
     topModuleClass: String,
     targetConfigs: String,
     platformConfigs: String,
     N: Int = 8
-  ) extends firesim.midasexamples.TestSuiteCommon with GeneratorUtils {
+  ) extends firesim.TestSuiteCommon with GeneratorUtils {
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 

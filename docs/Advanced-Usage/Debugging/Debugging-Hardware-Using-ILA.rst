@@ -40,6 +40,21 @@ themselves (eg. in Chisel3.util.Queue).
 Note: In case the module with the annotated signal is instantiated multiple times,
 all instatiations of the annotated signal will be wired to the ILA.
 
+Setting a ILA Depth
+-------------------
+
+The ILA depth parameter specifies the duration in cycles to capture annotated signals
+around a trigger. Increasing this parameter may ease debugging, but will also increase
+FPGA resource utilization. The default depth is 1024 cycles. The desired depth can be
+configured much like the desired HostFrequency by appending a mixin to the 
+`PLATFORM_CONFIG`. See :ref:`Generating-Different-Targets` for details on `PLATFORM_CONFIG`.
+
+Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` config file.
+
+::
+   
+   PLATFORM_CONFIG=FireSimConfig_ILADepth8192
+
 
 
 Using the ILA at Runtime
@@ -48,11 +63,15 @@ Using the ILA at Runtime
 Prerequisite: Make sure that ports 3121 and 10201 are enabled in the firesim AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
-This can be done by running the command:
+This can be done by running the following commands:
 
 ::
 
+  curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
+  sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
   /home/centos/src/scripts/setup_gui.sh
+  # keep manager paramiko compatibility
+  sudo pip2 uninstall gssapi
 
 When the command will finish running, a temporary password will be printed out. This
 password will be used to access the GUI interface of the master instance. We will

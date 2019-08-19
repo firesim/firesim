@@ -15,9 +15,10 @@ class ShmemPort : public BasePort {
 
 ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(portNo, !uplink) {
 #define SHMEM_EXTRABYTES 1
+#define SHMEM_NAME_SIZE 120
 
     // create shared memory regions
-    char name[100];
+    char name[SHMEM_NAME_SIZE];
     int shmemfd;
 
     char * recvdirection;
@@ -44,12 +45,17 @@ ShmemPort::ShmemPort(int portNo, char * shmemportname, bool uplink) : BasePort(p
     }
 
     for (int j = 0; j < 2; j++) {
+        int namelen;
         if (shmemportname) {
             fprintf(stdout, "Using non-slot-id associated shmemportname:\n");
-            sprintf(name, "/port_%s%s_%d", recvdirection, shmemportname, j);
+            namelen = snprintf(name, SHMEM_NAME_SIZE, "/port_%s%s_%d", recvdirection, shmemportname, j);
+            if (namelen >= SHMEM_NAME_SIZE) {
+                fprintf(stderr, "shmem port name /port_%s%s_%d too large\n",
+                        recvdirection, shmemportname, j);
+            }
         } else {
             fprintf(stdout, "Using slot-id associated shmemportname:\n");
-            sprintf(name, "/port_%s%d_%d", recvdirection, _portNo, j);
+            snprintf(name, SHMEM_NAME_SIZE, "/port_%s%d_%d", recvdirection, _portNo, j);
         }
         fprintf(stdout, "opening/creating shmem region\n%s\n", name);
         shmemfd = shm_open(name, shm_flags, S_IRWXU);

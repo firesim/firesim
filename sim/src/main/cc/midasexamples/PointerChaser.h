@@ -36,7 +36,7 @@ public:
                    FASEDMEMORYTIMINGMODEL_0_W_num_registers,
                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
-        argc, argv, "memory_stats.csv", 1L << TARGET_MEM_ADDR_BITS, host_mem_offset));
+        argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
 #endif
   }
 

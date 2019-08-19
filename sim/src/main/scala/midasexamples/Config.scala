@@ -7,14 +7,17 @@ import midas.widgets._
 import freechips.rocketchip.config._
 import junctions._
 
+import firesim.util.DesiredHostFrequency
+import firesim.configs.WithDefaultMemModel
+
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class DefaultF1Config extends Config(new Config((site, here, up) => {
-    case firesim.util.DesiredHostFrequency => 75
+    case DesiredHostFrequency => 75
     case SynthAsserts => true
     case midas.GenerateMultiCycleRamModels => true
     case SynthPrints => true
-}) ++ new Config(new firesim.firesim.WithDefaultMemModel ++ new midas.F1Config))
+}) ++ new Config(new WithDefaultMemModel ++ new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
   case MemSize => BigInt(1 << 30) // 1 GB
