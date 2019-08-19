@@ -14,6 +14,8 @@ import chisel3.util._
 import chisel3.experimental.{Direction}
 import chisel3.experimental.DataMirror.{directionOf}
 
+import scala.collection.mutable.ArrayBuffer
+
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
 
@@ -41,4 +43,3 @@ object AXI4BundleWithEdge {
 //  lazy val readyValidOutputs = findRVChannels(Direction.Output)
 //  lazy val readyValidInputs = findRVChannels(Direction.Input)
 }
-

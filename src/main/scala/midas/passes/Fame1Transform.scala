@@ -21,16 +21,10 @@ import chisel3.experimental.ChiselAnnotation
 // Datastructures
 import scala.collection.mutable
 
-private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.passes.Pass {
+private[passes] class Fame1Transform extends firrtl.passes.Pass {
   override def name = "[midas] Fame1 Transforms"
   type Enables = collection.mutable.HashMap[String, Boolean]
   type Statements = collection.mutable.ArrayBuffer[Statement]
-  private lazy val srams = json.foldLeft(Map.empty[String, SRAMMacro])({ case (sramMap, file) =>
-    val str = io.Source.fromFile(file).mkString
-    val srams = readMDFFromString(str).get collect { case x: SRAMMacro => x }
-    sramMap ++ (srams map (sram => sram.name -> sram)).toMap
-  })
-
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
   private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
 
@@ -41,12 +35,6 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
           memPortField(s, _, "en").serialize -> false)
         ens ++= s.readwriters map (
           memPortField(s, _, "wmode").serialize -> false)
-      case s: WDefInstance => srams get s.module match {
-        case Some(sram) => ens ++= sram.ports flatMap (port =>
-          (port.writeEnable ++ port.readEnable ++ port.chipEnable) map (en =>
-            wsub(wref(s.name), en.name).serialize -> inv(en.polarity)))
-        case _ =>
-      }
       case _ =>
     }
     s map collect(ens)
@@ -55,7 +43,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
   private def connect(ens: Enables,
                       stmts: Statements)
                       (s: Statement): Statement = s match {
-    case s: WDefInstance if !(srams contains s.module) =>
+    case s: WDefInstance =>
       Block(Seq(s,
         Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire)
       ))
@@ -83,8 +71,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
   protected def transform(m: DefModule): DefModule = {
     val ens = new Enables
     val stmts = new Statements
-    if (srams contains m.name) m
-    else m map collect(ens) map connect(ens, stmts) match {
+    m map collect(ens) map connect(ens, stmts) match {
       case m: Module =>
         m.copy(ports = m.ports ++ Seq(targetFirePort),
                body = Block(m.body +: stmts))
@@ -99,7 +86,7 @@ private[passes] class Fame1Transform(json: Option[java.io.File]) extends firrtl.
 // It is used to tranform RTL used as a timing model within handwritten models
 // where it may be easier to simply write target RTL
 class ModelFame1Transform(f1Modules: Map[String, String], f1ModuleSuffix: String = "_f1")
-    extends Fame1Transform(None) {
+    extends Fame1Transform {
 
   private val duplicateModuleSuffix = "_f1"
 
