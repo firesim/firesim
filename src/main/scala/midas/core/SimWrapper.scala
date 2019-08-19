@@ -158,8 +158,8 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   }).toMap
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.WireChannel,Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.WireChannel,_,Some(sinks)) => ch -> regenWireType(sinks)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(sinks)) => ch -> regenWireType(sinks)
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
@@ -170,7 +170,7 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   type WirePortTuple = (Option[ReadyValidIO[Data]], Option[ReadyValidIO[Data]])
 
   val wirePortMap: Map[FAMEChannelConnectionAnnotation, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.WireChannel,sources,sinks) => {
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.PipeChannel(_),sources,sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -362,16 +362,16 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   target.io.clock := clock
   import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
 
-  def getWireChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
+  def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
     target.io.wireTypeMap(chAnno)
   }
 
-  def genWireChannel(chAnno: FAMEChannelConnectionAnnotation, latency: Int = 1): WireChannel[ChLeafType] = {
+  def genPipeChannel(chAnno: FAMEChannelConnectionAnnotation, latency: Int = 1): PipeChannel[ChLeafType] = {
     require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
     require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
 
-    val channel = Module(new WireChannel(getWireChannelType(chAnno), latency))
-    channel suggestName s"WireChannel_${chAnno.globalName}"
+    val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
+    channel suggestName s"PipeChannel_${chAnno.globalName}"
 
     val (srcPort, sinkPort) = target.io.wirePortMap(chAnno)
     srcPort match {
@@ -434,11 +434,11 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   // the appropriate reset for that channel will then be plumbed out with the rest of the queue.
   val resetChannelName = "PeekPokeEndpoint_reset"
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != resetChannelName  => genWireChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != resetChannelName  => genPipeChannel(ch, 0)
   })
 
   val resetChannel = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genWireChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genPipeChannel(ch, 0)
   }).get
 
   //val resetPort = channelPorts.elements(resetChannelName + "_sink")

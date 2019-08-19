@@ -45,6 +45,7 @@ void simif_t::init(int argc, char** argv, bool log) {
     }
     if (arg.find("+seed=") == 0) {
       seed = strtoll(arg.c_str() + 6, NULL, 10);
+      fprintf(stderr, "Using custom SEED: %ld\n", seed);
     }
   }
   gen.seed(seed);
