@@ -53,7 +53,6 @@ def getQemuCmd(config, initramfs=False):
     if 'img' in config and not initramfs:
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
-        cmd = cmd + ['-append', '"ro root=/dev/vda"']
 
     return " ".join(cmd)
 

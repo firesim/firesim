@@ -9,17 +9,43 @@ import collections
 import shutil
 import psutil
 import errno
+import pathlib
 from contextlib import contextmanager
 
+# Root for wlutil library
 wlutil_dir = os.path.normpath(os.path.dirname(__file__))
+
+# Root for firemarshal (e.g. firesim-software/)
 root_dir = os.getcwd()
+
+# Root for default board (platform-specific stuff)
+board_dir = os.path.join(root_dir, 'boards', 'firechip')
+
+# Stores all outputs (binaries and images)
 image_dir = os.path.join(root_dir, "images")
+
+# Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
+
+# Initramfs root directory (used to build default initramfs for loading board drivers)
+initramfs_root = pathlib.Path(os.path.join(wlutil_dir, "initramfsRoot"))
+
+# Runtime Logs
 log_dir = os.path.join(root_dir, "logs")
+
+# SW-simulation outputs
 res_dir = os.path.join(root_dir, "runOutput")
+
+# Empty directory used for mounting images
 mnt = os.path.join(root_dir, "disk-mount")
+
+# Basic template for user-specified commands (the "command:" option) 
 commandScript = os.path.join(wlutil_dir, "_command.sh")
+
+# Default parallelism level to use in subcommands (mostly when calling 'make')
 jlevel = "-j" + str(os.cpu_count())
+
+# Gets set uniquely for each logical invocation of this library
 runName = ""
 
 # Useful for defining lists of files (e.g. 'files' part of config)
@@ -102,7 +128,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
         prettyCmd = ' '.join(args[0])
 
     if 'cwd' in kwargs:
-        log.log(level, 'Running: "' + prettyCmd + '" in ' + kwargs['cwd'])
+        log.log(level, 'Running: "' + prettyCmd + '" in ' + str(kwargs['cwd']))
     else:
         log.log(level, 'Running: "' + prettyCmd + '" in ' + os.getcwd())
 

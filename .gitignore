@@ -7,4 +7,4 @@ wlutil/fedora/rootfs.raw.xz
 wlutil/fedora/rootfs.img
 *__pycache__
 _command.sh
-.doit.db
+.doit.db*

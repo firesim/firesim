@@ -16,8 +16,8 @@ CONFIG_RISCV_ISA_C=n
 #
 # Boot options
 #
-CONFIG_CMDLINE="console=hvc0 root=/dev/generic-blkdev rw"
-CONFIG_CMDLINE_FALLBACK=y
+CONFIG_CMDLINE="console=hvc0"
+CONFIG_CMDLINE_FORCE=y
 
 #
 # Power management options
@@ -90,4 +90,3 @@ CONFIG_DEBUG_INFO=y
 CONFIG_DEBUG_FS=y
 CONFIG_DEBUG_SECTION_MISMATCH=y
 CONFIG_STACKTRACE=y
-
