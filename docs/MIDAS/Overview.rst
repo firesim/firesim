@@ -11,29 +11,28 @@ MIDAS vs FireSim
 
 MIDAS was designed to be used as library in any Chisel-based project. That
 said, *FireSim is the canonical example of how to employ MIDAS*, and provides
-many features that would be required in most projects that would use MIDAS
-(FPGA host-platform projects (AWS FPGA), automation utilities (the manager), a
+many features that would be required in most projects that would use MIDAS, such as
+FPGA host-platform projects (AWS FPGA), automation utilities (the manager), a
 standalone build system, as well the most common Chisel-based RISC-V target
-designs in Rocket and BOOM).  To this end, we expect that most users should
-either fork FireSim, or submodule FireSim into their larger chip project,
+designs in Rocket and BOOM.  To this end, we expect that most users should
+either fork Chipyard, or submodule FireSim into their larger chip project,
 instead of using MIDAS directly.
 
-FPGA-Accelerated Simulation vs FPGA Prototyping
------------------------------------------------
+MIDAS vs FPGA Prototyping
+-------------------------
 
 Key to understanding the design of MIDAS, is understanding that MIDAS-generated
-simulators, like FireSim, are not FPGA prototypes. MIDAS-generated simulators,
-like all FPGA-accelerated simulators before it (see RAMP), decouple the
-target-clock from the FPGA-host clock (we say it is *host-decoupled*). Thus one cycle in the target-machine is
-simulated over a one-or-more FPGA-host clock cycles. In constrast, a
+simulators are not FPGA prototypes. Unlike in a prototype, MIDAS-generated simulators decouple the
+target-clock from the FPGA-host clock (we say it is *host-decoupled*): one cycle in the target-machine is
+simulated over a one-or-more FPGA clock cycles. In constrast, a
 conventional FPGA-prototype "emulates" the SoC by implementing the target
 directly in FPGA logic, with each FPGA-clock edge executing a clock edge of the
 SoC.
 
-Why FPGA-Accelerated Simulation
+Why Use MIDAS & FireSim
 -------------------------------
 
-The host-decoupling used FPGA-accelerated simulators enables:
+The host-decoupling by MIDAS-generated simulators enables:
 
 #. **Providing simulation determinism.**
    MIDAS creates a closed simulation environment such that bugs in the target can be reproduced
@@ -46,13 +45,13 @@ The host-decoupling used FPGA-accelerated simulators enables:
    that preserve the target RTL's behavior, but take more host cycles to save resources.
    eg. A 5R, 3W-ported register file with a dual-ported BRAM over 4 cycles.
 
-#. **Distributed simulation & SW co-simulation.**
+#. **Distributed simulation & software co-simulation.**
    Since models are decoupled from host time, it becomes much easier to host
    components of the simulator on multiple FPGAs, and on a host-CPU, while still
    preserving simulation determinism. This feature serves as the basis for building
    cycle-accurate scale-out systems with FireSim.
 
-#. **FPGA-hosted timing-faithful models of I/O devices.**
+#. **FPGA-hosted, timing-faithful models of I/O devices.**
    Most simple FPGA-prototypes use FPGA-attached DRAM to model the target's
    DRAM memory system. If the available memory system does not match that of
    the target, the target's simulated performance will be artificially
@@ -61,7 +60,7 @@ The host-decoupling used FPGA-accelerated simulators enables:
    while still use FPGA-host resources like DRAM as a functional store.
 
 
-Why Not FPGA-Accelerated Simulation
+Why Not MIDAS
 -----------------------------------
 
 Ultimately, MIDAS-generated simulators introduce overheads not present in an
@@ -72,18 +71,13 @@ I/O devices would be best served by implementing their design directly on an FPG
 those looking to building a system around Rocket-Chip, we'd suggest looking at
 `SiFive's Freedom platform <https://github.com/sifive/freedom>`_ to start.
 
+How is Host-Decoupling Implemented?
+-----------------------------------
+Host-decoupling in MIDAS-generated simulators is implemented by decomposing the
+target machine into a dataflow graph of latency-insensitive models. As a user
+of FireSim, understanding this dataflow abstraction is essential for debugging
+your system and for developing your own software models and endpoints. We
+describe it in the next section.
 
 .. [#] These overheads varying depending on the features implemented and optimizations applied. Certain optimizations, currently in development, may increase fmax or decrease resource utilization over the equivalent prototype.
-
-
-
-
-
-
-
-
-
-
-
-
 

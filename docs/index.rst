@@ -37,6 +37,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    :caption: MIDAS Docs:
 
    MIDAS/Overview
+   MIDAS/LI-BDN
    MIDAS/Getting-Started
    MIDAS/Background
 
