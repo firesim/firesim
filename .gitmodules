@@ -29,5 +29,5 @@
 	path = deploy/workloads/runscripts/gapbs-scripts/gapbs
 	url = https://github.com/sbeamer/gapbs.git
 [submodule "deploy/workloads/coremark/riscv-coremark"]
-    path = deploy/workloads/coremark/riscv-coremark
-    url = https://github.com/riscv-boom/riscv-coremark
+	path = deploy/workloads/coremark/riscv-coremark
+	url = https://github.com/riscv-boom/riscv-coremark
