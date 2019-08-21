@@ -1,0 +1,32 @@
+From a1aa300d08734d9c1adc5988c1f6ac30eb6aa7fe Mon Sep 17 00:00:00 2001
+From: Sagar Karandikar <sagark@eecs.berkeley.edu>
+Date: Fri, 22 Mar 2019 02:22:22 +0000
+Subject: [PATCH] add temporary fix for dts reading of timebase-frequency
+ because our rocket-chip is old
+
+---
+ arch/riscv/kernel/time.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/riscv/kernel/time.c b/arch/riscv/kernel/time.c
+index 40470e669a35..b6d69e755938 100644
+--- a/arch/riscv/kernel/time.c
++++ b/arch/riscv/kernel/time.c
+@@ -24,8 +24,12 @@ void __init time_init(void)
+ 	u32 prop;
+ 
+ 	cpu = of_find_node_by_path("/cpus");
+-	if (!cpu || of_property_read_u32(cpu, "timebase-frequency", &prop))
+-		panic(KERN_WARNING "RISC-V system with no 'timebase-frequency' in DTS\n");
++	if (!cpu || of_property_read_u32(cpu, "timebase-frequency", &prop)) {
++		cpu = of_find_node_by_path("/cpus/cpu@0");
++		if (!cpu || of_property_read_u32(cpu, "timebase-frequency", &prop)) {
++			panic(KERN_WARNING "RISC-V system with no 'timebase-frequency' in DTS\n");
++		}
++	}
+ 	of_node_put(cpu);
+ 	riscv_timebase = prop;
+ 
+-- 
+2.16.5
+

@@ -60,8 +60,21 @@ def main():
             'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
     install_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
 
+    # Init Command
+    init_parser = subparsers.add_parser(
+            'init', help="Run this command on a fresh clone to setup FireMarshal")
+
     args = parser.parse_args()
     
+    if args.command == "init":
+        wlutil.setRunName(None, 'init')
+        wlutil.initLogging(args.verbose)
+        if not args.verbose:
+            print("To check on progress, either call marshal with '-v' or see the live output at: ")
+            print(os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
+        wlutil.oneTimeInit()
+        sys.exit()
+
     # Load all the configs from the workload directory
     args.config_files = [ os.path.abspath(f) for f in args.config_files ] 
     if args.workdir is None:
@@ -128,6 +141,7 @@ def main():
             else:
                 print("Test Passed")
             log.info("")
+
         elif args.command == 'clean':
             # with contextlib.suppress(FileNotFoundError):
                 if 'bin' in targetCfg:
@@ -142,8 +156,10 @@ def main():
                             deleteSafe(jCfg['bin'] + '-initramfs')
                         if 'img' in jCfg:
                             deleteSafe(jCfg['img'])
+
         elif args.command == 'install':
             wlutil.installWorkload(cfgPath, cfgs)
+
         else:
             log.error("No subcommand specified")
             sys.exit(1)

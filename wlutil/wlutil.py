@@ -10,6 +10,7 @@ import shutil
 import psutil
 import errno
 import pathlib
+import git
 from contextlib import contextmanager
 
 # Root for wlutil library
@@ -19,7 +20,7 @@ wlutil_dir = os.path.normpath(os.path.dirname(__file__))
 root_dir = os.getcwd()
 
 # Root for default board (platform-specific stuff)
-board_dir = os.path.join(root_dir, 'boards', 'firechip')
+board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
 
 # Stores all outputs (binaries and images)
 image_dir = os.path.join(root_dir, "images")
@@ -61,7 +62,12 @@ def setRunName(configPath, operation):
     timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
     randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
-    runName = os.path.splitext(os.path.basename(configPath))[0] + \
+    if configPath:
+        configName = os.path.splitext(os.path.basename(configPath))[0]
+    else:
+        configName = ''
+
+    runName = configName + \
             "-" + operation + \
             "-" + timeline + \
             "-" +  randname
@@ -229,3 +235,24 @@ def copyImgFiles(img, files, direction):
                 run('cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
+
+# Initialize wlutil for the first time
+def oneTimeInit():
+    log = logging.getLogger()
+
+    # Apply linux patches to the default kernel
+    patches = list(board_dir.glob("*.patch"))
+
+    linuxRepo = git.Repo(linux_dir)
+    if linuxRepo.is_dirty():
+        log.warning("Linux source dirty, skipping patches. You should manually check that the following patches have been applied (or are not needed):")
+        log.warning([ str(p) for p in patches])
+    else:
+        log.info("Applying linux patches to default linux source")
+        try:
+            for patch in patches:
+                log.info("Applying: " + str(patch))
+                run(['git', 'apply', str(patch)], cwd=linux_dir)
+        except:
+            log.error("Failed to apply patches. If you've changed the default linux, you should re-evaluate the patches.")
+
