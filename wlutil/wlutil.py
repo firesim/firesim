@@ -241,11 +241,25 @@ def copyImgFiles(img, files, direction):
 def oneTimeInit():
     log = logging.getLogger()
 
+    # Build initramfs fs structure (git can't save these because reasons)
+    (initramfs_root / "bin").mkdir(parents=True)
+    (initramfs_root / "etc").mkdir(parents=True)
+    (initramfs_root / "proc").mkdir(parents=True)
+    (initramfs_root / "root").mkdir(parents=True)
+    (initramfs_root / "sbin").mkdir(parents=True)
+    (initramfs_root / "sys").mkdir(parents=True)
+    (initramfs_root / "usr").mkdir(parents=True)
+    (initramfs_root / "mnt" / "root").mkdir(parents=True)
+
     # We need to build buildroot to get busybox. It also takes a surprising
     # amount of time which can be unintuitive (the first time you build
     # anything that uses buildroot takes 20min).
     log.info("Building buildroot (this may take a while)")
     br.Builder().buildBaseImage()
+
+    brBuildDir = pathlib.Path(wlutil_dir) / "br" / "buildroot" / "output" / "build"
+    busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
+    shutil.copy(busyboxPath, initramfs_root / 'bin/')
 
     # Apply linux patches to the default kernel
     patches = list(board_dir.glob("*.patch"))
