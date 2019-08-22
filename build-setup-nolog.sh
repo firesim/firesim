@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # FireSim initial setup script. This script will:
-# 1) Initalize submodules (only the required ones, minimizing duplicates
-# 2) Install RISC-V tools, including linux tools
-# 3) Installs python requirements for firesim manager
+# 1) Installs python requirements for firesim manager
+# 2) Initalize submodules (only the required ones, minimizing duplicates
+# 3) Install RISC-V tools, including linux tools
 
 # TODO: build FireSim linux distro here?
 
@@ -24,6 +24,21 @@ git submodule update --init --recursive #--jobs 8
 # unignore riscv-tools,catapult-shell2 globally
 git config --global --unset submodule.riscv-tools.update
 git config --global --unset submodule.experimental-blocks.update
+
+# run these first as tools build will fail if requirements are not met
+# commands to run only on EC2
+# see if the instance info page exists. if not, we are not on ec2.
+# this is one of the few methods that works without sudo
+if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
+    # Install firesim-software dependencies 
+    cd $RDIR
+    cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
+    sudo pip3 install -r sw/firesim-software/python-requirements.txt
+
+    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+    make
+    cd $RDIR
+fi
 
 FASTINSTALL=false
 
@@ -110,14 +125,6 @@ echo "export LD_LIBRARY_PATH=$RISCV/lib" >> env.sh
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
-    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-    make
-
-    # Install firesim-software dependencies 
-    cd $RDIR
-    sudo pip3 install -r sw/firesim-software/python-requirements.txt
-    cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
-
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
     # worker instances
