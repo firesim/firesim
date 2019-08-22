@@ -12,6 +12,7 @@ import errno
 import pathlib
 import git
 from contextlib import contextmanager
+from .br import br
 
 # Root for wlutil library
 wlutil_dir = os.path.normpath(os.path.dirname(__file__))
@@ -239,6 +240,12 @@ def copyImgFiles(img, files, direction):
 # Initialize wlutil for the first time
 def oneTimeInit():
     log = logging.getLogger()
+
+    # We need to build buildroot to get busybox. It also takes a surprising
+    # amount of time which can be unintuitive (the first time you build
+    # anything that uses buildroot takes 20min).
+    log.info("Building buildroot (this may take a while)")
+    br.Builder().buildBaseImage()
 
     # Apply linux patches to the default kernel
     patches = list(board_dir.glob("*.patch"))

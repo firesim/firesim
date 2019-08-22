@@ -222,12 +222,15 @@ def setupBoardInitramfs(boardDir, linuxSrc):
 
     # the initramfs needs busybox, we just borrow it from buildroot
     brBuildDir = pathlib.Path(wlutil_dir) / "br" / "buildroot" / "output" / "build"
-    if not brBuildDir.exists:
-        log.log(logging.DEBUG, "Buildroot not initialized (needed by all distros), building now. This will take a while.")
-        distros["br"]['builder'].buildBaseImage()
+    try:
+        busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
+    except StopIteration:
+        # This shouldn't happen in normal operation (it's built by marshal init)
+        log.warning("Buildroot not initialized (needed by all distros), building now. This will take a while.")
+        distros["br"].buildBaseImage()
+        busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
 
-    busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
-    shutil.copy(busyboxPath, initramfs_root / 'bin')
+    shutil.copy(busyboxPath, initramfs_root / 'bin/')
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
