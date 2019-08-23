@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from .br import br
 
 # Root for wlutil library
-wlutil_dir = os.path.normpath(os.path.dirname(__file__))
+wlutil_dir = pathlib.Path(__file__).parent.resolve()
 
 # Root for firemarshal (e.g. firesim-software/)
 root_dir = os.getcwd()
@@ -29,8 +29,12 @@ image_dir = os.path.join(root_dir, "images")
 # Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
 
+# Busybox source directory (used for the initramfs)
+busybox_dir = wlutil_dir / 'busybox'
+
 # Initramfs root directory (used to build default initramfs for loading board drivers)
 initramfs_root = pathlib.Path(os.path.join(wlutil_dir, "initramfsRoot"))
+initramfs_cpio = pathlib.Path(os.path.join(wlutil_dir, "initramfsRoot.cpio"))
 
 # Runtime Logs
 log_dir = os.path.join(root_dir, "logs")
@@ -242,24 +246,16 @@ def oneTimeInit():
     log = logging.getLogger()
 
     # Build initramfs fs structure (git can't save these because reasons)
-    (initramfs_root / "bin").mkdir(parents=True)
-    (initramfs_root / "etc").mkdir(parents=True)
-    (initramfs_root / "proc").mkdir(parents=True)
-    (initramfs_root / "root").mkdir(parents=True)
-    (initramfs_root / "sbin").mkdir(parents=True)
-    (initramfs_root / "sys").mkdir(parents=True)
-    (initramfs_root / "usr").mkdir(parents=True)
-    (initramfs_root / "mnt" / "root").mkdir(parents=True)
+    initramfs_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
+    for d in initramfs_dirs:
+        if not (initramfs_root / d).exists():
+            (initramfs_root / d).mkdir(parents=True)
 
-    # We need to build buildroot to get busybox. It also takes a surprising
-    # amount of time which can be unintuitive (the first time you build
-    # anything that uses buildroot takes 20min).
-    log.info("Building buildroot (this may take a while)")
-    br.Builder().buildBaseImage()
-
-    brBuildDir = pathlib.Path(wlutil_dir) / "br" / "buildroot" / "output" / "build"
-    busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
-    shutil.copy(busyboxPath, initramfs_root / 'bin/')
+    # Make busybox (needed for the initramfs)
+    log.info("Building busybox (used in initramfs)")
+    shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
+    run(['make', jlevel], cwd=busybox_dir)
+    shutil.copy(busybox_dir / 'busybox', initramfs_root / 'bin/')
 
     # Apply linux patches to the default kernel
     patches = list(board_dir.glob("*.patch"))

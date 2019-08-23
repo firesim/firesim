@@ -7,3 +7,6 @@
 [submodule "br/buildroot"]
 	path = wlutil/br/buildroot
 	url = https://git.buildroot.net/buildroot
+[submodule "wlutil/busybox"]
+	path = wlutil/busybox
+	url = https://git.busybox.net/busybox/

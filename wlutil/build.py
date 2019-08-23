@@ -220,17 +220,11 @@ def setupBoardInitramfs(boardDir, linuxSrc):
         for driverPath in drivers:
             f.write("insmod /" + str(driverPath.name) + "\n")
 
-    # the initramfs needs busybox, we just borrow it from buildroot
-    brBuildDir = pathlib.Path(wlutil_dir) / "br" / "buildroot" / "output" / "build"
-    try:
-        busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
-    except StopIteration:
-        # This shouldn't happen in normal operation (it's built by marshal init)
-        log.warning("Buildroot not initialized (needed by all distros), building now. This will take a while.")
-        distros["br"].buildBaseImage()
-        busyboxPath = next(brBuildDir.glob("busybox-*")) / "busybox"
+    if not (initramfs_root / "bin" / "busybox").exists():
+        raise RunTimeError("Initramfs root not initialized. Please run './marshal init'")
 
-    shutil.copy(busyboxPath, initramfs_root / 'bin/')
+    # This script adds the device nodes and packages up the initrd.
+    run(['fakeroot', '--', './makeInitramfs.sh'], cwd=wlutil_dir)
 
 # Now build linux/bbl
 def makeBin(config, initramfs=False):
@@ -246,7 +240,7 @@ def makeBin(config, initramfs=False):
             shutil.copy(linuxCfg, defCfg)
             with open(defCfg, 'a') as f:
                 f.write("CONFIG_BLK_DEV_INITRD=y\n")
-                f.write('CONFIG_INITRAMFS_SOURCE="' + str(initramfs_root) + '"\n')
+                f.write('CONFIG_INITRAMFS_SOURCE="' + str(initramfs_cpio) + '"\n')
 
         # Create a config from the user fragments
         kconfigEnv = os.environ.copy()
