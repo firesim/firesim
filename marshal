@@ -83,7 +83,9 @@ def main():
 
     if args.command == 'test':
         suitePass = True
-
+        
+    skipCount = 0
+    failCount = 0
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
         wlutil.setRunName(cfgPath, args.command)
@@ -127,8 +129,6 @@ def main():
                 log.exception("Failed to launch workload:")
 
         elif args.command == "test":
-            skipCount = 0
-            failCount = 0
             log.info("Running: " + cfgPath)
             res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
