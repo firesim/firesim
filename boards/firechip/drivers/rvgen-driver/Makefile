@@ -4,7 +4,10 @@ obj-m += rvgen.o
 
 else
 
-KMAKE=make -C ../riscv-linux ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- M=$(PWD)
+# The default assumes you cloned this as part of firesim-software (FireMarshal)
+LINUXSRC=../../../../riscv-linux
+
+KMAKE=make -C $(LINUXSRC) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- M=$(PWD)
 
 rvgen.ko: rvgen.c
 	$(KMAKE)

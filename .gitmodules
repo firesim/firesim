@@ -10,3 +10,6 @@
 [submodule "wlutil/busybox"]
 	path = wlutil/busybox
 	url = https://git.busybox.net/busybox/
+[submodule "boards/firechip/drivers/icenet-driver"]
+	path = boards/firechip/drivers/icenet-driver
+	url = git@github.com:firesim/icenet-driver.git
