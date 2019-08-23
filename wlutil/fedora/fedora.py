@@ -1,7 +1,7 @@
 import os
 import subprocess as sp
 import shutil
-import wlutil
+from .. import wlutil
 
 serviceTemplate = """[Unit]
 Requires=multi-user.target

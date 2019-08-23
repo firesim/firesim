@@ -2,8 +2,8 @@ import os
 import subprocess as sp
 import shutil
 import logging
-import wlutil
 import string
+from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
 
