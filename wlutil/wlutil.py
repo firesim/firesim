@@ -10,7 +10,6 @@ import shutil
 import psutil
 import errno
 import pathlib
-import git
 from contextlib import contextmanager
 
 # Root for wlutil library

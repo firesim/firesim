@@ -1,4 +1,5 @@
 import logging
+import git
 from .wlutil import *
 from .br import br
 
