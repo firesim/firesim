@@ -273,27 +273,38 @@ class UserTopologies(object):
         else:
             raise Exception("Don't know how to create memblade config for {}x{}".format(n, m))
 
-    def base_memblade_config(self, n, m):
+    def memblade_base_config(self, n, m):
         self.base_twohw_config(
                 "firesim-quadcore-rdma-l2-nic-ddr3",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
-    def base_dram_cache_config(self, n, m):
+    def dramcache_base_config(self, n, m):
         self.base_twohw_config(
-                "firesim-quadcore-dramcache-l2-nic-ddr3",
+                "firesim-dualcore-dramcache-ddr3-l2",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
-    def example_memblade_1x1config(self):
-        self.base_memblade_config(1, 1)
+    def boom_dramcache_base_config(self, n, m):
+        self.base_twohw_config(
+                "fireboom-dualcore-dramcache-ddr3-l2",
+                "firesim-singlecore-memblade-ddr3", n, m)
 
-    def example_memblade_2x2config(self):
-        self.base_memblade_config(2, 2)
+    def memblade_1x1_config(self):
+        self.memblade_base_config(1, 1)
 
-    def example_dram_cache_1x1config(self):
-        self.base_dram_cache_config(1, 1)
+    def memblade_2x2_config(self):
+        self.memblade_base_config(2, 2)
 
-    def example_dram_cache_1x2config(self):
-        self.base_dram_cache_config(1, 2)
+    def dramcache_1x1_config(self):
+        self.dramcache_base_config(1, 1)
+
+    def dramcache_1x2_config(self):
+        self.dramcache_base_config(1, 2)
+
+    def dramcache_2x1_config(self):
+        self.dramcache_base_config(2, 1)
+
+    def boom_dramcache_1x1_config(self):
+        self.boom_dramcache_base_config(1, 1)
 
     @staticmethod
     def supernode_flatten(arr):
