@@ -238,6 +238,22 @@ ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
 
+rmem-alloc-test:
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/memblade-tests/rmem-alloc && make
+	cp ../../sw/memblade-tests/rmem-alloc/*.riscv $@/overlay
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/memblade-dummy.riscv
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+flush-test:
+	cd ../../sw/memblade-tests/linux && make flush-test-{master,slave}.riscv
+	cp ../../sw/memblade-tests/linux/flush-test-{master,slave}.riscv $@/overlay
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/memblade-dummy.riscv
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -246,4 +262,5 @@ ccbench-cache-sweep:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress
+	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress \
+	rmem-alloc-test flush-test

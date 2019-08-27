@@ -1,0 +1,33 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "flush-test",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "master",
+          "files" : ["flush-test-master.riscv", "run-master.sh"],
+          "command" : "/root/run-master.sh",
+          "simulation_outputs": [],
+          "outputs": []
+      },
+      {
+          "name" : "slave",
+          "files" : ["flush-test-slave.riscv", "run-slave.sh"],
+          "command" : "/root/run-slave.sh && poweroff",
+          "simulation_outputs": [],
+          "outputs": []
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
+      }
+  ]
+}

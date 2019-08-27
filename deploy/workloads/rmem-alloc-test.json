@@ -1,0 +1,30 @@
+{
+  "benchmark_name" : "rmem-alloc-test",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "rmem-alloc-test",
+          "bootbinary" : "bbl-vmlinux",
+          "files" : [
+              "run-test.sh",
+              "client.riscv",
+              "server.riscv"
+          ],
+          "command" : "/root/run-test.sh",
+          "simulation_outputs": [],
+          "outputs": []
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
+      }
+  ]
+}
