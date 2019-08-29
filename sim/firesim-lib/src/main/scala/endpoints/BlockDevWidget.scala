@@ -75,7 +75,7 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   rRespBuf.reset  := reset.toBool || targetReset
   wAckBuf.reset  := reset.toBool || targetReset
 
-  // Hack 
+  // Hack: hReady depends on hValid. See firesim/firesim#335
   io.hPort.toHost.hReady := tFireHelper.fire
   io.hPort.fromHost.hValid := tFireHelper.fire
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)

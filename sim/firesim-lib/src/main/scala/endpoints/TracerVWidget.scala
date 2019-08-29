@@ -97,6 +97,7 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
 
   io.tReset.ready := tFireHelper.fire(io.tReset.valid)
   io.hPort.fromHost.hValid := tFireHelper.fire(io.hPort.fromHost.hReady)
+  // Hack: hReady depends on hValid. See firesim/firesim#335
   io.hPort.toHost.hReady := tFireHelper.fire
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready)
