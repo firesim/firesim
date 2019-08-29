@@ -251,7 +251,7 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
                                     ingressReady, bReady, rReady, tResetReady, temp_true_B)
 
   // HACK: Feeding valid back on ready and ready back on valid until we figure out
-  // channel tokenization
+  // channel tokenization. See firesim/firesim#335
   io.tNasti.toHost.hReady := tFireHelper.fire(temp_true_B)
   io.tNasti.fromHost.hValid := tFireHelper.fire(temp_true_B)
   io.tReset.ready := tFireHelper.fire(tResetReady)
