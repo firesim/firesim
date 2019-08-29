@@ -40,7 +40,7 @@ fi
 # shouldn't be tested (e.g. we exclude the base configs and some specialized
 # tests)
 echo "Running regular tests" | tee -a $LOGNAME
-BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike)"
+BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike|spike-args)"
 ./marshal clean test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 ./marshal test test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
@@ -52,7 +52,7 @@ fi
 
 # These tests need to run on spike, but not with the initramfs option
 echo "Running bare-metal tests" | tee -a $LOGNAME
-IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs)"
+IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args)"
 ./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
 # This is a temporary workaround for bug #38
 ./marshal build test/spike.json

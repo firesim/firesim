@@ -1,0 +1,2 @@
+  compatible = "ucbbar,spike-bare-dev";
+  model = "ucbbar,spike-bare";
