@@ -1,6 +1,6 @@
 ifneq ($(KERNELRELEASE),)
 
-obj-m += rvgen.o
+obj-m += iceblk.o
 
 else
 
@@ -9,7 +9,7 @@ LINUXSRC=../../../../riscv-linux
 
 KMAKE=make -C $(LINUXSRC) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- M=$(PWD)
 
-rvgen.ko: rvgen.c
+iceblk.ko: iceblk.c
 	$(KMAKE)
 
 clean:
