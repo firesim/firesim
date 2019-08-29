@@ -190,12 +190,10 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
 
   val target = io.hPort.hBits
-  val fixMeOnNextRocketBump = true.B // Need a dummy predicate to exclude for now
   val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid,
                                     io.hPort.fromHost.hReady,
-                                    io.tReset.valid,
-                                    fixMeOnNextRocketBump)
-  val tFire = tFireHelper.fire(fixMeOnNextRocketBump)
+                                    io.tReset.valid)
+  val tFire = tFireHelper.fire
   io.tReset.ready := true.B // This is unused
 
 //  htnt_queue.reset  := reset //|| targetReset
