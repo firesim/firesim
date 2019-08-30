@@ -163,14 +163,25 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
-  // _1 => Source port, _2 => Sink Port.
+
   // (Some, None) -> Source channel
   // (None, Some) -> Sink channel
   // (Some, Some) -> Loop back channel -> two interconnected models
-  type WirePortTuple = (Option[ReadyValidIO[Data]], Option[ReadyValidIO[Data]])
+  trait PortTuple[T <: Any] {
+    def source: Option[T]
+    def sink:   Option[T]
+    def isOutput(): Boolean = sink == None
+    def isInput(): Boolean = source == None
+    def isLoopback(): Boolean = source != None && sink != None
+  }
 
-  val wirePortMap: Map[FAMEChannelConnectionAnnotation, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.PipeChannel(_),sources,sinks) => {
+  case class WirePortTuple(source: Option[ReadyValidIO[Data]], sink: Option[ReadyValidIO[Data]]) 
+      extends PortTuple[ReadyValidIO[Data]]{
+    require(source != None || sink != None)
+  }
+
+  val wirePortMap: Map[String, WirePortTuple] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_),sources,sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -183,21 +194,33 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
         wireElements += name -> port
         port
       })
-      (ch -> (sourceP, sinkP))
+      (globalName -> WirePortTuple(sourceP, sinkP))
     }
   }).toMap
+
+  // Looks up a  channel based on a channel name
+  val wireOutputPortMap = wirePortMap.collect({
+    case (name, portTuple) if portTuple.isOutput => name -> portTuple.source.get
+  })
+
+  val wireInputPortMap = wirePortMap.collect({
+    case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
+  })
 
   // Tuple of forward port and reverse (backpressure) port
   type TargetRVPortType = (ReadyValidIO[ValidIO[Data]], ReadyValidIO[Bool])
   // A tuple of Options of the above type. _1 => source port _2 => sink port
   // Same principle as the wire channel, now with a more complex port type
-  type TargetRVPortTuple = (Option[TargetRVPortType], Option[TargetRVPortType])
+  case class TargetRVPortTuple(source: Option[TargetRVPortType], sink: Option[TargetRVPortType])
+      extends PortTuple[TargetRVPortType]{
+    require(source != None || sink != None)
+  }
 
   val rvElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
-  // Using a chAnno; look up it's associated port tuple
-  val rvPortMap: Map[FAMEChannelConnectionAnnotation, TargetRVPortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
+  // Using a channel's globalName; look up it's associated port tuple
+  val rvPortMap: Map[String, TargetRVPortTuple] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
       val sourcePortPair = leafSources.map({ tRefs =>
         require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
         val validTRef: ReferenceTarget = info.validSource.getOrElse(throw new RuntimeException(
@@ -227,12 +250,21 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
         rvElements ++= Seq((fwdName -> fwdPort), (revName -> revPort))
         (fwdPort, revPort)
       })
-      ch -> (sourcePortPair, sinkPortPair)
+      globalName -> TargetRVPortTuple(sourcePortPair, sinkPortPair)
   }).toMap
+
+  // Looks up a  channel based on a channel name
+  val rvOutputPortMap = rvPortMap.collect({
+    case (name, portTuple) if portTuple.isOutput => name -> portTuple.source.get
+  })
+
+  val rvInputPortMap = rvPortMap.collect({
+    case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
+  })
 
   // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
   def bindRVChannelEnq[T <: Data](enq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
-    val (fwdPort, revPort) = rvPortMap(chAnno)._1.get // Get the source-port pair
+    val (fwdPort, revPort) = rvPortMap(chAnno.globalName).source.get // Get the source-port pair
     enq.fwd.hValid   := fwdPort.valid
     enq.target.valid := fwdPort.bits.valid
     enq.target.bits  := fwdPort.bits.bits  // Yeah, i know
@@ -245,7 +277,7 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   }
 
   def bindRVChannelDeq[T <: Data](deq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
-    val (fwdPort, revPort) = rvPortMap(chAnno)._2.get // Get the sink-port pair
+    val (fwdPort, revPort) = rvPortMap(chAnno.globalName).sink.get // Get the sink-port pair
     deq.fwd.hReady := fwdPort.ready
     fwdPort.valid      := deq.fwd.hValid
     fwdPort.bits.valid := deq.target.valid
@@ -256,6 +288,9 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
     deq.target.ready := revPort.bits
     revPort.ready := deq.rev.hReady
   }
+
+  // Looks up a FCCA based on a global channel name
+  val chNameToAnnoMap = chAnnos.map(anno => anno.globalName -> anno)
 }
 
 class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
@@ -284,54 +319,6 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, endpointAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
-
-  /////*** Endpoints ***/
-  //val endpointMap = p(EndpointKey)
-  //val endpoints = endpointMap.endpoints
-  //private def findEndpoint(name: String, data: Data) {
-  //  endpointMap get data match {
-  //    case Some(endpoint) =>
-  //      endpoint add (name, data)
-  //    case None => data match {
-  //      case b: Record => b.elements foreach {
-  //        case (n, e) => findEndpoint(s"${name}_${n}", e)
-  //      }
-  //      case v: Vec[_] => v.zipWithIndex foreach {
-  //        case (e, i) => findEndpoint(s"${name}_${i}", e)
-  //      }
-  //      case _ =>
-  //    }
-  //  }
-  //}
-  //targetIo.foreach({ case (name, port) => findEndpoint(name, port)})
-
-  ///*** Wire Channels ***/
-  //val endpointWires = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-  //  val (prefix, data) = ep(i)
-  //  data.elements.toSeq flatMap {
-  //    case (name, rv: ReadyValidIO[_]) => Nil
-  //    case (name, wires) =>
-  //      val (ins, outs, _, _) = SimUtils.parsePorts(wires)
-  //      (ins ++ outs).unzip._1
-  //  }
-  //})).toSet
-
-  ///*** Wire Channels ***/
-  //val endpointRVs = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-  //    val (prefix, data) = ep(i)
-  //    val (_, _, rvis, rvos) = SimUtils.parsePorts(data)
-  //    (rvis ++ rvos).unzip._1
-  //  }
-  //)).toSet
-
-  //// Inputs that are not target decoupled
-  //val pokedInputs = wireInputs filterNot (x => endpointWires(x._1))
-  //val peekedOutputs = wireOutputs filterNot (x => endpointWires(x._1))
-  //val pokedReadyValidInputs = readyValidInputs filterNot (x => endpointRVs(x._1))
-  //val peekedReadyValidOutputs = readyValidOutputs filterNot (x => endpointRVs(x._1))
-
-  //override def cloneType: this.type =
-  //  new SimWrapperIO(chAnnos, leafTypeMap).asInstanceOf[this.type]
 
 class SimBox(simChannels: SimWrapperChannels) extends BlackBox {
   val io = IO(new Bundle {
@@ -373,13 +360,13 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
     val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
     channel suggestName s"PipeChannel_${chAnno.globalName}"
 
-    val (srcPort, sinkPort) = target.io.wirePortMap(chAnno)
-    srcPort match {
+    val portTuple = target.io.wirePortMap(chAnno.globalName)
+    portTuple.source match {
       case Some(srcP) => channel.io.in <> srcP
       case None => channel.io.in <> channelPorts.elements(s"${chAnno.globalName}_sink")
     }
 
-    sinkPort match {
+    portTuple.sink match {
       case Some(sinkP) => sinkP <> channel.io.out
       case None => channelPorts.elements(s"${chAnno.globalName}_source") <> channel.io.out
     }
@@ -432,14 +419,14 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   // Generate all wire channels, excluding reset
   // TODO: This longstanding hack needs to be removed by doing channel excision on target-stateful channels
   // the appropriate reset for that channel will then be plumbed out with the rest of the queue.
-  val resetChannelName = "PeekPokeEndpoint_reset"
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name != resetChannelName  => genPipeChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_)  => genPipeChannel(ch, latency)
   })
 
-  val resetChannel = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genPipeChannel(ch, 0)
-  }).get
+  //val resetChannelName = "PeekPokeEndpoint_reset"
+  //val resetChannel = chAnnos.collectFirst({
+  //  case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genPipeChannel(ch, 0)
+  //}).get
 
   //val resetPort = channelPorts.elements(resetChannelName + "_sink")
   //// Fan out targetReset tokens to all target-stateful channels

@@ -12,7 +12,8 @@ import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util.{DecoupledHelper}
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+
+import scala.collection.mutable
 
 case object DMANastiKey extends Field[NastiParameters]
 case object FpgaMMIOSize extends Field[BigInt]
@@ -43,46 +44,63 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
 
-  private def channels2Port(port: HostPortIO[Data], widgetName: String): Unit = {
+  private def channels2Port(endpointPort: HostPortIO[Data], endpointAnno: EndpointIOAnnotation): Unit = {
     // Aggregate input tokens into a single larger token
-    val toHostChannels: Seq[ReadyValidIO[Data]] =
-      for ((field, name) <- port.inputWireChannels) yield {
-        val portName = s"${widgetName}%s_source".format(if (name != "") s"_${name}" else "")
-        val tokenChannel = simIo.elements(portName)
-        field := tokenChannel.bits
-        tokenChannel
-      }
+    val local2globalName = endpointAnno.channelMapping.toMap
+    val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
-    // Break apart output tokens into channels
-    val fromHostChannels: Seq[ReadyValidIO[Data]] =
-      for ((field, name) <- port.outputWireChannels) yield {
-        val portName = s"${widgetName}%s_sink".format(if (name != "") s"_${name}" else "")
-        val tokenChannel = simIo.elements(portName)
-        tokenChannel.bits := field
-        tokenChannel
-      }
+    // Bind payloads to HostPort, and collect channels
+    for ((field, localName) <- endpointPort.inputWireChannels) {
+      val tokenChannel = simIo.wireOutputPortMap(local2globalName(localName))
+      field := tokenChannel.bits
+      toHostChannels += tokenChannel
+    }
 
-    port.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
-    port.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
+    for ((field, localName) <- endpointPort.outputWireChannels) {
+      val tokenChannel = simIo.wireInputPortMap(local2globalName(localName))
+      tokenChannel.bits := field
+      fromHostChannels += tokenChannel
+    }
+
+    for ((field, localName) <- endpointPort.inputRVChannels) {
+      val (fwdChPort, revChPort) = simIo.rvOutputPortMap(local2globalName(localName))
+      field.bits  := fwdChPort.bits.bits
+      field.valid := fwdChPort.bits.valid
+      revChPort.bits := field.ready
+      fromHostChannels += revChPort
+      toHostChannels += fwdChPort
+    }
+
+    for ((field, localName) <- endpointPort.outputRVChannels) {
+      val (fwdChPort, revChPort) = simIo.rvInputPortMap(local2globalName(localName))
+      fwdChPort.bits.bits := field.bits
+      fwdChPort.bits.valid := field.valid
+      field.ready := revChPort.bits
+      fromHostChannels += fwdChPort
+      toHostChannels += revChPort
+    }
+
+    endpointPort.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
+    endpointPort.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
 
     // Dequeue from toHost channels only if all toHost tokens are available,
     // and the endpoint consumes it
-    val toHostHelper   = DecoupledHelper((port.toHost.hReady +: toHostChannels.map(_.valid)):_*)
+    val toHostHelper   = DecoupledHelper((endpointPort.toHost.hReady +: toHostChannels.map(_.valid)):_*)
     toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
 
     // Enqueue into the toHost channels only once all toHost channels can accept the token
-    val fromHostHelper = DecoupledHelper((port.fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
+    val fromHostHelper = DecoupledHelper((endpointPort.fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
     fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
   }
 
-  val memPorts = new ListBuffer[NastiIO]
+  val memPorts = new mutable.ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
-  val dmaInfoBuffer = new ListBuffer[DmaInfo]
+  val dmaInfoBuffer = new mutable.ListBuffer[DmaInfo]
 
   // Instantiate endpoint widgets.
-  simIo.endpointAnnos.map({ anno =>
-    val widgetChannelPrefix = s"${anno.target.ref}"
-    val widget: EndpointWidget = addWidget(anno.widget(p))
+  simIo.endpointAnnos.map({ endpointAnno =>
+    val widgetChannelPrefix = s"${endpointAnno.target.ref}"
+    val widget: EndpointWidget = addWidget(endpointAnno.widget(p))
     widget.reset := reset.toBool || simReset
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
@@ -110,7 +128,7 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
         )
       }
       // For a HostPortIO channels are aggregated into a single input and output token
-      case hPort: HostPortIO[Data] => channels2Port(hPort, widgetChannelPrefix)
+      case hPort: HostPortIO[Data] => channels2Port(hPort, endpointAnno)
     }
 
     widget match {
