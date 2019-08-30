@@ -63,7 +63,23 @@ case class FAMEChannelConnectionAnnotation(
       sinks   = sinks.map(_.map(updateRT))
     )
   }
+
   override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten
+}
+
+// Helper factory methods for generating endpoint annotations that have only sinks or sources
+object FAMEChannelConnectionAnnotation {
+  def sink(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
+  FAMEChannelConnectionAnnotation(globalName, channelInfo, None, Some(sinks))
+
+  def source(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sources: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
+  FAMEChannelConnectionAnnotation(globalName, channelInfo, Some(sources), None)
 }
 
 /**
@@ -120,6 +136,14 @@ case class DecoupledForwardChannel(
   }
 }
 
+// Helper factory methods for generating endpoint annotations that have only sinks or sources
+object DecoupledForwardChannel {
+  def sink(valid: ReferenceTarget, ready: ReferenceTarget) =
+    DecoupledForwardChannel(None, None, Some(ready), Some(valid))
+
+  def source(valid: ReferenceTarget, ready: ReferenceTarget) =
+    DecoupledForwardChannel(Some(ready), Some(valid), None, None)
+}
 
 /**
   * Indicates that a particular instance is a FAME Model
