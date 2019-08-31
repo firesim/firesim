@@ -153,13 +153,14 @@ class FireSimServerNode(FireSimNode):
 
     def __init__(self, server_hardware_config=None, server_link_latency=None,
                  server_bw_max=None, server_profile_interval=None,
-                 trace_enable=None, trace_start=None, trace_end=None):
+                 trace_enable=None, trace_select=None, trace_start=None, trace_end=None):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
         self.server_profile_interval = server_profile_interval
         self.trace_enable = trace_enable
+        self.trace_select = trace_select
         self.trace_start = trace_start
         self.trace_end = trace_end
         self.job = None
@@ -198,7 +199,7 @@ class FireSimServerNode(FireSimNode):
             self.get_mac_address(), self.get_rootfs_name(), slotno,
             self.server_link_latency, self.server_bw_max,
             self.server_profile_interval, self.get_bootbin_name(),
-            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
+            self.trace_enable, self.trace_select, self.trace_start, self.trace_end, shmemportname)
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -260,6 +261,7 @@ class FireSimServerNode(FireSimNode):
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
+        all_paths += self.get_job().get_siminputs()
         return all_paths
 
     def get_agfi(self):
@@ -368,7 +370,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         return self.server_hardware_config.get_supernode_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_start, self.trace_end, all_shmemportnames)
+            self.trace_select, self.trace_start, self.trace_end, all_shmemportnames)
 
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as

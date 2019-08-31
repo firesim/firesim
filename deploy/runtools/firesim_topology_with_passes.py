@@ -34,7 +34,7 @@ class FireSimTopologyWithPasses:
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
                  defaultnetbandwidth, defaultprofileinterval,
-                 defaulttraceenable, defaulttracestart, defaulttraceend,
+                 defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
                  terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
@@ -49,6 +49,7 @@ class FireSimTopologyWithPasses:
         self.defaultnetbandwidth = defaultnetbandwidth
         self.defaultprofileinterval = defaultprofileinterval
         self.defaulttraceenable = defaulttraceenable
+        self.defaulttraceselect = defaulttraceselect
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
         self.terminateoncompletion = terminateoncompletion
@@ -296,6 +297,8 @@ class FireSimTopologyWithPasses:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
                     node.trace_enable = self.defaulttraceenable
+                if node.trace_select is None:
+                    node.trace_select = self.defaulttraceselect
                 if node.trace_start is None:
                     node.trace_start = self.defaulttracestart
                 if node.trace_end is None:

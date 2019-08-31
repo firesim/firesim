@@ -4,6 +4,9 @@
 #include "endpoints/endpoint.h"
 #include <vector>
 
+// TODO: get this automatically
+#define NUM_CORES 1
+
 #ifdef TRACERVWIDGET_struct_guard
 class tracerv_t: public endpoint_t
 {
@@ -21,8 +24,10 @@ class tracerv_t: public endpoint_t
     private:
         TRACERVWIDGET_struct * mmio_addrs;
         simif_t* sim;
-        FILE * tracefile;
-        uint64_t start_cycle, end_cycle, cur_cycle;
+        FILE * tracefiles[NUM_CORES];
+        uint64_t cur_cycle;
+        uint64_t trace_trigger_start, trace_trigger_end;
+        uint32_t trigger_selector;
         bool human_readable = false;
         // Used in unit testing to check TracerV is correctly pulling instuctions off the target
         bool test_output = false;

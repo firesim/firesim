@@ -24,6 +24,8 @@ class JobConfig:
         self.outputs = joboutputs + parent_workload.common_outputs
         simoutputs = singlejob_dict.get("simulation_outputs", [])
         self.simoutputs = simoutputs + parent_workload.common_simulation_outputs
+        siminputs = singlejob_dict.get("simulation_inputs", [])
+        self.siminputs = siminputs + parent_workload.common_simulation_inputs
 
         if singlejob_dict.get("bootbinary") is not None:
             self.bootbinary = singlejob_dict.get("bootbinary")
@@ -52,6 +54,9 @@ class JobConfig:
     def bootbinary_path(self):
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
+    def get_siminputs(self):
+        return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, x), self.siminputs))
+
     def rootfs_path(self):
         return self.rootfs
 
@@ -69,7 +74,7 @@ class WorkloadConfig:
     workloadinputs = 'workloads/'
     workloadoutputs = 'results-workloads/'
 
-    def __init__(self, workloadfilename, launch_time):
+    def __init__(self, workloadfilename, launch_time, suffixtag):
         self.workloadfilename = self.workloadinputs + workloadfilename
         workloadjson = None
         with open(self.workloadfilename) as json_data:
@@ -90,6 +95,7 @@ class WorkloadConfig:
         # functionality will be merged into the manager too
         self.common_outputs = workloadjson.get("common_outputs", [])
         self.common_simulation_outputs = workloadjson.get("common_simulation_outputs", [])
+        self.common_simulation_inputs = workloadjson.get("common_simulation_inputs", [])
 
         # rootfses, bootbinaries live here
         self.workload_input_base_dir = self.workloadinputs + self.workload_name + '/'
@@ -100,10 +106,11 @@ class WorkloadConfig:
         self.post_run_hook = workloadjson.get("post_run_hook")
 
         # we set this up as an absolute path to simplify later use
-        self.job_results_dir = """{}/results-workload/{}-{}/""".format(
+        self.job_results_dir = """{}/results-workload/{}-{}{}/""".format(
                                                             os.getcwd(),
                                                             launch_time,
-                                                            self.workload_name)
+                                                            self.workload_name,
+                                                            "-" + suffixtag)
 
         #import code
         #code.interact(local=locals())

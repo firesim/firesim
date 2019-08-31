@@ -89,7 +89,7 @@ class RuntimeHWConfig:
 
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
                                     linklatency, netbw, profile_interval, bootbin,
-                                    trace_enable, trace_start, trace_end, shmemportname):
+                                    trace_enable, trace_select, trace_start, trace_end, shmemportname):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -103,12 +103,12 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
-        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
+        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog +trace-select0={trace_select} {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
                 slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
                 linklatency=linklatency, netbw=netbw,
                 profile_interval=profile_interval, shmemportname=shmemportname,
-                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
-                trace_end=trace_end)
+                bootbin=bootbin, tracefile=tracefile, trace_select=trace_select,
+                trace_start=trace_start, trace_end=trace_end)
 
         if blkdev is not None:
             driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
@@ -123,7 +123,7 @@ class RuntimeHWConfig:
                                               all_rootfses, all_linklatencies,
                                               all_netbws, profile_interval,
                                               all_bootbinaries, trace_enable,
-                                              trace_start, trace_end,
+                                              trace_select, trace_start, trace_end,
                                               all_shmemportnames):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
@@ -154,7 +154,7 @@ class RuntimeHWConfig:
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
 
 
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile}  +trace-select0={trace_select} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
@@ -162,7 +162,7 @@ class RuntimeHWConfig:
             command_netbws=command_netbws,
             profile_interval=profile_interval,
             command_shmemportnames=command_shmemportnames,
-            command_bootbinaries=command_bootbinaries,
+            command_bootbinaries=command_bootbinaries, trace_select=trace_select,
             trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)
 
         return basecommand
@@ -263,15 +263,19 @@ class InnerRuntimeConfiguration:
         self.profileinterval = int(runtime_dict['targetconfig']['profileinterval'])
         # Default values
         self.trace_enable = False
+        self.trace_select = 0
         self.trace_start = 0
         self.trace_end = -1
         if 'tracing' in runtime_dict:
             self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.trace_select = runtime_dict['tracing'].get('selector', "0")
             self.trace_start = int(runtime_dict['tracing'].get('startcycle', "0"))
             self.trace_end = int(runtime_dict['tracing'].get('endcycle', "-1"))
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
 
         self.workload_name = runtime_dict['workload']['workloadname']
+        # an extra tag to differentiate workloads with the same name in results names
+        self.suffixtag = runtime_dict['workload']['suffixtag'] if 'suffixtag' in runtime_dict['workload'] else ""
         self.terminateoncompletion = runtime_dict['workload']['terminateoncompletion'] == "yes"
 
     def __str__(self):
@@ -301,7 +305,8 @@ class RuntimeConfig:
 
         # setup workload config obj, aka a list of workloads that can be assigned
         # to a server
-        self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time)
+        self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
+                                       self.innerconf.suffixtag)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
                                self.innerconf.f1_4xlarges_requested,
@@ -319,7 +324,7 @@ class RuntimeConfig:
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
             self.innerconf.profileinterval, self.innerconf.trace_enable,
-            self.innerconf.trace_start, self.innerconf.trace_end,
+            self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
             self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self):
