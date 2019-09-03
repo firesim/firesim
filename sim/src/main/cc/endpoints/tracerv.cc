@@ -163,13 +163,22 @@ void tracerv_t::tick() {
         if (this->tracefiles[0]) {
             if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-
-
-                    for (int q = 0; q < NUM_CORES; q++) {
-                       if (this->test_output) fprintf(this->tracefiles[q], "TRACEPORT: ");
-                       if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                         fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
-                       }
+                    if (this->test_output) {
+                        fprintf(this->tracefiles[q], "TRACEPORT: ");
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+4]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+3]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+2]);
+                        fprintf(this->tracefile, "%016lx", OUTBUF[i+1]);
+                        fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
+                    } else {
+                        for (int q = 0; q < NUM_CORES; q++) {
+                           if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                             fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                           }
+                        }
                     }
 
                     //fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
@@ -221,10 +230,22 @@ void tracerv_t::flush() {
     if (this->tracefiles[0]) {
         if (this->human_readable || this->test_output) {
             for (int i = 0; i < beats_available * 8; i+=8) {
-                for (int q = 0; q < NUM_CORES; q++) {
-                    if (this->test_output) fprintf(this->tracefiles[q], "TRACEPORT: ");
-                    if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                        fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+
+                if (this->test_output) {
+                    fprintf(this->tracefiles[q], "TRACEPORT: ");
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+4]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+3]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+2]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+1]);
+                    fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
+                } else {
+                    for (int q = 0; q < NUM_CORES; q++) {
+                      if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                        fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                      }
                     }
                 }
 
