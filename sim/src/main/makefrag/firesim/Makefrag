@@ -127,9 +127,9 @@ run-xsim: $(xsim)
 EMUL ?= verilator
 
 # Firechip Tests
-fc_test_dir = $(base_dir)/target-rtl/chipyard/tests
-fc_test_srcs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
-fc_test_hdrs = $(wildcard $(base_dir)/target-rtl/chipyard/tests/*.cc)
+fc_test_dir = $(chipyard_dir)/tests
+fc_test_srcs = $(wildcard $(fc_test_dir)/*.c)
+fc_test_hdrs = $(wildcard $(fc_test_dir)/*.h)
 
 $(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
 	make -C $(fc_test_dir)
