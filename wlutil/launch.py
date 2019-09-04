@@ -22,9 +22,9 @@ def getSpikeCmd(config, initramfs=False):
         spikeBin = 'spike'
 
     if initramfs:
-        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-initramfs'
+        return spikeBin + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-initramfs'
     elif 'img' not in config:
-        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin']
+        return spikeBin + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin']
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
@@ -55,7 +55,7 @@ def getQemuCmd(config, initramfs=False):
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
         cmd = cmd + ['-append', '"ro root=/dev/vda"']
 
-    return " ".join(cmd)
+    return " ".join(cmd) + " " + config.get('qemu-args', '')
 
 def launchWorkload(cfgName, cfgs, job='all', spike=False):
     log = logging.getLogger()
@@ -86,6 +86,7 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
         else:
             cmd = getQemuCmd(config, config['initramfs'])
 
+        log.info("Running: " + "".join(cmd))
         sp.check_call(cmd + " | tee " + uartLog, shell=True)
 
         if 'outputs' in config:
