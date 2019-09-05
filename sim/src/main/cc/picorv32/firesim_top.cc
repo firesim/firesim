@@ -73,7 +73,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #endif
 
 std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = -0x00000000LL;
+uint64_t host_mem_offset = HOST_MEM_OFFSET;
 #ifdef MEMMODEL_0
     fpga_models.push_back(new FpgaMemoryModel(
                 this,

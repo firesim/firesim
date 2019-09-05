@@ -19,6 +19,9 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(base_dir)/output/$(PLATFORM)/$(name_tuple)
 
+# Host mem offset as a parameter - this is passed as a preprocessor macro to the drivers.
+HOST_MEM_OFFSET ?= 
+
 ##################
 # RTL Generation #
 ##################
@@ -56,7 +59,7 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, \
 #DRIVER_H = $(driver_dir)/picorv32/firesim_top.h
 #DRIVER_CC = $(driver_dir)/picorv32/firesim_top.cc
 
-TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/picorv32 -I$(RISCV)/include
+TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/picorv32 -I$(RISCV)/include -DHOST_MEM_OFFSET=$(HOST_MEM_OFFSET)
 TARGET_LD_FLAGS :=
 
 ####################################
