@@ -15,29 +15,8 @@ import junctions._
 
 import midas.core.{HostPort}
 
-
 class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
-}
-
-class AssertBundleEndpoint extends Endpoint {
-  var numAsserts = 0
-  var initialized = false
-  def matchType(data: Data) = data match {
-    case channel: AssertBundle =>
-      require(DataMirror.directionOf(channel) == Direction.Output, "AssertBundle has unexpected direction")
-      // Can't do this as matchType is invoked multiple times
-      //require(!initialized, "Can only match on one instance of AssertBundle")
-      initialized = true
-      numAsserts = channel.numAsserts
-      true
-    case _ => false
-  }
-  def widget(p: Parameters) = {
-    require(initialized, "Attempted to generate an AssertWidget before inspecting input data bundle")
-    new AssertWidget(numAsserts)(p)
-  }
-  override def widgetName = "AssertionWidget"
 }
 
 class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
