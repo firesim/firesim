@@ -18,8 +18,8 @@
           "outputs": []
       },
       {
-          "name" : "memblade-dummy",
-          "bootbinary" : "memblade-dummy.riscv",
+          "name" : "pingd",
+          "bootbinary" : "pingd.riscv",
           "files" : [],
           "command" : "",
           "simulation_outputs" : [],

@@ -215,7 +215,8 @@ ccbench-dram-cache:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 dram-cache-test-linux:
-	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/memblade-tests/baremetal && make pingd.riscv
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/pingd.riscv
 	cd ../../sw/memblade-tests/linux && make dram-cache-test.riscv
 	cp ../../sw/memblade-tests/linux/dram-cache-test.riscv $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
