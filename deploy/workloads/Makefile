@@ -254,6 +254,11 @@ flush-test:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+coremark:
+	cd coremark/riscv-coremark/coremark && make CC=riscv64-unknown-linux-gnu-gcc compile
+	mv coremark/riscv-coremark/coremark/coremark.exe coremark/overlay/coremark.riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -263,4 +268,4 @@ flush-test:
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
 	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress \
-	rmem-alloc-test flush-test
+	rmem-alloc-test flush-test coremark linux-immediate-poweroff

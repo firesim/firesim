@@ -19,7 +19,7 @@ import firrtl.transforms.TopWiring._
     This also has an option to pass a function as a parmeter to generate custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
+class ILATopWiringTransform(dir: File = new File("/tmp/"), datadepth: Int = 1024) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] ILA Top Wiring Transform"
@@ -63,17 +63,18 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
     }
 
     //body
+    val probetriggers = 2
     mapping map { case ((cname, tpe, _, path, prefix), index) =>
       //val probewidth = tpe.asInstanceOf[GroundType].width.asInstanceOf[IntWidth].width
       val probewidth = tpe match { case GroundType(IntWidth(w)) => w }
       val probewidth1 = probewidth - 1
-      val probetriggers = 3
       val probenum = index
       val probeportname = prefix + path.mkString("_")
 
       //vivado tcl
       tclOutputFile.append(s"CONFIG.C_PROBE$probenum" ++ s"_WIDTH {$probewidth} ")
       tclOutputFile.append(s"CONFIG.C_PROBE$probenum" ++ s"_MU_CNT {$probetriggers} ")
+
 
       //verilog ports
       portsOutputFile.append(s"    .$probeportname($probeportname), \n")
@@ -88,14 +89,14 @@ class ILATopWiringTransform(dir: File = new File("/tmp/")) extends Transform {
     if (mapping.isEmpty) {
         //vivado tcl
         tclOutputFile.append(s"CONFIG.C_PROBE0" ++ s"_WIDTH {1} ")
-        tclOutputFile.append(s"CONFIG.C_PROBE0" ++ s"_MU_CNT {3} ")
+        tclOutputFile.append(s"CONFIG.C_PROBE0" ++ s"_MU_CNT {$probetriggers} ")
     }
 
 
     //vivado tcl epilogue
     val numprobes = if (mapping.size > 0) {mapping.size} else {1}
-    val probetriggers = 3
     tclOutputFile.append(s"CONFIG.C_NUM_OF_PROBES {$numprobes} ")
+    tclOutputFile.append(s"CONFIG.C_DATA_DEPTH {$datadepth} ")
     tclOutputFile.append(s"CONFIG.C_TRIGOUT_EN {false} ")
     tclOutputFile.append(s"CONFIG.C_EN_STRG_QUAL {1} ")
     tclOutputFile.append(s"CONFIG.C_ADV_TRIGGER {true} ")
