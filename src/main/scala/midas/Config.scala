@@ -24,7 +24,6 @@ case object SynthPrints extends Field[Boolean]
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
-case object EndpointKey extends Field[EndpointMap]
 
 // MIDAS 2.0 Switches
 case object GenerateMultiCycleRamModels extends Field[Boolean](false)
@@ -41,7 +40,6 @@ class SimConfig extends Config((site, here, up) => {
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case DMANastiKey      => NastiParameters(512, 64, 6)
-  case EndpointKey      => EndpointMap(Seq())
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
   case HostMemChannelNastiKey => NastiParameters(64, 32, 6)

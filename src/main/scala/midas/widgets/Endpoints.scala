@@ -41,55 +41,6 @@ abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
   def hPort: Record with HasEndpointChannels // Tokenized port moving between the endpoint the target-RTL
 }
 
-
-trait Endpoint {
-  protected val channels = mutable.ArrayBuffer[(String, Record)]()
-  protected val wires = mutable.HashSet[Bits]()
-  def clockRatio: IsRationalClockRatio = UnityClockRatio
-  def matchType(data: Data): Boolean
-  def widget(p: Parameters): EndpointWidget
-  def widgetName: String = getClass.getSimpleName
-  final def size = channels.size
-  final def apply(wire: Bits) = wires(wire)
-  final def apply(i: Int) = channels(i)
-  def add(name: String, channel: Data) {
-    val (ins, outs, _, _) = SimUtils.parsePorts(channel)
-    wires ++= (ins ++ outs).unzip._1
-    channels += (name -> channel.asInstanceOf[Record])
-  }
-
-  // Finds all of the target ReadyValid bundles sourced or sunk by the target
-  // input => sunk by the target
-  private def findRVChannels(dir: Direction): Seq[(String, ReadyValidIO[Data])] =
-    channels.flatMap({ case (prefix, data) => data.elements.toSeq.collect({
-        case (name, rv: ReadyValidIO[_]) if directionOf(rv.valid) == dir => s"${prefix}_${name}" -> rv
-      })
-  })
-
-  lazy val readyValidOutputs = findRVChannels(Direction.Output)
-  lazy val readyValidInputs = findRVChannels(Direction.Input)
-}
-// MIDAS 2.0
-//trait Endpoint {
-//  val channels = ArrayBuffer[(String, Record)]()
-//  val wires = HashSet[Element]()
-//  def clockRatio: IsRationalClockRatio = UnityClockRatio
-//  def matchType(data: Data): Boolean
-//  def widget(p: Parameters): EndpointWidget
-//  def widgetName: String = getClass.getSimpleName
-//  final def size = channels.size
-//  final def apply(wire: Element) = wires(wire)
-//  final def apply(i: Int) = channels(i)
-//  def add(name: String, channel: Data) {
-//    val (ins, outs, _, _) = SimUtils.parsePorts(channel)
-//    wires ++= (ins ++ outs).unzip._1
-//    channels += (name -> channel.asInstanceOf[Record])
-
-case class EndpointMap(endpoints: Seq[Endpoint]) {
-  def get(data: Data) = endpoints find (_ matchType data)
-  def ++(x: EndpointMap) = EndpointMap(endpoints ++ x.endpoints)
-}
-
 case class EndpointAnnotation(
   val target: ModuleTarget,
   widget: (Parameters) => EndpointWidget,
