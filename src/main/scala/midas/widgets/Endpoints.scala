@@ -4,7 +4,7 @@ package midas
 package widgets
 
 import midas.core.{IsRationalClockRatio, UnityClockRatio, HostPort, HostPortIO, SimUtils}
-import midas.core.SimUtils.RVChTuple
+import midas.core.SimUtils.{RVChTuple}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
@@ -98,7 +98,7 @@ case class EndpointAnnotation(
   def toIOAnnotation(port: String): EndpointIOAnnotation = {
     val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
     EndpointIOAnnotation(target.copy(module = target.circuit).ref(port), widget, channelMapping.toMap)
-  }
+   }
  }
 
 private[midas] case class EndpointIOAnnotation(
@@ -123,6 +123,13 @@ trait IsEndpoint {
   def endpointIO: HasEndpointChannels
   def widget: (Parameters) => EndpointWidget
 
+  // FCCA renamer can't handle flattening of an aggregate target; so do it manually
+  private def lowerAggregateIntoLeafTargets(bits: Data): Seq[ReferenceTarget] = {
+    val (ins, outs, _, _) = SimUtils.parsePorts(bits)
+    require (ins.isEmpty || outs.isEmpty, "Aggregate should be uni-directional")
+    (ins ++ outs).map({ case (leafField, _) => leafField.toNamed.toTarget })
+  }
+
   // Create a wire channel annotation
   private def generateWireChannelFCCAs(channels: Seq[(Data, String)], endpointSunk: Boolean = false): Unit = {
     for ((field, chName) <- channels) {
@@ -140,21 +147,22 @@ trait IsEndpoint {
   private def generateRVChannelFCCAs(channels: Seq[(ReadyValidIO[Data], String)], endpointSunk: Boolean = false): Unit = {
     for ((field, chName) <- channels) yield {
       // Generate the forward channel annotation
+      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
       annotate(new ChiselAnnotation { def toFirrtl = {
         val validTarget = field.valid.toNamed.toTarget
         val readyTarget = field.ready.toNamed.toTarget
-        val leafTargets = Seq(validTarget, field.bits.toNamed.toTarget)
+        val leafTargets = Seq(validTarget) ++ lowerAggregateIntoLeafTargets(field.bits)
         // Endpoint is the sink; it applies target backpressure
         if (endpointSunk) {
           FAMEChannelConnectionAnnotation.source(
-            chName,
+            fwdChName,
             DecoupledForwardChannel.source(validTarget, readyTarget),
             leafTargets
           )
         } else {
         // Endpoint is the source; it asserts target-valid and recieves target-backpressure
           FAMEChannelConnectionAnnotation.sink(
-            chName,
+            fwdChName,
             DecoupledForwardChannel.sink(validTarget, readyTarget),
             leafTargets
           )
@@ -164,9 +172,9 @@ trait IsEndpoint {
       annotate(new ChiselAnnotation { def toFirrtl = {
         val readyTarget = Seq(field.ready.toNamed.toTarget)
         if (endpointSunk) {
-          FAMEChannelConnectionAnnotation.sink(chName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, readyTarget)
         } else {
-          FAMEChannelConnectionAnnotation.source(chName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, readyTarget)
         }
       }})
     }
@@ -179,7 +187,6 @@ trait IsEndpoint {
      EndpointAnnotation(self.toNamed.toTarget, widget, endpointIO.allChannelNames)
    })
 
-
     generateWireChannelFCCAs(endpointIO.outputWireChannels)
     generateWireChannelFCCAs(endpointIO.inputWireChannels, endpointSunk = true)
     generateRVChannelFCCAs(endpointIO.outputRVChannels)
@@ -190,16 +197,26 @@ trait IsEndpoint {
 trait HasEndpointChannels {
   def outputWireChannels: Seq[(Data, String)]
   def inputWireChannels: Seq[(Data, String)]
+  def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
+  def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
+
 
   // Specially labelled ready-valid channels. Used to emit special channel
   // annotations to generate MIDAS I-like simulators that run with FMR=1
   def outputRVChannels: Seq[RVChTuple]
   def inputRVChannels: Seq[RVChTuple]
 
-  // Breaks a RV Channels into its uni-directioned forward and reverse channels
-  def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
-  def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
-  def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames
+  private def getRVChannelNames(channels: Seq[RVChTuple]): Seq[String] =
+    channels.flatMap({ channel =>
+      val (fwd, rev) =  SimUtils.rvChannelNamePair(channel)
+      Seq(fwd, rev)
+    })
+
+  def outputRVChannelNames = getRVChannelNames(outputRVChannels)
+  def inputRVChannelNames = getRVChannelNames(inputRVChannels)
+
+  def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames ++
+    outputRVChannelNames ++ inputRVChannelNames
 
 }
 

@@ -29,6 +29,33 @@ object SimUtils {
   type RVChTuple = Tuple2[ReadyValidIO[Data], String]
   type ParsePortsTuple = (List[ChTuple], List[ChTuple], List[RVChTuple], List[RVChTuple])
 
+  // (Some, None) -> Source channel
+  // (None, Some) -> Sink channel
+  // (Some, Some) -> Loop back channel -> two interconnected models
+  trait PortTuple[T <: Any] {
+    def source: Option[T]
+    def sink:   Option[T]
+    def isOutput(): Boolean = sink == None
+    def isInput(): Boolean = source == None
+    def isLoopback(): Boolean = source != None && sink != None
+  }
+
+  case class WirePortTuple(source: Option[ReadyValidIO[Data]], sink: Option[ReadyValidIO[Data]]) 
+      extends PortTuple[ReadyValidIO[Data]]{
+    require(source != None || sink != None)
+  }
+  // Tuple of forward port and reverse (backpressure) port
+  type TargetRVPortType = (ReadyValidIO[ValidIO[Data]], ReadyValidIO[Bool])
+  // A tuple of Options of the above type. _1 => source port _2 => sink port
+  // Same principle as the wire channel, now with a more complex port type
+  case class TargetRVPortTuple(source: Option[TargetRVPortType], sink: Option[TargetRVPortType])
+      extends PortTuple[TargetRVPortType]{
+    require(source != None || sink != None)
+  }
+
+  def rvChannelNamePair(chName: String): (String, String) = (chName + "_fwd", chName + "_rev")
+  def rvChannelNamePair(tuple: RVChTuple): (String, String) = rvChannelNamePair(tuple._2)
+
   def prefixWith(prefix: String, base: Any): String =
     if (prefix != "")  s"${prefix}_${base}" else base.toString
 
@@ -164,21 +191,6 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
-  // (Some, None) -> Source channel
-  // (None, Some) -> Sink channel
-  // (Some, Some) -> Loop back channel -> two interconnected models
-  trait PortTuple[T <: Any] {
-    def source: Option[T]
-    def sink:   Option[T]
-    def isOutput(): Boolean = sink == None
-    def isInput(): Boolean = source == None
-    def isLoopback(): Boolean = source != None && sink != None
-  }
-
-  case class WirePortTuple(source: Option[ReadyValidIO[Data]], sink: Option[ReadyValidIO[Data]]) 
-      extends PortTuple[ReadyValidIO[Data]]{
-    require(source != None || sink != None)
-  }
 
   val wirePortMap: Map[String, WirePortTuple] = chAnnos.collect({
     case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_),sources,sinks) => {
@@ -207,14 +219,6 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
     case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
   })
 
-  // Tuple of forward port and reverse (backpressure) port
-  type TargetRVPortType = (ReadyValidIO[ValidIO[Data]], ReadyValidIO[Bool])
-  // A tuple of Options of the above type. _1 => source port _2 => sink port
-  // Same principle as the wire channel, now with a more complex port type
-  case class TargetRVPortTuple(source: Option[TargetRVPortType], sink: Option[TargetRVPortType])
-      extends PortTuple[TargetRVPortType]{
-    require(source != None || sink != None)
-  }
 
   val rvElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
@@ -261,33 +265,6 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   val rvInputPortMap = rvPortMap.collect({
     case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
   })
-
-  // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
-  def bindRVChannelEnq[T <: Data](enq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
-    val (fwdPort, revPort) = rvPortMap(chAnno.globalName).source.get // Get the source-port pair
-    enq.fwd.hValid   := fwdPort.valid
-    enq.target.valid := fwdPort.bits.valid
-    enq.target.bits  := fwdPort.bits.bits  // Yeah, i know
-    fwdPort.ready := enq.fwd.hReady
-
-    // Connect up the target-ready token channel
-    revPort.valid := enq.rev.hValid
-    revPort.bits  := enq.target.ready
-    enq.rev.hReady := revPort.ready
-  }
-
-  def bindRVChannelDeq[T <: Data](deq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
-    val (fwdPort, revPort) = rvPortMap(chAnno.globalName).sink.get // Get the sink-port pair
-    deq.fwd.hReady := fwdPort.ready
-    fwdPort.valid      := deq.fwd.hValid
-    fwdPort.bits.valid := deq.target.valid
-    fwdPort.bits.bits  := deq.target.bits
-
-    // Connect up the target-ready token channel
-    deq.rev.hValid   := revPort.valid
-    deq.target.ready := revPort.bits
-    revPort.ready := deq.rev.hReady
-  }
 
   // Looks up a FCCA based on a global channel name
   val chNameToAnnoMap = chAnnos.map(anno => anno.globalName -> anno)
@@ -376,13 +353,41 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
     channel
   }
 
+  // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
+  def bindRVChannelEnq[T <: Data](enq: SimReadyValidIO[T], port: TargetRVPortType): Unit = {
+    val (fwdPort, revPort) = port
+    enq.fwd.hValid   := fwdPort.valid
+    enq.target.valid := fwdPort.bits.valid
+    enq.target.bits  := fwdPort.bits.bits  // Yeah, i know
+    fwdPort.ready := enq.fwd.hReady
+
+    // Connect up the target-ready token channel
+    revPort.valid := enq.rev.hValid
+    revPort.bits  := enq.target.ready
+    enq.rev.hReady := revPort.ready
+  }
+
+  def bindRVChannelDeq[T <: Data](deq: SimReadyValidIO[T], port: TargetRVPortType): Unit = {
+    val (fwdPort, revPort) = port
+    deq.fwd.hReady := fwdPort.ready
+    fwdPort.valid      := deq.fwd.hValid
+    fwdPort.bits.valid := deq.target.valid
+    fwdPort.bits.bits  := deq.target.bits
+
+    // Connect up the target-ready token channel
+    deq.rev.hValid   := revPort.valid
+    deq.target.ready := revPort.bits
+    revPort.ready := deq.rev.hReady
+  }
+
 
   def getReadyValidChannelType(chAnno: FAMEChannelConnectionAnnotation): Data = {
     target.io.payloadTypeMap(chAnno)
   }
 
   def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
-    val strippedName = chAnno.globalName.stripSuffix("_fwd")
+      val chName = chAnno.globalName
+      val strippedName = chName.stripSuffix("_fwd")
       // Determine which endpoint this channel belongs to by looking it up with the valid
       //val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
       //  case Some(endpoint) => endpoint.clockRatio
@@ -394,15 +399,17 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
 
       channel.suggestName(s"ReadyValidChannel_$strippedName")
 
-      (chAnno.sources match {
-        case Some(_) => target.io
-        case None => channelPorts
-      }).bindRVChannelEnq(channel.io.enq, chAnno)
+      val enqPortPair = (chAnno.sources match {
+        case Some(_) => target.io.rvOutputPortMap(chName)
+        case None => channelPorts.rvInputPortMap(chName)
+      })
+      bindRVChannelEnq(channel.io.enq, enqPortPair)
 
-      (chAnno.sinks match {
-        case Some(_) => target.io
-        case None => channelPorts
-      }).bindRVChannelDeq(channel.io.deq, chAnno)
+      val deqPortPair = (chAnno.sinks match {
+        case Some(_) => target.io.rvInputPortMap(chName)
+        case None => channelPorts.rvOutputPortMap(chName)
+      })
+      bindRVChannelDeq(channel.io.deq, deqPortPair)
 
       channel.io.trace := DontCare
       channel.io.traceLen := DontCare

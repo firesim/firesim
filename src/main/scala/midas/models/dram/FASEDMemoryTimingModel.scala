@@ -6,7 +6,7 @@ package models
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.diplomacy.{LazyModule}
-import freechips.rocketchip.amba.axi4.{AXI4EdgeParameters}
+import freechips.rocketchip.amba.axi4.{AXI4EdgeParameters, AXI4Bundle}
 import junctions._
 
 import chisel3._
@@ -533,4 +533,14 @@ class FASEDEndpoint(cfg: BaseConfig)(implicit p: Parameters) extends BlackBox wi
   val endpointIO = HostPort(io)
   def widget = (hostP: Parameters) => new FASEDMemoryTimingModel(cfg)(p ++ hostP)
   generateAnnotations()
+}
+
+object FASEDEndpoint {
+  def apply(axi4: AXI4Bundle, reset: Bool, cfg: BaseConfig)(implicit p: Parameters): FASEDEndpoint = {
+    val ep = Module(new FASEDEndpoint(cfg))
+    ep.io.reset := reset
+    import chisel3.core.ExplicitCompileOptions.NotStrict
+    ep.io.axi4 <> axi4
+    ep
+  }
 }

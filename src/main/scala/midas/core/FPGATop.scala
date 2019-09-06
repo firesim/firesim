@@ -63,19 +63,24 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
     }
 
     for ((field, localName) <- endpointPort.inputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvOutputPortMap(local2globalName(localName))
-      field.bits  := fwdChPort.bits.bits
+      val (fwdChPort, revChPort) = simIo.rvOutputPortMap(local2globalName(localName + "_fwd"))
       field.valid := fwdChPort.bits.valid
       revChPort.bits := field.ready
+
+      import chisel3.core.ExplicitCompileOptions.NotStrict
+      field.bits  := fwdChPort.bits.bits
+
       fromHostChannels += revChPort
       toHostChannels += fwdChPort
     }
 
     for ((field, localName) <- endpointPort.outputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvInputPortMap(local2globalName(localName))
-      fwdChPort.bits.bits := field.bits
+      val (fwdChPort, revChPort) = simIo.rvInputPortMap(local2globalName(localName + "_fwd"))
       fwdChPort.bits.valid := field.valid
       field.ready := revChPort.bits
+
+      import chisel3.core.ExplicitCompileOptions.NotStrict
+      fwdChPort.bits.bits := field.bits
       fromHostChannels += fwdChPort
       toHostChannels += revChPort
     }
