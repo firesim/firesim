@@ -22,7 +22,22 @@ object TokenQueueConsts {
 }
 import TokenQueueConsts._
 
-case object LoopbackNIC extends Field[Boolean]
+case object LoopbackNIC extends Field[Boolean](false)
+
+class NICEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(Flipped(new NICIOvonly))
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => new SimpleNICWidget()(p)
+  generateAnnotations()
+}
+
+object NICEndpoint {
+  def apply(nicIO: NICIOvonly)(implicit p: Parameters): NICEndpoint = {
+    val ep = Module(new NICEndpoint)
+    ep.io <> nicIO
+    ep
+  }
+}
 
 /* on a NIC token transaction:
  * 1) simulation driver feeds an empty token to start:
@@ -60,11 +75,6 @@ class NICToHostToken extends Bundle {
   val data_out = new StreamChannel(64)
   val data_out_valid = Bool()
   val data_in_ready = Bool()
-}
-
-class SimpleNICEndpointTargetIO extends Bundle {
-  val nic = Flipped(new NICIOvonly)
-  val reset = Input(Bool())
 }
 
 class BigTokenToNICTokenAdapter extends Module {
@@ -184,9 +194,6 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
                                     hPort.fromHost.hReady)
   val tFire = tFireHelper.fire
-
-//  htnt_queue.reset  := reset //|| targetReset
-//  ntht_queue.reset := reset //|| targetReset
 
   if (p(LoopbackNIC)) {
     val tokenGen = Module(new HostToNICTokenGenerator(10))

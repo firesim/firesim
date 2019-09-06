@@ -31,6 +31,11 @@ class WithMultiCycleRamModels extends Config((site, here, up) => {
 // Short name alias for above
 class MCRams extends WithMultiCycleRamModels
 
+// Enables NIC loopback the NIC widget
+class WithNICWidgetLoopback  extends Config((site, here, up) => {
+  case LoopbackNIC => true
+})
+
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
