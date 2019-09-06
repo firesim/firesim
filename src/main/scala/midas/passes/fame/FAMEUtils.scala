@@ -19,7 +19,6 @@ object RTRenamer {
     { rt =>
       val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
       if (renameMatches.length == 0)
-        println(rt)
       assert(renameMatches.length == 1)
       renameMatches.head
     }
@@ -198,6 +197,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
     def channelIsDuplicate(ps: Seq[Port]): Boolean = visitedChannel.contains(ps)
 
     def dedupPortLists(pList: Map[String, Seq[Port]]): Map[String, Seq[Port]] = pList.flatMap({
+      case (cName, Nil) => throw new RuntimeException(s"Channel ${cName} is empty (has no associate ports)")
       case (_, ports) if channelSharesPorts(ports) && !channelIsDuplicate(ports) =>
         throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
       case (cName, ports) if channelIsDuplicate(ports) =>

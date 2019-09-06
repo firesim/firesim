@@ -57,11 +57,15 @@ case class FAMEChannelConnectionAnnotation(
 
   def moveFromEndpoint(portName: String): FAMEChannelConnectionAnnotation = {
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
-    copy(
-      globalName = s"${portName}_${globalName}",
-      sources = sources.map(_.map(updateRT)),
-      sinks   = sinks.map(_.map(updateRT))
-    )
+
+    require(sources == None || sinks == None, "Endpoint-connected channels cannot loopback")
+    val rTs = sources.getOrElse(sinks.get) ++ (channelInfo match {
+      case i: DecoupledForwardChannel => Seq(i.readySink.getOrElse(i.readySource.get))
+      case other => Seq()
+    })
+
+    val localRenames = RenameMap(Map((rTs.map(rT => rT -> Seq(updateRT(rT)))):_*))
+    copy(globalName = s"${portName}_${globalName}").update(localRenames).head.asInstanceOf[this.type]
   }
 
   override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten

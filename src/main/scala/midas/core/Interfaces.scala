@@ -31,20 +31,25 @@ class HostReadyValid extends Bundle {
 }
 
 // For use in the interface of EndpointWidgets
-class HostPortIO[+T <: Data](gen: T) extends Bundle with midas.widgets.HasEndpointChannels {
+// We're using a Record here because reflection in Bundle prematurely initializes our lazy vals
+class HostPortIO[+T <: Data](gen: T) extends Record with midas.widgets.HasEndpointChannels {
   val fromHost = new HostReadyValid
   val toHost = Flipped(new HostReadyValid)
   val hBits  = gen
 
+  val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
+
   override def cloneType: this.type = new HostPortIO(gen).asInstanceOf[this.type]
 
-  private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(hBits)
+  // These are lazy because parsePorts needs a directioned gen; these can be called once 
+  // this Record has been bound to Hardware
+  private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(gen, alsoFlattenRVPorts = false)
   def inputWireChannels(): Seq[(Data, String)] = ins
   def outputWireChannels(): Seq[(Data, String)] = outs
   def inputRVChannels(): Seq[(ReadyValidIO[Data], String)] = rvIns
   def outputRVChannels(): Seq[(ReadyValidIO[Data], String)] = rvOuts
-  val name2Wire = Map((ins ++ outs).map({ case (wire, name) => name -> wire }):_*)
-  val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
+  lazy val name2Wire = Map((ins ++ outs).map({ case (wire, name) => name -> wire }):_*)
+  lazy val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
 }
 
 object HostPort {
