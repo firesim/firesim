@@ -86,9 +86,9 @@ trait IsEndpoint {
     for ((field, chName) <- channels) {
       annotate(new ChiselAnnotation { def toFirrtl =
         if (endpointSunk) {
-          FAMEChannelConnectionAnnotation.source(chName, WireChannel, Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(1), Seq(field.toNamed.toTarget))
         } else {
-          FAMEChannelConnectionAnnotation.sink  (chName, WireChannel, Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.sink  (chName, PipeChannel(1), Seq(field.toNamed.toTarget))
         }
       })
     }
@@ -207,9 +207,6 @@ abstract class ChannelizedHostPortIO(private val gen: Data) extends Record with 
 
   def InputChannel[T <: Data](field: T) = channel(Direction.Input)(field)
   def OutputChannel[T <: Data](field: T) = channel(Direction.Output)(field)
-
-  //def InputRVChannel[T <: Data](field: T) = channel(Direction.Input)(field)
-  //def OutputRVChannel[T <: Data](field: T) = channel(Direction.Output)(field)
 
   private def checkAllFieldsAssignedToChannels(): Unit = {
     def prefixWith(prefix: String, base: Any): String =
