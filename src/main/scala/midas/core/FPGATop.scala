@@ -44,60 +44,6 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   sim.io.reset     := reset.toBool || simReset
   sim.io.hostReset := simReset
 
-  private def channels2Port(endpointPort: HostPortIO[Data], endpointAnno: EndpointIOAnnotation): Unit = {
-    // Aggregate input tokens into a single larger token
-    val local2globalName = endpointAnno.channelMapping.toMap
-    val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
-
-    // Bind payloads to HostPort, and collect channels
-    for ((field, localName) <- endpointPort.inputWireChannels) {
-      val tokenChannel = simIo.wireOutputPortMap(local2globalName(localName))
-      field := tokenChannel.bits
-      toHostChannels += tokenChannel
-    }
-
-    for ((field, localName) <- endpointPort.outputWireChannels) {
-      val tokenChannel = simIo.wireInputPortMap(local2globalName(localName))
-      tokenChannel.bits := field
-      fromHostChannels += tokenChannel
-    }
-
-    for ((field, localName) <- endpointPort.inputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvOutputPortMap(local2globalName(localName + "_fwd"))
-      field.valid := fwdChPort.bits.valid
-      revChPort.bits := field.ready
-
-      import chisel3.core.ExplicitCompileOptions.NotStrict
-      field.bits  := fwdChPort.bits.bits
-
-      fromHostChannels += revChPort
-      toHostChannels += fwdChPort
-    }
-
-    for ((field, localName) <- endpointPort.outputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvInputPortMap(local2globalName(localName + "_fwd"))
-      fwdChPort.bits.valid := field.valid
-      field.ready := revChPort.bits
-
-      import chisel3.core.ExplicitCompileOptions.NotStrict
-      fwdChPort.bits.bits := field.bits
-      fromHostChannels += fwdChPort
-      toHostChannels += revChPort
-    }
-
-    endpointPort.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
-    endpointPort.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
-
-    // Dequeue from toHost channels only if all toHost tokens are available,
-    // and the endpoint consumes it
-    val toHostHelper   = DecoupledHelper((endpointPort.toHost.hReady +: toHostChannels.map(_.valid)):_*)
-    toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
-
-    // Enqueue into the toHost channels only once all toHost channels can accept the token
-    val fromHostHelper = DecoupledHelper((endpointPort.fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
-    fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
-  }
-
   val memPorts = new mutable.ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
   val dmaInfoBuffer = new mutable.ListBuffer[DmaInfo]
@@ -121,20 +67,7 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
         master.io.done := peekPoke.io.idle
       case _ =>
     }
-    widget.hPort match {
-      // For this form of HostPort, the endpoint binds 1:1 to each channel
-      // presented by the simulation wrapper.
-      case hPort: ChannelizedHostPortIO => {
-        hPort.inputChannelNames.foreach(chName =>
-          hPort.elements(chName) <> simIo.elements(s"${widgetChannelPrefix}_${chName}_source")
-        )
-        hPort.outputChannelNames.foreach(chName =>
-          simIo.elements(s"${widgetChannelPrefix}_${chName}_sink") <> hPort.elements(chName)
-        )
-      }
-      // For a HostPortIO channels are aggregated into a single input and output token
-      case hPort: HostPortIO[Data] => channels2Port(hPort, endpointAnno)
-    }
+    widget.hPort.connectChannels2Port(endpointAnno, simIo)
 
     widget match {
       case widget: HasDMA => dmaInfoBuffer += DmaInfo(widget.getWName, widget.dma, widget.dmaSize)

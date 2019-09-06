@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import midas.core.{IsRationalClockRatio, UnityClockRatio, HostPort, HostPortIO, SimUtils}
+import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
@@ -38,7 +38,7 @@ import scala.collection.immutable.ListMap
  */
 
 abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
-  def hPort: Record with HasEndpointChannels // Tokenized port moving between the endpoint the target-RTL
+  def hPort: Record with HasChannels // Tokenized port moving between the endpoint the target-RTL
 }
 
 case class EndpointAnnotation(
@@ -71,31 +71,82 @@ private[midas] object EndpointIOAnnotation {
 
 trait IsEndpoint {
   self: BlackBox =>
-  def endpointIO: HasEndpointChannels
+  def endpointIO: HasChannels
   def widget: (Parameters) => EndpointWidget
 
+  def generateAnnotations(): Unit = {
+    // Generate the endpoint annotation
+    annotate(new ChiselAnnotation { def toFirrtl =
+      EndpointAnnotation(self.toNamed.toTarget, widget, endpointIO.allChannelNames)
+    })
+    // Emit annotations to capture channel information
+    endpointIO.generateAnnotations()
+  }
+}
+
+trait HasChannels {
+  // A template of the target-land port that is channelized in this host-land port
+  protected def targetPortProto: Data
+
+  // Conventional channels corresponding to a single, unidirectioned token stream
+  def outputWireChannels: Seq[(Data, String)]
+  def inputWireChannels: Seq[(Data, String)]
+
+  // Ready-valid channels with bidirectional token streams.
+  // Used to emit special channel annotations to generate MIDAS I-like
+  // simulators that run with FMR=1
+  def outputRVChannels: Seq[RVChTuple]
+  def inputRVChannels: Seq[RVChTuple]
+
+  // Called to emit FCCAs in the target RTL in order to assign the target
+  // port's fields to channels
+  def generateAnnotations(): Unit
+
+  // Called in FPGATop to connect the instantiated endpoint to channel ports on the wrapper
+  private[midas] def connectChannels2Port(endpointAnno: EndpointIOAnnotation, channels: SimWrapperChannels): Unit
+
+  /*
+   * Implementation follows
+   *
+   */
+
+  private[midas] def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
+  private[midas] def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
+
+  private def getRVChannelNames(channels: Seq[RVChTuple]): Seq[String] =
+    channels.flatMap({ channel =>
+      val (fwd, rev) =  SimUtils.rvChannelNamePair(channel)
+      Seq(fwd, rev)
+    })
+
+  private[midas] def outputRVChannelNames = getRVChannelNames(outputRVChannels)
+  private[midas] def inputRVChannelNames = getRVChannelNames(inputRVChannels)
+
+  private[midas] def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames ++
+    outputRVChannelNames ++ inputRVChannelNames
+
   // FCCA renamer can't handle flattening of an aggregate target; so do it manually
-  private def lowerAggregateIntoLeafTargets(bits: Data): Seq[ReferenceTarget] = {
+  protected def lowerAggregateIntoLeafTargets(bits: Data): Seq[ReferenceTarget] = {
     val (ins, outs, _, _) = SimUtils.parsePorts(bits)
     require (ins.isEmpty || outs.isEmpty, "Aggregate should be uni-directional")
     (ins ++ outs).map({ case (leafField, _) => leafField.toNamed.toTarget })
   }
 
   // Create a wire channel annotation
-  private def generateWireChannelFCCAs(channels: Seq[(Data, String)], endpointSunk: Boolean = false): Unit = {
+  protected def generateWireChannelFCCAs(channels: Seq[(Data, String)], endpointSunk: Boolean = false, latency: Int = 0): Unit = {
     for ((field, chName) <- channels) {
       annotate(new ChiselAnnotation { def toFirrtl =
         if (endpointSunk) {
-          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(1), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
         } else {
-          FAMEChannelConnectionAnnotation.sink  (chName, PipeChannel(1), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.sink  (chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
         }
       })
     }
   }
 
   // Create Ready Valid channel annotations assuming endpoint-sourced directions
-  private def generateRVChannelFCCAs(channels: Seq[(ReadyValidIO[Data], String)], endpointSunk: Boolean = false): Unit = {
+  protected def generateRVChannelFCCAs(channels: Seq[(ReadyValidIO[Data], String)], endpointSunk: Boolean = false): Unit = {
     for ((field, chName) <- channels) yield {
       // Generate the forward channel annotation
       val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
@@ -130,113 +181,4 @@ trait IsEndpoint {
       }})
     }
   }
-
-  def generateAnnotations(): Unit = {
-
-   // Generate the endpoint annotation
-   annotate(new ChiselAnnotation { def toFirrtl =
-     EndpointAnnotation(self.toNamed.toTarget, widget, endpointIO.allChannelNames)
-   })
-
-    generateWireChannelFCCAs(endpointIO.outputWireChannels)
-    generateWireChannelFCCAs(endpointIO.inputWireChannels, endpointSunk = true)
-    generateRVChannelFCCAs(endpointIO.outputRVChannels)
-    generateRVChannelFCCAs(endpointIO.inputRVChannels, endpointSunk = true)
-  }
-}
-
-trait HasEndpointChannels {
-  def outputWireChannels: Seq[(Data, String)]
-  def inputWireChannels: Seq[(Data, String)]
-  def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
-  def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
-
-
-  // Specially labelled ready-valid channels. Used to emit special channel
-  // annotations to generate MIDAS I-like simulators that run with FMR=1
-  def outputRVChannels: Seq[RVChTuple]
-  def inputRVChannels: Seq[RVChTuple]
-
-  private def getRVChannelNames(channels: Seq[RVChTuple]): Seq[String] =
-    channels.flatMap({ channel =>
-      val (fwd, rev) =  SimUtils.rvChannelNamePair(channel)
-      Seq(fwd, rev)
-    })
-
-  def outputRVChannelNames = getRVChannelNames(outputRVChannels)
-  def inputRVChannelNames = getRVChannelNames(inputRVChannels)
-
-  def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames ++
-    outputRVChannelNames ++ inputRVChannelNames
-
-}
-
-abstract class ChannelizedHostPortIO(private val gen: Data) extends Record with HasEndpointChannels {
-  private val _inputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
-  private val _outputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
-  lazy val channelMapping = Map((_inputWireChannels ++ _outputWireChannels):_*)
-
-  private def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => Seq()
-    case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
-    case v: Vec[_] => v.flatMap(getLeafDirs)
-    case b: Bits => Seq(directionOf(b))
-  }
-  // Simplifying assumption: if the user wants to aggregate a bunch of wires
-  // into a single channel they should aggregate them into a Bundle on their record
-  private def channel[T <: Data](direction: Direction)(field: T): DecoupledIO[T] = {
-    val directions = getLeafDirs(field)
-    val isUnidirectional = directions.zip(directions.tail).map({ case (a, b) => a == b })
-                                                          .foldLeft(true)(_ && _)
-    require(isUnidirectional, "Token channels must have a unidirectioned payload")
-    require(directions.head == direction)
-
-    directions.head match {
-      case Direction.Input => {
-        val ch = Flipped(Decoupled(field.cloneType))
-        _inputWireChannels += (field -> ch)
-        ch
-      }
-      case Direction.Output => {
-        val ch = Decoupled(field.cloneType)
-        _outputWireChannels += (field -> ch)
-        ch
-      }
-    }
-  }
-
-  def InputChannel[T <: Data](field: T) = channel(Direction.Input)(field)
-  def OutputChannel[T <: Data](field: T) = channel(Direction.Output)(field)
-
-  private def checkAllFieldsAssignedToChannels(): Unit = {
-    def prefixWith(prefix: String, base: Any): String =
-      if (prefix != "")  s"${prefix}.${base}" else base.toString
-
-    def loop(name: String, field: Data): Seq[(String, Boolean)] = field match {
-      case c: Clock => Seq(name -> true)
-      case b: Record if channelMapping.isDefinedAt(b) => Seq(name -> true)
-      case b: Record => b.elements.flatMap({ case (n, e) => loop(prefixWith(name, n), e) }).toSeq
-      case v: Vec[_] if channelMapping.isDefinedAt(v) => Seq(name -> true)
-      case v: Vec[_] => (v.zipWithIndex).flatMap({ case (e, i) => loop(s"${name}_$i", e) })
-      case b: Bits => Seq(name -> channelMapping.isDefinedAt(b))
-    }
-    val messages = loop("", gen).collect({ case (name, assigned) if !assigned =>
-      "Field ${name} of endpoint IO is not assigned to a channel"})
-    assert(messages.isEmpty, messages.mkString("\n"))
-  }
-
-  def inputWireChannels: Seq[(Data, String)] = {
-    checkAllFieldsAssignedToChannels()
-    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
-    _inputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
-  }
-
-  def outputWireChannels: Seq[(Data, String)] = {
-    checkAllFieldsAssignedToChannels()
-    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
-    _outputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
-  }
-
-  def inputRVChannels = Seq.empty
-  def outputRVChannels = Seq.empty
 }
