@@ -62,16 +62,6 @@ class NICToHostToken extends Bundle {
   val data_in_ready = Bool()
 }
 
-class SimSimpleNIC extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: NICIOvonly =>
-      DataMirror.directionOf(channel.out.valid) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = new SimpleNICWidget()(p)
-  override def widgetName = "SimpleNICWidget"
-}
-
 class SimpleNICEndpointTargetIO extends Bundle {
   val nic = Flipped(new NICIOvonly)
   val reset = Input(Bool())

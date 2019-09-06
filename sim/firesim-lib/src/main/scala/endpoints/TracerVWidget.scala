@@ -16,7 +16,6 @@ import icenet.{NICIOvonly, RateLimiterSettings}
 import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
-import firesim.util.EndpointIOMatcher
 
 // Hack: In a457f658a, RC added the Clocked trait to TracedInstruction, which breaks midas
 // I/O token handling. The non-Clock fields of this Bundle should be factored out in rocket chip.
@@ -69,8 +68,7 @@ class TracerVEndpoint(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends 
   generateAnnotations()
 }
 
-object TracerVEndpoint extends EndpointIOMatcher[TraceOutputTop, TracerVEndpoint] {
-  def checkPort(port: TraceOutputTop): Boolean = true
+object TracerVEndpoint {
   def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[TracerVEndpoint] = {
     val ep = Module(new TracerVEndpoint(port.getProto))
     ep.io <> port

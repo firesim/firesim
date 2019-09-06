@@ -11,8 +11,6 @@ import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
 
-import firesim.util.{EndpointIOMatcher}
-
 class BlockDevEndpointTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
   val reset = Input(Bool())
@@ -25,14 +23,12 @@ class BlockDevEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint 
   generateAnnotations()
 }
 
-object BlockDevEndpoint extends EndpointIOMatcher[BlockDeviceIO, BlockDevEndpoint] {
-  def checkPort(channel: BlockDeviceIO): Boolean =
-    DataMirror.directionOf(channel.req.valid) == Direction.Output
-
-  def apply(blkdevIO: BlockDeviceIO)(implicit p: Parameters): Seq[BlockDevEndpoint] = {
+object BlockDevEndpoint  {
+  def apply(blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevEndpoint = {
     val ep = Module(new BlockDevEndpoint)
     ep.io.bdev <> blkdevIO
-    Seq(ep)
+    ep.io.reset := reset
+    ep
   }
 }
 

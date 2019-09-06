@@ -5,8 +5,8 @@ import freechips.rocketchip.config.{Parameters, Config, Field}
 
 import midas.models._
 import firesim.endpoints._
-import firesim.util.{EndpointKey, MemModelKey}
 
+case object MemModelKey extends Field[(Parameters) => BaseConfig]
 object BaseParamsKey extends Field[BaseParams]
 object LlcKey extends Field[Option[LLCParams]]
 object DramOrganizationKey extends Field[DramOrganizationParams]
@@ -44,8 +44,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     beatCounters = true,
     llcKey = site(LlcKey))
 
-	case MemModelKey => (p: Parameters) => new FASEDEndpoint(new LatencyPipeConfig(site(BaseParamsKey))(p))(p)
-  case firesim.util.EndpointKey  => up(firesim.util.EndpointKey) ++ Seq(firesim.util.FASEDEndpointMatcher)
+  case MemModelKey => (p: Parameters) => new LatencyPipeConfig(site(BaseParamsKey))(p)
 })
 
 
@@ -73,22 +72,20 @@ class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
 
 // Instantiates a DDR3 model with a FCFS memory access scheduler
 class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FASEDEndpoint(
-    new FIFOMASConfig(
-      transactionQueueDepth = queueDepth,
-      dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey))(p))(p)
+  case MemModelKey => (p: Parameters) => new FIFOMASConfig(
+    transactionQueueDepth = queueDepth,
+    dramKey = site(DramOrganizationKey),
+    baseParams = site(BaseParamsKey))(p)
 })
 
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
 // windowSize = Maximum number of references the MAS can schedule across
 class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FASEDEndpoint(
-    new FirstReadyFCFSConfig(
-      schedulerWindowSize = windowSize,
-      transactionQueueDepth = queueDepth,
-      dramKey = site(DramOrganizationKey),
-      baseParams = site(BaseParamsKey))(p))(p)
+  case MemModelKey => (p: Parameters) => new FirstReadyFCFSConfig(
+    schedulerWindowSize = windowSize,
+    transactionQueueDepth = queueDepth,
+    dramKey = site(DramOrganizationKey),
+    baseParams = site(BaseParamsKey))(p)
   }
 )
 

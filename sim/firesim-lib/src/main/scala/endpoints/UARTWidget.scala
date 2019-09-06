@@ -1,7 +1,5 @@
 package firesim.endpoints
 
-import firesim.util.{EndpointIOMatcher}
-
 import midas.core.{HostPort}
 import midas.widgets._
 
@@ -22,12 +20,11 @@ class UARTEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
   generateAnnotations()
 }
 
-object UARTEndpoint extends EndpointIOMatcher[UARTPortIO, UARTEndpoint] {
-  def checkPort(port: UARTPortIO): Boolean = DataMirror.directionOf(port.txd) == Direction.Output
-  def apply(uart: UARTPortIO)(implicit p: Parameters): Seq[UARTEndpoint] = {
+object UARTEndpoint {
+  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTEndpoint = {
     val ep = Module(new UARTEndpoint)
     ep.io.uart <> uart
-    Seq(ep)
+    ep
   }
 }
 

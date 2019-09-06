@@ -17,12 +17,11 @@ class SerialEndpoint extends BlackBox with IsEndpoint {
   generateAnnotations()
 }
 
-object SerialEndpoint extends firesim.util.EndpointIOMatcher[SerialIO, SerialEndpoint] {
-  def checkPort(channel: SerialIO): Boolean = DataMirror.directionOf(channel.out.valid) == Direction.Output
-  def apply(port: SerialIO)(implicit p: Parameters): Seq[SerialEndpoint] = {
+object SerialEndpoint {
+  def apply(port: SerialIO)(implicit p: Parameters): SerialEndpoint = {
     val ep = Module(new SerialEndpoint)
     ep.io.serial <> port
-    Seq(ep)
+    ep
   }
 }
 
