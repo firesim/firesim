@@ -17,6 +17,7 @@ import logger.{Logger, LogLevel}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{PrintRecordBag, EndpointIOAnnotation, PrintWidget}
 import midas.targetutils.SynthPrintfAnnotation
 
@@ -54,6 +55,23 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     state
   }
 
+  // Takes a single printPort and emits an FCCA for each field
+  def genFCCAsFromPort(mT: ModuleTarget, p: Port): Seq[FAMEChannelConnectionAnnotation] = {
+    println(p)
+    p.tpe match {
+      case BundleType(fields) =>
+        fields.map(field =>
+          FAMEChannelConnectionAnnotation(
+            p.name + "_" + field.name,
+            WireChannel,
+            sources = Some(Seq(mT.ref(p.name).field(field.name))),
+            sinks = None
+          )
+        )
+      case other => Seq()
+    }
+  }
+
   def synthesizePrints(state: CircuitState, printfAnnos: Seq[SynthPrintfAnnotation]): CircuitState = {
     require(state.annotations.collect({ case t: TopWiringAnnotation => t }).isEmpty,
       "CircuitState cannot have existing TopWiring annotations before PrintSynthesis.")
@@ -65,7 +83,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val topWiringAnnos = mutable.ArrayBuffer[Annotation](
       TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc))
 
-    val topWiringPrefix = "synthesizedPrint_"
+    val topWiringPrefix = ""
 
     def onModule(m: DefModule): DefModule = m match {
       case m: Module if printMods(mTarget(m)) =>
@@ -114,14 +132,16 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       case ports => {
         // TODO: Generate sensible channel annotations once we can aggregate wire channels
         val portName = topWiringPrefix.stripSuffix("_")
-        val portRT = ModuleTarget(c.main, c.main).ref(portName)
+        val mT = ModuleTarget(c.main, c.main)
+        val portRT = mT.ref(portName)
 
+        val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
         val endpointAnno = EndpointIOAnnotation(
           target = portRT,
           widget = (p: Parameters) => new PrintWidget(topWiringPrefix, addedPrintPorts)(p),
-          channelNames = Seq(portName)
+          channelNames = fccaAnnos.map(_.globalName)
         )
-        Seq(endpointAnno)
+        endpointAnno +: fccaAnnos
       }
     }
     // Remove added TopWiringAnnotations to prevent being reconsumed by a downstream pass
