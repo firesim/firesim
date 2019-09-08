@@ -149,7 +149,7 @@ private[passes] class AssertPass(
       val endpointAnno = EndpointIOAnnotation(
         target = portRT,
         widget = (p: Parameters) => new AssertWidget(assertNum)(p),
-        channelNames = Seq(portName)
+        channelMapping = Map("" -> portName)
       )
 
       Seq(fcca, endpointAnno)
