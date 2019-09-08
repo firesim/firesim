@@ -10,7 +10,7 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
-import midas.models.{AXI4BundleWithEdge}
+import midas.models.{AXI4BundleWithEdge, FASEDEndpoint}
 import midas.widgets.{PeekPokeEndpoint}
 
 object AXI4Printf {
@@ -94,14 +94,7 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
-    val fasedInstance =  Module(p(firesim.util.MemModelKey)(p))
-
-    {
-      import chisel3.core.ExplicitCompileOptions.NotStrict
-      fasedInstance.io.axi4 <> fuzzer.axi4
-    }
-
-    fasedInstance.io.reset := reset
+    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, p(firesim.configs.MemModelKey)(p))
     val peekPokeEndpoint = PeekPokeEndpoint(reset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
