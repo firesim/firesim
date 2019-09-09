@@ -111,8 +111,8 @@ abstract class TutorialSuite(
   runTest("verilator")
 }
 
-class PointerChaserF1Test extends TutorialSuite(
-  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
+//class PointerChaserF1Test extends TutorialSuite(
+//  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
 class GCDF1Test extends TutorialSuite("GCD")
 // Hijack Parity to test all of the Midas-level backends
 class ParityF1Test extends TutorialSuite("Parity") {
