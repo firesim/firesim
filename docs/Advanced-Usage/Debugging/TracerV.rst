@@ -31,12 +31,12 @@ the "tracing" section.
     startcycle=XXXX
     endcycle=YYYY
 
-TracerV Runtime Arguments (+args)
----------------------------------
+MIDAS- & FPGA-Level Simulation Arguments (+args)
+------------------------------------------------
 
 Under the hood, TracerV settings in your config_runtime.ini are being translated to plusargs 
 that are passed the simulator during ``firesim runworkload``. You can pass these same plusargs to MIDAS- and FPGA-level
-simulators if you invoke them directly or by setting ``EXTRA_SIM_ARGS=<plusarg string>`` if you invoke them through ``make``.
+simulators (if you invoke them directly) or by setting ``EXTRA_SIM_ARGS=<plusarg string>`` if you invoke them through ``make``.
 
 **+tracefile0=<filename>**
     Specifies the file into which the trace will be dumped.
