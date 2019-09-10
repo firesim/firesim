@@ -15,7 +15,7 @@ public:
       uint32_t in = rand_next(2);
       poke(io_in, in);
       outputDelayer.enqueue(reg[3]);
-      if (cycles() > 4) expect(io_out, outputDelayer.current());
+      if (cycles() > (4 + 2)) expect(io_out, outputDelayer.current());
       step(1);
       outputDelayer.step();
       for (int j = 3 ; j > 0 ; j--) reg[j] = reg[j-1];
