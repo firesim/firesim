@@ -31,5 +31,25 @@ the "tracing" section.
     startcycle=XXXX
     endcycle=YYYY
 
+MIDAS- & FPGA-Level Simulation Arguments (+args)
+------------------------------------------------
+
+Under the hood, TracerV settings in your config_runtime.ini are being translated to plusargs 
+that are passed the simulator during ``firesim runworkload``. You can pass these same plusargs to MIDAS- and FPGA-level
+simulators (if you invoke them directly) or by setting ``EXTRA_SIM_ARGS=<plusarg string>`` if you invoke them through ``make``.
+
+**+tracefile0=<filename>**
+    Specifies the file into which the trace will be dumped.
+
+**+trace-start0=<uint64_t>**
+    (From config_runtime.ini startcycle) Specifies the target cycle at which to start dumping the trace to file.
+
+**+trace-end0=<uint64_t>**
+    (From config_runtime.ini endcycle) Specifies the target cycle at which to stop dumping the trace to file.
+
+**+trace-humanreadable0**
+    Dumps the output trace as hexidecimal strings instead of raw binary. Each line 
+    represents a single target-cycle of collected trace (one token).
+
 Interpreting the Trace Result
 -----------------------------
