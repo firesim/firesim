@@ -20,13 +20,13 @@ class ImageDeleter(object):
         account_id = client.get_caller_identity()["Account"]
         return account_id
 
-    def get_image_for_agfi(self, agfi):
+    def get_images_for_agfis(self, agfis):
         account_id = self.get_customer_id()
         result = self.client.describe_fpga_images(
             Filters=[
                 {
                     "Name": "fpga-image-global-id",
-                    "Values": [agfi]
+                    "Values": agfis
                 },
                 {
                     "Name": "owner-id",
@@ -36,21 +36,16 @@ class ImageDeleter(object):
             ]
         )
 
-        if len(result["FpgaImages"]) == 0:
-            return None
-
-        image = result["FpgaImages"][0]
-        if image["Public"]:
-            return None
-
-        return image
+        return [image for image in result["FpgaImages"] if not image["Public"]]
 
     def delete_agfi(self, agfi):
-        image = self.get_image_for_agfi(agfi)
+        images = self.get_images_for_agfis([agfi])
 
-        if not image:
+        if len(images) == 0:
             print("Could not find image {}".format(agfi))
             return
+
+        image = images[0]
 
         print("{} {}".format(image["FpgaImageId"], image["Description"]))
         print("You are about to delete this image")
@@ -61,6 +56,22 @@ class ImageDeleter(object):
             print("Delete {}".format(afi))
             self.client.delete_fpga_image(FpgaImageId = afi)
             self.deleted.append(afi)
+
+    def delete_agfis(self, agfis):
+        images = self.get_images_for_agfis(agfis)
+
+        for image in images:
+            print("{} {}".format(image["FpgaImageId"], image["Description"]))
+
+        print("You are about to delete these {} images".format(len(images)))
+
+        proceed = raw_input("Are you sure you want to proceed? (yes/no): ")
+        if proceed == "yes":
+            for image in images:
+                afi = image["FpgaImageId"]
+                print("Delete {}".format(afi))
+                self.client.delete_fpga_image(FpgaImageId = afi)
+                self.deleted.append(afi)
 
     def list_images_before(self, before):
         account_id = self.get_customer_id()
@@ -114,12 +125,17 @@ def main():
     parser = argparse.ArgumentParser(description="Tool for deleting F1 FPGA images")
     parser.add_argument("--agfi", help="Global FPGA image ID")
     parser.add_argument("--before", help="Delete all images created before this date (YYYY-mm-dd)")
+    parser.add_argument("--list", help="Delete AGFIs from list")
     parser.add_argument("--region", help="EC2 Region to resolve AGFIs in")
     args = parser.parse_args()
 
     deleter = ImageDeleter(args.region)
     if args.agfi:
         deleter.delete_agfi(args.agfi)
+    elif args.list:
+        with open(args.list) as f:
+            agfis = [s.strip() for s in f]
+            deleter.delete_agfis(agfis)
     elif args.before:
         datefmt = "%Y-%m-%d"
         before = datetime.strptime(args.before, datefmt)
