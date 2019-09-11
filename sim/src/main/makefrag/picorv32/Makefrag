@@ -44,7 +44,7 @@ verilog_src_path = src/main/verilog/picorv32/picosoc
 $(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR) $(scala_src_path)/$(DESIGN).fir
 	mkdir -p $(@D)
 	$(SBT) $(SBT_FLAGS) \
-	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(GENERATED_DIR)"
+	"runMain $(DESIGN_PACKAGE).FireSimGenerator $(GENERATED_DIR) $(scala_src_path)/$(DESIGN).fir"
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 

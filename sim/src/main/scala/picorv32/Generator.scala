@@ -42,13 +42,14 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
   )
 
   // We're dealing with a FIRRTL source rather than Chisel, so there are no configs to worry about. All of this is hardcoded.
-  val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-EmptyConfig-PicoRV32Config/"
+  lazy val targetDir = "/home/centos/firesim/sim/generated-src/f1/PicoRV32-EmptyConfig-PicoRV32Config/" // we'll override this from the make recipe
   lazy val genDir = new File(targetDir)
+  lazy val firrtlSrc = "src/main/scala/picorv32/PicoRV32.fir"
 
   def hostParams = (new Config(new firesim.firesim.PicoRV32Config)).toInstance
 
   def elaborateAndCompileWithMidas {
-    val lines = Source.fromFile("src/main/scala/picorv32/PicoRV32.fir").getLines()
+    val lines = Source.fromFile(firrtlSrc).getLines()
     val chirrtl = firrtl.Parser.parse(lines)
 
     val dut = chisel3.Driver.elaborate(() => new PicoRV32)
@@ -68,8 +69,10 @@ trait FireSimGeneratorUtils extends HasTestSuites with HasTargetAgnosticUtilites
 }
 
 object FireSimGenerator extends App with FireSimGeneratorUtils {
-  require (args.size == 1, "Command line arg must be output directory!")
-  lazy val generatorArgs = GeneratorArgs(args)
+  require (args.size == 2, "Command line args must be (1) output directory and (2) FIRRTL source file!")
+  lazy val generatorArgs = GeneratorArgs(args) // this doesn't do anything here, but must be included as it's part of FireSimGeneratorUtils
+  override lazy val targetDir = args(0)
+  override lazy val firrtlSrc = args(1)
   elaborateAndCompileWithMidas
   generateTestSuiteMakefrags
   generateHostVerilogHeader
