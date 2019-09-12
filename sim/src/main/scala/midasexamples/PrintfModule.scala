@@ -8,13 +8,15 @@ import chisel3.experimental.MultiIOModule
 
 import midas.targetutils.SynthesizePrintf
 
-class PrintfModule extends MultiIOModule {
-  val a = IO(Input(Bool()))
-  val b = IO(Input(Bool()))
+class PrintfModuleDUT extends Module {
+  val io = IO(new Bundle {
+    val a = Input(Bool())
+    val b = Input(Bool())
+  })
 
   val cycle = RegInit(0.U(16.W))
 
-  when(a) { cycle := cycle + 1.U }
+  when(io.a) { cycle := cycle + 1.U }
 
   // Printf format strings must be prefixed with "SYNTHESIZED_PRINT CYCLE: %d"
   // so they can be pulled out of RTL simulators log and sorted within a cycle
@@ -25,7 +27,7 @@ class PrintfModule extends MultiIOModule {
   printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d wideArgument: %x\n", cycle, wideArgument)) // argument width > DMA width
 
   val childInst = Module(new PrintfModuleChild)
-  childInst.c := a
+  childInst.c := io.a
   childInst.cycle := cycle
 
   printf(SynthesizePrintf("thi$!sn+taS/\neName", "SYNTHESIZED_PRINT CYCLE: %d constantArgument: %x\n", cycle, 1.U(8.W)))
@@ -43,11 +45,18 @@ class PrintfModuleChild extends MultiIOModule {
   //}
 }
 
-class NarrowPrintfModule extends MultiIOModule {
-  val enable = IO(Input(Bool()))
+class PrintfModule extends PeekPokeMidasExampleEnvironment(() => new PrintfModuleDUT)
+
+class NarrowPrintfModuleDUT extends Module {
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+  })
+
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
-  when(LFSR16()(0) & LFSR16()(0) & enable) {
+  when(LFSR16()(0) & LFSR16()(0) & io.enable) {
     printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle(5,0)))
   }
 }
+
+class NarrowPrintfModule extends PeekPokeMidasExampleEnvironment(() => new NarrowPrintfModuleDUT)

@@ -4,8 +4,11 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.unless
+import chisel3.experimental.{withClock, RawModule}
 
-class GCD extends Module {
+import midas.widgets.PeekPokeEndpoint
+
+class GCDDUT extends Module {
   val io = IO(new Bundle {
     val a  = Input(UInt(16.W))
     val b  = Input(UInt(16.W))
@@ -25,3 +28,4 @@ class GCD extends Module {
   printf("X: %d, Y:%d\n", x, y)
 }
 
+class GCD extends PeekPokeMidasExampleEnvironment(() => new GCDDUT)

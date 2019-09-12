@@ -1,5 +1,4 @@
-package firesim
-package endpoints
+package firesim.endpoints
 
 import midas.core.{HostPort}
 import midas.widgets._
@@ -11,39 +10,43 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
 
-class SimSerialIO extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: SerialIO =>
-      DataMirror.directionOf(channel.out.valid) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = new SerialWidget()(p)
-  override def widgetName = "SerialWidget"
+class SerialEndpoint extends BlackBox with IsEndpoint {
+  val io = IO(new SerialEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => new SerialWidget()(p)
+  generateAnnotations()
 }
 
-class SerialWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
-  val w = testchipip.SerialAdapter.SERIAL_IF_WIDTH
-  val hPort = Flipped(HostPort(new SerialIO(w)))
+object SerialEndpoint {
+  def apply(port: SerialIO)(implicit p: Parameters): SerialEndpoint = {
+    val ep = Module(new SerialEndpoint)
+    ep.io.serial <> port
+    ep
+  }
+}
+
+class SerialEndpointTargetIO extends Bundle {
+  val serial = Flipped(new SerialIO(testchipip.SerialAdapter.SERIAL_IF_WIDTH))
+  val reset = Input(Bool())
 }
 
 class SerialWidget(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new SerialWidgetIO)
+  val io = IO(new WidgetIO)
+  val hPort = IO(HostPort(new SerialEndpointTargetIO))
 
-  val inBuf  = Module(new Queue(UInt(io.w.W), 16))
-  val outBuf = Module(new Queue(UInt(io.w.W), 16))
+  val serialBits = testchipip.SerialAdapter.SERIAL_IF_WIDTH
+  val inBuf  = Module(new Queue(UInt(serialBits.W), 16))
+  val outBuf = Module(new Queue(UInt(serialBits.W), 16))
   val tokensToEnqueue = RegInit(0.U(32.W))
 
-  val target = io.hPort.hBits
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid && tokensToEnqueue =/= 0.U
-  val targetReset = tFire & io.tReset.bits
+  val target = hPort.hBits.serial
+  val tFire = hPort.toHost.hValid && hPort.fromHost.hReady && tokensToEnqueue =/= 0.U
+  val targetReset = tFire & hPort.hBits.reset
   inBuf.reset  := reset.toBool || targetReset
   outBuf.reset := reset.toBool || targetReset
 
-  // Hack: hReady depends on hValid. See firesim/firesim#335
-  // Should use a DecoupledHelper here
-  io.hPort.toHost.hReady := tFire
-  io.hPort.fromHost.hValid := tFire
-  io.tReset.ready := tFire
+  hPort.toHost.hReady := tFire
+  hPort.fromHost.hValid := tFire
 
   target.in <> inBuf.io.deq
   inBuf.io.deq.ready := target.in.ready && tFire

@@ -21,18 +21,22 @@ object PipeModule {
   }
 }
 
-class WireInterconnect extends MultiIOModule {
+class WireInterconnectDUT extends Module {
   def aType = UInt(16.W)
   def bType = new Bundle {
     val foo = SInt(4.W)
     val bar = Valid(UInt(128.W))
   }
 
-  val aIn   = IO(Input(aType) )
-  val aOut  = IO(Output(aType))
-  val bIn   = IO(Input(bType) )
-  val bOut  = IO(Output(bType))
+  val io = IO(new Bundle {
+    val aIn   = Input(aType)
+    val aOut  = Output(aType)
+    val bIn   = Input(bType)
+    val bOut  = Output(bType)
+  })
 
-  aOut := PipeModule(aIn, 0)
-  bOut := PipeModule(bIn, 1)
+  io.aOut := PipeModule(io.aIn, 0)
+  io.bOut := PipeModule(io.bIn, 1)
 }
+
+class WireInterconnect extends PeekPokeMidasExampleEnvironment(() => new WireInterconnectDUT)

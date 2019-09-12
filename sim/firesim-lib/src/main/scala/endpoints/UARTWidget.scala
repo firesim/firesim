@@ -1,5 +1,4 @@
-package firesim
-package endpoints
+package firesim.endpoints
 
 import midas.core.{HostPort}
 import midas.widgets._
@@ -11,40 +10,44 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
-class SimUART extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: UARTPortIO =>
-      DataMirror.directionOf(channel.txd) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = {
-    val frequency = p(PeripheryBusKey).frequency
-    val baudrate = 3686400L
-    val div = (p(PeripheryBusKey).frequency / baudrate).toInt
-    new UARTWidget(div)(p)
-  }
-  override def widgetName = "UARTWidget"
+class UARTEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(new UARTEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  val frequency = p(PeripheryBusKey).frequency
+  val baudrate = 3686400L
+  val div = (p(PeripheryBusKey).frequency / baudrate).toInt
+  def widget = (p: Parameters) => new UARTWidget(div)(p)
+  generateAnnotations()
 }
 
-class UARTWidgetIO(implicit p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new UARTPortIO))
+object UARTEndpoint {
+  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTEndpoint = {
+    val ep = Module(new UARTEndpoint)
+    ep.io.uart <> uart
+    ep
+  }
+}
+
+class UARTEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+  val uart = Flipped(new UARTPortIO)
+  val reset = Input(Bool())
 }
 
 class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new UARTWidgetIO)
+  val io = IO(new WidgetIO())
+  val hPort = IO(HostPort(new UARTEndpointTargetIO))
 
   val txfifo = Module(new Queue(UInt(8.W), 128))
   val rxfifo = Module(new Queue(UInt(8.W), 128))
 
-  val target = io.hPort.hBits
-  val fire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid & txfifo.io.enq.ready
-  val targetReset = fire & io.tReset.bits
+  val target = hPort.hBits.uart
+  val fire = hPort.toHost.hValid && hPort.fromHost.hReady && txfifo.io.enq.ready
+  val targetReset = fire & hPort.hBits.reset
   rxfifo.reset := reset.toBool || targetReset
   txfifo.reset := reset.toBool || targetReset
 
-  io.hPort.toHost.hReady := fire
-  io.hPort.fromHost.hValid := fire
-  io.tReset.ready := fire
+  hPort.toHost.hReady := fire
+  hPort.fromHost.hValid := fire
 
   val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(UInt(), 4)
   val txState = RegInit(sTxIdle)

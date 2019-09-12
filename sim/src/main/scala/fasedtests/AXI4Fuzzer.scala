@@ -3,14 +3,15 @@
 package firesim.fasedtests
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
+import chisel3.experimental.{RawModule, MultiIOModule}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
-import midas.models.AXI4BundleWithEdge
+import midas.models.{AXI4BundleWithEdge, FASEDEndpoint}
+import midas.widgets.{PeekPokeEndpoint}
 
 object AXI4Printf {
   def apply(axi4: AXI4Bundle): Unit = {
@@ -58,13 +59,14 @@ object AXI4Printf {
 
 
 // TODO: Handle errors and reinstatiate the TLErrorEvaluator
-class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
+class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val nMemoryChannels = 1
   val fuzz  = LazyModule(new TLFuzzer(p(NumTransactions), p(MaxFlight)))
   val model = LazyModule(new TLRAMModel("AXI4FuzzMaster"))
   val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i => p(AXI4SlavePort) })
 
   (slave
+    := AXI4Buffer() // Required to cut combinational paths through FASED instance
     := AXI4UserYanker()
     := AXI4IdIndexer(p(IDBits))
     := TLToAXI4()
@@ -83,5 +85,18 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
     done := fuzz.module.io.finished
     error := false.B
     AXI4Printf(axi4)
+  }
+}
+
+class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
+  val clock = IO(Input(Clock()))
+  val reset = WireInit(false.B)
+
+  withClockAndReset(clock, reset) {
+    val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
+    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, p(firesim.configs.MemModelKey)(p))
+    val peekPokeEndpoint = PeekPokeEndpoint(reset,
+                                            ("done", fuzzer.done),
+                                            ("error", fuzzer.error))
   }
 }
