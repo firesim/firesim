@@ -1,6 +1,5 @@
 package firesim.endpoints
 
-import midas.core.{HostPort}
 import midas.widgets._
 
 import chisel3._

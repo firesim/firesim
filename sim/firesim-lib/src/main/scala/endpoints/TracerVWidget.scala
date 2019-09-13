@@ -9,7 +9,6 @@ import freechips.rocketchip.rocket.TracedInstruction
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
 
-import midas.core.{HostPort}
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
