@@ -8,7 +8,6 @@ import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.config.{Config, Parameters}
-import freechips.rocketchip.devices.debug.DebugIO
 import freechips.rocketchip.diplomacy.{ValName, LazyModule, AutoBundle}
 import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
@@ -88,13 +87,14 @@ ${buildStrategy.emitTcl}
 
   // For host configurations, look up configs in one of three places:
   // 1) The user specified project (eg. firesim.firesim)
-  // 2) firesim.util  -> this has a bunch of target agnostic configurations, like host frequency
-  // 3) midas -> This has debug features, etc
+  // 2) firesim.configs -> Legacy SimConfigs
+  // 3) firesim.util  -> this has a bunch of target agnostic configurations, like host frequency
+  // 4) midas -> This has debug features, etc
   // Allows the user to concatenate configs together from different packages
   // without needing to fully specify the class name for each config
   // eg. FireSimConfig_F90MHz maps to: firesim.util.F90MHz ++ firesim.firesim.FiresimConfig
   def getHostParameters(targetNames: ParsedInputNames, hostNames: ParsedInputNames): Parameters = {
-    val packages = hostNames.configProject +: Seq("firesim.util", "midas")
+    val packages = hostNames.configProject +: Seq("firesim.configs", "firesim.util", "midas")
     val hParams = new Config(
       getConfigWithFallback(packages, hostNames.configClasses) ++
       getConfig(targetNames.fullConfigClasses)).toInstance
@@ -161,7 +161,6 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites {
 
      val portList = target.getPorts flatMap {
       // TODO: BOth of these need to be removed before rebar release
-      case Port(id: DebugIO, _) => None
       case Port(id: AutoBundle, _) => None
       case otherPort => Some(otherPort.id.instanceName -> otherPort.id)
     }

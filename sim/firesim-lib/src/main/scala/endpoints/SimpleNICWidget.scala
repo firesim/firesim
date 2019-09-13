@@ -190,9 +190,11 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
 
   val target = io.hPort.hBits
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
-  val targetReset = tFire & io.tReset.bits
-  io.tReset.ready := tFire
+  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid,
+                                    io.hPort.fromHost.hReady,
+                                    io.tReset.valid)
+  val tFire = tFireHelper.fire
+  io.tReset.ready := true.B // This is unused
 
 //  htnt_queue.reset  := reset //|| targetReset
 //  ntht_queue.reset := reset //|| targetReset

@@ -52,6 +52,13 @@ class WithTracerVWidget extends Config((site, here, up) => {
     EndpointMap(Seq(new SimTracerV))
 })
 
+// MIDAS 2.0 Switches
+class WithMultiCycleRamModels extends Config((site, here, up) => {
+  case midas.GenerateMultiCycleRamModels => true
+})
+// Short name alias for above
+class MCRams extends WithMultiCycleRamModels
+
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {

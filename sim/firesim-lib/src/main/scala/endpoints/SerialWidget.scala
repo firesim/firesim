@@ -39,6 +39,8 @@ class SerialWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   inBuf.reset  := reset.toBool || targetReset
   outBuf.reset := reset.toBool || targetReset
 
+  // Hack: hReady depends on hValid. See firesim/firesim#335
+  // Should use a DecoupledHelper here
   io.hPort.toHost.hReady := tFire
   io.hPort.fromHost.hValid := tFire
   io.tReset.ready := tFire

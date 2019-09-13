@@ -15,6 +15,7 @@ class NoConfig extends Config(Parameters.empty)
 class DefaultF1Config extends Config(new Config((site, here, up) => {
     case DesiredHostFrequency => 75
     case SynthAsserts => true
+    case midas.GenerateMultiCycleRamModels => true
     case SynthPrints => true
 }) ++ new Config(new WithDefaultMemModel ++ new midas.F1Config))
 

@@ -4,6 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util._
+import midas.targetutils._
 
 class RiscSRAM extends Module {
   val io = IO(new Bundle {
@@ -14,8 +15,11 @@ class RiscSRAM extends Module {
     val valid  = Output(Bool())
     val out    = Output(UInt(32.W))
   })
-  val fileMem = SeqMem(128, UInt(32.W))
+  val fileMem = SeqMem(256, UInt(32.W))
+  // We only support combinational mems for now
+  //chisel3.experimental.annotate(MemModelAnnotation(fileMem))
   val codeMem = SeqMem(128, UInt(32.W))
+  //chisel3.experimental.annotate(MemModelAnnotation(codeMem))
 
   val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(UInt(), 6)
   val state = RegInit(idle)
@@ -43,7 +47,7 @@ class RiscSRAM extends Module {
 
   val file_wen = state === rc_write && rci =/= 255.U
   val file_addr = Mux(state === decode, rai, rbi)
-  val file = fileMem.read(file_addr, !file_wen)
+  val file = fileMem.read(file_addr)//, !file_wen)
   when(file_wen) {
     fileMem.write(rci, io.out)
   }
