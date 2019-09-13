@@ -2,7 +2,7 @@
 
 package midas.models
 
-import midas.core.{HostPort, MemNastiKey, IsRationalClockRatio, UnityClockRatio}
+import midas.core.{MemNastiKey, IsRationalClockRatio, UnityClockRatio}
 import midas.widgets._
 import junctions._
 

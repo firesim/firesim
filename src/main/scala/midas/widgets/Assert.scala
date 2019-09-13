@@ -1,7 +1,6 @@
 // See LICENSE for license details.
 
-package midas
-package widgets
+package midas.widgets
 
 import chisel3._
 import chisel3.util._
@@ -11,9 +10,6 @@ import scala.collection.immutable.ListMap
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
-import junctions._
-
-import midas.core.{HostPort}
 
 class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
