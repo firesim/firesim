@@ -22,6 +22,8 @@ import Console.{UNDERLINED, RESET}
 
 import java.io.{File, FileWriter}
 
+// Note: NASTI -> legacy rocket chip implementation of AXI4
+case object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
 
 case class BaseParams(
   // Pessimistically provisions the functional model. Don't be cheap:
