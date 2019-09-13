@@ -1,7 +1,6 @@
 // See LICENSE for license details.
 
-package midas
-package widgets
+package midas.widgets
 
 import scala.collection.immutable.ListMap
 
@@ -12,7 +11,7 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import midas.core.{HostPort, DMANastiKey}
+import midas.core.{DMANastiKey}
 
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
