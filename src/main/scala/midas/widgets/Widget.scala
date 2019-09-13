@@ -53,6 +53,9 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
     wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
   }
 
+  lazy val ctrlWidth = io.ctrl.nastiXDataBits
+  def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
+
   def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
     crRegistry.allocate(RegisterEntry(reg, name, permissions))
   }
@@ -136,11 +139,12 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
     reg
   }
 
-  def genCRFile() {
+  def genCRFile(): MCRFile = {
     val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     crFile.io.mcr := DontCare
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
+    crFile
   }
 
   // Returns widget-relative word address

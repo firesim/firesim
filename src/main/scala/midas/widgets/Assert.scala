@@ -44,7 +44,7 @@ class AssertBundleEndpoint extends Endpoint {
   override def widgetName = "AssertionWidget"
 }
 
-class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) with HasChannels {
+class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
   val io = IO(new AssertWidgetIO(numAsserts))
   val resume = WireInit(false.B)
   val cycles = RegInit(0.U(64.W))

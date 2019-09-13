@@ -26,6 +26,7 @@ object FlattenData {
     }
   }
 }
+
 /** An object that is useful for measuring the QoR of a module on FPGA
   * CAD tools; achieves two goals
   * 1) Registers all inputs/outputs to properly measure intra-module timing
@@ -33,8 +34,8 @@ object FlattenData {
   *    I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths
   */
 object ScanRegister {
-  def apply[T <: Data](data : T, scanEnable: Bool, scanIn: Bool): Bool = {
-    val leaves = FlattenData(data)
+  def apply(data: Seq[Data], scanEnable: Bool, scanIn: Bool): Bool = {
+    val leaves = data flatMap FlattenData.apply
     leaves.foldLeft(scanIn)((in: Bool, leaf: (Data, ActualDirection)) => {
       val r = Reg(VecInit(leaf._1.asUInt.toBools).cloneType)
       (leaf._2) match {

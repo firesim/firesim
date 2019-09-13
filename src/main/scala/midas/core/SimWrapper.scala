@@ -10,50 +10,66 @@ import scala.collection.mutable.ArrayBuffer
 import junctions.NastiIO
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.{ActualDirection, Reset}
-import chisel3.core.DataMirror.directionOf
-import SimUtils._
+import chisel3.core.{Reset}
+import chisel3.experimental.{MultiIOModule, Direction}
+import chisel3.experimental.DataMirror.directionOf
+import passes.fame
+import passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel}
+import firrtl.annotations.{ReferenceTarget}
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 object SimUtils {
-  def parsePorts(io: Data, prefix: String = "") = {
-    val inputs = ArrayBuffer[(Bits, String)]()
-    val outputs = ArrayBuffer[(Bits, String)]()
+  type ChLeafType = Bits
+  type ChTuple = Tuple2[ChLeafType, String]
+  type RVChTuple = Tuple2[ReadyValidIO[Data], String]
+  type ParsePortsTuple = (List[ChTuple], List[ChTuple], List[RVChTuple], List[RVChTuple])
 
-    def prefixWith(prefix: String, base: Any): String =
-      if (prefix != "")  s"${prefix}_${base}" else base.toString
+  def prefixWith(prefix: String, base: Any): String =
+    if (prefix != "")  s"${prefix}_${base}" else base.toString
+
+  // Returns a list of input and output elements, with their flattened names
+  def parsePorts(io: Seq[(String, Data)], alsoFlattenRVPorts: Boolean): ParsePortsTuple = {
+    val inputs = ArrayBuffer[ChTuple]()
+    val outputs = ArrayBuffer[ChTuple]()
+    val rvInputs = ArrayBuffer[RVChTuple]()
+    val rvOutputs = ArrayBuffer[RVChTuple]()
 
     def loop(name: String, data: Data): Unit = data match {
       case c: Clock => // skip
+      case rv: ReadyValidIO[_] => (directionOf(rv.valid): @unchecked) match {
+          case Direction.Input =>  rvInputs  += (rv -> name)
+          case Direction.Output => rvOutputs += (rv -> name)
+        }
+        if (alsoFlattenRVPorts) rv.elements foreach {case (n, e) => loop(prefixWith(name, n), e)}
       case b: Record =>
         b.elements foreach {case (n, e) => loop(prefixWith(name, n), e)}
       case v: Vec[_] =>
         v.zipWithIndex foreach {case (e, i) => loop(prefixWith(name, i), e)}
-      case b: Bits => (directionOf(b): @unchecked) match {
-        case ActualDirection.Input => inputs += (b -> name)
-        case ActualDirection.Output => outputs += (b -> name)
+      case b: ChLeafType => (directionOf(b): @unchecked) match {
+        case Direction.Input => inputs += (b -> name)
+        case Direction.Output => outputs += (b -> name)
+
       }
     }
-    loop(prefix, io)
-    (inputs.toList, outputs.toList)
+    io.foreach({ case (name, port) => loop(name, port)})
+    (inputs.toList, outputs.toList, rvInputs.toList, rvOutputs.toList)
   }
 
-  def getChunks(b: Bits)(implicit channelWidth: Int): Int =
-    (b.getWidth-1)/channelWidth + 1
-  def getChunks(s: Seq[Bits])(implicit channelWidth: Int): Int =
-    (s foldLeft 0)((res, b) => res + getChunks(b))
-  def getChunks(args: (Bits, String))(implicit channelWidth: Int): (String, Int) =
-    args match { case (wire, name) => name -> SimUtils.getChunks(wire) }
+  def parsePorts(io: Data, prefix: String = "", alsoFlattenRVPorts: Boolean = true): ParsePortsTuple =
+    parsePorts(Seq(prefix -> io), alsoFlattenRVPorts)
 
-  def genIoMap(ports: Seq[(Bits, String)], offset: Int = 0)(implicit channelWidth: Int) =
-    ((ports foldLeft ((ListMap[Bits, Int](), offset))){
-      case ((map, off), (port, name)) => (map + (port -> off), off + getChunks(port))
-    })._1
+  def parsePortsSeq(io: Seq[(String, Data)], alsoFlattenRVPorts: Boolean = true): ParsePortsTuple =
+    parsePorts(io, alsoFlattenRVPorts)
+
 }
+
+import SimUtils._
 
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
@@ -64,14 +80,14 @@ trait HasSimWrapperParams {
   val traceMaxLen = p(strober.core.TraceMaxLen)
   val daisyWidth = p(strober.core.DaisyWidth)
   val sramChainNum = p(strober.core.SRAMChainNum)
-  val enableSnapshot = p(EnableSnapshot)
 }
+
 
 class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
   val elements = ListMap() ++ (es map { case (name, rv) =>
     (directionOf(rv.valid): @unchecked) match {
-      case ActualDirection.Input => name -> Flipped(SimReadyValid(rv.bits.cloneType))
-      case ActualDirection.Output => name -> SimReadyValid(rv.bits.cloneType)
+      case Direction.Input => name -> Flipped(SimReadyValid(rv.bits.cloneType))
+      case Direction.Output => name -> SimReadyValid(rv.bits.cloneType)
     }
   })
   def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
@@ -84,11 +100,208 @@ class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Recor
   def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
 }
 
-class SimWrapperIO(io: TargetBoxIO)
-   (implicit val p: Parameters) extends Bundle with HasSimWrapperParams {
-  import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
+// Regenerates the "bits" field of a target ready-valid interface from a list of flattened
+// elements that include the "bits_" prefix. This is stripped off.
+class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
+  override val elements = ListMap((elms map { case (name, data) => name.stripPrefix("bits_") -> data.cloneType }):_*)
+  override def cloneType: this.type = new PayloadRecord(elms).asInstanceOf[this.type]
+}
 
-  /*** Endpoints ***/
+class TargetBoxIO(chAnnos: Seq[FAMEChannelConnectionAnnotation],
+                  leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends Record {
+  val clock = Input(Clock())
+  val hostReset = Input(Bool())
+
+  def regenTypesFromField(name: String, tpe: firrtl.ir.Type): Seq[(String, ChLeafType)] = tpe match {
+    case firrtl.ir.BundleType(fields) => fields.flatMap(f => regenTypesFromField(prefixWith(name, f.name), f.tpe))
+    case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => Seq(name -> UInt(width.width.toInt.W))
+    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => Seq(name -> SInt(width.width.toInt.W))
+    case _ => throw new RuntimeException(s"Unexpected type in token payload: ${tpe}.")
+  }
+
+  def regenTypes(refTargets: Seq[ReferenceTarget]): Seq[(String, ChLeafType)] = {
+    val port = leafTypeMap(refTargets.head.copy(component = Seq()))
+    val fieldName = refTargets.head.component match {
+      case firrtl.annotations.TargetToken.Field(fName) :: Nil => fName
+      case firrtl.annotations.TargetToken.Field(fName) :: fields => fName
+      case _ => throw new RuntimeException("Expected only a bits field in ReferenceTarget's component.")
+    }
+
+    val bitsField = port.tpe match {
+      case a: firrtl.ir.BundleType => a.fields.filter(_.name == fieldName).head
+      case _ => throw new RuntimeException("ReferenceTargets should point at the channel's bundle.")
+    }
+
+    regenTypesFromField("", bitsField.tpe)
+  }
+
+  def regenPayloadType(refTargets: Seq[ReferenceTarget]): Data = {
+    require(!refTargets.isEmpty)
+    // Reject all (String -> Data) pairs not included in the refTargets
+    // Use this to remove target valid
+    val targetLeafNames = refTargets.map(_.component.reverse.head.value).toSet
+    val elements = regenTypes(refTargets).filter({ case (name, f)  => targetLeafNames(name) })
+    elements match {
+      case (name, field) :: Nil => field // If there's only a single field, just pass out the type
+      case elms => new PayloadRecord(elms)
+    }
+  }
+
+  def regenWireType(refTargets: Seq[ReferenceTarget]): ChLeafType = {
+    require(refTargets.size == 1, "FIXME: Handle aggregated wires")
+    regenTypes(refTargets).head._2
+  }
+
+  val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
+    // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_),Some(srcs),_) =>
+      ch -> regenPayloadType(srcs.filterNot(_ == vsrc))
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)),_,Some(sinks)) =>
+      ch -> regenPayloadType(sinks.filterNot(_ == vsink))
+  }).toMap
+
+  val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(sinks)) => ch -> regenWireType(sinks)
+  }).toMap
+
+  val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
+  // _1 => Source port, _2 => Sink Port.
+  // (Some, None) -> Source channel
+  // (None, Some) -> Sink channel
+  // (Some, Some) -> Loop back channel -> two interconnected models
+  type WirePortTuple = (Option[ReadyValidIO[Data]], Option[ReadyValidIO[Data]])
+
+  val wirePortMap: Map[FAMEChannelConnectionAnnotation, WirePortTuple] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.PipeChannel(_),sources,sinks) => {
+      val sinkP = sinks.map({ tRefs =>
+        val name = tRefs.head.ref.stripSuffix("_bits")
+        val port = Flipped(Decoupled(wireTypeMap(ch)))
+        wireElements += name -> port
+        port
+      })
+      val sourceP = sources.map({ tRefs =>
+        val name = tRefs.head.ref.stripSuffix("_bits")
+        val port = Decoupled(wireTypeMap(ch))
+        wireElements += name -> port
+        port
+      })
+      (ch -> (sourceP, sinkP))
+    }
+  }).toMap
+
+  // Tuple of forward port and reverse (backpressure) port
+  type TargetRVPortType = (ReadyValidIO[ValidIO[Data]], ReadyValidIO[Bool])
+  // A tuple of Options of the above type. _1 => source port _2 => sink port
+  // Same principle as the wire channel, now with a more complex port type
+  type TargetRVPortTuple = (Option[TargetRVPortType], Option[TargetRVPortType])
+
+  val rvElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
+
+  // Using a chAnno; look up it's associated port tuple
+  val rvPortMap: Map[FAMEChannelConnectionAnnotation, TargetRVPortTuple] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(_, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
+      val sourcePortPair = leafSources.map({ tRefs =>
+        require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
+        val validTRef: ReferenceTarget = info.validSource.getOrElse(throw new RuntimeException(
+          "Target RV port has leaves but no TRef to a validSource"))
+        val readyTRef: ReferenceTarget = info.readySink.getOrElse(throw new RuntimeException(
+           "Target RV port has leaves but no TRef to a readySink"))
+
+        val fwdName = validTRef.ref
+        val fwdPort = Decoupled(Valid(payloadTypeMap(ch)))
+        val revName = readyTRef.ref
+        val revPort = Flipped(Decoupled(Bool()))
+        rvElements ++= Seq((fwdName -> fwdPort), (revName -> revPort))
+        (fwdPort, revPort)
+      })
+
+      val sinkPortPair = leafSinks.map({ tRefs =>
+        require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
+        val validTRef: ReferenceTarget = info.validSink.getOrElse(throw new RuntimeException(
+          "Target RV port has payload sinks but no TRef to a validSink"))
+        val readyTRef: ReferenceTarget = info.readySource.getOrElse(throw new RuntimeException(
+          "Target RV port has payload sinks but no TRef to a readySource"))
+
+        val fwdName = validTRef.ref
+        val fwdPort = Flipped(Decoupled(Valid(payloadTypeMap(ch))))
+        val revName = readyTRef.ref
+        val revPort = Decoupled(Bool())
+        rvElements ++= Seq((fwdName -> fwdPort), (revName -> revPort))
+        (fwdPort, revPort)
+      })
+      ch -> (sourcePortPair, sinkPortPair)
+  }).toMap
+
+  override val elements = ListMap((wireElements ++ rvElements):_*) ++
+    // Untokenized ports
+    ListMap("clock" -> clock, "hostReset" -> hostReset)
+
+  override def cloneType: this.type = new TargetBoxIO(chAnnos, leafTypeMap).asInstanceOf[this.type]
+}
+
+class TargetBox(chAnnos: Seq[FAMEChannelConnectionAnnotation],
+               leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends BlackBox {
+  val io = IO(new TargetBoxIO(chAnnos, leafTypeMap))
+}
+
+class SimWrapperIO(val targetIo: Seq[(String, Data)],
+                   val chAnnos: Seq[FAMEChannelConnectionAnnotation])(implicit val p: Parameters) extends Record {
+  //import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
+
+  // Generate (ChLeafType -> flatName: String) tuples that identify all of the token
+  // channels on the target
+  val channelizedPorts = targetIo.map({ case (name, port) => port -> SimUtils.parsePorts(port, name, false) })
+  val portToChannelsMap = ListMap(channelizedPorts:_*)
+
+  // Need a beter name for this
+  val wireInputs:  Seq[ChTuple] = channelizedPorts flatMap { case (port, (is, _, _, _)) => is }
+  val wireOutputs: Seq[ChTuple] = channelizedPorts flatMap { case (port, (_, os, _, _)) => os }
+
+  // This gives a means to look up the the name of the channel that sinks or sources
+  // a particular element using the original data field
+  def generateChannelIO(channelDefns: Seq[ChTuple]) = channelDefns map { case (elm, name) =>
+    if (directionOf(elm) == Direction.Input) {
+      (name -> Flipped(Decoupled(elm.cloneType)))
+    } else {
+      (name -> Decoupled(elm.cloneType))
+    }
+  }
+
+  val wireInputPorts = generateChannelIO(wireInputs)
+  val wireOutputPorts = generateChannelIO(wireOutputs)
+  // Look up the token port using the name of the channel
+  val wirePortMap: ListMap[String, DecoupledIO[ChLeafType]] = ListMap((wireInputPorts ++ wireOutputPorts):_*)
+  // Look up the channel name using the ChiselType associated with it
+  val wireTypeMap: ListMap[ChLeafType, String] = ListMap((wireInputs ++ wireOutputs):_*)
+  def wireName2port(name: String): DecoupledIO[ChLeafType] = wirePortMap(name)
+  // Look up a wire port using the element from the target's port list
+  def apply(chiselType: ChLeafType): DecoupledIO[ChLeafType] = wirePortMap(wireTypeMap(chiselType))
+
+  // Ready-valid channels
+  def generateRVChannelIO(channelDefns: Seq[RVChTuple]) = channelDefns.map({ case (rv, name) =>
+    if (directionOf(rv.valid) == Direction.Input) {
+      (name -> Flipped(SimReadyValid(rv.bits.cloneType)))
+    } else {
+      (name -> SimReadyValid(rv.bits.cloneType))
+    }
+  })
+
+  val readyValidInputs:  Seq[RVChTuple] = channelizedPorts flatMap { case (port, (_, _, rvis, _)) => rvis }
+  val readyValidOutputs: Seq[RVChTuple] = channelizedPorts flatMap { case (port, (_, _, _, rvos)) => rvos }
+
+  val readyValidInputPorts : Seq[(String, SimReadyValidIO[Data])] = generateRVChannelIO(readyValidInputs)
+  val readyValidOutputPorts: Seq[(String, SimReadyValidIO[Data])] = generateRVChannelIO(readyValidOutputs)
+  val readyValidInMap: ListMap[ReadyValidIO[Data], SimReadyValidIO[Data]] = ListMap((readyValidInputs.zip(readyValidInputPorts)).map({
+      case (defn, port) => defn._1 -> port._2 }):_*)
+  val readyValidOutMap : ListMap[ReadyValidIO[Data], SimReadyValidIO[Data]] = ListMap((readyValidOutputs.zip(readyValidOutputPorts)).map({
+      case (defn, port) => defn._1 -> port._2 }):_*)
+  val readyValidMap: ListMap[ReadyValidIO[Data], SimReadyValidIO[Data]] = readyValidInMap ++ readyValidOutMap
+  // Look up a channel port using the target's RV port
+  def apply(rv: ReadyValidIO[Data]): SimReadyValidIO[Data] = readyValidMap(rv)
+  val readyValidPortMap = ListMap((readyValidInputPorts ++ readyValidOutputPorts):_*)
+
+  ///*** Endpoints ***/
   val endpointMap = p(EndpointKey)
   val endpoints = endpointMap.endpoints
   private def findEndpoint(name: String, data: Data) {
@@ -106,9 +319,7 @@ class SimWrapperIO(io: TargetBoxIO)
       }
     }
   }
-  io.elements.foreach({ case (name, data) => findEndpoint(name, data)})
-
-  val (inputs, outputs) = parsePorts(io)
+  targetIo.foreach({ case (name, port) => findEndpoint(name, port)})
 
   /*** Wire Channels ***/
   val endpointWires = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
@@ -116,266 +327,189 @@ class SimWrapperIO(io: TargetBoxIO)
     data.elements.toSeq flatMap {
       case (name, rv: ReadyValidIO[_]) => Nil
       case (name, wires) =>
-        val (ins, outs) = SimUtils.parsePorts(wires)
+        val (ins, outs, _, _) = SimUtils.parsePorts(wires)
         (ins ++ outs).unzip._1
     }
   })).toSet
-  val wireInputs = inputs filterNot { case (wire, name) =>
-    (endpoints exists (_(wire))) && !endpointWires(wire) }
-  val wireOutputs = outputs filterNot { case (wire, name) =>
-    (endpoints exists (_(wire))) && !endpointWires(wire) }
-  val pokedInputs = wireInputs filterNot (x => endpointWires(x._1))
-  val peekedOutputs = wireOutputs filterNot (x => endpointWires(x._1))
-  val inWireChannelNum = getChunks(wireInputs.unzip._1)
-  val outWireChannelNum = getChunks(wireOutputs.unzip._1)
-  // FIXME: aggregate doesn't have a type without leaf
-  val wireIns =
-    if (inWireChannelNum > 0) Flipped(Vec(inWireChannelNum, Decoupled(UInt(channelWidth.W))))
-    else Input(Vec(inWireChannelNum, Decoupled(UInt(channelWidth.W))))
-  //
-  // FIXME: aggregate doesn't have a type without leaf
-  val wireOuts =
-    if (outWireChannelNum > 0) Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W)))
-    else Output(Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W))))
-  //
-  val wireInMap = genIoMap(wireInputs)
-  val wireOutMap = genIoMap(wireOutputs)
-  def getIns(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
-    case (wire, id) => (0 until getChunks(wire)) map (off => wireIns(id+off))
-  }
-  def getOuts(arg: (Bits, Int)): Seq[DecoupledIO[UInt]] = arg match {
-    case (wire, id) => (0 until getChunks(wire)) map (off => wireOuts(id+off))
-  }
-  def getIns(wire: Bits): Seq[DecoupledIO[UInt]] = getIns(wire -> wireInMap(wire))
-  def getOuts(wire: Bits): Seq[DecoupledIO[UInt]] = getOuts(wire -> wireOutMap(wire))
-
-  /*** ReadyValid Channels ***/
-  val readyValidInputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-    val (prefix, data) = ep(i)
-    data.elements.toSeq collect { case (name, rv: ReadyValidIO[_])
-      if directionOf(rv.valid) == ActualDirection.Input => s"${prefix}_${name}" -> rv
-    }
-  })
-  val readyValidOutputs = endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
-    val (prefix, data) = ep(i)
-    data.elements.toSeq collect { case (name, rv: ReadyValidIO[_])
-      if directionOf(rv.valid) == ActualDirection.Output => s"${prefix}_${name}" -> rv
-    }
-  })
-  // FIXME: aggregate doesn't have a type without leaf
-  val readyValidIns =
-    if (readyValidInputs.nonEmpty) new SimReadyValidRecord(readyValidInputs)
-    else Input(new SimReadyValidRecord(readyValidInputs))
-  val readyValidOuts =
-    if (readyValidOutputs.nonEmpty) new SimReadyValidRecord(readyValidOutputs)
-    else Output(new SimReadyValidRecord(readyValidOutputs))
-  //
-  val readyValidInMap = (readyValidInputs.unzip._2 zip readyValidIns.elements).toMap
-  val readyValidOutMap = (readyValidOutputs.unzip._2 zip readyValidOuts.elements).toMap
-  val readyValidMap = readyValidInMap ++ readyValidOutMap
-
-  /*** Instrumentation ***/
-  val daisy = new strober.core.DaisyBundle(daisyWidth, sramChainNum)
-  val traceLen = Input(UInt(log2Up(traceMaxLen + 1).W))
-  val wireInTraces = 
-    if (inWireChannelNum > 0) Vec(inWireChannelNum, Decoupled(UInt(channelWidth.W)))
-    else Output(Vec(inWireChannelNum, Decoupled(UInt(channelWidth.W))))
-  val wireOutTraces =
-    if (outWireChannelNum > 0) Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W)))
-    else Output(Vec(outWireChannelNum, Decoupled(UInt(channelWidth.W))))
-  //
-
-  // FIXME: aggregate doesn't have a type without leaf
-  val readyValidInTraces =
-    if (readyValidOutputs.nonEmpty) new ReadyValidTraceRecord(readyValidInputs)
-    else Output(new ReadyValidTraceRecord(readyValidInputs))
-  val readyValidOutTraces =
-    if (readyValidOutputs.nonEmpty) new ReadyValidTraceRecord(readyValidOutputs)
-    else Output(new ReadyValidTraceRecord(readyValidOutputs))
-  //
-
-  override def cloneType: this.type =
-    new SimWrapperIO(io).asInstanceOf[this.type]
-}
-
-class TargetBoxIO(targetIo: Seq[(String, Data)]) extends Record {
-  // ChiselTypeOf is more strict; rely on chiselCloneType behavior defaulting
-  // to output for pass-added target-IO for now
-  val elements = ListMap((targetIo map { case (name, field) => name -> field.chiselCloneType}):_*)
-  def resets = elements collect { case (_, r: Reset) => r }
-  def clocks = elements collect { case (_, c: Clock) => c }
-  def cloneType = new TargetBoxIO(targetIo).asInstanceOf[this.type]
-}
-
-// this gets replaced with the real target
-class TargetBox(targetIo: Seq[(String, Data)]) extends BlackBox {
-  val io = IO(new TargetBoxIO(targetIo))
-}
-
-class SimBox(simIo: SimWrapperIO)
-            (implicit val p: Parameters)
-             extends BlackBox with HasSimWrapperParams {
-  val io = IO(new Bundle {
-    val clock = Input(Clock())
-    val reset = Input(Bool())
-    val io = simIo.cloneType
-  })
-}
-
-class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, Data)])
-                (implicit val p: Parameters) extends Module with HasSimWrapperParams {
-  val target = Module(new TargetBox(targetIo ++ generatedTargetIo))
-  val io = IO(new SimWrapperIO(target.io))
-  val fire = Wire(Bool())
-
-  target.io.clocks foreach (_ := clock)
-
-  val targetResets = ArrayBuffer[UInt]()
 
   /*** Wire Channels ***/
-  val wireInChannels: Seq[WireChannel] = io.wireInputs flatMap genWireChannels
-  val wireOutChannels: Seq[WireChannel] = io.wireOutputs flatMap genWireChannels
+  val endpointRVs = (endpoints flatMap (ep => (0 until ep.size) flatMap { i =>
+      val (prefix, data) = ep(i)
+      val (_, _, rvis, rvos) = SimUtils.parsePorts(data)
+      (rvis ++ rvos).unzip._1
+    }
+  )).toSet
 
-  (wireInChannels zip io.wireIns) foreach { case (channel, in) => channel.io.in <> in }
-  (io.wireInputs foldLeft 0)(connectInput(_, _, wireInChannels, fire))
+  // Inputs that are not target decoupled
+  val pokedInputs = wireInputs filterNot (x => endpointWires(x._1))
+  val peekedOutputs = wireOutputs filterNot (x => endpointWires(x._1))
+  val pokedReadyValidInputs = readyValidInputs filterNot (x => endpointRVs(x._1))
+  val peekedReadyValidOutputs = readyValidOutputs filterNot (x => endpointRVs(x._1))
 
-  (io.wireOuts zip wireOutChannels) foreach { case (out, channel) => out <> channel.io.out }
-  (io.wireOutputs foldLeft 0)(connectOutput(_, _, wireOutChannels))
+  override val elements = wirePortMap ++
+    ListMap((readyValidInputPorts ++ readyValidOutputPorts):_*)
 
-  if (enableSnapshot) {
-    (io.wireInTraces zip wireInChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
-    (io.wireOutTraces zip wireOutChannels) foreach { case (tr, channel) => tr <> channel.io.trace }
-  } else {
-    io.wireInTraces foreach (_ := DontCare)
-    io.wireOutTraces foreach (_ := DontCare)
+  override def cloneType: this.type =
+    new SimWrapperIO(targetIo, chAnnos).asInstanceOf[this.type]
+}
+
+class SimBox(simIo: SimWrapperIO) (implicit val p: Parameters) extends BlackBox with HasSimWrapperParams {
+  val io = IO(new Bundle {
+    val channelPorts = simIo.cloneType
+    val reset = Input(Bool())
+    val hostReset = Input(Bool())
+    val clock = Input(Clock())
+  })
+}
+
+class SimWrapper(targetIo: Seq[(String, Data)],
+                 generatedTargetIo: Seq[(String, Data)],
+                 chAnnos: Seq[FAMEChannelConnectionAnnotation],
+                 leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
+
+
+  // HACK: We need actual hardware for SimUtils.parsePorts to work -> so create
+  // a dummy module with the added ports bound as its IO
+  // This can be cleaned up when we rework endpoint
+  val boundGeneratedTargetIO: Seq[(String, Data)] =  {
+    class DummyIO(val generatedTargetIo: Seq[(String, Data)]) extends Record {
+      val elements = ListMap((generatedTargetIo.map({ case(name, elm) => name -> elm.cloneType })):_*)
+      override def cloneType: this.type = new DummyIO(generatedTargetIo).asInstanceOf[this.type]
+    }
+
+    class Dummy extends Module {
+      val io = IO(new DummyIO(generatedTargetIo))
+      io <> DontCare
+    }
+    val dummy = Module(new Dummy)
+    dummy.io <> DontCare
+    dummy.io.elements.toSeq
   }
 
-  def genWireChannels[T <: Bits](arg: (T, String)) =
-    arg match { case (port, name) =>
-      (0 until getChunks(port)) map { off =>
-        val width = scala.math.min(channelWidth, port.getWidth - off * channelWidth)
-        // Figure out the clock ratio by looking up the endpoint to which this wire belongs
-        val endpointClockRatio = io.endpoints.find(_(port)) match {
-          case Some(endpoint) => endpoint.clockRatio
-          case None => UnityClockRatio
-        }
+  val channelPorts = IO(new SimWrapperIO(targetIo ++ boundGeneratedTargetIO, chAnnos))
+  val hostReset = IO(Input(Bool()))
+  val target = Module(new TargetBox(chAnnos, leafTypeMap))
+  target.io.hostReset := reset.toBool && hostReset
+  target.io.clock := clock
+  import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
 
-        // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
-        val flipped = directionOf(port) == ActualDirection.Input
-        val channel = Module(new WireChannel(
-          width,
-          clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio
-        ))
-        // FIXME: it's not working
-        /* port match {
-          case _: Reset =>
-            targetResets += channel.io.out.bits
-          case _ =>
-        } */
-        if (!enableSnapshot) channel.io.trace := DontCare
-        if (name == "reset") targetResets += channel.io.out.bits // FIXME: it's awkward
-        channel suggestName s"WireChannel_${name}_${off}"
-        channel
-      }
-    }
-
-  def connectInput[T <: Bits](off: Int, arg: (Bits, String), inChannels: Seq[WireChannel], fire: Bool) =
-    arg match { case (wire, name) =>
-      val channels = inChannels slice (off, off + getChunks(wire))
-      wire := Cat(channels.reverse map (_.io.out.bits))
-      off + getChunks(wire)
-    }
-
-  def connectOutput[T <: Bits](off: Int, arg: (Bits, String), outChannels: Seq[WireChannel]) =
-    arg match { case (wire, name) =>
-      val channels = outChannels slice (off, off + getChunks(wire))
-      channels.zipWithIndex foreach { case (channel, i) =>
-        channel.io.in.bits := wire.asUInt() >> (i * channelWidth)
-      }
-      off + getChunks(wire)
-    }
-
-  val targetReset = (targetResets foldLeft 0.U)(_ | _)
-
-  /*** ReadyValid Channels ***/
-  val readyValidInChannels: Seq[ReadyValidChannel[_]] = io.readyValidInputs map genReadyValidChannel
-  val readyValidOutChannels: Seq[ReadyValidChannel[_]] = io.readyValidOutputs map genReadyValidChannel
-
-  (readyValidInChannels zip io.readyValidIns.elements.unzip._2) foreach {
-    case (channel, in) => channel.io.enq <> in }
-  (io.readyValidOuts.elements.unzip._2 zip readyValidOutChannels) foreach {
-    case (out, channel) => out <> channel.io.deq }
-
-  if (enableSnapshot) {
-    (io.readyValidInTraces.elements.unzip._2 zip readyValidInChannels) foreach {
-      case (tr, channel) => tr <> channel.io.trace }
-    (io.readyValidOutTraces.elements.unzip._2 zip readyValidOutChannels) foreach {
-      case (tr, channel) => tr <> channel.io.trace }
-  } else {
-    io.readyValidInTraces.elements.unzip._2 foreach (_ := DontCare)
-    io.readyValidOutTraces.elements.unzip._2 foreach (_ := DontCare)
+  def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
+    target.io.wireTypeMap(chAnno)
   }
 
-  def genReadyValidChannel[T <: Data](arg: (String, ReadyValidIO[T])) =
-    arg match { case (name, rvInterface) =>
-        // Determine which endpoint this channel belongs to by looking it up with the valid
-      val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
-        case Some(endpoint) => endpoint.clockRatio
-        case None => UnityClockRatio
-      }
+  def genPipeChannel(chAnno: FAMEChannelConnectionAnnotation, latency: Int = 1): PipeChannel[ChLeafType] = {
+    require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
+    require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
+
+    val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
+    channel suggestName s"PipeChannel_${chAnno.globalName}"
+
+    val (srcPort, sinkPort) = target.io.wirePortMap(chAnno)
+    srcPort match {
+      case Some(srcP) => channel.io.in <> srcP
+      case None => channel.io.in <> channelPorts.elements(chAnno.globalName)
+    }
+
+    sinkPort match {
+      case Some(sinkP) => sinkP <> channel.io.out
+      case None => channelPorts.elements(chAnno.globalName) <> channel.io.out
+    }
+
+    channel.io.trace.ready := DontCare
+    channel.io.traceLen := DontCare
+    channel
+  }
+
+  def bindOutputRVChannel[T <: Data](enq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
+    val (fwdPort, revPort) = target.io.rvPortMap(chAnno)._1.get // Get the source-port pair
+    enq.fwd.hValid   := fwdPort.valid
+    enq.target.valid := fwdPort.bits.valid
+    enq.target.bits  := fwdPort.bits.bits  // Yeah, i know
+    fwdPort.ready := enq.fwd.hReady
+
+    // Connect up the target-ready token channel
+    revPort.valid := enq.rev.hValid
+    revPort.bits  := enq.target.ready
+    enq.rev.hReady := revPort.ready
+  }
+
+  def bindInputRVChannel[T <: Data](deq: SimReadyValidIO[T], chAnno: FAMEChannelConnectionAnnotation) {
+    val (fwdPort, revPort) = target.io.rvPortMap(chAnno)._2.get // Get the sink-port pair
+    deq.fwd.hReady := fwdPort.ready
+    fwdPort.valid      := deq.fwd.hValid
+    fwdPort.bits.valid := deq.target.valid
+    fwdPort.bits.bits  := deq.target.bits
+
+    // Connect up the target-ready token channel
+    deq.rev.hValid   := revPort.valid
+    deq.target.ready := revPort.bits
+    revPort.ready := deq.rev.hReady
+  }
+
+  def getReadyValidChannelType(chAnno: FAMEChannelConnectionAnnotation): Data = {
+    target.io.payloadTypeMap(chAnno)
+  }
+
+  def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
+    val strippedName = chAnno.globalName.stripSuffix("_fwd")
+      // Determine which endpoint this channel belongs to by looking it up with the valid
+      //val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
+      //  case Some(endpoint) => endpoint.clockRatio
+      //  case None => UnityClockRatio
+      //}
+      val endpointClockRatio = UnityClockRatio // TODO: FIXME
       // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
-      val flipped = directionOf(rvInterface.valid) == ActualDirection.Input
-      val channel = ReadyValidChannel(
-        rvInterface.bits.cloneType,
-        flipped,
-        clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio  
-      )
+      val channel = Module(new ReadyValidChannel(getReadyValidChannelType(chAnno).cloneType))
 
-      channel suggestName s"ReadyValidChannel_$name"
+      channel.suggestName(s"ReadyValidChannel_$strippedName")
 
-      if (flipped) {
-        rvInterface <> channel.io.deq.target
-      } else {
-        channel.io.enq.target <> rvInterface
+      chAnno.sources match {
+        case Some(_) => bindOutputRVChannel(channel.io.enq, chAnno)
+        case None => channel.io.enq <> channelPorts.readyValidPortMap(strippedName)
       }
 
-      if (!enableSnapshot) channel.io.trace := DontCare
-      channel.io.targetReset.bits := targetReset
-      channel.io.targetReset.valid := fire
+      chAnno.sinks match {
+        case Some(_) => bindInputRVChannel(channel.io.deq, chAnno)
+        case None => channelPorts.readyValidPortMap(strippedName) <> channel.io.deq
+      }
+
+      channel.io.trace := DontCare
+      channel.io.traceLen := DontCare
+      channel.io.targetReset.bits := false.B
+      channel.io.targetReset.valid := true.B
       channel
-    }
-
-  // Control
-  // Firing condtion:
-  // 1) all input values are valid
-  // 2) all output FIFOs are not full
-  fire := (wireInChannels foldLeft true.B)(_ && _.io.out.valid) &&
-          (wireOutChannels foldLeft true.B)(_ && _.io.in.ready) &&
-          (readyValidInChannels foldLeft true.B)(_ && _.io.deq.host.hValid) &&
-          (readyValidOutChannels foldLeft true.B)(_ && _.io.enq.host.hReady)
-
-  // Inputs are consumed when firing conditions are met
-  wireInChannels foreach (_.io.out.ready := fire)
-  readyValidInChannels foreach (_.io.deq.host.hReady := fire)
-
-  // Outputs should be ready when firing conditions are met, inject an intial
-  // token into each output queue after reset is asserted
-  val resetNext = RegNext(reset.toBool)
-  wireOutChannels foreach (_.io.in.valid := fire || resetNext)
-  readyValidOutChannels foreach (_.io.enq.host.hValid := fire || resetNext)
-
-  // Trace size is runtime configurable
-  wireInChannels foreach (_.io.traceLen := io.traceLen)
-  wireOutChannels foreach (_.io.traceLen := io.traceLen)
-  readyValidInChannels foreach (_.io.traceLen := io.traceLen)
-  readyValidOutChannels foreach (_.io.traceLen := io.traceLen)
-
-  io.daisy := DontCare // init daisy output
-
-  // Cycles for debug
-  val cycles = Reg(UInt(64.W))
-  when (fire) {
-    // cycles := Mux(target.io.reset, 0.U, cycles + 1.U)
-    when(false.B) { printf("%d", cycles) }
   }
+
+  // Generate all ready-valid channels
+  val rvChannels = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
+  })
+
+  // Generate all wire channels, excluding reset
+  chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_) if name != "reset"  => genPipeChannel(ch, latency)
+  })
+
+  val resetChannel = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(_),_,_) if name == "reset"  => genPipeChannel(ch, 0)
+  }).get
+
+  val resetPort = channelPorts.wireName2port("reset")
+  // Fan out targetReset tokens to all target-stateful channels
+  val tResetQueues = rvChannels.map(_ => Module(new Queue(Bool(), 2)))
+  val tResetHelper = DecoupledHelper((
+    tResetQueues.map(_.io.enq.ready) :+
+    resetChannel.io.in.ready :+
+    resetPort.valid):_*)
+
+  (rvChannels.zip(tResetQueues)).foreach({ case (channel, resetQueue) =>
+    channel.io.targetReset <> resetQueue.io.deq
+    resetQueue.io.enq.bits := resetPort.bits
+    resetQueue.io.enq.valid := tResetHelper.fire
+  })
+  // Override the connections generated in genPipeChannel which assume the
+  // reset token is not fanning out
+  resetChannel.io.in.valid := tResetHelper.fire
+  resetPort.ready := tResetHelper.fire(resetPort.valid)
+
 }

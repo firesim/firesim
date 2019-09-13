@@ -11,8 +11,8 @@ import freechips.rocketchip.amba.axi4._
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
+import chisel3.experimental.{Direction}
+import chisel3.experimental.DataMirror.{directionOf}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,6 +33,16 @@ object AXI4BundleWithEdge {
   def fromNode(ports: Seq[(AXI4Bundle, AXI4EdgeParameters)]): Seq[AXI4BundleWithEdge] = ports.map({ 
     case (bundle, edge) => new AXI4BundleWithEdge(bundle.params, edge)
   })
+//  // Finds all of the target ReadyValid bundles sourced or sunk by the target
+//  // input => sunk by the target
+//  private def findRVChannels(dir: Direction): Seq[(String, ReadyValidIO[Data])] =
+//    channels.flatMap({ case (prefix, data) => data.elements.toSeq.collect({
+//        case (name, rv: ReadyValidIO[_]) if directionOf(rv.valid) == dir => s"${prefix}_${name}" -> rv
+//      })
+//  })
+//
+//  lazy val readyValidOutputs = findRVChannels(Direction.Output)
+//  lazy val readyValidInputs = findRVChannels(Direction.Input)
 }
 
 
@@ -87,7 +97,7 @@ class FASEDNastiEndpoint(
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: NastiIO =>
-      directionOf(channel.w.valid) == ActualDirection.Output
+      directionOf(channel.w.valid) == Direction.Output
     case _ => false
   }
 }
@@ -97,7 +107,7 @@ class FASEDAXI4Endpoint(
   ) extends SimMemIO {
   def matchType(data: Data) = data match {
     case channel: AXI4Bundle =>
-      directionOf(channel.w.valid) == ActualDirection.Output
+      directionOf(channel.w.valid) == Direction.Output
     case _ => false
   }
 }
