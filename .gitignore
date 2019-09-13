@@ -8,3 +8,5 @@ project/target
 *.tmp
 *.key
 DVEfiles
+*~
+*#

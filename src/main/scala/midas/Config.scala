@@ -26,6 +26,9 @@ case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
 case object EndpointKey extends Field[EndpointMap]
 
+// MIDAS 2.0 Switches
+case object GenerateMultiCycleRamModels extends Field[Boolean](false)
+
 class SimConfig extends Config((site, here, up) => {
   case TraceMaxLen      => 1024
   case SRAMChainNum     => 1

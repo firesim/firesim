@@ -89,7 +89,18 @@ object SynthesizePrintf {
 
   def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
 
-  // TODO: Accept a printable -> need to somehow get the format string from it
+  // TODO: Accept a printable -> need to somehow get the format string from 
+}
+
+// This labels a target Mem so that it is extracted and replaced with a separate model
+case class MemModelAnnotation[T <: chisel3.Data](target: chisel3.MemBase[T])
+    extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl = FirrtlMemModelAnnotation(target.toNamed.toTarget)
+}
+
+case class FirrtlMemModelAnnotation(target: ReferenceTarget) extends
+    SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(rt: ReferenceTarget) = this.copy(target = rt)
 }
 
 case class ExcludeInstanceAssertsAnnotation(target: (String, String)) extends

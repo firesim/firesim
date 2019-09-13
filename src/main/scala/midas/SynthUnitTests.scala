@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 
-package midas
-package unittest
+package midas.unittest
 
-import core._
+import midas.core._
 
 import chisel3._
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
@@ -19,24 +18,9 @@ class WithAllUnitTests extends Config((site, here, up) => {
     implicit val p = q
     val timeout = 2000000
     Seq(
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
-      Module(new WireChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
-      Module(new WireChannelUnitTest),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(2))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(3))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(4))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = ReciprocalClockRatio(7))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(2))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(3))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(4))),
-      Module(new ReadyValidChannelUnitTest(timeout = timeout, clockRatio = IntegralClockRatio(7))),
-      Module(new ReadyValidChannelUnitTest),
+      Module(new PipeChannelUnitTest(latency = 0, timeout = timeout)),
+      Module(new PipeChannelUnitTest(latency = 1, timeout = timeout)),
+      Module(new ReadyValidChannelUnitTest(timeout = timeout)),
       Module(new CounterTableUnitTest),
       Module(new LatencyHistogramUnitTest),
       Module(new AddressRangeCounterUnitTest))
@@ -48,14 +32,14 @@ class WithTimeOutCheck extends Config((site, here, up) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
     Seq(
-      Module(new WireChannelUnitTest(timeout = 100, clockRatio = ReciprocalClockRatio(2))),
+      Module(new PipeChannelUnitTest(timeout = 100)),
     )
   }
 })
 
 // Complete configs
-class AllUnitTests extends Config(new WithAllUnitTests ++ new SimConfig)
-class TimeOutCheck extends Config(new WithTimeOutCheck ++ new SimConfig)
+class AllUnitTests extends Config(new WithAllUnitTests ++ new midas.SimConfig)
+class TimeOutCheck extends Config(new WithTimeOutCheck ++ new midas.SimConfig)
 
 // Generates synthesizable unit tests for key modules, such as simulation channels
 // See: src/main/cc/unittest/Makefile for the downstream RTL-simulation flow

@@ -13,6 +13,7 @@ import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
 import freechips.rocketchip.config.{Parameters, Field}
 import java.io.{File, FileWriter, Writer}
+import logger._
 
 // Directory into which output files are dumped. Set by dir argument
 case object OutputDir extends Field[File]
@@ -41,7 +42,8 @@ private class HostTransformCompiler extends firrtl.Compiler {
 // Custom transforms have been scheduled -> do the final lowering
 private class LastStageVerilogCompiler extends firrtl.Compiler {
   def emitter = new firrtl.VerilogEmitter
-  def transforms = Seq(new firrtl.LowFirrtlOptimization)
+  def transforms = Seq(new firrtl.LowFirrtlOptimization,
+                       new firrtl.transforms.RemoveReset)
 }
 
 object MidasCompiler {
@@ -54,7 +56,9 @@ object MidasCompiler {
       hostTransforms: Seq[Transform]    // Run post-MIDAS transformations
     )
      (implicit p: Parameters): CircuitState = {
-    val midasAnnos = Seq(InferReadWriteAnnotation)
+    val midasAnnos = Seq(
+      firrtl.TargetDirAnnotation(dir.getPath()),
+      InferReadWriteAnnotation)
     val midasTransforms = new passes.MidasTransforms(io)(p alterPartial { case OutputDir => dir })
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(

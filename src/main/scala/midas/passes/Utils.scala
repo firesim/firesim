@@ -92,6 +92,18 @@ object Utils {
     f.write(state.getEmittedCircuit.value)
     f.close
   }
+
+}
+
+// Lowers a circuitState from form A to form B, but unlike the lowering compilers
+// provided by firrtl, doesn't assume a chirrtl input form
+class IntermediateLoweringCompiler(inputForm: CircuitForm, outputForm: CircuitForm) extends firrtl.Compiler {
+  def emitter = outputForm match {
+    case LowForm  => new LowFirrtlEmitter
+    case MidForm  => new MiddleFirrtlEmitter
+    case HighForm => new HighFirrtlEmitter
+  }
+  def transforms = firrtl.CompilerUtils.getLoweringTransforms(inputForm, outputForm)
 }
 
 // Writes out the circuit to a file for debugging
