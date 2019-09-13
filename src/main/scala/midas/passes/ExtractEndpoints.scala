@@ -8,7 +8,7 @@ import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChan
 import firrtl._
 import firrtl.annotations._
 import firrtl.ir._
-import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
 import firrtl.passes.wiring.{Wiring, WiringInfo}
 import Utils._
@@ -65,15 +65,16 @@ private[passes] class EndpointExtraction extends firrtl.Transform {
 
   def getEndpointConnectivity(portInstMapping: mutable.ArrayBuffer[(String, String)],
                               insts: mutable.ArrayBuffer[(String, String)])
-                             (stmt: Statement): Statement = stmt.map(getEndpointConnectivity(portInstMapping, insts)) match {
-                               // Need to collect WDefInsts too
-    case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _), 
-                        WRef(endpointInstName, _, InstanceKind, _)) => {
-      portInstMapping += (portName -> endpointInstName)
-      c
+                             (stmt: Statement): Unit = {
+    stmt match {
+      case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _), 
+                          WRef(endpointInstName, _, InstanceKind, _)) =>
+        portInstMapping += (portName -> endpointInstName)
+      case i @ WDefInstance(_, name, module, _) if name != "realTopInst" =>
+        insts += (name -> module)
+      case o => Nil
     }
-    case i @ WDefInstance(_, name, module, _) if name != "realTopInst" => insts += (name -> module); i
-    case s => s
+    stmt.foreach(getEndpointConnectivity(portInstMapping, insts))
   }
 
   // Moves endpoint annotations from BlackBox onto newly created ports
@@ -95,7 +96,7 @@ private[passes] class EndpointExtraction extends firrtl.Transform {
 
     val portInstPairs = new mutable.ArrayBuffer[(String, String)]()
     val instList      = new mutable.ArrayBuffer[(String, String)]()
-    topModule.map(getEndpointConnectivity(portInstPairs, instList))
+    topModule.foreach(getEndpointConnectivity(portInstPairs, instList))
     val instMap = instList.toMap
 
     val ioAnnotations = portInstPairs.flatMap({ case (port, inst) =>
