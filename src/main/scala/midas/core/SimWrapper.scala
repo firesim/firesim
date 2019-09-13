@@ -7,95 +7,20 @@ package core
 import midas.widgets.EndpointIOAnnotation
 import midas.passes.fame
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel}
+import midas.core.SimUtils._
+
 // from rocketchip
-import junctions.NastiIO
-import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.{Reset}
 import chisel3.experimental.{MultiIOModule, Direction}
 import chisel3.experimental.DataMirror.directionOf
 import firrtl.annotations.{ReferenceTarget}
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer, HashSet}
+import scala.collection.mutable.{ArrayBuffer}
 
-object SimUtils {
-  type ChLeafType = Bits
-  type ChTuple = Tuple2[ChLeafType, String]
-  type RVChTuple = Tuple2[ReadyValidIO[Data], String]
-  type ParsePortsTuple = (List[ChTuple], List[ChTuple], List[RVChTuple], List[RVChTuple])
-
-  // (Some, None) -> Source channel
-  // (None, Some) -> Sink channel
-  // (Some, Some) -> Loop back channel -> two interconnected models
-  trait PortTuple[T <: Any] {
-    def source: Option[T]
-    def sink:   Option[T]
-    def isOutput(): Boolean = sink == None
-    def isInput(): Boolean = source == None
-    def isLoopback(): Boolean = source != None && sink != None
-  }
-
-  case class WirePortTuple(source: Option[ReadyValidIO[Data]], sink: Option[ReadyValidIO[Data]]) 
-      extends PortTuple[ReadyValidIO[Data]]{
-    require(source != None || sink != None)
-  }
-  // Tuple of forward port and reverse (backpressure) port
-  type TargetRVPortType = (ReadyValidIO[ValidIO[Data]], ReadyValidIO[Bool])
-  // A tuple of Options of the above type. _1 => source port _2 => sink port
-  // Same principle as the wire channel, now with a more complex port type
-  case class TargetRVPortTuple(source: Option[TargetRVPortType], sink: Option[TargetRVPortType])
-      extends PortTuple[TargetRVPortType]{
-    require(source != None || sink != None)
-  }
-
-  def rvChannelNamePair(chName: String): (String, String) = (chName + "_fwd", chName + "_rev")
-  def rvChannelNamePair(tuple: RVChTuple): (String, String) = rvChannelNamePair(tuple._2)
-
-  def prefixWith(prefix: String, base: Any): String =
-    if (prefix != "")  s"${prefix}_${base}" else base.toString
-
-  // Returns a list of input and output elements, with their flattened names
-  def parsePorts(io: Seq[(String, Data)], alsoFlattenRVPorts: Boolean): ParsePortsTuple = {
-    val inputs = ArrayBuffer[ChTuple]()
-    val outputs = ArrayBuffer[ChTuple]()
-    val rvInputs = ArrayBuffer[RVChTuple]()
-    val rvOutputs = ArrayBuffer[RVChTuple]()
-
-    def loop(name: String, data: Data): Unit = data match {
-      case c: Clock => // skip
-      case rv: ReadyValidIO[_] => (directionOf(rv.valid): @unchecked) match {
-          case Direction.Input =>  rvInputs  += (rv -> name)
-          case Direction.Output => rvOutputs += (rv -> name)
-        }
-        if (alsoFlattenRVPorts) rv.elements foreach {case (n, e) => loop(prefixWith(name, n), e)}
-      case b: Record =>
-        b.elements foreach {case (n, e) => loop(prefixWith(name, n), e)}
-      case v: Vec[_] =>
-        v.zipWithIndex foreach {case (e, i) => loop(prefixWith(name, i), e)}
-      case b: ChLeafType => (directionOf(b): @unchecked) match {
-        case Direction.Input => inputs += (b -> name)
-        case Direction.Output => outputs += (b -> name)
-
-      }
-    }
-    io.foreach({ case (name, port) => loop(name, port)})
-    (inputs.toList, outputs.toList, rvInputs.toList, rvOutputs.toList)
-  }
-
-  def parsePorts(io: Data, prefix: String = "", alsoFlattenRVPorts: Boolean = true): ParsePortsTuple =
-    parsePorts(Seq(prefix -> io), alsoFlattenRVPorts)
-
-  def parsePortsSeq(io: Seq[(String, Data)], alsoFlattenRVPorts: Boolean = true): ParsePortsTuple =
-    parsePorts(io, alsoFlattenRVPorts)
-
-}
-
-import SimUtils._
 
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
@@ -424,32 +349,7 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   })
 
   // Generate all wire channels, excluding reset
-  // TODO: This longstanding hack needs to be removed by doing channel excision on target-stateful channels
-  // the appropriate reset for that channel will then be plumbed out with the rest of the queue.
   chAnnos.collect({
     case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_)  => genPipeChannel(ch, latency)
   })
-
-  //val resetChannelName = "PeekPokeEndpoint_reset"
-  //val resetChannel = chAnnos.collectFirst({
-  //  case ch @ FAMEChannelConnectionAnnotation(name, fame.WireChannel,_,_) if name == resetChannelName  => genPipeChannel(ch, 0)
-  //}).get
-
-  //val resetPort = channelPorts.elements(resetChannelName + "_sink")
-  //// Fan out targetReset tokens to all target-stateful channels
-  //val tResetQueues = rvChannels.map(_ => Module(new Queue(Bool(), 2)))
-  //val tResetHelper = DecoupledHelper((
-  //  tResetQueues.map(_.io.enq.ready) :+
-  //  resetChannel.io.in.ready :+
-  //  resetPort.valid):_*)
-
-  //(rvChannels.zip(tResetQueues)).foreach({ case (channel, resetQueue) =>
-  //  channel.io.targetReset <> resetQueue.io.deq
-  //  resetQueue.io.enq.bits := resetPort.bits
-  //  resetQueue.io.enq.valid := tResetHelper.fire
-  //})
-  //// Override the connections generated in genWireChannel which assume the
-  //// reset token is not fanning out
-  //resetChannel.io.in.valid := tResetHelper.fire
-  //resetPort.ready := tResetHelper.fire(resetPort.valid)
 }
