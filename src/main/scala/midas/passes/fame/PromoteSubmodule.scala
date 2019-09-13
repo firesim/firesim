@@ -89,7 +89,8 @@ class PromoteSubmodule extends Transform {
     val order = reversedIGraph.linearize.filter(reversedIGraph.getEdges(_).size > 0).filter(promoted)
     val renames = RenameMap()
     for (childInstance <- order) {
-      val childModule = iGraph.moduleMap(childInstance.module)
+      // All Modules should exist in updatedModules; ExtModule lookups will fallback to to the iGraph
+      val childModule = updatedModules.getOrElse(childInstance.module, iGraph.moduleMap(childInstance.module))
       val parentInstances = reversedIGraph.getEdges(childInstance)
       val parentModule = updatedModules(parentInstances.head.module)
       val originalTarget = CircuitTarget(state.circuit.main).module(parentModule.name).instOf(childInstance.name, childInstance.module)
