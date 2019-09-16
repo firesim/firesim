@@ -350,8 +350,6 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       
       val circuitwithwidget = AddAutoCounterWidget(state.circuit.copy(modules = modulesx))  
       state.copy(circuit = fixupCircuit(circuitwithwidget, annotations = state.annotations ++ newAnnos)
-      //state.copy(circuit = fixupCircuit(state.circuit.copy(modules = modulesx ++ widgetmod)), 
-      //                     annotations = state.annotations ++ newAnnos)
       
     } else { state }
   }
