@@ -17,11 +17,11 @@ class AutoCounterBundle(val numCounters: Int) extends Bundle {
   val counters = Input(Vec(numCounters, UInt(64.W)))
 }
 
+/*
 class AutoCounterWidgetIO(val numCounters: Int)(implicit p: Parameters) extends EndpointWidgetIO()(p) {
   val hPort = Flipped(HostPort(new AutoCounterBundle(numCounters)))
 }
 
-/*
 class AutoCounterBundleEndpoint extends Endpoint {
   var numCounters = 0
   var initialized = false
@@ -43,8 +43,9 @@ class AutoCounterBundleEndpoint extends Endpoint {
 }
 */
 
-class AutoCounterWidget(numCounters: Int, labels: Seq(String))(implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new AutoCounterWidgetIO(numCounters))
+class AutoCounterWidget(numCounters: Int, labels: Seq[String])(implicit p: Parameters) extends EndpointWidget()(p) {
+  //val io = IO(new AutoCounterWidgetIO(numCounters))
+  val io = Flipped(HostPort(new AutoCounterBundle(numCounters)))
   val resume = WireInit(false.B)
   val cycles = RegInit(0.U(64.W))
   val tResetAsserted = RegInit(false.B)
