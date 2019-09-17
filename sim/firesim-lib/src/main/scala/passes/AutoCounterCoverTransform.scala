@@ -5,6 +5,7 @@ package firesim.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.passes._
+import firrtl.passes.wiring.{WiringTransform}
 import firrtl.Utils.throwInternalError
 import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
@@ -215,7 +216,8 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
    //wire the counters to the widget
    private def AddAutoCounterWidget(circuit: Circuit): Circuit = {
      val topnamespace = Namespace(circuit)
-     val instanceGraph = (new InstanceGraph(circuit)).graph
+     val instanceGraph = new InstanceGraph(circuit)
+     //val instanceGraph = (new InstanceGraph(circuit)).graph
      val numcounters = instanceGraph.findInstancesInHierarchy("AutoCounter").size
      val widgetmod = MakeAutoCounterWidget(topnamespace, numcounters, circuit)
 
