@@ -12,7 +12,7 @@ import freechips.rocketchip.config.Parameters
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
@@ -70,7 +70,7 @@ private[midas] object EndpointIOAnnotation {
 }
 
 trait IsEndpoint {
-  self: BlackBox =>
+  self: BaseModule =>
   def endpointIO: HasChannels
   def widget: (Parameters) => EndpointWidget
 
