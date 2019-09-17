@@ -64,10 +64,10 @@ class AutoCounterWidget(numCounters: Int, labels: Seq[String])(implicit p: Param
     }
   }
 
-  labels.zip(io.counterios).foreach {
-    case(label, counterio) => {
-      genROReg(counterio(31, 0), s"$label_counter_low")
-      genROReg(counterio >> 32, s"$label_counter_high")
+  labels.zip(io.counters).foreach {
+    case(label, counter) => {
+      genROReg(counter(31, 0), s"$label_counter_low")
+      genROReg(counter >> 32, s"$label_counter_high")
     }
   }
 
