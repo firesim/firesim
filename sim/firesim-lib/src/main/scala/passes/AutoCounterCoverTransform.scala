@@ -222,12 +222,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      val widgetmod = MakeAutoCounterWidget(topnamespace, numcounters, circuit)
 
      val topSort = instanceGraph.moduleOrder
-     val top = topSort.head
+     val top = topSort.head.asInstanceOf[Module]
      val widgetInstName = topnamespace.newName(s"autocounter_target_widget_inst") // Helps debug
      val widgetInst = WDefInstance(NoInfo, widgetInstName, widgetmod.name, UnknownType)
      val bodyx = Block(top.body +: Seq(widgetInst))
-     val newtop = Seq(top.copy(body = bodyx)) 
-     circuit.copy(modules = topSort.tail ++ newtop ++ widgetmod) 
+     val newtop = top.copy(body = bodyx) 
+     circuit.copy(modules = topSort.tail ++ Seq(newtop) ++ Seq(widgetmod)) 
    }
 
 
