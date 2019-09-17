@@ -81,14 +81,14 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(Flipped(new TraceOutputTop(traceProto))))
 
-  val tFire = io.hPort.toHost.hValid && io.hPort.fromHost.hReady && io.tReset.valid
+  val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
   //trigger conditions
   //TODO: trigger conditions currently assume only 1 instruction is retired every cycle
   //This work for rocket, but will not work for BOOM
 
   //Program Counter trigger value can be configured externally
-  val hostTriggerPCWidthOffset = io.hPort.hBits.traces(0)(0).iaddr.getWidth - p(CtrlNastiKey).dataBits
-  val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else io.hPort.hBits.traces(0)(0).iaddr.getWidth
+  val hostTriggerPCWidthOffset = hPort.hBits.traces(0)(0).iaddr.getWidth - p(CtrlNastiKey).dataBits
+  val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else hPort.hBits.traces(0)(0).iaddr.getWidth
   val hostTriggerPCHighWidth = if (hostTriggerPCWidthOffset > 0) hostTriggerPCWidthOffset else 0
 
   val hostTriggerPCStartHigh = RegInit(0.U(hostTriggerPCHighWidth.W))
@@ -96,7 +96,7 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
   attach(hostTriggerPCStartHigh, "hostTriggerPCStartHigh", WriteOnly)
   attach(hostTriggerPCStartLow, "hostTriggerPCStartLow", WriteOnly)
   val hostTriggerPCStart = Cat(hostTriggerPCStartHigh, hostTriggerPCStartLow)
-  val triggerPCStart = RegInit(0.U((io.hPort.hBits.traces(0)(0).iaddr.getWidth).W))
+  val triggerPCStart = RegInit(0.U((hPort.hBits.traces(0)(0).iaddr.getWidth).W))
   triggerPCStart := hostTriggerPCStart
 
   val hostTriggerPCEndHigh = RegInit(0.U(hostTriggerPCHighWidth.W))
@@ -104,7 +104,7 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
   attach(hostTriggerPCEndHigh, "hostTriggerPCEndHigh", WriteOnly)
   attach(hostTriggerPCEndLow, "hostTriggerPCEndLow", WriteOnly)
   val hostTriggerPCEnd = Cat(hostTriggerPCEndHigh, hostTriggerPCEndLow)
-  val triggerPCEnd = RegInit(0.U((io.hPort.hBits.traces(0)(0).iaddr.getWidth).W))
+  val triggerPCEnd = RegInit(0.U((hPort.hBits.traces(0)(0).iaddr.getWidth).W))
   triggerPCEnd := hostTriggerPCEnd
 
   //Cycle count trigger
@@ -139,13 +139,13 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
 
    //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
-  val hostTriggerStartInst = RegInit(0.U((io.hPort.hBits.traces(0)(0).insn.getWidth).W)) 
-  val hostTriggerStartInstMask = RegInit(0.U((io.hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerStartInst = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerStartInstMask = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
   attach(hostTriggerStartInst, "hostTriggerStartInst", WriteOnly)
   attach(hostTriggerStartInstMask, "hostTriggerStartInstMask", WriteOnly)
 
-  val hostTriggerEndInst = RegInit(0.U((io.hPort.hBits.traces(0)(0).insn.getWidth).W)) 
-  val hostTriggerEndInstMask = RegInit(0.U((io.hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerEndInst = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerEndInstMask = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
   attach(hostTriggerEndInst, "hostTriggerEndInst", WriteOnly)
   attach(hostTriggerEndInstMask, "hostTriggerEndInstMask", WriteOnly)
 
@@ -158,23 +158,23 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
   val triggerCycleCountVal = RegInit(false.B) 
   triggerCycleCountVal := (trace_cycle_counter >= triggerCycleCountStart) & (trace_cycle_counter <= triggerCycleCountEnd)
 
-  val triggerPCValVec = RegInit(VecInit(Seq.fill(io.hPort.hBits.traces.length)(false.B)))
-  for (i <- 0 until io.hPort.hBits.traces.length) {
-    when (io.hPort.hBits.traces(i)(0).valid) {
-      when (triggerPCStart === io.hPort.hBits.traces(i)(0).iaddr) {
+  val triggerPCValVec = RegInit(VecInit(Seq.fill(hPort.hBits.traces.length)(false.B)))
+  for (i <- 0 until hPort.hBits.traces.length) {
+    when (hPort.hBits.traces(i)(0).valid) {
+      when (triggerPCStart === hPort.hBits.traces(i)(0).iaddr) {
         triggerPCValVec(i) := true.B
-      } .elsewhen ((triggerPCEnd === io.hPort.hBits.traces(i)(0).iaddr) && triggerPCValVec(i)) {
+      } .elsewhen ((triggerPCEnd === hPort.hBits.traces(i)(0).iaddr) && triggerPCValVec(i)) {
         triggerPCValVec(i) := false.B
       }
     }
   }
 
-  val triggerInstValVec = RegInit(VecInit(Seq.fill(io.hPort.hBits.traces.length)(false.B)))
-  for (i <- 0 until io.hPort.hBits.traces.length) {
-    when (io.hPort.hBits.traces(i)(0).valid) {
-      when (hostTriggerStartInst === (io.hPort.hBits.traces(i)(0).insn & hostTriggerStartInstMask)) {
+  val triggerInstValVec = RegInit(VecInit(Seq.fill(hPort.hBits.traces.length)(false.B)))
+  for (i <- 0 until hPort.hBits.traces.length) {
+    when (hPort.hBits.traces(i)(0).valid) {
+      when (hostTriggerStartInst === (hPort.hBits.traces(i)(0).insn & hostTriggerStartInstMask)) {
         triggerInstValVec(i) := true.B
-      } .elsewhen (hostTriggerEndInst === (io.hPort.hBits.traces(i)(0).insn & hostTriggerEndInstMask)) {
+      } .elsewhen (hostTriggerEndInst === (hPort.hBits.traces(i)(0).insn & hostTriggerEndInstMask)) {
         triggerInstValVec(i) := false.B
       }
     }
@@ -193,7 +193,7 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
-  val uint_traces = io.hPort.hBits.traces map (trace => (UInt(0, 64.W) | Cat(trace(0).valid, trace(0).iaddr)))
+  val uint_traces = hPort.hBits.traces map (trace => (UInt(0, 64.W) | Cat(trace(0).valid, trace(0).iaddr)))
   //val uint_traces = hPort.hBits.traces map (trace => trace.asUInt)
   outgoingPCISdat.io.enq.bits := wide_cycles_counter | Cat(uint_traces)
 
