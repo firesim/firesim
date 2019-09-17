@@ -10,7 +10,8 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
-import midas.models.{AXI4BundleWithEdge, FASEDEndpoint}
+import junctions.{NastiKey, NastiParameters}
+import midas.models.{FASEDEndpoint, FasedAXI4Edge}
 import midas.widgets.{PeekPokeEndpoint}
 
 object AXI4Printf {
@@ -77,7 +78,8 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
     := fuzz.node)
 
   lazy val module = new LazyModuleImp(this) {
-    val axi4 = IO(AXI4BundleWithEdge.fromNode(slave.in).head)
+    val axi4 = IO(slave.in.head._1.cloneType)
+    val axi4Edge = slave.in.head._2
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 
@@ -94,7 +96,15 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
-    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, p(firesim.configs.MemModelKey)(p))
+    val nastiKey = NastiParameters(fuzzer.axi4.r.bits.data.getWidth,
+                                   fuzzer.axi4.ar.bits.addr.getWidth,
+                                   fuzzer.axi4.ar.bits.id.getWidth)
+
+    val fasedP = p.alterPartial({
+      case NastiKey => nastiKey
+      case FasedAXI4Edge => Some(fuzzer.axi4Edge)
+    })
+    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, fasedP(firesim.configs.MemModelKey)(fasedP))
     val peekPokeEndpoint = PeekPokeEndpoint(reset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
