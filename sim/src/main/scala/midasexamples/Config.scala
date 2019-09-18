@@ -14,43 +14,6 @@ import memblade.cache.DRAMCacheKey
 import icenet.IceNetConsts.{NET_IF_WIDTH, NET_IF_BYTES}
 import scala.math.min
 
-class WithDRAMCacheTraceGen extends Config((site, here, up) => {
-  case GroundTestTilesKey => Seq.fill(2) {
-    TraceGenParams(
-      dcache = Some(new DCacheParams(nSets = 16, nWays=1)),
-      wordBits = NET_IF_WIDTH,
-      addrBits = 40,
-      addrBag = {
-        val cacheKey = site(DRAMCacheKey)
-        val nSets = cacheKey.nSets
-        val nWays = cacheKey.nWays
-        val spanBytes = cacheKey.spanBytes
-        val blockBytes = site(CacheBlockBytes)
-        val nBlocks = min(spanBytes/blockBytes, 2)
-        val nChannels = cacheKey.nChannels
-        val nSpans = cacheKey.nBanksPerChannel * nChannels
-        List.tabulate(nWays + 1) { i =>
-          Seq.tabulate(nBlocks) { j =>
-            Seq.tabulate(nSpans) { k =>
-              BigInt(
-                (k * spanBytes) +
-                (j * blockBytes) +
-                (i * nSets * spanBytes))
-            }
-          }.flatten
-        }.flatten
-      },
-      maxRequests = 1024,
-      memStart = site(DRAMCacheKey).baseAddr,
-      numGens = 2)
-  }
-  case DRAMCacheKey => up(DRAMCacheKey).copy(
-    extentTableInit = Seq((3, 0)),
-    nSets = 1 << 10)
-})
-
-
-
 import firesim.util.DesiredHostFrequency
 import firesim.configs.WithDefaultMemModel
 
@@ -70,12 +33,3 @@ class PointerChaserConfig extends Config((site, here, up) => {
   case NastiKey => NastiParameters(dataBits = 64, addrBits = 32, idBits = 3)
   case Seed => System.currentTimeMillis
 })
-
-class DRAMCacheTraceGenConfig extends Config(
-  new WithDRAMCacheTraceGen ++
-  new WithDRAMCacheKey ++
-  new WithMemBladeKey ++
-  //new WithExtMemSize(8L << 30) ++
-  new WithoutTLMonitors ++
-  new WithNICKey ++
-  new freechips.rocketchip.system.DefaultConfig)

@@ -27,8 +27,6 @@
 #include "Stack.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
-#elif defined DESIGNNAME_DRAMCacheTraceGen
-#include "DRAMCacheTraceGen.h"
 #elif defined DESIGNNAME_PrintfModule
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
