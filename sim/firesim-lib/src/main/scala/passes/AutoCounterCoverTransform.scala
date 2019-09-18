@@ -24,6 +24,11 @@ case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, me
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 
+case class AutoCounterAnnotation(target: ReferenceTarget, label: String, message: String) extends
+    SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget) = this.copy(target = n)
+}
+
 case class AutoCounterCoverModuleAnnotation(target: ModuleTarget) extends
     SingleTargetAnnotation[ModuleTarget] {
   def duplicate(n: ModuleTarget) = this.copy(target = n)
@@ -168,12 +173,13 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
      import chisel3._
      import chisel3.util.experimental.BoringUtils
+     import chisel3.experimental.MultiIOModule
      import midas.widgets._
-     import midas.core.{HostPort}
      import freechips.rocketchip.config.{Parameters, Field}
      import firesim.endpoints.{AutoCounterBundle, AutoCounterWidget}
 
-     def targetwidgetmodule() = new BlackBox with IsEndpoint {
+     //def targetwidgetmodule() = new BlackBox with IsEndpoint {
+     def targetwidgetmodule() = new MultiIOModule with IsEndpoint {
        override def desiredName = "AutoCounterTargetWidget"
        val io = IO(new AutoCounterBundle(numcounters))
        val endpointIO = HostPort(io)
@@ -240,6 +246,10 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       case a: AutoCounterCoverAnnotation => a
     }
 
+    val autocounterannos = state.annotations.collect {
+      case a: AutoCounterAnnotation => a
+    }
+
     //select which modules do we want to actually look at, and generate counters for
     //this can be done in one of two way:
     //1. Using an input file called `covermodules.txt` in a directory declared in the transform concstructor
@@ -265,12 +275,14 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       println(covermodulesnames)
 
       //filter the cover annotations only by the modules that we want
-      val filterannos = coverannos.filter{ case AutoCounterCoverAnnotation(ReferenceTarget(_,modname,_,_,_),l,m) =>
+      val filtercoverannos = coverannos.filter{ case AutoCounterCoverAnnotation(ReferenceTarget(_,modname,_,_,_),l,m) =>
                                            covermodulesnames.contains(modname) }
 
+      val allcounterannos = filtercoverannos ++ autocounterannos
       //group the selected signal by modules, and attach label from the cover point to each signal
-      val selectedsignals = filterannos.map { case AutoCounterCoverAnnotation(target,l,m) =>
-                                              (target, l) }
+      val selectedsignals = allcounterannos.map { case AutoCounterCoverAnnotation(target,l,m) => (target, l) 
+                                                  case AutoCounterAnnotation(target,l,m) => (target, l)
+                                            }
                                    .groupBy { case (ReferenceTarget(_,modname,_,_,_), l) => modname }
 
 
