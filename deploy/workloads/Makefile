@@ -73,7 +73,7 @@ simperf-test:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
-linux-immediate-poweroff:
+linux-poweroff:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
 
@@ -120,4 +120,4 @@ coremark:
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
 	ccbench-cache-sweep flash-stress fc-test coremark \
-	linux-immediate-poweroff
+	linux-poweroff

@@ -109,16 +109,15 @@ abstract class TutorialSuite(
   mkdirs
   compile
   runTest("verilator")
-  runTest("vcs", true)
 }
 
-class PointerChaserF1Test extends TutorialSuite(
-  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
+//class PointerChaserF1Test extends TutorialSuite(
+//  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
 class GCDF1Test extends TutorialSuite("GCD")
 // Hijack Parity to test all of the Midas-level backends
 class ParityF1Test extends TutorialSuite("Parity") {
   runTest("verilator", true)
-  runTest("vcs")
+  runTest("vcs", true)
 }
 class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister")
 class ResetShiftRegisterF1Test extends TutorialSuite("ResetShiftRegister")
@@ -135,5 +134,3 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
-// MIDAS 2.0 compiler tests
-class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")

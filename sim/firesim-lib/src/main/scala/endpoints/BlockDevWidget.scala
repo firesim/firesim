@@ -63,15 +63,13 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
                                hPort.fromHost.hReady)
   val rRespStallN = Wire(Bool()) // Unset if the SW model hasn't returned the response data in time
   val wAckStallN = Wire(Bool())  // As above, but with a write acknowledgement
-  val fixMeOnNextRocketBump = true.B
   val tFireHelper = DecoupledHelper((channelCtrlSignals ++ Seq(
                                      reqBuf.io.enq.ready,
                                      dataBuf.io.enq.ready,
-                                     fixMeOnNextRocketBump,
                                      rRespStallN,
                                      wAckStallN)):_*)
 
-  val tFire = tFireHelper.fire(fixMeOnNextRocketBump) // Dummy argument to get conjunction of all signals
+  val tFire = tFireHelper.fire
   // Decoupled helper can't exclude two bools unfortunately...
   val targetReset = channelCtrlSignals.reduce(_ && _) && hPort.hBits.reset
 
@@ -80,8 +78,8 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   rRespBuf.reset  := reset.toBool || targetReset
   wAckBuf.reset  := reset.toBool || targetReset
 
-  hPort.toHost.hReady := tFireHelper.fire()
-  hPort.fromHost.hValid := tFireHelper.fire()
+  hPort.toHost.hReady := tFireHelper.fire
+  hPort.fromHost.hValid := tFireHelper.fire
 
   reqBuf.io.enq.bits := target.req.bits
   reqBuf.io.enq.valid := target.req.valid && tFireHelper.fire(reqBuf.io.enq.ready)

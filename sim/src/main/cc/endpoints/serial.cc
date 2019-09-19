@@ -65,7 +65,7 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWID
 
 serial_t::~serial_t() {
     free(this->mmio_addrs);
-    free(fesvr);
+    delete fesvr;
 }
 
 void serial_t::init() {

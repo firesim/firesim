@@ -7,6 +7,6 @@ iperf3
 check-rtc-linux
 bw-test-one-instance/*.riscv
 bw-test-two-instances/*.riscv
-linux-immediate-poweroff
+linux-poweroff
 unittest/STRESSRUNS
 /gapbs

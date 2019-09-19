@@ -1,6 +1,6 @@
 {
   "common_bootbinary" : "br-base-bin",
-  "benchmark_name" : "linux-immediate-poweroff",
+  "benchmark_name" : "linux-poweroff",
   "deliver_dir" : "/",
   "common_args" : [],
   "common_files" : [],
