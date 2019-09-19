@@ -253,47 +253,46 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
   val tResetReady = (!tReset || host_mem_idle)
 
   // decoupled helper fire currently doesn't support directly passing true/false.B as exclude
-  val temp_true_B = true.B
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
                                     hPort.fromHost.hReady,
-                                    ingressReady, bReady, rReady, tResetReady, temp_true_B)
+                                    ingressReady, bReady, rReady, tResetReady)
 
+  val targetFire = tFireHelper.fire
   // HACK: Feeding valid back on ready and ready back on valid until we figure out
   // channel tokenization
-  hPort.toHost.hReady := tFireHelper.fire(temp_true_B)
-  hPort.fromHost.hValid := tFireHelper.fire(temp_true_B)
+  hPort.toHost.hReady := tFireHelper.fire
+  hPort.fromHost.hValid := tFireHelper.fire
   ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
   model.tNasti <> tNasti
   model.reset := tReset
   // Connect up aw to ingress and model
-  ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire()
+  ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire
   ingress.io.nastiInputs.hBits.aw.bits := tNasti.aw.bits
 
   // Connect ar to ingress and model
-  ingress.io.nastiInputs.hBits.ar.valid := tNasti.ar.fire()
+  ingress.io.nastiInputs.hBits.ar.valid := tNasti.ar.fire
   ingress.io.nastiInputs.hBits.ar.bits := tNasti.ar.bits
 
   // Connect w to ingress and model
-  ingress.io.nastiInputs.hBits.w.valid := tNasti.w.fire()
+  ingress.io.nastiInputs.hBits.w.valid := tNasti.w.fire
   ingress.io.nastiInputs.hBits.w.bits := tNasti.w.bits
 
   // Connect target-level signals between egress and model
   readEgress.io.req.t := model.io.egressReq.r
-  readEgress.io.req.hValid := tFireHelper.fire(temp_true_B)
+  readEgress.io.req.hValid := targetFire
   readEgress.io.resp.tReady := model.io.egressResp.rReady
   model.io.egressResp.rBits := readEgress.io.resp.tBits
 
   writeEgress.io.req.t := model.io.egressReq.b
-  writeEgress.io.req.hValid := tFireHelper.fire(temp_true_B)
+  writeEgress.io.req.hValid := targetFire
   writeEgress.io.resp.tReady := model.io.egressResp.bReady
   model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
   ingress.reset     := reset.toBool || tReset && tFireHelper.fire(ingressReady)
-  readEgress.reset  := reset.toBool || tReset && tFireHelper.fire(temp_true_B)
-  writeEgress.reset := reset.toBool || tReset && tFireHelper.fire(temp_true_B)
+  readEgress.reset  := reset.toBool || tReset && targetFire
+  writeEgress.reset := reset.toBool || tReset && targetFire
 
-  val targetFire = tFireHelper.fire(temp_true_B)// dummy arg
 
   if (cfg.params.localHCycleCount) {
     val hCycle = RegInit(0.U(32.W))
