@@ -121,7 +121,8 @@ class DynamicLatencyPipe[T <: Data] (
   ) extends Module with HasFIFOPointers {
   val io = IO(new DynamicLatencyPipeIO(gen, entries, countBits))
 
-  assert(io.latency =/= 0.U, "DynamicLatencyPipe only supports latencies > 0")
+  // Add the implication on enq.fire to work around target reset problems for now
+  assert(!io.enq.fire || io.latency =/= 0.U, "DynamicLatencyPipe only supports latencies > 0")
   val ram = Mem(entries, gen)
   do_enq := io.enq.fire()
   do_deq := io.deq.fire()
