@@ -24,7 +24,7 @@ case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, me
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 
-case class AutoCounterAnnotation(target: ReferenceTarget, label: String, message: String) extends
+case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, message: String) extends
     SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
@@ -39,6 +39,10 @@ case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation 
   //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
   //It currently doesn't matter since the transform throws away the circuit name
   def toFirrtl =  AutoCounterCoverModuleAnnotation(ModuleTarget("",target))
+}
+
+case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
+  def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
 }
 
 class FireSimPropertyLibrary() extends BasePropertyLibrary {
@@ -247,7 +251,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     }
 
     val autocounterannos = state.annotations.collect {
-      case a: AutoCounterAnnotation => a
+      case a: AutoCounterFirrtlAnnotation => a
     }
 
     //select which modules do we want to actually look at, and generate counters for
@@ -281,7 +285,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       val allcounterannos = filtercoverannos ++ autocounterannos
       //group the selected signal by modules, and attach label from the cover point to each signal
       val selectedsignals = allcounterannos.map { case AutoCounterCoverAnnotation(target,l,m) => (target, l) 
-                                                  case AutoCounterAnnotation(target,l,m) => (target, l)
+                                                  case AutoCounterFirrtlAnnotation(target,l,m) => (target, l)
                                             }
                                    .groupBy { case (ReferenceTarget(_,modname,_,_,_), l) => modname }
 
