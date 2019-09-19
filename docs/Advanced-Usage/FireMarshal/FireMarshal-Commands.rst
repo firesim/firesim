@@ -36,6 +36,20 @@ FireMarshal will redirect much of it's output to a log file in order to keep
 standard out clean. This option instructs FireMarshal to print much more output to
 standard out (in addition to logging it).
 
+
+init
+--------------------------------------
+The init command is used to initialize a fresh clone of FireMarshal. It sets up
+the default linux kernel and initramfs source files along with any other
+one-time initialization tasks needed by FireMarshal. It is safe to run the init
+command multiple times, although you may see warnings about linux source
+patches being skipped. If you have no local changes to the default linux
+source, these should be safe to ignore.
+
+::
+
+   ./marshal init
+
 build
 --------------------------------------
 The build command is used to generate the rootfs's and boot-binaries from the

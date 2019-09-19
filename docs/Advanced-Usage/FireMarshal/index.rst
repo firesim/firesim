@@ -32,3 +32,4 @@ installed to firesim for running on real RTL.
    FireMarshal-QuickStart
    FireMarshal-Commands
    FireMarshal-Config
+   internal/index
