@@ -8,8 +8,8 @@ mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t devtmpfs none /dev
 
-if [ -e /dev/generic-blkdev ]; then
-  mount -o ro /dev/generic-blkdev /mnt/root
+if [ -e /dev/iceblk ]; then
+  mount -o ro /dev/iceblk /mnt/root
 elif [ -e /dev/vda ]; then
   mount -o ro /dev/vda /mnt/root
 else
