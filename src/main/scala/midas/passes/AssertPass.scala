@@ -148,7 +148,7 @@ private[passes] class AssertPass(
 
       val endpointAnno = EndpointIOAnnotation(
         target = portRT,
-        widget = (p: Parameters) => new AssertWidget(assertNum)(p),
+        widget = Some((p: Parameters) => new AssertWidget(assertNum)(p)),
         channelMapping = Map("" -> portName)
       )
 

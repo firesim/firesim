@@ -10,12 +10,11 @@ import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
 
-case class LatencyPipeConfig(baseParams: BaseParams)(implicit p: Parameters)
-    extends BaseConfig(baseParams)(p) {
-  def elaborate(): LatencyPipe = Module(new LatencyPipe(this))
+case class LatencyPipeConfig(params: BaseParams) extends BaseConfig {
+  def elaborate()(implicit p: Parameters): LatencyPipe = Module(new LatencyPipe(this))
 }
 
-class LatencyPipeMMRegIO(cfg: BaseConfig) extends SplitTransactionMMRegIO(cfg){
+class LatencyPipeMMRegIO(cfg: BaseConfig)(implicit p: Parameters) extends SplitTransactionMMRegIO(cfg){
   val readLatency = Input(UInt(32.W))
   val writeLatency = Input(UInt(32.W))
 

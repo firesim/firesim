@@ -47,11 +47,12 @@ case class FAMEChannelConnectionAnnotation(
   globalName: String,
   channelInfo: FAMEChannelInfo,
   sources: Option[Seq[ReferenceTarget]],
-  sinks: Option[Seq[ReferenceTarget]]) extends Annotation {
+  sinks: Option[Seq[ReferenceTarget]]) extends Annotation with HasSerializationHints {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
     Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
   }
+  def typeHints(): Seq[Class[_]] = Seq(channelInfo.getClass)
 
   def getEndpointModule(): String = sources.getOrElse(sinks.get).head.module
 

@@ -31,9 +31,10 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
 
   // Instrumentation Registers
   val bins = cfg.params.occupancyHistograms match {
-    case Some(rules) => rules.size
-    case None => 0
+    case Nil => 0
+    case binMaximums => binMaximums.size + 1
   }
+
   val readOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
   val writeOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
 
@@ -158,33 +159,37 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
     io.mmReg.totalWriteBeats foreach { _ := totalWriteBeats }
   }
 
-  cfg.params.occupancyHistograms foreach { binPredicates =>
-    val numBins = binPredicates.size
-    val readOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
-    val writeOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
+  cfg.params.occupancyHistograms match {
+    case Nil => Nil
+    case binMaximums =>
+      val numBins = binMaximums.size + 1
+      val readOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
+      val writeOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
 
-    def bindHistograms(bins: Seq[UInt], predicates: Seq[Bool]): Bool = {
-      (bins.zip(predicates)).foldLeft(false.B)({ case (hasIncrmented, (bin, pred)) =>
-        when (!hasIncrmented && pred) {
-          bin :=  bin + 1.U
-        }
-        hasIncrmented || pred
-      })
-    }
-    bindHistograms(readOutstandingHistogram, binPredicates map { _(pendingReads.value) })
-    bindHistograms(writeOutstandingHistogram, binPredicates map { _(pendingAWReq.value) })
-    io.mmReg.readOutstandingHistogram := readOutstandingHistogram
-    io.mmReg.writeOutstandingHistogram := writeOutstandingHistogram
+      def bindHistograms(bins: Seq[UInt], maximums: Seq[Int], count: UInt): Bool = {
+        (bins.zip(maximums)).foldLeft(false.B)({ case (hasIncrmented, (bin, maximum)) =>
+          when (!hasIncrmented && (count <= maximum.U)) {
+            bin :=  bin + 1.U
+          }
+          hasIncrmented || (count <= maximum.U)
+        })
+      }
+
+      // Append the largest UInt representable to the end of the Seq to catch remaining cases
+      val allBinMaximums = binMaximums :+ -1
+      bindHistograms(readOutstandingHistogram, binMaximums, pendingReads.value)
+      bindHistograms(writeOutstandingHistogram, binMaximums, pendingAWReq.value)
+      io.mmReg.readOutstandingHistogram := readOutstandingHistogram
+      io.mmReg.writeOutstandingHistogram := writeOutstandingHistogram
   }
 }
-
 
 // A class of simple timing models that has independently programmable bounds on
 // the number of reads and writes the model will accept.
 //
 // This is in contrast to more complex DRAM models that propogate backpressure
 // from shared structures back to the AXI4 request channels.
-abstract class SplitTransactionMMRegIO(cfg: BaseConfig) extends MMRegIO(cfg) {
+abstract class SplitTransactionMMRegIO(cfg: BaseConfig)(implicit p: Parameters) extends MMRegIO(cfg) {
   val readMaxReqs = Input(UInt(log2Ceil(cfg.maxReads+1).W))
   val writeMaxReqs = Input(UInt(log2Ceil(cfg.maxWrites+1).W))
 

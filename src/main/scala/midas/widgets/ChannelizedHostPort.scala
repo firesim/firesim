@@ -11,7 +11,7 @@ import chisel3.experimental.DataMirror.directionOf
 
 import scala.collection.mutable
 
-abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extends Record with HasChannels {
+abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extends TokenizedRecord {
   // Call in port definition to register a field as belonging to a unique channel
   def InputChannel[T <: Data](field: T) = channel(Direction.Input)(field)
   def OutputChannel[T <: Data](field: T) = channel(Direction.Output)(field)

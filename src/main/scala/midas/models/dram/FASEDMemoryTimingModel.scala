@@ -16,6 +16,7 @@ import chisel3.experimental.dontTouch
 import midas.core._
 import midas.widgets._
 import midas.passes.{Fame1ChiselAnnotation}
+import midas.passes.fame.{HasSerializationHints}
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}
@@ -23,7 +24,7 @@ import Console.{UNDERLINED, RESET}
 import java.io.{File, FileWriter}
 
 // Note: NASTI -> legacy rocket chip implementation of AXI4
-case object FasedAXI4Edge extends Field[Option[AXI4EdgeParameters]](None)
+case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
 
 case class BaseParams(
   // Pessimistically provisions the functional model. Don't be cheap:
@@ -31,6 +32,8 @@ case class BaseParams(
   // target AW. W or R channels, which may lead to unexpected bandwidth throttling.
   maxReads: Int,
   maxWrites: Int,
+  nastiKey: Option[NastiParameters] = None,
+  edge: Option[AXI4EdgeParameters] = None,
 
   // AREA OPTIMIZATIONS:
   // AXI4 bursts(INCR) can be 256 beats in length -- some
@@ -58,28 +61,21 @@ case class BaseParams(
   xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
   beatCounters: Boolean = false, // Numbers of read and write beats in AXI4 xactions
   targetCycleCounter: Boolean = false, // Redundant in a full simulator; useful for testing
-  // Number of xactions in flight in a given cycle or Some(Number of Bins)
-  occupancyHistograms: Option[Seq[(UInt) => Bool]] = Some(
-    Seq({ _ === 0.U},
-        { _ <  2.U},
-        { _ <  4.U},
-        { _ <  8.U},
-        { x => true.B })
-  ),
 
+  // Number of xactions in flight in a given cycle. Bin N contains the range
+  // (occupancyHistograms[N-1], occupancyHistograms[N]]
+  occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
   addrRangeCounters: BigInt = BigInt(0)
 )
+// A serializable summary of the diplomatic edge
+case class AXI4EdgeSummary(
+  maxReadTransfer: Int,
+  maxWriteTransfer: Int,
+  idReuse: Option[Int],
+  maxFlight: Option[Int],
+)
 
-abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) {
-
-  // Returns (maxReadLength, maxWriteLength)
-  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
-    val beatBytes = e.slave.beatBytes
-    val readXferSize  = e.slave.slaves.head.supportsRead.max
-    val writeXferSize = e.slave.slaves.head.supportsWrite.max
-    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
-  }
-
+object AXI4EdgeSummary {
   // Returns max ID reuse; None -> unbounded
   private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
     val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
@@ -87,6 +83,13 @@ abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) {
       case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
       case _ => None
     })
+  }
+  // Returns (maxReadLength, maxWriteLength)
+  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
+    val beatBytes = e.slave.beatBytes
+    val readXferSize  = e.slave.slaves.head.supportsRead.max
+    val writeXferSize = e.slave.slaves.head.supportsWrite.max
+    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
   }
 
   // Sums up the maximum number of requests that can be inflight across all masters
@@ -99,41 +102,50 @@ abstract class BaseConfig(val params: BaseParams)(implicit p: Parameters) {
     })
   }
 
-  private def getMaxPerID(e: Option[AXI4EdgeParameters], modelMaxXactions: Int, userMax: Option[Int]): Int = {
-    e.flatMap(getIDReuseFromEdge)
-     .getOrElse(min(userMax.getOrElse(modelMaxXactions), modelMaxXactions))
+  def apply(e: AXI4EdgeParameters): AXI4EdgeSummary = AXI4EdgeSummary(
+    getMaxTransferFromEdge(e)._1,
+    getMaxTransferFromEdge(e)._2,
+    getIDReuseFromEdge(e),
+    getMaxTotalFlightFromEdge(e))
+}
+
+abstract class BaseConfig {
+  def params: BaseParams
+
+  private def getMaxPerID(e: Option[AXI4EdgeSummary], modelMaxXactions: Int, userMax: Option[Int])(implicit p: Parameters): Int = {
+    e.flatMap(_.idReuse).getOrElse(min(userMax.getOrElse(modelMaxXactions), modelMaxXactions))
   }
 
-  def maxReadLength = p(FasedAXI4Edge) match {
-    case Some(e) => getMaxTransferFromEdge(e)._1
+  def maxReadLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => e.maxReadTransfer
     case _ => params.maxReadLength
   }
 
-  def maxWriteLength = p(FasedAXI4Edge) match {
-    case Some(e) => getMaxTransferFromEdge(e)._2
+  def maxWriteLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
+    case Some(e) => e.maxWriteTransfer
     case _ => params.maxWriteLength
   }
 
-  def maxWritesPerID = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
-  def maxReadsPerID = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
+  def maxWritesPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
+  def maxReadsPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
 
-  def maxWrites = {
-    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxWrites)
+  def maxWrites(implicit p: Parameters) = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(_.maxFlight).getOrElse(params.maxWrites)
     min(params.maxWrites, maxFromEdge)
   }
 
-  def maxReads = {
-    val maxFromEdge = p(FasedAXI4Edge).flatMap(getMaxTotalFlightFromEdge).getOrElse(params.maxReads)
+  def maxReads(implicit p: Parameters) = {
+    val maxFromEdge = p(FasedAXI4Edge).flatMap(_.maxFlight).getOrElse(params.maxReads)
     min(params.maxReads, maxFromEdge)
   }
 
   def useLLCModel = params.llcKey != None
 
   // Timing model classes implement this function to elaborate the correct module
-  def elaborate(): TimingModel
+  def elaborate()(implicit p: Parameters): TimingModel
 
-  def maxWritesBits = log2Up(maxWrites)
-  def maxReadsBits = log2Up(maxReads)
+  def maxWritesBits(implicit p: Parameters) = log2Up(maxWrites)
+  def maxReadsBits(implicit p: Parameters) = log2Up(maxReads)
 }
 
 
@@ -162,10 +174,27 @@ class MemModelIO(implicit val p: Parameters) extends WidgetIO()(p){
   val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
 }
 
-class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends EndpointWidget()(p) {
+// Need to wrap up all the parameters in a case class for serialization. The edge and width
+// were previously passed in via the target's Parameters object
+case class CompleteConfig(
+    userProvided: BaseConfig,
+    axi4Widths: NastiParameters,
+    axi4Edge: Option[AXI4EdgeSummary] = None) extends HasSerializationHints {
+  def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
+}
+
+class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends EndpointWidget[HostPortIO[FASEDTargetIO]]()(hostParams) {
+  val cfg = completeConfig.userProvided
+  // Reconstitute the parameters object
+  implicit override val p = hostParams.alterPartial({
+    case NastiKey => completeConfig.axi4Widths
+    case FasedAXI4Edge => completeConfig.axi4Edge
+  })
+
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
   )
+
   val io = IO(new MemModelIO)
   val hPort = IO(HostPort(new FASEDTargetIO))
   val tNasti = hPort.hBits.axi4
@@ -529,16 +558,17 @@ class FASEDMemoryTimingModel(cfg: BaseConfig)(implicit p: Parameters) extends En
   }
 }
 
-class FASEDEndpoint(cfg: BaseConfig)(implicit p: Parameters) extends BlackBox with IsEndpoint {
+class FASEDEndpoint(argument: CompleteConfig)(implicit p: Parameters)
+    extends BlackBox with Endpoint[HostPortIO[FASEDTargetIO], FASEDMemoryTimingModel] {
   val io = IO(new FASEDTargetIO)
   val endpointIO = HostPort(io)
-  def widget = (hostP: Parameters) => new FASEDMemoryTimingModel(cfg)(p ++ hostP)
+  val constructorArg = Some(argument)
   generateAnnotations()
 }
 
 object FASEDEndpoint {
-  def apply(axi4: AXI4Bundle, reset: Bool, cfg: BaseConfig)(implicit p: Parameters): FASEDEndpoint = {
-    val ep = Module(new FASEDEndpoint(cfg))
+  def apply(axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDEndpoint = {
+    val ep = Module(new FASEDEndpoint(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
     ep.io.reset := reset
     import chisel3.core.ExplicitCompileOptions.NotStrict
     ep.io.axi4 <> axi4

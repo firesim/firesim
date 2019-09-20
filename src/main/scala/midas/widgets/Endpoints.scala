@@ -5,79 +5,55 @@ package widgets
 
 import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
-
-import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
 
 import freechips.rocketchip.config.Parameters
 
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
-import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
+import firrtl.annotations.{ReferenceTarget}
 
-import scala.collection.mutable
-import scala.collection.immutable.ListMap
+import scala.reflect.runtime.{universe => ru}
 
 /* Endpoint
  *
  * Endpoints are widgets that operate directly on token streams moving to and
  * from the transformed-RTL model.
  *
- * Endpoints extend Widget to add an IO that includes a HostPort[T <: Data] which
- * contains bidriectional channels for token-flow moving from the transformed-RTL
- * model to the endpoint ("toHost"), and from the endpoint to the transformed
- * RTL model ("fromHost")
- *
- * Endpoints must also define a matcher-class that extends "trait Endpoint"
- * This guides MIDAS during platform-mapping, by matching on ports on the transformed-RTL 
- * whose Chisel-type matches the the Chisel-type of your endpoint's HostPort
- * and thus, which token streams, should be connected to your Endpoint. carried
- * by token
  */
 
-abstract class EndpointWidget(implicit p: Parameters) extends Widget()(p) {
-  def hPort: Record with HasChannels // Tokenized port moving between the endpoint the target-RTL
+abstract class TokenizedRecord extends Record with HasChannels
+
+abstract class EndpointWidget[HostPortType <: TokenizedRecord]
+  (implicit p: Parameters) extends Widget()(p) {
+  def hPort: HostPortType
 }
 
-case class EndpointAnnotation(
-  val target: ModuleTarget,
-  widget: (Parameters) => EndpointWidget,
-  channelNames: Seq[String]) extends SingleTargetAnnotation[ModuleTarget] {
-  def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String): EndpointIOAnnotation = {
-    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
-    EndpointIOAnnotation(target.copy(module = target.circuit).ref(port), widget, channelMapping.toMap)
-   }
- }
-
-private[midas] case class EndpointIOAnnotation(
-    val target: ReferenceTarget,
-    widget: (Parameters) => EndpointWidget,
-    channelMapping: Map[String, String]) extends SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target)
-  def channelNames = channelMapping.map(_._2)
-}
-
-
-private[midas] object EndpointIOAnnotation {
-  // Useful when a pass emits these annotations directly; (they aren't promoted from EndpointAnnotation)
-  def apply(target: ReferenceTarget,
-            widget: (Parameters) => EndpointWidget,
-            channelNames: Seq[String]): EndpointIOAnnotation =
-   EndpointIOAnnotation(target, widget, channelNames.map(p => p -> p).toMap)
-}
-
-trait IsEndpoint {
+trait Endpoint[HPType <: TokenizedRecord, WidgetType <: EndpointWidget[HPType]] {
   self: BaseModule =>
-  def endpointIO: HasChannels
-  def widget: (Parameters) => EndpointWidget
+  def constructorArg: Option[_ <: AnyRef]
+  def endpointIO: HPType
 
   def generateAnnotations(): Unit = {
+
+    // Adapted from https://medium.com/@giposse/scala-reflection-d835832ed13a
+    val mirror = ru.runtimeMirror(getClass.getClassLoader)
+    val classType = mirror.classSymbol(getClass)
+    // The base class here is Endpoint, but it has not yet been parameterized. 
+    val baseClassType = ru.typeOf[Endpoint[_,_]].typeSymbol.asClass
+    // Now this will be the type-parameterized form of Endpoint
+    val baseType = ru.internal.thisType(classType).baseType(baseClassType)
+    val widgetClassSymbol = baseType.typeArgs(1).typeSymbol.asClass
+
     // Generate the endpoint annotation
-    annotate(new ChiselAnnotation { def toFirrtl =
-      EndpointAnnotation(self.toNamed.toTarget, widget, endpointIO.allChannelNames)
+    annotate(new ChiselAnnotation { def toFirrtl = {
+        SerializableEndpointAnnotation(
+          self.toNamed.toTarget,
+          endpointIO.allChannelNames,
+          widgetClass = widgetClassSymbol.fullName,
+          widgetConstructorKey = constructorArg)
+      }
     })
     // Emit annotations to capture channel information
     endpointIO.generateAnnotations()

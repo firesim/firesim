@@ -13,13 +13,13 @@ import Console.{UNDERLINED, RESET}
 case class BankConflictConfig(
     maxBanks: Int,
     maxLatencyBits: Int = 12, // 4K cycles
-    baseParams: BaseParams)(implicit p: Parameters)
-  extends BaseConfig(baseParams)(p) {
+    params: BaseParams) extends BaseConfig {
 
-  def elaborate(): BankConflictModel = Module(new BankConflictModel(this))
+  def elaborate()(implicit p: Parameters): BankConflictModel = Module(new BankConflictModel(this))
 }
 
-class BankConflictMMRegIO(cfg: BankConflictConfig) extends SplitTransactionMMRegIO(cfg: BaseConfig){
+class BankConflictMMRegIO(cfg: BankConflictConfig)(implicit p: Parameters)
+    extends SplitTransactionMMRegIO(cfg){
   val latency = Input(UInt(cfg.maxLatencyBits.W))
   val conflictPenalty = Input(UInt(32.W))
   //  The mask bits setting determines how many banks are used

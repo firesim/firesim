@@ -27,7 +27,7 @@ import scala.collection.mutable
  */
 
 // We're using a Record here because reflection in Bundle prematurely initializes our lazy vals
-class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Record with HasChannels {
+class HostPortIO[+T <: Data](protected val targetPortProto: T) extends TokenizedRecord {
   val fromHost = new HostReadyValid
   val toHost = Flipped(new HostReadyValid)
   val hBits  = targetPortProto

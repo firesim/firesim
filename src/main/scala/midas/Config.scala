@@ -27,6 +27,12 @@ case object KeepSamplesInMem extends Field[Boolean]
 
 // MIDAS 2.0 Switches
 case object GenerateMultiCycleRamModels extends Field[Boolean](false)
+// User provided transforms to run before Golden Gate transformations
+// These are constructor functions accept a Parameters instance and produce a
+// sequence of firrtl Transforms to run
+case object TargetTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
+// User provided transforms to run after Golden Gate transformations
+case object HostTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
 
 class SimConfig extends Config((site, here, up) => {
   case TraceMaxLen      => 1024
