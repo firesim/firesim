@@ -17,10 +17,10 @@ case class FirstReadyFCFSConfig(
     schedulerWindowSize: Int,
     transactionQueueDepth: Int,
     backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
-    baseParams: BaseParams)(implicit p: Parameters)
-  extends DRAMBaseConfig(baseParams)(p) {
+    params: BaseParams)
+  extends DRAMBaseConfig {
 
-  def elaborate(): FirstReadyFCFSModel = Module(new FirstReadyFCFSModel(this))
+  def elaborate()(implicit p: Parameters): FirstReadyFCFSModel = Module(new FirstReadyFCFSModel(this))
 }
 
 class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMRegIO(cfg) {

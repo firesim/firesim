@@ -16,21 +16,34 @@ import freechips.rocketchip.config.Parameters
 import midas.core.SimUtils._
 import midas.core.{SimReadyValid, SimReadyValidIO}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
+import midas.widgets.SerializationUtils._
 
-class PeekPokeIOWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
+class PeekPokeWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
   val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
   val idle = Output(Bool())
 }
 
+case class PeekPokeKey(
+    peeks: Seq[SerializableField],
+    pokes: Seq[SerializableField],
+    maxChannelDecoupling: Int = 2)
+
+object PeekPokeKey {
+  def apply(targetIO: Record): PeekPokeKey = {
+    val (targetInputs, targetOutputs, _, _)  = parsePorts(targetIO)
+    val inputFields = targetInputs.map({ case (field, name) => SerializableField(name, field) })
+    val outputFields = targetOutputs.map({ case (field, name) => SerializableField(name, field) })
+    PeekPokeKey(inputFields, outputFields)
+  }
+}
+
 // Maximum channel decoupling puts a bound on the number of cycles the fastest
 // channel can advance ahead of the slowest channel
-class PeekPokeIOWidget(
-    peekPokeIO: PeekPokeEndpointIO,
-    maxChannelDecoupling: Int = 2) (implicit p: Parameters) extends EndpointWidget()(p) {
-  val io = IO(new PeekPokeIOWidgetIO)
-  val hPort = IO(peekPokeIO.cloneType)
+class PeekPokeWidget(key: PeekPokeKey)(implicit p: Parameters) extends EndpointWidget[PeekPokeTokenizedIO] {
+  val io = IO(new PeekPokeWidgetIO)
+  val hPort = IO(PeekPokeTokenizedIO(key))
 
-  require(maxChannelDecoupling > 1, "A smaller channel decoupling will affect FMR")
+  require(key.maxChannelDecoupling > 1, "A smaller channel decoupling will affect FMR")
   // Tracks the number of tokens the slowest channel has to produce or consume
   // before we reach the desired target cycle
   val cycleHorizon = RegInit(0.U(ctrlWidth.W))
@@ -58,7 +71,7 @@ class PeekPokeIOWidget(
   def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
     // Track local-channel decoupling
-    val cyclesAhead = SatUpDownCounter(maxChannelDecoupling)
+    val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
     val isAhead = !cyclesAhead.empty || channel.fire
     cyclesAhead.inc := channel.fire
     cyclesAhead.dec := tCycleAdvancing
@@ -91,7 +104,7 @@ class PeekPokeIOWidget(
   def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
     val reg = genWideReg(name, channel.bits)
     // Track local-channel decoupling
-    val cyclesAhead = SatUpDownCounter(maxChannelDecoupling)
+    val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
     val isAhead = !cyclesAhead.empty || channel.fire
     cyclesAhead.inc := channel.fire
     cyclesAhead.dec := tCycleAdvancing
@@ -147,31 +160,44 @@ class PeekPokeIOWidget(
       case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
     super.genHeader(base, sb)
-    val inputs = hPort.targetInputs
     sb.append(genComment("Pokeable target inputs"))
-    sb.append(genMacro("POKE_SIZE", UInt64(inputs.size)))
-    genOffsets(inputs.unzip._2)
+    sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
+    genOffsets(hPort.ins.unzip._1)
     sb.append(genArray("INPUT_ADDRS", inputAddrs.map(off => UInt32(base + off.head)).toSeq))
-    sb.append(genArray("INPUT_NAMES", inputs.unzip._2 map CStrLit))
+    sb.append(genArray("INPUT_NAMES", hPort.ins.unzip._1 map CStrLit))
     sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
 
-    val outputs = hPort.targetOutputs
     sb.append(genComment("Peekable target outputs"))
-    sb.append(genMacro("PEEK_SIZE", UInt64(outputs.size)))
-    genOffsets(outputs.unzip._2)
+    sb.append(genMacro("PEEK_SIZE", UInt64(hPort.outs.size)))
+    genOffsets(hPort.outs.unzip._1)
     sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
-    sb.append(genArray("OUTPUT_NAMES", outputs.unzip._2 map CStrLit))
+    sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
     sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
   }
 }
 
-class PeekPokeEndpointIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
-  // NB: Directions of targetIO are WRT to the endpoint, but "ins" and "outs" WRT to the target RTL
+class PeekPokeTokenizedIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
+  //NB: Directions of targetIO are WRT to the endpoint, but "ins" and "outs" WRT to the target RTL
   val (targetOutputs, targetInputs, _, _) = parsePorts(targetIO)
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
   override val elements = ListMap((ins ++ outs):_*)
-  override def cloneType = new PeekPokeEndpointIO(targetIO).asInstanceOf[this.type]
+  override def cloneType = new PeekPokeTokenizedIO(targetIO).asInstanceOf[this.type]
+}
+
+object PeekPokeTokenizedIO {
+  // Hack: Since we can't build the host-land port from a copy of the targetIO
+  // (we cannot currently serialize that) Spoof the original targetIO using
+  // serialiable port information
+  def apply(key: PeekPokeKey): PeekPokeTokenizedIO = {
+    // Instantiate a useless module from which we can get a hardware type with parsePorts
+    val dummyModule = Module(new Module {
+      val io = IO(new RegeneratedTargetIO(key.peeks, key.pokes))
+      io <> DontCare
+    })
+    dummyModule.io <> DontCare
+    new PeekPokeTokenizedIO(dummyModule.io)
+  }
 }
 
 class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extends Record {
@@ -183,10 +209,11 @@ class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extend
   override def cloneType = new PeekPokeTargetIO(targetIO, withReset).asInstanceOf[this.type]
 }
 
-class PeekPokeEndpoint(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox with IsEndpoint {
+class PeekPokeEndpoint(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox
+    with Endpoint[PeekPokeTokenizedIO, PeekPokeWidget] {
   val io = IO(new PeekPokeTargetIO(targetIO, reset != None))
-  val endpointIO = new PeekPokeEndpointIO(io)
-  def widget = (p: Parameters) => new PeekPokeIOWidget(endpointIO)(p)
+  val constructorArg = Some(PeekPokeKey(io))
+  val endpointIO = new PeekPokeTokenizedIO(io)
   generateAnnotations()
 }
 

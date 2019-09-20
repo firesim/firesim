@@ -50,8 +50,8 @@ class PrintRecordBag(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)]) 
   def hasEnabledPrint(): Bool = elements.map(_._2.enable).foldLeft(false.B)(_ || _)
 }
 
-class PrintWidget(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters) extends EndpointWidget()(p)
-    with UnidirectionalDMAToHostCPU {
+class PrintWidget(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
+    extends EndpointWidget[HostPortIO[PrintRecordBag]]()(p) with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(Flipped(new PrintRecordBag(prefix, printPorts))))
 

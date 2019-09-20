@@ -13,10 +13,10 @@ case class FIFOMASConfig(
     dramKey: DramOrganizationParams,
     transactionQueueDepth: Int,
     backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
-    baseParams: BaseParams)(implicit p: Parameters)
-  extends DRAMBaseConfig(baseParams)(p) {
+    params: BaseParams)
+  extends DRAMBaseConfig {
 
-  def elaborate(): FIFOMASModel = Module(new FIFOMASModel(this)(p))
+  def elaborate()(implicit p: Parameters): FIFOMASModel = Module(new FIFOMASModel(this)(p))
 }
 
 class FIFOMASMMRegIO(val cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
