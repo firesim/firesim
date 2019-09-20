@@ -188,14 +188,14 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
 def makeDrivers(boardDir, linuxSrc):
     driverDirs = pathlib.Path(boardDir).glob("drivers/*")
-    makeCmd = "make -C " + str(linuxSrc) + " ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- "
+    makeCmd = "make LINUXSRC=" + str(linuxSrc)
 
     # Prepare the linux source for building external drivers
     run(["make", "ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-", "modules_prepare", jlevel], cwd=linuxSrc)
 
     drivers = []
     for driverDir in driverDirs:
-        run(makeCmd + "M=" + str(driverDir), cwd=driverDir, shell=True)
+        run(makeCmd, cwd=driverDir, shell=True)
         drivers.extend(list(driverDir.glob("*.ko")))
 
     return drivers
