@@ -15,27 +15,27 @@ def get_free_tcp_port():
 	return str(port)
 
 # Returns a command string to luanch the given config in spike. Must be called with shell=True.
-def getSpikeCmd(config, initramfs=False):
+def getSpikeCmd(config, nodisk=False):
     if 'spike' in config:
         spikeBin = config['spike']
     else:
         spikeBin = 'spike'
 
-    if initramfs:
-        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-initramfs'
+    if nodisk:
+        return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-nodisk'
     elif 'img' not in config:
         return spikeBin + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin']
     else:
         raise ValueError("Spike does not support disk-based configurations")
 
 # Returns a command string to luanch the given config in qemu. Must be called with shell=True.
-def getQemuCmd(config, initramfs=False):
+def getQemuCmd(config, nodisk=False):
     log = logging.getLogger()
 
     launch_port = get_free_tcp_port()
 
-    if initramfs:
-        exe = config['bin'] + '-initramfs'
+    if nodisk:
+        exe = config['bin'] + '-nodisk'
     else:
         exe = config['bin']
 
@@ -50,7 +50,7 @@ def getQemuCmd(config, initramfs=False):
            '-device', 'virtio-net-device,netdev=usernet',
            '-netdev', 'user,id=usernet,hostfwd=tcp::' + launch_port + '-:22']
 
-    if 'img' in config and not initramfs:
+    if 'img' in config and not nodisk:
         cmd = cmd + ['-device', 'virtio-blk-device,drive=hd0',
                      '-drive', 'file=' + config['img'] + ',format=raw,id=hd0']
 
@@ -78,12 +78,12 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False):
         os.makedirs(runResDir)
 
         if spike:
-            if 'img' in config and not config['initramfs']:
+            if 'img' in config and not config['nodisk']:
                 sys.exit("Spike currently does not support disk-based " +
                         "configurations. Please use an initramfs based image.")
-            cmd = getSpikeCmd(config, config['initramfs'])
+            cmd = getSpikeCmd(config, config['nodisk'])
         else:
-            cmd = getQemuCmd(config, config['initramfs'])
+            cmd = getQemuCmd(config, config['nodisk'])
 
         sp.check_call(cmd + " | tee " + uartLog, shell=True)
 

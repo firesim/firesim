@@ -53,10 +53,10 @@ def addDep(loader, config):
                 'uptodate' : [(checkLinuxUpToDate, [config])]
                 })
 
-    # Add a rule for the initramfs version if requested
-    # Note that we need both the regular bin and initramfs bin if the base
+    # Add a rule for the nodisk version if requested
+    # Note that we need both the regular bin and nodisk bin if the base
     # workload needs an init script
-    if config['initramfs'] and 'bin' in config:
+    if config['nodisk'] and 'bin' in config:
         file_deps = []
         task_deps = []
         if 'img' in config:
@@ -67,9 +67,9 @@ def addDep(loader, config):
             file_deps.append(config['linux-config'])
 
         loader.addTask({
-                'name' : config['bin'] + '-initramfs',
-                'actions' : [(makeBin, [config], {'initramfs' : True})],
-                'targets' : [config['bin'] + '-initramfs'],
+                'name' : config['bin'] + '-nodisk',
+                'actions' : [(makeBin, [config], {'nodisk' : True})],
+                'targets' : [config['bin'] + '-nodisk'],
                 'file_dep': file_deps,
                 'task_dep' : task_deps,
                 'uptodate' : [(checkLinuxUpToDate, [config])]
@@ -164,8 +164,8 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     if buildBin and 'bin' in config:
         binList = [config['bin']]
-        if config['initramfs']:
-            binList.append(config['bin'] + '-initramfs')
+        if config['nodisk']:
+            binList.append(config['bin'] + '-nodisk')
    
     if 'img' in config and buildImg:
         imgList.append(config['img'])
@@ -175,8 +175,8 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             handleHostInit(jCfg)
             if buildBin:
                 binList.append(jCfg['bin'])
-                if jCfg['initramfs']:
-                    binList.append(jCfg['bin'] + '-initramfs')
+                if jCfg['nodisk']:
+                    binList.append(jCfg['bin'] + '-nodisk')
 
             if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
@@ -227,7 +227,7 @@ def setupBoardInitramfs(boardDir, linuxSrc):
     run(['fakeroot', '--', './makeInitramfs.sh'], cwd=wlutil_dir)
 
 # Now build linux/bbl
-def makeBin(config, initramfs=False):
+def makeBin(config, nodisk=False):
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
@@ -250,7 +250,7 @@ def makeBin(config, initramfs=False):
 
         setupBoardInitramfs(board_dir, config['linux-src'])
 
-        if initramfs:
+        if nodisk:
             with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
                 toCpio(config, config['img'], tmpCpio.name)
                 convertInitramfsConfig(linuxCfg, tmpCpio.name)
@@ -268,8 +268,8 @@ def makeBin(config, initramfs=False):
             '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd='riscv-pk/build')
         run(['make', jlevel], cwd='riscv-pk/build')
 
-        if initramfs:
-            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-initramfs')
+        if nodisk:
+            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-nodisk')
         else:
             shutil.copy('riscv-pk/build/bbl', config['bin'])
 

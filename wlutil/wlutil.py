@@ -197,17 +197,17 @@ def toCpio(config, src, dst):
     log = logging.getLogger()
 
     with mountImg(src, mnt):
-        # Fedora needs a special init in order to boot from initramfs
+        # Fedora needs a special init in order to boot from initramfs for nodisk configs
         run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
 
-    # Ideally, the distro's themselves would provide initramfs-based versions.
+    # Ideally, the distro's themselves would provide nodisk-based versions.
     # However, having two codepaths for disk images and cpio archives
     # complicates a bunch of stuff in the rest of marshal. Instead, we maintain
     # overlays here that convert a disk-based image to a cpio-based image.
     if config['distro'] == 'fedora':
-        sp.call("cat " + os.path.join(wlutil_dir, "fedora-initramfs-append.cpio") + " >> " + dst, shell=True)
+        sp.call("cat " + os.path.join(wlutil_dir, "fedora-nodisk-append.cpio") + " >> " + dst, shell=True)
     elif config['distro'] == 'br':
-        sp.call("cat " + os.path.join(wlutil_dir, "br-initramfs-append.cpio") + " >> " + dst, shell=True)
+        sp.call("cat " + os.path.join(wlutil_dir, "br-nodisk-append.cpio") + " >> " + dst, shell=True)
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute

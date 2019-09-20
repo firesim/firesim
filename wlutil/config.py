@@ -132,9 +132,9 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
 
-        if 'initramfs' not in self.cfg:
+        if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
-            self.cfg['initramfs'] = False
+            self.cfg['nodisk'] = False
 
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)

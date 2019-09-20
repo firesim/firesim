@@ -50,7 +50,7 @@ else
   echo "Success" | tee -a $LOGNAME
 fi
 
-# These tests need to run on spike, but not with the initramfs option
+# These tests need to run on spike, but not with the no-disk option
 echo "Running bare-metal tests" | tee -a $LOGNAME
 IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs)"
 ./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
@@ -64,12 +64,12 @@ else
   echo "Success" | tee -a $LOGNAME
 fi
 
-# Run the initramfs versions on spike, initramfs runs have many restrictions,
+# Run the no-disk versions on spike, no-disk runs have many restrictions,
 # we only run a few tests here to test basic capabilities
-echo "Running initramfs capable tests on spike" | tee -a $LOGNAME
+echo "Running no-disk capable tests on spike" | tee -a $LOGNAME
 IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|smoke0)"
-./marshal -i clean test/$IS_INCLUDE.json | tee -a $LOGNAME
-./marshal -i test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
+./marshal -d clean test/$IS_INCLUDE.json | tee -a $LOGNAME
+./marshal -d test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
