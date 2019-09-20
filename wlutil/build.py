@@ -234,13 +234,13 @@ def makeBin(config, initramfs=False):
     if 'linux-config' in config:
         linuxCfg = os.path.join(config['linux-src'], '.config')
         defCfg = os.path.join(config['linux-src'], 'defconfig')
+
         # Create a defconfig to use as reference
-        if not os.path.isfile(defCfg):
-            run(['make', 'ARCH=riscv', 'defconfig'], cwd=config['linux-src'])
-            shutil.copy(linuxCfg, defCfg)
-            with open(defCfg, 'a') as f:
-                f.write("CONFIG_BLK_DEV_INITRD=y\n")
-                f.write('CONFIG_INITRAMFS_SOURCE="' + str(initramfs_cpio) + '"\n')
+        run(['make', 'ARCH=riscv', 'defconfig'], cwd=config['linux-src'])
+        shutil.copy(linuxCfg, defCfg)
+        with open(defCfg, 'a') as f:
+            f.write("CONFIG_BLK_DEV_INITRD=y\n")
+            f.write('CONFIG_INITRAMFS_SOURCE="' + str(initramfs_cpio) + '"\n')
 
         # Create a config from the user fragments
         kconfigEnv = os.environ.copy()
