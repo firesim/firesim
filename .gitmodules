@@ -1,6 +1,6 @@
 [submodule "riscv-linux"]
 	path = riscv-linux
-	url = https://github.com/torvalds/linux.git
+	url = https://github.com/firesim/linux.git
 [submodule "riscv-pk"]
 	path = riscv-pk
 	url = https://github.com/firesim/riscv-pk.git
