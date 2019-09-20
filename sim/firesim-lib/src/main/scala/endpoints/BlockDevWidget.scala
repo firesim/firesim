@@ -78,8 +78,8 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   rRespBuf.reset  := reset.toBool || targetReset
   wAckBuf.reset  := reset.toBool || targetReset
 
-  hPort.toHost.hReady := tFireHelper.fire()
-  hPort.fromHost.hValid := tFireHelper.fire()
+  hPort.toHost.hReady := tFireHelper.fire
+  hPort.fromHost.hValid := tFireHelper.fire
 
   reqBuf.io.enq.bits := target.req.bits
   reqBuf.io.enq.valid := target.req.valid && tFireHelper.fire(reqBuf.io.enq.ready)

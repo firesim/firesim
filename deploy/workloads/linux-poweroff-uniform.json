@@ -1,5 +1,5 @@
 {
-  "benchmark_name" : "linux-immediate-poweroff",
+  "benchmark_name" : "linux-poweroff",
   "common_bootbinary" : "br-base-bin",
   "common_rootfs"     : "poweroffnode.ext2",
   "common_outputs"    : ["/etc/os-release"],
