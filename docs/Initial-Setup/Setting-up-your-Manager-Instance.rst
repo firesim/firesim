@@ -6,9 +6,9 @@ Launching a "Manager Instance"
 
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
-Since we will deploy the heavy lifting to separate ``c4.4xlarge`` and
+Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
 ``f1`` instances later, the Manager Instance can be a relatively cheap instance. In this guide, however,
-we will use a ``c4.4xlarge``,
+we will use a ``c5.4xlarge``,
 running the AWS FPGA Developer AMI (be sure to subscribe if you have not done so. See :ref:`ami-subscription`).
 
 Head to the `EC2 Management
@@ -25,7 +25,7 @@ To launch a manager instance, follow these steps:
    "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.6.0``.
    **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
-   your choosing. A good choice is a ``c4.4xlarge``.
+   your choosing. A good choice is a ``c5.4xlarge``.
 4. On the "Configure Instance Details" page:
 
    1. First make sure that the ``firesim`` VPC is selected in the
