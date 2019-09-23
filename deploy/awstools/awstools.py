@@ -310,7 +310,7 @@ def send_firesim_notification(subject, body):
 
 if __name__ == '__main__':
     #""" Example usage """
-    #instanceobjs = launch_instances('c4.4xlarge', 2)
+    #instanceobjs = launch_instances('c5.4xlarge', 2)
     #instance_ips = get_private_ips_for_instances(instanceobjs)
     #instance_ids = get_instance_ids_for_instances(instanceobjs)
     #wait_on_instance_launches(instanceobjs)
