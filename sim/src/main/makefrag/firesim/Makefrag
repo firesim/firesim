@@ -23,6 +23,10 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 ##################
 # RTL Generation #
 ##################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
@@ -34,7 +38,7 @@ else
 	firesim_sbt_project := firechip
 endif
 
-$(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	cd $(base_dir) && \
 	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
@@ -138,7 +142,7 @@ $(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
--include $(GENERATED_DIR)/$(DESIGN).d
+-include $(GENERATED_DIR)/$(long_name).d
 endif
 
 

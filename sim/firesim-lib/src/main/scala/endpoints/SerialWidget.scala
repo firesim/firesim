@@ -10,10 +10,10 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
 
-class SerialEndpoint extends BlackBox with IsEndpoint {
+class SerialEndpoint extends BlackBox with Endpoint[HostPortIO[SerialEndpointTargetIO], SerialWidget] {
   val io = IO(new SerialEndpointTargetIO)
   val endpointIO = HostPort(io)
-  def widget = (p: Parameters) => new SerialWidget()(p)
+  val constructorArg = None
   generateAnnotations()
 }
 
@@ -30,7 +30,7 @@ class SerialEndpointTargetIO extends Bundle {
   val reset = Input(Bool())
 }
 
-class SerialWidget(implicit p: Parameters) extends EndpointWidget()(p) {
+class SerialWidget(implicit p: Parameters) extends EndpointWidget[HostPortIO[SerialEndpointTargetIO]]()(p) {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new SerialEndpointTargetIO))
 

@@ -9,17 +9,18 @@ import freechips.rocketchip.util.DecoupledHelper
 
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
-import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
+import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey, BlockDeviceConfig}
 
 class BlockDevEndpointTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
   val reset = Input(Bool())
 }
 
-class BlockDevEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+class BlockDevEndpoint(implicit p: Parameters) extends BlackBox
+    with Endpoint[HostPortIO[BlockDevEndpointTargetIO], BlockDevWidget]  {
   val io = IO(new BlockDevEndpointTargetIO)
   val endpointIO = HostPort(io)
-  def widget = (p: Parameters) => { new BlockDevWidget()(p) }
+  val constructorArg = Some(p(BlockDeviceKey))
   generateAnnotations()
 }
 
@@ -32,9 +33,9 @@ object BlockDevEndpoint  {
   }
 }
 
-class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
+class BlockDevWidget(blockDevExternal: BlockDeviceConfig, hostP: Parameters) extends EndpointWidget[HostPortIO[BlockDevEndpointTargetIO]]()(hostP) {
+  implicit override val p = hostP.alterPartial({ case BlockDeviceKey => blockDevExternal })
   // TODO use HasBlockDeviceParameters
-  val blockDevExternal = p(BlockDeviceKey)
   val dataBytes = 512
   val sectorBits = 32
   val nTrackers = blockDevExternal.nTrackers

@@ -10,13 +10,18 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
-class UARTEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+// We need to box this Int in a case class for the constructor invocation to
+// work correctly.
+case class UARTKey(div: Int)
+
+class UARTEndpoint(implicit p: Parameters) extends BlackBox
+    with Endpoint[HostPortIO[UARTEndpointTargetIO], UARTWidget] {
   val io = IO(new UARTEndpointTargetIO)
   val endpointIO = HostPort(io)
   val frequency = p(PeripheryBusKey).frequency
   val baudrate = 3686400L
   val div = (p(PeripheryBusKey).frequency / baudrate).toInt
-  def widget = (p: Parameters) => new UARTWidget(div)(p)
+  val constructorArg = Some(UARTKey(div))
   generateAnnotations()
 }
 
@@ -28,12 +33,14 @@ object UARTEndpoint {
   }
 }
 
-class UARTEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+class UARTEndpointTargetIO extends Bundle {
   val uart = Flipped(new UARTPortIO)
   val reset = Input(Bool())
 }
 
-class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
+
+class UARTWidget(key: UARTKey)(implicit p: Parameters) extends EndpointWidget[HostPortIO[UARTEndpointTargetIO]]()(p) {
+  val div = key.div
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(new UARTEndpointTargetIO))
 

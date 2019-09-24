@@ -10,7 +10,7 @@ import freechips.rocketchip.diplomacy.{LazyModule}
 
 import firesim.endpoints._
 import firesim.configs.MemModelKey
-import midas.widgets.{IsEndpoint, PeekPokeEndpoint}
+import midas.widgets.{Endpoint, PeekPokeEndpoint}
 
 // Creates a wrapper FireSim harness module that instantiates endpoints based
 // on the scala type of the Target (_not_ its IO). This avoids needing to
@@ -25,10 +25,10 @@ import midas.widgets.{IsEndpoint, PeekPokeEndpoint}
 // A sequence of partial functions that match on the type the DUT (_not_ it's
 // IO) to generate an appropriate endpoint. You can add your own endpoint by prepending 
 // a custom PartialFunction to this Seq
-case object EndpointBinders extends Field[Seq[PartialFunction[Any, Seq[IsEndpoint]]]](Seq())
+case object EndpointBinders extends Field[Seq[PartialFunction[Any, Seq[Endpoint[_,_]]]]](Seq())
 
 // Config sugar that accepts a partial function and prepends it to EndpointBinders
-class RegisterEndpointBinder(pf: =>PartialFunction[Any, Seq[IsEndpoint]]) extends Config((site, here, up) => {
+class RegisterEndpointBinder(pf: =>PartialFunction[Any, Seq[Endpoint[_,_]]]) extends Config((site, here, up) => {
   case EndpointBinders => pf +: up(EndpointBinders, site)
 })
 

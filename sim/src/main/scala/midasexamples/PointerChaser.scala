@@ -9,7 +9,7 @@ import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 
 import midas.widgets.{PeekPokeEndpoint}
-import midas.models.{FASEDEndpoint, BaseParams, LatencyPipeConfig}
+import midas.models.{FASEDEndpoint, BaseParams, LatencyPipeConfig, CompleteConfig}
 
 case object MemSize extends Field[Int]
 case object NMemoryChannels extends Field[Int]
@@ -110,7 +110,7 @@ class PointerChaser(implicit val p: Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val pointerChaser = Module(new PointerChaserDUT)
-    val fasedInstance =  Module(new FASEDEndpoint(LatencyPipeConfig(BaseParams(16,16))))
+    val fasedInstance =  Module(new FASEDEndpoint(CompleteConfig(LatencyPipeConfig(BaseParams(16,16)), p(NastiKey))))
     fasedInstance.io.axi4 <> pointerChaser.io.nasti
     fasedInstance.io.reset := reset
     val peekPokeEndpoint = PeekPokeEndpoint(reset,

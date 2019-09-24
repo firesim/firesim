@@ -24,10 +24,10 @@ import TokenQueueConsts._
 
 case object LoopbackNIC extends Field[Boolean](false)
 
-class NICEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+class NICEndpoint(implicit p: Parameters) extends BlackBox with Endpoint[HostPortIO[NICIOvonly], SimpleNICWidget] {
   val io = IO(Flipped(new NICIOvonly))
   val endpointIO = HostPort(io)
-  def widget = (p: Parameters) => new SimpleNICWidget()(p)
+  val constructorArg = None
   generateAnnotations()
 }
 
@@ -174,7 +174,7 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
+class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget[HostPortIO[NICIOvonly]]()(p)
     with BidirectionalDMA {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(Flipped(new NICIOvonly)))

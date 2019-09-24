@@ -22,6 +22,10 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 ##################
 # RTL Generation #
 ##################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
@@ -42,7 +46,7 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_
 
 common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 

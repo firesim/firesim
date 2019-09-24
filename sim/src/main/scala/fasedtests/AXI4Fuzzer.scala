@@ -11,7 +11,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
 import junctions.{NastiKey, NastiParameters}
-import midas.models.{FASEDEndpoint, FasedAXI4Edge}
+import midas.models.{FASEDEndpoint, AXI4EdgeSummary, CompleteConfig}
 import midas.widgets.{PeekPokeEndpoint}
 
 object AXI4Printf {
@@ -100,11 +100,8 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
                                    fuzzer.axi4.ar.bits.addr.getWidth,
                                    fuzzer.axi4.ar.bits.id.getWidth)
 
-    val fasedP = p.alterPartial({
-      case NastiKey => nastiKey
-      case FasedAXI4Edge => Some(fuzzer.axi4Edge)
-    })
-    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, fasedP(firesim.configs.MemModelKey)(fasedP))
+    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset,
+      CompleteConfig(p(firesim.configs.MemModelKey), nastiKey, Some(AXI4EdgeSummary(fuzzer.axi4Edge))))
     val peekPokeEndpoint = PeekPokeEndpoint(reset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
