@@ -61,7 +61,10 @@ private[passes] class AssertPass(
   private def findMessages(mname: String)
                           (s: Statement): Statement =
     s map findMessages(mname) match {
-      case s: Print if s.args.isEmpty =>
+      // work around a large design assert build failure 
+      // drop arguments and just show the format string
+      //case s: Print if s.args.isEmpty =>
+      case s: Print =>
         asserts(mname) get s.en.serialize match {
           case Some((idx, str)) =>
             messages(mname)(idx) = s.string.serialize
