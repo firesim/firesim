@@ -33,4 +33,4 @@ class StackDUT extends Module {
 
   io.dataOut := out
 }
-class Stack extends PeekPokeMidasExampleEnvironment(() => new StackDUT)
+class Stack extends PeekPokeMidasExampleHarness(() => new StackDUT)

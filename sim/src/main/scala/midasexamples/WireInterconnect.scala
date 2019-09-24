@@ -39,4 +39,4 @@ class WireInterconnectDUT extends Module {
   io.bOut := PipeModule(io.bIn, 1)
 }
 
-class WireInterconnect extends PeekPokeMidasExampleEnvironment(() => new WireInterconnectDUT)
+class WireInterconnect extends PeekPokeMidasExampleHarness(() => new WireInterconnectDUT)

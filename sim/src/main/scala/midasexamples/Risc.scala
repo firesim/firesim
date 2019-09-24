@@ -53,4 +53,4 @@ class RiscDUT extends Module {
   }
 }
 
-class Risc extends PeekPokeMidasExampleEnvironment(() => new RiscDUT)
+class Risc extends PeekPokeMidasExampleHarness(() => new RiscDUT)

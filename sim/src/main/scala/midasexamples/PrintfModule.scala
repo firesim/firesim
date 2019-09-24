@@ -45,7 +45,7 @@ class PrintfModuleChild extends MultiIOModule {
   //}
 }
 
-class PrintfModule extends PeekPokeMidasExampleEnvironment(() => new PrintfModuleDUT)
+class PrintfModule extends PeekPokeMidasExampleHarness(() => new PrintfModuleDUT)
 
 class NarrowPrintfModuleDUT extends Module {
   val io = IO(new Bundle {
@@ -59,4 +59,4 @@ class NarrowPrintfModuleDUT extends Module {
   }
 }
 
-class NarrowPrintfModule extends PeekPokeMidasExampleEnvironment(() => new NarrowPrintfModuleDUT)
+class NarrowPrintfModule extends PeekPokeMidasExampleHarness(() => new NarrowPrintfModuleDUT)

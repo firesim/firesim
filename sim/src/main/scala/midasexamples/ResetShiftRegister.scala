@@ -24,4 +24,4 @@ class ResetShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-class ResetShiftRegister extends PeekPokeMidasExampleEnvironment(() => new ResetShiftRegisterDUT)
+class ResetShiftRegister extends PeekPokeMidasExampleHarness(() => new ResetShiftRegisterDUT)
