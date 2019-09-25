@@ -31,8 +31,7 @@ linux_dir = os.path.join(root_dir, "riscv-linux")
 busybox_dir = wlutil_dir / 'busybox'
 
 # Initramfs root directory (used to build default initramfs for loading board drivers)
-initramfs_root = pathlib.Path(os.path.join(wlutil_dir, "initramfsRoot"))
-initramfs_cpio = pathlib.Path(os.path.join(wlutil_dir, "initramfsRoot.cpio"))
+initramfs_dir = pathlib.Path(os.path.join(wlutil_dir, "initramfs"))
 
 # Runtime Logs
 log_dir = os.path.join(root_dir, "logs")
@@ -149,14 +148,8 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     if check == True and p.returncode != 0:
             raise sp.CalledProcessError(p.returncode, prettyCmd)
 
-# Convert a linux configuration file to use an initramfs that points to the correct cpio
-# This will modify linuxCfg in place
-def convertInitramfsConfig(cfgPath, cpioPath):
-    log = logging.getLogger()
-    with open(cfgPath, 'at') as f:
-        f.write("CONFIG_BLK_DEV_INITRD=y\n")
-        f.write('CONFIG_INITRAMFS_SOURCE="' + cpioPath + '"\n')
- 
+    return p
+
 def genRunScript(command):
     with open(commandScript, 'w') as s:
         s.write("#!/bin/bash\n")
@@ -192,22 +185,6 @@ def mountImg(imgPath, mntPath):
     # modifying the image for a period after unmount. This is the documented
     # best-practice (see man guestmount).
     waitpid(mntPid)
-
-def toCpio(config, src, dst):
-    log = logging.getLogger()
-
-    with mountImg(src, mnt):
-        # Fedora needs a special init in order to boot from initramfs for nodisk configs
-        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
-
-    # Ideally, the distro's themselves would provide nodisk-based versions.
-    # However, having two codepaths for disk images and cpio archives
-    # complicates a bunch of stuff in the rest of marshal. Instead, we maintain
-    # overlays here that convert a disk-based image to a cpio-based image.
-    if config['distro'] == 'fedora':
-        sp.call("cat " + os.path.join(wlutil_dir, "fedora-nodisk-append.cpio") + " >> " + dst, shell=True)
-    elif config['distro'] == 'br':
-        sp.call("cat " + os.path.join(wlutil_dir, "br-nodisk-append.cpio") + " >> " + dst, shell=True)
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute

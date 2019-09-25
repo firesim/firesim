@@ -1,6 +1,7 @@
 #!/bin/busybox sh
 
 /bin/busybox sh setupSystem.sh
+
 if [ $? != 0 ]; then
   echo "Failed to setup system. Dropping to emergency shell."
   exec /bin/busybox sh

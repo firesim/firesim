@@ -186,45 +186,73 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     if ret != 0:
         raise RuntimeError("Error while building workload")
 
-def makeDrivers(boardDir, linuxSrc):
+def toCpio(src, dst):
+    log = logging.getLogger()
+
+    with mountImg(src, mnt):
+        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
+
+def generateKConfig(kfrags, linuxSrc):
+        linuxCfg = os.path.join(linuxSrc, '.config')
+        defCfg = os.path.join(linuxSrc, 'defconfig')
+
+        # Create a defconfig to use as reference
+        run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
+        shutil.copy(linuxCfg, defCfg)
+
+        # Create a config from the user fragments
+        kconfigEnv = os.environ.copy()
+        kconfigEnv['ARCH'] = 'riscv'
+        run([os.path.join(linuxSrc, 'scripts/kconfig/merge_config.sh'),
+            defCfg] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
+
+def makeInitramfsKfrag(srcs, dst):
+    with open(dst, 'w') as f:
+        f.write("CONFIG_BLK_DEV_INITRD=y\n")
+        f.write('CONFIG_INITRAMFS_COMPRESSION=".lzo"\n')
+        f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
+        f.write('CONFIG_INITRAMFS_SOURCE="')
+        for src in srcs:
+            f.write(str(src) + " ")
+        f.write('"\n')
+
+# Build all the drivers for this linux source on the specified board.
+# Returns a path to a cpio archive containing all the drivers in
+# /lib/modules/KERNELVERSION/*.ko
+# kfrags: list of paths to kernel configuration fragments to use when building drivers
+# boardDir: Path to the board directory. Should have a 'drivers/' subdir
+#           containing all the drivers we should build for this board
+# linuxSrc: Path to linux source tree to build against
+def makeDrivers(kfrags, boardDir, linuxSrc):
     driverDirs = pathlib.Path(boardDir).glob("drivers/*")
     makeCmd = "make LINUXSRC=" + str(linuxSrc)
 
     # Prepare the linux source for building external drivers
+    generateKConfig(kfrags, linuxSrc)
     run(["make", "ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-", "modules_prepare", jlevel], cwd=linuxSrc)
+    kernelVersion = sp.run(["make", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
     for driverDir in driverDirs:
         run(makeCmd, cwd=driverDir, shell=True)
         drivers.extend(list(driverDir.glob("*.ko")))
 
-    return drivers
+    driverDir = initramfs_dir / "drivers" / "lib" / "modules" / kernelVersion
 
-def setupBoardInitramfs(boardDir, linuxSrc):
-    log = logging.getLogger()
+    # Always start from a clean slate
+    try:
+        shutil.rmtree(driverDir)
+    except FileNotFoundError:
+        pass
+    driverDir.mkdir(parents=True)
 
-    loadScript = initramfs_root / "loadDrivers.sh"
-
-    # clear out any leftover drivers from a previous build
-    for oldDriver in initramfs_root.glob("*.ko"):
-        oldDriver.unlink()
-    if loadScript.exists():
-        loadScript.unlink()
-
-    drivers = makeDrivers(boardDir, linuxSrc)
-
+    # Copy in our new drivers
     for driverPath in drivers:
-        shutil.copy(driverPath, initramfs_root)
+        shutil.copy(driverPath, driverDir)
 
-    with open(loadScript, 'w') as f:
-        for driverPath in drivers:
-            f.write("insmod /" + str(driverPath.name) + "\n")
+    # Setup the dependency file needed by modprobe to load the drivers
+    run(['depmod', '-b', str(initramfs_dir / "drivers"), kernelVersion])
 
-    if not (initramfs_root / "bin" / "busybox").exists():
-        raise RunTimeError("Initramfs root not initialized. Please run './marshal init'")
-
-    # This script adds the device nodes and packages up the initrd.
-    run(['fakeroot', '--', './makeInitramfs.sh'], cwd=wlutil_dir)
 
 # Now build linux/bbl
 def makeBin(config, nodisk=False):
@@ -232,31 +260,28 @@ def makeBin(config, nodisk=False):
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
-        linuxCfg = os.path.join(config['linux-src'], '.config')
-        defCfg = os.path.join(config['linux-src'], 'defconfig')
+        initramfsIncludes = []
 
-        # Create a defconfig to use as reference
-        run(['make', 'ARCH=riscv', 'defconfig'], cwd=config['linux-src'])
-        shutil.copy(linuxCfg, defCfg)
-        with open(defCfg, 'a') as f:
-            f.write("CONFIG_BLK_DEV_INITRD=y\n")
-            f.write('CONFIG_INITRAMFS_SOURCE="' + str(initramfs_cpio) + '"\n')
-
-        # Create a config from the user fragments
-        kconfigEnv = os.environ.copy()
-        kconfigEnv['ARCH'] = 'riscv'
-        run([os.path.join(config['linux-src'], 'scripts/kconfig/merge_config.sh'),
-            defCfg, config['linux-config']], env=kconfigEnv, cwd=config['linux-src']) 
-
-        setupBoardInitramfs(board_dir, config['linux-src'])
+        makeDrivers([config['linux-config']], board_dir, config['linux-src'])
+        initramfsIncludes.append(initramfs_dir / 'drivers')
 
         if nodisk:
-            with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
-                toCpio(config, config['img'], tmpCpio.name)
-                convertInitramfsConfig(linuxCfg, tmpCpio.name)
-                run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=config['linux-src'])
+            initramfsIncludes.append(initramfs_dir / "nodisk")
+            with mountImg(config['img'], mnt):
+                initramfsIncludes.append(mnt)
+                makeInitramfsKfrag(initramfsIncludes, initramfs_dir / "initramfs.kfrag")
+                generateKConfig([config['linux-config'], initramfs_dir / "initramfs.kfrag"], config['linux-src'])
                 run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
+            # with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
+            #     toCpio(config['img'], tmpCpio.name)
+            #     initramfsIncludes.append(tmpCpio.name)
+            #     makeInitramfsKfrag(initramfsIncludes, initramfs_dir / "initramfs.kfrag")
+            #     generateKConfig([config['linux-config'], initramfs_dir / "initramfs.kfrag"], config['linux-src'])
+            #     run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
         else: 
+            initramfsIncludes += [initramfs_dir / "disk", initramfs_dir / "nodlist.txt"]
+            makeInitramfsKfrag(initramfsIncludes, initramfs_dir / "initramfs.kfrag")
+            generateKConfig([config['linux-config'], initramfs_dir / "initramfs.kfrag"], config['linux-src'])
             run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes

@@ -3,7 +3,7 @@ import logging
 from .wlutil import *
 
 # The amount of memory to use when launching
-launch_mem = "4096"
+launch_mem = "16384"
 launch_cores = "4"
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
@@ -41,6 +41,7 @@ def getQemuCmd(config, nodisk=False):
 
     cmd = ['qemu-system-riscv64',
            '-nographic',
+           '-bios none',
            '-smp', launch_cores,
            '-machine', 'virt',
            '-m', launch_mem,

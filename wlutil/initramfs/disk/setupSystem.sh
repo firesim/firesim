@@ -1,12 +1,12 @@
 /bin/busybox --install -s
 
-# Load platform drivers
-sh /loadDrivers.sh
-
 # Mount the /proc and /sys filesystems.
 mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t devtmpfs none /dev
+
+# Load all kernel modules
+modprobe -a $(modprobe -l)
 
 if [ -e /dev/iceblk ]; then
   echo "Mounting /dev/iceblk as root device"

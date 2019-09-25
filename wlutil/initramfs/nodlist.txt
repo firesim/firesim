@@ -1,0 +1,2 @@
+nod /dev/console 644 0 0 c 5 1
+nod /dev/tty 666 0 0 c 5 0

@@ -6,11 +6,11 @@ from .br import br
 def oneTimeInit():
     log = logging.getLogger()
 
-    # Build initramfs fs structure (git can't save these because reasons)
-    initramfs_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
-    for d in initramfs_dirs:
-        if not (initramfs_root / d).exists():
-            (initramfs_root / d).mkdir(parents=True)
+    # Setup disk initramfs dirs
+    disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
+    for d in disk_dirs:
+        if not (initramfs_dir / 'disk' / d).exists():
+            (initramfs_dir / 'disk' / d).mkdir(parents=True)
 
     # Make busybox (needed for the initramfs)
     log.info("Building busybox (used in initramfs)")

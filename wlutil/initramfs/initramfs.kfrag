@@ -1,0 +1,4 @@
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_COMPRESSION=".lzo"
+CONFIG_INITRAMFS_COMPRESSION_LZO=y
+CONFIG_INITRAMFS_SOURCE="/home/centos/firesim/sw/firesim-software/wlutil/initramfs/drivers /home/centos/firesim/sw/firesim-software/wlutil/initramfs/disk /home/centos/firesim/sw/firesim-software/wlutil/initramfs/nodlist.txt "

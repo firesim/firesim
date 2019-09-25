@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "Running FireMarshal nodisk init"
+# Load all kernel modules in /lib/modules/KERNELVERSION/*.ko
+echo "Loading FireMarshal platform drivers"
+modprobe -a $(modprobe -l)
+
+# Call the native init that came with the distro
+echo "Calling distro init"
+exec /sbin/init
