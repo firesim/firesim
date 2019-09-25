@@ -11,11 +11,11 @@ import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import freechips.rocketchip.util.property._
 import freechips.rocketchip.util.WideCounter
+import firesim.endpoints._
 
  import java.io._
 import scala.io.Source
 import collection.mutable
-
 
 
  //====================MOVE TO A UTILS PLACE? ALTHOUGH THESE ARE ALL PLATFORM STUFF=======================
@@ -70,7 +70,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   val newAnnos = mutable.ArrayBuffer.empty[Annotation]
   val autoCounterLabels = mutable.ArrayBuffer.empty[String]
 
-  private def MakeCounter(label: String): CircuitState = {
+  private def MakeCounter(label: String, hastracerwidget: Boolean = false): CircuitState = {
     import chisel3._
     import chisel3.experimental.MultiIOModule
     import chisel3.util.experimental.BoringUtils
@@ -79,9 +79,22 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       val cycle = RegInit(0.U(64.W))
       cycle := cycle + 1.U
       val in0 = IO(Input(Bool()))
+
+      //connect the trigger from the tracer widget
+      val trigger = Wire(Bool())
+      hastracerwidget match {
+        case true => BoringUtils.addSink(trigger, s"trace_trigger") 
+        case _ => trigger := RegInit(true.B)
+      }
+
+      //*****if we ever want to use the trigger to reset the counters******
+      //withReset(reset = ~trigger) {
+      //  val count = WideCounter(64, in0)
+      //}
+
       val count = WideCounter(64, in0)
       if (printcounter) {
-        when (in0) {
+        when (in0 & trigger) {
           printf(midas.targetutils.SynthesizePrintf(s"[AutoCounter] $label: %d cycle: %d\n",count, cycle))
         }
       } else {
@@ -97,7 +110,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     lowFirrtlIR 
   } 
 
-  private def onModule(topNS: Namespace, covertuples: Seq[(ReferenceTarget, String)])(mod: Module): Seq[Module] = {
+  private def onModule(topNS: Namespace, covertuples: Seq[(ReferenceTarget, String)], hastracerwidget: Boolean = false)(mod: Module): Seq[Module] = {
 
     val namespace = Namespace(mod)
     val resetRef = mod.ports.collectFirst { case Port(_,"reset",_,_) => WRef("reset") }
@@ -110,7 +123,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     //for each annotated signal within this module
     covertuples.foreach { case (target, label) =>
         //create counter
-        val countermodstate = MakeCounter(label)
+        val countermodstate = MakeCounter(label, hastracerwidget = hastracerwidget)
         val countermod = countermodstate.circuit.modules match {
             case Seq(one: firrtl.ir.Module) => one
             case other => throwInternalError(s"Invalid resulting modules ${other.map(_.name)}")
@@ -187,6 +200,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
        override def desiredName = "AutoCounterTargetWidget"
        val io = IO(new AutoCounterBundle(numcounters))
        val endpointIO = HostPort(io)
+
        //wiring transform annotation to connect to the counters
        autoCounterLabels.zip(io.counters).foreach {
           case(label, counter) => BoringUtils.addSink(counter, label)
@@ -254,6 +268,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       case a: AutoCounterFirrtlAnnotation => a
     }
 
+    val hastracerwidget = state.annotations.collect({ case midas.EndpointAnnotation(mT,_, _) => 
+                                          mT match {
+                                              case TracerVEndpoint(_) => true
+                                              case _ => Nil
+                                          }}).length > 0
+
     //select which modules do we want to actually look at, and generate counters for
     //this can be done in one of two way:
     //1. Using an input file called `covermodules.txt` in a directory declared in the transform concstructor
@@ -296,7 +316,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
         case mod: Module =>
           val covertuples = selectedsignals.getOrElse(mod.name, Seq())
           if (!covertuples.isEmpty) {
-            val mods = onModule(moduleNamespace, covertuples)(mod)
+            val mods = onModule(moduleNamespace, covertuples, hastracerwidget = hastracerwidget)(mod)
             val newMods = mods.filter(_.name != mod.name)
             assert(newMods.size + 1 == mods.size) // Sanity check
             mods

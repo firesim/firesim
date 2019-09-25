@@ -2,6 +2,7 @@ package firesim.endpoints
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.BoringUtils
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
@@ -186,6 +187,7 @@ class TracerVWidget(traceProto: Seq[Vec[DeclockedTracedInstruction]])(implicit p
     3.U -> triggerInstValVec.reduce(_ || _)))
 
   //TODO: for inter-widget triggering
+  BoringUtils.addSource(trigger, s"trace_trigger")
   //io.trigger_out.head <> trigger
 
   // DMA mixin parameters
