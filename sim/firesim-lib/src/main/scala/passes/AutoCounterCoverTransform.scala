@@ -268,9 +268,10 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       case a: AutoCounterFirrtlAnnotation => a
     }
 
-    val hastracerwidget = state.annotations.collect({ case midas.EndpointAnnotation(mT,_, _) => 
-                                          mT match {
-                                              case TracerVEndpoint(_) => true
+
+    val hastracerwidget = state.annotations.collect({ case midas.widgets.EndpointAnnotation(_,widget, _) => 
+                                          widget match {
+                                              case p:((_) => TracerVWidget) => true
                                               case _ => Nil
                                           }}).length > 0
 
