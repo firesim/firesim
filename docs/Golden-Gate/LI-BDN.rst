@@ -1,15 +1,15 @@
 Target Abstraction & Host Decoupling
 ====================================
 
-MIDAS-generated simulators are deterministic, cycle-exact representations of
-the source RTL fed to the compiler. To achieve this, MIDAS consumes input RTL
+Golden Gate-generated simulators are deterministic, cycle-exact representations of
+the source RTL fed to the compiler. To achieve this, Golden Gate consumes input RTL
 (as FIRRTL) and transforms it into a latency-insensitive bounded dataflow
 network (LI-BDN) representation of the same RTL.
 
 The Target as a Dataflow Graph
 ------------------------------
 
-Dataflow graphs in MIDAS consist of models, tokens, and channels:
+Dataflow graphs in Golden Gate consist of models, tokens, and channels:
 
 1) Models -- the nodes of the graph, these capture the behavior of the target machine by consuming and producing tokens.
 
@@ -30,12 +30,11 @@ We give an example below of a dataflow graph representation of a 32-bit adder, s
 Model Implementations
 ---------------------
 
-In MIDAS, there are two dimensions of model implementation:
+In Golden Gate, there are two dimensions of model implementation:
 
-1) CPU-hosted or FPGA-hosted: simply, where the model is going to be hosted.
-CPU-hosted models are software and thus are more flexible and easy
-to debug but slow. Conversely, FPGA-hosted models are fast, but are harder to debug,
-and difficult to write~(if they aren't transformed from RTL by the compiler).
+1) CPU- or FPGA-hosted: simply, where the model is going to execute.
+CPU-hosted models, being software, are more flexible and easy
+to debug but slow. Conversely, FPGA-hosted models are fast, but more difficult to write and debug.
 
 2) Cycle-Exact or Abstract: cycle-exact models faithfully implement a chunk of
 the SoC's RTL~(this formalized later), where as abstract models are
@@ -63,20 +62,19 @@ Expressing the Target Graph
 The target graph is captured implicitly in the FIRRTL for your target. The bulk
 of the RTL for your system will be transformed by Golden Gate into one or more
 cycle-exact, FPGA-hosted models. You introduce abstract, FPGA-hosted models and
-CPU-hosted models into the graph by instantiating specially annotated FIRRTL
+CPU-hosted models into the graph by instantiating specially annotated modules or 
 black-boxes, called Endpoints. During compilation, Golden Gate promotes these
-black boxes to create new token channels, and then
-instantiates your custom EndpointWidget Module to source and sink these token
-channels. It is in this widget you model target behavior by writing RTL &
-software that sources and sinks tokens. We describe the procedure for developing
-a custom endpoint in the Endpoints section.
+removes these black-boxes to establish new token channels to the rest of the target.
+Here, Golden Gate instantiates your custom RTL, called an EndpointWidget,
+which together with a CPU-hosted Endpoint Driver, gives you the means to model
+arbitrary target-behavior. We expand on this in the Endpoint section.
 
 
 Latency-Insensitive Bounded Dataflow Networks
 ---------------------------------------------
 
-In order for the resulting simulator to be a faithful representation of the target RTL. 
-Models must adhere to three properties. We refer the reader to TODO for the formal definitions of these properties.
+In order for the resulting simulator to be a faithful representation of the target RTL, 
+models must adhere to three properties. We refer the reader to TODO for the formal definitions of these properties.
 English language equivalents follow.
 
 Partial Implementation: The model output token behavior matches the cycle-by-cyle output of the reference RTL,
@@ -87,7 +85,6 @@ from each of it's input ports.
 
 No Extraenous Dependencies: Once the input tokens required to compute an output
 token become available, the model must eventually enqueue that output token.
-
 
 
 A Foolproof Algorithm For LI-BDN Implementation from Reference RTL
@@ -111,11 +108,4 @@ NED: simulation deadlock
 -> ensure output enqueue guard depends only tokens to which it is combinationally dependent
 -> e.g., if an output token depends only on target state, it should have no dependency on any input port (it should be able to enqueue a new output immediate after the model state has advanced one cycle)
 
-SC: simulation deadlock 
-
-
-
-
-
-
-
+SC: simulation deadlock
