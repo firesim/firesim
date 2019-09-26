@@ -35,5 +35,5 @@ public:
     }
   }
 private:
-  const size_t size = 8;
+  const size_t size = 64;
 };

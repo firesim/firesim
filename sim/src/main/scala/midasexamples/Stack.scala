@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util.log2Ceil
 
 class StackDUT extends Module {
-  val depth = 8
+  val depth = 64
   val io = IO(new Bundle {
     val push    = Input(Bool())
     val pop     = Input(Bool())
