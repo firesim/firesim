@@ -16,4 +16,4 @@ def oneTimeInit():
     log.info("Building busybox (used in initramfs)")
     shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
     run(['make', jlevel], cwd=busybox_dir)
-    shutil.copy(busybox_dir / 'busybox', initramfs_root / 'bin/')
+    shutil.copy(busybox_dir / 'busybox', initramfs_dir / 'disk' / 'bin/')
