@@ -3,7 +3,7 @@
 *.swp
 test.log
 wlutil/_command.sh
-wlutil/fedora/rootfs.raw
-wlutil/fedora/rootfs.raw.xz
+wlutil/fedora/rootfs.img
+wlutil/fedora/rootfs.img.xz
 *__pycache__
 .doit.db*
