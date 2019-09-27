@@ -96,7 +96,7 @@ class Builder:
         # script at boot. We just overwrite this script.
         scriptDst = os.path.join(overlay, 'firesim.sh')
         if script != None:
-            wlutil.run(['cp', script, scriptDst])
+            wlutil.run(['cp', str(script), str(scriptDst)])
         else:
             wlutil.run(['rm', scriptDst])
             # Create a blank init script because overlays won't let us delete stuff

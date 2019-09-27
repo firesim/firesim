@@ -215,7 +215,7 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
 
 def generateKConfig(kfrags, linuxSrc):
         linuxCfg = os.path.join(linuxSrc, '.config')
-        defCfg = os.path.join(linuxSrc, 'defconfig')
+        defCfg = gen_dir / 'defconfig'
 
         # Create a defconfig to use as reference
         run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
@@ -225,7 +225,7 @@ def generateKConfig(kfrags, linuxSrc):
         kconfigEnv = os.environ.copy()
         kconfigEnv['ARCH'] = 'riscv'
         run([os.path.join(linuxSrc, 'scripts/kconfig/merge_config.sh'),
-            defCfg] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
+            str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
 
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:

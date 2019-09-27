@@ -33,6 +33,9 @@ busybox_dir = wlutil_dir / 'busybox'
 # Initramfs root directory (used to build default initramfs for loading board drivers)
 initramfs_dir = pathlib.Path(os.path.join(wlutil_dir, "initramfs"))
 
+# Storage for generated/temporary outputs
+gen_dir = wlutil_dir / "generated"
+
 # Runtime Logs
 log_dir = os.path.join(root_dir, "logs")
 
@@ -43,7 +46,7 @@ res_dir = os.path.join(root_dir, "runOutput")
 mnt = os.path.join(root_dir, "disk-mount")
 
 # Basic template for user-specified commands (the "command:" option) 
-commandScript = os.path.join(wlutil_dir, "_command.sh")
+commandScript = gen_dir / "_command.sh"
 
 # Default parallelism level to use in subcommands (mostly when calling 'make')
 jlevel = "-j" + str(os.cpu_count())
