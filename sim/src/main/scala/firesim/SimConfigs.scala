@@ -56,8 +56,7 @@ class WithTracerVWidget extends Config((site, here, up) => {
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
-  case EndpointKey => up(EndpointKey) ++ EndpointMap(Seq(
-    new FASEDAXI4Endpoint(midas.core.ReciprocalClockRatio(clockDivision))))
+  case EndpointKey => EndpointMap(Seq(new FASEDAXI4Endpoint(midas.core.ReciprocalClockRatio(clockDivision)))) ++ up(EndpointKey, site)
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
