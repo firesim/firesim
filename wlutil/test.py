@@ -20,10 +20,8 @@ from .launch import *
 testResult = Enum('testResult', ['success', 'failure', 'skip'])
 
 # Default timeouts (in seconds)
-defBuildTimeout = 900 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
-defRunTimeout = 600 # 5 min
-# defBuildTimeout = 2 # 15 min (if there's lots of jobs, init scripts, and/or fedora)
-# defRunTimeout = 600 # 5 min
+defBuildTimeout = 2400 
+defRunTimeout =  2400
 
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
