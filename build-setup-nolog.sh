@@ -102,6 +102,16 @@ else
     target_chipyard_dir=$RDIR/target-design/chipyard
 fi
 
+# Enable latest Developer Toolset for GNU make 4.x
+devtoolset=''
+for dir in /opt/rh/devtoolset-* ; do
+    ! [ -x "${dir}/root/usr/bin/make" ] || devtoolset="${dir}"
+done
+if [ -n "${devtoolset}" ] ; then
+    echo "Enabling ${devtoolset##*/}"
+    . "${devtoolset}/enable"
+fi
+
 #build the toolchain through chipyard (whether as top or as library)
 cd $target_chipyard_dir
 if [ "$FASTINSTALL" = "true" ]; then
