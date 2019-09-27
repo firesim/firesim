@@ -14,3 +14,7 @@ created from a normal disk image.
 This archive contains the board's platform drivers in a
 /lib/modules/KERNELVERSION/ directory. You should append this to an initramfs
 cpio to provide drivers.
+
+# devNodes.cpio
+A prebuilt archive containing the required special files in dev/. Specifically
+/dev/console and /dev/tty.

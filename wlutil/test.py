@@ -200,15 +200,19 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         if cmp_only is None:
             with stdout_redirected(cmdOut):
                 # Build workload
+                log.info("Building test workload")
                 runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
 
                 # Run every job (or just the workload itself if no jobs)
                 if 'jobs' in cfg:
                     for jName in cfg['jobs'].keys():
+                        log.info("Running job " + jName)
                         runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName, spike=spike)
                 else:
+                    log.info("Running workload")
                     runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
-            
+
+        log.info("Testing outputs")    
         if 'strip' in testCfg and testCfg['strip']:
             stripUartlog(cfg, testPath)
 
