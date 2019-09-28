@@ -21,6 +21,10 @@ configUser = [
         'base',
         # Path to spike binary to use (use $PATH if this is omitted)
         'spike',
+        # Optional extra arguments to spike
+        'spike-args',
+        # Optional extra arguments to qemu
+        'qemu-args',
         # Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
         # Path to linux configuration file to use
@@ -69,7 +73,20 @@ configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'hos
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro', 'spike', 'launch', 'bin', 'post_run_hook']
+configInherit = [
+        'runSpec',
+        'files',
+        'outputs',
+        'linux-src',
+        'linux-config',
+        'builder',
+        'distro',
+        'spike',
+        'launch',
+        'bin',
+        'post_run_hook',
+        'spike-args',
+        'qemu-args']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {

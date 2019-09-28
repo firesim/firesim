@@ -1,0 +1,9 @@
+{
+  "name" : "spike-args",
+  "bin" : "hello",
+  "host-init" : "build.sh",
+  "spike-args" : "--dump-dts",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}
