@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __UART_H
 #define __UART_H
 

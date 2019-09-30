@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef RTLSIM
 #include "simif_f1.h"
 #else

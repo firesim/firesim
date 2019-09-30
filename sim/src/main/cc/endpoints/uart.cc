@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifdef UARTWIDGET_struct_guard
 
 #include "uart.h"

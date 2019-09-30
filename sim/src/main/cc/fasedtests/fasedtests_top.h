@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __FASED_TOP_H
 #define __FASED_TOP_H
 
