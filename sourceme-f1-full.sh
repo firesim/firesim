@@ -6,12 +6,12 @@ RDIR=$(pwd)
 AWSFPGA=$RDIR/platforms/f1/aws-fpga
 
 # setup risc-v tools
-source env.sh
+source ./env.sh
 
 # setup AWS tools
 cd $AWSFPGA
-source hdk_setup.sh
-source sdk_setup.sh
+source ./hdk_setup.sh
+source ./sdk_setup.sh
 export CL_DIR=$AWSFPGA/hdk/cl/developer_designs/cl_firesim
 cd $RDIR
 
