@@ -3,14 +3,16 @@
 package firesim.fasedtests
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
+import chisel3.experimental.{RawModule, MultiIOModule}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.Parameters
 
-import midas.models.AXI4BundleWithEdge
+import junctions.{NastiKey, NastiParameters}
+import midas.models.{FASEDEndpoint, FasedAXI4Edge}
+import midas.widgets.{PeekPokeEndpoint}
 
 object AXI4Printf {
   def apply(axi4: AXI4Bundle): Unit = {
@@ -58,13 +60,14 @@ object AXI4Printf {
 
 
 // TODO: Handle errors and reinstatiate the TLErrorEvaluator
-class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
+class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val nMemoryChannels = 1
   val fuzz  = LazyModule(new TLFuzzer(p(NumTransactions), p(MaxFlight)))
   val model = LazyModule(new TLRAMModel("AXI4FuzzMaster"))
   val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i => p(AXI4SlavePort) })
 
   (slave
+    := AXI4Buffer() // Required to cut combinational paths through FASED instance
     := AXI4UserYanker()
     := AXI4IdIndexer(p(IDBits))
     := TLToAXI4()
@@ -75,7 +78,8 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
     := fuzz.node)
 
   lazy val module = new LazyModuleImp(this) {
-    val axi4 = IO(AXI4BundleWithEdge.fromNode(slave.in).head)
+    val axi4 = IO(slave.in.head._1.cloneType)
+    val axi4Edge = slave.in.head._2
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 
@@ -83,5 +87,26 @@ class AXI4Fuzzer(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
     done := fuzz.module.io.finished
     error := false.B
     AXI4Printf(axi4)
+  }
+}
+
+class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
+  val clock = IO(Input(Clock()))
+  val reset = WireInit(false.B)
+
+  withClockAndReset(clock, reset) {
+    val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
+    val nastiKey = NastiParameters(fuzzer.axi4.r.bits.data.getWidth,
+                                   fuzzer.axi4.ar.bits.addr.getWidth,
+                                   fuzzer.axi4.ar.bits.id.getWidth)
+
+    val fasedP = p.alterPartial({
+      case NastiKey => nastiKey
+      case FasedAXI4Edge => Some(fuzzer.axi4Edge)
+    })
+    val fasedInstance =  FASEDEndpoint(fuzzer.axi4, reset, fasedP(firesim.configs.MemModelKey)(fasedP))
+    val peekPokeEndpoint = PeekPokeEndpoint(reset,
+                                            ("done", fuzzer.done),
+                                            ("error", fuzzer.error))
   }
 }

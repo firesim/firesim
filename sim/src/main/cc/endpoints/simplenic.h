@@ -1,3 +1,4 @@
+//See LICENSE for license details
 
 #ifndef __SIMPLENIC_H
 #define __SIMPLENIC_H

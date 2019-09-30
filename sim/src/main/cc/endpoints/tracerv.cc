@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifdef TRACERVWIDGET_struct_guard
 
 #include "tracerv.h"

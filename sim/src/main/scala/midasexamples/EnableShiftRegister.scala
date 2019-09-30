@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 
-class EnableShiftRegister extends Module {
+class EnableShiftRegisterDUT extends Module {
   val io = IO(new Bundle {
     val in    = Input(UInt(4.W))
     val shift = Input(Bool())
@@ -22,3 +22,6 @@ class EnableShiftRegister extends Module {
   }
   io.out := r3
 }
+
+
+class EnableShiftRegister extends PeekPokeMidasExampleHarness(() => new EnableShiftRegisterDUT)

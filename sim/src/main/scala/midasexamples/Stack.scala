@@ -5,8 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import chisel3.util.log2Ceil
 
-class Stack extends Module {
-  val depth = 8
+class StackDUT extends Module {
+  val depth = 64
   val io = IO(new Bundle {
     val push    = Input(Bool())
     val pop     = Input(Bool())
@@ -33,3 +33,4 @@ class Stack extends Module {
 
   io.dataOut := out
 }
+class Stack extends PeekPokeMidasExampleHarness(() => new StackDUT)

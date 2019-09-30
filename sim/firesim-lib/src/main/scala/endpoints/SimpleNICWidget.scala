@@ -1,3 +1,4 @@
+//See LICENSE for license details
 package firesim
 package endpoints
 
@@ -8,7 +9,6 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
-import midas.core.{HostPort}
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import icenet.{NICIOvonly, RateLimiterSettings}
@@ -22,7 +22,22 @@ object TokenQueueConsts {
 }
 import TokenQueueConsts._
 
-case object LoopbackNIC extends Field[Boolean]
+case object LoopbackNIC extends Field[Boolean](false)
+
+class NICEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(Flipped(new NICIOvonly))
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => new SimpleNICWidget()(p)
+  generateAnnotations()
+}
+
+object NICEndpoint {
+  def apply(nicIO: NICIOvonly)(implicit p: Parameters): NICEndpoint = {
+    val ep = Module(new NICEndpoint)
+    ep.io <> nicIO
+    ep
+  }
+}
 
 /* on a NIC token transaction:
  * 1) simulation driver feeds an empty token to start:
@@ -60,20 +75,6 @@ class NICToHostToken extends Bundle {
   val data_out = new StreamChannel(64)
   val data_out_valid = Bool()
   val data_in_ready = Bool()
-}
-
-class SimSimpleNIC extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: NICIOvonly =>
-      DataMirror.directionOf(channel.out.valid) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = new SimpleNICWidget()(p)
-  override def widgetName = "SimpleNICWidget"
-}
-
-class SimpleNICWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new NICIOvonly))
 }
 
 class BigTokenToNICTokenAdapter extends Module {
@@ -175,8 +176,8 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
 
 class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     with BidirectionalDMA {
-  val io = IO(new SimpleNICWidgetIO)
-
+  val io = IO(new WidgetIO)
+  val hPort = IO(HostPort(Flipped(new NICIOvonly)))
   // DMA mixin parameters
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
@@ -189,15 +190,10 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
   val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
 
-  val target = io.hPort.hBits
-  val tFireHelper = DecoupledHelper(io.hPort.toHost.hValid,
-                                    io.hPort.fromHost.hReady,
-                                    io.tReset.valid)
+  val target = hPort.hBits
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
+                                    hPort.fromHost.hReady)
   val tFire = tFireHelper.fire
-  io.tReset.ready := true.B // This is unused
-
-//  htnt_queue.reset  := reset //|| targetReset
-//  ntht_queue.reset := reset //|| targetReset
 
   if (p(LoopbackNIC)) {
     val tokenGen = Module(new HostToNICTokenGenerator(10))
@@ -211,14 +207,14 @@ class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget()(p)
     htnt_queue.io.enq <> bigtokenToNIC.io.htnt
   }
 
-  io.hPort.toHost.hReady := ntht_queue.io.enq.ready
-  ntht_queue.io.enq.valid := io.hPort.toHost.hValid
+  hPort.toHost.hReady := ntht_queue.io.enq.ready
+  ntht_queue.io.enq.valid := hPort.toHost.hValid
   ntht_queue.io.enq.bits.data_out := target.out.bits
   ntht_queue.io.enq.bits.data_out_valid := target.out.valid
   ntht_queue.io.enq.bits.data_in_ready := true.B //target.in.ready
 
-  io.hPort.fromHost.hValid := htnt_queue.io.deq.valid
-  htnt_queue.io.deq.ready := io.hPort.fromHost.hReady
+  hPort.fromHost.hValid := htnt_queue.io.deq.valid
+  htnt_queue.io.deq.ready := hPort.fromHost.hReady
   target.in.bits := htnt_queue.io.deq.bits.data_in
   target.in.valid := htnt_queue.io.deq.bits.data_in_valid
   //target.out.ready := htnt_queue.io.deq.bits.data_out_ready

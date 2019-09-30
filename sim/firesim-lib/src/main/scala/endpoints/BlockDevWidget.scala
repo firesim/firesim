@@ -1,5 +1,5 @@
-package firesim
-package endpoints
+//See LICENSE for license details
+package firesim.endpoints
 
 import chisel3._
 import chisel3.util._
@@ -7,25 +7,29 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
-import midas.core.{HostPort, IsRationalClockRatio, UnityClockRatio}
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
 
-class SimBlockDev(
-    override val clockRatio: IsRationalClockRatio = UnityClockRatio)
-  extends Endpoint {
-  def matchType(data: Data) = data match {
-    case channel: BlockDeviceIO =>
-      DataMirror.directionOf(channel.req.valid) == Direction.Output
-    case _ => false
-  }
-  def widget(p: Parameters) = new BlockDevWidget()(p)
-  override def widgetName = "BlockDevWidget"
+class BlockDevEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+  val bdev = Flipped(new BlockDeviceIO)
+  val reset = Input(Bool())
 }
 
-class BlockDevWidgetIO(implicit val p: Parameters) extends EndpointWidgetIO()(p) {
-  val hPort = Flipped(HostPort(new BlockDeviceIO))
+class BlockDevEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
+  val io = IO(new BlockDevEndpointTargetIO)
+  val endpointIO = HostPort(io)
+  def widget = (p: Parameters) => { new BlockDevWidget()(p) }
+  generateAnnotations()
+}
+
+object BlockDevEndpoint  {
+  def apply(blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevEndpoint = {
+    val ep = Module(new BlockDevEndpoint)
+    ep.io.bdev <> blkdevIO
+    ep.io.reset := reset
+    ep
+  }
 }
 
 class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
@@ -46,7 +50,8 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   val defaultReadLatency = (1 << 8).U(latencyBits.W)
   val defaultWriteLatency = (1 << 8).U(latencyBits.W)
 
-  val io = IO(new BlockDevWidgetIO)
+  val io = IO(new WidgetIO())
+  val hPort = IO(HostPort(new BlockDevEndpointTargetIO))
 
   val reqBuf = Module(new Queue(new BlockDeviceRequest, 10))
   val dataBuf = Module(new Queue(new BlockDeviceData, 32))
@@ -54,10 +59,9 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   val rRespBuf = Module(new Queue(new BlockDeviceData, 32))
   val wAckBuf = Module(new Queue(UInt(tagBits.W), 4))
 
-  val target = io.hPort.hBits
-  val channelCtrlSignals = Seq(io.hPort.toHost.hValid,
-                               io.hPort.fromHost.hReady,
-                               io.tReset.valid)
+  val target = hPort.hBits.bdev
+  val channelCtrlSignals = Seq(hPort.toHost.hValid,
+                               hPort.fromHost.hReady)
   val rRespStallN = Wire(Bool()) // Unset if the SW model hasn't returned the response data in time
   val wAckStallN = Wire(Bool())  // As above, but with a write acknowledgement
   val tFireHelper = DecoupledHelper((channelCtrlSignals ++ Seq(
@@ -68,17 +72,15 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
 
   val tFire = tFireHelper.fire
   // Decoupled helper can't exclude two bools unfortunately...
-  val targetReset = channelCtrlSignals.reduce(_ && _) && io.tReset.bits
+  val targetReset = channelCtrlSignals.reduce(_ && _) && hPort.hBits.reset
 
   reqBuf.reset  := reset.toBool || targetReset
   dataBuf.reset  := reset.toBool || targetReset
   rRespBuf.reset  := reset.toBool || targetReset
   wAckBuf.reset  := reset.toBool || targetReset
 
-  // Hack: hReady depends on hValid. See firesim/firesim#335
-  io.hPort.toHost.hReady := tFireHelper.fire
-  io.hPort.fromHost.hValid := tFireHelper.fire
-  io.tReset.ready := tFireHelper.fire(io.tReset.valid)
+  hPort.toHost.hReady := tFireHelper.fire
+  hPort.fromHost.hValid := tFireHelper.fire
 
   reqBuf.io.enq.bits := target.req.bits
   reqBuf.io.enq.valid := target.req.valid && tFireHelper.fire(reqBuf.io.enq.ready)

@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 ifndef FIRESIM_ENV_SOURCED
 $(error You must source sourceme-f1-manager.sh or env.sh to use this Makefile)
 endif

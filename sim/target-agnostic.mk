@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 # FireSim MAKEFRAG interface - Compulsory variables follow
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here

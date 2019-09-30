@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #include "firesim_fesvr.h"
 
 #define MSIP_BASE 0x2000000

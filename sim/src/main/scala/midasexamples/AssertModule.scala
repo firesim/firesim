@@ -11,7 +11,7 @@ class ChildModule extends Module {
   assert(!io.pred, "Pred asserted")
 }
 
-class AssertModule extends Module {
+class AssertModuleDUT extends Module {
   val io = IO(new Bundle {
     val cycleToFail  = Input(UInt(16.W))
     val a  = Input(Bool())
@@ -30,3 +30,4 @@ class AssertModule extends Module {
   cMod.io.pred := io.c && io.cycleToFail === cycle
 }
 
+class AssertModule extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)

@@ -134,3 +134,5 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
+// MIDAS 2.0 compiler tests
+class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")

@@ -5,7 +5,7 @@ package firesim.midasexamples
 import chisel3._
 import chisel3.util.Enum
 
-class Parity extends Module {
+class ParityDUT extends Module {
   val io = IO(new Bundle {
     val in  = Input(Bool())
     val out = Output(Bool())
@@ -18,3 +18,5 @@ class Parity extends Module {
   }
   io.out := (state === s_odd)
 }
+
+class Parity extends PeekPokeMidasExampleHarness(() => new ParityDUT)

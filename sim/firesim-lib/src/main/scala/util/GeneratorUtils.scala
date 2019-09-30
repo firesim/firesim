@@ -4,6 +4,7 @@ package firesim.util
 
 import java.io.{File, FileWriter}
 
+import chisel3.Module
 import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.Port
 
@@ -181,15 +182,16 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites {
 //   1: Output directory (same as above)
 //   Remaining argments are the same as above
 object FireSimRuntimeConfGenerator extends App with HasFireSimGeneratorUtilities {
+  require(1==0, "See Midas #132")
   lazy val generatorArgs = GeneratorArgs(args)
   lazy val genDir = new File(names.targetDir)
   // We need the scala instance of an elaborated memory-model, so that settings
   // may be legalized against the generated hardware. TODO: Currently these
   // settings aren't dependent on the target-AXI4 widths (~bug); this will need
   // to be an optional post-generation step in MIDAS
-  lazy val memModel = (hostParams(midas.models.MemModelKey))(hostParams alterPartial {
-      case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
-  chisel3.Driver.elaborate(() => memModel)
-  val confFileName = args(0)
-  memModel.getSettings(confFileName)(hostParams)
+  //lazy val memModel = (hostParams(midas.models.MemModelKey))(hostParams alterPartial {
+  //    case junctions.NastiKey => junctions.NastiParameters(64, 32, 4)})// Related note ^
+  //chisel3.Driver.elaborate(() => memModel)
+  //val confFileName = args(0)
+  //memModel.getSettings(confFileName)(hostParams)
 }

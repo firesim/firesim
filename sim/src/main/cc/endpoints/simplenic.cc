@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifdef SIMPLENICWIDGET_struct_guard
 
 #include "simplenic.h"
