@@ -14,17 +14,7 @@ FireMarshal comes with a few basic workloads that you can build right out of
 the box (in ``workloads/``). In this example, we will build and test the
 buildroot-based linux distribution (called *br-base*).
 
-The first time you clone FireMarshal, you will need to initialize it. If you
-are using FireSim, the build-setup script will have already done this. It is
-safe to re-run the ``init`` command multiple times, although you may see
-warnings about skipping patches.
-
-::
-
-   ./marshal init
-
-
-Next, we build the workload. This will build the linux binary, the platform
+We begin by building the workload. This will build the linux binary, the platform
 specific drivers (and initramfs), and the root filesystem:
 
 ::
