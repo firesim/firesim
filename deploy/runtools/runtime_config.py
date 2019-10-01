@@ -244,8 +244,18 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX'] + "-"
+        runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
+        if runfarmtagprefix != "":
+            runfarmtagprefix += "-"
+
         self.runfarmtag = runfarmtagprefix + runtime_dict['runfarm']['runfarmtag']
+
+        # now, check if we're in tutorial mode and set extra prefix if so
+        tutorial_mode_dict = iam_tutorial_mode()
+        if tutorial_mode_dict['firesim-tutorial-mode']:
+            # in tutorial mode, further prefix runfarmtag
+            self.runfarmtag = tutorial_mode_dict['runfarmprefix'] + "-" + self.runfarmtag
+
         self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
         self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
         self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0

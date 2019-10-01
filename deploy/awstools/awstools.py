@@ -67,7 +67,8 @@ def iam_tutorial_mode():
         'securitygroupname': resptags['firesim-tutorial-securitygroupname'],
         'keyname':           resptags['firesim-tutorial-keyname'],
         's3bucketname' :     resptags['firesim-tutorial-s3bucketname'],
-        'snsname'      :     resptags['firesim-tutorial-snsname']
+        'snsname'      :     resptags['firesim-tutorial-snsname'],
+        'runfarmprefix':     resptags['firesim-tutorial-runfarmprefix'],
     }
 
     return returntags
