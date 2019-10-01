@@ -2,8 +2,8 @@
 *-bin
 *.swp
 test.log
-wlutil/fedora/Fedora-Developer-Rawhide-20181015.n.0-sda.raw
-wlutil/fedora/Fedora-Developer-Rawhide-20181015.n.0-sda.raw.xz
 wlutil/_command.sh
+wlutil/fedora/rootfs.img
+wlutil/fedora/rootfs.img.xz
 *__pycache__
 .doit.db*
