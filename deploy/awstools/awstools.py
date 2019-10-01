@@ -10,15 +10,8 @@ from fabric.api import local
 
 rootLogger = logging.getLogger()
 
-# users are instructed to create a key named `firesim` in the wiki
-keyname = 'firesim'
-
 # this needs to be updated whenever the FPGA Dev AMI changes
 f1_ami_name = "FPGA Developer AMI - 1.6.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0b1edf08d56c2da5c.4"
-
-# users are instructed to create these in the setup instructions
-securitygroupname = 'firesim'
-vpcname = 'firesim'
 
 # AMIs are region specific
 def get_f1_ami_id():
@@ -74,6 +67,12 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
          This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
     """
+    # users are instructed to create a key named `firesim` in the wiki
+    keyname = 'firesim'
+    # users are instructed to create these in the setup instructions
+    securitygroupname = 'firesim'
+    vpcname = 'firesim'
+
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
 
