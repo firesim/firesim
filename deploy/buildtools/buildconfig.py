@@ -88,6 +88,12 @@ class GlobalBuildConfig:
 
         self.s3_bucketname = \
             global_build_configfile.get('afibuild', 's3bucketname')
+
+        tutorial_mode_dict = iam_tutorial_mode()
+        if tutorial_mode_dict['firesim-tutorial-mode']:
+            # in tutorial mode, special s3 bucket name
+            self.s3_bucketname = tutorial_mode_dict['s3bucketname']
+
         self.build_instance_market = \
                 global_build_configfile.get('afibuild', 'buildinstancemarket')
         self.spot_interruption_behavior = \

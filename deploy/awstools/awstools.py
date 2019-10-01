@@ -19,8 +19,8 @@ def iam_tutorial_mode():
 
     Returns dict with at least:
         'firesim-tutorial-mode' set to True or False
-        if true, then also:
-            'vpcname', 'securitygroupname', 'keyname', 's3bucketname'.
+        if True, then also:
+            'vpcname', 'securitygroupname', 'keyname', 's3bucketname', 'snsname'.
 
     Note that these tags are NOT used to enforce the usage of these resources,
     rather just to configure the manager. Enforcement is done in IAM
@@ -66,7 +66,8 @@ def iam_tutorial_mode():
         'vpcname':           resptags['firesim-tutorial-vpcname'],
         'securitygroupname': resptags['firesim-tutorial-securitygroupname'],
         'keyname':           resptags['firesim-tutorial-keyname'],
-        's3bucketname' :     resptags['firesim-tutorial-s3bucketname']
+        's3bucketname' :     resptags['firesim-tutorial-s3bucketname'],
+        'snsname'      :     resptags['firesim-tutorial-snsname']
     }
 
     return returntags
@@ -340,9 +341,16 @@ def subscribe_to_firesim_topic(email):
     """ Subscribe a user to their FireSim SNS topic for notifications. """
     client = boto3.client('sns')
 
+    snsname = 'FireSim'
+
+    tutorial_mode_dict = iam_tutorial_mode()
+    if tutorial_mode_dict['firesim-tutorial-mode']:
+        # in tutorial mode, these are not just 'firesim'
+        snsname = tutorial_mode_dict['snsname']
+
     # this will either create the topic, if it doesn't exist, or just get the arn
     response = client.create_topic(
-        Name='FireSim'
+        Name=snsname
     )
     arn = response['TopicArn']
 
@@ -363,9 +371,16 @@ def send_firesim_notification(subject, body):
     """ Send a FireSim SNS Email notification. """
     client = boto3.client('sns')
 
+    snsname = 'FireSim'
+
+    tutorial_mode_dict = iam_tutorial_mode()
+    if tutorial_mode_dict['firesim-tutorial-mode']:
+        # in tutorial mode, these are not just 'firesim'
+        snsname = tutorial_mode_dict['snsname']
+
     # this will either create the topic, if it doesn't exist, or just get the arn
     response = client.create_topic(
-        Name='FireSim'
+        Name=snsname
     )
 
     arn = response['TopicArn']
