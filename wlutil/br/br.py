@@ -42,17 +42,24 @@ def buildConfig():
     """Construct the final buildroot configuration for this environment. After
     calling this, it is safe to call 'make' in the buildroot directory."""
 
+    # We run the preprocessor on a simple program to see the C-visible
+    # "LINUX_VERSION_CODE" macro
+    linuxHeaderTest = """#include <linux/version.h>
+    LINUX_VERSION_CODE
+    """
+    linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
+              input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
+    linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
+
     # Major/minor version of the linux kernel headers included with our
     # toolchain. This is not necessarily the same as the linux kernel used by
     # Marshal, but is assumed to be <= to the version actually used.
-    linuxHeaderVer = sp.run(
-      "{ echo '#include <linux/version.h>' ; echo 'LINUX_VERSION_CODE' ; } | riscv64-unknown-linux-gnu-gcc -E -xc - | tail -n 1",
-      stdout=sp.PIPE, shell=True, universal_newlines=True).stdout.strip()
     linuxMaj = str(int(linuxHeaderVer) >> 16)
     linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
 
     # Toolchain major version
-    toolVerStr = sp.run("riscv64-unknown-linux-gnu-gcc --version", shell=True, universal_newlines=True, stdout=sp.PIPE).stdout
+    toolVerStr = sp.run("riscv64-unknown-linux-gnu-gcc --version", shell=True,
+            universal_newlines=True, stdout=sp.PIPE).stdout
     toolVer = toolVerStr[36]
 
     # Contains options specific to the build enviornment (br is touchy about this stuff)
