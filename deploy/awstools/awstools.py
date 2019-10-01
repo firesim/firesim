@@ -13,6 +13,66 @@ rootLogger = logging.getLogger()
 # this needs to be updated whenever the FPGA Dev AMI changes
 f1_ami_name = "FPGA Developer AMI - 1.6.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0b1edf08d56c2da5c.4"
 
+def iam_tutorial_mode():
+    """ Check if we're in "tutorial mode". These are instances with special
+    tags applied that modify what VPC, security group, and keys they use.
+
+    Returns dict with at least:
+        'firesim-tutorial-mode' set to True or False
+        if true, then also:
+            'vpcname', 'securitygroupname', 'keyname', 's3bucketname'.
+
+    Note that these tags are NOT used to enforce the usage of these resources,
+    rather just to configure the manager. Enforcement is done in IAM
+    policies."""
+
+    false_dict = {'firesim-tutorial-mode': False}
+
+    # first get this instance's ID
+    res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
+    instanceid = res.stdout
+    print(instanceid)
+
+    # try to get tags. if we don't have permission for this. return False
+    client = boto3.client('ec2')
+    resp = None
+    try:
+        resp = client.describe_tags(
+            Filters=[
+                {
+                    'Name': 'resource-id',
+                    'Values': [
+                        instanceid,
+                    ]
+                },
+            ]
+        )
+    except:
+        # we do not have permission to describe tags, return False
+        return false_dict
+
+    resptags = {}
+    for pair in resp['Tags']:
+        resptags[pair['Key']] = pair['Value']
+    print(resptags)
+
+    in_tutorial_mode = 'firesim-tutorial-mode' in resptags.keys() and resptags['firesim-tutorial-mode'] == 'yes'
+    if not in_tutorial_mode:
+        return false_dict
+
+    # at this point, assume we are in tutorial mode and get all tags we need
+    returntags = {
+        'firesim-tutorial-mode': True,
+        'vpcname':           resptags['firesim-tutorial-vpcname'],
+        'securitygroupname': resptags['firesim-tutorial-securitygroupname'],
+        'keyname':           resptags['firesim-tutorial-keyname'],
+        's3bucketname' :     resptags['firesim-tutorial-s3bucketname']
+    }
+
+    return returntags
+
+
+
 # AMIs are region specific
 def get_f1_ami_id():
     """ Get the AWS F1 Developer AMI by looking up the image name -- should be region independent.
@@ -72,6 +132,15 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     # users are instructed to create these in the setup instructions
     securitygroupname = 'firesim'
     vpcname = 'firesim'
+
+    # now, check if we're in tutorial mode and override if necessary
+    tutorial_mode_dict = iam_tutorial_mode()
+
+    if tutorial_mode_dict['firesim-tutorial-mode']:
+        # in tutorial mode, these are not just 'firesim'
+        keyname = tutorial_mode_dict['keyname']
+        securitygroupname = tutorial_mode_dict['securitygroupname']
+        vpcname = tutorial_mode_dict['vpcname']
 
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
@@ -320,4 +389,6 @@ if __name__ == '__main__':
     """ Test SNS """
     #subscribe_to_firesim_topic("sagark@eecs.berkeley.edu")
 
-    send_firesim_notification("test subject", "test message")
+    #send_firesim_notification("test subject", "test message")
+
+    print(iam_tutorial_mode())
