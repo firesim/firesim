@@ -3,13 +3,14 @@ import subprocess as sp
 import shutil
 import logging
 import string
+import pathlib
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
 
 # Some common directories for this module (all absolute paths)
-br_dir = os.path.dirname(os.path.realpath(__file__))
-overlay = os.path.join(br_dir, 'firesim-overlay')
+br_dir = pathlib.Path(__file__).parent
+overlay = br_dir / 'firesim-overlay'
 
 initTemplate = string.Template("""#!/bin/sh
 
@@ -37,6 +38,48 @@ esac
 
 exit""")
 
+def buildConfig():
+    """Construct the final buildroot configuration for this environment. After
+    calling this, it is safe to call 'make' in the buildroot directory."""
+
+    # Major/minor version of the linux kernel headers included with our
+    # toolchain. This is not necessarily the same as the linux kernel used by
+    # Marshal, but is assumed to be <= to the version actually used.
+    linuxHeaderVer = sp.run(
+      "{ echo '#include <linux/version.h>' ; echo 'LINUX_VERSION_CODE' ; } | riscv64-unknown-linux-gnu-gcc -E -xc - | tail -n 1",
+      stdout=sp.PIPE, shell=True, universal_newlines=True).stdout.strip()
+    linuxMaj = str(int(linuxHeaderVer) >> 16)
+    linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
+
+    # Toolchain major version
+    toolVerStr = sp.run("riscv64-unknown-linux-gnu-gcc --version", shell=True, universal_newlines=True, stdout=sp.PIPE).stdout
+    toolVer = toolVerStr[36]
+
+    # Contains options specific to the build enviornment (br is touchy about this stuff)
+    toolKfrag = wlutil.gen_dir / 'brToolKfrag'
+    with open(toolKfrag, 'w') as f:
+        f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+linuxMaj+"_"+linuxMin+"=y\n")
+        f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+linuxMaj+"_"+linuxMin+"=y\n")
+        f.write('BR2_TOOLCHAIN_HEADERS_AT_LEAST="'+linuxMaj+"."+linuxMin+'"\n')
+        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer+'=y\n')
+        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer+'"\n')
+        f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer+'=y\n')
+        f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
+
+    # Default Configuration (allows us to bump BR independently of our configs)
+    defconfig = wlutil.gen_dir / 'brDefConfig'
+    wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'))
+    shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
+
+    # Our config fragment, specifies differences from the default
+    marshalKfrag = br_dir / 'buildroot-config'
+
+    # We're just borrowing linux's merge_config.sh helper since br uses the same make system
+    # This doesn't actually depend on any details of this linux kernel
+    mergeScript = str(pathlib.Path(wlutil.linux_dir) / 'scripts' / 'kconfig' / 'merge_config.sh')
+    wlutil.run([mergeScript, str(defconfig), str(toolKfrag), str(marshalKfrag)],
+            cwd=(br_dir / 'buildroot'))
+    
 class Builder:
 
     def baseConfig(self):
@@ -52,9 +95,8 @@ class Builder:
     def buildBaseImage(self):
         log = logging.getLogger()
         rootfs_target = "rootfs.img"
-        shutil.copy(os.path.join(br_dir, 'buildroot-config'),
-                    os.path.join(br_dir, "buildroot/.config"))
-        # log.debug(sp.check_output(['make'], cwd=os.path.join(br_dir, "buildroot")))
+
+        buildConfig()
 
         # Buildroot complains about some common PERL configurations
         env = os.environ.copy()
