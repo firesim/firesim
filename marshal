@@ -21,7 +21,8 @@ def main():
     parser.add_argument('--workdir', help='Use a custom workload directory (defaults to the same directory as the first config file)')
     parser.add_argument('-v', '--verbose',
                         help='Print all output of subcommands to stdout as well as the logs', action='store_true')
-    parser.add_argument('-i', '--initramfs', action='store_true', help="Use the initramfs version of this workload")
+    parser.add_argument('-i', '--initramfs', action='store_true', help="Alias for --no-disk")
+    parser.add_argument('-d', '--no-disk', action='store_true', help="Use the no-disk version of this workload (the rootfs will be included as an initramfs in the boot binary)")
     subparsers = parser.add_subparsers(title='Commands', dest='command')
 
     # Build command
@@ -62,6 +63,9 @@ def main():
 
     args = parser.parse_args()
     
+    # Perform any basic setup functions for wlutil. This is idempotent.
+    wlutil.initialize()
+
     # Load all the configs from the workload directory
     args.config_files = [ os.path.abspath(f) for f in args.config_files ] 
     if args.workdir is None:
@@ -85,11 +89,11 @@ def main():
 
         targetCfg = cfgs[cfgPath]
    
-        if args.initramfs:
-            targetCfg['initramfs'] = True
+        if args.initramfs or args.no_disk:
+            targetCfg['nodisk'] = True
             if 'jobs' in targetCfg:
                 for j in targetCfg['jobs'].values():
-                    j['initramfs'] = True
+                    j['nodisk'] = True
 
         if args.command == "build":
             try:
@@ -128,22 +132,25 @@ def main():
             else:
                 print("Test Passed")
             log.info("")
+
         elif args.command == 'clean':
             # with contextlib.suppress(FileNotFoundError):
                 if 'bin' in targetCfg:
                     deleteSafe(targetCfg['bin'])
-                    deleteSafe(targetCfg['bin'] + '-initramfs')
+                    deleteSafe(targetCfg['bin'] + '-nodisk')
                 if 'img' in targetCfg:
                     deleteSafe(targetCfg['img'])
                 if 'jobs' in targetCfg:
                     for jCfg in targetCfg['jobs'].values():
                         if 'bin' in jCfg:
                             deleteSafe(jCfg['bin'])
-                            deleteSafe(jCfg['bin'] + '-initramfs')
+                            deleteSafe(jCfg['bin'] + '-nodisk')
                         if 'img' in jCfg:
                             deleteSafe(jCfg['img'])
+
         elif args.command == 'install':
             wlutil.installWorkload(cfgPath, cfgs)
+
         else:
             log.error("No subcommand specified")
             sys.exit(1)

@@ -1,0 +1,14 @@
+#!/bin/busybox sh
+
+/bin/busybox sh setupSystem.sh
+
+if [ $? != 0 ]; then
+  echo "Failed to setup system. Dropping to emergency shell."
+  exec /bin/busybox sh
+fi
+
+echo "Loaded platform drivers, booting from disk:"
+exec switch_root /mnt/root /sbin/init
+
+echo "Failed to find appropriate init"
+exec /bin/busybox sh
