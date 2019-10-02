@@ -6,7 +6,7 @@
 	url = https://github.com/firesim/riscv-pk.git
 [submodule "br/buildroot"]
 	path = wlutil/br/buildroot
-	url = https://git.buildroot.net/buildroot
+	url = https://github.com/buildroot/buildroot.git
 [submodule "wlutil/busybox"]
 	path = wlutil/busybox
 	url = https://git.busybox.net/busybox/
