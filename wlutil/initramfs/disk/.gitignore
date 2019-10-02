@@ -1,0 +1,4 @@
+*.ko
+loadDrivers.sh
+bin/busybox
+dev/

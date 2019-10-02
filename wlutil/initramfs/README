@@ -1,0 +1,20 @@
+This directory contains utilities for constructing initramfs's. Each
+subdirectory can be included in the linux CONFIG_INITRAMFS_SOURCE option. 
+
+# disk
+This is the initramfs for disk-based workloads. It contains a fully-functioning
+self-contained initramfs that will load drivers automatically.
+
+# no-disk
+This simply contains a /init script that loads platform drivers and calls the
+distro's /sbin/init. It is intended to be appended to a rootfs cpio that was
+created from a normal disk image.
+
+# drivers
+This archive contains the board's platform drivers in a
+/lib/modules/KERNELVERSION/ directory. You should append this to an initramfs
+cpio to provide drivers.
+
+# devNodes.cpio
+A prebuilt archive containing the required special files in dev/. Specifically
+/dev/console and /dev/tty.

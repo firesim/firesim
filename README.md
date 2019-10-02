@@ -42,3 +42,19 @@ pip3 install python-requirements.txt
 In addition to standard libraries, you will need riscv-tools
 (https://github.com/firesim/riscv-tools.git). This was last tested with commit
 bce7b5e (gcc version 7.2).
+
+# Basic Usage
+On a fresh clone, run:
+    ./marshal init
+
+You can now build workloads. For example:
+
+    ./marshal build workloads/br-base.json
+
+To run in qemu:
+
+    ./marshal launch workloads/br-base.json
+
+To install into FireSim (assuming you cloned this as a submodule of firesim):
+
+    ./marshal install workloads/br-base.json
