@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #include "firesim_top.h"
 
 // FireSim-defined endpoints

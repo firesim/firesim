@@ -28,4 +28,4 @@ class GCDDUT extends Module {
   printf("X: %d, Y:%d\n", x, y)
 }
 
-class GCD extends PeekPokeMidasExampleEnvironment(() => new GCDDUT)
+class GCD extends PeekPokeMidasExampleHarness(() => new GCDDUT)

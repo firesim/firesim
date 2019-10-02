@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __BLOCKDEV_H
 #define __BLOCKDEV_H
 

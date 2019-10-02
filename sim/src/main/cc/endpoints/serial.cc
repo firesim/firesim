@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifdef SERIALWIDGET_struct_guard
 
 #include <assert.h>

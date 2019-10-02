@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.fasedtests
 DESIGN ?= AXI4Fuzzer

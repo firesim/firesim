@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __FIRESIM_FESVR_H
 #define __FIRESIM_FESVR_H
 

@@ -16,4 +16,4 @@ class ShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-class ShiftRegister extends PeekPokeMidasExampleEnvironment(() => new ShiftRegisterDUT)
+class ShiftRegister extends PeekPokeMidasExampleHarness(() => new ShiftRegisterDUT)

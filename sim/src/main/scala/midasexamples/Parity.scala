@@ -19,4 +19,4 @@ class ParityDUT extends Module {
   io.out := (state === s_odd)
 }
 
-class Parity extends PeekPokeMidasExampleEnvironment(() => new ParityDUT)
+class Parity extends PeekPokeMidasExampleHarness(() => new ParityDUT)

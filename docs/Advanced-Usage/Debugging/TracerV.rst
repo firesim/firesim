@@ -41,7 +41,7 @@ In config_build_recipes.ini:
     DESIGN=FireSim
     TARGET_CONFIG=FireSimRocketChipQuadCoreTracedConfig
     PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig
-    instancetype=c4.4xlarge
+    instancetype=c5.4xlarge
     deploytriplet=None
 
 In config_build.ini:

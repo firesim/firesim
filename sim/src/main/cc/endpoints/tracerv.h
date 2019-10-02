@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __TRACERV_H
 #define __TRACERV_H
 

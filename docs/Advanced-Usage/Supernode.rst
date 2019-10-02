@@ -64,7 +64,7 @@ configurations.  For example:
     DESIGN=FireSimSupernode
     TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
     PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz
-    instancetype=c4.4xlarge
+    instancetype=c5.4xlarge
     deploytriplet=None
 
 

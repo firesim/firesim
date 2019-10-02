@@ -7,10 +7,10 @@ import chisel3.experimental.{withClock, RawModule}
 
 import midas.widgets.PeekPokeEndpoint
 
-// A simple MIDAS environment / test harness that generates a legacy
+// A simple MIDAS harness that generates a legacy
 // module DUT (it has a single io: Data member) and connects all of
 // its IO to a PeekPokeEndpoint
-class PeekPokeMidasExampleEnvironment(dutGen: () => Module) extends RawModule {
+class PeekPokeMidasExampleHarness(dutGen: () => Module) extends RawModule {
   val clock = IO(Input(Clock()))
   val reset = WireInit(false.B)
 

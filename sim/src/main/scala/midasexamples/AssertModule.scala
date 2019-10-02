@@ -30,4 +30,4 @@ class AssertModuleDUT extends Module {
   cMod.io.pred := io.c && io.cycleToFail === cycle
 }
 
-class AssertModule extends PeekPokeMidasExampleEnvironment(() => new AssertModuleDUT)
+class AssertModule extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)

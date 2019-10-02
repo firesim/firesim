@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __FIRESIM_TOP_H
 #define __FIRESIM_TOP_H
 

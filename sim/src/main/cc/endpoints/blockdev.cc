@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifdef BLOCKDEVWIDGET_struct_guard
 
 #include "blockdev.h"

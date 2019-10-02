@@ -24,4 +24,4 @@ class EnableShiftRegisterDUT extends Module {
 }
 
 
-class EnableShiftRegister extends PeekPokeMidasExampleEnvironment(() => new EnableShiftRegisterDUT)
+class EnableShiftRegister extends PeekPokeMidasExampleHarness(() => new EnableShiftRegisterDUT)

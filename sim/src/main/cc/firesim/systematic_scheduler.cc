@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #include <assert.h>
 #include "systematic_scheduler.h"
 

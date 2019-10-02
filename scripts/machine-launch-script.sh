@@ -12,6 +12,10 @@ sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath
 sudo yum install -y gtk3-devel
 # deps for firesim-software (note that rsync is installed but too old)
 sudo yum install -y python36-pip python36-devel rsync
+# Install GNU make 4.x (needed to cross-compile glibc 2.28+)
+sudo yum install -y centos-release-scl
+sudo yum install -y devtoolset-8-make
+
 # install DTC. it's not available in repos in FPGA AMI
 DTCversion=dtc-1.4.4
 wget https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/$DTCversion.tar.gz

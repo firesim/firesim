@@ -82,4 +82,4 @@ class RiscSRAMDUT extends Module {
   }
 }
 
-class RiscSRAM extends PeekPokeMidasExampleEnvironment(() => new RiscSRAMDUT)
+class RiscSRAM extends PeekPokeMidasExampleHarness(() => new RiscSRAMDUT)
