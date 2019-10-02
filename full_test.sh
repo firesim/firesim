@@ -52,7 +52,7 @@ fi
 
 # These tests need to run on spike, but not with the no-disk option
 echo "Running bare-metal tests" | tee -a $LOGNAME
-IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args)"
+IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args|rocc)"
 ./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
 # This is a temporary workaround for bug #38
 ./marshal build test/spike.json

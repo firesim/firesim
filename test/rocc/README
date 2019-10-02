@@ -1,0 +1,46 @@
+This tests basic RoCC accelerator functionality using the default dummy_rocc
+accelerator included with spike. You may use this as a template for writing
+bare-metal software for RoCC accelerators.
+
+# Key Files
+* crt.S: Initializes the system and sets up the basic runtime. This eliminates
+  the need for an OS.
+* rocc.h: These are helper macros for constructing RoCC instructions
+* syscalls.c: This implements a subset of the C standard library. We do not
+  include all of C, so you'll need to implement whatever you need that isn't
+  there.
+* link.ld: This instructs the linker to setup the binary as a standalone
+  bootable image on the bare-metal hardware without any OS.
+* rocc-test.c: This is our actual benchmark. For the most part, a new project
+  would only need to modify this file.
+
+# Config Options
+tests/rocc.json
+
+* host-init: This script simply calls into our makefile to cross-compile the
+  benchmark.
+* bin: bare-metal workloads in Marshal must specify their boot-binary
+  explicitly (relative to their workload directory)
+* spike-args: This allows us to pass additional arguments to spike when run
+  from Marshal. In this case, we specify the extension to use (dummy_rocc comes
+  with spike by default).
+* testing: Reference outputs from a known-good run of the workload (used by
+  Marshal's 'test' command).
+
+# Usage
+## Using Marshal
+Build:
+  ./marshal build test/rocc.json
+
+Run interactively:
+    ./marshal launch --spike test/rocc.json
+
+or run the automated unit test:
+    ./marshal test --spike test/rocc.json
+
+## Manual
+Build with:
+    make
+
+Run on Spike with:
+    spike --extension=dummy_rocc rocc-test.riscv
