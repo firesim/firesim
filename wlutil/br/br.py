@@ -58,7 +58,7 @@ def buildConfig():
     linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
 
     # Toolchain major version
-    toolVerStr = sp.run("riscv64-unknown-linux-gnu-gcc --version", shell=True,
+    toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
             universal_newlines=True, stdout=sp.PIPE).stdout
     toolVer = toolVerStr[36]
 
