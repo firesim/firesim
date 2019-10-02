@@ -31,6 +31,7 @@ supported).
    quickstart
    commands
    config
+   internal/index
 
 
 .. todo:: Setup autodoc and add code documentation (via docstrings)
