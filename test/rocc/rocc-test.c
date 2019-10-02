@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include "rocc.h"
 
-// Old custom format:
 int main() {
   uint64_t x = 123, y = 456, z = 0;
   // load x into accumulator 2 (funct=0)
