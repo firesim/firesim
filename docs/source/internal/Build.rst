@@ -40,14 +40,12 @@ create the real linux configuration. We first run 'make ARCH=riscv defconfig'
 in the linux source directory (either default or user-provided). We then append
 configuration options to include an initramfs (CONFIG_BLK_DEV_INITRD and
 CONFIG_INITRAMFS_SOURCE), more on that below. We then call a script provided by
-linux to combine the kernel fragments
-(``riscv-linux/scripts/kconfig/merge_config.sh``). The default configuration
-(including initramfs options) is only created once per source. If you change
-the default configuration in a custom kernel, you should manually delete the
-generated ``defconfig`` file.
+Linux to combine the kernel fragments
+(``riscv-linux/scripts/kconfig/merge_config.sh``).
 
-Generate Initramfs
+Build Platform Drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+``wlutil/build.py:makeDrivers()``
 FireSim provides a number of non-standard devices that require custom linux
 drivers. In particular, the block device driver is needed in order to boot a
 working system. Instead of maintaining a custom fork of the linux kernel (and
@@ -62,18 +60,32 @@ important if the workload provides a custom kernel). We currently do not
 support alternative drivers, so any custom linux kernel must be compatible with
 the default kernel with regard to these drivers.
 
-Finally, we generate the initramfs cpio. ``marshal init`` prepared most of this
-for us by building busybox and creating the filesystem skeleton at
-``wlutil/initramfsRoot``. At build time, we additionally copy in the
-newly-built drivers and generate a script (``loadDrivers.sh``) that loads them
-at boot-time. Finally, we call ``makeInitramfs.sh`` to create the cpio. This
-script must be separate because it runs in a fakeroot environment to create the
-needed device nodes (e.g. ``/dev/console``).
+Generate Initramfs
+^^^^^^^^^^^^^^^^^^^^^^^^^
+``wlutil/build.py:makeInitramfs()``
 
-Note that for full-initramfs workloads (those constructed with the ``-i``
-flag), we cannot use our custom initramfs or drivers. Those workloads instead
-convert the target rootfs into an initramfs and use that. Users will need to
-manually build and load any drivers that they need.
+Because some drivers must be loaded in order to boot, we package them into a
+custom initramfs that is compiled into the kernel.  Marshal generates this
+archive by staging several filesystems at ``wlutil/initramfs{disk, nodisk,
+drivers}``:
+* ``disk/``: contains a fully-functioning root filesystem with a busybox-based
+  environment and an init script that knows to load drivers and look for a disk
+  to boot from (either ``/dev/vda`` for qemu or ``/dev/iceblk`` for firesim).
+* ``nodisk/``: contains just the init script to load drivers (it must be
+  combined with a working root filesystem).
+* ``drivers/``: contains the platform drivers built earlier.
+* ``devNodes.cpio``: A pre-built archive containing the ``/dev/console`` and
+  ``/dev/tty`` special files. These require a special procedure to create so we
+  only do it once and commit the result.
+
+Marshal combines the needed initramfs sources in a temporary directory into a
+single cpio archive and configures the kernel to include this archive at boot
+time.
+
+Note that for nodisk workloads, we additionally include the entire contents of
+the workload's rootfs into the initramfs. In this case, the init script in
+``wlutil/initramfs/nodisk/init`` simply loads the drivers and calls the
+target's ``/sbin/init`` to finish booting.
 
 Linux Kernel Generation and Linking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -106,9 +118,9 @@ on boot (see below for how), and boot exacly once in Qemu.
 
 Run Script or Command
 ^^^^^^^^^^^^^^^^^^^^^^^^
-The final step is to apply the users ``run`` script or ``command`` options (if
+The final step is to apply the user's ``run`` script or ``command`` options (if
 any). For simplicity, commands are converted into a run script (stored in
-``wlutil/_command.sh``) before proceeding.
+``wlutil/generated/_command.sh``) before proceeding.
 
 Run scripts are handled in a per-distro fashion (since distros acheive it in
 different ways). Marshal abstracts this by requesting that the distribution
