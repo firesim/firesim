@@ -12,8 +12,10 @@ All workload-generation related commands and code are in ``firesim/sw/firesim-so
 
 FireMarshal comes with a few basic workloads that you can build right out of
 the box (in ``workloads/``). In this example, we will build and test the
-buildroot-based linux distribution (called *br-base*). We begin by building the
-workload:
+buildroot-based linux distribution (called *br-base*).
+
+We begin by building the workload. This will build the linux binary, the platform
+specific drivers (and initramfs), and the root filesystem:
 
 ::
 
@@ -23,7 +25,7 @@ The first time you build a workload may take a long time (buildroot must
 download and cross-compile a large number of packages), but subsequent builds
 of the same base will use cached results. Once the command completes, you
 should see two new files in ``images/``: ``br-base-bin`` and ``br-base.img``.
-These are the boot-binary (linux + boot loader) and root filesystem
+These are the boot-binary (linux, initramfs, and boot loader) and root filesystem
 (respectively). We can now launch this workload in qemu:
 
 ::
