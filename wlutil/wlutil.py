@@ -12,12 +12,20 @@ import errno
 import pathlib
 from contextlib import contextmanager
 
+#------------------------------------------------------------------------------
+# Root Directories:
+# wlutil_dir and root_dir are the two roots for wlutil, all other paths are
+# derived from these two values. They must work, even when FireMarshal/ is a symlink.
+#------------------------------------------------------------------------------
 # Root for wlutil library
 wlutil_dir = pathlib.Path(__file__).parent.resolve()
 
 # Root for firemarshal (e.g. firesim-software/)
-root_dir = os.getcwd()
+root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
 
+#------------------------------------------------------------------------------
+# Derived Paths
+#------------------------------------------------------------------------------
 # Root for default board (platform-specific stuff)
 board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
 
