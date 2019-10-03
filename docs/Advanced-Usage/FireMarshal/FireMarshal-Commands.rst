@@ -22,13 +22,15 @@ By default, FireMarshal will search the same directory as the provided
 configuration file for ``base`` references and the workload source directory.
 This option instructs FireMarshal to look elsewhere for these references.
 
-``-i --initramfs``
+``-d --no-disk``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alias: ``-i --initramfs``
+
 By default, FireMarshal assumes that your workload includes both a rootfs and a
 boot-binary. However, it may be necessary (e.g. when using spike) to build the
 rootfs into the boot-binary and load it into RAM during boot. This is only
 supported on linux-based workloads. This option instructs FireMarshal too use
-the \*-initramfs boot-binary instead of the disk-based outputs.
+the \*-nodisk boot-binary instead of the disk-based outputs.
 
 ``-v --verbose``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -41,7 +43,7 @@ build
 The build command is used to generate the rootfs's and boot-binaries from the
 workload configuration file. The output will be ``images/NAME-JOBNAME-bin`` and
 ``images/NAME-JOBNAME.img`` files for each job in the workload. If you passed
-the --initramfs option to FireMarshal, a ``images/NAME-JOBNAME-bin-initramfs``
+the --nodisk option to FireMarshal, a ``images/NAME-JOBNAME-bin-nodisk``
 file will also be created.
 
 ::
@@ -77,7 +79,7 @@ to run using the --job option.
 In some cases, you may need to boot your workload in spike (typically due to a
 custom ISA extension or hardware model). In that case, you may use the -s
 option. Note that spike currently does not support network or block devices.
-You must pass the --initramfs option to FireMarshal when using spike.
+You must pass the --nodisk option to FireMarshal when using spike.
 
 clean
 --------------------------------------
@@ -97,7 +99,7 @@ included in the output directory.
 
 ``-s --spike``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Test using spike instead of qemu (requires the --initramfs option to the
+Test using spike instead of qemu (requires the --nodisk option to the
 ``marshal`` command).
 
 ``-m testDir --manual testDir``

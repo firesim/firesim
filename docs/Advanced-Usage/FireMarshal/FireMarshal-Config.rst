@@ -152,9 +152,10 @@ this workload. Defaults to the riscv-linux source submoduled at
 
 linux-config
 ^^^^^^^^^^^^^^^^
-Linux configuration file to use when building linux. Take care when using a
-custom configuration, FireSim may require certain boot arguments and device
-drivers to work properly.
+Linux configuration fragment(s) to use when building linux. A kernel
+configuration fragment contains one or more linux configuration options (in the
+same format as a standard linux configuration file). These options will
+override the default values for riscv-linux.
 
 host-init
 ^^^^^^^^^^^^^^
