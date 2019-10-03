@@ -88,7 +88,7 @@ trait IsRuntimeSetting extends HasConsoleUtils {
 
   // This prompts the user via the console for setting
   def requestSetting(field: Data) {
-    set(requestInput(query, default))
+    set(requestInput(query, default, Some(min), max))
   }
 }
 

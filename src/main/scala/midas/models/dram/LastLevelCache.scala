@@ -81,9 +81,9 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
   // Note short-burst writes will produce a refill, whereas releases from caches will not
 
   val registers = Seq(
-    wayBits     -> RuntimeSetting(3, "Log2(ways per set)"),
-    setBits     -> RuntimeSetting(9, "Log2(sets per bank"),
-    blockBits   -> RuntimeSetting(6, "Log2(cache-block bytes"),
+    wayBits     -> RuntimeSetting(llcKey.ways.maxBits, "Log2(ways per set)"),
+    setBits     -> RuntimeSetting(llcKey.sets.maxBits, "Log2(sets per bank"),
+    blockBits   -> RuntimeSetting(llcKey.blockBytes.maxBits, "Log2(cache-block bytes"),
     activeMSHRs -> RuntimeSetting(llcKey.mshrs.max, "Number of MSHRs", min = 1, max = Some(llcKey.mshrs.max))
   )
 
@@ -96,17 +96,19 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
   def setLLCSettings(bytesPerBlock: Option[Int] = None): Unit = {
     Console.println(s"\n${UNDERLINED}Last-Level Cache Settings${RESET}")
 
-    regMap(blockBits).set(log2Ceil(requestInput("Block size in bytes", 128,
-                                                min = Some(llcKey.blockBytes.min),
-                                                max = Some(llcKey.sets.max))))
-    regMap(setBits).set(log2Ceil(requestInput("Number of sets in LLC", 4096,
-                                               min = Some(llcKey.sets.min),
-                                               max = Some(llcKey.sets.max))))
-    regMap(wayBits).set(log2Ceil(requestInput("Set associativity", 8,
-                                              min = Some(llcKey.ways.min),
-                                              max = Some(llcKey.ways.max))))
+    regMap(blockBits).set(log2Ceil(requestInput("Block size in bytes",
+                                                default = llcKey.blockBytes.max,
+                                                min     = Some(llcKey.blockBytes.min),
+                                                max     = Some(llcKey.blockBytes.max))))
+    regMap(setBits).set(log2Ceil(requestInput("Number of sets in LLC",
+                                               default = llcKey.sets.max,
+                                               min     = Some(llcKey.sets.min),
+                                               max     = Some(llcKey.sets.max))))
+    regMap(wayBits).set(log2Ceil(requestInput("Set associativity",
+                                              default = llcKey.ways.max,
+                                              min     = Some(llcKey.ways.min),
+                                              max     = Some(llcKey.ways.max))))
   }
-
 }
 
 case class WRange(min: Int, max: Int) {
