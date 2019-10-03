@@ -7,34 +7,9 @@ import midas.models._
 import firesim.endpoints._
 
 case object MemModelKey extends Field[(Parameters) => BaseConfig]
-object BaseParamsKey extends Field[BaseParams]
-object LlcKey extends Field[Option[LLCParams]]
-object DramOrganizationKey extends Field[DramOrganizationParams]
-
-class BasePlatformConfig extends Config(new midas.F1Config)
-
-// Experimental: mixing this in will enable assertion synthesis
-class WithSynthAsserts extends Config((site, here, up) => {
-  case midas.SynthAsserts => true
-})
-
-// Experimental: mixing this in will enable print synthesis
-class WithPrintfSynthesis extends Config((site, here, up) => {
-  case midas.SynthPrints => true
-})
-
-// MIDAS 2.0 Switches
-class WithMultiCycleRamModels extends Config((site, here, up) => {
-  case midas.GenerateMultiCycleRamModels => true
-})
-
-// Short name alias for above
-class MCRams extends WithMultiCycleRamModels
-
-// Enables NIC loopback the NIC widget
-class WithNICWidgetLoopback  extends Config((site, here, up) => {
-  case LoopbackNIC => true
-})
+case object BaseParamsKey extends Field[BaseParams]
+case object LlcKey extends Field[Option[LLCParams]]
+case object DramOrganizationKey extends Field[DramOrganizationParams]
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
@@ -56,6 +31,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
 /*******************************************************************************
 * Memory-timing model configuration modifiers
 *******************************************************************************/
+
 // Adds a LLC model with at most <maxSets> sets with <maxWays> ways
 class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) => {
   case LlcKey => Some(LLCParams().copy(
@@ -109,6 +85,7 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
 class LBP32R32W extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
+
 class LBP32R32WLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
   new WithFuncModelLimits(32,32) ++
