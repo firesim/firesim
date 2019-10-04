@@ -13,11 +13,11 @@ int main() {
   // See rocc.h for details but roughly:
   // I_R_I => rd (Immediate), rs1 (Register), rs2 (Immediate)
   // opcode=0, rd=0 (no return value), rs1=x (register), rs2=2 (immediate),
-  // funct=0, use register 11 for rs1
-  ROCC_INSTRUCTION_I_R_I(0, 0, x, 2, 0, 11);
+  // funct=0
+  ROCC_INSTRUCTION_I_R_I(0, 0, x, 2, 0);
 
   // read it back into z (funct=1) to verify it
-  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1, 10);
+  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1);
 
   if(z != x) {
     printf("Failure!\n");
@@ -25,23 +25,24 @@ int main() {
   }
 
   // accumulate 456 into it (funct=3)
-  ROCC_INSTRUCTION_I_R_I(0, 0, y, 2, 3, 11);
+  ROCC_INSTRUCTION_I_R_I(0, 0, y, 2, 3);
 
   // verify it
-  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1, 10);
+  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1);
   if(z != x+y) {
     printf("Failure!\n");
     return 1;
   }
 
   // do it all again, but initialize acc2 via memory this time (funct=2)
-  ROCC_INSTRUCTION_I_R_I(0, 0, &x, 2, 2, 11);
-  ROCC_INSTRUCTION_I_R_I(0, 0, y, 2, 3, 11);
-  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1, 10);
+  ROCC_INSTRUCTION_I_R_I(0, 0, &x, 2, 2);
+  ROCC_INSTRUCTION_I_R_I(0, 0, y, 2, 3);
+  ROCC_INSTRUCTION_R_I_I(0, z, 0, 2, 1);
   if(z != x+y) {
     printf("Failure!\n");
     return 1;
   }
 
   printf("success!\n");
+  return 0;
 }
