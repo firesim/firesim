@@ -75,12 +75,12 @@ def aws_resource_names():
         return base_dict
 
     # at this point, assume we are in tutorial mode and get all tags we need
-    base_dict['vpcname']           = resptags['firesim-tutorial-username'],
-    base_dict['securitygroupname'] = resptags['firesim-tutorial-username'],
-    base_dict['keyname']           = resptags['firesim-tutorial-username'],
-    base_dict['s3bucketname']      = resptags['firesim-tutorial-username'],
-    base_dict['snsname']           = resptags['firesim-tutorial-username'],
-    base_dict['runfarmprefix']     = resptags['firesim-tutorial-username'],
+    base_dict['vpcname']           = resptags['firesim-tutorial-username']
+    base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
+    base_dict['keyname']           = resptags['firesim-tutorial-username']
+    base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
+    base_dict['snsname']           = resptags['firesim-tutorial-username']
+    base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
 
     return base_dict
 
