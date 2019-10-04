@@ -91,24 +91,32 @@ else
     target_chipyard_dir=$RDIR/target-design/chipyard
 fi
 
-# Enable latest Developer Toolset for GNU make 4.x
-devtoolset=''
-for dir in /opt/rh/devtoolset-* ; do
-    ! [ -x "${dir}/root/usr/bin/make" ] || devtoolset="${dir}"
-done
-if [ -n "${devtoolset}" ] ; then
-    echo "Enabling ${devtoolset##*/}"
-    . "${devtoolset}/enable"
-fi
 
-#build the toolchain through chipyard (whether as top or as library)
-cd $target_chipyard_dir
-if [ "$FASTINSTALL" = "true" ]; then
-  $target_chipyard_dir/scripts/build-toolchains.sh --ec2fast
-else
-  $target_chipyard_dir/scripts/build-toolchains.sh
-fi
-cd $RDIR
+# Restrict the devtoolset environment to a subshell
+#
+# The devtoolset wrapper around sudo does not correctly pass options
+# through, which causes an aws-fpga SDK setup script to fail:
+# platforms/f1/aws-fpga/sdk/userspace/install_fpga_mgmt_tools.sh
+(
+    # Enable latest Developer Toolset for GNU make 4.x
+    devtoolset=''
+    for dir in /opt/rh/devtoolset-* ; do
+        ! [ -x "${dir}/root/usr/bin/make" ] || devtoolset="${dir}"
+    done
+    if [ -n "${devtoolset}" ] ; then
+        echo "Enabling ${devtoolset##*/}"
+        . "${devtoolset}/enable"
+    fi
+
+    # Build the toolchain through chipyard (whether as top or as library)
+    cd "$target_chipyard_dir"
+    if [ "$FASTINSTALL" = "true" ] ; then
+        ./scripts/build-toolchains.sh --ec2fast
+    else
+        ./scripts/build-toolchains.sh
+    fi
+)
+
 #generate env.sh file which sources the chipyard env.sh file
 echo "if [ -f \"$target_chipyard_dir/env.sh\" ]; then" > env.sh
 echo "  source $target_chipyard_dir/env.sh" >> env.sh
