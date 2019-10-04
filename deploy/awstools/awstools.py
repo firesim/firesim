@@ -13,20 +13,34 @@ rootLogger = logging.getLogger()
 # this needs to be updated whenever the FPGA Dev AMI changes
 f1_ami_name = "FPGA Developer AMI - 1.6.0-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-0b1edf08d56c2da5c.4"
 
-def iam_tutorial_mode():
-    """ Check if we're in "tutorial mode". These are instances with special
-    tags applied that modify what VPC, security group, and keys they use.
+def aws_resource_names():
+    """ Get names for various aws resources the manager relies on. For example:
+    vpcname, securitygroupname, keyname, etc.
+
+    Regular users are instructed to hardcode many of these to firesim.
+
+    Other users may have special settings pre-determined for them (e.g.
+    tutorial users. This function produces the correct dict by looking up
+    tags applied to the manager instance.
 
     Returns dict with at least:
-        'firesim-tutorial-mode' set to True or False
-        if True, then also:
-            'vpcname', 'securitygroupname', 'keyname', 's3bucketname', 'snsname'.
+        'vpcname', 'securitygroupname', 'keyname', 's3bucketname', 'snsname',
+        'runfarmprefix'.
 
     Note that these tags are NOT used to enforce the usage of these resources,
     rather just to configure the manager. Enforcement is done in IAM
-    policies."""
+    policies where necessary."""
 
-    false_dict = {'firesim-tutorial-mode': False}
+    base_dict = {
+        # regular users are instructed to create these in the setup instructions
+        'vpcname':           'firesim',
+        'securitygroupname': 'firesim',
+        # regular users are instructed to create a key named `firesim` in the wiki
+        'keyname':           'firesim',
+        's3bucketname' :     None,
+        'snsname'      :     'FireSim',
+        'runfarmprefix':     None,
+    }
 
     # first get this instance's ID
     res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
@@ -49,29 +63,26 @@ def iam_tutorial_mode():
         )
     except:
         # we do not have permission to describe tags, return False
-        return false_dict
+        return base_dict
 
     resptags = {}
     for pair in resp['Tags']:
         resptags[pair['Key']] = pair['Value']
     print(resptags)
 
-    in_tutorial_mode = 'firesim-tutorial-mode' in resptags.keys() and resptags['firesim-tutorial-mode'] == 'yes'
+    in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
     if not in_tutorial_mode:
-        return false_dict
+        return base_dict
 
     # at this point, assume we are in tutorial mode and get all tags we need
-    returntags = {
-        'firesim-tutorial-mode': True,
-        'vpcname':           resptags['firesim-tutorial-vpcname'],
-        'securitygroupname': resptags['firesim-tutorial-securitygroupname'],
-        'keyname':           resptags['firesim-tutorial-keyname'],
-        's3bucketname' :     resptags['firesim-tutorial-s3bucketname'],
-        'snsname'      :     resptags['firesim-tutorial-snsname'],
-        'runfarmprefix':     resptags['firesim-tutorial-runfarmprefix'],
-    }
+    base_dict['vpcname']           = resptags['firesim-tutorial-username'],
+    base_dict['securitygroupname'] = resptags['firesim-tutorial-username'],
+    base_dict['keyname']           = resptags['firesim-tutorial-username'],
+    base_dict['s3bucketname']      = resptags['firesim-tutorial-username'],
+    base_dict['snsname']           = resptags['firesim-tutorial-username'],
+    base_dict['runfarmprefix']     = resptags['firesim-tutorial-username'],
 
-    return returntags
+    return base_dict
 
 
 
@@ -129,20 +140,12 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
          This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
     """
-    # users are instructed to create a key named `firesim` in the wiki
-    keyname = 'firesim'
-    # users are instructed to create these in the setup instructions
-    securitygroupname = 'firesim'
-    vpcname = 'firesim'
 
     # now, check if we're in tutorial mode and override if necessary
-    tutorial_mode_dict = iam_tutorial_mode()
-
-    if tutorial_mode_dict['firesim-tutorial-mode']:
-        # in tutorial mode, these are not just 'firesim'
-        keyname = tutorial_mode_dict['keyname']
-        securitygroupname = tutorial_mode_dict['securitygroupname']
-        vpcname = tutorial_mode_dict['vpcname']
+    aws_resource_names_dict = aws_resource_names()
+    keyname = aws_resource_names_dict['keyname']
+    securitygroupname = aws_resource_names_dict['securitygroupname']
+    vpcname = aws_resource_names_dict['vpcname']
 
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
@@ -342,12 +345,8 @@ def subscribe_to_firesim_topic(email):
     """ Subscribe a user to their FireSim SNS topic for notifications. """
     client = boto3.client('sns')
 
-    snsname = 'FireSim'
-
-    tutorial_mode_dict = iam_tutorial_mode()
-    if tutorial_mode_dict['firesim-tutorial-mode']:
-        # in tutorial mode, these are not just 'firesim'
-        snsname = tutorial_mode_dict['snsname']
+    aws_resource_names_dict = aws_resource_names()
+    snsname = aws_resource_names_dict['snsname']
 
     # this will either create the topic, if it doesn't exist, or just get the arn
     response = client.create_topic(
@@ -372,12 +371,8 @@ def send_firesim_notification(subject, body):
     """ Send a FireSim SNS Email notification. """
     client = boto3.client('sns')
 
-    snsname = 'FireSim'
-
-    tutorial_mode_dict = iam_tutorial_mode()
-    if tutorial_mode_dict['firesim-tutorial-mode']:
-        # in tutorial mode, these are not just 'firesim'
-        snsname = tutorial_mode_dict['snsname']
+    aws_resource_names_dict = aws_resource_names()
+    snsname = aws_resource_names_dict['snsname']
 
     # this will either create the topic, if it doesn't exist, or just get the arn
     response = client.create_topic(
@@ -407,4 +402,4 @@ if __name__ == '__main__':
 
     #send_firesim_notification("test subject", "test message")
 
-    print(iam_tutorial_mode())
+    print(aws_resource_names())
