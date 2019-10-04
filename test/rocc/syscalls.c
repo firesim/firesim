@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -116,7 +117,7 @@ void _init(int cid, int nc)
   char* pbuf = buf;
   for (int i = 0; i < NUM_COUNTERS; i++)
     if (counters[i])
-      pbuf += sprintf(pbuf, "%s = %d\n", counter_names[i], counters[i]);
+      pbuf += sprintf(pbuf, "%s = %" PRIuPTR "\n", counter_names[i], counters[i]);
   if (pbuf != buf)
     printstr(buf);
 
