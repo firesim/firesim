@@ -129,12 +129,6 @@ if  [ "$IS_LIBRARY" = false ]; then
     echo "export FIRESIM_STANDALONE=1" >> env.sh
 fi
 
-# build QEMU
-echo "Building QEMU"
-cd sw/qemu
-./configure --target-list=riscv64-softmmu --prefix=$RISCV
-make -j16
-make install
 cd $RDIR
 
 # commands to run only on EC2
