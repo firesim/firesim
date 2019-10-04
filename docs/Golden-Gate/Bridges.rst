@@ -1,12 +1,11 @@
-Endpoints
-=====================
+Target-to-Host Bridges
+======================
 
-Developing custom endpoints are the primary way you will customize your FireSim
-simulation, as they are the primary means to inject custom models into the target graph.
-Endpoints bridge between the target and host worlds, your implementation will need to act 
-on token streams directly.
+Deploying your own Models using Target-to-Host Bridges, or Bridges for short, is the primary way you will customize your FireSim
+simulation. As their name suggests,  Just as their name suggests, Bridges connect the target and host worlds, by allowing you to write
+custom RTL and software that act on token streams directly.
 
-Endpoints enable:
+Bridges enable:
 
 #. Software co-simulation. Ex. Before writing RTL for your accelerator, you can instantiate a custom endpoint that
    calls out to a software model running on the CPU.
@@ -35,27 +34,27 @@ Use Cases
    tokens between each FPGA. See the SimpleNICEndpoint.
 
 
-Defining A Endpoint
+Defining A Bridge
 --------------------------
 
-Endpoints have a target-land definition and a host-land implementation.
+Bridges have a target-land definition and a host-land implementation.
 
 Target-Land Definition
 ----------------------
 
 In your target-land definition, you will define, Scala trait that extends
-Endpoint that mixes into a Chisel Black Box, or a Module you'd like to replace.
+Bridge that mixes into a Chisel Black Box, or a Module you'd like to replace.
 
 This trait has two type parameters and two abstract members you'll need define
-for your Endpoint. Note that since you must mix Endpoint into either a Chisel
+for your Bridge. Note that since you must mix Bridge into either a Chisel
 Black Box or a Module, you'll of course need to define the IO for that module.
 That's the interface you'll use to connect to your target RTL.
 
 Type Paramaters:
 
-#. Host Interface Type [HPType]: The Chisel type of your Endpoint's target-land interface. This describes how the target interface
+#. Host Interface Type [HPType]: The Chisel type of your Bridge's target-land interface. This describes how the target interface
 has been divided into seperate token channels. One example, HostPort[T], divides a chisel Bundle into a single bi-directional token stream.
-#. Host Widget Type: The type of the Chisel Module you want Golden Gate to connect in-place of your black box.
+#. Host Module Type: The type of the Chisel Module you want Golden Gate to connect in-place of your black box.
 
 Abstract Members:
 
@@ -64,26 +63,26 @@ Abstract Members:
    Golden Gate how the target-land IO of this black box is being divided into
    channels.  The constructor of thisr must accept the target-land IO
    interface, a hardware type, that it may correctly divide it into channels,
-   and annotate the right fields of your Endpoint instance.
+   and annotate the right fields of your Bridge instance.
 
 #. Constructor Arg: A Scala case class you'd like to pass to your host-land
    widget's constructor. This will be serialized into an annotation and
    consumed later by Golden Gate. In this case class you should capture all
-   target-land configuration information you'll need in your Widget's
+   target-land configuration information you'll need in your Module's
    generator.
 
 
-Finally at the bottom of your Endpoint's class definition **you'll need to call generateAnnotations()**.
-This will emit an "EndpointAnnotation" that indicate:
+Finally at the bottom of your Bridge's class definition **you'll need to call generateAnnotations()**.
+This will emit an "BridgeAnnotation" that indicate:
 
-#. This module is an Endpoint.
-#. The class name of the widget's generator (e.g., firesim.endpoints.UARTWidget)
+#. This module is an Bridge.
+#. The class name of the widget's generator (e.g., firesim.endpoints.UARTModule)
 #. The serialized constructor argument for that generator (e.g. firesim.endpoints.UARTKey)
 #. A list of channel names; string references to Channel annotations
 
 And a series of FAMEChannelConnectionAnnotations, which target the module's I/O to group them into token channels.
 
-You can freely instantiate your Endpoint anywhere in your Target RTL: deep in
+You can freely instantiate your Bridge anywhere in your Target RTL: deep in
 your module hierarchy or at the I/O boundary.  Since all of the Golden
 Gate-specific metadata is captured in FIRRTL annotations, you can generate your
 target design and simulate it a target-level RTL simulation or even pass it off
@@ -98,29 +97,29 @@ the design. During host-decoupling transforms, Golden Gate aggregates fields of
 your endpoint's target IO based on ChannelAnnotations, and wraps them up into
 new Decoupled interfaces that match your Host Interface definition. Finally,
 once Golden Gate is done performing compiler transformations, it iterates
-through each Endpoint annotation, generates your Widget, passing it the
+through each Bridge annotation, generates your Module, passing it the
 serialized constructor argument, and connects it to the tokenized interface
 presented by the now host-decoupled target.
 
 Host-Land Implementation
 ------------------------
 
-Endpoint Implementations have two components.
-#. A FPGA-hosted Widget
-#. A CPU-hosted Endpoint Driver.
+Bridge implementations have two components.
+#. A FPGA-hosted BridgeModule.
+#. A CPU-hosted BridgeDriver.
 
 both a driver and a widget. In FASED memory timing models, 
-the Endpoint Driver configures timing parameters at the start of simulation, and periodically reads instrumentation during execution.
-In the Block Device model, a Driver periodically polls hardware queues checking for new functional requests to be served. In the NICEndpoint,
-the endpoint Driver moves tokens in bulk between the Widget and a software switch model.
+the Bridge Driver configures timing parameters at the start of simulation, and periodically reads instrumentation during execution.
+In the Block Device model, a Driver periodically polls hardware queues checking for new functional requests to be served. In the NICBridge,
+the endpoint Driver moves tokens in bulk between the BridgeModule and a software switch model.
 
 Golden Gate provides two transport types to implement these features.
 
-#. MMIO: On the hardware-side this is implemented over a 32-bit AXI4-lite bus. Reads and writes to this bus are made by Endpoint Drivers
-   using simif_t::read() and simif_t::write(); EndpointWidgets register memory mapped registers using methods defined in Widget, addresses for 
+#. MMIO: On the hardware-side this is implemented over a 32-bit AXI4-lite bus. Reads and writes to this bus are made by Bridge Drivers
+   using simif_t::read() and simif_t::write(); BridgeModules register memory mapped registers using methods defined in Widget, addresses for 
    these registers are passed to the drivers in a generated C++ header.
 
-#. DMA: On the hardware-side this is implemented with a wide (512-bit) AXI4 bus, that is mastered by the CPU. Endpoint Drivers initiate
+#. DMA: On the hardware-side this is implemented with a wide (512-bit) AXI4 bus, that is mastered by the CPU. Bridge Drivers initiate
    bulk transactions by passing buffers to simif_t::push() and simif_t::pull()
    (DMA from the FPGA). Typically is used to stream tokens directly into and
    out of large FIFOs provided in the widget.
@@ -129,8 +128,8 @@ Golden Gate provides two transport types to implement these features.
 Host vs Target-land Configuration
 ---------------------------------
 
-An Example MMIO-Based Endpoint
+An Example MMIO-Based Bridge
 ------------------------------
 
-An Example DMA-Based Endpoint
+An Example DMA-Based Bridge
 -----------------------------

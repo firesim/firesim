@@ -38,7 +38,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
    Golden-Gate/Overview
    Golden-Gate/LI-BDN
-   Golden-Gate/Endpoints
+   Golden-Gate/Bridges
 
 
 Indices and tables
