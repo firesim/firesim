@@ -58,7 +58,7 @@
               "i" (ROCC_XD), "i" (funct));                              \
     } while (0)
 
-#define ROCC_INSTRUCTION_I_R_R(X, rd, rs1, rs2)                         \
+#define ROCC_INSTRUCTION_I_R_R(X, rd, rs1, rs2, funct)                  \
     do {                                                                \
         __asm__ __volatile__ (                                          \
             ".insn r CUSTOM_" #X ", %3, %4, x%0, %1, %2\n\t"            \
@@ -76,7 +76,7 @@
               "i" (ROCC_XS1), "i" (funct));                             \
     } while (0)
 
-#define ROCC_INSTRUCTION_I_I_I(X, rd, rs1, rs2, funct) {                \
+#define ROCC_INSTRUCTION_I_I_I(X, rd, rs1, rs2, funct)                  \
     do {                                                                \
         __asm__ __volatile__ (                                          \
             ".insn r CUSTOM_" #X ", %3, %4, x%0, x%1, x%2\n\t"          \
