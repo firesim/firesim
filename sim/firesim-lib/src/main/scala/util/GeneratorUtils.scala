@@ -93,7 +93,7 @@ ${buildStrategy.emitTcl}
   // 4) midas -> This has debug features, etc
   // Allows the user to concatenate configs together from different packages
   // without needing to fully specify the class name for each config
-  // eg. FireSimConfig_F90MHz maps to: firesim.util.F90MHz ++ firesim.firesim.FiresimConfig
+  // eg. BaseF1Config_F90MHz maps to: firesim.util.F90MHz ++ firesim.firesim.FiresimConfig
   def getHostParameters(targetNames: ParsedInputNames, hostNames: ParsedInputNames): Parameters = {
     val packages = hostNames.configProject +: Seq("firesim.configs", "firesim.util", "midas")
     val hParams = new Config(

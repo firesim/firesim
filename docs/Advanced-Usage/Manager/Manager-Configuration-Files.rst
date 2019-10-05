@@ -334,7 +334,7 @@ This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
 These are defined in ``firesim/sim/src/main/scala/firesim/SimConfigs.scala``.
 We specify the host FPGA frequency in the ``PLATFORM_CONFIG`` by appending a frequency
-``Config`` with an underscore (ex. FireSimConfig_F160MHz).
+``Config`` with an underscore (ex. BaseF1Config_F160MHz).
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
