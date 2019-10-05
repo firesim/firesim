@@ -32,7 +32,7 @@ echo -e "FireSim RTL Simulation Execution Rates\n" > $REPORT_FILE
 ################################################################################
 export DESIGN=FireSimNoNIC
 export TARGET_CONFIG=FireSimRocketChipConfig
-export PLATFORM_CONFIG=FireSimConfig
+export PLATFORM_CONFIG=BaseF1Config
 export SIM_ARGS=+verbose
 export TIME="%C %E real, %U user, %S sys"
 
