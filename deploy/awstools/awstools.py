@@ -43,9 +43,11 @@ def aws_resource_names():
     }
 
     # first get this instance's ID
-    res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
+    res = None
+    with hide('everything'):
+        res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
     instanceid = res.stdout
-    print(instanceid)
+    rootLogger.debug(instanceid)
 
     # try to get tags. if we don't have permission for this. return False
     client = boto3.client('ec2')
@@ -68,7 +70,7 @@ def aws_resource_names():
     resptags = {}
     for pair in resp['Tags']:
         resptags[pair['Key']] = pair['Value']
-    print(resptags)
+    rootLogger.debug(resptags)
 
     in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
     if not in_tutorial_mode:
