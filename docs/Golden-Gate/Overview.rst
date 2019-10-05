@@ -63,7 +63,7 @@ How is Host-Decoupling Implemented?
 Host-decoupling in Golden Gate-generated simulators is implemented by decomposing the
 target machine into a dataflow graph of latency-insensitive models. As a user
 of FireSim, understanding this dataflow abstraction is essential for debugging
-your system and for developing your own software models and endpoints. We
+your system and for developing your own software models and bridges. We
 describe it in the next section.
 
 .. [#] These overheads varying depending on the features implemented and optimizations applied. Certain optimizations, currently in development, may increase fmax or decrease resource utilization over the equivalent prototype.
