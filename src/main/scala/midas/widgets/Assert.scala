@@ -15,7 +15,7 @@ class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
 }
 
-class AssertWidget(numAsserts: Int)(implicit p: Parameters) extends EndpointWidget[HostPortIO[UInt]]()(p) {
+class AssertBridgeModule(numAsserts: Int)(implicit p: Parameters) extends BridgeModule[HostPortIO[UInt]]()(p) {
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
   val resume = WireInit(false.B)

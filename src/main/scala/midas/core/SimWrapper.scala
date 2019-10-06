@@ -4,7 +4,7 @@ package midas
 package core
 
 
-import midas.widgets.EndpointIOAnnotation
+import midas.widgets.BridgeIOAnnotation
 import midas.passes.fame
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel}
 import midas.core.SimUtils._
@@ -213,12 +213,12 @@ class TargetBox(chAnnos: Seq[FAMEChannelConnectionAnnotation],
 }
 
 class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                         val endpointAnnos: Seq[EndpointIOAnnotation],
+                         val bridgeAnnos: Seq[BridgeIOAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
     extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
   override val elements = ListMap((wireElements ++ rvElements):_*)
-  override def cloneType: this.type = new SimWrapperChannels(chAnnos, endpointAnnos, leafTypeMap).asInstanceOf[this.type]
+  override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
 
@@ -232,18 +232,18 @@ class SimBox(simChannels: SimWrapperChannels) extends BlackBox {
 }
 
 class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                 endpointAnnos: Seq[EndpointIOAnnotation],
+                 bridgeAnnos: Seq[BridgeIOAnnotation],
                  leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
                 (implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
 
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
-  // to endpoints and will be presented in the SimWrapper's IO
-  val endpointChAnnos = chAnnos.collect({
+  // to bridges and will be presented in the SimWrapper's IO
+  val bridgeChAnnos = chAnnos.collect({
     case fca @ FAMEChannelConnectionAnnotation(_,_,_,None) => fca
     case fca @ FAMEChannelConnectionAnnotation(_,_,None,_) => fca
   })
 
-  val channelPorts = IO(new SimWrapperChannels(endpointChAnnos, endpointAnnos, leafTypeMap))
+  val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
 
@@ -313,13 +313,13 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
       val chName = chAnno.globalName
       val strippedName = chName.stripSuffix("_fwd")
-      // Determine which endpoint this channel belongs to by looking it up with the valid
-      //val endpointClockRatio = io.endpoints.find(_(rvInterface.valid)) match {
-      //  case Some(endpoint) => endpoint.clockRatio
+      // Determine which bridge this channel belongs to by looking it up with the valid
+      //val bridgeClockRatio = io.bridges.find(_(rvInterface.valid)) match {
+      //  case Some(bridge) => bridge.clockRatio
       //  case None => UnityClockRatio
       //}
-      val endpointClockRatio = UnityClockRatio // TODO: FIXME
-      // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an endpoint)
+      val bridgeClockRatio = UnityClockRatio // TODO: FIXME
+      // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an bridge)
       val channel = Module(new ReadyValidChannel(getReadyValidChannelType(chAnno).cloneType))
 
       channel.suggestName(s"ReadyValidChannel_$strippedName")

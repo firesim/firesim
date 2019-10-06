@@ -183,7 +183,7 @@ case class CompleteConfig(
   def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
-class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends EndpointWidget[HostPortIO[FASEDTargetIO]]()(hostParams) {
+class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams) {
   val cfg = completeConfig.userProvided
   // Reconstitute the parameters object
   implicit override val p = hostParams.alterPartial({
@@ -558,17 +558,17 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   }
 }
 
-class FASEDEndpoint(argument: CompleteConfig)(implicit p: Parameters)
-    extends BlackBox with Endpoint[HostPortIO[FASEDTargetIO], FASEDMemoryTimingModel] {
+class FASEDBridge(argument: CompleteConfig)(implicit p: Parameters)
+    extends BlackBox with Bridge[HostPortIO[FASEDTargetIO], FASEDMemoryTimingModel] {
   val io = IO(new FASEDTargetIO)
-  val endpointIO = HostPort(io)
+  val bridgeIO = HostPort(io)
   val constructorArg = Some(argument)
   generateAnnotations()
 }
 
-object FASEDEndpoint {
-  def apply(axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDEndpoint = {
-    val ep = Module(new FASEDEndpoint(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
+object FASEDBridge {
+  def apply(axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDBridge = {
+    val ep = Module(new FASEDBridge(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
     ep.io.reset := reset
     import chisel3.core.ExplicitCompileOptions.NotStrict
     ep.io.axi4 <> axi4

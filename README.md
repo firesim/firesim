@@ -237,13 +237,13 @@ The MIDAS passes are designed to act on a low-firrtl graph that, in a VLSI flow,
 
 ## Advanced Usage
 
-### Endpoints
+### Bridges
 
-The easiest way to write a testbench for the software driver is use `poke`, `peek`, `expect` for each I/O port along with `step`. However, this may not be proper in many situations as it increases communication overhead between the FPGA and the software driver. Thus, we introduce [`Endpoint`](src/main/scala/midas/core/Endpoints.scala) that translates the low-level timing tokens into higher-level transactions and vice versa through [a specialized `Widget`](src/main/scala/midas/widgets/NastiIO.scala). The intuition behind is the systems we are building are nicely divided into FPGA and software such that the communication between them are rare (e.g. through decoupled channels).
+The easiest way to write a testbench for the software driver is use `poke`, `peek`, `expect` for each I/O port along with `step`. However, this may not be proper in many situations as it increases communication overhead between the FPGA and the software driver. Thus, we introduce [`Bridge`](src/main/scala/midas/core/Bridges.scala) that translates the low-level timing tokens into higher-level transactions and vice versa through [a specialized `Widget`](src/main/scala/midas/widgets/NastiIO.scala). The intuition behind is the systems we are building are nicely divided into FPGA and software such that the communication between them are rare (e.g. through decoupled channels).
 
-#### Custom Endpoint Widget Implementation
+#### Custom Bridge Widget Implementation
 
-First, implement a custom endpoint widget by inheriting `midas.widget.EndpointWidget`. Also, declare `hPort` in `midas.widget.EndpointWidgetIO` with the type of the top-level I/O ports. `hPort`. The top-level target design ports on which the endpoint operates are wrapped by `hPort` of type `HostPortIO` that has three following fields:
+First, implement a custom endpoint widget by inheriting `midas.widget.BridgeModule`. Also, declare `hPort` in `midas.widget.BridgeModuleIO` with the type of the top-level I/O ports. `hPort`. The top-level target design ports on which the endpoint operates are wrapped by `hPort` of type `HostPortIO` that has three following fields:
 
 * `fromHost`: ready/valid signals for tokens from the host side (toward the target design).
 * `toHost`: ready/valid signals for tokens toward the host side (from the target design).
@@ -276,22 +276,22 @@ def genRORegInit[T <: Data](wire: T, name: String, default: T): T
 ```
 `name` is used to generate macros for memory-mapped registers. Note that the maximum width of each communication is platform-dependent (given as `io.ctrl.nastiXDataBits`), so each word should be chopped and sent if it exceeds the max width. Finally, don't forget to call `genCRFile()` at the end, which elaborates all assigned control registers. The APIs are not finalized yet, so they are subject to change in later releases.
 
-#### Custom Endpoint Widget Instantiation
+#### Custom Bridge Widget Instantiation
 
-Declare `matchType` and `widget` in the inherited class of [`midas.core.Endpoint`](src/main/scala/midas/core/Endpoints.scala). The `matchType` method figures out which I/O ports are connected to this endpoint with type matching. The `widget` method instantiates the endpoint widget. Endpoints are instantiated with the parameter `EndpointKey` like:
+Declare `matchType` and `widget` in the inherited class of [`midas.core.Bridge`](src/main/scala/midas/core/Bridges.scala). The `matchType` method figures out which I/O ports are connected to this endpoint with type matching. The `widget` method instantiates the endpoint widget. Bridges are instantiated with the parameter `BridgeKey` like:
 ```scala
-class WithMyEndpoints extends Config(new Config((site, here, up) => {
-  case midas.EndpointKey =>
+class WithMyBridges extends Config(new Config((site, here, up) => {
+  case midas.BridgeKey =>
     // Includes all endpoints defined by the default config
-    up(EndpointKey) ++
+    up(BridgeKey) ++
     // Adds custom endpoints
-    midas.core.EndpointMap(Seq(new MyEndpoint1, new MyEndpoint2))
+    midas.core.BridgeMap(Seq(new MyBridge1, new MyBridge2))
 }
 
-class MyZynqConfig extends Config(new WithMyEndpoints ++ new midas.ZynqConfig)
+class MyZynqConfig extends Config(new WithMyBridges ++ new midas.ZynqConfig)
 ```
 
-#### Endpoint Software
+#### Bridge Software
 
 To write endpoint software, implement a derived class of [`endpoint_t`](src/main/cc/endpoints/endpoint.h). Software models can be also plugged using this class. You are supposed to implement two methods.
 

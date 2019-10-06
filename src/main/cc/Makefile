@@ -1,6 +1,6 @@
 midas_dir = $(abspath .)
 util_dir = $(midas_dir)/utils
-endpoint_dir = $(midas_dir)/endpoints
+bridge_dir = $(midas_dir)/bridges
 replay_dir = $(midas_dir)/replay
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
@@ -57,10 +57,10 @@ design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
 design_vh := $(GEN_DIR)/$(DESIGN)-const.vh
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
-endpoint_h := $(wildcard $(endpoint_dir)/*.h)
-endpoint_cc := $(wildcard $(endpoint_dir)/*.cc)
-endpoint_o := $(patsubst $(endpoint_dir)/%.cc, $(GEN_DIR)/%.o, $(endpoint_cc))
-$(endpoint_o): $(GEN_DIR)/%.o: $(endpoint_dir)/%.cc $(design_h) $(endpoint_h)
+bridge_h := $(wildcard $(bridge_dir)/*.h)
+bridge_cc := $(wildcard $(bridge_dir)/*.cc)
+bridge_o := $(patsubst $(bridge_dir)/%.cc, $(GEN_DIR)/%.o, $(bridge_cc))
+$(bridge_o): $(GEN_DIR)/%.o: $(bridge_dir)/%.cc $(design_h) $(bridge_h)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
 platform_files := simif simif_$(PLATFORM) sample/sample
@@ -72,10 +72,10 @@ $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(endpoint_o)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) -include $< \
-	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(endpoint_o) $(LDFLAGS)
+	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(bridge_o) $(LDFLAGS)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 
@@ -83,9 +83,9 @@ $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 override CFLAGS += -include $(design_h)
 
 emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
-emul_h     := $(driver_h) $(endpoint_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
+emul_h     := $(driver_h) $(bridge_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
 # This includes c sources and static libraries
-emul_cc    := $(DRIVER) $(endpoint_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
+emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
 emul_v     := $(design_vh) $(design_v)
 
 # The lop level module must be called out for verilator

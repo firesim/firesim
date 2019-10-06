@@ -2,7 +2,7 @@
 
 package midas.passes
 
-import midas.widgets.{EndpointAnnotation}
+import midas.widgets.{BridgeAnnotation}
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
 
 import firrtl._
@@ -16,93 +16,93 @@ import Utils._
 import scala.collection.mutable
 import java.io.{File, FileWriter, StringWriter}
 
-private[passes] class EndpointExtraction extends firrtl.Transform {
+private[passes] class BridgeExtraction extends firrtl.Transform {
 
-  case class EndpointInstance(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
+  case class BridgeInstance(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
     def targets = Seq(target)
     def duplicate(n: InstanceTarget) = this.copy(n)
   }
 
-  override def name = "[MIDAS] Endpoint Extraction"
+  override def name = "[MIDAS] Bridge Extraction"
   def inputForm = MidForm
   def outputForm = MidForm
 
-  private val endpointMods = new mutable.HashSet[String]()
+  private val bridgeMods = new mutable.HashSet[String]()
   private val wiringAnnos  = mutable.ArrayBuffer[WiringInfo]()
   private val topPorts     = mutable.ArrayBuffer[Port]()
 
   // Taken from extract model -- recursively calls PromoteSubmodule until all
-  // endpoints live at the top of the module hierarchy
-  def promoteEndpoints(state: CircuitState): CircuitState = {
+  // bridges live at the top of the module hierarchy
+  def promoteBridges(state: CircuitState): CircuitState = {
     val anns = state.annotations.flatMap {
-      case a @ EndpointInstance(it) if (it.module != it.circuit) => Seq(a, PromoteSubmoduleAnnotation(it))
+      case a @ BridgeInstance(it) if (it.module != it.circuit) => Seq(a, PromoteSubmoduleAnnotation(it))
       case a => Seq(a)
     }
     if (anns.toSeq == state.annotations.toSeq) {
       state
     } else {
-      promoteEndpoints((new PromoteSubmodule).runTransform(state.copy(annotations = anns)))
+      promoteBridges((new PromoteSubmodule).runTransform(state.copy(annotations = anns)))
     }
   }
 
-  // Propogate Endpoint ModuleAnnotations to Instance Annotations
+  // Propogate Bridge ModuleAnnotations to Instance Annotations
   def annotateInstances(state: CircuitState): CircuitState = {
     val c = state.circuit
     val iGraph  =  new firrtl.analyses.InstanceGraph(c)
-    // Collect all endpoint modules
-    val endpointAnnos = state.annotations.collect({ case anno: EndpointAnnotation => anno.target })
-    val endpointModules = endpointAnnos.map(_.module)
+    // Collect all bridge modules
+    val bridgeAnnos = state.annotations.collect({ case anno: BridgeAnnotation => anno.target })
+    val bridgeModules = bridgeAnnos.map(_.module)
 
-    // Get a list of all endpoint instances using iGraph
-    val endpointInsts: Seq[Seq[WDefInstance]] = endpointModules.flatMap(e => iGraph.findInstancesInHierarchy(e).map(_.reverse))
+    // Get a list of all bridge instances using iGraph
+    val bridgeInsts: Seq[Seq[WDefInstance]] = bridgeModules.flatMap(e => iGraph.findInstancesInHierarchy(e).map(_.reverse))
 
-    // Generate instance annotations to drive promoteEndpoints()
-    val instAnnos = endpointInsts.collect({ case endpoint :: parent :: restOfPath =>
-      EndpointInstance(InstanceTarget(c.main, parent.module, Nil, endpoint.name, endpoint.module))
+    // Generate instance annotations to drive promoteBridges()
+    val instAnnos = bridgeInsts.collect({ case bridge :: parent :: restOfPath =>
+      BridgeInstance(InstanceTarget(c.main, parent.module, Nil, bridge.name, bridge.module))
     })
     state.copy(annotations = state.annotations ++ instAnnos)
   }
 
-  def getEndpointConnectivity(portInstMapping: mutable.ArrayBuffer[(String, String)],
+  def getBridgeConnectivity(portInstMapping: mutable.ArrayBuffer[(String, String)],
                               insts: mutable.ArrayBuffer[(String, String)])
                              (stmt: Statement): Unit = {
     stmt match {
       case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _), 
-                          WRef(endpointInstName, _, InstanceKind, _)) =>
-        portInstMapping += (portName -> endpointInstName)
+                          WRef(bridgeInstName, _, InstanceKind, _)) =>
+        portInstMapping += (portName -> bridgeInstName)
       case i @ WDefInstance(_, name, module, _) if name != "realTopInst" =>
         insts += (name -> module)
       case o => Nil
     }
-    stmt.foreach(getEndpointConnectivity(portInstMapping, insts))
+    stmt.foreach(getBridgeConnectivity(portInstMapping, insts))
   }
 
-  // Moves endpoint annotations from BlackBox onto newly created ports
-  def commuteEndpointAnnotations(state: CircuitState): CircuitState = {
+  // Moves bridge annotations from BlackBox onto newly created ports
+  def commuteBridgeAnnotations(state: CircuitState): CircuitState = {
     val c = state.circuit
     val topModule = c.modules.find(_.name == c.main).get
-    // Collect all endpoint modules
-    val endpointAnnos = mutable.ArrayBuffer[EndpointAnnotation]()
+    // Collect all bridge modules
+    val bridgeAnnos = mutable.ArrayBuffer[BridgeAnnotation]()
     val fcaAnnos = mutable.ArrayBuffer[FAMEChannelConnectionAnnotation]()
 
     val otherAnnos = state.annotations.flatMap({
-      case anno: EndpointAnnotation => endpointAnnos += anno; None
+      case anno: BridgeAnnotation => bridgeAnnos += anno; None
       case fca: FAMEChannelConnectionAnnotation => fcaAnnos += fca; None
       case otherAnno => Some(otherAnno)
     })
 
-    val endpointAnnoMap = endpointAnnos.map(anno => anno.target.module -> anno ).toMap
-    val fcaMap = fcaAnnos.groupBy(_.getEndpointModule).toMap
+    val bridgeAnnoMap = bridgeAnnos.map(anno => anno.target.module -> anno ).toMap
+    val fcaMap = fcaAnnos.groupBy(_.getBridgeModule).toMap
 
     val portInstPairs = new mutable.ArrayBuffer[(String, String)]()
     val instList      = new mutable.ArrayBuffer[(String, String)]()
-    topModule.foreach(getEndpointConnectivity(portInstPairs, instList))
+    topModule.foreach(getBridgeConnectivity(portInstPairs, instList))
     val instMap = instList.toMap
 
     val ioAnnotations = portInstPairs.flatMap({ case (port, inst) =>
-      val updatedEndpointAnno = endpointAnnoMap(instMap(inst)).toIOAnnotation(port)
-      val updatedFCAAnnos = fcaMap(instMap(inst)).map(_.moveFromEndpoint(port))
-      Seq(updatedEndpointAnno) ++ updatedFCAAnnos
+      val updatedBridgeAnno = bridgeAnnoMap(instMap(inst)).toIOAnnotation(port)
+      val updatedFCAAnnos = fcaMap(instMap(inst)).map(_.moveFromBridge(port))
+      Seq(updatedBridgeAnno) ++ updatedFCAAnnos
     })
 
     state.copy(annotations = otherAnnos ++ ioAnnotations)
@@ -112,23 +112,23 @@ private[passes] class EndpointExtraction extends firrtl.Transform {
     val c = state.circuit
     val circuitNS = Namespace(c)
 
-    // First create a dummy top into which we'll promote endpoints
+    // First create a dummy top into which we'll promote bridges
     val topWrapperName = circuitNS.newName("DummyTop")
     val topInstance = WDefInstance("realTopInst", c.main)
     val topWrapper = Module(NoInfo, topWrapperName, Seq(), Block(Seq(topInstance)))
     val wrappedTopState = state.copy(circuit = c.copy(modules = topWrapper +: c.modules, main = topWrapperName))
 
-    // Annotate all endpoint instances
+    // Annotate all bridge instances
     val instAnnoedState = annotateInstances(wrappedTopState)
 
-    // Promote all modules that are annotated as endpoints
-    val promotedState = promoteEndpoints(instAnnoedState)
+    // Promote all modules that are annotated as bridges
+    val promotedState = promoteBridges(instAnnoedState)
 
-    // Propogate endpoint annotations to the IO created on the true top module
-    val commutedState = commuteEndpointAnnotations(promotedState)
+    // Propogate bridge annotations to the IO created on the true top module
+    val commutedState = commuteBridgeAnnotations(promotedState)
 
-    // Remove all endpoint modules and the dummy top wrapper
-    val modulesToRemove = endpointMods += topWrapperName
+    // Remove all bridge modules and the dummy top wrapper
+    val modulesToRemove = bridgeMods += topWrapperName
     val prunedCircuit = commutedState.circuit.copy(
       modules = promotedState.circuit.modules.filterNot(m => modulesToRemove(m.name)),
       main = c.main

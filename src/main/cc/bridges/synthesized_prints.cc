@@ -1,4 +1,4 @@
-#ifdef PRINTWIDGET_struct_guard
+#ifdef PRINTBRIDGEMODULE_struct_guard
 
 #include <iomanip>
 
@@ -7,7 +7,7 @@
 synthesized_prints_t::synthesized_prints_t(
   simif_t* sim,
   std::vector<std::string> &args,
-  PRINTWIDGET_struct * mmio_addrs,
+  PRINTBRIDGEMODULE_struct * mmio_addrs,
   unsigned int print_count,
   unsigned int token_bytes,
   unsigned int idle_cycles_mask,
@@ -16,7 +16,7 @@ synthesized_prints_t::synthesized_prints_t(
   const unsigned int* argument_counts,
   const unsigned int* argument_widths,
   unsigned int dma_address):
-    endpoint_t(sim),
+    bridge_driver_t(sim),
     mmio_addrs(mmio_addrs),
     print_count(print_count),
     token_bytes(token_bytes),
@@ -291,4 +291,4 @@ void synthesized_prints_t::flush() {
   this->printstream->flush();
 }
 
-#endif // PRINTWIDGET_struct_guard
+#endif // PRINTBRIDGEMODULE_struct_guard

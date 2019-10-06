@@ -14,7 +14,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
 import strober.passes.{StroberMetaData, postorder}
-import midas.widgets.{EndpointIOAnnotation, AssertBundle, AssertWidget}
+import midas.widgets.{BridgeIOAnnotation, AssertBundle, AssertBridgeModule}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.targetutils.ExcludeInstanceAssertsAnnotation
 
@@ -146,13 +146,13 @@ private[passes] class AssertPass(
         sources = Some(Seq(portRT)),
         sinks = None)
 
-      val endpointAnno = EndpointIOAnnotation(
+      val bridgeAnno = BridgeIOAnnotation(
         target = portRT,
-        widget = Some((p: Parameters) => new AssertWidget(assertNum)(p)),
+        widget = Some((p: Parameters) => new AssertBridgeModule(assertNum)(p)),
         channelMapping = Map("" -> portName)
       )
 
-      Seq(fcca, endpointAnno)
+      Seq(fcca, bridgeAnno)
     } else {
       Seq()
     }

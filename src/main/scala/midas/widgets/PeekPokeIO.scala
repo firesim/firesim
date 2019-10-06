@@ -39,7 +39,7 @@ object PeekPokeKey {
 
 // Maximum channel decoupling puts a bound on the number of cycles the fastest
 // channel can advance ahead of the slowest channel
-class PeekPokeWidget(key: PeekPokeKey)(implicit p: Parameters) extends EndpointWidget[PeekPokeTokenizedIO] {
+class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends BridgeModule[PeekPokeTokenizedIO] {
   val io = IO(new PeekPokeWidgetIO)
   val hPort = IO(PeekPokeTokenizedIO(key))
 
@@ -112,7 +112,7 @@ class PeekPokeWidget(key: PeekPokeKey)(implicit p: Parameters) extends EndpointW
     // Let token sinks accept one more token than sources can produce (if
     // they aren't poked) This enables peeking outputs that depend
     // combinationally on other input channels (these channels may not
-    // necessarily sourced (poked) by this endpoint)
+    // necessarily sourced (poked) by this bridge)
     channel.ready := cyclesAhead.value < (cycleHorizon + 1.U)
     when (channel.fire) {
       reg.zipWithIndex.foreach({ case (reg, i) =>
@@ -177,7 +177,7 @@ class PeekPokeWidget(key: PeekPokeKey)(implicit p: Parameters) extends EndpointW
 }
 
 class PeekPokeTokenizedIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
-  //NB: Directions of targetIO are WRT to the endpoint, but "ins" and "outs" WRT to the target RTL
+  //NB: Directions of targetIO are WRT to the bridge, but "ins" and "outs" WRT to the target RTL
   val (targetOutputs, targetInputs, _, _) = parsePorts(targetIO)
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
@@ -209,20 +209,20 @@ class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extend
   override def cloneType = new PeekPokeTargetIO(targetIO, withReset).asInstanceOf[this.type]
 }
 
-class PeekPokeEndpoint(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox
-    with Endpoint[PeekPokeTokenizedIO, PeekPokeWidget] {
+class PeekPokeBridge(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox
+    with Bridge[PeekPokeTokenizedIO, PeekPokeBridgeModule] {
   val io = IO(new PeekPokeTargetIO(targetIO, reset != None))
   val constructorArg = Some(PeekPokeKey(io))
-  val endpointIO = new PeekPokeTokenizedIO(io)
+  val bridgeIO = new PeekPokeTokenizedIO(io)
   generateAnnotations()
 }
 
-object PeekPokeEndpoint {
+object PeekPokeBridge {
   @chiselName
-  def apply(reset: Bool, ioList: (String, Data)*): PeekPokeEndpoint = {
-    val peekPokeEndpoint = Module(new PeekPokeEndpoint(ioList, Some(reset)))
-    ioList.foreach({ case (name, field) => field <> peekPokeEndpoint.io.elements(name) })
-    reset := peekPokeEndpoint.io.reset.get
-    peekPokeEndpoint
+  def apply(reset: Bool, ioList: (String, Data)*): PeekPokeBridge = {
+    val peekPokeBridge = Module(new PeekPokeBridge(ioList, Some(reset)))
+    ioList.foreach({ case (name, field) => field <> peekPokeBridge.io.elements(name) })
+    reset := peekPokeBridge.io.reset.get
+    peekPokeBridge
   }
 }

@@ -177,8 +177,8 @@ object Widget {
     val w = Module(m)
     // Assign stable widget names by using the class name and suffix using the
     // number of other instances.
-    // We could let the user specify this in their endpoint --> we'd need to consider:
-    // 1) Name collisions for embedded endpoints
+    // We could let the user specify this in their bridge --> we'd need to consider:
+    // 1) Name collisions for embedded bridges
     // 2) We currently rely on having fixed widget names based on the class
     //    name, in the simulation driver.
     val widgetBasename = w.getClass.getSimpleName

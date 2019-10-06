@@ -54,12 +54,12 @@ case class FAMEChannelConnectionAnnotation(
   }
   def typeHints(): Seq[Class[_]] = Seq(channelInfo.getClass)
 
-  def getEndpointModule(): String = sources.getOrElse(sinks.get).head.module
+  def getBridgeModule(): String = sources.getOrElse(sinks.get).head.module
 
-  def moveFromEndpoint(portName: String): FAMEChannelConnectionAnnotation = {
+  def moveFromBridge(portName: String): FAMEChannelConnectionAnnotation = {
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
 
-    require(sources == None || sinks == None, "Endpoint-connected channels cannot loopback")
+    require(sources == None || sinks == None, "Bridge-connected channels cannot loopback")
     val rTs = sources.getOrElse(sinks.get) ++ (channelInfo match {
       case i: DecoupledForwardChannel => Seq(i.readySink.getOrElse(i.readySource.get))
       case other => Seq()
@@ -72,7 +72,7 @@ case class FAMEChannelConnectionAnnotation(
   override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten
 }
 
-// Helper factory methods for generating endpoint annotations that have only sinks or sources
+// Helper factory methods for generating bridge annotations that have only sinks or sources
 object FAMEChannelConnectionAnnotation {
   def sink(
     globalName: String,
@@ -141,7 +141,7 @@ case class DecoupledForwardChannel(
   }
 }
 
-// Helper factory methods for generating endpoint annotations that have only sinks or sources
+// Helper factory methods for generating bridge annotations that have only sinks or sources
 object DecoupledForwardChannel {
   def sink(valid: ReferenceTarget, ready: ReferenceTarget) =
     DecoupledForwardChannel(None, None, Some(ready), Some(valid))
