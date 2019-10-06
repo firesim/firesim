@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
 #include "simif.h"
-#include "endpoints/endpoint.h"
-#include "endpoints/fased_memory_timing_model.h"
+#include "bridges/endpoint.h"
+#include "bridges/fased_memory_timing_model.h"
 
 class PointerChaser_t: virtual simif_t
 {
@@ -55,14 +55,14 @@ public:
     poke(io_result_ready, 0);
     do {
       step(1, false);
-      for (auto e: endpoints) {
+      for (auto e: bridges) {
         e->tick();
       }
     } while (!peek(io_result_valid) && cycles() < max_cycles);
     expect(io_result_bits, result);
   }
 private:
-  std::vector<endpoint_t*> endpoints;
+  std::vector<endpoint_t*> bridges;
   std::vector<FpgaModel*> fpga_models;
   uint64_t max_cycles;
   mpz_t address;

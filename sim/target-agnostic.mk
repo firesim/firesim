@@ -18,6 +18,14 @@ HEADER ?=
 # The midas-generated simulator RTL which will be baked into the FPGA shell project
 VERILOG ?=
 
+# The target's FIRRTL and associated anotations
+FIRRTL_FILE ?=
+ANNO_FILE ?=
+
+# The host config package and class string
+PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
+PLATFORM_CONFIG ?= DefaultF1Config
+
 # The host platform type
 PLATFORM ?= f1
 
@@ -31,6 +39,19 @@ midas_cc = $(shell find $(simif_dir) -name "*.cc")
 
 common_cxx_flags := $(TARGET_CXX_FLAGS) -Wno-unused-variable
 common_ld_flags := $(TARGET_LD_FLAGS) -lrt
+
+####################################
+# Golden Gate Invocation           #
+####################################
+midas_sbt_project := {file:$(firesim_base_dir)}midas
+
+$(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
+	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
+		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
+		-ggaf $(ANNO_FILE) \
+		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
+		-ggcs $(PLATFORM_CONFIG) \
+		-E verilog"
 
 ####################################
 # Runtime-Configuraiton Generation #

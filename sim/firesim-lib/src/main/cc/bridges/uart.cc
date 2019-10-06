@@ -1,5 +1,5 @@
 //See LICENSE for license details
-#ifdef UARTWIDGET_struct_guard
+#ifdef UARTBRIDGEMODULE_struct_guard
 
 #include "uart.h"
 #include <sys/stat.h>
@@ -36,7 +36,7 @@ void sighand(int s) {
 }
 #endif
 
-uart_t::uart_t(simif_t* sim, UARTWIDGET_struct * mmio_addrs, int uartno): endpoint_t(sim)
+uart_t::uart_t(simif_t* sim, UARTBRIDGEMODULE_struct * mmio_addrs, int uartno): bridge_driver_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
     this->loggingfd = 0; // unused
@@ -143,4 +143,4 @@ void uart_t::tick() {
     } while(data.in.fire() || data.out.fire());
 }
 
-#endif // UARTWIDGET_struct_guard
+#endif // UARTBRIDGEMODULE_struct_guard

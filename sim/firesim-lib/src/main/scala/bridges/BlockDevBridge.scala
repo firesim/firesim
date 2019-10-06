@@ -1,5 +1,5 @@
 //See LICENSE for license details
-package firesim.endpoints
+package firesim.bridges
 
 import chisel3._
 import chisel3.util._
@@ -9,32 +9,33 @@ import freechips.rocketchip.util.DecoupledHelper
 
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
-import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey}
+import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey, BlockDeviceConfig}
 
-class BlockDevEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+class BlockDevBridgeTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
   val reset = Input(Bool())
 }
 
-class BlockDevEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
-  val io = IO(new BlockDevEndpointTargetIO)
-  val endpointIO = HostPort(io)
-  def widget = (p: Parameters) => { new BlockDevWidget()(p) }
+class BlockDevBridge(implicit p: Parameters) extends BlackBox
+    with Bridge[HostPortIO[BlockDevBridgeTargetIO], BlockDevBridgeModule]  {
+  val io = IO(new BlockDevBridgeTargetIO)
+  val bridgeIO = HostPort(io)
+  val constructorArg = Some(p(BlockDeviceKey))
   generateAnnotations()
 }
 
-object BlockDevEndpoint  {
-  def apply(blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevEndpoint = {
-    val ep = Module(new BlockDevEndpoint)
+object BlockDevBridge  {
+  def apply(blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevBridge = {
+    val ep = Module(new BlockDevBridge)
     ep.io.bdev <> blkdevIO
     ep.io.reset := reset
     ep
   }
 }
 
-class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
+class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameters) extends BridgeModule[HostPortIO[BlockDevBridgeTargetIO]]()(hostP) {
+  implicit override val p = hostP.alterPartial({ case BlockDeviceKey => blockDevExternal })
   // TODO use HasBlockDeviceParameters
-  val blockDevExternal = p(BlockDeviceKey)
   val dataBytes = 512
   val sectorBits = 32
   val nTrackers = blockDevExternal.nTrackers
@@ -51,7 +52,7 @@ class BlockDevWidget(implicit p: Parameters) extends EndpointWidget()(p) {
   val defaultWriteLatency = (1 << 8).U(latencyBits.W)
 
   val io = IO(new WidgetIO())
-  val hPort = IO(HostPort(new BlockDevEndpointTargetIO))
+  val hPort = IO(HostPort(new BlockDevBridgeTargetIO))
 
   val reqBuf = Module(new Queue(new BlockDeviceRequest, 10))
   val dataBuf = Module(new Queue(new BlockDeviceData, 32))

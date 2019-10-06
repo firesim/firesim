@@ -17,7 +17,7 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
     case SynthAsserts => true
     case midas.GenerateMultiCycleRamModels => true
     case SynthPrints => true
-}) ++ new Config(new WithDefaultMemModel ++ new midas.F1Config))
+}) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
   case MemSize => BigInt(1 << 30) // 1 GB

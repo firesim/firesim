@@ -5,11 +5,11 @@
 #include <memory>
 
 #include "simif.h"
-#include "endpoints/endpoint.h"
-#include "endpoints/fpga_model.h"
+#include "bridges/bridge_driver.h"
+#include "bridges/fpga_model.h"
 #include "firesim/systematic_scheduler.h"
 
-#include "endpoints/synthesized_prints.h"
+#include "bridges/synthesized_prints.h"
 
 class fasedtests_top_t: virtual simif_t, public systematic_scheduler_t
 {
@@ -19,18 +19,18 @@ class fasedtests_top_t: virtual simif_t, public systematic_scheduler_t
         void run();
 
     protected:
-        void add_endpoint(endpoint_t* endpoint) {
-            endpoints.push_back(std::unique_ptr<endpoint_t>(endpoint));
+        void add_bridge_driver(bridge_driver_t* bridge_driver) {
+            bridges.push_back(std::unique_ptr<bridge_driver_t>(bridge_driver));
         }
 
     private:
-        // Memory mapped endpoints bound to software models
-        std::vector<std::unique_ptr<endpoint_t> > endpoints;
+        // Memory mapped bridges bound to software models
+        std::vector<std::unique_ptr<bridge_driver_t> > bridges;
         // FPGA-hosted models with programmable registers & instrumentation
         std::vector<FpgaModel*> fpga_models;
 
-#ifdef PRINTWIDGET_struct_guard
-        synthesized_prints_t * print_endpoint;
+#ifdef PRINTBRIDGEMODULE_struct_guard
+        synthesized_prints_t * print_bridge;
 #endif
 
         // profile interval: # of cycles to advance before profiling instrumentation registers in models
@@ -40,9 +40,9 @@ class fasedtests_top_t: virtual simif_t, public systematic_scheduler_t
         // If set, will write all zeros to fpga dram before commencing simulation
         bool do_zero_out_dram = false;
 
-        // Returns true if any endpoint has signaled for simulation termination
+        // Returns true if any bridge has signaled for simulation termination
         bool simulation_complete();
-        // Returns the error code of the first endpoint for which it is non-zero
+        // Returns the error code of the first bridge for which it is non-zero
         int exit_code();
 
 };

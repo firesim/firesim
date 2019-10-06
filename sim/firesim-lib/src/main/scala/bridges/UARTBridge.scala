@@ -1,5 +1,5 @@
 //See LICENSE for license details
-package firesim.endpoints
+package firesim.bridges
 
 import midas.widgets._
 
@@ -10,32 +10,39 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
-class UARTEndpoint(implicit p: Parameters) extends BlackBox with IsEndpoint {
-  val io = IO(new UARTEndpointTargetIO)
-  val endpointIO = HostPort(io)
+// We need to box this Int in a case class for the constructor invocation to
+// work correctly.
+case class UARTKey(div: Int)
+
+class UARTBridge(implicit p: Parameters) extends BlackBox
+    with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] {
+  val io = IO(new UARTBridgeTargetIO)
+  val bridgeIO = HostPort(io)
   val frequency = p(PeripheryBusKey).frequency
   val baudrate = 3686400L
   val div = (p(PeripheryBusKey).frequency / baudrate).toInt
-  def widget = (p: Parameters) => new UARTWidget(div)(p)
+  val constructorArg = Some(UARTKey(div))
   generateAnnotations()
 }
 
-object UARTEndpoint {
-  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTEndpoint = {
-    val ep = Module(new UARTEndpoint)
+object UARTBridge {
+  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
+    val ep = Module(new UARTBridge)
     ep.io.uart <> uart
     ep
   }
 }
 
-class UARTEndpointTargetIO(implicit val p: Parameters) extends Bundle {
+class UARTBridgeTargetIO extends Bundle {
   val uart = Flipped(new UARTPortIO)
   val reset = Input(Bool())
 }
 
-class UARTWidget(div: Int)(implicit p: Parameters) extends EndpointWidget()(p) {
+
+class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[UARTBridgeTargetIO]]()(p) {
+  val div = key.div
   val io = IO(new WidgetIO())
-  val hPort = IO(HostPort(new UARTEndpointTargetIO))
+  val hPort = IO(HostPort(new UARTBridgeTargetIO))
 
   val txfifo = Module(new Queue(UInt(8.W), 128))
   val rxfifo = Module(new Queue(UInt(8.W), 128))
