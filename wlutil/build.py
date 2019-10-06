@@ -324,6 +324,13 @@ def makeImage(config):
         if 'base-img' in config:
             shutil.copy(config['base-img'], config['img'])
   
+    # Convert overlay to file list
+    if 'overlay' in config:
+        config.setdefault('files', [])
+        files = glob.glob(os.path.join(config['overlay'], '*'))
+        for f in files:
+            config['files'].append(FileSpec(src=f, dst='/'))
+
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         copyImgFiles(config['img'], config['files'], 'in')
