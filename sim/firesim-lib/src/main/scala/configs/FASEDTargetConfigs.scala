@@ -3,38 +3,14 @@ package firesim.configs
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 
+import midas.{HostTransforms, TargetTransforms}
 import midas.models._
-import firesim.endpoints._
+import firesim.bridges._
 
-case object MemModelKey extends Field[(Parameters) => BaseConfig]
-object BaseParamsKey extends Field[BaseParams]
-object LlcKey extends Field[Option[LLCParams]]
-object DramOrganizationKey extends Field[DramOrganizationParams]
-
-class BasePlatformConfig extends Config(new midas.F1Config)
-
-// Experimental: mixing this in will enable assertion synthesis
-class WithSynthAsserts extends Config((site, here, up) => {
-  case midas.SynthAsserts => true
-})
-
-// Experimental: mixing this in will enable print synthesis
-class WithPrintfSynthesis extends Config((site, here, up) => {
-  case midas.SynthPrints => true
-})
-
-// MIDAS 2.0 Switches
-class WithMultiCycleRamModels extends Config((site, here, up) => {
-  case midas.GenerateMultiCycleRamModels => true
-})
-
-// Short name alias for above
-class MCRams extends WithMultiCycleRamModels
-
-// Enables NIC loopback the NIC widget
-class WithNICWidgetLoopback  extends Config((site, here, up) => {
-  case LoopbackNIC => true
-})
+case object MemModelKey extends Field[BaseConfig]
+case object BaseParamsKey extends Field[BaseParams]
+case object LlcKey extends Field[Option[LLCParams]]
+case object DramOrganizationKey extends Field[DramOrganizationParams]
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
@@ -43,19 +19,20 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
   // Default to a Latency-Bandwidth Pipe without and LLC model
-  case BaseParamsKey => new BaseParams(
+  case BaseParamsKey => BaseParams(
     maxReads = 16,
     maxWrites = 16,
     beatCounters = true,
     llcKey = site(LlcKey))
 
-  case MemModelKey => (p: Parameters) => new LatencyPipeConfig(site(BaseParamsKey))(p)
+  case MemModelKey => new LatencyPipeConfig(site(BaseParamsKey))
 })
 
 
 /*******************************************************************************
 * Memory-timing model configuration modifiers
 *******************************************************************************/
+
 // Adds a LLC model with at most <maxSets> sets with <maxWays> ways
 class WithLLCModel(maxSets: Int, maxWays: Int) extends Config((site, here, up) => {
   case LlcKey => Some(LLCParams().copy(
@@ -77,20 +54,20 @@ class WithDramOrganization(maxRanks: Int, maxBanks: Int, dramSize: BigInt)
 
 // Instantiates a DDR3 model with a FCFS memory access scheduler
 class WithDDR3FIFOMAS(queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FIFOMASConfig(
+  case MemModelKey => new FIFOMASConfig(
     transactionQueueDepth = queueDepth,
     dramKey = site(DramOrganizationKey),
-    baseParams = site(BaseParamsKey))(p)
+    params = site(BaseParamsKey))
 })
 
 // Instantiates a DDR3 model with a FR-FCFS memory access scheduler
 // windowSize = Maximum number of references the MAS can schedule across
 class WithDDR3FRFCFS(windowSize: Int, queueDepth: Int) extends Config((site, here, up) => {
-  case MemModelKey => (p: Parameters) => new FirstReadyFCFSConfig(
+  case MemModelKey => new FirstReadyFCFSConfig(
     schedulerWindowSize = windowSize,
     transactionQueueDepth = queueDepth,
     dramKey = site(DramOrganizationKey),
-    baseParams = site(BaseParamsKey))(p)
+    params = site(BaseParamsKey))
   }
 )
 
@@ -109,6 +86,7 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
 class LBP32R32W extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
+
 class LBP32R32WLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
   new WithFuncModelLimits(32,32) ++

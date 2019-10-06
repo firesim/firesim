@@ -10,6 +10,7 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  exportJars := true,
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases"),
@@ -45,8 +46,17 @@ lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
   .dependsOn(chisel)
 
-lazy val midas      = (project in file("midas"))
-  .settings(commonSettings).dependsOn(barstools, rocketchip)
+// We cannot forward reference firesim from midas (this creates a circular
+// dependency on the project definitions), so declare a reference to it
+// first and use that to append to our RuntimeClasspath
+lazy val firesimRef = ProjectRef(file("."), "firesim")
+
+lazy val midas = (project in file("midas"))
+  .dependsOn(barstools, rocketchip)
+  .settings(commonSettings,
+    Runtime / fullClasspathAsJars ++= ((firesimRef / Runtime / fullClasspath).value ++
+                                       (firechip / Runtime / fullClasspath).value)
+  )
 
 lazy val firesimLib = (project in file("firesim-lib"))
   .settings(commonSettings).dependsOn(midas, icenet, testchipip, sifive_blocks)

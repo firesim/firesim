@@ -106,7 +106,7 @@ compound Config instance. See the example below:
 
 With this scheme, you don't need to define a Config class for every instance you
 wish to generate. We use this scheme to specify FPGA frequencies (eg.
-FireSimConfig_F90MHz) in manager build recipes, but it's also very useful for doing
+BaseF1Config_F90MHz) in manager build recipes, but it's also very useful for doing
 sweeping over a parameterization space.
 
 

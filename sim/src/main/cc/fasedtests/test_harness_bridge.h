@@ -1,15 +1,15 @@
 //See LICENSE for license details.
 
-#ifndef __TEST_HARNESS_ENDPOINT_H
-#define __TEST_HARNESS_ENDPOINT_H
+#ifndef __TEST_HARNESS_BRIDGE_H
+#define __TEST_HARNESS_BRIDGE_H
 
 #include <unordered_map>
 
 // From MIDAS
-#include "endpoints/endpoint.h"
-#include "endpoints/address_map.h"
+#include "bridges/bridge_driver.h"
+#include "bridges/address_map.h"
 
-class test_harness_endpoint_t: public endpoint_t
+class test_harness_bridge_t: public bridge_driver_t
 {
   private:
     int error = 0;
@@ -19,8 +19,8 @@ class test_harness_endpoint_t: public endpoint_t
     std::unordered_map<std::string, uint32_t> expected_uarchevent_values;
 
   public:
-    test_harness_endpoint_t(simif_t* sim, AddressMap addr_map, const std::vector<std::string>& args);
-    virtual ~test_harness_endpoint_t() {};
+    test_harness_bridge_t(simif_t* sim, AddressMap addr_map, const std::vector<std::string>& args);
+    virtual ~test_harness_bridge_t() {};
     virtual void init() {};
     virtual void tick();
     virtual bool terminate() { return done || error != 0; };
@@ -28,4 +28,4 @@ class test_harness_endpoint_t: public endpoint_t
     virtual void finish() {};
 };
 
-#endif // __TEST_HARNESS_ENDPOINT_H
+#endif // __TEST_HARNESS_BRIDGE_H

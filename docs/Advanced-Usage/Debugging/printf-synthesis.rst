@@ -32,8 +32,10 @@ like so:
 
 Be judicious, as synthesizing many, frequently active printfs, will slow down your simulator. 
 
-Once your printfs have been annotated, to enable printf synthesis add the ``WithPrintfSynthesis`` Config to your
-PLATFORM_CONFIG in SimConfigs.scala.  During compilation, MIDAS will print the
+Once your printfs have been annotated, to enable printf synthesis prepend the ``WithPrintfSynthesis`` configuraiton mixin to your
+PLATFORM_CONFIG in ``config_build_recipes.ini``.
+For example, if you previous PLATFORM_CONFIG was ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you must prepend the mixin (rather than appending). 
+During compilation, MIDAS will print the
 number of printfs it's synthesized.  In the target's generated header
 (``<DESIGN>-const.h``), you'll find metadata for each of the printfs MIDAS synthesized.
 This is passed as argument to the constructor of the ``synthesized_prints_t``

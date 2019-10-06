@@ -3,18 +3,18 @@
 #ifndef __SIMPLENIC_H
 #define __SIMPLENIC_H
 
-#include "endpoints/endpoint.h"
+#include "bridges/bridge_driver.h"
 #include <vector>
 
 // TODO this should not be hardcoded here.
 #define MAX_BANDWIDTH 200
 
-#ifdef SIMPLENICWIDGET_struct_guard
-class simplenic_t: public endpoint_t
+#ifdef SIMPLENICBRIDGEMODULE_struct_guard
+class simplenic_t: public bridge_driver_t
 {
     public:
         simplenic_t(simif_t* sim, std::vector<std::string> &args,
-            SIMPLENICWIDGET_struct *addrs, int simplenicno,
+            SIMPLENICBRIDGEMODULE_struct *addrs, int simplenicno,
             long dma_addr);
         ~simplenic_t();
 
@@ -38,7 +38,7 @@ class simplenic_t: public endpoint_t
         // IMPORTANT: this must be a multiple of 7
         int LINKLATENCY;
         FILE * niclog;
-        SIMPLENICWIDGET_struct *mmio_addrs;
+        SIMPLENICBRIDGEMODULE_struct *mmio_addrs;
         bool loopback;
 
         // checking for token loss
@@ -54,6 +54,6 @@ class simplenic_t: public endpoint_t
 
         long dma_addr;
 };
-#endif // SIMPLENICWIDGET_struct_guard
+#endif // SIMPLENICBRIDGEMODULE_struct_guard
 
 #endif // __SIMPLENIC_H

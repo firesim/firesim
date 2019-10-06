@@ -14,7 +14,7 @@ TARGET_CONFIG ?= FireSimRocketChipConfig
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
-PLATFORM_CONFIG ?= FireSimConfig
+PLATFORM_CONFIG ?= BaseF1Config
 
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
@@ -23,6 +23,10 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 ##################
 # RTL Generation #
 ##################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
@@ -34,7 +38,7 @@ else
 	firesim_sbt_project := firechip
 endif
 
-$(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	cd $(base_dir) && \
 	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
@@ -43,12 +47,17 @@ $(VERILOG) $(HEADER): $(SCALA_SOURCES) $(FIRRTL_JAR)
 # Driver Sources & Flags #
 ##########################
 
+firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
-DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim/* fesvr/* endpoints/*))) $(RISCV)/lib/libfesvr.a
+DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
+		   $(shell find $(firesim_lib_dir) -name "*.h")
 
-TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
+            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
+			$(RISCV)/lib/libfesvr.a
+
+$(info $(DRIVER_CC))
+TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
 ####################################
@@ -138,7 +147,7 @@ $(fc_test_dir)/%.riscv: $(fc_test_srcs) $(fc_test_hdrs) $(fc_test_dir)/Makefile
 
 ifneq ($(filter run% %.run %.out %.vpd %.vcd,$(MAKECMDGOALS)),)
 output_dir := $(OUTPUT_DIR)
--include $(GENERATED_DIR)/$(DESIGN).d
+-include $(GENERATED_DIR)/$(long_name).d
 endif
 
 
