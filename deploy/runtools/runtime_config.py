@@ -250,7 +250,6 @@ class InnerRuntimeConfiguration:
 
         self.runfarmtag = runfarmtagprefix + runtime_dict['runfarm']['runfarmtag']
 
-        # now, check if we're in tutorial mode and set extra prefix if so
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
