@@ -16,7 +16,7 @@ CONFIG_RISCV_ISA_C=n
 #
 # Boot options
 #
-CONFIG_CMDLINE="console=hvc0"
+CONFIG_CMDLINE="console=hvc0 earlycon=sbi"
 CONFIG_CMDLINE_FORCE=y
 
 #
