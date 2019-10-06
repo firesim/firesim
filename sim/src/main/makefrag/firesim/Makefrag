@@ -47,12 +47,17 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 # Driver Sources & Flags #
 ##########################
 
+firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
-DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, \
-	firesim/* fesvr/* endpoints/*))) $(RISCV)/lib/libfesvr.a
+DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
+		   $(shell find $(firesim_lib_dir) -name "*.h")
 
-TARGET_CXX_FLAGS := -g -I$(driver_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
+DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
+            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
+			$(RISCV)/lib/libfesvr.a
+
+$(info $(DRIVER_CC))
+TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
 ####################################

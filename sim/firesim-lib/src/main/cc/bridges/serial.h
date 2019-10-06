@@ -2,7 +2,7 @@
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
-#include "endpoints/endpoint.h"
+#include "bridges/bridge_driver.h"
 #include "fesvr/firesim_fesvr.h"
 
 template<class T>
@@ -21,11 +21,11 @@ struct serial_data_t {
     } out;
 };
 
-#ifdef SERIALWIDGET_struct_guard
-class serial_t: public endpoint_t
+#ifdef SERIALBRIDGEMODULE_struct_guard
+class serial_t: public bridge_driver_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, uint64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();
@@ -34,7 +34,7 @@ class serial_t: public endpoint_t
         virtual void finish() {};
 
     private:
-        SERIALWIDGET_struct * mmio_addrs;
+        SERIALBRIDGEMODULE_struct * mmio_addrs;
         simif_t* sim;
         firesim_fesvr_t* fesvr;
         // host memory offset based on the number of memory models and their size
@@ -52,6 +52,6 @@ class serial_t: public endpoint_t
         void handle_loadmem_write(fesvr_loadmem_t loadmem);
         void serial_bypass_via_loadmem();
 };
-#endif // SERIALWIDGET_struct_guard
+#endif // SERIALBRIDGEMODULE_struct_guard
 
 #endif // __SERIAL_H

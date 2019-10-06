@@ -1,6 +1,6 @@
 //See LICENSE for license details
 package firesim
-package endpoints
+package bridges
 
 import chisel3._
 import chisel3.util._
@@ -24,16 +24,16 @@ import TokenQueueConsts._
 
 case object LoopbackNIC extends Field[Boolean](false)
 
-class NICEndpoint(implicit p: Parameters) extends BlackBox with Endpoint[HostPortIO[NICIOvonly], SimpleNICWidget] {
+class NICBridge(implicit p: Parameters) extends BlackBox with Bridge[HostPortIO[NICIOvonly], SimpleNICBridgeModule] {
   val io = IO(Flipped(new NICIOvonly))
-  val endpointIO = HostPort(io)
+  val bridgeIO = HostPort(io)
   val constructorArg = None
   generateAnnotations()
 }
 
-object NICEndpoint {
-  def apply(nicIO: NICIOvonly)(implicit p: Parameters): NICEndpoint = {
-    val ep = Module(new NICEndpoint)
+object NICBridge {
+  def apply(nicIO: NICIOvonly)(implicit p: Parameters): NICBridge = {
+    val ep = Module(new NICBridge)
     ep.io <> nicIO
     ep
   }
@@ -174,7 +174,7 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICWidget(implicit p: Parameters) extends EndpointWidget[HostPortIO[NICIOvonly]]()(p)
+class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICIOvonly]]()(p)
     with BidirectionalDMA {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(Flipped(new NICIOvonly)))

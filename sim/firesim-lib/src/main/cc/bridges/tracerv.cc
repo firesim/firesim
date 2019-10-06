@@ -1,5 +1,5 @@
 //See LICENSE for license details
-#ifdef TRACERVWIDGET_struct_guard
+#ifdef TRACERVBRIDGEMODULE_struct_guard
 
 #include "tracerv.h"
 
@@ -31,7 +31,7 @@
 #define QUEUE_DEPTH 6144
 
 tracerv_t::tracerv_t(
-    simif_t *sim, std::vector<std::string> &args, TRACERVWIDGET_struct * mmio_addrs, int tracerno, long dma_addr) : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
@@ -187,4 +187,4 @@ void tracerv_t::flush() {
     }
    cur_cycle += beats_available;
 }
-#endif // TRACERVWIDGET_struct_guard
+#endif // TRACERVBRIDGEMODULE_struct_guard

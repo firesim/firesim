@@ -1,5 +1,5 @@
 //See LICENSE for license details
-#ifdef SIMPLENICWIDGET_struct_guard
+#ifdef SIMPLENICBRIDGEMODULE_struct_guard
 
 #include "simplenic.h"
 
@@ -45,8 +45,8 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 #define niclog_printf(...) if (this->niclog) { fprintf(this->niclog, __VA_ARGS__); fflush(this->niclog); }
 
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
-        SIMPLENICWIDGET_struct *mmio_addrs, int simplenicno,
-        long dma_addr): endpoint_t(sim)
+        SIMPLENICBRIDGEMODULE_struct *mmio_addrs, int simplenicno,
+        long dma_addr): bridge_driver_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
 
@@ -61,7 +61,7 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     this->dma_addr = dma_addr;
 
 
-    // construct arg parsing strings here. We basically append the endpoint
+    // construct arg parsing strings here. We basically append the bridge_driver
     // number to each of these base strings, to get args like +blkdev0 etc.
     std::string num_equals = std::to_string(simplenicno) + std::string("=");
     std::string niclog_arg = std::string("+niclog") + num_equals;
@@ -337,5 +337,5 @@ void simplenic_t::tick() {
     }
 }
 
-#endif // #ifdef SIMPLENICWIDGET_struct_guard
+#endif // #ifdef SIMPLENICBRIDGEMODULE_struct_guard
 

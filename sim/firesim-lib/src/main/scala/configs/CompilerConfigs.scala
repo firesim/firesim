@@ -3,7 +3,7 @@ package firesim.configs
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import midas.{TargetTransforms, HostTransforms}
-import firesim.endpoints._
+import firesim.bridges._
 
 // Experimental: mixing this in will enable assertion synthesis
 class WithSynthAsserts extends Config((site, here, up) => {

@@ -1,5 +1,5 @@
 //See LICENSE for license details
-package firesim.endpoints
+package firesim.bridges
 
 import midas.widgets._
 
@@ -10,29 +10,29 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
 
-class SerialEndpoint extends BlackBox with Endpoint[HostPortIO[SerialEndpointTargetIO], SerialWidget] {
-  val io = IO(new SerialEndpointTargetIO)
-  val endpointIO = HostPort(io)
+class SerialBridge extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
+  val io = IO(new SerialBridgeTargetIO)
+  val bridgeIO = HostPort(io)
   val constructorArg = None
   generateAnnotations()
 }
 
-object SerialEndpoint {
-  def apply(port: SerialIO)(implicit p: Parameters): SerialEndpoint = {
-    val ep = Module(new SerialEndpoint)
+object SerialBridge {
+  def apply(port: SerialIO)(implicit p: Parameters): SerialBridge = {
+    val ep = Module(new SerialBridge)
     ep.io.serial <> port
     ep
   }
 }
 
-class SerialEndpointTargetIO extends Bundle {
+class SerialBridgeTargetIO extends Bundle {
   val serial = Flipped(new SerialIO(testchipip.SerialAdapter.SERIAL_IF_WIDTH))
   val reset = Input(Bool())
 }
 
-class SerialWidget(implicit p: Parameters) extends EndpointWidget[HostPortIO[SerialEndpointTargetIO]]()(p) {
+class SerialBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {
   val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(new SerialEndpointTargetIO))
+  val hPort = IO(HostPort(new SerialBridgeTargetIO))
 
   val serialBits = testchipip.SerialAdapter.SERIAL_IF_WIDTH
   val inBuf  = Module(new Queue(UInt(serialBits.W), 16))

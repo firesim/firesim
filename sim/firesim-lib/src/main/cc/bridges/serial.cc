@@ -1,5 +1,5 @@
 //See LICENSE for license details
-#ifdef SERIALWIDGET_struct_guard
+#ifdef SERIALBRIDGEMODULE_struct_guard
 
 #include <assert.h>
 #include "serial.h"
@@ -10,8 +10,8 @@
 #define DEFAULT_STEPSIZE (2004765L)
 #endif
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALWIDGET_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
-        endpoint_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
+        bridge_driver_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 
@@ -160,4 +160,4 @@ void serial_t::tick() {
     }
 }
 
-#endif // SERIALWIDGET_struct_guard
+#endif // SERIALBRIDGEMODULE_struct_guard

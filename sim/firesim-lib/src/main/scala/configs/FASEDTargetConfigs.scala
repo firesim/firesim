@@ -5,7 +5,7 @@ import freechips.rocketchip.config.{Parameters, Config, Field}
 
 import midas.{HostTransforms, TargetTransforms}
 import midas.models._
-import firesim.endpoints._
+import firesim.bridges._
 
 case object MemModelKey extends Field[BaseConfig]
 case object BaseParamsKey extends Field[BaseParams]

@@ -1,5 +1,5 @@
 //See LICENSE for license details
-package firesim.endpoints
+package firesim.bridges
 
 import chisel3._
 import chisel3.util._
@@ -64,7 +64,7 @@ object DeclockedTracedInstruction {
   })
 }
 
-// The IO matched on by the TracerV endpoint: a wrapper around a heterogenous
+// The IO matched on by the TracerV bridge: a wrapper around a heterogenous
 // bag of vectors. Each entry is Vec of committed instructions
 class TraceOutputTop(private val traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bundle {
   val traces = Output(HeterogeneousBag(traceProto.map(_.cloneType)))
@@ -85,23 +85,23 @@ case class TracerVKey(
   vecSizes: Seq[Int] // The number of insns in each vec (= max insns retired at that core) 
 )
 
-class TracerVEndpoint(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox
-    with Endpoint[HostPortIO[TraceOutputTop], TracerVWidget] {
+class TracerVBridge(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox
+    with Bridge[HostPortIO[TraceOutputTop], TracerVBridgeModule] {
   val io = IO(Flipped(new TraceOutputTop(traceProto)))
-  val endpointIO = HostPort(io)
+  val bridgeIO = HostPort(io)
   val constructorArg = Some(TracerVKey(io.getWidths, io.getVecSizes))
   generateAnnotations()
 }
 
-object TracerVEndpoint {
-  def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[TracerVEndpoint] = {
-    val ep = Module(new TracerVEndpoint(port.getProto))
+object TracerVBridge {
+  def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[TracerVBridge] = {
+    val ep = Module(new TracerVBridge(port.getProto))
     ep.io <> port
     Seq(ep)
   }
 }
 
-class TracerVWidget(key: TracerVKey)(implicit p: Parameters) extends EndpointWidget[HostPortIO[TraceOutputTop]]()(p)
+class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TraceOutputTop]]()(p)
     with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(Flipped(TraceOutputTop(key.insnWidths, key.vecSizes))))

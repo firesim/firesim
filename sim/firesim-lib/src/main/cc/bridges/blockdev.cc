@@ -1,5 +1,5 @@
 //See LICENSE for license details
-#ifdef BLOCKDEVWIDGET_struct_guard
+#ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 
 #include "blockdev.h"
 #include <stdio.h>
@@ -11,7 +11,7 @@
  * This works in conjunction with
  * chipyard/testchipip/src/main/scala/BlockDevice.scala (Block Device RTL)
  * and
- * src/main/scala/endpoints/BlockDevWidget.scala
+ * src/main/scala/bridges/BlockDevWidget.scala
  */
 
 /* Uncomment to get DEBUG printing
@@ -22,14 +22,14 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVWIDGET_struct * mmio_addrs, int blkdevno): endpoint_t(sim) {
+blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVBRIDGEMODULE_struct * mmio_addrs, int blkdevno): bridge_driver_t(sim) {
     this->mmio_addrs = mmio_addrs;
     _ntags = num_trackers;
     long size;
     long mem_filesize = 0;
 
 
-    // construct arg parsing strings here. We basically append the endpoint
+    // construct arg parsing strings here. We basically append the bridge_driver
     // number to each of these base strings, to get args like +blkdev0 etc.
     std::string num_equals = std::to_string(blkdevno) + std::string("=");
 
@@ -374,4 +374,4 @@ void blockdev_t::tick() {
     this->send();
 }
 
-#endif // BLOCKDEVWIDGET_struct_guard
+#endif // BLOCKDEVBRIDGEMODULE_struct_guard

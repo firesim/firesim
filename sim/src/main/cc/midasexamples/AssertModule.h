@@ -1,15 +1,15 @@
 //See LICENSE for license details.
 
 #include "simif.h"
-#include "endpoints/synthesized_assertions.h"
+#include "bridges/synthesized_assertions.h"
 
 class AssertModule_t: virtual simif_t
 {
 public:
     synthesized_assertions_t * assert_endpoint;
     AssertModule_t(int argc, char** argv) {
-        ASSERTWIDGET_0_substruct_create;
-        assert_endpoint = new synthesized_assertions_t(this, ASSERTWIDGET_0_substruct);
+        ASSERTBRIDGEMODULE_0_substruct_create;
+        assert_endpoint = new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_0_substruct);
     };
     void run() {
         int assertions_thrown = 0;

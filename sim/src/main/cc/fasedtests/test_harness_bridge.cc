@@ -1,11 +1,11 @@
 //See LICENSE for license details.
 
-#include "test_harness_endpoint.h"
+#include "test_harness_bridge.h"
 
-test_harness_endpoint_t::test_harness_endpoint_t(
+test_harness_bridge_t::test_harness_bridge_t(
   simif_t* sim,
   AddressMap addr_map, // This matches the addr map pass to the FASED timing model
-  const std::vector<std::string>& args) : endpoint_t(sim), sim(sim), addr_map(addr_map) {
+  const std::vector<std::string>& args) : bridge_driver_t(sim), sim(sim), addr_map(addr_map) {
 
 
   for (auto &arg: args) {
@@ -23,7 +23,7 @@ test_harness_endpoint_t::test_harness_endpoint_t(
 // This periodically peeks a done bit on the DUT. After it's been asserted,
 // it then reads uarch event counts from the FASED instance and compares them against
 // expected values
-void test_harness_endpoint_t::tick(){
+void test_harness_bridge_t::tick(){
   this->done = sim->peek(done);
   if(done) {
     this->error = 0;
