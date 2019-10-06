@@ -265,7 +265,7 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-    [firesim-quadcore-nic-ddr3-llc4mb]
+    [firesim-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -276,7 +276,7 @@ you would use:
 ::
 
     [agfistoshare]
-    firesim-quadcore-nic-ddr3-llc4mb
+    firesim-quadcore-nic-l2-llc4mb-ddr3
 
 
 ``[sharewithaccounts]``
@@ -392,7 +392,7 @@ these as necessary:
 
 ::
 
-    [firesim-quadcore-nic-ddr3-llc4mb]
+    [firesim-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -401,7 +401,7 @@ these as necessary:
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, ``firesim-quadcore-nic-ddr3-llc4mb`` is the name that will be
+In this example, ``firesim-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 
