@@ -40,7 +40,7 @@ class simif_t
     std::mt19937_64 gen;
     SIMULATIONMASTER_struct * master_mmio_addrs;
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
-    PEEKPOKEWIDGET_struct * defaultiowidget_mmio_addrs;
+    PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {

@@ -18,7 +18,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
-import midas.widgets.{PrintRecordBag, EndpointIOAnnotation, PrintWidget}
+import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule}
 import midas.targetutils.SynthPrintfAnnotation
 
 private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends firrtl.Transform {
@@ -136,12 +136,12 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
         val portRT = mT.ref(portName)
 
         val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
-        val endpointAnno = EndpointIOAnnotation(
+        val bridgeAnno = BridgeIOAnnotation(
           target = portRT,
-          widget = (p: Parameters) => new PrintWidget(topWiringPrefix, addedPrintPorts)(p),
+          widget = (p: Parameters) => new PrintBridgeModule(topWiringPrefix, addedPrintPorts)(p),
           channelNames = fccaAnnos.map(_.globalName)
         )
-        endpointAnno +: fccaAnnos
+        bridgeAnno +: fccaAnnos
       }
     }
     // Remove added TopWiringAnnotations to prevent being reconsumed by a downstream pass

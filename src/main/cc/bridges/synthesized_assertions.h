@@ -1,14 +1,14 @@
 #ifndef __SYNTHESIZED_ASSERTIONS_H
 #define __SYNTHESIZED_ASSERTIONS_H
 
-#ifdef ASSERTWIDGET_struct_guard
+#ifdef ASSERTBRIDGEMODULE_struct_guard
 
-#include "endpoint.h"
+#include "bridge_driver.h"
 
-class synthesized_assertions_t: public endpoint_t
+class synthesized_assertions_t: public bridge_driver_t
 {
     public:
-        synthesized_assertions_t(simif_t* sim, ASSERTWIDGET_struct * mmio_addrs);
+        synthesized_assertions_t(simif_t* sim, ASSERTBRIDGEMODULE_struct * mmio_addrs);
         ~synthesized_assertions_t();
         virtual void init() {};
         virtual void tick();
@@ -20,9 +20,9 @@ class synthesized_assertions_t: public endpoint_t
         bool assert_fired = false;
         int assert_id;
         uint64_t assert_cycle;
-        ASSERTWIDGET_struct * mmio_addrs;
+        ASSERTBRIDGEMODULE_struct * mmio_addrs;
 };
 
-#endif // ASSERTWIDGET_struct_guard
+#endif // ASSERTBRIDGEMODULE_struct_guard
 
 #endif //__SYNTHESIZED_ASSERTIONS_H

@@ -62,7 +62,7 @@ abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extend
       case b: Bits => Seq(name -> fieldToChannelMap.isDefinedAt(b))
     }
     val messages = loop("", targetPortProto).collect({ case (name, assigned) if !assigned =>
-      "Field ${name} of endpoint IO is not assigned to a channel"})
+      "Field ${name} of bridge IO is not assigned to a channel"})
     assert(messages.isEmpty, messages.mkString("\n"))
   }
 
@@ -82,12 +82,12 @@ abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extend
   def outputRVChannels = Seq.empty
 
   def generateAnnotations(): Unit = {
-    generateWireChannelFCCAs(inputWireChannels, endpointSunk = true)
-    generateWireChannelFCCAs(outputWireChannels, endpointSunk = false)
+    generateWireChannelFCCAs(inputWireChannels, bridgeSunk = true)
+    generateWireChannelFCCAs(outputWireChannels, bridgeSunk = false)
   }
 
-  def connectChannels2Port(endpointAnno: EndpointIOAnnotation, channels: SimWrapperChannels): Unit = {
-    val local2globalName = endpointAnno.channelMapping.toMap
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, channels: SimWrapperChannels): Unit = {
+    val local2globalName = bridgeAnno.channelMapping.toMap
     for (localName <- inputChannelNames) {
       elements(localName) <> channels.wireOutputPortMap(local2globalName(localName))
     }

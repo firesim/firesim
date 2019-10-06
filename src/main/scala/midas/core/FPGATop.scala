@@ -48,10 +48,10 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
   val dmaInfoBuffer = new mutable.ListBuffer[DmaInfo]
 
-  // Instantiate endpoint widgets.
-  simIo.endpointAnnos.map({ endpointAnno =>
-    val widgetChannelPrefix = s"${endpointAnno.target.ref}"
-    val widget = addWidget(endpointAnno.elaborateWidget)
+  // Instantiate bridge widgets.
+  simIo.bridgeAnnos.map({ bridgeAnno =>
+    val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
+    val widget = addWidget(bridgeAnno.elaborateWidget)
     widget.reset := reset.toBool || simReset
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
@@ -62,12 +62,12 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
         model.hPort.hBits.axi4.ar.bits.region := DontCare
         model.hPort.hBits.axi4.w.bits.id := DontCare
         model.hPort.hBits.axi4.w.bits.user := DontCare
-      case peekPoke: PeekPokeWidget =>
+      case peekPoke: PeekPokeBridgeModule =>
         peekPoke.io.step <> master.io.step
         master.io.done := peekPoke.io.idle
       case _ =>
     }
-    widget.hPort.connectChannels2Port(endpointAnno, simIo)
+    widget.hPort.connectChannels2Port(bridgeAnno, simIo)
 
     widget match {
       case widget: HasDMA => dmaInfoBuffer += DmaInfo(widget.getWName, widget.dma, widget.dmaSize)

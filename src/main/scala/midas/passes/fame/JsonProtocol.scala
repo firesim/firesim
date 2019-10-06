@@ -2,7 +2,7 @@
 
 package midas.passes.fame
 
-import midas.widgets.SerializableEndpointAnnotation
+import midas.widgets.SerializableBridgeAnnotation
 
 import firrtl.annotations._
 
@@ -16,7 +16,7 @@ import org.json4s.native.Serialization.{read, writePretty}
 case class DeserializationTypeHintsAnnotation(typeTags: Seq[String]) extends NoTargetAnnotation
 
 trait HasSerializationHints {
-  // For serialization of complicated constuctor arguments, let the endpoint
+  // For serialization of complicated constuctor arguments, let the bridge
   // designer specify additional type hints for relevant classes that might be
   // contained within
   def typeHints(): Seq[Class[_]]

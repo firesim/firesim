@@ -1,14 +1,14 @@
 #ifndef __SYNTHESIZED_PRINTS_H
 #define __SYNTHESIZED_PRINTS_H
 
-#ifdef PRINTWIDGET_struct_guard
+#ifdef PRINTBRIDGEMODULE_struct_guard
 
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <gmp.h>
 
-#include "endpoint.h"
+#include "bridge_driver.h"
 
 struct print_vars_t {
   std::vector<mpz_t*> data;
@@ -20,13 +20,13 @@ struct print_vars_t {
   }
 };
 
-class synthesized_prints_t: public endpoint_t
+class synthesized_prints_t: public bridge_driver_t
 {
 
     public:
         synthesized_prints_t(simif_t* sim,
                              std::vector<std::string> &args,
-                             PRINTWIDGET_struct * mmio_addrs,
+                             PRINTBRIDGEMODULE_struct * mmio_addrs,
                              unsigned int print_count,
                              unsigned int token_bytes,
                              unsigned int idle_cycles_mask,
@@ -43,7 +43,7 @@ class synthesized_prints_t: public endpoint_t
         void flush();
         void finish() { flush(); };
     private:
-        PRINTWIDGET_struct * mmio_addrs;
+        PRINTBRIDGEMODULE_struct * mmio_addrs;
         const unsigned int print_count;
         const unsigned int  token_bytes;
         const unsigned int  idle_cycles_mask;
@@ -92,6 +92,6 @@ class synthesized_prints_t: public endpoint_t
         int beats_avaliable_stable();
 };
 
-#endif // PRINTWIDGET_struct_guard
+#endif // PRINTBRIDGEMODULE_struct_guard
 
 #endif //__SYNTHESIZED_PRINTS_H

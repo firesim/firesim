@@ -13,10 +13,10 @@ import freechips.rocketchip.util.{DecoupledHelper}
 import scala.collection.mutable
 
 /*
- *  The MIDAS-I legacy HostPort. Endpoints using this Class to implement it's host-land interface
+ *  The MIDAS-I legacy HostPort. Bridges using this Class to implement it's host-land interface
  *  consume a _single_ input token and produce a _single_ output token. As such, HostPort is really only
  *  useful for modeling a "tick"-like behavior where no output depends
- *  combinationally on an input token. In this case, the endpoint should be
+ *  combinationally on an input token. In this case, the bridge should be
  *  able to enqueue an output token without requiring an input token. (This, to
  *  satisfy LI-BDN's NED property, and to give better simulation performance)
  *
@@ -46,8 +46,8 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
   lazy val name2Wire = Map((ins ++ outs).map({ case (wire, name) => name -> wire }):_*)
   lazy val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
 
-  def connectChannels2Port(endpointAnno: EndpointIOAnnotation, simIo: SimWrapperChannels): Unit = {
-    val local2globalName = endpointAnno.channelMapping.toMap
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit = {
+    val local2globalName = bridgeAnno.channelMapping.toMap
     val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
     // Bind payloads to HostPort, and collect channels
@@ -90,7 +90,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
     fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
 
     // Dequeue from toHost channels only if all toHost tokens are available,
-    // and the endpoint consumes it
+    // and the bridge consumes it
     val toHostHelper   = DecoupledHelper((toHost.hReady +: toHostChannels.map(_.valid)):_*)
     toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
 
@@ -100,10 +100,10 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
   }
 
   def generateAnnotations(): Unit = {
-    generateWireChannelFCCAs(inputWireChannels, endpointSunk = true, latency = 1)
-    generateWireChannelFCCAs(outputWireChannels, endpointSunk = false, latency = 1)
-    generateRVChannelFCCAs(inputRVChannels, endpointSunk = true)
-    generateRVChannelFCCAs(outputRVChannels, endpointSunk = false)
+    generateWireChannelFCCAs(inputWireChannels, bridgeSunk = true, latency = 1)
+    generateWireChannelFCCAs(outputWireChannels, bridgeSunk = false, latency = 1)
+    generateRVChannelFCCAs(inputRVChannels, bridgeSunk = true)
+    generateRVChannelFCCAs(outputRVChannels, bridgeSunk = false)
   }
 }
 

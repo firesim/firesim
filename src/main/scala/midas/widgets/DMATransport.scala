@@ -145,7 +145,7 @@ trait TieOffDMAFromHostCPU extends HasDMA {
   dma.b.bits := DontCare
 }
 
-// Complete Endpoint mixins for DMA-based transport
+// Complete Bridge mixins for DMA-based transport
 trait UnidirectionalDMAToHostCPU extends HasDMA with DMAToHostCPU with TieOffDMAFromHostCPU {
   self: Widget =>
 }

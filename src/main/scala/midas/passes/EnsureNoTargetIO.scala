@@ -2,7 +2,7 @@
 
 package midas.passes
 
-import midas.widgets.EndpointAnnotation
+import midas.widgets.BridgeAnnotation
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
 
 import firrtl._
@@ -17,7 +17,7 @@ import scala.collection.mutable
 import java.io.{File, FileWriter, StringWriter}
 
 // Ensures that there are no dangling IO on the target. All I/O coming off the DUT must be bound
-// to an Endpoint BlackBox
+// to an Bridge BlackBox
 private[passes] class EnsureNoTargetIO extends firrtl.Transform {
   def inputForm = HighForm
   def outputForm = HighForm
@@ -32,7 +32,7 @@ private[passes] class EnsureNoTargetIO extends firrtl.Transform {
     if (!nonClockPorts.isEmpty) {
       val exceptionMessage = """
 Your target design has dangling IO.
-You must bind the following top-level ports to an Endpoint BlackBox:
+You must bind the following top-level ports to an Bridge BlackBox:
 """ + nonClockPorts.map(_.name).mkString("\n")
       throw new Exception(exceptionMessage)
     }
