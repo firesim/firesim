@@ -143,7 +143,6 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
          This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
     """
 
-    # now, check if we're in tutorial mode and override if necessary
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
     securitygroupname = aws_resource_names_dict['securitygroupname']
