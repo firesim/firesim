@@ -182,13 +182,6 @@ class Config(collections.MutableMapping):
         if 'guest-init' in self.cfg:
             self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
 
-        # Convert overlay to file list (main program doesn't handle overlays directly)
-        if 'overlay' in self.cfg:
-            self.cfg.setdefault('files', [])
-            files = glob.glob(os.path.join(self.cfg['overlay'], '*'))
-            for f in files:
-                self.cfg['files'].append(FileSpec(src=f, dst='/'))
-
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
