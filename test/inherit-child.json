@@ -1,0 +1,10 @@
+{
+  "name" : "inherit-child",
+  "workdir" : "inherit",
+  "base" : "inherit-parent.json",
+  "command" : "cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput/child",
+    "strip" : true
+  }
+}
