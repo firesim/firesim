@@ -185,7 +185,7 @@ def genRunScript(command):
     with open(commandScript, 'w') as s:
         s.write("#!/bin/bash\n")
         s.write(command + "\n")
-        s.write("poweroff\n")
+        s.write("sync; poweroff -f\n")
 
     return commandScript
 
