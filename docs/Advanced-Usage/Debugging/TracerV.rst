@@ -37,7 +37,7 @@ In config_build_recipes.ini:
 
 .. code-block:: ini
 
-    [firesim-quadcore-traced-nic-ddr3-llc4mb]
+    [firesim-quadcore-traced-nic-l2-llc4mb-ddr3]
     DESIGN=FireSim
     TARGET_CONFIG=FireSimRocketChipQuadCoreTracedConfig
     PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig
@@ -49,14 +49,14 @@ In config_build.ini:
 .. code-block:: ini
 
     [builds]
-    firesim-quadcore-traced-nic-ddr3-llc4mb
+    firesim-quadcore-traced-nic-l2-llc4mb-ddr3
 
 Then run "firesim buildafi" to build an FPGA image. Add the resulting AGFI as
 a new entry in config_hwdb.ini.
 
 .. code-block:: ini
 
-    [firesim-quadcore-traced-nic-ddr3-llc4mb]
+    [firesim-quadcore-traced-nic-l2-llc4mb-ddr3]
     agfi=agfi-XXXXX
     deploytripletoverride=None
     customruntimeconfig=None

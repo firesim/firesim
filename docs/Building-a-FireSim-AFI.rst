@@ -56,8 +56,8 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 	firesim-singlecore-no-nic-lbp
 	#firesim-quadcore-nic-lbp
 	#firesim-quadcore-no-nic-lbp
-	#firesim-quadcore-nic-ddr3-llc4mb
-	#firesim-quadcore-no-nic-ddr3-llc4mb
+	#firesim-quadcore-nic-l2-llc4mb-ddr3
+	#firesim-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Running a Build

@@ -370,9 +370,9 @@ class UserTopologies(object):
     # Spins up all of the precompiled, unnetworked targets
     def all_no_net_targets_config(self):
         hwdb_entries = [
-            "fireboom-singlecore-no-nic-ddr3-llc4mb",
-            "fireboom-singlecore-no-nic-ddr3-llc4mb-gg",
-            "firesim-quadcore-no-nic-ddr3-llc4mb",
+            "fireboom-singlecore-no-nic-l2-llc4mb-ddr3",
+            "fireboom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts",
+            "firesim-quadcore-no-nic-l2-llc4mb-ddr3",
             "firesim-singlecore-no-nic-lbp",
         ]
         assert len(hwdb_entries) == self.no_net_num_nodes

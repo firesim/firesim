@@ -94,15 +94,15 @@ to change a few items in this section:
     # This references a section from config_hwconfigs.ini
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
-    defaulthwconfig=firesim-quadcore-no-nic-ddr3-llc4mb
+    defaulthwconfig=firesim-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Note that we changed three of the parameters here: ``topology`` is now set to
 ``no_net_config``, indicating that we do not want a network. Then,
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, we changed ``defaulthwconfig`` from
-``firesim-quadcore-nic-ddr3-llc4mb`` to
-``firesim-quadcore-no-nic-ddr3-llc4mb``.  Notice the subtle difference in this
+``firesim-quadcore-nic-l2-llc4mb-ddr3`` to
+``firesim-quadcore-no-nic-l2-llc4mb-ddr3``.  Notice the subtle difference in this
 last option? All we did is switch to a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
@@ -141,7 +141,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	# This references a section from config_hwconfigs.ini
 	# In homogeneous configurations, use this to set the hardware config deployed
 	# for all simulators
-	defaulthwconfig=firesim-quadcore-no-nic-ddr3-llc4mb
+	defaulthwconfig=firesim-quadcore-no-nic-l2-llc4mb-ddr3
 
 	[workload]
 	workloadname=linux-uniform.json
@@ -150,7 +150,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-no-nic-ddr3-llc4mb``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-no-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
