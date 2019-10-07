@@ -1,11 +1,9 @@
 #!/bin/bash
 
 # Usage:
-#   fakeroot -- ./makeInitramfs.sh
+#   fakeroot -- ./makeDevNodes.sh
 
-# This script turns initramfsRoot/ into a proper cpio archive of a bootable
-# initramfs. It must be run in a fakeroot environment in order to create the
-# special device files /dev/console and /dev/tty before packaging..
+# Create the devNodes.cpio archive that contains special files for an initramfs
 
 orig_pwd=${PWD}
 tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
