@@ -94,6 +94,14 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   exit 1
 fi
 
+echo "Running inheritance test" | tee -a $LOGNAME
+./test/inherit/test.py >> $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
+fi
+
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
 if [ $SUITE_PASS = false ]; then
   echo "FAILURE: Some tests failed" | tee -a $LOGNAME
