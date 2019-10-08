@@ -114,7 +114,7 @@ sets a field not already set in higher precendence Configs.
 
 For example, "BaseF1Config_F90MHz" is equivalent to
 "BaseF1Config_F90MHz_F80MHz" as ``DesiredHostFrequency`` resolves to 90 MHz,
-but "F90MHz_BaseF1Config" is distinct "F80MHz_F90MHz_BaseF1Config" in
+but "F90MHz_BaseF1Config" is distinct from "F80MHz_F90MHz_BaseF1Config" in
 that ``DesiredHostFrequency`` resolves to 90 and 80 MHz respectively.
 
 
