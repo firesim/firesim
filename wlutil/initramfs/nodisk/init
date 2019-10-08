@@ -13,7 +13,6 @@ modprobe -a $(modprobe -l)
 
 umount /proc
 umount /sys
-umount /dev
 
 # Call the native init that came with the distro
 echo "Calling distro init"
