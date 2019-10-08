@@ -7,6 +7,7 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.transforms._
 
 class AsyncResetReg extends chisel3.experimental.MultiIOModule {
   import chisel3.core._
@@ -18,7 +19,7 @@ class AsyncResetReg extends chisel3.experimental.MultiIOModule {
 }
 
 // Transform RocketChip's async reset to sync reset
-object AsyncResetRegPass extends firrtl.passes.Pass {
+object AsyncResetRegPass extends firrtl.Transform {
   override def name = "[FireSim] Replace AsyncReset Pass"
   override def inputForm = MidForm
   override def outputForm = MidForm
@@ -54,7 +55,18 @@ object AsyncResetRegPass extends firrtl.passes.Pass {
       case _ => m
     } 
 
-  def run(c: Circuit): Circuit = {
-    c.copy(modules = c.modules map transform)
+  def execute(cs: CircuitState): CircuitState = {
+    val transformedMods = cs.circuit.modules.map(transform)
+
+    // Drop AsyncResetReg BlackBoxSourceHelper annotations
+    val eMods = transformedMods.collect({ case e: ExtModule => e.name }).toSet
+    val transformedAnnos = cs.annotations.filter {
+      case BlackBoxResourceAnno(t, _) => eMods.contains(t.name)
+      case BlackBoxInlineAnno(t, _, _) => eMods.contains(t.name)
+      case BlackBoxPathAnno(t, _) => eMods.contains(t.name)
+      case _ => true
+    }
+
+    cs.copy(circuit = cs.circuit.copy(modules = transformedMods), annotations = transformedAnnos)
   }
 } 

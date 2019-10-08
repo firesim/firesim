@@ -55,6 +55,8 @@ $(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-E verilog"
+	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
+	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
 
 ####################################
 # Runtime-Configuration Generation #
