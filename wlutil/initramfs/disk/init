@@ -31,7 +31,8 @@ _setup() (
 
   umount /proc
   umount /sys
-  umount /dev
+  # buildroot inittab(5) does not mount /dev itself
+  mount -o move /dev /mnt/root/dev
 )
 
 if ! _setup ; then
