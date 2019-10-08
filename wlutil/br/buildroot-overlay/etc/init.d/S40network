@@ -9,13 +9,13 @@ mkdir -p /run/network
 case "$1" in
   start)
 	printf "Starting network: "
-#    ifconfig eth0 hw ether 00:12:6D:00:00:07
 	/sbin/ifup -a
-    ip link set eth0 up
-    mac=$(ifconfig | grep -o "..:..:..:..:..:..")
-    machigh=$(echo $mac | cut -c 13-14 -)
-    maclow=$(echo $mac | cut -c 16-17 -)
-    ip addr add 172.16.$((16#$machigh)).$((16#$maclow))/16 dev eth0
+	ifname=eth0
+	if test -r "/sys/class/net/${ifname}/address" ; then
+		/sbin/ip link set dev "$ifname" up &&
+		IFS=: read -r _ _ _ _ machigh maclow < "/sys/class/net/${ifname}/address" &&
+		/sbin/ip addr add "172.16.$((16#$machigh)).$((16#$maclow))/16" dev "$ifname"
+	fi
 #	/sbin/ifup eth0
 	[ $? = 0 ] && echo "OK" || echo "FAIL"
 	;;
