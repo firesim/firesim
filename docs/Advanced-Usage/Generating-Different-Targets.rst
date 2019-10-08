@@ -66,7 +66,7 @@ Specifying A Target Instance
 To generate a specific instance of a target, the build system leverages four Make variables:
 
 1. ``TARGET_PROJECT``: this points the Makefile (`sim/Makefile`) at the right
-   target-specific Makefrag, which defines the generation and Golden Gate-level
+   target-specific Makefrag, which defines the generation and MIDAS-level
    software-simulation recipes.  The makefrag for the default target project is
    defined at ``sim/src/main/makefrag/firesim``.
 
@@ -86,12 +86,9 @@ To generate a specific instance of a target, the build system leverages four Mak
 ``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see 
 `freechips.rocketchip.config
 <https://github.com/freechipsproject/rocket-chip/blob/master/src/main/scala/config/Config.scala>`_). These strings are of the form
-"{..._}{ClassName_}ClassName". Only the final, base class name is
+"{..._}{<Class Name>\_}<Class Name>". Only the final, base class name is
 compulsory: class names that are prepended with "_" are used to create a
-compound Config instance. For instance, "Foo_Bar" is equivalent to:
-
-.. code-block:: scala
-    new Config(new Foo ++ new Bar)
+compound Config instance.
 
 .. code-block:: scala
 
@@ -110,9 +107,7 @@ wish to generate. We use this scheme to specify FPGA frequencies (eg.
 sweeping over a parameterization space. 
 
 **Note that the precedence of Configs decreases from left to right in a string**.  Appending a config to an existing one will only have an effect if it
-sets a field not already set in higher precendence Configs.
-
-For example, "BaseF1Config_F90MHz" is equivalent to
+sets a field not already set in higher precendence Configs. For example, "BaseF1Config_F90MHz" is equivalent to
 "BaseF1Config_F90MHz_F80MHz" as ``DesiredHostFrequency`` resolves to 90 MHz,
 but "F90MHz_BaseF1Config" is distinct from "F80MHz_F90MHz_BaseF1Config" in
 that ``DesiredHostFrequency`` resolves to 90 and 80 MHz respectively.
