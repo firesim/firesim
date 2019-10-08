@@ -33,13 +33,31 @@ def checkLinuxUpToDate(config):
     #   makefiles make this not too bad (it adds a few seconds per image). This
     #   function is left here to make it easier if/when we get around to doing
     #   it right.
-    return False 
+    return False
 
+def handleHostInit(config):
+    log = logging.getLogger()
+    if 'host-init' in config:
+       log.info("Applying host-init: " + config['host-init'])
+       if not os.path.exists(config['host-init']):
+           raise ValueError("host-init script " + config['host-init'] + " not found.")
+
+       run([config['host-init']], cwd=config['workdir'])
+ 
 def addDep(loader, config):
+    """Adds 'config' to the doit dependency graph ('loader')"""
+
+    hostInit = []
+    if 'host-init' in config:
+        loader.addTask({
+            'name' : config['host-init'],
+            'actions' : [(handleHostInit, [config])],
+        })
+        hostInit = [config['host-init']]
 
     # Add a rule for the binary
     file_deps = []
-    task_deps = []
+    task_deps = [] + hostInit
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
     
@@ -58,7 +76,7 @@ def addDep(loader, config):
     # workload needs an init script
     if config['nodisk'] and 'bin' in config:
         file_deps = []
-        task_deps = []
+        task_deps = [] + hostInit
         if 'img' in config:
             file_deps = [config['img']]
             task_deps = [config['img']]
@@ -77,11 +95,11 @@ def addDep(loader, config):
 
     # Add a rule for the image (if any)
     file_deps = []
-    task_deps = []
+    task_deps = [] + hostInit
     if 'img' in config:
         if 'base-img' in config:
-            task_deps = [config['base-img']]
-            file_deps = [config['base-img']]
+            task_deps += [config['base-img']]
+            file_deps += [config['base-img']]
         if 'files' in config:
             for fSpec in config['files']:
                 # Add directories recursively
@@ -141,15 +159,6 @@ def buildDepGraph(cfgs):
 
     return loader
 
-def handleHostInit(config):
-    log = logging.getLogger()
-    if 'host-init' in config:
-       log.info("Applying host-init: " + config['host-init'])
-       if not os.path.exists(config['host-init']):
-           raise ValueError("host-init script " + config['host-init'] + " not found.")
-
-       run([config['host-init']], cwd=config['workdir'])
- 
 def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     # This should only be built once (multiple builds will mess up doit)
     global taskLoader
@@ -158,7 +167,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
         
     config = cfgs[cfgName]
 
-    handleHostInit(config)
+    # handleHostInit(config)
     imgList = []
     binList = []
 
