@@ -31,13 +31,17 @@ from util.streamlogger import StreamLogger
 
 def managerinit():
     """ Setup local FireSim manager components. """
-    # prompt users to run aws configure
-    # run the subscription script
-    # copy config files
-    rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-    # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-    # stored in the log
-    local("aws configure")
+
+    aws_resourceinfo = aws_resource_names()
+    if not aws_resourceinfo['tutorial_mode']:
+        # only run aws configure if we're not in tutorial mode.
+        # tutorial users will have this already done for them and we don't
+        # want them to have to hit enter to skip, which can be error-prone
+        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
+        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
+        # stored in the log
+        local("aws configure")
+
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
     for conf_file in config_files:
