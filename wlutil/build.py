@@ -183,7 +183,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
         if config['nodisk']:
             binList.append(config['bin'] + '-nodisk')
         else:
-            binList.append([config['bin']])
+            binList.append(config['bin'])
    
     if 'img' in config and buildImg:
         imgList.append(config['img'])
