@@ -48,6 +48,8 @@ def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
 
     hostInit = []
+    # Host-init task always runs because we can't tell if its uptodate and we
+    # don't know its inputs/outputs.
     if 'host-init' in config:
         loader.addTask({
             'name' : config['host-init'],
@@ -61,6 +63,12 @@ def addDep(loader, config):
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
     
+    # A child binary could conceivably rely on the parent rootfs. This also
+    # implicitly depends on the parent's host-init script (whcih the img
+    # depends on).
+    if 'base-img' in config:
+        task_deps.append(config['base-img'])
+
     if 'bin' in config:
         loader.addTask({
                 'name' : config['bin'],
