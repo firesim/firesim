@@ -1,0 +1,3 @@
+[submodule "src/main/cc/dramsim2"]
+	path = src/main/cc/dramsim2
+	url = https://github.com/firesim/DRAMSim2.git
