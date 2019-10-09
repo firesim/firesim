@@ -78,24 +78,24 @@ Abstract Members:
    and annotate the right fields of your Bridge instance.
 
 #. Constructor Arg: A Scala case class you'd like to pass to your host-land
-   widget's constructor. This will be serialized into an annotation and
+   BridgeModule's constructor. This will be serialized into an annotation and
    consumed later by Golden Gate. In this case class you should capture all
    target-land configuration information you'll need in your Module's
    generator.
 
 
 Finally at the bottom of your Bridge's class definition **you'll need to call generateAnnotations()**.
-This will emit an "BridgeAnnotation" that indicate:
+This will emit an "BridgeAnnotation" attached to module that indicates:
 
 #. This module is an Bridge.
-#. The class name of the widget's generator (e.g., firesim.bridges.UARTModule)
+#. The class name of the BridgeModule's generator (e.g., firesim.bridges.UARTModule)
 #. The serialized constructor argument for that generator (e.g. firesim.bridges.UARTKey)
 #. A list of channel names; string references to Channel annotations
 
 And a series of FAMEChannelConnectionAnnotations, which target the module's I/O to group them into token channels.
 
-You can freely instantiate your Bridge anywhere in your Target RTL: deep in
-your module hierarchy or at the I/O boundary.  Since all of the Golden
+You can freely instantiate your Bridge anywhere in your Target RTL: at the I/O
+boundary of your chi or deep in its module hierarchy.  Since all of the Golden
 Gate-specific metadata is captured in FIRRTL annotations, you can generate your
 target design and simulate it a target-level RTL simulation or even pass it off
 to ASIC CAD tools -- Golden Gate's annotations will simply be unused.
@@ -118,7 +118,7 @@ Host-side Implementation
 
 Host-side implementations have two components.
 #. A FPGA-hosted BridgeModule.
-#. An optional, CPU-hosted BridgeDriver.
+#. An optional, CPU-hosted, bridge driver.
 
 In general, bridges have both a module and a driver: in FASED memory timing
 models, the BridgeDriver configures timing parameters at the start of

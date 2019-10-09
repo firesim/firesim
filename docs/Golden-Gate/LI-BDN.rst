@@ -44,18 +44,6 @@ improved resource utilization, etc...
 Hybrid, CPU-FPGA-hosted models are common. Here, a common pattern is write an RTL
 timing-model and a software functional model.
 
-.. For example, FireSim's block
-.. device model hosts its fixed-latency timing model on the FPGA, but its
-.. functional model runs on the CPU which allows it to use the host-CPU's
-.. filesystem as a backing store. The latency pipe dequeues an input token as they
-.. arrive, buffering requests as they appear and keeping track of cycle at which
-.. it must return response for that request. It enqueues output tokens,
-.. until it reaches a cycle at which it is supposed to return a response. Here it
-.. checks a functional response queue, and if no response is available it fails to
-.. enqueue an output token, stalling the downstream model.
-.. In parallel, the CPU-hosted functional model polls the FPGA-hosted component for requests to serve, and serves them, and enqueues responses
-.. into the functional reponse queue.
-
 Expressing the Target Graph
 ---------------------------
 
@@ -84,7 +72,6 @@ Cycle exact models must implement PI, whereas abstract models do not.
 
 The remaining two properties ensure the graph does not deadlock, and must be
 implemented by both cycle-exact and abstract models.
-
 
 **Self Cleaning**: A model that has enqueued N tokens into each of it's output
 ports _must_ eventually dequeue N tokens from each of it's input ports.

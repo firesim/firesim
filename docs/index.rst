@@ -34,7 +34,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
-   :caption: Golden Gate Docs:
+   :caption: Golden Gate (MIDAS II) Docs:
 
    Golden-Gate/Overview
    Golden-Gate/LI-BDN
