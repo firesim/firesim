@@ -201,21 +201,35 @@ def waitpid(pid):
                 break
         time.sleep(0.25)
 
-@contextmanager
-def mountImg(imgPath, mntPath):
-    run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
-    try:
-        with open('./guestmount.pid', 'r') as pidFile:
-            mntPid = int(pidFile.readline())
-        yield mntPath
-    finally:
-        run(['guestunmount', mntPath])
-        os.remove('./guestmount.pid')
 
-    # There is a race-condition in guestmount where a background task keeps
-    # modifying the image for a period after unmount. This is the documented
-    # best-practice (see man guestmount).
-    waitpid(mntPid)
+if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
+    # User has passwordless sudo available, use the mount command (much faster)
+    sudoCmd = "sudo"
+    @contextmanager
+    def mountImg(imgPath, mntPath):
+        run("sudo mount -o loop " + imgPath + " " + mntPath, shell=True)
+        try:
+            yield mntPath
+        finally:
+            run('sudo umount ' + mntPath, shell=True)
+else:
+    # User doesn't have sudo (use guestmount, slow but reliable)
+    sudoCmd = ""
+    @contextmanager
+    def mountImg(imgPath, mntPath):
+        run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
+        try:
+            with open('./guestmount.pid', 'r') as pidFile:
+                mntPid = int(pidFile.readline())
+            yield mntPath
+        finally:
+            run(['guestunmount', mntPath])
+            os.remove('./guestmount.pid')
+
+        # There is a race-condition in guestmount where a background task keeps
+        # modifying the image for a period after unmount. This is the documented
+        # best-practice (see man guestmount).
+        waitpid(mntPid)
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute
@@ -240,9 +254,9 @@ def copyImgFiles(img, files, direction):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                run(sudoCmd + ' cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
             elif direction == 'out':
                 uid = os.getuid()
-                run('cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                run(sudoCmd + ' cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
