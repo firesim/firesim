@@ -4,6 +4,7 @@ import shutil
 import logging
 import string
 import pathlib
+import hashlib
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -11,6 +12,7 @@ from .. import wlutil
 # Some common directories for this module (all absolute paths)
 br_dir = pathlib.Path(__file__).parent
 overlay = br_dir / 'firesim-overlay'
+br_image = br_dir / 'buildroot' / 'output' / 'images' / 'rootfs.ext2'
 
 initTemplate = string.Template("""#!/bin/sh
 
@@ -37,6 +39,16 @@ case "$$1" in
 esac
 
 exit""")
+
+def hashFile(path):
+	h = hashlib.md5()
+	with open(path, 'rb') as f:
+		b = f.read(1024*1024)
+		while len(b) > 0:
+			h.update(b)
+			b = f.read(1024*1024)
+
+	return h.hexdigest()
 
 def buildConfig():
     """Construct the final buildroot configuration for this environment. After
@@ -87,6 +99,14 @@ def buildConfig():
     wlutil.run([mergeScript, str(defconfig), str(toolKfrag), str(marshalKfrag)],
             cwd=(br_dir / 'buildroot'))
     
+def buildBuildRoot():
+	buildConfig()
+
+	# Buildroot complains about some common PERL configurations
+	env = os.environ.copy()
+	env.pop('PERL_MM_OPT', None)
+	wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+
 class Builder:
 
     def baseConfig(self):
@@ -95,45 +115,25 @@ class Builder:
                 'distro' : 'br',
                 'workdir' : br_dir,
                 'builder' : self,
-                'img' : os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
+                'img' : str(br_image)
                 }
 
     # Build a base image in the requested format and return an absolute path to that image
     def buildBaseImage(self):
-        log = logging.getLogger()
-        rootfs_target = "rootfs.img"
-
-        buildConfig()
-
-        # Buildroot complains about some common PERL configurations
-        env = os.environ.copy()
-        env.pop('PERL_MM_OPT', None)
-        wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+        buildBuildRoot()
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):
-        # There's something wrong with buildroot's makefile, it throws an error
-        # and never reports being up to date. This is a compromise: marshal
-        # will build everything the first time, but never rebuild buildroot
-        # (e.g. if you change the buildroot config). This should be
-        # extremely rare (it's not even possible for Fedora). The alternative
-        # is to have all buildroot-based workloads rebuild the entire
-        # dependency chain every time.
-        return False
-        # if os.path.exists(os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")):
-        #     return True
-        # else: 
-        #     return False
+        if not br_image.exists():
+            return False
+        oldHash = hashFile(br_image)	    
+        buildBuildRoot()
+        newHash = hashFile(br_image)
+        if oldHash != newHash:
+            return False
 
-        # This is here in case we ever want to switch to "always rebuild" or
-        # find a way to fix the br dependency checking
-        # makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
-        # cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
-        # if makeStatus == 0 and cfgDiff == 0:
-        #     return True
-        # else:
-        #     return False
+        return True
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
