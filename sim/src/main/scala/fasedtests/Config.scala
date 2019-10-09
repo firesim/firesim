@@ -53,7 +53,7 @@ class FRFCFSConfig extends Config(
   new DefaultConfig)
 
 class LLCDRAMConfig extends Config(
-  new FRFCFS16GBQuadRankLLC4MB ++
+  new FRFCFS16GBQuadRankLLC2MB ++
   new DefaultConfig)
 
 
