@@ -29,6 +29,8 @@ ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
+CONF_NAME ?= runtime.conf
+
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := firesim
 else
@@ -60,16 +62,6 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fasedtests/*
 
 TARGET_CXX_FLAGS := -g -O2 -I$(driver_dir) -I$(driver_dir)/fasedtests -I$(RISCV)/include
 TARGET_LD_FLAGS :=
-
-####################################
-# Runtime-Configuraiton Generation #
-####################################
-CONF_NAME ?= runtime.conf
-#.PHONY: conf
-#conf:
-#	mkdir -p $(GENERATED_DIR)
-#	$(SBT) $(SBT_FLAGS) \
-#	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
