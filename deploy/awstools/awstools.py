@@ -32,6 +32,7 @@ def aws_resource_names():
     policies where necessary."""
 
     base_dict = {
+        'tutorial_mode'  :   False,
         # regular users are instructed to create these in the setup instructions
         'vpcname':           'firesim',
         'securitygroupname': 'firesim',
@@ -77,6 +78,7 @@ def aws_resource_names():
         return base_dict
 
     # at this point, assume we are in tutorial mode and get all tags we need
+    base_dict['tutorial_mode']     = True
     base_dict['vpcname']           = resptags['firesim-tutorial-username']
     base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
     base_dict['keyname']           = resptags['firesim-tutorial-username']

@@ -83,7 +83,7 @@ As part of target-generation, Rocket Chip emits a make fragment with recipes
 for running suites of assembly tests. MIDAS puts this in
 ``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
 Make sure your ``$RISCV`` environment variable is set by sourcing
-``firesim/source-me*.sh`` or ``firesim/env.sh``, and type:
+``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
 
 ::
 
@@ -141,7 +141,7 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
 FPGA-Level Simulation
 ----------------------------
 
-Like MIDAS-level simulation, there is currently no support for DMA\_PCIS, so
+There is currently no support for DMA\_PCIS, so
 we'll restrict ourselves to instances without a NIC by setting `DESIGN=FireSimNoNIC`.  As
 with MIDAS-level simulations, FPGA-level simulations run out of
 ``firesim/sim``.
@@ -227,19 +227,19 @@ The selected tests, target configurations, as well as the type of RTL simulator
 to compile can be modified by changing the scala tests that reside at
 ``firesim/sim/src/test/scala/<target-project>/``.
 
-To run all tests, with the sbt console open, do the familiar:
+To run all tests for a given project, with the sbt console open, do the familiar:
 
 ::
 
     test
 
-To run only tests on Rocket-Chip based targets:
+To run only tests on Rocket-Chip based targets, in the ``firechip`` SBT project run:
 
 ::
 
     testOnly firesim.firesim.*
 
-To run only the MIDAS examples:
+To run only the MIDAS examples, in the ``firesim`` SBT project:
 
 ::
 
