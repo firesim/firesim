@@ -60,16 +60,6 @@ $(info $(DRIVER_CC))
 TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 
-####################################
-# Runtime-Configuraiton Generation #
-####################################
-CONF_NAME ?= runtime.conf
-.PHONY: conf
-conf:
-	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && \
-	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
-
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
 ################################################################
