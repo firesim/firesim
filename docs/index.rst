@@ -27,7 +27,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/FireMarshal/index
    Advanced-Usage/Generating-Different-Targets.rst
    Advanced-Usage/Debugging/index
-   Developing-New-Devices/index
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
