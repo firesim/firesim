@@ -26,6 +26,9 @@ ANNO_FILE ?=
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
 PLATFORM_CONFIG ?= DefaultF1Config
 
+# The name of the generated runtime configuration file
+CONF_NAME ?= runtime.conf
+
 # The host platform type
 PLATFORM ?= f1
 
@@ -54,9 +57,23 @@ $(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
 		-E verilog"
 
 ####################################
-# Runtime-Configuraiton Generation #
+# Runtime-Configuration Generation #
 ####################################
-CONF_NAME ?= runtime.conf
+
+# This reads in the annotations from a generated target, elaborates a
+# FASEDTimingModel if a BridgeAnnoation for one exists, and asks for user input
+# to generate a runtime configuration that is compatible with the generated
+# hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
+.PHONY: conf
+conf: $(ANNO_FILE)
+	mkdir -p $(GENERATED_DIR)
+	cd $(base_dir) && \
+	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+		-td $(GENERATED_DIR) \
+		-ggaf $(ANNO_FILE) \
+		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
+		-ggcs $(PLATFORM_CONFIG) \
+		-ggrc $(CONF_NAME)"
 
 ####################################
 # Verilator MIDAS-Level Simulators #
