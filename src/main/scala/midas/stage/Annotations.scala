@@ -44,3 +44,18 @@ object ConfigStringAnnotation extends HasShellOptions {
       shortOption = Some("ggcs"),
       helpValueName = Some("<class name>{[_<additional class names>]}}") ) )
 }
+
+// Used to specify the name of the desired runtime configuration
+// file.  Will be emitted in the TargetDir
+case class RuntimeConfigNameAnnotation(configString: String) extends NoTargetAnnotation
+
+object RuntimeConfigNameAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "golden-gate-runtime-config-name",
+      toAnnotationSeq = (a: String) => Seq(RuntimeConfigNameAnnotation(a)),
+      helpText = "Specifies the filename for the generated runtime configuration file.",
+      shortOption = Some("ggrc"),
+      helpValueName = Some("<filename>") ) )
+}
