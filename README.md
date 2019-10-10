@@ -2,7 +2,7 @@
 
 Golden Gate is an _optimizing_ FIRRTL compiler for generating FPGA-accelerated simulators
 automatically from Chisel-based RTL design, and is the basis for simulator
-generation in [FireSim](https://fires.im).
+compilation in [FireSim](https://fires.im).
 
 Golden Gate is the successor to MIDAS, which was originally based off the
 [Strober](http://dl.acm.org/citation.cfm?id=3001151) sample-based energy
