@@ -4,9 +4,9 @@ Golden Gate is an _optimizing_ FIRRTL compiler for generating FPGA-accelerated s
 automatically from Chisel-based RTL design, and is the basis for simulator
 generation in [FireSim](https://fires.im).
 
-Golden Gate the successor to MIDAS, which was originally based off the
+Golden Gate is the successor to MIDAS, which was originally based off the
 [Strober](http://dl.acm.org/citation.cfm?id=3001151) sample-based energy
-simulation framework. Golden Gate differs from prior work in that it is the first open compiler
+simulation framework. Golden Gate differs from prior work in that it is, to our knowledge, the first compiler
 to support automatic _multi-model composition_: it can break apart a
 block of RTL into a graph of models.  Golden Gate uses this feature
 to identify and replace FPGA-hostile blocks with multi-host-cycle models that
@@ -17,25 +17,19 @@ Xilinx VU9P.
 
 ## Changes From MIDAS
 
-Golden Gate inherits nearly all of the features of MIDAS, including:
+Golden Gate inherits nearly all of the features of MIDAS, including, FASED memory timing models, assertion synthesis, and printf synthesis, but there are some notable changes:
 
-#. FASED Memory Timing Models
-#. Assertion Synthesis .
-#. Printf Synthesis
-
-But there are some notable changes:
-
-### Support for Resource Optimizations
+### 1. Support for Resource Optimizations
 
 As mentioned above, Golden Gate can identify and optimize FPGA-hostile
 structures in the target RTL. This is described at length in our ICCAD2019
-paper.  Currently Golden Gate only support optimizing multi-ported memories,
+paper.  Currently Golden Gate only supports optimizing multi-ported memories,
 but other area optimizations are under development.
 
-### Different Inputs and Invocation Model (FIRRTL Stage).
+### 2. Different Inputs and Invocation Model (FIRRTL Stage).
 
 Golden Gate is not invoked in the same process as the target generator.
-Instead it's invoked as a seperate process and provided with three inputs:
+instead it's invoked as a seperate process and provided with three inputs:
 1) FIRRTL for the target-design
 2) Associated FIRRTL annotations for that design
 3) A compiler parameterization (derived from Rocket Chip's Config system).
@@ -43,7 +37,7 @@ annotations. This permits decoupling the target Generator from the compiler,
 and enables the resuse of the same FIRRTL between multiple simulation or EDA
 backends. midas.Compiler will be removed in the next release.
 
-### Endpoints Replaced with Target-to-Host Bridges.
+### 3. Endpoints Have Been Replaced With Target-to-Host Bridges.
 
 Unlike Endpoints, which where instantiated by matching on a Chisel I/O type,
 target-to-host bridges (or bridges, for short) are instantiated directly in the
@@ -53,18 +47,18 @@ module-hierarchy-dependent parameterization information from the target. This
 makes it easier to have multiple instances of the same bridge with difference
 parameterizations.
 
-### The Input Target-Design Must Have No I/O.
+### 4. The Input Target-Design Must Be Closed
 
 The FIRRTL passed to Golden Gate must expose no dangling I/O (with the exception of one input
 clock): instead the target should be wrapped in a module that instantiates the
-appropriate bridges. These wrapper modules are a directly analagous to a test
+appropriate bridges. This wrapper module is directly analogous to a test
 harness used in software-based RTL simulation.  How these bridges are
 instantiated is left to the user, but multiple differ examples can be found in
 FireSim.
 
-### Different Underlying Dataflow Network Formalism
+### 5. Different Underlying Dataflow Network Formalism
 
-Golden Gate uses the _Latency-Insensitive Bounded-Dataflow Network_(LI-BDN)
+Golden Gate uses the [_Latency-Insensitive Bounded-Dataflow Network_](https://dl.acm.org/citation.cfm?id=1715781)(LI-BDN)
 target formalism.  This makes it possible to model combinational paths that
 span multiple models, and to prove that properties about target-cycle-exactness
 and deadlock freedom in the resulting simulator.
@@ -75,7 +69,7 @@ Golden Gate's documentation is hosted in [FireSim's Read-The-Docs](https://docs.
 
 ## Related Publications
 
-* Albert Magyar, David T. Biancolin, Jack Koenig, Sanjit Seshia, Jonathan Bachrach, Krste Asanović, **Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes**, To appear at ICCAD '19.
+* Albert Magyar, David T. Biancolin, Jack Koenig, Sanjit Seshia, Jonathan Bachrach, Krste Asanović, **Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes**, To appear at ICCAD '19.([Paper PDF](http://davidbiancolin.github.io/papers/goldengate-iccad19.pdf))
 * David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, **“FASED: FPGA-Accelerated Simulation and Evaluation of DRAM”**, In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays, Seaside, CA, February 2019. ([Paper PDF](https://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf))
 * Donggyu Kim, Christopher Celio, Sagar Karandikar, David Biancolin, Jonathan Bachrach, and Krste Asanović, **“DESSERT: Debugging RTL Effectively with State Snapshotting for Error Replays across Trillions of cycles”**, In proceedings of the 28th International Conference on Field Programmable Logic & Applications (FPL 2018), Dublin, Ireland, August 2018. ([IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8533471))
 * Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing Huang, Kyle Kovacs, Borivoje Nikolić, Randy Katz, Jonathan Bachrach, and Krste Asanović, **“FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud”**, In proceedings of the 45th ACM/IEEE International Symposium on Computer Architecture (ISCA 2018), Los Angeles, June 2018. ([Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf), [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816)) **Selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”.** 
