@@ -11,7 +11,7 @@ to support automatic _multi-model composition_: it can break apart a
 block of RTL into a graph of models.  Golden Gate uses this feature
 to identify and replace FPGA-hostile blocks with multi-host-cycle models that
 consume fewer FPGA resources while still exactly representing the behavior of
-the source RTL. In our ICCAD 2019 paper, we leverage this feature optimize
+the source RTL. In [our ICCAD 2019 paper](http://davidbiancolin.github.io/papers/goldengate-iccad19.pdf), we leverage this feature optimize
 multi-ported RAMs in order to fit an extra two BOOM cores (6 up from 4) on a
 Xilinx VU9P.
 
@@ -22,9 +22,10 @@ Golden Gate inherits nearly all of the features of MIDAS, including, FASED memor
 ### 1. Support for Resource Optimizations
 
 As mentioned above, Golden Gate can identify and optimize FPGA-hostile
-structures in the target RTL. This is described at length in our ICCAD2019
-paper.  Currently Golden Gate only supports optimizing multi-ported memories,
-but other area optimizations are under development.
+structures in the target RTL. This is described at length in [our ICCAD2019
+paper](http://davidbiancolin.github.io/papers/goldengate-iccad19.pdf).
+Currently Golden Gate only supports optimizing multi-ported memories,
+but other resource-reducing optimizations are under development.
 
 ### 2. Different Inputs and Invocation Model (FIRRTL Stage).
 
@@ -39,7 +40,7 @@ backends. midas.Compiler will be removed in the next release.
 
 ### 3. Endpoints Have Been Replaced With Target-to-Host Bridges.
 
-Unlike Endpoints, which where instantiated by matching on a Chisel I/O type,
+Unlike Endpoints, which were instantiated by matching on a Chisel I/O type,
 target-to-host bridges (or bridges, for short) are instantiated directly in the
 target's RTL (i.e., in Chisel).  Unlike endpoints, bridges can be instantiated
 anywhere in the module heirachy, and can more effectively capture
@@ -47,20 +48,22 @@ module-hierarchy-dependent parameterization information from the target. This
 makes it easier to have multiple instances of the same bridge with difference
 parameterizations.
 
-### 4. The Input Target-Design Must Be Closed
+### 4. The Input Target Design Must Be Closed
 
 The FIRRTL passed to Golden Gate must expose no dangling I/O (with the exception of one input
 clock): instead the target should be wrapped in a module that instantiates the
 appropriate bridges. This wrapper module is directly analogous to a test
 harness used in software-based RTL simulation.  How these bridges are
-instantiated is left to the user, but multiple differ examples can be found in
-FireSim.
+instantiated is left to the user, but multiple different examples can be found in
+FireSim. One benefit of this "closed-world" approach is that the topology of the
+simulator (as a network of simulation models) is guaranteed to match the topology
+of the input design.
 
 ### 5. Different Underlying Dataflow Network Formalism
 
-Golden Gate uses the [_Latency-Insensitive Bounded-Dataflow Network_](https://dl.acm.org/citation.cfm?id=1715781)(LI-BDN)
+Golden Gate uses the [_Latency-Insensitive Bounded-Dataflow Network_](https://dl.acm.org/citation.cfm?id=1715781) (LI-BDN)
 target formalism.  This makes it possible to model combinational paths that
-span multiple models, and to prove that properties about target-cycle-exactness
+span multiple models, and to prove that properties about target-cycle exactness
 and deadlock freedom in the resulting simulator.
 
 ## Documentation
