@@ -82,7 +82,7 @@ issues with various packages. Therefore, AWS currently recommends using `NICE DV
   sudo systemctl stop firewalld
   dcv create-session --type virtual --user centos centos
 
-These commands will setup linux desktop pre-requisites, install the NICE DVC server, setup the password as ``centos``, disable firewalld,
+These commands will setup Linux desktop pre-requisites, install the NICE DVC server, ask you to setup the password to the ``centos`` user, disable firewalld,
 and finally create a DVC session. You can now connect to this session through the DVC client.
 
 After access the GUI interface, open a terminal, and open ``vivado``.
