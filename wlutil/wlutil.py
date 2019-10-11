@@ -207,11 +207,11 @@ if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
     sudoCmd = "/usr/bin/sudo"
     @contextmanager
     def mountImg(imgPath, mntPath):
-        run("sudo mount -o loop " + imgPath + " " + mntPath, shell=True)
+        run([sudoCmd,"mount", "-o", "loop", imgPath, mntPath])
         try:
             yield mntPath
         finally:
-            run('sudo umount ' + mntPath, shell=True)
+            run([sudoCmd, 'umount', mntPath])
 else:
     # User doesn't have sudo (use guestmount, slow but reliable)
     sudoCmd = ""
