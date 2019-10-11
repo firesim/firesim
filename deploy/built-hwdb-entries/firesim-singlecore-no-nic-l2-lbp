@@ -1,0 +1,10 @@
+
+
+# WNS=-0.239
+[firesim-singlecore-no-nic-l2-lbp]
+agfi=agfi-0b5e4b6967ad1d3f0
+deploytripletoverride=None
+customruntimeconfig=None
+
+
+
