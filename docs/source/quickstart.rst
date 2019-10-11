@@ -45,7 +45,7 @@ caches intermediate build steps whenever possible.
 
 Finally, FireMarshal supports installing workloads to the FireSim cycle-exact
 simulator. To do this, you will need to use the FireMarshal that comes with
-`FireSim <www.fires.im>`_ or `Chipyard
+`FireSim <https://www.fires.im>`_ or `Chipyard
 <https://chipyard.readthedocs.io/en/latest/>`_. To run a workload in FireSim,
 you must first install it from FireMarshal:
 
