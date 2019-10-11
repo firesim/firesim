@@ -107,3 +107,8 @@ install
 Creates a firesim workload definition file in ``firesim/deploy/workloads`` with
 all appropriate links to the generated workload. This allows you to launch the
 workload in firesim using standard commands.
+
+.. Note:: The install command assumes that FireMarshal was cloned as a
+  submodule of either `FireSim <www.fires.im>`_ or `Chipyard
+  <https://chipyard.readthedocs.io/en/latest/>`_. See the documentation for
+  those projects for more details. 
