@@ -204,7 +204,7 @@ def waitpid(pid):
 
 if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
-    sudoCmd = "sudo"
+    sudoCmd = "/usr/bin/sudo"
     @contextmanager
     def mountImg(imgPath, mntPath):
         run("sudo mount -o loop " + imgPath + " " + mntPath, shell=True)
@@ -235,7 +235,11 @@ else:
 # Note that all paths must be absolute
 def applyOverlay(img, overlay):
     log = logging.getLogger()
-    copyImgFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')], 'in')
+    flist = []
+    for f in pathlib.Path(overlay).glob('*'):
+        flist.append(FileSpec(src=f, dst='/'))
+
+    copyImgFiles(img, flist, 'in')
     
 # Copies a list of type FileSpec ('files') to/from the destination image (img)
 #   img - path to image file to use
@@ -254,9 +258,10 @@ def copyImgFiles(img, files, direction):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                run(sudoCmd + ' cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                # run(sudoCmd + ' cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
             elif direction == 'out':
                 uid = os.getuid()
-                run(sudoCmd + ' cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                run([sudoCmd, 'cp', '-a', os.path.normpath(mnt + f.src), f.dst])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
