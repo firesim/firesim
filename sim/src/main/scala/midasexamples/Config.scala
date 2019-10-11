@@ -7,8 +7,7 @@ import midas.widgets._
 import freechips.rocketchip.config._
 import junctions._
 
-import firesim.util.DesiredHostFrequency
-import firesim.configs.WithDefaultMemModel
+import firesim.configs.{WithDefaultMemModel, DesiredHostFrequency}
 
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
