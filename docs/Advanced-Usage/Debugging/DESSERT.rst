@@ -30,7 +30,7 @@ below:
 
 ::
 
-    id: 1190, module: IssueSlot_4, path: FireBoomNoNIC.tile_1.core.issue_units_0.slots_3]
+    id: 1190, module: IssueSlot_4, path: FireSimNoNIC.tile_1.core.issue_units_0.slots_3]
     Assertion failed
         at issue_slot.scala:214 assert (!slot_p1_poisoned)
         at cycle: 2142042185

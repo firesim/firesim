@@ -220,7 +220,7 @@ Scala Tests
 
 To make it easier to do RTL-simulation-based regression testing, the scala
 tests wrap calls to Makefiles, and run a limited set of tests on a set of selected
-designs, including all of the MIDAS examples, FireSimNoNIC and FireBoomNoNIC.
+designs, including all of the MIDAS examples and FireSimNoNIC.
 
 The selected tests, target configurations, as well as the type of RTL simulator
 to compile can be modified by changing the scala tests that reside at
