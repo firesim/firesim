@@ -378,3 +378,12 @@ class UserTopologies(object):
         assert len(hwdb_entries) == self.no_net_num_nodes
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
 
+
+#    ######Used only for tutorial purposes####################
+#    def example_sha3hetero_2config(self):
+#        self.roots= [FireSimSwitchNode()]
+#        servers = [FireSimServerNode(server_hardware_config=
+#                     "fireboom-singlecore-nic-l2-llc4mb-ddr3"),
+#                   FireSimServerNode(server_hardware_config=
+#                     "firesim-singlecore-sha3-nic-l2-llc4mb-ddr3")]
+#        self.roots[0].add_downlinks(servers)
