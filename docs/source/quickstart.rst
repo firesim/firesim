@@ -41,9 +41,13 @@ cleaned out any changes, let's clean and rebuild the workload:
   ./marshal build workloads/br-base.json
 
 Note that this build took significantly less time than the first; FireMarshal
-caches intermediate build steps whenever possible. The final step is to run
-this workload on the real firesim RTL with full timing accuracy. To do that we
-must first install the workload:
+caches intermediate build steps whenever possible.
+
+Finally, FireMarshal supports installing workloads to the FireSim cycle-exact
+simulator. To do this, you will need to use the FireMarshal that comes with
+`FireSim <www.fires.im>`_ or `Chipyard
+<https://chipyard.readthedocs.io/en/latest/>`_. To run a workload in FireSim,
+you must first install it from FireMarshal:
 
 ::
 
