@@ -63,7 +63,7 @@ Using the ILA at Runtime
 Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the firesim AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
-In the past, AWS had a custon ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
+In the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
 issues with various packages. Therefore, AWS currently recommends using `NICE DVC <https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html>`__ as a GUI client. You should `download a DVC client <https://docs.aws.amazon.com/dcv/latest/userguide/client.html>`__, and then run the following commands on your FireSim manager instance:
 
 ::
