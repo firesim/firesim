@@ -98,7 +98,15 @@ Our paper from FPGA 2019 details the DRAM model used in FireSim:
 
 > David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, **FASED: FPGA-Accelerated Simulation and Evaluation of DRAM**, In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays, Seaside, CA, February 2018.
 
-[Paper PDF](http://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf)
+[Paper PDF](https://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf)
+
+### ICCAD 2019: Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes
+
+Our paper describing FireSim's Compiler, _Golden Gate_:
+
+> Albert Magyar, David T. Biancolin, Jack Koenig, Sanjit Seshia, Jonathan Bachrach, Krste Asanović, **Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes**, To appear at ICCAD '19.
+
+[Paper PDF](https://davidbiancolin.github.io/papers/goldengate-iccad19.pdf)
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 
