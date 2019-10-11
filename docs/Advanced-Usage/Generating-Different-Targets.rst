@@ -178,7 +178,7 @@ Quad-core, Rocket pipeline
 BOOM-based SoCs
 ---------------
 
-The BOOM (`Berkeley Out-of-Order Machine <https://github.com/ucb-bar/riscv-boom>`_) superscalar out-of-order pipelines can also be used with the same design classes that the Rocket pipelines use.
+The BOOM (`Berkeley Out-of-Order Machine <https://github.com/ucb-bar/riscv-boom>`_) superscalar out-of-order pipelines can also be used with the same design classes that the Rocket pipelines use. Only the TARGET_CONFIG needs to be changed, as shown below:
 
 Single-core BOOM
 
