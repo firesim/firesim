@@ -178,19 +178,19 @@ Quad-core, Rocket pipeline
 BOOM-based SoCs
 ---------------
 
-Two design classes use BOOM (`Berkeley Out-of-Order Machine <https://github.com/ucb-bar/riscv-boom>`_) superscalar out-of-order pipelines.
+The BOOM (`Berkeley Out-of-Order Machine <https://github.com/ucb-bar/riscv-boom>`_) superscalar out-of-order pipelines can also be used with the same design classes that the Rocket pipelines use. Only the TARGET_CONFIG needs to be changed, as shown below:
 
 Single-core BOOM
 
 ::
 
-    make DESIGN=FireBoom TARGET_CONFIG=FireSimBoomConfig
+    make DESIGN=FireSim TARGET_CONFIG=FireSimBoomConfig
 
 Single-core BOOM, no network interface
 
 ::
 
-    make DESIGN=FireBoomNoNIC TARGET_CONFIG=FireSimBoomConfig
+    make DESIGN=FireSimNoNIC TARGET_CONFIG=FireSimBoomConfig
 
 
 ----------------------------------------------------------
