@@ -55,3 +55,8 @@ To run in qemu:
 To install into FireSim (assuming you cloned this as a submodule of firesim):
 
     ./marshal install workloads/br-base.json
+
+# Security Note
+Be advised that FireMarshal will run initialization scripts provided by
+workloads. These scripts will have all the permissions your user has, be sure
+to read all workloads carefully before building them.
