@@ -201,7 +201,6 @@ def waitpid(pid):
                 break
         time.sleep(0.25)
 
-
 if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
     sudoCmd = "/usr/bin/sudo"
@@ -230,6 +229,14 @@ else:
         # modifying the image for a period after unmount. This is the documented
         # best-practice (see man guestmount).
         waitpid(mntPid)
+
+def toCpio(src, dst):
+    log = logging.getLogger()
+    log.debug("Creating Cpio archive from " + str(src))
+    with open(dst, 'wb') as outCpio:
+        p = sp.run([sudoCmd, "sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
+                stderr=sp.PIPE, stdout=outCpio, cwd=src)
+        log.debug(p.stderr.decode('utf-8'))
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute
