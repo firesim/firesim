@@ -17,7 +17,7 @@ PRs to write protected branches (master/dev) that bump submodule pointers must o
 
 #### Chipyard <-> FireSim Submodule Dependency
 
-Chipyard subsumes FireChip as a more complete SoC development environment. In order a use case where either Chipyard or FireSim is clone as the top-level repository, we've introduced a circular submodule depedency between the two repositories. 
+Chipyard subsumes FireChip as a more complete SoC development environment. In order to support a use case where either Chipyard or FireSim is clone as the top-level repository, we've introduced a circular submodule depedency between the two repositories. 
 
 - Firesim submodules Chipyard at `target-design/chipyard`
 - Chipyard submodules Firesim at `sims/firesim`
