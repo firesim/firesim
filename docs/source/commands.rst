@@ -29,11 +29,6 @@ FireMarshal will redirect much of it's output to a log file in order to keep
 standard out clean. This option instructs FireMarshal to print much more output to
 standard out (in addition to logging it).
 
-init
---------------------------------------
-The init command must be run once on a fresh clone of FireMarshal. This command
-initializes any dependencies needed by the tool.
-
 build
 --------------------------------------
 The build command is used to generate the rootfs's and boot-binaries from the
@@ -112,3 +107,8 @@ install
 Creates a firesim workload definition file in ``firesim/deploy/workloads`` with
 all appropriate links to the generated workload. This allows you to launch the
 workload in firesim using standard commands.
+
+.. Note:: The install command assumes that FireMarshal was cloned as a
+  submodule of either `FireSim <https://www.fires.im>`_ or `Chipyard
+  <https://chipyard.readthedocs.io/en/latest/>`_. See the documentation for
+  those projects for more details. 
