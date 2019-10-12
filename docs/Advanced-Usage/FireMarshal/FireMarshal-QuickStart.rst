@@ -1,13 +1,6 @@
 Quick Start
 --------------------------------------
 
-.. attention::
-
-   FireMarshal is still in alpha. You are encouraged to try it out and use it
-   for new workloads. The old-style workload generation is still supported (see
-   :ref:`defining-custom-workloads` for details).
-
-
 All workload-generation related commands and code are in ``firesim/sw/firesim-software``.
 
 FireMarshal comes with a few basic workloads that you can build right out of
