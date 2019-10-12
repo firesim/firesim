@@ -31,6 +31,15 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
 
+.. toctree::
+   :maxdepth: 3
+   :caption: Golden Gate (MIDAS II) Docs:
+
+   Golden-Gate/Overview
+   Golden-Gate/LI-BDN
+   Golden-Gate/Bridges
+
+
 Indices and tables
 ==================
 
