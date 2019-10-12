@@ -2,7 +2,7 @@
 
 package firesim.passes
 
-import firesim.util.{DesiredHostFrequency, BuildStrategy}
+import firesim.configs.{DesiredHostFrequency, BuildStrategy}
 
 import freechips.rocketchip.config.Parameters
 

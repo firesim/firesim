@@ -1,5 +1,5 @@
 //See LICENSE for license details.
-package firesim.util
+package firesim.configs
 
 import java.io.{File, FileWriter}
 

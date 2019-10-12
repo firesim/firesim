@@ -87,7 +87,7 @@ class LBP32R32W extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
 
-class LBP32R32WLLC4MB extends Config(
+class LBP32R32WLLC2MB extends Config(
   new WithLLCModel(4096, 8) ++
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
@@ -100,7 +100,7 @@ class LBP32R32W3Div extends Config(
 
 // DDR3 - FCFS models.
 class FCFS16GBQuadRank extends Config(new WithDDR3FIFOMAS(8) ++ new WithDefaultMemModel)
-class FCFS16GBQuadRankLLC4MB extends Config(
+class FCFS16GBQuadRankLLC2MB extends Config(
   new WithLLCModel(4096, 8) ++
   new FCFS16GBQuadRank)
 
@@ -110,12 +110,12 @@ class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
   new WithDDR3FRFCFS(8, 8) ++
   new WithDefaultMemModel(clockDiv)
 )
-class FRFCFS16GBQuadRankLLC4MB extends Config(
+class FRFCFS16GBQuadRankLLC2MB extends Config(
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank
 )
 
-class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
+class FRFCFS16GBQuadRankLLC2MB3Div extends Config(
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank(3)
 )
