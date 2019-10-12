@@ -5,10 +5,10 @@ mknod /dev/dram-cache-mem    c 254 1
 
 for size in ${SIZES[@]}
 do
-    /root/saxpy-dc.riscv -n $size -d 300 -s 4
+    taskset 0x1 /root/saxpy-dc.riscv -n $size -d 300 -s 4
 done
 
 for size in ${SIZES[@]}
 do
-    /root/saxpy-dc.riscv -n $size -d 300 -s 4 -p
+    taskset 0x1 /root/saxpy-dc.riscv -n $size -d 300 -s 4 -p
 done
