@@ -23,7 +23,7 @@ Chipyard subsumes FireChip as a more complete SoC development environment. In or
 - Chipyard submodules Firesim at `sims/firesim`
 
 *This only applies to circumstances in which you are making changes to both Chipyard and Firesim.*
-Joint modifications to Chipyard and FireSim sources will require additional commit in at least one of the two repositorys.   Our recommend procedure is as follows. Commits are labeled <COMMIT_NAME>(<SUBMODULE_COMMIT_NAME>). 
+Joint modifications to Chipyard and FireSim sources will require additional commit in at least one of the two repositories.   Our recommend procedure is as follows. Commits are labeled <COMMIT_NAME>(<SUBMODULE_COMMIT_NAME>). 
 
 ```
 Firesim:dev  ->  A(I) -> ... ->        ?(?)              E(L) Fast-forward (5)
