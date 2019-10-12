@@ -3,3 +3,14 @@ python36-devel
 python36-pip
 rsync
 libguestfs-tools
+dtc
+makeinfo
+texinfo
+yac
+bison
+flex
+expat
+expat-devel
+glib-devel
+gtk2-devel
+ctags

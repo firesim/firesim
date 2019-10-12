@@ -1,4 +1,4 @@
-FireMarshal (firesim-software)
+FireMarshal
 Version 1.6
 ==================================
 
@@ -6,11 +6,8 @@ This tool builds base images for several linux-based distros that work with qemu
 spike, and firesim. 
 
 This is just a quick primer. To see full documentation, please see the official
-firesim documentation. Find pre-built documentation for the latest FireSim here:
-https://docs.fires.im/en/latest/Advanced-Usage/FireMarshal/index.html
-
-You can also find the latest FireSim source at:
-https://github.com/firesim/firesim
+documentation:
+https://firemarshal.readthedocs.io/en/latest/index.html
 
 # Requirements
 The easiest way to use Marshal is to run it via firesim on Amazon EC2 by
@@ -42,3 +39,19 @@ pip3 install python-requirements.txt
 In addition to standard libraries, you will need riscv-tools
 (https://github.com/firesim/riscv-tools.git). This was last tested with commit
 bce7b5e (gcc version 7.2).
+
+# Basic Usage
+On a fresh clone, run:
+    ./marshal init
+
+You can now build workloads. For example:
+
+    ./marshal build workloads/br-base.json
+
+To run in qemu:
+
+    ./marshal launch workloads/br-base.json
+
+To install into FireSim (assuming you cloned this as a submodule of firesim):
+
+    ./marshal install workloads/br-base.json

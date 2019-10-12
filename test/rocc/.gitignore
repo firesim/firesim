@@ -1,0 +1,4 @@
+*.riscv
+*.o
+riscv-isa-sim
+spike_local

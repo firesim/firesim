@@ -1,0 +1,19 @@
+#!/bin/busybox sh
+
+echo "Running FireMarshal nodisk init"
+
+# Mount the /proc and /sys filesystems.
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# Load all kernel modules in /lib/modules/KERNELVERSION/*.ko
+echo "Loading FireMarshal platform drivers"
+modprobe -a $(modprobe -l)
+
+umount /proc
+umount /sys
+
+# Call the native init that came with the distro
+echo "Calling distro init"
+exec /sbin/init

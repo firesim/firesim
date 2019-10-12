@@ -27,7 +27,7 @@ def installWorkload(cfgName, cfgs):
     targetCfg = cfgs[cfgName]
     # if 'jobs' in targetCfg:
     #     raise NotImplementedError("Jobs not currently supported by the install command")
-    if targetCfg['initramfs'] == True:
+    if targetCfg['nodisk'] == True:
         raise NotImplementedError("Initramfs-based builds not currently supported by the install command")
 
     fsTargetDir = fsWork / targetCfg['name']

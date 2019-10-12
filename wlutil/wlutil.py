@@ -9,21 +9,81 @@ import collections
 import shutil
 import psutil
 import errno
+import pathlib
 from contextlib import contextmanager
 
-wlutil_dir = os.path.normpath(os.path.dirname(__file__))
-root_dir = os.getcwd()
+#------------------------------------------------------------------------------
+# Root Directories:
+# wlutil_dir and root_dir are the two roots for wlutil, all other paths are
+# derived from these two values. They must work, even when FireMarshal/ is a symlink.
+#------------------------------------------------------------------------------
+# Root for wlutil library
+wlutil_dir = pathlib.Path(__file__).parent.resolve()
+
+# Root for firemarshal (e.g. firesim-software/)
+root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
+
+#------------------------------------------------------------------------------
+# Derived Paths
+#------------------------------------------------------------------------------
+# Root for default board (platform-specific stuff)
+board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
+
+# Stores all outputs (binaries and images)
 image_dir = os.path.join(root_dir, "images")
+
+# Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
+
+# Busybox source directory (used for the initramfs)
+busybox_dir = wlutil_dir / 'busybox'
+
+# Initramfs root directory (used to build default initramfs for loading board drivers)
+initramfs_dir = pathlib.Path(os.path.join(wlutil_dir, "initramfs"))
+
+# Storage for generated/temporary outputs
+gen_dir = wlutil_dir / "generated"
+
+# Runtime Logs
 log_dir = os.path.join(root_dir, "logs")
+
+# SW-simulation outputs
 res_dir = os.path.join(root_dir, "runOutput")
+
+# Empty directory used for mounting images
 mnt = os.path.join(root_dir, "disk-mount")
-commandScript = os.path.join(wlutil_dir, "_command.sh")
+
+# Basic template for user-specified commands (the "command:" option) 
+commandScript = gen_dir / "_command.sh"
+
+# Default parallelism level to use in subcommands (mostly when calling 'make')
 jlevel = "-j" + str(os.cpu_count())
+
+# Gets set uniquely for each logical invocation of this library
 runName = ""
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
+
+def initialize():
+    """Get wlutil ready to use. Must be called at least once per installation.
+    Is safe and fast to call every time you load the library."""
+    log = logging.getLogger()
+
+    # Directories that must be initialized for disk-based initramfs
+    initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
+
+    # Setup disk initramfs dirs
+    for d in initramfs_disk_dirs:
+        if not (initramfs_dir / 'disk' / d).exists():
+            (initramfs_dir / 'disk' / d).mkdir(parents=True)
+
+    # Make busybox (needed for the initramfs)
+    if not (initramfs_dir /'disk' / 'bin' / 'busybox').exists():
+        log.info("Building busybox (used in initramfs)")
+        shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
+        run(['make', jlevel], cwd=busybox_dir)
+        shutil.copy(busybox_dir / 'busybox', initramfs_dir / 'disk' / 'bin/')
 
 # Create a unique run name. You can call this multiple times to reset internal
 # paths (e.g. for starting a logically different run). The run name controls
@@ -35,7 +95,12 @@ def setRunName(configPath, operation):
     timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
     randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
-    runName = os.path.splitext(os.path.basename(configPath))[0] + \
+    if configPath:
+        configName = os.path.splitext(os.path.basename(configPath))[0]
+    else:
+        configName = ''
+
+    runName = configName + \
             "-" + operation + \
             "-" + timeline + \
             "-" +  randname
@@ -102,7 +167,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
         prettyCmd = ' '.join(args[0])
 
     if 'cwd' in kwargs:
-        log.log(level, 'Running: "' + prettyCmd + '" in ' + kwargs['cwd'])
+        log.log(level, 'Running: "' + prettyCmd + '" in ' + str(kwargs['cwd']))
     else:
         log.log(level, 'Running: "' + prettyCmd + '" in ' + os.getcwd())
 
@@ -114,19 +179,13 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     if check == True and p.returncode != 0:
             raise sp.CalledProcessError(p.returncode, prettyCmd)
 
-# Convert a linux configuration file to use an initramfs that points to the correct cpio
-# This will modify linuxCfg in place
-def convertInitramfsConfig(cfgPath, cpioPath):
-    log = logging.getLogger()
-    with open(cfgPath, 'at') as f:
-        f.write("CONFIG_BLK_DEV_INITRD=y\n")
-        f.write('CONFIG_INITRAMFS_SOURCE="' + cpioPath + '"\n')
- 
+    return p
+
 def genRunScript(command):
     with open(commandScript, 'w') as s:
         s.write("#!/bin/bash\n")
         s.write(command + "\n")
-        s.write("poweroff\n")
+        s.write("sync; poweroff -f\n")
 
     return commandScript
 
@@ -157,22 +216,6 @@ def mountImg(imgPath, mntPath):
     # modifying the image for a period after unmount. This is the documented
     # best-practice (see man guestmount).
     waitpid(mntPid)
-
-def toCpio(config, src, dst):
-    log = logging.getLogger()
-
-    with mountImg(src, mnt):
-        # Fedora needs a special init in order to boot from initramfs
-        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + dst, shell=True, cwd=mnt)
-
-    # Ideally, the distro's themselves would provide initramfs-based versions.
-    # However, having two codepaths for disk images and cpio archives
-    # complicates a bunch of stuff in the rest of marshal. Instead, we maintain
-    # overlays here that convert a disk-based image to a cpio-based image.
-    if config['distro'] == 'fedora':
-        sp.call("cat " + os.path.join(wlutil_dir, "fedora-initramfs-append.cpio") + " >> " + dst, shell=True)
-    elif config['distro'] == 'br':
-        sp.call("cat " + os.path.join(wlutil_dir, "br-initramfs-append.cpio") + " >> " + dst, shell=True)
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute

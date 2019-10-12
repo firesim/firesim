@@ -1,0 +1,11 @@
+{
+  "name" : "rocc",
+  "base" : "bare",
+  "host-init" : "build.sh",
+  "bin" : "rocc-test.riscv",
+  "spike" : "spike_local/bin/spike",
+  "spike-args" : "--extension=dummy_rocc",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}

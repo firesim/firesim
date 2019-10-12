@@ -33,16 +33,42 @@ def checkLinuxUpToDate(config):
     #   makefiles make this not too bad (it adds a few seconds per image). This
     #   function is left here to make it easier if/when we get around to doing
     #   it right.
-    return False 
+    return False
 
+def handleHostInit(config):
+    log = logging.getLogger()
+    if 'host-init' in config:
+       log.info("Applying host-init: " + config['host-init'])
+       if not os.path.exists(config['host-init']):
+           raise ValueError("host-init script " + config['host-init'] + " not found.")
+
+       run([config['host-init']], cwd=config['workdir'])
+ 
 def addDep(loader, config):
+    """Adds 'config' to the doit dependency graph ('loader')"""
+
+    hostInit = []
+    # Host-init task always runs because we can't tell if its uptodate and we
+    # don't know its inputs/outputs.
+    if 'host-init' in config:
+        loader.addTask({
+            'name' : config['host-init'],
+            'actions' : [(handleHostInit, [config])],
+        })
+        hostInit = [config['host-init']]
 
     # Add a rule for the binary
     file_deps = []
-    task_deps = []
+    task_deps = [] + hostInit
     if 'linux-config' in config:
         file_deps.append(config['linux-config'])
     
+    # A child binary could conceivably rely on the parent rootfs. This also
+    # implicitly depends on the parent's host-init script (whcih the img
+    # depends on).
+    if 'base-img' in config:
+        task_deps.append(config['base-img'])
+
     if 'bin' in config:
         loader.addTask({
                 'name' : config['bin'],
@@ -53,12 +79,12 @@ def addDep(loader, config):
                 'uptodate' : [(checkLinuxUpToDate, [config])]
                 })
 
-    # Add a rule for the initramfs version if requested
-    # Note that we need both the regular bin and initramfs bin if the base
+    # Add a rule for the nodisk version if requested
+    # Note that we need both the regular bin and nodisk bin if the base
     # workload needs an init script
-    if config['initramfs'] and 'bin' in config:
+    if config['nodisk'] and 'bin' in config:
         file_deps = []
-        task_deps = []
+        task_deps = [] + hostInit
         if 'img' in config:
             file_deps = [config['img']]
             task_deps = [config['img']]
@@ -67,9 +93,9 @@ def addDep(loader, config):
             file_deps.append(config['linux-config'])
 
         loader.addTask({
-                'name' : config['bin'] + '-initramfs',
-                'actions' : [(makeBin, [config], {'initramfs' : True})],
-                'targets' : [config['bin'] + '-initramfs'],
+                'name' : config['bin'] + '-nodisk',
+                'actions' : [(makeBin, [config], {'nodisk' : True})],
+                'targets' : [config['bin'] + '-nodisk'],
                 'file_dep': file_deps,
                 'task_dep' : task_deps,
                 'uptodate' : [(checkLinuxUpToDate, [config])]
@@ -77,11 +103,11 @@ def addDep(loader, config):
 
     # Add a rule for the image (if any)
     file_deps = []
-    task_deps = []
+    task_deps = [] + hostInit
     if 'img' in config:
         if 'base-img' in config:
-            task_deps = [config['base-img']]
-            file_deps = [config['base-img']]
+            task_deps += [config['base-img']]
+            file_deps += [config['base-img']]
         if 'files' in config:
             for fSpec in config['files']:
                 # Add directories recursively
@@ -141,15 +167,6 @@ def buildDepGraph(cfgs):
 
     return loader
 
-def handleHostInit(config):
-    log = logging.getLogger()
-    if 'host-init' in config:
-       log.info("Applying host-init: " + config['host-init'])
-       if not os.path.exists(config['host-init']):
-           raise ValueError("host-init script " + config['host-init'] + " not found.")
-
-       run([config['host-init']], cwd=config['workdir'])
- 
 def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     # This should only be built once (multiple builds will mess up doit)
     global taskLoader
@@ -158,14 +175,15 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
         
     config = cfgs[cfgName]
 
-    handleHostInit(config)
+    # handleHostInit(config)
     imgList = []
     binList = []
 
     if buildBin and 'bin' in config:
-        binList = [config['bin']]
-        if config['initramfs']:
-            binList.append(config['bin'] + '-initramfs')
+        if config['nodisk']:
+            binList.append(config['bin'] + '-nodisk')
+        else:
+            binList.append(config['bin'])
    
     if 'img' in config and buildImg:
         imgList.append(config['img'])
@@ -175,8 +193,8 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             handleHostInit(jCfg)
             if buildBin:
                 binList.append(jCfg['bin'])
-                if jCfg['initramfs']:
-                    binList.append(jCfg['bin'] + '-initramfs')
+                if jCfg['nodisk']:
+                    binList.append(jCfg['bin'] + '-nodisk')
 
             if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
@@ -186,23 +204,121 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     if ret != 0:
         raise RuntimeError("Error while building workload")
 
+def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
+    """Generate a cpio archive containing each of the sources and store it in cpioDir.
+    Return a path to the generated archive.
+    srcs: are a list of paths to directories to include, sources will be
+    cpioDir: Scratch directory to produce outputs in
+    applied in-order (potentially overwriting duplicate files).
+    includeDevNodes: If true, will include '/dev/console' and '/dev/tty' special files."""
+    
+    # Generate individual cpios for each source
+    cpios = []
+    for src in srcs:
+        dst = cpioDir / (src.name + '.cpio')
+        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + str(dst), shell=True, cwd=src)
+        cpios.append(dst)
+
+    if includeDevNodes:
+        cpios.append(initramfs_dir / 'devNodes.cpio')
+
+    # Generate final cpio
+    finalPath = cpioDir / 'initramfs.cpio'
+    with open(finalPath, 'wb') as finalF:
+        for cpio in cpios:
+            with open(cpio, 'rb') as srcF:
+                shutil.copyfileobj(srcF, finalF)
+
+    return finalPath
+
+def generateKConfig(kfrags, linuxSrc):
+        linuxCfg = os.path.join(linuxSrc, '.config')
+        defCfg = gen_dir / 'defconfig'
+
+        # Create a defconfig to use as reference
+        run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
+        shutil.copy(linuxCfg, defCfg)
+
+        # Create a config from the user fragments
+        kconfigEnv = os.environ.copy()
+        kconfigEnv['ARCH'] = 'riscv'
+        run([os.path.join(linuxSrc, 'scripts/kconfig/merge_config.sh'),
+            str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
+
+def makeInitramfsKfrag(src, dst):
+    with open(dst, 'w') as f:
+        f.write("CONFIG_BLK_DEV_INITRD=y\n")
+        f.write('CONFIG_INITRAMFS_COMPRESSION=".lzo"\n')
+        f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
+        f.write('CONFIG_INITRAMFS_SOURCE="' + str(src) + '"\n')
+
+# Build all the drivers for this linux source on the specified board.
+# Returns a path to a cpio archive containing all the drivers in
+# /lib/modules/KERNELVERSION/*.ko
+# kfrags: list of paths to kernel configuration fragments to use when building drivers
+# boardDir: Path to the board directory. Should have a 'drivers/' subdir
+#           containing all the drivers we should build for this board
+# linuxSrc: Path to linux source tree to build against
+def makeDrivers(kfrags, boardDir, linuxSrc):
+    driverDirs = pathlib.Path(boardDir).glob("drivers/*")
+    makeCmd = "make LINUXSRC=" + str(linuxSrc)
+
+    # Prepare the linux source for building external drivers
+    generateKConfig(kfrags, linuxSrc)
+    run(["make", "ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-", "modules_prepare", jlevel], cwd=linuxSrc)
+    kernelVersion = sp.run(["make", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
+
+    drivers = []
+    for driverDir in driverDirs:
+        # Drivers don't seem to detect changes in the kernel
+        run(makeCmd + " clean", cwd=driverDir, shell=True)
+        run(makeCmd, cwd=driverDir, shell=True)
+        drivers.extend(list(driverDir.glob("*.ko")))
+
+    driverDir = initramfs_dir / "drivers" / "lib" / "modules" / kernelVersion
+
+    # Always start from a clean slate
+    try:
+        shutil.rmtree(driverDir)
+    except FileNotFoundError:
+        pass
+    driverDir.mkdir(parents=True)
+
+    # Copy in our new drivers
+    for driverPath in drivers:
+        shutil.copy(driverPath, driverDir)
+
+    # Setup the dependency file needed by modprobe to load the drivers
+    run(['depmod', '-b', str(initramfs_dir / "drivers"), kernelVersion])
+
+
 # Now build linux/bbl
-def makeBin(config, initramfs=False):
+def makeBin(config, nodisk=False):
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
-        linuxCfg = os.path.join(config['linux-src'], '.config')
-        shutil.copy(config['linux-config'], linuxCfg)
+        initramfsIncludes = []
 
-        if initramfs:
-            with tempfile.NamedTemporaryFile(suffix='.cpio') as tmpCpio:
-                toCpio(config, config['img'], tmpCpio.name)
-                convertInitramfsConfig(linuxCfg, tmpCpio.name)
-                run(['make', 'ARCH=riscv', 'olddefconfig'], cwd=config['linux-src'])
-                run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
-        else: 
-            run(['make', 'ARCH=riscv', 'vmlinux', jlevel], cwd=config['linux-src'])
+        makeDrivers([config['linux-config']], board_dir, config['linux-src'])
+        initramfsIncludes.append(initramfs_dir / 'drivers')
+
+        with tempfile.TemporaryDirectory() as cpioDir:
+            cpioDir = pathlib.Path(cpioDir)
+            initramfsPath = ""
+            if nodisk:
+                initramfsIncludes += [initramfs_dir / "nodisk"]
+                with mountImg(config['img'], mnt):
+                    initramfsIncludes += [pathlib.Path(mnt)]
+                    # This must be done while in the mountImg context
+                    initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
+            else:
+                initramfsIncludes += [initramfs_dir / "disk"]
+                initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
+
+            makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
+            generateKConfig([config['linux-config'], cpioDir / "initramfs.kfrag"], config['linux-src'])
+            run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
         if os.path.exists('riscv-pk/build'):
@@ -213,8 +329,8 @@ def makeBin(config, initramfs=False):
             '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd='riscv-pk/build')
         run(['make', jlevel], cwd='riscv-pk/build')
 
-        if initramfs:
-            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-initramfs')
+        if nodisk:
+            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-nodisk')
         else:
             shutil.copy('riscv-pk/build/bbl', config['bin'])
 
@@ -226,6 +342,13 @@ def makeImage(config):
         if 'base-img' in config:
             shutil.copy(config['base-img'], config['img'])
   
+    # Convert overlay to file list
+    if 'overlay' in config:
+        config.setdefault('files', [])
+        files = glob.glob(os.path.join(config['overlay'], '*'))
+        for f in files:
+            config['files'].append(FileSpec(src=f, dst='/'))
+
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         copyImgFiles(config['img'], config['files'], 'in')

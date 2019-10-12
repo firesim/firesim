@@ -1,0 +1,8 @@
+{
+  "name" : "qemu-args",
+  "base" : "br-base.json",
+  "qemu-args" : "-h",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

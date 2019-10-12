@@ -1,0 +1,47 @@
+#!/bin/busybox sh
+
+_setup_rootfs() {
+  for blk in iceblk vda ; do
+    if test -b "/dev/${blk}" ; then
+      echo "Mounting /dev/${blk} as root device"
+      mount -o ro "/dev/${blk}" /mnt/root
+      return
+    fi
+  done
+  return 1
+}
+
+_setup() (
+  set -e
+
+  /bin/busybox --install -s
+
+  # Mount special filesystems
+  mount -t proc none /proc
+  mount -t sysfs none /sys
+  mount -t devtmpfs none /dev
+
+  # Load all kernel modules
+  modprobe -a $(modprobe -l)
+
+  if ! _setup_rootfs ; then
+    echo 'Failed to load an appropriate block device'
+    return 1
+  fi
+
+  umount /proc
+  umount /sys
+  # buildroot inittab(5) does not mount /dev itself
+  mount -o move /dev /mnt/root/dev
+)
+
+if ! _setup ; then
+  echo "Failed to setup system. Dropping to emergency shell."
+  exec /bin/busybox sh
+fi
+
+echo "Loaded platform drivers, booting from disk:"
+exec switch_root /mnt/root /sbin/init
+
+echo "Failed to find appropriate init"
+exec /bin/busybox sh

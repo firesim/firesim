@@ -1,8 +1,8 @@
 import os
 import glob
-import wlutil.br.br as br
-import wlutil.fedora.fedora as fed
-import wlutil.baremetal.bare as bare
+from .br import br
+from .fedora import fedora as fed
+from .baremetal import bare
 import collections
 import json
 import pprint
@@ -21,6 +21,10 @@ configUser = [
         'base',
         # Path to spike binary to use (use $PATH if this is omitted)
         'spike',
+        # Optional extra arguments to spike
+        'spike-args',
+        # Optional extra arguments to qemu
+        'qemu-args',
         # Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
         # Path to linux configuration file to use
@@ -69,7 +73,20 @@ configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'hos
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
-configInherit = ['runSpec', 'files', 'outputs', 'linux-src', 'linux-config', 'builder', 'distro', 'spike', 'launch', 'bin', 'post_run_hook']
+configInherit = [
+        'runSpec',
+        'files',
+        'outputs',
+        'linux-src',
+        'linux-config',
+        'builder',
+        'distro',
+        'spike',
+        'launch',
+        'bin',
+        'post_run_hook',
+        'spike-args',
+        'qemu-args']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -132,9 +149,9 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
 
-        if 'initramfs' not in self.cfg:
+        if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
-            self.cfg['initramfs'] = False
+            self.cfg['nodisk'] = False
 
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
@@ -164,13 +181,6 @@ class Config(collections.MutableMapping):
 
         if 'guest-init' in self.cfg:
             self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
-
-        # Convert overlay to file list (main program doesn't handle overlays directly)
-        if 'overlay' in self.cfg:
-            self.cfg.setdefault('files', [])
-            files = glob.glob(os.path.join(self.cfg['overlay'], '*'))
-            for f in files:
-                self.cfg['files'].append(FileSpec(src=f, dst='/'))
 
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
