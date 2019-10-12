@@ -61,7 +61,8 @@ Latency-Insensitive Bounded Dataflow Networks
 ---------------------------------------------
 
 In order for the resulting simulator to be a faithful representation of the
-target RTL, models must adhere to three properties. We refer the reader to TODO
+target RTL, models must adhere to three properties. We refer the reader to
+`the LI-BDN paper <https://dspace.mit.edu/bitstream/handle/1721.1/58834/Vijayaraghavan-2009-Bounded%20Dataflow%20Networks%20and%20Latency-Insensitive%20Circuits.pdf?sequence=1&isAllowed=y>`_
 for the formal definitions of these properties.  English language equivalents
 follow.
 
@@ -73,9 +74,15 @@ Cycle exact models must implement PI, whereas abstract models do not.
 The remaining two properties ensure the graph does not deadlock, and must be
 implemented by both cycle-exact and abstract models.
 
-**Self Cleaning**: A model that has enqueued N tokens into each of it's output
-ports _must_ eventually dequeue N tokens from each of it's input ports.
+**Self-Cleaning**: A model that has enqueued N tokens into each of it's output
+ports *must* eventually dequeue N tokens from each of it's input ports.
 
-**No Extraenous Dependencies**: Once the input tokens required to compute an output
-token become available, the model must eventually enqueue that output token.
+**No Extranenous Dependencies**: If a given output channel of an
+LI-BDN simulation model has received a number of tokens no greater
+than any other channel, and if the model receives all input tokens
+required to compute the next output token for that channel, the model
+must eventually enqueue that output token, regardless of future
+external activity. Here, a model enqueueing an output token is
+synonymous with the corresponding output channel "receiving" the
+token.
 

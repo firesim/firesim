@@ -14,7 +14,7 @@ Bridges enable:
    fewer FPGA resources or run entirely software.
 
 The use of Bridges in a FireSim simulation has many analogs to doing
-mixed-language (verilog-C++) simulation of the same system in software. Where
+mixed-language (Verilog-C++) simulation of the same system in software. Where
 possible, we'll draw analogies.
 
 
@@ -42,30 +42,33 @@ Use Cases
 Defining A Bridge
 --------------------------
 
-Bridges have a target-side, consisting of a specially annotated Module, and host-side,
+Bridges have a target side, consisting of a specially annotated Module, and host side,
 which consist of an FPGA-hosted BridgeModule and an optional CPU-hosted BridgeDriver.
 
-In a mixed-language software simulation, a verilog VPI interface, (i.e, a tick
-fucntion) is analagous to the target-side of a bridge, with the C++ backing
-that interface being the host-side.
+In a mixed-language software simulation, a Verilog VPI interface, (i.e, a tick
+fucntion) is analogous to the target side of a bridge, with the C++ backing
+that interface being the host side.
 
 
-Target-Side
+Target Side
 ----------------------
 
 In your target-side implementation, you will define a Scala trait that extends
-Bridge. This trait will mix into a Chisel Black Box or a Module, that will
-extracted by Golden Gate, and driven by your host-side implementation.
+Bridge. This trait indicates that the module will declared and connected to in
+the target design, but that its implementation will be provided by a simulation
+Bridge. Once the trait is mixed into a Chisel BlackBox or a Module, that module
+will be extracted by Golden Gate, and its interface with the rest of the target
+design will be driven by your host-side implementation.
 
 This trait has two type parameters and two abstract members you'll need define
 for your Bridge. Note that since you must mix Bridge into either a Chisel
-Black Box or a Module, you'll of course need to define the IO for that module.
+BlackBox or a Module, you'll of course need to define the IO for that module.
 That's the interface you'll use to connect to your target RTL.
 
-Type Paramaters:
+Type Parameters:
 
 #. Host Interface Type [HPType]: The Chisel type of your Bridge's target-land interface. This describes how the target interface
-has been divided into seperate token channels. One example, HostPort[T], divides a chisel Bundle into a single bi-directional token stream.
+has been divided into seperate token channels. One example, HostPort[T], divides a Chisel Bundle into a single bi-directional token stream.
 #. Host Module Type: The type of the Chisel Module you want Golden Gate to connect in-place of your black box.
 
 Abstract Members:
@@ -104,7 +107,7 @@ What Happens Next?
 ------------------------
 
 If you do pass your FIRRTL & Annotations to Golden Gate. It will find your
-module, remove it,  and wire it's dangling target-interface to the top-level of
+module, remove it,  and wire its dangling target-interface to the top-level of
 the design. During host-decoupling transforms, Golden Gate aggregates fields of
 your bridge's target IO based on ChannelAnnotations, and wraps them up into
 new Decoupled interfaces that match your Host Interface definition. Finally,
@@ -146,7 +149,7 @@ Communication between a BridgeModule and BridgeDriver is implemented with two ty
 Compile-Time (Parameterization) vs Runtime Configuration
 --------------------------------------------------------
 
-Just as is the case when compiling a software-RTL simulator, the simulated design
+As when compiling a software-RTL simulator, the simulated design
 is configured over two phases:
 
 #. Compile Time. By parameterization the target RTL and BridgeModule
