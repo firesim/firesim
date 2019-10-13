@@ -2,8 +2,6 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-**Developers: Please add descriptions of your changes to this PR as your PRs are merged into Dev**
-
 ### Added
 * Upgraded MIDAS to Golden Gate (MIDAS II)
 * [WIP] Better support for FireSim as a library. 
