@@ -4,7 +4,7 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 
 ### Added
 * Upgraded MIDAS to Golden Gate (MIDAS II)
-* [WIP] Better support for FireSim as a library. 
+* Better support for FireSim as a library. 
   * Toolchains now built through chipyard, with firesim-specific tools added on top 
 * Workloads
   * Coremark (PR #288)
@@ -13,21 +13,23 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
   * 512 KiB, single-bank
 * Added SHA3 AFIs (PR #368)
 
-
 ### Changed
 * FireChip replaced with [chipyard](https://github.com/ucb-bar/chipyard)
   * Derived from project-template, like FireChip
   * Improved integration with other UCB-BAR projects
 * MIDAS Endpoints replaced with Golden Gate target-to-host Bridges
+  * See Golden Gate docs hosted at docs.fires.im
   * See porting guide for more information
 * Submodules moved
   * sim/{firrtl, barstools} -> moved to chipyard
-  * sw/firesim-software -> [Nathan]
 * Config files reorganized (found in `firesim-lib/src/main/scala/configs`)
   * Bridges (formerly endpoints) configured in target generator
   * [PLATFORM\_CONFIG] SimConfigs.scala -> CompilerConfigs.scala
   * [PLATFORM\_CONFIG] util/Configs.scala -> F1PlatformConfigs.scala:
   * [TARGET\_CONFIG] FASEDConfigs moved from SimConfigs.scala to FASEDTargetConfigs.scala (passed to target generator)
+* Add a DefaultFireSimHarness
+  * Instantiates Bridges usings partial functions matching on Module type
+  * Supernoded-ness can be applied to any design using this harness see (`Field` NumNodes)
 * FASED memory timing models use maximum # of available sets and ways
   * 2MiB default
 * build recipe & hwdb entry names changed to match cache hierarchy
@@ -54,7 +56,7 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 ### Removed
 * "Developing New Devices" section in documentation
 * Clock-domain division in endpoint channels.
-  * This to be replaced in 1.8.0
+  * This to be replaced in 1.8.0 (Early November)
 
 ## [1.6.0] - 2019-06-23
 
