@@ -2,6 +2,62 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+**Developers: Please add descriptions of your changes to this PR as your PRs are merged into Dev**
+
+### Added
+* Upgraded MIDAS to Golden Gate (MIDAS II)
+* [WIP] Better support for FireSim as a library. 
+  * Toolchains now built through chipyard, with firesim-specific tools added on top 
+* Workloads
+  * Coremark (PR #288)
+  * A linux workload that immediately powers off (PR #321)
+* SiFive L2 Cache added to pre-generated AGFIs
+  * 512 KiB, single-bank
+* Added SHA3 AFIs (PR #368)
+
+
+### Changed
+* FireChip replaced with [chipyard](https://github.com/ucb-bar/chipyard)
+  * Derived from project-template, like FireChip
+  * Improved integration with other UCB-BAR projects
+* MIDAS Endpoints replaced with Golden Gate target-to-host Bridges
+  * See porting guide for more information
+* Submodules moved
+  * sim/{firrtl, barstools} -> moved to chipyard
+  * sw/firesim-software -> [Nathan]
+* Config files reorganized (found in `firesim-lib/src/main/scala/configs`)
+  * Bridges (formerly endpoints) configured in target generator
+  * [PLATFORM\_CONFIG] SimConfigs.scala -> CompilerConfigs.scala
+  * [PLATFORM\_CONFIG] util/Configs.scala -> F1PlatformConfigs.scala:
+  * [TARGET\_CONFIG] FASEDConfigs moved from SimConfigs.scala to FASEDTargetConfigs.scala (passed to target generator)
+* FASED memory timing models use maximum # of available sets and ways
+  * 2MiB default
+* build recipe & hwdb entry names changed to match cache hierarchy
+* Boom based targets now use LargeBoomConfig
+* Boom based targets now use FireSim DESIGN (PR #368)
+* FASED memory models can now have different address widths for each channel
+* 0-initialize registers and memories in MIDAS-level VCS simulation
+* Default to c5.4xlarges for builds/manager instances
+* Make 4.x is needed to build the updated toolchain (PR #345)
+  Upgrade procedure for existing EC2 instances:
+  ```
+  sudo yum install -y centos-release-scl
+  sudo yum install -y devtoolset-8-make
+  ```
+
+### Fixed
+* Block Device widget
+  * A bug that would cause the simulation to hang under current reads and writes (PR #308) 
+  * A determinism hole that would cause reads to be released prematurely in target-time (PR #325)
+
+### Deprecated
+* None
+
+### Removed
+* "Developing New Devices" section in documentation
+* Clock-domain division in endpoint channels.
+  * This to be replaced in 1.8.0
+
 ## [1.6.0] - 2019-06-23
 
 A more detailed account of everything included is included in the dev to master PR for this release: https://github.com/firesim/firesim/pull/262
