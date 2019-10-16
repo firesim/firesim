@@ -83,7 +83,7 @@ class PromoteSubmodule extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val iGraph = new InstanceGraph(state.circuit)
     val updatedModules = new mutable.LinkedHashMap[String, Module]
-    iGraph.moduleMap.foreach { case (k, v: Module) => updatedModules += (k -> v); case (k, v) => }
+    updatedModules ++= iGraph.moduleMap.collect { case (k, v: Module) => (k -> v) }
     val reversedIGraph = iGraph.graph.reverse
     val promoted = findPromotedInstances(iGraph, state.annotations)
     val order = reversedIGraph.linearize.filter(reversedIGraph.getEdges(_).size > 0).filter(promoted)
@@ -110,7 +110,7 @@ class PromoteSubmodule extends Transform {
       }
     }
     state.copy(
-      circuit = state.circuit.copy(modules = updatedModules.map({ case (k, v) => v }).toSeq),
+      circuit = state.circuit.copy(modules = state.circuit.modules.map{ m => updatedModules.getOrElse(m.name, m) }),
       renames = Some(renames),
       annotations = state.annotations.filterNot(_.isInstanceOf[PromoteSubmoduleAnnotation])
     )

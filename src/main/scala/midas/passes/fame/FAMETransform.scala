@@ -7,11 +7,13 @@ import java.io.{PrintWriter, File}
 import firrtl._
 import ir._
 import Mappers._
-import Utils._
+import firrtl.Utils.{BoolType, kind, ceilLog2, one}
 import firrtl.passes.MemPortUtils
 import annotations._
 import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
+
+import midas.passes._
 
 /**************
  PRECONDITIONS:
@@ -27,8 +29,8 @@ trait FAME1Channel {
   def tpe: Type = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
   def portName: String
   def asPort: Port = Port(NoInfo, portName, direction, tpe)
-  def isReady: Expression = WSubField(WRef(asPort), "ready", Utils.BoolType)
-  def isValid: Expression = WSubField(WRef(asPort), "valid", Utils.BoolType)
+  def isReady: Expression = WSubField(WRef(asPort), "ready", BoolType)
+  def isValid: Expression = WSubField(WRef(asPort), "valid", BoolType)
   def isFiring: Expression = Reduce.and(Seq(isReady, isValid))
   def replacePortRef(wr: WRef): WSubField = {
     if (ports.size > 1) {
@@ -59,7 +61,7 @@ case class FAME1OutputChannel(val name: String, val ports: Seq[Port], val firedR
       Mux(finishing,
         UIntLiteral(0, IntWidth(1)),
         isFiredOrFiring,
-        Utils.BoolType))
+        BoolType))
     val setValid = Connect(
       NoInfo,
       isValid,
@@ -75,7 +77,7 @@ object ChannelCCDependencyGraph {
 }
 
 object PatientMemTransformer {
-  def apply(mem: DefMemory, finishing: WRef, memClock: WRef, ns: Namespace): Block = {
+  def apply(mem: DefMemory, finishing: Expression, memClock: WRef, ns: Namespace): Block = {
     val shim = DefWire(NoInfo, mem.name, MemPortUtils.memType(mem))
     val newMem = mem.copy(name = ns.newName(mem.name))
     val defaultConnect = Connect(NoInfo, WRef(shim), WRef(newMem.name, shim.tpe, MemKind))
@@ -83,7 +85,7 @@ object PatientMemTransformer {
     val preserveReads = syncReadPorts.flatMap {
       case rpName =>
         val addrWidth = IntWidth(ceilLog2(mem.depth) max 1)
-        val dummyReset = DefWire(NoInfo, ns.newName(s"${mem.name}_${rpName}_dummyReset"), Utils.BoolType)
+        val dummyReset = DefWire(NoInfo, ns.newName(s"${mem.name}_${rpName}_dummyReset"), BoolType)
         val tieOff = Connect(NoInfo, WRef(dummyReset), UIntLiteral(0))
         val addrReg = new DefRegister(NoInfo, ns.newName(s"${mem.name}_${rpName}"),
           UIntType(addrWidth), memClock, WRef(dummyReset), UIntLiteral(0, addrWidth))
@@ -109,7 +111,7 @@ object PatientSSMTransformer {
     val clocks = m.ports.filter(_.tpe == ClockType)
     // TODO: turn this back on
     // assert(clocks.length == 1)
-    val finishing = new Port(NoInfo, ns.newName(triggerName), Input, Utils.BoolType)
+    val finishing = new Port(NoInfo, ns.newName(triggerName), Input, BoolType)
     val hostClock = clocks.find(_.name == "clock").getOrElse(clocks.head) // TODO: naming convention for host clock
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
       case conn @ Connect(info, lhs, _) if (kind(lhs) == RegKind) =>
@@ -117,7 +119,7 @@ object PatientSSMTransformer {
       case s: Stop  => s.copy(en = DoPrim(PrimOps.And, Seq(WRef(finishing), s.en), Seq.empty, BoolType))
       case p: Print => p.copy(en = DoPrim(PrimOps.And, Seq(WRef(finishing), p.en), Seq.empty, BoolType))
       case mem: DefMemory => PatientMemTransformer(mem, WRef(finishing), WRef(hostClock), ns)
-      case wi: WDefInstance if analysis.syncModules.contains(ModuleTarget(analysis.circuit.main, wi.module)) =>
+      case wi: WDefInstance if analysis.syncNativeModules.contains(analysis.moduleTarget(wi)) =>
         new Block(Seq(wi, Connect(wi.info, WSubField(WRef(wi), triggerName), WRef(finishing))))
       case s => s
     }
@@ -128,7 +130,7 @@ object PatientSSMTransformer {
 object FAMEModuleTransformer {
   def apply(m: Module, analysis: FAMEChannelAnalysis)(implicit triggerName: String): Module = {
     // Step 0: Special signals & bookkeeping
-    val ns = Namespace(m)
+    implicit val ns = Namespace(m)
     val clocks = m.ports.filter(_.tpe == ClockType)
     // TODO: turn this back to == 1
     assert(clocks.length >= 1)
@@ -137,7 +139,15 @@ object FAMEModuleTransformer {
     def createHostReg(name: String = "host", width: Width = IntWidth(1)): DefRegister = {
       new DefRegister(NoInfo, ns.newName(name), UIntType(width), WRef(hostClock), WRef(hostReset), UIntLiteral(0, width))
     }
-    val finishing = DefWire(NoInfo, ns.newName(triggerName), Utils.BoolType)
+    val finishing = DefWire(NoInfo, ns.newName(triggerName), BoolType)
+
+    val gateTargetClock = analysis.containsSyncBlackboxes(m)
+    val targetClock = if (gateTargetClock) {
+      val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
+      SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, MALE))
+    } else {
+      PassThru(WRef(hostClock), "target_clock")
+    }
 
     // Step 1: Build channels
     val mTarget = ModuleTarget(analysis.circuit.main, m.name)
@@ -177,17 +187,31 @@ object FAMEModuleTransformer {
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
       case oWR @ WRef(name, tpe, PortKind, FEMALE) if tpe != ClockType =>
         outChannelMap(name).replacePortRef(oWR)
+      case wr: WRef if wr.name == hostClock.name =>
+        // Replace host clock references with target clock references
+        targetClock.ref
       case e => e
     }
 
+   /*
+    * A target state trigger is only needed if clocks are not gated.  When using true clock gating,
+    * the transform still programmatically adds an extra enable signal to the state updates, so we
+    * pass in a constant one as the value of this enable signal.  This spurious condition gets
+    * optimized away during ConstantPropagation. This homogeneity is helpful since a transformed
+    * module might be instantiated within multiple top-level simulation models, some of which may
+    * rely true clock gating (if their corresponding target modules contain blackboxes) and some of
+    * which may not.
+    */
+    val targetStateTrigger = if (gateTargetClock) one else WRef(finishing)
+
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt).map(onExpr) match {
       case conn @ Connect(info, lhs, _) if (kind(lhs) == RegKind) =>
-        Conditionally(info, WRef(finishing), conn, EmptyStmt)
-      case mem: DefMemory => PatientMemTransformer(mem, WRef(finishing), WRef(hostClock), ns)
-      case wi: WDefInstance if analysis.syncModules.contains(analysis.topTarget.copy(module = wi.module)) =>
-        new Block(Seq(wi, Connect(wi.info, WSubField(WRef(wi), triggerName), WRef(finishing))))
-      case s: Stop  => s.copy(en = DoPrim(PrimOps.And, Seq(WRef(finishing), s.en), Seq.empty, BoolType))
-      case p: Print => p.copy(en = DoPrim(PrimOps.And, Seq(WRef(finishing), p.en), Seq.empty, BoolType))
+        Conditionally(info, targetStateTrigger, conn, EmptyStmt)
+      case mem: DefMemory => PatientMemTransformer(mem, targetStateTrigger, WRef(hostClock), ns)
+      case wi: WDefInstance if analysis.syncNativeModules.contains(analysis.moduleTarget(wi)) =>
+        new Block(Seq(wi, Connect(wi.info, WSubField(WRef(wi), triggerName), targetStateTrigger)))
+      case s: Stop  => s.copy(en = DoPrim(PrimOps.And, Seq(targetStateTrigger, s.en), Seq.empty, BoolType))
+      case p: Print => p.copy(en = DoPrim(PrimOps.And, Seq(targetStateTrigger, p.en), Seq.empty, BoolType))
       case s => s
     }
 
@@ -200,7 +224,9 @@ object FAMEModuleTransformer {
     ruleStmts += Connect(NoInfo, WRef(finishing),
       Reduce.and(outChannels.map(_.isFiredOrFiring) ++ inChannels.map(_.isValid)))
 
-    Module(m.info, m.name, transformedPorts, new Block(decls ++ transformedStmts ++ ruleStmts))
+    // Statements have to be conservatively ordered to satisfy declaration order
+    val allStmts = targetClock.decl +: (decls ++ transformedStmts ++ ruleStmts) :+ targetClock.assigns
+    Module(m.info, m.name, transformedPorts, new Block(allStmts))
   }
 }
 
@@ -209,8 +235,8 @@ class FAMETransform extends Transform {
   def outputForm = HighForm
 
   def updateNonChannelConnects(analysis: FAMEChannelAnalysis)(stmt: Statement): Statement = stmt.map(updateNonChannelConnects(analysis)) match {
-    case wi: WDefInstance if (analysis.transformedModules.contains(analysis.topTarget.copy(module=wi.module))) =>
-      val resetConn = Connect(NoInfo, WSubField(WRef(wi), "hostReset"), WRef(analysis.hostReset.ref, Utils.BoolType))
+    case wi: WDefInstance if (analysis.transformedModules.contains(analysis.moduleTarget(wi))) =>
+      val resetConn = Connect(NoInfo, WSubField(WRef(wi), "hostReset"), WRef(analysis.hostReset.ref, BoolType))
       Block(Seq(wi, resetConn))
     case Connect(_, WRef(name, _, _, _), _) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case Connect(_, _, WRef(name, _, _, _)) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
@@ -274,7 +300,7 @@ class FAMETransform extends Transform {
     val transformedModules = c.modules.map {
       case m: Module if (m.name == c.main) => transformTop(m, analysis)
       case m: Module if (analysis.transformedModules.contains(ModuleTarget(c.main,m.name))) => FAMEModuleTransformer(m, analysis)
-      case m: Module if (analysis.syncModules.contains(ModuleTarget(c.main, m.name))) => PatientSSMTransformer(m, analysis)
+      case m: Module if (analysis.syncNativeModules.contains(ModuleTarget(c.main, m.name))) => PatientSSMTransformer(m, analysis)
       case m => m
     }
     state.copy(circuit = c.copy(modules = transformedModules), renames = Some(hostDecouplingRenames(analysis)))

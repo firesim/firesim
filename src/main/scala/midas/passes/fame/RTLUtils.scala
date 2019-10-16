@@ -6,6 +6,10 @@ import firrtl._
 import ir._
 import Utils._
 
+object Instantiate {
+  def apply(m: DefModule, name: String) = WDefInstance(NoInfo, name, m.name, Utils.module_type(m))
+}
+
 object Decouple {
   def apply(t: Type): Type = BundleType(Seq(
     Field("ready", Flip, Utils.BoolType),

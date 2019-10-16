@@ -69,6 +69,7 @@ private[midas] class MidasTransforms(
       new fame.InferModelPorts,
       new EmitFirrtl("post-channel-excision.fir"),
       new fame.FAMETransform,
+      DefineAbstractClockGate,
       new EmitFirrtl("post-fame-transform.fir"),
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
@@ -76,7 +77,8 @@ private[midas] class MidasTransforms(
       new ResolveAndCheck) ++
     Seq(
       new SimulationMapping(io),
-      new PlatformMapping(state.circuit.main, dir))
+      new PlatformMapping(state.circuit.main, dir),
+      xilinx.HostSpecialization)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)
   }

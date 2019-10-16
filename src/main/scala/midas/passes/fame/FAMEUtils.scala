@@ -6,9 +6,12 @@ import firrtl._
 import ir._
 import Utils._
 import Mappers._
-import transforms.CheckCombLoops
-import annotations._
 import graph.DiGraph
+import analyses.InstanceGraph
+import transforms.CheckCombLoops
+
+import annotations._
+
 import scala.collection
 import collection.mutable
 import collection.mutable.{LinkedHashSet, LinkedHashMap, MultiMap}
@@ -56,7 +59,20 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   // TODO: only transform submodules of model modules
   // TODO: add renames!
   val circuit = state.circuit
-  val syncModules = circuit.modules.filter(_.ports.exists(_.tpe == ClockType)).map(m => ModuleTarget(circuit.main, m.name)).toSet
+  val topTarget = ModuleTarget(circuit.main, circuit.main)
+  def moduleTarget(m: DefModule) = topTarget.copy(module = m.name)
+  def moduleTarget(wi: WDefInstance) = topTarget.copy(module = wi.module)
+
+  // The presence of a clock port is used to indicate whether a module contains state
+  def stateful(m: DefModule) = m.ports.exists(_.tpe == ClockType)
+
+ /*
+  * A list of stateful modules that doesn't include blackboxes.
+  * This is needed since only pure-FIRRTL modules get transformed.
+  * Blackboxes' ports remain unchanged, as does their Verilog source.
+  */
+  val syncNativeModules = circuit.modules.collect({ case m: Module if stateful(m) => moduleTarget(m) }).toSet
+
   val moduleNodes = new LinkedHashMap[ModuleTarget, DefModule]
   val portNodes = new LinkedHashMap[ReferenceTarget, Port]
   circuit.modules.foreach({
@@ -68,6 +84,12 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       })
     }
   })
+
+  // Used to check if any modules contains synchronous blackboxes in its sub-hierarchy
+  private val syncBlackboxes = circuit.modules.collect({ case bb: ExtModule if stateful(bb) => bb.name }).toSet
+  lazy val iGraph = new InstanceGraph(circuit)
+  lazy val mGraph = iGraph.graph.transformNodes[String](_.module)
+  def containsSyncBlackboxes(m: Module) = mGraph.reachableFrom(m.name).exists(syncBlackboxes.contains(_))
 
   lazy val connectivity = (new CheckCombLoops).analyze(state)
 
@@ -83,7 +105,6 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
   })
 
-  val topTarget = ModuleTarget(circuit.main, circuit.main)
   private val moduleOfInstance = new LinkedHashMap[String, String]
   val topConnects = new LinkedHashMap[ReferenceTarget, ReferenceTarget]
   val inputChannels = new LinkedHashMap[ModuleTarget, mutable.Set[String]] with MultiMap[ModuleTarget, String]

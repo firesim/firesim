@@ -82,11 +82,14 @@ $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
 override CFLAGS += -include $(design_h)
 
+# Models of FPGA primitives that are used in host-level sim, but not in FPGATop
+sim_fpga_resource_models := $(v_dir)/BUFGCE.v
+
 emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
 emul_h     := $(driver_h) $(bridge_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
 # This includes c sources and static libraries
 emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
-emul_v     := $(design_vh) $(design_v)
+emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 # The lop level module must be called out for verilator
 ifeq ($(PLATFORM),zynq)
