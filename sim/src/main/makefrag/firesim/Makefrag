@@ -164,3 +164,20 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
+# TraceGen rules
+
+AXE_DIR=$(chipyard_dir)/tools/axe/src
+AXE=$(AXE_DIR)/axe
+
+$(OUTPUT_DIR)/tracegen.out: $($(EMUL))
+	mkdir -p $(OUTPUT_DIR) && \
+	cd $(dir $($(EMUL))) && \
+	./$(notdir $($(EMUL))) +sample=$<.sample $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
+
+$(OUTPUT_DIR)/tracegen.result: $(OUTPUT_DIR)/tracegen.out $(AXE)
+	$(chipyard_dir)/scripts/check-tracegen.sh $< > $@
+
+fsim-tracegen: $(OUTPUT_DIR)/tracegen.result
+
+.PHONY: fsim-tracegen
