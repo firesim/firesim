@@ -1,0 +1,12 @@
+generated
+logs
+results
+target
+project/target
+*.out
+*.swp
+*.tmp
+*.key
+DVEfiles
+*~
+*#
