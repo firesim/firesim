@@ -121,6 +121,19 @@ your firesim directory and source this file again.**
 Completing Setup Using the Manager
 ----------------------------------
 
+First, run the following to setup your AWS credentials on the instance:
+
+::
+
+    aws configure
+
+
+This will prompt you to setup AWS credentials on the instance, which allows
+the manager to automatically manage build/simulation nodes. See
+https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
+for more about these credentials. When prompted, you should specify the same
+region that you chose above and set the default output format to ``json``.
+
 The FireSim manager contains a command that will interactively guide you
 through the rest of the FireSim setup process. To run it, do the following:
 
@@ -128,11 +141,7 @@ through the rest of the FireSim setup process. To run it, do the following:
 
     firesim managerinit
 
-This will first prompt you to setup AWS credentials on the instance, which allows
-the manager to automatically manage build/simulation nodes. See
-https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about these credentials. When prompted, you should specify the same
-region that you chose above and set the default output format to ``json``.
+This will first prompt you to setup AWS credentials on the instance, which we just did in the previous step. You can simply hit enter to skip these four prompts.
 
 Next, it will create initial configuration files, which we will edit in later
 sections. Finally, it will prompt you for an email address, which is used to
