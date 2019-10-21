@@ -39,7 +39,7 @@ class WithBuildStategy(strategy: BuildStrategies.IsBuildStrategy) extends Config
 })
 
 // Shortened names useful for appending to config strings in Make variables and build recipes
-// example: FireSimConfig_F160MHz is equivalent to: new Config(new F160MHz ++ new FireSimConfig) 
+// example: BaseF1Config_F160MHz is equivalent to: new Config(new BaseF1Config ++ new F160MHz)
 class F190MHz extends WithDesiredHostFrequency(190)
 class F175MHz extends WithDesiredHostFrequency(175)
 class F160MHz extends WithDesiredHostFrequency(160)
@@ -56,7 +56,7 @@ class  F75MHz extends WithDesiredHostFrequency(75)
 class  F70MHz extends WithDesiredHostFrequency(70)
 class  F65MHz extends WithDesiredHostFrequency(65)
 class  F60MHz extends WithDesiredHostFrequency(60)
-class  F55MHz extends WithDesiredHostFrequency(50)
+class  F55MHz extends WithDesiredHostFrequency(55)
 class  F50MHz extends WithDesiredHostFrequency(50)
 class  F45MHz extends WithDesiredHostFrequency(45)
 class  F40MHz extends WithDesiredHostFrequency(40)

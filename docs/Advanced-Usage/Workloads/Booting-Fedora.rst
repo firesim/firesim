@@ -54,5 +54,6 @@ booting a workload (e.g. :ref:`single-node-sim` or :ref:`cluster-sim`).
 
 .. attention:: For the standard distributions we provide pre-built firesim
    workloads. In general, FireMarshal can derive a FireSim workload from
-   the FireMarshal configuration using the ``install`` command (see
-   :ref:`firemarshal-commands`)
+   the FireMarshal configuration using the ``install`` command. For more
+   information, see the official `FireMarshal documentation
+   <https://firemarshal.readthedocs.io/en/latest/>`_.

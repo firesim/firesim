@@ -20,7 +20,7 @@ import firrtl.transforms.TopWiring._
     This also has an option to pass a function as a parmeter to generate custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class ILATopWiringTransform(dir: File = new File("/tmp/"), datadepth: Int = 1024) extends Transform {
+class ILATopWiringTransform(datadepth: Int = 1024) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] ILA Top Wiring Transform"
@@ -135,6 +135,7 @@ class ILATopWiringTransform(dir: File = new File("/tmp/"), datadepth: Int = 1024
       case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_")  }
     }
 
+    val dir = state.annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
     //dirname should be some aws-fpga synthesis directory
     val topwiringannos = targetannos ++ Seq(TopWiringOutputFilesAnnotation(dir.getPath(), ILAWiringOutputFiles))
 

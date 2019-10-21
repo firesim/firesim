@@ -370,11 +370,20 @@ class UserTopologies(object):
     # Spins up all of the precompiled, unnetworked targets
     def all_no_net_targets_config(self):
         hwdb_entries = [
-            "fireboom-singlecore-no-nic-ddr3-llc4mb",
-            "fireboom-singlecore-no-nic-ddr3-llc4mb-gg",
-            "firesim-quadcore-no-nic-ddr3-llc4mb",
+            "fireboom-singlecore-no-nic-l2-llc4mb-ddr3",
+            "fireboom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts",
+            "firesim-quadcore-no-nic-l2-llc4mb-ddr3",
             "firesim-singlecore-no-nic-lbp",
         ]
         assert len(hwdb_entries) == self.no_net_num_nodes
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
 
+
+#    ######Used only for tutorial purposes####################
+#    def example_sha3hetero_2config(self):
+#        self.roots= [FireSimSwitchNode()]
+#        servers = [FireSimServerNode(server_hardware_config=
+#                     "fireboom-singlecore-nic-l2-llc4mb-ddr3"),
+#                   FireSimServerNode(server_hardware_config=
+#                     "firesim-singlecore-sha3-nic-l2-llc4mb-ddr3")]
+#        self.roots[0].add_downlinks(servers)

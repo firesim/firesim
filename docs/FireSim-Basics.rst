@@ -106,6 +106,10 @@ the simulating, we also define:
 We frequently prefix words with these terms. For example, software can run
 on the simulated RISC-V system (*target*-software) or on a host x86 machine (*host*-software).
 
+**Golden Gate (MIDAS II)**
+  The FIRRTL compiler used by FireSim to convert target RTL into a decoupled
+  simulator. Formerly named MIDAS.
+
 Using FireSim/The FireSim Workflow
 -------------------------------------
 

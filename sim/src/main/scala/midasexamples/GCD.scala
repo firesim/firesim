@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util.unless
 import chisel3.experimental.{withClock, RawModule}
 
-import midas.widgets.PeekPokeEndpoint
+import midas.widgets.PeekPokeBridge
 
 class GCDDUT extends Module {
   val io = IO(new Bundle {

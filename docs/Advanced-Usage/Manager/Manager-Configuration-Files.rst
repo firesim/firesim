@@ -265,7 +265,7 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-    [firesim-quadcore-nic-ddr3-llc4mb]
+    [firesim-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -276,7 +276,7 @@ you would use:
 ::
 
     [agfistoshare]
-    firesim-quadcore-nic-ddr3-llc4mb
+    firesim-quadcore-nic-l2-llc4mb-ddr3
 
 
 ``[sharewithaccounts]``
@@ -334,7 +334,7 @@ This specifies hardware parameters of the simulation environment - for example,
 selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
 These are defined in ``firesim/sim/src/main/scala/firesim/SimConfigs.scala``.
 We specify the host FPGA frequency in the ``PLATFORM_CONFIG`` by appending a frequency
-``Config`` with an underscore (ex. FireSimConfig_F160MHz).
+``Config`` with an underscore (ex. BaseF1Config_F160MHz).
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
@@ -392,7 +392,7 @@ these as necessary:
 
 ::
 
-    [firesim-quadcore-nic-ddr3-llc4mb]
+    [firesim-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -401,7 +401,7 @@ these as necessary:
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, ``firesim-quadcore-nic-ddr3-llc4mb`` is the name that will be
+In this example, ``firesim-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 

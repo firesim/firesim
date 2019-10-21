@@ -53,34 +53,37 @@ Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` co
 
 ::
    
-   PLATFORM_CONFIG=FireSimConfig_ILADepth8192
+   PLATFORM_CONFIG=BaseF1Config_ILADepth8192
 
 
 
 Using the ILA at Runtime
 ------------------------
 
-Prerequisite: Make sure that ports 3121 and 10201 are enabled in the firesim AWS security group.
+Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the firesim AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
-This can be done by running the following commands:
+In the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
+issues with various packages. Therefore, AWS currently recommends using `NICE DVC <https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html>`__ as a GUI client. You should `download a DVC client <https://docs.aws.amazon.com/dcv/latest/userguide/client.html>`__, and then run the following commands on your FireSim manager instance:
 
 ::
 
-  curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
-  sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
-  /home/centos/src/scripts/setup_gui.sh
-  # keep manager paramiko compatibility
-  sudo pip2 uninstall gssapi
+  sudo yum -y groupinstall "GNOME Desktop"
+  sudo yum -y install glx-utils
+  sudo rpm --import https://s3-eu-west-1.amazonaws.com/nice-dcv-publish/NICE-GPG-KEY
+  wget https://d1uj6qtbmh3dt5.cloudfront.net/2019.0/Servers/nice-dcv-2019.0-7318-el7.tgz
+  tar xvf nice-dcv-2019.0-7318-el7.tgz
+  cd nice-dcv-2019.0-7318-el7
+  sudo yum -y install nice-dcv-server-2019.0.7318-1.el7.x86_64.rpm
+  sudo yum -y install nice-xdcv-2019.0.224-1.el7.x86_64.rpm
+  sudo systemctl enable dcvserver
+  sudo systemctl start dcvserver
+  sudo passwd centos
+  sudo systemctl stop firewalld
+  dcv create-session --type virtual --user centos centos
 
-When the command will finish running, a temporary password will be printed out. This
-password will be used to access the GUI interface of the master instance. We will
-connect to the GUI interface of the manager instance using an RDP client. Use the
-public IP address of the manager instances in order to connect using the RDP client.
-The username is `centos`, and the password is the temporary password that was printed
-out at the end of the previous command. An additional login screen with the username
-Cloud-User and the same password may appear in some occasion. More information about
-the AWS GUI interface can be found in the ``~/src/GUI_README`` on the manager instance.
+These commands will setup Linux desktop pre-requisites, install the NICE DVC server, ask you to setup the password to the ``centos`` user, disable firewalld,
+and finally create a DVC session. You can now connect to this session through the DVC client.
 
 After access the GUI interface, open a terminal, and open ``vivado``.
 Follow the instructions in the `AWS-FPGA guide for connecting xilinx hardware manager on vivado (running on a remote machine) to the debug target  <https://github.com/aws/aws-fpga/blob/master/hdk/docs/Virtual_JTAG_XVC.md#connecting-xilinx-hardware-manager-vivado-lab-edition-running-on-a-remote-machine-to-the-debug-target-fpga-enabled-ec2-instance>`__ .

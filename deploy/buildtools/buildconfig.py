@@ -28,8 +28,12 @@ class BuildConfig:
         return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
 
     def launch_build_instance(self, build_instance_market,
-                          spot_interruption_behavior, spot_max_price):
-        """ Launch an instance to run this build. """
+                          spot_interruption_behavior, spot_max_price,
+                              buildfarmprefix):
+        """ Launch an instance to run this build.
+        buildfarmprefix can be None.
+        """
+        buildfarmprefix = '' if buildfarmprefix is None else buildfarmprefix
         num_instances = 1
         self.launched_instance_object = launch_instances(self.instancetype,
                           num_instances, build_instance_market,
@@ -44,6 +48,7 @@ class BuildConfig:
                                   },
                               },
                           ],
+                          tags={ 'fsimbuildcluster': buildfarmprefix },
                           randomsubnet=True)[0]
 
     def get_launched_instance_object(self):
@@ -88,6 +93,12 @@ class GlobalBuildConfig:
 
         self.s3_bucketname = \
             global_build_configfile.get('afibuild', 's3bucketname')
+
+        aws_resource_names_dict = aws_resource_names()
+        if aws_resource_names_dict['s3bucketname'] is not None:
+            # in tutorial mode, special s3 bucket name
+            self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+
         self.build_instance_market = \
                 global_build_configfile.get('afibuild', 'buildinstancemarket')
         self.spot_interruption_behavior = \
@@ -119,10 +130,19 @@ class GlobalBuildConfig:
 
     def launch_build_instances(self):
         """ Launch an instance for the builds we want to do """
+
+        # get access to the runfarmprefix, which we will apply to build
+        # instances too now.
+        aws_resource_names_dict = aws_resource_names()
+        # just duplicate the runfarmprefix for now. This can be None,
+        # in which case we give an empty build farm prefix
+        build_farm_prefix = aws_resource_names_dict['runfarmprefix']
+
         for build in self.builds_list:
             build.launch_build_instance(self.build_instance_market,
                                         self.spot_interruption_behavior,
-                                        self.spot_max_price)
+                                        self.spot_max_price,
+                                        build_farm_prefix)
 
     def wait_build_instances(self):
         """ block until all build instances are launched """
