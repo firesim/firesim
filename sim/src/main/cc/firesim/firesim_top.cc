@@ -8,6 +8,7 @@
 #include "bridges/simplenic.h"
 #include "bridges/blockdev.h"
 #include "bridges/tracerv.h"
+#include "bridges/groundtest.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fpga_model.h"
@@ -328,6 +329,49 @@ uint64_t host_mem_offset = -0x80000000LL;
     #ifdef TRACERVBRIDGEMODULE_7_PRESENT
     TRACERVBRIDGEMODULE_7_substruct_create;
     add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_7_substruct, 7, TRACERVBRIDGEMODULE_7_DMA_ADDR));
+    #endif
+#endif
+
+#ifdef GROUNDTESTBRIDGEMODULE_struct_guard
+    #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
+    GROUNDTESTBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_0_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_1_PRESENT
+    GROUNDTESTBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_1_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_2_PRESENT
+    GROUNDTESTBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_2_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_3_PRESENT
+    GROUNDTESTBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_3_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_4_PRESENT
+    GROUNDTESTBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_4_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_5_PRESENT
+    GROUNDTESTBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_5_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_6_PRESENT
+    GROUNDTESTBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_6_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
+    GROUNDTESTBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_7_substruct));
     #endif
 #endif
 
