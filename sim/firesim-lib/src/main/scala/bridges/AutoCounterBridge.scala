@@ -1,4 +1,5 @@
-package firesim.endpoints
+package firesim
+package bridges
 
 import chisel3._
 import chisel3.util._
@@ -16,7 +17,7 @@ class AutoCounterBundle(val numCounters: Int) extends Bundle {
 }
 
 
-class AutoCounterWidget(numCounters: Int, labels: Seq[String])(implicit p: Parameters) extends EndpointWidget()(p) {
+class AutoCounterBridgeModule(numCounters: Int, labels: Seq[String])(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
   val io = IO(new WidgetIO())
   val hPort = IO(Flipped(HostPort(new AutoCounterBundle(numCounters))))
   val cycles = RegInit(0.U(64.W))

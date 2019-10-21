@@ -55,11 +55,16 @@ class WithILATopWiringTransform extends Config((site, here, up) => {
   case HostTransforms => ((p: Parameters) => Seq(new firesim.passes.ILATopWiringTransform)) +: up(HostTransforms, site)
 })
 
+// Implements the AutoCounter performace counters features
+class WithAutoCounterCoverTransform extends Config((site, here, up) => {
+  case TargetTransforms => ((p: Parameters) => Seq(new firesim.passes.AutoCounterCoverTransform)) +: up(TargetTransforms, site)
+})
 
 class BaseF1Config extends Config(
   new WithAsyncResetReplacement ++
   new WithPlusArgReaderRemoval ++
   new WithEC2F1Artefacts ++
+  new WithAutoCounterCoverTransform ++
   new WithILATopWiringTransform ++
   new midas.F1Config
 )

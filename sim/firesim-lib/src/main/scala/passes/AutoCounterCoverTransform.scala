@@ -11,7 +11,7 @@ import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import freechips.rocketchip.util.property._
 import freechips.rocketchip.util.WideCounter
-import firesim.endpoints._
+import firesim.bridges._
 import midas.targetutils._
 
  import java.io._
@@ -196,19 +196,22 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      import chisel3.experimental.MultiIOModule
      import midas.widgets._
      import freechips.rocketchip.config.{Parameters, Field}
-     import firesim.endpoints.{AutoCounterBundle, AutoCounterWidget}
+     import firesim.bridges.{AutoCounterBundle, AutoCounterBridgeModule}
 
-     //def targetwidgetmodule() = new BlackBox with IsEndpoint {
-     def targetwidgetmodule() = new MultiIOModule with IsEndpoint {
-       override def desiredName = "AutoCounterTargetWidget"
+     //def targetwidgetmodule() = new BlackBox with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
+     def targetwidgetmodule() = new MultiIOModule with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
+       override def desiredName = "AutoCounterBridge"
        val io = IO(new AutoCounterBundle(numcounters))
-       val endpointIO = HostPort(io)
+       val bridgeIO = HostPort(io)
 
+       case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterLabels: Seq[String])
+
+       val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterLabels)) 
+ 
        //wiring transform annotation to connect to the counters
        autoCounterLabels.zip(io.counters).foreach {
           case(label, counter) => BoringUtils.addSink(counter, label)
        } 
-       def widget = (p: Parameters) => new AutoCounterWidget(numcounters, autoCounterLabels)(p)
        generateAnnotations()
      } 
 
@@ -272,9 +275,9 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     }
 
 
-    val hastracerwidget = state.annotations.collect({ case midas.widgets.EndpointAnnotation(_,widget, _) => 
+    val hastracerwidget = state.annotations.collect({ case midas.widgets.SerializableBridgeAnnotation(_,_,widget, _) => 
                                           widget match {
-                                              case p:((_) => TracerVWidget) => true
+                                              case "firesim.bridges.TracerVBridgeModule" => true
                                               case _ => Nil
                                           }}).length > 0
 
