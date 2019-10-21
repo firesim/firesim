@@ -12,6 +12,7 @@ import firrtl.analyses.InstanceGraph
 import freechips.rocketchip.util.property._
 import freechips.rocketchip.util.WideCounter
 import firesim.endpoints._
+import midas.targetutils._
 
  import java.io._
 import scala.io.Source
@@ -19,6 +20,7 @@ import collection.mutable
 
 
  //====================MOVE TO A UTILS PLACE? ALTHOUGH THESE ARE ALL PLATFORM STUFF=======================
+/*
 case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, message: String) extends
     SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
@@ -44,6 +46,7 @@ case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation 
 case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
   def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
 }
+*/
 
 class FireSimPropertyLibrary() extends BasePropertyLibrary {
   import chisel3._
@@ -63,7 +66,7 @@ class FireSimPropertyLibrary() extends BasePropertyLibrary {
 /**
 Take the annotated cover points and convert them to counters with synthesizable printfs
 **/
-class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = true) extends Transform {
+class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] AutoCounter Cover Transform"
