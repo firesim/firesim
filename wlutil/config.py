@@ -166,12 +166,6 @@ class Config(collections.MutableMapping):
                 fList.append(FileSpec(src=os.path.join(self.cfg['workdir'], f[0]), dst=f[1]))
 
             self.cfg['files'] = fList
-
-        # Distros are indexed by their name, not a path (since they don't have real configs)
-        # All other bases should converted to absolute paths
-        if 'base' in self.cfg:
-            if self.cfg['base'] not in distros and not os.path.isabs(self.cfg['base']):
-                self.cfg['base'] = os.path.join(cfgDir, self.cfg['base'])
         
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
@@ -197,7 +191,7 @@ class Config(collections.MutableMapping):
 
                 # jobs can base off any workload, but default to the current workload
                 if 'base' not in jCfg:
-                    jCfg['base'] = cfgFile
+                    jCfg['base'] = os.path.basename(cfgFile)
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
             
@@ -286,19 +280,22 @@ class ConfigManager(collections.MutableMapping):
 
         # Read all the configs from their files
         for f in cfgPaths:
+            cfgName = os.path.basename(f)
             try:
                 log.debug("Loading " + f)
-                self.cfgs[f] = Config(f)
+                if cfgName in list(self.cfgs.keys()):
+                    log.warning("Workload " + f + " overrides " + self.cfgs[cfgName]['cfg-file'])
+                self.cfgs[cfgName] = Config(f)
             except KeyError as e:
                 log.warning("Skipping " + f + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 # raise
                 continue
             except Exception as e:
                 log.warning("Skipping " + f + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 raise
                 continue
 

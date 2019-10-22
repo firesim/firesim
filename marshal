@@ -70,7 +70,7 @@ def main():
     args.config_files = [ os.path.abspath(f) for f in args.config_files ] 
     if args.workdir is None:
         args.workdir = os.path.dirname(args.config_files[0])
-    cfgs = wlutil.ConfigManager([args.workdir])
+    cfgs = wlutil.ConfigManager([wlutil.workdir_builtin, args.workdir])
 
     if args.command == 'test':
         suitePass = True
@@ -81,13 +81,14 @@ def main():
         # Each config gets it's own logging output and results directory
         wlutil.setRunName(cfgPath, args.command)
         wlutil.initLogging(args.verbose)
+        cfgName = os.path.basename(cfgPath)
 
         log = logging.getLogger()
         if not args.verbose:
             print("To check on progress, either call marshal with '-v' or see the live output at: ")
             print(os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
 
-        targetCfg = cfgs[cfgPath]
+        targetCfg = cfgs[cfgName]
    
         if args.initramfs or args.no_disk:
             targetCfg['nodisk'] = True
@@ -99,9 +100,9 @@ def main():
             try:
                 if args.binOnly or args.imgOnly:
                     # It's fine if they pass -IB, it just builds both
-                    wlutil.buildWorkload(cfgPath, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
+                    wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
                 else:
-                    wlutil.buildWorkload(cfgPath, cfgs)
+                    wlutil.buildWorkload(cfgName, cfgs)
             except Exception as e:
                 log.exception("Error while building workload")
 
@@ -115,13 +116,13 @@ def main():
                     parser.print_help()
 
             try:
-                wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
+                wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
 
         elif args.command == "test":
             log.info("Running: " + cfgPath)
-            res = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
+            res = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
                 print("Test Failed")
                 suitePass = False
@@ -149,7 +150,7 @@ def main():
                             deleteSafe(jCfg['img'])
 
         elif args.command == 'install':
-            wlutil.installWorkload(cfgPath, cfgs)
+            wlutil.installWorkload(cfgName, cfgs)
 
         else:
             log.error("No subcommand specified")

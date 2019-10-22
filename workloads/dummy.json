@@ -1,7 +1,0 @@
-{
-  "name" : "dummy",
-  "base" : "bare",
-  "host-init" : "build.sh",
-  "bin" : "dummy",
-  "launch" : false
-}

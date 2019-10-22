@@ -29,6 +29,9 @@ root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
 # Root for default board (platform-specific stuff)
 board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
 
+# Builtin workloads
+workdir_builtin = board_dir / 'base-workloads'
+
 # Stores all outputs (binaries and images)
 image_dir = os.path.join(root_dir, "images")
 
