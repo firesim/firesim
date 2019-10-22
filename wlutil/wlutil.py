@@ -38,6 +38,9 @@ image_dir = os.path.join(root_dir, "images")
 # Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
 
+# Default pk source
+pk_dir = root_dir / 'riscv-pk'
+
 # Busybox source directory (used for the initramfs)
 busybox_dir = wlutil_dir / 'busybox'
 
