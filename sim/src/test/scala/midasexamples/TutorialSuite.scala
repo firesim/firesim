@@ -12,7 +12,9 @@ abstract class TutorialSuite(
     targetConfigs: String = "NoConfig",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
-  ) extends firesim.TestSuiteCommon with GeneratorUtils {
+  ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
+
+  val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
@@ -29,19 +31,6 @@ abstract class TutorialSuite(
                            s"DESIGN=$targetName",
                            s"TARGET_CONFIG=${generatorArgs.targetConfigs}")
   val targetTuple = generatorArgs.tupleName
-  override lazy val platform = hostParams(midas.Platform)
-
-  //implicit val p = (platform match {
-  //  case midas.F1 => new midas.F1Config
-  //  case midas.Zynq => new midas.ZynqConfig
-  //}).toInstance
-
-  //def runReplay(b: String, sample: Option[File] = None) = {
-  //  if (isCmdAvailable("vcs")) {
-  //    Seq("make", s"$replay-$b", s"PLATFORM=$platformName",
-  //        "SAMPLE=%s".format(sample map (_.toString) getOrElse "")).!
-  //  } else 0
-  //}
 
   def run(backend: String,
           debug: Boolean = false,
@@ -70,17 +59,6 @@ abstract class TutorialSuite(
       it should s"pass in ${testEnv}" in {
         assert(run(b, debug, sample, args=args) == 0)
       }
-      //if (p(midas.EnableSnapshot)) {
-      //  replayBackends foreach { replayBackend =>
-      //    if (isCmdAvailable("vcs")) {
-      //      it should s"replay samples with $replayBackend" in {
-      //        assert(runReplay(replayBackend, sample) == 0)
-      //      }
-      //    } else {
-      //      ignore should s"replay samples with $replayBackend" in { }
-      //    }
-      //  }
-      //}
     } else {
       ignore should s"pass in ${testEnv}" in { }
     }
@@ -107,12 +85,12 @@ abstract class TutorialSuite(
 
   clean
   mkdirs
-  compile
+  elaborate
   runTest("verilator")
 }
 
-class PointerChaserF1Test extends TutorialSuite(
-  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
+//class PointerChaserF1Test extends TutorialSuite(
+//  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
 class GCDF1Test extends TutorialSuite("GCD")
 // Hijack Parity to test all of the Midas-level backends
 class ParityF1Test extends TutorialSuite("Parity") {
@@ -134,3 +112,5 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
 }
+// MIDAS 2.0 compiler tests
+class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")

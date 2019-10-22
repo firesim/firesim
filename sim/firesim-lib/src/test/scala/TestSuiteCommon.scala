@@ -8,9 +8,8 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
 
   def targetTuple: String
   def commonMakeArgs: Seq[String]
-  def platform: midas.PlatformType
 
-  val platformName = platform.toString.toLowerCase
+  val platformName = "f1"
   val replayBackends = Seq("rtl")
   val platformMakeArgs = Seq(s"PLATFORM=$platformName")
 
@@ -60,8 +59,6 @@ abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = 
   val commonMakeArgs = Seq(s"UNITTEST_CONFIG=${unitTestConfig}",
                            s"GENERATED_DIR=${genDir}",
                            s"OUTPUT_DIR=${outDir}")
-  // Currently, this is just a dummy arg
-  lazy val platform = midas.F1
 
   override lazy val genDir  = new File(s"generated-src/unittests/${targetTuple}")
   override lazy val outDir = new File(s"output/unittests/${targetTuple}")

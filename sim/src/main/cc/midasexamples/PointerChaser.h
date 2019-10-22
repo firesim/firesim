@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
 #include "simif.h"
-#include "endpoints/endpoint.h"
-#include "endpoints/fased_memory_timing_model.h"
+#include "bridges/endpoint.h"
+#include "bridges/fased_memory_timing_model.h"
 
 class PointerChaser_t: virtual simif_t
 {
@@ -25,18 +25,18 @@ public:
       }
     }
 
-#ifdef MEMMODEL_0
+#ifdef FASEDMEMORYTIMINGMODEL_0_PRESENT
     uint64_t host_mem_offset = 0x00000000LL;
     fpga_models.push_back(new FASEDMemoryTimingModel(
         this,
         // Casts are required for now since the emitted type can change...
-        AddressMap(MEMMODEL_0_R_num_registers,
-                   (const unsigned int*) MEMMODEL_0_R_addrs,
-                   (const char* const*) MEMMODEL_0_R_names,
-                   MEMMODEL_0_W_num_registers,
-                   (const unsigned int*) MEMMODEL_0_W_addrs,
-                   (const char* const*) MEMMODEL_0_W_names),
-        argc, argv, "memory_stats.csv", 1L << MEMMODEL_0_target_addr_bits, host_mem_offset));
+        AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
+                   (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
+                   (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
+                   FASEDMEMORYTIMINGMODEL_0_W_num_registers,
+                   (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
+                   (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
+        argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
 #endif
   }
 
@@ -44,26 +44,25 @@ public:
     for (auto e: fpga_models) {
       e->init();
     }
-    target_reset(0);
+    target_reset();
     int current_cycle = 0;
-
     poke(io_startAddr_bits, address);
     poke(io_startAddr_valid, 1);
-    do {
+    while (!peek(io_startAddr_ready)) {
       step(1);
-    } while (!peek(io_startAddr_ready));
+    }
     poke(io_startAddr_valid, 0);
     poke(io_result_ready, 0);
     do {
       step(1, false);
-      for (auto e: endpoints) {
+      for (auto e: bridges) {
         e->tick();
       }
     } while (!peek(io_result_valid) && cycles() < max_cycles);
     expect(io_result_bits, result);
   }
 private:
-  std::vector<endpoint_t*> endpoints;
+  std::vector<endpoint_t*> bridges;
   std::vector<FpgaModel*> fpga_models;
   uint64_t max_cycles;
   mpz_t address;

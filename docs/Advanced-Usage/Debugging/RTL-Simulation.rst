@@ -57,8 +57,7 @@ verilator version: 3.904)
 Target-Level Simulation
 --------------------------
 
-This is described in :ref:`target-level-simulation`, as part of the *Developing
-New Devices* tutorial.
+This is described in the documentation for `Chipyard <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulators.html>`_.
 
 MIDAS-Level Simulation
 ------------------------
@@ -83,7 +82,7 @@ As part of target-generation, Rocket Chip emits a make fragment with recipes
 for running suites of assembly tests. MIDAS puts this in
 ``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
 Make sure your ``$RISCV`` environment variable is set by sourcing
-``firesim/source-me*.sh`` or ``firesim/env.sh``, and type:
+``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
 
 ::
 
@@ -127,7 +126,7 @@ Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
 ::
 
     make DESIGN=FireSimNoNIC
-    make DESIGN=FireSimNoNIC $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.out
+    make DESIGN=FireSimNoNIC $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-BaseF1Config/rv64ui-p-simple.out
 
 Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
 
@@ -135,13 +134,13 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
 
 
     make DESIGN=FireSimNoNIC vcs-debug
-    make DESIGN=FireSimNoNIC EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimConfig/rv64ui-p-simple.vpd
+    make DESIGN=FireSimNoNIC EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-BaseF1Config/rv64ui-p-simple.vpd
 
 
 FPGA-Level Simulation
 ----------------------------
 
-Like MIDAS-level simulation, there is currently no support for DMA\_PCIS, so
+There is currently no support for DMA\_PCIS, so
 we'll restrict ourselves to instances without a NIC by setting `DESIGN=FireSimNoNIC`.  As
 with MIDAS-level simulations, FPGA-level simulations run out of
 ``firesim/sim``.
@@ -221,25 +220,25 @@ Scala Tests
 
 To make it easier to do RTL-simulation-based regression testing, the scala
 tests wrap calls to Makefiles, and run a limited set of tests on a set of selected
-designs, including all of the MIDAS examples, FireSimNoNIC and FireBoomNoNIC.
+designs, including all of the MIDAS examples and FireSimNoNIC.
 
 The selected tests, target configurations, as well as the type of RTL simulator
 to compile can be modified by changing the scala tests that reside at
 ``firesim/sim/src/test/scala/<target-project>/``.
 
-To run all tests, with the sbt console open, do the familiar:
+To run all tests for a given project, with the sbt console open, do the familiar:
 
 ::
 
     test
 
-To run only tests on Rocket-Chip based targets:
+To run only tests on Rocket-Chip based targets, in the ``firechip`` SBT project run:
 
 ::
 
     testOnly firesim.firesim.*
 
-To run only the MIDAS examples:
+To run only the MIDAS examples, in the ``firesim`` SBT project:
 
 ::
 

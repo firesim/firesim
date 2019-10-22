@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 
-class ResetShiftRegister extends Module {
+class ResetShiftRegisterDUT extends Module {
   val io = IO(new Bundle {
     val in    = Input(UInt(4.W))
     val shift = Input(Bool())
@@ -23,3 +23,5 @@ class ResetShiftRegister extends Module {
   }
   io.out := r3
 }
+
+class ResetShiftRegister extends PeekPokeMidasExampleHarness(() => new ResetShiftRegisterDUT)

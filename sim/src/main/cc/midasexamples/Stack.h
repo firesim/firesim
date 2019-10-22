@@ -30,10 +30,10 @@ public:
       poke(io_push,   push);
       poke(io_en,     enable);
       poke(io_dataIn, dataIn);
-      step(1);
       expect(io_dataOut, dataOut);
+      step(1);
     }
   }
 private:
-  const size_t size = 8;
+  const size_t size = 64;
 };

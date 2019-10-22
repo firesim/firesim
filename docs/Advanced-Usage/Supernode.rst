@@ -30,8 +30,8 @@ Building Supernode Designs
 Here, we outline some of the changes between supernode and regular simulations
 that are required to build supernode designs.
 
-The Supernode target configuration wrapper can be found in
-``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  An example wrapper
+The Supernode target configuration wrapper can be found in Chipyard in
+``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  An example wrapper
 configuration is:
 
 ::
@@ -53,18 +53,18 @@ FPGA, you can use:
 
 Next, when defining the build recipe, we must remmber to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
-``FireSimSupernode``, while the ``TARGET_CONFIG`` parameter should be set to
+``FireSim``, while the ``TARGET_CONFIG`` parameter should be set to
 the wrapper configuration that was defined in
-``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.  The
+``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  The
 ``PLATFORM_CONFIG`` can be selected the same as in regular FireSim
 configurations.  For example:
 
 ::
 
-    DESIGN=FireSimSupernode
+    DESIGN=FireSim
     TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
     PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz
-    instancetype=c4.4xlarge
+    instancetype=c5.4xlarge
     deploytriplet=None
 
 

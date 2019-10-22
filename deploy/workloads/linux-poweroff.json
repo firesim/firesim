@@ -1,0 +1,19 @@
+{
+  "common_bootbinary" : "br-base-bin",
+  "benchmark_name" : "linux-poweroff",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "poweroffnode",
+      "files": [],
+      "command": "echo 'Powering off immediately.'",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

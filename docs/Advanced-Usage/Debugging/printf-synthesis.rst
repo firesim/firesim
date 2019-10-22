@@ -1,7 +1,7 @@
 Printf Synthesis
 ===================
 
-MIDAS can synthesize printfs present in FIRRTL (implemented as ``printf``
+Golden Gate can synthesize printfs present in FIRRTL (implemented as ``printf``
 statements) that would otherwise be lost in the FPGA synthesis flow. Rocket and
 BOOM have printfs of their commit logs and other useful transaction
 streams.
@@ -30,14 +30,16 @@ like so:
 
     printf(midas.targetutils.SynthesizePrintf("x%d p%d 0x%x\n", rf_waddr, rf_waddr, rf_wdata))
 
-Be judicious, as synthesizing many, frequently active printfs, will slow down your simulator. 
+Be judicious, as synthesizing many, frequently active printfs will slow down your simulator. 
 
-Once your printfs have been annotated, to enable printf synthesis add the ``WithPrintfSynthesis`` Config to your
-PLATFORM_CONFIG in SimConfigs.scala.  During compilation, MIDAS will print the
+Once your printfs have been annotated, to enable printf synthesis prepend the ``WithPrintfSynthesis`` configuraiton mixin to your
+PLATFORM_CONFIG in ``config_build_recipes.ini``.
+For example, if you previous PLATFORM_CONFIG was ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you must prepend the mixin (rather than appending). 
+During compilation, Golden Gate will print the
 number of printfs it's synthesized.  In the target's generated header
-(``<DESIGN>-const.h``), you'll find metadata for each of the printfs MIDAS synthesized.
+(``<DESIGN>-const.h``), you'll find metadata for each of the printfs Golden Gate synthesized.
 This is passed as argument to the constructor of the ``synthesized_prints_t``
-endpoint driver, which will be automatically instantiated in FireSim driver.
+bridge driver, which will be automatically instantiated in FireSim driver.
 
 Runtime Arguments
 -----------------

@@ -17,8 +17,8 @@ public:
       poke(io_in,    in);
       poke(io_shift, shift);
       step(1);
-      expect(io_out, cycles() < 4 ? 0 : ins[(k + 1) % 5]);
       if (shift == 1) k++;
+      expect(io_out, cycles() < 3 ? 0 : ins[(k + 1) % 5]);
     }
   }
 };

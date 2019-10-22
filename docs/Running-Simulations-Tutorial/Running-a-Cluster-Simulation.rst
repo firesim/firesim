@@ -39,7 +39,7 @@ this like so:
     cd firesim/sw/firesim-software
     ./marshal -v build workloads/br-base.json
 
-This process will take about 10 to 15 minutes on a ``c4.4xlarge`` instance.
+This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
 -  ``firesim/sw/firesim-software/images/br-disk-bin`` - a bootloader + Linux
@@ -73,7 +73,7 @@ we want. Let's outline the important parameters:
 * ``linklatency=6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
 * ``switchinglatency=10``: This models switches with a minimum port-to-port latency of 10 cycles.
 * ``netbandwidth=200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
-* ``defaulthwconfig=firesim-quadcore-nic-ddr3-llc4mb``: This tells the manager to use a quad-core Rocket Chip configuration with 4 MB of L2 and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
+* ``defaulthwconfig=firesim-quadcore-nic-l2-llc4mb-ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
 
 You'll see other parameters here, like ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
@@ -95,7 +95,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-nic-ddr3-llc4mb``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
