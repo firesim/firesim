@@ -153,6 +153,7 @@ def buildDepGraph(cfgs):
                     'name' : dCfg['img'],
                     'actions' : [(dCfg['builder'].buildBaseImage, [])],
                     'targets' : [dCfg['img']],
+                    'file_dep' : dCfg['builder'].fileDeps(),
                     'uptodate': [(dCfg['builder'].upToDate, [])]
                 })
 

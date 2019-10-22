@@ -4,7 +4,6 @@ import shutil
 import logging
 import string
 import pathlib
-import hashlib
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -39,16 +38,6 @@ case "$$1" in
 esac
 
 exit""")
-
-def hashFile(path):
-	h = hashlib.md5()
-	with open(path, 'rb') as f:
-		b = f.read(1024*1024)
-		while len(b) > 0:
-			h.update(b)
-			b = f.read(1024*1024)
-
-	return h.hexdigest()
 
 def buildConfig():
     """Construct the final buildroot configuration for this environment. After
@@ -100,14 +89,15 @@ def buildConfig():
             cwd=(br_dir / 'buildroot'))
     
 def buildBuildRoot():
-	buildConfig()
-
 	# Buildroot complains about some common PERL configurations
 	env = os.environ.copy()
 	env.pop('PERL_MM_OPT', None)
 	wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
 
 class Builder:
+
+    def __init__(self):
+        buildConfig()
 
     def baseConfig(self):
         return {
@@ -122,17 +112,23 @@ class Builder:
     def buildBaseImage(self):
         buildBuildRoot()
 
-    # Return True if the base image is up to date, or False if it needs to be
-    # rebuilt.
-    def upToDate(self):
-        if not br_image.exists():
-            return False
-        oldHash = hashFile(br_image)	    
-        buildBuildRoot()
-        newHash = hashFile(br_image)
-        if oldHash != newHash:
-            return False
+    def fileDeps(self):
+        # List all files that should be checked to determine if BR is uptodate
+        deps = []
+        deps += [ f for f in (br_dir / 'buildroot-overlay').glob('**/*') if not f.is_dir()]
+        
+        # This was generated in __init__ and encapsulates changes to the
+        # toolchain, and to the firemarshal buildroot kfrag at
+        # br/buildroot-config
+        deps.append(br_dir / 'buildroot' / '.config')
 
+        deps.append(pathlib.Path(__file__))
+        return deps
+
+    # Return True if the base image is up to date, or False if it needs to be
+    # rebuilt. This is in addition to the files in fileDeps()
+    def upToDate(self):
+        # All deps are handled by fileDeps for buildroot
         return True
 
     # Set up the image such that, when run in qemu, it will run the script "script"
