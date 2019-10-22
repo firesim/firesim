@@ -4,7 +4,7 @@ DSTMAC=0400006D1200
 STARTPAGE=5
 BARRIER_SPAN=16
 
-mknod /dev/remote-mem c 254 0
+mknod /dev/remote-mem c 250 0
 
 for size in 1024 2048 4096 #8192
 do

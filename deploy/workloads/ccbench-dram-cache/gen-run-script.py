@@ -23,8 +23,8 @@ def main():
     types = [0, 1, linewords] # random, unit stride, and cache line stride
 
     print("#!/bin/bash")
-    print("mknod /dev/dram-cache-exttab c 254 0")
-    print("mknod /dev/dram-cache-mem    c 254 1")
+    print("mknod /dev/dram-cache-exttab c 250 0")
+    print("mknod /dev/dram-cache-mem    c 250 1")
     print("echo \"@NumDataPointsPerSet=[{}]\"".format(len(sizes)))
 
     for typ in types:

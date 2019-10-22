@@ -2,7 +2,7 @@
 
 DSTMAC=0400006D1200
 
-mknod /dev/remote-mem c 254 0
+mknod /dev/remote-mem c 250 0
 
 /root/memblade-lat.riscv -m 2 -n 100 -s 6 -d $DSTMAC -p 2 -b 3 
 /root/memblade-lat.riscv -m 2 -n 100 -s 6 -d $DSTMAC -p 2 -b 4 -q
