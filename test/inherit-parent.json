@@ -1,0 +1,12 @@
+{
+  "name" : "inherit-parent",
+  "workdir" : "inherit",
+  "base" : "br-base.json",
+  "files" : [["runOutput", "/root/"]],
+  "host-init" : "host-init.sh",
+  "command" : "cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput/parent",
+    "strip" : true
+  }
+}

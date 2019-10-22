@@ -1,5 +1,4 @@
 FireMarshal
-Version 1.6
 ==================================
 
 This tool builds base images for several linux-based distros that work with qemu,
@@ -10,10 +9,10 @@ documentation:
 https://firemarshal.readthedocs.io/en/latest/index.html
 
 # Requirements
-The easiest way to use Marshal is to run it via firesim on Amazon EC2 by
-following the instructions at https://docs.fires.im/en/latest/. However, this
-is not required. To run Firemarshal independently, you will need the following
-dependencies:
+The easiest way to use Marshal is to run it via Chipyard
+(https://chipyard.readthedocs.io/en/latest/) or FireSim
+(https://docs.fires.im/en/latest/). However, this is not required. To run
+FireMarshal independently, you will need the following dependencies:
 
 ## Standard Packages
 centos-requirements.txt is a list of packages for centos7 that are needed by
@@ -35,16 +34,15 @@ This project was written for python 3.6. You can install all dependencies using:
 pip3 install python-requirements.txt
 ```
 
-## riscv-tools
-In addition to standard libraries, you will need riscv-tools
-(https://github.com/firesim/riscv-tools.git). This was last tested with commit
-bce7b5e (gcc version 7.2).
+## RISC-V Tools
+In addition to standard libraries, you will need a RISC-V compatible toolchain,
+the RISC-V isa simulator (spike), and Qemu.
+
+See the [Chipyard documentation](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#building-a-toolchain)
+for help setting up a known-good toolchain and environment.
 
 # Basic Usage
-On a fresh clone, run:
-    ./marshal init
-
-You can now build workloads. For example:
+Building workloads:
 
     ./marshal build workloads/br-base.json
 
@@ -52,6 +50,11 @@ To run in qemu:
 
     ./marshal launch workloads/br-base.json
 
-To install into FireSim (assuming you cloned this as a submodule of firesim):
+To install into FireSim (assuming you cloned this as a submodule of firesim or chipyard):
 
     ./marshal install workloads/br-base.json
+
+# Security Note
+Be advised that FireMarshal will run initialization scripts provided by
+workloads. These scripts will have all the permissions your user has, be sure
+to read all workloads carefully before building them.
