@@ -3,7 +3,7 @@
 shopt -s extglob
 
 SUITE_PASS=true
-LOGNAME=$(mktemp results_full_test.XXXX)
+LOGNAME=$(realpath $(mktemp results_full_test.XXXX))
 
 echo "Running Full Test. Results available in $LOGNAME"
 
@@ -15,7 +15,6 @@ echo "Running Full Test. Results available in $LOGNAME"
 echo "Running launch timeout test (should timeout):" | tee -a $LOGNAME
 echo "This test will reset your terminal"
 ./marshal test test/timeout-run.json | grep "timeout while running"
-# Note: This records the 
 res=${PIPESTATUS[1]}
 reset
 echo "Ran launch timeout test (screen was reset)"
