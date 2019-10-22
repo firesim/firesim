@@ -3,6 +3,10 @@
 FireMarshal Commands
 =======================
 
+.. Note:: Marshal commands may execute scripts defined in the workload with
+  full user permissions. Users should excercise caution when building and running
+  untrusted workloads.
+
 Core Options
 --------------------
 The base ``marshal`` command provides a number of options that apply to most

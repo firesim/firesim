@@ -201,27 +201,52 @@ def waitpid(pid):
                 break
         time.sleep(0.25)
 
-@contextmanager
-def mountImg(imgPath, mntPath):
-    run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
-    try:
-        with open('./guestmount.pid', 'r') as pidFile:
-            mntPid = int(pidFile.readline())
-        yield mntPath
-    finally:
-        run(['guestunmount', mntPath])
-        os.remove('./guestmount.pid')
+if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
+    # User has passwordless sudo available, use the mount command (much faster)
+    sudoCmd = "/usr/bin/sudo"
+    @contextmanager
+    def mountImg(imgPath, mntPath):
+        run([sudoCmd,"mount", "-o", "loop", imgPath, mntPath])
+        try:
+            yield mntPath
+        finally:
+            run([sudoCmd, 'umount', mntPath])
+else:
+    # User doesn't have sudo (use guestmount, slow but reliable)
+    sudoCmd = ""
+    @contextmanager
+    def mountImg(imgPath, mntPath):
+        run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
+        try:
+            with open('./guestmount.pid', 'r') as pidFile:
+                mntPid = int(pidFile.readline())
+            yield mntPath
+        finally:
+            run(['guestunmount', mntPath])
+            os.remove('./guestmount.pid')
 
-    # There is a race-condition in guestmount where a background task keeps
-    # modifying the image for a period after unmount. This is the documented
-    # best-practice (see man guestmount).
-    waitpid(mntPid)
+        # There is a race-condition in guestmount where a background task keeps
+        # modifying the image for a period after unmount. This is the documented
+        # best-practice (see man guestmount).
+        waitpid(mntPid)
+
+def toCpio(src, dst):
+    log = logging.getLogger()
+    log.debug("Creating Cpio archive from " + str(src))
+    with open(dst, 'wb') as outCpio:
+        p = sp.run([sudoCmd, "sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
+                stderr=sp.PIPE, stdout=outCpio, cwd=src)
+        log.debug(p.stderr.decode('utf-8'))
 
 # Apply the overlay directory "overlay" to the filesystem image "img"
 # Note that all paths must be absolute
 def applyOverlay(img, overlay):
     log = logging.getLogger()
-    copyImgFiles(img, [FileSpec(src=os.path.join(overlay, "*"), dst='/')], 'in')
+    flist = []
+    for f in pathlib.Path(overlay).glob('*'):
+        flist.append(FileSpec(src=f, dst='/'))
+
+    copyImgFiles(img, flist, 'in')
     
 # Copies a list of type FileSpec ('files') to/from the destination image (img)
 #   img - path to image file to use
@@ -240,9 +265,10 @@ def copyImgFiles(img, files, direction):
             # Note: shell=True because f.src is allowed to contain globs
             # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                run('cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                # run(sudoCmd + ' cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
+                run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
             elif direction == 'out':
                 uid = os.getuid()
-                run('cp -a ' + os.path.normpath(mnt + f.src) + " " + f.dst, shell=True)
+                run([sudoCmd, 'cp', '-a', os.path.normpath(mnt + f.src), f.dst])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")

@@ -216,7 +216,7 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     cpios = []
     for src in srcs:
         dst = cpioDir / (src.name + '.cpio')
-        run("find -print0 | cpio --owner root:root --null -ov --format=newc > " + str(dst), shell=True, cwd=src)
+        toCpio(src, dst)
         cpios.append(dst)
 
     if includeDevNodes:
