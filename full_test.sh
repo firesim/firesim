@@ -8,7 +8,7 @@ LOGNAME=$(mktemp results_full_test.XXXX)
 echo "Running Full Test. Results available in $LOGNAME"
 
 # We pre-build to avoid potential timeouts on a fresh clone
-echo "Pre-building base workloads" | tee -a $LOGNAME
+# echo "Pre-building base workloads" | tee -a $LOGNAME
 ./marshal build test/br-base.json
 ./marshal build test/fedora-base.json
 
@@ -101,6 +101,17 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
   exit 1
 fi
+
+# Ensures that marshal can be called from different PWDs
+echo "Running different PWD test" | tee -a $LOGNAME
+pushd test/
+../marshal test command.json | tee -a $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
+fi
+popd
 
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
 if [ $SUITE_PASS = false ]; then
