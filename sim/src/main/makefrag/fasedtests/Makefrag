@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.fasedtests
 DESIGN ?= AXI4Fuzzer
@@ -20,8 +22,14 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 ##################
 # RTL Generation #
 ##################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
+
+CONF_NAME ?= runtime.conf
 
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := firesim
@@ -40,7 +48,7 @@ chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_
 
 common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
@@ -54,16 +62,6 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fasedtests/*
 
 TARGET_CXX_FLAGS := -g -O2 -I$(driver_dir) -I$(driver_dir)/fasedtests -I$(RISCV)/include
 TARGET_LD_FLAGS :=
-
-####################################
-# Runtime-Configuraiton Generation #
-####################################
-CONF_NAME ?= runtime.conf
-#.PHONY: conf
-#conf:
-#	mkdir -p $(GENERATED_DIR)
-#	$(SBT) $(SBT_FLAGS) \
-#	"runMain $(DESIGN_PACKAGE).FireSimRuntimeConfGenerator $(CONF_NAME) $(common_chisel_args)"
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #

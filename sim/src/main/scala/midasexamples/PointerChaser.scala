@@ -4,8 +4,12 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.{withClock, RawModule}
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
+
+import midas.widgets.{PeekPokeBridge}
+import midas.models.{FASEDBridge, BaseParams, LatencyPipeConfig, CompleteConfig}
 
 case object MemSize extends Field[Int]
 case object NMemoryChannels extends Field[Int]
@@ -17,7 +21,7 @@ case object Seed extends Field[Long]
 // node consists of a pointer to the next node and a 64 bit SInt
 // Inputs: (Decoupled) start address: the location of the first node in memory
 // Outputs: (Decoupled) result: The sum of the list
-class PointerChaser(implicit val p: Parameters) extends Module with HasNastiParameters {
+class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiParameters {
   val io = IO(new Bundle {
     val nasti = new NastiIO
     val result = Decoupled(SInt(nastiXDataBits.W))
@@ -98,4 +102,19 @@ class PointerChaser(implicit val p: Parameters) extends Module with HasNastiPara
   println("Number of Channels: " + p(NMemoryChannels))
   println("Cache Block Size: " + p(CacheBlockBytes))
   println("Number of Channels: " + p(NMemoryChannels))
+}
+
+class PointerChaser(implicit val p: Parameters) extends RawModule {
+  val clock = IO(Input(Clock()))
+  val reset = WireInit(false.B)
+
+  withClockAndReset(clock, reset) {
+    val pointerChaser = Module(new PointerChaserDUT)
+    val fasedInstance =  Module(new FASEDBridge(CompleteConfig(LatencyPipeConfig(BaseParams(16,16)), p(NastiKey))))
+    fasedInstance.io.axi4 <> pointerChaser.io.nasti
+    fasedInstance.io.reset := reset
+    val peekPokeBridge = PeekPokeBridge(reset,
+                                           ("io_startAddr", pointerChaser.io.startAddr),
+                                           ("io_result", pointerChaser.io.result))
+  }
 }

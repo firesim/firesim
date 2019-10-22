@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 # FireSim MAKEFRAG interface - Compulsory variables follow
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
@@ -16,6 +18,17 @@ HEADER ?=
 # The midas-generated simulator RTL which will be baked into the FPGA shell project
 VERILOG ?=
 
+# The target's FIRRTL and associated anotations
+FIRRTL_FILE ?=
+ANNO_FILE ?=
+
+# The host config package and class string
+PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
+PLATFORM_CONFIG ?= DefaultF1Config
+
+# The name of the generated runtime configuration file
+CONF_NAME ?= runtime.conf
+
 # The host platform type
 PLATFORM ?= f1
 
@@ -31,9 +44,36 @@ common_cxx_flags := $(TARGET_CXX_FLAGS) -Wno-unused-variable
 common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 
 ####################################
-# Runtime-Configuraiton Generation #
+# Golden Gate Invocation           #
 ####################################
-CONF_NAME ?= runtime.conf
+midas_sbt_project := {file:$(firesim_base_dir)}midas
+
+$(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
+	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
+		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
+		-ggaf $(ANNO_FILE) \
+		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
+		-ggcs $(PLATFORM_CONFIG) \
+		-E verilog"
+
+####################################
+# Runtime-Configuration Generation #
+####################################
+
+# This reads in the annotations from a generated target, elaborates a
+# FASEDTimingModel if a BridgeAnnoation for one exists, and asks for user input
+# to generate a runtime configuration that is compatible with the generated
+# hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
+.PHONY: conf
+conf: $(ANNO_FILE)
+	mkdir -p $(GENERATED_DIR)
+	cd $(base_dir) && \
+	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+		-td $(GENERATED_DIR) \
+		-ggaf $(ANNO_FILE) \
+		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
+		-ggcs $(PLATFORM_CONFIG) \
+		-ggrc $(CONF_NAME)"
 
 ####################################
 # Verilator MIDAS-Level Simulators #

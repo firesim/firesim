@@ -73,7 +73,7 @@ simperf-test:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
-linux-immediate-poweroff:
+linux-poweroff:
 	mkdir -p $@
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
 
@@ -269,4 +269,4 @@ coremark:
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
 	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress \
-	rmem-alloc-test flush-test coremark linux-immediate-poweroff
+	rmem-alloc-test flush-test coremark linux-poweroff

@@ -1,3 +1,5 @@
+# See LICENSE for license details.
+
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.midasexamples
 DESIGN ?= GCD
@@ -15,6 +17,10 @@ OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 ##########################
 # RTL Generation         #
 ##########################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
@@ -41,7 +47,7 @@ mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
 COMMON_SIM_ARGS ?= $(mem_model_args)
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
-$(VERILOG) $(HEADER): $(chisel_srcs) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
 	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 	# Remove once runtime conf generation is generalized, and something is always emitted
@@ -65,6 +71,7 @@ TARGET_LD_FLAGS :=
 # PointerChaser requires a custom memory initialization
 ifeq ($(DESIGN),PointerChaser)
 LOADMEM ?= $(GENERATED_DIR)/mem_init.hex
+ARGS    ?= `cat runtime.conf`
 
 $(LOADMEM): src/main/resources/midasexamples/generate_memory_init.py
 	$< --output_file $@

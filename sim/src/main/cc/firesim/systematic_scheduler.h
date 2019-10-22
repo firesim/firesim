@@ -1,3 +1,4 @@
+//See LICENSE for license details
 #ifndef __SYSTEMATIC_SCHEDULER_H
 #define __SYSTEMATIC_SCHEDULER_H
 

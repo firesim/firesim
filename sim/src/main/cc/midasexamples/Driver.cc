@@ -25,6 +25,8 @@
 #include "ShiftRegister.h"
 #elif defined DESIGNNAME_Stack
 #include "Stack.h"
+#elif defined DESIGNNAME_WireInterconnect
+#include "WireInterconnect.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
 #elif defined DESIGNNAME_PrintfModule

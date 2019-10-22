@@ -6,9 +6,9 @@ Launching a "Manager Instance"
 
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
-Since we will deploy the heavy lifting to separate ``c4.4xlarge`` and
+Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
 ``f1`` instances later, the Manager Instance can be a relatively cheap instance. In this guide, however,
-we will use a ``c4.4xlarge``,
+we will use a ``c5.4xlarge``,
 running the AWS FPGA Developer AMI (be sure to subscribe if you have not done so. See :ref:`ami-subscription`).
 
 Head to the `EC2 Management
@@ -25,7 +25,7 @@ To launch a manager instance, follow these steps:
    "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.6.0``.
    **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
-   your choosing. A good choice is a ``c4.4xlarge``.
+   your choosing. A good choice is a ``c5.4xlarge``.
 4. On the "Configure Instance Details" page:
 
    1. First make sure that the ``firesim`` VPC is selected in the
@@ -121,6 +121,19 @@ your firesim directory and source this file again.**
 Completing Setup Using the Manager
 ----------------------------------
 
+First, run the following to setup your AWS credentials on the instance:
+
+::
+
+    aws configure
+
+
+This will prompt you to setup AWS credentials on the instance, which allows
+the manager to automatically manage build/simulation nodes. See
+https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
+for more about these credentials. When prompted, you should specify the same
+region that you chose above and set the default output format to ``json``.
+
 The FireSim manager contains a command that will interactively guide you
 through the rest of the FireSim setup process. To run it, do the following:
 
@@ -128,11 +141,7 @@ through the rest of the FireSim setup process. To run it, do the following:
 
     firesim managerinit
 
-This will first prompt you to setup AWS credentials on the instance, which allows
-the manager to automatically manage build/simulation nodes. See
-https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about these credentials. When prompted, you should specify the same
-region that you chose above and set the default output format to ``json``.
+This will first prompt you to setup AWS credentials on the instance, which we just did in the previous step. You can simply hit enter to skip these four prompts.
 
 Next, it will create initial configuration files, which we will edit in later
 sections. Finally, it will prompt you for an email address, which is used to

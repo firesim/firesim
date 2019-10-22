@@ -1,16 +1,20 @@
+//See LICENSE for license details
 #include "firesim_top.h"
 
-// FireSim-defined endpoints
-#include "endpoints/serial.h"
-#include "endpoints/uart.h"
-#include "endpoints/simplenic.h"
-#include "endpoints/blockdev.h"
-#include "endpoints/tracerv.h"
-// MIDAS-defined endpoints
-#include "endpoints/fpga_model.h"
-#include "endpoints/fased_memory_timing_model.h"
-#include "endpoints/synthesized_assertions.h"
-#include "endpoints/synthesized_prints.h"
+// FireSim library bridge drivers
+// From firesim-lib/src/main/cc/bridges
+#include "bridges/serial.h"
+#include "bridges/uart.h"
+#include "bridges/simplenic.h"
+#include "bridges/blockdev.h"
+#include "bridges/tracerv.h"
+#include "bridges/groundtest.h"
+
+// Golden Gate provided bridge drivers
+#include "bridges/fpga_model.h"
+#include "bridges/fased_memory_timing_model.h"
+#include "bridges/synthesized_assertions.h"
+#include "bridges/synthesized_prints.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
@@ -31,327 +35,366 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     }
 
 
-#ifdef UARTWIDGET_struct_guard
-    #ifdef UARTWIDGET_0_PRESENT
-    UARTWIDGET_0_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_0_substruct, 0));
+#ifdef UARTBRIDGEMODULE_struct_guard
+    #ifdef UARTBRIDGEMODULE_0_PRESENT
+    UARTBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_0_substruct, 0));
     #endif
-    #ifdef UARTWIDGET_1_PRESENT
-    UARTWIDGET_1_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_1_substruct, 1));
+    #ifdef UARTBRIDGEMODULE_1_PRESENT
+    UARTBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_1_substruct, 1));
     #endif
-    #ifdef UARTWIDGET_2_PRESENT
-    UARTWIDGET_2_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_2_substruct, 2));
+    #ifdef UARTBRIDGEMODULE_2_PRESENT
+    UARTBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_2_substruct, 2));
     #endif
-    #ifdef UARTWIDGET_3_PRESENT
-    UARTWIDGET_3_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_3_substruct, 3));
+    #ifdef UARTBRIDGEMODULE_3_PRESENT
+    UARTBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_3_substruct, 3));
     #endif
-    #ifdef UARTWIDGET_4_PRESENT
-    UARTWIDGET_4_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_4_substruct, 4));
+    #ifdef UARTBRIDGEMODULE_4_PRESENT
+    UARTBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_4_substruct, 4));
     #endif
-    #ifdef UARTWIDGET_5_PRESENT
-    UARTWIDGET_5_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_5_substruct, 5));
+    #ifdef UARTBRIDGEMODULE_5_PRESENT
+    UARTBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_5_substruct, 5));
     #endif
-    #ifdef UARTWIDGET_6_PRESENT
-    UARTWIDGET_6_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_6_substruct, 6));
+    #ifdef UARTBRIDGEMODULE_6_PRESENT
+    UARTBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_6_substruct, 6));
     #endif
-    #ifdef UARTWIDGET_7_PRESENT
-    UARTWIDGET_7_substruct_create;
-    add_endpoint(new uart_t(this, UARTWIDGET_7_substruct, 7));
+    #ifdef UARTBRIDGEMODULE_7_PRESENT
+    UARTBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct, 7));
     #endif
 #endif
 
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
-#ifdef MEMMODEL_0
+#ifdef FASEDMEMORYTIMINGMODEL_0
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_0_R_num_registers,
-                    (const unsigned int*) MEMMODEL_0_R_addrs,
-                    (const char* const*) MEMMODEL_0_R_names,
-                    MEMMODEL_0_W_num_registers,
-                    (const unsigned int*) MEMMODEL_0_W_addrs,
-                    (const char* const*) MEMMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << MEMMODEL_0_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
+                    FASEDMEMORYTIMINGMODEL_0_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
+                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << MEMMODEL_0_target_addr_bits);
+     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
 #endif
 
-#ifdef MEMMODEL_1
+#ifdef FASEDMEMORYTIMINGMODEL_1
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_1_R_num_registers,
-                    (const unsigned int*) MEMMODEL_1_R_addrs,
-                    (const char* const*) MEMMODEL_1_R_names,
-                    MEMMODEL_1_W_num_registers,
-                    (const unsigned int*) MEMMODEL_1_W_addrs,
-                    (const char* const*) MEMMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << MEMMODEL_1_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_1_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_R_names,
+                    FASEDMEMORYTIMINGMODEL_1_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_W_names),
+                argc, argv, "memory_stats1.csv", 1L << FASEDMEMORYTIMINGMODEL_1_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_1_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_1_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_2
+#ifdef FASEDMEMORYTIMINGMODEL_2
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_2_R_num_registers,
-                    (const unsigned int*) MEMMODEL_2_R_addrs,
-                    (const char* const*) MEMMODEL_2_R_names,
-                    MEMMODEL_2_W_num_registers,
-                    (const unsigned int*) MEMMODEL_2_W_addrs,
-                    (const char* const*) MEMMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << MEMMODEL_2_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_2_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_R_names,
+                    FASEDMEMORYTIMINGMODEL_2_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_W_names),
+                argc, argv, "memory_stats2.csv", 1L << FASEDMEMORYTIMINGMODEL_2_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_2_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_2_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_3
+#ifdef FASEDMEMORYTIMINGMODEL_3
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_3_R_num_registers,
-                    (const unsigned int*) MEMMODEL_3_R_addrs,
-                    (const char* const*) MEMMODEL_3_R_names,
-                    MEMMODEL_3_W_num_registers,
-                    (const unsigned int*) MEMMODEL_3_W_addrs,
-                    (const char* const*) MEMMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << MEMMODEL_3_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_3_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_R_names,
+                    FASEDMEMORYTIMINGMODEL_3_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_W_names),
+                argc, argv, "memory_stats3.csv", 1L << FASEDMEMORYTIMINGMODEL_3_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_3_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_3_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_4
+#ifdef FASEDMEMORYTIMINGMODEL_4
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_4_R_num_registers,
-                    (const unsigned int*) MEMMODEL_4_R_addrs,
-                    (const char* const*) MEMMODEL_4_R_names,
-                    MEMMODEL_4_W_num_registers,
-                    (const unsigned int*) MEMMODEL_4_W_addrs,
-                    (const char* const*) MEMMODEL_4_W_names),
-                argc, argv, "memory_stats4.csv", 1L << MEMMODEL_4_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_4_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_R_names,
+                    FASEDMEMORYTIMINGMODEL_4_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_W_names),
+                argc, argv, "memory_stats4.csv", 1L << FASEDMEMORYTIMINGMODEL_4_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_4_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_4_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_5
+#ifdef FASEDMEMORYTIMINGMODEL_5
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_5_R_num_registers,
-                    (const unsigned int*) MEMMODEL_5_R_addrs,
-                    (const char* const*) MEMMODEL_5_R_names,
-                    MEMMODEL_5_W_num_registers,
-                    (const unsigned int*) MEMMODEL_5_W_addrs,
-                    (const char* const*) MEMMODEL_5_W_names),
-                argc, argv, "memory_stats5.csv", 1L << MEMMODEL_5_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_5_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_R_names,
+                    FASEDMEMORYTIMINGMODEL_5_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_W_names),
+                argc, argv, "memory_stats5.csv", 1L << FASEDMEMORYTIMINGMODEL_5_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_5_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_5_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_6
+#ifdef FASEDMEMORYTIMINGMODEL_6
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_6_R_num_registers,
-                    (const unsigned int*) MEMMODEL_6_R_addrs,
-                    (const char* const*) MEMMODEL_6_R_names,
-                    MEMMODEL_6_W_num_registers,
-                    (const unsigned int*) MEMMODEL_6_W_addrs,
-                    (const char* const*) MEMMODEL_6_W_names),
-                argc, argv, "memory_stats6.csv", 1L << MEMMODEL_6_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_6_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_R_names,
+                    FASEDMEMORYTIMINGMODEL_6_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_W_names),
+                argc, argv, "memory_stats6.csv", 1L << FASEDMEMORYTIMINGMODEL_6_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_6_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_6_target_addr_bits;
 #endif
 
-#ifdef MEMMODEL_7
+#ifdef FASEDMEMORYTIMINGMODEL_7
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
                 // Casts are required for now since the emitted type can change...
-                AddressMap(MEMMODEL_7_R_num_registers,
-                    (const unsigned int*) MEMMODEL_7_R_addrs,
-                    (const char* const*) MEMMODEL_7_R_names,
-                    MEMMODEL_7_W_num_registers,
-                    (const unsigned int*) MEMMODEL_7_W_addrs,
-                    (const char* const*) MEMMODEL_7_W_names),
-                argc, argv, "memory_stats7.csv", 1L << MEMMODEL_7_target_addr_bits, host_mem_offset));
+                AddressMap(FASEDMEMORYTIMINGMODEL_7_R_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_R_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_R_names,
+                    FASEDMEMORYTIMINGMODEL_7_W_num_registers,
+                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_W_addrs,
+                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_W_names),
+                argc, argv, "memory_stats7.csv", 1L << FASEDMEMORYTIMINGMODEL_7_target_addr_bits, host_mem_offset));
      host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << MEMMODEL_7_target_addr_bits;
+     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_7_target_addr_bits;
 #endif
 
-#ifdef SERIALWIDGET_struct_guard
-    #ifdef SERIALWIDGET_0_PRESENT
-    SERIALWIDGET_0_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_0_substruct, 0, host_mem_offsets[0]));
+#ifdef SERIALBRIDGEMODULE_struct_guard
+    #ifdef SERIALBRIDGEMODULE_0_PRESENT
+    SERIALBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_0_substruct, 0, host_mem_offsets[0]));
     #endif
-    #ifdef SERIALWIDGET_1_PRESENT
-    SERIALWIDGET_1_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_1_substruct, 1, host_mem_offsets[1]));
+    #ifdef SERIALBRIDGEMODULE_1_PRESENT
+    SERIALBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_1_substruct, 1, host_mem_offsets[1]));
     #endif
-    #ifdef SERIALWIDGET_2_PRESENT
-    SERIALWIDGET_2_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_2_substruct, 2, host_mem_offsets[2]));
+    #ifdef SERIALBRIDGEMODULE_2_PRESENT
+    SERIALBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_2_substruct, 2, host_mem_offsets[2]));
     #endif
-    #ifdef SERIALWIDGET_3_PRESENT
-    SERIALWIDGET_3_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_3_substruct, 3, host_mem_offsets[3]));
+    #ifdef SERIALBRIDGEMODULE_3_PRESENT
+    SERIALBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_3_substruct, 3, host_mem_offsets[3]));
     #endif
-    #ifdef SERIALWIDGET_4_PRESENT
-    SERIALWIDGET_4_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_4_substruct, 4, host_mem_offsets[4]));
+    #ifdef SERIALBRIDGEMODULE_4_PRESENT
+    SERIALBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_4_substruct, 4, host_mem_offsets[4]));
     #endif
-    #ifdef SERIALWIDGET_5_PRESENT
-    SERIALWIDGET_5_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_5_substruct, 5, host_mem_offsets[5]));
+    #ifdef SERIALBRIDGEMODULE_5_PRESENT
+    SERIALBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_5_substruct, 5, host_mem_offsets[5]));
     #endif
-    #ifdef SERIALWIDGET_6_PRESENT
-    SERIALWIDGET_6_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_6_substruct, 6, host_mem_offsets[6]));
+    #ifdef SERIALBRIDGEMODULE_6_PRESENT
+    SERIALBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_6_substruct, 6, host_mem_offsets[6]));
     #endif
-    #ifdef SERIALWIDGET_7_PRESENT
-    SERIALWIDGET_7_substruct_create;
-    add_endpoint(new serial_t(this, args, SERIALWIDGET_7_substruct, 7, host_mem_offsets[7]));
-    #endif
-#endif
-
-#ifdef BLOCKDEVWIDGET_struct_guard
-    #ifdef BLOCKDEVWIDGET_0_PRESENT
-    BLOCKDEVWIDGET_0_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_0_num_trackers, BLOCKDEVWIDGET_0_latency_bits, BLOCKDEVWIDGET_0_substruct, 0));
-    #endif
-    #ifdef BLOCKDEVWIDGET_1_PRESENT
-    BLOCKDEVWIDGET_1_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_1_num_trackers, BLOCKDEVWIDGET_1_latency_bits, BLOCKDEVWIDGET_1_substruct, 1));
-    #endif
-    #ifdef BLOCKDEVWIDGET_2_PRESENT
-    BLOCKDEVWIDGET_2_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_2_num_trackers, BLOCKDEVWIDGET_2_latency_bits, BLOCKDEVWIDGET_2_substruct, 2));
-    #endif
-    #ifdef BLOCKDEVWIDGET_3_PRESENT
-    BLOCKDEVWIDGET_3_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_3_num_trackers, BLOCKDEVWIDGET_3_latency_bits, BLOCKDEVWIDGET_3_substruct, 3));
-    #endif
-    #ifdef BLOCKDEVWIDGET_4_PRESENT
-    BLOCKDEVWIDGET_4_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_4_num_trackers, BLOCKDEVWIDGET_4_latency_bits, BLOCKDEVWIDGET_4_substruct, 4));
-    #endif
-    #ifdef BLOCKDEVWIDGET_5_PRESENT
-    BLOCKDEVWIDGET_5_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_5_num_trackers, BLOCKDEVWIDGET_5_latency_bits, BLOCKDEVWIDGET_5_substruct, 5));
-    #endif
-    #ifdef BLOCKDEVWIDGET_6_PRESENT
-    BLOCKDEVWIDGET_6_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_6_num_trackers, BLOCKDEVWIDGET_6_latency_bits, BLOCKDEVWIDGET_6_substruct, 6));
-    #endif
-    #ifdef BLOCKDEVWIDGET_7_PRESENT
-    BLOCKDEVWIDGET_7_substruct_create;
-    add_endpoint(new blockdev_t(this, args, BLOCKDEVWIDGET_7_num_trackers, BLOCKDEVWIDGET_7_latency_bits, BLOCKDEVWIDGET_7_substruct, 7));
+    #ifdef SERIALBRIDGEMODULE_7_PRESENT
+    SERIALBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_7_substruct, 7, host_mem_offsets[7]));
     #endif
 #endif
 
-#ifdef SIMPLENICWIDGET_struct_guard
-    #ifdef SIMPLENICWIDGET_0_PRESENT
-    SIMPLENICWIDGET_0_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_0_substruct, 0, SIMPLENICWIDGET_0_DMA_ADDR));
+#ifdef BLOCKDEVBRIDGEMODULE_struct_guard
+    #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
+    BLOCKDEVBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_0_num_trackers, BLOCKDEVBRIDGEMODULE_0_latency_bits, BLOCKDEVBRIDGEMODULE_0_substruct, 0));
     #endif
-    #ifdef SIMPLENICWIDGET_1_PRESENT
-    SIMPLENICWIDGET_1_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_1_substruct, 1, SIMPLENICWIDGET_1_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_1_PRESENT
+    BLOCKDEVBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_1_num_trackers, BLOCKDEVBRIDGEMODULE_1_latency_bits, BLOCKDEVBRIDGEMODULE_1_substruct, 1));
     #endif
-    #ifdef SIMPLENICWIDGET_2_PRESENT
-    SIMPLENICWIDGET_2_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_2_substruct, 2, SIMPLENICWIDGET_2_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_2_PRESENT
+    BLOCKDEVBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_2_num_trackers, BLOCKDEVBRIDGEMODULE_2_latency_bits, BLOCKDEVBRIDGEMODULE_2_substruct, 2));
     #endif
-    #ifdef SIMPLENICWIDGET_3_PRESENT
-    SIMPLENICWIDGET_3_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_3_substruct, 3, SIMPLENICWIDGET_3_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_3_PRESENT
+    BLOCKDEVBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_3_num_trackers, BLOCKDEVBRIDGEMODULE_3_latency_bits, BLOCKDEVBRIDGEMODULE_3_substruct, 3));
     #endif
-    #ifdef SIMPLENICWIDGET_4_PRESENT
-    SIMPLENICWIDGET_4_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_4_substruct, 4, SIMPLENICWIDGET_4_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_4_PRESENT
+    BLOCKDEVBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_4_num_trackers, BLOCKDEVBRIDGEMODULE_4_latency_bits, BLOCKDEVBRIDGEMODULE_4_substruct, 4));
     #endif
-    #ifdef SIMPLENICWIDGET_5_PRESENT
-    SIMPLENICWIDGET_5_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_5_substruct, 5, SIMPLENICWIDGET_5_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_5_PRESENT
+    BLOCKDEVBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_5_num_trackers, BLOCKDEVBRIDGEMODULE_5_latency_bits, BLOCKDEVBRIDGEMODULE_5_substruct, 5));
     #endif
-    #ifdef SIMPLENICWIDGET_6_PRESENT
-    SIMPLENICWIDGET_6_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_6_substruct, 6, SIMPLENICWIDGET_6_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_6_PRESENT
+    BLOCKDEVBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_6_num_trackers, BLOCKDEVBRIDGEMODULE_6_latency_bits, BLOCKDEVBRIDGEMODULE_6_substruct, 6));
     #endif
-    #ifdef SIMPLENICWIDGET_7_PRESENT
-    SIMPLENICWIDGET_7_substruct_create;
-    add_endpoint(new simplenic_t(this, args, SIMPLENICWIDGET_7_substruct, 7, SIMPLENICWIDGET_7_DMA_ADDR));
+    #ifdef BLOCKDEVBRIDGEMODULE_7_PRESENT
+    BLOCKDEVBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new blockdev_t(this, args, BLOCKDEVBRIDGEMODULE_7_num_trackers, BLOCKDEVBRIDGEMODULE_7_latency_bits, BLOCKDEVBRIDGEMODULE_7_substruct, 7));
     #endif
 #endif
 
-#ifdef TRACERVWIDGET_struct_guard
-    #ifdef TRACERVWIDGET_0_PRESENT
-    TRACERVWIDGET_0_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_0_substruct, 0, TRACERVWIDGET_0_DMA_ADDR));
+#ifdef SIMPLENICBRIDGEMODULE_struct_guard
+    #ifdef SIMPLENICBRIDGEMODULE_0_PRESENT
+    SIMPLENICBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_0_substruct, 0, SIMPLENICBRIDGEMODULE_0_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_1_PRESENT
-    TRACERVWIDGET_1_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_1_substruct, 1, TRACERVWIDGET_1_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_1_PRESENT
+    SIMPLENICBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_1_substruct, 1, SIMPLENICBRIDGEMODULE_1_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_2_PRESENT
-    TRACERVWIDGET_2_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_2_substruct, 2, TRACERVWIDGET_2_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_2_PRESENT
+    SIMPLENICBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_2_substruct, 2, SIMPLENICBRIDGEMODULE_2_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_3_PRESENT
-    TRACERVWIDGET_3_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_3_substruct, 3, TRACERVWIDGET_3_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_3_PRESENT
+    SIMPLENICBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_3_substruct, 3, SIMPLENICBRIDGEMODULE_3_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_4_PRESENT
-    TRACERVWIDGET_4_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_4_substruct, 4, TRACERVWIDGET_4_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_4_PRESENT
+    SIMPLENICBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_4_substruct, 4, SIMPLENICBRIDGEMODULE_4_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_5_PRESENT
-    TRACERVWIDGET_5_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_5_substruct, 5, TRACERVWIDGET_5_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_5_PRESENT
+    SIMPLENICBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_5_substruct, 5, SIMPLENICBRIDGEMODULE_5_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_6_PRESENT
-    TRACERVWIDGET_6_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_6_substruct, 6, TRACERVWIDGET_6_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_6_PRESENT
+    SIMPLENICBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_6_substruct, 6, SIMPLENICBRIDGEMODULE_6_DMA_ADDR));
     #endif
-    #ifdef TRACERVWIDGET_7_PRESENT
-    TRACERVWIDGET_7_substruct_create;
-    add_endpoint(new tracerv_t(this, args, TRACERVWIDGET_7_substruct, 7, TRACERVWIDGET_7_DMA_ADDR));
+    #ifdef SIMPLENICBRIDGEMODULE_7_PRESENT
+    SIMPLENICBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_7_substruct, 7, SIMPLENICBRIDGEMODULE_7_DMA_ADDR));
+    #endif
+#endif
+
+#ifdef TRACERVBRIDGEMODULE_struct_guard
+    #ifdef TRACERVBRIDGEMODULE_0_PRESENT
+    TRACERVBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_0_substruct, 0, TRACERVBRIDGEMODULE_0_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_1_PRESENT
+    TRACERVBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_1_substruct, 1, TRACERVBRIDGEMODULE_1_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_2_PRESENT
+    TRACERVBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_2_substruct, 2, TRACERVBRIDGEMODULE_2_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_3_PRESENT
+    TRACERVBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_3_substruct, 3, TRACERVBRIDGEMODULE_3_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_4_PRESENT
+    TRACERVBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_4_substruct, 4, TRACERVBRIDGEMODULE_4_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_5_PRESENT
+    TRACERVBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_5_substruct, 5, TRACERVBRIDGEMODULE_5_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_6_PRESENT
+    TRACERVBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_6_substruct, 6, TRACERVBRIDGEMODULE_6_DMA_ADDR));
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_7_PRESENT
+    TRACERVBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_7_substruct, 7, TRACERVBRIDGEMODULE_7_DMA_ADDR));
+    #endif
+#endif
+
+#ifdef GROUNDTESTBRIDGEMODULE_struct_guard
+    #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
+    GROUNDTESTBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_0_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_1_PRESENT
+    GROUNDTESTBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_1_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_2_PRESENT
+    GROUNDTESTBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_2_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_3_PRESENT
+    GROUNDTESTBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_3_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_4_PRESENT
+    GROUNDTESTBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_4_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_5_PRESENT
+    GROUNDTESTBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_5_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_6_PRESENT
+    GROUNDTESTBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_6_substruct));
+    #endif
+    #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
+    GROUNDTESTBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new groundtest_t(
+            this, args, GROUNDTESTBRIDGEMODULE_7_substruct));
     #endif
 #endif
 
 // There can only be one instance of assert and print widgets as their IO is
 // uniquely generated by a FIRRTL transform
-#ifdef ASSERTIONWIDGET_struct_guard
-    #ifdef ASSERTIONWIDGET_0_PRESENT
-    ASSERTIONWIDGET_0_substruct_create;
-    add_endpoint(new synthesized_assertions_t(this, ASSERTIONWIDGET_0_substruct));
-    #endif
+#ifdef ASSERTBRIDGEMODULE_0_PRESENT
+    ASSERTBRIDGEMODULE_0_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_0_substruct));
 #endif
 
-#ifdef PRINTWIDGET_struct_guard
-    #ifdef PRINTWIDGET_0_PRESENT
-    PRINTWIDGET_0_substruct_create;
-    add_endpoint(new synthesized_prints_t(this,
+#ifdef PRINTBRIDGEMODULE_0_PRESENT
+    PRINTBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
                                           args,
-                                          PRINTWIDGET_0_substruct,
-                                          PRINTWIDGET_0_print_count,
-                                          PRINTWIDGET_0_token_bytes,
-                                          PRINTWIDGET_0_idle_cycles_mask,
-                                          PRINTWIDGET_0_print_offsets,
-                                          PRINTWIDGET_0_format_strings,
-                                          PRINTWIDGET_0_argument_counts,
-                                          PRINTWIDGET_0_argument_widths,
-                                          PRINTWIDGET_0_DMA_ADDR));
-    #endif
+                                          PRINTBRIDGEMODULE_0_substruct,
+                                          PRINTBRIDGEMODULE_0_print_count,
+                                          PRINTBRIDGEMODULE_0_token_bytes,
+                                          PRINTBRIDGEMODULE_0_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_0_print_offsets,
+                                          PRINTBRIDGEMODULE_0_format_strings,
+                                          PRINTBRIDGEMODULE_0_argument_counts,
+                                          PRINTBRIDGEMODULE_0_argument_widths,
+                                          PRINTBRIDGEMODULE_0_DMA_ADDR));
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
@@ -361,7 +404,7 @@ uint64_t host_mem_offset = -0x80000000LL;
 
 bool firesim_top_t::simulation_complete() {
     bool is_complete = false;
-    for (auto &e: endpoints) {
+    for (auto &e: bridges) {
         is_complete |= e->terminate();
     }
     return is_complete;
@@ -375,7 +418,7 @@ uint64_t firesim_top_t::profile_models(){
 }
 
 int firesim_top_t::exit_code(){
-    for (auto &e: endpoints) {
+    for (auto &e: bridges) {
         if (e->exit_code())
             return e->exit_code();
     }
@@ -388,7 +431,7 @@ void firesim_top_t::run() {
         e->init();
     }
 
-    for (auto &e: endpoints) {
+    for (auto &e: bridges) {
         e->init();
     }
 
@@ -401,13 +444,13 @@ void firesim_top_t::run() {
     uint64_t start_time = timestamp();
 
     // Assert reset T=0 -> 50
-    target_reset(0, 50);
+    target_reset(50);
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
         step(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
-            for (auto &e: endpoints) e->tick();
+            for (auto &e: bridges) e->tick();
         }
     }
 
@@ -439,7 +482,7 @@ void firesim_top_t::run() {
         e->finish();
     }
 
-    for (auto &e: endpoints) {
+    for (auto &e: bridges) {
         e->finish();
     }
 }

@@ -40,7 +40,7 @@ parallel, with the parameters listed in the relevant section of the
 ``deploy/config_build_recipes.ini`` file. Here you can set parameters of the simulated
 system, and also select the type of instance on which the Vivado build will be
 deployed. From our experimentation, there are diminishing returns using
-anything above a ``c4.4xlarge``, so we default to that.
+anything above a ``c5.4xlarge``, so we default to that.
 
 To start out, let's build a simple design, ``firesim-singlecore-no-nic-lbp``.
 This is a design that has one core, no nic, and uses the latency-bandwidth pipe
@@ -56,8 +56,8 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 	firesim-singlecore-no-nic-lbp
 	#firesim-quadcore-nic-lbp
 	#firesim-quadcore-no-nic-lbp
-	#firesim-quadcore-nic-ddr3-llc4mb
-	#firesim-quadcore-no-nic-ddr3-llc4mb
+	#firesim-quadcore-nic-l2-llc4mb-ddr3
+	#firesim-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Running a Build

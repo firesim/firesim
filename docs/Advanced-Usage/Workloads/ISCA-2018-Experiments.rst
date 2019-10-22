@@ -18,8 +18,11 @@ Some of these experiments require a large number of instances -- you should
 make sure you understand the resource requirements before you run one of the
 scripts.
 
-Compatiblity: These were last tested with commit
-``bba9dea4811a2445f22809ef226cf00971674758`` of FireSim.
+**Compatiblity**: These were last tested with commit
+``4769e5d86acf6a9508d2b5a63141dc80a6ef20a6`` (Oct. 2019) of FireSim. After this commit,
+the Linux version in FireSim has been bumped past Linux 4.15. To reproduce workloads
+that rely on OS behavior that has changed, like 
+``memcached-thread-imbalance``, you must use the last tested Oct. 2019 commit.
 
 
 Prerequisites
