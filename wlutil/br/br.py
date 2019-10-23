@@ -10,7 +10,7 @@ from .. import wlutil
 
 # Some common directories for this module (all absolute paths)
 br_dir = pathlib.Path(__file__).parent
-overlay = br_dir / 'firesim-overlay'
+overlay = br_dir / 'overlay'
 
 initTemplate = string.Template("""#!/bin/sh
 
