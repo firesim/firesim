@@ -154,16 +154,6 @@ def initLogging(verbose):
 # The arguments are identical to those for subprocess.call()
 # level - The logging level to use
 # check - Throw an error on non-zero return status?
-# def run(*args, level=logging.DEBUG, check=True, **kwargs):
-#     log = logging.getLogger()
-#
-#     try:
-#         out = sp.check_output(*args, universal_newlines=True, stderr=sp.STDOUT, **kwargs)
-#         log.log(level, out)
-#     except sp.CalledProcessError as e:
-#         log.log(level, e.output)
-#         if check:
-#             raise
 def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
@@ -207,7 +197,7 @@ def waitpid(pid):
                 break
         time.sleep(0.25)
 
-if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
+if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
     sudoCmd = "/usr/bin/sudo"
     @contextmanager

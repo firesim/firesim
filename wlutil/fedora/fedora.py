@@ -32,6 +32,9 @@ class Builder:
     def buildBaseImage(self):
         wlutil.run(['make', "rootfs.img"], cwd=fed_dir)
 
+    def fileDeps(self):
+        return []
+
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):

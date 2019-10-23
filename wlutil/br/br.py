@@ -11,6 +11,7 @@ from .. import wlutil
 # Some common directories for this module (all absolute paths)
 br_dir = pathlib.Path(__file__).parent
 overlay = br_dir / 'overlay'
+br_image = br_dir / 'buildroot' / 'output' / 'images' / 'rootfs.ext2'
 
 initTemplate = string.Template("""#!/bin/sh
 
@@ -87,7 +88,16 @@ def buildConfig():
     wlutil.run([mergeScript, str(defconfig), str(toolKfrag), str(marshalKfrag)],
             cwd=(br_dir / 'buildroot'))
     
+def buildBuildRoot():
+	# Buildroot complains about some common PERL configurations
+	env = os.environ.copy()
+	env.pop('PERL_MM_OPT', None)
+	wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+
 class Builder:
+
+    def __init__(self):
+        buildConfig()
 
     def baseConfig(self):
         return {
@@ -95,45 +105,31 @@ class Builder:
                 'distro' : 'br',
                 'workdir' : br_dir,
                 'builder' : self,
-                'img' : os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")
+                'img' : str(br_image)
                 }
 
     # Build a base image in the requested format and return an absolute path to that image
     def buildBaseImage(self):
-        log = logging.getLogger()
-        rootfs_target = "rootfs.img"
+        buildBuildRoot()
 
-        buildConfig()
+    def fileDeps(self):
+        # List all files that should be checked to determine if BR is uptodate
+        deps = []
+        deps += [ f for f in (br_dir / 'buildroot-overlay').glob('**/*') if not f.is_dir()]
+        
+        # This was generated in __init__ and encapsulates changes to the
+        # toolchain, and to the firemarshal buildroot kfrag at
+        # br/buildroot-config
+        deps.append(br_dir / 'buildroot' / '.config')
 
-        # Buildroot complains about some common PERL configurations
-        env = os.environ.copy()
-        env.pop('PERL_MM_OPT', None)
-        wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+        deps.append(pathlib.Path(__file__))
+        return deps
 
     # Return True if the base image is up to date, or False if it needs to be
-    # rebuilt.
+    # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
-        # There's something wrong with buildroot's makefile, it throws an error
-        # and never reports being up to date. This is a compromise: marshal
-        # will build everything the first time, but never rebuild buildroot
-        # (e.g. if you change the buildroot config). This should be
-        # extremely rare (it's not even possible for Fedora). The alternative
-        # is to have all buildroot-based workloads rebuild the entire
-        # dependency chain every time.
-        return False
-        # if os.path.exists(os.path.join(br_dir, "buildroot/output/images/rootfs.ext2")):
-        #     return True
-        # else: 
-        #     return False
-
-        # This is here in case we ever want to switch to "always rebuild" or
-        # find a way to fix the br dependency checking
-        # makeStatus = sp.call('make -q', shell=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=os.path.join(br_dir, 'buildroot'))
-        # cfgDiff = sp.call(['diff', '-q', 'buildroot-config', 'buildroot/.config'], stdout=sp.DEVNULL, stderr=sp.DEVNULL, cwd=br_dir)
-        # if makeStatus == 0 and cfgDiff == 0:
-        #     return True
-        # else:
-        #     return False
+        # All deps are handled by fileDeps for buildroot
+        return True
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted

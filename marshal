@@ -134,23 +134,26 @@ def main():
                     parser.print_help()
 
             try:
-                wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
+                outputPath = wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
+            if outputPath is not None:
+                log.info("Workload outputs available at: " + outputPath)
 
         elif args.command == "test":
-            log.info("Running: " + cfgPath)
-            res = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
+            log.info("Testing: " + cfgPath)
+            res, resPath = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
-                print("Test Failed")
+                log.info("Test Failed")
+                log.info("Output available at: " + resPath)
                 suitePass = False
                 failCount += 1
             elif res is wlutil.testResult.skip:
-                print("Test Skipped")
+                log.info("Test Skipped")
                 skipCount += 1
             else:
-                print("Test Passed")
-            log.info("")
+                log.info("Test Passed")
+                log.info("Output available at: " + resPath)
 
         elif args.command == 'clean':
             # with contextlib.suppress(FileNotFoundError):
