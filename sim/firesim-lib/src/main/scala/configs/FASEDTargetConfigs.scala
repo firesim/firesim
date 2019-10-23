@@ -26,7 +26,9 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     llcKey = site(LlcKey))
 
   case MemModelKey => new LatencyPipeConfig(site(BaseParamsKey))
-})
+}) {
+  require(clockDivision == 1, "Endpoint clock-division temporarily removed until FireSim 1.8.0")
+}
 
 
 /*******************************************************************************
