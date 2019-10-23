@@ -6,6 +6,8 @@ import logging
 import wlutil
 import contextlib
 import shutil
+import collections
+import pathlib
 
 if not shutil.which('riscv64-unknown-linux-gnu-gcc'):
     sys.exit("No riscv toolchain detected. Please install riscv-tools.")
@@ -66,11 +68,27 @@ def main():
     # Perform any basic setup functions for wlutil. This is idempotent.
     wlutil.initialize()
 
-    # Load all the configs from the workload directory
-    args.config_files = [ os.path.abspath(f) for f in args.config_files ] 
-    if args.workdir is None:
-        args.workdir = os.path.dirname(args.config_files[0])
-    cfgs = wlutil.ConfigManager([wlutil.workdir_builtin, args.workdir])
+    # Load all the configs from the workload directories
+    # Order matters here, duplicate workload files found in later search paths
+    # will overwrite files found in earlier search paths.
+
+    # We use the keys of an ordered dict to enforce order and uniqueness on the
+    # search paths. The value is meaningless.
+    workdirs = collections.OrderedDict()
+
+    # board builtin workloads (the *-base.json's).
+    workdirs[wlutil.workdir_builtin] = None
+
+    # User-provided workload search path
+    if args.workdir is not None:
+        workdirs[args.workdir] = None
+
+    # Treat the workload name as a path and search locally for it
+    args.config_files = [ pathlib.Path(f).resolve() for f in args.config_files ] 
+    for f in args.config_files:
+        workdirs[f.parent] = None
+
+    cfgs = wlutil.ConfigManager(workdirs.keys())
 
     if args.command == 'test':
         suitePass = True
