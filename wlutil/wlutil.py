@@ -191,7 +191,7 @@ def waitpid(pid):
                 break
         time.sleep(0.25)
 
-if sp.run(['/usr/bin/sudo', '-ln', 'true']).returncode == 0:
+if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
     sudoCmd = "/usr/bin/sudo"
     @contextmanager
