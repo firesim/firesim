@@ -6,6 +6,8 @@ import logging
 import wlutil
 import contextlib
 import shutil
+import collections
+import pathlib
 
 if not shutil.which('riscv64-unknown-linux-gnu-gcc'):
     sys.exit("No riscv toolchain detected. Please install riscv-tools.")
@@ -66,11 +68,27 @@ def main():
     # Perform any basic setup functions for wlutil. This is idempotent.
     wlutil.initialize()
 
-    # Load all the configs from the workload directory
-    args.config_files = [ os.path.abspath(f) for f in args.config_files ] 
-    if args.workdir is None:
-        args.workdir = os.path.dirname(args.config_files[0])
-    cfgs = wlutil.ConfigManager([args.workdir])
+    # Load all the configs from the workload directories
+    # Order matters here, duplicate workload files found in later search paths
+    # will overwrite files found in earlier search paths.
+
+    # We use the keys of an ordered dict to enforce order and uniqueness on the
+    # search paths. The value is meaningless.
+    workdirs = collections.OrderedDict()
+
+    # board builtin workloads (the *-base.json's).
+    workdirs[wlutil.workdir_builtin] = None
+
+    # User-provided workload search path
+    if args.workdir is not None:
+        workdirs[args.workdir] = None
+
+    # Treat the workload name as a path and search locally for it
+    args.config_files = [ pathlib.Path(f).resolve() for f in args.config_files ] 
+    for f in args.config_files:
+        workdirs[f.parent] = None
+
+    cfgs = wlutil.ConfigManager(workdirs.keys())
 
     if args.command == 'test':
         suitePass = True
@@ -81,13 +99,14 @@ def main():
         # Each config gets it's own logging output and results directory
         wlutil.setRunName(cfgPath, args.command)
         wlutil.initLogging(args.verbose)
+        cfgName = os.path.basename(cfgPath)
 
         log = logging.getLogger()
         if not args.verbose:
             print("To check on progress, either call marshal with '-v' or see the live output at: ")
             print(os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
 
-        targetCfg = cfgs[cfgPath]
+        targetCfg = cfgs[cfgName]
    
         if args.initramfs or args.no_disk:
             targetCfg['nodisk'] = True
@@ -99,9 +118,9 @@ def main():
             try:
                 if args.binOnly or args.imgOnly:
                     # It's fine if they pass -IB, it just builds both
-                    wlutil.buildWorkload(cfgPath, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
+                    wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
                 else:
-                    wlutil.buildWorkload(cfgPath, cfgs)
+                    wlutil.buildWorkload(cfgName, cfgs)
             except Exception as e:
                 log.exception("Error while building workload")
 
@@ -115,7 +134,7 @@ def main():
                     parser.print_help()
 
             try:
-                outputPath = wlutil.launchWorkload(cfgPath, cfgs, args.job, args.spike)
+                outputPath = wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
             if outputPath is not None:
@@ -123,7 +142,7 @@ def main():
 
         elif args.command == "test":
             log.info("Testing: " + cfgPath)
-            res, resPath = wlutil.testWorkload(cfgPath, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
+            res, resPath = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
                 log.info("Test Failed")
                 log.info("Output available at: " + resPath)
@@ -152,7 +171,7 @@ def main():
                             deleteSafe(jCfg['img'])
 
         elif args.command == 'install':
-            wlutil.installWorkload(cfgPath, cfgs)
+            wlutil.installWorkload(cfgName, cfgs)
 
         else:
             log.error("No subcommand specified")

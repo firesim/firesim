@@ -322,18 +322,19 @@ def makeBin(config, nodisk=False):
             run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', jlevel], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
-        if os.path.exists('riscv-pk/build'):
-            shutil.rmtree('riscv-pk/build')
-        os.mkdir('riscv-pk/build')
+        pk_build = (pk_dir / 'build')
+        if pk_build.exists():
+            shutil.rmtree(pk_build)
+        pk_build.mkdir()
 
         run(['../configure', '--host=riscv64-unknown-elf',
-            '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd='riscv-pk/build')
-        run(['make', jlevel], cwd='riscv-pk/build')
+            '--with-payload=' + os.path.join(config['linux-src'], 'vmlinux')], cwd=pk_build)
+        run(['make', jlevel], cwd=pk_build)
 
         if nodisk:
-            shutil.copy('riscv-pk/build/bbl', config['bin'] + '-nodisk')
+            shutil.copy(pk_build / 'bbl', config['bin'] + '-nodisk')
         else:
-            shutil.copy('riscv-pk/build/bbl', config['bin'])
+            shutil.copy(pk_build / 'bbl', config['bin'])
 
 def makeImage(config):
     log = logging.getLogger()

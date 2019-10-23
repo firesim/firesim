@@ -3,19 +3,18 @@
 shopt -s extglob
 
 SUITE_PASS=true
-LOGNAME=$(mktemp results_full_test.XXXX)
+LOGNAME=$(realpath $(mktemp results_full_test.XXXX))
 
 echo "Running Full Test. Results available in $LOGNAME"
 
 # We pre-build to avoid potential timeouts on a fresh clone
-echo "Pre-building base workloads" | tee -a $LOGNAME
+# echo "Pre-building base workloads" | tee -a $LOGNAME
 ./marshal build test/br-base.json
 ./marshal build test/fedora-base.json
 
 echo "Running launch timeout test (should timeout):" | tee -a $LOGNAME
 echo "This test will reset your terminal"
 ./marshal test test/timeout-run.json | grep "timeout while running"
-# Note: This records the 
 res=${PIPESTATUS[1]}
 reset
 echo "Ran launch timeout test (screen was reset)"
@@ -101,6 +100,17 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
   exit 1
 fi
+
+# Ensures that marshal can be called from different PWDs
+echo "Running different PWD test" | tee -a $LOGNAME
+pushd test/
+../marshal test command.json | tee -a $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
+fi
+popd
 
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
 if [ $SUITE_PASS = false ]; then

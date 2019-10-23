@@ -29,11 +29,17 @@ root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
 # Root for default board (platform-specific stuff)
 board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
 
+# Builtin workloads
+workdir_builtin = board_dir / 'base-workloads'
+
 # Stores all outputs (binaries and images)
 image_dir = os.path.join(root_dir, "images")
 
 # Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
+
+# Default pk source
+pk_dir = root_dir / 'riscv-pk'
 
 # Busybox source directory (used for the initramfs)
 busybox_dir = wlutil_dir / 'busybox'
