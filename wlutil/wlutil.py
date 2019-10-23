@@ -148,16 +148,6 @@ def initLogging(verbose):
 # The arguments are identical to those for subprocess.call()
 # level - The logging level to use
 # check - Throw an error on non-zero return status?
-# def run(*args, level=logging.DEBUG, check=True, **kwargs):
-#     log = logging.getLogger()
-#
-#     try:
-#         out = sp.check_output(*args, universal_newlines=True, stderr=sp.STDOUT, **kwargs)
-#         log.log(level, out)
-#     except sp.CalledProcessError as e:
-#         log.log(level, e.output)
-#         if check:
-#             raise
 def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
