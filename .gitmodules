@@ -4,9 +4,6 @@
 [submodule "sw/firesim-software"]
 	path = sw/firesim-software
 	url = https://github.com/firesim/firesim-software
-[submodule "sim/midas"]
-	path = sim/midas
-	url = https://github.com/ucb-bar/midas
 [submodule "target-design/chipyard"]
 	path = target-design/chipyard
 	url = https://github.com/ucb-bar/project-template
@@ -28,3 +25,6 @@
 [submodule "deploy/workloads/coremark/riscv-coremark"]
 	path = deploy/workloads/coremark/riscv-coremark
 	url = https://github.com/riscv-boom/riscv-coremark
+[submodule "sim/midas/src/main/cc/dramsim2"]
+	path = sim/midas/src/main/cc/dramsim2
+	url = https://github.com/firesim/DRAMSim2.git

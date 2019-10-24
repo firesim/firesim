@@ -1,0 +1,41 @@
+# VCS RTL Simulation Makefrag
+#
+# This makefrag stores common recipes for building RTL simulators with VCS
+#
+# Compulsory variables:
+#  All those described Makefrag-verilator
+#  vcs_wrapper_v: An additional verilog wrapper around the DUT not used in verilator
+#  CLOCK_PERIOD: Self explanatory
+#  TB := The top level module on which the stop and printf conditions are defined 
+#
+
+VCS ?= vcs -full64
+override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
+	-notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_pp +no_notifier -cpp $(CXX) \
+	-Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc \
+	+vc+list \
+	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -DVCS -I$(VCS_HOME)/include" \
+	-LDFLAGS "$(LDFLAGS)" \
+	-sverilog \
+	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	+define+RANDOMIZE_GARBAGE_ASSIGN \
+	+define+RANDOMIZE_INVALID_ASSIGN \
+	+define+STOP_COND=!$(TB).reset \
+	+define+PRINTF_COND=!$(TB).reset \
+	$(VCS_FLAGS)
+
+vcs_v := $(emul_v) $(vcs_wrapper_v)
+
+$(OUT_DIR)/$(DESIGN): $(vcs_v) $(emul_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DESIGN).csrc
+	rm -rf $(OUT_DIR)/$(DESIGN).daidir
+	$(VCS) $(VCS_FLAGS) \
+	-o $@ $(vcs_v) $(emul_cc)
+
+$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(emul_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
+	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
+	$(VCS) $(VCS_FLAGS) +define+DEBUG \
+	-o $@ $(vcs_v) $(emul_cc)
