@@ -513,7 +513,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
 
-    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    //crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
   // Prints out key elaboration time settings

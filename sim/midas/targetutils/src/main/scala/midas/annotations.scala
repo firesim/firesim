@@ -114,3 +114,41 @@ object ExcludeInstanceAsserts {
       def toFirrtl = ExcludeInstanceAssertsAnnotation(target)
     }
 }
+
+
+
+
+case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, message: String) extends
+    SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget) = this.copy(target = n)
+}
+
+case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, message: String) extends
+    SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget) = this.copy(target = n)
+}
+
+case class AutoCounterCoverModuleAnnotation(target: ModuleTarget) extends
+    SingleTargetAnnotation[ModuleTarget] {
+  def duplicate(n: ModuleTarget) = this.copy(target = n)
+}
+
+import chisel3.experimental.ChiselAnnotation
+case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation {
+  //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
+  //It currently doesn't matter since the transform throws away the circuit name
+  def toFirrtl =  AutoCounterCoverModuleAnnotation(ModuleTarget("",target))
+}
+
+case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
+  def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
+}
+
+
+object PerfCounter {
+  def apply(target: chisel3.Data, label: String, message: String): Unit = {
+    chisel3.experimental.annotate(AutoCounterAnnotation(target, label, message))
+  }
+}
+
+

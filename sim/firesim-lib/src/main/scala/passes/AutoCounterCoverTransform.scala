@@ -46,6 +46,12 @@ case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation 
 case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
   def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
 }
+
+object PerfCounter {
+  def apply(target: chisel3.Data, label: String, message: String): Unit = {
+    chisel3.experimental.annotate(AutoCounterAnnotation(target, label, message))
+  }
+}
 */
 
 class FireSimPropertyLibrary() extends BasePropertyLibrary {
