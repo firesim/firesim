@@ -90,10 +90,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       val in0 = IO(Input(Bool()))
 
       //connect the trigger from the tracer widget
-      val trigger = Wire(Bool())
+      val trigger = WireDefault(true.B)
+      //val trigger = Wire(Bool())
       hastracerwidget match {
-        case true => BoringUtils.addSink(trigger, s"trace_trigger") 
-        case _ => trigger := RegInit(true.B)
+        case true => BoringUtils.addSink(trigger, s"trace_trigger")
+        case _ => trigger := true.B
+        //case _ => trigger := RegInit(true.B)
       }
 
       //*****if we ever want to use the trigger to reset the counters******
@@ -183,14 +185,13 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      Seq(mod.copy(body = bodyx)) ++ newMods
    }
 
-   private def fixupCircuit(circuit: Circuit): Circuit = {
-     val passes = Seq(
-       new WiringTransform,
-       InferTypes,
-       ResolveKinds,
-       ResolveGenders
+   private def fixupCircuit(instate: CircuitState): CircuitState = {
+     val xforms = Seq(
+          new WiringTransform,
+          new ResolveAndCheck
      )
-     passes.foldLeft(circuit) { case (c: Circuit, p: Pass) => p.run(c) }
+     (xforms foldLeft instate)((in, xform) =>
+      xform runTransform in).copy(form=outputForm)
    }
 
 
@@ -307,22 +308,25 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     //extract the module names from the methods mentioned previously 
     val covermodulesnames = moduleannos.map { case AutoCounterCoverModuleAnnotation(ModuleTarget(_,m)) => m }
 
-    if (!covermodulesnames.isEmpty) {
-      println("[AutoCounter]: Cover modules in AutoCounterCoverTransform:")
-      println(covermodulesnames)
+    //if (!covermodulesnames.isEmpty) {
+    println("[AutoCounter]: Cover modules in AutoCounterCoverTransform:")
+    println(covermodulesnames)
 
-      //filter the cover annotations only by the modules that we want
-      val filtercoverannos = coverannos.filter{ case AutoCounterCoverAnnotation(ReferenceTarget(_,modname,_,_,_),l,m) =>
+    //filter the cover annotations only by the modules that we want
+    val filtercoverannos = coverannos.filter{ case AutoCounterCoverAnnotation(ReferenceTarget(_,modname,_,_,_),l,m) =>
                                            covermodulesnames.contains(modname) }
 
-      val allcounterannos = filtercoverannos ++ autocounterannos
-      //group the selected signal by modules, and attach label from the cover point to each signal
-      val selectedsignals = allcounterannos.map { case AutoCounterCoverAnnotation(target,l,m) => (target, l) 
-                                                  case AutoCounterFirrtlAnnotation(target,l,m) => (target, l)
+    val allcounterannos = filtercoverannos ++ autocounterannos
+    //group the selected signal by modules, and attach label from the cover point to each signal
+    val selectedsignals = allcounterannos.map { case AutoCounterCoverAnnotation(target,l,m) => (target, l) 
+                                                case AutoCounterFirrtlAnnotation(target,l,m) => (target, l)
                                             }
                                    .groupBy { case (ReferenceTarget(_,modname,_,_,_), l) => modname }
 
+    println("[AutoCounter]: AutoCounter signals are:")
+    println(selectedsignals)
 
+    if (!selectedsignals.isEmpty) {
       //create counters for each of the Bools in the filtered cover functions
       val moduleNamespace = Namespace(state.circuit)
       val modulesx: Seq[DefModule] = state.circuit.modules.map {
@@ -339,7 +343,8 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
       
       val circuitwithwidget = AddAutoCounterWidget(state.circuit.copy(modules = modulesx))  
-      state.copy(circuit = fixupCircuit(circuitwithwidget), annotations = state.annotations ++ newAnnos)
+      fixupCircuit(state.copy(circuit = circuitwithwidget, annotations = state.annotations ++ newAnnos))
+      //state.copy(fixupCircuit(state.copy(circuit = circuitwithwidget, annotations = state.annotations ++ newAnnos)))
       
     } else { state }
   }
