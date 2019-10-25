@@ -4,6 +4,7 @@ import shutil
 import logging
 import string
 import pathlib
+import git
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -115,8 +116,13 @@ class Builder:
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
         deps = []
-        deps += [ f for f in (br_dir / 'buildroot-overlay').glob('**/*') if not f.is_dir()]
         
+        brRepo = git.Repo(br_dir / 'buildroot')
+        hashCache = wlutil.gen_dir / 'buildroot-hash'
+        with open(hashCache, 'w') as f:
+            f.write(brRepo.head.object.hexsha)
+        deps.append(wlutil.gen_dir / 'buildroot-hash')
+
         # This was generated in __init__ and encapsulates changes to the
         # toolchain, and to the firemarshal buildroot kfrag at
         # br/buildroot-config
@@ -128,8 +134,13 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
-        # All deps are handled by fileDeps for buildroot
-        return True
+        log = logging.getLogger()
+        brRepo = git.Repo(br_dir / 'buildroot')
+        if brRepo.is_dirty():
+            log.warn("Buildroot repo is dirty: rebuilding")
+            return False
+        else:
+            return True
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
