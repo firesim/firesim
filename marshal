@@ -141,7 +141,7 @@ def main():
                 log.info("Workload outputs available at: " + outputPath)
 
         elif args.command == "test":
-            log.info("Testing: " + cfgPath)
+            log.info("Testing: " + str(cfgPath))
             res, resPath = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
                 log.info("Test Failed")
