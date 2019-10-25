@@ -1,18 +1,18 @@
 #ifndef __AUTOCOUNTER_H
 #define __AUTOCOUNTER_H
 
-#include "endpoints/endpoint.h"
+#include "bridges/bridge_driver.h"
 #include <vector>
 #include <fstream>
 
 // TODO: get this automatically
 #define NUM_CORES 1
 
-#ifdef AUTOCOUNTERWIDGET_struct_guardclass autocounter_t: public endpoint_t
-class autocounter_t: public endpoint_t
+#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
+class autocounter_t: public bridge_driver_t
     public:
         autocounter_t(simif_t *sim, std::vector<std::string> &args,
-        AUTOCOUNTERWIDGET_struct * mmio_addrs, AddressMap addr_map);
+        AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map);
         ~autocounter_t();
 
         virtual void init();
@@ -22,7 +22,7 @@ class autocounter_t: public endpoint_t
         virtual void finish() {};
 
     private:
-        AUTOCOUNTERWIDGET_struct * mmio_addrs;
+        AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs;
         AddressMap addr_map;
         simif_t* sim;
         uint64_t cur_cycle;

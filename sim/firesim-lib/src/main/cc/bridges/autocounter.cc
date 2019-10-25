@@ -1,4 +1,4 @@
-#ifdef AUTOCOUNTERWIDGET_struct_guard
+#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
 
 #include "autocounter.h"
 
@@ -15,9 +15,10 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(
-    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERWIDGET_struct * mmio_addrs) : endpoint_t(sim)
+    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map) : bridge_driver_t(sim)
 {
     this->mmio_addrs = mmio_addrs;
+    this->addr_map = addr_map;
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
@@ -70,4 +71,4 @@ void autocounter_t::tick() {
   }
 }
 
-#endif // AUTOCOUNTERWIDGET_struct_guard
+#endif // AUTOCOUNTERBRIDGEMODULE_struct_guard
