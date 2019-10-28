@@ -58,3 +58,8 @@ To install into FireSim (assuming you cloned this as a submodule of firesim or c
 Be advised that FireMarshal will run initialization scripts provided by
 workloads. These scripts will have all the permissions your user has, be sure
 to read all workloads carefully before building them.
+
+# Getting Help / Discussion:
+* For general questions, help, and discussion: use the FireSim user forum: https://groups.google.com/forum/#!forum/firesim
+* For bugs and feature requests: use the github issue tracker: https://github.com/firesim/FireMarshal/issues
+* See CONTRIBUTING.md for more details
