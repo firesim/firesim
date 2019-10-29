@@ -163,7 +163,7 @@ def buildDepGraph(cfgs):
                     'actions' : [(dCfg['builder'].buildBaseImage, [])],
                     'targets' : [dCfg['img']],
                     'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': [(dCfg['builder'].upToDate, []), result_dep('_toolchain-version')]
+                    'uptodate': [(dCfg['builder'].upToDate, []), doit.tools.result_dep('_toolchain-version')]
                 })
 
     # Non-distro configs 
