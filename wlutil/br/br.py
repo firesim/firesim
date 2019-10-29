@@ -4,6 +4,7 @@ import shutil
 import logging
 import string
 import pathlib
+import collections
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -39,10 +40,10 @@ esac
 
 exit""")
 
-def buildConfig():
-    """Construct the final buildroot configuration for this environment. After
-    calling this, it is safe to call 'make' in the buildroot directory."""
+toolVersionTuple = collections.namedtuple('toolVersionTuple', ["linuxMaj", "linuxMin", "gcc"])
 
+def getToolVersions():
+    """Detect version information for the currently enabled toolchain"""
     # We run the preprocessor on a simple program to see the C-visible
     # "LINUX_VERSION_CODE" macro
     linuxHeaderTest = """#include <linux/version.h>
@@ -63,15 +64,22 @@ def buildConfig():
             universal_newlines=True, stdout=sp.PIPE).stdout
     toolVer = toolVerStr[36]
 
+    return toolVersionTuple(linuxMaj, linuxMin, toolVer)
+
+def buildConfig():
+    """Construct the final buildroot configuration for this environment. After
+    calling this, it is safe to call 'make' in the buildroot directory."""
+
+    toolVer = getToolVersions()
     # Contains options specific to the build enviornment (br is touchy about this stuff)
     toolKfrag = wlutil.gen_dir / 'brToolKfrag'
     with open(toolKfrag, 'w') as f:
-        f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+linuxMaj+"_"+linuxMin+"=y\n")
-        f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+linuxMaj+"_"+linuxMin+"=y\n")
-        f.write('BR2_TOOLCHAIN_HEADERS_AT_LEAST="'+linuxMaj+"."+linuxMin+'"\n')
-        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer+'=y\n')
-        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer+'"\n')
-        f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer+'=y\n')
+        f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+toolVer.linuxMaj+"_"+toolVer.linuxMin+"=y\n")
+        f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+toolVer.linuxMaj+"_"+toolVer.linuxMin+"=y\n")
+        f.write('BR2_TOOLCHAIN_HEADERS_AT_LEAST="'+toolVer.linuxMaj+"."+toolVer.linuxMin+'"\n')
+        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer.gcc+'=y\n')
+        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer.gcc+'"\n')
+        f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer.gcc+'=y\n')
         f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
 
     # Default Configuration (allows us to bump BR independently of our configs)
