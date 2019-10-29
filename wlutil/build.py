@@ -145,6 +145,15 @@ def addDep(loader, config):
 def buildDepGraph(cfgs):
     loader = doitLoader()
 
+    # Workloads all depend on the toolchain implicitly. The distro workloads
+    # check the output of this task to determine if the toolchain has changed.
+    # Since every workload depends on a distro, all workloads depend on the
+    # toolchain version. 
+    loader.workloads.append({
+        'name' : '_toolchain-version',
+        'actions' : [(getToolVersions, [])]
+        })
+
     # Define the base-distro tasks
     for d in distros:
         dCfg = cfgs[d]
@@ -154,7 +163,7 @@ def buildDepGraph(cfgs):
                     'actions' : [(dCfg['builder'].buildBaseImage, [])],
                     'targets' : [dCfg['img']],
                     'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': [(dCfg['builder'].upToDate, [])]
+                    'uptodate': [(dCfg['builder'].upToDate, []), result_dep('_toolchain-version')]
                 })
 
     # Non-distro configs 
