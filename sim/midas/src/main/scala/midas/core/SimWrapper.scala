@@ -103,22 +103,22 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
     // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_),Some(srcs),_) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_),Some(clock),Some(srcs),_) =>
       ch -> regenPayloadType(srcs.filterNot(_ == vsrc))
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)),_,Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)),Some(clock),_,Some(sinks)) =>
       ch -> regenPayloadType(sinks.filterNot(_ == vsink))
   }).toMap
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(sinks)) => ch -> regenWireType(sinks)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(clock),Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(clock),_,Some(sinks)) => ch -> regenWireType(sinks)
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
 
   val wirePortMap: Map[String, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_),sources,sinks) => {
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_), Some(clock), sources, sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -149,7 +149,7 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   // Using a channel's globalName; look up it's associated port tuple
   val rvPortMap: Map[String, TargetRVPortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), Some(clock), leafSources, leafSinks) =>
       val sourcePortPair = leafSources.map({ tRefs =>
         require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
         val validTRef: ReferenceTarget = info.validSource.getOrElse(throw new RuntimeException(
@@ -239,8 +239,8 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
   // to bridges and will be presented in the SimWrapper's IO
   val bridgeChAnnos = chAnnos.collect({
-    case fca @ FAMEChannelConnectionAnnotation(_,_,_,None) => fca
-    case fca @ FAMEChannelConnectionAnnotation(_,_,None,_) => fca
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,None) => fca
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,None,_) => fca
   })
 
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
@@ -345,11 +345,11 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
 
   // Generate all ready-valid channels
   val rvChannels = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_,_) => genReadyValidChannel(ch)
   })
 
   // Generate all wire channels, excluding reset
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_)  => genPipeChannel(ch, latency)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_,_)  => genPipeChannel(ch, latency)
   })
 }
