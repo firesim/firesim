@@ -95,6 +95,7 @@ def main():
         
     skipCount = 0
     failCount = 0
+    ret = 0
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
         wlutil.setRunName(cfgPath, args.command)
@@ -115,14 +116,15 @@ def main():
                     j['nodisk'] = True
 
         if args.command == "build":
-            try:
-                if args.binOnly or args.imgOnly:
-                    # It's fine if they pass -IB, it just builds both
-                    wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
-                else:
-                    wlutil.buildWorkload(cfgName, cfgs)
-            except Exception as e:
-                log.exception("Error while building workload")
+            # try:
+            if args.binOnly or args.imgOnly:
+                # It's fine if they pass -IB, it just builds both
+                ret = wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
+            else:
+                ret = wlutil.buildWorkload(cfgName, cfgs)
+
+            if ret != 0:
+                log.error("Failed to build workload " + cfgName)
 
         elif args.command == "launch":
             # job-configs are named special internally

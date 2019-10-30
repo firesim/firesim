@@ -64,22 +64,19 @@ def buildConfig():
     # Our config fragment, specifies differences from the default
     marshalKfrag = br_dir / 'buildroot-config'
 
-    # We're just borrowing linux's merge_config.sh helper since br uses the same make system
-    # This doesn't actually depend on any details of this linux kernel
-    mergeScript = str(pathlib.Path(wlutil.linux_dir) / 'scripts' / 'kconfig' / 'merge_config.sh')
+    mergeScript = br_dir / 'merge_config.sh'
     wlutil.run([mergeScript, str(defconfig), str(toolKfrag), str(marshalKfrag)],
             cwd=(br_dir / 'buildroot'))
     
 def buildBuildRoot():
-	# Buildroot complains about some common PERL configurations
-	env = os.environ.copy()
-	env.pop('PERL_MM_OPT', None)
-	wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+    buildConfig()
+
+    # Buildroot complains about some common PERL configurations
+    env = os.environ.copy()
+    env.pop('PERL_MM_OPT', None)
+    wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
 
 class Builder:
-
-    def __init__(self):
-        buildConfig()
 
     def baseConfig(self):
         return {
@@ -98,16 +95,19 @@ class Builder:
         # List all files that should be checked to determine if BR is uptodate
         deps = []
         
-        brRepo = git.Repo(br_dir / 'buildroot')
-        hashCache = wlutil.gen_dir / 'buildroot-hash'
-        with open(hashCache, 'w') as f:
-            f.write(brRepo.head.object.hexsha)
-        deps.append(wlutil.gen_dir / 'buildroot-hash')
+        try:
+            brRepo = git.Repo(br_dir / 'buildroot')
+        except:
+            # Submodule not initialized (or otherwise can't be read as a repo)
+            brRepo = None
 
-        # This was generated in __init__ and encapsulates changes to the
-        # toolchain, and to the firemarshal buildroot kfrag at
-        # br/buildroot-config
-        deps.append(br_dir / 'buildroot' / '.config')
+        if brRepo is not None:
+            hashCache = wlutil.gen_dir / 'buildroot-hash'
+            with open(hashCache, 'w') as f:
+                f.write(brRepo.head.object.hexsha)
+            deps.append(wlutil.gen_dir / 'buildroot-hash')
+
+        deps.append(br_dir / 'buildroot-config')
 
         deps.append(pathlib.Path(__file__))
         return deps
@@ -116,9 +116,15 @@ class Builder:
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
         log = logging.getLogger()
-        brRepo = git.Repo(br_dir / 'buildroot')
-        if brRepo.is_dirty():
-            log.warn("Buildroot repo is dirty: rebuilding")
+        try:
+            brRepo = git.Repo(br_dir / 'buildroot')
+        except:
+            # Buildroot submodule not initialized. Force a rebuild (that will
+            # throw the actual error).
+            brRepo = None
+
+        if brRepo is None or brRepo.is_dirty():
+            log.warn("Buildroot repo is dirty or uninitialized: rebuilding")
             return False
         else:
             return True

@@ -71,6 +71,20 @@ runName = ""
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
+class SubmoduleError(Exception):
+    """Error representing a nonexistent or uninitialized submodule"""
+    def __init__(self, path):
+        self.message = "Dependency missing or not initialized " + \
+                str(path) + \
+                ". Do you need to initialize submodules?"
+        self.path = path
+
+    def __repr__(self):
+        return "Submodule Error: \n" + self.message
+
+    def __str__(self):
+        return self.__repr__()
+
 def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
     Is safe and fast to call every time you load the library."""
@@ -83,13 +97,6 @@ def initialize():
     for d in initramfs_disk_dirs:
         if not (initramfs_dir / 'disk' / d).exists():
             (initramfs_dir / 'disk' / d).mkdir(parents=True)
-
-    # Make busybox (needed for the initramfs)
-    if not (initramfs_dir /'disk' / 'bin' / 'busybox').exists():
-        log.info("Building busybox (used in initramfs)")
-        shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
-        run(['make', jlevel], cwd=busybox_dir)
-        shutil.copy(busybox_dir / 'busybox', initramfs_dir / 'disk' / 'bin/')
 
 # Create a unique run name. You can call this multiple times to reset internal
 # paths (e.g. for starting a logically different run). The run name controls
@@ -160,7 +167,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     if isinstance(args[0], str):
         prettyCmd = args[0]
     else:
-        prettyCmd = ' '.join(args[0])
+        prettyCmd = ' '.join([str(a) for a in args[0]])
 
     if 'cwd' in kwargs:
         log.log(level, 'Running: "' + prettyCmd + '" in ' + str(kwargs['cwd']))
@@ -295,3 +302,64 @@ def getToolVersions():
     return {'linuxMaj' : linuxMaj,
             'linuxMin' : linuxMin,
             'gcc' : toolVer}
+
+def checkGitStatus(submodule):
+    """Returns a dictionary representing the status of a git repo.
+
+    Fields:
+    'sha'  : latest git commit hash (or "" if not initialized)
+    'dirty': boolean indicating whether there are uncommited changes (uninitialized repos are considered dirty)
+    'init' : boolean indiicating if the repository has been initialized
+    'rebuild' : A random number if the repo should be considered not up to date
+        for any reason (e.g. dirty==True or init==False). 0 otherwised.
+
+    This is primarily useful as an input to doit's config_changed() updtodate
+    helper which considers a workload not uptodate if some string or dictionary
+    has changed since the last time it ran. The 'sha' or 'rebuild' fields will
+    change if the repo has changed (or we can't tell if it's changed)."""
+
+    log = logging.getLogger()
+    try:
+        repo = git.Repo(submodule)
+    except:
+        # Submodule not initialized (or otherwise can't be read as a repo)
+        return {
+                'sha' : "",
+                'dirty' : True,
+                "init" : False,
+                "rebuild" : random
+                }
+
+    status['init'] = True
+    status['sha'] = brRepo.head.object.hexsha
+    status['dirty'] = brRepo.is_dirty()
+    if brRepo.is_dirty():
+        # In the absense of a clever way to record changes, we must assume that
+        # a dirty repo has changed since the last time we built.
+        log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
+        status['rebuild'] = random
+    else:
+        status['rebuild'] = 0
+
+    return status
+
+def dirEmpty(d):
+    if any(os.scandir(d)):
+        return False
+    else:
+        return True
+
+def checkSubmodule(s):
+    """Check whether a submodule is present and initialized.
+
+    It is safe to call this on something that is not actually a submodule. In
+    that case, this will simply check if the directory is empty or not.
+
+    s: Pathlib path to submodule
+
+    raises SubmoduleError if submodule not ready 
+    """
+    
+    if not s.exists() or dirEmpty(s):
+        raise SubmoduleError(s)
+
