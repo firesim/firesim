@@ -103,22 +103,22 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
     // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_),Some(clock),Some(srcs),_) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_), _, Some(srcs),_) =>
       ch -> regenPayloadType(srcs.filterNot(_ == vsrc))
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)),Some(clock),_,Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)), _, _, Some(sinks)) =>
       ch -> regenPayloadType(sinks.filterNot(_ == vsink))
   }).toMap
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(clock),Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(clock),_,Some(sinks)) => ch -> regenWireType(sinks)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,Some(sinks)) => ch -> regenWireType(sinks)
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
 
   val wirePortMap: Map[String, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_), Some(clock), sources, sinks) => {
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_), _, sources, sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -149,7 +149,7 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   // Using a channel's globalName; look up it's associated port tuple
   val rvPortMap: Map[String, TargetRVPortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), Some(clock), leafSources, leafSinks) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), _, leafSources, leafSinks) =>
       val sourcePortPair = leafSources.map({ tRefs =>
         require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
         val validTRef: ReferenceTarget = info.validSource.getOrElse(throw new RuntimeException(

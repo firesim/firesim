@@ -56,7 +56,7 @@ class ChannelExcision extends Transform {
 
     // Step 1: Analysis -> build a map from reference targets to channel name
     state.annotations.collect({
-      case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), Some(clock), Some(srcs), Some(sinks)) =>
+      case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), _, Some(srcs), Some(sinks)) =>
       sinks.zip(srcs).foreach({ pipeChannels(_) = name })
     })
 
