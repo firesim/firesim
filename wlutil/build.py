@@ -20,21 +20,6 @@ class doitLoader(doit.cmd_base.TaskLoader):
         config = {'verbosity': 2}
         return task_list, config
 
-# Checks if the linux kernel used by this config needs to be rebuilt
-# Note: this is intended to be used by the doit 'uptodate' feature
-def checkLinuxUpToDate(config):
-    # XXX There are a number of issues with doing this for real:
-    #   - The linux build system always reports that it's not uptodate
-    #     (make -q == False), so we'd have to come up with a more clever way
-    #   - Using the make -q method is nearly equivalent to makeBin, we need all
-    #     that logic (e.g. initramfs, baremetal, etc.).
-    #   
-    #   The result is that for now we'll always rebuild linux and hope the
-    #   makefiles make this not too bad (it adds a few seconds per image). This
-    #   function is left here to make it easier if/when we get around to doing
-    #   it right.
-    return False
-
 def buildBusybox():
     """Builds the local copy of busybox (needed by linux initramfs).
     
@@ -93,7 +78,7 @@ def addDep(loader, config):
                 'targets' : [config['bin']],
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'uptodate' : [(checkLinuxUpToDate, [config])]
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
                 })
 
     # Add a rule for the nodisk version if requested
@@ -110,7 +95,7 @@ def addDep(loader, config):
                 'targets' : [config['bin'] + '-nodisk'],
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'uptodate' : [(checkLinuxUpToDate, [config])]
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
                 })
 
     # Add a rule for the image (if any)
@@ -162,7 +147,8 @@ def buildDepGraph(cfgs):
         'name' : '_busybox',
         'actions' : [(buildBusybox, [])],
         'targets' : [initramfs_dir /'disk' / 'bin' / 'busybox'],
-        'uptodate': [doit.tools.config_changed(checkGitStatus(busybox_dir))]
+        'uptodate': [config_changed(checkGitStatus(busybox_dir)),
+            config_changed(getToolVersions())]
         })
 
     # Define the base-distro tasks
@@ -174,8 +160,8 @@ def buildDepGraph(cfgs):
                     'actions' : [(dCfg['builder'].buildBaseImage, [])],
                     'targets' : [dCfg['img']],
                     'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': [(dCfg['builder'].upToDate, []),
-                        doit.tools.config_changed(getToolVersions())]
+                    'uptodate': dCfg['builder'].upToDate() +
+                        [config_changed(getToolVersions())]
                 })
 
     # Non-distro configs 
@@ -293,8 +279,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     drivers = []
     for driverDir in driverDirs:
-        if dirEmpty(driverDir):
-            raise(SubmoduleError(driverDir))
+        checkSubmodule(driverDir)
 
         # Drivers don't seem to detect changes in the kernel
         run(makeCmd + " clean", cwd=driverDir, shell=True)

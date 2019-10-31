@@ -38,11 +38,13 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt.
     def upToDate(self):
-        retcode = sp.call('make -q rootfs.img', shell=True, cwd=fed_dir)
-        if retcode == 0:
-            return True
-        else:
-            return False
+        def checkMake():
+            retcode = sp.call('make -q rootfs.img', shell=True, cwd=fed_dir)
+            if retcode == 0:
+                return True
+            else:
+                return False
+        return [(checkMake, ())]
 
     def generateBootScriptOverlay(self, script, args):
         # How this works:

@@ -94,40 +94,15 @@ class Builder:
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
         deps = []
-        
-        try:
-            brRepo = git.Repo(br_dir / 'buildroot')
-        except:
-            # Submodule not initialized (or otherwise can't be read as a repo)
-            brRepo = None
-
-        if brRepo is not None:
-            hashCache = wlutil.gen_dir / 'buildroot-hash'
-            with open(hashCache, 'w') as f:
-                f.write(brRepo.head.object.hexsha)
-            deps.append(wlutil.gen_dir / 'buildroot-hash')
-
         deps.append(br_dir / 'buildroot-config')
-
         deps.append(pathlib.Path(__file__))
+
         return deps
 
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
-        log = logging.getLogger()
-        try:
-            brRepo = git.Repo(br_dir / 'buildroot')
-        except:
-            # Buildroot submodule not initialized. Force a rebuild (that will
-            # throw the actual error).
-            brRepo = None
-
-        if brRepo is None or brRepo.is_dirty():
-            log.warn("Buildroot repo is dirty or uninitialized: rebuilding")
-            return False
-        else:
-            return True
+        return [wlutil.config_changed(wlutil.checkGitStatus(br_dir / 'buildroot'))]
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted

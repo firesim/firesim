@@ -10,6 +10,9 @@ import shutil
 import psutil
 import errno
 import pathlib
+import git
+import json
+import hashlib
 from contextlib import contextmanager
 
 #------------------------------------------------------------------------------
@@ -306,6 +309,9 @@ def getToolVersions():
 def checkGitStatus(submodule):
     """Returns a dictionary representing the status of a git repo.
 
+    submodule: Path to the submodule to check. This check will be skipped if
+        the empty string is passed (the empty string is always uptodate)
+
     Fields:
     'sha'  : latest git commit hash (or "" if not initialized)
     'dirty': boolean indicating whether there are uncommited changes (uninitialized repos are considered dirty)
@@ -319,35 +325,40 @@ def checkGitStatus(submodule):
     change if the repo has changed (or we can't tell if it's changed)."""
 
     log = logging.getLogger()
+
+    if submodule == "":
+        return {
+                'sha' : "",
+                'dirty' : False,
+                "init" : False,
+                "rebuild" : ""
+                }
+
     try:
         repo = git.Repo(submodule)
-    except:
+    except git.InvalidGitRepositoryError:
         # Submodule not initialized (or otherwise can't be read as a repo)
         return {
                 'sha' : "",
                 'dirty' : True,
                 "init" : False,
-                "rebuild" : random
+                "rebuild" : random.random()
                 }
 
-    status['init'] = True
-    status['sha'] = brRepo.head.object.hexsha
-    status['dirty'] = brRepo.is_dirty()
-    if brRepo.is_dirty():
+    status = {
+            'init' : True,
+            'sha' : repo.head.object.hexsha,
+            'dirty' : repo.is_dirty()
+            }
+    if repo.is_dirty():
         # In the absense of a clever way to record changes, we must assume that
         # a dirty repo has changed since the last time we built.
         log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
-        status['rebuild'] = random
+        status['rebuild'] = random.random()
     else:
         status['rebuild'] = 0
 
     return status
-
-def dirEmpty(d):
-    if any(os.scandir(d)):
-        return False
-    else:
-        return True
 
 def checkSubmodule(s):
     """Check whether a submodule is present and initialized.
@@ -360,6 +371,51 @@ def checkSubmodule(s):
     raises SubmoduleError if submodule not ready 
     """
     
-    if not s.exists() or dirEmpty(s):
+    if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
 
+# The doit.tools.config_changed helper doesn't support multiple invocations in
+# a single uptodate. I fix that bug here, otherwise it's a direct copy from their
+# code. See https://github.com/pydoit/doit/issues/333.
+class config_changed(object):
+    """check if passed config was modified
+    @var config (str) or (dict)
+    @var encoder (json.JSONEncoder) Encoder used to convert non-default values.
+    """
+    def __init__(self, config, encoder=None):
+        self.config = config
+        self.config_digest = None
+        self.encoder = encoder
+
+    def _calc_digest(self):
+        if isinstance(self.config, str):
+            return self.config
+        elif isinstance(self.config, dict):
+            data = json.dumps(self.config, sort_keys=True, cls=self.encoder)
+            byte_data = data.encode("utf-8")
+            return hashlib.md5(byte_data).hexdigest()
+        else:
+            raise Exception(('Invalid type of config_changed parameter got %s' +
+                             ', must be string or dict') % (type(self.config),))
+
+    def configure_task(self, task):
+        # Give this object a unique ID that persists between calls (ID is the
+        # order in which it was evaluated when adding)
+        if not hasattr(task, '_config_changed_lastID'):
+            task._config_changed_lastID = 0
+        self.saverID = str(task._config_changed_lastID)
+        task._config_changed_lastID += 1
+
+        configKey = '_config_changed'+self.saverID
+        task.value_savers.append(lambda: {configKey:self.config_digest})
+
+    def __call__(self, task, values):
+        """return True if config values are UNCHANGED"""
+
+        configKey = '_config_changed'+self.saverID
+
+        self.config_digest = self._calc_digest()
+        last_success = values.get(configKey)
+        if last_success is None:
+            return False
+        return (last_success == self.config_digest)
