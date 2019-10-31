@@ -28,8 +28,8 @@ class FAMEDefaults extends Transform {
     def isBound(topPort: Port) = analysis.channelsByPort.contains(analysis.topTarget.ref(topPort.name))
     val defaultExtChannelAnnos = topModule.ports.filterNot(isGlobal).filterNot(isBound).flatMap({
       case Port(_, _, _, ClockType) => None // FIXME: Reject the clock in RC's debug interface
-      case Port(_, name, Input, _)  => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, None, Some(Seq(analysis.topTarget.ref(name)))))
-      case Port(_, name, Output, _) => Some(FAMEChannelConnectionAnnotation(channelNS.newName(name), WireChannel, Some(Seq(analysis.topTarget.ref(name))), None))
+      case Port(_, name, Input, _)  => Some(FAMEChannelConnectionAnnotation.implicitlyClockedSink(channelNS.newName(name), WireChannel, Seq(analysis.topTarget.ref(name))))
+      case Port(_, name, Output, _) => Some(FAMEChannelConnectionAnnotation.implicitlyClockedSource(channelNS.newName(name), WireChannel, Seq(analysis.topTarget.ref(name))))
     })
     val channelModules = new LinkedHashSet[String] // TODO: find modules to absorb into channels, don't label as FAME models
     val defaultLoopbackAnnos = new ArrayBuffer[FAMEChannelConnectionAnnotation]
@@ -41,11 +41,11 @@ class FAMEDefaults extends Transform {
         wi
       case c @ Connect(_, WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, _, _), WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
         if (c.loc.tpe != ClockType && c.expr.tpe != ClockType) {
-          defaultLoopbackAnnos += FAMEChannelConnectionAnnotation(
+          defaultLoopbackAnnos += FAMEChannelConnectionAnnotation.implicitlyClockedLoopback(
             channelNS.newName(s"${rhsiname}_${rhspname}__to__${lhsiname}_${lhspname}"),
             WireChannel,
-            Some(Seq(topTarget.ref(rhsiname).field(rhspname))),
-            Some(Seq(topTarget.ref(lhsiname).field(lhspname))))
+            Seq(topTarget.ref(rhsiname).field(rhspname)),
+            Seq(topTarget.ref(lhsiname).field(lhspname)))
         }
         c
       case s => s

@@ -61,11 +61,10 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     p.tpe match {
       case BundleType(fields) =>
         fields.map(field =>
-          FAMEChannelConnectionAnnotation(
+          FAMEChannelConnectionAnnotation.implicitlyClockedSource(
             p.name + "_" + field.name,
             WireChannel,
-            sources = Some(Seq(mT.ref(p.name).field(field.name))),
-            sinks = None
+            Seq(mT.ref(p.name).field(field.name))
           )
         )
       case other => Seq()

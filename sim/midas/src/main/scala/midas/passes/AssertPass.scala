@@ -143,11 +143,7 @@ private[passes] class AssertPass(
     val assertAnnos = if (assertNum > 0) {
       val portName = assertPorts(c.main).name
       val portRT = ModuleTarget(c.main, c.main).ref(portName)
-      val fcca = FAMEChannelConnectionAnnotation(
-        globalName = portName,
-        channelInfo = WireChannel,
-        sources = Some(Seq(portRT)),
-        sinks = None)
+      val fcca = FAMEChannelConnectionAnnotation.implicitlyClockedSource(portName, WireChannel, Seq(portRT))
 
       val bridgeAnno = BridgeIOAnnotation(
         target = portRT,

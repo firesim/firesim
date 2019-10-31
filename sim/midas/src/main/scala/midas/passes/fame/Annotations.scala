@@ -50,7 +50,7 @@ case class FAMEChannelPortsAnnotation(
 case class FAMEChannelConnectionAnnotation(
   globalName: String,
   channelInfo: FAMEChannelInfo,
-  clock: Option[ReferenceTarget]
+  clock: Option[ReferenceTarget],
   sources: Option[Seq[ReferenceTarget]],
   sinks: Option[Seq[ReferenceTarget]]) extends Annotation with HasSerializationHints {
   def update(renames: RenameMap): Seq[Annotation] = {
@@ -77,11 +77,18 @@ case class FAMEChannelConnectionAnnotation(
     copy(globalName = s"${portName}_${globalName}").update(localRenames).head.asInstanceOf[this.type]
   }
 
-  override def getTargets: Seq[ReferenceTarget] = clock +: (sources.toSeq.flatten ++ sinks.toSeq.flatten)
+  override def getTargets: Seq[ReferenceTarget] = clock ++: (sources.toSeq.flatten ++ sinks.toSeq.flatten)
 }
 
-// Helper factory methods for generating bridge annotations that have only sinks or sources
+// Helper factory methods for generating common patterns
 object FAMEChannelConnectionAnnotation {
+  def implicitlyClockedLoopback(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sources: Seq[ReferenceTarget],
+    sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
+    FAMEChannelConnectionAnnotation(globalName, channelInfo, None, Some(sources), Some(sinks))
+
   def sink(
     globalName: String,
     channelInfo: FAMEChannelInfo,
@@ -89,12 +96,22 @@ object FAMEChannelConnectionAnnotation {
     sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
   FAMEChannelConnectionAnnotation(globalName, channelInfo, clock, None, Some(sinks))
 
+  def implicitlyClockedSink(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation = sink(globalName, channelInfo, None, sinks)
+
   def source(
     globalName: String,
     channelInfo: FAMEChannelInfo,
     clock: Option[ReferenceTarget],
     sources: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
   FAMEChannelConnectionAnnotation(globalName, channelInfo, clock, Some(sources), None)
+
+  def implicitlyClockedSource(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sources: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation = source(globalName, channelInfo, None, sources)
 }
 
 /**

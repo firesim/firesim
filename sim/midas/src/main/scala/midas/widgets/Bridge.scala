@@ -113,9 +113,9 @@ trait HasChannels {
     for ((field, chName) <- channels) {
       annotate(new ChiselAnnotation { def toFirrtl =
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.implicitlyClockedSource(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
         } else {
-          FAMEChannelConnectionAnnotation.sink  (chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.implicitlyClockedSink(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
         }
       })
     }
@@ -132,14 +132,14 @@ trait HasChannels {
         val leafTargets = Seq(validTarget) ++ lowerAggregateIntoLeafTargets(field.bits)
         // Bridge is the sink; it applies target backpressure
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.source(
+          FAMEChannelConnectionAnnotation.implicitlyClockedSource(
             fwdChName,
             DecoupledForwardChannel.source(validTarget, readyTarget),
             leafTargets
           )
         } else {
         // Bridge is the source; it asserts target-valid and recieves target-backpressure
-          FAMEChannelConnectionAnnotation.sink(
+          FAMEChannelConnectionAnnotation.implicitlyClockedSink(
             fwdChName,
             DecoupledForwardChannel.sink(validTarget, readyTarget),
             leafTargets
@@ -150,9 +150,9 @@ trait HasChannels {
       annotate(new ChiselAnnotation { def toFirrtl = {
         val readyTarget = Seq(field.ready.toNamed.toTarget)
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.implicitlyClockedSink(revChName, DecoupledReverseChannel, readyTarget)
         } else {
-          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.implicitlyClockedSource(revChName, DecoupledReverseChannel, readyTarget)
         }
       }})
     }

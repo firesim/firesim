@@ -38,14 +38,14 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
     def portRefTarget(field: String) = ReferenceTarget(circuit.main, circuit.main, Nil, field, Nil)
 
     def wireSinkAnno(chName: String) =
-      FAMEChannelConnectionAnnotation(chName, PipeChannel(1), None, Some(Seq(portRefTarget(chName))))
+      FAMEChannelConnectionAnnotation.implicitlyClockedSink(chName, PipeChannel(1), Seq(portRefTarget(chName)))
     def wireSourceAnno(chName: String) =
-      FAMEChannelConnectionAnnotation(chName, PipeChannel(1), Some(Seq(portRefTarget(chName))), None)
+      FAMEChannelConnectionAnnotation.implicitlyClockedSource(chName, PipeChannel(1), Seq(portRefTarget(chName)))
 
     def decoupledRevSinkAnno(name: String, readyTarget: ReferenceTarget) =
-      FAMEChannelConnectionAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, None, Some(Seq(readyTarget)))
+      FAMEChannelConnectionAnnotation.implicitlyClockedSink(prefixWith(name, "rev"), DecoupledReverseChannel, Seq(readyTarget))
     def decoupledRevSourceAnno(name: String, readyTarget: ReferenceTarget) =
-      FAMEChannelConnectionAnnotation(prefixWith(name, "rev"), DecoupledReverseChannel, Some(Seq(readyTarget)), None)
+      FAMEChannelConnectionAnnotation.implicitlyClockedSource(prefixWith(name, "rev"), DecoupledReverseChannel, Seq(readyTarget))
 
     def decoupledFwdSinkAnno(chName: String,
                              validTarget: ReferenceTarget,
@@ -57,7 +57,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
         readySource = Some(readyTarget),
         validSource = None,
         readySink   = None)
-      FAMEChannelConnectionAnnotation(prefixWith(chName, "fwd"), chInfo, None, Some(leaves))
+      FAMEChannelConnectionAnnotation.implicitlyClockedSink(prefixWith(chName, "fwd"), chInfo, leaves)
     }
 
     def decoupledFwdSourceAnno(chName: String,
@@ -70,7 +70,7 @@ private[passes] class ChannelizeTargetIO(io: Seq[(String, chisel3.Data)]) extend
         readySink   = Some(readyTarget),
         validSink   = None,
         readySource = None)
-      FAMEChannelConnectionAnnotation(prefixWith(chName, "fwd"), chInfo, Some(leaves), None)
+      FAMEChannelConnectionAnnotation.implicitlyClockedSource(prefixWith(chName, "fwd"), chInfo, leaves)
     }
 
     // Generate ReferenceTargets for the leaves in an RV payload
