@@ -7,8 +7,25 @@ LOGNAME=$(realpath $(mktemp results_full_test.XXXX))
 
 echo "Running Full Test. Results available in $LOGNAME"
 
+# These tests need to run on spike, but not with the no-disk option
+echo "Running bare-metal tests" | tee -a $LOGNAME
+IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args|rocc)"
+./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
+# This is a temporary workaround for bug #38
+./marshal build test/spike.json
+./marshal test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+else
+  echo "Success" | tee -a $LOGNAME
+fi
+
+echo "Initializing submodules for linux-based tests" | tee -a $LOGNAME
+./init-submodules.sh | tee -a $LOGNAME
+
 # We pre-build to avoid potential timeouts on a fresh clone
-# echo "Pre-building base workloads" | tee -a $LOGNAME
+echo "Pre-building base workloads" | tee -a $LOGNAME
 ./marshal build test/br-base.json
 ./marshal build test/fedora-base.json
 
@@ -42,20 +59,6 @@ echo "Running regular tests" | tee -a $LOGNAME
 BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike|spike-args|rocc)"
 ./marshal clean test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 ./marshal test test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
-if [ ${PIPESTATUS[0]} != 0 ]; then
-  echo "Failure" | tee -a $LOGNAME
-  SUITE_PASS=false
-else
-  echo "Success" | tee -a $LOGNAME
-fi
-
-# These tests need to run on spike, but not with the no-disk option
-echo "Running bare-metal tests" | tee -a $LOGNAME
-IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args|rocc)"
-./marshal clean test/$IS_INCLUDE.json | tee -a $LOGNAME
-# This is a temporary workaround for bug #38
-./marshal build test/spike.json
-./marshal test -s test/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
