@@ -24,8 +24,8 @@ Bridges enable:
    SoC boundary. Then write software models and bridge drivers that move
    tokens between each FPGA. See the SimpleNICBridge.
 
-#. **Resource optimizations.** Resource-intenstive components of the target can
-   be replaced with models that use fewer FPGA resources or run entirely
+#. **Resource optimizations.** Resource-intensive components of the target can
+   be replaced with models that use fewer FPGA resources or run entirely in
    software.
 
 
@@ -51,11 +51,11 @@ In your target side, you will mix-in ``midas.widgets.Bridge`` into a Chisel
 ``BaseModule`` (this can be a black or white-box Chisel module) and implement
 its abstract members. This trait indicates that the associated module will be
 replaced with a connection to the host-side of the bridge that sources and
-sinks token streams. During complilation, the target-side module will be extracted by Golden Gate and
+sinks token streams. During compilation, the target-side module will be extracted by Golden Gate and
 its interface will be driven by your bridge's host-side implementation.
 
 This trait has two type parameters and two abstract members you'll need define
-for your Bridge. Since you must mix Bridge into a Chisel BaseModule, the IO you
+for your Bridge. Since you must mix ``Bridge`` into a Chisel ``BaseModule``, the IO you
 define for that module constitutes the target-side interface of your bridge.
 
 Type Parameters:
@@ -63,10 +63,11 @@ Type Parameters:
 
 #. **Host Interface Type** ``HPType <: TokenizedRecord``: The Chisel type of your Bridge's
    host-land interface. This describes how the target interface has been
-   divided into seperate token channels. One example, ``HostPortIO[T]``, divides a
+   divided into separate token channels. One example, ``HostPortIO[T]``, divides a
    Chisel Bundle into a single bi-directional token stream and is sufficient
    for defining bridges that do not model combinational paths between token
-   streams.
+   streams. We suggest starting with ``HostPortIO[T]`` when defining a Bridge for modeling IO devices, as it is the simplest
+   to reasonable about and can run at FMR = 1. For other port types, see Bridge Host Interaces.
 
 #. **BridgeModule Type** ``WidgetType <: BridgeModule``: The type of the
    host-land BridgeModule you want Golden Gate to connect in-place of your target-side module.
