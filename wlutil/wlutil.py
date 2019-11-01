@@ -326,7 +326,7 @@ def checkGitStatus(submodule):
 
     log = logging.getLogger()
 
-    if submodule == "":
+    if submodule == None:
         return {
                 'sha' : "",
                 'dirty' : False,
@@ -336,7 +336,7 @@ def checkGitStatus(submodule):
 
     try:
         repo = git.Repo(submodule)
-    except git.InvalidGitRepositoryError:
+    except (git.InvalidGitRepositoryError, git.exc.NoSuchPathError):
         # Submodule not initialized (or otherwise can't be read as a repo)
         return {
                 'sha' : "",
@@ -354,6 +354,7 @@ def checkGitStatus(submodule):
         # In the absense of a clever way to record changes, we must assume that
         # a dirty repo has changed since the last time we built.
         log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
+        raise Exception("oof")
         status['rebuild'] = random.random()
     else:
         status['rebuild'] = 0
