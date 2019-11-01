@@ -95,7 +95,6 @@ def main():
         
     skipCount = 0
     failCount = 0
-    ret = 0
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
         wlutil.setRunName(cfgPath, args.command)
