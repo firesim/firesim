@@ -167,6 +167,7 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
 class FASEDTargetIO(implicit val p: Parameters) extends Bundle {
   val axi4 = Flipped(new NastiIO)
   val reset = Input(Bool())
+  val clock = Input(Clock())
 }
 
 class MemModelIO(implicit val p: Parameters) extends WidgetIO()(p){
@@ -567,9 +568,10 @@ class FASEDBridge(argument: CompleteConfig)(implicit p: Parameters)
 }
 
 object FASEDBridge {
-  def apply(axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDBridge = {
+  def apply(clock: Clock, axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDBridge = {
     val ep = Module(new FASEDBridge(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
     ep.io.reset := reset
+    ep.io.clock := clock
     import chisel3.core.ExplicitCompileOptions.NotStrict
     ep.io.axi4 <> axi4
     ep

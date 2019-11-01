@@ -67,6 +67,7 @@ object DeclockedTracedInstruction {
 // The IO matched on by the TracerV bridge: a wrapper around a heterogenous
 // bag of vectors. Each entry is Vec of committed instructions
 class TraceOutputTop(private val traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bundle {
+  val clock = Output(Clock())
   val traces = Output(HeterogeneousBag(traceProto.map(_.cloneType)))
   def getProto() = traceProto
   def getWidths(): Seq[TracedInstructionWidths] = traceProto.map(_.head.widths)

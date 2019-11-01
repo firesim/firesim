@@ -24,17 +24,24 @@ import TokenQueueConsts._
 
 case object LoopbackNIC extends Field[Boolean](false)
 
-class NICBridge(implicit p: Parameters) extends BlackBox with Bridge[HostPortIO[NICIOvonly], SimpleNICBridgeModule] {
-  val io = IO(Flipped(new NICIOvonly))
+class NICTargetIO extends Bundle {
+  val clock = Input(Clock())
+  val nic = Flipped(new NICIOvonly)
+}
+
+class NICBridge(implicit p: Parameters) extends BlackBox with Bridge[HostPortIO[NICTargetIO], SimpleNICBridgeModule] {
+  val io = IO(new NICTargetIO)
   val bridgeIO = HostPort(io)
   val constructorArg = None
   generateAnnotations()
 }
 
+
 object NICBridge {
-  def apply(nicIO: NICIOvonly)(implicit p: Parameters): NICBridge = {
+  def apply(clock: Clock, nicIO: NICIOvonly)(implicit p: Parameters): NICBridge = {
     val ep = Module(new NICBridge)
     ep.io <> nicIO
+    ep.io.clock := clock
     ep
   }
 }
@@ -174,10 +181,10 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICIOvonly]]()(p)
+class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICTargetIO]]()(p)
     with BidirectionalDMA {
   val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(Flipped(new NICIOvonly)))
+  val hPort = IO(HostPort(Flipped(new NICTargetIO)))
   // DMA mixin parameters
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
@@ -190,7 +197,7 @@ class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPor
   val bigtokenToNIC = Module(new BigTokenToNICTokenAdapter)
   val NICtokenToBig = Module(new NICTokenToBigTokenAdapter)
 
-  val target = hPort.hBits
+  val target = hPort.hBits.nic
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
                                     hPort.fromHost.hReady)
   val tFire = tFireHelper.fire

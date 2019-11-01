@@ -23,7 +23,6 @@ import scala.collection.mutable
  *  (It is also possible to use this for very simple models where the one or
  *  more outputs depend combinationally on a _single_ input token (the toHost
  *  field))
- *
  */
 
 // We're using a Record here because reflection in Bundle prematurely initializes our lazy vals
@@ -56,7 +55,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
       field := tokenChannel.bits
       toHostChannels += tokenChannel
     }
- 
+
     for ((field, localName) <- outputWireChannels) {
       val tokenChannel = simIo.wireInputPortMap(local2globalName(localName))
       tokenChannel.bits := field
@@ -97,6 +96,9 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
     // Enqueue into the toHost channels only once all toHost channels can accept the token
     val fromHostHelper = DecoupledHelper((fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
     fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
+
+    // Tie off the target clock; these should be unused in the BridgeModule
+    SimUtils.findClocks(hBits).map(_ := false.B.asClock)
   }
 
   def generateAnnotations(): Unit = {

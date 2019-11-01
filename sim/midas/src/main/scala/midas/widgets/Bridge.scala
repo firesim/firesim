@@ -85,9 +85,17 @@ trait HasChannels {
    * Implementation follows
    *
    */
+  private[midas] def getClock(): Clock = {
+    val allTargetClocks = SimUtils.findClocks(targetPortProto)
+    require(allTargetClocks.nonEmpty,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has no clock field.")
+    require(allTargetClocks.size == 1,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has ${allTargetClocks.size} clocks but must define only one.")
+    allTargetClocks.head
+  }
 
-  private[midas] def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
   private[midas] def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
+  private[midas] def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
 
   private def getRVChannelNames(channels: Seq[RVChTuple]): Seq[String] =
     channels.flatMap({ channel =>
@@ -113,9 +121,9 @@ trait HasChannels {
     for ((field, chName) <- channels) {
       annotate(new ChiselAnnotation { def toFirrtl =
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.implicitlyClockedSource(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
         } else {
-          FAMEChannelConnectionAnnotation.implicitlyClockedSink(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.sink(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
         }
       })
     }
@@ -127,21 +135,24 @@ trait HasChannels {
       // Generate the forward channel annotation
       val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
       annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
         val validTarget = field.valid.toNamed.toTarget
         val readyTarget = field.ready.toNamed.toTarget
         val leafTargets = Seq(validTarget) ++ lowerAggregateIntoLeafTargets(field.bits)
         // Bridge is the sink; it applies target backpressure
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.implicitlyClockedSource(
+          FAMEChannelConnectionAnnotation.source(
             fwdChName,
             DecoupledForwardChannel.source(validTarget, readyTarget),
+            clockTarget,
             leafTargets
           )
         } else {
         // Bridge is the source; it asserts target-valid and recieves target-backpressure
-          FAMEChannelConnectionAnnotation.implicitlyClockedSink(
+          FAMEChannelConnectionAnnotation.sink(
             fwdChName,
             DecoupledForwardChannel.sink(validTarget, readyTarget),
+            clockTarget,
             leafTargets
           )
         }

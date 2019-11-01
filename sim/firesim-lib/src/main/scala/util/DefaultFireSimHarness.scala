@@ -46,7 +46,7 @@ class DefaultFireSimHarness[T <: LazyModule](dutGen: () => T)(implicit val p: Pa
   withClockAndReset(clock, reset) {
     // Instantiate multiple instances of the DUT to implement supernode
     val targets = Seq.fill(p(NumNodes))(Module(LazyModule(dutGen()).module))
-    val peekPokeBridge = PeekPokeBridge(reset)
+    val peekPokeBridge = PeekPokeBridge(clock, reset)
     // A Seq of partial functions that will instantiate the right bridge only
     // if that Mixin trait is present in the target's class instance
     //

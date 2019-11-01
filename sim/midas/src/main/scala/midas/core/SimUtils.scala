@@ -80,4 +80,11 @@ object SimUtils {
   def parsePortsSeq(io: Seq[(String, Data)], alsoFlattenRVPorts: Boolean = true): ParsePortsTuple =
     parsePorts(io, alsoFlattenRVPorts)
 
+  // Returns reference to all clocks
+  def findClocks(field: Data): Seq[Clock] = field match {
+    case c: Clock => Seq(c)
+    case b: Record => b.elements.flatMap({ case (_, field) => findClocks(field) }).toSeq
+    case v: Vec[_] => v.flatMap(findClocks)
+    case o => Seq()
+  }
 }

@@ -100,9 +100,9 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
                                    fuzzer.axi4.ar.bits.addr.getWidth,
                                    fuzzer.axi4.ar.bits.id.getWidth)
 
-    val fasedInstance =  FASEDBridge(fuzzer.axi4, reset,
+    val fasedInstance =  FASEDBridge(clock, fuzzer.axi4, reset,
       CompleteConfig(p(firesim.configs.MemModelKey), nastiKey, Some(AXI4EdgeSummary(fuzzer.axi4Edge))))
-    val peekPokeBridge = PeekPokeBridge(reset,
+    val peekPokeBridge = PeekPokeBridge(clock, reset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
   }

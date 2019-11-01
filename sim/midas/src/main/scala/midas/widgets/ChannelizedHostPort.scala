@@ -21,7 +21,7 @@ abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extend
   lazy val fieldToChannelMap = Map((_inputWireChannels ++ _outputWireChannels):_*)
 
   private def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => Seq()
+    case c: Clock => throw new Exception("Tokens cannot contain clock fields")
     case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
     case b: Bits => Seq(directionOf(b))

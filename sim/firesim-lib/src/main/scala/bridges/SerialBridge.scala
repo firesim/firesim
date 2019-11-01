@@ -18,9 +18,10 @@ class SerialBridge extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO]
 }
 
 object SerialBridge {
-  def apply(port: SerialIO)(implicit p: Parameters): SerialBridge = {
+  def apply(clock: Clock, port: SerialIO)(implicit p: Parameters): SerialBridge = {
     val ep = Module(new SerialBridge)
     ep.io.serial <> port
+    ep.io.clock := clock
     ep
   }
 }
@@ -28,6 +29,7 @@ object SerialBridge {
 class SerialBridgeTargetIO extends Bundle {
   val serial = Flipped(new SerialIO(testchipip.SerialAdapter.SERIAL_IF_WIDTH))
   val reset = Input(Bool())
+  val clock = Input(Clock())
 }
 
 class SerialBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {

@@ -26,14 +26,16 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
 }
 
 object UARTBridge {
-  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
+  def apply(clock: Clock, uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
     val ep = Module(new UARTBridge)
     ep.io.uart <> uart
+    ep.io.clock := clock
     ep
   }
 }
 
 class UARTBridgeTargetIO extends Bundle {
+  val clock = Input(Clock())
   val uart = Flipped(new UARTPortIO)
   val reset = Input(Bool())
 }
