@@ -4,7 +4,7 @@ package midas.widgets
 
 import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel}
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DensePrefixSum
@@ -54,13 +54,15 @@ class RationalClockBridge(referencePeriod: Int, phaseRelationships: (Int, Int)*)
     }
   })
 
-  //annotate(new ChiselAnnotation { def toFirrtl = {
-  //    ClockChannelAnnotation(
-  //      io.toNamed.toTarget,
-  //      referencePeriod,
-  //      phaseRelationships)
-  //  }
-  //})
+  annotate(new ChiselAnnotation { def toFirrtl =
+      FAMEChannelConnectionAnnotation(
+        clockChannelName,
+        channelInfo = TargetClockChannel,
+        clock = None, // Clock channels do not have a reference clock
+        sinks = Some(io.clocks.map(_.toNamed.toTarget)),
+        sources = None
+      )
+  })
 }
 
 class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeConsts {

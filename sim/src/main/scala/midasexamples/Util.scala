@@ -11,8 +11,7 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 // module DUT (it has a single io: Data member) and connects all of
 // its IO to a PeekPokeBridge
 class PeekPokeMidasExampleHarness(dutGen: () => Module) extends RawModule {
-  //val clock = Module(new RationalClockBridge(1000)).io.clocks.head
-  val clock = IO(Input(Clock()))
+  val clock = Module(new RationalClockBridge(1000)).io.clocks.head
   val reset = WireInit(false.B)
 
   withClockAndReset(clock, reset) {

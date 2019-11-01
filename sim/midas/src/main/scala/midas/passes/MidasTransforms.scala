@@ -53,6 +53,7 @@ private[midas] class MidasTransforms(
       new MiddleFirrtlToLowFirrtl,
       new BridgeExtraction,
       new ResolveAndCheck,
+      new EmitFirrtl("post-bridge-extraction.fir"),
       new MiddleFirrtlToLowFirrtl,
       new fame.WrapTop,
       new ResolveAndCheck,
