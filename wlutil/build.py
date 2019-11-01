@@ -65,12 +65,6 @@ def addDep(loader, config):
         bin_file_deps.append(config['linux-config'])
         bin_task_deps.append('_busybox')
     
-    # A child binary could conceivably rely on the parent rootfs. This also
-    # implicitly depends on the parent's host-init script (whcih the img
-    # depends on).
-    if 'base-img' in config:
-        bin_task_deps.append(config['base-img'])
-
     if 'bin' in config:
         loader.addTask({
                 'name' : config['bin'],
