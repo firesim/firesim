@@ -64,7 +64,8 @@ configDerived = [
         'cfg-file', # Path to this workloads raw config file
         'distro', # Base linux distribution (either 'fedora' or 'br')
         'initramfs', # boolean: should we use an initramfs with this config?
-        'jobs' # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
+        'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
+        'base-deps' # A list of tasks that this workload needs from its base (a potentially empty list)
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -143,6 +144,8 @@ class Config(collections.MutableMapping):
             assert ( os.path.isabs(self.cfg['workdir'])), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
 
         # Some default values
+        self.cfg['base-deps'] = []
+
         if 'workdir' in self.cfg:
             if not os.path.isabs(self.cfg['workdir']): 
                 self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['workdir'])
@@ -206,7 +209,11 @@ class Config(collections.MutableMapping):
         # config will not generate a new image if it's base didn't
         if 'img' in baseCfg:
             self.cfg['base-img'] = baseCfg['img']
+            self.cfg['base-deps'].append(self.cfg['base-img'])
             self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
+
+        if 'host-init' in baseCfg:
+            self.cfg['base-deps'].append(baseCfg['host-init'])
 
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = linux_dir

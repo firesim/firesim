@@ -60,7 +60,7 @@ def addDep(loader, config):
 
     # Add a rule for the binary
     bin_file_deps = []
-    bin_task_deps = [] + hostInit
+    bin_task_deps = [] + hostInit + config['base-deps']
     if 'linux-config' in config:
         bin_file_deps.append(config['linux-config'])
         bin_task_deps.append('_busybox')
@@ -94,11 +94,8 @@ def addDep(loader, config):
 
     # Add a rule for the image (if any)
     img_file_deps = []
-    img_task_deps = [] + hostInit
+    img_task_deps = [] + hostInit + config['base-deps']
     if 'img' in config:
-        if 'base-img' in config:
-            img_task_deps += [config['base-img']]
-            img_file_deps += [config['base-img']]
         if 'files' in config:
             for fSpec in config['files']:
                 # Add directories recursively
