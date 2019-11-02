@@ -7,6 +7,7 @@ import collections
 import json
 import pprint
 import logging
+import humanfriendly
 from .wlutil import *
 import pathlib as pth
 
@@ -50,13 +51,16 @@ configUser = [
         # be relative to this (but converted to absolute when loaded)
         'workdir',
         # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
-        'launch'
+        'launch',
+        # Size of root filesystem (human-readable string) 
+        'rootfs-size'
         ]
 
 # This is a comprehensive list of all options set during config parsing
 # (but not explicitly provided by the user)
 configDerived = [
         'img', # Path to output filesystem image
+        'img-sz', # Desired size of image in bytes (optional)
         'bin', # Path to output binary (e.g. bbl-vmlinux)
         'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
@@ -86,6 +90,7 @@ configInherit = [
         'bin',
         'post_run_hook',
         'spike-args',
+        'rootfs-size',
         'qemu-args']
 
 # These are the permissible base-distributions to use (they get treated special)
@@ -158,6 +163,9 @@ class Config(collections.MutableMapping):
         for k in (set(configToAbs) & set(self.cfg.keys())):
             if not os.path.isabs(self.cfg[k]):
                 self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
+
+        if 'rootfs-size' in self.cfg:
+            self.cfg['img-sz'] = humanfriendly.parse_size(self.cfg['rootfs-size'])
 
         # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs) 
         if 'files' in self.cfg:

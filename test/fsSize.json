@@ -1,0 +1,13 @@
+{
+  "name" : "fsSize",
+  "base" : "br-base.json",
+  "rootfs-size" : "4G",
+  "files" : [["huge0.dat", "/root/"],
+             ["huge1.dat", "/root/"],
+             ["runOutput", "/root/"]],
+  "command" : "cat /root/runOutput",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}

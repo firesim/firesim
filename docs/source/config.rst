@@ -226,6 +226,16 @@ should be absolute with respect to the workload rootfs. Files will be placed
 together in the output directory. You cannot specify the directory structure of
 the output.
 
+rootfs-size
+^^^^^^^^^^^^^^^^^
+The desired rootfs size (in human-readable units, e.g. "4GB"). This number must
+either be >= to the parent workload's image size or set to 0. If set to 0, the
+rootfs will be shrunk to have 256MB of free space.
+
+.. Note:: It is only necessary to set this option if you intend to copy in
+   large amounts of files or your workload generates large intermediate files. The
+   base workloads will provide 256MB of free space by default.
+
 run
 ^^^^^^^^^^^^^
 A script to run automatically every time this workload runs. The script will
