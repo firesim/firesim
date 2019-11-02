@@ -41,4 +41,6 @@ make -j32
 make M=drivers/block -j32
 modinfo drivers/block/nbd.ko
 
-echo "NBD kernel module available in $KBUILDDIR/drivers/block/nbd.ko"
+OUTPUTFILE=$GENERICBUILDDIR/nbd.ko
+cp $KBUILDDIR/drivers/block/nbd.ko $OUTPUTFILE
+echo "NBD kernel module available in $OUTPUTFILE"
