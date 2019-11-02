@@ -92,8 +92,9 @@ tracerv_t::~tracerv_t() {
 
 void tracerv_t::init() {
     cur_cycle = 0;
-
-    printf("Collect trace from %lu to %lu cycles\n", start_cycle, end_cycle);
+    if (this->tracefile) {
+        printf("TracerV: Collecting trace from %lu to %lu cycles\n", start_cycle, end_cycle);
+    }
 }
 
 // defining this stores as human readable hex (e.g. open in VIM)
@@ -155,7 +156,6 @@ void tracerv_t::flush() {
 
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
     size_t beats_available = beats_available_stable();
-    fprintf(stderr, "Beats available: %d\n", beats_available);
 
     int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
 
