@@ -378,6 +378,34 @@ class InstanceDeployManager:
                 run('make clean')
                 run('make')
 
+    def fpga_node_qcow(self):
+        """ Install qemu-img management tools and copy NBD infra to remote
+        node. This assumes that the kernel module was already built and exists
+        in the directory on this machine.
+        """
+        self.instance_logger("""Setting up remote node for qcow2 disk images.""")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            # get qemu-nbd
+            run('sudo yum -y install qemu-img')
+            # copy over kernel module
+            put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
+
+    def load_nbd_module(self):
+        """ load the nbd module. """
+        self.unload_nbd_module()
+        # now load xdma
+        self.instance_logger("Loading NBD Kernel Module.")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("sudo insmod /home/centos/nbd.ko")
+
+    def unload_nbd_module(self):
+        """ unload the nbd module. """
+        self.instance_logger("Unloading NBD Kernel Module.")
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            # fpga mgmt tools seem to force load xocl after a flash now...
+            # so we just remove everything for good measure:
+            run('sudo rmmod nbd')
+
     def unload_xdma(self):
         self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
 
@@ -571,6 +599,11 @@ class InstanceDeployManager:
             self.fpga_node_xdma()
             # load xdma
             self.load_xdma()
+
+            # setup nbd/qcow infra
+            self.fpga_node_qcow()
+            # load nbd module
+            self.load_nbd_module()
 
             # clear/flash fpgas
             self.clear_fpgas()
