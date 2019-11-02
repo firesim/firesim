@@ -1,7 +1,7 @@
 {
   "name" : "fsSize",
   "base" : "br-base.json",
-  "rootfs-size" : "4G",
+  "rootfs-size" : "4GiB",
   "files" : [["huge0.dat", "/root/"],
              ["huge1.dat", "/root/"],
              ["runOutput", "/root/"]],

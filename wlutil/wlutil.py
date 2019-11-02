@@ -259,20 +259,6 @@ def applyOverlay(img, overlay):
 
     copyImgFiles(img, flist, 'in')
     
-def checkSizes(mnt, files):
-    """Takes a list of FileSpec objects and a mount point and raise a
-    RootfsCapacityError if the files cannot be safely added.
-
-    It is assumed that some target image is mounted at mnt."""
-
-    total = 0
-    for f in files:
-        total += os.path.getsize(f.src)
-
-    avail = shutil.disk_usage(mnt)[2]
-    if total > avail:
-        raise RootfsCapacityError(total, avail)
-
 def resizeFS(img, newSize=0):
     """Resize the rootfs at img to newSize.
 
@@ -281,7 +267,11 @@ def resizeFS(img, newSize=0):
       size + rootfsMargin
     """
     log = logging.getLogger()
-    run(['e2fsck', '-f', '-p', str(img)])
+    chkfsCmd = ['e2fsck', '-f', '-p', str(img)]
+    ret = run(chkfsCmd, check=False).returncode
+    if ret >= 4:
+        # e2fsck has non-error error codes (1,2 indicate corrected errors)
+        raise sp.CalledProcessError(ret, " ".join(chkfsCmd))
 
     if newSize == 0:
         run(['resize2fs', '-M', img])
@@ -290,8 +280,8 @@ def resizeFS(img, newSize=0):
     origSz = os.path.getsize(img)
     if origSz > newSize:
         log.warn("Cannot shrink image file " + str(img) + \
-                ": current size=" + humanfriendly.format_size(origSize) + \
-                " requested size=" + humanfriendly.format_size(newSize))
+                ": current size=" + humanfriendly.format_size(origSz, binary=True) + \
+                " requested size=" + humanfriendly.format_size(newSize, binary=True))
         return
     elif origSz == newSize:
         return
@@ -315,7 +305,6 @@ def copyImgFiles(img, files, direction):
     with mountImg(img, mnt):
         for f in files:
             if direction == 'in':
-                checkSizes(mnt, files)
                 run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
             elif direction == 'out':
                 uid = os.getuid()
