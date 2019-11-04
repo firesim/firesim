@@ -103,8 +103,8 @@ fi
 
 # Ensures that marshal can be called from different PWDs
 echo "Running different PWD test" | tee -a $LOGNAME
-pushd test/
-../marshal test command.json | tee -a $LOGNAME
+pushd test/sameWorkdir
+../../marshal test sameDir.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
