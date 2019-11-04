@@ -273,6 +273,9 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
       case None => channelPorts.elements(s"${chAnno.globalName}_source") <> channel.io.out
     }
 
+    AssertTokenIrrevocable(channel.io.in, Some(s"${chAnno.globalName}_in"))
+    AssertTokenIrrevocable(channel.io.out, Some(s"${chAnno.globalName}_out"))
+
     channel.io.trace.ready := DontCare
     channel.io.traceLen := DontCare
     channel
@@ -335,6 +338,11 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
         case None => channelPorts.rvOutputPortMap(chName)
       })
       bindRVChannelDeq(channel.io.deq, deqPortPair)
+
+      channel.io.enq.fwdIrrevocabilityAssertions(Some(strippedName))
+      channel.io.enq.revIrrevocabilityAssertions(Some(strippedName))
+      channel.io.deq.fwdIrrevocabilityAssertions(Some(strippedName))
+      channel.io.deq.revIrrevocabilityAssertions(Some(strippedName))
 
       channel.io.trace := DontCare
       channel.io.traceLen := DontCare
