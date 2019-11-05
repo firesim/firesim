@@ -13,6 +13,7 @@ import pathlib
 import git
 import json
 import hashlib
+import humanfriendly
 from contextlib import contextmanager
 
 #------------------------------------------------------------------------------
@@ -71,6 +72,9 @@ jlevel = "-j" + str(os.cpu_count())
 # Gets set uniquely for each logical invocation of this library
 runName = ""
 
+# Number of extra bytes to leave free by default in filesystem images
+rootfsMargin = 256*(1024*1024)
+
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
@@ -87,6 +91,17 @@ class SubmoduleError(Exception):
 
     def __str__(self):
         return self.__repr__()
+
+class RootfsCapacityError(Exception):
+    """Error representing that the workload's rootfs has run out of disk space."""
+    def __init__(self, requested, available):
+        self.requested = requested
+        self.available = available
+
+    def __str__(self):
+        return "Unsufficient disk space: " + \
+                "\tRequested: " + humanfriendly.format_size(self.requested) + \
+                "\tAvailable: " + humanfriendly.format_size(self.available)
 
 def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
@@ -254,11 +269,44 @@ def applyOverlay(img, overlay):
 
     copyImgFiles(img, flist, 'in')
     
-# Copies a list of type FileSpec ('files') to/from the destination image (img)
-#   img - path to image file to use
-#   files - list of FileSpecs to use
-#   direction - "in" or "out" for copying files into or out of the image (respectively)
+def resizeFS(img, newSize=0):
+    """Resize the rootfs at img to newSize.
+
+    img: path to image file to resize
+    newSize: desired size (in bytes). If 0, shrink the image to its minimum
+      size + rootfsMargin
+    """
+    log = logging.getLogger()
+    chkfsCmd = ['e2fsck', '-f', '-p', str(img)]
+    ret = run(chkfsCmd, check=False).returncode
+    if ret >= 4:
+        # e2fsck has non-error error codes (1,2 indicate corrected errors)
+        raise sp.CalledProcessError(ret, " ".join(chkfsCmd))
+
+    if newSize == 0:
+        run(['resize2fs', '-M', img])
+        newSize = os.path.getsize(img) + rootfsMargin
+
+    origSz = os.path.getsize(img)
+    if origSz > newSize:
+        log.warn("Cannot shrink image file " + str(img) + \
+                ": current size=" + humanfriendly.format_size(origSz, binary=True) + \
+                " requested size=" + humanfriendly.format_size(newSize, binary=True))
+        return
+    elif origSz == newSize:
+        return
+
+    os.truncate(img, newSize)
+    run(['resize2fs', str(img)])
+    return
+
 def copyImgFiles(img, files, direction):
+    """Copies a list of type FileSpec ('files') to/from the destination image (img).
+
+    img - path to image file to use
+    files - list of FileSpecs to use
+    direction - "in" or "out" for copying files into or out of the image (respectively)
+    """
     log = logging.getLogger()
 
     if not os.path.exists(mnt):
@@ -266,12 +314,7 @@ def copyImgFiles(img, files, direction):
 
     with mountImg(img, mnt):
         for f in files:
-            # Overlays may not be owned by root, but the filesystem must be.
-            # The FUSE mount automatically handles the chown from root to user
-            # Note: shell=True because f.src is allowed to contain globs
-            # Note: os.path.join can't handle overlay-style concats (e.g. join('foo/bar', '/baz') == '/baz')
             if direction == 'in':
-                # run(sudoCmd + ' cp -a ' + f.src + " " + os.path.normpath(mnt + f.dst), shell=True)
                 run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
             elif direction == 'out':
                 uid = os.getuid()
