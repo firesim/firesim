@@ -3,7 +3,7 @@
 package midas
 package core
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
@@ -14,6 +14,11 @@ import chisel3.experimental.{dontTouch, chiselName, MultiIOModule}
 
 import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}
+
+// Generates stateful assertions on the ports of channels to check that token
+// irrevocability constraints aren't be violated. Bridges that don not produce
+// token streams irrevocably will introduce simulation non-determinism.
+case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
 // For now use the convention that clock ratios are set with respect to the transformed RTL
 trait IsRationalClockRatio {
@@ -76,6 +81,8 @@ class PipeChannel[T <: ChLeafType](
     }
   }
 
+  if (p(GenerateTokenIrrevocabilityAssertions)) AssertTokenIrrevocable(io.in, None)
+
   if (p(EnableSnapshot)) {
     io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
@@ -85,7 +92,7 @@ class PipeChannel[T <: ChLeafType](
 }
 
 object AssertTokenIrrevocable {
-  def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String])(implicit p: Parameters): Unit = {
+  def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String]): Unit = {
     val prefix = suggestedName match {
       case Some(str) => str + ": "
       case None => ""
@@ -99,7 +106,7 @@ object AssertTokenIrrevocable {
       s"${prefix}bits changed without handshake, violating irrevocability")
   }
 
-  def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String] = None)(implicit p: Parameters): Unit = {
+  def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String] = None): Unit = {
     val dummyMod = Module(new Module { val io = IO(Input(Decoupled(bits.cloneType))) })
     dummyMod.io.valid := valid
     dummyMod.io.bits := bits
@@ -151,10 +158,10 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val rev = Flipped(new HostReadyValid)
   override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
 
-  def fwdIrrevocabilityAssertions(suggestedName: Option[String] = None)(implicit p: Parameters): Unit =
+  def generateFwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
     AssertTokenIrrevocable(fwd.hValid, Cat(target.valid, target.bits.asUInt), fwd.hReady, suggestedName)
 
-  def revIrrevocabilityAssertions(suggestedName: Option[String] = None)(implicit p: Parameters): Unit =
+  def generateRevIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
     AssertTokenIrrevocable(rev.hValid, target.ready, rev.hReady, suggestedName)
 
   // Returns two directioned objects driven by this SimReadyValidIO hw instance
@@ -279,6 +286,11 @@ class ReadyValidChannel[T <: Data](
 
   deqFwdFired := Mux(targetFire, false.B, deqFwdFired || io.deq.fwd.hReady)
   enqRevFired := Mux(targetFire, false.B, enqRevFired || io.enq.rev.hReady)
+
+  if (p(GenerateTokenIrrevocabilityAssertions)) {
+    io.enq.generateFwdIrrevocabilityAssertions()
+    io.deq.generateRevIrrevocabilityAssertions()
+  }
 
   io.trace := DontCare
   io.trace.bits.valid  := false.B

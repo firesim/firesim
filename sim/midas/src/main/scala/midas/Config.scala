@@ -83,3 +83,8 @@ class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
   case EnableSnapshot => true
 }) ++ new F1Config)
 
+// Turns on all additional synthesizable debug features for checking the
+// implementation of the simulator.
+class HostDebugFeatures extends Config((site, here, up) => {
+  case GenerateTokenIrrevocabilityAssertions => true
+})
