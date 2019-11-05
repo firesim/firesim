@@ -60,17 +60,11 @@ def addDep(loader, config):
 
     # Add a rule for the binary
     bin_file_deps = []
-    bin_task_deps = [] + hostInit
+    bin_task_deps = [] + hostInit + config['base-deps']
     if 'linux-config' in config:
         bin_file_deps.append(config['linux-config'])
         bin_task_deps.append('_busybox')
     
-    # A child binary could conceivably rely on the parent rootfs. This also
-    # implicitly depends on the parent's host-init script (whcih the img
-    # depends on).
-    if 'base-img' in config:
-        bin_task_deps.append(config['base-img'])
-
     if 'bin' in config:
         loader.addTask({
                 'name' : config['bin'],
@@ -82,29 +76,26 @@ def addDep(loader, config):
                 })
 
     # Add a rule for the nodisk version if requested
-    # Note that we need both the regular bin and nodisk bin if the base
-    # workload needs an init script
     if config['nodisk'] and 'bin' in config:
+        nodisk_file_deps = bin_file_deps.copy()
+        nodisk_task_deps = bin_task_deps.copy()
         if 'img' in config:
-            bin_file_deps.append(config['img'])
-            bin_task_deps.append(config['img'])
+            nodisk_file_deps.append(config['img'])
+            nodisk_task_deps.append(config['img'])
 
         loader.addTask({
                 'name' : config['bin'] + '-nodisk',
                 'actions' : [(makeBin, [config], {'nodisk' : True})],
                 'targets' : [config['bin'] + '-nodisk'],
-                'file_dep': bin_file_deps,
-                'task_dep' : bin_task_deps,
+                'file_dep': nodisk_file_deps,
+                'task_dep' : nodisk_task_deps,
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
                 })
 
     # Add a rule for the image (if any)
     img_file_deps = []
-    img_task_deps = [] + hostInit
+    img_task_deps = [] + hostInit + config['base-deps']
     if 'img' in config:
-        if 'base-img' in config:
-            img_task_deps += [config['base-img']]
-            img_file_deps += [config['base-img']]
         if 'files' in config:
             for fSpec in config['files']:
                 # Add directories recursively
@@ -209,6 +200,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
     return doit.doit_cmd.DoitMain(taskLoader).run(binList + imgList)
+    # return doit.doit_cmd.DoitMain(taskLoader).run(["info", "/data/repos/fm2/images/smoke0-bin"])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.
