@@ -1,0 +1,42 @@
+# Example of Linux Kernel Debugging with GDB
+You can use FireMarshal to boot a linux kernel in Qemu and debug it with gdb.
+This only works with Qemu, not spike or FireSim.
+
+## Enable GDB in the kernel config
+We add a few options to the kernel config using the "linux-config" option in
+gdb.json. In this case, the kernel configuration fragment is in gdb/gdb-kfrag.
+It enables debug symbols and the linux gdb helper scripts. 
+
+**Note** Using kernel scripts requires that your GDB is fairly recent, and
+built with the '--with-python' option.
+
+## Configure Qemu to use a builtin GDB server
+Qemu includes a GDB server that is enabled using the '-s' command line option.
+We tell FireMarshal to use this with the 'qemu-args' option in gdb.json.
+
+The '-S' option (notice the capital letter) tells Qemu to start the gdb server
+with the kernel halted. It will wait for a gdb client to attach and request
+that it continue. This is optional, but handy for debugging early boot.
+
+## Booting and connecting
+We can now build and launch the workload normally:
+  ./marshal build example-workloads/gdb.json
+  ./marshal launch example-workloads/gdb.json
+
+Because we added the '-S' option to 'qemu-args', the system will pause until a gdb client attaches. To do that, open another terminal/window and run:
+  cd FireMarshal/riscv-linux
+  riscv64-unknown-linux-gnu-gdb vmlinux
+
+**Note** on some systems, the gdb helper scripts may not work unless you add
+'add-auto-load-safe-path /PATH/TO/FIREMARSHAL/riscv-linux' to ~/.gdbinit (where
+/PATH/TO/FIREMARSHAL is the path to your FireMarshal directory).
+
+You are now in gdb and can run the following command to connect to the gdb server on its default port:
+  target remote :1234
+
+You are now connected to the running kernel and can interact as usual with GDB. E.g.:
+  b _do_fork
+  continue
+
+Now any time a new process forks, gdb will pause! When you shutdown the target
+OS, gdb will disconnect and you can exit normally.
