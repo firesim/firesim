@@ -31,7 +31,7 @@ PLATFORM ?= f1
 ifdef FIRESIM_STANDALONE
 
 base_dir := $(firesim_base_dir)
-chipyard_dir := $(firesim_base_dir)/target-rtl/chipyard
+chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 JVM_MEMORY ?= 16G
@@ -40,8 +40,8 @@ JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 
 # Manage the FIRRTL dependency manually
-FIRRTL_SUBMODULE_DIR ?= $(firesim_base_dir)/target-rtl/chipyard/tools/firrtl
-FIRRTL_JAR ?= $(firesim_base_dir)/target-rtl/chipyard/lib/firrtl.jar
+FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
+FIRRTL_JAR ?= $(chipyard_dir)/lib/firrtl.jar
 $(FIRRTL_JAR): $(shell find $(FIRRTL_SUBMODULE_DIR)/src/main/scala -iname "*.scala")
 	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
 	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
@@ -52,7 +52,7 @@ firrtl: $(FIRRTL_JAR)
 .PHONY: firrtl
 
 else
-# REBAR make variables
+# Chipyard make variables
 base_dir := $(abspath ../../..)
 sim_dir := $(firesim_base_dir)
 chipyard_dir := $(base_dir)
