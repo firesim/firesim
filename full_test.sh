@@ -112,6 +112,16 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
 fi
 popd
 
+echo "Running fsSize test" | tee -a $LOGNAME
+pushd test/fsSize
+./test.sh >> $LOGNAME
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
+fi
+popd
+
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
 if [ $SUITE_PASS = false ]; then
   echo "FAILURE: Some tests failed" | tee -a $LOGNAME
