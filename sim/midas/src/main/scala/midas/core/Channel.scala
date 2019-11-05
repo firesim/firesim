@@ -91,28 +91,24 @@ class PipeChannel[T <: ChLeafType](
   }
 }
 
+// Generates stateful assertions to check that an ReadyValid interface is irrevocable
 object AssertTokenIrrevocable {
-  def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String]): Unit = {
+  def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String]): Unit = {
     val prefix = suggestedName match {
       case Some(str) => str + ": "
       case None => ""
     }
-    val validPrev = RegNext(rv.valid, false.B)
-    val bitsPrev  = RegNext(rv.bits)
-    val firePrev  = RegNext(rv.fire)
-    assert(!validPrev || firePrev || rv.valid,
+    val validPrev = RegNext(valid, false.B)
+    val bitsPrev  = RegNext(bits)
+    val firePrev  = RegNext(valid && ready)
+    assert(!validPrev || firePrev || valid,
       s"${prefix}valid de-asserted without handshake, violating irrevocability")
-    assert(!validPrev || firePrev || bitsPrev.asUInt === rv.bits.asUInt,
+    assert(!validPrev || firePrev || bitsPrev.asUInt === bits.asUInt,
       s"${prefix}bits changed without handshake, violating irrevocability")
   }
 
-  def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String] = None): Unit = {
-    val dummyMod = Module(new Module { val io = IO(Input(Decoupled(bits.cloneType))) })
-    dummyMod.io.valid := valid
-    dummyMod.io.bits := bits
-    dummyMod.io.ready := ready
-    apply(dummyMod.io, suggestedName)
-  }
+  def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String] = None): Unit =
+    apply(rv.valid, rv.bits, rv.ready, suggestedName)
 }
 
 class PipeChannelUnitTest(
