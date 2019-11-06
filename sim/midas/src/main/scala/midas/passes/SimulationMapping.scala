@@ -141,7 +141,6 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case _: FAMEChannelConnectionAnnotation => false
       case _: BridgeIOAnnotation => false
-      case _: AddedTargetIoAnnotation[_] => false
       case _ => true
     })
 

@@ -108,14 +108,3 @@ class Fame1Instances extends Transform {
     state.copy(circuit = new ModelFame1Transform(fame1s).run(state.circuit))
   }
 }
-
-/* Instead of passing a data structure between pre-FAME target-transforming passes 
- * Add NoTargetAnnotations that can regenerate a chisel type from a HighForm port
- *
- * Initially i tried extending SingleTargetAnnotation but we need a LowForm
- * inner circuit to do linking (if the wrapping circuit is LowForm), and thus the target
- *  will have lost its subFields when we go to regenerate the ChiselIO.
- */
-trait AddedTargetIoAnnotation[T <: chisel3.Data] extends Annotation {
-  def generateChiselIO(): Tuple2[String, T]
-}
