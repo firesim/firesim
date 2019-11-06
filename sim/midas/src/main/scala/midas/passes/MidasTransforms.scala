@@ -4,6 +4,8 @@ package midas
 package passes
 
 import midas.core._
+
+import freechips.rocketchip.config.Parameters
 import chisel3.core.DataMirror.directionOf
 
 import firrtl._
@@ -13,6 +15,7 @@ import logger._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
 import Utils._
+
 import java.io.{File, FileWriter}
 
 private[passes] class WCircuit(
@@ -21,9 +24,7 @@ private[passes] class WCircuit(
   main: String,
   val sim: SimWrapperChannels) extends Circuit(info, modules, main)
 
-private[midas] class MidasTransforms(
-    io: Seq[(String, chisel3.Data)])
-    (implicit p: freechips.rocketchip.config.Parameters) extends Transform {
+private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
   val dir = p(OutputDir)
@@ -77,7 +78,6 @@ private[midas] class MidasTransforms(
       new ResolveAndCheck) ++
     Seq(
       new SimulationMapping(state.circuit.main),
-      //new PlatformMapping(state.circuit.main, dir),
       xilinx.HostSpecialization)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)

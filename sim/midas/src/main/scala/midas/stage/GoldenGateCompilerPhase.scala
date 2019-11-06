@@ -29,9 +29,6 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
     val configString  = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get
     val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString)
 
-    // MIDAS Legacy requirement -- GGRELEASE: Remove
-    val io: Seq[(String, chisel3.Data)] = Seq.empty
-
     val midasAnnos = Seq(InferReadWriteAnnotation)
 
     implicit val p = getParameters(pNames).alterPartial({
@@ -41,7 +38,7 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
     val targetTransforms = p(TargetTransforms).flatMap(transformCtor => transformCtor(p))
     // Ran after Golden Gate transformations (host-time)
     val hostTransforms = p(HostTransforms).flatMap(transformCtor => transformCtor(p))
-    val midasTransforms = new passes.MidasTransforms(io)
+    val midasTransforms = new passes.MidasTransforms()
     val compiler = new MidasCompiler
     val midas = compiler.compile(firrtl.CircuitState(
       circuit, firrtl.HighForm, annotations ++ midasAnnos),
