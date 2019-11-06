@@ -3,6 +3,7 @@
 package midas.stage
 
 import midas._
+import midas.passes.{MidasCompiler, HostTransformCompiler, LastStageVerilogCompiler}
 
 import firrtl.ir.Circuit
 import firrtl.{Transform, CircuitState, AnnotationSeq}
