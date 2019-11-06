@@ -42,6 +42,11 @@ See the [Chipyard documentation](https://chipyard.readthedocs.io/en/latest/Chipy
 for help setting up a known-good toolchain and environment.
 
 # Basic Usage
+If you only want to build bare-metal workloads, you can skip updating
+submodules. Otherwise, you should update the required submodules by running:
+
+    ./init-submodules.sh
+
 Building workloads:
 
     ./marshal build workloads/br-base.json

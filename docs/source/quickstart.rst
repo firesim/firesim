@@ -1,6 +1,14 @@
 Quick Start
 --------------------------------------
 
+After a fresh clone of the FireMarshal repository, you may need to update
+submodules. You may skip this step if you only intend to build bare-metal
+workloads:
+
+::
+
+  ./init-submodules.sh
+
 FireMarshal comes with a few basic workloads that you can build right out of
 the box (in ``workloads/``). In this example, we will build and test the
 buildroot-based linux distribution (called *br-base*). We begin by building the

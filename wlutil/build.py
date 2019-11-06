@@ -20,20 +20,21 @@ class doitLoader(doit.cmd_base.TaskLoader):
         config = {'verbosity': 2}
         return task_list, config
 
-# Checks if the linux kernel used by this config needs to be rebuilt
-# Note: this is intended to be used by the doit 'uptodate' feature
-def checkLinuxUpToDate(config):
-    # XXX There are a number of issues with doing this for real:
-    #   - The linux build system always reports that it's not uptodate
-    #     (make -q == False), so we'd have to come up with a more clever way
-    #   - Using the make -q method is nearly equivalent to makeBin, we need all
-    #     that logic (e.g. initramfs, baremetal, etc.).
-    #   
-    #   The result is that for now we'll always rebuild linux and hope the
-    #   makefiles make this not too bad (it adds a few seconds per image). This
-    #   function is left here to make it easier if/when we get around to doing
-    #   it right.
-    return False
+def buildBusybox():
+    """Builds the local copy of busybox (needed by linux initramfs).
+    
+    This is called as a doit task (added to the graph in buildDepGraph())
+    """
+
+    try:
+        checkSubmodule(busybox_dir)
+    except SubmoduleError as e:
+        return doit.exceptions.TaskFailed(e)
+    
+    shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
+    run(['make', jlevel], cwd=busybox_dir)
+    shutil.copy(busybox_dir / 'busybox', initramfs_dir / 'disk' / 'bin/')
+    return True
 
 def handleHostInit(config):
     log = logging.getLogger()
@@ -58,56 +59,43 @@ def addDep(loader, config):
         hostInit = [config['host-init']]
 
     # Add a rule for the binary
-    file_deps = []
-    task_deps = [] + hostInit
+    bin_file_deps = []
+    bin_task_deps = [] + hostInit + config['base-deps']
     if 'linux-config' in config:
-        file_deps.append(config['linux-config'])
+        bin_file_deps.append(config['linux-config'])
+        bin_task_deps.append('_busybox')
     
-    # A child binary could conceivably rely on the parent rootfs. This also
-    # implicitly depends on the parent's host-init script (whcih the img
-    # depends on).
-    if 'base-img' in config:
-        task_deps.append(config['base-img'])
-
     if 'bin' in config:
         loader.addTask({
                 'name' : config['bin'],
                 'actions' : [(makeBin, [config])],
                 'targets' : [config['bin']],
-                'file_dep': file_deps,
-                'task_dep' : task_deps,
-                'uptodate' : [(checkLinuxUpToDate, [config])]
+                'file_dep': bin_file_deps,
+                'task_dep' : bin_task_deps,
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
                 })
 
     # Add a rule for the nodisk version if requested
-    # Note that we need both the regular bin and nodisk bin if the base
-    # workload needs an init script
     if config['nodisk'] and 'bin' in config:
-        file_deps = []
-        task_deps = [] + hostInit
+        nodisk_file_deps = bin_file_deps.copy()
+        nodisk_task_deps = bin_task_deps.copy()
         if 'img' in config:
-            file_deps = [config['img']]
-            task_deps = [config['img']]
-
-        if 'linux-config' in config:
-            file_deps.append(config['linux-config'])
+            nodisk_file_deps.append(config['img'])
+            nodisk_task_deps.append(config['img'])
 
         loader.addTask({
                 'name' : config['bin'] + '-nodisk',
                 'actions' : [(makeBin, [config], {'nodisk' : True})],
                 'targets' : [config['bin'] + '-nodisk'],
-                'file_dep': file_deps,
-                'task_dep' : task_deps,
-                'uptodate' : [(checkLinuxUpToDate, [config])]
+                'file_dep': nodisk_file_deps,
+                'task_dep' : nodisk_task_deps,
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
                 })
 
     # Add a rule for the image (if any)
-    file_deps = []
-    task_deps = [] + hostInit
+    img_file_deps = []
+    img_task_deps = [] + hostInit + config['base-deps']
     if 'img' in config:
-        if 'base-img' in config:
-            task_deps += [config['base-img']]
-            file_deps += [config['base-img']]
         if 'files' in config:
             for fSpec in config['files']:
                 # Add directories recursively
@@ -117,25 +105,25 @@ def addDep(loader, config):
                             fdep = os.path.join(root, f)
                             # Ignore symlinks
                             if not os.path.islink(fdep):
-                                file_deps.append(fdep)
+                                img_file_deps.append(fdep)
                 else:
                     # Ignore symlinks
                     if not os.path.islink(fSpec.src):
-                        file_deps.append(fSpec.src)			
+                        img_file_deps.append(fSpec.src)			
         if 'guest-init' in config:
-            file_deps.append(config['guest-init'].path)
-            task_deps.append(config['bin'])
+            img_file_deps.append(config['guest-init'].path)
+            img_task_deps.append(config['bin'])
         if 'runSpec' in config and config['runSpec'].path != None:
-            file_deps.append(config['runSpec'].path)
+            img_file_deps.append(config['runSpec'].path)
         if 'cfg-file' in config:
-            file_deps.append(config['cfg-file'])
+            img_file_deps.append(config['cfg-file'])
         
         loader.addTask({
             'name' : config['img'],
             'actions' : [(makeImage, [config])],
             'targets' : [config['img']],
-            'file_dep' : file_deps,
-            'task_dep' : task_deps
+            'file_dep' : img_file_deps,
+            'task_dep' : img_task_deps
             })
 
 # Generate a task-graph loader for the doit "Run" command
@@ -144,6 +132,15 @@ def addDep(loader, config):
 # issue.
 def buildDepGraph(cfgs):
     loader = doitLoader()
+
+    # Linux-based workloads depend on this task
+    loader.workloads.append({
+        'name' : '_busybox',
+        'actions' : [(buildBusybox, [])],
+        'targets' : [initramfs_dir /'disk' / 'bin' / 'busybox'],
+        'uptodate': [config_changed(checkGitStatus(busybox_dir)),
+            config_changed(getToolVersions())]
+        })
 
     # Define the base-distro tasks
     for d in distros:
@@ -154,7 +151,8 @@ def buildDepGraph(cfgs):
                     'actions' : [(dCfg['builder'].buildBaseImage, [])],
                     'targets' : [dCfg['img']],
                     'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': [(dCfg['builder'].upToDate, [])]
+                    'uptodate': dCfg['builder'].upToDate() +
+                        [config_changed(getToolVersions())]
                 })
 
     # Non-distro configs 
@@ -201,9 +199,8 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
                 imgList.append(jCfg['img'])
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
-    ret = doit.doit_cmd.DoitMain(taskLoader).run(binList + imgList)
-    if ret != 0:
-        raise RuntimeError("Error while building workload")
+    return doit.doit_cmd.DoitMain(taskLoader).run(binList + imgList)
+    # return doit.doit_cmd.DoitMain(taskLoader).run(["info", "/data/repos/fm2/images/smoke0-bin"])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.
@@ -253,14 +250,17 @@ def makeInitramfsKfrag(src, dst):
         f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
         f.write('CONFIG_INITRAMFS_SOURCE="' + str(src) + '"\n')
 
-# Build all the drivers for this linux source on the specified board.
-# Returns a path to a cpio archive containing all the drivers in
-# /lib/modules/KERNELVERSION/*.ko
-# kfrags: list of paths to kernel configuration fragments to use when building drivers
-# boardDir: Path to the board directory. Should have a 'drivers/' subdir
-#           containing all the drivers we should build for this board
-# linuxSrc: Path to linux source tree to build against
 def makeDrivers(kfrags, boardDir, linuxSrc):
+    """Build all the drivers for this linux source on the specified board.
+    Returns a path to a cpio archive containing all the drivers in
+    /lib/modules/KERNELVERSION/*.ko
+
+    kfrags: list of paths to kernel configuration fragments to use when building drivers
+    boardDir: Path to the board directory. Should have a 'drivers/' subdir
+        containing all the drivers we should build for this board
+    linuxSrc: Path to linux source tree to build against
+    """
+
     driverDirs = pathlib.Path(boardDir).glob("drivers/*")
     makeCmd = "make LINUXSRC=" + str(linuxSrc)
 
@@ -271,6 +271,8 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     drivers = []
     for driverDir in driverDirs:
+        checkSubmodule(driverDir)
+
         # Drivers don't seem to detect changes in the kernel
         run(makeCmd + " clean", cwd=driverDir, shell=True)
         run(makeCmd, cwd=driverDir, shell=True)
@@ -293,15 +295,27 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
     run(['depmod', '-b', str(initramfs_dir / "drivers"), kernelVersion])
 
 
-# Now build linux/bbl
 def makeBin(config, nodisk=False):
+    """Build the binary specified in 'config'.
+
+    This is called as a doit task (see buildDepGraph() and addDep())
+    """
+
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux-config' in config:
         initramfsIncludes = []
 
-        makeDrivers([config['linux-config']], board_dir, config['linux-src'])
+        # Some submodules are only needed if building Linux
+        try:
+            checkSubmodule(pathlib.Path(config['linux-src']))
+            checkSubmodule(pk_dir)
+            
+            makeDrivers([config['linux-config']], board_dir, config['linux-src'])
+        except SubmoduleError as err:
+            return doit.exceptions.TaskFailed(err)
+
         initramfsIncludes.append(initramfs_dir / 'drivers')
 
         with tempfile.TemporaryDirectory() as cpioDir:
@@ -335,6 +349,8 @@ def makeBin(config, nodisk=False):
             shutil.copy(pk_build / 'bbl', config['bin'] + '-nodisk')
         else:
             shutil.copy(pk_build / 'bbl', config['bin'])
+
+    return True
 
 def makeImage(config):
     log = logging.getLogger()

@@ -10,6 +10,9 @@ import shutil
 import psutil
 import errno
 import pathlib
+import git
+import json
+import hashlib
 import humanfriendly
 from contextlib import contextmanager
 
@@ -75,6 +78,20 @@ rootfsMargin = 256*(1024*1024)
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
+class SubmoduleError(Exception):
+    """Error representing a nonexistent or uninitialized submodule"""
+    def __init__(self, path):
+        self.message = "Dependency missing or not initialized " + \
+                str(path) + \
+                ". Do you need to initialize submodules?"
+        self.path = path
+
+    def __repr__(self):
+        return "Submodule Error: \n" + self.message
+
+    def __str__(self):
+        return self.__repr__()
+
 class RootfsCapacityError(Exception):
     """Error representing that the workload's rootfs has run out of disk space."""
     def __init__(self, requested, available):
@@ -98,13 +115,6 @@ def initialize():
     for d in initramfs_disk_dirs:
         if not (initramfs_dir / 'disk' / d).exists():
             (initramfs_dir / 'disk' / d).mkdir(parents=True)
-
-    # Make busybox (needed for the initramfs)
-    if not (initramfs_dir /'disk' / 'bin' / 'busybox').exists():
-        log.info("Building busybox (used in initramfs)")
-        shutil.copy(wlutil_dir / 'busybox-config', busybox_dir / '.config')
-        run(['make', jlevel], cwd=busybox_dir)
-        shutil.copy(busybox_dir / 'busybox', initramfs_dir / 'disk' / 'bin/')
 
 # Create a unique run name. You can call this multiple times to reset internal
 # paths (e.g. for starting a logically different run). The run name controls
@@ -175,7 +185,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     if isinstance(args[0], str):
         prettyCmd = args[0]
     else:
-        prettyCmd = ' '.join(args[0])
+        prettyCmd = ' '.join([str(a) for a in args[0]])
 
     if 'cwd' in kwargs:
         log.log(level, 'Running: "' + prettyCmd + '" in ' + str(kwargs['cwd']))
@@ -311,3 +321,144 @@ def copyImgFiles(img, files, direction):
                 run([sudoCmd, 'cp', '-a', os.path.normpath(mnt + f.src), f.dst])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
+
+def getToolVersions():
+    """Detect version information for the currently enabled toolchain."""
+
+    # We run the preprocessor on a simple program to see the C-visible
+    # "LINUX_VERSION_CODE" macro
+    linuxHeaderTest = """#include <linux/version.h>
+    LINUX_VERSION_CODE
+    """
+    linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
+              input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
+    linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
+
+    # Major/minor version of the linux kernel headers included with our
+    # toolchain. This is not necessarily the same as the linux kernel used by
+    # Marshal, but is assumed to be <= to the version actually used.
+    linuxMaj = str(int(linuxHeaderVer) >> 16)
+    linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
+
+    # Toolchain major version
+    toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
+            universal_newlines=True, stdout=sp.PIPE).stdout
+    toolVer = toolVerStr[36]
+
+    return {'linuxMaj' : linuxMaj,
+            'linuxMin' : linuxMin,
+            'gcc' : toolVer}
+
+def checkGitStatus(submodule):
+    """Returns a dictionary representing the status of a git repo.
+
+    submodule: Path to the submodule to check. This check will be skipped if
+        the empty string is passed (the empty string is always uptodate)
+
+    Fields:
+    'sha'  : latest git commit hash (or "" if not initialized)
+    'dirty': boolean indicating whether there are uncommited changes (uninitialized repos are considered dirty)
+    'init' : boolean indiicating if the repository has been initialized
+    'rebuild' : A random number if the repo should be considered not up to date
+        for any reason (e.g. dirty==True or init==False). 0 otherwised.
+
+    This is primarily useful as an input to doit's config_changed() updtodate
+    helper which considers a workload not uptodate if some string or dictionary
+    has changed since the last time it ran. The 'sha' or 'rebuild' fields will
+    change if the repo has changed (or we can't tell if it's changed)."""
+
+    log = logging.getLogger()
+
+    if submodule == None:
+        return {
+                'sha' : "",
+                'dirty' : False,
+                "init" : False,
+                "rebuild" : ""
+                }
+
+    try:
+        repo = git.Repo(submodule)
+    except (git.InvalidGitRepositoryError, git.exc.NoSuchPathError):
+        # Submodule not initialized (or otherwise can't be read as a repo)
+        return {
+                'sha' : "",
+                'dirty' : True,
+                "init" : False,
+                "rebuild" : random.random()
+                }
+
+    status = {
+            'init' : True,
+            'sha' : repo.head.object.hexsha,
+            'dirty' : repo.is_dirty()
+            }
+    if repo.is_dirty():
+        # In the absense of a clever way to record changes, we must assume that
+        # a dirty repo has changed since the last time we built.
+        log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
+        status['rebuild'] = random.random()
+    else:
+        status['rebuild'] = 0
+
+    return status
+
+def checkSubmodule(s):
+    """Check whether a submodule is present and initialized.
+
+    It is safe to call this on something that is not actually a submodule. In
+    that case, this will simply check if the directory is empty or not.
+
+    s: Pathlib path to submodule
+
+    raises SubmoduleError if submodule not ready 
+    """
+    
+    if not s.exists() or not any(os.scandir(s)):
+        raise SubmoduleError(s)
+
+# The doit.tools.config_changed helper doesn't support multiple invocations in
+# a single uptodate. I fix that bug here, otherwise it's a direct copy from their
+# code. See https://github.com/pydoit/doit/issues/333.
+class config_changed(object):
+    """check if passed config was modified
+    @var config (str) or (dict)
+    @var encoder (json.JSONEncoder) Encoder used to convert non-default values.
+    """
+    def __init__(self, config, encoder=None):
+        self.config = config
+        self.config_digest = None
+        self.encoder = encoder
+
+    def _calc_digest(self):
+        if isinstance(self.config, str):
+            return self.config
+        elif isinstance(self.config, dict):
+            data = json.dumps(self.config, sort_keys=True, cls=self.encoder)
+            byte_data = data.encode("utf-8")
+            return hashlib.md5(byte_data).hexdigest()
+        else:
+            raise Exception(('Invalid type of config_changed parameter got %s' +
+                             ', must be string or dict') % (type(self.config),))
+
+    def configure_task(self, task):
+        # Give this object a unique ID that persists between calls (ID is the
+        # order in which it was evaluated when adding)
+        if not hasattr(task, '_config_changed_lastID'):
+            task._config_changed_lastID = 0
+        self.saverID = str(task._config_changed_lastID)
+        task._config_changed_lastID += 1
+
+        configKey = '_config_changed'+self.saverID
+        task.value_savers.append(lambda: {configKey:self.config_digest})
+
+    def __call__(self, task, values):
+        """return True if config values are UNCHANGED"""
+
+        configKey = '_config_changed'+self.saverID
+
+        self.config_digest = self._calc_digest()
+        last_success = values.get(configKey)
+        if last_success is None:
+            return False
+        return (last_success == self.config_digest)

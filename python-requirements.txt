@@ -1,3 +1,4 @@
 psutil
 doit
+gitpython
 humanfriendly
