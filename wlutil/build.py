@@ -361,7 +361,7 @@ def makeImage(config):
             shutil.copy(config['base-img'], config['img'])
   
     # Resize if needed
-    if 'img-sz' in config:
+    if config['img-sz'] != 0:
         resizeFS(config['img'], config['img-sz'])
 
     # Convert overlay to file list
@@ -405,6 +405,6 @@ def makeImage(config):
         run_overlay = config['builder'].generateBootScriptOverlay(scriptPath, spec.args)
         applyOverlay(config['img'], run_overlay)
     
-    # Make image sizes tight by default
-    if 'img-sz' not in config:
+    # Tighten the image size if requested
+    if config['img-sz'] == 0:
         resizeFS(config['img'], 0)

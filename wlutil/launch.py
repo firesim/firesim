@@ -2,10 +2,6 @@ import socket
 import logging
 from .wlutil import *
 
-# The amount of memory to use when launching
-launch_mem = "16384"
-launch_cores = "4"
-
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
 def get_free_tcp_port():
 	tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -14,19 +10,29 @@ def get_free_tcp_port():
 	tcp.close()
 	return str(port)
 
-# Returns a command string to luanch the given config in spike. Must be called with shell=True.
+# Returns a command string to launch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, nodisk=False):
+
+    if 'img' in config and not nodisk:
+        raise ValueError("Spike does not support disk-based configurations")
+
     if 'spike' in config:
         spikeBin = config['spike']
     else:
         spikeBin = 'spike'
 
+    cmd = [spikeBin,
+           config.get('spike-args', ''),
+           ' -p' + str(config['cpus']),
+           ' -m' + str( int(config['mem'] / (1024*1024)) )]
+    
     if nodisk:
-        return spikeBin + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin'] + '-nodisk'
-    elif 'img' not in config:
-        return spikeBin + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + config['bin']
+        cmd.append(config['bin'] + '-nodisk')
     else:
-        raise ValueError("Spike does not support disk-based configurations")
+        cmd.append(config['bin'])
+
+    print(config['bin'])
+    return " ".join(cmd)
 
 # Returns a command string to luanch the given config in qemu. Must be called with shell=True.
 def getQemuCmd(config, nodisk=False):
@@ -42,9 +48,9 @@ def getQemuCmd(config, nodisk=False):
     cmd = ['qemu-system-riscv64',
            '-nographic',
            '-bios none',
-           '-smp', launch_cores,
+           '-smp', str(config['cpus']),
            '-machine', 'virt',
-           '-m', launch_mem,
+           '-m', str( int(config['mem'] / (1024*1024)) ),
            '-kernel', exe,
            '-object', 'rng-random,filename=/dev/urandom,id=rng0',
            '-device', 'virtio-rng-device,rng=rng0',
