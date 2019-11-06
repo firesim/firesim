@@ -76,8 +76,8 @@ private[midas] class MidasTransforms(
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++
     Seq(
-      new SimulationMapping(io),
-      new PlatformMapping(state.circuit.main, dir),
+      new SimulationMapping(state.circuit.main),
+      //new PlatformMapping(state.circuit.main, dir),
       xilinx.HostSpecialization)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)

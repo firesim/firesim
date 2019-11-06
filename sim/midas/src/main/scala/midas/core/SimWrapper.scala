@@ -21,9 +21,9 @@ import firrtl.annotations.{ReferenceTarget}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
-
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
+case object SimWrapperKey extends Field[SimWrapperConfig]
 
 trait HasSimWrapperParams {
   implicit val p: Parameters
@@ -31,6 +31,8 @@ trait HasSimWrapperParams {
   val traceMaxLen = p(strober.core.TraceMaxLen)
   val daisyWidth = p(strober.core.DaisyWidth)
   val sramChainNum = p(strober.core.SRAMChainNum)
+
+  val targetInstName = "target"
 }
 
 
@@ -221,20 +223,13 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
+case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
+                         bridgeAnnos: Seq[BridgeIOAnnotation],
+                         leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
-class SimBox(simChannels: SimWrapperChannels) extends BlackBox {
-  val io = IO(new Bundle {
-    val clock = Input(Clock())
-    val reset = Input(Bool())
-    val hostReset = Input(Bool())
-    val channelPorts = simChannels.cloneType
-  })
-}
+class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
 
-class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                 bridgeAnnos: Seq[BridgeIOAnnotation],
-                 leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
-                (implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
+  val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config
 
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
   // to bridges and will be presented in the SimWrapper's IO
@@ -246,6 +241,7 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
+  target.suggestName(targetInstName)
 
   target.io.hostReset := reset.toBool && hostReset
   target.io.clock := clock
