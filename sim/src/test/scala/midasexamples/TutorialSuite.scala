@@ -24,12 +24,13 @@ abstract class TutorialSuite(
     targetConfigProject = "firesim.midasexamples",
     targetConfigs = targetConfigs,
     platformConfigProject = "firesim.midasexamples",
-    platformConfigs = "DefaultF1Config")
+    platformConfigs = "HostDebugFeatures_DefaultF1Config")
 
   val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
   val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
                            s"DESIGN=$targetName",
-                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}")
+                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}",
+                           s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
   val targetTuple = generatorArgs.tupleName
 
   def run(backend: String,

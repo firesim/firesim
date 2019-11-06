@@ -3,7 +3,7 @@
 package midas
 package core
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
@@ -14,6 +14,11 @@ import chisel3.experimental.{dontTouch, chiselName, MultiIOModule}
 
 import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}
+
+// Generates stateful assertions on the ports of channels to check that token
+// irrevocability constraints aren't be violated. Bridges that don not produce
+// token streams irrevocably will introduce simulation non-determinism.
+case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
 // For now use the convention that clock ratios are set with respect to the transformed RTL
 trait IsRationalClockRatio {
@@ -76,6 +81,8 @@ class PipeChannel[T <: ChLeafType](
     }
   }
 
+  if (p(GenerateTokenIrrevocabilityAssertions)) AssertTokenIrrevocable(io.in, None)
+
   if (p(EnableSnapshot)) {
     io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
   } else {
@@ -84,6 +91,25 @@ class PipeChannel[T <: ChLeafType](
   }
 }
 
+// Generates stateful assertions to check that an ReadyValid interface is irrevocable
+object AssertTokenIrrevocable {
+  def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String]): Unit = {
+    val prefix = suggestedName match {
+      case Some(str) => str + ": "
+      case None => ""
+    }
+    val validPrev = RegNext(valid, false.B)
+    val bitsPrev  = RegNext(bits)
+    val firePrev  = RegNext(valid && ready)
+    assert(!validPrev || firePrev || valid,
+      s"${prefix}valid de-asserted without handshake, violating irrevocability")
+    assert(!validPrev || firePrev || bitsPrev.asUInt === bits.asUInt,
+      s"${prefix}bits changed without handshake, violating irrevocability")
+  }
+
+  def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String] = None): Unit =
+    apply(rv.valid, rv.bits, rv.ready, suggestedName)
+}
 
 class PipeChannelUnitTest(
     latency: Int = 0,
@@ -128,41 +154,11 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val rev = Flipped(new HostReadyValid)
   override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
 
-  def fwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
-    val hValidPrev = RegNext(fwd.hValid, false.B)
-    val hReadyPrev = RegNext(fwd.hReady)
-    val hFirePrev = hValidPrev && hReadyPrev
-    val tPrev = RegNext(target)
-    val prefix = suggestedName match {
-      case Some(name) => name + ": "
-      case None => ""
-    }
-    assert(!hValidPrev || hFirePrev || fwd.hValid,
-      s"${prefix}hValid de-asserted without handshake, violating fwd token irrevocability")
-    assert(!hValidPrev || hFirePrev || tPrev.valid === target.valid,
-      s"${prefix}tValid transitioned without host handshake, violating fwd token irrevocability")
-    assert(!hValidPrev || hFirePrev || tPrev.bits.asUInt() === target.bits.asUInt(),
-      s"${prefix}tBits transitioned without host handshake, violating fwd token irrevocability")
-    assert(!hFirePrev  || tPrev.fire || !tPrev.valid,
-      s"${prefix}tValid deasserted without prior target handshake, violating target-queue irrevocability")
-    assert(!hFirePrev  || tPrev.fire || !tPrev.valid || tPrev.bits.asUInt() === target.bits.asUInt(),
-      s"${prefix}tBits transitioned without prior target handshake, violating target-queue irrevocability")
-  }
+  def generateFwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
+    AssertTokenIrrevocable(fwd.hValid, Cat(target.valid, target.bits.asUInt), fwd.hReady, suggestedName)
 
-  def revIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit = {
-    val prefix = suggestedName match {
-      case Some(name) => name + ": "
-      case None => ""
-    }
-    val hReadyPrev = RegNext(rev.hReady, false.B)
-    val hValidPrev = RegNext(rev.hValid)
-    val tReadyPrev = RegNext(target.ready)
-    val hFirePrev = hReadyPrev && hValidPrev
-    assert(hFirePrev || !hReadyPrev || rev.hReady,
-      s"${prefix}hReady de-asserted, violating token irrevocability")
-    assert(hFirePrev || !hReadyPrev || tReadyPrev === target.ready,
-      s"${prefix}tReady de-asserted, violating token irrevocability")
-  }
+  def generateRevIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
+    AssertTokenIrrevocable(rev.hValid, target.ready, rev.hReady, suggestedName)
 
   // Returns two directioned objects driven by this SimReadyValidIO hw instance
   def bifurcate(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
@@ -286,6 +282,11 @@ class ReadyValidChannel[T <: Data](
 
   deqFwdFired := Mux(targetFire, false.B, deqFwdFired || io.deq.fwd.hReady)
   enqRevFired := Mux(targetFire, false.B, enqRevFired || io.enq.rev.hReady)
+
+  if (p(GenerateTokenIrrevocabilityAssertions)) {
+    io.enq.generateFwdIrrevocabilityAssertions()
+    io.deq.generateRevIrrevocabilityAssertions()
+  }
 
   io.trace := DontCare
   io.trace.bits.valid  := false.B
