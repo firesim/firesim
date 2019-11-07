@@ -63,7 +63,7 @@ def managerinit():
         # check again
         valid_creds = valid_aws_configure_creds()
         if not valid_creds:
-            rootLogger.info("Invalid creds. Try again.")
+            rootLogger.info("Invalid AWS credentials. Try again.")
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
