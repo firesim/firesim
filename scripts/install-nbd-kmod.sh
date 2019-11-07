@@ -14,6 +14,7 @@ GENERICBUILDDIR=$(pwd)/build
 NBDBUILDDIR=$GENERICBUILDDIR/nbdbuild
 
 cd $GENERICBUILDDIR
+echo $(pwd)
 mkdir -p $NBDBUILDDIR/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
 wget $KURL
@@ -37,7 +38,7 @@ make -j32 modules_prepare
 # turn on NBD in the config
 sed -i 's/# CONFIG_BLK_DEV_NBD is not set/CONFIG_BLK_DEV_NBD=m/g' $KBUILDDIR/.config
 
-make -j32
+make -j32 modules
 make M=drivers/block -j32
 modinfo drivers/block/nbd.ko
 
