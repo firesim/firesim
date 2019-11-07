@@ -15,6 +15,9 @@ import json
 import hashlib
 import humanfriendly
 from contextlib import contextmanager
+import yaml
+import re
+import pprint
 
 #------------------------------------------------------------------------------
 # Root Directories:
@@ -37,7 +40,8 @@ board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
 workdir_builtin = board_dir / 'base-workloads'
 
 # Stores all outputs (binaries and images)
-image_dir = os.path.join(root_dir, "images")
+# image_dir = os.path.join(root_dir, "images")
+image_dir = None
 
 # Default linux source
 linux_dir = os.path.join(root_dir, "riscv-linux")
@@ -78,6 +82,9 @@ rootfsMargin = 256*(1024*1024)
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
+# Global configuration (marshalCtx set by initialize())
+ctx = None
+
 class SubmoduleError(Exception):
     """Error representing a nonexistent or uninitialized submodule"""
     def __init__(self, path):
@@ -103,10 +110,158 @@ class RootfsCapacityError(Exception):
                 "\tRequested: " + humanfriendly.format_size(self.requested) + \
                 "\tAvailable: " + humanfriendly.format_size(self.available)
 
+class ConfigurationOptionError(Exception):
+    """Error representing a problem with marshal configuration."""
+    def __init__(self, opt, cause):
+        self.opt = opt
+        self.cause = cause
+
+    def __str__(self):
+        return "Error with configuration option " + self.opt + ": " + str(self.cause)
+        
+class ConfigurationFileError(Exception):
+    """Error representing issues with loading the configuration"""
+    def __init__(self, missingFile, cause):
+        self.missingFile = missingFile
+        self.cause = cause
+
+    def __str__(self):
+        return "Failed to load configuration file: " + str(self.missingFile) + "\n" + \
+                str(self.cause)
+
+def cleanPaths(opts, baseDir=pathlib.Path('.')):
+    """Clean all paths in an options dictionary by converting them to resolved,
+    absolute, pathlib.Path's. Paths will be interpreted as relative to
+    baseDir."""
+
+    # These options represent pathlib paths
+    pathOpts = [
+        # Root for default board (platform-specific stuff)
+        'board-dir',
+        # Builtin workloads
+        'workdir-builtin',
+        # Stores all outputs (binaries and images)
+        # image_dir = os.path.join(root_dir, "images")
+        'image-dir',
+        # Default linux source
+        'linux-dir',
+        # Default pk source
+        'pk-dir',
+        # Busybox source directory (used for the initramfs)
+        'busybox-dir',
+        # Initramfs root directory (used to build default initramfs for loading board drivers)
+        'initramfs-dir',
+        # Storage for generated/temporary outputs
+        'gen-dir',
+        # Runtime Logs
+        'log-dir',
+        # SW-simulation outputs
+        'res-dir',
+        # Empty directory used for mounting images
+        'mnt-dir',
+        # Basic template for user-specified commands (the "command:" option) 
+        'commandScript'
+    ]
+
+    for opt in pathOpts:
+        if opt in opts:
+            try:
+                path = (baseDir / pathlib.Path(opts[opt])).resolve()
+                opts[opt] = path
+            except Exception as e:
+                raise ConfigurationOptionError(opt, "Invalid path: " + str(e))
+
+class marshalCtx(collections.MutableMapping):
+    """Global FireMarshal context (configuration)."""
+    
+    # Actual internal storage for all options
+    opts = {}
+
+    def __init__(self):
+        """On init, we search for and load all sources of options.
+
+        The order in which options are added here is the order of precidence."""
+        # This is an exhaustive list of defaults, it always exists and can be
+        # overwritten by other user-defined configs
+        defaultCfg = wlutil_dir / 'default_config.yaml'
+        self.addPath(defaultCfg)
+        
+        # These are mutually-exlusive search paths (only one will be loaded)
+        cfgSources = [
+            pathlib.Path('marshal_config.yaml'),
+            pathlib.Path(sys.modules['__main__'].__file__).parent.resolve() / 'marshal_config.yaml'
+                ]
+        for src in cfgSources:
+            if src.exists():
+                self.addPath(src)
+                break
+
+        self.addEnv()
+
+    def add(self, newOpts):
+        """Add options to this configuration, opts will override any
+        conflicting options.
+        
+        newOpts: dictionary containing new options to add"""
+        self.opts = dict(self.opts, **newOpts)
+        
+    def addPath(self, path):
+        """Add the yaml file at path to the config."""
+        try:
+            with open(path, 'r') as newF:
+                newCfg = yaml.full_load(newF)
+        except Exception as e:
+            raise ConfigurationFileError(path, e)
+
+        cleanPaths(newCfg, baseDir=path.parent)
+        self.add(newCfg)
+
+    def addEnv(self):
+        """Find all marshal options in the environment and load them.
+        
+        Environment options take the form MARSHAL_OPT where "OPT" will be
+        converted to lower-case and used as the option name. For example
+        MARSHAL_FSIM=../firesim would add a ('fsim' : '../firesim') option to 
+        the config."""
+        reOpt = re.compile("^MARSHAL_(\S+)")
+        envCfg = {}
+        for opt,val in os.environ.items():
+            match = reOpt.match(opt)
+            if match:
+                optName = match.group(1).lower()
+                envCfg[optName] = val
+
+        self.add(envCfg)
+
+    # The following methods are needed by MutableMapping
+    def __getitem__(self, key):
+        return self.opts[key]
+
+    def __setitem__(self, key, value):
+        self.opts[key] = value
+
+    def __delitem__(self, key):
+        del self.opts[key]
+
+    def __iter__(self):
+        return iter(self.opts)
+
+    def __len__(self):
+        return len(self.opts)
+
+    def __str__(self):
+        return pprint.pformat(self.opts)
+
+    def __repr__(self):
+        return repr(self.opts)
+
+
 def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
     Is safe and fast to call every time you load the library."""
     log = logging.getLogger()
+
+    ctx = marshalCtx()
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']

@@ -66,7 +66,12 @@ def main():
     args = parser.parse_args()
     
     # Perform any basic setup functions for wlutil. This is idempotent.
-    wlutil.initialize()
+    try:
+        wlutil.initialize()
+    except wlutil.ConfigurationFileError as e:
+        print("Failed to initialize FireMarshal:")
+        print(e)
+        sys.exit(1)
 
     # Load all the configs from the workload directories
     # Order matters here, duplicate workload files found in later search paths
