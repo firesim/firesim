@@ -31,7 +31,6 @@ def getSpikeCmd(config, nodisk=False):
     else:
         cmd.append(config['bin'])
 
-    print(config['bin'])
     return " ".join(cmd)
 
 # Returns a command string to luanch the given config in qemu. Must be called with shell=True.
@@ -90,6 +89,7 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
         # Run the base image
         config = cfgs[cfgName]
  
+    print(config)
     if config['launch']:
         baseResDir = os.path.join(res_dir, getRunName())
         runResDir = os.path.join(baseResDir, config['name'])
