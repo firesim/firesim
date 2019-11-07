@@ -89,7 +89,6 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
         # Run the base image
         config = cfgs[cfgName]
  
-    print(config)
     if config['launch']:
         baseResDir = os.path.join(res_dir, getRunName())
         runResDir = os.path.join(baseResDir, config['name'])
