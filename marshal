@@ -138,6 +138,8 @@ def main():
                 outputPath = wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
+                outputPath = None
+
             if outputPath is not None:
                 log.info("Workload outputs available at: " + outputPath)
 
