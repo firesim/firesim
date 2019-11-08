@@ -200,6 +200,9 @@ class FireSimServerNode(FireSimNode):
             self.server_profile_interval, self.get_bootbin_name(),
             self.trace_enable, self.trace_start, self.trace_end, shmemportname)
 
+
+
+
     def copy_back_job_results_from_run(self, slotno):
         """
         1) Make the local directory for this job's output
@@ -296,18 +299,32 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     call out to dummy server nodes to get all the info to launch the one
     command line to run the FPGA sim that has N > 1 sims on one fpga."""
 
-    def supernode_get_num_siblings(self):
-        siblings = 0
+    def copy_back_job_results_from_run(self, slotno):
+        """ This override is to call copy back job results for all the dummy nodes too. """
+        # first call the original
+        super(FireSimSuperNodeServerNode, self).copy_back_job_results_from_run(slotno)
+
+        # call on all siblings
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+        for sibindex in range(1, num_siblings):
+            self.supernode_get_sibling(sibindex).copy_back_job_results_from_run(slotno)
+
+
+    def supernode_get_num_siblings_plus_one(self):
+        """ This returns the number of siblings the supernodeservernode has,
+        plus one (because in most places, we use siblings + 1, not just siblings)
+        """
+        siblings = 1
         count = False
         for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
             if count:
                 if isinstance(servernode, FireSimDummyServerNode):
-                    count += 1
+                    siblings += 1
                 else:
-                    return count
+                    return siblings
             elif self == servernode:
                 count = True
-        return count
+        return siblings
 
     def supernode_get_sibling(self, siblingindex):
         """ return the sibling for supernode mode.
@@ -353,7 +370,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         Currently hardcoded to 4 nodes.
         """
 
-        num_siblings = self.supernode_get_num_siblings()
+        num_siblings = self.supernode_get_num_siblings_plus_one()
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling_mac_address(x) for x in range(1, num_siblings)]
         all_rootfses = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
@@ -384,7 +401,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.get_job().rootfs_path(),
                               self.get_rootfs_name()])
 
-        num_siblings = self.supernode_get_num_siblings()
+        num_siblings = self.supernode_get_num_siblings_plus_one()
 
         for x in range(1, num_siblings):
             sibling_rootfs_path = self.supernode_get_sibling_rootfs_path(x)
