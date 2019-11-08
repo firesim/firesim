@@ -179,7 +179,8 @@ class MemModelIO(implicit val p: Parameters) extends WidgetIO()(p){
 case class CompleteConfig(
     userProvided: BaseConfig,
     axi4Widths: NastiParameters,
-    axi4Edge: Option[AXI4EdgeSummary] = None) extends HasSerializationHints {
+    axi4Edge: Option[AXI4EdgeSummary] = None,
+    lastChannel: Boolean = true) extends HasSerializationHints {
   def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
@@ -512,6 +513,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     super.genHeader(base, sb)
 
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
+    sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_last_channel", UInt32(if (completeConfig.lastChannel) 1 else 0)))
 
     crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
