@@ -33,6 +33,10 @@
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
 #include "NarrowPrintfModule.h"
+#elif defined DESIGNNAME_Accumulator
+#include "Accumulator.h"
+#elif defined DESIGNNAME_VerilogAccumulator
+#include "VerilogAccumulator.h"
 #endif
 
 class dut_emul_t:

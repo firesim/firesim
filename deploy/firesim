@@ -32,15 +32,38 @@ from util.streamlogger import StreamLogger
 def managerinit():
     """ Setup local FireSim manager components. """
 
-    aws_resourceinfo = aws_resource_names()
-    if not aws_resourceinfo['tutorial_mode']:
-        # only run aws configure if we're not in tutorial mode.
-        # tutorial users will have this already done for them and we don't
-        # want them to have to hit enter to skip, which can be error-prone
+    def valid_aws_configure_creds():
+        """ See if aws configure has been run. Returns False if aws configure
+        needs to be run, else True.
+
+        This DOES NOT perform any deeper validation.
+        """
+        import botocore.session
+        session = botocore.session.get_session()
+        creds = session.get_credentials()
+        if creds is None:
+            return False
+        if session.get_credentials().access_key == '':
+            return False
+        if session.get_credentials().secret_key == '':
+            return False
+        if session.get_config_variable('region') == '':
+            return False
+        return True
+
+    valid_creds = valid_aws_configure_creds()
+    while not valid_creds:
+        # only run aws configure if we cannot already find valid creds
+        # this loops calling valid_aws_configure_creds until
         rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
         # DO NOT wrap this local call with StreamLogger, we don't want creds to get
         # stored in the log
         local("aws configure")
+
+        # check again
+        valid_creds = valid_aws_configure_creds()
+        if not valid_creds:
+            rootLogger.info("Invalid AWS credentials. Try again.")
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
