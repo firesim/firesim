@@ -280,18 +280,17 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self, dummyindex=0):
+    def get_rootfs_name(self):
         if self.get_job().rootfs_path() is None:
             return None
-        elif dummyindex:
-            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        else:
-            return self.get_job().rootfs_path().split("/")[-1]
+        # prefix rootfs name with the job name to disambiguate in supernode
+        # cases
+        return self.get_job_name() + "-" + self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self, dummyindex=0):
-        if dummyindex:
-            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().bootbinary_path().split("/")[-1]
+    def get_bootbin_name(self):
+        # prefix bootbin name with the job name to disambiguate in supernode
+        # cases
+        return self.get_job_name() + "-" + self.get_job().bootbinary_path().split("/")[-1]
 
 
 class FireSimSuperNodeServerNode(FireSimServerNode):
@@ -341,12 +340,12 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def supernode_get_sibling_rootfs(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name()
 
     def supernode_get_sibling_bootbin(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name()
 
     def supernode_get_sibling_rootfs_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
@@ -420,20 +419,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
-
-    def get_rootfs_name(self, dummyindex=0):
-        if self.get_job().rootfs_path() is None:
-            return None
-        elif dummyindex:
-            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        else:
-            return self.get_job().rootfs_path().split("/")[-1]
-
-    def get_bootbin_name(self, dummyindex=0):
-        if dummyindex:
-            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().bootbinary_path().split("/")[-1]
-
 
 class FireSimDummyServerNode(FireSimServerNode):
     """ This is a dummy server node for supernode mode. """
