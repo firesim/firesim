@@ -90,13 +90,9 @@ object FAMEModuleTransformer {
     }
     val finishing = DefWire(NoInfo, ns.newName(triggerName), BoolType)
 
-    val gateTargetClock = analysis.containsSyncBlackboxes(m)
-    val targetClock = if (gateTargetClock) {
-      val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
-      SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, MALE))
-    } else {
-      PassThru(WRef(hostClock), "target_clock")
-    }
+    val gateTargetClock = true
+    val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
+    val targetClock = SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, MALE))
 
     // Step 1: Build channels
     val mTarget = ModuleTarget(analysis.circuit.main, m.name)
