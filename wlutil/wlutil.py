@@ -227,17 +227,17 @@ def waitpid(pid):
 
 if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
-    sudoCmd = "/usr/bin/sudo"
+    sudoCmd = ["/usr/bin/sudo"]
     @contextmanager
     def mountImg(imgPath, mntPath):
-        run([sudoCmd,"mount", "-o", "loop", imgPath, mntPath])
+        run(sudoCmd + ["mount", "-o", "loop", imgPath, mntPath])
         try:
             yield mntPath
         finally:
-            run([sudoCmd, 'umount', mntPath])
+            run(sudoCmd + ['umount', mntPath])
 else:
     # User doesn't have sudo (use guestmount, slow but reliable)
-    sudoCmd = ""
+    sudoCmd = []
     @contextmanager
     def mountImg(imgPath, mntPath):
         run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
@@ -258,7 +258,7 @@ def toCpio(src, dst):
     log = logging.getLogger()
     log.debug("Creating Cpio archive from " + str(src))
     with open(dst, 'wb') as outCpio:
-        p = sp.run([sudoCmd, "sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
+        p = sp.run(sudoCmd + ["sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
                 stderr=sp.PIPE, stdout=outCpio, cwd=src)
         log.debug(p.stderr.decode('utf-8'))
 
@@ -318,10 +318,10 @@ def copyImgFiles(img, files, direction):
     with mountImg(img, mnt):
         for f in files:
             if direction == 'in':
-                run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
+                run(sudoCmd + ['cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
             elif direction == 'out':
                 uid = os.getuid()
-                run([sudoCmd, 'cp', '-a', os.path.normpath(mnt + f.src), f.dst])
+                run(sudoCmd + ['cp', '-a', os.path.normpath(mnt + f.src), f.dst])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
 
