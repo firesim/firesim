@@ -260,9 +260,9 @@ class FireSimServerNode(FireSimNode):
         all_paths = []
 
         if self.get_job().rootfs_path() is not None:
-            all_paths.append([self.get_job().rootfs_path(), ''])
+            all_paths.append([self.get_job().rootfs_path(), self.get_rootfs_name()])
 
-        all_paths.append([self.get_job().bootbinary_path(), ''])
+        all_paths.append([self.get_job().bootbinary_path(), self.get_bootbin_name()])
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
