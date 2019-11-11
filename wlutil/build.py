@@ -200,7 +200,6 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
     return doit.doit_cmd.DoitMain(taskLoader).run(binList + imgList)
-    # return doit.doit_cmd.DoitMain(taskLoader).run(["info", "/data/repos/fm2/images/smoke0-bin"])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.
