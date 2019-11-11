@@ -120,15 +120,16 @@ class RuntimeHWConfig:
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
+        zero_out_dram = "+zero-out-dram"
 
-
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
             command_linklatencies=command_linklatencies,
             command_netbws=command_netbws,
             profile_interval=profile_interval,
+            zero_out_dram=zero_out_dram,
             command_shmemportnames=command_shmemportnames,
             command_bootbinaries=command_bootbinaries,
             trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)
