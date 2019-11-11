@@ -110,11 +110,20 @@ class RuntimeHWConfig:
                 bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
                 trace_end=trace_end)
 
+        # if not qcow2 images, no nbdload/unload cmds
+        nbdloadcmd = ":"
+        nbdunloadcmd = ":"
+        if blkdev is not None and blkdev.endswith(".qcow2"):
+            nbdloadcmd = """sudo qemu-nbd -c /dev/nbd{SLOTNO} {BLKDEV}""".format(SLOTNO=slotid, BLKDEV=blkdev)
+            nbdunloadcmd = """sudo qemu-nbd -d /dev/nbd{SLOTNO}""".format(SLOTNO=slotid)
+            blkdev = """/dev/nbd{SLOTNO}""".format(SLOTNO=slotid)
+
         if blkdev is not None:
             driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
 
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, driverArgs=driverArgs)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && {nbdloadcmd} && sudo ./{driver} {driverArgs} && {nbdunloadcmd} && stty intr ^c' uartlog"; sleep 1""".format(
+                slotid=slotid, nbdloadcmd=nbdloadcmd, driver=driver,
+                driverArgs=driverArgs, nbdunloadcmd=nbdunloadcmd)
 
         return basecommand
 
@@ -130,6 +139,8 @@ class RuntimeHWConfig:
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
+
+        # TODO: this does not handle qcow2 images
 
         tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
 

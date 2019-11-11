@@ -345,6 +345,9 @@ class InstanceDeployManager:
     This is in charge of managing the locations of stuff on remote nodes.
     """
 
+    # max number of NBDs allowed by the nbd.ko kernel module
+    NBDS_MAX = 128
+
     def __init__(self, parentnode):
         self.parentnode = parentnode
 
@@ -390,17 +393,29 @@ class InstanceDeployManager:
             # copy over kernel module
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
+    def get_nbd_for_slot(self, slotno, offset):
+        """ This computes which nbd to use on a per-slot-basis, preventing overlaps.
+        slotno = the FPGA slot on the system
+        offset = N      -> means the Nth block device used by that slot.
+        """
+        parent_num_slots = self.parentnode.get_num_fpga_slots_max()
+        nbds_per_slot = self.NBDS_MAX / parent_num_slots
+        assert offset < nbds_per_slot, "Too many block devices for available number of NBDs."
+        return """/dev/nbd{}""".format(nbds_per_slot * slotno + offset)
+
     def load_nbd_module(self):
         """ load the nbd module. """
         self.unload_nbd_module()
         # now load xdma
         self.instance_logger("Loading NBD Kernel Module.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/nbd.ko")
+            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.NBDS_MAX))
 
     def unload_nbd_module(self):
         """ unload the nbd module. """
         self.instance_logger("Unloading NBD Kernel Module.")
+        # TODO: do we want to run through and make sure nothing is attached in
+        # /dev/nbd*?
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             # fpga mgmt tools seem to force load xocl after a flash now...
             # so we just remove everything for good measure:
@@ -554,6 +569,10 @@ class InstanceDeployManager:
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+            # TODO: add qcow mounting here
+
+
+
             run(server.get_sim_start_command(slotno))
 
     def kill_switch_slot(self, switchslot):
