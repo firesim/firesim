@@ -108,6 +108,9 @@ def initialize():
     Is safe and fast to call every time you load the library."""
     log = logging.getLogger()
 
+    if not os.path.exists(mnt):
+        run(['mkdir', mnt])
+
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
 
