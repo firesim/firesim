@@ -135,6 +135,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
 
   val transformedSinks = new LinkedHashSet[String]
   val transformedSources = new LinkedHashSet[String]
+  val clockPort = new LinkedHashMap[String, ReferenceTarget]
   val sinkModel = new LinkedHashMap[String, InstanceTarget]
   val sourceModel = new LinkedHashMap[String, InstanceTarget]
   val sinkPorts = new LinkedHashMap[String, Seq[ReferenceTarget]]
@@ -186,17 +187,17 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   }
 
   // Looks up all FAMEChannelPortAnnotations bound to a model module, to generate a Map
-  // from channel name to port list
-  private def genModelChannelPortMap(direction: Option[Direction])(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+  // from channel name to clock option and port list
+  private def genModelChannelPortMap(direction: Option[Direction])(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     modelPorts(mTarget).collect({
-      case FAMEChannelPortsAnnotation(name, ports) if direction == None || portNodes(ports.head).direction == direction.get =>
-        (name, ports.map(portNodes(_)))
+      case FAMEChannelPortsAnnotation(name, clock, ports) if direction == None || portNodes(ports.head).direction == direction.get =>
+        (name, clock.map(portNodes(_)), ports.map(portNodes(_)))
     }).toMap
   }
 
-  def modelInputChannelPortMap: ModuleTarget => Map[String, Seq[Port]]  = genModelChannelPortMap(Some(Input))
-  def modelOutputChannelPortMap: ModuleTarget => Map[String, Seq[Port]] = genModelChannelPortMap(Some(Output))
-  def modelChannelPortMap: ModuleTarget => Map[String, Seq[Port]]       = genModelChannelPortMap(None)
+  def modelInputChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])]  = genModelChannelPortMap(Some(Input))
+  def modelOutputChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])] = genModelChannelPortMap(Some(Output))
+  def modelChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])]       = genModelChannelPortMap(None)
 
   def getSinkHostDecoupledChannelType(cName: String): Type = {
     FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sinkPorts(cName).map(portNodes(_)))
@@ -230,9 +231,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
         Some(cName, ports)
       }).toMap
 
+    val clockMap = dedupPortLists(clockPortByChannel(mTarget))
     val inputPortMap = dedupPortLists(inputPortsByChannel(mTarget))
     val outputPortMap = dedupPortLists(outputPortsByChannel(mTarget))
-    val completePortMap = inputPortMap ++ outputPortMap
+    val completePortMap = (inputPortMap ++ outputPortMap).map { case (cName, ports) => cName -> (ports, clockMap(cName)) }
   }
 
   lazy val modulePortDedupers = transformedModules.map((mT: ModuleTarget) => new ModulePortDeduper(mT))

@@ -48,11 +48,18 @@ object Negate {
   def apply(arg: Expression): Expression = DoPrim(PrimOps.Not, Seq(arg), Seq.empty, arg.tpe)
 }
 
-object Reduce {
-  private def _reduce(op: PrimOp, args: Iterable[Expression]): Expression = {
-    args.tail.foldLeft(args.head){ (l, r) => DoPrim(op, Seq(l, r), Seq.empty, UIntType(IntWidth(1))) }
+sealed trait BinaryBooleanOp {
+  def op: PrimOp
+  def apply(l: Expression, r: Expression) = DoPrim(op, Seq(l, r))
+  def reduce(args: Iterable[Expression]): DoPrim = {
+    args.tail.foldLeft(args.head){ (l, r) => apply(l, r) }
   }
-  def and(args: Iterable[Expression]): Expression = _reduce(PrimOps.And, args)
-  def or(args: Iterable[Expression]): Expression = _reduce(PrimOps.Or, args)
 }
 
+object And extends BinaryBooleanOp {
+  val op = PrimOps.And
+}
+
+object Or extends BinaryBooleanOp {
+  val op = PrimOps.Or
+}

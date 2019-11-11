@@ -21,7 +21,7 @@ class InferModelPorts extends Transform {
     val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
     val cTarget = CircuitTarget(state.circuit.main)
     val modelChannelPortsAnnos = analysis.modulePortDedupers.flatMap(deduper =>
-      deduper.completePortMap.flatMap({ case (cName, ports) => Seq(
+      deduper.completePortMap.flatMap({ case (cName, (ports, clk)) => Seq(
         FAMEChannelPortsAnnotation(cName, ports.map(p => deduper.mTarget.ref(p.name)))) ++
         // Label all the channel ports with don't touch so as to prevent
         // annotation renaming from breaking downstream

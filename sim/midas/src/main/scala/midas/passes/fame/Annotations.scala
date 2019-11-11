@@ -26,12 +26,13 @@ import annotations._
   */
 case class FAMEChannelPortsAnnotation(
   localName: String,
+  clockPort: Option[ReferenceTarget],
   ports: Seq[ReferenceTarget]) extends Annotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(FAMEChannelPortsAnnotation(localName, ports.map(renamer)))
+    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), ports.map(renamer)))
   }
-  override def getTargets: Seq[ReferenceTarget] = ports
+  override def getTargets: Seq[ReferenceTarget] = clockPort ++: ports
 }
 
 /**
