@@ -29,6 +29,46 @@ class MockBoto3Instance:
         MockBoto3Instance.base_ip += 1
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
+
+class NBDTracker(object):
+    """ Track allocation of NBD devices on an instance. Used for mounting
+    qcow2 images.
+
+    TODO: This only persists during a runworkload run. firesim kill should
+    separately just disconnect all /dev/nbdX devices from their backing
+    file."""
+
+    # max number of NBDs allowed by the nbd.ko kernel module
+    NBDS_MAX = 128
+
+    def __init__(self):
+        self.unallocd = ["""/dev/nbd{}""".format(x) for x in range(self.NBDS_MAX)]
+
+        # this is a mapping from .qcow2 image name to nbd device.
+        self.allocated_dict = {}
+
+    def get_nbd_for_imagename(self, imagename):
+        """ Call this when you need to allocate an nbd for a particular image,
+        or when you need to know what nbd device is for that image.
+
+        This will allocate an nbd for an image if one does not already exist.
+
+        THIS DOES NOT CALL qemu-nbd to actually connect the image to the device"""
+        if imagename not in self.allocated_dict.keys():
+            # otherwise, allocate it
+            assert len(self.unallocd) >= 1, "No NBDs left to allocate on this instance."
+            self.allocated_dict[imagename] = self.unallocd.pop(0)
+
+        return self.allocated_dict[imagename]
+
+    def delete_nbd_for_imagename(self, imagename):
+        """ Disassociate the nbd device from an image. This DOES NOT call
+        qemu-nbd on the remote instance to actually perform the disconnection,
+        this is just for our tracking purposes."""
+        self.unallocd.append(self.allocated_dict[imagename])
+        del self.allocated_dict[imagename]
+
+
 class EC2Inst(object):
     # TODO: this is leftover from when we could only support switch slots.
     # This can be removed once self.switch_slots is dynamically allocated.
@@ -41,6 +81,7 @@ class EC2Inst(object):
         self.switch_slots_consumed = 0
         self.instance_deploy_manager = InstanceDeployManager(self)
         self._next_port = 10000 # track ports to allocate for server switch model ports
+        self.nbd_tracker = NBDTracker()
 
     def assign_boto3_instance_object(self, boto3obj):
         self.boto3_instance_object = boto3obj
@@ -345,9 +386,6 @@ class InstanceDeployManager:
     This is in charge of managing the locations of stuff on remote nodes.
     """
 
-    # max number of NBDs allowed by the nbd.ko kernel module
-    NBDS_MAX = 128
-
     def __init__(self, parentnode):
         self.parentnode = parentnode
 
@@ -393,33 +431,35 @@ class InstanceDeployManager:
             # copy over kernel module
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
-    def get_nbd_for_slot(self, slotno, offset):
-        """ This computes which nbd to use on a per-slot-basis, preventing overlaps.
-        slotno = the FPGA slot on the system
-        offset = N      -> means the Nth block device used by that slot.
-        """
-        parent_num_slots = self.parentnode.get_num_fpga_slots_max()
-        nbds_per_slot = self.NBDS_MAX / parent_num_slots
-        assert offset < nbds_per_slot, "Too many block devices for available number of NBDs."
-        return """/dev/nbd{}""".format(nbds_per_slot * slotno + offset)
-
     def load_nbd_module(self):
         """ load the nbd module. """
         self.unload_nbd_module()
         # now load xdma
         self.instance_logger("Loading NBD Kernel Module.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.NBDS_MAX))
+            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.parentnode.nbd_tracker.NBDS_MAX))
 
     def unload_nbd_module(self):
         """ unload the nbd module. """
         self.instance_logger("Unloading NBD Kernel Module.")
-        # TODO: do we want to run through and make sure nothing is attached in
-        # /dev/nbd*?
+
+        # disconnect all /dev/nbdX devices before rmmod
+        self.disconnect_all_nbds_instance()
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-            # fpga mgmt tools seem to force load xocl after a flash now...
-            # so we just remove everything for good measure:
             run('sudo rmmod nbd')
+
+    def disconnect_all_nbds_instance(self):
+        """ Disconnect all nbds on the instance. """
+        self.instance_logger("Disconnecting all NBDs.")
+
+        # warn_only, so we can call this even if there are no nbds
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            # build up one large command with all the disconnects
+            fullcmd = []
+            for nbd_index in range(self.parentnode.nbd_tracker.NBDS_MAX):
+                fullcmd.append("""sudo qemu-nbd -d /dev/nbd{nbdno}""".format(nbdno=nbd_index))
+
+            run("; ".join(fullcmd))
 
     def unload_xdma(self):
         self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
@@ -569,11 +609,7 @@ class InstanceDeployManager:
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-            # TODO: add qcow mounting here
-
-
-
-            run(server.get_sim_start_command(slotno))
+            server.run_sim_start_command(slotno)
 
     def kill_switch_slot(self, switchslot):
         """ kill the switch in slot switchslot. """
@@ -666,13 +702,14 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-
     def kill_simulations_instance(self):
         """ Kill all simulations on this instance. """
         if self.instance_assigned_simulations():
             # only on sim nodes
             for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
                 self.kill_sim_slot(slotno)
+        # disconnect all NBDs
+        self.disconnect_all_nbds_instance()
 
     def running_simulations(self):
         """ collect screen results from node to see what's running on it. """
