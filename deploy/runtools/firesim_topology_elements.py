@@ -194,13 +194,17 @@ class FireSimServerNode(FireSimNode):
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
 
+        all_macs = [self.get_mac_address()]
+        all_rootfses = [self.get_rootfs_name()]
+        all_linklatencies = [self.server_link_latency]
+        all_maxbws = [self.server_bw_max]
+        all_bootbins = [self.get_bootbin_name()]
+        all_shmemportnames = [shmemportname]
+
         return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_rootfs_name(), slotno,
-            self.server_link_latency, self.server_bw_max,
-            self.server_profile_interval, self.get_bootbin_name(),
-            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
-
-
+            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
+            self.server_profile_interval, all_bootbins, self.trace_enable,
+            self.trace_start, self.trace_end, all_shmemportnames)
 
 
     def copy_back_job_results_from_run(self, slotno):
@@ -381,7 +385,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         if self.uplinks:
             all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling_shmemportname(x) for x in range(1, num_siblings)]
 
-        return self.server_hardware_config.get_supernode_boot_simulation_command(
+        return self.server_hardware_config.get_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
             self.trace_start, self.trace_end, all_shmemportnames)
