@@ -99,22 +99,6 @@ class RuntimeHWConfig:
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
 
-        # TODO: this does not handle qcow2 images
-        # if not qcow2 images, no nbdload/unload cmds
-        #        nbdloadcmd = ":"
-        #        nbdunloadcmd = ":"
-        #        if blkdev is not None and blkdev.endswith(".qcow2"):
-        #            nbdloadcmd = """sudo qemu-nbd -c /dev/nbd{SLOTNO} {BLKDEV}""".format(SLOTNO=slotid, BLKDEV=blkdev)
-        #            nbdunloadcmd = """sudo qemu-nbd -d /dev/nbd{SLOTNO}""".format(SLOTNO=slotid)
-        #            blkdev = """/dev/nbd{SLOTNO}""".format(SLOTNO=slotid)
-        #
-        #        if blkdev is not None:
-        #            driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
-        #
-        #
-        #
-        #
-
         tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
 
         # this monstrosity boots the simulator, inside screen, inside script
