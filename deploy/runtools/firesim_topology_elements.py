@@ -203,21 +203,6 @@ class FireSimServerNode(FireSimNode):
             result_list.append(rootfsname)
         return result_list
 
-#    def has_assigned_host_instance(self):
-#        if self.host_instance is None:
-#            return False
-#        return True
-#
-#    def assign_host_instance(self, host_instance_run_farm_object):
-#        self.host_instance = host_instance_run_farm_object
-#
-#    def get_host_instance(self):
-#        return self.host_instance
-#
-#
-
-
-
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
                                                    str(self.server_id_internal),
