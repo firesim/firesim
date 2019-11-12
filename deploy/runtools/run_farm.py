@@ -425,7 +425,8 @@ class InstanceDeployManager:
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
     def load_nbd_module(self):
-        """ load the nbd module. """
+        """ load the nbd module. always unload the module first to ensure it
+        is in a clean state. """
         self.unload_nbd_module()
         # now load xdma
         self.instance_logger("Loading NBD Kernel Module.")

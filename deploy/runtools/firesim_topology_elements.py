@@ -184,13 +184,14 @@ class FireSimServerNode(FireSimNode):
         return self.mac_address
 
     def process_qcow2_rootfses(self, rootfses_list):
-        """ Take in list of all rootfses. For the qcow2 ones, allocate an
-        nbd device, attach the device to the qcow2 image,  and replace it in
-        the list with that nbd device. Return the new list. 
+        """ Take in list of all rootfses on this node. For the qcow2 ones, find
+        the allocated devices, attach the device to the qcow2 image on the
+        remote node, and replace it in the list with that nbd device. Return
+        the new list.
 
         Assumes it will be called from a sim_slot_* directory."""
 
-        assert self.has_assigned_host_instance(), "qcow2 alloc cannot be done without a host instance."
+        assert self.has_assigned_host_instance(), "qcow2 attach cannot be done without a host instance."
 
         result_list = []
         for rootfsname in rootfses_list:
@@ -204,6 +205,8 @@ class FireSimServerNode(FireSimNode):
         return result_list
 
     def allocate_nbds(self):
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
+        """
         rootfses_list = [self.get_rootfs_name()]
         for rootfsname in rootfses_list:
             if rootfsname.endswith(".qcow2"):
@@ -371,6 +374,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
 
     def allocate_nbds(self):
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
+        """
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
         rootfses_list = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
@@ -436,10 +441,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
     def run_sim_start_command(self, slotno):
         """ get/run the command to run a simulation. assumes it will be
-        called in a directory where its required_files are already located.
-
-        Currently hardcoded to 4 nodes.
-        """
+        called in a directory where its required_files are already located."""
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
@@ -503,7 +505,8 @@ class FireSimDummyServerNode(FireSimServerNode):
                                                      server_bw_max)
 
     def allocate_nbds(self):
-        """ this is handled by the non-dummy node. """
+        """ this is handled by the non-dummy node. override so it does nothing
+        when called"""
         pass
 
 
