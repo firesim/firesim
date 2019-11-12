@@ -203,6 +203,13 @@ class FireSimServerNode(FireSimNode):
             result_list.append(rootfsname)
         return result_list
 
+    def allocate_nbds(self):
+        rootfses_list = [self.get_rootfs_name()]
+        for rootfsname in rootfses_list:
+            if rootfsname.endswith(".qcow2"):
+                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+
+
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
                                                    str(self.server_id_internal),
@@ -363,6 +370,17 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             sib.copy_back_job_results_from_run(slotno)
 
 
+    def allocate_nbds(self):
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+
+        rootfses_list = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
+
+        for rootfsname in rootfses_list:
+            if rootfsname.endswith(".qcow2"):
+                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+
+
+
     def supernode_get_num_siblings_plus_one(self):
         """ This returns the number of siblings the supernodeservernode has,
         plus one (because in most places, we use siblings + 1, not just siblings)
@@ -483,6 +501,10 @@ class FireSimDummyServerNode(FireSimServerNode):
         super(FireSimDummyServerNode, self).__init__(server_hardware_config,
                                                      server_link_latency,
                                                      server_bw_max)
+
+    def allocate_nbds(self):
+        """ this is handled by the non-dummy node. """
+        pass
 
 
 class FireSimSwitchNode(FireSimNode):

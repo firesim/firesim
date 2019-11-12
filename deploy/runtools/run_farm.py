@@ -61,13 +61,6 @@ class NBDTracker(object):
 
         return self.allocated_dict[imagename]
 
-    def delete_nbd_for_imagename(self, imagename):
-        """ Disassociate the nbd device from an image. This DOES NOT call
-        qemu-nbd on the remote instance to actually perform the disconnection,
-        this is just for our tracking purposes."""
-        self.unallocd.append(self.allocated_dict[imagename])
-        del self.allocated_dict[imagename]
-
 
 class EC2Inst(object):
     # TODO: this is leftover from when we could only support switch slots.
@@ -702,14 +695,15 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-    def kill_simulations_instance(self):
+    def kill_simulations_instance(self, disconnect_all_nbds=True):
         """ Kill all simulations on this instance. """
         if self.instance_assigned_simulations():
             # only on sim nodes
             for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
                 self.kill_sim_slot(slotno)
-        # disconnect all NBDs
-        self.disconnect_all_nbds_instance()
+        if disconnect_all_nbds:
+            # disconnect all NBDs
+            self.disconnect_all_nbds_instance()
 
     def running_simulations(self):
         """ collect screen results from node to see what's running on it. """
