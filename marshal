@@ -115,7 +115,6 @@ def main():
                     j['nodisk'] = True
 
         if args.command == "build":
-            # try:
             if args.binOnly or args.imgOnly:
                 # It's fine if they pass -IB, it just builds both
                 ret = wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)

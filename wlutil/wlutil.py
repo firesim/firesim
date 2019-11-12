@@ -78,19 +78,30 @@ rootfsMargin = 256*(1024*1024)
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
+# List of marshal submodules (those enabled by init-submodules.sh)
+marshalSubmods = [
+        linux_dir,
+        pk_dir,
+        busybox_dir,
+        wlutil_dir / 'br' / 'buildroot'] + \
+        list(board_dir.glob("drivers/*"))
+        
 class SubmoduleError(Exception):
     """Error representing a nonexistent or uninitialized submodule"""
     def __init__(self, path):
-        self.message = "Dependency missing or not initialized " + \
-                str(path) + \
-                ". Do you need to initialize submodules?"
         self.path = path
 
     def __repr__(self):
-        return "Submodule Error: \n" + self.message
+        return 'Submodule Error: ' + self.__str__()
 
     def __str__(self):
-        return self.__repr__()
+        if self.path in marshalSubmods:
+            return 'Marshal submodule "' + str(self.path) + \
+                    '" not initialized. Please run "./init-submodules.sh."'
+        else:
+            return "Dependency missing or not initialized " + \
+                    str(self.path) + \
+                    ". Do you need to initialize a submodule?"
 
 class RootfsCapacityError(Exception):
     """Error representing that the workload's rootfs has run out of disk space."""
