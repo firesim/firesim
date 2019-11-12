@@ -32,11 +32,7 @@ class MockBoto3Instance:
 
 class NBDTracker(object):
     """ Track allocation of NBD devices on an instance. Used for mounting
-    qcow2 images.
-
-    TODO: This only persists during a runworkload run. firesim kill should
-    separately just disconnect all /dev/nbdX devices from their backing
-    file."""
+    qcow2 images."""
 
     # max number of NBDs allowed by the nbd.ko kernel module
     NBDS_MAX = 128
