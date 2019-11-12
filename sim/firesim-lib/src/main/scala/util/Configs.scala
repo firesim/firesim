@@ -69,8 +69,4 @@ class  ILADepth4096 extends WithILADepth(4096)
 class  ILADepth8192 extends WithILADepth(8192)
 class ILADepth16384 extends WithILADepth(16384)
 
-
-
-class Asserts extends firesim.configs.WithSynthAsserts
-
 class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
