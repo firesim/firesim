@@ -90,7 +90,7 @@ class ReadPort(val anno: ModelReadPort, val ports: Seq[Port]) extends IsMemoryPo
     val iSignals = Seq(anno.addr, anno.en)
     val iValids  = iSignals.map(valid)
     Seq(
-      Connect(NoInfo, readCmd.valid, Reduce.and(iValids)),
+      Connect(NoInfo, readCmd.valid, And.reduce(iValids)),
       Connect(NoInfo, readCmd.bits("en"), bits(anno.en)),
       Connect(NoInfo, readCmd.bits("addr"), bits(anno.addr)),
       Connect(NoInfo, ready(anno.addr), readCmd.ready),
@@ -110,7 +110,7 @@ class WritePort(val anno: ModelWritePort, val ports: Seq[Port]) extends IsMemory
     iSignals.flatMap(rT => Seq(
       Connect(NoInfo, ready(rT), writeCmd.ready)
     )) ++ Seq(
-      Connect(NoInfo, writeCmd.valid, Reduce.and(iValids)),
+      Connect(NoInfo, writeCmd.valid, And.reduce(iValids)),
       Connect(NoInfo, writeCmd.bits("en"), bits(anno.en)),
       Connect(NoInfo, writeCmd.bits("addr"), bits(anno.addr)),
       Connect(NoInfo, writeCmd.bits("data"), bits(anno.data)),

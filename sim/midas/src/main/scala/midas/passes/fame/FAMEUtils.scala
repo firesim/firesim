@@ -6,6 +6,7 @@ import firrtl._
 import ir._
 import Utils._
 import Mappers._
+import traversals.Foreachers._
 import graph.DiGraph
 import analyses.InstanceGraph
 import transforms.CheckCombLoops
@@ -101,6 +102,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       transformedModules += mt
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
+      fca.clock.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sinks.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
   })
@@ -109,11 +111,17 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   val topConnects = new LinkedHashMap[ReferenceTarget, ReferenceTarget]
   val inputChannels = new LinkedHashMap[ModuleTarget, mutable.Set[String]] with MultiMap[ModuleTarget, String]
   val outputChannels = new LinkedHashMap[ModuleTarget, mutable.Set[String]] with MultiMap[ModuleTarget, String]
-  moduleNodes(topTarget).asInstanceOf[Module].body.map(getTopConnects)
-  def getTopConnects(stmt: Statement): Statement = stmt.map(getTopConnects) match {
+  getTopConnects(moduleNodes(topTarget).asInstanceOf[Module].body)
+
+  def getTopConnects(stmt: Statement): Unit = stmt match {
     case WDefInstance(_, iname, mname, _) =>
       moduleOfInstance(iname) = mname
-      EmptyStmt
+    case Connect(_, WRef(tpname, ClockType, _, _), WSubField(WRef(iname, _, _, _), pname, ClockType, _)) =>
+      // Clock connect, don't make any channels
+      // The clock in a FAMEChannelConnectionAnnotation is the clock from model to bridge
+      val tpRef = topTarget.ref(tpname)
+      val child = topTarget.instOf(iname, moduleOfInstance(iname))
+      topConnects(tpRef) = child.ref(pname)
     case Connect(_, WRef(tpname, _, _, _), WSubField(WRef(iname, _, _, _), pname, _, _)) =>
       val tpRef = topTarget.ref(tpname)
       channelsByPort.get(tpRef).foreach({ cname =>
@@ -121,7 +129,6 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
         topConnects(tpRef) = child.ref(pname)
         outputChannels.addBinding(child.ofModuleTarget, cname)
       })
-      EmptyStmt
     case Connect(_, WSubField(WRef(iname, _, _, _), pname, _, _), WRef(tpname, _, _, _)) =>
       val tpRef = topTarget.ref(tpname)
       channelsByPort.get(tpRef).foreach({ cname =>
@@ -129,21 +136,27 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
         topConnects(tpRef) = child.ref(pname)
         inputChannels.addBinding(child.ofModuleTarget, cname)
       })
-      EmptyStmt
-    case s => EmptyStmt
+    case s => s.foreach(getTopConnects)
   }
 
   val transformedSinks = new LinkedHashSet[String]
   val transformedSources = new LinkedHashSet[String]
-  val clockPort = new LinkedHashMap[String, ReferenceTarget]
   val sinkModel = new LinkedHashMap[String, InstanceTarget]
   val sourceModel = new LinkedHashMap[String, InstanceTarget]
+
+  // clock ports don't go from one model to the other -> only one map needed
+  val modelClockPort = new LinkedHashMap[String, Option[ReferenceTarget]]
   val sinkPorts = new LinkedHashMap[String, Seq[ReferenceTarget]]
   val sourcePorts = new LinkedHashMap[String, Seq[ReferenceTarget]]
   val staleTopPorts = new LinkedHashSet[ReferenceTarget]
   state.annotations.collect({
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
+
+      // Clock port always gets recorded and marked for deletion in FAME transform
+      modelClockPort(fca.globalName) = fca.clock
+      staleTopPorts ++= fca.clock
+
       val sinks = fca.sinks.toSeq.flatten
       sinkPorts(fca.globalName) = sinks
       sinks.headOption.filter(rt => transformedModules.contains(ModuleTarget(rt.circuit, topConnects(rt).encapsulatingModule))).foreach({ rt =>
@@ -152,6 +165,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
         transformedSinks += fca.globalName
         staleTopPorts ++= sinks
       })
+
       val sources = fca.sources.toSeq.flatten
       sourcePorts(fca.globalName) = sources
       sources.headOption.filter(rt => transformedModules.contains(ModuleTarget(rt.circuit, topConnects(rt).encapsulatingModule))).foreach({ rt =>
@@ -164,24 +178,28 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
 
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
 
-  def inputPortsByChannel(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+  private def irPortFromGlobalTarget(rt: ReferenceTarget): Port = {
+    portNodes(topConnects(rt).pathlessTarget)
+  }
+
+  def portsByInputChannel(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     val iChannels = inputChannels.get(mTarget).toSet.flatten
     iChannels.map({
-      cname => (cname, sinkPorts(cname).map(topConnects(_).pathlessTarget).map(portNodes(_)))
+      cname => (cname, (modelClockPort(cname).map(irPortFromGlobalTarget), sinkPorts(cname).map(irPortFromGlobalTarget)))
     }).toMap
   }
 
-  def outputPortsByChannel(mTarget: ModuleTarget): Map[String, Seq[Port]] = {
+  def portsByOutputChannel(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     val oChannels = outputChannels.get(mTarget).toSet.flatten
     oChannels.map({
-      cname => (cname, sourcePorts(cname).map(topConnects(_).pathlessTarget).map(portNodes(_)))
+      cname => (cname, (modelClockPort(cname).map(irPortFromGlobalTarget), sourcePorts(cname).map(irPortFromGlobalTarget)))
     }).toMap
   }
 
   lazy val modelPorts = {
     val mPorts = new LinkedHashMap[ModuleTarget, mutable.Set[FAMEChannelPortsAnnotation]] with MultiMap[ModuleTarget, FAMEChannelPortsAnnotation]
     state.annotations.collect({
-      case fcp@FAMEChannelPortsAnnotation(_, port :: ps) => mPorts.addBinding(port.moduleTarget, fcp)
+      case fcp @ FAMEChannelPortsAnnotation(_, _, port :: ps) => mPorts.addBinding(port.moduleTarget, fcp)
     })
     mPorts
   }
@@ -191,7 +209,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   private def genModelChannelPortMap(direction: Option[Direction])(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     modelPorts(mTarget).collect({
       case FAMEChannelPortsAnnotation(name, clock, ports) if direction == None || portNodes(ports.head).direction == direction.get =>
-        (name, clock.map(portNodes(_)), ports.map(portNodes(_)))
+        (name, (clock.map(portNodes(_)), ports.map(portNodes(_))))
     }).toMap
   }
 
@@ -211,30 +229,33 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   // - Used to produce port annotations in InferModelPorts
   // - Reran to look up port names on model instances
   class ModulePortDeduper(val mTarget: ModuleTarget) {
-    val visitedLeafPort = new LinkedHashSet[Port]()
-    val visitedChannel = new LinkedHashMap[Seq[Port], String]()
     val channelDedups = new LinkedHashMap[String, String]
-    def channelSharesPorts(ps: Seq[Port]): Boolean = ps.map(visitedLeafPort).reduce(_ || _)
-    def channelIsDuplicate(ps: Seq[Port]): Boolean = visitedChannel.contains(ps)
 
-    def dedupPortLists(pList: Map[String, Seq[Port]]): Map[String, Seq[Port]] = pList.flatMap({
-      case (cName, Nil) => throw new RuntimeException(s"Channel ${cName} is empty (has no associate ports)")
-      case (_, ports) if channelSharesPorts(ports) && !channelIsDuplicate(ports) =>
+    private val visitedLeafPort = new LinkedHashSet[Port]()
+    private val visitedChannel = new LinkedHashMap[(Option[Port], Seq[Port]), String]()
+
+    private def channelSharesPorts(ps: (Option[Port], Seq[Port])): Boolean = (ps._1 ++: ps._2).exists(visitedLeafPort(_))
+    private def channelIsDuplicate(ps: (Option[Port], Seq[Port])): Boolean = visitedChannel.contains(ps)
+
+    private def dedupPortLists(pList: Map[String, (Option[Port], Seq[Port])]): Map[String, (Option[Port], Seq[Port])] = pList.flatMap({
+      case (cName, (_, Nil)) => throw new RuntimeException(s"Channel ${cName} is empty (has no associated ports)")
+      case (_, clockAndPorts) if channelSharesPorts(clockAndPorts) && !channelIsDuplicate(clockAndPorts) =>
         throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
-      case (cName, ports) if channelIsDuplicate(ports) =>
-        channelDedups(cName) = visitedChannel(ports)
+      case (cName, clockAndPorts) if channelIsDuplicate(clockAndPorts) =>
+        channelDedups(cName) = visitedChannel(clockAndPorts)
         None
-      case (cName, ports) =>
-        visitedChannel(ports) = cName
+      case (cName, (clock, ports)) =>
+        visitedChannel((clock, ports)) = cName
+        visitedLeafPort ++= clock
         visitedLeafPort ++= ports
         channelDedups(cName) = cName
-        Some(cName, ports)
+        Some(cName, (clock, ports))
       }).toMap
 
-    val clockMap = dedupPortLists(clockPortByChannel(mTarget))
-    val inputPortMap = dedupPortLists(inputPortsByChannel(mTarget))
-    val outputPortMap = dedupPortLists(outputPortsByChannel(mTarget))
-    val completePortMap = (inputPortMap ++ outputPortMap).map { case (cName, ports) => cName -> (ports, clockMap(cName)) }
+    private val inputPortMap = dedupPortLists(portsByInputChannel(mTarget))
+    private val outputPortMap = dedupPortLists(portsByOutputChannel(mTarget))
+
+    val completePortMap = inputPortMap ++ outputPortMap
   }
 
   lazy val modulePortDedupers = transformedModules.map((mT: ModuleTarget) => new ModulePortDeduper(mT))

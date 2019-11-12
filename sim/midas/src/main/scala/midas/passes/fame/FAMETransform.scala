@@ -43,7 +43,7 @@ trait FAME1Channel {
       WSubField(WRef(asPort), "bits")
     }
   }
-  def updateFiredReg(finishing: WRef): Seq[Statement] = {
+  def updateFiredReg(finishing: WRef): Statement = {
     Connect(NoInfo, isFired, Mux(finishing, Negate(WRef(clockDomainEnable)), isFiredOrFiring, BoolType))
   }
 }
@@ -60,7 +60,7 @@ case class FAME1OutputChannel(val name: String, val clockDomainEnable: Port, val
   val direction = Output
   val portName = s"${name}_source"
   def setValid(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Statement = {
-    Connect(NoInfo, isValid, And.reduce(ccDeps.map(_.isValid) :+ Negate(isFired)))
+    Connect(NoInfo, isValid, And(And.reduce(ccDeps.map(_.isValid)), Negate(isFired)))
   }
 }
 
@@ -76,56 +76,67 @@ object ChannelCCDependencyGraph {
 // - Finishing is gated with clock channel valid
 object FAMEModuleTransformer {
   def apply(m: Module, analysis: FAMEChannelAnalysis): Module = {
-    // Step 0: Bookkeeping for present naming and port structure conventions
+    // Step 0: Bookkeeping for port structure conventions
     implicit val ns = Namespace(m)
-    val clocks = m.ports.filter(_.tpe == ClockType)
+    val clocks: Seq[Port] = m.ports.filter(_.tpe == ClockType)
     val portsByName = m.ports.map(p => p.name -> p).toMap
-    assert(ns.tryName("hostClock") && ns.tryName("hostReset")) // for now, honor this convention
     assert(clocks.length >= 1)
 
     // Multi-clock management step 1: Add host clock + reset ports, finishing wire
+    // TODO: Should finishing be a WrappedComponent?
+    // TODO: Avoid static naming convention.
     val hostReset = Port(NoInfo, "hostReset", Input, BoolType)
     val hostClock = Port(NoInfo, "hostClock", Input, ClockType)
-    val finishing = DefWire(NoInfo, ns.newName(triggerName), BoolType) // TODO: can this be a WrappedComponent
-    def createHostReg(name: String = "host", width: Width = IntWidth(1), resetVal: Expression = UIntLiteral(0, width)): DefRegister = {
-      new DefRegister(NoInfo, ns.newName(name), UIntType(width), WRef(hostClock), WRef(hostReset), resetVal)
+    val finishing = DefWire(NoInfo, "targetCyclefinishing", BoolType)
+    assert(ns.tryName(hostReset.name) && ns.tryName(hostClock.name) && ns.tryName(finishing.name))
+    def hostFlagReg(suggestName: String, resetVal: UIntLiteral = UIntLiteral(0)): DefRegister = {
+      DefRegister(NoInfo, ns.newName(suggestName), BoolType, WRef(hostClock), WRef(hostReset), resetVal)
     }
 
     // Multi-clock management step 2: Convert all clock ports to enables of same name
-    val targetClockEns = clocks.map(tpe = BoolType)
+    val targetClockEns: Seq[Port] = clocks.map(_.copy(tpe = BoolType))
 
     // Multi-clock management step 3: Generate clock buffers for all target clocks
-    val targetClockBufs = targetClockEns.map { en =>
-      val enableReg = createHostReg(s"${en.name}_enabled", resetVal = UIntLiteral(1, 1))
+    val targetClockBufs: Seq[SignalInfo] = targetClockEns.map { en =>
+      val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
       val buf = WDefInstance(DefineAbstractClockGate.blackbox.name, ns.newName(s"${en.name}_buffer"))
-      val connects = Seq(
+      val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), WRef(en), WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
-        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(WRef(enableReg), WRef(finishing))))
+        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(WRef(enableReg), WRef(finishing)))))
       SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, MALE))
     }
 
     // Multi-clock management step 4: Generate target clock substitution map
-    val replaceClocksMap = (targetClockEns.map(p => we(p)) zip targetClockBufs.map(_.ref)).toMap
+    def asWE(p: Port) = WrappedExpression.we(WRef(p))
+    val replaceClocksMap = (targetClockEns.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
 
     // LI-BDN transformation step 1: Build channels
+    // TODO: get rid of the analysis calls; we just need connectivity & annotations
+    // Would be shorter, could merge common code for in/out channels
     val portDeps = analysis.connectivity(m.name)
+    val mTarget = ModuleTarget(analysis.circuit.main, m.name)
     val inChannels = (analysis.modelInputChannelPortMap(mTarget)).map({
-      case(cName, Some(clock), ports) =>
-        val clockDomainEnable = portsByName(portDeps(clock.name)).copy(tpe = BoolType)
-        new FAME1InputChannel(cName, clockDomainEnable, ports)
-      case (_, None, _) => ??? // clocks are currently mandatory in channels
-    })
+      case(cName, (Some(clock), ports)) =>
+        val sourceClocks = portDeps.getEdges(clock.name)
+        assert(sourceClocks.size == 1) // must be driven by one clock input
+        val clockDomainEnable = portsByName(sourceClocks.head).copy(tpe = BoolType)
+        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+        new FAME1InputChannel(cName, clockDomainEnable, ports, firedReg)
+      case (_, (None, _)) => ??? // clocks are currently mandatory in channels
+    }).toSeq
     val inChannelMap = new LinkedHashMap[String, FAME1InputChannel] ++
       (inChannels.flatMap(c => c.ports.map(p => (p.name, c))))
 
     val outChannels = analysis.modelOutputChannelPortMap(mTarget).map({
-      case(cName, Some(clock), ports) =>
-        val clockDomainEnable = portsByName(portDeps(clock.name)).copy(tpe = BoolType)
-        val firedReg = createHostReg(name = ns.newName(s"${cName}_fired"))
+      case(cName, (Some(clock), ports)) =>
+        val sourceClocks = portDeps.getEdges(clock.name)
+        assert(sourceClocks.size == 1) // must be driven by one clock input
+        val clockDomainEnable = portsByName(sourceClocks.head).copy(tpe = BoolType)
+        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
         new FAME1OutputChannel(cName, clockDomainEnable, ports, firedReg)
-      case (_, None, _) => ??? // clocks are currently mandatory in channels
-    })
+      case (_, (None, _)) => ??? // clocks are currently mandatory in channels
+    }).toSeq
     val outChannelMap = new LinkedHashMap[String, FAME1OutputChannel] ++
       (outChannels.flatMap(c => c.ports.map(p => (p.name, c))))
 
@@ -141,18 +152,20 @@ object FAMEModuleTransformer {
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     def onExpr(expr: Expression): Expression = expr match {
-      case wr @ WRef(name, tpe, PortKind, MALE) if tpe != ClockType =>
+      case iWR @ WRef(name, tpe, PortKind, MALE) if tpe != ClockType =>
         // Generally MALE references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
       case oWR @ WRef(name, tpe, PortKind, FEMALE) if tpe != ClockType =>
         outChannelMap(name).replacePortRef(oWR)
       case cWR @ WRef(name, ClockType, PortKind, MALE) =>
-        replaceClocksMap(wr)
+        replaceClocksMap(WrappedExpression.we(cWR))
       case e => e map onExpr
     }
 
-    val transformedStmts = Seq(m.body.map(_.map(onExpr)))
+    def onStmt(stmt: Statement): Statement = stmt map onStmt map onExpr
+
+    val updatedBody = onStmt(m.body)
 
     // LI-BDN transformation step 5: add firing rules for output channels, trigger end of cycle
     // This is modified for multi-clock, as each channel fires only when associated clock is enabled
@@ -160,17 +173,17 @@ object FAMEModuleTransformer {
     val clockChannelReady = ???
     val clockChannelValid = ???
 
-    val channelStateRules = (inChannels ++ outChannels).map(c => c.updateFiredReg)
-    val inputRules = inChannels.flatMap(i => i.setReady(WRef(finishing)))
-    val outputRules = outChannels.flatMap(o => o.setValid(WRef(finishing), ccDeps(o)))
+    val channelStateRules = (inChannels ++ outChannels).map(c => c.updateFiredReg(WRef(finishing)))
+    val inputRules = inChannels.map(i => i.setReady(WRef(finishing)))
+    val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
     val topRules = Seq(
       Connect(NoInfo, clockChannelReady, allFiredOrFiring),
       Connect(NoInfo, WRef(finishing), And(allFiredOrFiring, clockChannelValid)))
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = finishing +: targetClockBufs.map(_.decl) ++ (inChannels ++ outChannels).map(_.firedReg)
+    val decls = finishing +: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
     val assigns = targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
-    Module(m.info, m.name, transformedPorts, Block(decls ++: transformedStmts +: assigns))
+    Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
   }
 }
 
@@ -203,9 +216,9 @@ class FAMETransform extends Transform {
         analysis.sourcePorts(c).map(rt => (rt, rt.copy(ref = s"${c}_source").field("bits").field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1)))
     })
 
-    def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, Seq[Port]])
+    def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, (Option[Port], Seq[Port])])
                    (mT: ModuleTarget): Seq[(ReferenceTarget, ReferenceTarget)] = {
-        lookup(mT).toSeq.flatMap({ case (cName, pList) =>
+        lookup(mT).toSeq.flatMap({ case (cName, (clockOption, pList)) =>
           pList.map({ port =>
             val decoupledTarget = mT.ref(s"${cName}${suffix}").field("bits")
             if (pList.size == 1)
@@ -213,6 +226,7 @@ class FAMETransform extends Transform {
             else
               (mT.ref(port.name), decoupledTarget.field(FAMEChannelAnalysis.removeCommonPrefix(port.name, cName)._1))
           })
+          // TODO: rename clock to nothing, since it is deleted
         })
     }
     def renameModelInputs: ModuleTarget => Seq[(ReferenceTarget, ReferenceTarget)] = renamePorts("_sink", analysis.modelInputChannelPortMap)

@@ -20,17 +20,17 @@ package object passes {
     * together with a reference to the component. This is useful for passes that insert hardware,
     * since the "collateral" of that object can be kept in one place.
     */
-  case class SignalInfo(decl: Statement, assigns: Statement, rhsRef: Expression)
+  case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression)
 
 
   /**
     * A utility for creating a wire that "echoes" the value of an existing expression.
     */
   object PassThru {
-    def apply(source: WRef)(implicit ns: Namespace): SignalInfo = echo(source, source.name)
+    def apply(source: WRef)(implicit ns: Namespace): SignalInfo = apply(source, source.name)
     def apply(source: WRef, suggestedName: String)(implicit ns: Namespace): SignalInfo = {
       val decl = DefWire(NoInfo, ns.newName(suggestedName), source.tpe)
-      val rhsRef = WRef(decl)
+      val ref = WRef(decl)
       SignalInfo(decl, Connect(NoInfo, WRef(decl), source), ref)
     }
   }

@@ -17,16 +17,23 @@ class InferModelPorts extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
 
+  def portAnnos(mt: ModuleTarget, cName: String, clk: Option[Port], ports: Seq[Port]): Seq[Annotation] = {
+    val clkRT = clk.map(p => mt.ref(p.name))
+    val portsRT = ports.map(p => mt.ref(p.name))
+    val fcpa = FAMEChannelPortsAnnotation(cName, clkRT, portsRT)
+    // Label all the channel ports with don't touch so as to prevent
+    // annotation renaming from breaking downstream
+    fcpa +: (clkRT ++: portsRT).map(DontTouchAnnotation(_))
+  }
+
   override def execute(state: CircuitState): CircuitState = {
     val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
     val cTarget = CircuitTarget(state.circuit.main)
-    val modelChannelPortsAnnos = analysis.modulePortDedupers.flatMap(deduper =>
-      deduper.completePortMap.flatMap({ case (cName, (ports, clk)) => Seq(
-        FAMEChannelPortsAnnotation(cName, ports.map(p => deduper.mTarget.ref(p.name)))) ++
-        // Label all the channel ports with don't touch so as to prevent
-        // annotation renaming from breaking downstream
-        ports.map(p => DontTouchAnnotation(deduper.mTarget.ref(p.name)))
-      }))
+    val modelChannelPortsAnnos = analysis.modulePortDedupers.flatMap {
+      case deduper => deduper.completePortMap.flatMap {
+        case (cName, (clk, ports)) => portAnnos(deduper.mTarget, cName, clk, ports)
+      }
+    }
     state.copy(annotations = state.annotations ++ modelChannelPortsAnnos)
   }
 }

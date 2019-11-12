@@ -50,8 +50,8 @@ object Negate {
 
 sealed trait BinaryBooleanOp {
   def op: PrimOp
-  def apply(l: Expression, r: Expression) = DoPrim(op, Seq(l, r))
-  def reduce(args: Iterable[Expression]): DoPrim = {
+  def apply(l: Expression, r: Expression): DoPrim = DoPrim(op, Seq(l, r), Nil, UnknownType)
+  def reduce(args: Iterable[Expression]): Expression = {
     args.tail.foldLeft(args.head){ (l, r) => apply(l, r) }
   }
 }
