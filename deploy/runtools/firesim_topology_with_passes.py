@@ -527,15 +527,15 @@ class FireSimTopologyWithPasses:
             """ break out of this loop when either all sims are completed (no
             network) or when one sim is completed (networked case) """
 
-            # this is a list of jobs completed, since any completed job will have
-            # a directory within this directory.
-            jobscompleted = os.listdir(self.workload.job_results_dir)
-            rootLogger.debug(jobscompleted)
+            def get_jobs_completed_local_info():
+                # this is a list of jobs completed, since any completed job will have
+                # a directory within this directory.
+                jobscompleted = os.listdir(self.workload.job_results_dir)
+                rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
+                return jobscompleted
 
-            # figure out what the teardown condition is: for now we handle just
-            # single-rooted cycle-accurate network,
-            # no network
-            do_teardown = len(jobscompleted) == len(self.firesimtopol.roots)
+            jobscompleted = get_jobs_completed_local_info()
+
 
             # this job on the instance should return all the state about the instance
             # e.g.:
@@ -568,6 +568,8 @@ class FireSimTopologyWithPasses:
                 self.kill_simulation_passes(use_mock_instances_for_testing)
                 rootLogger.debug("continuing one more loop to fully copy results and terminate")
                 teardown = True
+                # get latest local info about jobs completed. avoid extra copy
+                jobscompleted = get_jobs_completed_local_info()
                 instancestates = execute(monitor_jobs_wrapper, self.run_farm,
                                         jobscompleted, teardown,
                                         self.terminateoncompletion,

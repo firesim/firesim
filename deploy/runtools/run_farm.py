@@ -735,7 +735,7 @@ class InstanceDeployManager:
         # make a local copy of completed_jobs, so that we can update it
         completed_jobs = list(completed_jobs)
 
-        rootLogger.debug(completed_jobs)
+        rootLogger.debug("completed jobs " + str(completed_jobs))
 
         if not self.instance_assigned_simulations() and self.instance_assigned_switches():
             # this node hosts ONLY switches and not fpga sims
@@ -775,10 +775,10 @@ class InstanceDeployManager:
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
             # ON THE INSTNACE.
             parentslots = self.parentnode.fpga_slots
-            rootLogger.debug(parentslots)
+            rootLogger.debug("parentslots " + str(parentslots))
             num_parentslots_used = self.parentnode.fpga_slots_consumed
             jobnames = [slot.get_job_name() for slot in parentslots[0:num_parentslots_used]]
-            rootLogger.debug(jobnames)
+            rootLogger.debug("jobnames " + str(jobnames))
             already_done = all([job in completed_jobs for job in jobnames])
             rootLogger.debug("already done? " + str(already_done))
             if already_done:
