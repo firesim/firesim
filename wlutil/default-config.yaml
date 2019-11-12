@@ -1,0 +1,18 @@
+# Root for default board (platform-specific stuff)
+board-dir : '../boards/firechip'
+
+# Stores all outputs (binaries and images)
+# image_dir = os.path.join(root_dir, "images")
+image-dir : '../images'
+
+# Default linux source
+linux-dir : '../riscv-linux'
+
+# Default pk source
+pk-dir : '../riscv-pk'
+
+# Runtime Logs
+log-dir : '../logs' 
+
+# SW-simulation outputs
+res-dir : '../runOutput'

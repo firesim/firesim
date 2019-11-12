@@ -19,66 +19,6 @@ import yaml
 import re
 import pprint
 
-#------------------------------------------------------------------------------
-# Root Directories:
-# wlutil_dir and root_dir are the two roots for wlutil, all other paths are
-# derived from these two values. They must work, even when FireMarshal/ is a symlink.
-#------------------------------------------------------------------------------
-# Root for wlutil library
-wlutil_dir = pathlib.Path(__file__).parent.resolve()
-
-# Root for firemarshal (e.g. firesim-software/)
-root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
-
-#------------------------------------------------------------------------------
-# Derived Paths
-#------------------------------------------------------------------------------
-# Root for default board (platform-specific stuff)
-board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
-
-# Builtin workloads
-workdir_builtin = board_dir / 'base-workloads'
-
-# Stores all outputs (binaries and images)
-# image_dir = os.path.join(root_dir, "images")
-image_dir = None
-
-# Default linux source
-linux_dir = os.path.join(root_dir, "riscv-linux")
-
-# Default pk source
-pk_dir = root_dir / 'riscv-pk'
-
-# Busybox source directory (used for the initramfs)
-busybox_dir = wlutil_dir / 'busybox'
-
-# Initramfs root directory (used to build default initramfs for loading board drivers)
-initramfs_dir = pathlib.Path(os.path.join(wlutil_dir, "initramfs"))
-
-# Storage for generated/temporary outputs
-gen_dir = wlutil_dir / "generated"
-
-# Runtime Logs
-log_dir = os.path.join(root_dir, "logs")
-
-# SW-simulation outputs
-res_dir = os.path.join(root_dir, "runOutput")
-
-# Empty directory used for mounting images
-mnt = os.path.join(root_dir, "disk-mount")
-
-# Basic template for user-specified commands (the "command:" option) 
-commandScript = gen_dir / "_command.sh"
-
-# Default parallelism level to use in subcommands (mostly when calling 'make')
-jlevel = "-j" + str(os.cpu_count())
-
-# Gets set uniquely for each logical invocation of this library
-runName = ""
-
-# Number of extra bytes to leave free by default in filesystem images
-rootfsMargin = 256*(1024*1024)
-
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
@@ -110,16 +50,24 @@ class RootfsCapacityError(Exception):
                 "\tRequested: " + humanfriendly.format_size(self.requested) + \
                 "\tAvailable: " + humanfriendly.format_size(self.available)
 
-class ConfigurationOptionError(Exception):
+class ConfigurationError(Exception):
+    """Error representing a generic problem with configuration"""
+    def __init__(self, cause):
+        self.cause = cause
+
+    def __str__(self):
+        return "Configuration Error: " + cause
+
+class ConfigurationOptionError(ConfigurationError):
     """Error representing a problem with marshal configuration."""
     def __init__(self, opt, cause):
         self.opt = opt
         self.cause = cause
 
     def __str__(self):
-        return "Error with configuration option " + self.opt + ": " + str(self.cause)
+        return "Error with configuration option '" + self.opt + "': " + str(self.cause)
         
-class ConfigurationFileError(Exception):
+class ConfigurationFileError(ConfigurationError):
     """Error representing issues with loading the configuration"""
     def __init__(self, missingFile, cause):
         self.missingFile = missingFile
@@ -130,46 +78,76 @@ class ConfigurationFileError(Exception):
                 str(self.cause)
 
 def cleanPaths(opts, baseDir=pathlib.Path('.')):
-    """Clean all paths in an options dictionary by converting them to resolved,
-    absolute, pathlib.Path's. Paths will be interpreted as relative to
-    baseDir."""
+    """Clean all user-defined paths in an options dictionary by converting them
+    to resolved, absolute, pathlib.Path's. Paths will be interpreted as
+    relative to baseDir."""
 
     # These options represent pathlib paths
     pathOpts = [
-        # Root for default board (platform-specific stuff)
         'board-dir',
-        # Builtin workloads
-        'workdir-builtin',
-        # Stores all outputs (binaries and images)
-        # image_dir = os.path.join(root_dir, "images")
         'image-dir',
-        # Default linux source
         'linux-dir',
-        # Default pk source
         'pk-dir',
-        # Busybox source directory (used for the initramfs)
-        'busybox-dir',
-        # Initramfs root directory (used to build default initramfs for loading board drivers)
-        'initramfs-dir',
-        # Storage for generated/temporary outputs
-        'gen-dir',
-        # Runtime Logs
         'log-dir',
-        # SW-simulation outputs
-        'res-dir',
-        # Empty directory used for mounting images
-        'mnt-dir',
-        # Basic template for user-specified commands (the "command:" option) 
-        'commandScript'
+        'res-dir'
     ]
 
     for opt in pathOpts:
         if opt in opts:
             try:
-                path = (baseDir / pathlib.Path(opts[opt])).resolve()
+                path = (baseDir / pathlib.Path(opts[opt])).resolve(strict=True)
                 opts[opt] = path
             except Exception as e:
                 raise ConfigurationOptionError(opt, "Invalid path: " + str(e))
+
+# These represent all available user-defined options (those set by the
+# environment or config files). See default-config.yaml or the documentation
+# for the meaning of these options.
+userOpts = [
+        'board-dir',
+        'image-dir',
+        'linux-dir',
+        'pk-dir',
+        'log-dir',
+        'res-dir'
+        ]
+
+# These represent all available derived options (constants and those generated
+# from userOpts, but not directly settable by users)
+derivedOpts = [
+        # Root for firemarshal (e.g. firesim-software/)
+        'root-dir',
+
+        # Root for wlutil library
+        'wlutil-dir',
+
+        # Builtin workloads (the board's bases)
+        'workdir-builtin',
+
+        # Busybox source directory (used for the initramfs)
+        'busybox-dir',
+
+        # Initramfs root directory (used to build default initramfs for loading board drivers)
+        'initramfs-dir',
+
+        # Storage for generated/temporary outputs
+        'gen-dir',
+
+        # Empty directory used for mounting images
+        'mnt-dir',
+
+        # Basic template for user-specified commands (the "command:" option) 
+        'commandScript',
+
+        # Default parallelism level to use in subcommands (mostly when calling 'make')
+        'jlevel', 
+
+        # Gets set uniquely for each logical invocation of this library
+        'runName',
+
+        # Number of extra bytes to leave free by default in filesystem images
+        'rootfsMargin',
+        ]
 
 class marshalCtx(collections.MutableMapping):
     """Global FireMarshal context (configuration)."""
@@ -181,15 +159,22 @@ class marshalCtx(collections.MutableMapping):
         """On init, we search for and load all sources of options.
 
         The order in which options are added here is the order of precidence."""
+
+        # These are set early to help with config file search-paths
+        self['wlutil-dir'] = pathlib.Path(__file__).parent.resolve()
+        self['root-dir'] = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
+
         # This is an exhaustive list of defaults, it always exists and can be
         # overwritten by other user-defined configs
-        defaultCfg = wlutil_dir / 'default_config.yaml'
+        defaultCfg = self['wlutil-dir'] / 'default-config.yaml'
         self.addPath(defaultCfg)
         
         # These are mutually-exlusive search paths (only one will be loaded)
         cfgSources = [
-            pathlib.Path('marshal_config.yaml'),
-            pathlib.Path(sys.modules['__main__'].__file__).parent.resolve() / 'marshal_config.yaml'
+            # pwd
+            pathlib.Path('marshal-config.yaml'),
+            # next to the marshal executable
+            self['root-dir'] / 'marshal-config.yaml'
                 ]
         for src in cfgSources:
             if src.exists():
@@ -197,6 +182,18 @@ class marshalCtx(collections.MutableMapping):
                 break
 
         self.addEnv()
+
+        # We should have all user-defined options now
+        missingOpts = set(userOpts) - set(self.opts)
+        if len(missingOpts) != 0:
+            raise ConfigurationError("Missing required options: " + str(missingOpts))
+
+        self.deriveOpts()
+
+        # It would be a marshal bug if any of these options are missing
+        missingDOpts = set(derivedOpts) - set(self.opts)
+        if len(missingDOpts) != 0:
+            raise RuntimeError("Internal error: Missing derived options or constants: " + str(missingDOpts))
 
     def add(self, newOpts):
         """Add options to this configuration, opts will override any
@@ -220,18 +217,36 @@ class marshalCtx(collections.MutableMapping):
         """Find all marshal options in the environment and load them.
         
         Environment options take the form MARSHAL_OPT where "OPT" will be
-        converted to lower-case and used as the option name. For example
-        MARSHAL_FSIM=../firesim would add a ('fsim' : '../firesim') option to 
-        the config."""
+        converted as follows:
+            1) convert to lower-case
+            2) all underscores will be replaced with dashes
+
+        For example MARSHAL_LINUX_DIR=../special/linux would add a ('linux-dir'
+        : '../special/linux') option to the config."""
         reOpt = re.compile("^MARSHAL_(\S+)")
         envCfg = {}
         for opt,val in os.environ.items():
             match = reOpt.match(opt)
             if match:
-                optName = match.group(1).lower()
+                optName = match.group(1).lower().replace('_', '-')
                 envCfg[optName] = val
 
+        cleanPaths(envCfg)
         self.add(envCfg)
+
+    def deriveOpts(self):
+        """Update or initialize all derived options. This assumes all
+        user-defined options have been set already. See the 'derivedOpts' list
+        above for documentation of these options."""
+        self['workdir-builtin'] = self['board-dir'] / 'base-workloads'
+        self['busybox-dir'] = self['wlutil-dir'] / 'busybox'
+        self['initramfs-dir'] = self['wlutil-dir'] / "initramfs"
+        self['gen-dir'] = self['wlutil-dir'] / "generated"
+        self['mnt-dir'] = self['root-dir'] / "disk-mount"
+        self['commandScript'] = commandScript = self['gen-dir'] / "_command.sh"
+        self['jlevel'] = "-j" + str(os.cpu_count())
+        self['runName'] = ""
+        self['rootfsMargin'] = 256*(1024*1024)
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
@@ -262,14 +277,15 @@ def initialize():
     log = logging.getLogger()
 
     ctx = marshalCtx()
+    print(ctx)
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
 
     # Setup disk initramfs dirs
     for d in initramfs_disk_dirs:
-        if not (initramfs_dir / 'disk' / d).exists():
-            (initramfs_dir / 'disk' / d).mkdir(parents=True)
+        if not (ctx['initramfs-dir'] / 'disk' / d).exists():
+            (ctx['initramfs-dir'] / 'disk' / d).mkdir(parents=True)
 
 # Create a unique run name. You can call this multiple times to reset internal
 # paths (e.g. for starting a logically different run). The run name controls

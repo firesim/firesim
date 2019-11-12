@@ -68,7 +68,7 @@ def main():
     # Perform any basic setup functions for wlutil. This is idempotent.
     try:
         wlutil.initialize()
-    except wlutil.ConfigurationFileError as e:
+    except wlutil.ConfigurationError as e:
         print("Failed to initialize FireMarshal:")
         print(e)
         sys.exit(1)
