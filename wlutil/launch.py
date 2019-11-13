@@ -22,7 +22,7 @@ def getSpikeCmd(config, nodisk=False):
         spikeBin = 'spike'
 
     if nodisk:
-        return str(spikeBin) + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + str(config['bin']) + '-nodisk'
+        return str(spikeBin) + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + str(noDiskPath(config['bin']))
     elif 'img' not in config:
         return str(spikeBin) + " " + config.get('spike-args', '') + ' -p' + launch_cores + ' -m' + launch_mem + " " + str(config['bin'])
     else:
@@ -35,7 +35,7 @@ def getQemuCmd(config, nodisk=False):
     launch_port = get_free_tcp_port()
 
     if nodisk:
-        exe = config['bin'] + '-nodisk'
+        exe = noDiskPath(config['bin'])
     else:
         exe = config['bin']
 
@@ -114,9 +114,10 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
             copyImgFiles(config['img'], outputSpec, direction='out')
 
         if 'post_run_hook' in config:
-            log.info("Running post_run_hook script: " + str(config['post_run_hook']))
+            prhCmd = [config['post_run_hook'].path] + config['post_run_hook'].args + [baseResDir]
+            log.info("Running post_run_hook script: " + ' '.join([ str(x) for x in prhCmd]))
             try:
-                run([config['post_run_hook'], baseResDir], cwd=config['workdir'])
+                run(prhCmd, cwd=config['workdir'])
             except sp.CalledProcessError as e:
                 log.info("\nRun output available in: " + str(runResDir.parent))
                 raise RuntimeError("Post run hook failed:\n" + e.output)
@@ -125,5 +126,4 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
     else:
         log.info("Workload launch skipped ('launch'=false in config)")
         return None
-
 

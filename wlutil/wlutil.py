@@ -648,3 +648,6 @@ class config_changed(object):
         if last_success is None:
             return False
         return (last_success == self.config_digest)
+
+def noDiskPath(path):
+    return path.parent / (path.name + '-nodisk')

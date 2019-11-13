@@ -74,7 +74,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['guest-init', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img', 'spike', 'post_run_hook']
+configToAbs = ['guest-init', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img', 'spike']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -195,6 +195,11 @@ class Config(collections.MutableMapping):
         if 'guest-init' in self.cfg:
             self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
 
+        if 'post_run_hook' in self.cfg:
+            scriptParts = self.cfg['post_run_hook'].split(' ')
+            self.cfg['post_run_hook'] = RunSpec(
+                    script = (self.cfg['workdir'] / scriptParts[0]).resolve(),
+                    args = scriptParts[1:])
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']

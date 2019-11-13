@@ -20,14 +20,17 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
 else
   echo "Success" | tee -a $LOGNAME
 fi
+echo ""
 
 echo "Initializing submodules for linux-based tests" | tee -a $LOGNAME
 ./init-submodules.sh | tee -a $LOGNAME
+echo ""
 
 # We pre-build to avoid potential timeouts on a fresh clone
 echo "Pre-building base workloads" | tee -a $LOGNAME
 ./marshal build test/br-base.json
 ./marshal build test/fedora-base.json
+echo ""
 
 echo "Running launch timeout test (should timeout):" | tee -a $LOGNAME
 echo "This test will reset your terminal"
@@ -41,6 +44,7 @@ if [ $res != 0 ]; then
 else
   echo "Success" | tee -a $LOGNAME
 fi
+echo ""
 
 echo "Running build timeout test (should timeout):" | tee -a $LOGNAME
 ./marshal test test/timeout-build.json | grep "timeout while building"
@@ -50,6 +54,7 @@ if [ ${PIPESTATUS[1]} != 0 ]; then
 else
   echo "Success" | tee -a $LOGNAME
 fi
+echo ""
 
 # Run the bulk tests (all work with the 'test' command)
 # Note the funny extended globbing, these are just lists of tests that
@@ -65,6 +70,7 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
 else
   echo "Success" | tee -a $LOGNAME
 fi
+echo ""
 
 # Run the no-disk versions on spike, no-disk runs have many restrictions,
 # we only run a few tests here to test basic capabilities
@@ -78,6 +84,7 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
 else
   echo "Success" | tee -a $LOGNAME
 fi
+echo ""
 
 # Run the specialized tests (tests that are too complicated for ./marshal
 # test)
@@ -87,6 +94,7 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
 fi
+echo ""
 
 echo "Running incremental test" | tee -a $LOGNAME
 ./test/incremental/test.py >> $LOGNAME
@@ -95,6 +103,7 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
   exit 1
 fi
+echo ""
 
 echo "Running inheritance test" | tee -a $LOGNAME
 ./test/inherit/test.py >> $LOGNAME
@@ -103,6 +112,7 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   SUITE_PASS=false
   exit 1
 fi
+echo ""
 
 # Ensures that marshal can be called from different PWDs
 echo "Running different PWD test" | tee -a $LOGNAME
@@ -114,10 +124,11 @@ if [ ${PIPESTATUS[0]} != 0 ]; then
   exit 1
 fi
 popd
+echo ""
 
 echo "Running fsSize test" | tee -a $LOGNAME
 pushd test/fsSize
-./test.sh >> $LOGNAME
+./test.sh | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false

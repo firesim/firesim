@@ -41,7 +41,7 @@ def handleHostInit(config):
     if 'host-init' in config:
        log.info("Applying host-init: " + str(config['host-init']))
        if not config['host-init'].exists():
-           raise ValueError("host-init script " + config['host-init'] + " not found.")
+           raise ValueError("host-init script " + str(config['host-init']) + " not found.")
 
        run([config['host-init']], cwd=config['workdir'])
  
@@ -69,7 +69,7 @@ def addDep(loader, config):
         loader.addTask({
                 'name' : str(config['bin']),
                 'actions' : [(makeBin, [config])],
-                'targets' : [config['bin']],
+                'targets' : [str(config['bin'])],
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
@@ -84,9 +84,9 @@ def addDep(loader, config):
             nodisk_task_deps.append(str(config['img']))
 
         loader.addTask({
-                'name' : str(config['bin'] + '-nodisk'),
+                'name' : str(noDiskPath(config['bin'])),
                 'actions' : [(makeBin, [config], {'nodisk' : True})],
-                'targets' : [config['bin'] + '-nodisk'],
+                'targets' : [str(noDiskPath(config['bin']))],
                 'file_dep': nodisk_file_deps,
                 'task_dep' : nodisk_task_deps,
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
@@ -180,7 +180,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     if buildBin and 'bin' in config:
         if config['nodisk']:
-            binList.append(config['bin'] + '-nodisk')
+            binList.append(noDiskPath(config['bin']))
         else:
             binList.append(config['bin'])
    
@@ -193,7 +193,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             if buildBin:
                 binList.append(jCfg['bin'])
                 if jCfg['nodisk']:
-                    binList.append(jCfg['bin'] + '-nodisk')
+                    binList.append(noDiskPath(jCfg['bin']))
 
             if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
@@ -346,7 +346,7 @@ def makeBin(config, nodisk=False):
         run(['make', getOpt('jlevel')], cwd=pk_build)
 
         if nodisk:
-            shutil.copy(pk_build / 'bbl', config['bin'] + '-nodisk')
+            shutil.copy(pk_build / 'bbl', noDiskPath(config['bin']))
         else:
             shutil.copy(pk_build / 'bbl', config['bin'])
 

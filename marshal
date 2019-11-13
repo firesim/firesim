@@ -162,18 +162,19 @@ def main():
             else:
                 log.info("Test Passed")
                 log.info("Output available at: " + str(resPath))
+            log.info("\n")
 
         elif args.command == 'clean':
             if 'bin' in targetCfg:
                 deleteSafe(targetCfg['bin'])
-                deleteSafe(targetCfg['bin'].parent / (targetCfg['bin'].name + '-nodisk'))
+                deleteSafe(wlutil.noDiskPath(targetCfg['bin']))
             if 'img' in targetCfg:
                 deleteSafe(targetCfg['img'])
             if 'jobs' in targetCfg:
                 for jCfg in targetCfg['jobs'].values():
                     if 'bin' in jCfg:
                         deleteSafe(jCfg['bin'])
-                        deleteSafe(jCfg['bin'].parent / (jCfg['bin'].name + '-nodisk'))
+                        deleteSafe(wlutil.noDiskPath(jCfg['bin']))
                     if 'img' in jCfg:
                         deleteSafe(jCfg['img'])
 
