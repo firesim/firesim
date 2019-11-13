@@ -1,6 +1,7 @@
 import os
 import subprocess as sp
 import shutil
+import pathlib
 from .. import wlutil
 
 serviceTemplate = """[Unit]
@@ -14,10 +15,10 @@ ExecStart=/etc/firesim/{scriptName} {scriptArgs}
 StandardOutput=journal+console"""
 
 # Some common directories for this module (all absolute paths)
-fed_dir=os.path.dirname(os.path.realpath(__file__))
+fed_dir=pathlib.Path(__file__).resolve().parent
 
 # Temporary overlay used for applying init scripts
-overlay=os.path.join(fed_dir, 'overlay')
+overlay=fed_dir / 'overlay'
 
 class Builder:
     def baseConfig(self):
@@ -26,7 +27,7 @@ class Builder:
                 'workdir' : fed_dir,
                 'distro' : 'fedora',
                 'builder' : self,
-                'img' : os.path.join(fed_dir, "rootfs.img")
+                'img' : fed_dir / "rootfs.img"
                 }
 
     def buildBaseImage(self):
@@ -52,27 +53,26 @@ class Builder:
         # filled in and a custom boot target (firesim.target) that loads a
         # custom service (firesim.service) that runs a script (/init.sh). We
         # can change the default boot behavior by changing this script.
-        scriptDst = os.path.join(overlay, 'etc/firesim/firesim.sh')
+        scriptDst = overlay / 'etc/firesim/firesim.sh'
         if script != None:
-            print("applying script: " + scriptDst)
+            print("applying script: " + str(scriptDst))
             shutil.copy(script, scriptDst)
-            # wlutil.run(['cp', script, scriptDst])
         else:
-            wlutil.run(['rm', scriptDst])
+            scriptDst.unlink()
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            wlutil.run(['touch', scriptDst])
+            scriptDst.touch()
         
-        wlutil.run(['chmod', '+x', scriptDst])
+        scriptDst.chmod(0o777)
 
         # Create the service script
         if args is None:
             serviceScript = serviceTemplate.format(scriptName='firesim.sh', scriptArgs='')
         else:
-            serviceScript = serviceTemplate.format(scriptName='firesim.sh', scriptArgs=args)
+            serviceScript = serviceTemplate.format(scriptName='firesim.sh', scriptArgs=' '.join(args))
 
-        with open(os.path.join(overlay, 'etc/systemd/system/firesim.service'), 'w') as f:
+        with open(overlay / 'etc/systemd/system/firesim.service', 'w') as f:
             f.write(serviceScript)
 
         return overlay

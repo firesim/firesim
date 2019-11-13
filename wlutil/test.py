@@ -155,7 +155,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
 
     cfg = cfgs[cfgName]
     if 'testing' not in cfg:
-        log.info("Test " + os.path.basename(cfgName) + " skipping: No 'testing' field in config")
+        log.info("Test " + cfgName + " skipping: No 'testing' field in config")
         return testResult.skip, None
 
     testCfg = cfg['testing']
@@ -165,9 +165,9 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
     if 'runTimeout' not in testCfg:
         testCfg['runTimeout'] = defRunTimeout
 
-    refPath = os.path.join(cfg['workdir'], testCfg['refDir'])
+    refPath = cfg['workdir'] / testCfg['refDir']
     if cmp_only is None:
-        testPath = os.path.join(res_dir, getRunName())
+        testPath = getOpt('res-dir') / getOpt('run-name')
     else:
         testPath = cmp_only
 
@@ -193,16 +193,16 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         diff = cmpOutput(testPath, refPath)
         if diff is not None:
             suitePass = False
-            log.info("Test " + os.path.basename(cfgName) + " failure: output does not match reference")
+            log.info("Test " + cfgName + " failure: output does not match reference")
             log.info(textwrap.indent(diff, '\t'))
             return testResult.failure, testPath
 
     except TimeoutError as e:
         suitePass = False
         if e.args[0] == "buildWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: timeout while building")
+            log.info("Test " + cfgName + " failure: timeout while building")
         elif e.args[0] == "launchWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: timeout while running")
+            log.info("Test " + cfgName + " failure: timeout while running")
         else:
             log.error("Internal tester error: timeout from unrecognized function: " + e.args[0])
         
@@ -211,9 +211,9 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
     except ChildProcessError as e:
         suitePass = False
         if e.args[0] == "buildWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: Exception while building")
+            log.info("Test " + cfgName + " failure: Exception while building")
         elif e.args[0] == "launchWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: Exception while running")
+            log.info("Test " + cfgName + " failure: Exception while running")
         else:
             log.error("Internal tester error: exception in unknown function: " + e.args[0])
         
@@ -221,7 +221,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
 
     except Exception as e:
         suitePass = False
-        log.info("Test " + os.path.basename(cfgName) + " failure: Exception encountered")
+        log.info("Test " + cfgName + " failure: Exception encountered")
         traceback.print_exc()
         return testResult.failure, testPath
 

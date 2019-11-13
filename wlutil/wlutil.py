@@ -109,7 +109,9 @@ userOpts = [
         'linux-dir',
         'pk-dir',
         'log-dir',
-        'res-dir'
+        'res-dir',
+        'jlevel',  # int or str from user, converted to '-jN' after loading
+        'rootfs-margin' # int or str from user, converted to int bytes after loading
         ]
 
 # These represent all available derived options (constants and those generated
@@ -137,16 +139,11 @@ derivedOpts = [
         'mnt-dir',
 
         # Basic template for user-specified commands (the "command:" option) 
-        'commandScript',
-
-        # Default parallelism level to use in subcommands (mostly when calling 'make')
-        'jlevel', 
+        'command-script',
 
         # Gets set uniquely for each logical invocation of this library
         'runName',
 
-        # Number of extra bytes to leave free by default in filesystem images
-        'rootfsMargin',
         ]
 
 class marshalCtx(collections.MutableMapping):
@@ -243,13 +240,41 @@ class marshalCtx(collections.MutableMapping):
         self['initramfs-dir'] = self['wlutil-dir'] / "initramfs"
         self['gen-dir'] = self['wlutil-dir'] / "generated"
         self['mnt-dir'] = self['root-dir'] / "disk-mount"
-        self['commandScript'] = commandScript = self['gen-dir'] / "_command.sh"
-        self['jlevel'] = "-j" + str(os.cpu_count())
+        self['command-script'] = self['gen-dir'] / "_command.sh"
         self['runName'] = ""
-        self['rootfsMargin'] = 256*(1024*1024)
+        self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
+        self['jlevel'] = '-j' + str(self['jlevel'])
+
+    def setRunName(self, configPath, operation):
+        """Helper function for formatting a  unique run name. You are free to
+        set the 'run-name' option directly if you don't need the help.
+
+        Args:
+            configPath (pathlike): Config file used for this run
+            operation (str): The operation being performed on this run (e.g. 'build') 
+        """
+
+        if configPath:
+            configName = pathlib.Path(configPath).stem
+        else:
+            configName = ''
+
+        timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
+        randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+
+        runName = configName + \
+                "-" + operation + \
+                "-" + timeline + \
+                "-" +  randname
+
+        self['run-name'] = runName
+
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
+        if key not in self.opts:
+            raise ConfigurationOptionError(key, 'No such option')
+
         return self.opts[key]
 
     def __setitem__(self, key, value):
@@ -270,14 +295,11 @@ class marshalCtx(collections.MutableMapping):
     def __repr__(self):
         return repr(self.opts)
 
-
 def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
     Is safe and fast to call every time you load the library."""
-    log = logging.getLogger()
 
-    ctx = marshalCtx()
-    print(ctx)
+    sys.modules[__name__].ctx = marshalCtx()
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
@@ -287,28 +309,19 @@ def initialize():
         if not (ctx['initramfs-dir'] / 'disk' / d).exists():
             (ctx['initramfs-dir'] / 'disk' / d).mkdir(parents=True)
 
-# Create a unique run name. You can call this multiple times to reset internal
-# paths (e.g. for starting a logically different run). The run name controls
-# where logging and workload outputs go. You must call initLogging again to
-# reset logging after changing setRunName.
-def setRunName(configPath, operation):
-    global runName
+def getCtx():
+    """Return the global confguration object (ctx). This is only valid after
+    calling initialize().
     
-    timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
-    randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+    Returns (marshalCtx)
+    """ 
+    return ctx
 
-    if configPath:
-        configName = os.path.splitext(os.path.basename(configPath))[0]
+def getOpt(opt):
+    if ctx is None:
+        raise RuntimeError("wlutil context not initized")
     else:
-        configName = ''
-
-    runName = configName + \
-            "-" + operation + \
-            "-" + timeline + \
-            "-" +  randname
-
-def getRunName():
-    return runName
+        return ctx[opt]
 
 # logging setup: You can call this multiple times to reset logging (e.g. if you
 # change the RunName)
@@ -322,7 +335,7 @@ def initLogging(verbose):
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
     # Create a unique log name
-    logPath = os.path.join(log_dir, getRunName() + ".log")
+    logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
     
     # formatting for log to file
     if fileHandler is not None:
@@ -374,12 +387,12 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     return p
 
 def genRunScript(command):
-    with open(commandScript, 'w') as s:
+    with open(getOpt('command-script'), 'w') as s:
         s.write("#!/bin/bash\n")
         s.write(command + "\n")
         s.write("sync; poweroff -f\n")
 
-    return commandScript
+    return getOpt('command-script')
 
 # This is like os.waitpid, but it works for non-child processes
 def waitpid(pid):
@@ -435,8 +448,8 @@ def toCpio(src, dst):
 def applyOverlay(img, overlay):
     log = logging.getLogger()
     flist = []
-    for f in pathlib.Path(overlay).glob('*'):
-        flist.append(FileSpec(src=f, dst='/'))
+    for f in overlay.glob('*'):
+        flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
 
     copyImgFiles(img, flist, 'in')
     
@@ -445,7 +458,7 @@ def resizeFS(img, newSize=0):
 
     img: path to image file to resize
     newSize: desired size (in bytes). If 0, shrink the image to its minimum
-      size + rootfsMargin
+      size + rootfs-margin
     """
     log = logging.getLogger()
     chkfsCmd = ['e2fsck', '-f', '-p', str(img)]
@@ -456,7 +469,7 @@ def resizeFS(img, newSize=0):
 
     if newSize == 0:
         run(['resize2fs', '-M', img])
-        newSize = os.path.getsize(img) + rootfsMargin
+        newSize = os.path.getsize(img) + getOpt('rootfs-margin')
 
     origSz = os.path.getsize(img)
     if origSz > newSize:
@@ -480,16 +493,18 @@ def copyImgFiles(img, files, direction):
     """
     log = logging.getLogger()
 
-    if not os.path.exists(mnt):
-        run(['mkdir', mnt])
+    if not getOpt('mnt-dir').exists():
+        run(['mkdir', getOpt('mnt-dir')])
 
-    with mountImg(img, mnt):
+    with mountImg(img, getOpt('mnt-dir')):
         for f in files:
             if direction == 'in':
-                run([sudoCmd, 'cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
+                dst = str(getOpt('mnt-dir') / f.dst.relative_to('/'))
+                run([sudoCmd, 'cp', '-a', str(f.src), dst])
             elif direction == 'out':
                 uid = os.getuid()
-                run([sudoCmd, 'cp', '-a', os.path.normpath(mnt + f.src), f.dst])
+                src = str(getOpt('mnt-dir') / f.src.relative_to('/'))
+                run([sudoCmd, 'cp', '-a', src, str(f.dst)])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
 

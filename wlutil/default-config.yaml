@@ -16,3 +16,10 @@ log-dir : '../logs'
 
 # SW-simulation outputs
 res-dir : '../runOutput'
+
+# Default parallelism level to use in subcommands (mostly when calling 'make')
+# '' means unbounded
+jlevel : ''
+
+# Number of extra bytes to leave free by default in filesystem images
+rootfs-margin : '256MiB'
