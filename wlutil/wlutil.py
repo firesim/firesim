@@ -108,8 +108,7 @@ def initialize():
     Is safe and fast to call every time you load the library."""
     log = logging.getLogger()
 
-    if not os.path.exists(mnt):
-        run(['mkdir', mnt])
+    pathlib.Path(mnt).mkdir(parents=True, exist_ok=True)
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
@@ -311,9 +310,6 @@ def copyImgFiles(img, files, direction):
     direction - "in" or "out" for copying files into or out of the image (respectively)
     """
     log = logging.getLogger()
-
-    if not os.path.exists(mnt):
-        run(['mkdir', mnt])
 
     with mountImg(img, mnt):
         for f in files:
