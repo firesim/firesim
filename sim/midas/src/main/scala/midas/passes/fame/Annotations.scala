@@ -4,6 +4,13 @@ import firrtl._
 import annotations._
 
 /**
+  * A mixed-in ancestor trait for all FAME annotations, useful for type-casing.
+  */
+trait FAMEAnnotation {
+  this: Annotation =>
+}
+
+/**
   * An annotation that describes the ports that constitute one channel
   * from the perspective of a particular module that will be replaced
   * by a simulation model. Note that this describes the channels as
@@ -27,7 +34,7 @@ import annotations._
 case class FAMEChannelPortsAnnotation(
   localName: String,
   clockPort: Option[ReferenceTarget],
-  ports: Seq[ReferenceTarget]) extends Annotation {
+  ports: Seq[ReferenceTarget]) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
     Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), ports.map(renamer)))
@@ -53,7 +60,7 @@ case class FAMEChannelConnectionAnnotation(
   channelInfo: FAMEChannelInfo,
   clock: Option[ReferenceTarget],
   sources: Option[Seq[ReferenceTarget]],
-  sinks: Option[Seq[ReferenceTarget]]) extends Annotation with HasSerializationHints {
+  sinks: Option[Seq[ReferenceTarget]]) extends Annotation with FAMEAnnotation with HasSerializationHints {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
     Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), clock.map(renamer), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
@@ -62,14 +69,15 @@ case class FAMEChannelConnectionAnnotation(
 
   def getBridgeModule(): String = sources.getOrElse(sinks.get).head.module
 
-  // TODO: Maybe clocks should become associated with module port here?
+  // TODO (David): Maybe clocks should become associated with module port here?
   // If so, the pass calling this would handle the clocks.
   // Otherwise, give this a different name to make it clear that it's not moving everything
+  // POSSIBLY FIXED (Albert): I included the clock in the renamed targets
   def moveFromBridge(portName: String): FAMEChannelConnectionAnnotation = {
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
 
     require(sources == None || sinks == None, "Bridge-connected channels cannot loopback")
-    val rTs = sources.getOrElse(sinks.get) ++ (channelInfo match {
+    val rTs = sources.getOrElse(sinks.get) ++ clock ++ (channelInfo match {
       case i: DecoupledForwardChannel => Seq(i.readySink.getOrElse(i.readySource.get))
       case other => Seq()
     })
@@ -146,7 +154,7 @@ case object DecoupledReverseChannel extends FAMEChannelInfo
 case object TargetClockChannel extends FAMEChannelInfo
 
 /**
-  * Indicates that a channel connection is the reverse (ready) half of
+  * Indicates that a channel connection is the forward (valid) half of
   * a decoupled target connection.
   *
   * @param readySink  sink port component of the corresponding reverse channel
@@ -186,7 +194,8 @@ object DecoupledForwardChannel {
 /**
   * Indicates that a particular instance is a FAME Model
   */
-case class FAMEModelAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
+case class FAMEModelAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: InstanceTarget) = this.copy(n)
 }
@@ -217,7 +226,9 @@ case object FAME1Transform extends FAMETransformType
   *  this is a ModuleTarget, all instances at the top level will be
   *  transformed identically.
   */
-case class FAMETransformAnnotation(transformType: FAMETransformType, target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
+case class FAMETransformAnnotation(
+  transformType: FAMETransformType,
+  target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: ModuleTarget) = this.copy(transformType, n)
 }
@@ -232,12 +243,13 @@ case class FAMETransformAnnotation(transformType: FAMETransformType, target: Mod
   *  be a *local* instance target, as all instances of the parent
   *  module will be transformed identically.
   */
-case class PromoteSubmoduleAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
+case class PromoteSubmoduleAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: InstanceTarget) = this.copy(n)
 }
 
-abstract class FAMEGlobalSignal extends SingleTargetAnnotation[ReferenceTarget] {
+abstract class FAMEGlobalSignal extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation {
   val target: ReferenceTarget
   def targets = Seq(target)
   def duplicate(n: ReferenceTarget): FAMEGlobalSignal
@@ -251,7 +263,7 @@ case class FAMEHostReset(target: ReferenceTarget) extends FAMEGlobalSignal {
   def duplicate(t: ReferenceTarget): FAMEHostReset = this.copy(t)
 }
 
-abstract class MemPortAnnotation extends Annotation {
+abstract class MemPortAnnotation extends Annotation with FAMEAnnotation {
   val en: ReferenceTarget
   val addr: ReferenceTarget
 }
@@ -319,4 +331,25 @@ case class ModelReadWritePort(
     Seq(ModelReadWritePort(renamer(wmode), renamer(rdata), renamer(wdata), renamer(wmask), renamer(addr), renamer(en)))
   }
   override def getTargets: Seq[ReferenceTarget] = Seq(wmode, rdata, wdata, wmask, addr, en)
+}
+
+/**
+  * A pass that dumps all FAME annotations to a file for debugging.
+  */
+class EmitFAMEAnnotations(fileName: String) extends firrtl.Transform {
+  import firrtl.options.TargetDirAnnotation
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override def name = s"[MIDAS] Debugging FAME Annotation Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    val targetDir = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
+    val dirName = targetDir.getOrElse(".")
+    val outputFile = new java.io.PrintWriter(s"${dirName}/${fileName}")
+    val fameAnnos = state.annotations.collect { case fa: FAMEAnnotation => fa }
+    outputFile.write(JsonProtocol.serialize(fameAnnos))
+    outputFile.close()
+    state
+  }
 }

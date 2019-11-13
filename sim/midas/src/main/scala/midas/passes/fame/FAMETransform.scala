@@ -25,17 +25,13 @@ import midas.passes._
 trait FAME1Channel {
   def name: String
   def direction: Direction
-  def clockDomainEnable: Port
   def ports: Seq[Port]
-  def firedReg: DefRegister
   def tpe: Type = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
   def portName: String
   def asPort: Port = Port(NoInfo, portName, direction, tpe)
   def isReady: Expression = WSubField(WRef(asPort), "ready", BoolType)
   def isValid: Expression = WSubField(WRef(asPort), "valid", BoolType)
   def isFiring: Expression = And(isReady, isValid)
-  def isFired = WRef(firedReg)
-  def isFiredOrFiring = Or(isFired, isFiring)
   def replacePortRef(wr: WRef): WSubField = {
     if (ports.size > 1) {
       WSubField(WSubField(WRef(asPort), "bits"), FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
@@ -43,12 +39,28 @@ trait FAME1Channel {
       WSubField(WRef(asPort), "bits")
     }
   }
+}
+
+case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel {
+  val direction = Input
+  val portName = s"${name}_sink" // clock channel port on model sinks clocks
+}
+
+trait FAME1DataChannel extends FAME1Channel {
+  def clockDomainEnable: Port
+  def firedReg: DefRegister
+  def isFired = WRef(firedReg)
+  def isFiredOrFiring = Or(isFired, isFiring)
   def updateFiredReg(finishing: WRef): Statement = {
     Connect(NoInfo, isFired, Mux(finishing, Negate(WRef(clockDomainEnable)), isFiredOrFiring, BoolType))
   }
 }
 
-case class FAME1InputChannel(val name: String, val clockDomainEnable: Port, val ports: Seq[Port], val firedReg: DefRegister) extends FAME1Channel {
+case class FAME1InputChannel(
+  name: String,
+  clockDomainEnable: Port,
+  ports: Seq[Port],
+  firedReg: DefRegister) extends FAME1DataChannel {
   val direction = Input
   val portName = s"${name}_sink"
   def setReady(finishing: WRef): Statement = {
@@ -56,17 +68,15 @@ case class FAME1InputChannel(val name: String, val clockDomainEnable: Port, val 
   }
 }
 
-case class FAME1OutputChannel(val name: String, val clockDomainEnable: Port, val ports: Seq[Port], val firedReg: DefRegister) extends FAME1Channel {
+case class FAME1OutputChannel(
+  name: String,
+  clockDomainEnable: Port,
+  ports: Seq[Port],
+  firedReg: DefRegister) extends FAME1DataChannel {
   val direction = Output
   val portName = s"${name}_source"
   def setValid(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Statement = {
     Connect(NoInfo, isValid, And(And.reduce(ccDeps.map(_.isValid)), Negate(isFired)))
-  }
-}
-
-object ChannelCCDependencyGraph {
-  def apply(m: Module): LinkedHashMap[FAME1OutputChannel, LinkedHashSet[FAME1InputChannel]] = {
-    new LinkedHashMap[FAME1OutputChannel, LinkedHashSet[FAME1InputChannel]]
   }
 }
 
@@ -78,6 +88,7 @@ object FAMEModuleTransformer {
   def apply(m: Module, analysis: FAMEChannelAnalysis): Module = {
     // Step 0: Bookkeeping for port structure conventions
     implicit val ns = Namespace(m)
+    val mTarget = ModuleTarget(analysis.circuit.main, m.name)
     val clocks: Seq[Port] = m.ports.filter(_.tpe == ClockType)
     val portsByName = m.ports.map(p => p.name -> p).toMap
     assert(clocks.length >= 1)
@@ -93,11 +104,19 @@ object FAMEModuleTransformer {
       DefRegister(NoInfo, ns.newName(suggestName), BoolType, WRef(hostClock), WRef(hostReset), resetVal)
     }
 
-    // Multi-clock management step 2: Convert all clock ports to enables of same name
-    val targetClockEns: Seq[Port] = clocks.map(_.copy(tpe = BoolType))
+    // Multi-clock management step 2: Build clock flags and clock channel
+    def isClockChannel(info: (String, (Option[Port], Seq[Port]))) = info match {
+      case (_, (clk, ports)) => clk.isEmpty && ports.forall(_.tpe == ClockType)
+    }
 
-    // Multi-clock management step 3: Generate clock buffers for all target clocks
-    val targetClockBufs: Seq[SignalInfo] = targetClockEns.map { en =>
+    val clockChannel = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
+      case Some((name, (None, ports))) => FAME1ClockChannel(name, ports.map(_.copy(tpe = BoolType)))
+      case Some(_) => ??? // Clock channel cannot have 
+      case None => ??? // Clock channel is mandatory for now
+    }
+
+    // Multi-clock management step 4: Generate clock buffers for all target clocks
+    val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
       val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
       val buf = WDefInstance(DefineAbstractClockGate.blackbox.name, ns.newName(s"${en.name}_buffer"))
       val connects = Block(Seq(
@@ -107,38 +126,40 @@ object FAMEModuleTransformer {
       SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, MALE))
     }
 
-    // Multi-clock management step 4: Generate target clock substitution map
+    // Multi-clock management step 5: Generate target clock substitution map
     def asWE(p: Port) = WrappedExpression.we(WRef(p))
-    val replaceClocksMap = (targetClockEns.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
+    val replaceClocksMap = (clockChannel.ports.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
 
     // LI-BDN transformation step 1: Build channels
     // TODO: get rid of the analysis calls; we just need connectivity & annotations
-    // Would be shorter, could merge common code for in/out channels
     val portDeps = analysis.connectivity(m.name)
-    val mTarget = ModuleTarget(analysis.circuit.main, m.name)
-    val inChannels = (analysis.modelInputChannelPortMap(mTarget)).map({
-      case(cName, (Some(clock), ports)) =>
-        val sourceClocks = portDeps.getEdges(clock.name)
-        assert(sourceClocks.size == 1) // must be driven by one clock input
-        val clockDomainEnable = portsByName(sourceClocks.head).copy(tpe = BoolType)
-        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
-        new FAME1InputChannel(cName, clockDomainEnable, ports, firedReg)
-      case (_, (None, _)) => ??? // clocks are currently mandatory in channels
-    }).toSeq
-    val inChannelMap = new LinkedHashMap[String, FAME1InputChannel] ++
-      (inChannels.flatMap(c => c.ports.map(p => (p.name, c))))
 
-    val outChannels = analysis.modelOutputChannelPortMap(mTarget).map({
-      case(cName, (Some(clock), ports)) =>
+    def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
+      case (cName, (Some(clock), ports)) =>
         val sourceClocks = portDeps.getEdges(clock.name)
         assert(sourceClocks.size == 1) // must be driven by one clock input
-        val clockDomainEnable = portsByName(sourceClocks.head).copy(tpe = BoolType)
+        val clkFlag = portsByName(sourceClocks.head).copy(tpe = BoolType)
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
-        new FAME1OutputChannel(cName, clockDomainEnable, ports, firedReg)
-      case (_, (None, _)) => ??? // clocks are currently mandatory in channels
-    }).toSeq
-    val outChannelMap = new LinkedHashMap[String, FAME1OutputChannel] ++
-      (outChannels.flatMap(c => c.ports.map(p => (p.name, c))))
+        (cName, clkFlag, ports, firedReg)
+      case (cName, (None, ports)) =>
+        println(s"Channel ${cName} has no clock")
+        ports.foreach { p => println(s"  ${p}") }
+        ??? // clock is mandatory for now
+    }
+
+    // LinkedHashMap.from is 2.13-only :(
+    def stableMap[K, V](contents: Iterable[(K, V)]) = new LinkedHashMap[K, V] ++= contents
+
+    // Have to filter out the clock channel from the input channels
+    val inChannelInfo = analysis.modelInputChannelPortMap(mTarget).filterNot(isClockChannel(_)).toSeq
+    val inChannelMetadata = inChannelInfo.map(genMetadata(_))
+    val inChannels = inChannelMetadata.map((FAME1InputChannel.apply _).tupled)
+    val inChannelMap = stableMap(inChannels.flatMap(c => c.ports.map(p => p.name -> c)))
+
+    val outChannelInfo = analysis.modelOutputChannelPortMap(mTarget).toSeq
+    val outChannelMetadata = outChannelInfo.map(genMetadata(_))
+    val outChannels = outChannelMetadata.map((FAME1OutputChannel.apply _).tupled)
+    val outChannelMap = stableMap(outChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
     // LI-BDN transformation step 2: find combinational dependencies among channels
     val ccDeps = new LinkedHashMap[FAME1OutputChannel, LinkedHashSet[FAME1InputChannel]]
@@ -148,7 +169,7 @@ object FAMEModuleTransformer {
     })
 
     // LI-BDN transformation step 3: transform ports (includes new clock ports)
-    val transformedPorts = Seq(hostClock, hostReset) ++ targetClockEns ++ (inChannels ++ outChannels).map(_.asPort)
+    val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).map(_.asPort)
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     def onExpr(expr: Expression): Expression = expr match {
@@ -170,15 +191,13 @@ object FAMEModuleTransformer {
     // LI-BDN transformation step 5: add firing rules for output channels, trigger end of cycle
     // This is modified for multi-clock, as each channel fires only when associated clock is enabled
     val allFiredOrFiring = And.reduce(outChannels.map(_.isFiredOrFiring) ++ inChannels.map(_.isValid))
-    val clockChannelReady = ???
-    val clockChannelValid = ???
 
     val channelStateRules = (inChannels ++ outChannels).map(c => c.updateFiredReg(WRef(finishing)))
     val inputRules = inChannels.map(i => i.setReady(WRef(finishing)))
     val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
     val topRules = Seq(
-      Connect(NoInfo, clockChannelReady, allFiredOrFiring),
-      Connect(NoInfo, WRef(finishing), And(allFiredOrFiring, clockChannelValid)))
+      Connect(NoInfo, clockChannel.isReady, allFiredOrFiring),
+      Connect(NoInfo, WRef(finishing), And(allFiredOrFiring, clockChannel.isValid)))
 
     // Statements have to be conservatively ordered to satisfy declaration order
     val decls = finishing +: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)

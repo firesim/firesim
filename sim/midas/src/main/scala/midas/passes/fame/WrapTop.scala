@@ -25,23 +25,22 @@ class WrapTop extends Transform {
     val clocks = topModule.ports.filter(_.tpe == ClockType)
     val hostClock = clocks.find(_.name == "clock").getOrElse(clocks.head)
     val hostReset = HostReset.makePort(topWrapperNS)
+    val oldCircuitTarget = CircuitTarget(topName)
     val topWrapperTarget = ModuleTarget(topWrapperName, topWrapperName)
     val topWrapper = Module(NoInfo, topWrapperName, topModule.ports :+ hostReset, Block(topInstance +: portConnections))
     val specialPortAnnotations = Seq(FAMEHostClock(topWrapperTarget.ref(hostClock.name)), FAMEHostReset(topWrapperTarget.ref(hostReset.name)))
     val renames = RenameMap()
     val newCircuit = Circuit(state.circuit.info, topWrapper +: state.circuit.modules, topWrapperName)
     // Make channel annotations point at top-level ports
+    val fccaRenames = RenameMap()
+    fccaRenames.record(oldCircuitTarget.module(topName), oldCircuitTarget.module(topWrapperName))
     val updatedAnnotations = state.annotations.map({
-      case fca: FAMEChannelConnectionAnnotation =>
-        fca.copy(sinks = fca.sinks.map(_.map(_.copy(module = topWrapperName))), sources = fca.sources.map(_.map(_.copy(module = topWrapperName))))
-      case a => a
-    }).map({ // Also update targets in info fields
-      case fca @ FAMEChannelConnectionAnnotation(_,info@DecoupledForwardChannel(_,_,_,_),_,_,_) =>
-        fca.copy(channelInfo = info.copy(
-          readySink   = info.readySink.  map(_.copy(module = topWrapperName)),
-          validSource = info.validSource.map(_.copy(module = topWrapperName)),
-          readySource = info.readySource.map(_.copy(module = topWrapperName)),
-          validSink   = info.validSink.  map(_.copy(module = topWrapperName))))
+      case fcca: FAMEChannelConnectionAnnotation =>
+        val renamedInfo = fcca.channelInfo match {
+          case fwd: DecoupledForwardChannel => fwd.update(fccaRenames)
+          case info => info
+        }
+        fcca.copy(channelInfo = renamedInfo).update(fccaRenames).head // always returns 1
       case a => a
     })
 

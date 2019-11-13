@@ -179,6 +179,15 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
 
   private def irPortFromGlobalTarget(rt: ReferenceTarget): Port = {
+    println(s"Resolving port node from global ref ${rt}")
+    if (topConnects.contains(rt)) {
+      println(s"${rt} is connected to ${topConnects(rt)} (in some direction)")
+    } else {
+      println(s"Key ${rt} not found, dumping topConnects:")
+      topConnects.foreach {
+        case (k, v) => println(s"  ${k} <> ${v}")
+      }
+    }
     portNodes(topConnects(rt).pathlessTarget)
   }
 
@@ -234,8 +243,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
     private val visitedLeafPort = new LinkedHashSet[Port]()
     private val visitedChannel = new LinkedHashMap[(Option[Port], Seq[Port]), String]()
 
-    private def channelSharesPorts(ps: (Option[Port], Seq[Port])): Boolean = (ps._1 ++: ps._2).exists(visitedLeafPort(_))
     private def channelIsDuplicate(ps: (Option[Port], Seq[Port])): Boolean = visitedChannel.contains(ps)
+    private def channelSharesPorts(ps: (Option[Port], Seq[Port])): Boolean = ps match {
+      case (clk, ports) => ports.exists(visitedLeafPort(_)) // clock can be shared
+    }
 
     private def dedupPortLists(pList: Map[String, (Option[Port], Seq[Port])]): Map[String, (Option[Port], Seq[Port])] = pList.flatMap({
       case (cName, (_, Nil)) => throw new RuntimeException(s"Channel ${cName} is empty (has no associated ports)")
