@@ -31,7 +31,7 @@ https://github.com/firesim/firesim-software/issues/30 for a workaround.
 ## Python
 This project was written for python 3.6. You can install all dependencies using:
 ```
-pip3 install python-requirements.txt
+pip3 install -r python-requirements.txt
 ```
 
 ## RISC-V Tools
