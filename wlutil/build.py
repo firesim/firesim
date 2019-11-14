@@ -63,7 +63,7 @@ def addDep(loader, config):
     bin_task_deps = [] + hostInit + config['base-deps']
     if 'linux-config' in config:
         bin_file_deps.append(config['linux-config'])
-        bin_task_deps.append('_busybox')
+        bin_task_deps.append('BuildBusybox')
     
     if 'bin' in config:
         loader.addTask({
@@ -135,7 +135,7 @@ def buildDepGraph(cfgs):
 
     # Linux-based workloads depend on this task
     loader.workloads.append({
-        'name' : '_busybox',
+        'name' : 'BuildBusybox',
         'actions' : [(buildBusybox, [])],
         'targets' : [initramfs_dir /'disk' / 'bin' / 'busybox'],
         'uptodate': [config_changed(checkGitStatus(busybox_dir)),

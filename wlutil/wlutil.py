@@ -333,32 +333,37 @@ def copyImgFiles(img, files, direction):
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
 
+_toolVersions = None
 def getToolVersions():
     """Detect version information for the currently enabled toolchain."""
 
-    # We run the preprocessor on a simple program to see the C-visible
-    # "LINUX_VERSION_CODE" macro
-    linuxHeaderTest = """#include <linux/version.h>
-    LINUX_VERSION_CODE
-    """
-    linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
-              input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
-    linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
+    global _toolVersions
+    if _toolVersions is None:
+        # We run the preprocessor on a simple program to see the C-visible
+        # "LINUX_VERSION_CODE" macro
+        linuxHeaderTest = """#include <linux/version.h>
+        LINUX_VERSION_CODE
+        """
+        linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
+                  input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
+        linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
 
-    # Major/minor version of the linux kernel headers included with our
-    # toolchain. This is not necessarily the same as the linux kernel used by
-    # Marshal, but is assumed to be <= to the version actually used.
-    linuxMaj = str(int(linuxHeaderVer) >> 16)
-    linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
+        # Major/minor version of the linux kernel headers included with our
+        # toolchain. This is not necessarily the same as the linux kernel used by
+        # Marshal, but is assumed to be <= to the version actually used.
+        linuxMaj = str(int(linuxHeaderVer) >> 16)
+        linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
 
-    # Toolchain major version
-    toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
-            universal_newlines=True, stdout=sp.PIPE).stdout
-    toolVer = toolVerStr[36]
+        # Toolchain major version
+        toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
+                universal_newlines=True, stdout=sp.PIPE).stdout
+        toolVer = toolVerStr[36]
 
-    return {'linuxMaj' : linuxMaj,
-            'linuxMin' : linuxMin,
-            'gcc' : toolVer}
+        _toolVersions = {'linuxMaj' : linuxMaj,
+                'linuxMin' : linuxMin,
+                'gcc' : toolVer}
+
+    return _toolVersions
 
 def checkGitStatus(submodule):
     """Returns a dictionary representing the status of a git repo.
