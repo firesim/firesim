@@ -142,7 +142,7 @@ def main():
                     parser.print_help()
 
             try:
-                outputPath = wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
+                outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
             if outputPath is not None:

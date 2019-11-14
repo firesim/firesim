@@ -181,10 +181,10 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
             if 'jobs' in cfg:
                 for jName in cfg['jobs'].keys():
                     log.info("Running job " + jName)
-                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName, spike=spike, interactive=verbose)
+                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, job=jName, spike=spike, interactive=verbose)
             else:
                 log.info("Running workload")
-                runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike, interactive=verbose)
+                runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, spike=spike, interactive=verbose)
 
         log.info("Testing outputs")    
         if 'strip' in testCfg and testCfg['strip']:

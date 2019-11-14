@@ -40,10 +40,10 @@ def handleHostInit(config):
     log = logging.getLogger()
     if 'host-init' in config:
        log.info("Applying host-init: " + str(config['host-init']))
-       if not config['host-init'].exists():
+       if not config['host-init'].path.exists():
            raise ValueError("host-init script " + str(config['host-init']) + " not found.")
 
-       run([config['host-init']], cwd=config['workdir'])
+       run([config['host-init'].path] + config['host-init'].args, cwd=config['workdir'])
  
 def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
@@ -384,7 +384,7 @@ def makeImage(config):
         init_overlay = config['builder'].generateBootScriptOverlay(str(config['guest-init'].path), config['guest-init'].args)
         applyOverlay(config['img'], init_overlay)
         print("Launching: " + str(config['bin']))
-        run(getQemuCmd(config), shell=True, level=logging.INFO)
+        run(getQemuCmd(config), shell=True, level=logging.DEBUG)
 
         # Clear the init script
         run_overlay = config['builder'].generateBootScriptOverlay(None, None)

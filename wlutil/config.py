@@ -74,7 +74,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['guest-init', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img', 'spike']
+configToAbs = ['overlay', 'linux-src', 'linux-config', 'cfg-file', 'bin', 'img', 'spike']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -117,6 +117,29 @@ class RunSpec():
         self.path = script
         self.command = command
 
+    @classmethod
+    def fromString(self, command, baseDir=pathlib.Path('.')):
+        """Construct a RunSpec from a string representing the script+args to run.
+
+        command: String representing the command to run, e.g. "./script.sh foo bar"
+        baseDir: Optional directory in which the script is to be found
+        """
+        scriptParts = command.split(' ')
+        return RunSpec(
+                script = (baseDir / scriptParts[0]).resolve(),
+                args = scriptParts[1:])
+
+    def __repr__(self):
+        return "RunSpec: " + self.__str__()
+
+    def __str__(self):
+        if self.command is not None:
+            return self.command
+        elif self.path is not None:
+            return str(self.path) + " " + ' '.join(self.args)
+        else:
+            return "uninitialized"
+    
 class Config(collections.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
@@ -184,22 +207,20 @@ class Config(collections.MutableMapping):
 
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
-            # Split the args from the script path
-            scriptParts = self.cfg['run'].split(' ')
-            self.cfg['runSpec'] = RunSpec(
-                    script = (self.cfg['workdir'] / scriptParts[0]).resolve(),
-                    args = scriptParts[1:])
+            self.cfg['runSpec'] = RunSpec.fromString(
+                    self.cfg['run'],
+                    baseDir=self.cfg['workdir'])
+
         elif 'command' in self.cfg:
             self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
 
-        if 'guest-init' in self.cfg:
-            self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
+        # Handle script arguments
+        for sOpt in ['guest-init', 'post_run_hook', 'host-init']:
+            if sOpt in self.cfg:
+                self.cfg[sOpt] = RunSpec.fromString(
+                        self.cfg[sOpt],
+                        baseDir=self.cfg['workdir'])
 
-        if 'post_run_hook' in self.cfg:
-            scriptParts = self.cfg['post_run_hook'].split(' ')
-            self.cfg['post_run_hook'] = RunSpec(
-                    script = (self.cfg['workdir'] / scriptParts[0]).resolve(),
-                    args = scriptParts[1:])
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']

@@ -57,7 +57,7 @@ def getQemuCmd(config, nodisk=False):
 
     return " ".join(cmd) + " " + config.get('qemu-args', '')
 
-def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
+def launchWorkload(baseConfig, job='all', spike=False, interactive=True):
     """Launches the specified workload in functional simulation.
 
     cfgName: unique name of the workload in the cfgs
@@ -71,7 +71,6 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
     Returns: Path of output directory
     """
     log = logging.getLogger()
-    baseConfig = cfgs[cfgName]
 
     # Bare-metal tests don't work on qemu yet
     if baseConfig.get('distro') == 'bare' and spike != True:
@@ -79,10 +78,10 @@ def launchWorkload(cfgName, cfgs, job='all', spike=False, interactive=True):
 
     if 'jobs' in baseConfig.keys() and job != 'all':
         # Run the specified job
-        config = cfgs[cfgName]['jobs'][job]
+        config = baseConfig['jobs'][job]
     else:
         # Run the base image
-        config = cfgs[cfgName]
+        config = baseConfig
  
     if config['launch']:
         baseResDir = getOpt('res-dir') / getOpt('run-name')

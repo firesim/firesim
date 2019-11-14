@@ -61,7 +61,7 @@ echo ""
 # shouldn't be tested (e.g. we exclude the base configs and some specialized
 # tests)
 echo "Running regular tests" | tee -a $LOGNAME
-BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike|spike-args|rocc)"
+BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike|spike-args|rocc|fsSize)"
 ./marshal clean test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 ./marshal test test/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
