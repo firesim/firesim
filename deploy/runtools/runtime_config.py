@@ -87,39 +87,7 @@ class RuntimeHWConfig:
         assert_def_local = gen_src_dir + self.get_design_name() + ".asserts"
         return assert_def_local
 
-    def get_boot_simulation_command(self, macaddr, blkdev, slotid,
-                                    linklatency, netbw, profile_interval, bootbin,
-                                    trace_enable, trace_start, trace_end, shmemportname):
-        """ return the command used to boot the simulation. this has to have
-        some external params passed to it, because not everything is contained
-        in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
-        pre-built runtime config? It kinda contains a mix of pre-built and
-        runtime parameters currently. """
-
-        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
-
-        # this monstrosity boots the simulator, inside screen, inside script
-        # the sed is in there to get rid of newlines in runtime confs
-        driver = self.get_local_driver_binaryname()
-        runtimeconf = self.get_local_runtimeconf_binaryname()
-
-        driverArgs = """+permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +macaddr0={macaddr} +slotid={slotid} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} +linklatency0={linklatency} +netbw0={netbw} +profile-interval={profile_interval} +zero-out-dram +shmemportname0={shmemportname} +permissive-off +prog0={bootbin}""".format(
-                slotid=slotid, runtimeconf=runtimeconf, macaddr=macaddr,
-                linklatency=linklatency, netbw=netbw,
-                profile_interval=profile_interval, shmemportname=shmemportname,
-                bootbin=bootbin, tracefile=tracefile, trace_start=trace_start,
-                trace_end=trace_end)
-
-        if blkdev is not None:
-            driverArgs += """ +blkdev0={blkdev}""".format(blkdev=blkdev)
-
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} {driverArgs} && stty intr ^c' uartlog"; sleep 1""".format(
-                slotid=slotid, driver=driver, driverArgs=driverArgs)
-
-        return basecommand
-
-
-    def get_supernode_boot_simulation_command(self, slotid, all_macs,
+    def get_boot_simulation_command(self, slotid, all_macs,
                                               all_rootfses, all_linklatencies,
                                               all_netbws, profile_interval,
                                               all_bootbinaries, trace_enable,
@@ -152,15 +120,16 @@ class RuntimeHWConfig:
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
+        zero_out_dram = "+zero-out-dram"
 
-
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} +zero-out-dram {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
             command_linklatencies=command_linklatencies,
             command_netbws=command_netbws,
             profile_interval=profile_interval,
+            zero_out_dram=zero_out_dram,
             command_shmemportnames=command_shmemportnames,
             command_bootbinaries=command_bootbinaries,
             trace_start=trace_start, trace_end=trace_end, tracefile=tracefile)

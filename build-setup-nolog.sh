@@ -158,6 +158,10 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     cd ../..
     rm -rf e2fsprogs*
 
+    # Setup for using qcow2 images
+    cd $RDIR
+    ./scripts/install-nbd-kmod.sh
+
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
     # worker instances
