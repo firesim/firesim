@@ -47,18 +47,18 @@ case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channe
 }
 
 trait FAME1DataChannel extends FAME1Channel {
-  def clockDomainEnable: Port
+  def clockDomainEnable: Expression
   def firedReg: DefRegister
   def isFired = WRef(firedReg)
   def isFiredOrFiring = Or(isFired, isFiring)
   def updateFiredReg(finishing: WRef): Statement = {
-    Connect(NoInfo, isFired, Mux(finishing, Negate(WRef(clockDomainEnable)), isFiredOrFiring, BoolType))
+    Connect(NoInfo, isFired, Mux(finishing, Negate(clockDomainEnable), isFiredOrFiring, BoolType))
   }
 }
 
 case class FAME1InputChannel(
   name: String,
-  clockDomainEnable: Port,
+  clockDomainEnable: Expression,
   ports: Seq[Port],
   firedReg: DefRegister) extends FAME1DataChannel {
   val direction = Input
@@ -70,13 +70,13 @@ case class FAME1InputChannel(
 
 case class FAME1OutputChannel(
   name: String,
-  clockDomainEnable: Port,
+  clockDomainEnable: Expression,
   ports: Seq[Port],
   firedReg: DefRegister) extends FAME1DataChannel {
   val direction = Output
   val portName = s"${name}_source"
   def setValid(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Statement = {
-    Connect(NoInfo, isValid, And(And.reduce(ccDeps.map(_.isValid)), Negate(isFired)))
+    Connect(NoInfo, isValid, And.reduce(ccDeps.map(_.isValid).toSeq :+ Negate(isFired)))
   }
 }
 
@@ -96,9 +96,9 @@ object FAMEModuleTransformer {
     // Multi-clock management step 1: Add host clock + reset ports, finishing wire
     // TODO: Should finishing be a WrappedComponent?
     // TODO: Avoid static naming convention.
-    val hostReset = Port(NoInfo, "hostReset", Input, BoolType)
-    val hostClock = Port(NoInfo, "hostClock", Input, ClockType)
-    val finishing = DefWire(NoInfo, "targetCyclefinishing", BoolType)
+    val hostReset = Port(NoInfo, WrapTop.hostResetName, Input, BoolType)
+    val hostClock = Port(NoInfo, WrapTop.hostClockName, Input, ClockType)
+    val finishing = DefWire(NoInfo, "targetCycleFinishing", BoolType)
     assert(ns.tryName(hostReset.name) && ns.tryName(hostClock.name) && ns.tryName(finishing.name))
     def hostFlagReg(suggestName: String, resetVal: UIntLiteral = UIntLiteral(0)): DefRegister = {
       DefRegister(NoInfo, ns.newName(suggestName), BoolType, WRef(hostClock), WRef(hostReset), resetVal)
@@ -110,17 +110,22 @@ object FAMEModuleTransformer {
     }
 
     val clockChannel = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
-      case Some((name, (None, ports))) => FAME1ClockChannel(name, ports.map(_.copy(tpe = BoolType)))
+      case Some((name, (None, ports))) => FAME1ClockChannel(name, ports)
       case Some(_) => ??? // Clock channel cannot have 
       case None => ??? // Clock channel is mandatory for now
+    }
+
+    def tokenizeClockRef(wr: WRef): Expression = wr match {
+      case WRef(name, ClockType, PortKind, _) => DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(wr)), Nil, BoolType)
     }
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
       val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
-      val buf = WDefInstance(DefineAbstractClockGate.blackbox.name, ns.newName(s"${en.name}_buffer"))
+      val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
+      val clockFlag = tokenizeClockRef(WRef(en))
       val connects = Block(Seq(
-        Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), WRef(en), WRef(enableReg), BoolType)),
+        Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
         Connect(NoInfo, WSubField(WRef(buf), "CE"), And(WRef(enableReg), WRef(finishing)))))
       SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, MALE))
@@ -136,15 +141,15 @@ object FAMEModuleTransformer {
 
     def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (cName, (Some(clock), ports)) =>
-        val sourceClocks = portDeps.getEdges(clock.name)
-        assert(sourceClocks.size == 1) // must be driven by one clock input
-        val clkFlag = portsByName(sourceClocks.head).copy(tpe = BoolType)
+        // must be driven by one clock input port
+        // TODO: this should not include muxes in connectivity!
+        val srcClockPorts = portDeps.getEdges(clock.name).map(portsByName(_))
+        assert(srcClockPorts.size == 1)
+        val clockRef = WRef(srcClockPorts.head)
+        val clockFlag = tokenizeClockRef(clockRef)
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
-        (cName, clkFlag, ports, firedReg)
-      case (cName, (None, ports)) =>
-        println(s"Channel ${cName} has no clock")
-        ports.foreach { p => println(s"  ${p}") }
-        ??? // clock is mandatory for now
+        (cName, clockFlag, ports, firedReg)
+      case (cName, (None, ports)) => ??? // clock is mandatory for now
     }
 
     // LinkedHashMap.from is 2.13-only :(
@@ -184,7 +189,10 @@ object FAMEModuleTransformer {
       case e => e map onExpr
     }
 
-    def onStmt(stmt: Statement): Statement = stmt map onStmt map onExpr
+    def onStmt(stmt: Statement): Statement = stmt match {
+      case Connect(_, WRef(_, ClockType, PortKind, _), _) => EmptyStmt // don't drive clock outputs
+      case s => s map onStmt map onExpr
+    }
 
     val updatedBody = onStmt(m.body)
 
@@ -212,8 +220,9 @@ class FAMETransform extends Transform {
 
   def updateNonChannelConnects(analysis: FAMEChannelAnalysis)(stmt: Statement): Statement = stmt.map(updateNonChannelConnects(analysis)) match {
     case wi: WDefInstance if (analysis.transformedModules.contains(analysis.moduleTarget(wi))) =>
-      val resetConn = Connect(NoInfo, WSubField(WRef(wi), "hostReset"), WRef(analysis.hostReset.ref, BoolType))
-      Block(Seq(wi, resetConn))
+      val clockConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostClockName), WRef(analysis.hostClock.ref, ClockType))
+      val resetConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostResetName), WRef(analysis.hostReset.ref, BoolType))
+      Block(Seq(wi, clockConn, resetConn))
     case Connect(_, WRef(name, _, _, _), _) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case Connect(_, _, WRef(name, _, _, _)) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case s => s
@@ -277,8 +286,7 @@ class FAMETransform extends Transform {
     val transformedModules = c.modules.map {
       case m: Module if (m.name == c.main) => transformTop(m, analysis)
       case m: Module if (analysis.transformedModules.contains(ModuleTarget(c.main,m.name))) => FAMEModuleTransformer(m, analysis)
-      case m: Module if (analysis.syncNativeModules.contains(ModuleTarget(c.main, m.name))) => PatientSSMTransformer(m, analysis)
-      case m => m
+      case m => m // TODO (Albert): revisit this; currently, not transforming nested modules
     }
     state.copy(circuit = c.copy(modules = transformedModules), renames = Some(hostDecouplingRenames(analysis)))
   }

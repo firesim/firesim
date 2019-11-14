@@ -51,11 +51,6 @@ private[fame] object FAMEChannelAnalysis {
   def getHostDecoupledChannelType(name: String, ports: Seq[Port]): Type = Decouple(getHostDecoupledChannelPayloadType(name, ports))
 }
 
-private [fame] object HostReset {
-  def makePort(ns: Namespace): Port =
-    new Port(NoInfo, ns.newName("hostReset"), Input, Utils.BoolType)
-}
-
 private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: FAMETransformType) {
   // TODO: only transform submodules of model modules
   // TODO: add renames!
@@ -176,18 +171,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       })
   })
 
+  val hostClock = state.annotations.collect({ case FAMEHostClock(rt) => rt }).head
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
 
   private def irPortFromGlobalTarget(rt: ReferenceTarget): Port = {
-    println(s"Resolving port node from global ref ${rt}")
-    if (topConnects.contains(rt)) {
-      println(s"${rt} is connected to ${topConnects(rt)} (in some direction)")
-    } else {
-      println(s"Key ${rt} not found, dumping topConnects:")
-      topConnects.foreach {
-        case (k, v) => println(s"  ${k} <> ${v}")
-      }
-    }
     portNodes(topConnects(rt).pathlessTarget)
   }
 
