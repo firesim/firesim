@@ -9,7 +9,7 @@
 	url = https://github.com/buildroot/buildroot.git
 [submodule "wlutil/busybox"]
 	path = wlutil/busybox
-	url = https://git.busybox.net/busybox/
+  url = https://github.com/ucb-bar/busybox.git
 [submodule "boards/firechip/drivers/icenet-driver"]
 	path = boards/firechip/drivers/icenet-driver
 	url = https://github.com/firesim/icenet-driver.git
