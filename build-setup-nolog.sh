@@ -63,7 +63,13 @@ done
 
 # Disable the REBAR submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
+git config submodule.sw/firesim-software.update none
 git submodule update --init --recursive #--jobs 8
+
+# firesim-software should not be recursively initialized by default (use
+# sw/firesim-software/init-submodules.sh if you need linux deps)
+git config --unset submodule.sw/firesim-software.update
+git submodule update --init sw/firesim-software
 
 if [ "$IS_LIBRARY" = false ]; then
     git config --unset submodule.target-design/chipyard.update
