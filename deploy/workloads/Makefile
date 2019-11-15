@@ -223,15 +223,15 @@ dram-cache-test-linux:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 saxpy:
-	cd ../../sw/memblade-tests/linux && make saxpy.riscv
-	cp ../../sw/memblade-tests/linux/saxpy.riscv $@/overlay
+	cd ../../sw/memblade-tests/linux && make {boom-cpumask,saxpy}.riscv
+	cp ../../sw/memblade-tests/linux/{boom-cpumask,saxpy}.riscv $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 saxpy-dc:
 	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
-	cd ../../sw/memblade-tests/linux && make saxpy-dc.riscv
-	cp ../../sw/memblade-tests/linux/saxpy-dc.riscv $@/overlay
+	cd ../../sw/memblade-tests/linux && make {boom-cpumask,saxpy-dc}.riscv
+	cp ../../sw/memblade-tests/linux/{boom-cpumask,saxpy-dc}.riscv $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 

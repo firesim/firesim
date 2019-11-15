@@ -9,7 +9,7 @@
   "workloads" : [
       {
           "name" : "saxpy",
-          "files" : ["saxpy.riscv", "run-test.sh"],
+          "files" : ["saxpy.riscv", "boom-cpumask.riscv", "run-test.sh"],
           "command" : "/root/run-test.sh | tee /root/report.csv && poweroff",
           "simulation_outputs": [],
           "outputs": ["/root/report.csv"]

@@ -288,6 +288,11 @@ class UserTopologies(object):
                 "fireboom-dualcore-dramcache-ddr3-l2",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
+    def hetero_dramcache_base_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-hetero-dramcache-ddr3-l2",
+                "firesim-singlecore-memblade-ddr3", n, m)
+
     def memblade_1x1_config(self):
         self.memblade_base_config(1, 1)
 
@@ -305,6 +310,9 @@ class UserTopologies(object):
 
     def boom_dramcache_1x1_config(self):
         self.boom_dramcache_base_config(1, 1)
+
+    def hetero_dramcache_1x1_config(self):
+        self.hetero_dramcache_base_config(1, 1)
 
     @staticmethod
     def supernode_flatten(arr):
