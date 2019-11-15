@@ -92,9 +92,8 @@ class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)
     extends BridgeModule[ClockTokenVector] {
   val io = IO(new WidgetIO())
   val hPort = IO(new ClockTokenVector(phaseRelationships.size + 1))
-  require(hPort.clocks.bits.size == 1)
-  hPort.clocks.bits(0) := true.B
-  hPort.clocks.valid := true.B
+  val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
+  hPort.clocks <> clockTokenGen.io
   //genCRFile()
   io.ctrl <> DontCare
 }
@@ -127,13 +126,14 @@ object FindScaledPeriodGCD {
 class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends Module {
   val numClocks = phaseRelationships.size + 1
   val io = IO(new DecoupledIO(Vec(numClocks, Bool())))
+  io.valid := true.B
 
   val maxCounterWidth = 16
   val clockPeriodicity = FindScaledPeriodGCD(phaseRelationships)
   val counterWidth     = clockPeriodicity.map(p => log2Ceil(p + 1)).reduce((a, b) => math.max(a, b))
   require(counterWidth <= maxCounterWidth, "Ensure this circuit doesn't blow up")
 
-  val timeToNextEdge   = VecInit(Seq.fill(numClocks)(RegInit(0.U(counterWidth.W))))
+  val timeToNextEdge   = RegInit(VecInit(Seq.fill(numClocks)(0.U(counterWidth.W))))
   val minStepsToEdge   = DensePrefixSum(timeToNextEdge)({ case (a, b) => Mux(a < b, a, b) }).last
 
   io.bits := VecInit(for ((reg, period) <- timeToNextEdge.zip(clockPeriodicity)) yield {

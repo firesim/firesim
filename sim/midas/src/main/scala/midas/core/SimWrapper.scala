@@ -194,13 +194,18 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   val chNameToAnnoMap = chAnnos.map(anno => anno.globalName -> anno)
 }
 
+class ClockRecord(numClocks: Int) extends Record {
+  override val elements = ListMap(Seq.tabulate(numClocks)(i => s"_$i" -> Clock()):_*)
+  override def cloneType = new ClockRecord(numClocks).asInstanceOf[this.type]
+}
+
 class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
                   extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): Data = refTargets.size match {
     case 1 => Clock()
-    case size => Vec(refTargets.size, Clock())
+    case size => new ClockRecord(refTargets.size)
   }
 
   val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
@@ -302,7 +307,7 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
     clockTokens.ready := target.io.clockElement._2.ready
     target.io.clockElement._2.bits match {
       case port: Clock => port := clockTokens.bits(0).asClock
-      case port: Vec[_] => port.zip(clockTokens.bits).foreach({ case (p, i) => p := i.asClock})
+      case port: ClockRecord => port.elements.zip(clockTokens.bits).foreach({ case ((_, p), i) => p := i.asClock})
     }
   }
 
