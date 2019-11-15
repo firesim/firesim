@@ -1,7 +1,7 @@
 # This script produces the nbd kernel module to use on run farm nodes.
 
 # deps
-sudo yum -y install xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils
+sudo yum -y install xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils "perl(ExtUtils::Embed)"
 
 # update this as FPGA Dev AMI updates
 KSRC="3.10.0-957.5.1.el7"
