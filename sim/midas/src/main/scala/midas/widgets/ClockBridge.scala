@@ -34,7 +34,7 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int,
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      Some((p: Parameters) => Module(new ClockBridgeModule(referencePeriod, phaseRelationships)(p)))
+      Some((p: Parameters) => new ClockBridgeModule(referencePeriod, phaseRelationships)(p))
     )
   }
 }
@@ -77,7 +77,7 @@ class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeC
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit = {
     val local2globalName = bridgeAnno.channelMapping.toMap
     for (localName <- outputChannelNames) {
-      simIo.wireInputPortMap(local2globalName(localName)) <> elements(localName)
+      simIo.clockElement._2 <> elements(localName)
     }
   }
 
@@ -93,6 +93,8 @@ class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)
   require(hPort.clocks.bits.size == 1)
   hPort.clocks.bits(0) := true.B
   hPort.clocks.valid := true.B
+  //genCRFile()
+  io.ctrl <> DontCare
 }
 
 

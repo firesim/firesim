@@ -101,8 +101,6 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
     regenTypes(refTargets).head._2
   }
 
-  def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
-
   val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
     // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
     case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_), _, Some(srcs),_) =>
@@ -135,12 +133,6 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
       (globalName -> WirePortTuple(sourceP, sinkP))
     }
   }).toMap
-
-  val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel, _, _, Some(sinks)) =>
-      println(sinks)
-      sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
-  }).get
 
   // Looks up a  channel based on a channel name
   val wireOutputPortMap = wirePortMap.collect({
@@ -206,6 +198,16 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
                   extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
+  def regenClockType(refTargets: Seq[ReferenceTarget]): Data = refTargets.size match {
+    case 1 => Clock()
+    case size => Vec(refTargets.size, Clock())
+  }
+
+  val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel, _, _, Some(sinks)) =>
+      sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
+  }).get
+
   val clock = Input(Clock())
   val hostReset = Input(Bool())
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*) ++
@@ -223,6 +225,13 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          val bridgeAnnos: Seq[BridgeIOAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
     extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
+
+  def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
+
+  val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel, _, _, Some(sinks)) =>
+      sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
+  }).get
 
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*)
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
@@ -288,7 +297,13 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   @chiselName
   def genClockChannel(chAnno: FAMEChannelConnectionAnnotation): Unit = {
     require(chAnno.channelInfo == fame.TargetClockChannel)
-    channelPorts.clockElement._2 <> Queue(target.io.clockElement._2)
+    val clockTokens = channelPorts.clockElement._2
+    target.io.clockElement._2.valid := clockTokens.valid
+    clockTokens.ready := target.io.clockElement._2.ready
+    target.io.clockElement._2.bits match {
+      case port: Clock => port := clockTokens.bits(0).asClock
+      case port: Vec[_] => port.zip(clockTokens.bits).foreach({ case (p, i) => p := i.asClock})
+    }
   }
 
   // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
