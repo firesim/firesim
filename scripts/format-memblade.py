@@ -1,7 +1,7 @@
 import re
 import struct
 import sys
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 FLITRE = re.compile(r"valid data chunk: ([0-9a-f]+), last ([01]), (send|recv)cycle: (\d+)")
 RMEM_REQ_ETH_TYPE  = 0x0408
@@ -10,17 +10,14 @@ RMEM_OC_SPAN_READ  = 0x00
 RMEM_OC_SPAN_WRITE = 0x01
 RMEM_RC_SPAN_OK    = 0x80
 RMEM_RC_NODATA_OK  = 0x81
-SPAN_BYTES=1024
-SPAN_FLITS=SPAN_BYTES/8
 
 Flit = namedtuple("Flit", ["data", "last", "sendrecv", "timestamp"])
 FlitGroup = namedtuple("Flit", ["data", "sendrecv", "timestamp"])
-CreditUpdate = namedtuple("CreditUpdate", ["count", "sendrecv", "timestamp"])
 RemoteMemRequest = namedtuple("RemoteMemRequest",
-                        ["version", "opcode", "xactid", "spanid",
+                        ["version", "opcode", "xactid", "spanid", "data",
                          "sendrecv", "timestamp"])
 RemoteMemResponse = namedtuple("RemoteMemResponse",
-                        ["version", "respcode", "xactid",
+                        ["version", "respcode", "xactid", "data",
                          "sendrecv", "timestamp"])
 OtherPacket = namedtuple("OtherPacket", ["ethtype", "len", "sendrecv", "timestamp"])
 
@@ -62,79 +59,60 @@ def group_flits(flits):
         print("Error: dangling packet data")
         print([hex(i) for i in recv_data])
 
-def check_update(data):
-    if len(data) != 1:
-        print("Error: credit update packet too long")
-
-def check_request(opcode, data):
-    if opcode == RMEM_OC_SPAN_READ and len(data) != 4:
-        print("Error: Span read request has wrong length")
-    if opcode == RMEM_OC_SPAN_WRITE and len(data) != (4 + SPAN_FLITS):
-        print("Error: Span write request has wrong length")
-
-def check_response(opcode, data):
-    if opcode == RMEM_RC_SPAN_OK and len(data) != (3 + SPAN_FLITS):
-        print("Error: Span read response has wrong length")
-    if opcode == RMEM_RC_NODATA_OK and len(data) != 3:
-        print("Error: Span write response has wrong length")
-
 def parse_packets(flitgroups):
+    xactcount = defaultdict(int)
     for group in flitgroups:
-        if (group.data[0] & 0xffff) != 0:
-            check_update(group.data)
-            yield CreditUpdate(group.data[0] & 0xffff,
-                    group.sendrecv, group.timestamp)
-        elif len(group.data) > 2:
+        if len(group.data) > 2:
             ethtype = (group.data[1] >> 48) & 0xffff
             if ethtype == RMEM_REQ_ETH_TYPE:
                 (version, opcode, xactid) = struct.unpack(
                         "<BBxxI", struct.pack("<q", group.data[2]))
                 spanid = group.data[3]
-                check_request(opcode, group.data)
                 yield RemoteMemRequest(
-                        version, opcode, xactid, spanid,
+                        version, opcode, xactid, spanid, group.data[4:],
                         group.sendrecv, group.timestamp)
             elif ethtype == RMEM_RESP_ETH_TYPE:
                 (version, respcode, xactid) = struct.unpack(
                         "<BBxxI", struct.pack("<q", group.data[2]))
-                check_response(respcode, group.data)
                 yield RemoteMemResponse(
-                        version, opcode, xactid,
+                        version, respcode, xactid, group.data[3:],
                         group.sendrecv, group.timestamp)
             else:
                 yield OtherPacket(
                         ethtype, len(group.data) - 2,
                         group.sendrecv, group.timestamp)
 
-def track_fc(packets):
-    in_avail = 0
-    out_avail = 0
-
-    for pkt in packets:
-        if isinstance(pkt, CreditUpdate):
-            if pkt.sendrecv:
-                in_avail += pkt.count
-                print("credit update {} -> {}".format(
-                    pkt.count, in_avail))
-            else:
-                out_avail += pkt.count
-        else:
-            if pkt.sendrecv:
-                out_avail -= 1
-            else:
-                in_avail -= 1
-
-    print("In packets available: {}".format(in_avail))
-    print("Out packets available: {}".format(out_avail))
-
-
 def format_log(f):
     flits = parse_flits(f)
     groups = group_flits(flits)
-    packets = list(parse_packets(groups))
+    packets = parse_packets(groups)
+    xactmatches = defaultdict(int)
 
     for pkt in packets:
-        print(pkt)
+        if isinstance(pkt, RemoteMemRequest):
+            if pkt.opcode == RMEM_OC_SPAN_READ:
+                print("{} read req spanid={} xactid={}".format(
+                    pkt.timestamp, pkt.spanid, pkt.xactid))
+            elif pkt.opcode == RMEM_OC_SPAN_WRITE:
+                print("{} write req spanid={} xactid={}".format(
+                    pkt.timestamp, pkt.spanid, pkt.xactid))
+                for flit in pkt.data:
+                    print("{:016x}".format(flit))
+            xactmatches[pkt.xactid] += 1
+        elif isinstance(pkt, RemoteMemResponse):
+            if pkt.respcode == RMEM_RC_SPAN_OK:
+                print("{} read resp xactid={}".format(
+                    pkt.timestamp, pkt.xactid))
+                for flit in pkt.data:
+                    print("{:016x}".format(flit))
+            elif pkt.respcode == RMEM_RC_NODATA_OK:
+                print("{} write resp xactid={}".format(
+                    pkt.timestamp, pkt.xactid))
+            xactmatches[pkt.xactid] -= 1
+
+    for xactid in xactmatches:
+        if xactmatches[xactid] > 0:
+            print("Unmatched xact id " + str(xactid))
 
 def main():
     if len(sys.argv) < 2:
