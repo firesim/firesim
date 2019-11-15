@@ -1,4 +1,5 @@
 # This script produces the nbd kernel module to use on run farm nodes.
+set -e
 
 # deps
 sudo yum -y install xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils "perl(ExtUtils::Embed)"
