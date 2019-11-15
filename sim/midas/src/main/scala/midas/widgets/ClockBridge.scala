@@ -25,7 +25,7 @@ sealed trait ClockBridgeConsts {
   val clockChannelName = "clocks"
 }
 
-case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int, phaseRelationships: Seq[(Int, Int)])
+case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int, numerators: Seq[Int], denominators: Seq[Int])
     extends BridgeAnnotation with ClockBridgeConsts {
   val channelNames = Seq(clockChannelName)
   def duplicate(n: ModuleTarget) = this.copy(target)
@@ -34,7 +34,7 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int,
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      Some((p: Parameters) => new ClockBridgeModule(referencePeriod, phaseRelationships)(p))
+      Some((p: Parameters) => new ClockBridgeModule(referencePeriod, numerators.zip(denominators))(p))
     )
   }
 }
@@ -50,7 +50,9 @@ class RationalClockBridge(referencePeriod: Int, phaseRelationships: (Int, Int)*)
       ClockBridgeAnnotation(
         outer.toNamed.toTarget,
         referencePeriod,
-        phaseRelationships)
+        // Unzip them to make them serializable
+        phaseRelationships.unzip._1,
+        phaseRelationships.unzip._2)
     }
   })
 
