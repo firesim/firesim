@@ -1,4 +1,3 @@
-import os
 import glob
 from .br import br
 from .fedora import fedora as fed
@@ -147,7 +146,11 @@ class RunSpec():
                 args = scriptParts[1:])
 
     def __repr__(self):
-        return "RunSpec: " + self.__str__()
+        return "RunSpec(" + \
+                ' path: ' + self.path + \
+                ', command: ' + self.command + \
+                ', args ' + str(self.args) + \
+                ')'
 
     def __str__(self):
         if self.command is not None:
@@ -182,9 +185,6 @@ class Config(collections.MutableMapping):
         cfgDir = None
         if 'cfg-file' in self.cfg:
             cfgDir = self.cfg['cfg-file'].parent
-        else:
-            assert ('workdir' in self.cfg), "No workdir or cfg-file provided"
-            assert ( os.path.isabs(self.cfg['workdir'])), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
 
         # Some default values
         self.cfg['base-deps'] = []
@@ -192,8 +192,10 @@ class Config(collections.MutableMapping):
         if 'workdir' in self.cfg:
             self.cfg['workdir'] = pathlib.Path(self.cfg['workdir'])
             if not self.cfg['workdir'].is_absolute():
+                assert('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
                 self.cfg['workdir'] = cfgDir / self.cfg['workdir']
         else:
+            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided" 
             self.cfg['workdir'] = cfgDir / self.cfg['name']
 
         if 'nodisk' not in self.cfg:
@@ -203,10 +205,9 @@ class Config(collections.MutableMapping):
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
         for k in (set(configToAbs) & set(self.cfg.keys())):
-            if not os.path.isabs(self.cfg[k]):
+            self.cfg[k] = pathlib.Path(self.cfg[k])
+            if not self.cfg[k].is_absolute():
                 self.cfg[k] = self.cfg['workdir'] / self.cfg[k]
-            else:
-                self.cfg[k] = pathlib.Path(self.cfg[k])
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
