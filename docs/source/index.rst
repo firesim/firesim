@@ -30,7 +30,8 @@ supported).
 
    quickstart
    commands
-   config
+   workloadConfig
+   marshalConfig
    internal/index
 
 

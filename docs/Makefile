@@ -17,3 +17,10 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# This will build the docs and launch a server. To access remotely you can use
+# SSH port forwarding:
+#     ssh -L 8000:localhost:8000 HOST
+# where HOST is the server actually hosting the docs
+server: html
+	python3 -m http.server -d build/html/

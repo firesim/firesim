@@ -2,7 +2,6 @@
 board-dir : '../boards/firechip'
 
 # Stores all outputs (binaries and images)
-# image_dir = os.path.join(root_dir, "images")
 image-dir : '../images'
 
 # Default linux source

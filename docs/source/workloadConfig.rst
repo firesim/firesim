@@ -1,4 +1,4 @@
-.. _firemarshal-config:
+.. _workload-config:
 
 Workload Specification
 =================================
@@ -135,6 +135,8 @@ Path to binary for spike (riscv-isa-sim) to use when running this
 workload in spike. Useful for custom forks of spike to support custom
 instructions or hardware models. Defaults to the version of spike on your PATH.
 
+.. _workload-linux-src:
+
 linux-src
 ^^^^^^^^^^^^^^^^
 Path to riscv-linux source directory to use when building the boot-binary for
@@ -226,15 +228,19 @@ should be absolute with respect to the workload rootfs. Files will be placed
 together in the output directory. You cannot specify the directory structure of
 the output.
 
+.. _workload-rootfs-size:
+
 rootfs-size
 ^^^^^^^^^^^^^^^^^
 The desired rootfs size (in human-readable units, e.g. "4GB"). This number must
 either be >= to the parent workload's image size or set to 0. If set to 0, the
-rootfs will be shrunk to have 256MB of free space.
+rootfs will be shrunk to have only a modest amount of free space (the exact
+margin is set by the :ref:`config-rootfs-size` global configuration option,
+256MiB by default).
 
 .. Note:: It is only necessary to set this option if you intend to copy in
-   large amounts of files or your workload generates large intermediate files. The
-   base workloads will provide 256MB of free space by default.
+   large amounts of files or your workload generates large intermediate files.
+   The base workloads all have the default rootfs-margin included.
 
 run
 ^^^^^^^^^^^^^
