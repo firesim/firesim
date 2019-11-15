@@ -9,6 +9,7 @@ import ir._
 import Mappers._
 import firrtl.Utils.{BoolType, kind, ceilLog2, one}
 import firrtl.passes.MemPortUtils
+import firrtl.transforms.DontTouchAnnotation
 import annotations._
 import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
@@ -283,11 +284,20 @@ class FAMETransform extends Transform {
     val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
     // TODO: pick a value that does not collide
     implicit val triggerName = "finishing"
+
+    val toTransform = analysis.transformedModules
     val transformedModules = c.modules.map {
       case m: Module if (m.name == c.main) => transformTop(m, analysis)
-      case m: Module if (analysis.transformedModules.contains(ModuleTarget(c.main,m.name))) => FAMEModuleTransformer(m, analysis)
+      case m: Module if (toTransform.contains(ModuleTarget(c.main, m.name))) => FAMEModuleTransformer(m, analysis)
       case m => m // TODO (Albert): revisit this; currently, not transforming nested modules
     }
-    state.copy(circuit = c.copy(modules = transformedModules), renames = Some(hostDecouplingRenames(analysis)))
+
+    val filteredAnnos = state.annotations.filter {
+      case DontTouchAnnotation(rt) if toTransform.contains(rt.moduleTarget) => false
+      case _ => true
+    }
+
+    val newCircuit = c.copy(modules = transformedModules)
+    CircuitState(newCircuit, outputForm, filteredAnnos, Some(hostDecouplingRenames(analysis)))
   }
 }
