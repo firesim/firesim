@@ -5,6 +5,7 @@ import logging
 import string
 import pathlib
 import git
+import doit
 from .. import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -69,6 +70,7 @@ def buildConfig():
             cwd=(br_dir / 'buildroot'))
     
 def buildBuildRoot():
+    wlutil.checkSubmodule(br_dir / 'buildroot')
     buildConfig()
 
     # Buildroot complains about some common PERL configurations
@@ -89,7 +91,14 @@ class Builder:
 
     # Build a base image in the requested format and return an absolute path to that image
     def buildBaseImage(self):
-        buildBuildRoot()
+        """Ensures that the image file specified by baseConfig() exists and is up to date.
+
+        This is called as a doit task.
+        """
+        try:
+            buildBuildRoot()
+        except wlutil.SubmoduleError as e:
+            return doit.exceptions.TaskFailed(e)
 
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate

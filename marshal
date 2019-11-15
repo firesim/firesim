@@ -122,7 +122,6 @@ def main():
                     j['nodisk'] = True
 
         if args.command == "build":
-            # try:
             if args.binOnly or args.imgOnly:
                 # It's fine if they pass -IB, it just builds both
                 ret = wlutil.buildWorkload(cfgName, cfgs, buildBin=args.binOnly, buildImg=args.imgOnly)
@@ -145,6 +144,8 @@ def main():
                 outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
+                outputPath = None
+
             if outputPath is not None:
                 log.info("Workload outputs available at: " + str(outputPath))
 

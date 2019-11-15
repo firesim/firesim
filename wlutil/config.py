@@ -7,7 +7,7 @@ import collections
 import json
 import pprint
 import logging
-import humanfriendly
+import humanfriendly as hf
 from .wlutil import *
 import pathlib as pth
 
@@ -53,7 +53,13 @@ configUser = [
         # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
         'launch',
         # Size of root filesystem (human-readable string) 
-        'rootfs-size'
+        'rootfs-size',
+        # Number of CPU cores to simulate (applies only to functional simulation). Converted to int after loading.
+        'cpus',
+        # Amount of memory (DRAM) to use when simulating (applies only to functional simulation).
+        # Can be standard size-formatted string from user (e.g. '4G'), but
+        # converted to bytes as int after loading.
+        'mem'
         ]
 
 # This is a comprehensive list of all options set during config parsing
@@ -92,13 +98,24 @@ configInherit = [
         'post_run_hook',
         'spike-args',
         'rootfs-size',
-        'qemu-args']
+        'qemu-args',
+        'cpus',
+        'mem']
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
         'fedora' : fed.Builder(),
         'br' : br.Builder(),
         'bare' : bare.Builder()
+        }
+
+# Default constants, may be overridden by the user
+# These take the post-processing form (e.g. if the user can provide a string,
+# but we convert it to an int, this would be an int)
+configDefaults = {
+        'img-sz' : 0, # default to 'tight' configuration
+        'mem' : hf.parse_size('16GiB'), # same as firesim default target
+        'cpus' : 4 # same as firesim default target
         }
 
 class RunSpec():
@@ -192,7 +209,9 @@ class Config(collections.MutableMapping):
                 self.cfg[k] = pathlib.Path(self.cfg[k])
 
         if 'rootfs-size' in self.cfg:
-            self.cfg['img-sz'] = humanfriendly.parse_size(self.cfg['rootfs-size'])
+            self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
+        else:
+            self.cfg['img-sz'] = configDefaults['img-sz']
 
         # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs) 
         if 'files' in self.cfg:
@@ -220,6 +239,16 @@ class Config(collections.MutableMapping):
                 self.cfg[sOpt] = RunSpec.fromString(
                         self.cfg[sOpt],
                         baseDir=self.cfg['workdir'])
+
+        if 'mem' in self.cfg:
+            self.cfg['mem'] = hf.parse_size(str(self.cfg['mem']))
+        else:
+            self.cfg['mem'] = configDefaults['mem']
+
+        if 'cpus' in self.cfg:
+            self.cfg['cpus'] = int(self.cfg['cpus'])
+        else:
+            self.cfg['cpus'] = configDefaults['cpus']
 
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
@@ -260,11 +289,9 @@ class Config(collections.MutableMapping):
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = getOpt('linux-dir')
 
-        # if 'bin' not in self.cfg:
         # We inherit the parent's binary for bare-metal configs, but not linux configs
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
         if 'linux-config' in self.cfg or 'bin' not in self.cfg:
-        # if 'linux-config' in self.cfg:
             self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
 
         # Some defaults need to occur, even if you don't have a base

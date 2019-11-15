@@ -25,19 +25,31 @@ FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 # Global configuration (marshalCtx set by initialize())
 ctx = None
 
+# List of marshal submodules (those enabled by init-submodules.sh)
+marshalSubmods = [
+        'linux-dir',
+        'pk-dir',
+        'busybox-dir',
+        'buildroot-dir',
+        'driver-dirs'
+        ]
+
 class SubmoduleError(Exception):
     """Error representing a nonexistent or uninitialized submodule"""
     def __init__(self, path):
-        self.message = "Dependency missing or not initialized " + \
-                str(path) + \
-                ". Do you need to initialize submodules?"
         self.path = path
 
     def __repr__(self):
-        return "Submodule Error: \n" + self.message
+        return 'Submodule Error: ' + self.__str__()
 
     def __str__(self):
-        return self.__repr__()
+        if self.path in [ ctx[opt] for opt in marshalSubmods ]:
+            return 'Marshal submodule "' + str(self.path) + \
+                    '" not initialized. Please run "./init-submodules.sh."'
+        else:
+            return "Dependency missing or not initialized " + \
+                    str(self.path) + \
+                    ". Do you need to initialize a submodule?"
 
 class RootfsCapacityError(Exception):
     """Error representing that the workload's rootfs has run out of disk space."""
@@ -144,6 +156,11 @@ derivedOpts = [
         # Gets set uniquely for each logical invocation of this library
         'runName',
 
+        # List of paths to linux driver sources to use
+        'driver-dirs',
+
+        # Buildroot source directory
+        'buildroot-dir'
         ]
 
 class marshalCtx(collections.MutableMapping):
@@ -155,7 +172,14 @@ class marshalCtx(collections.MutableMapping):
     def __init__(self):
         """On init, we search for and load all sources of options.
 
-        The order in which options are added here is the order of precidence."""
+        The order in which options are added here is the order of precidence.
+        
+        Attributes:
+            opts: Dictonary containing all configuration options (static values
+                set by the user or statically derived from those). Option
+                values are documented in the package variables 'derivedOpts' and
+                'userOpts'
+        """
 
         # These are set early to help with config file search-paths
         self['wlutil-dir'] = pathlib.Path(__file__).parent.resolve()
@@ -244,6 +268,8 @@ class marshalCtx(collections.MutableMapping):
         self['runName'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
+        self['driver-dirs'] = self['board-dir'].glob('drivers/*')
+        self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
 
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
@@ -268,7 +294,6 @@ class marshalCtx(collections.MutableMapping):
                 "-" +  randname
 
         self['run-name'] = runName
-
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
@@ -299,7 +324,10 @@ def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
     Is safe and fast to call every time you load the library."""
 
-    sys.modules[__name__].ctx = marshalCtx()
+    global ctx
+    ctx = marshalCtx()
+
+    ctx['mnt-dir'].mkdir(parents=True, exist_ok=True)
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
@@ -408,17 +436,17 @@ def waitpid(pid):
 
 if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
-    sudoCmd = "/usr/bin/sudo"
+    sudoCmd = ["/usr/bin/sudo"]
     @contextmanager
     def mountImg(imgPath, mntPath):
-        run([sudoCmd,"mount", "-o", "loop", imgPath, mntPath])
+        run(sudoCmd + ["mount", "-o", "loop", imgPath, mntPath])
         try:
             yield mntPath
         finally:
-            run([sudoCmd, 'umount', mntPath])
+            run(sudoCmd + ['umount', mntPath])
 else:
     # User doesn't have sudo (use guestmount, slow but reliable)
-    sudoCmd = ""
+    sudoCmd = []
     @contextmanager
     def mountImg(imgPath, mntPath):
         run(['guestmount', '--pid-file', 'guestmount.pid', '-a', imgPath, '-m', '/dev/sda', mntPath])
@@ -439,7 +467,7 @@ def toCpio(src, dst):
     log = logging.getLogger()
     log.debug("Creating Cpio archive from " + str(src))
     with open(dst, 'wb') as outCpio:
-        p = sp.run([sudoCmd, "sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
+        p = sp.run(sudoCmd + ["sh", "-c", "find -print0 | cpio --owner root:root --null -ov --format=newc"],
                 stderr=sp.PIPE, stdout=outCpio, cwd=src)
         log.debug(p.stderr.decode('utf-8'))
 
@@ -493,47 +521,49 @@ def copyImgFiles(img, files, direction):
     """
     log = logging.getLogger()
 
-    if not getOpt('mnt-dir').exists():
-        run(['mkdir', getOpt('mnt-dir')])
-
     with mountImg(img, getOpt('mnt-dir')):
         for f in files:
             if direction == 'in':
                 dst = str(getOpt('mnt-dir') / f.dst.relative_to('/'))
-                run([sudoCmd, 'cp', '-a', str(f.src), dst])
+                run(sudoCmd + ['cp', '-a', str(f.src), dst])
             elif direction == 'out':
                 uid = os.getuid()
                 src = str(getOpt('mnt-dir') / f.src.relative_to('/'))
-                run([sudoCmd, 'cp', '-a', src, str(f.dst)])
+                run(sudoCmd + ['cp', '-a', src, str(f.dst)])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
 
+_toolVersions = None
 def getToolVersions():
     """Detect version information for the currently enabled toolchain."""
 
-    # We run the preprocessor on a simple program to see the C-visible
-    # "LINUX_VERSION_CODE" macro
-    linuxHeaderTest = """#include <linux/version.h>
-    LINUX_VERSION_CODE
-    """
-    linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
-              input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
-    linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
+    global _toolVersions
+    if _toolVersions is None:
+        # We run the preprocessor on a simple program to see the C-visible
+        # "LINUX_VERSION_CODE" macro
+        linuxHeaderTest = """#include <linux/version.h>
+        LINUX_VERSION_CODE
+        """
+        linuxHeaderVer = sp.run(['riscv64-unknown-linux-gnu-gcc', '-E', '-xc', '-'],
+                  input=linuxHeaderTest, stdout=sp.PIPE, universal_newlines=True)
+        linuxHeaderVer = linuxHeaderVer.stdout.splitlines()[-1].strip()
 
-    # Major/minor version of the linux kernel headers included with our
-    # toolchain. This is not necessarily the same as the linux kernel used by
-    # Marshal, but is assumed to be <= to the version actually used.
-    linuxMaj = str(int(linuxHeaderVer) >> 16)
-    linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
+        # Major/minor version of the linux kernel headers included with our
+        # toolchain. This is not necessarily the same as the linux kernel used by
+        # Marshal, but is assumed to be <= to the version actually used.
+        linuxMaj = str(int(linuxHeaderVer) >> 16)
+        linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
 
-    # Toolchain major version
-    toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
-            universal_newlines=True, stdout=sp.PIPE).stdout
-    toolVer = toolVerStr[36]
+        # Toolchain major version
+        toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
+                universal_newlines=True, stdout=sp.PIPE).stdout
+        toolVer = toolVerStr[36]
 
-    return {'linuxMaj' : linuxMaj,
-            'linuxMin' : linuxMin,
-            'gcc' : toolVer}
+        _toolVersions = {'linuxMaj' : linuxMaj,
+                'linuxMin' : linuxMin,
+                'gcc' : toolVer}
+
+    return _toolVersions
 
 def checkGitStatus(submodule):
     """Returns a dictionary representing the status of a git repo.

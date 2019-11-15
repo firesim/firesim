@@ -63,7 +63,7 @@ def addDep(loader, config):
     bin_task_deps = [] + hostInit + config['base-deps']
     if 'linux-config' in config:
         bin_file_deps.append(config['linux-config'])
-        bin_task_deps.append('_busybox')
+        bin_task_deps.append('BuildBusybox')
     
     if 'bin' in config:
         loader.addTask({
@@ -135,7 +135,7 @@ def buildDepGraph(cfgs):
 
     # Linux-based workloads depend on this task
     loader.workloads.append({
-        'name' : '_busybox',
+        'name' : 'BuildBusybox',
         'actions' : [(buildBusybox, [])],
         'targets' : [getOpt('initramfs-dir') /'disk' / 'bin' / 'busybox'],
         'uptodate': [config_changed(checkGitStatus(getOpt('busybox-dir'))),
@@ -200,7 +200,6 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
     return doit.doit_cmd.DoitMain(taskLoader).run([str(p) for p in binList + imgList])
-    # return doit.doit_cmd.DoitMain(taskLoader).run(["info", "/data/repos/fm2/images/smoke0-bin"])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.
@@ -261,7 +260,6 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
     linuxSrc: Path to linux source tree to build against
     """
 
-    driverDirs = boardDir.glob("drivers/*")
     makeCmd = "make LINUXSRC=" + str(linuxSrc)
 
     # Prepare the linux source for building external drivers
@@ -270,7 +268,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
     kernelVersion = sp.run(["make", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
-    for driverDir in driverDirs:
+    for driverDir in getOpt('driver-dirs'):
         checkSubmodule(driverDir)
 
         # Drivers don't seem to detect changes in the kernel
@@ -361,7 +359,7 @@ def makeImage(config):
             shutil.copy(config['base-img'], config['img'])
   
     # Resize if needed
-    if 'img-sz' in config:
+    if config['img-sz'] != 0:
         resizeFS(config['img'], config['img-sz'])
 
     # Convert overlay to file list
@@ -405,6 +403,6 @@ def makeImage(config):
         run_overlay = config['builder'].generateBootScriptOverlay(scriptPath, spec.args)
         applyOverlay(config['img'], run_overlay)
     
-    # Make image sizes tight by default
-    if 'img-sz' not in config:
+    # Tighten the image size if requested
+    if config['img-sz'] == 0:
         resizeFS(config['img'], 0)

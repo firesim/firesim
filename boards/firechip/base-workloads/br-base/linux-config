@@ -11,8 +11,6 @@ CONFIG_PERF_EVENTS=y
 #
 CONFIG_RISCV_BASE_PMU=y
 
-CONFIG_RISCV_ISA_C=n
-
 #
 # Boot options
 #
