@@ -68,6 +68,7 @@ Because some drivers must be loaded in order to boot, we package them into a
 custom initramfs that is compiled into the kernel.  Marshal generates this
 archive by staging several filesystems at ``wlutil/initramfs{disk, nodisk,
 drivers}``:
+
 * ``disk/``: contains a fully-functioning root filesystem with a busybox-based
   environment and an init script that knows to load drivers and look for a disk
   to boot from (either ``/dev/vda`` for qemu or ``/dev/iceblk`` for firesim).
