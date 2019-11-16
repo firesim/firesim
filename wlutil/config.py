@@ -359,18 +359,17 @@ class ConfigManager(collections.MutableMapping):
         for f in cfgPaths:
             cfgName = f.name
             try:
-                log.debug("Loading ", f)
+                log.debug("Loading " + str(f))
                 if cfgName in list(self.cfgs.keys()):
-                    log.warning("Workload " + f + " overrides " + self.cfgs[cfgName]['cfg-file'])
+                    log.warning("Workload " + str(f) + " overrides " + str(self.cfgs[cfgName]['cfg-file']))
                 self.cfgs[cfgName] = Config(f)
             except KeyError as e:
-                log.warning("Skipping " + f + ":")
+                log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
                 del self.cfgs[cfgName]
-                # raise
                 continue
             except Exception as e:
-                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("Skipping " + str(f) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
                 del self.cfgs[cfgName]
                 raise
@@ -381,19 +380,18 @@ class ConfigManager(collections.MutableMapping):
             try:
                 self._initializeFromBase(self.cfgs[f])
             except KeyError as e:
-                log.warning("Skipping " + f + ":")
+                log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
                 del self.cfgs[f]
-                # raise
                 continue
             except Exception as e:
-                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("Skipping " + str(f) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
                 del self.cfgs[f]
                 raise
                 continue
 
-            log.debug("Loaded " + f)
+            log.debug("Loaded " + str(f))
 
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.

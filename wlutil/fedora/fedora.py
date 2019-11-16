@@ -1,4 +1,3 @@
-import os
 import subprocess as sp
 import shutil
 import pathlib

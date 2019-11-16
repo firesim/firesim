@@ -129,7 +129,7 @@ userOpts = [
 # These represent all available derived options (constants and those generated
 # from userOpts, but not directly settable by users)
 derivedOpts = [
-        # Root for firemarshal (e.g. firesim-software/)
+        # Root for firemarshal (e.g. FireMarshal/)
         'root-dir',
 
         # Root for wlutil library
@@ -150,11 +150,11 @@ derivedOpts = [
         # Empty directory used for mounting images
         'mnt-dir',
 
-        # Basic template for user-specified commands (the "command:" option) 
+        # Path to basic template for user-specified commands (the "command:" option) 
         'command-script',
 
         # Gets set uniquely for each logical invocation of this library
-        'runName',
+        'run-name',
 
         # List of paths to linux driver sources to use
         'driver-dirs',
@@ -196,7 +196,7 @@ class marshalCtx(collections.MutableMapping):
             pathlib.Path('marshal-config.yaml'),
             # next to the marshal executable
             self['root-dir'] / 'marshal-config.yaml'
-                ]
+        ]
         for src in cfgSources:
             if src.exists():
                 self.addPath(src)
@@ -221,10 +221,12 @@ class marshalCtx(collections.MutableMapping):
         conflicting options.
         
         newOpts: dictionary containing new options to add"""
+        
         self.opts = dict(self.opts, **newOpts)
         
     def addPath(self, path):
         """Add the yaml file at path to the config."""
+
         try:
             with open(path, 'r') as newF:
                 newCfg = yaml.full_load(newF)
@@ -244,6 +246,7 @@ class marshalCtx(collections.MutableMapping):
 
         For example MARSHAL_LINUX_DIR=../special/linux would add a ('linux-dir'
         : '../special/linux') option to the config."""
+
         reOpt = re.compile("^MARSHAL_(\S+)")
         envCfg = {}
         for opt,val in os.environ.items():
@@ -259,13 +262,14 @@ class marshalCtx(collections.MutableMapping):
         """Update or initialize all derived options. This assumes all
         user-defined options have been set already. See the 'derivedOpts' list
         above for documentation of these options."""
+
         self['workdir-builtin'] = self['board-dir'] / 'base-workloads'
         self['busybox-dir'] = self['wlutil-dir'] / 'busybox'
         self['initramfs-dir'] = self['wlutil-dir'] / "initramfs"
         self['gen-dir'] = self['wlutil-dir'] / "generated"
         self['mnt-dir'] = self['root-dir'] / "disk-mount"
         self['command-script'] = self['gen-dir'] / "_command.sh"
-        self['runName'] = ""
+        self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
         self['driver-dirs'] = self['board-dir'].glob('drivers/*')
