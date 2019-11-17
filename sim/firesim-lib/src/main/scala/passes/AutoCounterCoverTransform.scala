@@ -256,17 +256,24 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
    private def CreateSourceWiringAnnotations(instancepaths: Seq[Seq[WDefInstance]], state: CircuitState) {
 
+      println("instpathnames:") 
+      println(instancepaths.map { case instpath => instpath.map {case WDefInstance(_,name,_,_) => name}} ) 
       instancepaths.map { case instpath => 
-                          val path = instpath.mkString("_")
-                          val portname = s"autocounter_" + path + "_count"
+                          val instpathnames = instpath.map {case WDefInstance(_,name,_,_) => name}
+                          //val path = instpathnames.tail.mkString("_")
+                          //val portname = s"autocounter_" + path + "_count"
+                          //val path = instpathnames.tail.head + "." + instpathnames.tail.tail.mkString("_")
+                          val path = instpathnames.tail.tail.mkString("_")
+                          val portname = instpathnames.tail.head + s".autocounter_" + path + "_count"
                           val mod = instpath.last.module // WDefInstance.module is a string, should be equivalent to the module name
                           val oldlabel = autoCounterLabelsMap(mod)
-                          val newlabel = oldlabel + s"[" + instpath.dropRight(1).mkString(".") + s"]"
+                          val newlabel = oldlabel + s"[" + instpathnames.dropRight(1).mkString(".") + s"]"
                           //BoringUtils.addSource(portname, s"AutoCounter_$newlabel")
                           newAnnos += SourceAnnotation(ComponentName(portname, ModuleName(instpath.head.module, CircuitName(state.circuit.main))), s"AutoCounter_$newlabel")
                           autoCounterLabels += s"AutoCounter_$newlabel"
       }
-     
+      println("autoCounterLabels:") 
+      println(autoCounterLabels) 
    }
 
 
@@ -278,7 +285,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      val topnamespace = Namespace(circuit)
      val instanceGraph = new InstanceGraph(circuit)
      //val instanceGraph = (new InstanceGraph(circuit)).graph
-     val autocounterinsts = instanceGraph.findInstancesInHierarchy("AutoCounter")
+
+     val autocountermods = state.circuit.modules.collect {
+          case mod: DefModule if mod.name.contains("AutoCounter") => mod
+     }
+     //val autocounterinsts = instanceGraph.findInstancesInHierarchy("AutoCounter")
+     val autocounterinsts = autocountermods.flatMap { case mod => instanceGraph.findInstancesInHierarchy(mod.name) }
      val numcounters = autocounterinsts.size
 
      //punch out signal to the top
@@ -290,7 +302,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      }
      newAnnos --= srcannos 
 
-     //CreateSourceWiringAnnotations(instancepaths, state) 
+     CreateSourceWiringAnnotations(autocounterinsts, newstate) 
 
 
      //create the bridge module (widget)
