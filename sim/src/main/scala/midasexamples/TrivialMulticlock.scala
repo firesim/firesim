@@ -15,8 +15,10 @@ class RegisterModule extends MultiIOModule {
 }
 
 class TrivialMulticlock extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3), (3,7)))
-  val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
+  //val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3), (3,7)))
+  //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
+  val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3)))
+  val List(fullRate, halfRate, thirdRate) = clockBridge.io.clocks.toList
   val reset = Wire(Bool())
 
   withClockAndReset(fullRate, reset) {
@@ -25,14 +27,14 @@ class TrivialMulticlock extends RawModule {
     val thirdRateInst = Module(new RegisterModule)
     thirdRateInst.clock := thirdRate
     thirdRateInst.in := halfRateInst.in
-    val threeSeventhsRateInst = Module(new RegisterModule)
-    threeSeventhsRateInst.clock := threeSeventhsRate
-    threeSeventhsRateInst.in := halfRateInst.in
+    //val threeSeventhsRateInst = Module(new RegisterModule)
+    //threeSeventhsRateInst.clock := threeSeventhsRate
+    //threeSeventhsRateInst.in := halfRateInst.in
 
     val peekPokeBridge = PeekPokeBridge(fullRate, reset, ("in", halfRateInst.in),
                                                          ("halfOut", halfRateInst.out),
-                                                         ("thirdOut", thirdRateInst.out),
-                                                         ("threeSeventhsOut", threeSeventhsRateInst.out))
+                                                         ("thirdOut", thirdRateInst.out))
+                                                         //("threeSeventhsOut", threeSeventhsRateInst.out))
   }
 }
 

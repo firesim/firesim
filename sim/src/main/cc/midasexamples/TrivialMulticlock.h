@@ -34,7 +34,7 @@ public:
     std::vector<MultiClockChecker*> checkers;
     checkers.push_back(new MultiClockChecker(this, halfOut, 1, 2));
     checkers.push_back(new MultiClockChecker(this, thirdOut, 1, 3));
-    checkers.push_back(new MultiClockChecker(this, threeSeventhsOut, 3, 7));
+    //checkers.push_back(new MultiClockChecker(this, threeSeventhsOut, 3, 7));
 
     uint32_t current = rand_next(limit);
     poke(in, current);
