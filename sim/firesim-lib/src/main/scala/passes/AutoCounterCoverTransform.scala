@@ -79,6 +79,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   override def name = "[FireSim] AutoCounter Cover Transform"
   val newAnnos = mutable.ArrayBuffer.empty[Annotation]
   val autoCounterLabels = mutable.ArrayBuffer.empty[String]
+  val autoCounterReadableLabels = mutable.ArrayBuffer.empty[String]
   val autoCounterLabelsMap = mutable.Map.empty[String, String]
 
   private def MakeCounter(label: String, hastracerwidget: Boolean = false): CircuitState = {
@@ -103,15 +104,18 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
       //*****if we ever want to use the trigger to reset the counters******
       //withReset(reset = ~trigger) {
-      //  val count = WideCounter(64, in0)
+      //  val countfun = WideCounter(64, in0)
       //}
 
-      val count = WideCounter(64, in0)
+      val countfun = WideCounter(64, in0)
+      val count = Wire(UInt(64.W))
+      count := countfun
       if (printcounter) {
         when (in0 & trigger) {
           printf(midas.targetutils.SynthesizePrintf(s"[AutoCounter] $label: %d cycle: %d\n",count, cycle))
         }
       } else {
+          chisel3.core.dontTouch(count)
           annotate(new ChiselAnnotation { def toFirrtl = TopWiringAnnotation(count.toNamed, s"autocounter_") }) 
           //********In the future, when BoringUtils will be more rubust with TargetRefs***********
           //autoCounterLabels ++= Seq(s"AutoCounter_$label")
@@ -193,6 +197,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
    private def fixupCircuit(instate: CircuitState): CircuitState = {
      val xforms = Seq(
+          //new WiringTransform
           new WiringTransform,
           new ResolveAndCheck
      )
@@ -219,12 +224,9 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
        case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterLabels: Seq[String])
 
-       val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterLabels)) 
+       //val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterLabels)) 
+       val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterReadableLabels)) 
  
-       //wiring transform annotation to connect to the counters
-       autoCounterLabels.zip(io.counters).foreach {
-          case(label, counter) => BoringUtils.addSink(counter, label)
-       } 
        generateAnnotations()
      } 
 
@@ -244,11 +246,9 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      val targetwidgetmodn = targetwidgetmod.copy(name = newtargetwidgetname)
      val renamemap = RenameMap(Map(ModuleTarget(lowFirrtlIR.circuit.main, targetwidgetmod.name) -> Seq(ModuleTarget(maincircuit.main, newtargetwidgetname))))
      newAnnos ++= lowFirrtlIR.annotations.toSeq.flatMap { case anno => anno.update(renamemap) }
-     //instantiate the counter
-
-     //TODO: Do I need to instantiate ths blackbox???????
 
      //return the new module
+     println(targetwidgetmodn.serialize)
      targetwidgetmodn
    }
 
@@ -267,10 +267,13 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
                           val portname = instpathnames.tail.head + s".autocounter_" + path + "_count"
                           val mod = instpath.last.module // WDefInstance.module is a string, should be equivalent to the module name
                           val oldlabel = autoCounterLabelsMap(mod)
-                          val newlabel = oldlabel + s"[" + instpathnames.dropRight(1).mkString(".") + s"]"
+                          val readablelabel = oldlabel + s"[" + instpathnames.dropRight(1).mkString(".") + s"]"
+                          val newlabel = oldlabel + s"_" + instpathnames.dropRight(1).mkString("_")
                           //BoringUtils.addSource(portname, s"AutoCounter_$newlabel")
-                          newAnnos += SourceAnnotation(ComponentName(portname, ModuleName(instpath.head.module, CircuitName(state.circuit.main))), s"AutoCounter_$newlabel")
+                          //newAnnos += SourceAnnotation(ComponentName(portname, ModuleName(instpath.head.module, CircuitName(state.circuit.main))), s"AutoCounter_$newlabel")
+                          newAnnos += SourceAnnotation(ModuleTarget(state.circuit.main, instpath.head.module).ref(portname).toNamed, s"AutoCounter_$newlabel")
                           autoCounterLabels += s"AutoCounter_$newlabel"
+                          autoCounterReadableLabels += s"AutoCounter_$newlabel"
       }
       println("autoCounterLabels:") 
       println(autoCounterLabels) 
@@ -281,7 +284,20 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
    //create an appropriate widget IO
    //wire the counters to the widget
    private def AddAutoCounterWidget(state: CircuitState): CircuitState = {
-     val circuit = state.circuit
+
+     //punch out signal to the top
+     def topwiringtransform = new TopWiringTransform
+     val newstate: CircuitState = topwiringtransform.execute(state.copy(annotations = state.annotations ++ newAnnos))
+     //cleanup the topwiring annotations
+     val srcannos = newAnnos.collect {
+       case a: TopWiringAnnotation => a
+     }
+     println("TopWiring Annotations:")
+     println(srcannos)
+     newAnnos --= srcannos 
+
+     //Find the relevant ports/wires that were punched out to the top
+     val circuit = newstate.circuit
      val topnamespace = Namespace(circuit)
      val instanceGraph = new InstanceGraph(circuit)
      //val instanceGraph = (new InstanceGraph(circuit)).graph
@@ -292,16 +308,6 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      //val autocounterinsts = instanceGraph.findInstancesInHierarchy("AutoCounter")
      val autocounterinsts = autocountermods.flatMap { case mod => instanceGraph.findInstancesInHierarchy(mod.name) }
      val numcounters = autocounterinsts.size
-
-     //punch out signal to the top
-     def topwiringtransform = new TopWiringTransform
-     val newstate = topwiringtransform.execute(state.copy(annotations = state.annotations ++ newAnnos))
-     //cleanup the topwiring annotations
-     val srcannos = newAnnos.collect {
-       case a: TopWiringAnnotation => a
-     }
-     newAnnos --= srcannos 
-
      CreateSourceWiringAnnotations(autocounterinsts, newstate) 
 
 
@@ -310,10 +316,24 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
      val topSort = instanceGraph.moduleOrder
      val top = topSort.head.asInstanceOf[Module]
-     val widgetInstName = topnamespace.newName(s"autocounter_target_widget_inst") // Helps debug
+     //val widgetInstName = topnamespace.newName(s"autocounter_target_widget_inst") // Helps debug
+     val widgetInstName = topnamespace.newName(s"AutoCounterBridge_inst") // Helps debug
      val widgetInst = WDefInstance(NoInfo, widgetInstName, widgetmod.name, UnknownType)
      val bodyx = Block(top.body +: Seq(widgetInst))
      val newtop = top.copy(body = bodyx) 
+
+
+     //wiring transform annotation to connect to the counters
+     val counterports = widgetmod.ports.collect({ case Port(_,name,_,UIntType(_)) => name}).filter(_ != "reset")
+     autoCounterLabels.zip(counterports).foreach {
+        //case(label, counter) => BoringUtils.addSink(counter, label)
+        case(label, counterport) => {
+            newAnnos += SinkAnnotation(ModuleTarget(newstate.circuit.main, newtop.name).ref(widgetInst.name).field(counterport).toNamed, label)
+        }
+     } 
+
+     println(newtop.serialize)
+     //println(newstate.circuit.serialize)
      newstate.copy(circuit = newstate.circuit.copy(modules = topSort.tail ++ Seq(newtop) ++ Seq(widgetmod)), annotations = state.annotations ++ newAnnos) 
    }
 
@@ -395,6 +415,8 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       //val circuitwithwidget = AddAutoCounterWidget(state.circuit.copy(modules = modulesx))  
       //fixupCircuit(state.copy(circuit = circuitwithwidget, annotations = state.annotations ++ newAnnos))
       val statewithwidget = AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)))  
+      //println(statewithwidget.circuit.serialize)
+      //println(fixupCircuit(statewithwidget).circuit.serialize)
       fixupCircuit(statewithwidget)
       
     } else { state }
