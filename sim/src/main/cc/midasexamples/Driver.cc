@@ -37,6 +37,8 @@
 #include "Accumulator.h"
 #elif defined DESIGNNAME_VerilogAccumulator
 #include "VerilogAccumulator.h"
+#elif defined DESIGNNAME_TrivialMulticlock
+#include "TrivialMulticlock.h"
 #endif
 
 class dut_emul_t:

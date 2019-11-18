@@ -7,22 +7,32 @@ import chisel3.experimental.{withClock, RawModule, MultiIOModule}
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 
-class HalfRateModule extends MultiIOModule {
-  val in = IO(Input(Bool()))
-  val out = IO(Output(Bool()))
+class RegisterModule extends MultiIOModule {
+  def dataType = UInt(32.W)
+  val in = IO(Input(dataType))
+  val out = IO(Output(dataType))
   out := RegNext(in)
 }
 
 class TrivialMulticlock extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
-  val fullRate = clockBridge.io.clocks(0)
-  val halfRate = clockBridge.io.clocks(1)
-  // Dummy reset for now
+  val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3), (3,7)))
+  val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
   val reset = Wire(Bool())
 
-  withClockAndReset(halfRate, reset) {
-    val halfRateInst = Module(new HalfRateModule)
-    val peekPokeBridge = PeekPokeBridge(fullRate, reset, ("in", halfRateInst.in), ("out", halfRateInst.out))
+  withClockAndReset(fullRate, reset) {
+    val halfRateInst = Module(new RegisterModule)
+    halfRateInst.clock := halfRate
+    val thirdRateInst = Module(new RegisterModule)
+    thirdRateInst.clock := thirdRate
+    thirdRateInst.in := halfRateInst.in
+    val threeSeventhsRateInst = Module(new RegisterModule)
+    threeSeventhsRateInst.clock := threeSeventhsRate
+    threeSeventhsRateInst.in := halfRateInst.in
+
+    val peekPokeBridge = PeekPokeBridge(fullRate, reset, ("in", halfRateInst.in),
+                                                         ("halfOut", halfRateInst.out),
+                                                         ("thirdOut", thirdRateInst.out),
+                                                         ("threeSeventhsOut", threeSeventhsRateInst.out))
   }
 }
 
