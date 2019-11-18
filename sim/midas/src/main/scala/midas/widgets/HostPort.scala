@@ -30,7 +30,7 @@ import scala.collection.mutable
 class HostPortIO[+T <: Data](protected val targetPortProto: T) extends TokenizedRecord {
   val fromHost = new HostReadyValid
   val toHost = Flipped(new HostReadyValid)
-  val hBits  = targetPortProto
+  val hBits  = targetPortProto.cloneType
 
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
