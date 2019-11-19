@@ -17,7 +17,7 @@ class AutoCounterBundle(val numCounters: Int) extends Bundle {
 }
 
 
-class AutoCounterBridgeModule(numCounters: Int, labels: Seq[String])(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
+class AutoCounterBridgeModule(numCounters: Int, labels: scala.collection.mutable.Map[String, String])(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
   val io = IO(new WidgetIO())
   val hPort = IO(Flipped(HostPort(new AutoCounterBundle(numCounters))))
   val cycles = RegInit(0.U(64.W))
@@ -32,7 +32,7 @@ class AutoCounterBridgeModule(numCounters: Int, labels: Seq[String])(implicit p:
     cycles := cycles + 1.U
   }
 
-  labels.zip(hPort.hBits.counters).foreach {
+  labels.keys.zip(hPort.hBits.counters).foreach {
     case(label, counter) => {
       genROReg(counter(31, 0), s"${label}_counter_low")
       genROReg(counter >> 32, s"${label}_counter_high")
