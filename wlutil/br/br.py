@@ -47,7 +47,7 @@ def buildConfig():
 
     toolVer = wlutil.getToolVersions()
     # Contains options specific to the build enviornment (br is touchy about this stuff)
-    toolKfrag = wlutil.gen_dir / 'brToolKfrag'
+    toolKfrag = wlutil.getOpt('gen-dir') / 'brToolKfrag'
     with open(toolKfrag, 'w') as f:
         f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
         f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
@@ -58,7 +58,7 @@ def buildConfig():
         f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
 
     # Default Configuration (allows us to bump BR independently of our configs)
-    defconfig = wlutil.gen_dir / 'brDefConfig'
+    defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
     wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'))
     shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
 
@@ -76,7 +76,7 @@ def buildBuildRoot():
     # Buildroot complains about some common PERL configurations
     env = os.environ.copy()
     env.pop('PERL_MM_OPT', None)
-    wlutil.run(['make'], cwd=os.path.join(br_dir, "buildroot"), env=env)
+    wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
 
 class Builder:
 
@@ -121,22 +121,22 @@ class Builder:
         # The buildroot repo has a pre-built overlay with a custom S99run
         # script that init will run last. This script will run the /firesim.sh
         # script at boot. We just overwrite this script.
-        scriptDst = os.path.join(overlay, 'firesim.sh')
+        scriptDst = overlay / 'firesim.sh'
         if script != None:
-            wlutil.run(['cp', str(script), str(scriptDst)])
+            shutil.copy(script, scriptDst)
         else:
-            wlutil.run(['rm', scriptDst])
+            scriptDst.unlink()
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
-            wlutil.run(['touch', scriptDst])
+            scriptDst.touch()
         
-        wlutil.run(['chmod', '+x', scriptDst])
+        scriptDst.chmod(0o755)
 
-        with open(os.path.join(overlay, 'etc/init.d/S99run'), 'w') as f:
+        with open(overlay / 'etc/init.d/S99run', 'w') as f:
             if args == None:
                 f.write(initTemplate.substitute(args=''))
             else:
-                f.write(initTemplate.substitute(args=args))
+                f.write(initTemplate.substitute(args=' '.join(args)))
         
         return overlay

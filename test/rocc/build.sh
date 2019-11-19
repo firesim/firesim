@@ -10,14 +10,17 @@ if [ ! -d riscv-isa-sim ]; then
   pushd riscv-isa-sim
   git checkout 2dbcb01ca1c026b867cf673203646d213f6e6b5c
   popd
-
-  pushd riscv-isa-sim
-  mkdir build
-  pushd build
-  ../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
-  popd
-  popd
 fi
+
+# Spike is touchy about its configuration, better to reconfigure every time
+# (just in case)
+rm -rf riscv-isa-sim/build
+pushd riscv-isa-sim
+mkdir build
+pushd build
+../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
+popd
+popd
 
 pushd riscv-isa-sim/build
 make -j16

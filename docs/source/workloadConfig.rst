@@ -1,4 +1,4 @@
-.. _firemarshal-config:
+.. _workload-config:
 
 Workload Specification
 =================================
@@ -135,6 +135,8 @@ Path to binary for spike (riscv-isa-sim) to use when running this
 workload in spike. Useful for custom forks of spike to support custom
 instructions or hardware models. Defaults to the version of spike on your PATH.
 
+.. _workload-linux-src:
+
 linux-src
 ^^^^^^^^^^^^^^^^
 Path to riscv-linux source directory to use when building the boot-binary for
@@ -156,7 +158,9 @@ host-init
 ^^^^^^^^^^^^^^
 A script to run natively on your host (i.e., them machine where you
 invoked FireMarshal) from the workload source directory each time you
-explicitly build this workload.
+explicitly build this workload. This option may include arguments for the script, e.g.
+``"host-init" : "foo.sh bar baz"``.
+
 
 *Non-heritable*: The host-init script will not be re-run for child workloads.
 However, any affects that host-init has on the resulting rootfs *will* be
@@ -168,7 +172,8 @@ A script to run natively on the guest (in qemu) exactly once while building.
 The guest init script will be run from the root directory with root privileges.
 This script should end with a call to ``poweroff`` to make the build process
 fully automated. Otherwise, the user will need to log in and shut down manually
-on each build.
+on each build. This option may include arguments for the script, e.g.
+``"guest-init" : "foo.sh bar baz"``.
 
 *Non-heritable*: The guest-init script will not be re-run for child workloads.
 However, any affects that guest-init has on the resulting rootfs *will* be
@@ -178,14 +183,16 @@ post_run_hook
 ^^^^^^^^^^^^^^^^^
 A script or command to run on the output of your run. At least the uart output of
 each run is captured, along with any file outputs specified in the `outputs`_
-option. The script will be called like so:
+option. This option may include arguments for the script, e.g.
+``"post_run_hook" : "foo.sh bar baz"``. The script will be called like so:
 
 ::
 
   cd workload-dir
-  post_run_hook /path/to/output
+  post_run_hook ARGS /path/to/output
 
-The output directory will follow roughly the following format:
+Where ARGS are any arguments you included in the post_run_hook option. The
+output directory will follow roughly the following format:
 
 ::
 
@@ -226,15 +233,19 @@ should be absolute with respect to the workload rootfs. Files will be placed
 together in the output directory. You cannot specify the directory structure of
 the output.
 
+.. _workload-rootfs-size:
+
 rootfs-size
 ^^^^^^^^^^^^^^^^^
 The desired rootfs size (in human-readable units, e.g. "4GB"). This number must
 either be >= to the parent workload's image size or set to 0. If set to 0, the
-rootfs will be shrunk to have 256MB of free space.
+rootfs will be shrunk to have only a modest amount of free space (the exact
+margin is set by the :ref:`config-rootfs-size` global configuration option,
+256MiB by default).
 
 .. Note:: It is only necessary to set this option if you intend to copy in
-   large amounts of files or your workload generates large intermediate files. The
-   base workloads will provide 256MB of free space by default.
+   large amounts of files or your workload generates large intermediate files.
+   The base workloads all have the default rootfs-margin included.
 
 run
 ^^^^^^^^^^^^^
@@ -243,7 +254,8 @@ run after all other initialization finishes, but does not require the user to
 log in (run scripts run concurrently with any user interaction). Run scripts
 typically end with a call to ``poweroff`` to make the workload fully automated,
 but this can be omitted if you would like to interact with the workload after
-its run script has finished.
+its run script has finished. This option may include arguments for the script,
+e.g.  ``"run" : "foo.sh bar baz"``.
 
 .. Note:: The FireMarshal launch command uses the same rootfs for each run (not
   a copy), so you should avoid using ``poweroff -f`` to prevent filesystem

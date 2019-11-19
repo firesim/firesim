@@ -30,7 +30,7 @@ def main():
     # Build command
     build_parser = subparsers.add_parser(
         'build', help='Build an image from the given configuration.')
-    build_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    build_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
     build_parser.add_argument('-B', '--binOnly', action='store_true', help="Only build the binary")
     build_parser.add_argument('-I', '--imgOnly', action='store_true', help="Only build the image (may require an image if you have guest-init scripts)")
 
@@ -43,12 +43,12 @@ def main():
             help="Launch the specified job. Defaults to running the base image.")
     # the type= option here allows us to only accept one argument but store it
     # in a list so it matches the "build" behavior
-    launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [ c ]), help="Configuration file to use.")
+    launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [ pathlib.Path(c) ]), help="Configuration file to use.")
 
     # Test command
     test_parser = subparsers.add_parser(
             'test', help="Test each workload.")
-    test_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    test_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
     test_parser.add_argument('-s', '--spike', action='store_true',
             help="Use the spike isa simulator instead of qemu")
     test_parser.add_argument('-m', '--manual', metavar='testDir', help="Manual test, don't build or run, just compare testDir against the reference output.")
@@ -56,17 +56,24 @@ def main():
     # Clean Command
     clean_parser = subparsers.add_parser(
             'clean', help="Removes build outputs of the provided config (img and bin). Does not affect logs or runOutputs.")
-    clean_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    clean_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
 
     # Install Command
     install_parser = subparsers.add_parser(
             'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
-    install_parser.add_argument('config_files', metavar="config", nargs='+', help="Configuration file(s) to use.")
+    install_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
 
     args = parser.parse_args()
     
-    # Perform any basic setup functions for wlutil. This is idempotent.
-    wlutil.initialize()
+    # Perform any basic setup functions for wlutil.
+    try:
+        wlutil.initialize()
+    except wlutil.ConfigurationError as e:
+        print("Failed to initialize FireMarshal:")
+        print(e)
+        sys.exit(1)
+
+    ctx = wlutil.getCtx()
 
     # Load all the configs from the workload directories
     # Order matters here, duplicate workload files found in later search paths
@@ -77,14 +84,14 @@ def main():
     workdirs = collections.OrderedDict()
 
     # board builtin workloads (the *-base.json's).
-    workdirs[wlutil.workdir_builtin] = None
+    workdirs[wlutil.getOpt('workdir-builtin')] = None
 
     # User-provided workload search path
     if args.workdir is not None:
         workdirs[args.workdir] = None
 
     # Treat the workload name as a path and search locally for it
-    args.config_files = [ pathlib.Path(f).resolve() for f in args.config_files ] 
+    args.config_files = [ f.resolve() for f in args.config_files ] 
     for f in args.config_files:
         workdirs[f.parent] = None
 
@@ -97,14 +104,14 @@ def main():
     failCount = 0
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
-        wlutil.setRunName(cfgPath, args.command)
+        ctx.setRunName(cfgPath, args.command)
         wlutil.initLogging(args.verbose)
-        cfgName = os.path.basename(cfgPath)
+        cfgName = cfgPath.name
 
         log = logging.getLogger()
         if not args.verbose:
             print("To check on progress, either call marshal with '-v' or see the live output at: ")
-            print(os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
+            print(wlutil.getOpt('log-dir') / (wlutil.getOpt('run-name') + ".log"))
 
         targetCfg = cfgs[cfgName]
    
@@ -134,20 +141,20 @@ def main():
                     parser.print_help()
 
             try:
-                outputPath = wlutil.launchWorkload(cfgName, cfgs, args.job, args.spike)
+                outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)
             except Exception as e:
                 log.exception("Failed to launch workload:")
                 outputPath = None
 
             if outputPath is not None:
-                log.info("Workload outputs available at: " + outputPath)
+                log.info("Workload outputs available at: " + str(outputPath))
 
         elif args.command == "test":
             log.info("Testing: " + str(cfgPath))
             res, resPath = wlutil.testWorkload(cfgName, cfgs, args.verbose, spike=args.spike, cmp_only=args.manual)
             if res is wlutil.testResult.failure:
                 log.info("Test Failed")
-                log.info("Output available at: " + resPath)
+                log.info("Output available at: " + str(resPath))
                 suitePass = False
                 failCount += 1
             elif res is wlutil.testResult.skip:
@@ -155,22 +162,22 @@ def main():
                 skipCount += 1
             else:
                 log.info("Test Passed")
-                log.info("Output available at: " + resPath)
+                log.info("Output available at: " + str(resPath))
+            log.info("\n")
 
         elif args.command == 'clean':
-            # with contextlib.suppress(FileNotFoundError):
-                if 'bin' in targetCfg:
-                    deleteSafe(targetCfg['bin'])
-                    deleteSafe(targetCfg['bin'] + '-nodisk')
-                if 'img' in targetCfg:
-                    deleteSafe(targetCfg['img'])
-                if 'jobs' in targetCfg:
-                    for jCfg in targetCfg['jobs'].values():
-                        if 'bin' in jCfg:
-                            deleteSafe(jCfg['bin'])
-                            deleteSafe(jCfg['bin'] + '-nodisk')
-                        if 'img' in jCfg:
-                            deleteSafe(jCfg['img'])
+            if 'bin' in targetCfg:
+                deleteSafe(targetCfg['bin'])
+                deleteSafe(wlutil.noDiskPath(targetCfg['bin']))
+            if 'img' in targetCfg:
+                deleteSafe(targetCfg['img'])
+            if 'jobs' in targetCfg:
+                for jCfg in targetCfg['jobs'].values():
+                    if 'bin' in jCfg:
+                        deleteSafe(jCfg['bin'])
+                        deleteSafe(wlutil.noDiskPath(jCfg['bin']))
+                    if 'img' in jCfg:
+                        deleteSafe(jCfg['img'])
 
         elif args.command == 'install':
             wlutil.installWorkload(cfgName, cfgs)
@@ -179,7 +186,7 @@ def main():
             log.error("No subcommand specified")
             sys.exit(1)
 
-    log.info("Log available at: " + os.path.join(wlutil.log_dir, wlutil.getRunName() + ".log"))
+    log.info("Log available at: " + str(wlutil.getOpt('log-dir') / (wlutil.getOpt('run-name') + ".log")))
     if args.command == 'test':
         if suitePass:
             log.info("SUCCESS: All Tests Passed (" + str(skipCount) + " tests skipped)")

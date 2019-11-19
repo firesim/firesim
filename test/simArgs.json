@@ -1,7 +1,7 @@
 {
   "name" : "simArgs",
   "base" : "br-base.json",
-  "mem" : "2GiB",
+  "mem" : "4GiB",
   "cpus" : 2,
   "run" : "reportSimArgs.sh",
   "testing" : {

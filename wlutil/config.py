@@ -1,4 +1,3 @@
-import os
 import glob
 from .br import br
 from .fedora import fedora as fed
@@ -80,7 +79,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['guest-init', 'run', 'overlay', 'linux-src', 'linux-config', 'host-init', 'cfg-file', 'bin', 'img', 'spike', 'post_run_hook']
+configToAbs = ['overlay', 'linux-src', 'linux-config', 'cfg-file', 'bin', 'img', 'spike']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -119,23 +118,48 @@ configDefaults = {
         }
 
 class RunSpec():
-    def __init__(self, script=None, command=None):
+    def __init__(self, script=None, command=None, args=[]):
+        """RunSpec represents a command or script to run in the target.
+
+        Args:
+            script (pathlib.Path): Path to the script to add.
+            command (str): Shell command to run on the target (from /)
+            args (iterable(str)): Arguments to append to the script
+        """
         if script is not None and command is not None:
             raise ValueError("'command' and 'run' options are mutually exclusive")
 
-        self.args = None
-        self.path = None
-        self.command = None
-        if script is not None:
-            # Split the args from the script path
-            scriptParts = script.split(' ')
-            self.path = scriptParts[0]
-            if len(scriptParts) > 1:
-                self.args = ' '.join(scriptParts[1:])
-        elif command is not None:
-            # commands package their args into the script and have no additional args
-            self.command = command
+        self.args = args
+        self.path = script
+        self.command = command
 
+    @classmethod
+    def fromString(self, command, baseDir=pathlib.Path('.')):
+        """Construct a RunSpec from a string representing the script+args to run.
+
+        command: String representing the command to run, e.g. "./script.sh foo bar"
+        baseDir: Optional directory in which the script is to be found
+        """
+        scriptParts = command.split(' ')
+        return RunSpec(
+                script = (baseDir / scriptParts[0]).resolve(),
+                args = scriptParts[1:])
+
+    def __repr__(self):
+        return "RunSpec(" + \
+                ' path: ' + self.path + \
+                ', command: ' + self.command + \
+                ', args ' + str(self.args) + \
+                ')'
+
+    def __str__(self):
+        if self.command is not None:
+            return self.command
+        elif self.path is not None:
+            return str(self.path) + " " + ' '.join(self.args)
+        else:
+            return "uninitialized"
+    
 class Config(collections.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
@@ -160,19 +184,19 @@ class Config(collections.MutableMapping):
             
         cfgDir = None
         if 'cfg-file' in self.cfg:
-            cfgDir = os.path.dirname(self.cfg['cfg-file'])
-        else:
-            assert ('workdir' in self.cfg), "No workdir or cfg-file provided"
-            assert ( os.path.isabs(self.cfg['workdir'])), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
+            cfgDir = self.cfg['cfg-file'].parent
 
         # Some default values
         self.cfg['base-deps'] = []
 
         if 'workdir' in self.cfg:
-            if not os.path.isabs(self.cfg['workdir']): 
-                self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['workdir'])
+            self.cfg['workdir'] = pathlib.Path(self.cfg['workdir'])
+            if not self.cfg['workdir'].is_absolute():
+                assert('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
+                self.cfg['workdir'] = cfgDir / self.cfg['workdir']
         else:
-            self.cfg['workdir'] = os.path.join(cfgDir, self.cfg['name'])
+            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided" 
+            self.cfg['workdir'] = cfgDir / self.cfg['name']
 
         if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
@@ -181,8 +205,9 @@ class Config(collections.MutableMapping):
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
         for k in (set(configToAbs) & set(self.cfg.keys())):
-            if not os.path.isabs(self.cfg[k]):
-                self.cfg[k] = os.path.join(self.cfg['workdir'], self.cfg[k])
+            self.cfg[k] = pathlib.Path(self.cfg[k])
+            if not self.cfg[k].is_absolute():
+                self.cfg[k] = self.cfg['workdir'] / self.cfg[k]
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
@@ -193,18 +218,28 @@ class Config(collections.MutableMapping):
         if 'files' in self.cfg:
             fList = []
             for f in self.cfg['files']:
-                fList.append(FileSpec(src=os.path.join(self.cfg['workdir'], f[0]), dst=f[1]))
+                fList.append(FileSpec(src=self.cfg['workdir'] / f[0], dst=pathlib.Path(f[1])))
 
             self.cfg['files'] = fList
         
+        if 'outputs' in self.cfg:
+            self.cfg['outputs'] = [ pathlib.Path(f) for f in self.cfg['outputs'] ]
+
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
-            self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
+            self.cfg['runSpec'] = RunSpec.fromString(
+                    self.cfg['run'],
+                    baseDir=self.cfg['workdir'])
+
         elif 'command' in self.cfg:
             self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
 
-        if 'guest-init' in self.cfg:
-            self.cfg['guest-init'] = RunSpec(script=self.cfg['guest-init'])
+        # Handle script arguments
+        for sOpt in ['guest-init', 'post_run_hook', 'host-init']:
+            if sOpt in self.cfg:
+                self.cfg[sOpt] = RunSpec.fromString(
+                        self.cfg[sOpt],
+                        baseDir=self.cfg['workdir'])
 
         if 'mem' in self.cfg:
             self.cfg['mem'] = hf.parse_size(str(self.cfg['mem']))
@@ -231,7 +266,7 @@ class Config(collections.MutableMapping):
 
                 # jobs can base off any workload, but default to the current workload
                 if 'base' not in jCfg:
-                    jCfg['base'] = os.path.basename(cfgFile)
+                    jCfg['base'] = cfgFile.name
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
             
@@ -246,26 +281,26 @@ class Config(collections.MutableMapping):
         # config will not generate a new image if it's base didn't
         if 'img' in baseCfg:
             self.cfg['base-img'] = baseCfg['img']
-            self.cfg['base-deps'].append(self.cfg['base-img'])
-            self.cfg['img'] = os.path.join(image_dir, self.cfg['name'] + ".img")
+            self.cfg['base-deps'].append(str(self.cfg['base-img']))
+            self.cfg['img'] = getOpt('image-dir') / (self.cfg['name'] + ".img")
 
         if 'host-init' in baseCfg:
-            self.cfg['base-deps'].append(baseCfg['host-init'])
+            self.cfg['base-deps'].append(str(baseCfg['host-init']))
 
         if 'linux-src' not in self.cfg:
-            self.cfg['linux-src'] = linux_dir
+            self.cfg['linux-src'] = getOpt('linux-dir')
 
         # We inherit the parent's binary for bare-metal configs, but not linux configs
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
         if 'linux-config' in self.cfg or 'bin' not in self.cfg:
-            self.cfg['bin'] = os.path.join(image_dir, self.cfg['name'] + "-bin")
+            self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
 
         # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:
             self.cfg['launch'] = True
 
         if 'runSpec' not in self.cfg:
-            self.cfg['run'] = os.path.join(wlutil_dir, 'null_run.sh')
+            self.cfg['run'] = getOpt('wlutil-dir') / 'null_run.sh'
             self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
 
     # The following methods are needed by MutableMapping
@@ -309,7 +344,7 @@ class ConfigManager(collections.MutableMapping):
         
         if dirs != None:
             for d in dirs: 
-                for cfgFile in glob.iglob(os.path.join(d, "*.json")):
+                for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
 
         # First, load the base-configs specially. Note that these are indexed
@@ -322,20 +357,19 @@ class ConfigManager(collections.MutableMapping):
 
         # Read all the configs from their files
         for f in cfgPaths:
-            cfgName = os.path.basename(f)
+            cfgName = f.name
             try:
-                log.debug("Loading " + f)
+                log.debug("Loading " + str(f))
                 if cfgName in list(self.cfgs.keys()):
-                    log.warning("Workload " + f + " overrides " + self.cfgs[cfgName]['cfg-file'])
+                    log.warning("Workload " + str(f) + " overrides " + str(self.cfgs[cfgName]['cfg-file']))
                 self.cfgs[cfgName] = Config(f)
             except KeyError as e:
-                log.warning("Skipping " + f + ":")
+                log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
                 del self.cfgs[cfgName]
-                # raise
                 continue
             except Exception as e:
-                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("Skipping " + str(f) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
                 del self.cfgs[cfgName]
                 raise
@@ -346,19 +380,18 @@ class ConfigManager(collections.MutableMapping):
             try:
                 self._initializeFromBase(self.cfgs[f])
             except KeyError as e:
-                log.warning("Skipping " + f + ":")
+                log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
                 del self.cfgs[f]
-                # raise
                 continue
             except Exception as e:
-                log.warning("Skipping " + f + ": Unable to parse config:")
+                log.warning("Skipping " + str(f) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
                 del self.cfgs[f]
                 raise
                 continue
 
-            log.debug("Loaded " + f)
+            log.debug("Loaded " + str(f))
 
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.

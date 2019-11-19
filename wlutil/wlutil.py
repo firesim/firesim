@@ -15,77 +15,25 @@ import json
 import hashlib
 import humanfriendly
 from contextlib import contextmanager
-
-#------------------------------------------------------------------------------
-# Root Directories:
-# wlutil_dir and root_dir are the two roots for wlutil, all other paths are
-# derived from these two values. They must work, even when FireMarshal/ is a symlink.
-#------------------------------------------------------------------------------
-# Root for wlutil library
-wlutil_dir = pathlib.Path(__file__).parent.resolve()
-
-# Root for firemarshal (e.g. firesim-software/)
-root_dir = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
-
-#------------------------------------------------------------------------------
-# Derived Paths
-#------------------------------------------------------------------------------
-# Root for default board (platform-specific stuff)
-board_dir = pathlib.Path(root_dir) / 'boards' / 'firechip'
-
-# Builtin workloads
-workdir_builtin = board_dir / 'base-workloads'
-
-# Stores all outputs (binaries and images)
-image_dir = os.path.join(root_dir, "images")
-
-# Default linux source
-linux_dir = os.path.join(root_dir, "riscv-linux")
-
-# Default pk source
-pk_dir = root_dir / 'riscv-pk'
-
-# Busybox source directory (used for the initramfs)
-busybox_dir = wlutil_dir / 'busybox'
-
-# Initramfs root directory (used to build default initramfs for loading board drivers)
-initramfs_dir = pathlib.Path(os.path.join(wlutil_dir, "initramfs"))
-
-# Storage for generated/temporary outputs
-gen_dir = wlutil_dir / "generated"
-
-# Runtime Logs
-log_dir = os.path.join(root_dir, "logs")
-
-# SW-simulation outputs
-res_dir = os.path.join(root_dir, "runOutput")
-
-# Empty directory used for mounting images
-mnt = os.path.join(root_dir, "disk-mount")
-
-# Basic template for user-specified commands (the "command:" option) 
-commandScript = gen_dir / "_command.sh"
-
-# Default parallelism level to use in subcommands (mostly when calling 'make')
-jlevel = "-j" + str(os.cpu_count())
-
-# Gets set uniquely for each logical invocation of this library
-runName = ""
-
-# Number of extra bytes to leave free by default in filesystem images
-rootfsMargin = 256*(1024*1024)
+import yaml
+import re
+import pprint
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
 
+# Global configuration (marshalCtx set by initialize())
+ctx = None
+
 # List of marshal submodules (those enabled by init-submodules.sh)
 marshalSubmods = [
-        linux_dir,
-        pk_dir,
-        busybox_dir,
-        wlutil_dir / 'br' / 'buildroot'] + \
-        list(board_dir.glob("drivers/*"))
-        
+        'linux-dir',
+        'pk-dir',
+        'busybox-dir',
+        'buildroot-dir',
+        'driver-dirs'
+        ]
+
 class SubmoduleError(Exception):
     """Error representing a nonexistent or uninitialized submodule"""
     def __init__(self, path):
@@ -95,7 +43,7 @@ class SubmoduleError(Exception):
         return 'Submodule Error: ' + self.__str__()
 
     def __str__(self):
-        if self.path in marshalSubmods:
+        if self.path in [ ctx[opt] for opt in marshalSubmods ]:
             return 'Marshal submodule "' + str(self.path) + \
                     '" not initialized. Please run "./init-submodules.sh."'
         else:
@@ -114,43 +62,298 @@ class RootfsCapacityError(Exception):
                 "\tRequested: " + humanfriendly.format_size(self.requested) + \
                 "\tAvailable: " + humanfriendly.format_size(self.available)
 
+class ConfigurationError(Exception):
+    """Error representing a generic problem with configuration"""
+    def __init__(self, cause):
+        self.cause = cause
+
+    def __str__(self):
+        return "Configuration Error: " + cause
+
+class ConfigurationOptionError(ConfigurationError):
+    """Error representing a problem with marshal configuration."""
+    def __init__(self, opt, cause):
+        self.opt = opt
+        self.cause = cause
+
+    def __str__(self):
+        return "Error with configuration option '" + self.opt + "': " + str(self.cause)
+        
+class ConfigurationFileError(ConfigurationError):
+    """Error representing issues with loading the configuration"""
+    def __init__(self, missingFile, cause):
+        self.missingFile = missingFile
+        self.cause = cause
+
+    def __str__(self):
+        return "Failed to load configuration file: " + str(self.missingFile) + "\n" + \
+                str(self.cause)
+
+def cleanPaths(opts, baseDir=pathlib.Path('.')):
+    """Clean all user-defined paths in an options dictionary by converting them
+    to resolved, absolute, pathlib.Path's. Paths will be interpreted as
+    relative to baseDir."""
+
+    # These options represent pathlib paths
+    pathOpts = [
+        'board-dir',
+        'image-dir',
+        'linux-dir',
+        'pk-dir',
+        'log-dir',
+        'res-dir'
+    ]
+
+    for opt in pathOpts:
+        if opt in opts:
+            try:
+                path = (baseDir / pathlib.Path(opts[opt])).resolve(strict=True)
+                opts[opt] = path
+            except Exception as e:
+                raise ConfigurationOptionError(opt, "Invalid path: " + str(e))
+
+# These represent all available user-defined options (those set by the
+# environment or config files). See default-config.yaml or the documentation
+# for the meaning of these options.
+userOpts = [
+        'board-dir',
+        'image-dir',
+        'linux-dir',
+        'pk-dir',
+        'log-dir',
+        'res-dir',
+        'jlevel',  # int or str from user, converted to '-jN' after loading
+        'rootfs-margin' # int or str from user, converted to int bytes after loading
+        ]
+
+# These represent all available derived options (constants and those generated
+# from userOpts, but not directly settable by users)
+derivedOpts = [
+        # Root for firemarshal (e.g. FireMarshal/)
+        'root-dir',
+
+        # Root for wlutil library
+        'wlutil-dir',
+
+        # Builtin workloads (the board's bases)
+        'workdir-builtin',
+
+        # Busybox source directory (used for the initramfs)
+        'busybox-dir',
+
+        # Initramfs root directory (used to build default initramfs for loading board drivers)
+        'initramfs-dir',
+
+        # Storage for generated/temporary outputs
+        'gen-dir',
+
+        # Empty directory used for mounting images
+        'mnt-dir',
+
+        # Path to basic template for user-specified commands (the "command:" option) 
+        'command-script',
+
+        # Gets set uniquely for each logical invocation of this library
+        'run-name',
+
+        # List of paths to linux driver sources to use
+        'driver-dirs',
+
+        # Buildroot source directory
+        'buildroot-dir'
+        ]
+
+class marshalCtx(collections.MutableMapping):
+    """Global FireMarshal context (configuration)."""
+    
+    # Actual internal storage for all options
+    opts = {}
+
+    def __init__(self):
+        """On init, we search for and load all sources of options.
+
+        The order in which options are added here is the order of precidence.
+        
+        Attributes:
+            opts: Dictonary containing all configuration options (static values
+                set by the user or statically derived from those). Option
+                values are documented in the package variables 'derivedOpts' and
+                'userOpts'
+        """
+
+        # These are set early to help with config file search-paths
+        self['wlutil-dir'] = pathlib.Path(__file__).parent.resolve()
+        self['root-dir'] = pathlib.Path(sys.modules['__main__'].__file__).parent.resolve()
+
+        # This is an exhaustive list of defaults, it always exists and can be
+        # overwritten by other user-defined configs
+        defaultCfg = self['wlutil-dir'] / 'default-config.yaml'
+        self.addPath(defaultCfg)
+        
+        # These are mutually-exlusive search paths (only one will be loaded)
+        cfgSources = [
+            # pwd
+            pathlib.Path('marshal-config.yaml'),
+            # next to the marshal executable
+            self['root-dir'] / 'marshal-config.yaml'
+        ]
+        for src in cfgSources:
+            if src.exists():
+                self.addPath(src)
+                break
+
+        self.addEnv()
+
+        # We should have all user-defined options now
+        missingOpts = set(userOpts) - set(self.opts)
+        if len(missingOpts) != 0:
+            raise ConfigurationError("Missing required options: " + str(missingOpts))
+
+        self.deriveOpts()
+
+        # It would be a marshal bug if any of these options are missing
+        missingDOpts = set(derivedOpts) - set(self.opts)
+        if len(missingDOpts) != 0:
+            raise RuntimeError("Internal error: Missing derived options or constants: " + str(missingDOpts))
+
+    def add(self, newOpts):
+        """Add options to this configuration, opts will override any
+        conflicting options.
+        
+        newOpts: dictionary containing new options to add"""
+        
+        self.opts = dict(self.opts, **newOpts)
+        
+    def addPath(self, path):
+        """Add the yaml file at path to the config."""
+
+        try:
+            with open(path, 'r') as newF:
+                newCfg = yaml.full_load(newF)
+        except Exception as e:
+            raise ConfigurationFileError(path, e)
+
+        cleanPaths(newCfg, baseDir=path.parent)
+        self.add(newCfg)
+
+    def addEnv(self):
+        """Find all marshal options in the environment and load them.
+        
+        Environment options take the form MARSHAL_OPT where "OPT" will be
+        converted as follows:
+            1) convert to lower-case
+            2) all underscores will be replaced with dashes
+
+        For example MARSHAL_LINUX_DIR=../special/linux would add a ('linux-dir'
+        : '../special/linux') option to the config."""
+
+        reOpt = re.compile("^MARSHAL_(\S+)")
+        envCfg = {}
+        for opt,val in os.environ.items():
+            match = reOpt.match(opt)
+            if match:
+                optName = match.group(1).lower().replace('_', '-')
+                envCfg[optName] = val
+
+        cleanPaths(envCfg)
+        self.add(envCfg)
+
+    def deriveOpts(self):
+        """Update or initialize all derived options. This assumes all
+        user-defined options have been set already. See the 'derivedOpts' list
+        above for documentation of these options."""
+
+        self['workdir-builtin'] = self['board-dir'] / 'base-workloads'
+        self['busybox-dir'] = self['wlutil-dir'] / 'busybox'
+        self['initramfs-dir'] = self['wlutil-dir'] / "initramfs"
+        self['gen-dir'] = self['wlutil-dir'] / "generated"
+        self['mnt-dir'] = self['root-dir'] / "disk-mount"
+        self['command-script'] = self['gen-dir'] / "_command.sh"
+        self['run-name'] = ""
+        self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
+        self['jlevel'] = '-j' + str(self['jlevel'])
+        self['driver-dirs'] = self['board-dir'].glob('drivers/*')
+        self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
+
+    def setRunName(self, configPath, operation):
+        """Helper function for formatting a  unique run name. You are free to
+        set the 'run-name' option directly if you don't need the help.
+
+        Args:
+            configPath (pathlike): Config file used for this run
+            operation (str): The operation being performed on this run (e.g. 'build') 
+        """
+
+        if configPath:
+            configName = pathlib.Path(configPath).stem
+        else:
+            configName = ''
+
+        timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
+        randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+
+        runName = configName + \
+                "-" + operation + \
+                "-" + timeline + \
+                "-" +  randname
+
+        self['run-name'] = runName
+
+    # The following methods are needed by MutableMapping
+    def __getitem__(self, key):
+        if key not in self.opts:
+            raise ConfigurationOptionError(key, 'No such option')
+
+        return self.opts[key]
+
+    def __setitem__(self, key, value):
+        self.opts[key] = value
+
+    def __delitem__(self, key):
+        del self.opts[key]
+
+    def __iter__(self):
+        return iter(self.opts)
+
+    def __len__(self):
+        return len(self.opts)
+
+    def __str__(self):
+        return pprint.pformat(self.opts)
+
+    def __repr__(self):
+        return repr(self.opts)
+
 def initialize():
     """Get wlutil ready to use. Must be called at least once per installation.
     Is safe and fast to call every time you load the library."""
-    log = logging.getLogger()
 
-    pathlib.Path(mnt).mkdir(parents=True, exist_ok=True)
+    global ctx
+    ctx = marshalCtx()
+
+    ctx['mnt-dir'].mkdir(parents=True, exist_ok=True)
 
     # Directories that must be initialized for disk-based initramfs
     initramfs_disk_dirs = ["bin", 'dev', 'etc', 'proc', 'root', 'sbin', 'sys', 'usr/bin', 'usr/sbin', 'mnt/root']
 
     # Setup disk initramfs dirs
     for d in initramfs_disk_dirs:
-        if not (initramfs_dir / 'disk' / d).exists():
-            (initramfs_dir / 'disk' / d).mkdir(parents=True)
+        if not (ctx['initramfs-dir'] / 'disk' / d).exists():
+            (ctx['initramfs-dir'] / 'disk' / d).mkdir(parents=True)
 
-# Create a unique run name. You can call this multiple times to reset internal
-# paths (e.g. for starting a logically different run). The run name controls
-# where logging and workload outputs go. You must call initLogging again to
-# reset logging after changing setRunName.
-def setRunName(configPath, operation):
-    global runName
+def getCtx():
+    """Return the global confguration object (ctx). This is only valid after
+    calling initialize().
     
-    timeline = time.strftime("%Y-%m-%d--%H-%M-%S", time.gmtime())
-    randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+    Returns (marshalCtx)
+    """ 
+    return ctx
 
-    if configPath:
-        configName = os.path.splitext(os.path.basename(configPath))[0]
+def getOpt(opt):
+    if ctx is None:
+        raise RuntimeError("wlutil context not initized")
     else:
-        configName = ''
-
-    runName = configName + \
-            "-" + operation + \
-            "-" + timeline + \
-            "-" +  randname
-
-def getRunName():
-    return runName
+        return ctx[opt]
 
 # logging setup: You can call this multiple times to reset logging (e.g. if you
 # change the RunName)
@@ -164,7 +367,7 @@ def initLogging(verbose):
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
     # Create a unique log name
-    logPath = os.path.join(log_dir, getRunName() + ".log")
+    logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
     
     # formatting for log to file
     if fileHandler is not None:
@@ -216,12 +419,12 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
     return p
 
 def genRunScript(command):
-    with open(commandScript, 'w') as s:
+    with open(getOpt('command-script'), 'w') as s:
         s.write("#!/bin/bash\n")
         s.write(command + "\n")
         s.write("sync; poweroff -f\n")
 
-    return commandScript
+    return getOpt('command-script')
 
 # This is like os.waitpid, but it works for non-child processes
 def waitpid(pid):
@@ -277,8 +480,8 @@ def toCpio(src, dst):
 def applyOverlay(img, overlay):
     log = logging.getLogger()
     flist = []
-    for f in pathlib.Path(overlay).glob('*'):
-        flist.append(FileSpec(src=f, dst='/'))
+    for f in overlay.glob('*'):
+        flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
 
     copyImgFiles(img, flist, 'in')
     
@@ -287,7 +490,7 @@ def resizeFS(img, newSize=0):
 
     img: path to image file to resize
     newSize: desired size (in bytes). If 0, shrink the image to its minimum
-      size + rootfsMargin
+      size + rootfs-margin
     """
     log = logging.getLogger()
     chkfsCmd = ['e2fsck', '-f', '-p', str(img)]
@@ -298,7 +501,7 @@ def resizeFS(img, newSize=0):
 
     if newSize == 0:
         run(['resize2fs', '-M', img])
-        newSize = os.path.getsize(img) + rootfsMargin
+        newSize = os.path.getsize(img) + getOpt('rootfs-margin')
 
     origSz = os.path.getsize(img)
     if origSz > newSize:
@@ -322,13 +525,15 @@ def copyImgFiles(img, files, direction):
     """
     log = logging.getLogger()
 
-    with mountImg(img, mnt):
+    with mountImg(img, getOpt('mnt-dir')):
         for f in files:
             if direction == 'in':
-                run(sudoCmd + ['cp', '-a', str(f.src), os.path.normpath(mnt + f.dst)])
+                dst = str(getOpt('mnt-dir') / f.dst.relative_to('/'))
+                run(sudoCmd + ['cp', '-a', str(f.src), dst])
             elif direction == 'out':
                 uid = os.getuid()
-                run(sudoCmd + ['cp', '-a', os.path.normpath(mnt + f.src), f.dst])
+                src = str(getOpt('mnt-dir') / f.src.relative_to('/'))
+                run(sudoCmd + ['cp', '-a', src, str(f.dst)])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
 
@@ -477,3 +682,6 @@ class config_changed(object):
         if last_success is None:
             return False
         return (last_success == self.config_digest)
+
+def noDiskPath(path):
+    return path.parent / (path.name + '-nodisk')
