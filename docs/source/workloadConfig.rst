@@ -16,7 +16,7 @@ a 2-node workload that runs two benchmarks: quicksort and spam-filtering. This
 will require installing a number of packages on Fedora, as well as
 cross-compiling some code. The configuration is as follows:
 
-.. include:: ../../workloads/example-fed.json
+.. include:: ../../example-workloads/example-fed.json
   :code: json
 
 The ``name`` field is required and (by convention) should match the name of the
@@ -37,7 +37,7 @@ is a script that should be run on the host before building. In our case, it
 cross-compiles the quicksort benchmark (cross-compilation is much faster than
 natively compiling).
 
-.. include:: ../../workloads/example-fed/host-init.sh
+.. include:: ../../example-workloads/example-fed/host-init.sh
   :code: bash
 
 Next is ``guest-init``, this script should run exactly once natively within our
@@ -49,7 +49,7 @@ or interact at all, the guest-init script will run in the background. Note that
 guest-init.sh ends with a ``poweroff`` command, all guest-init scripts should
 include this (leave it off to debug the build process).
 
-.. include:: ../../workloads/example-fed/guest-init.sh
+.. include:: ../../example-workloads/example-fed/guest-init.sh
   :code: bash
 
 Finally, we specify the two jobs that will run on each simulated node. Job
@@ -65,7 +65,7 @@ each benchmark, collecting some statistics along the way, and then shutdown.
 Finishing a run script with ``poweroff`` is a common pattern that allows
 workloads to run automatically (no need to log-in or interact at all).
 
-.. include:: ../../workloads/example-fed/runQsort.sh
+.. include:: ../../example-workloads/example-fed/runQsort.sh
   :code: bash
 
 We can now build and launch this workload:
