@@ -16,11 +16,18 @@ class AutoCounterBundle(val numCounters: Int) extends Bundle {
   val counters = Input(Vec(numCounters, UInt(64.W)))
 }
 
+case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[String, String])
 
-class AutoCounterBridgeModule(numCounters: Int, labels: scala.collection.mutable.Map[String, String])(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
+//class AutoCounterBridgeModule(numCounters: Int, labels: scala.collection.mutable.Map[String, String])(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
+class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
+
+  val numCounters = constructorArg.numcounters
+  val labels = constructorArg.autoCounterPortsMap
+
   val io = IO(new WidgetIO())
   val hPort = IO(Flipped(HostPort(new AutoCounterBundle(numCounters))))
   val cycles = RegInit(0.U(64.W))
+
 
 
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid)

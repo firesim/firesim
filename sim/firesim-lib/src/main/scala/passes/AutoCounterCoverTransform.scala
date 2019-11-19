@@ -217,7 +217,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      import chisel3.experimental.MultiIOModule
      import midas.widgets._
      import freechips.rocketchip.config.{Parameters, Field}
-     import firesim.bridges.{AutoCounterBundle, AutoCounterBridgeModule}
+     import firesim.bridges.{AutoCounterBundle, AutoCounterBridgeModule, AutoCounterBridgeConstArgs}
 
      //def targetwidgetmodule() = new BlackBox with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
      def targetwidgetmodule() = new MultiIOModule with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
@@ -226,7 +226,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
        val bridgeIO = HostPort(io)
        chisel3.core.dontTouch(io)
 
-       case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[String, String])
+       //case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[String, String])
 
        val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterPortsMap)) 
  
