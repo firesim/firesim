@@ -131,7 +131,7 @@ class Builder:
             # symlink to disable the firesim target entirely
             scriptDst.touch()
         
-        scriptDst.chmod(0o777)
+        scriptDst.chmod(0o755)
 
         with open(overlay / 'etc/init.d/S99run', 'w') as f:
             if args == None:

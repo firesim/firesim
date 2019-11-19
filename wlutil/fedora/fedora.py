@@ -63,7 +63,7 @@ class Builder:
             # symlink to disable the firesim target entirely
             scriptDst.touch()
         
-        scriptDst.chmod(0o777)
+        scriptDst.chmod(0o755)
 
         # Create the service script
         if args is None:
