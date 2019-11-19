@@ -22,5 +22,7 @@ help:
 # SSH port forwarding:
 #     ssh -L 8000:localhost:8000 HOST
 # where HOST is the server actually hosting the docs
+.PHONY: server
 server: html
-	python3 -m http.server -d build/html/
+	cd build/html; \
+	python3 -m http.server
