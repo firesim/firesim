@@ -40,7 +40,7 @@ class NICBridge(implicit p: Parameters) extends BlackBox with Bridge[HostPortIO[
 object NICBridge {
   def apply(clock: Clock, nicIO: NICIOvonly)(implicit p: Parameters): NICBridge = {
     val ep = Module(new NICBridge)
-    ep.io <> nicIO
+    ep.io.nic <> nicIO
     ep.io.clock := clock
     ep
   }
@@ -184,7 +184,7 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
 class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICTargetIO]]()(p)
     with BidirectionalDMA {
   val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(Flipped(new NICTargetIO)))
+  val hPort = IO(HostPort(new NICTargetIO))
   // DMA mixin parameters
   lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
   lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
