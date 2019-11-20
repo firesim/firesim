@@ -3,10 +3,22 @@ module BUFGCE(
   input      CE,
   output reg O
 );
-  /* verilator lint_off COMBDLY */
-  reg enable;
-  always @(posedge I)
-    enable <= CE;
-  assign O = (I & enable);
-  /* verilator lint_on COMBDLY */
+   reg       enable_latch;
+   always @(posedge I)
+     enable_latch <= CE;
+`ifdef VERILATOR
+   // Verilator doesn't like procedural clock gates
+   // They cause combinational loop errors and UNOPT_FLAT
+   assign O = (I & enable_latch);
+`else
+   // VCS doesn't like the Verilator clock gate
+   // Delays clock edge too much when CE is a register
+   // Blocking assignment makes behavior deterministic
+   always @(posedge I or negedge I) begin
+     if (CE)
+       O = I;
+     else
+       O = 0;
+   end
+`endif
 endmodule
