@@ -150,7 +150,7 @@ object FAMEModuleTransformer {
         val clockFlag = tokenizeClockRef(clockRef)
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
         (cName, clockFlag, ports, firedReg)
-      case (cName, (None, ports)) => ??? // clock is mandatory for now
+      case (cName, (None, ports)) => throw new RuntimeException(s"Channel ${cName} has no associated clock port.")
     }
 
     // LinkedHashMap.from is 2.13-only :(
