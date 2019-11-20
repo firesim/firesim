@@ -159,11 +159,12 @@ trait HasChannels {
       }})
 
       annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
         val readyTarget = Seq(field.ready.toNamed.toTarget)
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.implicitlyClockedSink(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
         } else {
-          FAMEChannelConnectionAnnotation.implicitlyClockedSource(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
         }
       }})
     }
