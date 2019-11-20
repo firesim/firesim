@@ -15,17 +15,16 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(
-    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map) : bridge_driver_t(sim)
+    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map) : bridge_driver_t(sim), addr_map(addr_map)
 {
     this->mmio_addrs = mmio_addrs;
-    this->addr_map = addr_map;
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename = NULL;
-    std::string num_equals = std::to_string(coreno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-read-rate") + num_equals;
-    std::string filename_arg =        std::string("+autocounter-filename") + num_equals;
+    //std::string num_equals = std::to_string(coreno) + std::string("=");
+    std::string readrate_arg =        std::string("+autocounter-read-rate");
+    std::string filename_arg =        std::string("+autocounter-filename");
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
@@ -40,7 +39,8 @@ autocounter_t::autocounter_t(
 
     autocounter_file.open(autocounter_filename, std::ofstream::out);
     if(!autocounter_file.is_open()) {
-      throw std::runtime_error("Could not open output file: " + autocounter_filename);
+      throw std::runtime_error("Could not open autocounter output file\n");
+      //throw std::runtime_error("Could not open output file: " + autocounter_filename);
     }
 }
 
@@ -56,15 +56,15 @@ void autocounter_t::init() {
 
 void autocounter_t::tick() {
   //read(this->mmio_addrs->in_ready);
-  cur_cycle = read(this->mmio_addrs->cycle_low);
-  cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycle_high)) << 32;
+  cur_cycle = read(this->mmio_addrs->cycles_low);
+  cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
   if ((cur_cycle / readrate) > readrate_count) {
-    autocounter_file << "Cycle " << cur_cycle << endl;
-    autocounter_file << "============================" << endl;
+    autocounter_file << "Cycle " << cur_cycle << std::endl;
+    autocounter_file << "============================" << std::endl;
     for (auto pair: addr_map.r_registers) {
       // Print just read-only registers
       if (!addr_map.w_reg_exists((pair.first))) {
-        autocounter_file << "PerfCounter " << pair.first << ": " pair.second<< endl;
+        autocounter_file << "PerfCounter " << pair.first << ": " << pair.second<< std::endl;
       }
     }
     readrate_count++;

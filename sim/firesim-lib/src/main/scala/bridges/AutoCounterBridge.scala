@@ -25,12 +25,12 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   val labels = constructorArg.autoCounterPortsMap
 
   val io = IO(new WidgetIO())
-  val hPort = IO(Flipped(HostPort(new AutoCounterBundle(numCounters))))
+  val hPort = IO(HostPort(new AutoCounterBundle(numCounters)))
   val cycles = RegInit(0.U(64.W))
 
 
 
-  val tFireHelper = DecoupledHelper(hPort.toHost.hValid)
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady)
   val targetFire = tFireHelper.fire()
   hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
   // We only sink tokens, so tie off the return channel

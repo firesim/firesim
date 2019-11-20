@@ -2,6 +2,7 @@
 #define __AUTOCOUNTER_H
 
 #include "bridges/bridge_driver.h"
+#include "bridges/address_map.h"
 #include <vector>
 #include <fstream>
 
@@ -9,7 +10,7 @@
 #define NUM_CORES 1
 
 #ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
-class autocounter_t: public bridge_driver_t
+class autocounter_t: public bridge_driver_t {
     public:
         autocounter_t(simif_t *sim, std::vector<std::string> &args,
         AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map);
