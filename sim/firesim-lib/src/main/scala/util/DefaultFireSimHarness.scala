@@ -10,7 +10,7 @@ import freechips.rocketchip.diplomacy.{LazyModule}
 
 import firesim.bridges._
 import firesim.configs.MemModelKey
-import midas.widgets.{Bridge, PeekPokeBridge}
+import midas.widgets.{Bridge, PeekPokeBridge, RationalClockBridge}
 
 // Creates a wrapper FireSim harness module that instantiates bridges based
 // on the scala type of the Target (_not_ its IO). This avoids needing to
@@ -41,7 +41,7 @@ class WithNumNodes(n: Int) extends Config((pname, site, here) => {
 })
 
 class DefaultFireSimHarness[T <: LazyModule](dutGen: () => T)(implicit val p: Parameters) extends RawModule {
-  val clock = IO(Input(Clock()))
+  val clock = Module(new RationalClockBridge(1000)).io.clocks.head
   val reset = WireInit(false.B)
   withClockAndReset(clock, reset) {
     // Instantiate multiple instances of the DUT to implement supernode
