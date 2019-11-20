@@ -20,7 +20,7 @@ import java.io.{File, FileWriter, StringWriter}
 // to an Bridge BlackBox
 case class TargetMalformedException(message: String) extends RuntimeException(message)
 
-private[passes] class EnsureNoTargetIO extends firrtl.Transform {
+private[passes] object EnsureNoTargetIO extends firrtl.Transform {
   def inputForm = HighForm
   def outputForm = HighForm
   override def name = "[MIDAS] Ensure No Target IO"
