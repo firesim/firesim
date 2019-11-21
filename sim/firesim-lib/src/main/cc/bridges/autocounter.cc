@@ -50,6 +50,7 @@ autocounter_t::~autocounter_t() {
 
 void autocounter_t::init() {
     cur_cycle = 0;
+    cur_cycle_since_trigger = 0;
     readrate_count = 0;
 }
 
@@ -58,7 +59,9 @@ void autocounter_t::tick() {
   //read(this->mmio_addrs->in_ready);
   cur_cycle = read(this->mmio_addrs->cycles_low);
   cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
-  if ((cur_cycle / readrate) > readrate_count) {
+  cur_cycle_since_trigger = read(this->mmio_addrs->cycles_since_trigger_low);
+  cur_cycle_since_trigger |= ((uint64_t)read(this->mmio_addrs->cycles_since_trigger_high)) << 32;
+  if ((cur_cycle_since_trigger / readrate) > readrate_count) {
     autocounter_file << "Cycle " << cur_cycle << std::endl;
     autocounter_file << "============================" << std::endl;
     for (auto pair: addr_map.r_registers) {
@@ -79,6 +82,7 @@ void autocounter_t::tick() {
 
     }
     readrate_count++;
+    autocounter_file << "" << std::endl;
   }
 }
 
