@@ -71,7 +71,7 @@ void autocounter_t::tick() {
         if (pair.first.find("autocounter_low_") == 0) {
           char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
           std::string countername(str);
-          uint64_t coutner_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
+          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
           counter_val |= read(pair.second);
           autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
         }
