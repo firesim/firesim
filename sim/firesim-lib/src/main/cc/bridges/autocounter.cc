@@ -23,8 +23,8 @@ autocounter_t::autocounter_t(
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename = NULL;
     //std::string num_equals = std::to_string(coreno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-read-rate");
-    std::string filename_arg =        std::string("+autocounter-filename");
+    std::string readrate_arg =        std::string("+autocounter-read-rate=");
+    std::string filename_arg =        std::string("+autocounter-filename=");
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
@@ -67,7 +67,7 @@ void autocounter_t::tick() {
       std::string high_prefix = std::string("autocounter_high_");
 
       // Print just read-only registers
-      if (!addr_map.w_reg_exists((pair.first))) {
+      //if (!addr_map.w_reg_exists((pair.first))) {
         if (pair.first.find("autocounter_low_") == 0) {
           char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
           std::string countername(str);
@@ -75,14 +75,8 @@ void autocounter_t::tick() {
           counter_val |= read(pair.second);
           autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
         }
-      }
+      //}
 
-/*
-      // Print just read-only registers
-      if (!addr_map.w_reg_exists((pair.first))) {
-        autocounter_file << "PerfCounter " << pair.first << ": " << pair.second<< std::endl;
-      }
-*/
     }
     readrate_count++;
   }
