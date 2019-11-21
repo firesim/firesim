@@ -62,10 +62,27 @@ void autocounter_t::tick() {
     autocounter_file << "Cycle " << cur_cycle << std::endl;
     autocounter_file << "============================" << std::endl;
     for (auto pair: addr_map.r_registers) {
+
+      std::string low_prefix = std::string("autocounter_low_");
+      std::string high_prefix = std::string("autocounter_high_");
+
+      // Print just read-only registers
+      if (!addr_map.w_reg_exists((pair.first))) {
+        if (pair.first.find("autocounter_low_") == 0) {
+          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
+          std::string countername(str);
+          uint64_t upper = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
+          uint64_t counter_val = upper | read(pair.second);
+          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
+        }
+      }
+
+/*
       // Print just read-only registers
       if (!addr_map.w_reg_exists((pair.first))) {
         autocounter_file << "PerfCounter " << pair.first << ": " << pair.second<< std::endl;
       }
+*/
     }
     readrate_count++;
   }

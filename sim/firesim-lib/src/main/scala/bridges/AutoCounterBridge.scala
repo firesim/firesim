@@ -41,8 +41,8 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
   labels.keys.zip(hPort.hBits.counters).foreach {
     case(label, counter) => {
-      genROReg(counter(31, 0), s"${label}_counter_low")
-      genROReg(counter >> 32, s"${label}_counter_high")
+      genROReg(counter(31, 0), s"autocounter_low_${label}")
+      genROReg(counter >> 32, s"autocounter_high_${label}")
     }
   }
 
