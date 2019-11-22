@@ -7,7 +7,7 @@ module BUFGCE(
    always @(posedge I)
      enable_latch <= CE;
 `ifdef VERILATOR
-   // Verilator doesn't like procedural clock gates
+   // Note: Verilator doesn't like procedural clock gates
    // They cause combinational loop errors and UNOPT_FLAT
    assign O = (I & enable_latch);
 `else
