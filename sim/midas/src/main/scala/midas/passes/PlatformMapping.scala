@@ -5,6 +5,7 @@ package passes
 
 import firrtl._
 import firrtl.annotations.{CircuitName}
+import firrtl.passes.wiring._
 import firrtl.ir._
 import firrtl.Mappers._
 import Utils._
@@ -77,6 +78,7 @@ private[passes] class PlatformMapping(
     val chirrtl = Parser.parse(chisel3.Driver.emit(shimCircuit))
     val shimAnnos = shimCircuit.annotations.map(_.toFirrtl)
     val transforms = Seq(new Fame1Instances,
+                         new WiringTransform,
                          new PreLinkRenaming(Namespace(c.circuit)))
     val shimCircuitState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, shimAnnos), transforms)
 
