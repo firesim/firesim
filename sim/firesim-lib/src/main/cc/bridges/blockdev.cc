@@ -24,6 +24,8 @@
  * number of sectors to pass to widget */
 blockdev_t::blockdev_t(simif_t* sim, const std::vector<std::string>& args, uint32_t num_trackers, uint32_t latency_bits, BLOCKDEVBRIDGEMODULE_struct * mmio_addrs, int blkdevno): bridge_driver_t(sim) {
     this->mmio_addrs = mmio_addrs;
+    this->_file = NULL;
+    this->logfile = NULL;
     _ntags = num_trackers;
     long size;
     long mem_filesize = 0;
