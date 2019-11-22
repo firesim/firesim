@@ -47,7 +47,7 @@ conditions:
 By default, TracerV does not use a trigger, hence data collection starts at cycle 0 and ends at
 the last cycle of the simulation. To change this, modify the following under
 the "tracing" section of your ``config_runtime.ini``.
-Use the `selector` field to choose the type of trigger, and there use the `start` and `end` fields
+Use the ``selector`` field to choose the type of trigger, and there use the ``start`` and ``end`` fields
 to select the start and end values for the trigger.
 
 .. code-block:: ini
