@@ -35,7 +35,7 @@ class FireSimTopologyWithPasses:
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
                  defaultnetbandwidth, defaultprofileinterval,
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
-                 terminateoncompletion):
+                 defaultautocounterreadrate, terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -52,6 +52,7 @@ class FireSimTopologyWithPasses:
         self.defaulttraceselect = defaulttraceselect
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
+        self.defaultautocounterreadrate = defaultautocounterreadrate
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -303,6 +304,8 @@ class FireSimTopologyWithPasses:
                     node.trace_start = self.defaulttracestart
                 if node.trace_end is None:
                     node.trace_end = self.defaulttraceend
+                if node.autocounter_readrate is None:
+                    node.autocounter_readrate = self.defaultautocounterreadrate
 
     def pass_assign_jobs(self):
         """ assign jobs to simulations. """

@@ -23,7 +23,7 @@ autocounter_t::autocounter_t(
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename = NULL;
     //std::string num_equals = std::to_string(coreno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-read-rate=");
+    std::string readrate_arg =        std::string("+autocounter-readrate=");
     std::string filename_arg =        std::string("+autocounter-filename=");
 
     for (auto &arg: args) {

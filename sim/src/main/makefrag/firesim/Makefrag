@@ -75,10 +75,11 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile0=TRACEFILE
+autocounter_args = +autocounter-filename0=AUTOCOUNTERFILE
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args)
+COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
