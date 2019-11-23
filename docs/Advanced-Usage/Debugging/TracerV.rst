@@ -51,14 +51,15 @@ Use the ``selector`` field to choose the type of trigger, and there use the ``st
 to select the start and end values for the trigger.
 
 .. code-block:: ini
+   [tracing]
    #trigger selector
    #0 = no trigger
    #1 = cycle count trigger
    #2 = program counter trigger
    #3 = instruction trigger
    selector=1
-   startcycle=XXXX
-   endcycle=YYYY
+   start=XXXX
+   end=YYYY
 
 
 Interpreting the Trace Result

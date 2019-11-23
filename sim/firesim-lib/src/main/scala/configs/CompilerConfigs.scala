@@ -60,6 +60,11 @@ class WithAutoCounterCover extends Config((site, here, up) => {
   case TargetTransforms => ((p: Parameters) => Seq(new firesim.passes.AutoCounterCoverTransform)) +: up(TargetTransforms, site)
 })
 
+class WithAutoCounterCoverPrintf extends Config((site, here, up) => {
+  case midas.SynthAsserts => true
+  case TargetTransforms => ((p: Parameters) => Seq(new firesim.passes.AutoCounterCoverTransform(printcounter = true))) +: up(TargetTransforms, site)
+})
+
 class BaseF1Config extends Config(
   new WithAsyncResetReplacement ++
   new WithPlusArgReaderRemoval ++

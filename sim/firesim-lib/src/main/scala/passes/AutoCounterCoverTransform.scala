@@ -381,7 +381,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     //1. Using an input file called `covermodules.txt` in a directory declared in the transform concstructor
     //2. Using chisel annotations to be added in the Platform Config (in SimConfigs.scala). The annotations are
     //   of the form AutoCounterModuleAnnotation("ModuleName")
-    val modulesfile = new File(dir,"covermodules.txt")
+    val modulesfile = new File(dir,"autocounter-covermodules.txt")
     val filemoduleannos = mutable.ArrayBuffer.empty[AutoCounterCoverModuleAnnotation]
     if (modulesfile.exists()) {
       val sourcefile = scala.io.Source.fromFile(modulesfile.getPath())
