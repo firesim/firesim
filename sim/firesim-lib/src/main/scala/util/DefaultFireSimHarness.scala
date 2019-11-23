@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.RawModule
 
 import freechips.rocketchip.config.{Field, Config, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 import firesim.bridges._
 import firesim.configs.MemModelKey
@@ -40,13 +40,24 @@ class WithNumNodes(n: Int) extends Config((pname, site, here) => {
   case NumNodes => n
 })
 
+case class FireSimClockParameters(additionalClocks: Seq[(Int,Int)]) {
+  def numClocks(): Int = additionalClocks.size + 1
+}
+case object FireSimClockKey extends Field[FireSimClockParameters](FireSimClockParameters(Seq()))
+
+trait HasAdditionalClocks extends LazyModuleImp {
+  val clocks = IO(Vec(p(FireSimClockKey).numClocks, Input(Clock())))
+}
+
 class DefaultFireSimHarness[T <: LazyModule](dutGen: () => T)(implicit val p: Parameters) extends RawModule {
-  val clock = Module(new RationalClockBridge(1000)).io.clocks.head
+  val lazyDut = LazyModule(dutGen())
+  val clockBridge = Module(new RationalClockBridge(1000, p(FireSimClockKey).additionalClocks:_*))
+  val refClock = clockBridge.io.clocks(0)
   val reset = WireInit(false.B)
-  withClockAndReset(clock, reset) {
+  withClockAndReset(refClock, reset) {
     // Instantiate multiple instances of the DUT to implement supernode
-    val targets = Seq.fill(p(NumNodes))(Module(LazyModule(dutGen()).module))
-    val peekPokeBridge = PeekPokeBridge(clock, reset)
+    val targets = Seq.fill(p(NumNodes))(Module(lazyDut.module))
+    val peekPokeBridge = PeekPokeBridge(refClock, reset)
     // A Seq of partial functions that will instantiate the right bridge only
     // if that Mixin trait is present in the target's class instance
     //
@@ -54,5 +65,6 @@ class DefaultFireSimHarness[T <: LazyModule](dutGen: () => T)(implicit val p: Pa
     for ((target) <- targets) {
       p(BridgeBinders).map(_.lift).flatMap(elaborator => elaborator(target))
     }
+    targets.collect({ case t: HasAdditionalClocks => t.clocks := clockBridge.io.clocks })
   }
 }
