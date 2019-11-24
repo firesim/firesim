@@ -11,3 +11,4 @@ vivado*.jou
 vivado*.log
 awsver.txt
 scripts/format-trace
+build
