@@ -63,7 +63,13 @@ done
 
 # Disable the REBAR submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
+git config submodule.sw/firesim-software.update none
 git submodule update --init --recursive #--jobs 8
+
+# firesim-software should not be recursively initialized by default (use
+# sw/firesim-software/init-submodules.sh if you need linux deps)
+git config --unset submodule.sw/firesim-software.update
+git submodule update --init sw/firesim-software
 
 if [ "$IS_LIBRARY" = false ]; then
     git config --unset submodule.target-design/chipyard.update
@@ -151,6 +157,10 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     sudo make install
     cd ../..
     rm -rf e2fsprogs*
+
+    # Setup for using qcow2 images
+    cd $RDIR
+    ./scripts/install-nbd-kmod.sh
 
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
