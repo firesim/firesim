@@ -44,6 +44,10 @@ private[midas] class MidasTransforms(
       firrtl.passes.CommonSubexpressionElimination,
       new firrtl.transforms.DeadCodeElimination,
       EnsureNoTargetIO,
+      new BridgeExtraction,
+      new ResolveAndCheck,
+      new HighFirrtlToMiddleFirrtl,
+      new MiddleFirrtlToLowFirrtl,
       // NB: Carelessly removing this pass will break the FireSim manager as we always
       // need to generate the *.asserts file. Fix by baking into driver.
       new AssertPass(dir),
@@ -51,10 +55,7 @@ private[midas] class MidasTransforms(
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
-      new BridgeExtraction,
-      new ResolveAndCheck,
       new EmitFirrtl("post-bridge-extraction.fir"),
-      new MiddleFirrtlToLowFirrtl,
       fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++

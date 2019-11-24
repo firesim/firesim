@@ -14,7 +14,7 @@ class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class DefaultF1Config extends Config(new Config((site, here, up) => {
     case DesiredHostFrequency => 75
-    case SynthAsserts => false
+    case SynthAsserts => true
     case midas.GenerateMultiCycleRamModels => true
     case SynthPrints => false
 }) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
