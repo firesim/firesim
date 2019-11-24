@@ -39,6 +39,8 @@
 #include "VerilogAccumulator.h"
 #elif defined DESIGNNAME_TrivialMulticlock
 #include "TrivialMulticlock.h"
+#elif defined DESIGNNAME_MultiClockAssertModule
+#include "MultiClockAssertModule.h"
 #endif
 
 class dut_emul_t:

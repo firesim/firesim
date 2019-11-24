@@ -3,6 +3,8 @@
 package firesim.midasexamples
 
 import chisel3._
+import chisel3.experimental.{RawModule, MultiIOModule}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 
 class ChildModule extends Module {
   val io = IO(new Bundle {
@@ -10,7 +12,6 @@ class ChildModule extends Module {
   })
   assert(!io.pred, "Pred asserted")
 }
-
 class AssertModuleDUT extends Module {
   val io = IO(new Bundle {
     val cycleToFail  = Input(UInt(16.W))
@@ -31,3 +32,71 @@ class AssertModuleDUT extends Module {
 }
 
 class AssertModule extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)
+
+class RegisteredAssertModule extends Module {
+  val io = IO(new Bundle {
+    val pred = Input(Bool())
+  })
+  assert(!RegNext(io.pred), "Pred asserted")
+}
+
+class DualClockModule extends Module {
+  val io = IO(new Bundle {
+    val clockB = Input(Clock())
+    val a  = Input(Bool())
+    val b  = Input(Bool())
+    val c  = Input(Bool())
+    val d  = Input(Bool())
+  })
+
+  withClock(io.clockB) {
+    assert(!RegNext(io.a), "io.a asserted")
+    val modB = Module(new RegisteredAssertModule)
+    modB.io.pred := io.b
+  }
+
+  assert(!RegNext(io.c), "io.c asserted")
+  val modA = Module(new RegisteredAssertModule)
+  modA.io.pred := io.d
+}
+
+class StimulusGenerator extends MultiIOModule {
+  val input = IO(new Bundle {
+    val cycle       = Input(UInt(16.W))
+    val pulseLength = Input(UInt(4.W))
+  })
+  val pred = IO(Output(Bool()))
+  // Here i'm relying on zero-intialization of state instead of reset
+  val cycleCount = Reg(UInt(16.W))
+  cycleCount := cycleCount + 1.U
+
+  val pulseLengthRemaining = Reg(UInt(4.W))
+  when(input.cycle === cycleCount && input.pulseLength =/= 0.U) {
+    pulseLengthRemaining := input.pulseLength - 1.U
+  }.elsewhen(pulseLengthRemaining =/= 0.U) {
+    pulseLengthRemaining := pulseLengthRemaining - 1.U
+  }
+
+  pred := pulseLengthRemaining =/= 0.U || input.cycle === cycleCount
+}
+
+
+class MultiClockAssertModule extends RawModule {
+  val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
+  val List(refClock, div2Clock) = clockBridge.io.clocks.toList
+  val reset = WireInit(false.B)
+  withClockAndReset(refClock, reset) {
+    val fullRateMod = Module(new RegisteredAssertModule)
+    val fullRatePulseGen = Module(new StimulusGenerator)
+    fullRateMod.io.pred := fullRatePulseGen.pred
+
+    val halfRateMod = Module(new RegisteredAssertModule)
+    halfRateMod.clock := div2Clock
+    val halfRatePulseGen = Module(new StimulusGenerator)
+    halfRateMod.io.pred := halfRatePulseGen.pred
+
+    val peekPokeBridge = PeekPokeBridge(refClock, reset,
+                                        ("fullrate", fullRatePulseGen.input),
+                                        ("halfrate", halfRatePulseGen.input))
+  }
+}

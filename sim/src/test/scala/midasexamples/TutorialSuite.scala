@@ -118,3 +118,5 @@ class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
   runTest("verilator", true)
   runTest("vcs", true)
 }
+
+class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
