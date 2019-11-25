@@ -109,7 +109,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
 
   val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
   //trigger conditions
-  val traces = io.hPort.hBits.traces.flatten
+  val traces = hPort.hBits.traces.flatten
   private val pcWidth = traces.map(_.iaddr.getWidth).max
   private val insnWidth = traces.map(_.insn.getWidth).max
 
