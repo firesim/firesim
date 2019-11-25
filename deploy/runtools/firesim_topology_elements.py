@@ -195,7 +195,7 @@ class FireSimServerNode(FireSimNode):
 
         result_list = []
         for rootfsname in rootfses_list:
-            if rootfsname.endswith(".qcow2"):
+            if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
@@ -209,7 +209,7 @@ class FireSimServerNode(FireSimNode):
         """
         rootfses_list = [self.get_rootfs_name()]
         for rootfsname in rootfses_list:
-            if rootfsname.endswith(".qcow2"):
+            if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
 
 
@@ -265,8 +265,8 @@ class FireSimServerNode(FireSimNode):
 
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
-        is_qcow2 = rfsname.endswith(".qcow2")
         if rfsname is not None:
+            is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = """/home/centos/sim_slot_{}/mountpoint""".format(simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo mkdir -p {}""".format(mountpoint))
