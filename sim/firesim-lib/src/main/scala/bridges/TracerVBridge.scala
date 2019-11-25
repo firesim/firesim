@@ -109,12 +109,13 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
 
   val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
   //trigger conditions
-  //TODO: trigger conditions currently assume only 1 instruction is retired every cycle
-  //This work for rocket, but will not work for BOOM
+  val traces = io.hPort.hBits.traces.flatten
+  private val pcWidth = traces.map(_.iaddr.getWidth).max
+  private val insnWidth = traces.map(_.insn.getWidth).max
 
   //Program Counter trigger value can be configured externally
-  val hostTriggerPCWidthOffset = hPort.hBits.traces(0)(0).iaddr.getWidth - p(CtrlNastiKey).dataBits
-  val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else hPort.hBits.traces(0)(0).iaddr.getWidth
+  val hostTriggerPCWidthOffset = pcWidth - p(CtrlNastiKey).dataBits
+  val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else pcWidth
   val hostTriggerPCHighWidth = if (hostTriggerPCWidthOffset > 0) hostTriggerPCWidthOffset else 0
 
   val hostTriggerPCStartHigh = RegInit(0.U(hostTriggerPCHighWidth.W))
@@ -122,7 +123,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   attach(hostTriggerPCStartHigh, "hostTriggerPCStartHigh", WriteOnly)
   attach(hostTriggerPCStartLow, "hostTriggerPCStartLow", WriteOnly)
   val hostTriggerPCStart = Cat(hostTriggerPCStartHigh, hostTriggerPCStartLow)
-  val triggerPCStart = RegInit(0.U((hPort.hBits.traces(0)(0).iaddr.getWidth).W))
+  val triggerPCStart = RegInit(0.U(pcWidth.W))
   triggerPCStart := hostTriggerPCStart
 
   val hostTriggerPCEndHigh = RegInit(0.U(hostTriggerPCHighWidth.W))
@@ -130,7 +131,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   attach(hostTriggerPCEndHigh, "hostTriggerPCEndHigh", WriteOnly)
   attach(hostTriggerPCEndLow, "hostTriggerPCEndLow", WriteOnly)
   val hostTriggerPCEnd = Cat(hostTriggerPCEndHigh, hostTriggerPCEndLow)
-  val triggerPCEnd = RegInit(0.U((hPort.hBits.traces(0)(0).iaddr.getWidth).W))
+  val triggerPCEnd = RegInit(0.U(pcWidth.W))
   triggerPCEnd := hostTriggerPCEnd
 
   //Cycle count trigger
@@ -165,13 +166,13 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
 
    //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
-  val hostTriggerStartInst = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
-  val hostTriggerStartInstMask = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerStartInst = RegInit(0.U(insnWidth.W)) 
+  val hostTriggerStartInstMask = RegInit(0.U(insnWidth.W)) 
   attach(hostTriggerStartInst, "hostTriggerStartInst", WriteOnly)
   attach(hostTriggerStartInstMask, "hostTriggerStartInstMask", WriteOnly)
 
-  val hostTriggerEndInst = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
-  val hostTriggerEndInstMask = RegInit(0.U((hPort.hBits.traces(0)(0).insn.getWidth).W)) 
+  val hostTriggerEndInst = RegInit(0.U(insnWidth.W)) 
+  val hostTriggerEndInstMask = RegInit(0.U(insnWidth.W)) 
   attach(hostTriggerEndInst, "hostTriggerEndInst", WriteOnly)
   attach(hostTriggerEndInstMask, "hostTriggerEndInstMask", WriteOnly)
 
@@ -184,23 +185,23 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   val triggerCycleCountVal = RegInit(false.B) 
   triggerCycleCountVal := (trace_cycle_counter >= triggerCycleCountStart) & (trace_cycle_counter <= triggerCycleCountEnd)
 
-  val triggerPCValVec = RegInit(VecInit(Seq.fill(hPort.hBits.traces.length)(false.B)))
-  for (i <- 0 until hPort.hBits.traces.length) {
-    when (hPort.hBits.traces(i)(0).valid) {
-      when (triggerPCStart === hPort.hBits.traces(i)(0).iaddr) {
+  val triggerPCValVec = RegInit(VecInit(Seq.fill(traces.length)(false.B)))
+  traces.zipWithIndex.foreach { case (trace, i) =>
+    when (trace.valid) {
+      when (triggerPCStart === trace.iaddr) {
         triggerPCValVec(i) := true.B
-      } .elsewhen ((triggerPCEnd === hPort.hBits.traces(i)(0).iaddr) && triggerPCValVec(i)) {
+      } .elsewhen ((triggerPCEnd === trace.iaddr) && triggerPCValVec(i)) {
         triggerPCValVec(i) := false.B
       }
     }
   }
 
-  val triggerInstValVec = RegInit(VecInit(Seq.fill(hPort.hBits.traces.length)(false.B)))
-  for (i <- 0 until hPort.hBits.traces.length) {
-    when (hPort.hBits.traces(i)(0).valid) {
-      when (hostTriggerStartInst === (hPort.hBits.traces(i)(0).insn & hostTriggerStartInstMask)) {
+  val triggerInstValVec = RegInit(VecInit(Seq.fill(traces.length)(false.B)))
+  traces.zipWithIndex.foreach { case (trace, i) =>
+    when (trace.valid) {
+      when (hostTriggerStartInst === (trace.insn & hostTriggerStartInstMask)) {
         triggerInstValVec(i) := true.B
-      } .elsewhen (hostTriggerEndInst === (hPort.hBits.traces(i)(0).insn & hostTriggerEndInstMask)) {
+      } .elsewhen (hostTriggerEndInst === (trace.insn & hostTriggerEndInstMask)) {
         triggerInstValVec(i) := false.B
       }
     }
@@ -220,8 +221,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
-  val uint_traces = hPort.hBits.traces map (trace => (UInt(0, 64.W) | Cat(trace(0).valid, trace(0).iaddr)))
-  //val uint_traces = hPort.hBits.traces map (trace => trace.asUInt)
+  val uint_traces = traces map (trace => (UInt(0, 64.W) | Cat(trace.valid, trace.iaddr)))
   outgoingPCISdat.io.enq.bits := wide_cycles_counter | Cat(uint_traces)
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
