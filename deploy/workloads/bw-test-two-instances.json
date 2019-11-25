@@ -1,7 +1,7 @@
 {
   "benchmark_name" : "bw-test-two-instances",
   "common_simulation_outputs" : ["uartlog"],
-  "common_rootfs" : "dummy.ext2",
+  "common_rootfs" : null,
   "workloads" : [
     {
       "name" : "client-0",

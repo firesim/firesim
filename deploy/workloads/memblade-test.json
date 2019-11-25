@@ -1,6 +1,6 @@
 {
   "benchmark_name" : "memblade-test",
-  "common_rootfs" : "dummy.ext2",
+  "common_rootfs" : null,
   "common_simulation_outputs" : ["uartlog"],
 
   "workloads" : [
