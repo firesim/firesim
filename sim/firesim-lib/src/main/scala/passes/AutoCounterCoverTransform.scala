@@ -247,8 +247,6 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
    private def CreateTopCounterSources(instancepaths: Seq[Seq[WDefInstance]], state: CircuitState, topnamespace: Namespace): Seq[Statement] = {
 
-      println("instpathnames:") 
-      println(instancepaths.map { case instpath => instpath.map {case WDefInstance(_,name,_,_) => name}} ) 
       instancepaths.flatMap { case instpath => 
                           val instpathnames = instpath.map {case WDefInstance(_,name,_,_) => name}
                           val path = instpathnames.tail.tail.mkString("_")
