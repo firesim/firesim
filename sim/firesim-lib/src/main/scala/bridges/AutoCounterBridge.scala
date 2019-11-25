@@ -17,7 +17,7 @@ class AutoCounterBundle(val numCounters: Int) extends Bundle {
   val counters = Input(Vec(numCounters, UInt(64.W)))
 }
 
-case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[String, String], hastracerwidget: Boolean = false)
+case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[Int, String], hastracerwidget: Boolean = false)
 
 class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
 
@@ -45,21 +45,18 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   hPort.fromHost.hValid := true.B
   when (targetFire) {
     cycles := cycles + 1.U
-    hPort.hBits.counters.zip(acc_counters).foreach {
-      case(counter, acc) => acc := counter
-    }
+    for (i <- 0 to numCounters-1)  { acc_counters(i) := hPort.hBits.counters(i) }
   }
   when (targetFire && trigger) {
     cycles_since_trigger := cycles_since_trigger + 1.U
   }
 
-  //labels.keys.zip(hPort.hBits.counters).foreach {
-  labels.keys.zip(acc_counters).foreach {
-    case(label, counter) => {
-      //genROReg(counter(31, 0), s"autocounter_low_${label}")
-      //genROReg(counter >> 32, s"autocounter_high_${label}")
-      genROReg(counter(31, 0), s"autocounter_low_${labels(label)}")
-      genROReg(counter >> 32, s"autocounter_high_${labels(label)}")
+  labels.keys.foreach {
+    case(index) => {
+      //genROReg(acc_counters(index)(31, 0), s"autocounter_low_${label}")
+      //genROReg(acc_counters(index) >> 32, s"autocounter_high_${label}")
+      genROReg(acc_counters(index)(31, 0), s"autocounter_low_${labels(index)}")
+      genROReg(acc_counters(index) >> 32, s"autocounter_high_${labels(index)}")
     }
   }
 

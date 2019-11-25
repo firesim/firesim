@@ -82,7 +82,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   val autoCounterLabelsSourceMap = mutable.Map.empty[String, String]
   val autoCounterReadableLabels = mutable.ArrayBuffer.empty[String]
   val autoCounterReadableLabelsMap = mutable.Map.empty[String, String]
-  val autoCounterPortsMap = mutable.Map.empty[String, String]
+  val autoCounterPortsMap = mutable.Map.empty[Int, String]
   val autoCounterLabelsMap = mutable.Map.empty[String, String]
 
   private def MakeCounter(label: String, hastracerwidget: Boolean = false): CircuitState = {
@@ -336,12 +336,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   
 
      //Instead of wiring transform, manually connect the counter wire sinks on the Bridge side
-     val sinkconnections = autoCounterLabelsSourceMap.keys.zip(counterports).flatMap {
-            case(label, counterport) => {
-                val sinkref = WSubField(WRef(widgetInst.name), counterport) 
+     val sinkconnections = autoCounterLabelsSourceMap.keys.zipWithIndex.flatMap {
+            case(label,i) => {
+                val sinkref = WSubField(WRef(widgetInst.name), counterports(i)) 
                 val medref = WRef(autoCounterLabelsSourceMap(label))
-                //autoCounterPortsMap += counterport -> autoCounterReadableLabelsMap(label)
-                autoCounterPortsMap += counterport -> label
+                //autoCounterPortsMap += i -> autoCounterReadableLabelsMap(label)
+                autoCounterPortsMap += i -> label
                 Seq(Connect(NoInfo, sinkref, medref)) 
             }
      }
