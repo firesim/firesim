@@ -14,16 +14,16 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{MultiIOModule, Direction}
+import chisel3.experimental.{MultiIOModule, Direction, ChiselAnnotation}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{ReferenceTarget}
+import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
-
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
+case object SimWrapperKey extends Field[SimWrapperConfig]
 
 trait HasSimWrapperParams {
   implicit val p: Parameters
@@ -33,6 +33,9 @@ trait HasSimWrapperParams {
   val sramChainNum = p(strober.core.SRAMChainNum)
 }
 
+private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
+}
 
 class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
   val elements = ListMap() ++ (es map { case (name, rv) =>
@@ -221,20 +224,14 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
+case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
+                         bridgeAnnos: Seq[BridgeIOAnnotation],
+                         leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
-class SimBox(simChannels: SimWrapperChannels) extends BlackBox {
-  val io = IO(new Bundle {
-    val clock = Input(Clock())
-    val reset = Input(Bool())
-    val hostReset = Input(Bool())
-    val channelPorts = simChannels.cloneType
-  })
-}
+class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
 
-class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                 bridgeAnnos: Seq[BridgeIOAnnotation],
-                 leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
-                (implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
+  outer =>
+  val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config
 
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
   // to bridges and will be presented in the SimWrapper's IO
@@ -246,6 +243,11 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
+
+  // Indicates SimulationMapping which module we want to replace with the simulator
+  annotate(new ChiselAnnotation { def toFirrtl =
+    TargetBoxAnnotation(outer.toNamed.toTarget.ref(target.instanceName))
+  })
 
   target.io.hostReset := reset.toBool && hostReset
   target.io.clock := clock
