@@ -32,16 +32,16 @@ case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, m
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 
-case class AutoCounterCoverModuleAnnotation(target: ModuleTarget) extends
+case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
     SingleTargetAnnotation[ModuleTarget] {
   def duplicate(n: ModuleTarget) = this.copy(target = n)
 }
 
 import chisel3.experimental.ChiselAnnotation
-case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation {
+case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnotation {
   //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
   //It currently doesn't matter since the transform throws away the circuit name
-  def toFirrtl =  AutoCounterCoverModuleAnnotation(ModuleTarget("",target))
+  def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
 }
 
 case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
@@ -380,19 +380,19 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     //2. Using chisel annotations to be added in the Platform Config (in SimConfigs.scala). The annotations are
     //   of the form AutoCounterModuleAnnotation("ModuleName")
     val modulesfile = new File(dir,"autocounter-covermodules.txt")
-    val filemoduleannos = mutable.ArrayBuffer.empty[AutoCounterCoverModuleAnnotation]
+    val filemoduleannos = mutable.ArrayBuffer.empty[AutoCounterCoverModuleFirrtlAnnotation]
     if (modulesfile.exists()) {
       val sourcefile = scala.io.Source.fromFile(modulesfile.getPath())
       val covermodulesnames = (for (line <- sourcefile.getLines()) yield line).toList
       sourcefile.close()
-      filemoduleannos ++= covermodulesnames.map {m: String => AutoCounterCoverModuleAnnotation(ModuleTarget(state.circuit.main,m))}
+      filemoduleannos ++= covermodulesnames.map {m: String => AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget(state.circuit.main,m))}
     }
     val moduleannos = (state.annotations.collect {
-      case a: AutoCounterCoverModuleAnnotation => a
+      case a: AutoCounterCoverModuleFirrtlAnnotation => a
     } ++ filemoduleannos).distinct
 
     //extract the module names from the methods mentioned previously 
-    val covermodulesnames = moduleannos.map { case AutoCounterCoverModuleAnnotation(ModuleTarget(_,m)) => m }
+    val covermodulesnames = moduleannos.map { case AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget(_,m)) => m }
 
     if (!covermodulesnames.isEmpty) {
       println("[AutoCounter]: Cover modules in AutoCounterCoverTransform:")

@@ -128,16 +128,16 @@ case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, m
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 
-case class AutoCounterCoverModuleAnnotation(target: ModuleTarget) extends
+case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
     SingleTargetAnnotation[ModuleTarget] {
   def duplicate(n: ModuleTarget) = this.copy(target = n)
 }
 
 import chisel3.experimental.ChiselAnnotation
-case class AutoCounterModuleAnnotation(target: String) extends ChiselAnnotation {
+case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnotation {
   //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
   //It currently doesn't matter since the transform throws away the circuit name
-  def toFirrtl =  AutoCounterCoverModuleAnnotation(ModuleTarget("",target))
+  def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
 }
 
 case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
