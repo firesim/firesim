@@ -17,7 +17,7 @@ import fame.{FAMEChannelConnectionAnnotation, FAMEChannelAnalysis, FAME1Transfor
 import Utils._
 import freechips.rocketchip.config.Parameters
 
-import midas.core.{SimWrapper, SimWrapperConfig, SimWrapperKey, HasSimWrapperParams, TargetBox}
+import midas.core._
 import midas.widgets.BridgeIOAnnotation
 
 private[passes] object ReferenceTargetToPortMap {
@@ -70,31 +70,33 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
     }
   }
 
-  private def initStmt(target: String)(s: Statement): Statement =
+  // Note: this only runs on the SimulationWrapper Module
+  private def initStmt(targetModuleName: String, targetInstName: String)(s: Statement): Statement =
     s match {
-      case s: WDefInstance if s.name == targetInstName && s.module == classOf[TargetBox].getSimpleName => 
+      case s @ WDefInstance(_, name, _, _) if name == targetInstName =>
         Block(Seq(
-          s copy (module = target), // replace TargetBox with the actual target module
-          IsInvalid(NoInfo, wref(targetInstName)) // FIXME: due to rocketchip
+          s copy (module = targetModuleName), // replace TargetBox with the actual target module
+          IsInvalid(NoInfo, wref(name))
         ))
-      case s => s map initStmt(target)
+      case s => s map initStmt(targetModuleName, targetInstName)
     }
 
-  private def init(info: Info, target: String, main: String, tpe: Type)(m: DefModule) = m match {
-    case m: Module if m.name == classOf[SimWrapper].getSimpleName =>
-      val body = initStmt(target)(m.body)
+  private def init(info: Info, target: String, tpe: Type, targetBoxRT: ReferenceTarget)(m: DefModule) = m match {
+    case m: Module if m.name == targetBoxRT.module =>
+      val targetBoxInstName = targetBoxRT.ref
+      val body = initStmt(target, targetBoxInstName)(m.body)
       val stmts = if (!p(EnableSnapshot)) {
         Seq()
       } else {
          val ports = (m.ports map (p => p.name -> p)).toMap
-         (create_exps(wsub(wref(targetInstName, tpe), "daisy")) map { e =>
+         (create_exps(wsub(wref(targetBoxInstName, tpe), "daisy")) map { e =>
            val io = WRef(loweredName(mergeRef(wref("io"), splitRef(e)._2)))
            ports(io.name).direction match {
              case Input  => Connect(NoInfo, e, io)
              case Output => Connect(NoInfo, io, e)
            }
          }) ++ Seq(
-           Connect(NoInfo, wsub(wref(targetInstName), "daisyReset"), wref("reset", BoolType))
+           Connect(NoInfo, wsub(wref(targetBoxInstName), "daisyReset"), wref("reset", BoolType))
          )
        }
       Some(m copy (info = info, body = Block(body +: stmts)))
@@ -130,8 +132,9 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
+    val targetBoxAnno = outerState.annotations.collectFirst({ case c: TargetBoxAnnotation => c }).get
     val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
-      init(innerCircuit.info, innerCircuit.main, outerCircuit.main, targetType))
+      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxAnno.target))
 
     // Rename the annotations from the inner module, which are using an obsolete CircuitName
     val renameMap = RenameMap(

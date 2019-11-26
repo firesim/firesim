@@ -14,9 +14,9 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{MultiIOModule, Direction}
+import chisel3.experimental.{MultiIOModule, Direction, ChiselAnnotation}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{ReferenceTarget}
+import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
@@ -31,10 +31,11 @@ trait HasSimWrapperParams {
   val traceMaxLen = p(strober.core.TraceMaxLen)
   val daisyWidth = p(strober.core.DaisyWidth)
   val sramChainNum = p(strober.core.SRAMChainNum)
-
-  val targetInstName = "target"
 }
 
+private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
+}
 
 class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
   val elements = ListMap() ++ (es map { case (name, rv) =>
@@ -229,6 +230,7 @@ case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
 
 class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
 
+  outer =>
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config
 
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
@@ -241,7 +243,11 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
   val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
-  target.suggestName(targetInstName)
+
+  // Indicates SimulationMapping which module we want to replace with the simulator
+  annotate(new ChiselAnnotation { def toFirrtl =
+    TargetBoxAnnotation(outer.toNamed.toTarget.ref(target.instanceName))
+  })
 
   target.io.hostReset := reset.toBool && hostReset
   target.io.clock := clock
