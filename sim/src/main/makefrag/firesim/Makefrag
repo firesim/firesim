@@ -75,7 +75,7 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile0=TRACEFILE
-autocounter_args = +autocounter-filename0=AUTOCOUNTERFILE
+autocounter_args = +autocounter-filename=AUTOCOUNTERFILE
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
