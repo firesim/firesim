@@ -51,9 +51,6 @@ autocounter_t::~autocounter_t() {
 void autocounter_t::init() {
     cur_cycle = 0;
       
-    //autocounter_file << "readrate_low: " << (readrate & ((1ULL << 32) -1)) << std::endl;
-    //autocounter_file << "readrate_high: " << (readrate >> 32) << std::endl;
-    //write(this->mmio_addrs->readrate_low, 1000);
     write(addr_map.w_registers.at("readrate_low"), readrate & ((1ULL << 32) - 1));
     write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
     write(addr_map.w_registers.at("readdone"), 1);
