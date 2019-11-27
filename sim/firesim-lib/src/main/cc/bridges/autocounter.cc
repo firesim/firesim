@@ -50,18 +50,24 @@ autocounter_t::~autocounter_t() {
 
 void autocounter_t::init() {
     cur_cycle = 0;
-    cur_cycle_since_trigger = 0;
-    readrate_count = 0;
+      
+    //autocounter_file << "readrate_low: " << (readrate & ((1ULL << 32) -1)) << std::endl;
+    //autocounter_file << "readrate_high: " << (readrate >> 32) << std::endl;
+    //write(this->mmio_addrs->readrate_low, 1000);
+    write(addr_map.w_registers.at("readrate_low"), readrate & ((1ULL << 32) - 1));
+    write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
+    write(addr_map.w_registers.at("readdone"), 1);
+    autocounter_file << "finished init" << std::endl;
+
 }
 
 
 void autocounter_t::tick() {
-  //read(this->mmio_addrs->in_ready);
-  cur_cycle = read(this->mmio_addrs->cycles_low);
-  cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
-  cur_cycle_since_trigger = read(this->mmio_addrs->cycles_since_trigger_low);
-  cur_cycle_since_trigger |= ((uint64_t)read(this->mmio_addrs->cycles_since_trigger_high)) << 32;
-  if ((cur_cycle_since_trigger / readrate) > readrate_count) {
+  write(addr_map.w_registers.at("readdone"), 0);
+  if (read(addr_map.r_registers.at("countersready"))) {
+    write(addr_map.w_registers.at("readdone"), 1);
+    cur_cycle = read(this->mmio_addrs->cycles_low);
+    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
     autocounter_file << "Cycle " << cur_cycle << std::endl;
     autocounter_file << "============================" << std::endl;
     for (auto pair: addr_map.r_registers) {
@@ -69,19 +75,16 @@ void autocounter_t::tick() {
       std::string low_prefix = std::string("autocounter_low_");
       std::string high_prefix = std::string("autocounter_high_");
 
-      // Print just read-only registers
-      //if (!addr_map.w_reg_exists((pair.first))) {
-        if (pair.first.find("autocounter_low_") == 0) {
+      if (pair.first.find("autocounter_low_") == 0) {
           char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
           std::string countername(str);
           uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
           counter_val |= read(pair.second);
           autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
-        }
-      //}
+      }
 
     }
-    readrate_count++;
+    write(addr_map.w_registers.at("readdone"), 1);
     autocounter_file << "" << std::endl;
   }
 }

@@ -27,9 +27,7 @@ class autocounter_t: public bridge_driver_t {
         AddressMap addr_map;
         simif_t* sim;
         uint64_t cur_cycle;
-        uint64_t cur_cycle_since_trigger;
         uint64_t readrate;
-        uint64_t readrate_count;
         std::string autocounter_filename;
         std::ofstream autocounter_file;
 };
