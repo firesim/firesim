@@ -68,7 +68,6 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   hPort.fromHost.hValid := true.B
   when (targetFire) {
     cycles := cycles + 1.U
-    for (i <- 0 to numCounters-1)  { acc_counters(i) := hPort.hBits.counters(i) }
   }
 
 
@@ -84,9 +83,6 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   btht_queue.io.enq.bits.data_out := hPort.hBits.counters
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := btht_queue.io.enq.ready & hPort.fromHost.hReady
-  when (btht_queue.io.enq.fire()) {
-    printf("enqueued\n")
-  }
 
 /*
   when (periodcycles === readrate & targetFire) {
@@ -114,7 +110,6 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
     for (i <- 0 to numCounters-1)  { acc_counters(i) := btht_queue.io.deq.bits.data_out(i) }
     acc_cycles := btht_queue.io.deq.bits.cycle
     med := false.B
-    printf("dequeued\n")
   } .elsewhen (readdone_posedge) {
     med := true.B
   } .elsewhen (readdone_negedge) {

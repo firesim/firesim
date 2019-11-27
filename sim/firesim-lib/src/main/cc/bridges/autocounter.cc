@@ -57,7 +57,6 @@ void autocounter_t::init() {
     write(addr_map.w_registers.at("readrate_low"), readrate & ((1ULL << 32) - 1));
     write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
     write(addr_map.w_registers.at("readdone"), 1);
-    autocounter_file << "finished init" << std::endl;
 
 }
 
