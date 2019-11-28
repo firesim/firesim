@@ -12,7 +12,6 @@ import freechips.rocketchip.util.property._
 class AutoCounterModuleDUT extends Module {
   val io = IO(new Bundle {
     val a = Input(Bool())
-    val b = Input(Bool())
   })
 
   val cycle = RegInit(0.U(16.W))
@@ -22,7 +21,7 @@ class AutoCounterModuleDUT extends Module {
   PerfCounter(io.a, "CYCLES", "Count cycles. Should be identical to cycle count")
 
 
-  when (cycle(2)) {
+  when (~cycle(1) & ~cycle(0) & io.a) {
     cycle4 := true.B
   } .otherwise {
     cycle4 := false.B
@@ -55,7 +54,7 @@ class AutoCounterModule extends PeekPokeMidasExampleHarness(() => new AutoCounte
 
 class AutoCounterCoverModuleDUT extends Module {
   val io = IO(new Bundle {
-    val enable = Input(Bool())
+    val a = Input(Bool())
   })
 
   val cycle = RegInit(0.U(12.W))
@@ -63,7 +62,7 @@ class AutoCounterCoverModuleDUT extends Module {
   val cycle8 = RegInit(false.B)
 
 
-  when (cycle(3)) {
+  when (~cycle(2) & ~cycle(1) & ~cycle(0)) {
     cycle8 := true.B
   } .otherwise {
     cycle8 := false.B

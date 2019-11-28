@@ -85,14 +85,15 @@ abstract class TutorialSuite(
 
   // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
   // printfs from the RTL simulator
-  def diffAutoCounterOutput(autocounterOutputLog: String) {
+  def diffAutoCounterOutput(autocounterOutputLog: String, referenceFile: String) {
     behavior of "AutoCounter output log"
     it should "match the logs commited based on the design intent" in {
       def printLines(filename: File): Seq[String] = {
         val lines = Source.fromFile(filename).getLines.toList
+        lines
       }
 
-      val referenceOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
       val autocounterOutput = printLines(new File(genDir, s"/${autocounterOutputLog}"))
       assert(referenceOutput.size == autocounterOutput.size && referenceOutput.nonEmpty)
       for ( (rPrint, acPrint) <- referenceOutput.zip(autocounterOutput) ) {
@@ -124,7 +125,11 @@ class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
         simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
-        diffAutoCounterOutput("AUTOCOUNTERFILE")
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterModuleRef.log")
+}
+class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
+        simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterCoverModuleRef.log")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
