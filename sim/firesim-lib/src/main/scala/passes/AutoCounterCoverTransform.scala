@@ -79,6 +79,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   override def name = "[FireSim] AutoCounter Cover Transform"
   val newAnnos = mutable.ArrayBuffer.empty[Annotation]
   val autoCounterLabels = mutable.ArrayBuffer.empty[String]
+  val autoCounterMods = mutable.ArrayBuffer.empty[Module]
   val autoCounterLabelsSourceMap = mutable.Map.empty[String, String]
   val autoCounterReadableLabels = mutable.ArrayBuffer.empty[String]
   val autoCounterReadableLabelsMap = mutable.Map.empty[String, String]
@@ -155,6 +156,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
         val maincircuitname = target.circuitOpt.get 
         val renamemap = RenameMap(Map(ModuleTarget(countermodstate.circuit.main, countermod.name) -> Seq(ModuleTarget(maincircuitname, newmodulename))))
         newMods += countermodn
+        autoCounterMods += countermodn
         autoCounterLabelsMap += countermodn.name -> label
         newAnnos ++= countermodstate.annotations.toSeq.flatMap { case anno => anno.update(renamemap) }
         //instantiate the counter
@@ -301,10 +303,8 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      val topnamespace = Namespace(circuit)
      val instanceGraph = new InstanceGraph(circuit)
 
-     val autocountermods = state.circuit.modules.collect {
-          case mod: DefModule if mod.name.contains("AutoCounter") => mod
-     }
-     val autocounterinsts = autocountermods.flatMap { case mod => instanceGraph.findInstancesInHierarchy(mod.name) }
+     val autocounterinsts = autoCounterMods.flatMap { case mod => instanceGraph.findInstancesInHierarchy(mod.name) }
+
      val numcounters = autocounterinsts.size
      val sourceconnections = CreateTopCounterSources(autocounterinsts, newstate, topnamespace) 
 
