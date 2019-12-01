@@ -15,6 +15,7 @@ abstract class TutorialSuite(
   ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
 
   val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
+  val simString = "verilator"
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
@@ -74,7 +75,7 @@ abstract class TutorialSuite(
         lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
       }
 
-      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${simString}.out"))
       val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
       assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
@@ -90,10 +91,17 @@ abstract class TutorialSuite(
     it should "match the logs commited based on the design intent" in {
       def printLines(filename: File): Seq[String] = {
         val lines = Source.fromFile(filename).getLines.toList
-        lines
+        lines.sorted
       }
 
-      val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
+      def printVerilatorLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        val stripedlines = lines.filter(_.startsWith("AUTOCOUNTER_PRINT")).map(line => line.stripPrefix("AUTOCOUNTER_PRINT").trim.replaceAll(" +", " "))
+        stripedlines.sorted
+      }
+
+      //val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
+      val referenceOutput = printVerilatorLines(new File(outDir,  s"/${targetName}.${simString}.out"))
       val autocounterOutput = printLines(new File(genDir, s"/${autocounterOutputLog}"))
       assert(referenceOutput.size == autocounterOutput.size && referenceOutput.nonEmpty)
       for ( (rPrint, acPrint) <- referenceOutput.zip(autocounterOutput) ) {
@@ -105,7 +113,7 @@ abstract class TutorialSuite(
   clean
   mkdirs
   elaborate
-  runTest("verilator")
+  runTest(simString)
 }
 
 //class PointerChaserF1Test extends TutorialSuite(
@@ -125,11 +133,11 @@ class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
         simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
-        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterModuleRef.log")
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterModule.autocounter.out")
 }
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
         simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
-        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterCoverModuleRef.log")
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterCoverModule.autocounter.out")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
