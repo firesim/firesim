@@ -14,48 +14,32 @@ class AutoCounterModuleDUT extends Module {
     val a = Input(Bool())
   })
 
-  val cycle = RegInit(0.U(16.W))
-  val cycle4 = RegInit(false.B)
+  val enabled_cycles = RegInit(0.U(16.W))
+  val enabled4 = WireDefault(false.B)
 
-  //when(io.a) { cycle := cycle + 1.U }
-  cycle := cycle + 1.U
+  when(io.a) { enabled_cycles := enabled_cycles + 1.U }
 
-  PerfCounter(io.a, "CYCLES", "Count cycles. Should be identical to cycle count minus reset cycles")
+  PerfCounter(io.a, "ENABLED", "Enabled cycles. Should be identical to cycle count minus reset cycles")
 
+  enabled4 := ~enabled_cycles(1) & ~enabled_cycles(0) & io.a
 
-  when (~cycle(1) & ~cycle(0) & io.a) {
-    cycle4 := true.B
-  } .otherwise {
-    cycle4 := false.B
-  }
-
-
-  PerfCounter(cycle4, "CYCLES_DIV_4", "Count the number of times the cycle count is divisable by 4. Should be equval to number of cycles divided by 4")
+  PerfCounter(enabled4, "ENABLED_DIV_4", "Count the number of times the enabled cycle count is divisable by 4. Should be equval to number of cycles minus reset cycles divided by 4")
 
   val childInst = Module(new AutoCounterModuleChild)
   childInst.io.c := io.a
 
   //--------VALIDATION---------------
 
-  val cycle_printcount = RegInit(0.U(64.W))
-  val cycle4_printcount = RegInit(0.U(64.W))
-  val oddlfsr_printcount = RegInit(0.U(64.W))
-
-  when (cycle4) {
-    cycle4_printcount := cycle4_printcount + 1.U
-  }
-  when (io.a) {
-    cycle_printcount := cycle_printcount + 1.U
-  }
-  when (childInst.io.oddlfsr) {
-    oddlfsr_printcount := oddlfsr_printcount + 1.U
-  }
-
-  when ((cycle >= 999.U) & ((cycle - 999.U) % 1000.U === 0.U)) {
-    printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle)
+  val enabled_printcount = freechips.rocketchip.util.WideCounter(64, io.a)
+  val enabled4_printcount = freechips.rocketchip.util.WideCounter(64, enabled4)
+  val oddlfsr_printcount = freechips.rocketchip.util.WideCounter(64, childInst.io.oddlfsr)
+  val cycle_print = Reg(UInt(64.W))
+  cycle_print := cycle_print + 1.U
+  when ((cycle_print >= 1000.U) & (cycle_print % 1000.U === 0.U)) {
+    printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
-    printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_AutoCounterModule_AutoCounterModuleDUT: %d\n", cycle_printcount)
-    printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_4_AutoCounterModule_AutoCounterModuleDUT: %d\n", cycle4_printcount)
+    printf("AUTOCOUNTER_PRINT PerfCounter ENABLED_AutoCounterModule_AutoCounterModuleDUT: %d\n", enabled_printcount)
+    printf("AUTOCOUNTER_PRINT PerfCounter ENABLED_DIV_4_AutoCounterModule_AutoCounterModuleDUT: %d\n", enabled4_printcount)
     printf("AUTOCOUNTER_PRINT PerfCounter ODD_LFSR_AutoCounterModule_AutoCounterModuleDUT_childInst: %d\n", oddlfsr_printcount)
     printf("AUTOCOUNTER_PRINT \n")
   }
@@ -68,13 +52,10 @@ class AutoCounterModuleChild extends MultiIOModule {
   })
 
   val lfsr = chisel3.util.LFSR16(io.c)
-  val odd_lfsr = RegInit(false.B)
+  val odd_lfsr = WireDefault(false.B)
 
-  when (lfsr(0)) {
-    odd_lfsr := true.B
-  } .otherwise {
-    odd_lfsr := false.B
-  }
+
+  odd_lfsr := lfsr(0)
 
   PerfCounter(odd_lfsr, "ODD_LFSR", "Number of cycles the LFSR is has an odd value")
 
@@ -90,14 +71,10 @@ class AutoCounterCoverModuleDUT extends Module {
 
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
-  val cycle8 = RegInit(false.B)
+  val cycle8 = WireDefault(false.B)
 
 
-  when (~cycle(2) & ~cycle(1) & ~cycle(0)) {
-    cycle8 := true.B
-  } .otherwise {
-    cycle8 := false.B
-  }
+  cycle8 := ~cycle(2) & ~cycle(1) & ~cycle(0)
 
   cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisable by 8. Should be equval to number of cycles divided by 8")
 
@@ -109,9 +86,10 @@ class AutoCounterCoverModuleDUT extends Module {
   when (cycle8) {
     cycle8_printcount := cycle8_printcount + 1.U
   }
-
-  when ((cycle >= 999.U) & ((cycle - 999.U) % 1000.U === 0.U)) {
-    printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle)
+  val cycle_print = Reg(UInt(64.W))
+  cycle_print := cycle_print + 1.U
+  when ((cycle_print >= 1000.U) & (cycle_print % 1000.U === 0.U)) {
+    printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
     printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_8_AutoCounterCoverModule_AutoCounterCoverModuleDUT: %d\n", cycle8_printcount)
     printf("AUTOCOUNTER_PRINT \n")
