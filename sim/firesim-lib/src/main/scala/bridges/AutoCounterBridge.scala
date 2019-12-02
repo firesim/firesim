@@ -22,8 +22,6 @@ case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: sca
 class AutoCounterToHostToken(val numCounters: Int) extends Bundle {
   val data_out = Vec(numCounters, UInt(64.W))
   val cycle = UInt(64.W)
-  //val data_out_valid = Bool()
-  //val data_in_ready = Bool()
 }
 
 class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implicit p: Parameters) extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) {
@@ -37,7 +35,6 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   val hPort = IO(HostPort(new AutoCounterBundle(numCounters)))
   val cycles = RegInit(0.U(64.W))
   val acc_cycles = RegInit(0.U(64.W))
-  val periodcycles = RegInit(0.U(64.W))
 
   val hostCyclesWidthOffset = 64 - p(CtrlNastiKey).dataBits
   val hostCyclesLowWidth = if (hostCyclesWidthOffset > 0) p(CtrlNastiKey).dataBits else 64
@@ -56,6 +53,7 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   chisel3.core.dontTouch(readrate_low)
   chisel3.core.dontTouch(readrate_high)
   val readrate = Wire(UInt(64.W)) 
+  val readrate_dly = RegInit(0.U(64.W)) 
   readrate := Cat(readrate_high, readrate_low)
 
   val acc_counters = RegInit(VecInit(Seq.fill(numCounters)(0.U(64.W))))
@@ -70,20 +68,31 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
   //hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
   // We only sink tokens, so tie off the return channel
   hPort.fromHost.hValid := true.B
-  when (targetFire) {
+  val cycleInit = RegInit(true.B)
+  // Need to have cycleInit, since the hPort token queue is initalized with 1 token in it
+  // and we don't want to count that token in the cycle count
+  when (targetFire & cycleInit) {
+    cycles := 0.U
+    cycleInit := false.B
+    readrate_dly := readrate
+  } .elsewhen (targetFire) {
     cycles := cycles + 1.U
+    readrate_dly := readrate
   }
 
 
-  when ((periodcycles === readrate-1.U) & targetFire) {
-    periodcycles := 0.U
-  } .elsewhen (targetFire) {
-    periodcycles := periodcycles + 1.U
+  val periodcycles = RegInit(1.U(64.W))
+  when (targetFire & (readrate =/= readrate_dly)) {
+    periodcycles := readrate - 2.U
+  } .elsewhen (targetFire & (periodcycles === 0.U) & (readrate > 0.U)) {
+    periodcycles := readrate - 1.U
+  } .elsewhen (targetFire & (cycles > 0.U) & (readrate > 0.U)) {
+    periodcycles := periodcycles - 1.U
   }
 
   val btht_queue = Module(new Queue(new AutoCounterToHostToken(numCounters), 10))
 
-  btht_queue.io.enq.valid := (periodcycles === readrate-1.U) & targetFire & trigger    
+  btht_queue.io.enq.valid := (periodcycles === 0.U) & (cycles > 0.U) & (cycles >= readrate-1.U) & targetFire & trigger    
   btht_queue.io.enq.bits.data_out := hPort.hBits.counters
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := btht_queue.io.enq.ready & hPort.fromHost.hReady

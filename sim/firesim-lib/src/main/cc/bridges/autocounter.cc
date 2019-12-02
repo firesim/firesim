@@ -85,4 +85,32 @@ void autocounter_t::tick() {
   }
 }
 
+
+void autocounter_t::finish() {
+  write(addr_map.w_registers.at("readdone"), 0);
+  if (read(addr_map.r_registers.at("countersready"))) {
+    write(addr_map.w_registers.at("readdone"), 1);
+    cur_cycle = read(this->mmio_addrs->cycles_low);
+    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
+    autocounter_file << "Cycle " << cur_cycle << std::endl;
+    autocounter_file << "============================" << std::endl;
+    for (auto pair: addr_map.r_registers) {
+
+      std::string low_prefix = std::string("autocounter_low_");
+      std::string high_prefix = std::string("autocounter_high_");
+
+      if (pair.first.find("autocounter_low_") == 0) {
+          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
+          std::string countername(str);
+          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
+          counter_val |= read(pair.second);
+          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
+      }
+
+    }
+    write(addr_map.w_registers.at("readdone"), 1);
+    autocounter_file << "" << std::endl;
+  }
+}
+
 #endif // AUTOCOUNTERBRIDGEMODULE_struct_guard

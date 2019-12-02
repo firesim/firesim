@@ -20,7 +20,7 @@ class autocounter_t: public bridge_driver_t {
         virtual void tick();
         virtual bool terminate() { return false; }
         virtual int exit_code() { return 0; }
-        virtual void finish() {};
+        virtual void finish();
 
     private:
         AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs;
