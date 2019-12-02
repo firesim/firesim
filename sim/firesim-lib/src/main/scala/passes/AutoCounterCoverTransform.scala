@@ -15,45 +15,11 @@ import freechips.rocketchip.util.WideCounter
 import firesim.bridges._
 import midas.targetutils._
 
- import java.io._
+import java.io._
 import scala.io.Source
 import collection.mutable
 
 
- //====================MOVE TO A UTILS PLACE? ALTHOUGH THESE ARE ALL PLATFORM STUFF=======================
-/*
-case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
-}
-
-case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
-}
-
-case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
-    SingleTargetAnnotation[ModuleTarget] {
-  def duplicate(n: ModuleTarget) = this.copy(target = n)
-}
-
-import chisel3.experimental.ChiselAnnotation
-case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnotation {
-  //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
-  //It currently doesn't matter since the transform throws away the circuit name
-  def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
-}
-
-case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
-  def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
-}
-
-object PerfCounter {
-  def apply(target: chisel3.Data, label: String, message: String): Unit = {
-    chisel3.experimental.annotate(AutoCounterAnnotation(target, label, message))
-  }
-}
-*/
 
 class FireSimPropertyLibrary() extends BasePropertyLibrary {
   import chisel3._
@@ -71,7 +37,7 @@ class FireSimPropertyLibrary() extends BasePropertyLibrary {
  
 
 /**
-Take the annotated cover points and convert them to counters with synthesizable printfs
+Take the annotated cover points and convert them to counters
 **/
 class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false) extends Transform {
   def inputForm: CircuitForm = LowForm
@@ -259,12 +225,10 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
                           val readablelabel = oldlabel + s"[" + instpathnames.dropRight(1).mkString(".") + s"]"
                           val newlabel = oldlabel + s"_" + instpathnames.dropRight(1).mkString("_")
 
-                          //When the wiring trasnform gets fixed
+                          //When the wiring transform gets fixed
                           //=======================================================
                           //newAnnos += SourceAnnotation(ModuleTarget(state.circuit.main, instpath.head.module).ref(fullportname).toNamed, s"AutoCounter_$newlabel")
                           //=======================================================
-
-
                           //Instead of wiring transform, manually connect the counter wire source from the DUT side
                           val sourceref = WSubField(WRef(instpathnames.tail.head), portname) 
                           val wirename = topnamespace.newName(newlabel)
@@ -428,14 +392,12 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
           } else { Seq(mod) }
         case ext: ExtModule => Seq(ext)
       }.flatten
-     
  
-      val statewithwidget =  printcounter match {
+      val statewithwidget = printcounter match {
         case true => state.copy(circuit = state.circuit.copy(modules = modulesx))
         case _ => AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)), hastracerwidget = hastracerwidget)
       }
 
-      //val statewithwidget = AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)), hastracerwidget = hastracerwidget)  
       fixupCircuit(statewithwidget)
     } else { state }
   }
