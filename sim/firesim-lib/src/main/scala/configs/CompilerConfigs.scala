@@ -69,7 +69,6 @@ class BaseF1Config extends Config(
   new WithAsyncResetReplacement ++
   new WithPlusArgReaderRemoval ++
   new WithEC2F1Artefacts ++
-  new WithAutoCounterCover ++
   new WithILATopWiringTransform ++
   new midas.F1Config
 )
