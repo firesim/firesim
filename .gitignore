@@ -6,3 +6,4 @@ target-design/switch/switchconfig.h
 sim[0-9]
 build-setup-log
 tags
+build

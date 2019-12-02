@@ -112,7 +112,6 @@ tracerv_t::~tracerv_t() {
 
 void tracerv_t::init() {
     cur_cycle = 0;
-
     if (this->trigger_selector == 1)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
@@ -120,7 +119,7 @@ void tracerv_t::init() {
       write(this->mmio_addrs->hostTriggerCycleCountStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
       write(this->mmio_addrs->hostTriggerCycleCountEndHigh, this->trace_trigger_end >> 32);
       write(this->mmio_addrs->hostTriggerCycleCountEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
-      printf("Collect trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
+      printf("TracerV: Collect trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
     else if (this->trigger_selector == 2)
     {
@@ -129,7 +128,7 @@ void tracerv_t::init() {
       write(this->mmio_addrs->hostTriggerPCStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
       write(this->mmio_addrs->hostTriggerPCEndHigh, this->trace_trigger_end >> 32);
       write(this->mmio_addrs->hostTriggerPCEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
-      printf("Collect trace from instruction address %lx to %lx\n", trace_trigger_start, trace_trigger_end);
+      printf("TracerV: Collect trace from instruction address %lx to %lx\n", trace_trigger_start, trace_trigger_end);
     }
     else if (this->trigger_selector == 3)
     {
@@ -138,14 +137,14 @@ void tracerv_t::init() {
       write(this->mmio_addrs->hostTriggerStartInstMask, this->trace_trigger_start >> 32);
       write(this->mmio_addrs->hostTriggerEndInst, this->trace_trigger_end & ((1ULL << 32) - 1));
       write(this->mmio_addrs->hostTriggerEndInstMask, this->trace_trigger_end >> 32);
-      printf("Collect trace with start trigger instruction %x masked with %x, and end trigger instruction %x masked with %x\n",
+      printf("TracerV: Collect trace with start trigger instruction %x masked with %x, and end trigger instruction %x masked with %x\n",
               this->trace_trigger_start & ((1ULL << 32) - 1), this->trace_trigger_start >> 32,
               this->trace_trigger_end & ((1ULL << 32) - 1), this->trace_trigger_end >> 32);
     }
     else
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      printf("Collect trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
+      printf("TracerV: Collecting trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
 }
 
@@ -215,7 +214,6 @@ void tracerv_t::flush() {
 
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
     size_t beats_available = beats_available_stable();
-    fprintf(stderr, "Beats available: %d\n", beats_available);
 
     // TODO. as opt can mmap file and just load directly into it.
     pull(dma_addr, (char*)OUTBUF, beats_available * 64);

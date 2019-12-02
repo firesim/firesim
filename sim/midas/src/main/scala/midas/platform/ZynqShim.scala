@@ -37,10 +37,9 @@ class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val slave  = new NastiIO()(p alterPartial ({ case NastiKey => p(HostMemChannelNastiKey) }))
 }
 
-class ZynqShim(simIo: midas.core.SimWrapperChannels)
-              (implicit p: Parameters) extends PlatformShim {
+class ZynqShim(implicit p: Parameters) extends PlatformShim {
   val io = IO(new ZynqShimIO)
-  val top = Module(new midas.core.FPGATop(simIo))
+  val top = Module(new midas.core.FPGATop)
   val headerConsts = List[(String, Long)](
     "MMIO_WIDTH" -> p(MasterNastiKey).dataBits / 8,
     "MEM_WIDTH"  -> p(HostMemChannelNastiKey).dataBits / 8
