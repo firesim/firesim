@@ -20,7 +20,7 @@ class BlockDevBridge(implicit p: Parameters) extends BlackBox
     with Bridge[HostPortIO[BlockDevBridgeTargetIO], BlockDevBridgeModule]  {
   val io = IO(new BlockDevBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = Some(p(BlockDeviceKey))
+  val constructorArg = p(BlockDeviceKey)
   generateAnnotations()
 }
 
@@ -34,7 +34,7 @@ object BlockDevBridge  {
 }
 
 class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameters) extends BridgeModule[HostPortIO[BlockDevBridgeTargetIO]]()(hostP) {
-  implicit override val p = hostP.alterPartial({ case BlockDeviceKey => blockDevExternal })
+  implicit override val p = hostP.alterPartial({ case BlockDeviceKey => Some(blockDevExternal) })
   // TODO use HasBlockDeviceParameters
   val dataBytes = 512
   val sectorBits = 32
