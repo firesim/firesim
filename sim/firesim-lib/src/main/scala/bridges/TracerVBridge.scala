@@ -214,8 +214,10 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     3.U -> triggerInstValVec.reduce(_ || _)))
 
   //TODO: for inter-widget triggering
-  BoringUtils.addSource(trigger, s"trace_trigger")
   //io.trigger_out.head <> trigger
+  if (p(midas.TraceTrigger)) {
+    BoringUtils.addSource(trigger, s"trace_trigger")
+  }
 
   // DMA mixin parameters
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
