@@ -15,6 +15,7 @@ abstract class TutorialSuite(
   ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
 
   val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
+  val simString = "verilator"
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
@@ -75,7 +76,7 @@ abstract class TutorialSuite(
         lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
       }
 
-      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.verilator.out"))
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${simString}.out"))
       val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
       assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
@@ -84,10 +85,36 @@ abstract class TutorialSuite(
     }
   }
 
+  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
+  // printfs from the RTL simulator
+  def diffAutoCounterOutput(autocounterOutputLog: String, referenceFile: String) {
+    behavior of "AutoCounter output log"
+    it should "match the logs commited based on the design intent" in {
+      def printLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        lines.sorted
+      }
+
+      def printVerilatorLines(filename: File): Seq[String] = {
+        val lines = Source.fromFile(filename).getLines.toList
+        val stripedlines = lines.filter(_.startsWith("AUTOCOUNTER_PRINT")).map(line => line.stripPrefix("AUTOCOUNTER_PRINT").trim.replaceAll(" +", " "))
+        stripedlines.sorted
+      }
+
+      //val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
+      val referenceOutput = printVerilatorLines(new File(outDir,  s"/${targetName}.${simString}.out"))
+      val autocounterOutput = printLines(new File(genDir, s"/${autocounterOutputLog}"))
+      assert(referenceOutput.size == autocounterOutput.size && referenceOutput.nonEmpty)
+      for ( (rPrint, acPrint) <- referenceOutput.zip(autocounterOutput) ) {
+        assert(rPrint == acPrint)
+      }
+    }
+  }
+
   clean
   mkdirs
   elaborate
-  runTest("verilator")
+  runTest(simString)
 }
 
 //class PointerChaserF1Test extends TutorialSuite(
@@ -105,6 +132,14 @@ class StackF1Test extends TutorialSuite("Stack")
 class RiscF1Test extends TutorialSuite("Risc")
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
+class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
+        simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterModule.autocounter.out")
+}
+class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
+        simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+        diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterCoverModule.autocounter.out")
+}
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedPrints("synthprinttest.out")
