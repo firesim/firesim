@@ -9,6 +9,7 @@
 #include "bridges/blockdev.h"
 #include "bridges/tracerv.h"
 #include "bridges/groundtest.h"
+#include "bridges/autocounter.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fpga_model.h"
@@ -372,6 +373,97 @@ uint64_t host_mem_offset = -0x80000000LL;
     GROUNDTESTBRIDGEMODULE_7_substruct_create;
     add_bridge_driver(new groundtest_t(
             this, args, GROUNDTESTBRIDGEMODULE_7_substruct));
+    #endif
+#endif
+
+#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
+    #ifdef AUTOCOUNTERBRIDGEMODULE_0_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_0_substruct,
+                 AddressMap(AUTOCOUNTERBRIDGEMODULE_0_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_0_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_1_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_1_substruct,
+                 AddressMap(AUTOCOUNTERBRIDGEMODULE_1_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_1_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_1_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_1_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_2_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_2_substruct,
+                AddressMap(AUTOCOUNTERBRIDGEMODULE_2_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_2_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_2_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_2_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_W_names)));
+    #endif
+    #ifdef AUTCOUNTERBRIDGEMODULE_3_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_3_substruct,
+                 AddressMap(AUTOCOUNTERBRIDGEMODULE_3_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_3_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_3_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_3_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_4_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_4_substruct,
+                AddressMap(AUTOCOUNTERBRIDGEMODULE_4_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_4_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_4_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_4_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_5_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_5_substruct,
+               AddressMap(AUTOCOUNTERBRIDGEMODULE_5_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_5_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_5_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_5_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_6_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_6_substruct,
+                AddressMap(AUTOCOUNTERBRIDGEMODULE_6_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_6_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_6_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_6_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_W_names)));
+    #endif
+    #ifdef AUTOCOUNTERBRIDGEMODULE_7_PRESENT
+    AUTOCOUNTERBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new autocounter_t(
+            this, args, AUTOCOUNTERBRIDGEMODULE_7_substruct,
+                AddressMap(AUTOCOUNTERBRIDGEMODULE_7_R_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_7_R_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_R_names,
+                    AUTOCOUNTERBRIDGEMODULE_7_W_num_registers,
+                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_7_W_addrs,
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_W_names)));
     #endif
 #endif
 
