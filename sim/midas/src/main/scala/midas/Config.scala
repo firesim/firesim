@@ -18,6 +18,7 @@ case object Platform extends Field[(Parameters) => PlatformShim]
 // Switches to synthesize prints and assertions
 case object SynthAsserts extends Field[Boolean]
 case object SynthPrints extends Field[Boolean]
+case object TraceTrigger extends Field[Boolean]
 // Exclude module instances from assertion and print synthesis
 // Tuple of Parent Module (where the instance is instantiated) and the instance name
 case object EnableSnapshot extends Field[Boolean]
@@ -44,6 +45,7 @@ class SimConfig extends Config((site, here, up) => {
   case DaisyWidth       => 32
   case SynthAsserts     => false
   case SynthPrints      => false
+  case TraceTrigger     => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
