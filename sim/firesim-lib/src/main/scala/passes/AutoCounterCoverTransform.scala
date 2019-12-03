@@ -394,7 +394,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       }.flatten
  
       val statewithwidget = printcounter match {
-        case true => state.copy(circuit = state.circuit.copy(modules = modulesx))
+        case true => state.copy(circuit = state.circuit.copy(modules = modulesx), annotations = state.annotations ++ newAnnos)
         case _ => AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)), hastracerwidget = hastracerwidget)
       }
 
