@@ -21,7 +21,7 @@ autocounter_t::autocounter_t(
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
-    const char *autocounter_filename = NULL;
+    const char *autocounter_filename_in = NULL;
     //std::string num_equals = std::to_string(coreno) + std::string("=");
     std::string readrate_arg =        std::string("+autocounter-readrate=");
     std::string filename_arg =        std::string("+autocounter-filename=");
@@ -32,15 +32,15 @@ autocounter_t::autocounter_t(
             this->readrate = atol(str);;
         }
         if (arg.find(filename_arg) == 0) {
-            autocounter_filename = const_cast<char*>(arg.c_str()) + filename_arg.length();
-            this->autocounter_filename = std::string(autocounter_filename);
+            autocounter_filename_in = const_cast<char*>(arg.c_str()) + filename_arg.length();
+            this->autocounter_filename = std::string(autocounter_filename_in);
         }
     }
 
-    autocounter_file.open(autocounter_filename, std::ofstream::out);
+    autocounter_file.open(this->autocounter_filename, std::ofstream::out);
     if(!autocounter_file.is_open()) {
-      throw std::runtime_error("Could not open autocounter output file\n");
-      //throw std::runtime_error("Could not open output file: " + autocounter_filename);
+      //throw std::runtime_error("Could not open autocounter output file\n");
+      throw std::runtime_error("Could not open output file: " + this->autocounter_filename);
     }
 }
 
