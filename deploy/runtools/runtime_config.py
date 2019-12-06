@@ -113,19 +113,29 @@ class RuntimeHWConfig:
                     args.append("""{}{}={}""".format(plusarg, index, arg))
             return " ".join(args) + " "
 
+        def array_to_lognames(values, prefix):
+            names = ["{}{}".format(prefix, i) if val is not None else None
+                     for (i, val) in enumerate(values)]
+            return array_to_plusargs(names, "+" + prefix)
+
         command_macs = array_to_plusargs(all_macs, "+macaddr")
         command_rootfses = array_to_plusargs(all_rootfses, "+blkdev")
         command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
         command_netbws = array_to_plusargs(all_netbws, "+netbw")
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
 
+        command_niclogs = array_to_lognames(all_macs, "niclog")
+        command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
+
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
         zero_out_dram = "+zero-out-dram"
 
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} +niclog0=niclog {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs} {tracefile} +trace-start0={trace_start} +trace-end0={trace_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
+            command_niclogs=command_niclogs,
+            command_blkdev_logs=command_blkdev_logs,
             command_linklatencies=command_linklatencies,
             command_netbws=command_netbws,
             profile_interval=profile_interval,
