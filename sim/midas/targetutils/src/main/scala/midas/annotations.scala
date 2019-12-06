@@ -3,7 +3,7 @@
 package midas.targetutils
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
+import chisel3.experimental.{BaseModule, ChiselAnnotation}
 
 import firrtl.{RenameMap}
 import firrtl.annotations.{NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
