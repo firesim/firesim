@@ -15,13 +15,12 @@ class AutoCounterModuleDUT extends Module {
   })
 
   val enabled_cycles = RegInit(0.U(16.W))
-  val enabled4 = WireDefault(false.B)
 
   when(io.a) { enabled_cycles := enabled_cycles + 1.U }
 
   PerfCounter(io.a, "ENABLED", "Enabled cycles. Should be identical to cycle count minus reset cycles")
 
-  enabled4 := ~enabled_cycles(1) & ~enabled_cycles(0) & io.a
+  val enabled4 = ~enabled_cycles(1) & ~enabled_cycles(0) & io.a
 
   PerfCounter(enabled4, "ENABLED_DIV_4", "Count the number of times the enabled cycle count is divisible by 4. Should be equal to number of cycles minus reset cycles divided by 4")
 
@@ -52,10 +51,8 @@ class AutoCounterModuleChild extends MultiIOModule {
   })
 
   val lfsr = chisel3.util.LFSR16(io.c)
-  val odd_lfsr = WireDefault(false.B)
 
-
-  odd_lfsr := lfsr(0)
+  val odd_lfsr = lfsr(0)
 
   PerfCounter(odd_lfsr, "ODD_LFSR", "Number of cycles the LFSR is has an odd value")
 
@@ -71,12 +68,9 @@ class AutoCounterCoverModuleDUT extends Module {
 
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
-  val cycle8 = WireDefault(false.B)
+  val cycle8 = ~cycle(2) & ~cycle(1) & ~cycle(0)
 
-
-  cycle8 := ~cycle(2) & ~cycle(1) & ~cycle(0)
-
-  cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisable by 8. Should be equval to number of cycles divided by 8")
+  cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisible by 8. Should be equal to number of cycles divided by 8")
 
   chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("AutoCounterCoverModuleDUT"))
 

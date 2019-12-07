@@ -1,5 +1,5 @@
-package firesim
-package bridges
+package midas
+package widgets
 
 import chisel3._
 import chisel3.util._
@@ -10,7 +10,6 @@ import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
 
 
 class AutoCounterBundle(val numCounters: Int) extends Bundle {

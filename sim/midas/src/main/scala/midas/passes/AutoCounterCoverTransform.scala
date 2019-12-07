@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
-package firesim.passes
+package midas
+package passes
 
 import firrtl._
 import firrtl.ir._
@@ -12,7 +13,8 @@ import firrtl.analyses.InstanceGraph
 import firrtl.transforms.TopWiring._
 import freechips.rocketchip.util.property._
 import freechips.rocketchip.util.WideCounter
-import firesim.bridges._
+import freechips.rocketchip.config.{Parameters, Field}
+import midas.widgets._
 import midas.targetutils._
 
 import java.io._
@@ -39,7 +41,7 @@ class FireSimPropertyLibrary() extends BasePropertyLibrary {
 /**
 Take the annotated cover points and convert them to counters
 **/
-class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false) extends Transform {
+class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false)(implicit p: Parameters) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] AutoCounter Cover Transform"
@@ -176,7 +178,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
      import chisel3.experimental.MultiIOModule
      import midas.widgets._
      import freechips.rocketchip.config.{Parameters, Field}
-     import firesim.bridges.{AutoCounterBundle, AutoCounterBridgeModule, AutoCounterBridgeConstArgs}
+     import midas.widgets.{AutoCounterBundle, AutoCounterBridgeModule, AutoCounterBridgeConstArgs}
 
      //def targetwidgetmodule() = new BlackBox with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
      def targetwidgetmodule() = new MultiIOModule with Bridge[HostPortIO[AutoCounterBundle], AutoCounterBridgeModule] {
@@ -332,11 +334,15 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     }
 
     //identify if there is a TracerV bridge to supply a trigger signal
-    val hastracerwidget = state.annotations.collect({ case midas.widgets.SerializableBridgeAnnotation(_,_,widget, _) => 
-                                          widget match {
-                                              case "firesim.bridges.TracerVBridgeModule" => true
-                                              case _ => Nil
-                                          }}).length > 0
+    val hastracerwidget = p(midas.TraceTrigger)
+
+    //----if we want to identify the tracer widget based on bridge annotations, we can use this code segment,
+    //----but this requires the transform to be part of the firesim package rather than midas package
+    //val hastracerwidget = state.annotations.collect({ case midas.widgets.SerializableBridgeAnnotation(_,_,widget, _) => 
+    //                                      widget match {
+    //                                          case "firesim.bridges.TracerVBridgeModule" => true
+    //                                          case _ => Nil
+    //                                      }}).length > 0
 
     //select/filter which modules do we want to actually look at, and generate counters for
     //this can be done in one of two way:

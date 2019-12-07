@@ -15,7 +15,7 @@ abstract class TutorialSuite(
   ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
 
   val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
-  val simString = "verilator"
+  val backendSimulator = "verilator"
 
   lazy val generatorArgs = GeneratorArgs(
     midasFlowKind = "midas",
@@ -76,7 +76,7 @@ abstract class TutorialSuite(
         lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
       }
 
-      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${simString}.out"))
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"))
       val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
       assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
@@ -102,7 +102,7 @@ abstract class TutorialSuite(
       }
 
       //val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
-      val referenceOutput = printVerilatorLines(new File(outDir,  s"/${targetName}.${simString}.out"))
+      val referenceOutput = printVerilatorLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"))
       val autocounterOutput = printLines(new File(genDir, s"/${autocounterOutputLog}"))
       assert(referenceOutput.size == autocounterOutput.size && referenceOutput.nonEmpty)
       for ( (rPrint, acPrint) <- referenceOutput.zip(autocounterOutput) ) {
@@ -114,7 +114,7 @@ abstract class TutorialSuite(
   clean
   mkdirs
   elaborate
-  runTest(simString)
+  runTest(backendSimulator)
 }
 
 //class PointerChaserF1Test extends TutorialSuite(

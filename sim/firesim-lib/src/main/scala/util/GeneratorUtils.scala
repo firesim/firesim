@@ -12,7 +12,6 @@ import freechips.rocketchip.config.{Config, Parameters}
 import freechips.rocketchip.diplomacy.{ValName, LazyModule, AutoBundle}
 import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
-import firesim.passes.FireSimPropertyLibrary
 import freechips.rocketchip.util.property.cover
 
 // Contains FireSim generator utilities that can be reused in MIDAS examples
@@ -31,7 +30,7 @@ trait HasTargetAgnosticUtilites extends HasGeneratorUtilities {
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
     implicit val valName = ValName(targetNames.topModuleClass)
     implicit val p: Parameters = params
-    cover.setPropLib(new FireSimPropertyLibrary())
+    cover.setPropLib(new midas.passes.FireSimPropertyLibrary())
     val cls = Class.forName(targetNames.fullTopModuleClass)
     val inst = try {
       // Check if theres a constructor that accepts a Parameters object
