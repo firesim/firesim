@@ -386,7 +386,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_R_names,
                     AUTOCOUNTERBRIDGEMODULE_0_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names), 0));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_1_PRESENT
     AUTOCOUNTERBRIDGEMODULE_1_substruct_create;
@@ -397,7 +397,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_R_names,
                     AUTOCOUNTERBRIDGEMODULE_1_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_1_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_W_names), 1));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_2_PRESENT
     AUTOCOUNTERBRIDGEMODULE_2_substruct_create;
@@ -408,7 +408,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_R_names,
                     AUTOCOUNTERBRIDGEMODULE_2_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_2_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_W_names), 2));
     #endif
     #ifdef AUTCOUNTERBRIDGEMODULE_3_PRESENT
     AUTOCOUNTERBRIDGEMODULE_3_substruct_create;
@@ -419,7 +419,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_R_names,
                     AUTOCOUNTERBRIDGEMODULE_3_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_3_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_W_names), 3));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_4_PRESENT
     AUTOCOUNTERBRIDGEMODULE_4_substruct_create;
@@ -430,7 +430,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_R_names,
                     AUTOCOUNTERBRIDGEMODULE_4_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_4_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_W_names), 4));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_5_PRESENT
     AUTOCOUNTERBRIDGEMODULE_5_substruct_create;
@@ -441,7 +441,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_R_names,
                     AUTOCOUNTERBRIDGEMODULE_5_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_5_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_W_names), 5));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_6_PRESENT
     AUTOCOUNTERBRIDGEMODULE_6_substruct_create;
@@ -452,7 +452,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_R_names,
                     AUTOCOUNTERBRIDGEMODULE_6_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_6_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_W_names), 6));
     #endif
     #ifdef AUTOCOUNTERBRIDGEMODULE_7_PRESENT
     AUTOCOUNTERBRIDGEMODULE_7_substruct_create;
@@ -463,7 +463,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_R_names,
                     AUTOCOUNTERBRIDGEMODULE_7_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_7_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_W_names), 7));
     #endif
 #endif
 

@@ -161,10 +161,8 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   } .otherwise {
     trace_cycle_counter := trace_cycle_counter
   }
-  val wide_cycles_counter = RegInit(0.U((outgoingPCISdat.io.enq.bits.getWidth).W))
-  wide_cycles_counter := trace_cycle_counter << (outgoingPCISdat.io.enq.bits.getWidth - 64)
 
-   //target instruction type trigger (trigger through target software)
+  //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
   val hostTriggerStartInst = RegInit(0.U(insnWidth.W)) 
   val hostTriggerStartInstMask = RegInit(0.U(insnWidth.W)) 
@@ -223,8 +221,10 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
-  val uint_traces = traces map (trace => (UInt(0, 64.W) | Cat(trace.valid, trace.iaddr)))
-  outgoingPCISdat.io.enq.bits := wide_cycles_counter | Cat(uint_traces)
+  val uint_traces = traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))
+  outgoingPCISdat.io.enq.bits := Cat(Cat(trace_cycle_counter, 
+                                         0.U((outgoingPCISdat.io.enq.bits.getWidth - Cat(uint_traces).getWidth - trace_cycle_counter.getWidth).W)),
+                                     Cat(uint_traces))
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
     hPort.toHost.hValid, hPort.fromHost.hReady)

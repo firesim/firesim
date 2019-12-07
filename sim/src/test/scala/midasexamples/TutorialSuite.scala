@@ -133,11 +133,11 @@ class RiscF1Test extends TutorialSuite("Risc")
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
-        simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+        simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE")) {
         diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterModule.autocounter.out")
 }
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
-        simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+        simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE")) {
         diffAutoCounterOutput("AUTOCOUNTERFILE", "AutoCounterCoverModule.autocounter.out")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",

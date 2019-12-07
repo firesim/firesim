@@ -13,7 +13,7 @@
 class autocounter_t: public bridge_driver_t {
     public:
         autocounter_t(simif_t *sim, std::vector<std::string> &args,
-        AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map);
+        AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map, int autocounterno);
         ~autocounter_t();
 
         virtual void init();

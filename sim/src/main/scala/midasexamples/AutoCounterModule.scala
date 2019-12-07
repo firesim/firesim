@@ -23,7 +23,7 @@ class AutoCounterModuleDUT extends Module {
 
   enabled4 := ~enabled_cycles(1) & ~enabled_cycles(0) & io.a
 
-  PerfCounter(enabled4, "ENABLED_DIV_4", "Count the number of times the enabled cycle count is divisable by 4. Should be equval to number of cycles minus reset cycles divided by 4")
+  PerfCounter(enabled4, "ENABLED_DIV_4", "Count the number of times the enabled cycle count is divisible by 4. Should be equal to number of cycles minus reset cycles divided by 4")
 
   val childInst = Module(new AutoCounterModuleChild)
   childInst.io.c := io.a

@@ -50,8 +50,6 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
   val readrate_low = RegInit(0.U(hostReadrateLowWidth.W))
   val readrate_high = RegInit(0.U(hostReadrateHighWidth.W))
-  chisel3.core.dontTouch(readrate_low)
-  chisel3.core.dontTouch(readrate_high)
   val readrate = Wire(UInt(64.W)) 
   val readrate_dly = RegInit(0.U(64.W)) 
   readrate := Cat(readrate_high, readrate_low)
@@ -99,11 +97,11 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
 
   //communication with the driver
-  val readdone = RegInit(0.U(true.B))
-  val readdone_dly = RegInit(0.U(true.B))
+  val readdone = RegInit(false.B)
+  val readdone_dly = RegInit(false.B)
   val readdone_negedge = Wire(Bool())
   val readdone_posedge = Wire(Bool())
-  val med = RegInit(0.U(true.B))
+  val med = RegInit(false.B)
   readdone_dly := readdone
   readdone_posedge := readdone & ~readdone_dly
   readdone_negedge := readdone_dly & ~readdone
@@ -123,7 +121,7 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
 
   labels.keys.foreach {
-    case(index) => {
+    case (index) => {
       attach(acc_counters(index)(hostCounterLowWidth-1, 0), s"autocounter_low_${labels(index)}", ReadOnly)
       attach(acc_counters(index) >> hostCounterLowWidth, s"autocounter_high_${labels(index)}", ReadOnly)
     }

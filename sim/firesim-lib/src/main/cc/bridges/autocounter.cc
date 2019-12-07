@@ -15,16 +15,16 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(
-    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map) : bridge_driver_t(sim), addr_map(addr_map)
+    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map, int autocounterno) : bridge_driver_t(sim), addr_map(addr_map)
 {
     this->mmio_addrs = mmio_addrs;
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename_in = NULL;
-    //std::string num_equals = std::to_string(coreno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-readrate=");
-    std::string filename_arg =        std::string("+autocounter-filename=");
+    std::string num_equals   =        std::to_string(autocounterno) + std::string("=");
+    std::string readrate_arg =        std::string("+autocounter-readrate") + num_equals;
+    std::string filename_arg =        std::string("+autocounter-filename") + num_equals;
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {

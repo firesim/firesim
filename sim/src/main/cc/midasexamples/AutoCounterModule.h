@@ -20,7 +20,7 @@ class autocounter_module_t: virtual simif_t
                     (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_R_names,
                     AUTOCOUNTERBRIDGEMODULE_0_W_num_registers,
                     (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names)));
+                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names), 0));
         };
         void run_and_collect(int cycles) {
             step(cycles, false);
