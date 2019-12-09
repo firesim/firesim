@@ -21,7 +21,7 @@ class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
     val configString  = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get
     val runtimeConfigName  = annotations.collectFirst({ case RuntimeConfigNameAnnotation(s) => s }).get
 
-    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString)
+    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString, None)
 
     implicit val p = getParameters(pNames).alterPartial({
       case OutputDir => targetDir

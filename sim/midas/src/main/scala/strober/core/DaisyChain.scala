@@ -198,7 +198,7 @@ class SRAMChainControlIO(implicit override val p: Parameters)
 class SRAMChainControl(implicit override val p: Parameters)
     extends DaisyChainModule()(p) with SRAMChainParameters {
   val io = IO(new SRAMChainControlIO)
-  val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(UInt(), 4)
+  val s_IDLE :: s_ADDRGEN :: s_MEMREAD :: s_DONE :: Nil = Enum(4)
   val addrState = RegInit(s_IDLE)
   val addrIns = Seq.fill(n)(Reg(UInt(w.W)))
   val addrOut = Reg(UInt(w.W))

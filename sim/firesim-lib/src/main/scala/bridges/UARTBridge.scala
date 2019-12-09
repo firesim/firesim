@@ -56,7 +56,7 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
   hPort.toHost.hReady := fire
   hPort.fromHost.hValid := fire
 
-  val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(UInt(), 4)
+  val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(4)
   val txState = RegInit(sTxIdle)
   val txData = Reg(UInt(8.W))
   // iterate through bits in byte to deserialize
@@ -97,7 +97,7 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
   txfifo.io.enq.bits  := txData
   txfifo.io.enq.valid := txDataWrap
 
-  val sRxIdle :: sRxStart :: sRxData :: Nil = Enum(UInt(), 3)
+  val sRxIdle :: sRxStart :: sRxData :: Nil = Enum(3)
   val rxState = RegInit(sRxIdle)
   // iterate using div to convert clock rate to baud
   val (rxBaudCount, rxBaudWrap) = Counter(fire, div)

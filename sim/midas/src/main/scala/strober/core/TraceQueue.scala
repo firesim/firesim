@@ -16,7 +16,7 @@ class TraceQueueIO[T <: Data](data: T, val entries: Int) extends Bundle {
 }
 
 class TraceQueue[T <: Data](data: T)(implicit p: Parameters) extends Module {
-  import Chisel._ // FIXME: due to a bug in SyncReadMem
+  //import Chisel._ // FIXME: due to a bug in SyncReadMem
   val io = IO(new TraceQueueIO(data, p(TraceMaxLen)))
 
   val do_flow = Wire(Bool())
@@ -24,8 +24,8 @@ class TraceQueue[T <: Data](data: T)(implicit p: Parameters) extends Module {
   val do_deq = io.deq.fire() && !do_flow
 
   val maybe_full = RegInit(false.B)
-  val enq_ptr = RegInit(UInt(0, log2Ceil(io.entries)))
-  val deq_ptr = RegInit(UInt(0, log2Ceil(io.entries)))
+  val enq_ptr = RegInit(0.U(log2Ceil(io.entries).W))
+  val deq_ptr = RegInit(0.U(log2Ceil(io.entries).W))
   val enq_wrap = enq_ptr === (io.limit - 2.U)
   val deq_wrap = deq_ptr === (io.limit - 2.U)
   when (do_enq) { enq_ptr := Mux(enq_wrap, 0.U, enq_ptr + 1.U) }
@@ -38,7 +38,7 @@ class TraceQueue[T <: Data](data: T)(implicit p: Parameters) extends Module {
   val atLeastTwo = full || enq_ptr - deq_ptr >= 2.U
   do_flow := empty && io.deq.ready
 
-  val ram = SyncReadMem(io.entries, data.chiselCloneType)
+  val ram = SyncReadMem(io.entries, chiselTypeOf(data))
   when (do_enq) { ram.write(enq_ptr, io.enq.bits) }
 
   val ren = io.deq.ready && (atLeastTwo || !io.deq.valid && !empty)
@@ -71,7 +71,7 @@ object TraceQueue {
     val trace = Queue(queue.io.deq, 1, pipe=true)
 
     // for debugging
-    val count = RegInit(UInt(0, 32))
+    val count = RegInit(0.U(32.W))
     count suggestName s"${name}_count"
     when (trace.fire() =/= queue.io.enq.fire()) {
       count := Mux(trace.fire(), count - 1.U, count + 1.U)

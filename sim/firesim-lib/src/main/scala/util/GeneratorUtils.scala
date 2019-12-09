@@ -4,8 +4,7 @@ package firesim.util
 
 import java.io.{File, FileWriter}
 
-import chisel3.Module
-import chisel3.experimental.RawModule
+import chisel3.{Module, RawModule}
 import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.config.{Config, Parameters}
@@ -54,10 +53,10 @@ case class GeneratorArgs(
   platformConfigs: String) {
 
   def targetNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs)
+    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs, None)
 
   def platformNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs)
+    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs, None)
 
   def tupleName(): String = s"$topModuleClass-$targetConfigs-$platformConfigs"
 }

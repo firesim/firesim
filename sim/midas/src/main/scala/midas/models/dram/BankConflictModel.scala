@@ -96,7 +96,7 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   transactionQueue.io.enqB.bits.xaction := TransactionMetaData(tNasti.ar.bits)
   transactionQueue.io.enqB.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
 
-  val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(UInt(0, cfg.maxLatencyBits)))
+  val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(0.U(cfg.maxLatencyBits.W)))
   val bankConflictCounts = RegInit(VecInit(Seq.fill(cfg.maxBanks)(0.U(32.W))))
 
   val newReference = Wire(Decoupled(new BankConflictReference(cfg)))

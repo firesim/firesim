@@ -68,7 +68,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
       field.valid := fwdChPort.bits.valid
       revChPort.bits := field.ready
 
-      import chisel3.core.ExplicitCompileOptions.NotStrict
+      import chisel3.ExplicitCompileOptions.NotStrict
       field.bits  := fwdChPort.bits.bits
 
       fromHostChannels += revChPort
@@ -80,7 +80,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
       fwdChPort.bits.valid := field.valid
       field.ready := revChPort.bits
 
-      import chisel3.core.ExplicitCompileOptions.NotStrict
+      import chisel3.ExplicitCompileOptions.NotStrict
       fwdChPort.bits.bits := field.bits
       fromHostChannels += fwdChPort
       toHostChannels += revChPort
