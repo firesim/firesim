@@ -17,7 +17,7 @@ import fame.{FAMEChannelConnectionAnnotation, FAMEChannelAnalysis, FAME1Transfor
 import Utils._
 import freechips.rocketchip.config.Parameters
 
-import midas.core.SimWrapper
+import midas.core._
 import midas.widgets.BridgeIOAnnotation
 
 private[passes] object ReferenceTargetToPortMap {
@@ -33,38 +33,70 @@ private[passes] object ReferenceTargetToPortMap {
   }
 }
 
-private[passes] class SimulationMapping(
-    io: Seq[(String, chisel3.Data)])
-  (implicit param: Parameters) extends firrtl.Transform {
+private[passes] class SimulationMapping(targetName: String)(implicit val p: Parameters) extends firrtl.Transform
+    with HasSimWrapperParams {
 
   def inputForm = LowForm
   def outputForm = HighForm
-  override def name = "[MIDAS] Simulation Mapping"
+  override def name = "[Golden Gate] Simulation Mapping"
 
-  private def initStmt(target: String)(s: Statement): Statement =
+  private def dumpHeader(c: platform.PlatformShim) {
+    def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
+
+    val dir = p(OutputDir)
+    val csb = new StringBuilder
+    csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
+    csb append "#define __%s_H\n".format(targetName.toUpperCase)
+    c.genHeader(csb, targetName)
+    csb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
+
+    val vsb = new StringBuilder
+    vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
+    vsb append "`define __%s_H\n".format(targetName.toUpperCase)
+    c.headerConsts map vMacro addString vsb
+    vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
+
+    val ch = new FileWriter(new File(dir, s"${targetName}-const.h"))
+    val vh = new FileWriter(new File(dir, s"${targetName}-const.vh"))
+
+    try {
+      ch write csb.result
+      vh write vsb.result
+    } finally {
+      ch.close
+      vh.close
+      csb.clear
+      vsb.clear
+    }
+  }
+
+  // Note: this only runs on the SimulationWrapper Module
+  private def initStmt(targetModuleName: String, targetInstName: String)(s: Statement): Statement =
     s match {
-      case s: WDefInstance if s.name == "target" && s.module == "TargetBox" => Block(Seq(
-        s copy (module = target), // replace TargetBox with the actual target module
-        IsInvalid(NoInfo, wref("target")) // FIXME: due to rocketchip
-      ))
-      case s => s map initStmt(target)
+      case s @ WDefInstance(_, name, _, _) if name == targetInstName =>
+        Block(Seq(
+          s copy (module = targetModuleName), // replace TargetBox with the actual target module
+          IsInvalid(NoInfo, wref(name))
+        ))
+      case s => s map initStmt(targetModuleName, targetInstName)
     }
 
-  private def init(info: Info, target: String, main: String, tpe: Type)(m: DefModule) = m match {
-    case m: Module if m.name == main =>
-      val body = initStmt(target)(m.body)
-      val stmts = if (!param(EnableSnapshot)) {
+  private def init(info: Info, target: String, tpe: Type, targetBoxRT: ReferenceTarget)(m: DefModule) = m match {
+    case m: Module if m.name == targetBoxRT.module =>
+      val targetBoxInstName = targetBoxRT.ref
+      val body = initStmt(target, targetBoxInstName)(m.body)
+      val stmts = if (!p(EnableSnapshot)) {
         Seq()
       } else {
          val ports = (m.ports map (p => p.name -> p)).toMap
-         (create_exps(wsub(wref("target", tpe), "daisy")) map { e =>
+         (create_exps(wsub(wref(targetBoxInstName, tpe), "daisy")) map { e =>
            val io = WRef(loweredName(mergeRef(wref("io"), splitRef(e)._2)))
            ports(io.name).direction match {
              case Input  => Connect(NoInfo, e, io)
              case Output => Connect(NoInfo, io, e)
            }
          }) ++ Seq(
-           Connect(NoInfo, wsub(wref("target"), "daisyReset"), wref("reset", BoolType))
+           Connect(NoInfo, wsub(wref(targetBoxInstName), "daisyReset"), wref("reset", BoolType))
          )
        }
       Some(m copy (info = info, body = Block(body +: stmts)))
@@ -80,30 +112,29 @@ private[passes] class SimulationMapping(
     val bridgeAnnos = innerState.annotations.collect({ case ep: BridgeIOAnnotation => ep })
     // Generate a port map to look up the types of the IO of the channels
     val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
-
-    // Look up new IO than may have been added by instrumentation or debugging passes
-    val newTargetIO = innerState.annotations.collect({
-      case a: AddedTargetIoAnnotation[_] => a.generateChiselIO()
-    })
+    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, portTypeMap)
 
     // Now lower the inner circuit in preparation for linking
     // This prevents having to worry about matching aggregate structure in the wrapper IO
     val loweredInnerState = new IntermediateLoweringCompiler(innerState.form, LowForm).compile(innerState, Seq())
     val innerCircuit = loweredInnerState.circuit
 
-    lazy val sim = new SimWrapper(chAnnos, bridgeAnnos, portTypeMap)
-
-    val c3circuit = chisel3.Driver.elaborate(() => sim)
+    val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
+    lazy val shim = p(Platform)(completeParams)
+    val c3circuit = chisel3.Driver.elaborate(() => shim)
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = c3circuit.annotations.map(_.toFirrtl)
 
-    val transforms = Seq(new PreLinkRenaming(Namespace(innerCircuit)))
+    val transforms = Seq(
+      new Fame1Instances,
+      new PreLinkRenaming(Namespace(innerCircuit)))
     val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
+    val targetBoxAnno = outerState.annotations.collectFirst({ case c: TargetBoxAnnotation => c }).get
     val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
-      init(innerCircuit.info, innerCircuit.main, outerCircuit.main, targetType))
+      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxAnno.target))
 
     // Rename the annotations from the inner module, which are using an obsolete CircuitName
     val renameMap = RenameMap(
@@ -113,17 +144,17 @@ private[passes] class SimulationMapping(
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case _: FAMEChannelConnectionAnnotation => false
       case _: BridgeIOAnnotation => false
-      case _: AddedTargetIoAnnotation[_] => false
       case _ => true
     })
 
     val linkedState = CircuitState(
-      circuit     = new WCircuit(outerCircuit.info, modules, outerCircuit.main, sim.channelPorts),
+      circuit     = Circuit(outerCircuit.info, modules, outerCircuit.main),
       form        = HighForm,
       annotations = innerAnnos ++ outerState.annotations,
       renames     = Some(renameMap)
     )
     writeState(linkedState, "post-sim-mapping.fir")
+    dumpHeader(shim)
     linkedState
   }
 }

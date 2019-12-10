@@ -35,7 +35,7 @@ chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 JVM_MEMORY ?= 16G
-SCALA_VERSION ?= 2.12.4
+SCALA_VERSION ?= 2.12.10
 JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
 

@@ -140,6 +140,11 @@ class FireSimNode(object):
         """ Override this to provide the ability to terminate your simulation. """
         pass
 
+    def has_assigned_host_instance(self):
+        if self.host_instance is None:
+            return False
+        return True
+
     def assign_host_instance(self, host_instance_run_farm_object):
         self.host_instance = host_instance_run_farm_object
 
@@ -178,6 +183,36 @@ class FireSimServerNode(FireSimNode):
     def get_mac_address(self):
         return self.mac_address
 
+    def process_qcow2_rootfses(self, rootfses_list):
+        """ Take in list of all rootfses on this node. For the qcow2 ones, find
+        the allocated devices, attach the device to the qcow2 image on the
+        remote node, and replace it in the list with that nbd device. Return
+        the new list.
+
+        Assumes it will be called from a sim_slot_* directory."""
+
+        assert self.has_assigned_host_instance(), "qcow2 attach cannot be done without a host instance."
+
+        result_list = []
+        for rootfsname in rootfses_list:
+            if rootfsname.endswith(".qcow2"):
+                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+
+                # connect the /dev/nbdX device to the rootfs
+                run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
+                rootfsname = allocd_device
+            result_list.append(rootfsname)
+        return result_list
+
+    def allocate_nbds(self):
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
+        """
+        rootfses_list = [self.get_rootfs_name()]
+        for rootfsname in rootfses_list:
+            if rootfsname.endswith(".qcow2"):
+                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+
+
     def diagramstr(self):
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
                                                    str(self.server_id_internal),
@@ -186,19 +221,28 @@ class FireSimServerNode(FireSimNode):
                                                    str(self.server_hardware_config))
         return msg
 
-    def get_sim_start_command(self, slotno):
-        """ return the command to start the simulation. assumes it will be
+    def run_sim_start_command(self, slotno):
+        """ get/run the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
         shmemportname = "default"
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
 
-        return self.server_hardware_config.get_boot_simulation_command(
-            self.get_mac_address(), self.get_rootfs_name(), slotno,
-            self.server_link_latency, self.server_bw_max,
-            self.server_profile_interval, self.get_bootbin_name(),
-            self.trace_enable, self.trace_start, self.trace_end, shmemportname)
+        all_macs = [self.get_mac_address()]
+        all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
+        all_linklatencies = [self.server_link_latency]
+        all_maxbws = [self.server_bw_max]
+        all_bootbins = [self.get_bootbin_name()]
+        all_shmemportnames = [shmemportname]
+
+        runcommand = self.server_hardware_config.get_boot_simulation_command(
+            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
+            self.server_profile_interval, all_bootbins, self.trace_enable,
+            self.trace_start, self.trace_end, all_shmemportnames)
+
+        run(runcommand)
+
 
     def copy_back_job_results_from_run(self, slotno):
         """
@@ -208,6 +252,8 @@ class FireSimServerNode(FireSimNode):
 
         TODO: move this somewhere else, it's kinda in a weird place...
         """
+        assert self.has_assigned_host_instance(), "copy requires assigned host instance"
+
         jobinfo = self.get_job()
         simserverindex = slotno
         job_results_dir = self.get_job().parent_workload.job_results_dir
@@ -218,11 +264,19 @@ class FireSimServerNode(FireSimNode):
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # mount rootfs, copy files from it back to local system
-        if self.get_rootfs_name() is not None:
+        rfsname = self.get_rootfs_name()
+        is_qcow2 = rfsname.endswith(".qcow2")
+        if rfsname is not None:
             mountpoint = """/home/centos/sim_slot_{}/mountpoint""".format(simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo mkdir -p {}""".format(mountpoint))
-                run("""sudo mount /home/centos/sim_slot_{}/{} {}""".format(simserverindex, self.get_rootfs_name(), mountpoint))
+
+                if is_qcow2:
+                    rfsname = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rfsname)
+                else:
+                    rfsname = """/home/centos/sim_slot_{}/{}""".format(simserverindex, rfsname)
+
+                run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
                 run("""sudo chmod -Rf 777 {}""".format(mountpoint))
 
             ## copy back files from inside the rootfs
@@ -233,6 +287,12 @@ class FireSimServerNode(FireSimNode):
             ## unmount
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo umount {}""".format(mountpoint))
+
+            ## if qcow2, detach .qcow2 image from the device, we're done with it
+            if is_qcow2:
+                with StreamLogger('stdout'), StreamLogger('stderr'):
+                    run("""sudo qemu-nbd -d {devname}""".format(devname=rfsname))
+
 
         ## copy output files generated by the simulator that live on the host:
         ## e.g. uartlog, memory_stats.csv, etc
@@ -253,9 +313,9 @@ class FireSimServerNode(FireSimNode):
         all_paths = []
 
         if self.get_job().rootfs_path() is not None:
-            all_paths.append([self.get_job().rootfs_path(), ''])
+            all_paths.append([self.get_job().rootfs_path(), self.get_rootfs_name()])
 
-        all_paths.append([self.get_job().bootbinary_path(), ''])
+        all_paths.append([self.get_job().bootbinary_path(), self.get_bootbin_name()])
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
@@ -277,18 +337,17 @@ class FireSimServerNode(FireSimNode):
     def get_job_name(self):
         return self.job.jobname
 
-    def get_rootfs_name(self, dummyindex=0):
+    def get_rootfs_name(self):
         if self.get_job().rootfs_path() is None:
             return None
-        elif dummyindex:
-            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        else:
-            return self.get_job().rootfs_path().split("/")[-1]
+        # prefix rootfs name with the job name to disambiguate in supernode
+        # cases
+        return self.get_job_name() + "-" + self.get_job().rootfs_path().split("/")[-1]
 
-    def get_bootbin_name(self, dummyindex=0):
-        if dummyindex:
-            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().bootbinary_path().split("/")[-1]
+    def get_bootbin_name(self):
+        # prefix bootbin name with the job name to disambiguate in supernode
+        # cases
+        return self.get_job_name() + "-" + self.get_job().bootbinary_path().split("/")[-1]
 
 
 class FireSimSuperNodeServerNode(FireSimServerNode):
@@ -296,18 +355,52 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     call out to dummy server nodes to get all the info to launch the one
     command line to run the FPGA sim that has N > 1 sims on one fpga."""
 
-    def supernode_get_num_siblings(self):
-        siblings = 0
+    def copy_back_job_results_from_run(self, slotno):
+        """ This override is to call copy back job results for all the dummy nodes too. """
+        # first call the original
+        super(FireSimSuperNodeServerNode, self).copy_back_job_results_from_run(slotno)
+
+        # call on all siblings
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+
+        # TODO: for now, just hackishly give the siblings a host node.
+        # fixing this properly is going to probably require a larger revamp
+        # of supernode handling
+        super_server_host = self.get_host_instance()
+        for sibindex in range(1, num_siblings):
+            sib = self.supernode_get_sibling(sibindex)
+            sib.assign_host_instance(super_server_host)
+            sib.copy_back_job_results_from_run(slotno)
+
+
+    def allocate_nbds(self):
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
+        """
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+
+        rootfses_list = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
+
+        for rootfsname in rootfses_list:
+            if rootfsname.endswith(".qcow2"):
+                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+
+
+
+    def supernode_get_num_siblings_plus_one(self):
+        """ This returns the number of siblings the supernodeservernode has,
+        plus one (because in most places, we use siblings + 1, not just siblings)
+        """
+        siblings = 1
         count = False
         for index, servernode in enumerate(map( lambda x : x.get_downlink_side(), self.uplinks[0].get_uplink_side().downlinks)):
             if count:
                 if isinstance(servernode, FireSimDummyServerNode):
-                    count += 1
+                    siblings += 1
                 else:
-                    return count
+                    return siblings
             elif self == servernode:
                 count = True
-        return count
+        return siblings
 
     def supernode_get_sibling(self, siblingindex):
         """ return the sibling for supernode mode.
@@ -324,12 +417,12 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def supernode_get_sibling_rootfs(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_rootfs_name(siblingindex)
+        return self.supernode_get_sibling(siblingindex).get_rootfs_name()
 
     def supernode_get_sibling_bootbin(self, siblingindex):
         """ return the sibling's rootfs for supernode mode.
         siblingindex = 1 -> next sibling, 2 = second, 3 = last one."""
-        return self.supernode_get_sibling(siblingindex).get_bootbin_name(siblingindex)
+        return self.supernode_get_sibling(siblingindex).get_bootbin_name()
 
     def supernode_get_sibling_rootfs_path(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).get_job().rootfs_path()
@@ -346,17 +439,14 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def supernode_get_sibling_shmemportname(self, siblingindex):
         return self.supernode_get_sibling(siblingindex).uplinks[0].get_global_link_id()
 
-    def get_sim_start_command(self, slotno):
-        """ return the command to start the simulation. assumes it will be
-        called in a directory where its required_files are already located.
+    def run_sim_start_command(self, slotno):
+        """ get/run the command to run a simulation. assumes it will be
+        called in a directory where its required_files are already located."""
 
-        Currently hardcoded to 4 nodes.
-        """
-
-        num_siblings = self.supernode_get_num_siblings()
+        num_siblings = self.supernode_get_num_siblings_plus_one()
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling_mac_address(x) for x in range(1, num_siblings)]
-        all_rootfses = [self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)]
+        all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling_rootfs(x) for x in range(1, num_siblings)])
         all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling_bootbin(x) for x in range(1, num_siblings)]
         all_linklatencies = [self.server_link_latency] + [self.supernode_get_sibling_link_latency(x) for x in range(1, num_siblings)]
         all_maxbws = [self.server_bw_max] + [self.supernode_get_sibling_bw_max(x) for x in range(1, num_siblings)]
@@ -365,10 +455,12 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         if self.uplinks:
             all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling_shmemportname(x) for x in range(1, num_siblings)]
 
-        return self.server_hardware_config.get_supernode_boot_simulation_command(
+        runcommand = self.server_hardware_config.get_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
             self.trace_start, self.trace_end, all_shmemportnames)
+
+        run(runcommand)
 
     def get_required_files_local_paths(self):
         """ Return local paths of all stuff needed to run this simulation as
@@ -384,7 +476,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.get_job().rootfs_path(),
                               self.get_rootfs_name()])
 
-        num_siblings = self.supernode_get_num_siblings()
+        num_siblings = self.supernode_get_num_siblings_plus_one()
 
         for x in range(1, num_siblings):
             sibling_rootfs_path = self.supernode_get_sibling_rootfs_path(x)
@@ -404,20 +496,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
-    def get_rootfs_name(self, dummyindex=0):
-        if self.get_job().rootfs_path() is None:
-            return None
-        elif dummyindex:
-            return self.get_job().rootfs_path().split("/")[-1] + "-" + str(dummyindex)
-        else:
-            return self.get_job().rootfs_path().split("/")[-1]
-
-    def get_bootbin_name(self, dummyindex=0):
-        if dummyindex:
-            return self.get_job().bootbinary_path().split("/")[-1] + "-" + str(dummyindex)
-        return self.get_job().bootbinary_path().split("/")[-1]
-
-
 class FireSimDummyServerNode(FireSimServerNode):
     """ This is a dummy server node for supernode mode. """
     def __init__(self, server_hardware_config=None, server_link_latency=None,
@@ -425,6 +503,11 @@ class FireSimDummyServerNode(FireSimServerNode):
         super(FireSimDummyServerNode, self).__init__(server_hardware_config,
                                                      server_link_latency,
                                                      server_bw_max)
+
+    def allocate_nbds(self):
+        """ this is handled by the non-dummy node. override so it does nothing
+        when called"""
+        pass
 
 
 class FireSimSwitchNode(FireSimNode):
