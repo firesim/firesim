@@ -4,12 +4,6 @@ import json
 from pathlib import Path
 from .wlutil import *
 
-# firesim workloads directory
-try:
-    fsWork = (Path(root_dir) / "../../deploy/workloads").resolve()
-except:
-    fsWork = None
-
 readmeTxt="""This workload was generated using firesim-software. See the following config
 and workload directory for details:
 """
@@ -21,6 +15,7 @@ def fullRel(base, target):
     return os.path.relpath(str(target), start=str(base))
 
 def installWorkload(cfgName, cfgs):
+    fsWork = ((getOpt('root-dir') / "../../deploy/workloads").resolve())
     if fsWork == None:
         raise RuntimeError("The install command is not supported when firesim-software is checked out standalone (i.e. not a submodule of firesim).")
 
@@ -36,7 +31,7 @@ def installWorkload(cfgName, cfgs):
 
     # Path to dummy rootfs to use if no image specified (firesim requires a
     # rootfs, even if it's not used)
-    dummyPath = fullRel(fsTargetDir, Path(wlutil_dir) / 'dummy.rootfs')
+    dummyPath = fullRel(fsTargetDir, getOpt('wlutil-dir') / 'dummy.rootfs')
 
     # Firesim config
     fsCfg = {
@@ -62,7 +57,7 @@ def installWorkload(cfgName, cfgs):
                 wls[slot]["rootfs"] = dummyPath
 
             if 'outputs' in jCfg:
-                wls[slot]["outputs"] = jCfg['outputs']
+                wls[slot]["outputs"] = [ f.as_posix() for f in jCfg['outputs'] ]
         fsCfg['workloads'] = wls
     else:
         # Single-node run
