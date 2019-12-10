@@ -56,14 +56,14 @@ class WithILATopWiringTransform extends Config((site, here, up) => {
 })
 
 // Implements the AutoCounter performace counters features
-class WithAutoCounterCover extends Config((site, here, up) => {
+class WithAutoCounter extends Config((site, here, up) => {
   case midas.TraceTrigger => true
-  case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterCoverTransform()(p))) +: up(TargetTransforms, site)
+  case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterTransform()(p))) +: up(TargetTransforms, site)
 })
 
-class WithAutoCounterCoverPrintf extends Config((site, here, up) => {
+class WithAutoCounterPrintf extends Config((site, here, up) => {
   case midas.SynthPrints => true
-  case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterCoverTransform(printcounter = true)(p))) +: up(TargetTransforms, site)
+  case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterTransform(printcounter = true)(p))) +: up(TargetTransforms, site)
 })
 
 class BaseF1Config extends Config(

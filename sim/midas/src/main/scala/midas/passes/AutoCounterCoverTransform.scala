@@ -41,7 +41,7 @@ class FireSimPropertyLibrary() extends BasePropertyLibrary {
 /**
 Take the annotated cover points and convert them to counters
 **/
-class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false)(implicit p: Parameters) extends Transform {
+class AutoCounterTransform(dir: File = new File("/tmp/"), printcounter: Boolean = false)(implicit p: Parameters) extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] AutoCounter Cover Transform"
@@ -54,20 +54,18 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
   val autoCounterPortsMap = mutable.Map.empty[Int, String]
   val autoCounterLabelsMap = mutable.Map.empty[String, String]
 
-  private def MakeCounter(label: String, hastracerwidget: Boolean = false): CircuitState = {
+  private def makeCounter(label: String, hasTracerWidget: Boolean = false): CircuitState = {
     import chisel3._
     import chisel3.experimental.MultiIOModule
     import chisel3.experimental.ChiselAnnotation
     import chisel3.util.experimental.BoringUtils
     def countermodule() = new MultiIOModule {
       //override def desiredName = "AutoCounter"
-      val cycle = RegInit(0.U(64.W))
-      cycle := cycle + 1.U
       val in0 = IO(Input(Bool()))
 
       //connect the trigger from the tracer widget
       val trigger = WireDefault(true.B)
-      hastracerwidget match {
+      hasTracerWidget match {
         case true => BoringUtils.addSink(trigger, s"trace_trigger")
         case _ => trigger := true.B
       }
@@ -82,7 +80,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
       count := countfun
       if (printcounter) {
         when (in0 & trigger) {
-          printf(midas.targetutils.SynthesizePrintf(s"[AutoCounter] $label: %d cycle: %d\n",count, cycle))
+          printf(midas.targetutils.SynthesizePrintf(s"[AutoCounter] $label: %d\n",count))
         }
       } else {
           chisel3.core.dontTouch(count)
@@ -100,7 +98,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     lowFirrtlIR 
   } 
 
-  private def onModule(topNS: Namespace, covertuples: Seq[(ReferenceTarget, String)], hastracerwidget: Boolean = false)(mod: Module): Seq[Module] = {
+  private def onModule(topNS: Namespace, covertuples: Seq[(ReferenceTarget, String)], hasTracerWidget: Boolean = false)(mod: Module): Seq[Module] = {
 
     val namespace = Namespace(mod)
     val resetRef = mod.ports.collectFirst { case Port(_,"reset",_,_) => WRef("reset") }
@@ -113,7 +111,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     //for each annotated signal within this module
     covertuples.foreach { case (target, label) =>
         //create counter
-        val countermodstate = MakeCounter(label, hastracerwidget = hastracerwidget)
+        val countermodstate = makeCounter(label, hasTracerWidget = hasTracerWidget)
         val countermod = countermodstate.circuit.modules match {
             case Seq(one: firrtl.ir.Module) => one
             case other => throwInternalError(s"Invalid resulting modules ${other.map(_.name)}")
@@ -172,7 +170,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
 
    //create the appropriate perf counters target widget
-   private def MakeAutoCounterWidget(topNS: Namespace, numcounters: Int, maincircuit: Circuit, hastracerwidget: Boolean = false): Module = {
+   private def MakeAutoCounterWidget(topNS: Namespace, numcounters: Int, maincircuit: Circuit, hasTracerWidget: Boolean = false): Module = {
 
      import chisel3._
      import chisel3.experimental.MultiIOModule
@@ -187,7 +185,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
        val bridgeIO = HostPort(io)
        chisel3.core.dontTouch(io)
 
-       val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterPortsMap, hastracerwidget)) 
+       val constructorArg = Some(AutoCounterBridgeConstArgs(numcounters, autoCounterPortsMap, hasTracerWidget)) 
  
        generateAnnotations()
      } 
@@ -245,7 +243,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
    //count the number of generated perf counters
    //create an appropriate widget IO
    //wire the counters to the widget
-   private def AddAutoCounterWidget(state: CircuitState, hastracerwidget: Boolean = false): CircuitState = {
+   private def AddAutoCounterWidget(state: CircuitState, hasTracerWidget: Boolean = false): CircuitState = {
 
      //need to "remember/save" the "old/original" top level module, since the TopWiring transform
      //punches signals out all the way to the top, and we want them punched out only
@@ -276,7 +274,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
 
 
      //create the bridge module (widget)
-     val widgetmod = MakeAutoCounterWidget(topnamespace, numcounters, newstate.circuit, hastracerwidget)
+     val widgetmod = MakeAutoCounterWidget(topnamespace, numcounters, newstate.circuit, hasTracerWidget)
 
      val topSort = instanceGraph.moduleOrder
 
@@ -334,11 +332,11 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     }
 
     //identify if there is a TracerV bridge to supply a trigger signal
-    val hastracerwidget = p(midas.TraceTrigger)
+    val hasTracerWidget = p(midas.TraceTrigger)
 
     //----if we want to identify the tracer widget based on bridge annotations, we can use this code segment,
     //----but this requires the transform to be part of the firesim package rather than midas package
-    //val hastracerwidget = state.annotations.collect({ case midas.widgets.SerializableBridgeAnnotation(_,_,widget, _) => 
+    //val hasTracerWidget = state.annotations.collect({ case midas.widgets.SerializableBridgeAnnotation(_,_,widget, _) => 
     //                                      widget match {
     //                                          case "firesim.bridges.TracerVBridgeModule" => true
     //                                          case _ => Nil
@@ -365,7 +363,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
     val covermodulesnames = moduleannos.map { case AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget(_,m)) => m }
 
     if (!covermodulesnames.isEmpty) {
-      println("[AutoCounter]: Cover modules in AutoCounterCoverTransform:")
+      println("[AutoCounter]: Cover modules in AutoCounterTransform:")
       println(covermodulesnames)
     }
 
@@ -391,7 +389,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
         case mod: Module =>
           val covertuples = selectedsignals.getOrElse(mod.name, Seq())
           if (!covertuples.isEmpty) {
-            val mods = onModule(moduleNamespace, covertuples, hastracerwidget = hastracerwidget)(mod)
+            val mods = onModule(moduleNamespace, covertuples, hasTracerWidget = hasTracerWidget)(mod)
             val newMods = mods.filter(_.name != mod.name)
             assert(newMods.size + 1 == mods.size) // Sanity check
             mods
@@ -401,7 +399,7 @@ class AutoCounterCoverTransform(dir: File = new File("/tmp/"), printcounter: Boo
  
       val statewithwidget = printcounter match {
         case true => state.copy(circuit = state.circuit.copy(modules = modulesx), annotations = state.annotations ++ newAnnos)
-        case _ => AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)), hastracerwidget = hastracerwidget)
+        case _ => AddAutoCounterWidget(state.copy(circuit = state.circuit.copy(modules = modulesx)), hasTracerWidget = hasTracerWidget)
       }
 
       fixupCircuit(statewithwidget)

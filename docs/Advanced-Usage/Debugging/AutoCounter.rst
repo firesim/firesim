@@ -24,7 +24,7 @@ and the counter description. An example counter declaration would be:
 Building a Design with AutoCounter
 -------------------------------------
 
-To enable AutoCounter when building a design, prepend ``WithAutoCounterCover`` Config to your
+To enable AutoCounter when building a design, prepend ``WithAutoCounter`` Config to your
 PLATFORM_CONFIG. During compilation, FireSim will print the
 signals it is generating counters for. If AutoCounter has been enabled, the
 ``autocounter_t`` bridge driver will be automatically instantiated.
