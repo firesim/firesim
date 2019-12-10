@@ -13,7 +13,7 @@ abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
   val replayBackends = Seq("rtl")
   val platformMakeArgs = Seq(s"PLATFORM=$platformName")
 
-  // Check if we are running out of REBAR by checking for the existence of a firesim/sim directory
+  // Check if we are running out of Chipyard by checking for the existence of a firesim/sim directory
   val firesimDir = {
     val cwd = System.getProperty("user.dir")
     val firesimAsLibDir = new File(cwd, "sims/firesim/sim")
