@@ -2,7 +2,6 @@ package midas.models.sram
 
 import chisel3._
 import chisel3.util.{Mux1H, Decoupled, RegEnable, log2Ceil}
-import chisel3.experimental.MultiIOModule
 import chisel3.experimental.{DataMirror, requireIsChiselType}
 import collection.immutable.ListMap
 
@@ -73,7 +72,7 @@ class RegfileChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int, va
 
   // Registers to track target reset -> gates clocks and resets registers
   val reset_token = Reg(Bool())
-  val has_reset_token = Reg(init = false.B)
+  val has_reset_token = RegInit(false.B)
 
   // Unpacking inputs
   val reads_cmd_valid = (0 until nReads).map(i => channels.read_cmds(i).valid)

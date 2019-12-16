@@ -10,7 +10,7 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{dontTouch, chiselName, MultiIOModule}
+import chisel3.experimental.{chiselName}
 
 import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}

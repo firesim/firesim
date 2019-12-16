@@ -33,7 +33,11 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}firechip
+	firesim_sbt_project := {file:${chipyard_dir}}firechip
+
+	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "*.scala" -print 2> /dev/null)
+	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
+	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
 	firesim_sbt_project := firechip
 endif

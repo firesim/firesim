@@ -28,7 +28,7 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
     val targetDir = annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
     val configPackage = annotations.collectFirst({ case ConfigPackageAnnotation(p) => p }).get
     val configString  = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get
-    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString)
+    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString, None)
 
     val midasAnnos = Seq(InferReadWriteAnnotation)
 

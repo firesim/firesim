@@ -5,7 +5,6 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.MultiIOModule
 
 class PipeModule[T <: Data](gen: T, latency: Int = 0) extends MultiIOModule {
   val in   = IO(Input(gen))

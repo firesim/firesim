@@ -90,7 +90,7 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
   *
   * This uses the legacy non-LI-BDN F1 transform
   */
-case class Fame1ChiselAnnotation(target: chisel3.experimental.RawModule, tFire: String = "targetFire") 
+case class Fame1ChiselAnnotation(target: chisel3.RawModule, tFire: String = "targetFire")
     extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl = Fame1Annotation(target.toNamed, tFire)
 }

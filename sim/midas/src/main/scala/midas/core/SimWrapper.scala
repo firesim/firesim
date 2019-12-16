@@ -14,7 +14,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{MultiIOModule, Direction, ChiselAnnotation}
+import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
 import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 
@@ -251,7 +251,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
 
   target.io.hostReset := reset.toBool && hostReset
   target.io.clock := clock
-  import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
+  import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 
   def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
     target.io.wireTypeMap(chAnno)

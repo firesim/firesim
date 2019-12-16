@@ -3,7 +3,6 @@
 package firesim.fasedtests
 
 import chisel3._
-import chisel3.experimental.{RawModule, MultiIOModule}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._

@@ -5,7 +5,6 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{MultiIOModule}
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import junctions._

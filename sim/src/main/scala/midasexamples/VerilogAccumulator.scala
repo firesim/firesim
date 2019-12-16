@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.{unless, HasBlackBoxInline}
-import chisel3.experimental.{withClockAndReset, RawModule}
+import chisel3.experimental.{withClockAndReset}
 
 import midas.widgets.PeekPokeBridge
 
