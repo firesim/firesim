@@ -8,7 +8,15 @@
 class synthesized_assertions_t: public bridge_driver_t
 {
     public:
-        synthesized_assertions_t(simif_t* sim, ASSERTBRIDGEMODULE_struct * mmio_addrs);
+        synthesized_assertions_t(
+          simif_t* sim,
+          ASSERTBRIDGEMODULE_struct * mmio_addrs,
+          unsigned int num_asserts,
+          const char* const* msgs) :
+            bridge_driver_t(sim),
+            mmio_addrs(mmio_addrs),
+            num_asserts(num_asserts),
+            msgs(msgs) {};
         ~synthesized_assertions_t();
         virtual void init() {};
         virtual void tick();
@@ -21,6 +29,8 @@ class synthesized_assertions_t: public bridge_driver_t
         int assert_id;
         uint64_t assert_cycle;
         ASSERTBRIDGEMODULE_struct * mmio_addrs;
+        const unsigned int num_asserts;
+        const char* const* msgs;
 };
 
 #endif // ASSERTBRIDGEMODULE_struct_guard

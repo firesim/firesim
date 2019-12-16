@@ -3,12 +3,12 @@
 package midas
 package widgets
 
-trait CPPLiteral {
+sealed trait CPPLiteral {
   def typeString: String
   def toC: String
 }
 
-trait IntLikeLiteral extends CPPLiteral {
+sealed trait IntLikeLiteral extends CPPLiteral {
   def bitWidth: Int
   def literalSuffix: String
   def value: BigInt
@@ -31,7 +31,7 @@ case class UInt64(value: BigInt) extends IntLikeLiteral {
 
 case class CStrLit(val value: String) extends CPPLiteral {
   def typeString = "const char* const"
-  def toC = "\"%s\"".format(value)
+  def toC = "R\"ESC(%s)ESC\"".format(value)
 }
 
 object CppGenerationUtils {
@@ -64,6 +64,7 @@ object CppGenerationUtils {
 
   def genComment(str: String): String = "// %s\n".format(str)
 
+  implicit def toStrLit(str: String): CStrLit = CStrLit(str)
 }
 
 

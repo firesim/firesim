@@ -12,8 +12,14 @@ public:
     MultiClockAssertModule_t(int argc, char** argv) {
         ASSERTBRIDGEMODULE_0_substruct_create;
         ASSERTBRIDGEMODULE_1_substruct_create;
-        full_rate_assert_ep = new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_0_substruct);
-        half_rate_assert_ep = new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_1_substruct);
+        full_rate_assert_ep = new synthesized_assertions_t(this,
+          ASSERTBRIDGEMODULE_0_substruct,
+          ASSERTBRIDGEMODULE_0_assert_count,
+          ASSERTBRIDGEMODULE_0_assert_messages);
+        half_rate_assert_ep = new synthesized_assertions_t(this,
+          ASSERTBRIDGEMODULE_1_substruct,
+          ASSERTBRIDGEMODULE_1_assert_count,
+          ASSERTBRIDGEMODULE_1_assert_messages);
         assert_endpoints.push_back(full_rate_assert_ep);
         assert_endpoints.push_back(half_rate_assert_ep);
     };
