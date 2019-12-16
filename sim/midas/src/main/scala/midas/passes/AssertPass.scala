@@ -180,69 +180,66 @@ private[passes] class AssertPass(
     val mods = postorder(c, meta)(wireSynthesizedAssertions(meta, CircuitTarget(c.main)))
     val formattedMessages = formatMessages(meta, c.main)
 
-    // Step 4: Associate each assertion with a source clock
     val mInfo = new ModuleAssertInfo(topModule, meta, topMT)
-    val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
-    val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))
-    val clockMapping = FindClockSources(loweredState, mInfo.allClocks)
-    val rootClocks = mInfo.allClocks.map(clockMapping)
-
-    // For each clock in clock channel, list associated assert indices
-    val groupedAsserts = rootClocks.zipWithIndex.groupBy(_._1).mapValues(values => values.map(_._2))
-
-    // Step 5: Re-wire the top-level module
-    val ports = collection.mutable.ArrayBuffer[Port]()
-    val stmts = collection.mutable.ArrayBuffer[Statement]()
-    val assertAnnos = collection.mutable.ArrayBuffer[Annotation]()
-
-    // Step 5a: Connect all assertions to a single wire to match the order of our previous analysis
-    val allAssertsWire = DefWire(NoInfo, "allAsserts", mInfo.assertUInt)
-    val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts.reverse))
-    stmts ++= Seq(allAssertsWire, allAssertConnect)
-
-    // Step 5b: Generate unique ports for each clock
-    for ((clockRT, asserts) <- groupedAsserts) {
-      val portName = namespace.newName(s"midasAsserts_${clockRT.ref}")
-      val clockPortName = namespace.newName(s"midasAsserts_${clockRT.ref}_clock")
-      val tpe = UIntType(IntWidth(asserts.size))
-      val port = Port(NoInfo, portName, Output, tpe)
-      val clockPort = Port(NoInfo, clockPortName, Output, ClockType)
-      ports ++= Seq(port, clockPort)
-      val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
-      val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
-      val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
-      stmts ++= Seq(connectClock, connectAsserts)
-
-      // Generate the bridge Annotation
-      val portRT = ModuleTarget(c.main, c.main).ref(portName)
-      val clockPortRT = ModuleTarget(c.main, c.main).ref(clockPortName)
-      val fcca = FAMEChannelConnectionAnnotation.source(portName, WireChannel, Some(clockPortRT), Seq(portRT))
-      val assertMessages = asserts.map(formattedMessages(_))
-      val bridgeAnno = BridgeIOAnnotation(
-        target = portRT,
-        widget = Some((p: Parameters) => new AssertBridgeModule(assertMessages)(p)),
-        channelMapping = Map("" -> portName)
-      )
-      assertAnnos ++= Seq(fcca, bridgeAnno)
-    }
-    val wiredTopModule = topModule.copy(ports = topModule.ports ++ ports,
-                                        body = Block(topModule.body +: stmts.toSeq))
-
     println(s"[Golden Gate] total # of assertions synthesized: ${mInfo.assertWidth}")
 
-    state.copy(
-      circuit = c.copy(modules = wiredTopModule +: mods.filterNot(_.name == c.main)),
-      form    = HighForm,
-      annotations = state.annotations ++ assertAnnos
-    )
+    if (!mInfo.hasAsserts) state else {
+      // Step 4: Associate each assertion with a source clock
+      val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
+      val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))
+      val clockMapping = FindClockSources(loweredState, mInfo.allClocks)
+      val rootClocks = mInfo.allClocks.map(clockMapping)
+
+      // For each clock in clock channel, list associated assert indices
+      val groupedAsserts = rootClocks.zipWithIndex.groupBy(_._1).mapValues(values => values.map(_._2))
+
+      // Step 5: Re-wire the top-level module
+      val ports = collection.mutable.ArrayBuffer[Port]()
+      val stmts = collection.mutable.ArrayBuffer[Statement]()
+      val assertAnnos = collection.mutable.ArrayBuffer[Annotation]()
+
+      // Step 5a: Connect all assertions to a single wire to match the order of our previous analysis
+      val allAssertsWire = DefWire(NoInfo, "allAsserts", mInfo.assertUInt)
+      val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts.reverse))
+      stmts ++= Seq(allAssertsWire, allAssertConnect)
+
+      // Step 5b: Generate unique ports for each clock
+      for ((clockRT, asserts) <- groupedAsserts) {
+        val portName = namespace.newName(s"midasAsserts_${clockRT.ref}")
+        val clockPortName = namespace.newName(s"midasAsserts_${clockRT.ref}_clock")
+        val tpe = UIntType(IntWidth(asserts.size))
+        val port = Port(NoInfo, portName, Output, tpe)
+        val clockPort = Port(NoInfo, clockPortName, Output, ClockType)
+        ports ++= Seq(port, clockPort)
+        val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
+        val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
+        val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
+        stmts ++= Seq(connectClock, connectAsserts)
+
+        // Generate the bridge Annotation
+        val portRT = ModuleTarget(c.main, c.main).ref(portName)
+        val clockPortRT = ModuleTarget(c.main, c.main).ref(clockPortName)
+        val fcca = FAMEChannelConnectionAnnotation.source(portName, WireChannel, Some(clockPortRT), Seq(portRT))
+        val assertMessages = asserts.map(formattedMessages(_))
+        val bridgeAnno = BridgeIOAnnotation(
+          target = portRT,
+          widget = Some((p: Parameters) => new AssertBridgeModule(assertMessages)(p)),
+          channelMapping = Map("" -> portName)
+        )
+        assertAnnos ++= Seq(fcca, bridgeAnno)
+      }
+      val wiredTopModule = topModule.copy(ports = topModule.ports ++ ports,
+                                          body = Block(topModule.body +: stmts.toSeq))
+
+      state.copy(
+        circuit = c.copy(modules = wiredTopModule +: mods.filterNot(_.name == c.main)),
+        form    = HighForm,
+        annotations = state.annotations ++ assertAnnos
+      )
+    }
   }
 
   def execute(state: CircuitState): CircuitState = {
-    if (p(SynthAsserts)) synthesizeAsserts(state) else {
-      // Still need to touch the file.
-      val f = new FileWriter(new File(dir, s"${state.circuit.main}.asserts"))
-      f.close
-      state
-    }
+    if (p(SynthAsserts)) synthesizeAsserts(state) else state
   }
 }
