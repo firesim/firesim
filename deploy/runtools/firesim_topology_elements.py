@@ -259,7 +259,6 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
-        all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
     def get_agfi(self):
@@ -401,7 +400,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
-        all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
         return all_paths
 
     def get_rootfs_name(self, dummyindex=0):

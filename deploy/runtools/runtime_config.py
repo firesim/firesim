@@ -79,14 +79,6 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
-    # TODO: Delete this and bake the assertion definitions into the Driver
-    def get_local_assert_def_path(self):
-        """ return relative local path of the synthesized assertion definitions. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        gen_src_dir = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
-        assert_def_local = gen_src_dir + self.get_design_name() + ".asserts"
-        return assert_def_local
-
     def get_boot_simulation_command(self, macaddr, blkdev, slotid,
                                     linklatency, netbw, profile_interval, bootbin,
                                     trace_enable, trace_start, trace_end, shmemportname):
