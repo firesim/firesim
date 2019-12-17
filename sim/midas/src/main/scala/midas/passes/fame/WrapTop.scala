@@ -12,10 +12,10 @@ object WrapTop extends Transform {
   def outputForm = HighForm
 
   // TODO: Make these names flexible
-  // Previously, it looked like they were in the code, but they weren't
+  // Previously, it looked like they were flexible in the code, but they weren't
   // This refactors them to reflect that fact
   val topWrapperName = "FAMETop"
-  val hostClockName = "clock"
+  val hostClockName = "hostClock"
   val hostResetName = "hostReset"
 
   def checkNames(c: Circuit, top: DefModule) = {

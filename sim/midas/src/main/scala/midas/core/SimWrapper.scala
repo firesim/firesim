@@ -213,11 +213,11 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
-  val clock = Input(Clock())
+  val hostClock = Input(Clock())
   val hostReset = Input(Bool())
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*) ++
     // Untokenized ports
-    ListMap("clock" -> clock, "hostReset" -> hostReset)
+    ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
   override def cloneType: this.type = new TargetBoxIO(chAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
@@ -269,7 +269,7 @@ class SimWrapper(chAnnos: Seq[FAMEChannelConnectionAnnotation],
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
 
   target.io.hostReset := reset.toBool && hostReset
-  target.io.clock := clock
+  target.io.hostClock := clock
   import chisel3.core.ExplicitCompileOptions.NotStrict // FIXME
 
   def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
