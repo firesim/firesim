@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.LFSR16
-import chisel3.experimental.MultiIOModule
+import chisel3.core.MultiIOModule
 
 import midas.targetutils.{PerfCounter, AutoCounterCoverModuleAnnotation}
 import freechips.rocketchip.util.property._

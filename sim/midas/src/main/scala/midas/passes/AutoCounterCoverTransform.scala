@@ -27,7 +27,7 @@ class FireSimPropertyLibrary() extends BasePropertyLibrary {
   import chisel3._
   import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
-  import chisel3.core.{annotate,ChiselAnnotation}
+  import chisel3.experimental.{annotate,ChiselAnnotation}
   def generateProperty(prop_param: BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
@@ -56,7 +56,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"), printcounter: Boolean 
 
   private def makeCounter(label: String, hasTracerWidget: Boolean = false): CircuitState = {
     import chisel3._
-    import chisel3.experimental.MultiIOModule
+    import chisel3.core.MultiIOModule
     import chisel3.experimental.ChiselAnnotation
     import chisel3.util.experimental.BoringUtils
     def countermodule() = new MultiIOModule {
@@ -84,7 +84,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"), printcounter: Boolean 
         }
       } else {
           chisel3.core.dontTouch(count)
-          annotate(new ChiselAnnotation { def toFirrtl = TopWiringAnnotation(count.toNamed, s"autocounter_") }) 
+          chisel3.experimental.annotate(new ChiselAnnotation { def toFirrtl = TopWiringAnnotation(count.toNamed, s"autocounter_") }) 
           //********In the future, when BoringUtils will be more rubust with TargetRefs***********
           //autoCounterLabels ++= Seq(s"AutoCounter_$label")
           //BoringUtils.addSource(count, s"AutoCounter_$label")
@@ -173,7 +173,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"), printcounter: Boolean 
    private def MakeAutoCounterWidget(topNS: Namespace, numcounters: Int, maincircuit: Circuit, hasTracerWidget: Boolean = false): Module = {
 
      import chisel3._
-     import chisel3.experimental.MultiIOModule
+     import chisel3.core.MultiIOModule
      import midas.widgets._
      import freechips.rocketchip.config.{Parameters, Field}
      import midas.widgets.{AutoCounterBundle, AutoCounterBridgeModule, AutoCounterBridgeConstArgs}
