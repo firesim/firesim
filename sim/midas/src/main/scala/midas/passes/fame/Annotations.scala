@@ -3,12 +3,7 @@ package midas.passes.fame
 import firrtl._
 import annotations._
 
-/**
-  * A mixed-in ancestor trait for all FAME annotations, useful for type-casing.
-  */
-trait FAMEAnnotation {
-  this: Annotation =>
-}
+import midas.targetutils.FAMEAnnotation
 
 /**
   * An annotation that describes the ports that constitute one channel
@@ -190,16 +185,6 @@ object DecoupledForwardChannel {
   def source(valid: ReferenceTarget, ready: ReferenceTarget) =
     DecoupledForwardChannel(Some(ready), Some(valid), None, None)
 }
-
-/**
-  * Indicates that a particular instance is a FAME Model
-  */
-case class FAMEModelAnnotation(
-  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
-  def targets = Seq(target)
-  def duplicate(n: InstanceTarget) = this.copy(n)
-}
-
 
 /**
   * Specifies what form of FAME transform should be applied when

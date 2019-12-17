@@ -11,6 +11,8 @@ import Utils._
 import firrtl.passes.MemPortUtils
 import annotations.{InstanceTarget, Annotation, SingleTargetAnnotation}
 
+import midas.targetutils.FirrtlFAMEModelAnnotation
+
 import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
 
@@ -20,7 +22,7 @@ class ExtractModel extends Transform {
 
   def promoteModels(state: CircuitState): CircuitState = {
     val anns = state.annotations.flatMap {
-      case a @ FAMEModelAnnotation(it) if (it.module != it.circuit) => Seq(a, PromoteSubmoduleAnnotation(it))
+      case a @ FirrtlFAMEModelAnnotation(it) if (it.module != it.circuit) => Seq(a, PromoteSubmoduleAnnotation(it))
       case a => Seq(a)
     }
     if (anns.toSeq == state.annotations.toSeq) {

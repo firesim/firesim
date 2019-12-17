@@ -7,7 +7,7 @@ import Mappers._
 import ir._
 import annotations._
 import collection.mutable.ArrayBuffer
-import midas.targetutils.FirrtlMemModelAnnotation
+import midas.targetutils.{FirrtlMemModelAnnotation, FirrtlFAMEModelAnnotation}
 
 class LabelSRAMModels extends Transform {
   def inputForm = HighForm
@@ -41,7 +41,7 @@ class LabelSRAMModels extends Transform {
             val wrapper = mem2Module(mem).copy(name = moduleNS.newName(mem.name))
             val wrapperTarget = ModuleTarget(circ.main, wrapper.name)
             memModules += wrapper
-            memModelAnnotations += FAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
+            memModelAnnotations += FirrtlFAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
             memModelAnnotations ++= mem.readers.map(rp => ModelReadPort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.writers.map(rp => ModelWritePort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.readwriters.map(rp => ModelReadWritePort(wrapperTarget.ref(rp)))

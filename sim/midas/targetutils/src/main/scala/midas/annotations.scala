@@ -6,8 +6,8 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, dontTouch}
 
 import firrtl.{RenameMap}
-import firrtl.annotations.{NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
+import firrtl.annotations.{Annotation, NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
+import firrtl.annotations.{ReferenceTarget, InstanceTarget, ModuleTarget, AnnotationException}
 
 // This is currently consumed by a transformation that runs after MIDAS's core
 // transformations In FireSim, targeting an F1 host, these are consumed by the
@@ -92,7 +92,33 @@ object SynthesizePrintf {
   // TODO: Accept a printable -> need to somehow get the format string from 
 }
 
-// This labels a target Mem so that it is extracted and replaced with a separate model
+
+/**
+  * A mixed-in ancestor trait for all FAME annotations, useful for type-casing.
+  */
+trait FAMEAnnotation {
+  this: Annotation =>
+}
+
+/**
+  * This labels an instance so that it is extracted as a separate FAME model.
+  */
+case class FAMEModelAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl: FirrtlFAMEModelAnnotation = {
+    val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+    FirrtlFAMEModelAnnotation(parent.instOf(target.instanceName, target.name))
+  }
+}
+
+case class FirrtlFAMEModelAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: InstanceTarget) = this.copy(n)
+}
+
+/**
+  * This labels a target Mem so that it is extracted and replaced with a separate model.
+  */
 case class MemModelAnnotation[T <: chisel3.Data](target: chisel3.MemBase[T])
     extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl = FirrtlMemModelAnnotation(target.toNamed.toTarget)

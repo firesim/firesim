@@ -174,21 +174,22 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   val hostClock = state.annotations.collect({ case FAMEHostClock(rt) => rt }).head
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
 
-  private def irPortFromGlobalTarget(rt: ReferenceTarget): Port = {
-    portNodes(topConnects(rt).pathlessTarget)
+  private def irPortFromGlobalTarget(mt: ModuleTarget)(rt: ReferenceTarget): Option[Port] = {
+    val modelPort = topConnects(rt).pathlessTarget
+    Some(modelPort).filter(_.module == mt.module).map(portNodes(_))
   }
 
   def portsByInputChannel(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     val iChannels = inputChannels.get(mTarget).toSet.flatten
     iChannels.map({
-      cname => (cname, (modelClockPort(cname).map(irPortFromGlobalTarget), sinkPorts(cname).map(irPortFromGlobalTarget)))
+      cname => (cname, (modelClockPort(cname).flatMap(irPortFromGlobalTarget(mTarget)), sinkPorts(cname).map(rt => irPortFromGlobalTarget(mTarget)(rt).get)))
     }).toMap
   }
 
   def portsByOutputChannel(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     val oChannels = outputChannels.get(mTarget).toSet.flatten
     oChannels.map({
-      cname => (cname, (modelClockPort(cname).map(irPortFromGlobalTarget), sourcePorts(cname).map(irPortFromGlobalTarget)))
+      cname => (cname, (modelClockPort(cname).flatMap(irPortFromGlobalTarget(mTarget)), sourcePorts(cname).map(rt => irPortFromGlobalTarget(mTarget)(rt).get)))
     }).toMap
   }
 

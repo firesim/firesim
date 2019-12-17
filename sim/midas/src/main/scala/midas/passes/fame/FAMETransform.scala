@@ -27,27 +27,40 @@ trait FAME1Channel {
   def name: String
   def direction: Direction
   def ports: Seq[Port]
-  def tpe: Type = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
-  def portName: String
-  def asPort: Port = Port(NoInfo, portName, direction, tpe)
-  def isReady: Expression = WSubField(WRef(asPort), "ready", BoolType)
-  def isValid: Expression = WSubField(WRef(asPort), "valid", BoolType)
+  def isValid: Expression
+  def asHostModelPort: Option[Port] = None
+  def replacePortRef(wr: WRef): Expression
+}
+
+trait InputChannel {
+  this: FAME1Channel =>
+  val direction = Input
+  val portName = s"${name}_sink"
+  def setReady(readyCond: Expression): Statement
+}
+
+trait HasModelPort {
+  this: FAME1Channel =>
+  override def isValid = WSubField(WRef(asHostModelPort.get), "valid", BoolType)
+  def isReady = WSubField(WRef(asHostModelPort.get), "ready", BoolType)
   def isFiring: Expression = And(isReady, isValid)
-  def replacePortRef(wr: WRef): WSubField = {
-    if (ports.size > 1) {
-      WSubField(WSubField(WRef(asPort), "bits"), FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
-    } else {
-      WSubField(WRef(asPort), "bits")
+  def setReady(advanceCycle: Expression): Statement = Connect(NoInfo, isReady, advanceCycle)
+
+  override def asHostModelPort: Option[Port] = {
+    val tpe = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
+    direction match {
+      case Input => Some(Port(NoInfo, s"${name}_sink", Input, tpe))
+      case Output => Some(Port(NoInfo, s"${name}_source", Output, tpe))
     }
+  }
+
+  def replacePortRef(wr: WRef): Expression = {
+    val payload = WSubField(WRef(asHostModelPort.get), "bits")
+    if (ports.size == 1) payload else WSubField(payload, FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
   }
 }
 
-case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel {
-  val direction = Input
-  val portName = s"${name}_sink" // clock channel port on model sinks clocks
-}
-
-trait FAME1DataChannel extends FAME1Channel {
+trait FAME1DataChannel extends FAME1Channel with HasModelPort {
   def clockDomainEnable: Expression
   def firedReg: DefRegister
   def isFired = WRef(firedReg)
@@ -57,15 +70,23 @@ trait FAME1DataChannel extends FAME1Channel {
   }
 }
 
+case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel with InputChannel with HasModelPort
+
+case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel {
+  val name = "VirtualClockChannel"
+  val ports = Seq(targetClock)
+  val isValid: Expression = UIntLiteral(1)
+  def setReady(advanceCycle: Expression): Statement = EmptyStmt
+  def replacePortRef(wr: WRef): Expression = UIntLiteral(1)
+}
+
 case class FAME1InputChannel(
   name: String,
   clockDomainEnable: Expression,
   ports: Seq[Port],
-  firedReg: DefRegister) extends FAME1DataChannel {
-  val direction = Input
-  val portName = s"${name}_sink"
-  def setReady(finishing: WRef): Statement = {
-    Connect(NoInfo, isReady, And(finishing, Negate(isFired)))
+  firedReg: DefRegister) extends FAME1DataChannel with InputChannel {
+  override def setReady(advanceCycle: Expression): Statement = {
+    Connect(NoInfo, isReady, And(advanceCycle, Negate(isFired)))
   }
 }
 
@@ -112,19 +133,15 @@ object FAMEModuleTransformer {
 
     val clockChannel = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
       case Some((name, (None, ports))) => FAME1ClockChannel(name, ports)
-      case Some(_) => ??? // Clock channel cannot have 
-      case None => ??? // Clock channel is mandatory for now
-    }
-
-    def tokenizeClockRef(wr: WRef): Expression = wr match {
-      case WRef(name, ClockType, PortKind, _) => DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(wr)), Nil, BoolType)
+      case Some(_) => ??? // Clock channel cannot have an associated clock domain
+      case None => VirtualClockChannel(clocks.head) // Virtual clock channel for single-clock models
     }
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
       val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
-      val clockFlag = tokenizeClockRef(WRef(en))
+      val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
@@ -147,10 +164,16 @@ object FAMEModuleTransformer {
         val srcClockPorts = portDeps.getEdges(clock.name).map(portsByName(_))
         assert(srcClockPorts.size == 1)
         val clockRef = WRef(srcClockPorts.head)
-        val clockFlag = tokenizeClockRef(clockRef)
+        val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(clockRef)), Nil, BoolType)
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
         (cName, clockFlag, ports, firedReg)
-      case (cName, (None, ports)) => throw new RuntimeException(s"Channel ${cName} has no associated clock port.")
+      case (cName, (None, ports)) => clockChannel match {
+        case vc: VirtualClockChannel =>
+          val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+          (cName, UIntLiteral(1), ports, firedReg)
+        case _ =>
+          throw new RuntimeException(s"Channel ${cName} has no associated clock.")
+      }
     }
 
     // LinkedHashMap.from is 2.13-only :(
@@ -175,7 +198,7 @@ object FAMEModuleTransformer {
     })
 
     // LI-BDN transformation step 3: transform ports (includes new clock ports)
-    val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).map(_.asPort)
+    val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     def onExpr(expr: Expression): Expression = expr match {
@@ -204,8 +227,7 @@ object FAMEModuleTransformer {
     val channelStateRules = (inChannels ++ outChannels).map(c => c.updateFiredReg(WRef(finishing)))
     val inputRules = inChannels.map(i => i.setReady(WRef(finishing)))
     val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
-    val topRules = Seq(
-      Connect(NoInfo, clockChannel.isReady, allFiredOrFiring),
+    val topRules = Seq(clockChannel.setReady(allFiredOrFiring),
       Connect(NoInfo, WRef(finishing), And(allFiredOrFiring, clockChannel.isValid)))
 
     // Statements have to be conservatively ordered to satisfy declaration order
@@ -224,6 +246,7 @@ class FAMETransform extends Transform {
       val clockConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostClockName), WRef(analysis.hostClock.ref, ClockType))
       val resetConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostResetName), WRef(analysis.hostReset.ref, BoolType))
       Block(Seq(wi, clockConn, resetConn))
+    case Connect(_, lhs, rhs) if (lhs.tpe == ClockType) => EmptyStmt // drop ancillary clock connects
     case Connect(_, WRef(name, _, _, _), _) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case Connect(_, _, WRef(name, _, _, _)) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case s => s

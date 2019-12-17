@@ -11,13 +11,15 @@ import Utils._
 import firrtl.passes.MemPortUtils
 import annotations.{ModuleTarget, ReferenceTarget, Annotation, SingleTargetAnnotation}
 
+import midas.targetutils.FirrtlFAMEModelAnnotation
+
 import scala.collection.mutable
 
 class ChannelExcision extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  val addedChannelAnnos = new mutable.ArrayBuffer[FAMEModelAnnotation]()
+  val addedChannelAnnos = new mutable.ArrayBuffer[FirrtlFAMEModelAnnotation]()
   val pipeChannels = new mutable.HashMap[(ReferenceTarget, ReferenceTarget), String]()
 
 
@@ -29,19 +31,19 @@ class ChannelExcision extends Transform {
     def portTarget(p: Port) = topTarget.ref(p.name)
 
     def onStmt(addedPorts: mutable.ArrayBuffer[Port])(s: Statement): Statement = s.map(onStmt(addedPorts)) match {
-      case c @ Connect(_, lhs @ WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, _, _),
-                          rhs @ WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
+      case c @ Connect(_, lhs @ WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, lType, _),
+                          rhs @ WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, rType, _)) =>
         val lhsTarget = subfieldTarget(lhsiname, lhspname)
         val rhsTarget = subfieldTarget(rhsiname, rhspname)
-        pipeChannels.get((lhsTarget, rhsTarget)) match {
-          case Some(chName) =>
-            val srcP = Port(NoInfo, s"${rhsiname}_${rhspname}_source", Output, lhs.tpe)
-            val sinkP = Port(NoInfo, s"${lhsiname}_${lhspname}_sink", Input, rhs.tpe)
-            addedPorts ++= Seq(srcP, sinkP)
-            renames.record(lhsTarget, portTarget(sinkP))
-            renames.record(rhsTarget, portTarget(srcP))
-            Block(Seq(Connect(NoInfo, lhs, WRef(sinkP)), Connect(NoInfo, WRef(srcP), rhs)))
-          case None => c
+        if (pipeChannels.contains((lhsTarget, rhsTarget)) || lType == ClockType) {
+          val srcP = Port(NoInfo, s"${rhsiname}_${rhspname}_source", Output, lType)
+          val sinkP = Port(NoInfo, s"${lhsiname}_${lhspname}_sink", Input, rType)
+          addedPorts ++= Seq(srcP, sinkP)
+          renames.record(lhsTarget, portTarget(sinkP))
+          renames.record(rhsTarget, portTarget(srcP))
+          Block(Seq(Connect(NoInfo, lhs, WRef(sinkP)), Connect(NoInfo, WRef(srcP), rhs)))
+        } else {
+          c
         }
       case s => s
     }
