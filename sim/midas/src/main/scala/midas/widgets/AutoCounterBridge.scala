@@ -9,11 +9,12 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
-import midas.widgets._
+trait AutoCounterConsts {
+  val counterWidth = 64
+}
 
-
-class AutoCounterBundle(val numCounters: Int) extends Bundle {
-  val counters = Input(Vec(numCounters, UInt(64.W)))
+class AutoCounterBundle(val numCounters: Int) extends Bundle with AutoCounterConsts {
+  val counters = Input(Vec(numCounters, UInt(counterWidth.W)))
 }
 
 case class AutoCounterBridgeConstArgs(numcounters: Int, autoCounterPortsMap: scala.collection.mutable.Map[Int, String], hastracerwidget: Boolean = false)
@@ -49,8 +50,8 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
   val readrate_low = RegInit(0.U(hostReadrateLowWidth.W))
   val readrate_high = RegInit(0.U(hostReadrateHighWidth.W))
-  val readrate = Wire(UInt(64.W)) 
-  val readrate_dly = RegInit(0.U(64.W)) 
+  val readrate = Wire(UInt(64.W))
+  val readrate_dly = RegInit(0.U(64.W))
   readrate := Cat(readrate_high, readrate_low)
 
   val acc_counters = RegInit(VecInit(Seq.fill(numCounters)(0.U(64.W))))
@@ -61,22 +62,14 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
    }
 
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady)
-  val targetFire = tFireHelper.fire()
-  //hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
+  val targetFire = tFireHelper.fire
   // We only sink tokens, so tie off the return channel
   hPort.fromHost.hValid := true.B
-  val cycleInit = RegInit(true.B)
-  // Need to have cycleInit, since the hPort token queue is initalized with 1 token in it
-  // and we don't want to count that token in the cycle count
-  when (targetFire & cycleInit) {
-    cycles := 0.U
-    cycleInit := false.B
-    readrate_dly := readrate
-  } .elsewhen (targetFire) {
+
+  when (targetFire) {
     cycles := cycles + 1.U
     readrate_dly := readrate
   }
-
 
   val periodcycles = RegInit(1.U(64.W))
   when (targetFire & (readrate =/= readrate_dly)) {
@@ -89,7 +82,7 @@ class AutoCounterBridgeModule(constructorArg: AutoCounterBridgeConstArgs)(implic
 
   val btht_queue = Module(new Queue(new AutoCounterToHostToken(numCounters), 10))
 
-  btht_queue.io.enq.valid := (periodcycles === 0.U) & (cycles > 0.U) & (cycles >= readrate-1.U) & targetFire & trigger    
+  btht_queue.io.enq.valid := (periodcycles === 0.U) & (cycles > 0.U) & (cycles >= readrate-1.U) & targetFire & trigger
   btht_queue.io.enq.bits.data_out := hPort.hBits.counters
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := btht_queue.io.enq.ready & hPort.fromHost.hReady

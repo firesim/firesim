@@ -30,7 +30,7 @@ import scala.collection.mutable
 class HostPortIO[+T <: Data](protected val targetPortProto: T) extends TokenizedRecord {
   val fromHost = new HostReadyValid
   val toHost = Flipped(new HostReadyValid)
-  val hBits  = chiselTypeOf(targetPortProto)
+  val hBits  = targetPortProto
 
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
@@ -41,10 +41,10 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
   //private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
   private lazy val (ins, outs, rvIns, rvOuts) = try {
     SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
-  } catch { 
+  } catch {
     case e: chisel3.BindingException =>
       SimUtils.parsePorts(hBits, alsoFlattenRVPorts = false)
-  }              
+  }
 
 
   def inputWireChannels(): Seq[(Data, String)] = ins
