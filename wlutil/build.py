@@ -72,7 +72,8 @@ def addDep(loader, config):
                 'targets' : [str(config['bin'])],
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
+                    config_changed(checkGitStatus(config.get('pk-src')))]
                 })
 
     # Add a rule for the nodisk version if requested
@@ -89,7 +90,8 @@ def addDep(loader, config):
                 'targets' : [str(noDiskPath(config['bin']))],
                 'file_dep': nodisk_file_deps,
                 'task_dep' : nodisk_task_deps,
-                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src')))]
+                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
+                    config_changed(checkGitStatus(config.get('pk-src')))]
                 })
 
     # Add a rule for the image (if any)
@@ -308,7 +310,7 @@ def makeBin(config, nodisk=False):
         # Some submodules are only needed if building Linux
         try:
             checkSubmodule(config['linux-src'])
-            checkSubmodule(getOpt('pk-dir'))
+            checkSubmodule(config['pk-src'])
             
             makeDrivers([config['linux-config']], getOpt('board-dir'), config['linux-src'])
         except SubmoduleError as err:
@@ -334,7 +336,7 @@ def makeBin(config, nodisk=False):
             run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', getOpt('jlevel')], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
-        pk_build = (getOpt('pk-dir') / 'build')
+        pk_build = (config['pk-src'] / 'build')
         if pk_build.exists():
             shutil.rmtree(pk_build)
         pk_build.mkdir()
