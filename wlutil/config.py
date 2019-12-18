@@ -91,6 +91,7 @@ configInherit = [
         'outputs',
         'linux-src',
         'linux-config',
+        'pk-src',
         'builder',
         'distro',
         'spike',
