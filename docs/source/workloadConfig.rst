@@ -154,6 +154,10 @@ only the minimum necessary changes for your workload. In particular, you should
 avoid specifying a custom initramfs since Marshal provides it's own for loading
 platform drivers.
 
+pk-src
+^^^^^^^^^^^^^^^
+Path to riscv-pk source directory to use for this workload. This provides the bootload. Defaults to the riscv-pk submodule included at ``riscv-pk/``.
+
 host-init
 ^^^^^^^^^^^^^^
 A script to run natively on your host (i.e., them machine where you
