@@ -1,0 +1,9 @@
+{
+  "name" : "qemu",
+  "base" : "br-base.json",
+  "qemu" : "testQemu",
+  "command" : "echo Global: command",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

@@ -45,7 +45,7 @@ def getQemuCmd(config, nodisk=False):
         exe = str(config['bin'])
 
     if 'qemu' in config:
-        qemuBin = str(config('qemu'))
+        qemuBin = str(config['qemu'])
     else:
         qemuBin = 'qemu-system-riscv64'
 
