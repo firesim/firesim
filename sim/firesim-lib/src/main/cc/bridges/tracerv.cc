@@ -159,7 +159,6 @@ void tracerv_t::tick() {
     if (outfull) {
         // TODO. as opt can mmap file and just load directly into it.
         pull(dma_addr, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        // TODO: right now, we assume that if one tracefile is set, all are set.
         if (this->tracefiles[0]) {
             if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
