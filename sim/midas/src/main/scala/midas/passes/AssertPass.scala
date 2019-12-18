@@ -187,7 +187,7 @@ private[passes] class AssertPass(
       // Step 4: Associate each assertion with a source clock
       val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
       val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))
-      val clockMapping = FindClockSources(loweredState, mInfo.allClocks)
+      val clockMapping = FindClockSources.analyze(loweredState, mInfo.allClocks)
       val rootClocks = mInfo.allClocks.map(clockMapping)
 
       // For each clock in clock channel, list associated assert indices

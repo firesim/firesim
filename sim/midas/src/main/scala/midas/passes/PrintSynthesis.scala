@@ -29,11 +29,10 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   private val printMods = new mutable.HashSet[ModuleTarget]()
   private val formatStringMap = new mutable.HashMap[ReferenceTarget, String]()
 
-  // Generates a bundle to aggregate
+  // Generates a bundle containing a print's clock, enable, and argument fields
   def genPrintBundleType(print: Print): Type = BundleType(Seq(
-    Field("enable", Default, BoolType)) ++
-    print.args.zipWithIndex.map({ case (arg, idx) => Field(s"args_${idx}", Default, arg.tpe) })
-  )
+    Field("clock", Default, ClockType), Field("enable", Default, BoolType)) ++
+    print.args.zipWithIndex.map({ case (arg, idx) => Field(s"args_${idx}", Default, arg.tpe) }))
 
   def getPrintName(p: Print, anno: SynthPrintfAnnotation, ns: Namespace): String = {
     // If the user provided a name in the annotation use it; otherwise use the source locator
@@ -57,17 +56,17 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
   // Takes a single printPort and emits an FCCA for each field
   def genFCCAsFromPort(mT: ModuleTarget, p: Port): Seq[FAMEChannelConnectionAnnotation] = {
-    println(p)
     p.tpe match {
-      case BundleType(fields) =>
-        fields.map(field =>
-          FAMEChannelConnectionAnnotation.implicitlyClockedSource(
+      case BundleType(clockField :: dataFields) =>
+        dataFields.map(field =>
+          FAMEChannelConnectionAnnotation.source(
             p.name + "_" + field.name,
             WireChannel,
+            clock = Some(mT.ref(p.name).field(clockField.name)),
             Seq(mT.ref(p.name).field(field.name))
           )
         )
-      case other => Seq()
+      case other => ???
     }
   }
 
@@ -75,7 +74,10 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     require(state.annotations.collect({ case t: TopWiringAnnotation => t }).isEmpty,
       "CircuitState cannot have existing TopWiring annotations before PrintSynthesis.")
     val c = state.circuit
+
     def mTarget(m: Module): ModuleTarget = ModuleTarget(c.main, m.name)
+    def portRT(p: Port): ReferenceTarget = ModuleTarget(c.main, c.main).ref(p.name)
+    def portClockRT(p: Port): ReferenceTarget = portRT(p).field("clock")
 
     val modToAnnos = printfAnnos.groupBy(_.mod)
 
@@ -92,12 +94,13 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
     def onStmt(annos: Seq[SynthPrintfAnnotation], modNamespace: Namespace)
               (s: Statement): Statement = s.map(onStmt(annos, modNamespace)) match {
-      case p @ Print(_,format,args,_,en) if annos.exists(_.format == format.string) =>
+      case p @ Print(_,format,args,clk,en) if annos.exists(_.format == format.string) =>
         val associatedAnno = annos.find(_.format == format.string).get
         val printName = getPrintName(p, associatedAnno, modNamespace)
         // Generate an aggregate with all of our arguments; this will be wired out
         val wire = DefWire(NoInfo, printName, genPrintBundleType(p))
-        val enableConnect = Connect(NoInfo, wsub(WRef(wire), s"enable"), en)
+        val clockConnect = Connect(NoInfo, wsub(WRef(wire), "clock"), clk)
+        val enableConnect = Connect(NoInfo, wsub(WRef(wire), "enable"), en)
         val argumentConnects = (p.args.zipWithIndex).map({ case (arg, idx) =>
           Connect(NoInfo,
                   wsub(WRef(wire), s"args_${idx}"),
@@ -106,15 +109,16 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
         val printBundleTarget = associatedAnno.mod.ref(printName)
         topWiringAnnos += TopWiringAnnotation(printBundleTarget, topWiringPrefix)
         formatStringMap(printBundleTarget) = format.serialize
-        Block(Seq(p, wire, enableConnect) ++ argumentConnects)
+        Block(Seq(p, wire, clockConnect, enableConnect) ++ argumentConnects)
       case s => s
     }
-
+    // Step 1: Find and replace printfs with stubs
     val processedCircuit = c.map(onModule)
+
+    // Step 2: Wire out print stubs to top level module
     val wiredState = (new TopWiringTransform).execute(state.copy(
       circuit = processedCircuit,
       annotations = state.annotations ++ topWiringAnnos))
-
     val topModule = wiredState.circuit.modules.find(_.name == wiredState.circuit.main).get
     val portMap: Map[String, Port] = topModule.ports.map(port => port.name -> port).toMap
     val addedPrintPorts = topLevelOutputs.map({ case ((cname,_,_,path,prefix),_) =>
@@ -124,31 +128,39 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       (port, formatString)
     })
 
+    // Step 3: Using each printf bundle clock, group them into separate clock domains
+    val findClockSourceAnnos = addedPrintPorts.map({ case (port, _) => FindClockSourceAnnotation(portClockRT(port)) })
+    val stateToAnalyze = wiredState.copy(annotations = findClockSourceAnnos ++ wiredState.annotations)
+    val loweredState = Seq(new ResolveAndCheck,
+                           new HighFirrtlToMiddleFirrtl,
+                           new MiddleFirrtlToLowFirrtl,
+                           FindClockSources).foldLeft(stateToAnalyze)((state, xform) => xform.transform(state))
+
+    val clockMapping = loweredState.annotations.collect({ case ClockSourceAnnotation(qT, source) => qT -> source }).toMap
+    val groupedPrints = addedPrintPorts.groupBy({ case (port, _) => clockMapping(portClockRT(port)) })
+
     println(s"[MIDAS] total # of prints synthesized: ${addedPrintPorts.size}")
 
-    val printRecordAnno =  addedPrintPorts match {
-      case Nil   => Seq()
-      case ports => {
-        // TODO: Generate sensible channel annotations once we can aggregate wire channels
-        val portName = topWiringPrefix.stripSuffix("_")
-        val mT = ModuleTarget(c.main, c.main)
-        val portRT = mT.ref(portName)
-
-        val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
-        val bridgeAnno = BridgeIOAnnotation(
-          target = portRT,
-          widget = (p: Parameters) => new PrintBridgeModule(topWiringPrefix, addedPrintPorts)(p),
-          channelNames = fccaAnnos.map(_.globalName)
-        )
-        bridgeAnno +: fccaAnnos
-      }
+    // Step 4: Generate FCCAs and Bridge Annotations for each clock domain
+    val printRecordAnnos = for ((clockRT, ports) <- groupedPrints) yield {
+      // TODO: Generate sensible channel annotations once we can aggregate wire channels
+      val portName = topWiringPrefix.stripSuffix("_")
+      val mT = ModuleTarget(c.main, c.main)
+      val portRT = mT.ref(portName)
+      val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
+      val bridgeAnno = BridgeIOAnnotation(
+        target = portRT,
+        widget = (p: Parameters) => new PrintBridgeModule(topWiringPrefix, ports)(p),
+        channelNames = fccaAnnos.map(_.globalName)
+      )
+      bridgeAnno +: fccaAnnos
     }
     // Remove added TopWiringAnnotations to prevent being reconsumed by a downstream pass
     val cleanedAnnotations = wiredState.annotations.flatMap({
       case TopWiringAnnotation(_,_) => None
       case otherAnno => Some(otherAnno)
     })
-    wiredState.copy(annotations = cleanedAnnotations ++ printRecordAnno)
+    wiredState.copy(annotations = cleanedAnnotations ++ printRecordAnnos.toSeq.flatten)
   }
 
   def execute(state: CircuitState): CircuitState = {
