@@ -159,8 +159,7 @@ void tracerv_t::tick() {
     if (outfull) {
         // TODO. as opt can mmap file and just load directly into it.
         pull(dma_addr, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        if (this->tracefiles[0]) {
-            if (this->human_readable || this->test_output) {
+        if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     if (this->test_output) {
                         fprintf(this->tracefiles[0], "TRACEPORT: ");
@@ -180,7 +179,7 @@ void tracerv_t::tick() {
                         }
                     }
                 }
-            } else {
+        } else {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     // this stores as raw binary. stored as little endian.
                     // e.g. to get the same thing as the human readable above,
@@ -189,7 +188,6 @@ void tracerv_t::tick() {
                         fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[0]);
                     }
                 }
-            }
         }
         cur_cycle += QUEUE_DEPTH;
     }
@@ -216,8 +214,7 @@ void tracerv_t::flush() {
 
     // TODO. as opt can mmap file and just load directly into it.
     pull(dma_addr, (char*)OUTBUF, beats_available * 64);
-    if (this->tracefiles[0]) {
-        if (this->human_readable || this->test_output) {
+    if (this->human_readable || this->test_output) {
             for (int i = 0; i < beats_available * 8; i+=8) {
 
                 if (this->test_output) {
@@ -238,7 +235,7 @@ void tracerv_t::flush() {
                     }
                 }
             }
-        } else {
+    } else {
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                 // this stores as raw binary. stored as little endian.
                 // e.g. to get the same thing as the human readable above,
@@ -247,7 +244,6 @@ void tracerv_t::flush() {
                     fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[q]);
                 }
             }
-        }
     }
    cur_cycle += beats_available;
 }
