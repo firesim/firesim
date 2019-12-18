@@ -23,6 +23,8 @@ configUser = [
         'spike',
         # Optional extra arguments to spike
         'spike-args',
+        # Path to qemu binary to use (use $PATH if this is omitted)
+        'qemu',
         # Optional extra arguments to qemu
         'qemu-args',
         # Path to riscv-linux source to use (defaults to the included linux)
@@ -79,7 +81,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'linux-config', 'cfg-file', 'bin', 'img', 'spike']
+configToAbs = ['overlay', 'linux-src', 'linux-config', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -92,6 +94,7 @@ configInherit = [
         'builder',
         'distro',
         'spike',
+        'qemu',
         'launch',
         'bin',
         'post_run_hook',
