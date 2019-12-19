@@ -33,19 +33,25 @@
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
+    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores");
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
 
+    for (int i = 0; i < NUM_CORES; i++) {
+         this->tracefiles[i] = NULL;
+    }
+
+    this->trace_trigger_start = 0;
+    this->trace_trigger_end = ULONG_MAX;
+    this->trigger_selector = 0;
     this->tracefilename = "";
-    this->tracefile = NULL;
-    this->start_cycle = 0;
-    this->end_cycle = ULONG_MAX;
 
     std::string num_equals = std::to_string(tracerno) + std::string("=");
     std::string tracefile_arg =        std::string("+tracefile") + num_equals;
     std::string tracestart_arg =       std::string("+trace-start") + num_equals;
     std::string traceend_arg =         std::string("+trace-end") + num_equals;
+    std::string traceselect_arg =         std::string("+trace-select") + num_equals;
     // Testing: provides a reference file to diff the collected trace against
     std::string testoutput_arg =         std::string("+trace-test-output") + std::to_string(tracerno);
     // Formats the output before dumping the trace to file
@@ -56,13 +62,19 @@ tracerv_t::tracerv_t(
             tracefilename = const_cast<char*>(arg.c_str()) + tracefile_arg.length();
             this->tracefilename = std::string(tracefilename);
         }
+        if (arg.find(traceselect_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + traceselect_arg.length();
+            this->trigger_selector = atol(str);
+        }
         if (arg.find(tracestart_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + tracestart_arg.length();
-            this->start_cycle = atol(str);
+            char * pEnd;
+            this->trace_trigger_start = trigger_selector==1 ? atol(str) : strtoul (str,&pEnd,16);
         }
         if (arg.find(traceend_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + traceend_arg.length();
-            this->end_cycle = atol(str);
+            char * pEnd;
+            this->trace_trigger_end = trigger_selector==1 ? atol(str) : strtoul (str,&pEnd,16);
         }
         if (arg.find(testoutput_arg) == 0) {
             this->test_output = true;
@@ -75,25 +87,64 @@ tracerv_t::tracerv_t(
     }
 
     if (tracefilename) {
-        this->tracefile = fopen(tracefilename, "w");
-        if (!this->tracefile) {
-            fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
-            abort();
+        // giving no tracefilename means we will create NO tracefiles
+        for (int i = 0; i < NUM_CORES; i++) {
+            std::string tfname = std::string(tracefilename) + std::to_string(i);
+            this->tracefiles[i] = fopen(tfname.c_str(), "w");
+            if (!this->tracefiles[i]) {
+                fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
+                abort();
+            }
         }
+    } else {
+        fprintf(stderr, "TraceRV: Warning: No +tracefileN given!\n");
     }
 }
 
 tracerv_t::~tracerv_t() {
-    if (this->tracefile) {
-        fclose(this->tracefile);
-    }
+    for (int i = 0; i < NUM_CORES; i++) {
+        if (this->tracefiles[i]) {
+            fclose(this->tracefiles[i]);
+        }
+    } 
     free(this->mmio_addrs);
 }
 
 void tracerv_t::init() {
     cur_cycle = 0;
-    if (this->tracefile) {
-        printf("TracerV: Collecting trace from %lu to %lu cycles\n", start_cycle, end_cycle);
+    if (this->trigger_selector == 1)
+    {
+      write(this->mmio_addrs->triggerSelector, this->trigger_selector);
+      write(this->mmio_addrs->hostTriggerCycleCountStartHigh, this->trace_trigger_start >> 32);
+      write(this->mmio_addrs->hostTriggerCycleCountStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
+      write(this->mmio_addrs->hostTriggerCycleCountEndHigh, this->trace_trigger_end >> 32);
+      write(this->mmio_addrs->hostTriggerCycleCountEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
+      printf("TracerV: Collect trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
+    }
+    else if (this->trigger_selector == 2)
+    {
+      write(this->mmio_addrs->triggerSelector, this->trigger_selector);
+      write(this->mmio_addrs->hostTriggerPCStartHigh, this->trace_trigger_start >> 32);
+      write(this->mmio_addrs->hostTriggerPCStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
+      write(this->mmio_addrs->hostTriggerPCEndHigh, this->trace_trigger_end >> 32);
+      write(this->mmio_addrs->hostTriggerPCEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
+      printf("TracerV: Collect trace from instruction address %lx to %lx\n", trace_trigger_start, trace_trigger_end);
+    }
+    else if (this->trigger_selector == 3)
+    {
+      write(this->mmio_addrs->triggerSelector, this->trigger_selector);
+      write(this->mmio_addrs->hostTriggerStartInst, this->trace_trigger_start & ((1ULL << 32) - 1));
+      write(this->mmio_addrs->hostTriggerStartInstMask, this->trace_trigger_start >> 32);
+      write(this->mmio_addrs->hostTriggerEndInst, this->trace_trigger_end & ((1ULL << 32) - 1));
+      write(this->mmio_addrs->hostTriggerEndInstMask, this->trace_trigger_end >> 32);
+      printf("TracerV: Collect trace with start trigger instruction %x masked with %x, and end trigger instruction %x masked with %x\n",
+              this->trace_trigger_start & ((1ULL << 32) - 1), this->trace_trigger_start >> 32,
+              this->trace_trigger_end & ((1ULL << 32) - 1), this->trace_trigger_end >> 32);
+    }
+    else
+    {
+      write(this->mmio_addrs->triggerSelector, this->trigger_selector);
+      printf("TracerV: Collecting trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
 }
 
@@ -106,33 +157,37 @@ void tracerv_t::tick() {
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
 
     if (outfull) {
-        int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
-
         // TODO. as opt can mmap file and just load directly into it.
         pull(dma_addr, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        if (this->tracefile && can_write) {
-            if (this->human_readable || this->test_output) {
+        if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    if (this->test_output) fprintf(this->tracefile, "TRACEPORT: ");
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+4]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+3]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+2]);
-                    fprintf(this->tracefile, "%016lx", OUTBUF[i+1]);
-                    fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
+                    if (this->test_output) {
+                        fprintf(this->tracefiles[0], "TRACEPORT: ");
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+4]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+3]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+2]);
+                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
+                        fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
+                    } else {
+                        for (int q = 0; q < NUM_CORES; q++) {
+                           if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                             fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                           }
+                        }
+                    }
                 }
-            } else {
+        } else {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     // this stores as raw binary. stored as little endian.
                     // e.g. to get the same thing as the human readable above,
                     // flip all the bytes in each 512-bit line.
                     for (int q = 0; q < 8; q++) {
-                        fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
+                        fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[0]);
                     }
                 }
-            }
         }
         cur_cycle += QUEUE_DEPTH;
     }
@@ -157,33 +212,38 @@ void tracerv_t::flush() {
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
     size_t beats_available = beats_available_stable();
 
-    int can_write = cur_cycle >= start_cycle && cur_cycle < end_cycle;
-
     // TODO. as opt can mmap file and just load directly into it.
     pull(dma_addr, (char*)OUTBUF, beats_available * 64);
-    if (this->tracefile && can_write) {
-        if (this->human_readable || this->test_output) {
+    if (this->human_readable || this->test_output) {
             for (int i = 0; i < beats_available * 8; i+=8) {
-                if (this->test_output) fprintf(this->tracefile, "TRACEPORT: ");
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+4]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+3]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+2]);
-                fprintf(this->tracefile, "%016lx", OUTBUF[i+1]);
-                fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
+
+                if (this->test_output) {
+                    fprintf(this->tracefiles[0], "TRACEPORT: ");
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+4]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+3]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+2]);
+                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
+                    fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
+                } else {
+                    for (int q = 0; q < NUM_CORES; q++) {
+                      if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                        fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                      }
+                    }
+                }
             }
-        } else {
+    } else {
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                 // this stores as raw binary. stored as little endian.
                 // e.g. to get the same thing as the human readable above,
                 // flip all the bytes in each 512-bit line.
-                for (int q = 0; q < 8; q++) {
-                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
+                for (int q = 0; q < NUM_CORES; q++) {
+                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[q]);
                 }
             }
-        }
     }
    cur_cycle += beats_available;
 }

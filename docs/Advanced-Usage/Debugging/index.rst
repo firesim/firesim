@@ -13,3 +13,4 @@ This section describes methods of debugging the target design and the simulation
    TracerV.rst
    DESSERT.rst
    printf-synthesis.rst
+   AutoCounter.rst

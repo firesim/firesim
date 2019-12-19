@@ -163,6 +163,7 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
     require(_finalized, "Must build Widgets with their companion object")
     headerComment(sb)
     crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
   def printCRs = crRegistry.printCRs

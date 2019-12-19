@@ -21,7 +21,7 @@ object RTRenamer {
   def exact(renames: RenameMap): (ReferenceTarget => ReferenceTarget) = {
     { rt =>
       val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
-      assert(renameMatches.length == 1)
+      assert(renameMatches.length == 1, s"renameMatches is not 1. renameMatches length is ${renameMatches.length}")
       renameMatches.head
     }
   }
