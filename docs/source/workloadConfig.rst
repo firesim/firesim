@@ -156,7 +156,7 @@ platform drivers.
 
 pk-src
 ^^^^^^^^^^^^^^^
-Path to riscv-pk source directory to use for this workload. This provides the bootload. Defaults to the riscv-pk submodule included at ``riscv-pk/``.
+Path to riscv-pk source directory to use for this workload. This provides the bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
 
 host-init
 ^^^^^^^^^^^^^^
