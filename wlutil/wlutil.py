@@ -123,7 +123,8 @@ userOpts = [
         'log-dir',
         'res-dir',
         'jlevel',  # int or str from user, converted to '-jN' after loading
-        'rootfs-margin' # int or str from user, converted to int bytes after loading
+        'rootfs-margin', # int or str from user, converted to int bytes after loading
+        'doitOpts', # Dictionary of options to pass to doit (for the 'run' section)
         ]
 
 # These represent all available derived options (constants and those generated
@@ -274,6 +275,9 @@ class marshalCtx(collections.MutableMapping):
         self['jlevel'] = '-j' + str(self['jlevel'])
         self['driver-dirs'] = self['board-dir'].glob('drivers/*')
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
+
+        if self['doitOpts']['dep_file'] == '':
+            self['doitOpts']['dep_file'] = str(self['gen-dir'] / 'marshaldb')
 
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
