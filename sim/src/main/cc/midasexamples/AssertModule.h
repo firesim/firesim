@@ -9,7 +9,10 @@ public:
     synthesized_assertions_t * assert_endpoint;
     AssertModule_t(int argc, char** argv) {
         ASSERTBRIDGEMODULE_0_substruct_create;
-        assert_endpoint = new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_0_substruct);
+        assert_endpoint = new synthesized_assertions_t(this,
+          ASSERTBRIDGEMODULE_0_substruct,
+          ASSERTBRIDGEMODULE_0_assert_count,
+          ASSERTBRIDGEMODULE_0_assert_messages);
     };
     void run() {
         int assertions_thrown = 0;
