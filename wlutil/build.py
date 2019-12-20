@@ -17,8 +17,7 @@ class doitLoader(doit.cmd_base.TaskLoader):
 
     def load_tasks(self, cmd, opt_values, pos_args):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
-        config = {'verbosity': 2}
-        return task_list, config
+        return task_list, {}
 
 def buildBusybox():
     """Builds the local copy of busybox (needed by linux initramfs).
@@ -201,7 +200,8 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
                 imgList.append(jCfg['img'])
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader 
-    return doit.doit_cmd.DoitMain(taskLoader).run([str(p) for p in binList + imgList])
+    doitHandle = doit.doit_cmd.DoitMain(taskLoader, extra_config={'run': getOpt('doitOpts')})
+    return doitHandle.run([str(p) for p in binList + imgList])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.

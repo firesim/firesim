@@ -85,3 +85,34 @@ By default, FireMarshal shrinks the rootfs of each workload to contain only
 requirement with the :ref:`workload-rootfs-size` option). Increasing this can
 drastically increase host-machine disk requirements as every image generated
 will be larger.
+
+``doitOpts``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+FireMarshal uses a python library called `doit
+<https://pydoit.org/contents.html>`_ to track build dependencies and avoid
+unnecessary recompilation. You may pass additional options to this library as a
+dictionary here. To see a description of these options, consult the doit help
+output:
+
+   ``$ doit help run``
+
+``verbosity``
+"""""""""""""""""
+This is equivalent to the '-v' option when calling doit from the command line.
+Note that FireMarshal performs much of its own logging that supersedes this
+option. You should not typically change this unless you have a good reason.
+Briefly:
+
+   * 0 capture (do not print) stdout/stderr from task.
+   * 1 capture stdout only.
+   * 2 do not capture anything (print everything immediately).
+
+``dep_file``
+""""""""""""""""
+Doit requires a database to track dependencies and build artifacts. Without
+this database, it will conservatively rebuild all tasks. For most use-cases,
+you can leave this option as '' (the empty string) to default to a centralized
+database for all invocations of marshal. Since FireMarshal uses absolute paths
+to identify most tasks, this should be safe. However, you may use a different
+location for this database if needed by setting this option to a path (the path
+will be taken as relative to wherever the marshal command was invoked).
