@@ -3,8 +3,6 @@ package firesim.util
 
 import java.io.{File, FileWriter}
 
-import chisel3.experimental.RawModule
-
 import freechips.rocketchip.config.{Field, Config}
 
 object DesiredHostFrequency extends Field[Int](90) // Host FPGA frequency, in MHz

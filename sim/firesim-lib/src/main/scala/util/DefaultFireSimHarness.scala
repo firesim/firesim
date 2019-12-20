@@ -3,7 +3,6 @@
 package firesim.util
 
 import chisel3._
-import chisel3.experimental.RawModule
 
 import freechips.rocketchip.config.{Field, Config, Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule}

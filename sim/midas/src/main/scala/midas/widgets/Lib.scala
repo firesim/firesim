@@ -122,7 +122,7 @@ class MultiQueue[T <: Data](
   // Rely on the ROB & freelist to ensure we are always enq-ing to an available
   // slot
 
-  val ram = SeqMem(entries * numQueues, gen)
+  val ram = SyncReadMem(entries * numQueues, gen)
   val enqPtrs = RegInit(VecInit(Seq.fill(numQueues)(0.U(log2Up(entries).W))))
   val deqPtrs = RegInit(VecInit(Seq.fill(numQueues)(0.U(log2Up(entries).W))))
   val maybe_full = RegInit(VecInit(Seq.fill(numQueues)(false.B)))

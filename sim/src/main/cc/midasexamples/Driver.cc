@@ -33,6 +33,10 @@
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
 #include "NarrowPrintfModule.h"
+#elif defined DESIGNNAME_AutoCounterModule
+#include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounterCoverModule
+#include "AutoCounterCoverModule.h"
 #elif defined DESIGNNAME_Accumulator
 #include "Accumulator.h"
 #elif defined DESIGNNAME_VerilogAccumulator

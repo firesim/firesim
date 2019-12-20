@@ -61,7 +61,7 @@ do
     shift
 done
 
-# Disable the REBAR submodule initially, and enable if we're not in library mode
+# Disable the Chipyard submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
 git config submodule.sw/firesim-software.update none
 git submodule update --init --recursive #--jobs 8

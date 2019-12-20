@@ -75,7 +75,7 @@ object JsonProtocol {
     case e: org.json4s.ParserUtil.ParseException =>
       Failure(new InvalidAnnotationJSONException(e.getMessage))
   }.recoverWith { // If the input is a file, wrap in InvalidAnnotationFileException
-    case e => in match {
+    case e: firrtl.FirrtlUserException => in match {
       case FileInput(file) =>
         Failure(new InvalidAnnotationFileException(file, e))
       case _ => Failure(e)

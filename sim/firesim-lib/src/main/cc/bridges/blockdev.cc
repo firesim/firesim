@@ -17,7 +17,12 @@
 /* Uncomment to get DEBUG printing
  * TODO: better logging mechanism so that we don't need this */
 //#define BLKDEV_DEBUG
+
+#ifdef BLKDEV_DEBUG
 #define blkdev_printf(...) if (this->logfile) { fprintf(this->logfile, __VA_ARGS__); fflush(this->logfile); }
+#else
+#define blkdev_printf(...) {}
+#endif
 
 /* Block Dev software driver constructor.
  * Setup software driver state:
@@ -284,10 +289,8 @@ void blockdev_t::recv() {
         req.tag = read(this->mmio_addrs->bdev_req_tag);
         write(this->mmio_addrs->bdev_req_ready, true);
         requests.push(req);
-#ifdef BLKDEV_DEBUG
-       blkdev_printf("[disk] got req. write %x, offset %x, len %x, tag %x\n",
+        blkdev_printf("[disk] got req. write %x, offset %x, len %x, tag %x\n",
                 req.write, req.offset, req.len, req.tag);
-#endif
     }
 
     /* Read all pending data beats from the widget */
@@ -299,9 +302,7 @@ void blockdev_t::recv() {
         data.tag = read(this->mmio_addrs->bdev_data_tag);
         write(this->mmio_addrs->bdev_data_ready, true);
         req_data.push(data);
-#ifdef BLKDEV_DEBUG
         blkdev_printf("[disk] got data. data %llx, tag %x\n", data.data, data.tag);
-#endif
     }
 }
 
@@ -314,9 +315,7 @@ void blockdev_t::send() {
         uint32_t tag = write_acks.front();
         write(this->mmio_addrs->bdev_wack_tag, tag);
         write(this->mmio_addrs->bdev_wack_valid, true);
-#ifdef BLKDEV_DEBUG
         blkdev_printf("[disk] sending W ack. tag %x\n", tag);
-#endif
         write_acks.pop();
     }
 
@@ -328,9 +327,7 @@ void blockdev_t::send() {
         write(this->mmio_addrs->bdev_rresp_data_lower, resp.data & 0xFFFFFFFF);
         write(this->mmio_addrs->bdev_rresp_tag, resp.tag);
         write(this->mmio_addrs->bdev_rresp_valid, true);
-#ifdef BLKDEV_DEBUG
         blkdev_printf("[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
-#endif
         read_responses.pop();
     }
 

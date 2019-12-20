@@ -25,17 +25,42 @@ TracerV Bridge by default. To enable collection, modify the `tracing` section to
 
 Now when you run a workload, a trace output file will be placed in the
 `sim_slot_<slot #>` directory on the F1 instance under the name TRACEFILE.
+
+
+Setting a TracerV Trigger
+---------------------------
+
 Tracing the entirety of a long-running job like a Linux-based workload can
 generate a pretty large image, and you may only care about the state within a
-certain timeframe. Therefore, FireSim allows you to specify a start cycle and
-end cycle for collecting data. By default, it starts at cycle 0 and ends at
+certain timeframe. 
+Therefore, FireSim allows you to specify a trigger condition for starting and
+stopping trace data collection. FireSim currently provides three possible trigger
+conditions:
+* Simulation cycles: Specify a start cycle and end cycle, based on the simulation cycle count
+* Program Counter (PC) value: Specify a program counter value to start collection, and a program counter
+ value in which to end collection.
+* Instruction value: Specify an instruction value upon which to start data collection, and an instruction value
+ in which to end collection. This method is particularly valuable for setting the trigger from within the target
+ software under evaluation, by using custom "NOP" instructions. As such, one may use the 
+
+
+By default, TracerV does not use a trigger, hence data collection starts at cycle 0 and ends at
 the last cycle of the simulation. To change this, modify the following under
 the "tracing" section of your ``config_runtime.ini``.
+Use the ``selector`` field to choose the type of trigger, and there use the ``start`` and ``end`` fields
+to select the start and end values for the trigger.
 
 .. code-block:: ini
+   [tracing]
+   #trigger selector
+   #0 = no trigger
+   #1 = cycle count trigger
+   #2 = program counter trigger
+   #3 = instruction trigger
+   selector=1
+   start=XXXX
+   end=YYYY
 
-    startcycle=XXXX
-    endcycle=YYYY
 
 Interpreting the Trace Result
 -----------------------------

@@ -144,7 +144,7 @@ object FAMEModuleTransformer {
     val gateTargetClock = analysis.containsSyncBlackboxes(m)
     val targetClock = if (gateTargetClock) {
       val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
-      SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, MALE))
+      SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, SourceFlow))
     } else {
       PassThru(WRef(hostClock), "target_clock")
     }
@@ -181,11 +181,11 @@ object FAMEModuleTransformer {
 
     // Step 4: Replace refs and gate state updates
     def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
-      case iWR @ WRef(name, tpe, PortKind, MALE) if tpe != ClockType =>
-        // Generally MALE references to ports will be input channels, but RTL may use
+    case iWR @ WRef(name, tpe, PortKind, SourceFlow) if tpe != ClockType =>
+        // Generally SourceFlow references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
-      case oWR @ WRef(name, tpe, PortKind, FEMALE) if tpe != ClockType =>
+      case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType =>
         outChannelMap(name).replacePortRef(oWR)
       case wr: WRef if wr.name == hostClock.name =>
         // Replace host clock references with target clock references

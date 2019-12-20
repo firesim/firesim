@@ -38,7 +38,15 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
 
   // These are lazy because parsePorts needs a directioned gen; these can be called once 
   // this Record has been bound to Hardware
-  private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
+  //private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
+  private lazy val (ins, outs, rvIns, rvOuts) = try {
+    SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
+  } catch {
+    case e: chisel3.BindingException =>
+      SimUtils.parsePorts(hBits, alsoFlattenRVPorts = false)
+  }
+
+
   def inputWireChannels(): Seq[(Data, String)] = ins
   def outputWireChannels(): Seq[(Data, String)] = outs
   def inputRVChannels(): Seq[(ReadyValidIO[Data], String)] = rvIns
@@ -68,7 +76,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
       field.valid := fwdChPort.bits.valid
       revChPort.bits := field.ready
 
-      import chisel3.core.ExplicitCompileOptions.NotStrict
+      import chisel3.ExplicitCompileOptions.NotStrict
       field.bits  := fwdChPort.bits.bits
 
       fromHostChannels += revChPort
@@ -80,7 +88,7 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
       fwdChPort.bits.valid := field.valid
       field.ready := revChPort.bits
 
-      import chisel3.core.ExplicitCompileOptions.NotStrict
+      import chisel3.ExplicitCompileOptions.NotStrict
       fwdChPort.bits.bits := field.bits
       fromHostChannels += fwdChPort
       toHostChannels += revChPort

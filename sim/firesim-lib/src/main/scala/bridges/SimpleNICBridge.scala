@@ -83,7 +83,7 @@ class BigTokenToNICTokenAdapter extends Module {
     val pcie_in = Flipped(DecoupledIO(UInt(512.W)))
   })
 
-  val pcieBundled = (new BIGToken).fromBits(io.pcie_in.bits)
+  val pcieBundled = io.pcie_in.bits.asTypeOf(new BIGToken)
 
   val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
@@ -235,7 +235,7 @@ class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPor
     val pauseThreshold = Reg(UInt(32.W))
     val pauseTimes = Reg(UInt(32.W))
 
-    target.rlimit := (new RateLimiterSettings).fromBits(rlimitSettings)
+    target.rlimit := rlimitSettings.asTypeOf(new RateLimiterSettings)
     target.macAddr := Cat(macAddrRegUpper, macAddrRegLower)
     target.pauser.threshold := pauseThreshold(15, 0)
     target.pauser.quanta := pauseTimes(15, 0)

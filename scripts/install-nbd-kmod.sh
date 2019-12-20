@@ -14,6 +14,7 @@ KURL="http://vault.centos.org/7.6.1810/updates/Source/SPackages/$KRPM"
 GENERICBUILDDIR=$(pwd)/build
 NBDBUILDDIR=$GENERICBUILDDIR/nbdbuild
 
+mkdir -p $GENERICBUILDDIR
 cd $GENERICBUILDDIR
 echo $(pwd)
 mkdir -p $NBDBUILDDIR/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}

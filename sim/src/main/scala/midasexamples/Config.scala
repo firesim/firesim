@@ -22,6 +22,7 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
     case SynthAsserts => true
     case midas.GenerateMultiCycleRamModels => true
     case SynthPrints => true
+    case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterTransform()(p))) +: up(TargetTransforms, site)
 }) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {

@@ -4,13 +4,14 @@ package firesim.util
 
 import java.io.{File, FileWriter}
 
-import chisel3.Module
-import chisel3.experimental.RawModule
+import chisel3.{Module, RawModule}
 import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.config.{Config, Parameters}
 import freechips.rocketchip.diplomacy.{ValName, LazyModule, AutoBundle}
 import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
+
+import freechips.rocketchip.util.property.cover
 
 // Contains FireSim generator utilities that can be reused in MIDAS examples
 trait HasTargetAgnosticUtilites extends HasGeneratorUtilities {
@@ -28,6 +29,7 @@ trait HasTargetAgnosticUtilites extends HasGeneratorUtilities {
   def getGenerator(targetNames: ParsedInputNames, params: Parameters): RawModule = {
     implicit val valName = ValName(targetNames.topModuleClass)
     implicit val p: Parameters = params
+    cover.setPropLib(new midas.passes.FireSimPropertyLibrary())
     val cls = Class.forName(targetNames.fullTopModuleClass)
     val inst = try {
       // Check if theres a constructor that accepts a Parameters object
@@ -54,10 +56,10 @@ case class GeneratorArgs(
   platformConfigs: String) {
 
   def targetNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs)
+    ParsedInputNames(targetDir, topModuleProject, topModuleClass, targetConfigProject, targetConfigs, None)
 
   def platformNames(): ParsedInputNames =
-    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs)
+    ParsedInputNames(targetDir, "Unused", "Unused", platformConfigProject, platformConfigs, None)
 
   def tupleName(): String = s"$topModuleClass-$targetConfigs-$platformConfigs"
 }

@@ -11,7 +11,6 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.dontTouch
 
 import midas.core._
 import midas.widgets._
@@ -515,7 +514,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_last_channel", UInt32(if (completeConfig.lastChannel) 1 else 0)))
 
-    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    //crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
   // Prints out key elaboration time settings
@@ -572,7 +571,7 @@ object FASEDBridge {
   def apply(axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDBridge = {
     val ep = Module(new FASEDBridge(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
     ep.io.reset := reset
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
     ep.io.axi4 <> axi4
     ep
   }

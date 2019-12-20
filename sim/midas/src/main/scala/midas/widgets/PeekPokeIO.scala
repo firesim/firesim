@@ -204,7 +204,7 @@ class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extend
   val reset = if (withReset) Some(Output(Bool())) else None
   override val elements = ListMap((
     reset.map("reset" -> _).toSeq ++
-    targetIO.map({ case (name, field) => name -> Flipped(field.chiselCloneType) })
+    targetIO.map({ case (name, field) => name -> Flipped(chiselTypeOf(field)) })
   ):_*)
   override def cloneType = new PeekPokeTargetIO(targetIO, withReset).asInstanceOf[this.type]
 }
