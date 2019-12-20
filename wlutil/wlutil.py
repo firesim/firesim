@@ -569,6 +569,8 @@ def getToolVersions():
 
     return _toolVersions
 
+# only warn once per-submodule (if it's included by multiple workloads)
+checkGitStatusWarned = []
 def checkGitStatus(submodule):
     """Returns a dictionary representing the status of a git repo.
 
@@ -616,7 +618,9 @@ def checkGitStatus(submodule):
     if repo.is_dirty():
         # In the absense of a clever way to record changes, we must assume that
         # a dirty repo has changed since the last time we built.
-        log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
+        if submodule not in checkGitStatusWarned:
+            log.warn("Submodule: " + str(submodule) + " has uncommited changes. Any dependent workloads will be rebuilt")
+            checkGitStatusWarned.append(submodule)
         status['rebuild'] = random.random()
     else:
         status['rebuild'] = 0
