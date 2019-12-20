@@ -129,6 +129,11 @@ recommended way to generate bare-metal workloads.
 
 *Non-heritable*
 
+qemu
+^^^^^^^^^
+Path to binary to use for qemu (qemu-system-riscv64) when launching this
+workload. Defaults to the version of qemu-system-riscv64 on your $PATH.
+
 spike
 ^^^^^^^^^^
 Path to binary for spike (riscv-isa-sim) to use when running this

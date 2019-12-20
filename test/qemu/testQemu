@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "HELLO FROM QEMU TEST"
+exec qemu-system-riscv64 "$@"
