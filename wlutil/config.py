@@ -31,6 +31,8 @@ configUser = [
         'linux-src',
         # Path to linux configuration file to use
         'linux-config',
+        # Path to riscv-pk (used for bbl)
+        'pk-src',
         # Path to script to run on host before building this config
         'host-init',
         # Script to run on results dir after running workload
@@ -81,7 +83,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'linux-config', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'linux-src', 'linux-config', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided)
@@ -91,6 +93,7 @@ configInherit = [
         'outputs',
         'linux-src',
         'linux-config',
+        'pk-src',
         'builder',
         'distro',
         'spike',
@@ -292,6 +295,9 @@ class Config(collections.MutableMapping):
 
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = getOpt('linux-dir')
+
+        if 'pk-src' not in self.cfg:
+            self.cfg['pk-src'] = getOpt('pk-dir')
 
         # We inherit the parent's binary for bare-metal configs, but not linux configs
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
