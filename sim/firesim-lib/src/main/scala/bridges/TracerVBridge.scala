@@ -197,9 +197,9 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   val triggerInstValVec = RegInit(VecInit(Seq.fill(traces.length)(false.B)))
   traces.zipWithIndex.foreach { case (trace, i) =>
     when (trace.valid) {
-      when (hostTriggerStartInst === (trace.insn & hostTriggerStartInstMask)) {
+      when !((hostTriggerStartInst ^ trace.insn) & hostTriggerStartInstMask).orR {
         triggerInstValVec(i) := true.B
-      } .elsewhen (hostTriggerEndInst === (trace.insn & hostTriggerEndInstMask)) {
+      } .elsewhen !((hostTriggerEndInst ^ trace.insn) & hostTriggerEndInstMask).orR {
         triggerInstValVec(i) := false.B
       }
     }
