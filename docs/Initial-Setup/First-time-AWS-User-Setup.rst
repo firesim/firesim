@@ -29,9 +29,9 @@ Requesting Limit Increases
 
 In our experience, new AWS accounts do not have access to EC2 F1 instances by
 default. In order to get access, you should file a limit increase
-request.
+request. You can learn more about EC2 instance limits here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits
 
-Follow these steps to do so:
+To request a limit increase, follow these steps:
 
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
 
