@@ -35,27 +35,18 @@ Follow these steps to do so:
 
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
 
-You'll probably want to start out with the following requests, depending on your existing limits:
-
-Request 1:
+You'll probably want to start out with the following request, depending on your existing limits:
 
 ::
 
-    Region:                US East (Northern Virginia)
-    Primary Instance Type: f1.2xlarge
-    Limit:                 Instance Limit
-    New limit value:       1
+    Limit Type:                EC2 Instances
+    Region:                    US East (Northern Virginia)
+    Primary Instance Type:     All F instances
+    Limit:                     Instance Limit
+    New limit value:           64
 
-Request 2:
 
-::
-
-    Region:                US East (Northern Virginia)
-    Primary Instance Type: f1.16xlarge
-    Limit:                 Instance Limit
-    New limit value:       1
-
-This allows you to run one node on the ``f1.2xlarge`` or eight nodes on the
+This limit of 64 vCPUs for F instances allows you to run one node on the ``f1.2xlarge`` or eight nodes on the
 ``f1.16xlarge``.
 
 For the "Use Case Description", you should describe your project and write
