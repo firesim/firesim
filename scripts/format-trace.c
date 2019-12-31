@@ -6,32 +6,7 @@
 struct trace {
 	char valid;
 	uint64_t iaddr;
-	uint32_t insn;
-	char priv;
-	char exception;
-	char interrupt;
-	char cause;
-	uint64_t tval;
 };
-
-uint64_t pull_bits(size_t *pos, uint64_t *traceData, int nbits)
-{
-	size_t idx = (*pos) / 64;
-	size_t shift = (*pos) % 64;
-	size_t left = 64 - shift;
-	uint64_t data, mask;
-
-	data = traceData[idx] >> shift;
-	mask = (1UL << nbits) - 1;
-
-	if (nbits > left) {
-		data |= (traceData[idx+1] << left);
-	}
-
-	*pos += nbits;
-
-	return data & mask;
-}
 
 void print_usage(FILE *stream, const char *name)
 {
@@ -74,27 +49,23 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (ntraces > 7) {
+		fprintf(stderr, "Can't have %d > 7 traces\n", ntraces);
+		exit(EXIT_FAILURE);
+	}
+
 	while ((res = fread(traceData, sizeof(uint64_t), 8, f)) > 0) {
-		size_t pos = 0;
+		cycle = traceData[7];
 
 		for (i = 0; i < ntraces; i++) {
-			trace.tval = pull_bits(&pos, traceData, 40);
-			trace.cause = pull_bits(&pos, traceData, 8);
-			trace.interrupt = pull_bits(&pos, traceData, 1);
-			trace.exception = pull_bits(&pos, traceData, 1);
-			trace.priv = pull_bits(&pos, traceData, 3);
-			trace.insn = pull_bits(&pos, traceData, 32);
-			trace.iaddr = pull_bits(&pos, traceData, 40);
-			trace.valid = pull_bits(&pos, traceData, 1);
+			trace.valid = (traceData[i] >> 40) & 1;
+			trace.iaddr = traceData[i] & ((1L << 40) - 1);
 
 			if (!valid_only || trace.valid) {
-				printf("T%d: %12ld [%d] pc=[%010lx] [exc %d] [int %d] [cause %d] DASM(%08x)\n",
-					i, cycle, trace.valid, trace.iaddr,
-					trace.exception, trace.interrupt, trace.cause, trace.insn);
+				printf("T%d: %12ld [%d] pc=[%010lx]\n",
+					i, cycle, trace.valid, trace.iaddr);
 			}
 		}
-
-		cycle++;
 	}
 
 	fclose(f);
