@@ -245,12 +245,12 @@ void tracerv_t::flush() {
                 }
             }
         } else {
-            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+            for (int i = 0; i < beats_available * 8; i+=8) {
                 // this stores as raw binary. stored as little endian.
                 // e.g. to get the same thing as the human readable above,
                 // flip all the bytes in each 512-bit line.
-                for (int q = 0; q < NUM_CORES; q++) {
-                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[q]);
+                for (int q = 0; q < 8; q++) {
+                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[0]);
                 }
             }
         }
