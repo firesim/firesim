@@ -111,7 +111,6 @@ tracerv_t::~tracerv_t() {
 }
 
 void tracerv_t::init() {
-    cur_cycle = 0;
     if (this->trigger_selector == 1)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
@@ -189,7 +188,6 @@ void tracerv_t::tick() {
                     }
                 }
         }
-        cur_cycle += QUEUE_DEPTH;
     }
 }
 
@@ -245,6 +243,5 @@ void tracerv_t::flush() {
                 }
             }
     }
-   cur_cycle += beats_available;
 }
 #endif // TRACERVBRIDGEMODULE_struct_guard
