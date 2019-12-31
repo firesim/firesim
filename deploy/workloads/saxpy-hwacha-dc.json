@@ -1,0 +1,26 @@
+{
+  "common_bootbinary" : "bbl-vmlinux",
+  "benchmark_name" : "saxpy-hwacha-dc",
+  "deliver_dir" : "/root",
+  "common_args" : [],
+  "common_files" : [],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+      {
+          "name" : "saxpy-hwacha-dc",
+          "files" : ["saxpy-hwacha-dc.riscv", "run-test.sh", "boom-cpumask.riscv"],
+          "command" : "/root/run-test.sh | tee /root/report.csv && poweroff",
+          "simulation_outputs": [],
+          "outputs": ["/root/report.csv"]
+      },
+      {
+          "name" : "memblade-dummy",
+          "bootbinary" : "memblade-dummy.riscv",
+          "files" : [],
+          "command" : "",
+          "simulation_outputs" : [],
+          "outputs" : []
+      }
+  ]
+}

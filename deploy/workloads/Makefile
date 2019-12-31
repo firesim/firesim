@@ -235,6 +235,19 @@ saxpy-dc:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+saxpy-hwacha:
+	cd ../../sw/memblade-tests/linux && make {boom-cpumask,saxpy-hwacha}.riscv
+	cp ../../sw/memblade-tests/linux/{boom-cpumask,saxpy-hwacha}.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+saxpy-hwacha-dc:
+	cd ../../sw/memblade-tests/baremetal && make memblade-dummy.riscv
+	cd ../../sw/memblade-tests/linux && make {boom-cpumask,saxpy-hwacha-dc}.riscv
+	cp ../../sw/memblade-tests/linux/{boom-cpumask,saxpy-hwacha-dc}.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
@@ -268,5 +281,6 @@ coremark:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc pagerank-dram-cache ccbench-cache-sweep flash-stress \
+	saxpy saxpy-dc saxpy-hwacha saxpy-hwacha-dc \
+	pagerank-dram-cache ccbench-cache-sweep flash-stress \
 	rmem-alloc-test flush-test coremark linux-poweroff
