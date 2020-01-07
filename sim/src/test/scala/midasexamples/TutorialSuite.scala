@@ -120,3 +120,6 @@ class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
 }
 
 class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
+
+// Basic test for deduplicated extracted models
+class TwoAddersF1Test extends TutorialSuite("TwoAdders")

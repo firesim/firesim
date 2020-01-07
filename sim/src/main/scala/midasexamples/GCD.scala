@@ -26,16 +26,53 @@ class GCDInner extends Module {
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === 0.U
-
-  assert(!io.e || io.a =/= 0.U && io.b =/= 0.U, "Inputs to GCD cannot be 0")
+  // TODO: this assertion fails spuriously with deduped, extracted models
+  // assert(!io.e || io.a =/= 0.U && io.b =/= 0.U, "Inputs to GCD cannot be 0")
   printf("X: %d, Y:%d\n", x, y)
 }
 
 class GCDDUT extends Module {
   val io = IO(new GCDIO)
-  val inner = Module(new GCDInner)
-  annotate(FAMEModelAnnotation(inner))
-  io <> inner.io
+  val inner1 = Module(new GCDInner)
+  annotate(FAMEModelAnnotation(inner1))
+  val inner2 = Module(new GCDInner)
+  annotate(FAMEModelAnnotation(inner2))
+
+  val select = RegInit(false.B)
+  select := !select
+
+  val done1 = RegInit(false.B)
+  val result1 = Reg(UInt())
+
+  when (io.v) {
+    done1 := false.B
+  } .elsewhen (inner1.io.v) {
+    done1 := true.B
+    result1 := inner1.io.z
+  }
+
+  val done2 = RegInit(false.B)
+  val result2 = Reg(UInt())
+
+  when (io.v) {
+    done2 := false.B
+  } .elsewhen (inner2.io.v) {
+    done2 := true.B
+    result2 := inner2.io.z
+  }
+  
+  inner1.io.a := io.a
+  inner1.io.b := io.b
+  inner1.io.e := io.e
+
+  inner2.io.a := io.b
+  inner2.io.b := io.a
+  inner2.io.e := io.e
+
+  io.z := Mux(select, result1, result2)
+  io.v := done1 && done2
+
+  assert(!done1 || !done2 || (result1 === result2), "Outputs do not match!")
 }
 
 class GCD extends PeekPokeMidasExampleHarness(() => new GCDDUT)

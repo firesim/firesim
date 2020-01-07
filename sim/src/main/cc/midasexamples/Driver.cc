@@ -41,6 +41,8 @@
 #include "TrivialMulticlock.h"
 #elif defined DESIGNNAME_MultiClockAssertModule
 #include "MultiClockAssertModule.h"
+#elif defined DESIGNNAME_TwoAdders
+#include "TwoAdders.h"
 #endif
 
 class dut_emul_t:
