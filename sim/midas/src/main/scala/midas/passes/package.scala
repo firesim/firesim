@@ -22,7 +22,6 @@ package object passes {
     */
   case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression)
 
-
   /**
     * A utility for creating a wire that "echoes" the value of an existing expression.
     */

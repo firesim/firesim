@@ -79,6 +79,10 @@ private[midas] class MidasTransforms(
       new EmitFirrtl("post-fame-transform.fir"),
       new fame.EmitFAMEAnnotations("post-fame-transform.json"),
       new ResolveAndCheck,
+      fame.MultiThreadFAME5Models,
+      new EmitFirrtl("post-fame-5.fir"),
+      new fame.EmitFAMEAnnotations("post-fame-5.json"),
+      new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++

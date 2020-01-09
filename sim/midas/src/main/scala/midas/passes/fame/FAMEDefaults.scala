@@ -8,6 +8,8 @@ import ir._
 import annotations._
 import collection.mutable.{ArrayBuffer, LinkedHashSet}
 
+import midas.targetutils.FAMEAnnotation
+
 // Assumes: AQB form
 // Run after ExtractModel
 // Label all unbound top-level ports as wire channels
@@ -21,8 +23,9 @@ class FAMEDefaults extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
     val topModule = state.circuit.modules.find(_.name == state.circuit.main).get.asInstanceOf[Module]
-    val globalSignals = state.annotations.collect({ case g: FAMEGlobalSignal => g.target.ref }).toSet
-    val channelNames = state.annotations.collect({ case fca: FAMEChannelConnectionAnnotation => fca.globalName })
+    val fameAnnos = state.annotations.collect({ case fa: FAMEAnnotation => fa }) // for performance, avoid other annos
+    val globalSignals = fameAnnos.collect({ case g: FAMEGlobalSignal => g.target.ref }).toSet
+    val channelNames = fameAnnos.collect({ case fca: FAMEChannelConnectionAnnotation => fca.globalName })
     val channelNS = Namespace(channelNames)
     def isGlobal(topPort: Port) = globalSignals.contains(topPort.name)
     def isBound(topPort: Port) = analysis.channelsByPort.contains(analysis.topTarget.ref(topPort.name))
