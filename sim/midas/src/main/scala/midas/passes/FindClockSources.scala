@@ -19,8 +19,9 @@ case class FindClockSourceAnnotation(
     Seq(this.copy(RTRenamer.exact(renames)(target), originalTarget.orElse(Some(target))))
 }
 
-case class ClockSourceAnnotation(queryTarget: ReferenceTarget, source: ReferenceTarget) extends Annotation {
-  def update(renames: RenameMap): Seq[ClockSourceAnnotation] = Seq(this.copy(queryTarget, RTRenamer.exact(renames)(source)))
+case class ClockSourceAnnotation(queryTarget: ReferenceTarget, source: Option[ReferenceTarget]) extends Annotation {
+  def update(renames: RenameMap): Seq[ClockSourceAnnotation] = 
+    Seq(this.copy(queryTarget, source.map(s => RTRenamer.exact(renames)(s))))
 }
 
 object FindClockSources extends firrtl.Transform {
@@ -28,18 +29,27 @@ object FindClockSources extends firrtl.Transform {
   def outputForm = LowForm
   private def getSourceClock(moduleGraphs: Map[String,DiGraph[LogicNode]],
                              moduleDeps: Map[String, Map[String,String]])
-                            (rT: ReferenceTarget): ReferenceTarget = {
+                            (rT: ReferenceTarget): Option[ReferenceTarget] = {
     val modulePath   = (OfModule(rT.module) +: rT.path.map(_._2)).reverse
     val instancePath = (None +: rT.path.map(tuple => Some(tuple._1))).reverse
 
-    def walkModule(currentNode: LogicNode, path: Seq[(Option[Instance], OfModule)]): LogicNode = {
+    def walkModule(currentNode: LogicNode, path: Seq[(Option[Instance], OfModule)]): Option[LogicNode] = {
       require(path.nonEmpty)
       val (instOpt, module) :: restOfPath = path
       val mGraph = moduleGraphs(module.value)
-      val source = if (mGraph.findSinks(currentNode)) currentNode else mGraph.reachableFrom(currentNode).head
+      // Check if the current node is itself a source. This to handle references to
+      // clocks in the top-level module. All other references must traverse the
+      // graph. Note: The graph is directed from clock-leaves to clock-sources
+      val source = if (mGraph.findSinks(currentNode)) currentNode else {
+        val potentialSources =  mGraph.reachableFrom(currentNode)
+        assert(potentialSources.size == 1)
+        potentialSources.head
+      }
       (restOfPath, source) match {
         // Source is a port on the top level module -> we're done
-        case (Nil, LogicNode(_, None, _)) => source
+        case (Nil, LogicNode(_, None, _)) => Some(source)
+        // Source and sink nodes are the same port on an instance -> unconnected clock port
+        case (_, LogicNode(_, Some(_),_)) if source == currentNode => None
         // Source is a port on an instance in our current module; prepend it to the path and recurse
         case (_, LogicNode(port, Some(instName),_)) =>
           val childModule = moduleDeps(module.value)(instName)
@@ -49,10 +59,10 @@ object FindClockSources extends firrtl.Transform {
       }
     }
     val sourceClock = walkModule(LogicNode(rT.ref), instancePath.zip(modulePath))
-    rT.moduleTarget.ref(sourceClock.name)
+    sourceClock.map(sC => rT.moduleTarget.ref(sC.name))
   }
 
-  def analyze(state: CircuitState, queryTargets: Seq[ReferenceTarget]): Map[ReferenceTarget, ReferenceTarget] = {
+  def analyze(state: CircuitState, queryTargets: Seq[ReferenceTarget]): Map[ReferenceTarget, Option[ReferenceTarget]] = {
     queryTargets.foreach(t => {
       require(t.component == Nil)
       require(t.module == t.circuit, s"Queried leaf clock ${t} must provide an absolute instance path")
