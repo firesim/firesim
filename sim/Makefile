@@ -34,7 +34,7 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(firesim_base_dir)/target-rtl/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
-JVM_MEMORY ?= 16G
+JVM_MEMORY ?= 32G
 SCALA_VERSION ?= 2.12.4
 JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
