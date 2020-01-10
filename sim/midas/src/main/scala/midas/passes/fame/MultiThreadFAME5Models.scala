@@ -155,8 +155,19 @@ object MultiThreadFAME5Models extends Transform {
 
     val prunedTopoTopBody = top.body.map(analyzeAndPruneTopo(fame5ModulesByInstance, fame5Topo))
 
+    // For now, just one FAME5 model
+    assert(fame5InstancesByModule.keySet.size <= 1)
+
+    val nThreads = fame5InstancesByModule.headOption.map(_._2.size).getOrElse(1)
+
+    val circuitNS = Namespace(state.circuit)
+    val threadedModuleNames = state.circuit.modules.collect({
+      // Don't replace blackbox instances! TODO: Check for illegal blackboxes.
+      case m: Module => m.name -> circuitNS.newName(s"${m.name}_threaded")
+    }).toMap
+
     val threadedInstances = fame5InstancesByModule.map({
-      case (m, insts) => m -> WDefInstance(FAME5Info, ns.newName(s"${m.value}_threaded"), m.value, UnknownType)
+      case (m, insts) => m -> WDefInstance(FAME5Info, ns.newName(s"${m.value}_threaded"), threadedModuleNames(m.value), UnknownType)
     }).toMap
 
     val threadCounters = fame5InstancesByModule.map { case (m, insts) => m -> Counter(insts.size, hostClock, hostReset) }
@@ -187,12 +198,13 @@ object MultiThreadFAME5Models extends Transform {
     val prologue = insts ++: clockConns ++: resetConns ++: counters.flatMap(c => Seq(c.decl, c.assigns))
     val multiThreadedTopBody = Block(prologue ++: prunedTopoTopBody +: multiThreadedConns)
 
-    val transformedModules = state.circuit.modules.map {
+    val transformedModules = state.circuit.modules.flatMap {
       case m: Module if (m.name == state.circuit.main) =>
-        m.copy(body = multiThreadedTopBody)
-      case m: Module if (fame5InstancesByModule.contains(OfModule(m.name))) =>
-        MultiThreader(m, fame5InstancesByModule(OfModule(m.name)).size)
-      case m => m
+        Seq(m.copy(body = multiThreadedTopBody))
+      case m: Module =>
+        val threaded = MultiThreader(threadedModuleNames)(m, nThreads) // all threaded by same amount, many get pruned
+        Seq(m, threaded)
+      case m => Seq(m)
     }
 
     // TODO: Renames!

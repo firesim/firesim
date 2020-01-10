@@ -32,7 +32,7 @@ object SeparateInstanceDecls {
     case s => s.map(onStmt(insts))
   }
 
-  def apply(stmt: Statement): (Seq[Statement], Statement) = {
+  def apply(stmt: Statement): (Seq[WDefInstance], Statement) = {
     val insts = new mutable.ArrayBuffer[WDefInstance]
     val otherStmts = onStmt(insts)(stmt)
     (insts.toSeq, otherStmts)
@@ -62,6 +62,17 @@ object MultiThreader {
     case s => freshNames
   }
 
+  def replaceRegRefsLHS(freshNames: FreshNames)(expr: Expression): Expression = expr match {
+    case wr @ WRef(name, _, RegKind, _) => wr.copy(name = freshNames(name).head)
+    case e => e.map(replaceRegRefsLHS(freshNames))
+  }
+
+  def replaceRegRefsRHS(freshNames: FreshNames)(expr: Expression): Expression = expr match {
+    // 2nd-to-last slot feeds logic; last slot holds a shadow value
+    case wr @ WRef(name, _, RegKind, _) => wr.copy(name = freshNames(name).init.last)
+    case e => e.map(replaceRegRefsRHS(freshNames))
+  }
+
   def replaceRegRefs(freshNames: FreshNames)(expr: Expression): Expression = expr match {
     case wr @ WRef(name, _, RegKind, FEMALE) => wr.copy(name = freshNames(name).head)
     // 2nd-to-last slot feeds logic; last slot holds a shadow value
@@ -89,8 +100,10 @@ object MultiThreader {
   }
 
   def multiThread(freshNames: FreshNames, edgeStatus: collection.Map[WrappedExpression, SignalInfo], n: BigInt, counter: DefRegister)(stmt: Statement): Statement = {
-    val multiThreaded = stmt match {
-      case mem: DefMemory => mem.copy(depth = transformDepth(mem.depth, n))
+    stmt match {
+      case mem: DefMemory =>
+        assert(mem.readLatency == 0 && mem.writeLatency == 1, "Memories must be transformed with VerilogMemDelays before multithreading")
+        mem.copy(depth = transformDepth(mem.depth, n), readLatency = mem.readLatency * n.intValue())
       case reg: DefRegister =>
         val newRegs: Seq[DefRegister] = freshNames(reg.name).map(alias => updateReg(reg, alias))
         // Muxing happens between first two stages
@@ -100,16 +113,14 @@ object MultiThreader {
         val directPairs = newRegs.tail zip newRegs.tail.tail
         val directConns = directPairs.map { case (a, b) => Connect(FAME5Info, WRef(b), WRef(a)) }
         Block(newRegs ++: gatedUpdate +: directConns)
-      case conn @ Connect(info, lhs, rhs) if kind(lhs) == MemKind =>
-        lhs match {
-          case WSubField(p: WSubField, "addr", _, _) =>
-            Connect(info, lhs, transformAddr(counter, rhs))
-          case WSubField(p: WSubField, _, _, _) => conn
-          case _ => throw new NotImplementedError("Cannot multithread ${stmt}. Try lowering first.")
-        }
-      case s => s.map(multiThread(freshNames, edgeStatus, n, counter))
+      case Connect(info, lhs @ WSubField(p: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
+        Connect(info, replaceRegRefsLHS(freshNames)(lhs), transformAddr(counter, replaceRegRefsRHS(freshNames)(rhs)))
+      case Connect(info, lhs, rhs) =>
+        // TODO: LHS vs RHS is kind of a hack
+        // We need a new method to swap register refs on the LHS because VerilogMemDelays puts in un-gendered register refs
+        Connect(info, replaceRegRefsLHS(freshNames)(lhs), replaceRegRefsRHS(freshNames)(rhs))
+      case s => s.map(multiThread(freshNames, edgeStatus, n, counter)).map(replaceRegRefsRHS(freshNames))
     }
-    multiThreaded.map(replaceRegRefs(freshNames))
   }
 
   def findClocks(clocks: mutable.Set[WrappedExpression])(stmt: Statement): Unit = {
@@ -124,16 +135,17 @@ object MultiThreader {
     stmt.foreach(findClocks(clocks))
   }
 
-  def apply(m: Module, n: BigInt): Module = {
-    val ns = Namespace(m)
-    val clockPorts = m.ports.filter(_.tpe == ClockType)
+  def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
+    // TODO: this is ugly and uses copied code instead of bumping FIRRTL
+    // Simplify all memories first
+    val loweredMod = (new MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
+
+    val ns = Namespace(loweredMod)
     val hostClock = WRef(WrapTop.hostClockName)
     val hostReset = WRef(WrapTop.hostResetName)
-    require(clockPorts.length == 1) // TODO: check for blackboxes
-    require(clockPorts.head.name == hostClock.name)
 
     val clocks = new mutable.LinkedHashSet[WrappedExpression]
-    m.body.foreach(findClocks(clocks))
+    loweredMod.body.foreach(findClocks(clocks))
 
     val edgeStatus = new mutable.LinkedHashMap[WrappedExpression, SignalInfo]
     clocks.foreach {
@@ -150,7 +162,7 @@ object MultiThreader {
       }
     }
 
-    val tidxMax = UIntLiteral(n)
+    val tidxMax = UIntLiteral(n-1)
     val tidxType = UIntType(tidxMax.width)
     val tidxRef = WRef(ns.newName("threadIdx"), tidxType, RegKind)
     val tidxDecl = DefRegister(FAME5Info, tidxRef.name, tidxType, hostClock, zero, tidxRef)
@@ -161,11 +173,27 @@ object MultiThreader {
       tidxType)
     val tidxConn = Connect(FAME5Info, tidxRef, tidxUpdate)
 
-    val freshNames = renameRegs(HashMap.empty, n, ns, m.body)
-    val threaded = multiThread(freshNames, edgeStatus, n, tidxDecl)(m.body)
+    val freshNames = renameRegs(HashMap.empty, n, ns, loweredMod.body)
+    val threaded = multiThread(freshNames, edgeStatus, n, tidxDecl)(loweredMod.body)
 
+    // Uses only threaded instances
     val (iDecls, body) = SeparateInstanceDecls(threaded)
+
+    // TODO: earlier in the compiler, every module should get hostClock/hostReset ports hooked up
+    val threadedChildren = iDecls.map {
+      case i if (threadedModuleNames.contains(i.module)) =>
+        val threadedInst = i.copy(module = threadedModuleNames(i.module))
+        val hcConn = Connect(FAME5Info, Utils.mergeRef(WRef(threadedInst), hostClock), hostClock)
+        val hrConn = Connect(FAME5Info, Utils.mergeRef(WRef(threadedInst), hostReset), hostReset)
+        Block(Seq(threadedInst, hcConn, hrConn))
+      case i => i
+    }
+
     val clockGaters = edgeStatus.toSeq.map { case (k, v) => v }
-    m.copy(body = Block(iDecls ++ clockGaters.map(_.decl) ++ Seq(tidxDecl, tidxConn, body) ++ clockGaters.map(_.assigns)))
+    val threadedBody = Block(threadedChildren ++ clockGaters.map(_.decl) ++ Seq(tidxDecl, tidxConn, body) ++ clockGaters.map(_.assigns))
+
+    val hostPorts = Seq(Port(FAME5Info, hostClock.name, Input, ClockType), Port(FAME5Info, hostReset.name, Input, BoolType))
+    val newPorts = loweredMod.ports ++ hostPorts.filterNot(p => loweredMod.ports.map(_.name).contains(p.name))
+    Module(FAME5Info ++ loweredMod.info, threadedModuleNames(loweredMod.name), newPorts, threadedBody)
   }
 }
