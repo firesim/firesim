@@ -403,6 +403,41 @@ uint64_t host_mem_offset = -0x80000000LL;
                                                    ASSERTBRIDGEMODULE_3_assert_count,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
+#ifdef ASSERTBRIDGEMODULE_3_PRESENT
+    ASSERTBRIDGEMODULE_3_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_3_substruct,
+                                                   ASSERTBRIDGEMODULE_3_assert_count,
+                                                   ASSERTBRIDGEMODULE_3_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_4_PRESENT
+    ASSERTBRIDGEMODULE_4_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_4_substruct,
+                                                   ASSERTBRIDGEMODULE_4_assert_count,
+                                                   ASSERTBRIDGEMODULE_4_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_5_PRESENT
+    ASSERTBRIDGEMODULE_5_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_5_substruct,
+                                                   ASSERTBRIDGEMODULE_5_assert_count,
+                                                   ASSERTBRIDGEMODULE_5_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_6_PRESENT
+    ASSERTBRIDGEMODULE_6_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_6_substruct,
+                                                   ASSERTBRIDGEMODULE_6_assert_count,
+                                                   ASSERTBRIDGEMODULE_6_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_7_PRESENT
+    ASSERTBRIDGEMODULE_7_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_7_substruct,
+                                                   ASSERTBRIDGEMODULE_7_assert_count,
+                                                   ASSERTBRIDGEMODULE_7_assert_messages));
+#endif
 
 #ifdef PRINTBRIDGEMODULE_0_PRESENT
     PRINTBRIDGEMODULE_0_substruct_create;
@@ -417,6 +452,104 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_0_argument_counts,
                                           PRINTBRIDGEMODULE_0_argument_widths,
                                           PRINTBRIDGEMODULE_0_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_1_PRESENT
+    PRINTBRIDGEMODULE_1_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_1_substruct,
+                                          PRINTBRIDGEMODULE_1_print_count,
+                                          PRINTBRIDGEMODULE_1_token_bytes,
+                                          PRINTBRIDGEMODULE_1_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_1_print_offsets,
+                                          PRINTBRIDGEMODULE_1_format_strings,
+                                          PRINTBRIDGEMODULE_1_argument_counts,
+                                          PRINTBRIDGEMODULE_1_argument_widths,
+                                          PRINTBRIDGEMODULE_1_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_2_PRESENT
+    PRINTBRIDGEMODULE_2_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_2_substruct,
+                                          PRINTBRIDGEMODULE_2_print_count,
+                                          PRINTBRIDGEMODULE_2_token_bytes,
+                                          PRINTBRIDGEMODULE_2_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_2_print_offsets,
+                                          PRINTBRIDGEMODULE_2_format_strings,
+                                          PRINTBRIDGEMODULE_2_argument_counts,
+                                          PRINTBRIDGEMODULE_2_argument_widths,
+                                          PRINTBRIDGEMODULE_2_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_3_PRESENT
+    PRINTBRIDGEMODULE_3_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_3_substruct,
+                                          PRINTBRIDGEMODULE_3_print_count,
+                                          PRINTBRIDGEMODULE_3_token_bytes,
+                                          PRINTBRIDGEMODULE_3_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_3_print_offsets,
+                                          PRINTBRIDGEMODULE_3_format_strings,
+                                          PRINTBRIDGEMODULE_3_argument_counts,
+                                          PRINTBRIDGEMODULE_3_argument_widths,
+                                          PRINTBRIDGEMODULE_3_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_4_PRESENT
+    PRINTBRIDGEMODULE_4_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_4_substruct,
+                                          PRINTBRIDGEMODULE_4_print_count,
+                                          PRINTBRIDGEMODULE_4_token_bytes,
+                                          PRINTBRIDGEMODULE_4_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_4_print_offsets,
+                                          PRINTBRIDGEMODULE_4_format_strings,
+                                          PRINTBRIDGEMODULE_4_argument_counts,
+                                          PRINTBRIDGEMODULE_4_argument_widths,
+                                          PRINTBRIDGEMODULE_4_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_5_PRESENT
+    PRINTBRIDGEMODULE_5_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_5_substruct,
+                                          PRINTBRIDGEMODULE_5_print_count,
+                                          PRINTBRIDGEMODULE_5_token_bytes,
+                                          PRINTBRIDGEMODULE_5_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_5_print_offsets,
+                                          PRINTBRIDGEMODULE_5_format_strings,
+                                          PRINTBRIDGEMODULE_5_argument_counts,
+                                          PRINTBRIDGEMODULE_5_argument_widths,
+                                          PRINTBRIDGEMODULE_5_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_6_PRESENT
+    PRINTBRIDGEMODULE_6_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_6_substruct,
+                                          PRINTBRIDGEMODULE_6_print_count,
+                                          PRINTBRIDGEMODULE_6_token_bytes,
+                                          PRINTBRIDGEMODULE_6_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_6_print_offsets,
+                                          PRINTBRIDGEMODULE_6_format_strings,
+                                          PRINTBRIDGEMODULE_6_argument_counts,
+                                          PRINTBRIDGEMODULE_6_argument_widths,
+                                          PRINTBRIDGEMODULE_6_DMA_ADDR));
+#endif
+#ifdef PRINTBRIDGEMODULE_7_PRESENT
+    PRINTBRIDGEMODULE_7_substruct_create;
+    add_bridge_driver(new synthesized_prints_t(this,
+                                          args,
+                                          PRINTBRIDGEMODULE_7_substruct,
+                                          PRINTBRIDGEMODULE_7_print_count,
+                                          PRINTBRIDGEMODULE_7_token_bytes,
+                                          PRINTBRIDGEMODULE_7_idle_cycles_mask,
+                                          PRINTBRIDGEMODULE_7_print_offsets,
+                                          PRINTBRIDGEMODULE_7_format_strings,
+                                          PRINTBRIDGEMODULE_7_argument_counts,
+                                          PRINTBRIDGEMODULE_7_argument_widths,
+                                          PRINTBRIDGEMODULE_7_DMA_ADDR));
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
