@@ -40,8 +40,8 @@ object SeparateInstanceDecls {
 }
 
 object AddHostClockAndReset {
-  val hostClock = Port(FAME5Info, WrapTop.hostClockName, Input, ClockType)
-  val hostReset = Port(FAME5Info, WrapTop.hostResetName, Input, BoolType)
+  val hostClock = Port(FAME5Info.info, WrapTop.hostClockName, Input, ClockType)
+  val hostReset = Port(FAME5Info.info, WrapTop.hostResetName, Input, BoolType)
 
   def apply(m: Module): Module = {
     m.copy(ports = m.ports ++ Seq(hostClock, hostReset).filterNot(p => m.ports.map(_.name).contains(p.name)))
@@ -49,15 +49,15 @@ object AddHostClockAndReset {
 
   def apply(wi: WDefInstance): Statement = {
     // Adds connections to instance hostClock/hostReset ports
-    val hcConn = Connect(FAME5Info, WSubField(WRef(wi), WrapTop.hostClockName), WRef(WrapTop.hostClockName))
-    val hrConn = Connect(FAME5Info, WSubField(WRef(wi), WrapTop.hostResetName), WRef(WrapTop.hostResetName))
+    val hcConn = Connect(FAME5Info.info, WSubField(WRef(wi), WrapTop.hostClockName), WRef(WrapTop.hostClockName))
+    val hrConn = Connect(FAME5Info.info, WSubField(WRef(wi), WrapTop.hostResetName), WRef(WrapTop.hostResetName))
     Block(Seq(wi, hcConn, hrConn))
   }
 }
 
 object Toggle {
   def apply(r: DefRegister): Statement = {
-    Connect(FAME5Info, WRef(r), DoPrim(PrimOps.Not, Seq(WRef(r)), Nil, r.tpe))
+    Connect(FAME5Info.info, WRef(r), DoPrim(PrimOps.Not, Seq(WRef(r)), Nil, r.tpe))
   }
 }
 
@@ -124,10 +124,10 @@ object MultiThreader {
         val newRegs: Seq[DefRegister] = freshNames(reg.name).map(alias => updateReg(reg, alias))
         // Muxing happens between first two stages
         val useNew = edgeStatus(WrappedExpression(reg.clock)).ref
-        val gatedUpdate = Connect(FAME5Info, WRef(newRegs.tail.head), Mux(useNew, WRef(newRegs.head), WRef(newRegs.last), UnknownType))
+        val gatedUpdate = Connect(FAME5Info.info, WRef(newRegs.tail.head), Mux(useNew, WRef(newRegs.head), WRef(newRegs.last), UnknownType))
         // Other stages are straight connections
         val directPairs = newRegs.tail zip newRegs.tail.tail
-        val directConns = directPairs.map { case (a, b) => Connect(FAME5Info, WRef(b), WRef(a)) }
+        val directConns = directPairs.map { case (a, b) => Connect(FAME5Info.info, WRef(b), WRef(a)) }
         Block(newRegs ++: gatedUpdate +: directConns)
       case Connect(info, lhs @ WSubField(p: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
         Connect(info, replaceRegRefsLHS(freshNames)(lhs), transformAddr(counter, replaceRegRefsRHS(freshNames)(rhs)))
@@ -170,10 +170,10 @@ object MultiThreader {
           // Optimization -- don't generate this gate recovery stuff for host clock
           edgeStatus(we) = SignalInfo(EmptyStmt, EmptyStmt, UIntLiteral(1))
         case e =>
-          val edgeCount = DefRegister(FAME5Info, ns.newName("edgeCount"), BoolType, e, hostReset, UIntLiteral(0))
-          val updateCount = DefRegister(FAME5Info, ns.newName("updateCount"), BoolType, hostClock, hostReset, UIntLiteral(0))
+          val edgeCount = DefRegister(FAME5Info.info, ns.newName("edgeCount"), BoolType, e, hostReset, UIntLiteral(0))
+          val updateCount = DefRegister(FAME5Info.info, ns.newName("updateCount"), BoolType, hostClock, hostReset, UIntLiteral(0))
           val neq = DoPrim(PrimOps.Neq, Seq(WRef(edgeCount), WRef(updateCount)), Nil, BoolType)
-          val trackUpdates = Conditionally(FAME5Info, neq, Toggle(updateCount), EmptyStmt)
+          val trackUpdates = Conditionally(FAME5Info.info, neq, Toggle(updateCount), EmptyStmt)
           edgeStatus(we) = SignalInfo(Block(Seq(edgeCount, updateCount)), Block(Seq(Toggle(edgeCount), trackUpdates)), neq)
       }
     }
@@ -181,13 +181,13 @@ object MultiThreader {
     val tidxMax = UIntLiteral(n-1)
     val tidxType = UIntType(tidxMax.width)
     val tidxRef = WRef(ns.newName("threadIdx"), tidxType, RegKind)
-    val tidxDecl = DefRegister(FAME5Info, tidxRef.name, tidxType, hostClock, zero, tidxRef)
+    val tidxDecl = DefRegister(FAME5Info.info, tidxRef.name, tidxType, hostClock, zero, tidxRef)
     val tidxUpdate = Mux(
       DoPrim(PrimOps.Eq, Seq(tidxRef, tidxMax), Nil, BoolType),
       UIntLiteral(0),
       DoPrim(PrimOps.Add, Seq(tidxRef, one), Nil, BoolType),
       tidxType)
-    val tidxConn = Connect(FAME5Info, tidxRef, tidxUpdate)
+    val tidxConn = Connect(FAME5Info.info, tidxRef, tidxUpdate)
 
     val freshNames = renameRegs(HashMap.empty, n, ns, loweredMod.body)
     val threaded = multiThread(freshNames, edgeStatus, n, tidxDecl)(loweredMod.body)
@@ -204,8 +204,8 @@ object MultiThreader {
     val clockGaters = edgeStatus.toSeq.map { case (k, v) => v }
     val threadedBody = Block(threadedChildren ++ clockGaters.map(_.decl) ++ Seq(tidxDecl, tidxConn, body) ++ clockGaters.map(_.assigns))
 
-    val hostPorts = Seq(Port(FAME5Info, hostClock.name, Input, ClockType), Port(FAME5Info, hostReset.name, Input, BoolType))
+    val hostPorts = Seq(Port(FAME5Info.info, hostClock.name, Input, ClockType), Port(FAME5Info.info, hostReset.name, Input, BoolType))
     val newPorts = module.ports ++ hostPorts.filterNot(p => module.ports.map(_.name).contains(p.name))
-    Module(FAME5Info ++ module.info, threadedModuleNames(module.name), newPorts, threadedBody)
+    Module(FAME5Info.info ++ module.info, threadedModuleNames(module.name), newPorts, threadedBody)
   }
 }

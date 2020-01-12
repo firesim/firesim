@@ -31,19 +31,18 @@ case class ReadyValidSink(ref: Expression) extends ReadyValidSignal
 
 case class ReadyValidSource(ref: Expression) extends ReadyValidSignal
 
-case object FAME5Info extends Info {
-  override def toString = "@ [Added during FAME5Transform]"
-  def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(Seq(this, that))
+object FAME5Info {
+  def info = FileInfo(StringLit("@ [Added during FAME5Transform]"))
 }
 
 object Counter {
   def apply(nVals: Integer, hostClock: Expression, hostReset: Expression)(implicit ns: Namespace): SignalInfo = {
     val maxLit = UIntLiteral(BigInt(nVals - 1))
-    val decl = DefRegister(FAME5Info, ns.newName("threadIdx"), maxLit.tpe, hostClock, hostReset, UIntLiteral(0))
+    val decl = DefRegister(FAME5Info.info, ns.newName("threadIdx"), maxLit.tpe, hostClock, hostReset, UIntLiteral(0))
     val ref = WRef(decl)
     val inc = DoPrim(PrimOps.Add, Seq(ref, UIntLiteral(1)), Nil, UnknownType)
     val wrap = DoPrim(PrimOps.Eq, Seq(ref, maxLit), Nil, BoolType)
-    val assign = Connect(FAME5Info, ref, Mux(wrap, UIntLiteral(0), inc, UnknownType))
+    val assign = Connect(FAME5Info.info, ref, Mux(wrap, UIntLiteral(0), inc, UnknownType))
     SignalInfo(decl, assign, ref)
   }
 }
@@ -62,21 +61,21 @@ class StaticArbiter(counter: SignalInfo) {
 
   def mux(sink: ReadyValidSink, sources: Seq[ReadyValidSource]): Statement = {
     val valid = muxIdx(counter.ref, sources.map(_.valid))
-    val validConn = Connect(FAME5Info, sink.valid, valid)
+    val validConn = Connect(FAME5Info.info, sink.valid, valid)
     val bits = muxIdx(counter.ref, sources.map(_.bits))
-    val bitsConn = Connect(FAME5Info, sink.bits, bits)
+    val bitsConn = Connect(FAME5Info.info, sink.bits, bits)
     val readyConns = sources.zipWithIndex.map {
-      case (source, idx) => Connect(FAME5Info, source.ready, counterMask(counter, idx, sink.ready))
+      case (source, idx) => Connect(FAME5Info.info, source.ready, counterMask(counter, idx, sink.ready))
     }
     Block(validConn +: bitsConn +: readyConns)
   }
 
   def demux(sinks: Seq[ReadyValidSink], source: ReadyValidSource): Statement = {
     val ready = muxIdx(counter.ref, sinks.map(_.ready))
-    val readyConn = Connect(FAME5Info, source.ready, ready)
-    val bitsConns = sinks.map(sink => Connect(FAME5Info, sink.bits, source.bits))
+    val readyConn = Connect(FAME5Info.info, source.ready, ready)
+    val bitsConns = sinks.map(sink => Connect(FAME5Info.info, sink.bits, source.bits))
     val validConns = sinks.zipWithIndex.map {
-      case (sink, idx) => Connect(FAME5Info, sink.valid, counterMask(counter, idx, source.valid))
+      case (sink, idx) => Connect(FAME5Info.info, sink.valid, counterMask(counter, idx, source.valid))
     }
     Block(readyConn +: bitsConns ++: validConns)
   }
@@ -167,7 +166,7 @@ object MultiThreadFAME5Models extends Transform {
     }).toMap
 
     val threadedInstances = fame5InstancesByModule.map({
-      case (m, insts) => m -> WDefInstance(FAME5Info, ns.newName(s"${m.value}_threaded"), threadedModuleNames(m.value), UnknownType)
+      case (m, insts) => m -> WDefInstance(FAME5Info.info, ns.newName(s"${m.value}_threaded"), threadedModuleNames(m.value), UnknownType)
     }).toMap
 
     val threadCounters = fame5InstancesByModule.map { case (m, insts) => m -> Counter(insts.size, hostClock, hostReset) }
@@ -192,8 +191,8 @@ object MultiThreadFAME5Models extends Transform {
 
     val insts = threadedInstances.toSeq.map { case (k, v) => v } // keep ordering
     val counters = threadCounters.toSeq.map { case (k, v) => v } // keep ordering
-    val clockConns = insts.map(i => Connect(FAME5Info, WSubField(WRef(i), WrapTop.hostClockName), WRef(WrapTop.hostClockName)))
-    val resetConns = insts.map(i => Connect(FAME5Info, WSubField(WRef(i), WrapTop.hostResetName), WRef(WrapTop.hostResetName)))
+    val clockConns = insts.map(i => Connect(FAME5Info.info, WSubField(WRef(i), WrapTop.hostClockName), WRef(WrapTop.hostClockName)))
+    val resetConns = insts.map(i => Connect(FAME5Info.info, WSubField(WRef(i), WrapTop.hostResetName), WRef(WrapTop.hostResetName)))
 
     val prologue = insts ++: clockConns ++: resetConns ++: counters.flatMap(c => Seq(c.decl, c.assigns))
     val multiThreadedTopBody = Block(prologue ++: prunedTopoTopBody +: multiThreadedConns)
