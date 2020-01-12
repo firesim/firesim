@@ -5,7 +5,7 @@ package core
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.unittest._
-import freechips.rocketchip.util.{DecoupledHelper}
+import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue}
 import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
@@ -64,7 +64,7 @@ class PipeChannel[T <: ChLeafType](
   require(latency == 0 || latency == 1)
 
   val io = IO(new PipeChannelIO(gen))
-  val tokens = Module(new Queue(gen, p(ChannelLen)))
+  val tokens = Module(new ShiftQueue(gen, 2))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
 
@@ -242,18 +242,18 @@ class ReadyValidChannel[T <: Data](
   require(clockRatio.isUnity, "CDC is not currently implemented")
 
   val io = IO(new ReadyValidChannelIO(gen))
-  val enqFwdQ = Module(new Queue(ValidIO(gen), 2, flow = true))
+  val enqFwdQ = Module(new ShiftQueue(ValidIO(gen), 2, flow = true))
   enqFwdQ.io.enq.bits.valid := io.enq.target.valid
   enqFwdQ.io.enq.bits.bits := io.enq.target.bits
   enqFwdQ.io.enq.valid := io.enq.fwd.hValid
   io.enq.fwd.hReady := enqFwdQ.io.enq.ready
 
-  val deqRevQ = Module(new Queue(Bool(), 2, flow = true))
+  val deqRevQ = Module(new ShiftQueue(Bool(), 2, flow = true))
   deqRevQ.io.enq.bits  := io.deq.target.ready
   deqRevQ.io.enq.valid := io.deq.rev.hValid
   io.deq.rev.hReady    := deqRevQ.io.enq.ready
 
-  val reference = Module(new Queue(gen, n))
+  val reference = Module(new ShiftQueue(gen, n))
   val deqFwdFired = RegInit(false.B)
   val enqRevFired = RegInit(false.B)
 
@@ -305,7 +305,7 @@ class ReadyValidChannelUnitTest(
   val resetLength = 4
 
   val dut = Module(new ReadyValidChannel(payloadType))
-  val reference = Module(new Queue(payloadType, queueDepth))
+  val reference = Module(new ShiftQueue(payloadType, queueDepth))
 
   // Generates target-reset tokens
   def resetTokenGen(): Bool = {
