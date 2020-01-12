@@ -201,7 +201,7 @@ object MultiThreadFAME5Models extends Transform {
       case m: Module if (m.name == state.circuit.main) =>
         Seq(m.copy(body = multiThreadedTopBody))
       case m: Module =>
-        val threaded = MultiThreader(threadedModuleNames)(m, nThreads) // all threaded by same amount, many get pruned
+        val threaded = MuxingMultiThreader(threadedModuleNames)(m, nThreads) // all threaded by same amount, many get pruned
         Seq(m, threaded)
       case m => Seq(m)
     }
