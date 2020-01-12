@@ -39,6 +39,22 @@ object SeparateInstanceDecls {
   }
 }
 
+object AddHostClockAndReset {
+  val hostClock = Port(FAME5Info, WrapTop.hostClockName, Input, ClockType)
+  val hostReset = Port(FAME5Info, WrapTop.hostResetName, Input, BoolType)
+
+  def apply(m: Module): Module = {
+    m.copy(ports = m.ports ++ Seq(hostClock, hostReset).filterNot(p => m.ports.map(_.name).contains(p.name)))
+  }
+
+  def apply(wi: WDefInstance): Statement = {
+    // Adds connections to instance hostClock/hostReset ports
+    val hcConn = Connect(FAME5Info, WSubField(WRef(wi), WrapTop.hostClockName), WRef(WrapTop.hostClockName))
+    val hrConn = Connect(FAME5Info, WSubField(WRef(wi), WrapTop.hostResetName), WRef(WrapTop.hostResetName))
+    Block(Seq(wi, hcConn, hrConn))
+  }
+}
+
 object Toggle {
   def apply(r: DefRegister): Statement = {
     Connect(FAME5Info, WRef(r), DoPrim(PrimOps.Not, Seq(WRef(r)), Nil, r.tpe))
@@ -92,7 +108,7 @@ object MultiThreader {
   def updateReg(reg: DefRegister, slotName: String): DefRegister = {
     // Keep self-resets as self-resets
     val newInit = reg.init match {
-      case selfRef @ WRef(reg.name, _, _, _) => selfRef.copy(name = slotName)
+      case wr: WRef if (wr.name == reg.name) => wr.copy(name = slotName)
       case e => e
     }
     // All slot registers are free-running
@@ -179,13 +195,9 @@ object MultiThreader {
     // Uses only threaded instances
     val (iDecls, body) = SeparateInstanceDecls(threaded)
 
-    // TODO: earlier in the compiler, every module should get hostClock/hostReset ports hooked up
     val threadedChildren = iDecls.map {
       case i if (threadedModuleNames.contains(i.module)) =>
-        val threadedInst = i.copy(module = threadedModuleNames(i.module))
-        val hcConn = Connect(FAME5Info, Utils.mergeRef(WRef(threadedInst), hostClock), hostClock)
-        val hrConn = Connect(FAME5Info, Utils.mergeRef(WRef(threadedInst), hostReset), hostReset)
-        Block(Seq(threadedInst, hcConn, hrConn))
+        AddHostClockAndReset(i.copy(module = threadedModuleNames(i.module)))
       case i => i
     }
 
@@ -193,7 +205,7 @@ object MultiThreader {
     val threadedBody = Block(threadedChildren ++ clockGaters.map(_.decl) ++ Seq(tidxDecl, tidxConn, body) ++ clockGaters.map(_.assigns))
 
     val hostPorts = Seq(Port(FAME5Info, hostClock.name, Input, ClockType), Port(FAME5Info, hostReset.name, Input, BoolType))
-    val newPorts = loweredMod.ports ++ hostPorts.filterNot(p => loweredMod.ports.map(_.name).contains(p.name))
-    Module(FAME5Info ++ loweredMod.info, threadedModuleNames(loweredMod.name), newPorts, threadedBody)
+    val newPorts = module.ports ++ hostPorts.filterNot(p => module.ports.map(_.name).contains(p.name))
+    Module(FAME5Info ++ module.info, threadedModuleNames(module.name), newPorts, threadedBody)
   }
 }
