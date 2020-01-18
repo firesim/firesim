@@ -46,8 +46,6 @@ tracerv_t::tracerv_t(
     std::string tracefile_arg =        std::string("+tracefile") + num_equals;
     std::string tracestart_arg =       std::string("+trace-start") + num_equals;
     std::string traceend_arg =         std::string("+trace-end") + num_equals;
-    // Testing: provides a reference file to diff the collected trace against
-    std::string testoutput_arg =         std::string("+trace-test-output") + std::to_string(tracerno);
     // Formats the output before dumping the trace to file
     std::string humanreadable_arg =    std::string("+trace-humanreadable") + std::to_string(tracerno);
 
@@ -63,9 +61,6 @@ tracerv_t::tracerv_t(
         if (arg.find(traceend_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + traceend_arg.length();
             this->end_cycle = atol(str);
-        }
-        if (arg.find(testoutput_arg) == 0) {
-            this->test_output = true;
         }
         if (arg.find(humanreadable_arg) == 0) {
             this->human_readable = true;
@@ -112,7 +107,6 @@ void tracerv_t::tick() {
         if (this->tracefile && can_write) {
             if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    if (this->test_output) fprintf(this->tracefile, "TRACEPORT: ");
                     fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
                     fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
                     fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
@@ -164,7 +158,6 @@ void tracerv_t::flush() {
     if (this->tracefile && can_write) {
         if (this->human_readable || this->test_output) {
             for (int i = 0; i < beats_available * 8; i+=8) {
-                if (this->test_output) fprintf(this->tracefile, "TRACEPORT: ");
                 fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
                 fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
                 fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);

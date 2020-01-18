@@ -66,46 +66,44 @@ object DeclockedTracedInstruction {
 
 // The IO matched on by the TracerV bridge: a wrapper around a heterogenous
 // bag of vectors. Each entry is Vec of committed instructions
-class TraceOutputTop(private val traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bundle {
-  val clock = Output(Clock())
-  val traces = Output(HeterogeneousBag(traceProto.map(_.cloneType)))
+class TraceOutputTop(private val traceProto: Vec[DeclockedTracedInstruction]) extends Bundle {
+  val clock = Input(Clock())
+  val traces = Input(traceProto.cloneType)
   def getProto() = traceProto
-  def getWidths(): Seq[TracedInstructionWidths] = traceProto.map(_.head.widths)
-  def getVecSizes(): Seq[Int] = traceProto.map(_.size)
 }
 
 object TraceOutputTop {
-  def apply(widths: Seq[TracedInstructionWidths], vecSizes: Seq[Int]): TraceOutputTop =
-    new TraceOutputTop(vecSizes.zip(widths).map({ case (size, w) =>
-      Vec(size, new DeclockedTracedInstruction(w))
-    }))
+  def apply(widths: TracedInstructionWidths, size: Int): TraceOutputTop =
+    new TraceOutputTop(Vec(size, new DeclockedTracedInstruction(widths)))
 }
 
 case class TracerVKey(
-  insnWidths: Seq[TracedInstructionWidths], // Widths of variable length fields in each TI
-  vecSizes: Seq[Int] // The number of insns in each vec (= max insns retired at that core) 
+  insnWidths: TracedInstructionWidths, // Widths of variable length fields in each TI
+  vecSize: Int // The number of insns in the traced insn vec (= max insns retired at that core) 
 )
 
-class TracerVBridge(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox
+class TracerVBridge(traceProto: Vec[DeclockedTracedInstruction]) extends BlackBox
     with Bridge[HostPortIO[TraceOutputTop], TracerVBridgeModule] {
-  val io = IO(Flipped(new TraceOutputTop(traceProto)))
+  val io = IO(new TraceOutputTop(traceProto))
   val bridgeIO = HostPort(io)
-  val constructorArg = Some(TracerVKey(io.getWidths, io.getVecSizes))
+  val constructorArg = Some(TracerVKey(traceProto.head.widths, traceProto.size))
   generateAnnotations()
 }
 
 object TracerVBridge {
-  def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[TracerVBridge] = {
-    val ep = Module(new TracerVBridge(port.getProto))
-    ep.io <> port
-    Seq(ep)
+  def apply(tracedInsns: Vec[TracedInstruction])(implicit p:Parameters): TracerVBridge = {
+    val declockedTIs = DeclockedTracedInstruction.fromVec(tracedInsns)
+    val ep = Module(new TracerVBridge(declockedTIs))
+    ep.io.traces := declockedTIs
+    ep.io.clock := tracedInsns.head.clock
+    ep
   }
 }
 
 class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TraceOutputTop]]()(p)
     with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(Flipped(TraceOutputTop(key.insnWidths, key.vecSizes))))
+  val hPort = IO(HostPort(TraceOutputTop(key.insnWidths, key.vecSize)))
 
   // DMA mixin parameters
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
