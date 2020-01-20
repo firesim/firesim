@@ -36,7 +36,7 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
     with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] {
   // Since we're extending BlackBox this is the port will connect to in our target's RTL
   val io = IO(new UARTBridgeTargetIO)
-  // Implement the bridgeIO member of Bridge using HostPort This indicates that
+  // Implement the bridgeIO member of Bridge using HostPort. This indicates that
   // we want to divide io, into a bidirectional token stream with the input
   // token corresponding to all of the inputs of this BlackBox, and the output token consisting of 
   // all of the outputs from the BlackBox

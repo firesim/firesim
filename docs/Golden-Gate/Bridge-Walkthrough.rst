@@ -25,7 +25,7 @@ Source code for the UART Bridge lives in the following memory locations:
 UART Bridge Target-Side Chisel
 ++++++++++++++++++++++++++++++
 The first order of business when designing a new bridge is to implement its
-target side. In the case of UART we've defined a Chiesl BlackBox extending Bridge.
+target side. In the case of UART we've defined a Chisel BlackBox extending Bridge.
 We'll instantiate this BlackBox and connect it to UART IO in the
 top-level of our chip.
 

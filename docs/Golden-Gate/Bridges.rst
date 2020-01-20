@@ -120,7 +120,7 @@ The host side of a bridge has two components:
 In general, bridges have both: in FASED memory timing
 models, the driver configures timing parameters at the start of
 simulation, and periodically reads instrumentation during execution.  In the
-Block Device model, the driver periodically polls queues in the module checking for
+Block Device model, the driver periodically polls queues in the bridge module checking for
 new functional requests to be served. In the NIC model, the driver moves
 tokens in bulk between the software switch model and the bridge module, which
 simply queues up tokens as they arrive.
