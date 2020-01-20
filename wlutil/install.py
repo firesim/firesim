@@ -69,7 +69,7 @@ def installWorkload(cfgName, cfgs):
             fsCfg["common_rootfs"] = dummyPath
 
         if 'outputs' in targetCfg:
-            fsCfg["common_outputs"] = targetCfg['outputs']
+            fsCfg["common_outputs"] = [ f.as_posix() for f in targetCfg['outputs'] ]
 
     with open(str(fsTargetDir / "README"), 'w') as readme:
         readme.write(readmeTxt)
