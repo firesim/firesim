@@ -241,7 +241,7 @@ class FireSimServerNode(FireSimNode):
         runcommand = self.server_hardware_config.get_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_select, self.trace_start, self.trace_end, 
+            self.trace_select, self.trace_start, self.trace_end,
             self.autocounter_readrate, all_shmemportnames)
 
         run(runcommand)
@@ -279,7 +279,8 @@ class FireSimServerNode(FireSimNode):
                     rfsname = """/home/centos/sim_slot_{}/{}""".format(simserverindex, rfsname)
 
                 run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
-                run("""sudo chmod -Rf 777 {}""".format(mountpoint))
+                run("""sudo chattr -R -i {}""".format(mountpoint))
+                run("""sudo chown -R centos {}""".format(mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
