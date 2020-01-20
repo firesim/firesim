@@ -25,7 +25,8 @@
 #define INT_WID 1
 #define CAUSE_WID 8
 #define TVAL_WID 40
-#define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID)
+#define RESET_WID 1
+#define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID + RESET_WID)
 
 // The maximum number of beats available in the FPGA-side FIFO
 #define QUEUE_DEPTH 6144

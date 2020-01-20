@@ -36,6 +36,7 @@ class DeclockedTracedInstruction(val widths: TracedInstructionWidths) extends Bu
   val interrupt = Bool()
   val cause = UInt(widths.cause.W)
   val tval = UInt(widths.tval.W)
+  val reset = Bool()
 }
 
 object DeclockedTracedInstruction {
@@ -54,6 +55,7 @@ object DeclockedTracedInstruction {
       declocked.interrupt := clocked.interrupt
       declocked.cause := clocked.cause
       declocked.tval := clocked.tval
+      declocked.reset := clocked.reset
     })
     VecInit(declockedVec)
   }
