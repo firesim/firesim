@@ -36,7 +36,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 // DOC include start: UART Bridge Driver Registration
     // Here we instantiate our driver once for each bridge in the target
-    // Golden Gate emits a <BridgeModuleClassName>_<id>_present macro for each instance
+    // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each instance
     // which you may use to conditionally instantiate your driver
     #ifdef UARTBRIDGEMODULE_0_PRESENT
     // Create an instance of the constructor argument (this has all of
