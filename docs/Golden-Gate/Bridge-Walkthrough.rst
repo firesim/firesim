@@ -1,5 +1,7 @@
+.. _bridge-walkthrough:
+
 Bridge Walkthrough
-======================
+==================
 In this section, we'll walkthrough a simple Target-to-Host bridge, the UARTBridge, provided with FireSim
 to demonstrate how to integrate your own. The UARTBridge uses host-MMIO to model
 a UART device.

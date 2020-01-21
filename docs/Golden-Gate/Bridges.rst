@@ -31,7 +31,8 @@ Bridges enable:
 
 The use of Bridges in a FireSim simulation has many analogs to doing
 mixed-language (Verilog-C++) simulation of the same system in software. Where
-possible, we'll draw analogies.
+possible, we'll draw analogies. After reading this page we encourage you to read the 
+:ref:`bridge-walkthrough`, which concretely explains the implementation of the UARTBridge.
 
 
 Terminology
@@ -118,9 +119,9 @@ The host side of a bridge has two components:
 #. An optional, CPU-hosted, bridge driver (``bridge_driver_t``).
 
 In general, bridges have both: in FASED memory timing
-models, the driver configures timing parameters at the start of
-simulation, and periodically reads instrumentation during execution.  In the
-Block Device model, the driver periodically polls queues in the bridge module checking for
+models, the BridgeModule contains a timing model that exposes timing
+parameters as memory-mapped registers that the driver configures  at the start
+of simulation.  In the Block Device model, the driver periodically polls queues in the bridge module checking for
 new functional requests to be served. In the NIC model, the driver moves
 tokens in bulk between the software switch model and the bridge module, which
 simply queues up tokens as they arrive.
