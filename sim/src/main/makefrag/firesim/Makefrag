@@ -60,7 +60,6 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*)))
             $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
 			$(RISCV)/lib/libfesvr.a
 
-$(info $(DRIVER_CC))
 TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
 

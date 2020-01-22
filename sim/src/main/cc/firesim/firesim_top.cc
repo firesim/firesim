@@ -528,7 +528,7 @@ void firesim_top_t::run() {
     }
 
     if (do_zero_out_dram) {
-        fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+        fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few minutes...\n");
         zero_out_dram();
     }
     fprintf(stderr, "Commencing simulation.\n");
