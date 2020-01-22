@@ -344,7 +344,7 @@ Targets<generating-different-targets>`).
 """""""""""""""""""
 
 This defines the type of instance that the build will run on. Generally, running
-on a ``c5.4xlarge`` is sufficient. In our experience, using more powerful instances
+on a ``z1d.2xlarge`` is sufficient. In our experience, using more powerful instances
 than this provides little gain.
 
 ``deploytriplet``
