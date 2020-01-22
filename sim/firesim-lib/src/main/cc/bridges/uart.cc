@@ -1,4 +1,6 @@
 //See LICENSE for license details
+
+// Note: struct_guards just as in the headers
 #ifdef UARTBRIDGEMODULE_struct_guard
 
 #include "uart.h"

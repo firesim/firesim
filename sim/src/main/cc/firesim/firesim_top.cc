@@ -36,15 +36,25 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     }
 
 
-#ifdef UARTBRIDGEMODULE_struct_guard
+// DOC include start: UART Bridge Driver Registration
+    // Here we instantiate our driver once for each bridge in the target
+    // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each instance
+    // which you may use to conditionally instantiate your driver
     #ifdef UARTBRIDGEMODULE_0_PRESENT
+    // Create an instance of the constructor argument (this has all of
+    // addresses of the BridgeModule's memory mapped registers)
     UARTBRIDGEMODULE_0_substruct_create;
+    // Instantiate the driver; register it in the main simulation class
     add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_0_substruct, 0));
     #endif
+
+    // Repeat the code above with modified indices as many times as necessary
+    // to support the maximum expected number of bridge instances
     #ifdef UARTBRIDGEMODULE_1_PRESENT
     UARTBRIDGEMODULE_1_substruct_create;
     add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_1_substruct, 1));
     #endif
+// DOC include end: UART Bridge Driver Registration
     #ifdef UARTBRIDGEMODULE_2_PRESENT
     UARTBRIDGEMODULE_2_substruct_create;
     add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_2_substruct, 2));
@@ -69,7 +79,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     UARTBRIDGEMODULE_7_substruct_create;
     add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct, 7));
     #endif
-#endif
 
 std::vector<uint64_t> host_mem_offsets;
 uint64_t host_mem_offset = -0x80000000LL;
