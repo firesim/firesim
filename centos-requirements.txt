@@ -6,7 +6,7 @@ libguestfs-tools
 dtc
 makeinfo
 texinfo
-yac
+yacc
 bison
 flex
 expat
