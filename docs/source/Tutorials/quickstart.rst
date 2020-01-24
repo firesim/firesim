@@ -1,5 +1,7 @@
-Quick Start
---------------------------------------
+.. _tutorial-quickstart:
+
+Quick Start (Built-In Workloads)
+=========================================
 
 After a fresh clone of the FireMarshal repository, you may need to update
 submodules. You may skip this step if you only intend to build bare-metal
@@ -10,13 +12,21 @@ workloads:
   ./init-submodules.sh
 
 FireMarshal comes with a few basic workloads that you can build right out of
-the box (in ``workloads/``). In this example, we will build and test the
-buildroot-based linux distribution (called *br-base*). We begin by building the
-workload:
+the box. These builtin workloads include: br-base.json (buildroot) and fedora-base.json
+(fedora). You can see the source for these workloads at
+``boards/firechip/base-workloads``. In this example, we will build and test the
+buildroot-based linux distribution (called *br-base*). The instructions are
+identical for fedora, just replace br-base.json with fedora-base.json. We begin
+by building the workload:
 
 ::
 
-  ./marshal build workloads/br-base.json
+  ./marshal build br-base.json
+
+.. Note:: The ``base-workloads`` directory is on the default search path for
+   FireMarshal workloads. This means that we do not need to provide the full-path
+   to the br-base.json configuration file. For custom workloads, you will need to
+   provide a path to the workload configuration file. 
 
 The first time you build a workload may take a long time (buildroot must
 download and cross-compile a large number of packages), but subsequent builds
@@ -27,7 +37,7 @@ These are the boot-binary (linux + boot loader) and root filesystem
 
 ::
 
-  ./marshal launch workloads/br-base.json
+  ./marshal launch br-base.json
 
 You should now see linux booting and be presented with a login prompt. Sign in
 as 'root' with password 'firesim'. From here you can manipulate files, run
@@ -45,8 +55,8 @@ cleaned out any changes, let's clean and rebuild the workload:
 
 ::
 
-  ./marshal clean workloads/br-base.json
-  ./marshal build workloads/br-base.json
+  ./marshal clean br-base.json
+  ./marshal build br-base.json
 
 Note that this build took significantly less time than the first; FireMarshal
 caches intermediate build steps whenever possible.
@@ -59,8 +69,8 @@ you must first install it from FireMarshal:
 
 ::
 
-  ./marshal install workloads/br-base.json
+  ./marshal install br-base.json
 
 This command creates a firesim workload file at
 ``firesim/deploy/workloads/br-base.json``. You can now run this workload using
-the standard FireSim commands. 
+the standard FireSim commands.
