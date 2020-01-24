@@ -96,19 +96,36 @@ on Computer Architecture (ISCA’18)*, Los Angeles, CA, June 2018.
 
 Our paper from FPGA 2019 details the DRAM model used in FireSim:
 
-> David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, **FASED: FPGA-Accelerated Simulation and Evaluation of DRAM**, In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays, Seaside, CA, February 2018.
+> David Biancolin, Sagar Karandikar, Donggyu Kim, Jack Koenig, Andrew Waterman, Jonathan Bachrach, Krste Asanović, **FASED: FPGA-Accelerated Simulation and Evaluation of DRAM**, *In proceedings of the 27th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays*, Seaside, CA, February 2018.
 
 [Paper PDF](https://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf) |
 [ACM DL](https://dl.acm.org/citation.cfm?id=3293894) |
 [BibTeX](https://people.eecs.berkeley.edu/~biancolin/bib/fased-fpga19.bib)
 
-### ICCAD 2019: Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes
+### **IEEE Micro Top Picks of 2018**: FireSim: FPGA-Accelerated, Cycle-Accurate Scale-Out System Simulation in the Public Cloud
+
+This article discusses several updates since the FireSim ISCA 2018 paper:
+
+> Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing Huang, Kyle Kovacs, Borivoje Nikolic, Randy Katz, Jonathan Bachrach, and Krste Asanović. **FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud**. *IEEE Micro, vol. 39, no. 3, pp. 56-65, (Micro Top Picks 2018 Issue)*. May-June 2019.
+
+[Article PDF](https://sagark.org/assets/pubs/firesim-micro-top-picks2018.pdf)
+
+### **ICCAD 2019**: Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes
 
 Our paper describing FireSim's Compiler, _Golden Gate_:
 
 > Albert Magyar, David T. Biancolin, Jack Koenig, Sanjit Seshia, Jonathan Bachrach, Krste Asanović, **Golden Gate: Bridging The Resource-Efficiency Gap Between ASICs and FPGA Prototypes**, *In proceedings of the 39th International Conference on Computer-Aided Design (ICCAD '19)*, Westminster, CO, November 2019.
 
 [Paper PDF](https://davidbiancolin.github.io/papers/goldengate-iccad19.pdf)
+
+### **ASPLOS 2020**: FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design
+
+Our paper to appear in ASPLOS 2020 discusses system-level profiling features in FireSim:
+
+> Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *To appear, In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
+
+[Paper PDF](https://sagark.org/assets/pubs/fireperf-asplos2020.pdf)
+
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 

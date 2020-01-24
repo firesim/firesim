@@ -18,6 +18,7 @@ The PerfCounter function takes 3 arguments: A boolean signal to be counted, a co
 and the counter description. An example counter declaration would be:
 
 .. code-block:: scala
+
     midas.targetutils.PerfCounter(s1_pc, "s1_pc", "stage 1 program counter")
 
 
@@ -42,11 +43,12 @@ within selected modules will generate counters.
 
 The filtered modules can be indicated using one of two methods:
 1. A module selection annotation within the top-level configuration implementation. 
-   To use this method, add the ``AutoCounterCoverModuleAnnotation``
-   annotation with the name of the module that you want the cover functions to be turned into AutoCounters. 
-   The following example will generate counters from cover functions within the StreamWriter module:
+To use this method, add the ``AutoCounterCoverModuleAnnotation``
+annotation with the name of the module that you want the cover functions to be turned into AutoCounters. 
+The following example will generate counters from cover functions within the StreamWriter module:
 
 .. code-block:: scala
+
    class FireSimDUT(implicit p: Parameters) extends Subsystem
     with HasHierarchicalBusTopology
     with CanHaveMasterAXI4MemPort
@@ -58,7 +60,7 @@ The filtered modules can be indicated using one of two methods:
     with HasTraceIO
   {
     override lazy val module = new FireSimModuleImp(this)
-
+      
     chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("StreamWriter"))
   }
 
@@ -67,7 +69,7 @@ The filtered modules can be indicated using one of two methods:
 
 
 AutoCounter Runtime Parameters
------------------------------
+---------------------------------
 AutoCounter currently takes a single runtime configurable parameter, defined under the ``[autocounter]``
 section in the ``config_runtime.ini`` file. 
 The ``readrate`` parameter defines the rate at which the counters should be read, 
@@ -76,6 +78,7 @@ the simulator will read and print the values of the counters every 100 cycles.
 By default, the read-rate is set to 0 cycles, which is equivalent to disabling AutoCounter.
 
 .. code-block:: ini
+
    [autocounter]
    readrate=XXXX
 
