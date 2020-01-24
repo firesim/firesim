@@ -6,7 +6,7 @@ libguestfs-tools
 dtc
 makeinfo
 texinfo
-yac
+yacc
 bison
 flex
 expat
@@ -14,3 +14,4 @@ expat-devel
 glib-devel
 gtk2-devel
 ctags
+bc
