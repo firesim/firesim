@@ -2,6 +2,10 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.7.0] - 2019-10-16
+
+A more detailed account of everything included is included in the dev to master PR for this release: https://github.com/firesim/firesim/pull/313
+
 ### Added
 * Upgraded MIDAS to Golden Gate (MIDAS II)
 * Better support for FireSim as a library. 
