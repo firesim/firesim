@@ -1,7 +1,32 @@
 # Changelog
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
+Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
+## [1.8.0] - 2020-01-24
+This release introduces user-configurable options for FireMarshal through a
+config file or environment variables. It also relaxes constraints on the
+location of the workload directories (they can be anywhere in your filesystem
+now). These changes make it much easier to add the marshal command to your PATH
+and use it like a general utility.
+
+### Added
+* PR #81 Allows for multiple workload directories, and for those directories to be anywhere in the filesystem.
+* PR #93 Enables basic functionality without initializing all submodules. Submodules are only accessed if they are actually used. Also introduces the init-submodules.sh script.
+* PR #94 Adds the 'rootfs-size' option to allow for custom rootfs sizes. Also defaults to a tight-packing of the rootfs by default, greatly reducing default image sizes.
+* PR #96 Adds options for machine configuration at launch time (memory and cpu amounts)
+* PR #107 Adds a configuration system for common tool options (like default output locations or search paths). This will enable much more flexibility in the future.
+* PR #116 and #117 allow for more customization in build components (BBL and Qemu sources, respectively)
+
+### Changed
+* PR #83 changes the way buildroot dependencies are checked. We now only rebuild buildroot if the submodule version changes (or if it's dirty) or if the buildroot configuration changes. This drastically reduces build times.
+* PR #84 cleans up much of the logging output for the 'test' command
+* PR #118 changes the default location of the build database (doit.db) and allows it to be configured.
+
+### Fixed
+* PR #101 switches to a github mirror for busybox from their private repo which was experiencing frequent server failures.
+* Many documentation fixes and updates (including centos-requirements.txt, contributing guidelines, and tutorials). In particular, PR #121 expands the tutorial section.
+ 
 ## [1.7.0] - 2019-10-12
 This release primarily updates several FireMarshal defaults to recent
 upstreamed versions, notably: Linux (v5.3), Fedora (20190126), and Buildroot (2019.08).
