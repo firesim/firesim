@@ -3,7 +3,7 @@
 Defining Custom Workloads
 ================================================
 
-**Workloads** in FireSim consist of a series of **Jobs** that are assigned to
+If you do not want to use :ref:`firemarshal`, you can still manually create custom workloads in FireSim. **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
 either:
 
