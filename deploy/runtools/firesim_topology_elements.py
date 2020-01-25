@@ -279,7 +279,9 @@ class FireSimServerNode(FireSimNode):
                     rfsname = """/home/centos/sim_slot_{}/{}""".format(simserverindex, rfsname)
 
                 run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
-                run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
+                with warn_only():
+                    # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
+                    run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
                 run("""sudo chown -R centos {}""".format(mountpoint))
 
             ## copy back files from inside the rootfs
