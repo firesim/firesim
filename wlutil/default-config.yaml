@@ -1,0 +1,35 @@
+# Root for default board (platform-specific stuff)
+board-dir : '../boards/firechip'
+
+# Stores all outputs (binaries and images)
+image-dir : '../images'
+
+# Default linux source
+linux-dir : '../riscv-linux'
+
+# Default pk source
+pk-dir : '../riscv-pk'
+
+# Runtime Logs
+log-dir : '../logs' 
+
+# SW-simulation outputs
+res-dir : '../runOutput'
+
+# Default parallelism level to use in subcommands (mostly when calling 'make')
+# '' means unbounded
+jlevel : ''
+
+# Number of extra bytes to leave free by default in filesystem images
+rootfs-margin : '256MiB'
+
+# Options to pass to the doit library (for the 'run' command). Documentation is
+# sparse, but you can run 'doit help run' for a few options.
+doitOpts :
+  # see the verbosity section of '$doit help run' for details
+  verbosity : 2
+  # Where to store the build history database for marshal (path is relative to
+  # where the marshal command is invoked). This allows you to have multiple
+  # databases if needed. Otherwise, '' defaults to one database for every
+  # invocation of FireMarshal.
+  dep_file : ''

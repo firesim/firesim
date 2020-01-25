@@ -13,13 +13,15 @@ if [ ! -d riscv-isa-sim ]; then
 
   pushd riscv-isa-sim
   git apply ../spike.patch
-
-  mkdir build
-  pushd build
-  ../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
-  popd
   popd
 fi
+  
+# Spike is sensitive to toolchain changes, best to simply reconfigure every time
+rm -rf riscv-isa-sim/build
+mkdir riscv-isa-sim/build
+pushd riscv-isa-sim/build
+../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
+popd
 
 pushd riscv-isa-sim/build
 make -j16

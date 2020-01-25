@@ -31,7 +31,7 @@ https://github.com/firesim/firesim-software/issues/30 for a workaround.
 ## Python
 This project was written for python 3.6. You can install all dependencies using:
 ```
-pip3 install python-requirements.txt
+pip3 install -r python-requirements.txt
 ```
 
 ## RISC-V Tools
@@ -42,6 +42,11 @@ See the [Chipyard documentation](https://chipyard.readthedocs.io/en/latest/Chipy
 for help setting up a known-good toolchain and environment.
 
 # Basic Usage
+If you only want to build bare-metal workloads, you can skip updating
+submodules. Otherwise, you should update the required submodules by running:
+
+    ./init-submodules.sh
+
 Building workloads:
 
     ./marshal build workloads/br-base.json
@@ -53,3 +58,13 @@ To run in qemu:
 To install into FireSim (assuming you cloned this as a submodule of firesim or chipyard):
 
     ./marshal install workloads/br-base.json
+
+# Security Note
+Be advised that FireMarshal will run initialization scripts provided by
+workloads. These scripts will have all the permissions your user has, be sure
+to read all workloads carefully before building them.
+
+# Getting Help / Discussion:
+* For general questions, help, and discussion: use the FireSim user forum: https://groups.google.com/forum/#!forum/firesim
+* For bugs and feature requests: use the github issue tracker: https://github.com/firesim/FireMarshal/issues
+* See CONTRIBUTING.md for more details

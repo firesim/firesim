@@ -1,5 +1,6 @@
 {
   "name" : "br-base",
   "base" : "br",
+  "overlay" : "overlay",
   "linux-config" : "linux-config"
 }

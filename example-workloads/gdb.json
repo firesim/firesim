@@ -1,0 +1,6 @@
+{
+  "name" : "gdb",
+  "base" : "br-base.json",
+  "linux-config" : "gdb-kfrag",
+  "qemu-args" : "-s -S"
+}

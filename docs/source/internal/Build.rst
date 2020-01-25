@@ -68,15 +68,16 @@ Because some drivers must be loaded in order to boot, we package them into a
 custom initramfs that is compiled into the kernel.  Marshal generates this
 archive by staging several filesystems at ``wlutil/initramfs{disk, nodisk,
 drivers}``:
+
 * ``disk/``: contains a fully-functioning root filesystem with a busybox-based
-  environment and an init script that knows to load drivers and look for a disk
-  to boot from (either ``/dev/vda`` for qemu or ``/dev/iceblk`` for firesim).
+environment and an init script that knows to load drivers and look for a disk
+to boot from (either ``/dev/vda`` for qemu or ``/dev/iceblk`` for firesim).
 * ``nodisk/``: contains just the init script to load drivers (it must be
-  combined with a working root filesystem).
+combined with a working root filesystem).
 * ``drivers/``: contains the platform drivers built earlier.
 * ``devNodes.cpio``: A pre-built archive containing the ``/dev/console`` and
-  ``/dev/tty`` special files. These require a special procedure to create so we
-  only do it once and commit the result.
+``/dev/tty`` special files. These require a special procedure to create so we
+only do it once and commit the result.
 
 Marshal combines the needed initramfs sources in a temporary directory into a
 single cpio archive and configures the kernel to include this archive at boot

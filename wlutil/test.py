@@ -71,37 +71,6 @@ def cmpOutput(testDir, refDir, strip=False):
 
     return None
 
-# adapted from https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
-def fileno(file_or_fd):
-    fd = getattr(file_or_fd, 'fileno', lambda: file_or_fd)()
-    if not isinstance(fd, int):
-        raise ValueError("Expected a file (`.fileno()`) or a file descriptor")
-    return fd
-
-# adapted from https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
-@contextmanager
-def stdout_redirected(to=os.devnull, stdout=None):
-    if stdout is None:
-       stdout = sys.stdout
-
-    stdout_fd = fileno(stdout)
-    # copy stdout_fd before it is overwritten
-    #NOTE: `copied` is inheritable on Windows when duplicating a standard stream
-    with os.fdopen(os.dup(stdout_fd), 'wb') as copied: 
-        stdout.flush()  # flush library buffers that dup2 knows nothing about
-        try:
-            os.dup2(fileno(to), stdout_fd)  # $ exec >&to
-        except ValueError:  # filename
-            with open(to, 'wb') as to_file:
-                os.dup2(to_file.fileno(), stdout_fd)  # $ exec > to
-        try:
-            yield stdout # allow code to be run with the redirected stdout
-        finally:
-            # restore stdout to its previous value
-            #NOTE: dup2 makes stdout_fd inheritable unconditionally
-            stdout.flush()
-            os.dup2(copied.fileno(), stdout_fd)  # $ exec >&copied
-
 def runTimeout(func, timeout):
     def wrap(*args, **kwargs):
         p = mp.Process(target=func, args=args, kwargs=kwargs)
@@ -167,19 +136,27 @@ def stripUartlog(config, outputPath):
 
 # Build and run a workload and compare results against the testing spec
 # ('testing' field in config)
-# Returns wluitl.test.testResult
+# Returns wlutil.test.testResult
 def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
-    log = logging.getLogger()
+    """Test the workload specified by cfgName.
+    cfgName: unique name of the workload in the cfgs
+    cfgs: initialized configuration (contains all possible workloads)
+    verbose: If true, the workload outputs will be displayed live, otherwise
+        they will be silently logged.
+    spike: Test using spike instead of the default qemu
+    cmp_only (path): Do not run the workload. Instead, simply compare the
+        golden output against the path in cmp_only. For example, cmp_only could
+        point to the output of a FireSim run. 
 
-    if verbose:
-        cmdOut = sys.stdout
-    else:
-        cmdOut = os.devnull
+    Returns (wlutil.test.testResult, output directory)
+    """
+
+    log = logging.getLogger()
 
     cfg = cfgs[cfgName]
     if 'testing' not in cfg:
-        log.info("Test " + os.path.basename(cfgName) + " skipping: No 'testing' field in config")
-        return testResult.skip
+        log.info("Test " + cfgName + " skipping: No 'testing' field in config")
+        return testResult.skip, None
 
     testCfg = cfg['testing']
         
@@ -188,27 +165,26 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
     if 'runTimeout' not in testCfg:
         testCfg['runTimeout'] = defRunTimeout
 
-    refPath = os.path.join(cfg['workdir'], testCfg['refDir'])
+    refPath = cfg['workdir'] / testCfg['refDir']
     if cmp_only is None:
-        testPath = os.path.join(res_dir, getRunName())
+        testPath = getOpt('res-dir') / getOpt('run-name')
     else:
         testPath = cmp_only
 
     try:
         if cmp_only is None:
-            with stdout_redirected(cmdOut):
-                # Build workload
-                log.info("Building test workload")
-                runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
+            # Build workload
+            log.info("Building test workload")
+            runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
 
-                # Run every job (or just the workload itself if no jobs)
-                if 'jobs' in cfg:
-                    for jName in cfg['jobs'].keys():
-                        log.info("Running job " + jName)
-                        runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, job=jName, spike=spike)
-                else:
-                    log.info("Running workload")
-                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfgName, cfgs, spike=spike)
+            # Run every job (or just the workload itself if no jobs)
+            if 'jobs' in cfg:
+                for jName in cfg['jobs'].keys():
+                    log.info("Running job " + jName)
+                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, job=jName, spike=spike, interactive=verbose)
+            else:
+                log.info("Running workload")
+                runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, spike=spike, interactive=verbose)
 
         log.info("Testing outputs")    
         if 'strip' in testCfg and testCfg['strip']:
@@ -217,44 +193,39 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         diff = cmpOutput(testPath, refPath)
         if diff is not None:
             suitePass = False
-            log.info("Test " + os.path.basename(cfgName) + " failure: output does not match reference")
+            log.info("Test " + cfgName + " failure: output does not match reference")
             log.info(textwrap.indent(diff, '\t'))
-            log.info("Output available in " + testPath)
-            return testResult.failure
+            return testResult.failure, testPath
 
     except TimeoutError as e:
         suitePass = False
         if e.args[0] == "buildWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: timeout while building")
+            log.info("Test " + cfgName + " failure: timeout while building")
         elif e.args[0] == "launchWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: timeout while running")
+            log.info("Test " + cfgName + " failure: timeout while running")
         else:
             log.error("Internal tester error: timeout from unrecognized function: " + e.args[0])
         
-        log.info("Output available in " + testPath)
-        return testResult.failure
+        return testResult.failure, testPath
 
     except ChildProcessError as e:
         suitePass = False
         if e.args[0] == "buildWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: Exception while building")
+            log.info("Test " + cfgName + " failure: Exception while building")
         elif e.args[0] == "launchWorkload":
-            log.info("Test " + os.path.basename(cfgName) + " failure: Exception while running")
+            log.info("Test " + cfgName + " failure: Exception while running")
         else:
             log.error("Internal tester error: exception in unknown function: " + e.args[0])
         
-        log.info("Output available in " + testPath)
-        return testResult.failure
+        return testResult.failure, testPath
 
     except Exception as e:
         suitePass = False
-        log.info("Test " + os.path.basename(cfgName) + " failure: Exception encountered")
+        log.info("Test " + cfgName + " failure: Exception encountered")
         traceback.print_exc()
-        log.info("Output available in " + testPath)
-        return testResult.failure
+        return testResult.failure, testPath
 
-    log.info("Success - output available in " + testPath)
-    return testResult.success
+    return testResult.success, testPath
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check the outupt of a workload against a reference output. The reference directory should match the layout of test directory including any jobs, uartlogs, or file outputs. Reference uartlogs can be a subset of the full output (this will check only that the reference uartlog content exists somewhere in the test uartlog).")

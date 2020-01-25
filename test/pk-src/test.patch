@@ -1,0 +1,13 @@
+diff --git a/bbl/bbl.c b/bbl/bbl.c
+index 1b96a9d..8d82e7d 100644
+--- a/bbl/bbl.c
++++ b/bbl/bbl.c
+@@ -7,6 +7,8 @@
+ #include "fdt.h"
+ #include <string.h>
+ 
++#define PK_ENABLE_LOGO
++
+ static const void* entry_point;
+ long disabled_hart_mask;
+ 

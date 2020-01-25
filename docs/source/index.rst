@@ -25,12 +25,13 @@ installed to a platform for running on real RTL (currently only FireSim is
 supported).
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
-   quickstart
+   Tutorials/index
    commands
-   config
+   workloadConfig
+   marshalConfig
    internal/index
 
 

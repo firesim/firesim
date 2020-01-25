@@ -15,10 +15,12 @@ class Builder:
     def buildBaseImage(self):
         raise NotImplementedError("Baremetal workloads currently do not support disk images")
 
-    # Return True if the base image is up to date, or False if it needs to be
-    # rebuilt.
     def upToDate(self):
-        return True
+        """Report whether the distro is up to date or not.
+
+        Trivially true because the bare-distro doesn't actually do anything
+        """
+        return [True]
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted

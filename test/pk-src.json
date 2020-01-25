@@ -1,0 +1,10 @@
+{
+  "name" : "pk-src",
+  "base" : "br-base.json",
+  "host-init" : "copy-src.sh",
+  "pk-src" : "riscv-pk",
+  "command" : "echo Global : command",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}
