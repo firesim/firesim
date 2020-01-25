@@ -156,11 +156,6 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   triggerCycleCountEnd := hostTriggerCycleCountEnd
 
   val trace_cycle_counter = RegInit(0.U(64.W))
-  when (tFire) {
-    trace_cycle_counter := trace_cycle_counter + 1.U
-  } .otherwise {
-    trace_cycle_counter := trace_cycle_counter
-  }
 
   //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
@@ -226,13 +221,16 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
                                          0.U((outgoingPCISdat.io.enq.bits.getWidth - Cat(uint_traces).getWidth - trace_cycle_counter.getWidth).W)),
                                      Cat(uint_traces))
 
-  val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready,
-    hPort.toHost.hValid, hPort.fromHost.hReady)
-
-  hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
-  hPort.toHost.hReady := tFireHelper.fire
+  val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid)
+  hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
+  // We don't drive tokens back to the target.
+  hPort.fromHost.hValid := true.B
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready, trigger)
+
+  when (tFireHelper.fire) {
+    trace_cycle_counter := trace_cycle_counter + 1.U
+  }
 
   // This need to go on a debug switch
   //when (outgoingPCISdat.io.enq.fire()) {
