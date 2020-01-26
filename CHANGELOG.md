@@ -7,15 +7,31 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 A more detailed account of everything included is included in the dev to master PR for this release: https://github.com/firesim/firesim/pull/413
 
 ### Added
+* Black-box Verilog support via external clock-gating PR #388 
+  * For the transform to work, the Chisel `Blackbox` that wraps the Verilog IP must have a single clock input that can safely be clock-gated.
+  * The compiler that produces the decoupled simulator ("FAME Transform") automatically recognizes such blackboxes inside the target design.
+  * The compiler automatically gates the clock to the Verilog IP to ensure that it deterministically advances in lockstep with the rest of the simulator.
+  * This allows any Verilog module with a single clock input to be instantiated anywhere in the target design using the standard Chisel `Blackbox` interface.
+* Added chisel assertions to check for token irrevocability (non-determinism check) PR #416 
+  * Enable by adding `HostDebugFeatures` to your `PLATFORM_CONFIG`
+* Support for QCOW2 disk images in the manager. This means that FireSim simulations can now boot directly from qcow2 images---the default linux-uniform image is 40MB as a qcow2 image as opposed to 2GB as a raw .img. Firemarshal support for generating these images is upcoming. This is PR #415 and resolves #411 
+* AutoCounter and Trigger features from FirePerf paper (PR #437)
 
 ### Changed
+* Default buildfarm instances changed from c5.4xlarges to z1d.2xlarges #464  
+* Update to Chipyard 1.1.0
+* Update FireMarshal to 1.8. This drastically reduces the default root filesystem image sizes and allows for FireMarshal workloads to be in any directory (not just the workloads/ directory).
 
 ### Fixed
+* Fix managerinit aws configure bug introduced by tutorial modifications. managerinit now correctly runs aws configure again, there is no need to run it separately (docs are updated to reflect this)
+* Supernode: Copying back results from supernode simulations now works for all rootfses, not just the zeroeth rootfs of a supernode sim. PR #415 
+* Manager: No longer double-copies results for a node that is responsible for triggering a teardown in the networked simulation case. PR #415 
 
 ### Deprecated
+* N/A
 
 ### Removed
-
+* MIDAS submodule removed, now inlined in this repo ([MIDAS]-prefixed commits denote commits that originate from that repo) PR #400 
 
 ## [1.7.0] - 2019-10-16
 
