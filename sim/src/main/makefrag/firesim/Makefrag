@@ -33,7 +33,11 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}firechip
+	firesim_sbt_project := {file:${chipyard_dir}}firechip
+
+	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "*.scala" -print 2> /dev/null)
+	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
+	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
 	firesim_sbt_project := firechip
 endif
@@ -43,6 +47,7 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	cd $(base_dir) && \
 	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
+# DOC include start: Bridge Build System Changes
 ##########################
 # Driver Sources & Flags #
 ##########################
@@ -56,9 +61,9 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*)))
             $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
 			$(RISCV)/lib/libfesvr.a
 
-$(info $(DRIVER_CC))
 TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
 TARGET_LD_FLAGS :=
+# DOC include end: Bridge Build System Changes
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
@@ -75,10 +80,12 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile0=TRACEFILE
+blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
+autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args)
+COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
@@ -164,3 +171,25 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
+# TraceGen rules
+
+AXE_DIR=$(chipyard_dir)/tools/axe/src
+AXE=$(AXE_DIR)/axe
+
+ifdef FIRESIM_STANDALONE
+$(AXE): $(wildcard $(AXE_DIR)/*.[ch]) $(AXE_DIR)/make.sh
+	cd $(AXE_DIR) && ./make.sh
+endif
+
+$(OUTPUT_DIR)/tracegen.out: $($(EMUL))
+	mkdir -p $(OUTPUT_DIR) && \
+	cd $(dir $($(EMUL))) && \
+	./$(notdir $($(EMUL))) +sample=$<.sample $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	2> /dev/null 2> $@ && [ $$PIPESTATUS -eq 0 ]
+
+$(OUTPUT_DIR)/tracegen.result: $(OUTPUT_DIR)/tracegen.out $(AXE)
+	$(chipyard_dir)/scripts/check-tracegen.sh $< > $@
+
+fsim-tracegen: $(OUTPUT_DIR)/tracegen.result
+
+.PHONY: fsim-tracegen

@@ -61,9 +61,15 @@ do
     shift
 done
 
-# Disable the REBAR submodule initially, and enable if we're not in library mode
+# Disable the Chipyard submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
+git config submodule.sw/firesim-software.update none
 git submodule update --init --recursive #--jobs 8
+
+# firesim-software should not be recursively initialized by default (use
+# sw/firesim-software/init-submodules.sh if you need linux deps)
+git config --unset submodule.sw/firesim-software.update
+git submodule update --init sw/firesim-software
 
 if [ "$IS_LIBRARY" = false ]; then
     git config --unset submodule.target-design/chipyard.update
@@ -111,7 +117,7 @@ fi
     # Build the toolchain through chipyard (whether as top or as library)
     cd "$target_chipyard_dir"
     if [ "$FASTINSTALL" = "true" ] ; then
-        ./scripts/build-toolchains.sh --ec2fast
+        ./scripts/build-toolchains.sh ec2fast
     else
         ./scripts/build-toolchains.sh
     fi
@@ -138,10 +144,23 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
     make
 
-    # Install firesim-software dependencies 
+    # Install firesim-software dependencies
     cd $RDIR
     sudo pip3 install -r sw/firesim-software/python-requirements.txt
     cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
+    wget https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/snapshot/e2fsprogs-1.45.4.tar.gz
+    tar xvzf e2fsprogs-1.45.4.tar.gz
+    cd e2fsprogs-1.45.4/
+    mkdir build && cd build
+    ../configure
+    make
+    sudo make install
+    cd ../..
+    rm -rf e2fsprogs*
+
+    # Setup for using qcow2 images
+    cd $RDIR
+    ./scripts/install-nbd-kmod.sh
 
     # run sourceme-f1-full.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on

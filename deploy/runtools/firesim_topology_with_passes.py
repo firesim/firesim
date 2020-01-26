@@ -34,8 +34,8 @@ class FireSimTopologyWithPasses:
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
                  defaultnetbandwidth, defaultprofileinterval,
-                 defaulttraceenable, defaulttracestart, defaulttraceend,
-                 terminateoncompletion):
+                 defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
+                 defaultautocounterreadrate, terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -49,8 +49,10 @@ class FireSimTopologyWithPasses:
         self.defaultnetbandwidth = defaultnetbandwidth
         self.defaultprofileinterval = defaultprofileinterval
         self.defaulttraceenable = defaulttraceenable
+        self.defaulttraceselect = defaulttraceselect
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
+        self.defaultautocounterreadrate = defaultautocounterreadrate
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -296,10 +298,23 @@ class FireSimTopologyWithPasses:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
                     node.trace_enable = self.defaulttraceenable
+                if node.trace_select is None:
+                    node.trace_select = self.defaulttraceselect
                 if node.trace_start is None:
                     node.trace_start = self.defaulttracestart
                 if node.trace_end is None:
                     node.trace_end = self.defaulttraceend
+                if node.autocounter_readrate is None:
+                    node.autocounter_readrate = self.defaultautocounterreadrate
+
+
+    def pass_allocate_nbd_devices(self):
+        """ allocate NBD devices. this must be done here to preserve the
+        data structure for use in runworkload teardown. """
+        servers = self.firesimtopol.get_dfs_order_servers()
+        for server in servers:
+            server.allocate_nbds()
+
 
     def pass_assign_jobs(self):
         """ assign jobs to simulations. """
@@ -317,6 +332,7 @@ class FireSimTopologyWithPasses:
         self.pass_apply_default_hwconfig()
         self.pass_apply_default_network_params()
         self.pass_assign_jobs()
+        self.pass_allocate_nbd_devices()
 
         self.pass_create_topology_diagram()
 
@@ -386,7 +402,7 @@ class FireSimTopologyWithPasses:
 
         execute(boot_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
-    def kill_simulation_passes(self, use_mock_instances_for_testing):
+    def kill_simulation_passes(self, use_mock_instances_for_testing, disconnect_all_nbds=True):
         """ Passes that kill the simulator. """
         if use_mock_instances_for_testing:
             self.run_farm.bind_mock_instances_to_objects()
@@ -403,7 +419,7 @@ class FireSimTopologyWithPasses:
         @parallel
         def kill_simulation_wrapper(runfarm):
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
-            my_node.instance_deploy_manager.kill_simulations_instance()
+            my_node.instance_deploy_manager.kill_simulations_instance(disconnect_all_nbds=disconnect_all_nbds)
 
         execute(kill_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
         execute(kill_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
@@ -527,15 +543,15 @@ class FireSimTopologyWithPasses:
             """ break out of this loop when either all sims are completed (no
             network) or when one sim is completed (networked case) """
 
-            # this is a list of jobs completed, since any completed job will have
-            # a directory within this directory.
-            jobscompleted = os.listdir(self.workload.job_results_dir)
-            rootLogger.debug(jobscompleted)
+            def get_jobs_completed_local_info():
+                # this is a list of jobs completed, since any completed job will have
+                # a directory within this directory.
+                jobscompleted = os.listdir(self.workload.job_results_dir)
+                rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
+                return jobscompleted
 
-            # figure out what the teardown condition is: for now we handle just
-            # single-rooted cycle-accurate network,
-            # no network
-            do_teardown = len(jobscompleted) == len(self.firesimtopol.roots)
+            jobscompleted = get_jobs_completed_local_info()
+
 
             # this job on the instance should return all the state about the instance
             # e.g.:
@@ -565,9 +581,13 @@ class FireSimTopologyWithPasses:
             if teardown_required and any(global_status):
                 # in this case, do the teardown, then call exec again, then exit
                 rootLogger.info("Teardown required, manually tearing down...")
-                self.kill_simulation_passes(use_mock_instances_for_testing)
+                # do not disconnect nbds, because we may need them for copying
+                # results. the process of copying results will tear them down anyway
+                self.kill_simulation_passes(use_mock_instances_for_testing, disconnect_all_nbds=False)
                 rootLogger.debug("continuing one more loop to fully copy results and terminate")
                 teardown = True
+                # get latest local info about jobs completed. avoid extra copy
+                jobscompleted = get_jobs_completed_local_info()
                 instancestates = execute(monitor_jobs_wrapper, self.run_farm,
                                         jobscompleted, teardown,
                                         self.terminateoncompletion,

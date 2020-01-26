@@ -17,13 +17,6 @@ Some notes:
 -  You may need to increase the size of the RootFS in buildroot in ``firesim/sw/firesim-software/images``.
 -  No support for fp{rate, speed} benchmarks yet.
 
-.. attention::
-
-     **Regarding BOOM.** Users wishing to run SPEC on BOOM must change the
-     default architecture from ``-march=rv64imafdc`` to ``-march=rv64imafd`` in
-     Speckle’s target SPEC configuration (``riscv.cfg``), as BOOM does not
-     support compressed instructions
-
 --------
 Intspeed
 --------

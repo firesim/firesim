@@ -1,0 +1,37 @@
+# Verilator RTL Simulation Makefrag
+#
+# This makefrag stores common recipes for building RTL simulators with Verilator
+#
+# Compulsory variables:
+# 	OUT_DIR: See Makefile
+# 	GEN_DIR: See Makefile
+# 	DESIGN: See Makefile
+# 	emul_cc: C++ sources
+# 	emul_h: C++ headers
+# 	emul_v: verilog sources and headers
+#
+# Verilator Only:
+#   top_module: The top of the DUT
+#   (optional) verilator_conf: An verilator configuration file
+
+VERILATOR ?= verilator --cc --exe
+override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
+	-CFLAGS "$(CXXFLAGS) $(CFLAGS)" \
+	-LDFLAGS "$(LDFLAGS) " \
+	$(VERILATOR_FLAGS)
+
+$(OUT_DIR)/V$(DESIGN): $(emul_v) $(emul_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
+	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
+	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN).csrc/V$(top_module).h" \
+	-o $@ $(emul_v) $(verilator_conf) $(emul_cc)
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
+
+$(OUT_DIR)/V$(DESIGN)-debug: $(emul_v) $(emul_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
+	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(top_module).h" \
+	-o $@ $(emul_v) $(verilator_conf) $(emul_cc)
+	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(top_module).mk
