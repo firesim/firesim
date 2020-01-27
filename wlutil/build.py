@@ -364,13 +364,6 @@ def makeImage(config):
     if config['img-sz'] != 0:
         resizeFS(config['img'], config['img-sz'])
 
-    # Convert overlay to file list
-    if 'overlay' in config:
-        config.setdefault('files', [])
-        files = config['overlay'].glob('*')
-        for f in files:
-            config['files'].append(FileSpec(src=f, dst=pathlib.Path('/')))
-
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
         copyImgFiles(config['img'], config['files'], 'in')
