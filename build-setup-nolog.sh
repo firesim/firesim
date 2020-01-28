@@ -66,15 +66,20 @@ git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8
 
 if [ "$IS_LIBRARY" = false ]; then
+    # 0 if this is the first time chipyard is initialized, 1 if it's being re-initialized
+    first_init=$(git submodule status target-design/chipyard | grep -q "^-"; echo $?)
+
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
     ./scripts/init-submodules-no-riscv-tools.sh --no-firesim
     cd $RDIR
 
-    # Configure firemarshal to know where our firesim installation is
+    # Configure firemarshal to know where our firesim installation is.
+    # If this is a fresh init of chipyard, we can safely overwrite the marshal
+    # config, otherwise we have to assume the user might have changed it
     marshal_cfg=$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml
-    if [ ! -f $marshal_cfg]; then
+    if [ $first_init -eq 0 ]; then
       echo "firesim-dir: '../../../../'" > $marshal_cfg 
     fi
 fi
