@@ -19,6 +19,27 @@ transformed and thus used in FireSim:
 #. Asynchronous reset must only be implemented using Rocket Chip's black box async reset. 
    These are replaced with synchronously reset registers using a FIRRTL transformation.
 
+.. _verilog-ip:
+
+--------------------
+Including Verilog IP
+--------------------
+
+FireSim now supports target designs that incorporate Verilog IP using the standard ``BlackBox``
+`interface from Chisel <https://github.com/freechipsproject/chisel3/wiki/Blackboxes>`_. For an
+example of how to add Verilog IP to a target system based on Rocket Chip, see the `Incorporating
+Verilog Blocks
+<https://chipyard.readthedocs.io/en/latest/Customization/Incorporating-Verilog-Blocks.html>`_
+section of the Chipyard documentation.
+
+#. For the transform to work, the Chisel Blackbox that wraps the Verilog IP must have a single clock
+   input that can safely be clock-gated.
+#. The compiler that produces the decoupled simulator ("FAME Transform") automatically recognizes
+   such blackboxes inside the target design.
+#. The compiler automatically gates the clock to the Verilog IP to ensure that it deterministically
+   advances in lockstep with the rest of the simulator.
+#. This allows any Verilog module with a single clock input to be instantiated anywhere in the target
+   design using the standard Chisel Blackbox interface.
 
 .. _generating-different-targets:
 

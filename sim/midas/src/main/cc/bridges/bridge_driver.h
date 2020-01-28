@@ -5,6 +5,7 @@
 
 #include "simif.h"
 
+// DOC include start: Bridge Driver Interface
 // Bridge Drivers are the CPU-hosted component of a Target-to-Host Bridge. A
 // Bridge Driver interacts with their accompanying FPGA-hosted BridgeModule
 // using MMIO (via read() and write() methods) or CPU-mastered DMA (via pull()
@@ -31,6 +32,7 @@ public:
   // the FPGA before destructors are called at the end of simulation. Useful
   // for doing end-of-simulation clean up that requires calling {read,write,push,pull}.
   virtual void finish() = 0;
+  // DOC include end: Bridge Driver Interface
 
 protected:
   void write(size_t addr, data_t data) {
