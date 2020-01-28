@@ -61,13 +61,18 @@ do
     shift
 done
 
-# Disable the Chipyard submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8
 
 if [ "$IS_LIBRARY" = false ]; then
-    # 0 if this is the first time chipyard is initialized, 1 if it's being re-initialized
-    first_init=$(git submodule status target-design/chipyard | grep -q "^-"; echo $?)
+    # Detect if the chipyard submodule is being initialized for the first time (true)
+    # or being re-initialized (false). Note that 'git submodule status' is
+    # wrong when the module was skipped via 'chipyard.update none'.
+    if [ `ls -1A target-design/chipyard | wc -l` -eq 0 ]; then
+      first_init=true
+    else
+      first_init=false
+    fi
 
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
@@ -79,7 +84,7 @@ if [ "$IS_LIBRARY" = false ]; then
     # If this is a fresh init of chipyard, we can safely overwrite the marshal
     # config, otherwise we have to assume the user might have changed it
     marshal_cfg=$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml
-    if [ $first_init -eq 0 ]; then
+    if [ $first_init = true ]; then
       echo "firesim-dir: '../../../../'" > $marshal_cfg 
     fi
 fi
