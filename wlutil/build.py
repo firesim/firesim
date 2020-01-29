@@ -267,7 +267,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
     # Prepare the linux source for building external drivers
     generateKConfig(kfrags, linuxSrc)
     run(["make", "ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-", "modules_prepare", getOpt('jlevel')], cwd=linuxSrc)
-    kernelVersion = sp.run(["make", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
+    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
     for driverDir in getOpt('driver-dirs'):
