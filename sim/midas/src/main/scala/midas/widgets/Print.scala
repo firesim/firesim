@@ -37,23 +37,23 @@ class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) exte
 }
 
 
-class PrintRecordBag(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
+class PrintRecordBag(printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
   val ports: Seq[(String, PrintRecord)] = printPorts.collect({
     case (firrtl.ir.Port(_, name, _, tpe @ firrtl.ir.BundleType(_)), formatString) =>
-      name.stripPrefix(prefix) -> new PrintRecord(tpe, formatString)
+      name -> new PrintRecord(tpe, formatString)
   })
 
   val elements = ListMap(ports:_*)
-  override def cloneType = new PrintRecordBag(prefix, printPorts).asInstanceOf[this.type]
+  override def cloneType = new PrintRecordBag(printPorts).asInstanceOf[this.type]
 
   // Generates a Bool indicating if at least one Printf has it's enable set on this cycle
   def hasEnabledPrint(): Bool = elements.map(_._2.enable).foldLeft(false.B)(_ || _)
 }
 
-class PrintBridgeModule(prefix: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
+class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
     extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO())
-  val hPort = IO(HostPort(Flipped(new PrintRecordBag(prefix, printPorts))))
+  val hPort = IO(HostPort(Flipped(new PrintRecordBag(printPorts))))
 
   lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
   lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)

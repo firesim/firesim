@@ -57,7 +57,6 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
   // Takes a single printPort and emits an FCCA for each field
   def genFCCAsFromPort(mT: ModuleTarget, p: Port): Seq[FAMEChannelConnectionAnnotation] = {
-    println(p)
     p.tpe match {
       case BundleType(fields) =>
         fields.map(field =>
@@ -83,7 +82,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val topWiringAnnos = mutable.ArrayBuffer[Annotation](
       TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc))
 
-    val topWiringPrefix = ""
+    val topWiringPrefix = "synthesizedPrintf_"
 
     def onModule(m: DefModule): DefModule = m match {
       case m: Module if printMods(mTarget(m)) =>
@@ -138,7 +137,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
         val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
         val bridgeAnno = BridgeIOAnnotation(
           target = portRT,
-          widget = (p: Parameters) => new PrintBridgeModule(topWiringPrefix, addedPrintPorts)(p),
+          widget = (p: Parameters) => new PrintBridgeModule(addedPrintPorts)(p),
           channelNames = fccaAnnos.map(_.globalName)
         )
         bridgeAnno +: fccaAnnos
