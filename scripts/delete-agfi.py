@@ -3,6 +3,7 @@
 import boto3
 import argparse
 from datetime import datetime
+from collections import defaultdict
 import pytz
 
 def get_current_region():
@@ -73,7 +74,7 @@ class ImageDeleter(object):
                 self.client.delete_fpga_image(FpgaImageId = afi)
                 self.deleted.append(afi)
 
-    def list_images_before(self, before):
+    def iter_non_shared_images(self):
         account_id = self.get_customer_id()
         result = self.client.describe_fpga_images(
             Filters=[
@@ -96,21 +97,40 @@ class ImageDeleter(object):
                     FpgaImageId = image["FpgaImageId"],
                     Attribute = "loadPermission")
             loadPermissions = attribute["FpgaImageAttribute"]["LoadPermissions"]
-            created = image["CreateTime"]
 
-            if not loadPermissions and created < before:
-                images.append(image)
+            if not loadPermissions:
+                yield image
 
-        return images
+    def list_images_before(self, before):
+        return [image for image in self.iter_non_shared_images() if image["UpdateTime"] < before]
 
-    def delete_before(self, before):
-        images = self.list_images_before(before)
+    def list_old_images(self):
+        latest = []
+        oldimages = []
+        imagedict = defaultdict(list)
 
+        for image in self.iter_non_shared_images():
+            imagedict[image["Name"]].append(image)
+
+        for name in imagedict:
+            imagegroup = imagedict[name]
+            imagegroup.sort(key=lambda image: image["UpdateTime"], reverse=True)
+            latest.append(imagegroup[0])
+            oldimages += imagegroup[1:]
+
+        return latest, oldimages
+
+    def print_image(self, image):
+        print("{} {} {} {}".format(
+            image["FpgaImageGlobalId"],
+            image["FpgaImageId"],
+            image["UpdateTime"],
+            image["Description"]))
+
+    def confirm_and_delete(self, images):
         for image in images:
-            print("{} {} {}".format(
-                image["FpgaImageGlobalId"],
-                image["FpgaImageId"],
-                image["Description"]))
+            self.print_image(image)
+
         print("You are about to delete {} images.".format(len(images)))
         proceed = raw_input("Are you sure you want to continue? (yes/no): ")
 
@@ -121,12 +141,25 @@ class ImageDeleter(object):
                 self.client.delete_fpga_image(FpgaImageId=afi)
                 self.deleted.append(afi)
 
+    def delete_before(self, before):
+        self.confirm_and_delete(self.list_images_before(before))
+
+    def delete_old(self):
+        latest, oldimages = self.list_old_images()
+        print("Skipping:")
+        for image in latest:
+            self.print_image(image)
+        print("Deleting:")
+        self.confirm_and_delete(oldimages)
+
 def main():
     parser = argparse.ArgumentParser(description="Tool for deleting F1 FPGA images")
     parser.add_argument("--agfi", help="Global FPGA image ID")
     parser.add_argument("--before", help="Delete all images created before this date (YYYY-mm-dd)")
     parser.add_argument("--list", help="Delete AGFIs from list")
     parser.add_argument("--region", help="EC2 Region to resolve AGFIs in")
+    parser.add_argument("--old", action="store_const", const=True, default=False,
+            help="Delete old AGFIs for each image name")
     args = parser.parse_args()
 
     deleter = ImageDeleter(args.region)
@@ -141,6 +174,8 @@ def main():
         before = datetime.strptime(args.before, datefmt)
         before = before.replace(tzinfo=pytz.UTC)
         deleter.delete_before(before)
+    elif args.old:
+        deleter.delete_old()
 
     print("Deleted {} images".format(len(deleter.deleted)))
 
