@@ -278,6 +278,11 @@ class UserTopologies(object):
                 "firesim-quadcore-rdma-l2-nic-ddr3",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
+    def hwacha_memblade_base_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-hwacha-rdma-ddr3-l2",
+                "firesim-singlecore-memblade1024-ddr3", n, m)
+
     def dramcache_base_config(self, n, m):
         self.base_twohw_config(
                 "firesim-dualcore-dramcache-ddr3-l2",
@@ -309,6 +314,9 @@ class UserTopologies(object):
 
     def memblade_2x2_config(self):
         self.memblade_base_config(2, 2)
+
+    def hwacha_memblade_1x1_config(self):
+        self.hwacha_memblade_base_config(1, 1)
 
     def dramcache_1x1_config(self):
         self.dramcache_base_config(1, 1)
