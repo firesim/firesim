@@ -1,3 +1,4 @@
 /bbl-vmlinux
+/memblade-dummy.riscv
 overlay/*.riscv
 *.ext2
