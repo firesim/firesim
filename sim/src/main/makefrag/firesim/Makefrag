@@ -82,10 +82,15 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 tracer_args = +tracefile0=TRACEFILE
 blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
 autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE
+# Neglecting this +arg will make the simulator use the same step size as on the
+# FPGA. This will make ML simulation more closely match results seen on the
+# FPGA at the expense of dramatically increased target runtime
+#serial_args = +fesvr-step-size=128
+serial_args =
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
+COMMON_SIM_ARGS ?= $(serial_args) $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)
