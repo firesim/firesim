@@ -6,7 +6,8 @@ git --no-pager log -n 1
 
 if [[ -n $(git status -s)  ]]; then
     echo -e "\nRepo is dirty. Diff of tracked files follows.\n"
-    git --no-pager diff --submodule=diff
+    # NB: The --submodule command is not supported in older git versions
+    git --no-pager diff --submodule=diff || true
 else
     echo -e "\nRepo is clean"
 fi
