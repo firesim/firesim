@@ -30,6 +30,10 @@
 // The maximum number of beats available in the FPGA-side FIFO
 #define QUEUE_DEPTH 6144
 
+// put FIREPERF in a mode that writes a simple log for processing later.
+// useful for iterating on software side only without re-running on FPGA.
+//#define FIREPERF_LOGGER
+
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
@@ -202,6 +206,23 @@ void tracerv_t::tick() {
                         }
                     }
                 }
+            } else if (this->fireperf) {
+                for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                    int valid_inst = (OUTBUF[i+1] >> 61) & 0x1;
+
+                    uint64_t cycle_internal = ((uint64_t)(i / 8)) + cur_cycle;
+
+                    for (int q = 0; q < NUM_CORES; q++) {
+                        if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                            uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
+                            this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
+    #ifdef FIREPERF_LOGGER
+                        fprintf(this->tracefiles[q], "%016llx", iaddr);
+                        fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+    #endif //FIREPERF_LOGGER
+                        }
+                    }
+                }
             } else {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     // this stores as raw binary. stored as little endian.
@@ -259,6 +280,26 @@ void tracerv_t::flush() {
                       if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                         fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
                       }
+                    }
+                }
+            }
+        } else if (this->fireperf) {
+            for (int i = 0; i < beats_available * 8; i+=8) {
+                int valid_inst = (OUTBUF[i+1] >> 61) & 0x1;
+
+                uint64_t cycle_internal = ((uint64_t)(i / 8)) + cur_cycle;
+
+                for (int q = 0; q < NUM_CORES; q++) {
+                    if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                        // is a valid instruction
+                        //
+                        // sign extended from sv39
+                        uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
+                        this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
+#ifdef FIREPERF_LOGGER
+                    fprintf(this->tracefiles[q], "%016llx", iaddr);
+                    fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+#endif //FIREPERF_LOGGER
                     }
                 }
             }
