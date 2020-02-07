@@ -23,5 +23,5 @@ export FIRESIM_SOURCED=1
 # if you have multiple copies of firesim
 export FIRESIM_RUNFARM_PREFIX=""
 
-# put FlameGraph on the user path
-export PATH=$(pwd)/utils/fireperf/FlameGraph:$PATH
+# put FlameGraph/other fireperf utils on the user path
+export PATH=$(pwd)/utils/fireperf:$(pwd)/utils/fireperf/FlameGraph:$PATH
