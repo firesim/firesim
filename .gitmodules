@@ -31,3 +31,12 @@
 [submodule "utils/FlameGraph"]
 	path = utils/fireperf/FlameGraph
 	url = https://github.com/brendangregg/FlameGraph.git
+[submodule "sim/firesim-lib/src/main/cc/lib/boost"]
+	path = sim/firesim-lib/src/main/cc/lib/boost
+	url = https://github.com/boostorg/boost
+[submodule "sim/firesim-lib/src/main/cc/lib/elfutils"]
+	path = sim/firesim-lib/src/main/cc/lib/elfutils
+	url = git://sourceware.org/git/elfutils.git
+[submodule "sim/firesim-lib/src/main/cc/lib/libdwarf"]
+	path = sim/firesim-lib/src/main/cc/lib/libdwarf
+	url = git://git.code.sf.net/p/libdwarf/code
