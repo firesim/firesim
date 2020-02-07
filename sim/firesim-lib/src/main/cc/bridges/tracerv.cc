@@ -208,18 +208,16 @@ void tracerv_t::tick() {
                 }
             } else if (this->fireperf) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    int valid_inst = (OUTBUF[i+1] >> 61) & 0x1;
-
-                    uint64_t cycle_internal = ((uint64_t)(i / 8)) + cur_cycle;
+                    uint64_t cycle_internal = OUTBUF[i+7];
 
                     for (int q = 0; q < NUM_CORES; q++) {
                         if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                             uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
                             this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
-    #ifdef FIREPERF_LOGGER
-                        fprintf(this->tracefiles[q], "%016llx", iaddr);
-                        fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
-    #endif //FIREPERF_LOGGER
+#ifdef FIREPERF_LOGGER
+                            fprintf(this->tracefiles[q], "%016llx", iaddr);
+                            fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+#endif //FIREPERF_LOGGER
                         }
                     }
                 }
@@ -285,9 +283,7 @@ void tracerv_t::flush() {
             }
         } else if (this->fireperf) {
             for (int i = 0; i < beats_available * 8; i+=8) {
-                int valid_inst = (OUTBUF[i+1] >> 61) & 0x1;
-
-                uint64_t cycle_internal = ((uint64_t)(i / 8)) + cur_cycle;
+                uint64_t cycle_internal = OUTBUF[i+7];
 
                 for (int q = 0; q < NUM_CORES; q++) {
                     if ((OUTBUF[i+0+q] >> 40) & 0x1) {
