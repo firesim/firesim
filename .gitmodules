@@ -28,3 +28,6 @@
 [submodule "sim/midas/src/main/cc/dramsim2"]
 	path = sim/midas/src/main/cc/dramsim2
 	url = https://github.com/firesim/DRAMSim2.git
+[submodule "utils/FlameGraph"]
+	path = utils/FlameGraph
+	url = https://github.com/brendangregg/FlameGraph.git
