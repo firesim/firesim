@@ -325,6 +325,11 @@ class FireSimServerNode(FireSimNode):
         all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_assert_def_path(), ''])
+
+        # shared libraries
+        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
+        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+
         all_paths += self.get_job().get_siminputs()
         return all_paths
 
