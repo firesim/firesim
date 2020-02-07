@@ -691,5 +691,9 @@ class config_changed(object):
             return False
         return (last_success == self.config_digest)
 
+def appendPath(basepath, appendval):
+    return basepath.parent / (basepath.name + appendval)
+
 def noDiskPath(path):
-    return path.parent / (path.name + '-nodisk')
+    return appendPath(path, '-nodisk')
+
