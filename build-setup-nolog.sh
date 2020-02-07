@@ -170,6 +170,12 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 fi
 
 cd $RDIR
+source env.sh && ./scripts/build-libelf.sh
+cd $RDIR
+source env.sh && ./scripts/build-libdwarf.sh
+
+
+cd $RDIR
 ./gen-tags.sh
 
 echo "Setup complete!"
