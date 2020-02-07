@@ -13,8 +13,6 @@ import freechips.rocketchip.tile.TileKey
 
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
-import icenet.{NICIOvonly, RateLimiterSettings}
-import icenet.IceNIC._
 import junctions.{NastiIO, NastiKey}
 import TokenQueueConsts._
 
