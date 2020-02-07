@@ -58,7 +58,7 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 		   $(shell find $(firesim_lib_dir) -name "*.h")
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
-            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
+            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 			$(RISCV)/lib/libfesvr.a
 
 TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost
