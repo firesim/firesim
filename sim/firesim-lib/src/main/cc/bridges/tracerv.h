@@ -44,6 +44,8 @@ class tracerv_t: public bridge_driver_t
         void flush();
         int beats_available_stable();
         std::string tracefilename;
+        std::string dwarf_file_name;
+        bool fireperf = false;
 };
 #endif // TRACERVBRIDGEMODULE_struct_guard
 

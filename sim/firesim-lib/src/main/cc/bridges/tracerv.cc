@@ -37,6 +37,7 @@ tracerv_t::tracerv_t(
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
+    const char *dwarf_file_name = NULL;
 
     for (int i = 0; i < NUM_CORES; i++) {
          this->tracefiles[i] = NULL;
@@ -46,6 +47,7 @@ tracerv_t::tracerv_t(
     this->trace_trigger_end = ULONG_MAX;
     this->trigger_selector = 0;
     this->tracefilename = "";
+    this->dwarf_file_name = "";
 
     std::string num_equals = std::to_string(tracerno) + std::string("=");
     std::string tracefile_arg =        std::string("+tracefile") + num_equals;
@@ -56,6 +58,9 @@ tracerv_t::tracerv_t(
     std::string testoutput_arg =         std::string("+trace-test-output") + std::to_string(tracerno);
     // Formats the output before dumping the trace to file
     std::string humanreadable_arg =    std::string("+trace-humanreadable") + std::to_string(tracerno);
+
+    std::string fireperf_arg =             std::string("+fireperf") + std::to_string(tracerno);
+    std::string dwarf_file_arg =           std::string("+dwarf-file-name") + num_equals;
 
     for (auto &arg: args) {
         if (arg.find(tracefile_arg) == 0) {
@@ -82,8 +87,13 @@ tracerv_t::tracerv_t(
         if (arg.find(humanreadable_arg) == 0) {
             this->human_readable = true;
         }
-
-
+        if (arg.find(fireperf_arg) == 0) {
+            this->fireperf = true;
+        }
+        if (arg.find(dwarf_file_arg) == 0) {
+            dwarf_file_name = const_cast<char*>(arg.c_str()) + dwarf_file_arg.length();
+            this->dwarf_file_name = std::string(dwarf_file_name);
+        }
     }
 
     if (tracefilename) {
@@ -99,6 +109,16 @@ tracerv_t::tracerv_t(
     } else {
         fprintf(stderr, "TraceRV: Warning: No +tracefileN given!\n");
     }
+
+    if (fireperf) {
+        if (this->dwarf_file_name.compare("") == 0) {
+            fprintf(stderr, "+fireperf specified but no +dwarf-file-name given\n");
+            abort();
+        }
+        for (int i = 0; i < NUM_CORES; i++) {
+            this->trace_trackers[i] = new TraceTracker(this->dwarf_file_name, this->tracefiles[i]);
+        }
+    }
 }
 
 tracerv_t::~tracerv_t() {
@@ -106,7 +126,7 @@ tracerv_t::~tracerv_t() {
         if (this->tracefiles[i]) {
             fclose(this->tracefiles[i]);
         }
-    } 
+    }
     free(this->mmio_addrs);
 }
 
