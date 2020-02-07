@@ -106,9 +106,9 @@ On this machine, run the following:
 
 See
 https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about aws configure. You should specify the same region that you chose
+for more about aws configure. Within the prompt, you should specify the same region that you chose
 above (one of ``us-east-1``, ``us-west-2``, ``eu-west-1``) and set the default
-output format to ``json``.
+output format to ``json``. You will need to generate an AWS access key in the "Security Credentials" menu of your AWS settings (as instructed in https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys ). 
 
 Again on the ``t2.nano`` instance, do the following:
 
