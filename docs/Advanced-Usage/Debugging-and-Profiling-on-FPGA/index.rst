@@ -9,8 +9,9 @@ simulation components *once you have a FireSim simulation running on an FPGA*.
    :maxdepth: 2
    :caption: Debugging and Profiling on the FPGA:
 
-   Debugging-Hardware-Using-ILA.rst
    TracerV.rst
    DESSERT.rst
    printf-synthesis.rst
+   Debugging-Hardware-Using-ILA.rst
    AutoCounter.rst
+   TracerV-with-FlameGraph.rst
