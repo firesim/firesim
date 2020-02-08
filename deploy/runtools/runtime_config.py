@@ -92,6 +92,7 @@ class RuntimeHWConfig:
                                               all_netbws, profile_interval,
                                               all_bootbinaries, trace_enable,
                                               trace_select, trace_start, trace_end,
+                                              trace_output_format,
                                               autocounter_readrate, all_shmemportnames):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
@@ -131,8 +132,11 @@ class RuntimeHWConfig:
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
         zero_out_dram = "+zero-out-dram"
 
+        # TODO supernode support
+        dwarf_file_name = "+dwarf-file-name0=" + all_bootbinaries[0] + "-dwarf"
+
         # TODO: supernode support (tracefile0, trace-select0.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select0={trace_select} +trace-start0={trace_start} +trace-end0={trace_end} +autocounter-readrate0={autocounter_readrate} {autocounterfile} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select0={trace_select} +trace-start0={trace_start} +trace-end0={trace_end} +trace-output-format0={trace_output_format} {dwarf_file_name} +autocounter-readrate0={autocounter_readrate} {autocounterfile} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
@@ -145,6 +149,8 @@ class RuntimeHWConfig:
             command_shmemportnames=command_shmemportnames,
             command_bootbinaries=command_bootbinaries, trace_select=trace_select,
             trace_start=trace_start, trace_end=trace_end, tracefile=tracefile,
+            trace_output_format=trace_output_format,
+            dwarf_file_name=dwarf_file_name,
             autocounterfile=autocounterfile, autocounter_readrate=autocounter_readrate)
 
         return basecommand
@@ -257,12 +263,14 @@ class InnerRuntimeConfiguration:
         self.trace_select = "0"
         self.trace_start = "0"
         self.trace_end = "-1"
+        self.trace_output_format = "0"
         self.autocounter_readrate = 0
         if 'tracing' in runtime_dict:
             self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
             self.trace_start = runtime_dict['tracing'].get('start', "0")
             self.trace_end = runtime_dict['tracing'].get('end', "-1")
+            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
         if 'autocounter' in runtime_dict:
             self.autocounter_readrate = int(runtime_dict['autocounter'].get('readrate', "0"))
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
@@ -319,6 +327,7 @@ class RuntimeConfig:
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
             self.innerconf.profileinterval, self.innerconf.trace_enable,
             self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
+            self.innerconf.trace_output_format,
             self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self):

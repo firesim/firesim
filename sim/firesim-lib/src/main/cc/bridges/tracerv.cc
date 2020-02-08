@@ -53,6 +53,8 @@ tracerv_t::tracerv_t(
     this->tracefilename = "";
     this->dwarf_file_name = "";
 
+    long outputfmtselect = 0;
+
     std::string num_equals = std::to_string(tracerno) + std::string("=");
     std::string tracefile_arg =        std::string("+tracefile") + num_equals;
     std::string tracestart_arg =       std::string("+trace-start") + num_equals;
@@ -63,7 +65,7 @@ tracerv_t::tracerv_t(
     // Formats the output before dumping the trace to file
     std::string humanreadable_arg =    std::string("+trace-humanreadable") + std::to_string(tracerno);
 
-    std::string fireperf_arg =             std::string("+fireperf") + std::to_string(tracerno);
+    std::string trace_output_format_arg = std::string("+trace-output-format") + num_equals;
     std::string dwarf_file_arg =           std::string("+dwarf-file-name") + num_equals;
 
     for (auto &arg: args) {
@@ -88,11 +90,9 @@ tracerv_t::tracerv_t(
         if (arg.find(testoutput_arg) == 0) {
             this->test_output = true;
         }
-        if (arg.find(humanreadable_arg) == 0) {
-            this->human_readable = true;
-        }
-        if (arg.find(fireperf_arg) == 0) {
-            this->fireperf = true;
+        if (arg.find(trace_output_format_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + trace_output_format_arg.length();
+            outputfmtselect = atol(str);
         }
         if (arg.find(dwarf_file_arg) == 0) {
             dwarf_file_name = const_cast<char*>(arg.c_str()) + dwarf_file_arg.length();
@@ -109,6 +109,21 @@ tracerv_t::tracerv_t(
                 fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
                 abort();
             }
+        }
+
+        // This must be kept consistent with config_runtime.ini's output_format.
+        // That file's comments are the single source of truth for this.
+        if (outputfmtselect == 0) {
+            this->human_readable = true;
+            this->fireperf = false;
+        } else if (outputfmtselect == 1) {
+            this->human_readable = false;
+            this->fireperf = false;
+        } else if (outputfmtselect == 2) {
+            this->human_readable = false;
+            this->fireperf = true;
+        } else {
+            fprintf(stderr, "Invalid trace format arg\n");
         }
     } else {
         fprintf(stderr, "TraceRV: Warning: No +tracefileN given!\n");

@@ -124,6 +124,7 @@ ObjdumpedBinary::ObjdumpedBinary(std::string binaryWithDwarf)
 
         prev = sub.pc_end ? nullptr : entry;
     }
+    printf("\n");
 
     // Propagate previous unbounded label to end of image
     if (prev) {
