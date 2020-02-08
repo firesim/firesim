@@ -346,7 +346,7 @@ def makeBin(config, nodisk=False):
         run(['make', getOpt('jlevel')], cwd=pk_build)
 
         # give users a copy of vmlinux with debugging info for fireperf
-        shutil.copy(os.path.join(config['linux-src'], 'vmlinux'), appendPath(config['bin'], "-vmlinux-dwarf"))
+        shutil.copy(os.path.join(config['linux-src'], 'vmlinux'), appendPath(config['bin'], "-dwarf"))
 
         if nodisk:
             shutil.copy(pk_build / 'bbl', noDiskPath(config['bin']))
