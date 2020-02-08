@@ -10,8 +10,8 @@ simulation components *once you have a FireSim simulation running on an FPGA*.
    :caption: Debugging and Profiling on the FPGA:
 
    TracerV.rst
-   DESSERT.rst
-   printf-synthesis.rst
+   Assertion-Synthesis.rst
+   Printf-Synthesis.rst
    Debugging-Hardware-Using-ILA.rst
    AutoCounter.rst
    TracerV-with-FlameGraph.rst

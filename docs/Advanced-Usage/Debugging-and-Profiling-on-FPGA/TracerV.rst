@@ -1,7 +1,7 @@
-Debugging Using TracerV
-=======================
+Capturing RISC-V Instruction Traces with TracerV
+==================================================
 
-FireSim can provide a cycle-by-cycle trace of the CPU's architectural state
+FireSim can provide a cycle-by-cycle trace of the target CPU's architectural state
 over the course of execution. This can be useful for profiling or debugging.
 The tracing functionality is provided by the TracerV widget.
 
