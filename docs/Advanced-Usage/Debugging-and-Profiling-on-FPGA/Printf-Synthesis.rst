@@ -1,5 +1,5 @@
-Printf Synthesis
-===================
+Printf Synthesis: Capturing printf Calls in RTL when Running on the FPGA
+=============================================================================
 
 Golden Gate can synthesize printfs present in FIRRTL (implemented as ``printf``
 statements) that would otherwise be lost in the FPGA synthesis flow. Rocket and

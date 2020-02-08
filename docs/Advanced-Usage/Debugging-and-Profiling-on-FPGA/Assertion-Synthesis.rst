@@ -1,5 +1,5 @@
-Assertion Synthesis
-===================
+Assertion Synthesis: Catching Assertions when Running on the FPGA
+===================================================================
 
 Golden Gate can synthesize assertions present in FIRRTL (implemented as ``stop``
 statements) that would otherwise be lost in the FPGA synthesis flow. Rocket

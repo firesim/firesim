@@ -1,5 +1,5 @@
-Debugging Using AutoCounter
-================================
+AutoCounter: Profiling with Out-of-Band Performance Counter Collection
+========================================================================
 
 FireSim can provide visibility into the CPU's architectural and microarchitectural
 state over the course of execution through the use of counters. These are
