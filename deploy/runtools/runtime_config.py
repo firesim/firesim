@@ -100,8 +100,9 @@ class RuntimeHWConfig:
         pre-built runtime config? It kinda contains a mix of pre-built and
         runtime parameters currently. """
 
-        tracefile = "+tracefile0=TRACEFILE" if trace_enable else ""
-        autocounterfile = "+autocounter-filename0=AUTOCOUNTERFILE"
+        # TODO: supernode support
+        tracefile = "+tracefile0=TRACEFILE0" if trace_enable else ""
+        autocounterfile = "+autocounter-filename0=AUTOCOUNTERFILE0"
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs

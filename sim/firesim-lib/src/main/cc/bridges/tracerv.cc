@@ -103,7 +103,7 @@ tracerv_t::tracerv_t(
     if (tracefilename) {
         // giving no tracefilename means we will create NO tracefiles
         for (int i = 0; i < NUM_CORES; i++) {
-            std::string tfname = std::string(tracefilename) + std::to_string(i);
+            std::string tfname = std::string(tracefilename) + std::to_string("-C") + std::to_string(i);
             this->tracefiles[i] = fopen(tfname.c_str(), "w");
             if (!this->tracefiles[i]) {
                 fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);

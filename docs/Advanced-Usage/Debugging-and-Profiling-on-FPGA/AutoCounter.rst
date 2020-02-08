@@ -84,7 +84,7 @@ By default, the read-rate is set to 0 cycles, which is equivalent to disabling A
 
 
 Now when you run a workload, an AutoCounter output file will be placed in the
-`sim_slot_<slot #>` directory on the F1 instance under the name AUTOCOUNTERFILE.
+`sim_slot_<slot #>` directory on the F1 instance under the name AUTOCOUNTERFILE0.
 
 .. Note:: AutoCounter is designed as a coarse-grained observability mechanism. It assumes the counters will be read at intervals greater than O(10000) cycles. If you intend on reading counters at a finer granularity, please consider using synthesizable printfs (otherwise, simulation performance may degrade more than necessary)
 

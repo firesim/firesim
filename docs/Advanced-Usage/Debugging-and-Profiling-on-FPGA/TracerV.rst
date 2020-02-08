@@ -37,11 +37,16 @@ instead of ``no``:
     enable=yes
 
 Now when you run a workload, a trace output file will be placed in the
-````sim_slot_<slot #>```` directory on the F1 instance under the name ``TRACEFILE0``.
-You can add ``TRACEFILE0`` to your ``common_simulation_outputs`` or
-``simulation_outputs`` in your workload ``.json`` file to have this automatically
-copied back to your manager.  See the :ref:`defining-custom-workloads` section
-for more information about these options.
+``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE0-C0``.
+The first ``0`` in this filename disambiguates between multiple SoCs on one FPGA
+if you're running in supernode mode and will always be ``0`` if you're not running
+in supernode mode. The ``C0`` represents core 0 in the simulated
+SoC. If you have multiple cores, each will have its own file (ending in ``C1``,
+``C2``, etc).  To copy all TracerV trace files back to your manager, you can
+add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
+``simulation_outputs`` in your workload ``.json`` file. See the
+:ref:`defining-custom-workloads` section for more information about these
+options.
 
 Selecting a Trace Output Format
 ---------------------------------
