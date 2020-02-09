@@ -76,7 +76,7 @@ for each of the nodes in the simulation (each gets its own copy). The ``common_b
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
-is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
+is built by the :ref:`FireMarshal <firemarshal>` tool.
 
 Similarly, the ``common_rootfs`` field represents the disk image that the simulations
 in this workload are expected to boot from. The manager will copy this root
@@ -85,7 +85,7 @@ The ``common_rootfs`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base.img`` that
-is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
+is built by the :ref:`FireMarshal <firemarshal>` tool.
 
 The ``common_outputs`` field is a list of outputs that the manager will copy out of
 the root filesystem image AFTER a simulation completes. In this simple example,
