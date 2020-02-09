@@ -110,21 +110,102 @@ values for the trigger.
 
 The four triggering methods available in FireSim are as follows:
 
-* **No trigger**: Record trace for the entire simulation. This is option ``0``
-  in the ``.ini`` above. The ``start`` and ``end`` fields are ignored.
-* **Target cycle trigger**: Specify a start cycle and end cycle, based on the
-  simulation cycle count. This is option ``1`` in the ``.ini`` above. The ``start``
-  and ``end`` fields are interpreted as decimal integers.
-* **Program Counter (PC) value trigger**: Specify a program
-  counter value to start collection, and a program counter value in which to
-  end collection. This is option ``2`` in the ``.ini`` above. The ``start``
-  and ``end`` fields are interpreted as hexadecimal values.
-* **Instruction value trigger**: Specify an instruction value upon which
-  to start data collection, and an instruction value in which to end
-  collection. This method is particularly valuable for setting the trigger from
-  within the target software under evaluation, by inserting custom "NOP"
-  instructions. This is option ``3`` in the ``.ini`` above. The ``start``
-  and ``end`` fields are interpreted as hexadecimal values.
+No trigger
+^^^^^^^^^^^^^^
+
+Records the trace for the entire simulation.
+
+This is option ``0`` in the ``.ini`` above.
+
+The ``start`` and ``end`` fields are ignored.
+
+Target cycle trigger
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Trace recording begins when a specified start cycle is
+reached and ends when a specified end cycle is reached, based on the
+target's simulation cycle count.
+
+This is option ``1`` in the ``.ini`` above.
+
+The ``start`` and ``end`` fields are interpreted as decimal integers.
+
+
+Program Counter (PC) value trigger
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Trace recording begins when a specified program counter value is reached
+and ends when a specified program counter value is reached.
+
+This is option ``2`` in the ``.ini`` above.
+
+The ``start`` and ``end`` fields are interpreted as hexadecimal values.
+
+
+Instruction value trigger
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Trace recording begins when a specific instruction is seen in the instruction
+trace and recording ends when a specific instruction is seen in the instruction
+trace. This method is particularly valuable for setting the trigger from
+within the target software under evaluation, by inserting custom "NOP"
+instructions. Linux distributions included with FireSim include small trigger
+programs by default for this purpose; see the end of this subsection.
+
+This is option ``3`` in the ``.ini`` above.
+
+The ``start`` and ``end`` fields are interpreted as hexadecimal values. For
+each, the field is a 64-bit value, with the upper 32-bits representing a
+mask and the lower 32-bits representing a comparison value. That is, the
+start or stop condition will be satisfied when the following evaluates to true:
+
+.. code-block:: C
+
+    ((inst value) & (upper 32 bits)) == (lower 32 bits)
+
+
+That is, setting ``start=ffffffff00008013`` will cause recording to start when
+the instruction value is exactly ``00008013`` (the ``addi x0, x1, 0``
+instruction in RISC-V).
+
+
+This form of triggering is useful when recording traces only when a particular
+application is running within Linux. To simplify the use of this triggering
+mechanism, workloads derived from ``br-base.json`` in FireMarshal automatically
+include the commands ``firesim-start-trigger`` and ``firesim-end-trigger``,
+which issue a ``addi x0, x1, 0`` and ``addi x0, x2, 0`` instruction
+respectively. In your ``config_runtime.ini``, if you set the following
+trigger settings:
+
+.. code-block:: ini
+
+    selector=3
+    start=ffffffff00008013
+    end=ffffffff00010013
+
+
+And then run the following at the bash prompt on the simulated system:
+
+.. code-block:: bash
+
+    $ firesim-start-trigger && ./my-interesting-benchmark && firesim-end-trigger
+
+
+The trace will contain primarily only traces for the duration of
+``my-interesting-benchmark``.  Note that there will be a small amount of extra
+trace information from ``firesim-start-trigger`` and ``firesim-end-trigger``,
+as well as the OS switching between these and ``my-interesting-benchmark``. 
+
+
+.. Attention::  While it is unlikely that a compiler will generate the
+   aforementioned trigger instructions within normal application code, it is also
+   a good idea to confirm that these instructions are not inadvertently present
+   within the section of code you wish to profile. This will result in the trace
+   recording inadvertently turning on and off in the middle of the workload.
+
+   On the flip-side, a developer can deliberately insert the aforementioned ``addi``
+   instructions into the code they wish to profile, to enable more fine-grained
+   control.
 
 
 Interpreting the Trace Result
