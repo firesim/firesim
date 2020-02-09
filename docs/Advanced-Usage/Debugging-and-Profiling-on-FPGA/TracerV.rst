@@ -1,3 +1,5 @@
+.. _tracerv:
+
 Capturing RISC-V Instruction Traces with TracerV
 ==================================================
 
