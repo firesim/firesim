@@ -143,6 +143,8 @@ This is option ``2`` in the ``.ini`` above.
 The ``start`` and ``end`` fields are interpreted as hexadecimal values.
 
 
+.. _tracerv-inst-value-trigger:
+
 Instruction value trigger
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

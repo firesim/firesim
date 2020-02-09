@@ -79,7 +79,11 @@ file, for example:
 
 
 The trigger selector settings can be set as described in the
-:ref:`tracerv-trigger` section.
+:ref:`tracerv-trigger` section. In particular, when profiling the OS only when
+a desired application is running (e.g., ``iperf3`` in our `ASPLOS 2020 paper
+<https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_), instruction value
+triggering is extremely useful. See the :ref:`tracerv-inst-value-trigger`
+section for more.
 
 
 Producing DWARF information to supply to the TracerV driver
