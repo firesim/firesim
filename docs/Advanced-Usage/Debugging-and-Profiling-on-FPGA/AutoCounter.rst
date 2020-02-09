@@ -10,6 +10,8 @@ for profiling and debugging.
 Since AutoCounter injects counters only in simulation (unlike target-level performance
 counters), these counters do not affect the behavior of the simulated machine. 
 
+This feature was introduced in our
+`FirePerf paper at ASPLOS 2020 <https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_ .
 
 Ad-hoc Performance Counters
 ------------------------------
