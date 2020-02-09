@@ -1,7 +1,14 @@
-.. _defining-custom-workloads:
+.. _deprecated-defining-custom-workloads:
 
-Defining Custom Workloads
+[DEPRECATED] Defining Custom Workloads
 ================================================
+
+.. DANGER:: This version of the Defining Custom Workloads page is kept here to
+   document some of the legacy workload configurations still present in
+   ``deploy/workloads/``. New workloads should NOT be generated using these
+   instructions. New workloads should be written by following the current
+   version of the :ref:`defining-custom-workloads` page.
+
 
 **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
