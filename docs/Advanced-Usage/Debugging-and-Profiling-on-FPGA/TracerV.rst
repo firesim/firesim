@@ -7,8 +7,9 @@ FireSim can provide a cycle-by-cycle trace of a target CPU's architectural
 state over the course of execution, including fields like instruction address,
 raw instruction bits, privilege level, exception/interrupt status and cause,
 and a valid signal. This can be useful for profiling or debugging.
-
-**TracerV** is the FireSim bridge that provides this functionality.
+**TracerV** is the FireSim bridge that provides this functionality. This
+feature was introduced in our `FirePerf paper at ASPLOS 2020
+<https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_ .
 
 This section details how to capture these traces in cycle-by-cycle formats,
 usually for debugging purposes.
