@@ -17,6 +17,8 @@ For profiling purposes, FireSim also supports automatically producing stack
 traces from this data and producing Flame Graphs, which is documented in the
 :ref:`tracerv-with-flamegraphs` section.
 
+.. _tracerv-bridge:
+
 Building a Design with TracerV
 -------------------------------
 
@@ -60,7 +62,7 @@ FireSim supports three trace output formats, which can be set in your
 .. code-block:: ini
 
    [tracing]
-   enable=no
+   enable=yes
 
    # Trace output formats. Only enabled if "enable" is set to "yes" above
    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
@@ -69,6 +71,8 @@ FireSim supports three trace output formats, which can be set in your
 
 See the "Interpreting the Trace Result" section below for a description of
 these formats.
+
+.. _tracerv-trigger:
 
 Setting a TracerV Trigger
 ---------------------------
@@ -89,7 +93,7 @@ values for the trigger.
 .. code-block:: ini
 
    [tracing]
-   enable=no
+   enable=yes
 
    # Trace output formats. Only enabled if "enable" is set to "yes" above
    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
