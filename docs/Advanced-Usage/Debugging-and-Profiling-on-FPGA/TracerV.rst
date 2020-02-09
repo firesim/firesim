@@ -138,7 +138,7 @@ In this output, C0 represents instruction stream (or core) zero. The next field
 represents the address of the instruction committed that cycle and a valid bit,
 in hex, interpreted like so:
 
-.. code-block::
+.. code-block:: ini
 
     0000010080000000
          ^|--------|
