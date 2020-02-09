@@ -66,12 +66,12 @@ file, for example:
     enable=yes
 
     # Trace output formats. Only enabled if "enable" is set to "yes" above
-    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph       (stack
+    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
     # unwinding -> Flame Graph)
     output_format=2
 
     # Trigger selector.
-    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger;       3 =
+    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
     # instruction trigger
     selector=1
     start=0
@@ -116,14 +116,14 @@ descriptions, see the :ref:`defining-custom-workloads` section.
 To concretize this, let us consider the default ``linux-uniform.json`` workload,
 which does not support Flame Graph generation:
 
-.. include:: ../../deploy/workloads/linux-uniform.json
+.. include:: /../deploy/workloads/linux-uniform.json
    :code: json
 
 
 Below is the modified version of this workload, ``linux-uniform-flamegraph.json``,
 which makes the aforementioned three changes:
 
-.. include:: ../../deploy/workloads/linux-uniform-flamegraph.json
+.. include:: /../deploy/workloads/linux-uniform-flamegraph.json
    :code: json
 
 
