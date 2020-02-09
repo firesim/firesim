@@ -124,6 +124,48 @@ The four triggering methods available in FireSim are as follows:
 Interpreting the Trace Result
 ------------------------------
 
+Human readable output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is ``output_format=0``.
+
+The human readable trace output format looks like so:
+
+.. include:: TRACERV-HUMAN-READABLE-EXAMPLE
+   :code: ini
+
+In this output, C0 represents instruction stream (or core) zero. The next field
+represents the address of the instruction committed that cycle and a valid bit,
+in hex, interpreted like so:
+
+.. code-block::
+
+    0000010080000000
+         ^|--------|
+         |       \--- 40 bits of address
+         |
+         \-------- valid bit
+
+
+The final field is the target cycle on which this instruction was committed,
+in hex.
+
+Binary output
+^^^^^^^^^^^^^^^^^
+
+This is ``output_format=1``.
+
+This simply writes the 512 bits received from the FPGA each cycle to the output
+file in binary. Each 512-bit chunk is stored little-endian, that is, the first
+64-bits stores the address and valid bits of core 0 in little-endian, the next
+64-bits stores the address and valid bits of core 1 in little-endian, and so on,
+until the final 64-bit value in the 512-bit value, which stores the cycle number
+in little-endian.
+
+Flame Graph output
+^^^^^^^^^^^^^^^^^^^^
+
+This is ``output_format=2``. See the :ref:`tracerv-with-flamegraphs` section.
 
 Caveats
 --------------------
