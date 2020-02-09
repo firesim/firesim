@@ -5,7 +5,10 @@ TracerV+Flame Graphs: Profiling Software with Out-of-Band Flame Graph Generation
 
 FireSim supports generating `Flame Graphs
 <http://www.brendangregg.com/flamegraphs.html>`_ out-of-band, to visualize
-the performance of software running on simulated processors.
+the performance of software running on simulated processors. This feature was
+introduced in our `FirePerf paper at ASPLOS 2020
+<https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_ .
+
 
 .. image:: http://www.brendangregg.com/FlameGraphs/cpu-mysql-updated.svg
 
@@ -18,8 +21,5 @@ Graphs.
 
 Before proceeding, make sure you understand the :ref:`tracerv` section.
 
-
-This feature was introduced in our
-`FirePerf paper at ASPLOS 2020 <https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_ .
 
 
