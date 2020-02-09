@@ -3,6 +3,15 @@
 Defining Custom Workloads
 ================================================
 
+This page documents the ``JSON`` input format that FireSim uses to understand
+your software workloads that run on the target design. Most of the time, you
+should not be writing these files from scratch. Instead, use :ref:`firemarshal`
+to build a workload (including Linux kernel images and root filesystems) and
+use ``firemarshal``'s ``install`` command to generate an initial ``.json`` file
+for FireSim. Once you generate a base ``.json`` with FireMarshal, you can add
+some of the options noted on this page to control additional files used as
+inputs/outputs to/from simulations.
+
 **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
 either:
@@ -17,7 +26,7 @@ either:
   ``firesim/deploy/workloads/ping-latency.json``.
 
 
-FireSim supports can take these workload definitions and perform two functions:
+FireSim can take these workload definitions and perform two functions:
 
 - Building workloads using ``firesim/deploy/workloads/gen-benchmark-rootfs.py``
 
@@ -32,9 +41,10 @@ this should really be named "jobs" -- we will fix this in a future release.
 
 **ERRATA**: The following instructions assume the default buildroot-based linux
 distribution (br-base). In order to customize Fedora, you should build the
-basic Fedora image (as described in :ref:`booting-fedora`) and modify the
-image directly (or in QEMU). Imporantly, Fedora currently does not support the
-"command" option for workloads.
+basic Fedora image (as described in :ref:`booting-fedora`) and modify the image
+directly (or use :ref:`FireMarshal <firemarshal>` to generate the
+workload). Imporantly, Fedora currently does not support the "command" option
+for workloads.
 
 Uniform Workload JSON
 ----------------------------
@@ -72,7 +82,7 @@ directory name the same. In this case, we have set all of them to
 
 Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
-for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is 
+for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
@@ -147,7 +157,7 @@ AFTER the workload is built:
 
 First, let's identify some of these files:
 
-- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``. Note that it's named differently here, but still symlinks to ``br-base-bin`` in ``linux-uniform``.
+- ``bbl-vmlinux``: This workload just uses the default linux binary generated for the ``linux-uniform`` workload.
 - ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
 - ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
 
