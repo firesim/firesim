@@ -3,7 +3,7 @@
 Defining Custom Workloads
 ================================================
 
-If you do not want to use :ref:`firemarshal`, you can still manually create custom workloads in FireSim. **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
+**Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
 either:
 
@@ -31,11 +31,10 @@ of the json file inline.
 this should really be named "jobs" -- we will fix this in a future release.
 
 **ERRATA**: The following instructions assume the default buildroot-based linux
-distribution (br-disk). In order to customize Fedora, you should build the
-basic Fedora image (as described in :ref:`booting-fedora`) and modify the image
-directly (or use :ref:`FireMarshal <firemarshal>` to generate the
-workload). Imporantly, Fedora currently does not support the "command" option
-for workloads.
+distribution (br-base). In order to customize Fedora, you should build the
+basic Fedora image (as described in :ref:`booting-fedora`) and modify the
+image directly (or in QEMU). Imporantly, Fedora currently does not support the
+"command" option for workloads.
 
 Uniform Workload JSON
 ----------------------------
@@ -77,7 +76,7 @@ for each of the nodes in the simulation (each gets its own copy). The ``common_b
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
-is built by the :ref:`FireMarshal <firemarshal>` tool.
+is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 Similarly, the ``common_rootfs`` field represents the disk image that the simulations
 in this workload are expected to boot from. The manager will copy this root
@@ -86,7 +85,7 @@ The ``common_rootfs`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base.img`` that
-is built by the :ref:`FireMarshal <firemarshal>` tool.
+is built by the FireSim Linux distro in ``firesim/sw/firesim-software``.
 
 The ``common_outputs`` field is a list of outputs that the manager will copy out of
 the root filesystem image AFTER a simulation completes. In this simple example,
@@ -148,7 +147,7 @@ AFTER the workload is built:
 
 First, let's identify some of these files:
 
-- ``bbl-vmlinux``: This workload just uses the default linux binary generated for the ``linux-uniform`` workload.
+- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``. Note that it's named differently here, but still symlinks to ``br-base-bin`` in ``linux-uniform``.
 - ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
 - ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
 
