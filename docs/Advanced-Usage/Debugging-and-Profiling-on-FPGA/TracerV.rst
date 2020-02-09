@@ -65,37 +65,24 @@ FireSim supports three trace output formats, which can be set in your
    # unwinding -> Flame Graph)
    output_format=0
 
-The human readable format looks like so:
-
-TODO
+See the "Interpreting the Trace Result" section below for a description of
+these formats.
 
 Setting a TracerV Trigger
 ---------------------------
 
 Tracing the entirety of a long-running job like a Linux-based workload can
-generate a pretty large image, and you may only care about the state within a
+generate a large trace and you may only care about the state within a
 certain timeframe.
 Therefore, FireSim allows you to specify a trigger condition for starting and
-stopping trace data collection. FireSim currently provides three possible trigger
-conditions:
-
-* Simulation cycles: Specify a start cycle and end cycle, based on the
-  simulation cycle count
-* Program Counter (PC) value: Specify a program
-  counter value to start collection, and a program counter value in which to
-  end collection.
-* Instruction value: Specify an instruction value upon which
-  to start data collection, and an instruction value in which to end
-  collection. This method is particularly valuable for setting the trigger from
-  within the target software under evaluation, by using custom "NOP"
-  instructions. As such, one may use the  TODO @alonamid
-
+stopping trace data collection.
 
 By default, TracerV does not use a trigger, so data collection starts at cycle
 0 and ends at the last cycle of the simulation. To change this, modify the
 following under the ``[tracing]`` section of your ``config_runtime.ini``.
-Use the ``selector`` field to choose the type of trigger, and there use the ``start`` and ``end`` fields
-to select the start and end values for the trigger.
+Use the ``selector`` field to choose the type of trigger (options are described
+below). The ``start`` and ``end`` fields are used to supply the start and end
+values for the trigger.
 
 .. code-block:: ini
 
@@ -114,6 +101,24 @@ to select the start and end values for the trigger.
    start=0
    end=-1
 
+
+The four triggering methods available in FireSim are as follows:
+
+* **No trigger**: Record trace for the entire simulation. This is option ``0``
+  in the ``.ini`` above. The ``start`` and ``end`` fields are ignored.
+* **Target cycle trigger**: Specify a start cycle and end cycle, based on the
+  simulation cycle count. This is option ``1`` in the ``.ini`` above. The ``start``
+  and ``end`` fields are interpreted as decimal integers.
+* **Program Counter (PC) value trigger**: Specify a program
+  counter value to start collection, and a program counter value in which to
+  end collection. This is option ``2`` in the ``.ini`` above. The ``start``
+  and ``end`` fields are interpreted as hexadecimal values.
+* **Instruction value trigger**: Specify an instruction value upon which
+  to start data collection, and an instruction value in which to end
+  collection. This method is particularly valuable for setting the trigger from
+  within the target software under evaluation, by inserting custom "NOP"
+  instructions. This is option ``3`` in the ``.ini`` above. The ``start``
+  and ``end`` fields are interpreted as hexadecimal values.
 
 
 Interpreting the Trace Result
