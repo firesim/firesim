@@ -85,8 +85,8 @@ autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTE
 # Neglecting this +arg will make the simulator use the same step size as on the
 # FPGA. This will make ML simulation more closely match results seen on the
 # FPGA at the expense of dramatically increased target runtime
-#serial_args = +fesvr-step-size=128
-serial_args =
+serial_args = +fesvr-step-size=128
+#serial_args =
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
