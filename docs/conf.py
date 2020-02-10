@@ -107,6 +107,7 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
+html_logo = '_static/images/firesim_logo_small.png'
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
