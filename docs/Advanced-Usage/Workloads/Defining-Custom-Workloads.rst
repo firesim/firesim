@@ -44,8 +44,6 @@ The following examples use the default buildroot-based linux
 distribution (br-base). In order to customize Fedora, you should refer to the :ref:`booting-fedora`
 page.
 
-..
-  TODO is the last sentence above still true?
 
 Uniform Workload JSON
 ----------------------------
