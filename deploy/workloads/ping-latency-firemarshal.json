@@ -1,0 +1,58 @@
+{
+  "benchmark_name" : "ping-latency",
+  "common_bootbinary" : "bbl-vmlinux",
+  "common_outputs" : [],
+  "common_simulation_inputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "pinger",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "pingee",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-1",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-2",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-3",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-4",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-5",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "idler-6",
+      "simulation_inputs": [],
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

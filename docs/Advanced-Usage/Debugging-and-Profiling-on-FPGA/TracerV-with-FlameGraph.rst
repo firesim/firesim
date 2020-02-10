@@ -106,6 +106,8 @@ example, building the ``br-base.json`` workload will automatically produce
 and ``br-base.img``.
 
 
+.. _tracerv-flamegraph-workload-description:
+
 Modifying your workload description
 -------------------------------------
 

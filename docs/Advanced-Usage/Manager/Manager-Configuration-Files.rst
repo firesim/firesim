@@ -213,7 +213,8 @@ benchmark. If you specify fewer nodes, the manager will warn that not all jobs w
 assigned to a simulation. If you specify too many simulations and not enough
 jobs, the manager will not launch the jobs.
 
-Others can be found in the aforementioned directory.
+Others can be found in the aforementioned directory. For a description of the
+JSON format, see :ref:`defining-custom-workloads`.
 
 
 ``terminateoncompletion``
