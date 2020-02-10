@@ -135,6 +135,12 @@ In a networked simulation, this specifies the maximum output bandwidth that a
 NIC is allowed to produce as an integer in Gbit/s. Currently, this must be a
 number between 1 and 200, allowing you to model NICs between 1 and 200 Gbit/s.
 
+``profileinterval``
+"""""""""""""""""""""""""""""
+
+TODO @biancolin
+
+
 ``defaulthwconfig``
 """""""""""""""""""""""""""""
 
@@ -147,6 +153,39 @@ You should set this to one of the hardware configurations you have defined alrea
 ``config_hwdb.ini``.  You should set this to the NAME (section title) of the
 hardware configuration from ``config_hwdb.ini``, NOT the actual agfi itself
 (NOT something like ``agfi-XYZ...``).
+
+
+``[tracing]``
+^^^^^^^^^^^^^^^^^^^
+
+This section manages TracerV-based tracing at simulation runtime. For more
+details, see the :ref:`tracerv` page for more details.
+
+``enable``
+""""""""""""""""""
+
+This turns tracing on, when set to ``yes`` and off when set to ``no``. See the :ref:`tracerv-enabling`.
+
+``output_format``
+""""""""""""""""""""
+
+This sets the output format for TracerV tracing. See the :ref:`tracerv-output-format` section.
+
+``selector``, ``start``, and ``end``
+"""""""""""""""""""""""""""""""""""""
+
+These configure triggering for TracerV. See the :ref:`tracerv-trigger` section.
+
+
+``[autocounter]``
+^^^^^^^^^^^^^^^^^^^^^
+
+This section configures AutoCounter. See the :ref:`autocounter` page for more details.
+
+``readrate``
+"""""""""""""""""
+
+This sets the rate at which AutoCounters are read. See the :ref:`autocounter-runtime-parameters` section for more details.
 
 
 ``[workload]``

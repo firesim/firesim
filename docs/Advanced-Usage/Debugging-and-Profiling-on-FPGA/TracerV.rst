@@ -28,6 +28,8 @@ enable it by attaching a TracerV Bridge to the RISC-V trace port of one-or-more
 cores. By default, only the cycle number, instruction address, and valid bit
 are collected.
 
+.. _tracerv-enabling:
+
 Enabling Tracing at Runtime
 ----------------------------
 
@@ -52,6 +54,8 @@ add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
 ``simulation_outputs`` in your workload ``.json`` file. See the
 :ref:`defining-custom-workloads` section for more information about these
 options.
+
+.. _tracerv-output-format:
 
 Selecting a Trace Output Format
 ---------------------------------

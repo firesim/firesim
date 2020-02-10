@@ -1,3 +1,5 @@
+.. _autocounter:
+
 AutoCounter: Profiling with Out-of-Band Performance Counter Collection
 ========================================================================
 
@@ -69,6 +71,7 @@ The following example will generate counters from cover functions within the Str
 2. An input file with a list of module names. This input file is named ``autocounter-covermodules.txt``,
    an includes a list of module names separated by new lines (no commas).
 
+.. _autocounter-runtime-parameters:
 
 AutoCounter Runtime Parameters
 ---------------------------------
