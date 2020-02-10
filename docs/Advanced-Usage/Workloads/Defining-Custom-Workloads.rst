@@ -27,7 +27,7 @@ either:
 
 FireSim uses these workload definitions to help the manager deploy your
 simulations. Historically, there was also a script to build workloads using
-these JSON files, but this has been replaced with a much more powerful tool,
+these JSON files, but this has been replaced with a more powerful tool,
 :ref:`firemarshal`. New workloads should always be built with :ref:`firemarshal`.
 
 In the following subsections, we will go through the two aforementioned example
@@ -41,8 +41,8 @@ inline.
 
 
 The following examples use the default buildroot-based linux
-distribution (br-base). In order to customize Fedora, you refer to the :ref:`booting-fedora`
-page. Imporantly, Fedora currently does not support the "command" option for
+distribution (br-base). In order to customize Fedora, you should refer to the :ref:`booting-fedora`
+page. Importantly, Fedora currently does not support the "command" option for
 workloads.
 
 ..
