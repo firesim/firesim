@@ -1,0 +1,8 @@
+{
+  "name" : "makefile",
+  "base" : "br-base.json",
+  "command" : "echo Global: makefile",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

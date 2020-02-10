@@ -16,6 +16,10 @@ log-dir : '../logs'
 # SW-simulation outputs
 res-dir : '../runOutput'
 
+# Location of the FireSim repository. Used by the 'install' command. Null
+# indicates that no FireSim installation is available.
+firesim-dir : null
+
 # Default parallelism level to use in subcommands (mostly when calling 'make')
 # '' means unbounded
 jlevel : ''

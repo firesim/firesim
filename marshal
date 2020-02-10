@@ -180,8 +180,11 @@ def main():
                         deleteSafe(jCfg['img'])
 
         elif args.command == 'install':
-            wlutil.installWorkload(cfgName, cfgs)
-
+            try:
+                wlutil.installWorkload(cfgName, cfgs)
+            except wlutil.ConfigurationError as e:
+                print(e)
+                sys.exit(1)
         else:
             log.error("No subcommand specified")
             sys.exit(1)

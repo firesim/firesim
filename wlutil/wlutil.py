@@ -68,7 +68,7 @@ class ConfigurationError(Exception):
         self.cause = cause
 
     def __str__(self):
-        return "Configuration Error: " + cause
+        return "Configuration Error: " + self.cause
 
 class ConfigurationOptionError(ConfigurationError):
     """Error representing a problem with marshal configuration."""
@@ -99,13 +99,14 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
         'board-dir',
         'image-dir',
         'linux-dir',
+        'firesim-dir',
         'pk-dir',
         'log-dir',
         'res-dir'
     ]
 
     for opt in pathOpts:
-        if opt in opts:
+        if opt in opts and opts[opt] is not None:
             try:
                 path = (baseDir / pathlib.Path(opts[opt])).resolve(strict=True)
                 opts[opt] = path
@@ -119,6 +120,7 @@ userOpts = [
         'board-dir',
         'image-dir',
         'linux-dir',
+        'firesim-dir',
         'pk-dir',
         'log-dir',
         'res-dir',

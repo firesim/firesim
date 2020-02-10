@@ -137,6 +137,17 @@ fi
 popd
 echo ""
 
+echo "Running recursive make test" | tee -a $LOGNAME
+pushd test/makefile
+make
+if [ ${PIPESTATUS[0]} != 0 ]; then
+  echo "Failure" | tee -a $LOGNAME
+  SUITE_PASS=false
+  exit 1
+fi
+popd
+echo ""
+
 echo -e "\n\nMarshal full test complete. Log at: $LOGNAME"
 if [ $SUITE_PASS = false ]; then
   echo "FAILURE: Some tests failed" | tee -a $LOGNAME
