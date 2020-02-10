@@ -42,8 +42,7 @@ inline.
 
 The following examples use the default buildroot-based linux
 distribution (br-base). In order to customize Fedora, you should refer to the :ref:`booting-fedora`
-page. Importantly, Fedora currently does not support the "command" option for
-workloads.
+page.
 
 ..
   TODO is the last sentence above still true?
