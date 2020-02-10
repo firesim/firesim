@@ -277,6 +277,11 @@ When ``buildinstancemarket=spot``, this value determines the max price you are
 willing to pay per instance, in dollars. You can also set it to ``ondemand``
 to set your max to the on-demand price for the instance.
 
+``postbuildhook``
+"""""""""""""""""""""""
+
+TODO @biancolin
+
 
 ``[builds]``
 ^^^^^^^^^^^^^^^^^^^^^
