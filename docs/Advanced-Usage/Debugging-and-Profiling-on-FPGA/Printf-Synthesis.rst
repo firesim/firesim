@@ -35,7 +35,7 @@ printf, not the printf itself, like so:
 Be judicious, as synthesizing many, frequently active printfs will slow down your simulator.
 
 Once your printfs have been annotated, enable printf synthesis by prepending
-the ``WithPrintfSynthesis`` configuraiton mixin to your ``PLATFORM_CONFIG`` in
+the ``WithPrintfSynthesis`` configuration mixin to your ``PLATFORM_CONFIG`` in
 ``config_build_recipes.ini``.
 For example, if you previous ``PLATFORM_CONFIG`` was
 ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to
