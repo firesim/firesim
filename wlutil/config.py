@@ -71,6 +71,7 @@ configDerived = [
         'img', # Path to output filesystem image
         'img-sz', # Desired size of image in bytes (optional)
         'bin', # Path to output binary (e.g. bbl-vmlinux)
+        'dwarf', # Additional debugging symbols for the kernel (bbl strips them from 'bin')
         'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
         'base-format', # The format of base-img
@@ -310,6 +311,7 @@ class Config(collections.MutableMapping):
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
         if 'linux-config' in self.cfg or 'bin' not in self.cfg:
             self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
+            self.cfg['dwarf'] = getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
 
         # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:

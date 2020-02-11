@@ -168,14 +168,18 @@ def main():
         elif args.command == 'clean':
             if 'bin' in targetCfg:
                 deleteSafe(targetCfg['bin'])
+                deleteSafe(targetCfg['dwarf'])
                 deleteSafe(wlutil.noDiskPath(targetCfg['bin']))
+                deleteSafe(wlutil.noDiskPath(targetCfg['dwarf']))
             if 'img' in targetCfg:
                 deleteSafe(targetCfg['img'])
             if 'jobs' in targetCfg:
                 for jCfg in targetCfg['jobs'].values():
                     if 'bin' in jCfg:
                         deleteSafe(jCfg['bin'])
+                        deleteSafe(jCfg['dwarf'])
                         deleteSafe(wlutil.noDiskPath(jCfg['bin']))
+                        deleteSafe(wlutil.noDiskPath(jCfg['dwarf']))
                     if 'img' in jCfg:
                         deleteSafe(jCfg['img'])
 
