@@ -1,7 +1,7 @@
 .. _tracerv-with-flamegraphs:
 
 TracerV + Flame Graphs: Profiling Software with Out-of-Band Flame Graph Generation
-=================================================================================
+====================================================================================
 
 FireSim supports generating `Flame Graphs
 <http://www.brendangregg.com/flamegraphs.html>`_ out-of-band, to visualize
@@ -156,4 +156,3 @@ Caveats
 The current stack trace construction code does not distinguish between
 different userspace programs, instead consolidating them into one entry.
 Expanded support for userspace programs will be available in a future release.
-
