@@ -1,3 +1,5 @@
+.. _printf-synthesis:
+
 Printf Synthesis: Capturing RTL printf Calls when Running on the FPGA
 =============================================================================
 
