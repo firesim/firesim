@@ -3,9 +3,9 @@
 Printf Synthesis: Capturing RTL printf Calls when Running on the FPGA
 =============================================================================
 
-Golden Gate can synthesize printfs present in FIRRTL (implemented as ``printf``
-statements) that would otherwise be lost in the FPGA synthesis flow. Rocket and
-BOOM have printfs of their commit logs and other useful transaction
+Golden Gate can synthesize printfs present in Chisel/FIRRTL (implemented as
+``printf`` statements) that would otherwise be lost in the FPGA synthesis flow.
+Rocket and BOOM have printfs of their commit logs and other useful transaction
 streams.
 
 ::
@@ -23,28 +23,33 @@ Synthesizing these printfs lets you capture the same logs on a running FireSim i
 Enabling Printf Synthesis
 ----------------------------
 
-To synthesize a printf, in your Chisel source you need to annotate the specific
-printfs you'd like to capture.  Presently, due to a limitation in Chisel and
-FIRRTL's annotation system, you need to annotate the arguments to the printf, not the printf itself,
-like so:
+To synthesize a printf, you need to annotate the specific printfs you'd like to
+capture in your Chisel source code.  Presently, due to a limitation in Chisel
+and FIRRTL's annotation system, you need to annotate the arguments to the
+printf, not the printf itself, like so:
 
 ::
 
     printf(midas.targetutils.SynthesizePrintf("x%d p%d 0x%x\n", rf_waddr, rf_waddr, rf_wdata))
 
-Be judicious, as synthesizing many, frequently active printfs will slow down your simulator. 
+Be judicious, as synthesizing many, frequently active printfs will slow down your simulator.
 
-Once your printfs have been annotated, to enable printf synthesis prepend the ``WithPrintfSynthesis`` configuraiton mixin to your
-PLATFORM_CONFIG in ``config_build_recipes.ini``.
-For example, if you previous PLATFORM_CONFIG was ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you must prepend the mixin (rather than appending). 
-During compilation, Golden Gate will print the
-number of printfs it's synthesized.  In the target's generated header
-(``<DESIGN>-const.h``), you'll find metadata for each of the printfs Golden Gate synthesized.
-This is passed as argument to the constructor of the ``synthesized_prints_t``
-bridge driver, which will be automatically instantiated in FireSim driver.
+Once your printfs have been annotated, enable printf synthesis by prepending
+the ``WithPrintfSynthesis`` configuraiton mixin to your ``PLATFORM_CONFIG`` in
+``config_build_recipes.ini``.
+For example, if you previous ``PLATFORM_CONFIG`` was
+``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to
+``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you
+must prepend the mixin (rather than appending).  During compilation, Golden
+Gate will print the number of printfs it has synthesized.  In the target's
+generated header (``<DESIGN>-const.h``), you'll find metadata for each of the
+printfs Golden Gate synthesized.  This is passed as argument to the constructor
+of the ``synthesized_prints_t`` bridge driver, which will be automatically
+instantiated in FireSim driver.
 
 Runtime Arguments
------------------
+---------------------------
+
 **+print-file**
     Specifies the file into which the synthesized printf log should written.
 
