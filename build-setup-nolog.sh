@@ -156,7 +156,7 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     make
 
     # Install firesim-software dependencies
-    marshal_dir=$RDIR/target-design/chipyard/software/firemarshal
+    marshal_dir=$target_chipyard_dir/software/firemarshal
     cd $RDIR
     sudo pip3 install -r $marshal_dir/python-requirements.txt
     cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
