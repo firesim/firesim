@@ -8,7 +8,7 @@ microarchitectural state over the course of execution through the use of
 counters. These are similar to performance counters provided by processor
 vendors, and more general counters provided by architectural simulators.
 
-This functionality is provided by the AutoCounter feature(introduced in our
+This functionality is provided by the AutoCounter feature (introduced in our
 `FirePerf paper at ASPLOS 2020
 <https://sagark.org/assets/pubs/fireperf-asplos2020.pdf>`_), and can be used
 for profiling and debugging. Since AutoCounter injects counters only in
