@@ -138,7 +138,7 @@ number between 1 and 200, allowing you to model NICs between 1 and 200 Gbit/s.
 ``profileinterval``
 """""""""""""""""""""""""""""
 
-TODO @biancolin
+The simulation driver periodically samples performance counters in FASED timing model instances and dumps the result to a file on the host. ``profileinterval`` defines the number of target cycles between samples; setting this field to -1 disables polling. 
 
 
 ``defaulthwconfig``
@@ -486,4 +486,3 @@ Add more hardware config sections, like ``[NAME_GOES_HERE_2]``
 
 You can add as many of these entries to ``config_hwdb.ini`` as you want, following the format
 discussed above (i.e. you provide ``agfi``, ``deploytripletoverride``, or ``customruntimeconfig``).
-
