@@ -281,7 +281,7 @@ to set your max to the on-demand price for the instance.
 ``postbuildhook``
 """""""""""""""""""""""
 
-TODO @biancolin
+(Optional) Provide an a script to run on the results copied back from a _single_ build instance. Upon completion of each design's build, the manager invokes this script and passing the absolute path to that instance's build-results directory as it's first argument. 
 
 
 ``[builds]``
