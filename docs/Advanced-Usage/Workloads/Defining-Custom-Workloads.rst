@@ -34,19 +34,11 @@ In the following subsections, we will go through the two aforementioned example
 workload configurations, describing the how the manager uses each part of the JSON file
 inline.
 
-..
-  TODO: This is no longer relevant with firemarshal, remove eventually:
-  **ERRATA**: You will notice in the following json files the field "workloads"
-  this should really be named "jobs" -- we will fix this in a future release.
-
 
 The following examples use the default buildroot-based linux
 distribution (br-base). In order to customize Fedora, you should refer to the :ref:`booting-fedora`
-page. Importantly, Fedora currently does not support the "command" option for
-workloads.
+page.
 
-..
-  TODO is the last sentence above still true?
 
 Uniform Workload JSON
 ----------------------------
