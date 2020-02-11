@@ -37,7 +37,7 @@ Be judicious, as synthesizing many, frequently active printfs will slow down you
 Once your printfs have been annotated, enable printf synthesis by prepending
 the ``WithPrintfSynthesis`` configuration mixin to your ``PLATFORM_CONFIG`` in
 ``config_build_recipes.ini``.
-For example, if you previous ``PLATFORM_CONFIG`` was
+For example, if your previous ``PLATFORM_CONFIG`` was
 ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to
 ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you
 must prepend the mixin (rather than appending).  During compilation, Golden
