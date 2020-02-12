@@ -8,8 +8,7 @@ DESIGN ?= FireSim
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.firesim
-TARGET_CONFIG ?= FireSimRocketChipConfig
-# TARGET_CONFIG ?= FireSimBoomConfig
+TARGET_CONFIG ?= FireSimRocketConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
