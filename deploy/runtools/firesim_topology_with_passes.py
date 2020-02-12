@@ -158,6 +158,12 @@ class FireSimTopologyWithPasses:
                 serverind += 1
                 if len(servers) == serverind:
                     return
+        for f1_4x in self.run_farm.f1_4s:
+            for x in range(f1_4x.get_num_fpga_slots_max()):
+                f1_4x.add_simulation(servers[serverind])
+                serverind += 1
+                if len(servers) == serverind:
+                    return
         for f1_2x in self.run_farm.f1_2s:
             for x in range(f1_2x.get_num_fpga_slots_max()):
                 f1_2x.add_simulation(servers[serverind])
