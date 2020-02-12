@@ -68,12 +68,14 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new fame.FAMEDefaults,
       new fame.ChannelExcision,
       new fame.InferModelPorts,
+      new ResolveAndCheck,
       new EmitFirrtl("post-channel-excision.fir"),
       new fame.FAMETransform,
       DefineAbstractClockGate,
       new EmitFirrtl("post-fame-transform.fir"),
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
+      ConnectHostClock,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++
     Seq(
