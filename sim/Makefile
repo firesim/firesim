@@ -60,6 +60,13 @@ include $(base_dir)/variables.mk
 include $(base_dir)/common.mk
 endif
 
+_JAVA_OPTIONS := \
+	-Dsbt.ivy.home=$(firesim_base_dir)/.ivy2 \
+	-Dsbt.global.base=$(firesim_base_dir)/.sbt \
+	-Dsbt.boot.directory=$(firesim_base_dir)/.sbt/boot/
+
+export _JAVA_OPTIONS
+
 # Include target-specific sources and input generation recipes
 include $(TARGET_PROJECT_MAKEFRAG)
 

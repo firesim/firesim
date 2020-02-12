@@ -7,3 +7,5 @@ tags
 AsyncResetReg.v
 firrtl_black_box_resource_files.f
 lib/firrtl.jar
+.sbt/
+.ivy2/
