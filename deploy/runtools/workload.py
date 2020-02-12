@@ -55,7 +55,8 @@ class JobConfig:
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
     def get_siminputs(self):
-        return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, x), self.siminputs))
+        # remote filename for a siminput gets prefixed with the job's name
+        return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, self.jobname + "-" + x), self.siminputs))
 
     def rootfs_path(self):
         return self.rootfs

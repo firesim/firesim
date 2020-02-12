@@ -35,6 +35,7 @@ class FireSimTopologyWithPasses:
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
                  defaultnetbandwidth, defaultprofileinterval,
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
+                 defaulttraceoutputformat,
                  defaultautocounterreadrate, terminateoncompletion):
         self.passes_used = []
         self.user_topology_name = user_topology_name
@@ -52,6 +53,7 @@ class FireSimTopologyWithPasses:
         self.defaulttraceselect = defaulttraceselect
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
+        self.defaulttraceoutputformat = defaulttraceoutputformat
         self.defaultautocounterreadrate = defaultautocounterreadrate
         self.terminateoncompletion = terminateoncompletion
 
@@ -294,6 +296,7 @@ class FireSimTopologyWithPasses:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
+                # TODO: some of this stuff seems misplaced...
                 if node.server_profile_interval is None:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
@@ -304,6 +307,8 @@ class FireSimTopologyWithPasses:
                     node.trace_start = self.defaulttracestart
                 if node.trace_end is None:
                     node.trace_end = self.defaulttraceend
+                if node.trace_output_format is None:
+                    node.trace_output_format = self.defaulttraceoutputformat
                 if node.autocounter_readrate is None:
                     node.autocounter_readrate = self.defaultautocounterreadrate
 
