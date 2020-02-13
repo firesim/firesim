@@ -3,6 +3,7 @@
 package midas
 package core
 
+import logger.{Logger, LogLevel}
 import junctions._
 import widgets._
 import chisel3._
@@ -32,6 +33,8 @@ class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
 
 // Platform agnostic wrapper of the simulation models for FPGA
 class FPGATop(implicit p: Parameters) extends Module with HasWidgets {
+  val previousLogLevel = Logger.getGlobalLevel
+  Logger.setLevel(LogLevel.Warn)
 
   val io = IO(new FPGATopIO)
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
@@ -142,4 +145,5 @@ class FPGATop(implicit p: Parameters) extends Module with HasWidgets {
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
+  Logger.setLevel(previousLogLevel)
 }

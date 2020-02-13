@@ -3,6 +3,7 @@
 package midas
 package widgets
 
+import logger.LazyLogging
 import chisel3._
 import chisel3.util._
 import chisel3.core.ActualDirection
@@ -32,7 +33,7 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 
-abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
+abstract class Widget(implicit val p: Parameters) extends MultiIOModule with LazyLogging {
   private var _finalized = false
   protected val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs

@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import midas.core.{SimWrapperChannels, SimUtils}
+import midas.core.{SimWrapperChannels, SimUtils, Logging}
 import midas.core.SimUtils.{RVChTuple}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
 
@@ -13,6 +13,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 import firrtl.annotations.{ReferenceTarget}
+import logger.LazyLogging
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -26,7 +27,7 @@ import scala.reflect.runtime.{universe => ru}
 abstract class TokenizedRecord extends Record with HasChannels
 
 abstract class BridgeModule[HostPortType <: TokenizedRecord]
-  (implicit p: Parameters) extends Widget()(p) {
+  (implicit p: Parameters) extends Widget()(p) with Logging {
   def hPort: HostPortType
 }
 
