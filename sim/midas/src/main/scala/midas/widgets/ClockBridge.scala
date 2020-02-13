@@ -94,14 +94,24 @@ class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)
   val hPort = IO(new ClockTokenVector(phaseRelationships.size + 1))
   val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
   hPort.clocks <> clockTokenGen.io
-  //genCRFile()
-  io.ctrl <> DontCare
+
+  val hCycleName = "hCycle"
+  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
+  hCycle := hCycle + 1.U
+
+  // Count the number of clock tokens for which the fastest clock is scheduled to fire
+  //  --> Use to calculate FMR
+  val tCycleFastest = genWideRORegInit(0.U(64.W), "tCycle")
+  val fastestClockIdx = ((1,1) +: phaseRelationships).map({ case (n, d) => n.toDouble / d })
+                                                     .zipWithIndex
+                                                     .sortBy(_._1)
+                                                     .last._2
+
+  when (hPort.clocks.fire && hPort.clocks.bits(fastestClockIdx)) {
+    tCycleFastest := tCycleFastest + 1.U
+  }
+  genCRFile()
 }
-
-
-//class ClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends MultiIOModule {
-//  val clockTokens = IO(new DecoupledIO(Vec(phaseRelationships.size + 1, Bool())))
-//}
 
 /**
   * Finds a clock whose period is the GCD of the periods of all requested

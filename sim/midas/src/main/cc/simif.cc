@@ -25,6 +25,8 @@ simif_t::simif_t() {
   this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
   PEEKPOKEBRIDGEMODULE_0_substruct_create;
   this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
+  CLOCKBRIDGEMODULE_0_substruct_create;
+  this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
@@ -60,16 +62,16 @@ void simif_t::init(int argc, char** argv, bool log) {
 }
 
 uint64_t simif_t::actual_tcycle() {
-    write(this->defaultiowidget_mmio_addrs->tCycle_latch, 1);
-    data_t cycle_l = read(this->defaultiowidget_mmio_addrs->tCycle_0);
-    data_t cycle_h = read(this->defaultiowidget_mmio_addrs->tCycle_1);
+    write(this->clock_bridge_mmio_addrs->tCycle_latch, 1);
+    data_t cycle_l = read(this->clock_bridge_mmio_addrs->tCycle_0);
+    data_t cycle_h = read(this->clock_bridge_mmio_addrs->tCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
 uint64_t simif_t::hcycle() {
-    write(this->defaultiowidget_mmio_addrs->hCycle_latch, 1);
-    data_t cycle_l = read(this->defaultiowidget_mmio_addrs->hCycle_0);
-    data_t cycle_h = read(this->defaultiowidget_mmio_addrs->hCycle_1);
+    write(this->clock_bridge_mmio_addrs->hCycle_latch, 1);
+    data_t cycle_l = read(this->clock_bridge_mmio_addrs->hCycle_0);
+    data_t cycle_h = read(this->clock_bridge_mmio_addrs->hCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
@@ -90,7 +92,7 @@ int simif_t::finish() {
   finish_sampling();
 #endif
 
-  fprintf(stderr, "Runs %llu cycles\n", actual_tcycle());
+  fprintf(stderr, "Ran %llu cycles (fastest target clock)\n", actual_tcycle());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "\nSEED: %ld\n", seed);

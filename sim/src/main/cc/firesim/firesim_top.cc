@@ -630,6 +630,7 @@ void firesim_top_t::run() {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
     }
     double fmr = ((double) hcycles / end_cycle);
+    // This returns the FMR of the fastest target clock
     fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 

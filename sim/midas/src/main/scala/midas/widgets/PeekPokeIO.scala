@@ -51,9 +51,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
   val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
   val tCycleAdvancing = WireInit(false.B)
 
-  val hCycleName = "hCycle"
-  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
-
   // needs back pressure from reset queues
   io.idle := cycleHorizon === 0.U
 
@@ -136,8 +133,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     cycleHorizon := cycleHorizon - 1.U
     tCycleAdvancing := true.B
   }
-
-  hCycle := hCycle + 1.U
 
   when (io.step.fire) {
     cycleHorizon := io.step.bits
