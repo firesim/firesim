@@ -138,9 +138,11 @@ class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends M
   val io = IO(new DecoupledIO(Vec(numClocks, Bool())))
   io.valid := true.B
 
-  val maxCounterWidth = 16
   val clockPeriodicity = FindScaledPeriodGCD(phaseRelationships)
   val counterWidth     = clockPeriodicity.map(p => log2Ceil(p + 1)).reduce((a, b) => math.max(a, b))
+
+  // This is an arbitrarily selected number; feel free to increase it
+  val maxCounterWidth = 16
   require(counterWidth <= maxCounterWidth, "Ensure this circuit doesn't blow up")
 
   val timeToNextEdge   = RegInit(VecInit(Seq.fill(numClocks)(0.U(counterWidth.W))))
