@@ -216,11 +216,18 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
-  val uint_traces = traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))
-  outgoingPCISdat.io.enq.bits := Cat(Cat(trace_cycle_counter, 
-                                         0.U((outgoingPCISdat.io.enq.bits.getWidth - Cat(uint_traces).getWidth - trace_cycle_counter.getWidth).W)),
-                                     Cat(uint_traces))
-
+  // This is a temporary workaround for large multi-boom systems. Multiclock
+  // instantiates one tracerV instance per core
+  val perInsnBits = 64
+  val uint_traces = traces.map(trace => Cat(trace.valid, trace.iaddr).pad(perInsnBits))
+  val availableTokenBits = outgoingPCISdat.io.enq.bits.getWidth - trace_cycle_counter.getWidth
+  val insnsPerPayload = availableTokenBits / perInsnBits
+  if (insnsPerPayload != uint_traces.size) {
+    warn(s"TracerV bridge capturing only the first ${insnsPerPayload} of ${uint_traces.size} traced instructions.")
+  }
+  outgoingPCISdat.io.enq.bits := Cat(trace_cycle_counter,
+                                     0.U(availableTokenBits % perInsnBits),
+                                     Cat(uint_traces.take(insnsPerPayload)))
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid)
   hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
   // We don't drive tokens back to the target.
