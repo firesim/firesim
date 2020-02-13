@@ -64,8 +64,7 @@ MIDAS-Level Simulation
 
 MIDAS-level simulations are run out of the ``firesim/sim`` directory. Currently, FireSim
 lacks support for MIDAS-level simulation of the NIC since DMA\_PCIS is not yet
-supported. So here we'll be setting ``DESIGN=FireSimNoNIC``. To compile a simulator,
-type:
+supported. 
 
 ::
 
@@ -109,40 +108,38 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
 ::
 
     [in firesim/sim]
-    make DESIGN=FireSimNoNIC
-    make DESIGN=FireSimNoNIC -j run-asm-tests
-    make DESIGN=FireSimNoNIC -j run-bmark-tests
+    make DESIGN=FireSim
+    make DESIGN=FireSim -j run-asm-tests
+    make DESIGN=FireSim -j run-bmark-tests
     
 Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
 
 ::
 
-    make DESIGN=FireSimNoNIC verilator-debug
-    make DESIGN=FireSimNoNIC -j run-asm-tests-debug
-    make DESIGN=FireSimNoNIC -j run-bmark-tests-debug
+    make DESIGN=FireSim verilator-debug
+    make DESIGN=FireSim -j run-asm-tests-debug
+    make DESIGN=FireSim -j run-bmark-tests-debug
 
 Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
 
 ::
 
-    make DESIGN=FireSimNoNIC
-    make DESIGN=FireSimNoNIC $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-BaseF1Config/rv64ui-p-simple.out
+    make DESIGN=FireSim
+    make DESIGN=FireSim $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
 
 Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
 
 ::
 
 
-    make DESIGN=FireSimNoNIC vcs-debug
-    make DESIGN=FireSimNoNIC EMUL=vcs $(pwd)/output/f1/FireSimNoNIC-FireSimRocketChipConfig-BaseF1Config/rv64ui-p-simple.vpd
+    make DESIGN=FireSim vcs-debug
+    make DESIGN=FireSim EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
 
 
 FPGA-Level Simulation
 ----------------------------
 
-There is currently no support for DMA\_PCIS, so
-we'll restrict ourselves to instances without a NIC by setting `DESIGN=FireSimNoNIC`.  As
-with MIDAS-level simulations, FPGA-level simulations run out of
+As with MIDAS-level simulations, FPGA-level simulations run out of
 ``firesim/sim``.
 
 Since FPGA-level simulation is up to 1000x slower than MIDAS-level simulation,
@@ -175,7 +172,7 @@ To run a simulation you need to make both the DUT and driver targets by typing:
 When following this process, you should wait until ``make xsim-dut`` prints
 ``opening driver to xsim`` before running ``make run-xsim`` (getting these prints from
 ``make xsim-dut`` will take a while). Additionally, you will want to use
-``DESIGN=FireSimNoNIC``, since the XSim scripts included with ``aws-fpga`` do
+``DESIGN=FireSim``, since the XSim scripts included with ``aws-fpga`` do
 not support DMA PCIS.
 
 Once both processes are running, you should see:
