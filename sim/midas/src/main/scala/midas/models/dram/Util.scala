@@ -9,7 +9,6 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.MultiIOModule
 
 // From MIDAS
 import midas.widgets.{D2V, V2D, SkidRegister}
@@ -147,7 +146,7 @@ class DynamicLatencyPipe[T <: Data] (
 
   val latencies = Reg(Vec(entries, UInt(countBits.W)))
   val pendingRegisters = RegInit(VecInit(Seq.fill(entries)(false.B)))
-  val done = Vec(latencies.zip(pendingRegisters) map { case (lat, pendingReg) =>
+  val done = VecInit(latencies.zip(pendingRegisters) map { case (lat, pendingReg) =>
     val cycleMatch = lat === io.tCycle
     when (cycleMatch) { pendingReg := false.B }
     cycleMatch || !pendingReg

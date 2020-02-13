@@ -10,7 +10,6 @@ import chisel3.util.{Decoupled, Counter, log2Up}
 import freechips.rocketchip.config.Parameters
 
 class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
-  val simReset = Output(Bool())
   val done = Input(Bool())
   val step = Decoupled(UInt(p(CtrlNastiKey).dataBits.W))
 }
@@ -33,9 +32,12 @@ object Pulsify {
 
 class SimulationMaster(implicit p: Parameters) extends Widget()(p) {
   val io = IO(new SimulationMasterIO)
-  Pulsify(genWORegInit(io.simReset, "SIM_RESET", false.B), pulseLength = 4)
   genAndAttachQueue(io.step, "STEP")
-  genRORegInit(io.done && ~io.simReset, "DONE", 0.U)
+  genRORegInit(io.done, "DONE", 0.U)
+
+  val initDelay = RegInit(64.U)
+  when (initDelay =/= 0.U) { initDelay := initDelay - 1.U }
+  genRORegInit(initDelay === 0.U, "INIT_DONE", 0.U)
 
   genCRFile()
 

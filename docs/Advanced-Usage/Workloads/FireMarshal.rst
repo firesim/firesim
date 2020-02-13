@@ -22,10 +22,5 @@ and rootfs can then be launched on qemu or spike (for functional simulation), or
 installed to firesim for running on real RTL.
 
 For more information, see the official `FireMarshal documentation
-<https://firemarshal.readthedocs.io/en/latest/>`_ and the quickstart guide
-below:
-
-.. toctree::
-   :maxdepth: 2
-
-   FireMarshal-QuickStart
+<https://firemarshal.readthedocs.io/en/latest/>`_, and its `quickstart
+tutorial <https://firemarshal.readthedocs.io/en/latest/quickstart.html>`_. 

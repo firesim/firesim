@@ -29,6 +29,35 @@ class MockBoto3Instance:
         MockBoto3Instance.base_ip += 1
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
+
+class NBDTracker(object):
+    """ Track allocation of NBD devices on an instance. Used for mounting
+    qcow2 images."""
+
+    # max number of NBDs allowed by the nbd.ko kernel module
+    NBDS_MAX = 128
+
+    def __init__(self):
+        self.unallocd = ["""/dev/nbd{}""".format(x) for x in range(self.NBDS_MAX)]
+
+        # this is a mapping from .qcow2 image name to nbd device.
+        self.allocated_dict = {}
+
+    def get_nbd_for_imagename(self, imagename):
+        """ Call this when you need to allocate an nbd for a particular image,
+        or when you need to know what nbd device is for that image.
+
+        This will allocate an nbd for an image if one does not already exist.
+
+        THIS DOES NOT CALL qemu-nbd to actually connect the image to the device"""
+        if imagename not in self.allocated_dict.keys():
+            # otherwise, allocate it
+            assert len(self.unallocd) >= 1, "No NBDs left to allocate on this instance."
+            self.allocated_dict[imagename] = self.unallocd.pop(0)
+
+        return self.allocated_dict[imagename]
+
+
 class EC2Inst(object):
     # TODO: this is leftover from when we could only support switch slots.
     # This can be removed once self.switch_slots is dynamically allocated.
@@ -41,6 +70,7 @@ class EC2Inst(object):
         self.switch_slots_consumed = 0
         self.instance_deploy_manager = InstanceDeployManager(self)
         self._next_port = 10000 # track ports to allocate for server switch model ports
+        self.nbd_tracker = NBDTracker()
 
     def assign_boto3_instance_object(self, boto3obj):
         self.boto3_instance_object = boto3obj
@@ -378,6 +408,49 @@ class InstanceDeployManager:
                 run('make clean')
                 run('make')
 
+    def fpga_node_qcow(self):
+        """ Install qemu-img management tools and copy NBD infra to remote
+        node. This assumes that the kernel module was already built and exists
+        in the directory on this machine.
+        """
+        self.instance_logger("""Setting up remote node for qcow2 disk images.""")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            # get qemu-nbd
+            run('sudo yum -y install qemu-img')
+            # copy over kernel module
+            put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
+
+    def load_nbd_module(self):
+        """ load the nbd module. always unload the module first to ensure it
+        is in a clean state. """
+        self.unload_nbd_module()
+        # now load xdma
+        self.instance_logger("Loading NBD Kernel Module.")
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.parentnode.nbd_tracker.NBDS_MAX))
+
+    def unload_nbd_module(self):
+        """ unload the nbd module. """
+        self.instance_logger("Unloading NBD Kernel Module.")
+
+        # disconnect all /dev/nbdX devices before rmmod
+        self.disconnect_all_nbds_instance()
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            run('sudo rmmod nbd')
+
+    def disconnect_all_nbds_instance(self):
+        """ Disconnect all nbds on the instance. """
+        self.instance_logger("Disconnecting all NBDs.")
+
+        # warn_only, so we can call this even if there are no nbds
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            # build up one large command with all the disconnects
+            fullcmd = []
+            for nbd_index in range(self.parentnode.nbd_tracker.NBDS_MAX):
+                fullcmd.append("""sudo qemu-nbd -d /dev/nbd{nbdno}""".format(nbdno=nbd_index))
+
+            run("; ".join(fullcmd))
+
     def unload_xdma(self):
         self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
 
@@ -526,7 +599,7 @@ class InstanceDeployManager:
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-            run(server.get_sim_start_command(slotno))
+            server.run_sim_start_command(slotno)
 
     def kill_switch_slot(self, switchslot):
         """ kill the switch in slot switchslot. """
@@ -572,6 +645,11 @@ class InstanceDeployManager:
             # load xdma
             self.load_xdma()
 
+            # setup nbd/qcow infra
+            self.fpga_node_qcow()
+            # load nbd module
+            self.load_nbd_module()
+
             # clear/flash fpgas
             self.clear_fpgas()
             self.flash_fpgas()
@@ -614,13 +692,15 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-
-    def kill_simulations_instance(self):
+    def kill_simulations_instance(self, disconnect_all_nbds=True):
         """ Kill all simulations on this instance. """
         if self.instance_assigned_simulations():
             # only on sim nodes
             for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
                 self.kill_sim_slot(slotno)
+        if disconnect_all_nbds:
+            # disconnect all NBDs
+            self.disconnect_all_nbds_instance()
 
     def running_simulations(self):
         """ collect screen results from node to see what's running on it. """
@@ -646,7 +726,7 @@ class InstanceDeployManager:
         # make a local copy of completed_jobs, so that we can update it
         completed_jobs = list(completed_jobs)
 
-        rootLogger.debug(completed_jobs)
+        rootLogger.debug("completed jobs " + str(completed_jobs))
 
         if not self.instance_assigned_simulations() and self.instance_assigned_switches():
             # this node hosts ONLY switches and not fpga sims
@@ -686,10 +766,10 @@ class InstanceDeployManager:
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
             # ON THE INSTNACE.
             parentslots = self.parentnode.fpga_slots
-            rootLogger.debug(parentslots)
+            rootLogger.debug("parentslots " + str(parentslots))
             num_parentslots_used = self.parentnode.fpga_slots_consumed
             jobnames = [slot.get_job_name() for slot in parentslots[0:num_parentslots_used]]
-            rootLogger.debug(jobnames)
+            rootLogger.debug("jobnames " + str(jobnames))
             already_done = all([job in completed_jobs for job in jobnames])
             rootLogger.debug("already done? " + str(already_done))
             if already_done:

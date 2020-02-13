@@ -131,11 +131,21 @@ object FAMEModuleTransformer {
       case (_, (clk, ports)) => clk.isEmpty && ports.forall(_.tpe == ClockType)
     }
 
+
     val clockChannel = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
       case Some((name, (None, ports))) => FAME1ClockChannel(name, ports)
       case Some(_) => ??? // Clock channel cannot have an associated clock domain
       case None => VirtualClockChannel(clocks.head) // Virtual clock channel for single-clock models
     }
+
+    /*
+     *  NB: Failing to keep the target clock-gated during FPGA initialization
+     *  can lead to spurious updates or metastability in target state elements.
+     *  Keeping all target-clocks gated through the latter stages of FPGA
+     *  initialization and reset ensures all target state elements are
+     *  initialized with a deterministic set of initial values.
+     */
+    val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
@@ -145,8 +155,8 @@ object FAMEModuleTransformer {
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
-        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(WRef(enableReg), WRef(finishing)))))
-      SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, MALE))
+        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(And(WRef(enableReg), WRef(finishing)), nReset))))
+      SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, SourceFlow))
     }
 
     // Multi-clock management step 5: Generate target clock substitution map
@@ -201,14 +211,14 @@ object FAMEModuleTransformer {
     val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
-    def onExpr(expr: Expression): Expression = expr match {
-      case iWR @ WRef(name, tpe, PortKind, MALE) if tpe != ClockType =>
-        // Generally MALE references to ports will be input channels, but RTL may use
+    def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
+      case iWR @ WRef(name, tpe, PortKind, SourceFlow) if tpe != ClockType =>
+        // Generally SourceFlow references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
-      case oWR @ WRef(name, tpe, PortKind, FEMALE) if tpe != ClockType =>
+      case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType =>
         outChannelMap(name).replacePortRef(oWR)
-      case cWR @ WRef(name, ClockType, PortKind, MALE) =>
+      case cWR @ WRef(name, ClockType, PortKind, SourceFlow) =>
         replaceClocksMap(WrappedExpression.we(cWR))
       case e => e map onExpr
     }

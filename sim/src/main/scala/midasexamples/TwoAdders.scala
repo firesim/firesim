@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.unless
-import chisel3.experimental.{withClock, annotate, RawModule}
+import chisel3.experimental.{withClock, annotate}
 
 import midas.widgets.PeekPokeBridge
 import midas.targetutils._

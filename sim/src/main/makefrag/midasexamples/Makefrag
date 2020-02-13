@@ -58,10 +58,12 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 ##########################
 
 driver_dir = $(firesim_base_dir)/src/main/cc
+firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc
+DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc \
+             $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/*)))  \
 
-TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(driver_dir)/midasexamples -g
+TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(firesim_lib_dir) -I$(driver_dir)/midasexamples -g
 TARGET_LD_FLAGS :=
 
 ##########################

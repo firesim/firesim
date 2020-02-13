@@ -20,7 +20,7 @@ case class FindClockSourceAnnotation(
 }
 
 case class ClockSourceAnnotation(queryTarget: ReferenceTarget, source: Option[ReferenceTarget]) extends Annotation {
-  def update(renames: RenameMap): Seq[ClockSourceAnnotation] = 
+  def update(renames: RenameMap): Seq[ClockSourceAnnotation] =
     Seq(this.copy(queryTarget, source.map(s => RTRenamer.exact(renames)(s))))
 }
 
@@ -42,7 +42,8 @@ object FindClockSources extends firrtl.Transform {
       // graph. Note: The graph is directed from clock-leaves to clock-sources
       val source = if (mGraph.findSinks(currentNode)) currentNode else {
         val potentialSources =  mGraph.reachableFrom(currentNode)
-        assert(potentialSources.size == 1)
+        // FIXME: There should only be a single source here.
+        assert(potentialSources.size >= 1)
         potentialSources.head
       }
       (restOfPath, source) match {

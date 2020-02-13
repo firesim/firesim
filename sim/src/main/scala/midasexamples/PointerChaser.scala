@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{withClock, RawModule}
+import chisel3.experimental.{withClock}
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 

@@ -9,8 +9,8 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.transforms._
 
-class AsyncResetReg extends chisel3.experimental.MultiIOModule {
-  import chisel3.core._
+class AsyncResetReg extends chisel3.MultiIOModule {
+  import chisel3._
   import chisel3.util._
   val en = IO(Input(Bool()))
   val d = IO(Input(Bool()))

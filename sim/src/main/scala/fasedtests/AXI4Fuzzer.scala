@@ -3,7 +3,6 @@
 package firesim.fasedtests
 
 import chisel3._
-import chisel3.experimental.{RawModule, MultiIOModule}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
@@ -12,7 +11,7 @@ import freechips.rocketchip.config.Parameters
 
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.widgets.{PeekPokeBridge}
+import midas.widgets.{PeekPokeBridge, RationalClockBridge}
 
 object AXI4Printf {
   def apply(axi4: AXI4Bundle): Unit = {
@@ -91,9 +90,9 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
 }
 
 class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
-  val clock = IO(Input(Clock()))
   val reset = WireInit(false.B)
-
+  val clockBridge = Module(new RationalClockBridge(1000))
+  val clock = clockBridge.io.clocks(0)
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
     val nastiKey = NastiParameters(fuzzer.axi4.r.bits.data.getWidth,

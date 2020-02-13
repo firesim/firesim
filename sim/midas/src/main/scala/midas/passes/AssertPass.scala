@@ -34,7 +34,6 @@ private[passes] class AssertPass(
   private val assertPorts = collection.mutable.HashMap[String, (Port, Seq[ReferenceTarget])]()
   private val excludeInstAsserts = collection.mutable.HashSet[(String, String)]()
 
-  private val clockVectorName = "midasAssertsClocks"
   private def getNameOrCroak(ns: Namespace, name: String): String = { assert(ns.tryName(name)); name }
 
   // Helper method to filter out module instances

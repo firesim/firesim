@@ -11,7 +11,7 @@ module BUFGCE(
    // They cause combinational loop errors and UNOPT_FLAT
    assign O = (I & enable_latch);
 `else
-   // VCS doesn't like the Verilator clock gate
+   // Note: VCS doesn't like the Verilator clock gate
    // Delays clock edge too much when CE is a register
    // Blocking assignment makes behavior deterministic
    always @(posedge I or negedge I) begin

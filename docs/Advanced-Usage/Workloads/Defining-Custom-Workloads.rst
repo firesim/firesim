@@ -3,6 +3,15 @@
 Defining Custom Workloads
 ================================================
 
+This page documents the ``JSON`` input format that FireSim uses to understand
+your software workloads that run on the target design. Most of the time, you
+should not be writing these files from scratch. Instead, use :ref:`firemarshal`
+to build a workload (including Linux kernel images and root filesystems) and
+use ``firemarshal``'s ``install`` command to generate an initial ``.json`` file
+for FireSim. Once you generate a base ``.json`` with FireMarshal, you can add
+some of the options noted on this page to control additional files used as
+inputs/outputs to/from simulations.
+
 **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
 either:
@@ -16,26 +25,20 @@ either:
   jobs as there are running simulated nodes. An example of such a workload is
   ``firesim/deploy/workloads/ping-latency.json``.
 
-
-FireSim supports can take these workload definitions and perform two functions:
-
-- Building workloads using ``firesim/deploy/workloads/gen-benchmark-rootfs.py``
-
-- Deploying workloads using the manager
+FireSim uses these workload definitions to help the manager deploy your
+simulations. Historically, there was also a script to build workloads using
+these JSON files, but this has been replaced with a more powerful tool,
+:ref:`firemarshal`. New workloads should always be built with :ref:`firemarshal`.
 
 In the following subsections, we will go through the two aforementioned example
-workload configurations, describing how these two functions use each part
-of the json file inline.
+workload configurations, describing the how the manager uses each part of the JSON file
+inline.
 
-**ERRATA**: You will notice in the following json files the field "workloads"
-this should really be named "jobs" -- we will fix this in a future release.
 
-**ERRATA**: The following instructions assume the default buildroot-based linux
-distribution (br-disk). In order to customize Fedora, you should build the
-basic Fedora image (as described in :ref:`booting-fedora`) and modify the image
-directly (or use :ref:`FireMarshal <firemarshal>` to generate the
-workload). Imporantly, Fedora currently does not support the "command" option
-for workloads.
+The following examples use the default buildroot-based linux
+distribution (br-base). In order to customize Fedora, you should refer to the :ref:`booting-fedora`
+page.
+
 
 Uniform Workload JSON
 ----------------------------
@@ -52,12 +55,15 @@ There is also a corresponding directory named after this workload/file:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/linux-uniform$ ls -la
-	total 4
-	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
-	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base-bin -> ../../../sw/firesim-software/images/br-base-bin
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base.img -> ../../../sw/firesim-software/images/br-base.img
+	centos@ip-192-168-2-7.ec2.internal:~/firesim/deploy/workloads/linux-uniform$ ls -la
+        total 4
+        drwxrwxr-x  2 centos centos   69 Feb  8 00:07 .
+        drwxrwxr-x 19 centos centos 4096 Feb  8 00:39 ..
+        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base-bin -> ../../../sw/firesim-software/images/br-base-bin
+        lrwxrwxrwx  1 centos centos   53 Feb  8 00:07 br-base-bin-dwarf -> ../../../sw/firesim-software/images/br-base-bin-dwarf
+        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base.img -> ../../../sw/firesim-software/images/br-base.img
+
+
 
 We will elaborate on this later.
 
@@ -67,13 +73,13 @@ workload definition.
 In this "uniform" case, the manager will name simulations after the
 ``benchmark_name`` field, appending a number for each simulation using the
 workload (e.g.  ``linux-uniform0``, ``linux-uniform1``, and so on). It is
-standard pratice to keep ``benchmark_name``, the json filename, and the above
+standard pratice to keep ``benchmark_name``, the JSON filename, and the above
 directory name the same. In this case, we have set all of them to
 ``linux-uniform``.
 
 Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
-for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is 
+for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
@@ -107,11 +113,13 @@ placed in the job's output directory within the workload's output directory
 (see the :ref:`firesim-runworkload` section). You can add multiple
 paths here.
 
-**ERRATA**: "Uniform" style workloads currently do not support being
-automatically built -- you can currently hack around this by building the
-rootfs as a single-node non-uniform workload, then deleting the ``workloads``
-field of the JSON to make the manager treat it as a uniform workload. This will
-be fixed in a future release.
+..
+  TODO: this is no longer relevant with firemarshal
+  **ERRATA**: "Uniform" style workloads currently do not support being
+  automatically built -- you can currently hack around this by building the
+  rootfs as a single-node non-uniform workload, then deleting the ``workloads``
+  field of the JSON to make the manager treat it as a uniform workload. This will
+  be fixed in a future release.
 
 
 Non-uniform Workload JSON (explicit job per simulated node)
@@ -120,11 +128,12 @@ Non-uniform Workload JSON (explicit job per simulated node)
 Now, we'll look at the ``ping-latency`` workload, which explicitly defines a 
 job per simulated node.
 
-.. include:: /../deploy/workloads/ping-latency.json
+.. include:: /../deploy/workloads/ping-latency-firemarshal.json
    :code: json
 
 Additionally, let's take a look at the state of the ``ping-latency`` directory
-AFTER the workload is built:
+AFTER the workload is built (assume that a tool like :ref:`firemarshal` already
+created the rootfses and linux images):
 
 ::
 
@@ -149,61 +158,49 @@ AFTER the workload is built:
 First, let's identify some of these files:
 
 - ``bbl-vmlinux``: This workload just uses the default linux binary generated for the ``linux-uniform`` workload.
-- ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
-- ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
+- ``.gitignore``: This just ignores the generated rootfses, which you probably don't want to commit to the repo.
+- ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses
+  that we want to run on different nodes in our simulation. They can be
+  generated with a tool like :ref:`firemarshal`.
 
-Additionally, let's look at the ``overlay`` subdirectory:
+Next, let's review some of the new fields present in this JSON file:
 
-::
-
-    centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency/overlay$ ls -la */*
-    -rwxrwxr-x 1 centos centos 249 May 17 21:58 bin/pinglatency.sh
-
-This is a file that's actually committed to the repo, that runs the benchmark we want to
-run on one of our simulated systems. We'll see how this is used soon.
-
-Now, let's take a look at how we got here. First, let's review some of the new
-fields present in this JSON file:
-
-- ``common_files``: This is an array of files that will be included in ALL of the job rootfses when they're built. This is relative to a path that we'll pass to the script that generates rootfses.
-- ``workloads``: This time, you'll notice that we have this array, which is populated by objects that represent individual jobs. Each job has some additional fields:
+- ``common_simulation_inputs``: This is an array of extra files that you would
+  like to supply to the simulator as *input*. One example is supplying files
+  containing DWARF debugging info for TracerV + Stack Unwinding. See the
+  :ref:`tracerv-flamegraph-workload-description` section of the
+  :ref:`tracerv-with-flamegraphs` page for an example.
+- ``no_post_run_hook``: This is a placeholder for running a script on your
+  manager automatically once your workload completes. To use this option, rename
+  it to ``post_run_hook`` and supply a command to be run. The manager will
+  automatically suffix the command with the path of the workload's results
+  directory.
+- ``workloads``: This time, you'll notice that we have this array, which is
+  populated by objects that represent individual jobs (note the naming discrepancy
+  here, from here on out, we will refer to the contents of this array as **jobs**
+  rather than **workloads**). Each job has some additional fields:
 
    - ``name``: In this case, jobs are each assigned a name manually. These names MUST BE UNIQUE within a particular workload.
-   - ``files``: Just like ``common_files``, but specific to this job.
-   - ``command``: This is the command that will be run automatically immediately when the simulation running this job boots up. This is usually the command that starts the workload we want.
+   - ``simulation_inputs``: Just like ``common_simulation_inputs``, but specific to this job.
    - ``simulation_outputs``: Just like ``common_simulation_outputs``, but specific to this job.
    - ``outputs``: Just like ``common_outputs``, but specific to this job.
 
+Because each of these jobs do not supply a ``rootfs`` field, the manager instead
+assumes that that the rootfs for each job is named ``name``.ext2. To explicitly
+supply a rootfs name that is distinct from the job name, add the ``rootfs``
+field to a job and supply a path relative to the workload's directory.
 
-In this example, we specify one node that boots up and runs the
-``pinglatency.sh`` benchmark, then powers off cleanly and 7 nodes that just
-idle waiting to be pinged.
+Once you specify the ``.json`` for this workload (and assuming you have built
+the corresponding rootfses with :ref:`firemarshal`, you can run it with the
+manager by setting ``workload=ping-latency.json`` in ``config_runtime.ini``.
+The manager will automatically look for the generated rootfses (based on
+workload and job names that it reads from the JSON) and distribute work
+appropriately.
 
-Given this JSON description, our existing ``pinglatency.sh`` script in the
-overlay directory, and the base rootfses generated in ``firesim-software``,
-the following command will automatically generate all of the rootfses that you
-see in the ``ping-latency`` directory.
-
-::
-
-    [ from the workloads/ directory ]
-    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-base.img -s ping-latency/overlay
-
-Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
-that we want to include in the generated disk images. This script will take care of the rest and we'll end up with 
-``idler-[1-6].ext2``, ``pingee.ext2``, and ``pinger.ext2``!
-
-You'll notice a Makefile in the ``workloads/`` directory -- it contains many
-similar commands for all of the workloads included with FireSim.
-
-Once you generate the rootfses for this workload, you can run it with the manager
-by setting ``workload=ping-latency.json`` in ``config_runtime.ini``. The manager
-will automatically look for the generated rootfses (based on workload and job names
-that it reads from the json) and distribute work appropriately.
-
-Just like in the uniform case, it will copy back the results that we specify
-in the json file. We'll end up with a directory in ``firesim/deploy/results-workload/``
-named after the workload name, with a subdirectory named after each job in the workload,
-which will contain the output files we want.
+Just like in the uniform case, it will copy back the results that we specify in
+the JSON file. We'll end up with a directory in
+``firesim/deploy/results-workload/`` named after the workload name, with
+a subdirectory named after each job in the workload, which will contain the
+output files we want.
 
 

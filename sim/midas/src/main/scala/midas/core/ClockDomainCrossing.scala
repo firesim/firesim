@@ -6,7 +6,6 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.MultiIOModule
 
 trait ClockUtils {
   // Assume time is measured in ps

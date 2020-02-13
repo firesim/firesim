@@ -31,18 +31,12 @@ class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
 }
 
 // Platform agnostic wrapper of the simulation models for FPGA
-class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Module with HasWidgets {
-  val io = IO(new FPGATopIO)
-  // Simulation Target
-  val sim = Module(new SimBox(simIoType.cloneType))
-  val simIo = sim.io.channelPorts
-  // This reset is used to return the simulation to time 0.
-  val master = addWidget(new SimulationMaster)
-  val simReset = master.io.simReset
+class FPGATop(implicit p: Parameters) extends Module with HasWidgets {
 
-  sim.io.clock     := clock
-  sim.io.reset     := reset.toBool || simReset
-  sim.io.hostReset := simReset
+  val io = IO(new FPGATopIO)
+  val sim = Module(new SimWrapper(p(SimWrapperKey)))
+  val simIo = sim.channelPorts
+  val master = addWidget(new SimulationMaster)
 
   val memPorts = new mutable.ListBuffer[NastiIO]
   case class DmaInfo(name: String, port: NastiIO, size: BigInt)
@@ -52,7 +46,6 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   simIo.bridgeAnnos.map({ bridgeAnno =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
     val widget = addWidget(bridgeAnno.elaborateWidget)
-    widget.reset := reset.toBool || simReset
     widget match {
       case model: midas.models.FASEDMemoryTimingModel =>
         memPorts += model.io.host_mem
@@ -80,7 +73,6 @@ class FPGATop(simIoType: SimWrapperChannels)(implicit p: Parameters) extends Mod
   val numMemModels = memPorts.length
   val nastiP = p.alterPartial({ case NastiKey => p(MemNastiKey) })
   val loadMem = addWidget(new LoadMemWidget(MemNastiKey))
-  loadMem.reset := reset.toBool || simReset
   memPorts += loadMem.io.toSlaveMem
 
   val channelSize = BigInt(1) << p(HostMemChannelNastiKey).addrBits

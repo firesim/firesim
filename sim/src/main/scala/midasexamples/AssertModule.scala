@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import chisel3._
-import chisel3.experimental.{RawModule, MultiIOModule}
 import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 
 class ChildModule extends Module {

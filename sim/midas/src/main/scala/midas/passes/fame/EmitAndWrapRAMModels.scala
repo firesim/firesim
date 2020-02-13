@@ -226,10 +226,13 @@ class EmitAndWrapRAMModels extends Transform {
       val readWritePorts = annos.collect({ case anno: ModelReadWritePort  => new ReadWritePort(anno, mod.ports)})
       require(readWritePorts.isEmpty)
 
-      val clocks = mod.ports.filter(_.tpe == ClockType)
-      // TODO: turn this back to == 1
-      assert(clocks.length >= 1)
-      val hostClock = clocks.find(_.name == "clock").getOrElse(clocks.head) // TODO: naming convention for host clock
+      val (hostClock, updatedPortList) = mod.ports.find(p => p.tpe == ClockType && p.name == "clock") match {
+        case Some(port) => (port, mod.ports)
+        case None =>
+          val cPort = Port(NoInfo, "clock", Input, ClockType)
+          (cPort, cPort +: mod.ports)
+      }
+
       val hostReset = mod.ports.find(_.name == "hostReset").get
 
       val name = ns.newName("RamModel")
@@ -237,7 +240,7 @@ class EmitAndWrapRAMModels extends Transform {
       val (module, newAnnos) = inst.elaborateModel(c.main)
       addedModules += module
       addedAnnotations ++= newAnnos
-      Module(NoInfo, mod.name, mod.ports, Block(inst.emitStatements(WRef(hostClock), WRef(hostReset))))
+      Module(NoInfo, mod.name, updatedPortList, Block(inst.emitStatements(WRef(hostClock), WRef(hostReset))))
     }
 
     def onModule(mod: DefModule): DefModule = mod match {

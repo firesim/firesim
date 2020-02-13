@@ -84,7 +84,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val topWiringAnnos = mutable.ArrayBuffer[Annotation](
       TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc))
 
-    val topWiringPrefix = ""
+    val topWiringPrefix = "synthesizedPrintf_"
 
     def onModule(m: DefModule): DefModule = m match {
       case m: Module if printMods(mTarget(m)) =>
@@ -150,7 +150,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       val fccaAnnos = ports.flatMap({ case (port, _) => genFCCAsFromPort(mT, port) })
       val bridgeAnno = BridgeIOAnnotation(
         target = portRT,
-        widget = (p: Parameters) => new PrintBridgeModule(topWiringPrefix, ports)(p),
+        widget = (p: Parameters) => new PrintBridgeModule(ports)(p),
         channelNames = fccaAnnos.map(_.globalName)
       )
       bridgeAnno +: fccaAnnos

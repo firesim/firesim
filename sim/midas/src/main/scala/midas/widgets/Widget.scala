@@ -5,7 +5,6 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{MultiIOModule}
 import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import junctions._
@@ -164,6 +163,7 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
     require(_finalized, "Must build Widgets with their companion object")
     headerComment(sb)
     crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
   def printCRs = crRegistry.printCRs

@@ -7,9 +7,12 @@ Launching a "Manager Instance"
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
 Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
-``f1`` instances later, the Manager Instance can be a relatively cheap instance. In this guide, however,
-we will use a ``c5.4xlarge``,
-running the AWS FPGA Developer AMI (be sure to subscribe if you have not done so. See :ref:`ami-subscription`).
+``f1`` instances later, the Manager Instance can be a relatively cheap instance. 
+In this guide, however, we will use a ``c5.4xlarge``,
+running the AWS FPGA Developer AMI. (Be sure to subscribe to the AMI 
+if you have not done so. See :ref:`ami-subscription`. Note that it 
+might take a few minutes after subscribing to the AMI to be able to 
+launch instances using it.)
 
 Head to the `EC2 Management
 Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
@@ -22,8 +25,8 @@ To launch a manager instance, follow these steps:
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   "FPGA" and select the option that starts with ``FPGA Developer AMI - 1.6.0``.
-   **DO NOT USE ANY OTHER VERSION.**
+   ``FPGA Developer AMI - 1.6.0`` and select the AMI that appears (there 
+   should be only one). **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge``.
 4. On the "Configure Instance Details" page:
@@ -45,9 +48,9 @@ To launch a manager instance, follow these steps:
       This will pre-install all of the dependencies needed to run FireSim on your instance.
 
 5. On the next page ("Add Storage"), increase the size of the root EBS
-   volume to ~300GB. The default of 150GB can quickly become tight as
+   volume to ~300GB. The default of 65GB can quickly become too small as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
-   and large root filesystems for simulations. You can get rid of the
+   and large root filesystems for simulations. You should get rid of the
    small (5GB) secondary volume that is added by default.
 6. You can skip the "Add Tags" page, unless you want tags.
 7. On the "Configure Security Group" page, select the ``firesim``
@@ -121,19 +124,6 @@ your firesim directory and source this file again.**
 Completing Setup Using the Manager
 ----------------------------------
 
-First, run the following to setup your AWS credentials on the instance:
-
-::
-
-    aws configure
-
-
-This will prompt you to setup AWS credentials on the instance, which allows
-the manager to automatically manage build/simulation nodes. See
-https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about these credentials. When prompted, you should specify the same
-region that you chose above and set the default output format to ``json``.
-
 The FireSim manager contains a command that will interactively guide you
 through the rest of the FireSim setup process. To run it, do the following:
 
@@ -141,7 +131,11 @@ through the rest of the FireSim setup process. To run it, do the following:
 
     firesim managerinit
 
-This will first prompt you to setup AWS credentials on the instance, which we just did in the previous step. You can simply hit enter to skip these four prompts.
+This will first prompt you to setup AWS credentials on the instance, which allows
+the manager to automatically manage build/simulation nodes. See
+https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
+for more about these credentials. When prompted, you should specify the same
+region that you chose above and set the default output format to ``json``.
 
 Next, it will create initial configuration files, which we will edit in later
 sections. Finally, it will prompt you for an email address, which is used to

@@ -3,10 +3,10 @@ import Tests._
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.12.10",
   traceLevel   := 15,
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -31,7 +31,7 @@ lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
 lazy val chipyardDir = if(firesimAsLibrary) {
   file("../../../")
 } else {
-  file("target-rtl/chipyard")
+  file("../target-design/chipyard")
 }
 
 lazy val chisel        = ProjectRef(chipyardDir, "chisel")

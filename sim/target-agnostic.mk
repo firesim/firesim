@@ -82,6 +82,7 @@ conf: $(ANNO_FILE)
 ####################################
 
 VERILATOR_CXXOPTS ?= -O0
+VERILATOR_MAKEFLAGS ?= -j8 VM_PARALLEL_BUILDS=1
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
@@ -90,11 +91,11 @@ $(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_fla
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-	$(MAKE) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 $(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-	$(MAKE) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
 
 verilator: $(verilator)

@@ -33,7 +33,11 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${firesim_base_dir}/target-rtl/chipyard/}firechip
+	firesim_sbt_project := {file:${chipyard_dir}}firechip
+
+	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "*.scala" -print 2> /dev/null)
+	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
+	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
 	firesim_sbt_project := firechip
 endif
@@ -43,6 +47,7 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	cd $(base_dir) && \
 	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
 
+# DOC include start: Bridge Build System Changes
 ##########################
 # Driver Sources & Flags #
 ##########################
@@ -53,12 +58,12 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 		   $(shell find $(firesim_lib_dir) -name "*.h")
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
-            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
+            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 			$(RISCV)/lib/libfesvr.a
 
-$(info $(DRIVER_CC))
-TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
-TARGET_LD_FLAGS :=
+TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost
+TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz
+# DOC include end: Bridge Build System Changes
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
@@ -74,11 +79,18 @@ NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
 nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
-tracer_args = +tracefile0=TRACEFILE
+tracer_args = +tracefile0=TRACEFILE0
+blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
+autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE0
+# Neglecting this +arg will make the simulator use the same step size as on the
+# FPGA. This will make ML simulation more closely match results seen on the
+# FPGA at the expense of dramatically increased target runtime
+serial_args = +fesvr-step-size=128
+#serial_args =
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args)
+COMMON_SIM_ARGS ?= $(serial_args) $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)

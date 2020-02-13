@@ -4,7 +4,6 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.LFSR16
-import chisel3.experimental.MultiIOModule
 
 import midas.targetutils.SynthesizePrintf
 

@@ -90,9 +90,9 @@ object MultiThreader {
   }
 
   def replaceRegRefs(freshNames: FreshNames)(expr: Expression): Expression = expr match {
-    case wr @ WRef(name, _, RegKind, FEMALE) => wr.copy(name = freshNames(name).head)
+    case wr @ WRef(name, _, RegKind, SinkFlow) => wr.copy(name = freshNames(name).head)
     // 2nd-to-last slot feeds logic; last slot holds a shadow value
-    case wr @ WRef(name, _, RegKind, MALE) => wr.copy(name = freshNames(name).init.last)
+    case wr @ WRef(name, _, RegKind, SourceFlow) => wr.copy(name = freshNames(name).init.last)
     case e => e.map(replaceRegRefs(freshNames))
   }
 

@@ -4,6 +4,8 @@ package midas
 package passes
 
 import midas.core._
+
+import freechips.rocketchip.config.Parameters
 import chisel3.core.DataMirror.directionOf
 
 import firrtl._
@@ -13,6 +15,7 @@ import logger._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
 import Utils._
+
 import java.io.{File, FileWriter}
 
 private[passes] class WCircuit(
@@ -21,9 +24,7 @@ private[passes] class WCircuit(
   main: String,
   val sim: SimWrapperChannels) extends Circuit(info, modules, main)
 
-private[midas] class MidasTransforms(
-    io: Seq[(String, chisel3.Data)])
-    (implicit p: freechips.rocketchip.config.Parameters) extends Transform {
+private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
   val dir = p(OutputDir)
@@ -46,6 +47,7 @@ private[midas] class MidasTransforms(
       EnsureNoTargetIO,
       new BridgeExtraction,
       new ResolveAndCheck,
+      new EmitFirrtl("post-bridge-extraction.fir"),
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new AssertPass(dir),
@@ -53,7 +55,7 @@ private[midas] class MidasTransforms(
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
-      new EmitFirrtl("post-bridge-extraction.fir"),
+      new EmitFirrtl("post-debug-synthesis.fir"),
       fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++
@@ -87,8 +89,7 @@ private[midas] class MidasTransforms(
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++
     Seq(
-      new SimulationMapping(io),
-      new PlatformMapping(state.circuit.main, dir),
+      new SimulationMapping(state.circuit.main),
       xilinx.HostSpecialization)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)
@@ -101,7 +102,7 @@ private[midas] class MidasTransforms(
   *
   * This uses the legacy non-LI-BDN F1 transform
   */
-case class Fame1ChiselAnnotation(target: chisel3.experimental.RawModule, tFire: String = "targetFire") 
+case class Fame1ChiselAnnotation(target: chisel3.RawModule, tFire: String = "targetFire")
     extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl = Fame1Annotation(target.toNamed, tFire)
 }
@@ -118,15 +119,4 @@ class Fame1Instances extends Transform {
     val fame1s = (state.annotations.collect { case Fame1Annotation(ModuleName(m, c), tFire) => m -> tFire }).toMap
     state.copy(circuit = new ModelFame1Transform(fame1s).run(state.circuit))
   }
-}
-
-/* Instead of passing a data structure between pre-FAME target-transforming passes 
- * Add NoTargetAnnotations that can regenerate a chisel type from a HighForm port
- *
- * Initially i tried extending SingleTargetAnnotation but we need a LowForm
- * inner circuit to do linking (if the wrapping circuit is LowForm), and thus the target
- *  will have lost its subFields when we go to regenerate the ChiselIO.
- */
-trait AddedTargetIoAnnotation[T <: chisel3.Data] extends Annotation {
-  def generateChiselIO(): Tuple2[String, T]
 }

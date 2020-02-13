@@ -24,9 +24,9 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
    Advanced-Usage/Manager/index
    Advanced-Usage/Workloads/index
-   Advanced-Usage/FireMarshal/index
    Advanced-Usage/Generating-Different-Targets.rst
-   Advanced-Usage/Debugging/index
+   Advanced-Usage/Debugging-in-Software/index
+   Advanced-Usage/Debugging-and-Profiling-on-FPGA/index
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
@@ -38,6 +38,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Golden-Gate/Overview
    Golden-Gate/LI-BDN
    Golden-Gate/Bridges
+   Golden-Gate/Bridge-Walkthrough
 
 
 Indices and tables

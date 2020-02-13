@@ -15,16 +15,16 @@ class RiscSRAMDUT extends Module {
     val valid  = Output(Bool())
     val out    = Output(UInt(32.W))
   })
-  val fileMem = SeqMem(256, UInt(32.W))
+  val fileMem = SyncReadMem(256, UInt(32.W))
   // We only support combinational mems for now
   //chisel3.experimental.annotate(MemModelAnnotation(fileMem))
-  val codeMem = SeqMem(128, UInt(32.W))
+  val codeMem = SyncReadMem(128, UInt(32.W))
   //chisel3.experimental.annotate(MemModelAnnotation(codeMem))
 
-  val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(UInt(), 6)
+  val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(6)
   val state = RegInit(idle)
 
-  val add_op :: imm_op :: Nil = Enum(UInt(), 2)
+  val add_op :: imm_op :: Nil = Enum(2)
   val pc       = RegInit(0.U(8.W))
   val raData   = Reg(UInt(32.W))
   val rbData   = Reg(UInt(32.W))

@@ -28,8 +28,8 @@ class FreeList(entries: Int) extends Module {
   io.nextId.valid := nextId.valid
   io.nextId.bits := nextId.bits
   // Add an extra entry to represent the empty bit. Maybe not necessary?
-  val ids = RegInit(Vec.tabulate(entries)(i =>
-    if (i == 0) false.B else true.B))
+  val ids = RegInit(VecInit(Seq.tabulate(entries)(i =>
+    if (i == 0) false.B else true.B)))
   val next = ids.indexWhere((x:Bool) => x)
 
   when(io.nextId.fire() || ~nextId.valid) {
@@ -110,7 +110,7 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
     val trans = new AllocationIO(vIdWidth, pIdWidth)
   })
 
-  val rat = RegInit(Vec.fill(numPIds)(RATEntry(vIdWidth, pIdWidth)))
+  val rat = RegInit(VecInit(Seq.fill(numPIds)(RATEntry(vIdWidth, pIdWidth))))
   val freeList = Module(new FreeList(numPIds))
   freeList.io.freeId <> io.free
 
