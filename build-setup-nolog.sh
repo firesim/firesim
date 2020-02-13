@@ -86,7 +86,7 @@ if [ "$IS_LIBRARY" = false ]; then
     # If this is a fresh init of chipyard, we can safely overwrite the marshal
     # config, otherwise we have to assume the user might have changed it
     if [ $first_init = true ]; then
-      echo "firesim-dir: '../../../../'" > $marshal_cfg 
+      echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
 fi
 

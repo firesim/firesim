@@ -15,7 +15,24 @@
 #   (optional) verilator_conf: An verilator configuration file
 
 VERILATOR ?= verilator --cc --exe
-override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
+ifeq ($(shell grep -i "module.*ariane" $(emul_v)),)
+    verilator_assert = --assert
+endif
+override VERILATOR_FLAGS := \
+	-Wno-STMTDLY \
+	-Werror-PINMISSING \
+	-Werror-IMPLICIT \
+	-Wno-fatal \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-ASSIGNDLY \
+	-Wno-DECLFILENAME \
+	-Wno-UNUSED \
+	-Wno-UNOPTFLAT \
+	-Wno-BLKANDNBLK \
+	-Wno-style \
+	-Wall \
+	-O3 \
+	$(verilator_assert) \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS)" \
