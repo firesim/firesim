@@ -141,7 +141,7 @@ object FAMEModuleTransformer {
     }
     val finishing = DefWire(NoInfo, ns.newName(triggerName), BoolType)
 
-    val gateTargetClock = analysis.containsSyncBlackboxes(m)
+    val gateTargetClock = true // analysis.containsSyncBlackboxes(m)
     val targetClock = if (gateTargetClock) {
       val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
       SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, SourceFlow))
