@@ -55,8 +55,6 @@ $(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-E verilog"
-	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
-	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
 
 ####################################
 # Runtime-Configuration Generation #
@@ -162,7 +160,7 @@ fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
 fpga_tcl_env   := $(fpga_work_dir)/design/cl_firesim_generated_env.tcl
 repo_state     := $(fpga_work_dir)/design/repo_state
 
-$(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
+$(fpga_work_dir)/stamp: #$(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
 	touch $@

@@ -26,16 +26,16 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 
 vcs_v := $(emul_v) $(vcs_wrapper_v)
 
-$(OUT_DIR)/$(DESIGN): $(vcs_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN): $(vcs_v) $(emul_cc) $(emul_h) $(design_resource_files)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN).csrc
 	rm -rf $(OUT_DIR)/$(DESIGN).daidir
 	$(VCS) $(VCS_FLAGS) \
-	-o $@ $(vcs_v) $(emul_cc)
+	-o $@ $(vcs_v) $(emul_cc) -f $(design_resource_files)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(emul_cc) $(emul_h) $(design_resource_files)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
 	$(VCS) $(VCS_FLAGS) +define+DEBUG \
-	-o $@ $(vcs_v) $(emul_cc)
+	-o $@ $(vcs_v) $(emul_cc) -f $(design_resource_files)

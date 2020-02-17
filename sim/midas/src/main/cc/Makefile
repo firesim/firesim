@@ -56,6 +56,7 @@ override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas
 design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
 design_vh := $(GEN_DIR)/$(DESIGN)-const.vh
+design_resource_files := $(GEN_DIR)/firrtl_black_box_resource_files.f
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
 bridge_h := $(wildcard $(bridge_dir)/*.h)
 bridge_cc := $(wildcard $(bridge_dir)/*.cc)
