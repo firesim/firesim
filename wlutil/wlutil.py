@@ -275,7 +275,7 @@ class marshalCtx(collections.MutableMapping):
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
-        self['driver-dirs'] = self['board-dir'].glob('drivers/*')
+        self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
 
         if self['doitOpts']['dep_file'] == '':

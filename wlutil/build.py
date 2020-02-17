@@ -294,7 +294,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     # Always start from a clean slate
     try:
-        shutil.rmtree(driverDir)
+        shutil.rmtree(driverDir.parent)
     except FileNotFoundError:
         pass
     driverDir.mkdir(parents=True)
@@ -305,7 +305,6 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     # Setup the dependency file needed by modprobe to load the drivers
     run(['depmod', '-b', str(getOpt('initramfs-dir') / "drivers"), kernelVersion])
-
 
 def makeBin(config, nodisk=False):
     """Build the binary specified in 'config'.
