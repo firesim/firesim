@@ -126,7 +126,7 @@ private[midas] case class BridgeIOAnnotation(
       val constructor = Class.forName(widgetClass.get).getConstructors()(0)
       (widgetConstructorKey match {
         case Some(key) =>
-          println(s"  With constructor arguments: $key")
+//        println(s"  With constructor arguments: $key")
           constructor.newInstance(key, p)
         case None => constructor.newInstance(p)
       }).asInstanceOf[BridgeModule[_ <: TokenizedRecord]]

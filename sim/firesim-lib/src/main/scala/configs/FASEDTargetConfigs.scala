@@ -12,6 +12,9 @@ case object BaseParamsKey extends Field[BaseParams]
 case object LlcKey extends Field[Option[LLCParams]]
 case object DramOrganizationKey extends Field[DramOrganizationParams]
 
+object LLCHWSettings extends Field[Option[LLCHardwiredSettings]](None)
+object DramHWSettings extends Field[Option[DramHardwiredSettings]](None)
+
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
 class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
@@ -23,13 +26,14 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     maxReads = 16,
     maxWrites = 16,
     beatCounters = true,
-    llcKey = site(LlcKey))
+    llcKey = site(LlcKey),
+    hardWiredSettings = site(DramHWSettings),
+    hardWiredLLCSettings = site(LLCHWSettings))
 
   case MemModelKey => new LatencyPipeConfig(site(BaseParamsKey))
 }) {
   require(clockDivision == 1, "Endpoint clock-division temporarily removed until FireSim 1.8.0")
 }
-
 
 /*******************************************************************************
 * Memory-timing model configuration modifiers
@@ -79,6 +83,11 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
     maxReads = maxReads,
     maxWrites = maxWrites
   )
+})
+
+// CS152
+class WithDramHardwiredSettings(dramSettings: DramHardwiredSettings) extends Config((site, here, up) => {
+  case DramHWSettings => Some(dramSettings)
 })
 
 /*******************************************************************************
