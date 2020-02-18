@@ -55,10 +55,12 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
         std::strcpy((argv_arr)[i], (args_vec)[i].c_str());
     }
 
+#if 0
     //debug for command line arguments
     printf("command line for program %d. argc=%d:\n", serialno, argc_count);
     for(int i = 0; i < argc_count; i++)  { printf("%s ", (argv_arr)[i]);  }
     printf("\n");
+#endif
 
    std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
    fesvr = new firesim_fesvr_t(args_new);
