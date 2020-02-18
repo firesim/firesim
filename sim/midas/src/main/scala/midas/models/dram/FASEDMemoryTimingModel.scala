@@ -554,14 +554,16 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
   def getSettings(fileName: String)(implicit p: Parameters) {
     println("\nGenerating a Midas Memory Model Configuration File")
+    val hardwired = cfg.params.hardWiredSettings.isDefined || cfg.params.hardWiredLLCSettings.isDefined
     val functionalModelSettings = funcModelRegs.getFuncModelSettings()
-    val timingModelSettings = model.io.mmReg.getTimingModelSettings()
+    val timingModelSettings = if (hardwired) Nil else model.io.mmReg.getTimingModelSettings()
     emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
   }
 
   def getDefaultSettings(fileName: String)(implicit p: Parameters) {
+    val hardwired = cfg.params.hardWiredSettings.isDefined || cfg.params.hardWiredLLCSettings.isDefined
     val functionalModelSettings = funcModelRegs.getDefaults()
-    val timingModelSettings = model.io.mmReg.getDefaults()
+    val timingModelSettings = if (hardwired) Nil else model.io.mmReg.getDefaults()
     emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
   }
 }
