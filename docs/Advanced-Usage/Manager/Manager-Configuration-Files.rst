@@ -224,6 +224,14 @@ Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
 
+``zerooutdram``
+"""""""""""""""""""""""""""""
+
+Set this to ``yes`` to zero-out FPGA-attached DRAM before simulation begins.
+This process takes 2-5 minutes. In general, this is not required to produce
+deterministic simulations on target machines running linux, but should be
+enabled if you observe simulation non-determinism.
+
 .. _config-build:
 
 ``config_build.ini``

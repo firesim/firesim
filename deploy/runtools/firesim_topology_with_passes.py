@@ -36,7 +36,8 @@ class FireSimTopologyWithPasses:
                  defaultnetbandwidth, defaultprofileinterval,
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
                  defaulttraceoutputformat,
-                 defaultautocounterreadrate, terminateoncompletion):
+                 defaultautocounterreadrate, terminateoncompletion,
+                 defaultzerooutdram):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -55,6 +56,7 @@ class FireSimTopologyWithPasses:
         self.defaulttraceend = defaulttraceend
         self.defaulttraceoutputformat = defaulttraceoutputformat
         self.defaultautocounterreadrate = defaultautocounterreadrate
+        self.defaultzerooutdram = defaultzerooutdram
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -317,6 +319,8 @@ class FireSimTopologyWithPasses:
                     node.trace_output_format = self.defaulttraceoutputformat
                 if node.autocounter_readrate is None:
                     node.autocounter_readrate = self.defaultautocounterreadrate
+                if node.zerooutdram is None:
+                    node.zerooutdram = self.defaultzerooutdram
 
 
     def pass_allocate_nbd_devices(self):
