@@ -93,7 +93,8 @@ class RuntimeHWConfig:
                                               all_bootbinaries, trace_enable,
                                               trace_select, trace_start, trace_end,
                                               trace_output_format,
-                                              autocounter_readrate, all_shmemportnames):
+                                              autocounter_readrate, all_shmemportnames,
+                                              enable_zerooutdram):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -131,7 +132,7 @@ class RuntimeHWConfig:
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
-        zero_out_dram = "+zero-out-dram"
+        zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
 
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name0=" + all_bootbinaries[0] + "-dwarf"
@@ -266,6 +267,7 @@ class InnerRuntimeConfiguration:
         self.trace_end = "-1"
         self.trace_output_format = "0"
         self.autocounter_readrate = 0
+        self.zerooutdram = False
         if 'tracing' in runtime_dict:
             self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
@@ -275,6 +277,8 @@ class InnerRuntimeConfiguration:
         if 'autocounter' in runtime_dict:
             self.autocounter_readrate = int(runtime_dict['autocounter'].get('readrate', "0"))
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
+        if 'hostdebug' in runtime_dict:
+            self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
 
         self.workload_name = runtime_dict['workload']['workloadname']
         # an extra tag to differentiate workloads with the same name in results names
@@ -329,7 +333,8 @@ class RuntimeConfig:
             self.innerconf.profileinterval, self.innerconf.trace_enable,
             self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
             self.innerconf.trace_output_format,
-            self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion)
+            self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion,
+            self.innerconf.zerooutdram)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """
