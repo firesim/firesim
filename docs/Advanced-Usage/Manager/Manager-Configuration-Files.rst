@@ -224,6 +224,18 @@ Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
 
+
+``suffixtag``
+""""""""""""""""""""""""""
+
+This allows you to append a string to a workload's output directory name,
+useful for differentiating between successive runs of the same workload,
+without renaming the entire workload. For example, specifying
+``suffixtag=test-v1`` with a workload named ``super-application`` will result
+in a workload results directory named
+``results-workload/DATE--TIME-super-application-test-v1/``.
+
+
 .. _config-build:
 
 ``config_build.ini``
