@@ -108,6 +108,8 @@ else
     target_chipyard_dir=$RDIR/target-design/chipyard
 fi
 
+# setup marshal symlink depending on where we are vs. chipyard
+ln -s $target_chipyard_dir/software/firemarshal $RDIR/sw/firesim-software
 
 # Restrict the devtoolset environment to a subshell
 #
@@ -156,7 +158,8 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     make
 
     # Install firesim-software dependencies
-    marshal_dir=$RDIR/target-design/chipyard/software/firemarshal
+    # We always setup the symlink correctly above, so use sw/firesim-software
+    marshal_dir=$RDIR/sw/firesim-software
     cd $RDIR
     sudo pip3 install -r $marshal_dir/python-requirements.txt
     cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
