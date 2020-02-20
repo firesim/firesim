@@ -104,12 +104,15 @@ fi
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
     target_chipyard_dir=$RDIR/../..
+
+    # setup marshal symlink
+    ln -s ../../../software/firemarshal $RDIR/sw/firesim-software
 else
     target_chipyard_dir=$RDIR/target-design/chipyard
-fi
 
-# setup marshal symlink depending on where we are vs. chipyard
-ln -s $target_chipyard_dir/software/firemarshal $RDIR/sw/firesim-software
+    # setup marshal symlink
+    ln -s ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
+fi
 
 # Restrict the devtoolset environment to a subshell
 #
