@@ -133,7 +133,7 @@ run-xsim: $(xsim)
 # Midas-Level Simulation Execution Recipes #
 ############################################
 # The desired RTL simulator. supported options: {vcs, verilator}
-EMUL ?= verilator
+EMUL ?= vcs
 
 # Firechip Tests
 fc_test_dir = $(chipyard_dir)/tests
@@ -165,11 +165,13 @@ $(OUTPUT_DIR)/%.run: $(OUTPUT_DIR)/% $(EMUL)
 $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 	cd $(dir $($(EMUL))) && \
 	./$(notdir $($(EMUL))) $< +sample=$<.sample $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	< /dev/null \
 	$(disasm) $@ && [ $$PIPESTATUS -eq 0 ]
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
 	./$(notdir $($(EMUL)_debug)) $< +sample=$<.sample +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	< /dev/null \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
 include $(firesim_base_dir)/src/main/makefrag/firesim/cs152.mk

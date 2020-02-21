@@ -16,6 +16,7 @@ run-pk: $(EMUL) | $(OUTPUT_DIR)
 	cd $(dir $($(EMUL))) && \
 	./$(notdir $($(EMUL))) +permissive $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off \
 	pk $(BINARY) \
+	< /dev/null \
 	$(disasm) $(call lab_output).out && [ $$PIPESTATUS -eq 0 ]
 
 .PHONY: run-pk-debug
@@ -23,6 +24,7 @@ run-pk-debug: $(EMUL)-debug | $(OUTPUT_DIR)
 	cd $(dir $($(EMUL)_debug)) && \
 	./$(notdir $($(EMUL)_debug)) +permissive +waveform=$(call lab_output).vpd $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off \
 	pk $(BINARY) \
+	< /dev/null \
 	$(disasm) $(call lab_output).out && [ $$PIPESTATUS -eq 0 ]
 
 
