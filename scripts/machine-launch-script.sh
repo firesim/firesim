@@ -36,7 +36,7 @@ sudo yum -y install git2u
 # install verilator
 git clone http://git.veripool.org/git/verilator
 cd verilator/
-git checkout v4.002
+git checkout v4.028
 autoconf && ./configure && make -j16 && sudo make install
 cd ..
 
