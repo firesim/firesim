@@ -10,8 +10,8 @@
   "workloads" : [
     {
       "name": "poweroffnode",
-      "files": [],
-      "command": "echo 'Powering off immediately.'",
+      "files": ["print-mcycle-linux"],
+      "command": "/print-mcycle-linux && echo 'Powering off immediately.'",
       "simulation_outputs": [],
       "outputs": []
     }
