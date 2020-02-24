@@ -60,7 +60,7 @@ lazy val midas = (project in file("midas"))
   )
 
 lazy val firesimLib = (project in file("firesim-lib"))
-  .settings(commonSettings).dependsOn(midas, icenet, testchipip, chipyard, sifive_blocks)
+  .settings(commonSettings).dependsOn(midas, icenet, testchipip, sifive_blocks)
 
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))

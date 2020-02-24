@@ -178,21 +178,21 @@ Single core, Rocket pipeline (default)
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimRocketConfig
+    make TARGET_CONFIG=FireSimRocketConfig
 
 
 Single-core, Rocket pipeline, with network interface
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=WithNIC_FireSimRocketChipConfig
+    make TARGET_CONFIG=WithNIC_FireSimRocketChipConfig
 
 
 Quad-core, Rocket pipeline
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimQuadRocketConfig
+    make TARGET_CONFIG=FireSimQuadRocketConfig
 
 
 ---------------
@@ -205,13 +205,13 @@ Single-core BOOM
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimLargeBoomConfig
+    make TARGET_CONFIG=FireSimLargeBoomConfig
 
 Single-core BOOM, with network interface
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=WithNIC_FireSimBoomConfig
+    make TARGET_CONFIG=WithNIC_FireSimBoomConfig
 
 
 ----------------------------------------------------------
