@@ -11,7 +11,7 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 * Unification of Configs/Tops between Chipyard and FireSim. Arbitrary Chipyard designs can be imported into FireSim
   * Users can define a FireSim version of a Chipyard config by specifying WithFireSimDefaultBridges, WithFireSimDefaultMemModel, and WithFireSimConfigTweaks
   * FireSimHarness moved to FireChip. Harness now uses Chipyard's BuildTop key to control which Top to build
-  * AGFI naming scheme changed. FireSim -> chipyard-rocket, FireBoom -> chipyard-boom
+  * AGFI naming scheme changed. firesim -> firesim-rocket, fireboom -> firesim-boom
 * BridgeBinders field now replaced with generalized chipyard.IOBinders field.
 
 ### Deprecated

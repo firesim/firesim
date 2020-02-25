@@ -73,7 +73,7 @@ we want. Let's outline the important parameters:
 * ``linklatency=6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
 * ``switchinglatency=10``: This models switches with a minimum port-to-port latency of 10 cycles.
 * ``netbandwidth=200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
-* ``defaulthwconfig=firesim-quadcore-nic-llc4mb-ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
+* ``defaulthwconfig=firesim-rocket-quadcore-nic-l2-llc4mb-ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
 
 You'll see other parameters here, like ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
@@ -95,7 +95,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-nic-llc4mb-ddr3``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``firesim-boom-singlecore-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
@@ -168,7 +168,7 @@ For a complete run, you should expect output like the following:
     FireSim Manager. Docs: http://docs.fires.im
     Running: infrasetup
 
-    Building FPGA software driver for FireSim-FireSimQuadRocketConfig-BaseF1Config_F90MHz
+    Building FPGA software driver for FireSim-FireSimQuadRocketConfig-F90MHz_BaseF1Config
     Building switch model binary for switch switch0
     [172.30.2.178] Executing task 'instance_liveness'
     [172.30.2.178] Checking if host instance is up...
