@@ -47,15 +47,15 @@ of 32 GiB for large designs.
 
 To start out, let's build a simple design, ``firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3``.
 This is a design that has four cores, no nic, and uses the 4MB LLC + DDR3 memory model.
-To do so, comment out all of the other build entries in ``deploy/config_build.ini``, besides the one we want.. So, you should
+To do so, comment out all of the other build entries in ``deploy/config_build.ini``, besides the one we want. So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
 ::
 
-	[builds]
-	# this section references builds defined in config_build_recipes.ini
-	# if you add a build here, it will be built when you run buildafi
-        firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
+   [builds]
+   # this section references builds defined in config_build_recipes.ini
+   # if you add a build here, it will be built when you run buildafi
+   firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Running a Build

@@ -377,9 +377,8 @@ you made up). Such a section must contain the following fields:
 """""""""""""""""""""""""""""
 
 This specifies the basic target design that will be built. Unless you
-are defining a custom system, this should either ``FireSim``. These
-are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``. We
-describe this in greater detail in :ref:`Generating Different
+are defining a custom system, this should be set to ``FireSim``.
+We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
 ``TARGET_CONFIG``
@@ -387,7 +386,6 @@ Targets<generating-different-targets>`).
 
 This specifies the hardware configuration of the target being simulated. Some
 examples include ``FireSimRocketConfig`` and ``FireSimQuadRocketConfig``.
-These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 

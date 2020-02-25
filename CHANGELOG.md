@@ -9,14 +9,14 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 
 ### Changed
 * Unification of Configs/Tops between Chipyard and FireSim. Arbitrary Chipyard designs can be imported into FireSim
-  * Users can define a FireSim version of a Chipyard config by specifying WithFireSimDefaultBridges, WithFireSimDefaultMemModel, and WithFireSimConfigTweaks
+  * Users can define a FireSim version of a Chipyard config by building a TARGET_CONFIG that specifies WithFireSimDefaultBridges, WithFireSimDefaultMemModel, and WithFireSimConfigTweaks
   * FireSimHarness moved to FireChip. Harness now uses Chipyard's BuildTop key to control which Top to build
   * AGFI naming scheme changed. firesim -> firesim-rocket, fireboom -> firesim-boom
 * BridgeBinders field now replaced with generalized chipyard.IOBinders field.
 
 ### Deprecated
 * FireSimNoNIC design option removed, replaced with chipyard.Top
-  * Designs can specify inclusion/exclusion of NIC by setting icenet.NICKey
+  * Designs can specify inclusion/exclusion of NIC by setting icenet.NICKey, i.e. in TARGET_CONFIG
 
 ### Removed
 * Many excess configs in the sample_config inis were removed
