@@ -178,21 +178,21 @@ Single core, Rocket pipeline (default)
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimRocketChipConfig
+    make TARGET_CONFIG=FireSimRocketConfig
 
 
-Single-core, Rocket pipeline, no network interface
+Single-core, Rocket pipeline, with network interface
 
 ::
 
-    make DESIGN=FireSimNoNIC TARGET_CONFIG=FireSimRocketChipConfig
+    make TARGET_CONFIG=WithNIC_FireSimRocketChipConfig
 
 
 Quad-core, Rocket pipeline
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimRocketChipQuadCoreConfig
+    make TARGET_CONFIG=FireSimQuadRocketConfig
 
 
 ---------------
@@ -205,13 +205,13 @@ Single-core BOOM
 
 ::
 
-    make DESIGN=FireSim TARGET_CONFIG=FireSimBoomConfig
+    make TARGET_CONFIG=FireSimLargeBoomConfig
 
-Single-core BOOM, no network interface
+Single-core BOOM, with network interface
 
 ::
 
-    make DESIGN=FireSimNoNIC TARGET_CONFIG=FireSimBoomConfig
+    make TARGET_CONFIG=WithNIC_FireSimBoomConfig
 
 
 ----------------------------------------------------------
@@ -225,14 +225,14 @@ use the Makefile-defined defaults of ``DESIGN=FireSim PLATFORM_CONFIG=BaseF1Conf
 Quad-rank DDR3 first-ready, first-come first-served memory access scheduler
 
 ::
-    make TARGET_CONFIG=DDR3FRFCFS_FireSimRocketChipConfig
+    make TARGET_CONFIG=DDR3FRFCFS_FireSimRocketConfig
 
 
 As above, but with a 4 MiB (maximum simulatable capacity) last-level-cache model
 
 ::
 
-    make TARGET_CONFIG=DDR3FRFCFSLLC4MB_FireSimRocketChipConfig
+    make TARGET_CONFIG=DDR3FRFCFSLLC4MB_FireSimRocketConfig
 
 FASED *timing-model* configurations are passed to the FASED Bridges
 in your Target's FIRRTL, and so must be prepended to ``TARGET_CONFIG``.

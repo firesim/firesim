@@ -94,15 +94,15 @@ to change a few items in this section:
     # This references a section from config_hwconfigs.ini
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
-    defaulthwconfig=firesim-quadcore-no-nic-l2-llc4mb-ddr3
+    defaulthwconfig=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Note that we changed three of the parameters here: ``topology`` is now set to
 ``no_net_config``, indicating that we do not want a network. Then,
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, we changed ``defaulthwconfig`` from
-``firesim-quadcore-nic-l2-llc4mb-ddr3`` to
-``firesim-quadcore-no-nic-l2-llc4mb-ddr3``.  Notice the subtle difference in this
+``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` to
+``firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3``.  Notice the subtle difference in this
 last option? All we did is switch to a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
@@ -141,7 +141,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	# This references a section from config_hwconfigs.ini
 	# In homogeneous configurations, use this to set the hardware config deployed
 	# for all simulators
-	defaulthwconfig=firesim-quadcore-no-nic-l2-llc4mb-ddr3
+	defaulthwconfig=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
 
 	[workload]
 	workloadname=linux-uniform.json
@@ -150,7 +150,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``fireboom-singlecore-no-nic-l2-llc4mb-ddr3``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
@@ -224,7 +224,7 @@ For a complete run, you should expect output like the following:
 	FireSim Manager. Docs: http://docs.fires.im
 	Running: infrasetup
 
-	Building FPGA software driver for FireSimNoNIC-FireSimRocketChipQuadCoreConfig-FireSimDDR3FRFCFSLLC4MBConfig
+	Building FPGA software driver for FireSim-FireSimQuadRocketConfig-F90MHz_BaseF1Config
 	[172.30.2.174] Executing task 'instance_liveness'
 	[172.30.2.174] Checking if host instance is up...
 	[172.30.2.174] Executing task 'infrasetup_node_wrapper'
@@ -395,7 +395,7 @@ You should see output like the following from the simulation console:
 	time elapsed: 468.8 s, simulation speed = 88.50 MHz
 	*** PASSED *** after 41492621244 cycles
 	Runs 41492621244 cycles
-	[PASS] FireSimNoNIC Test
+	[PASS] FireSim Test
 	SEED: 1526690334
 	Script done, file is uartlog
 

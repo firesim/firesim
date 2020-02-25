@@ -331,7 +331,7 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -342,7 +342,7 @@ you would use:
 ::
 
     [agfistoshare]
-    firesim-quadcore-nic-l2-llc4mb-ddr3
+    firesim-rocket-quadcore-nic-l2-llc4mb-ddr3
 
 
 ``[sharewithaccounts]``
@@ -377,18 +377,15 @@ you made up). Such a section must contain the following fields:
 """""""""""""""""""""""""""""
 
 This specifies the basic target design that will be built. Unless you
-are defining a custom system, this should either be ``FireSim``, for
-systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
-are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``. We
-describe this in greater detail in :ref:`Generating Different
+are defining a custom system, this should be set to ``FireSim``.
+We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulated. Some
-examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
-These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
+examples include ``FireSimRocketConfig`` and ``FireSimQuadRocketConfig``.
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
@@ -458,7 +455,7 @@ these as necessary:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -467,7 +464,7 @@ these as necessary:
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, ``firesim-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
+In this example, ``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 
