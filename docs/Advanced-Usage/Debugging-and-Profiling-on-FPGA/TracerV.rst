@@ -25,7 +25,7 @@ Building a Design with TracerV
 
 In all FireChip designs, TracerV is included by default. Other targets can
 enable it by attaching a TracerV Bridge to the RISC-V trace port of one-or-more
-cores or instruction streams (istream). By default, only the cycle number, instruction address, and valid bit
+cores or instruction streams. By default, only the cycle number, instruction address, and valid bit
 are collected.
 
 .. _tracerv-enabling:
@@ -47,8 +47,8 @@ Now when you run a workload, a trace output file will be placed in the
 ``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE0-C0``.
 The first ``0`` in this filename disambiguates between multiple SoCs on one FPGA
 if you're running in supernode mode and will always be ``0`` if you're not running
-in supernode mode. The ``C0`` represents core/istream 0 in the simulated
-SoC. If you have multiple cores/istreams, each will have its own file (ending in ``C1``,
+in supernode mode. The ``C0`` represents core or instruction stream 0 in the simulated
+SoC. If you have multiple cores or instruction streams, each will have its own file (ending in ``C1``,
 ``C2``, etc).  To copy all TracerV trace files back to your manager, you can
 add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
 ``simulation_outputs`` in your workload ``.json`` file. See the
@@ -228,7 +228,7 @@ The human readable trace output format looks like so:
 .. include:: TRACERV-HUMAN-READABLE-EXAMPLE
    :code: ini
 
-In this output, C0 represents instruction stream (or core/istream) zero. The next field
+In this output, C0 represents instruction stream (or core) zero. The next field
 represents the address of the instruction committed that cycle and a valid bit,
 in hex, interpreted like so:
 
@@ -251,8 +251,8 @@ This is ``output_format=1``.
 
 This simply writes the 512 bits received from the FPGA each cycle to the output
 file in binary. Each 512-bit chunk is stored little-endian, that is, the first
-64-bits stores the address and valid bits of core/istream 0 in little-endian, the next
-64-bits stores the address and valid bits of core/istream 1 in little-endian, and so on,
+64-bits stores the address and valid bits of core or instruction stream 0 in little-endian, the next
+64-bits stores the address and valid bits of core or instruction stream 1 in little-endian, and so on,
 until the final 64-bit value in the 512-bit value, which stores the cycle number
 in little-endian.
 
@@ -270,8 +270,8 @@ when using TracerV under certain conditions:
 * TracerV by default outputs only instruction address and a valid bit and assumes
   that the combination of these fits within 64 bits. Changing this requires
   modifying ``sim/firesim-lib/src/main/scala/bridges/TracerVBridge.scala``.
-* The number of cores/istreams is currently not automatically detected.
-  To collect data for multiple cores/istreams, you must change the
+* The number of cores or instruction streams is currently not automatically detected.
+  To collect data for multiple cores or instruction streams, you must change the
   ``NUM_INSTR_STREAMS`` macro at the top of ``sim/firesim-lib/src/main/cc/bridges/tracerv.h``.
    * TracerV currently packs the entire trace into a 512-bit word, so the maximum
      supported value for ``NUM_INSTR_STREAMS`` is 7. (7x 64-bit traces + a 64 bit cycle
