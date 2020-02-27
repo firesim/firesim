@@ -92,11 +92,11 @@ $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
 $(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
@@ -115,11 +115,11 @@ $(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 $(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
 $(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) vcs-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)"
+	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
