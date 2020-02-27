@@ -49,7 +49,11 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
     // A complete-path reference target to the source that drives this new output
     def absoluteSourceRT(childInstGraph: Map[String, Map[Instance, OfModule]]): ReferenceTarget = {
       instPath.foldLeft[IsModule](topMT)((target, instName) => {
-        val instModuleName = childInstGraph(target.module)(Instance(instName))
+        val moduleName = target match {
+          case iT: InstanceTarget => iT.ofModule
+          case mT: ModuleTarget   => mT.module
+        }
+        val instModuleName = childInstGraph(moduleName)(Instance(instName))
         target.instOf(instName, instModuleName.value)
       }).ref(src.name)
     }
@@ -59,6 +63,9 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
+
+    require(state.annotations.collect({ case t: TopWiringAnnotation => t }).isEmpty,
+      "CircuitState cannot have existing TopWiring annotations before BridgeTopWiring.")
 
     val inputAnnos = state.annotations.collect({ case a: BridgeTopWiringAnnotation => a })
     val localClockMap = inputAnnos.map(anno => anno.target -> anno.clock).toMap
@@ -100,7 +107,7 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
 
     // Step 3: Do clock analysis using complete paths to clocks
     val findClockSourceAnnos = allAbsClockRTs.map(src => FindClockSourceAnnotation(src)).toSeq
-    val stateToAnalyze = wiredState.copy(annotations = findClockSourceAnnos ++ wiredState.annotations)
+    val stateToAnalyze = wiredState.copy(annotations = findClockSourceAnnos)
     val loweredState = Seq(new ResolveAndCheck,
                            new MiddleFirrtlToLowFirrtl,
                            FindClockSources).foldLeft(stateToAnalyze)((state, xform) => xform.transform(state))
