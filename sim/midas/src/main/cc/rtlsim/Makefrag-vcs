@@ -7,7 +7,6 @@
 #  vcs_wrapper_v: An additional verilog wrapper around the DUT not used in verilator
 #  CLOCK_PERIOD: Self explanatory
 #  TB := The top level module on which the stop and printf conditions are defined
-#
 
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \

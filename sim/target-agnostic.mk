@@ -172,8 +172,7 @@ $(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 	cp -f $< $@
 	sed -i "s/\$$random/64'b0/g" $@
-	sed -i "s/void'(randomize(val));/val = '0;/g" $@
-	sed -i 's/fatal;/fatal(0, "");/g' $@
+	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $@
 
 $(fpga_vh): $(VERILOG) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/$(@F) $@
@@ -185,8 +184,7 @@ $(fpga_tcl_env): $(VERILOG) $(fpga_work_dir)/stamp
 $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/firesim_ila_insert_* $(fpga_work_dir)/design/ila_files/
 	sed -i "s/\$$random/64'b0/g" $(fpga_work_dir)/design/ila_files/*
-	sed -i "s/void'(randomize(val));/val = '0;/g" $(fpga_work_dir)/design/ila_files/*
-	sed -i 's/fatal;/fatal(0, "");/g' $(fpga_work_dir)/design/ila_files/*
+	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $(fpga_work_dir)/design/ila_files/*
 
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine

@@ -25,7 +25,7 @@ Building a Design with TracerV
 
 In all FireChip designs, TracerV is included by default. Other targets can
 enable it by attaching a TracerV Bridge to the RISC-V trace port of one-or-more
-cores or instruction streams. By default, only the cycle number, instruction address, and valid bit
+cores. By default, only the cycle number, instruction address, and valid bit
 are collected.
 
 .. _tracerv-enabling:
@@ -47,8 +47,8 @@ Now when you run a workload, a trace output file will be placed in the
 ``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE0-C0``.
 The first ``0`` in this filename disambiguates between multiple SoCs on one FPGA
 if you're running in supernode mode and will always be ``0`` if you're not running
-in supernode mode. The ``C0`` represents core or instruction stream 0 in the simulated
-SoC. If you have multiple cores or instruction streams, each will have its own file (ending in ``C1``,
+in supernode mode. The ``C0`` represents core 0 in the simulated
+SoC. If you have multiple cores, each will have its own file (ending in ``C1``,
 ``C2``, etc).  To copy all TracerV trace files back to your manager, you can
 add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
 ``simulation_outputs`` in your workload ``.json`` file. See the
@@ -251,8 +251,8 @@ This is ``output_format=1``.
 
 This simply writes the 512 bits received from the FPGA each cycle to the output
 file in binary. Each 512-bit chunk is stored little-endian, that is, the first
-64-bits stores the address and valid bits of core or instruction stream 0 in little-endian, the next
-64-bits stores the address and valid bits of core or instruction stream 1 in little-endian, and so on,
+64-bits stores the address and valid bits of core 0 in little-endian, the next
+64-bits stores the address and valid bits of core 1 in little-endian, and so on,
 until the final 64-bit value in the 512-bit value, which stores the cycle number
 in little-endian.
 

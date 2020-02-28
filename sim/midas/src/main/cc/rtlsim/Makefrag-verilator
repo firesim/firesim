@@ -15,26 +15,21 @@
 #   (optional) verilator_conf: An verilator configuration file
 
 VERILATOR ?= verilator --cc --exe
-ifeq ($(shell grep -i "module.*ariane" $(emul_v)),)
-    verilator_assert = --assert
-endif
+
+# brief description of special flags:
+# --assert : disable if running with ariane (temporary until it is supported by them)
+# -Werror-IMPLICIT : error on implicitly declared wires
+# -Wno-BLKANDNBLK : ignore blocking and non-blocking assignment mixes
+# -Wno-fatal : disable fatal exit on warnings
 override VERILATOR_FLAGS := \
+	$(shell if ! grep -iq "module.*ariane" $(emul_v); then echo "--assert"; fi) \
 	-Wno-STMTDLY \
-	-Werror-PINMISSING \
-	-Werror-IMPLICIT \
-	-Wno-fatal \
-	-Wno-PINCONNECTEMPTY \
-	-Wno-ASSIGNDLY \
-	-Wno-DECLFILENAME \
-	-Wno-UNUSED \
-	-Wno-UNOPTFLAT \
-	-Wno-BLKANDNBLK \
-	-Wno-style \
-	-Wall \
 	-O3 \
-	$(verilator_assert) \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
+	-Werror-IMPLICIT \
+	-Wno-BLKANDNBLK \
+	-Wno-fatal \
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS)" \
 	-LDFLAGS "$(LDFLAGS) " \
 	$(VERILATOR_FLAGS)
