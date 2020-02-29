@@ -36,7 +36,7 @@ MIDAS_VERILATOR_FLAGS = \
 	--assert
 
 override VERILATOR_FLAGS := \
-	$(shell if ! grep -iq "module.*ariane" $(emul_v)/*.*v; then echo "$(MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi) \
+	$(shell if ! grep -iq "module.*ariane" $(emul_v); then echo "$(MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi) \
 	-Wno-STMTDLY \
 	-O3 \
 	--output-split 10000 \
