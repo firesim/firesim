@@ -10,6 +10,7 @@ import firesim.util.GeneratorArgs
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
     targetConfigs: String = "NoConfig",
+    platformConfigs: String = "HostDebugFeatures_DefaultF1Config",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
   ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
@@ -25,7 +26,7 @@ abstract class TutorialSuite(
     targetConfigProject = "firesim.midasexamples",
     targetConfigs = targetConfigs,
     platformConfigProject = "firesim.midasexamples",
-    platformConfigs = "HostDebugFeatures_DefaultF1Config")
+    platformConfigs = platformConfigs)
 
   val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
   val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
@@ -68,16 +69,20 @@ abstract class TutorialSuite(
 
   // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
   // printfs from the RTL simulator
-  def diffSynthesizedPrints(synthPrintLog: String) {
+  def diffSynthesizedPrints(synthPrintLog: String,
+                            stdoutPrefix: String = "SYNTHESIZED_PRINT ",
+                            synthPrefix: String  = "SYNTHESIZED_PRINT ") {
     behavior of "synthesized print log"
     it should "match the logs produced by the verilated design" in {
-      def printLines(filename: File): Seq[String] = {
+      def printLines(filename: File, prefix: String): Seq[String] = {
         val lines = Source.fromFile(filename).getLines.toList
-        lines.filter(_.startsWith("SYNTHESIZED_PRINT")).sorted
+        lines.filter(_.startsWith(prefix))
+             .map(_.stripPrefix(prefix))
+             .sorted
       }
 
-      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"))
-      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"))
+      val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"), stdoutPrefix)
+      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"), synthPrefix)
       assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
         assert(vPrint == sPrint)
@@ -133,12 +138,17 @@ class RiscF1Test extends TutorialSuite("Risc")
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
-        simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
-        diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterModule.autocounter.out")
+    simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
+  diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterModule.autocounter.out")
 }
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
-        simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
-        diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
+    simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
+  diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
+}
+class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
+    simulationArgs = Seq("+print-file=synthprinttest.out"),
+    platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
+  diffSynthesizedPrints("synthprinttest.out", synthPrefix = "")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {

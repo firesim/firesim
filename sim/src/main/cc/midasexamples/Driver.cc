@@ -37,6 +37,8 @@
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
 #include "AutoCounterCoverModule.h"
+#elif defined DESIGNNAME_AutoCounterPrintfModule
+#include "PrintfModule.h"
 #elif defined DESIGNNAME_Accumulator
 #include "Accumulator.h"
 #elif defined DESIGNNAME_VerilogAccumulator

@@ -34,7 +34,7 @@ class AutoCounterModuleDUT extends Module {
   val oddlfsr_printcount = freechips.rocketchip.util.WideCounter(64, childInst.io.oddlfsr)
   val cycle_print = Reg(UInt(64.W))
   cycle_print := cycle_print + 1.U
-  when ((cycle_print >= 1000.U) & (cycle_print % 1000.U === 0.U)) {
+  when ((cycle_print >= 999.U) & (cycle_print % 1000.U === 999.U)) {
     printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
     printf("AUTOCOUNTER_PRINT PerfCounter ENABLED_AutoCounterModule_AutoCounterModuleDUT: %d\n", enabled_printcount)
@@ -82,7 +82,7 @@ class AutoCounterCoverModuleDUT extends Module {
   }
   val cycle_print = Reg(UInt(64.W))
   cycle_print := cycle_print + 1.U
-  when ((cycle_print >= 1000.U) & (cycle_print % 1000.U === 0.U)) {
+  when ((cycle_print >= 999.U) & (cycle_print % 1000.U === 999.U)) {
     printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
     printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_8_AutoCounterCoverModule_AutoCounterCoverModuleDUT: %d\n", cycle8_printcount)
@@ -92,4 +92,24 @@ class AutoCounterCoverModuleDUT extends Module {
 }
 
 class AutoCounterCoverModule extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
+
+class AutoCounterPrintfDUT extends Module {
+  val io = IO(new Bundle {
+    val a = Input(Bool())
+  })
+
+  val childInst = Module(new AutoCounterModuleChild)
+  childInst.io.c := io.a
+
+  //--------VALIDATION---------------
+
+  val oddlfsr_printcount = freechips.rocketchip.util.WideCounter(64, childInst.io.oddlfsr)
+  val cycle_print = Reg(UInt(39.W))
+  cycle_print := cycle_print + 1.U
+  when (childInst.io.oddlfsr) {
+    printf("SYNTHESIZED_PRINT CYCLE: %d [AutoCounter] ODD_LFSR: %d\n", cycle_print, oddlfsr_printcount) 
+  }
+}
+
+class AutoCounterPrintfModule extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
 

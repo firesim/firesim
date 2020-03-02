@@ -52,3 +52,21 @@ public:
     };
 };
 #endif //DESIGNNAME_PrintfModule
+
+#ifdef DESIGNNAME_AutoCounterPrintfModule
+class AutoCounterPrintfModule_t: public print_module_t, virtual simif_t
+{
+public:
+    AutoCounterPrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};
+    virtual void run() {
+        print_endpoint->init();
+        poke(reset, 1);
+        poke(io_a, 0);
+        step(1);
+        poke(reset, 0);
+        step(1);
+        poke(io_a, 1);
+        run_and_collect_prints(3000);
+    };
+};
+#endif // DESIGNNAME_AutoCounterPrintf
