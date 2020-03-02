@@ -6,9 +6,6 @@
 #include <vector>
 #include <fstream>
 
-// TODO: get this automatically
-#define NUM_CORES 1
-
 #ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
 class autocounter_t: public bridge_driver_t {
     public:
@@ -30,6 +27,10 @@ class autocounter_t: public bridge_driver_t {
         uint64_t readrate;
         std::string autocounter_filename;
         std::ofstream autocounter_file;
+
+        // Pulls a single sample from the Bridge, if available.
+        // Returns true if a sample was read
+        bool drain_sample();
 };
 #endif // AUTOCOUNTERWIDGET_struct_guard
 

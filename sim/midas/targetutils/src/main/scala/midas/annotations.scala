@@ -3,7 +3,7 @@
 package midas.targetutils
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import firrtl.{RenameMap}
 import firrtl.annotations.{Annotation, NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
@@ -161,15 +161,25 @@ object ExcludeInstanceAsserts {
 
 
 //AutoCounter annotations
-
-case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
-}
-
-case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
+case class AutoCounterFirrtlAnnotation(
+  target: ReferenceTarget,
+  clock: ReferenceTarget,
+  reset: ReferenceTarget,
+  label: String,
+  message: String,
+  coverGenerated: Boolean = false)
+    extends firrtl.annotations.Annotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    val renamedReset  = renamer.exactRename(reset)
+    Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
+  }
+  // The AutoCounter tranform will reject this annotation if it's not enclosed
+  def shouldBeIncluded(modList: Seq[String]): Boolean = !coverGenerated || modList.contains(target.module)
+  def enclosingModule(): String = target.module
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule)
 }
 
 case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
@@ -177,21 +187,29 @@ case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
   def duplicate(n: ModuleTarget) = this.copy(target = n)
 }
 
-import chisel3.experimental.ChiselAnnotation
 case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnotation {
   //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
   //It currently doesn't matter since the transform throws away the circuit name
   def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
 }
 
-case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
-  def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
-}
-
 object PerfCounter {
-  def apply(target: chisel3.Data, label: String, message: String): Unit = {
-    chisel3.experimental.annotate(AutoCounterAnnotation(target, label, message))
+  // Biancolin - WIP: Previously target was chisel3.data. Figure out why.
+  def apply(target: chisel3.Bool,
+            clock: chisel3.Clock,
+            reset: Reset,
+            label: String,
+            message: String): Unit = {
+    //Biancolin: WIP. Move the reset-driven gate into FIRRTL
+    val predicate = !reset.toBool && target
+    predicate.suggestName(label)
+    dontTouch(predicate)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = AutoCounterFirrtlAnnotation(predicate.toNamed.toTarget, clock.toNamed.toTarget,
+        reset.toNamed.toTarget, label, message)
+    })
   }
+
+  def apply(target: chisel3.Bool, label: String, message: String): Unit =
+    apply(target, Module.clock, Module.reset, label, message)
 }
-
-
