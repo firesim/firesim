@@ -33,9 +33,11 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
   // TODO: determine order for multiple renames, or just check of == 1 rename?
   def exactRename(rt: ReferenceTarget): ReferenceTarget = {
     val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
-    assert(renameMatches.length == 1)
+    assert(renameMatches.length == 1,
+      s"${rt} should be renamed exactly once. Suggested renames: ${renameMatches}")
     renameMatches.head
   }
+
   def apply(rt: ReferenceTarget): Seq[ReferenceTarget] = {
     renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
   }
