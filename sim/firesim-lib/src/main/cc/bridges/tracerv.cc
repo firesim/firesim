@@ -37,13 +37,13 @@
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
-    static_assert(NUM_INSTR_STREAMS <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores/Instruction Streams");
+    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores/Instruction Streams");
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
     const char *dwarf_file_name = NULL;
 
-    for (int i = 0; i < NUM_INSTR_STREAMS; i++) {
+    for (int i = 0; i < NUM_CORES; i++) {
          this->tracefiles[i] = NULL;
     }
 
@@ -102,7 +102,7 @@ tracerv_t::tracerv_t(
 
     if (tracefilename) {
         // giving no tracefilename means we will create NO tracefiles
-        for (int i = 0; i < NUM_INSTR_STREAMS; i++) {
+        for (int i = 0; i < NUM_CORES; i++) {
             std::string tfname = std::string(tracefilename) + std::string("-C") + std::to_string(i);
             this->tracefiles[i] = fopen(tfname.c_str(), "w");
             if (!this->tracefiles[i]) {
@@ -134,14 +134,14 @@ tracerv_t::tracerv_t(
             fprintf(stderr, "+fireperf specified but no +dwarf-file-name given\n");
             abort();
         }
-        for (int i = 0; i < NUM_INSTR_STREAMS; i++) {
+        for (int i = 0; i < NUM_CORES; i++) {
             this->trace_trackers[i] = new TraceTracker(this->dwarf_file_name, this->tracefiles[i]);
         }
     }
 }
 
 tracerv_t::~tracerv_t() {
-    for (int i = 0; i < NUM_INSTR_STREAMS; i++) {
+    for (int i = 0; i < NUM_CORES; i++) {
         if (this->tracefiles[i]) {
             fclose(this->tracefiles[i]);
         }
@@ -213,7 +213,7 @@ void tracerv_t::tick() {
                         fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
                         fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
                     } else {
-                        for (int q = 0; q < NUM_INSTR_STREAMS; q++) {
+                        for (int q = 0; q < NUM_CORES; q++) {
                            if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                              fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
                            }
@@ -224,7 +224,7 @@ void tracerv_t::tick() {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     uint64_t cycle_internal = OUTBUF[i+7];
 
-                    for (int q = 0; q < NUM_INSTR_STREAMS; q++) {
+                    for (int q = 0; q < NUM_CORES; q++) {
                         if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                             uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
                             this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
@@ -287,7 +287,7 @@ void tracerv_t::flush() {
                     fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
                     fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
                 } else {
-                    for (int q = 0; q < NUM_INSTR_STREAMS; q++) {
+                    for (int q = 0; q < NUM_CORES; q++) {
                       if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                         fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
                       }
@@ -298,7 +298,7 @@ void tracerv_t::flush() {
             for (int i = 0; i < beats_available * 8; i+=8) {
                 uint64_t cycle_internal = OUTBUF[i+7];
 
-                for (int q = 0; q < NUM_INSTR_STREAMS; q++) {
+                for (int q = 0; q < NUM_CORES; q++) {
                     if ((OUTBUF[i+0+q] >> 40) & 0x1) {
                         // is a valid instruction
                         //

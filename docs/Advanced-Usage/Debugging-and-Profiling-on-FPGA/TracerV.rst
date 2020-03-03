@@ -272,9 +272,9 @@ when using TracerV under certain conditions:
   modifying ``sim/firesim-lib/src/main/scala/bridges/TracerVBridge.scala``.
 * The number of cores or instruction streams is currently not automatically detected.
   To collect data for multiple cores or instruction streams, you must change the
-  ``NUM_INSTR_STREAMS`` macro at the top of ``sim/firesim-lib/src/main/cc/bridges/tracerv.h``.
+  ``NUM_CORES`` macro at the top of ``sim/firesim-lib/src/main/cc/bridges/tracerv.h``.
    * TracerV currently packs the entire trace into a 512-bit word, so the maximum
-     supported value for ``NUM_INSTR_STREAMS`` is 7. (7x 64-bit traces + a 64 bit cycle
+     supported value for ``NUM_CORES`` is 7. (7x 64-bit traces + a 64 bit cycle
      number = 512 bits).
 * Please reach out on the FireSim mailing list if you need help addressing any
   of these restrictions: https://groups.google.com/forum/#!forum/firesim

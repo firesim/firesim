@@ -8,7 +8,7 @@
 #include "bridges/tracerv/trace_tracker.h"
 
 // TODO: get this automatically
-#define NUM_INSTR_STREAMS 1
+#define NUM_CORES 1
 
 #ifdef TRACERVBRIDGEMODULE_struct_guard
 class tracerv_t: public bridge_driver_t
@@ -28,14 +28,14 @@ class tracerv_t: public bridge_driver_t
     private:
         TRACERVBRIDGEMODULE_struct * mmio_addrs;
         simif_t* sim;
-        FILE * tracefiles[NUM_INSTR_STREAMS];
+        FILE * tracefiles[NUM_CORES];
         uint64_t cur_cycle;
         uint64_t trace_trigger_start, trace_trigger_end;
         uint32_t trigger_selector;
 
         // TODO: rename this from linuxbin
         ObjdumpedBinary * linuxbin;
-        TraceTracker * trace_trackers[NUM_INSTR_STREAMS];
+        TraceTracker * trace_trackers[NUM_CORES];
 
         bool human_readable = false;
         // Used in unit testing to check TracerV is correctly pulling instuctions off the target
