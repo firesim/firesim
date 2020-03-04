@@ -34,7 +34,8 @@ class synthesized_prints_t: public bridge_driver_t
                              const char* const*  format_strings,
                              const unsigned int* argument_counts,
                              const unsigned int* argument_widths,
-                             unsigned int dma_address);
+                             unsigned int dma_address,
+                             int printno);
         ~synthesized_prints_t();
         virtual void init();
         virtual void tick();
@@ -52,6 +53,7 @@ class synthesized_prints_t: public bridge_driver_t
         const unsigned int* argument_counts;
         const unsigned int* argument_widths;
         const unsigned int dma_address;
+        const int printno;
 
         // DMA batching parameters
         const size_t beat_bytes  = DMA_DATA_BITS / 8;

@@ -15,7 +15,8 @@ synthesized_prints_t::synthesized_prints_t(
   const char* const*  format_strings,
   const unsigned int* argument_counts,
   const unsigned int* argument_widths,
-  unsigned int dma_address):
+  unsigned int dma_address,
+  int printno) :
     bridge_driver_t(sim),
     mmio_addrs(mmio_addrs),
     print_count(print_count),
@@ -25,7 +26,8 @@ synthesized_prints_t::synthesized_prints_t(
     format_strings(format_strings),
     argument_counts(argument_counts),
     argument_widths(argument_widths),
-    dma_address(dma_address) {
+    dma_address(dma_address),
+    printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
   assert(print_count > 0);
 
@@ -34,9 +36,10 @@ synthesized_prints_t::synthesized_prints_t(
   this->start_cycle = 0;
   this->end_cycle = -1ULL;
 
-  std::string printfile_arg  = std::string("+print-file=");
-  std::string printstart_arg = std::string("+print-start=");
-  std::string printend_arg   = std::string("+print-end=");
+  std::string num_equals = std::to_string(printno) + std::string("=");
+  std::string printfile_arg  = std::string("+print-file") + num_equals;
+  std::string printstart_arg = std::string("+print-start") + num_equals;
+  std::string printend_arg   = std::string("+print-end") + num_equals;
   // Does not format the printfs, before writing them to file
   std::string binary_arg   = std::string("+print-binary");
   // Removes the cycle prefix from human-readable output

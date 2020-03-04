@@ -554,7 +554,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_0_format_strings,
                                           PRINTBRIDGEMODULE_0_argument_counts,
                                           PRINTBRIDGEMODULE_0_argument_widths,
-                                          PRINTBRIDGEMODULE_0_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_0_DMA_ADDR, 0));
 #endif
 #ifdef PRINTBRIDGEMODULE_1_PRESENT
     PRINTBRIDGEMODULE_1_substruct_create;
@@ -568,7 +568,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_1_format_strings,
                                           PRINTBRIDGEMODULE_1_argument_counts,
                                           PRINTBRIDGEMODULE_1_argument_widths,
-                                          PRINTBRIDGEMODULE_1_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_1_DMA_ADDR, 1));
 #endif
 #ifdef PRINTBRIDGEMODULE_2_PRESENT
     PRINTBRIDGEMODULE_2_substruct_create;
@@ -582,7 +582,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_2_format_strings,
                                           PRINTBRIDGEMODULE_2_argument_counts,
                                           PRINTBRIDGEMODULE_2_argument_widths,
-                                          PRINTBRIDGEMODULE_2_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_2_DMA_ADDR, 2));
 #endif
 #ifdef PRINTBRIDGEMODULE_3_PRESENT
     PRINTBRIDGEMODULE_3_substruct_create;
@@ -596,7 +596,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_3_format_strings,
                                           PRINTBRIDGEMODULE_3_argument_counts,
                                           PRINTBRIDGEMODULE_3_argument_widths,
-                                          PRINTBRIDGEMODULE_3_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_3_DMA_ADDR, 3));
 #endif
 #ifdef PRINTBRIDGEMODULE_4_PRESENT
     PRINTBRIDGEMODULE_4_substruct_create;
@@ -610,7 +610,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_4_format_strings,
                                           PRINTBRIDGEMODULE_4_argument_counts,
                                           PRINTBRIDGEMODULE_4_argument_widths,
-                                          PRINTBRIDGEMODULE_4_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_4_DMA_ADDR, 4));
 #endif
 #ifdef PRINTBRIDGEMODULE_5_PRESENT
     PRINTBRIDGEMODULE_5_substruct_create;
@@ -624,7 +624,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_5_format_strings,
                                           PRINTBRIDGEMODULE_5_argument_counts,
                                           PRINTBRIDGEMODULE_5_argument_widths,
-                                          PRINTBRIDGEMODULE_5_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_5_DMA_ADDR, 5));
 #endif
 #ifdef PRINTBRIDGEMODULE_6_PRESENT
     PRINTBRIDGEMODULE_6_substruct_create;
@@ -638,7 +638,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_6_format_strings,
                                           PRINTBRIDGEMODULE_6_argument_counts,
                                           PRINTBRIDGEMODULE_6_argument_widths,
-                                          PRINTBRIDGEMODULE_6_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_6_DMA_ADDR, 6));
 #endif
 #ifdef PRINTBRIDGEMODULE_7_PRESENT
     PRINTBRIDGEMODULE_7_substruct_create;
@@ -652,7 +652,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                                           PRINTBRIDGEMODULE_7_format_strings,
                                           PRINTBRIDGEMODULE_7_argument_counts,
                                           PRINTBRIDGEMODULE_7_argument_widths,
-                                          PRINTBRIDGEMODULE_7_DMA_ADDR));
+                                          PRINTBRIDGEMODULE_7_DMA_ADDR, 7));
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
