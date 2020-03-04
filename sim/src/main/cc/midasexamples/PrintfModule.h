@@ -7,30 +7,54 @@
 
 class print_module_t: virtual simif_t
 {
-    public:
-        std::unique_ptr<synthesized_prints_t> print_endpoint;
-        print_module_t(int argc, char** argv) {
-            PRINTBRIDGEMODULE_0_substruct_create;
-            std::vector<std::string> args(argv + 1, argv + argc);
-            print_endpoint = std::unique_ptr<synthesized_prints_t>(new synthesized_prints_t(this,
-                args,
-                PRINTBRIDGEMODULE_0_substruct,
-                PRINTBRIDGEMODULE_0_print_count,
-                PRINTBRIDGEMODULE_0_token_bytes,
-                PRINTBRIDGEMODULE_0_idle_cycles_mask,
-                PRINTBRIDGEMODULE_0_print_offsets,
-                PRINTBRIDGEMODULE_0_format_strings,
-                PRINTBRIDGEMODULE_0_argument_counts,
-                PRINTBRIDGEMODULE_0_argument_widths,
-                PRINTBRIDGEMODULE_0_DMA_ADDR));
-        };
-        void run_and_collect_prints(int cycles) {
-            step(cycles, false);
-            while (!done()) {
-                print_endpoint->tick();
-            }
-            print_endpoint->finish();
-        };
+  public:
+    std::vector<std::unique_ptr<synthesized_prints_t>> print_endpoints;
+    print_module_t(int argc, char** argv) {
+      std::vector<std::string> args(argv + 1, argv + argc);
+#ifdef PRINTBRIDGEMODULE_0_PRESENT
+      PRINTBRIDGEMODULE_0_substruct_create;
+      print_endpoints.push_back(std::unique_ptr<synthesized_prints_t>(new synthesized_prints_t(
+        this,
+        args,
+        PRINTBRIDGEMODULE_0_substruct,
+        PRINTBRIDGEMODULE_0_print_count,
+        PRINTBRIDGEMODULE_0_token_bytes,
+        PRINTBRIDGEMODULE_0_idle_cycles_mask,
+        PRINTBRIDGEMODULE_0_print_offsets,
+        PRINTBRIDGEMODULE_0_format_strings,
+        PRINTBRIDGEMODULE_0_argument_counts,
+        PRINTBRIDGEMODULE_0_argument_widths,
+        PRINTBRIDGEMODULE_0_DMA_ADDR,
+        0)));
+#endif
+#ifdef PRINTBRIDGEMODULE_1_PRESENT
+      PRINTBRIDGEMODULE_1_substruct_create;
+      print_endpoints.push_back(std::unique_ptr<synthesized_prints_t>(new synthesized_prints_t(
+         this,
+         args,
+         PRINTBRIDGEMODULE_1_substruct,
+         PRINTBRIDGEMODULE_1_print_count,
+         PRINTBRIDGEMODULE_1_token_bytes,
+         PRINTBRIDGEMODULE_1_idle_cycles_mask,
+         PRINTBRIDGEMODULE_1_print_offsets,
+         PRINTBRIDGEMODULE_1_format_strings,
+         PRINTBRIDGEMODULE_1_argument_counts,
+         PRINTBRIDGEMODULE_1_argument_widths,
+         PRINTBRIDGEMODULE_1_DMA_ADDR,
+         1)));
+#endif
+    };
+    void run_and_collect_prints(int cycles) {
+      step(cycles, false);
+      while (!done()) {
+        for (auto &print_endpoint: print_endpoints) {
+          print_endpoint->tick();
+        }
+      }
+    for (auto &print_endpoint: print_endpoints) {
+      print_endpoint->finish();
+    }
+    };
 };
 
 #ifdef DESIGNNAME_PrintfModule

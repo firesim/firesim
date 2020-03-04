@@ -72,8 +72,8 @@ abstract class TutorialSuite(
   def diffSynthesizedPrints(synthPrintLog: String,
                             stdoutPrefix: String = "SYNTHESIZED_PRINT ",
                             synthPrefix: String  = "SYNTHESIZED_PRINT ") {
-    behavior of "synthesized print log"
-    it should "match the logs produced by the verilated design" in {
+    behavior of s"${synthPrintLog}"
+    it should "match the printfs by the verilated design" in {
       def printLines(filename: File, prefix: String): Seq[String] = {
         val lines = Source.fromFile(filename).getLines.toList
         lines.filter(_.startsWith(prefix))
@@ -83,7 +83,8 @@ abstract class TutorialSuite(
 
       val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"), stdoutPrefix)
       val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"), synthPrefix)
-      assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty)
+      assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty,
+        s"\nSynthesized output had length ${synthPrintOutput.size}. Expected ${verilatedOutput.size}")
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
         assert(vPrint == sPrint)
       }
@@ -166,6 +167,16 @@ class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
 }
 
 class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
+
+class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
+  simulationArgs = Seq("+print-file0=synthprinttest0.out",
+                       "+print-file1=synthprinttest1.out",
+                       "+print-no-cycle-prefix")) {
+  diffSynthesizedPrints("synthprinttest0.out")
+  diffSynthesizedPrints("synthprinttest1.out",
+    stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
+    synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ")
+}
 
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
