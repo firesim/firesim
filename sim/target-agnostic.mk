@@ -148,8 +148,8 @@ $(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
 	cp $(HEADER) $(OUTPUT_DIR)/build/
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
-	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC) \
-	TOP_DIR=$(chipyard_dir)"
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
+	TOP_DIR=$(chipyard_dir)
 
 #############################
 # FPGA Build Initialization #
@@ -218,8 +218,8 @@ $(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -
 $(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
-	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC) \
-	TOP_DIR=$(chipyard_dir)"
+	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" \
+	TOP_DIR=$(chipyard_dir)
 
 xsim: $(xsim)
 
