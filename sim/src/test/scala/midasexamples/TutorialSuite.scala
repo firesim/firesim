@@ -152,5 +152,13 @@ class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ")
 }
 
+class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterModule",
+    simulationArgs = Seq("+autocounter-readrate0=1000",
+                         "+autocounter-filename0=AUTOCOUNTERFILE0",
+                         "+autocounter-readrate1=1000",
+                         "+autocounter-filename1=AUTOCOUNTERFILE1")) {
+  diffSynthesizedLog("AUTOCOUNTERFILE0", "AUTOCOUNTER_PRINT ", "")
+  diffSynthesizedLog("AUTOCOUNTERFILE1", "AUTOCOUNTER_PRINT_HALFRATE ", "")
+}
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
