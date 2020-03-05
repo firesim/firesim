@@ -86,10 +86,11 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := targetFire
 
-  for ((counter, label) <- btht_queue.io.deq.bits.data_out.zip(labels)) {
-    attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly)
-    attach(counter >> hostCounterLowWidth, s"autocounter_high_${label}", ReadOnly)
-  }
+  val (lowCountAddrs, highCountAddrs) = (for ((counter, label) <- btht_queue.io.deq.bits.data_out.zip(labels)) yield {
+    val lowAddr = attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly)
+    val highAddr = attach(counter >> hostCounterLowWidth, s"autocounter_high_${label}", ReadOnly)
+    (lowAddr, highAddr)
+  }).unzip
 
   //communication with the driver
   attach(btht_queue.io.deq.bits.cycle(hostCyclesLowWidth-1, 0), "cycles_low", ReadOnly)
@@ -100,5 +101,12 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
   attach(btht_queue.io.deq.valid, "countersready", ReadOnly)
   Pulsify(genWORegInit(btht_queue.io.deq.ready, "readdone", false.B), 1)
 
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    headerComment(sb)
+    // Exclude counter addresses as their names can vary across AutoCounter instances, but 
+    // we only generate a single struct typedef
+    crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb, lowCountAddrs ++ highCountAddrs)
+    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+  }
   genCRFile()
 }
