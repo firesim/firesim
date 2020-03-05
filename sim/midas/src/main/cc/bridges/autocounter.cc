@@ -49,8 +49,10 @@ autocounter_t::~autocounter_t() {
 
 void autocounter_t::init() {
     cur_cycle = 0;
-    write(addr_map.w_registers.at("readrate_low"), readrate & ((1ULL << 32) - 1));
+    // Decrement the readrate by one to simplify the HW a little bit
+    write(addr_map.w_registers.at("readrate_low"), (readrate - 1) & ((1ULL << 32) - 1));
     write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
+    write(mmio_addrs->init_done, 1);
 }
 
 bool autocounter_t::drain_sample() {

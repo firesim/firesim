@@ -47,22 +47,20 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
 
   val readrate_low = RegInit(0.U(hostReadrateLowWidth.W))
   val readrate_high = RegInit(0.U(hostReadrateHighWidth.W))
-  val readrate = Wire(UInt(64.W))
-  val readrate_dly = RegInit(0.U(64.W))
-  readrate := Cat(readrate_high, readrate_low)
+  val readrate = Cat(readrate_high, readrate_low)
+  val initDone = RegInit(false.B)
   hastracerwidget match {
       case true => BoringUtils.addSink(trigger, s"trace_trigger")
       case _ => trigger := true.B
    }
 
-  val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady)
+  val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
   val targetFire = tFireHelper.fire
   // We only sink tokens, so tie off the return channel
   hPort.fromHost.hValid := true.B
 
   when (targetFire) {
     cycles := cycles + 1.U
-    readrate_dly := readrate
   }
 
   val counters = hPort.hBits.elements.unzip._2.map({ increment =>
@@ -73,18 +71,17 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
     count
   }).toSeq
 
-  val periodcycles = RegInit(1.U(64.W))
-  when (targetFire & (readrate =/= readrate_dly)) {
-    periodcycles := readrate - 2.U
-  } .elsewhen (targetFire & (periodcycles === 0.U) & (readrate > 0.U)) {
-    periodcycles := readrate - 1.U
-  } .elsewhen (targetFire & (cycles > 0.U) & (readrate > 0.U)) {
-    periodcycles := periodcycles - 1.U
+  val periodcycles = RegInit(0.U(64.W))
+  val isSampleCycle = periodcycles === readrate
+  when (targetFire && isSampleCycle) {
+    periodcycles := 0.U
+  } .elsewhen (targetFire) {
+    periodcycles := periodcycles + 1.U
   }
 
   val btht_queue = Module(new Queue(new AutoCounterToHostToken(numCounters), 2))
 
-  btht_queue.io.enq.valid := (periodcycles === 0.U) & (cycles > 0.U) & (cycles >= readrate-1.U) & targetFire & trigger
+  btht_queue.io.enq.valid := isSampleCycle & targetFire & trigger
   btht_queue.io.enq.bits.data_out := VecInit(counters)
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := targetFire
@@ -99,6 +96,7 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
   attach(btht_queue.io.deq.bits.cycle >> hostCyclesLowWidth, "cycles_high", ReadOnly)
   attach(readrate_low, "readrate_low", WriteOnly)
   attach(readrate_high, "readrate_high", WriteOnly)
+  attach(initDone, "init_done", WriteOnly)
   attach(btht_queue.io.deq.valid, "countersready", ReadOnly)
   Pulsify(genWORegInit(btht_queue.io.deq.ready, "readdone", false.B), 1)
 
