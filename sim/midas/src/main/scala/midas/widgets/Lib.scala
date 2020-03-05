@@ -225,16 +225,18 @@ class MCRFileMap() {
     case (e: RegisterEntry, addr) => mcrIO.bindReg(e, addr)
   }
 
-  def genHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+  def genHeader(prefix: String, base: BigInt, sb: StringBuilder, addrsToExclude: Seq[Int] = Nil): Unit = {
     // get widget name with no widget number (prefix includes it)
     val prefix_no_num = prefix.split("_")(0)
+
+    val filteredRegs = name2addr.toList.filterNot({ case (_, idx) => addrsToExclude.contains(idx) })
 
     // emit generic struct for this widget type. guarded so it only gets
     // defined once
     sb append s"#ifndef ${prefix_no_num}_struct_guard\n"
     sb append s"#define ${prefix_no_num}_struct_guard\n"
     sb append s"typedef struct ${prefix_no_num}_struct {\n"
-    name2addr.toList foreach { case (regName, idx) =>
+    filteredRegs foreach { case (regName, idx) =>
       sb append s"    unsigned long ${regName};\n"
     }
     sb append s"} ${prefix_no_num}_struct;\n"
@@ -248,7 +250,7 @@ class MCRFileMap() {
     sb append s"#define ${prefix}_substruct_create \\\n"
     // assume the widget destructor will free this
     sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
-    name2addr.toList foreach { case (regName, idx) =>
+    filteredRegs foreach { case (regName, idx) =>
       val address = base + idx
       sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
     }
