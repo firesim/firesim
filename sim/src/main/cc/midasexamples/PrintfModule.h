@@ -63,7 +63,9 @@ class PrintfModule_t: public print_module_t, virtual simif_t
 public:
     PrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};
     virtual void run() {
-        print_endpoint->init();
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
         poke(reset, 1);
         poke(io_a, 0);
         poke(io_b, 0);
@@ -83,7 +85,9 @@ class AutoCounterPrintfModule_t: public print_module_t, virtual simif_t
 public:
     AutoCounterPrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};
     virtual void run() {
-        print_endpoint->init();
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
         poke(reset, 1);
         poke(io_a, 0);
         step(1);

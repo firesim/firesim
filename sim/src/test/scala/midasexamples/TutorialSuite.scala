@@ -67,52 +67,26 @@ abstract class TutorialSuite(
     }
   }
 
-  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
-  // printfs from the RTL simulator
-  def diffSynthesizedPrints(synthPrintLog: String,
-                            stdoutPrefix: String = "SYNTHESIZED_PRINT ",
-                            synthPrefix: String  = "SYNTHESIZED_PRINT ") {
-    behavior of s"${synthPrintLog}"
-    it should "match the printfs by the verilated design" in {
+  // Checks that a bridge generated log in ${genDir}/${synthLog} matches output
+  // generated directly by the RTL simulator (usually with printfs)
+  def diffSynthesizedLog(synthLog: String,
+                         stdoutPrefix: String = "SYNTHESIZED_PRINT ",
+                         synthPrefix: String  = "SYNTHESIZED_PRINT ") {
+    behavior of s"${synthLog}"
+    it should "match the prints generated the verilated design" in {
       def printLines(filename: File, prefix: String): Seq[String] = {
         val lines = Source.fromFile(filename).getLines.toList
         lines.filter(_.startsWith(prefix))
-             .map(_.stripPrefix(prefix))
+             .map(_.stripPrefix(prefix).replaceAll(" +", " "))
              .sorted
       }
 
       val verilatedOutput = printLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"), stdoutPrefix)
-      val synthPrintOutput = printLines(new File(genDir, s"/${synthPrintLog}"), synthPrefix)
+      val synthPrintOutput = printLines(new File(genDir, s"/${synthLog}"), synthPrefix)
       assert(verilatedOutput.size == synthPrintOutput.size && verilatedOutput.nonEmpty,
         s"\nSynthesized output had length ${synthPrintOutput.size}. Expected ${verilatedOutput.size}")
       for ( (vPrint, sPrint) <- verilatedOutput.zip(synthPrintOutput) ) {
         assert(vPrint == sPrint)
-      }
-    }
-  }
-
-  // Checks that the synthesized print log in ${genDir}/${synthPrintLog} matches the
-  // printfs from the RTL simulator
-  def diffAutoCounterOutput(autocounterOutputLog: String, referenceFile: String) {
-    behavior of "AutoCounter output log"
-    it should "match the logs commited based on the design intent" in {
-      def printLines(filename: File): Seq[String] = {
-        val lines = Source.fromFile(filename).getLines.toList
-        lines.sorted
-      }
-
-      def printVerilatorLines(filename: File): Seq[String] = {
-        val lines = Source.fromFile(filename).getLines.toList
-        val stripedlines = lines.filter(_.startsWith("AUTOCOUNTER_PRINT")).map(line => line.stripPrefix("AUTOCOUNTER_PRINT").trim.replaceAll(" +", " "))
-        stripedlines.sorted
-      }
-
-      //val referenceOutput = printLines(new File(outDir,  s"/${referenceFile}"))
-      val referenceOutput = printVerilatorLines(new File(outDir,  s"/${targetName}.${backendSimulator}.out"))
-      val autocounterOutput = printLines(new File(genDir, s"/${autocounterOutputLog}"))
-      assert(referenceOutput.size == autocounterOutput.size && referenceOutput.nonEmpty)
-      for ( (rPrint, acPrint) <- referenceOutput.zip(autocounterOutput) ) {
-        assert(rPrint == acPrint)
       }
     }
   }
@@ -140,24 +114,24 @@ class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
     simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
-  diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterModule.autocounter.out")
+  diffSynthesizedLog("AUTOCOUNTERFILE0", "AUTOCOUNTER_PRINT ")
 }
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
     simulationArgs = Seq("+autocounter-readrate0=1000", "+autocounter-filename0=AUTOCOUNTERFILE0")) {
-  diffAutoCounterOutput("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
+  diffSynthesizedLog("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
 }
 class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
-    simulationArgs = Seq("+print-file=synthprinttest.out"),
+    simulationArgs = Seq("+print-file0=synthprinttest.out"),
     platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
-  diffSynthesizedPrints("synthprinttest.out", synthPrefix = "")
+  diffSynthesizedLog("synthprinttest.out", synthPrefix = "")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
-  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
-  diffSynthesizedPrints("synthprinttest.out")
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file0=synthprinttest.out")) {
+  diffSynthesizedLog("synthprinttest.out")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
-  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
-  diffSynthesizedPrints("synthprinttest.out")
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file0=synthprinttest.out")) {
+  diffSynthesizedLog("synthprinttest.out")
 }
 
 class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")
@@ -172,8 +146,8 @@ class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file0=synthprinttest0.out",
                        "+print-file1=synthprinttest1.out",
                        "+print-no-cycle-prefix")) {
-  diffSynthesizedPrints("synthprinttest0.out")
-  diffSynthesizedPrints("synthprinttest1.out",
+  diffSynthesizedLog("synthprinttest0.out")
+  diffSynthesizedLog("synthprinttest1.out",
     stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ")
 }
