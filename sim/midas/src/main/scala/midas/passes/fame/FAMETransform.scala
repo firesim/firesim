@@ -140,14 +140,16 @@ object FAMEModuleTransformer {
       new DefRegister(NoInfo, ns.newName(name), UIntType(width), WRef(hostClock), WRef(hostReset), UIntLiteral(0, width))
     }
     val finishing = DefWire(NoInfo, ns.newName(triggerName), BoolType)
-
-    val gateTargetClock = analysis.containsSyncBlackboxes(m)
-    val targetClock = if (gateTargetClock) {
-      val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock)).connect("CE", WRef(finishing))
-      SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, SourceFlow))
-    } else {
-      PassThru(WRef(hostClock), "target_clock")
-    }
+    /*
+     *  The conjuction of the following expressions enables the target-clock
+     *  Failing to keep the target clock-gated during reset can lead to spurious
+     *  target-clock edges leading to non-deterministically initialized target state
+     *  in registers that are not reset
+     */
+    val clockGatePredicates = Seq(WRef(finishing), DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType))
+    val buf = InstanceInfo(DefineAbstractClockGate.blackbox).connect("I", WRef(hostClock))
+                                                            .connect("CE", DoPrim(PrimOps.And, clockGatePredicates, Seq.empty, BoolType))
+    val targetClock = SignalInfo(buf.decl, buf.assigns, WSubField(buf.ref, "O", ClockType, SourceFlow))
 
     // Step 1: Build channels
     val mTarget = ModuleTarget(analysis.circuit.main, m.name)
@@ -193,16 +195,9 @@ object FAMEModuleTransformer {
       case e => e
     }
 
-   /*
-    * A target state trigger is only needed if clocks are not gated.  When using true clock gating,
-    * the transform still programmatically adds an extra enable signal to the state updates, so we
-    * pass in a constant one as the value of this enable signal.  This spurious condition gets
-    * optimized away during ConstantPropagation. This homogeneity is helpful since a transformed
-    * module might be instantiated within multiple top-level simulation models, some of which may
-    * rely true clock gating (if their corresponding target modules contain blackboxes) and some of
-    * which may not.
-    */
-    val targetStateTrigger = if (gateTargetClock) one else WRef(finishing)
+    // This is vestigial from when we supported two means of implementing clock
+    // gating; This will be removed when multiclock is implemented
+    val targetStateTrigger = one
 
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt).map(onExpr) match {
       case conn @ Connect(info, lhs, _) if (kind(lhs) == RegKind) =>

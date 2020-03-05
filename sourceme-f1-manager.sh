@@ -22,3 +22,6 @@ export FIRESIM_SOURCED=1
 # this is a prefix added to run farm names. change this to isolate run farms
 # if you have multiple copies of firesim
 export FIRESIM_RUNFARM_PREFIX=""
+
+# put FlameGraph/other fireperf utils on the user path
+export PATH=$(pwd)/utils/fireperf:$(pwd)/utils/fireperf/FlameGraph:$PATH

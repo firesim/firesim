@@ -1,5 +1,5 @@
-Debugging Using FPGA Integrated Logic Analyzers (ILA)
-=====================================================
+AutoILA: Simple Integrated Logic Analyzer (ILA) Insertion
+===================================================================
 
 Sometimes it takes too long to simulate FireSim on RTL simulators, and
 in some occasions we would also like to debug the simulation infrastructure

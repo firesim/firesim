@@ -74,8 +74,10 @@ simperf-test:
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 linux-poweroff:
-	mkdir -p $@
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+	mkdir -p $@/overlay
+	cd ../../sw/check-rtc && make print-mcycle-linux
+	cp ../../sw/check-rtc/print-mcycle-linux $@/overlay/
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 simperf-test-scale: simperf-test
 

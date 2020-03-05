@@ -55,7 +55,8 @@ class JobConfig:
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
     def get_siminputs(self):
-        return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, x), self.siminputs))
+        # remote filename for a siminput gets prefixed with the job's name
+        return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, self.jobname + "-" + x), self.siminputs))
 
     def rootfs_path(self):
         return self.rootfs
@@ -105,12 +106,16 @@ class WorkloadConfig:
 
         self.post_run_hook = workloadjson.get("post_run_hook")
 
+        appendsuffix = ""
+        if suffixtag != "":
+            appendsuffix = "-" + suffixtag
+
         # we set this up as an absolute path to simplify later use
         self.job_results_dir = """{}/results-workload/{}-{}{}/""".format(
                                                             os.getcwd(),
                                                             launch_time,
                                                             self.workload_name,
-                                                            "-" + suffixtag)
+                                                            appendsuffix)
 
         #import code
         #code.interact(local=locals())

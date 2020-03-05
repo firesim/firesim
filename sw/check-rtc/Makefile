@@ -12,6 +12,9 @@ check-rtc-linux: check-rtc-linux.c
 check-rtc: check-rtc.o crt.o syscalls.o
 	$(CC) -T link.ld $(LDFLAGS) $^ -o $@
 
+print-mcycle-linux: print-mcycle.c
+	$(CC_LINUX) $(CFLAGS_LINUX) $(LDFLAGS_LINUX) $< -o $@
+
 %.o: %.c util.h encoding.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
