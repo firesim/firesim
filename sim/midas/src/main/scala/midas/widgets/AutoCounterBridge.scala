@@ -88,9 +88,6 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
   btht_queue.io.enq.bits.data_out := VecInit(counters)
   btht_queue.io.enq.bits.cycle := cycles
   hPort.toHost.hReady := targetFire
-  when(btht_queue.io.enq.fire) {
-    printf(p"${btht_queue.io.enq.bits.data_out}\n")
-  }
 
   for ((counter, label) <- btht_queue.io.deq.bits.data_out.zip(labels)) {
     attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly)
