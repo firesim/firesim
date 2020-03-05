@@ -202,13 +202,11 @@ object PerfCounter {
             reset: Reset,
             label: String,
             message: String): Unit = {
-    //Biancolin: WIP. Move the reset-driven gate into FIRRTL
-    val predicate = !reset.toBool && target
-    predicate.suggestName(label)
-    dontTouch(predicate)
+    dontTouch(reset)
+    dontTouch(target)
     annotate(new ChiselAnnotation {
-      def toFirrtl = AutoCounterFirrtlAnnotation(predicate.toNamed.toTarget, clock.toNamed.toTarget,
-        reset.toNamed.toTarget, label, message)
+      def toFirrtl = AutoCounterFirrtlAnnotation(target.toTarget, clock.toTarget,
+        reset.toTarget, label, message)
     })
   }
 
