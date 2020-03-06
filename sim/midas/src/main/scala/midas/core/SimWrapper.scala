@@ -347,7 +347,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
       val chName = chAnno.globalName
       val strippedName = chName.stripSuffix("_fwd")
-      val bridgeClockRatio = UnityClockRatio // TODO: FIXME
       // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an bridge)
       val channel = Module(new ReadyValidChannel(getReadyValidChannelType(chAnno).cloneType))
 

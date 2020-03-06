@@ -20,36 +20,6 @@ import midas.core.SimUtils.{ChLeafType}
 // token streams irrevocably will introduce simulation non-determinism.
 case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
-// For now use the convention that clock ratios are set with respect to the transformed RTL
-trait IsRationalClockRatio {
-  def numerator: Int
-  def denominator: Int
-  def isUnity() = numerator == denominator
-  def isReciprocal() = numerator == 1
-  def isIntegral() =  denominator == 1
-  def inverse: IsRationalClockRatio
-}
-
-case class RationalClockRatio(numerator: Int, denominator: Int) extends IsRationalClockRatio {
-  def inverse() = RationalClockRatio(denominator, numerator)
-}
-
-case object UnityClockRatio extends IsRationalClockRatio {
-  val numerator = 1
-  val denominator = 1
-  def inverse() = UnityClockRatio
-}
-
-case class ReciprocalClockRatio(denominator: Int) extends IsRationalClockRatio {
-  val numerator = 1
-  def inverse = IntegralClockRatio(numerator = denominator)
-}
-
-case class IntegralClockRatio(numerator: Int) extends IsRationalClockRatio {
-  val denominator = 1
-  def inverse = ReciprocalClockRatio(denominator = numerator)
-}
-
 class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
@@ -61,11 +31,8 @@ class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bun
 
 class PipeChannel[T <: ChLeafType](
     val gen: T,
-    latency: Int,
-    clockRatio: IsRationalClockRatio = UnityClockRatio
+    latency: Int
   )(implicit p: Parameters) extends Module {
-
-  require(clockRatio.isUnity)
   require(latency == 0 || latency == 1)
 
   val io = IO(new PipeChannelIO(gen))
@@ -119,7 +86,7 @@ class PipeChannelUnitTest(
 
   override val testName = "PipeChannel Unit Test"
   val payloadWidth = 8
-  val dut = Module(new PipeChannel(UInt(payloadWidth.W), latency, UnityClockRatio))
+  val dut = Module(new PipeChannel(UInt(payloadWidth.W), latency))
   val referenceInput  = Wire(UInt(payloadWidth.W))
   val referenceOutput = ShiftRegister(referenceInput, latency)
 
@@ -232,10 +199,7 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
 class ReadyValidChannel[T <: Data](
     gen: T,
     n: Int = 2, // Target queue depth
-    // Clock ratio (N/M) of deq interface (N) vs enq interface (M)
-    clockRatio: IsRationalClockRatio = UnityClockRatio
   )(implicit p: Parameters) extends Module {
-  require(clockRatio.isUnity, "CDC is not currently implemented")
 
   val io = IO(new ReadyValidChannelIO(gen))
   val enqFwdQ = Module(new ShiftQueue(ValidIO(gen), 2, flow = true))
@@ -300,7 +264,7 @@ class ReadyValidChannelUnitTest(
     queueDepth: Int = 2,
     timeout: Int = 50000
   )(implicit p: Parameters) extends UnitTest(timeout) {
-  override val testName = "PipeChannel ClockRatio: ${clockRatio.numerator}/${clockRatio.denominator}"
+  override val testName = "PipeChannel"
 
   val payloadType = UInt(8.W)
   val resetLength = 4
