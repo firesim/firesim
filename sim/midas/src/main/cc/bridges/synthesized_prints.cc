@@ -31,7 +31,7 @@ synthesized_prints_t::synthesized_prints_t(
   assert((token_bytes & (token_bytes - 1)) == 0);
   assert(print_count > 0);
 
-  const char *printfilename = default_filename.c_str();
+  const char *printfilename = (default_filename + std::to_string(printno)).c_str();
 
   this->start_cycle = 0;
   this->end_cycle = -1ULL;
