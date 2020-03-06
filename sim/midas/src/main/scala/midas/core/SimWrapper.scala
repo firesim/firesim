@@ -241,7 +241,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   })
 
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
-  val hostReset = IO(Input(Bool()))
   val target = Module(new TargetBox(chAnnos, leafTypeMap))
 
   // Indicates SimulationMapping which module we want to replace with the simulator
@@ -249,7 +248,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
     TargetBoxAnnotation(outer.toNamed.toTarget.ref(target.instanceName))
   })
 
-  target.io.hostReset := reset.toBool && hostReset
+  target.io.hostReset := reset.toBool
   target.io.clock := clock
   import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 

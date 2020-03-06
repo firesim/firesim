@@ -8,8 +8,7 @@ DESIGN ?= FireSim
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.firesim
-TARGET_CONFIG ?= FireSimRocketChipConfig
-# TARGET_CONFIG ?= FireSimBoomConfig
+TARGET_CONFIG ?= FireSimRocketConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
@@ -58,11 +57,11 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 		   $(shell find $(firesim_lib_dir) -name "*.h")
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
-            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/*)))  \
+            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 			$(RISCV)/lib/libfesvr.a
 
-TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include
-TARGET_LD_FLAGS :=
+TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost
+TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz
 # DOC include end: Bridge Build System Changes
 
 ################################################################
@@ -79,13 +78,18 @@ NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
 nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
-tracer_args = +tracefile0=TRACEFILE
+tracer_args = +tracefile0=TRACEFILE0
 blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
-autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE
+autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE0
+# Neglecting this +arg will make the simulator use the same step size as on the
+# FPGA. This will make ML simulation more closely match results seen on the
+# FPGA at the expense of dramatically increased target runtime
+serial_args = +fesvr-step-size=128
+#serial_args =
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
+COMMON_SIM_ARGS ?= $(serial_args) $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +dramsim +max-cycles=$(TIMEOUT_CYCLES)

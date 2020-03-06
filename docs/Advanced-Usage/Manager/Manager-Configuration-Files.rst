@@ -135,6 +135,12 @@ In a networked simulation, this specifies the maximum output bandwidth that a
 NIC is allowed to produce as an integer in Gbit/s. Currently, this must be a
 number between 1 and 200, allowing you to model NICs between 1 and 200 Gbit/s.
 
+``profileinterval``
+"""""""""""""""""""""""""""""
+
+The simulation driver periodically samples performance counters in FASED timing model instances and dumps the result to a file on the host. ``profileinterval`` defines the number of target cycles between samples; setting this field to -1 disables polling. 
+
+
 ``defaulthwconfig``
 """""""""""""""""""""""""""""
 
@@ -147,6 +153,39 @@ You should set this to one of the hardware configurations you have defined alrea
 ``config_hwdb.ini``.  You should set this to the NAME (section title) of the
 hardware configuration from ``config_hwdb.ini``, NOT the actual agfi itself
 (NOT something like ``agfi-XYZ...``).
+
+
+``[tracing]``
+^^^^^^^^^^^^^^^^^^^
+
+This section manages TracerV-based tracing at simulation runtime. For more
+details, see the :ref:`tracerv` page for more details.
+
+``enable``
+""""""""""""""""""
+
+This turns tracing on, when set to ``yes`` and off when set to ``no``. See the :ref:`tracerv-enabling`.
+
+``output_format``
+""""""""""""""""""""
+
+This sets the output format for TracerV tracing. See the :ref:`tracerv-output-format` section.
+
+``selector``, ``start``, and ``end``
+"""""""""""""""""""""""""""""""""""""
+
+These configure triggering for TracerV. See the :ref:`tracerv-trigger` section.
+
+
+``[autocounter]``
+^^^^^^^^^^^^^^^^^^^^^
+
+This section configures AutoCounter. See the :ref:`autocounter` page for more details.
+
+``readrate``
+"""""""""""""""""
+
+This sets the rate at which AutoCounters are read. See the :ref:`autocounter-runtime-parameters` section for more details.
 
 
 ``[workload]``
@@ -174,7 +213,8 @@ benchmark. If you specify fewer nodes, the manager will warn that not all jobs w
 assigned to a simulation. If you specify too many simulations and not enough
 jobs, the manager will not launch the jobs.
 
-Others can be found in the aforementioned directory.
+Others can be found in the aforementioned directory. For a description of the
+JSON format, see :ref:`defining-custom-workloads`.
 
 
 ``terminateoncompletion``
@@ -183,6 +223,27 @@ Others can be found in the aforementioned directory.
 Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
+
+``suffixtag``
+""""""""""""""""""""""""""
+
+This allows you to append a string to a workload's output directory name,
+useful for differentiating between successive runs of the same workload,
+without renaming the entire workload. For example, specifying
+``suffixtag=test-v1`` with a workload named ``super-application`` will result
+in a workload results directory named
+``results-workload/DATE--TIME-super-application-test-v1/``.
+
+``[hostdebug]``
+^^^^^^^^^^^^^^^^^^
+
+``zerooutdram``
+"""""""""""""""""""""""""""""
+
+Set this to ``yes`` to zero-out FPGA-attached DRAM before simulation begins.
+This process takes 2-5 minutes. In general, this is not required to produce
+deterministic simulations on target machines running linux, but should be
+enabled if you observe simulation non-determinism.
 
 .. _config-build:
 
@@ -238,6 +299,11 @@ When ``buildinstancemarket=spot``, this value determines the max price you are
 willing to pay per instance, in dollars. You can also set it to ``ondemand``
 to set your max to the on-demand price for the instance.
 
+``postbuildhook``
+"""""""""""""""""""""""
+
+(Optional) Provide an a script to run on the results copied back from a _single_ build instance. Upon completion of each design's build, the manager invokes this script and passing the absolute path to that instance's build-results directory as it's first argument. 
+
 
 ``[builds]``
 ^^^^^^^^^^^^^^^^^^^^^
@@ -265,7 +331,7 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -276,7 +342,7 @@ you would use:
 ::
 
     [agfistoshare]
-    firesim-quadcore-nic-l2-llc4mb-ddr3
+    firesim-rocket-quadcore-nic-l2-llc4mb-ddr3
 
 
 ``[sharewithaccounts]``
@@ -311,18 +377,15 @@ you made up). Such a section must contain the following fields:
 """""""""""""""""""""""""""""
 
 This specifies the basic target design that will be built. Unless you
-are defining a custom system, this should either be ``FireSim``, for
-systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
-are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``. We
-describe this in greater detail in :ref:`Generating Different
+are defining a custom system, this should be set to ``FireSim``.
+We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulated. Some
-examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
-These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
+examples include ``FireSimRocketConfig`` and ``FireSimQuadRocketConfig``.
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
@@ -392,7 +455,7 @@ these as necessary:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -401,7 +464,7 @@ these as necessary:
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, ``firesim-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
+In this example, ``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 
@@ -441,4 +504,3 @@ Add more hardware config sections, like ``[NAME_GOES_HERE_2]``
 
 You can add as many of these entries to ``config_hwdb.ini`` as you want, following the format
 discussed above (i.e. you provide ``agfi``, ``deploytripletoverride``, or ``customruntimeconfig``).
-

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -e
+
+_usage() {
+    echo "usage: ${0} [-t] <tracefile> [svg]" >&2
+    exit 1
+}
+
+nomerge=''
+while getopts 't' opt ; do
+	case ${opt} in
+	t) nomerge=1 ;;
+	?) _usage ;;
+	esac
+done
+shift $((OPTIND - 1))
+
+test -n "$1" || _usage
+
+test -n "$2" && out="$2" || out="${1##*/}"
+out=${out%.svg}
+
+stackcollapse-tracerv.py ${nomerge:+-t} "$1" |
+    tee "${out}.folded" |
+    flamegraph.pl --title="Flame Graph" --fontsize 16 --height 20 --bgcolors "#ffffff" --countname cycles ${nomerge:+--flamechart} > "${out}.svg"

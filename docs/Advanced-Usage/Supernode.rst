@@ -36,19 +36,24 @@ configuration is:
 
 ::
 
-    class SupernodeFireSimRocketChipConfig extends Config(new WithNumNodes(4)
-    ++ new FireSimRocketChipConfig)
+    class SupernodeFireSimRocketConfig extends Config(
+       new WithNumNodes(4) ++
+       new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 8L) ++ // 8 GB
+       new FireSimRocketConfig)
 
-In this example, ``SupernodeFireSimRocketChipConfig`` is the wrapper, while
-``FireSimRocketChipConfig`` is the target node configuration. To simulate a
+
+In this example, ``SupernodeFireSimRocketConfig`` is the wrapper, while
+``FireSimRocketConfig`` is the target node configuration. To simulate a
 different target configuration, we will generate a new supernode wrapper, with
 the new target configuration. For example, to simulate 4 quad-core nodes on one
 FPGA, you can use:
 
 ::
 
-    class SupernodeFireSimRocketChipQuadCoreConfig extends Config(new
-    WithNumNodes(4) ++ new FireSimRocketChipQuadCoreConfig)
+    class SupernodeFireSimQuadRocketConfig extends Config(
+       new WithNumNodes(4) ++
+       new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 8L) ++ // 8 GB
+       new FireSimQuadRocketConfig)
 
 
 Next, when defining the build recipe, we must remmber to use the supernode
@@ -62,8 +67,8 @@ configurations.  For example:
 ::
 
     DESIGN=FireSim
-    TARGET_CONFIG=SupernodeFireSimRocketChipQuadCoreConfig
-    PLATFORM_CONFIG=FireSimDDR3FRFCFSLLC4MBConfig90MHz
+    TARGET_CONFIG=SupernodeFireSimQuadRocketConfig
+    PLATFORM_CONFIG=BaseF1Config
     instancetype=c5.4xlarge
     deploytriplet=None
 

@@ -61,22 +61,33 @@ do
     shift
 done
 
-# Disable the Chipyard submodule initially, and enable if we're not in library mode
 git config submodule.target-design/chipyard.update none
-git config submodule.sw/firesim-software.update none
 git submodule update --init --recursive #--jobs 8
 
-# firesim-software should not be recursively initialized by default (use
-# sw/firesim-software/init-submodules.sh if you need linux deps)
-git config --unset submodule.sw/firesim-software.update
-git submodule update --init sw/firesim-software
-
 if [ "$IS_LIBRARY" = false ]; then
+    # This checks if firemarshal has already been configured by someone. If
+    # not, we will provide our own config. This must be checked before calling
+    # init-submodules-no-riscv-tools.sh because that will configure
+    # firemarshal.
+    marshal_cfg=$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml
+    if [ ! -f $marshal_cfg ]; then
+      first_init=true
+    else
+      first_init=false
+    fi
+
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
     ./scripts/init-submodules-no-riscv-tools.sh --no-firesim
     cd $RDIR
+
+    # Configure firemarshal to know where our firesim installation is.
+    # If this is a fresh init of chipyard, we can safely overwrite the marshal
+    # config, otherwise we have to assume the user might have changed it
+    if [ $first_init = true ]; then
+      echo "firesim-dir: '../../../../'" > $marshal_cfg 
+    fi
 fi
 
 if [ "$SUBMODULES_ONLY" = true ]; then
@@ -93,10 +104,15 @@ fi
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
     target_chipyard_dir=$RDIR/../..
+
+    # setup marshal symlink
+    ln -s ../../../software/firemarshal $RDIR/sw/firesim-software
 else
     target_chipyard_dir=$RDIR/target-design/chipyard
-fi
 
+    # setup marshal symlink
+    ln -s ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
+fi
 
 # Restrict the devtoolset environment to a subshell
 #
@@ -145,9 +161,11 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     make
 
     # Install firesim-software dependencies
+    # We always setup the symlink correctly above, so use sw/firesim-software
+    marshal_dir=$RDIR/sw/firesim-software
     cd $RDIR
-    sudo pip3 install -r sw/firesim-software/python-requirements.txt
-    cat sw/firesim-software/centos-requirements.txt | sudo xargs yum install -y
+    sudo pip3 install -r $marshal_dir/python-requirements.txt
+    cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
     wget https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/snapshot/e2fsprogs-1.45.4.tar.gz
     tar xvzf e2fsprogs-1.45.4.tar.gz
     cd e2fsprogs-1.45.4/
@@ -168,6 +186,12 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     cd $RDIR
     bash sourceme-f1-full.sh
 fi
+
+cd $RDIR
+source env.sh && ./scripts/build-libelf.sh
+cd $RDIR
+source env.sh && ./scripts/build-libdwarf.sh
+
 
 cd $RDIR
 ./gen-tags.sh
