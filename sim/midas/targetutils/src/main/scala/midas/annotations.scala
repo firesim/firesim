@@ -213,3 +213,63 @@ object PerfCounter {
   def apply(target: chisel3.Bool, label: String, message: String): Unit =
     apply(target, Module.clock, Module.reset, label, message)
 }
+
+sealed trait TriggerSourceType
+case object Credit extends TriggerSourceType
+case object Debit extends TriggerSourceType
+
+private [midas] case class TriggerSourceAnnotation(
+    target: ReferenceTarget,
+    clock: ReferenceTarget,
+    reset: Option[ReferenceTarget],
+    sourceType: TriggerSourceType) extends Annotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    val renamedReset  = reset map renamer.exactRename
+    Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
+  }
+}
+
+
+private [midas] case class TriggerSinkAnnotation(
+    target: ReferenceTarget,
+    clock: ReferenceTarget) extends Annotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    Seq(this.copy(target = renamedTarget, clock = renamedClock))
+  }
+}
+
+// Trigger debit and credit
+object TriggerSource {
+  private def annotateTrigger(tpe: TriggerSourceType, target: Bool): Unit = {
+    dontTouch(target)
+    dontTouch(Module.reset)
+    dontTouch(Module.clock)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = TriggerSourceAnnotation(target.toTarget, Module.clock.toTarget, Some(Module.reset.toTarget), tpe)
+    })
+  }
+
+  def credit(credit: Bool): Unit = annotateTrigger(Credit, credit)
+  def debit(debit: Bool): Unit = annotateTrigger(Debit, debit)
+  def apply(creditSig: Bool, debitSig: Bool): Unit = {
+    credit(creditSig)
+    debit(debitSig)
+  }
+}
+
+// Trigger Sink
+object TriggerSink {
+  def apply(target: Bool): Unit = {
+    dontTouch(target)
+    dontTouch(Module.clock)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = TriggerSinkAnnotation(target.toTarget, Module.clock.toTarget)
+    })
+  }
+}
