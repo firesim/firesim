@@ -10,6 +10,11 @@ static inline long rdcycle(void)
 	return cycle;
 }
 
+static inline double timediff(struct timespec *ts1, struct timespec *ts2)
+{
+	return (ts2->tv_sec - ts1->tv_sec) * 1e9 + (ts2->tv_nsec - ts1->tv_nsec);
+}
+
 int main(void)
 {
 	long cycles;
@@ -20,12 +25,14 @@ int main(void)
 	clock_gettime(CLOCK_REALTIME, &ts1);
 	cycles = -rdcycle();
 
-	sleep(1);
+	// We have to busy-wait instead of using sleep because
+	// WFI pauses the cycle count
+	do {
+		clock_gettime(CLOCK_REALTIME, &ts2);
+	} while (timediff(&ts1, &ts2) < 1e9);
 
-	clock_gettime(CLOCK_REALTIME, &ts2);
 	cycles += rdcycle();
-
-	nanos = (ts2.tv_sec - ts1.tv_sec) * 1e9 + (ts2.tv_nsec - ts1.tv_nsec);
+	nanos = timediff(&ts1, &ts2);
 	cycles_per_nano = cycles / nanos;
 
 	printf("Clock speed: %f GHz\n", cycles_per_nano);
