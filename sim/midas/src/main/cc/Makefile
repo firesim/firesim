@@ -59,7 +59,7 @@ $(OUT_DIR)/$(DESIGN).chain:
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
 # The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
 
 design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
