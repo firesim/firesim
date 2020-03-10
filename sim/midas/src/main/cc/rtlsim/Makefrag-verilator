@@ -13,9 +13,13 @@
 # Verilator Only:
 #   top_module: The top of the DUT
 #   (optional) verilator_conf: An verilator configuration file
+#   (optional) VERILATOR_FLAGS: extra flags depending on the target
 
 VERILATOR ?= verilator --cc --exe
-override VERILATOR_FLAGS := --assert -Wno-STMTDLY -O3 \
+
+override VERILATOR_FLAGS := \
+	-Wno-STMTDLY \
+	-O3 \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS)" \

@@ -37,7 +37,7 @@
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
-    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores");
+    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores/Instruction Streams");
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
