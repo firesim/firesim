@@ -16,7 +16,6 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -DVCS -I$(VCS_HOME)/include" \
 	-LDFLAGS "$(LDFLAGS)" \
 	-sverilog \
-	-error=noZMMCM \
 	-assert svaext \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_GARBAGE_ASSIGN \
