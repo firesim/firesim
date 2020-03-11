@@ -6,8 +6,7 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import firrtl.{RenameMap}
-import firrtl.annotations.{Annotation, NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
-import firrtl.annotations.{ReferenceTarget, InstanceTarget, ModuleTarget, AnnotationException}
+import firrtl.annotations._
 
 // This is currently consumed by a transformation that runs after MIDAS's core
 // transformations In FireSim, targeting an F1 host, these are consumed by the
@@ -214,15 +213,16 @@ object PerfCounter {
     apply(target, Module.clock, Module.reset, label, message)
 }
 
-sealed trait TriggerSourceType
-case object Credit extends TriggerSourceType
-case object Debit extends TriggerSourceType
+// Need serialization utils to be upstreamed to FIRRTL before i can use these.
+//sealed trait TriggerSourceType
+//case object Credit extends TriggerSourceType
+//case object Debit extends TriggerSourceType
 
-private [midas] case class TriggerSourceAnnotation(
+case class TriggerSourceAnnotation(
     target: ReferenceTarget,
     clock: ReferenceTarget,
     reset: Option[ReferenceTarget],
-    sourceType: TriggerSourceType) extends Annotation {
+    sourceType: Boolean) extends Annotation {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -233,7 +233,7 @@ private [midas] case class TriggerSourceAnnotation(
 }
 
 
-private [midas] case class TriggerSinkAnnotation(
+case class TriggerSinkAnnotation(
     target: ReferenceTarget,
     clock: ReferenceTarget) extends Annotation {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
@@ -244,32 +244,33 @@ private [midas] case class TriggerSinkAnnotation(
   }
 }
 
-// Trigger debit and credit
 object TriggerSource {
-  private def annotateTrigger(tpe: TriggerSourceType, target: Bool): Unit = {
+  private def annotateTrigger(tpe: Boolean, target: Bool): Unit = {
+    val clock = Module.clock
+    val reset = Module.reset
     dontTouch(target)
-    dontTouch(Module.reset)
-    dontTouch(Module.clock)
+    dontTouch(clock)
+    dontTouch(reset)
     annotate(new ChiselAnnotation {
-      def toFirrtl = TriggerSourceAnnotation(target.toTarget, Module.clock.toTarget, Some(Module.reset.toTarget), tpe)
+      def toFirrtl = TriggerSourceAnnotation(target.toTarget, clock.toTarget, Some(reset.toTarget), tpe)
     })
   }
 
-  def credit(credit: Bool): Unit = annotateTrigger(Credit, credit)
-  def debit(debit: Bool): Unit = annotateTrigger(Debit, debit)
+  def credit(credit: Bool): Unit = annotateTrigger(true, credit)
+  def debit(debit: Bool): Unit = annotateTrigger(false, debit)
   def apply(creditSig: Bool, debitSig: Bool): Unit = {
     credit(creditSig)
     debit(debitSig)
   }
 }
 
-// Trigger Sink
 object TriggerSink {
   def apply(target: Bool): Unit = {
+    val clock = Module.clock
     dontTouch(target)
-    dontTouch(Module.clock)
+    dontTouch(clock)
     annotate(new ChiselAnnotation {
-      def toFirrtl = TriggerSinkAnnotation(target.toTarget, Module.clock.toTarget)
+      def toFirrtl = TriggerSinkAnnotation(target.toTarget, clock.toTarget)
     })
   }
 }

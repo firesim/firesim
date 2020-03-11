@@ -140,6 +140,8 @@ class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
   runTest("vcs", true)
 }
 
+class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
+
 class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",

@@ -51,6 +51,8 @@
 #include "TrivialMulticlock.h"
 #elif defined DESIGNNAME_MultiClockAssertModule
 #include "MultiClockAssertModule.h"
+#elif defined DESIGNNAME_TriggerWiringModule
+#include "TriggerWiringModule.h"
 #elif defined DESIGNNAME_TwoAdders
 #include "TwoAdders.h"
 #endif
