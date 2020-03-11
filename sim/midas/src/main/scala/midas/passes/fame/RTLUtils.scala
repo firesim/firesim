@@ -68,3 +68,11 @@ object Or extends BinaryBooleanOp {
 object Neq extends BinaryBooleanOp {
   val op = PrimOps.Neq
 }
+
+/** Generates a DefRegister with no reset, relying instead on FPGA programming
+  * to preset the register to 0
+  */
+object RegZeroPreset {
+  def apply(info: Info, name: String, tpe: Type, clock: Expression): DefRegister =
+    DefRegister(info, name, tpe, clock, zero, WRef(name))
+}
