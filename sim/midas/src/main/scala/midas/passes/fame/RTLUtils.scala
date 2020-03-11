@@ -64,3 +64,7 @@ object And extends BinaryBooleanOp {
 object Or extends BinaryBooleanOp {
   val op = PrimOps.Or
 }
+
+object Neq extends BinaryBooleanOp {
+  val op = PrimOps.Neq
+}
