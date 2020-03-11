@@ -4,9 +4,10 @@ package firesim.midasexamples
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 import midas.targetutils.{TriggerSource, TriggerSink}
-import freechips.rocketchip.util.DensePrefixSum
+import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.chiselName
 
 import scala.collection.mutable
 
@@ -29,10 +30,10 @@ trait SourceCredit { self: MultiIOModule =>
 trait SourceDebit { self: MultiIOModule =>
   val referenceDebit = IO(Output(Bool()))
   private val lfsr = LFSR16()
-  referenceDebit := lfsr(0) ^ lfsr(1)
+  referenceDebit := ShiftRegister(lfsr(0), 5)
   val debit = Wire(Bool())
   debit := referenceDebit
-  TriggerSource.credit(debit)
+  TriggerSource.debit(debit)
 }
 
 class TriggerSourceModule extends MultiIOModule with SourceCredit with SourceDebit
@@ -56,6 +57,7 @@ class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOMo
   totalCredit := doAccounting(inputCredits)
   totalDebit := doAccounting(inputDebits)
 
+  @chiselName
   def synchAndDiff(count: UInt): UInt = {
     val sync = RegNext(count)
     val syncLast = RegNext(sync)
@@ -79,10 +81,11 @@ object ReferenceSourceCounters {
 // as seen by all nodes with a trigger sink, fail to match their references.
 class TriggerWiringModule extends RawModule {
   val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
-  val refClock :: div2Clock = clockBridge.io.clocks.toList
+  val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
   val refSinks = new mutable.ArrayBuffer[Bool]()
   val reset = WireInit(false.B)
+  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
   withClockAndReset(refClock, reset) {
     val peekPokeBridge = PeekPokeBridge(refClock, reset)
     val src  = Module(new TriggerSourceModule)
@@ -97,13 +100,30 @@ class TriggerWiringModule extends RawModule {
     }
   }
 
-  // Reference Trigger Enable
-  withClockAndReset(refClock, reset) {
+  withClockAndReset(div2Clock, resetHalfRate) {
+    val src  = Module(new TriggerSourceModule)
+    val sink = Module(new TriggerSinkModule)
+    // Reference Hardware
+    refSourceCounts += ReferenceSourceCounters(Seq(src.referenceCredit), Seq(src.referenceDebit))
+    refSinks += {
+      val syncReg = Reg(Bool())
+      sink.reference := syncReg
+      syncReg
+    }
+  }
+
+  @chiselName
+  class ReferenceImpl {
     val totalCredit = Reg(UInt(32.W))
     val totalDebit  = Reg(UInt(32.W))
-    totalCredit := totalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
-    totalDebit  := totalDebit  + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
-    val triggerEnable = totalCredit =/= totalDebit
+    val creditNext  = totalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
+    val debitNext = totalDebit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
+    totalCredit := creditNext
+    totalDebit  := debitNext
+    val triggerEnable = creditNext =/= debitNext
     refSinks foreach { _ := triggerEnable }
   }
+
+  // Reference Trigger Enable
+  withClock(refClock) { new ReferenceImpl }
 }

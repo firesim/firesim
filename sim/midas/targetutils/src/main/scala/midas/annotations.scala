@@ -242,6 +242,7 @@ case class TriggerSinkAnnotation(
     val renamedClock  = renamer.exactRename(clock)
     Seq(this.copy(target = renamedTarget, clock = renamedClock))
   }
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, target.module)
 }
 
 object TriggerSource {

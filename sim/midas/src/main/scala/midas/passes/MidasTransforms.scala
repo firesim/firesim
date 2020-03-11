@@ -14,6 +14,7 @@ import firrtl.ir._
 import logger._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
+import firrtl.passes.wiring.{WiringTransform}
 import Utils._
 
 import java.io.{File, FileWriter}
@@ -54,6 +55,13 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new ResolveAndCheck,
       new AssertPass(dir),
       new PrintSynthesis(dir),
+      new ResolveAndCheck,
+      TriggerWiring,
+      new EmitFirrtl("post-trigger-wiring.fir"),
+      new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
+      new ResolveAndCheck,
+      new HighFirrtlToMiddleFirrtl,
+      new WiringTransform,
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
