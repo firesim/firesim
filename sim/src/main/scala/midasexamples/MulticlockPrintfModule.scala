@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.util.ResetCatchAndSync
-import midas.widgets.{RationalClockBridge, PeekPokeBridge}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 
 // Instantiates two of the printf duts from the single-clock test
@@ -12,7 +12,7 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 // from verilator/vcs and compare against the two files produced by
 // the bridges
 class MulticlockPrintfModule extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
+  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate",1 , 2)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
   val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)

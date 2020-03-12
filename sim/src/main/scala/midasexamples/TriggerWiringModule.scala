@@ -2,7 +2,7 @@
 
 package firesim.midasexamples
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 import midas.targetutils.{TriggerSource, TriggerSink}
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import chisel3._
@@ -78,7 +78,7 @@ object ReferenceSourceCounters {
 // implement in FIRRTL. The test fails if the firrtl-generated trigger-enables,
 // as seen by all nodes with a trigger sink, fail to match their references.
 class TriggerWiringModule extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
+  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
   val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
   val refSinks = new mutable.ArrayBuffer[Bool]()

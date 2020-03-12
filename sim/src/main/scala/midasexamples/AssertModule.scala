@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import midas.widgets.{RationalClockBridge, PeekPokeBridge}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 class ChildModule extends Module {
   val io = IO(new Bundle {
@@ -81,7 +81,7 @@ class StimulusGenerator extends MultiIOModule {
 
 
 class MultiClockAssertModule extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2)))
+  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
   withClockAndReset(refClock, reset) {

@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 class RegisterModule extends MultiIOModule {
   def dataType = UInt(32.W)
@@ -25,7 +25,8 @@ class TrivialMulticlock extends RawModule {
   // TODO: Resolve bug in PeekPoke bridge for 3/7 case
   //val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3), (3,7)))
   //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
-  val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3)))
+  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2), 
+                                                   RationalClock("ThirdRate", 1, 3)))
   val List(fullRate, halfRate, thirdRate) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
 

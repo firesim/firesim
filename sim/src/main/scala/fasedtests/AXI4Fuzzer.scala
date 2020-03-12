@@ -91,7 +91,7 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
 
 class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
   val reset = WireInit(false.B)
-  val clockBridge = Module(new RationalClockBridge(1000))
+  val clockBridge = Module(new RationalClockBridge())
   val clock = clockBridge.io.clocks(0)
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)

@@ -14,18 +14,14 @@ import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 import firrtl.annotations.{ModuleTarget, ReferenceTarget}
 
-/* Bridge
- *
- * Bridges are widgets that operate directly on token streams moving to and
- * from the transformed-RTL model.
- *
- */
+case class RationalClock(name: String, multiplier: Int, divisor: Int)
 
 sealed trait ClockBridgeConsts {
   val clockChannelName = "clocks"
+  val refClockDomain = "baseClock"
 }
 
-case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int, numerators: Seq[Int], denominators: Seq[Int])
+case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalClock])
     extends BridgeAnnotation with ClockBridgeConsts {
   val channelNames = Seq(clockChannelName)
   def duplicate(n: ModuleTarget) = this.copy(target)
@@ -34,34 +30,27 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, referencePeriod: Int,
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      Some((p: Parameters) => new ClockBridgeModule(referencePeriod, numerators.zip(denominators))(p))
+      Some((p: Parameters) => new ClockBridgeModule(clocks)(p))
     )
   }
 }
 
-class RationalClockBridge(referencePeriod: Int, phaseRelationships: (Int, Int)*) extends BlackBox with ClockBridgeConsts {
+class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox with ClockBridgeConsts {
   outer =>
+  val baseClock = RationalClock(refClockDomain, 1, 1)
+  val allClocks = baseClock +: additionalClocks
   val io = IO(new Bundle {
-    val clocks = Output(Vec(phaseRelationships.size + 1, Clock()))
+    val clocks = Output(Vec(allClocks.size, Clock()))
   })
 
   // Generate the bridge annotation
-  annotate(new ChiselAnnotation { def toFirrtl = {
-      ClockBridgeAnnotation(
-        outer.toNamed.toTarget,
-        referencePeriod,
-        // Unzip them to make them serializable
-        phaseRelationships.unzip._1,
-        phaseRelationships.unzip._2)
-    }
-  })
-
+  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation( outer.toTarget, allClocks) })
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
         channelInfo = TargetClockChannel,
         clock = None, // Clock channels do not have a reference clock
-        sinks = Some(io.clocks.map(_.toNamed.toTarget)),
+        sinks = Some(io.clocks.map(_.toTarget)),
         sources = None
       )
   })
@@ -88,10 +77,11 @@ class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeC
   def generateAnnotations(): Unit = {}
 }
 
-class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)])(implicit p: Parameters)
+class ClockBridgeModule(clockInfo: Seq[RationalClock])(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
   val io = IO(new WidgetIO())
-  val hPort = IO(new ClockTokenVector(phaseRelationships.size + 1))
+  val hPort = IO(new ClockTokenVector(clockInfo.size))
+  val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
   val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
   hPort.clocks <> clockTokenGen.io
 
@@ -102,10 +92,10 @@ class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)
   // Count the number of clock tokens for which the fastest clock is scheduled to fire
   //  --> Use to calculate FMR
   val tCycleFastest = genWideRORegInit(0.U(64.W), "tCycle")
-  val fastestClockIdx = ((1,1) +: phaseRelationships).map({ case (n, d) => n.toDouble / d })
-                                                     .zipWithIndex
-                                                     .sortBy(_._1)
-                                                     .last._2
+  val fastestClockIdx = (phaseRelationships).map({ case (n, d) => n.toDouble / d })
+                                            .zipWithIndex
+                                            .sortBy(_._1)
+                                            .last._2
 
   when (hPort.clocks.fire && hPort.clocks.bits(fastestClockIdx)) {
     tCycleFastest := tCycleFastest + 1.U
@@ -117,16 +107,13 @@ class ClockBridgeModule(referencePeriod: Int, phaseRelationships: Seq[(Int, Int)
   * Finds a clock whose period is the GCD of the periods of all requested
   * clocks, and returns the period of each requested clock as a multiple of that
   * high-frequency base clock
-  *
-  * Note: This prepends a reference (1,1) clock to the start of the list
   */
 
 object FindScaledPeriodGCD {
   def apply(phaseRelationships: Seq[(Int, Int)]): Seq[BigInt] = {
-    val allClocks = (1,1) +: phaseRelationships
-    val periodDivisors = allClocks.unzip._1
+    val periodDivisors = phaseRelationships.unzip._1
     val productOfDivisors  = periodDivisors.foldLeft(BigInt(1))(_ * _)
-    val scaledMultipliers  = allClocks.map({ case (divisor, multiplier) =>  multiplier * productOfDivisors / divisor })
+    val scaledMultipliers  = phaseRelationships.map({ case (divisor, multiplier) =>  multiplier * productOfDivisors / divisor })
     val gcdOfScaledPeriods = scaledMultipliers.reduce((a, b) => a.gcd(b))
     val reducedPeriods     = scaledMultipliers.map(_ / gcdOfScaledPeriods)
     reducedPeriods
@@ -134,7 +121,7 @@ object FindScaledPeriodGCD {
 }
 
 class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends Module {
-  val numClocks = phaseRelationships.size + 1
+  val numClocks = phaseRelationships.size
   val io = IO(new DecoupledIO(Vec(numClocks, Bool())))
   io.valid := true.B
 

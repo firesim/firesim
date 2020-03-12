@@ -326,7 +326,7 @@ class EmitFAMEAnnotations(fileName: String) extends firrtl.Transform {
   def inputForm = UnknownForm
   def outputForm = UnknownForm
 
-  override def name = s"[MIDAS] Debugging FAME Annotation Emission Pass: $fileName"
+  override def name = s"[Golden Gate] Debugging FAME Annotation Emission Pass: $fileName"
 
   def execute(state: CircuitState) = {
     val targetDir = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
