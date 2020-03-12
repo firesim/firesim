@@ -21,19 +21,17 @@ class TriggerSinkModule extends MultiIOModule {
 trait SourceCredit { self: MultiIOModule =>
   val referenceCredit = IO(Output(Bool()))
   private val lfsr = LFSR16()
-  referenceCredit := lfsr(0)
-  val credit = Wire(Bool())
-  credit := referenceCredit
+  val credit = lfsr(0)
   TriggerSource.credit(credit)
+  referenceCredit := ~reset.toBool && credit
 }
 
 trait SourceDebit { self: MultiIOModule =>
   val referenceDebit = IO(Output(Bool()))
   private val lfsr = LFSR16()
-  referenceDebit := ShiftRegister(lfsr(0), 5)
-  val debit = Wire(Bool())
-  debit := referenceDebit
+  val debit = ShiftRegister(lfsr(0), 5)
   TriggerSource.debit(debit)
+  referenceDebit := ~reset.toBool && debit
 }
 
 class TriggerSourceModule extends MultiIOModule with SourceCredit with SourceDebit

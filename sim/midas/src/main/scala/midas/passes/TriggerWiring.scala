@@ -3,7 +3,7 @@
 package midas.passes
 
 import midas.targetutils.{TriggerSourceAnnotation, TriggerSinkAnnotation}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel, Neq, RegZeroPreset}
+import midas.passes.fame._
 
 import freechips.rocketchip.util.DensePrefixSum
 import firrtl._
@@ -20,9 +20,30 @@ private[passes] object TriggerWiring extends firrtl.Transform {
   def outputForm = HighForm
   override def name = "[Golden Gate] Trigger Wiring"
   val topWiringPrefix = "simulationTrigger_"
+  val sinkWiringKey = "trigger_sink"
   val localCType = UIntType(IntWidth(16))
   val globalCType = UIntType(IntWidth(32))
-  val sinkWiringKey = "trigger_sink"
+
+  private def gateEventsWithReset(sourceModuleMap: Map[String, Seq[TriggerSourceAnnotation]],
+                                  updatedAnnos: mutable.ArrayBuffer[TriggerSourceAnnotation])
+                                 (mod: DefModule): DefModule = mod match {
+    case m: Module if sourceModuleMap.isDefinedAt(m.name) =>
+      val annos = sourceModuleMap(m.name)
+      val mT = annos.head.enclosingModuleTarget
+      val moduleNS = Namespace(mod)
+      val addedStmts = annos.flatMap({ anno =>
+        if (anno.reset.nonEmpty) {
+          val eventName = moduleNS.newName(anno.target.ref + "_masked")
+          updatedAnnos += anno.copy(target = mT.ref(eventName))
+          Seq(DefNode(NoInfo, eventName, And(Negate(WRef(anno.reset.get.ref)), WRef(anno.target.ref))))
+        } else {
+          updatedAnnos += anno
+          Nil
+        }
+      })
+      m.copy(body = Block(m.body, addedStmts:_*))
+      case o => o
+  }
 
   def onModuleSink(sinkAnnoModuleMap: Map[String, Seq[TriggerSinkAnnotation]],
                    addedAnnos: mutable.ArrayBuffer[Annotation])
@@ -74,16 +95,20 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     val updatedState = if (srcCreditAnnos.isEmpty && srcDebitAnnos.isEmpty || sinkAnnos.isEmpty) {
       state
     } else {
-      val bridgeTopWiringAnnos = (srcCreditAnnos ++ srcDebitAnnos).map(anno =>
-        BridgeTopWiringAnnotation(anno.target, anno.clock))
+      // Step 1) Gate credits and debits with their associated reset, if provided
+      val updatedAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
+      val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule)
+      val gatedCircuit = state.circuit.map((gateEventsWithReset(srcAnnoMap, updatedAnnos)))
+      val (gatedCredits, gatedDebits) = updatedAnnos.partition(_.sourceType)
 
-      // 2) Use bridge topWiring to generate inter-module connectivity -- but drop the port list
+      // Step 2) Use bridge topWiring to generate inter-module connectivity -- but drop the port list
+      val bridgeTopWiringAnnos = updatedAnnos.map(anno => BridgeTopWiringAnnotation(anno.target, anno.clock))
       val wiredState = (new BridgeTopWiring(topWiringPrefix)).execute(state.copy(
-        annotations = state.annotations ++ bridgeTopWiringAnnos))
+        circuit = gatedCircuit, annotations = state.annotations ++ bridgeTopWiringAnnos))
       val wiredTopModule = wiredState.circuit.modules.collectFirst({
         case m@Module(_,name,_,_) if name == topModName => m
       }).get
-      val otherModules =  wiredState.circuit.modules.filter(_.name != topModName)
+      val otherModules = wiredState.circuit.modules.filter(_.name != topModName)
       val addedPorts = wiredTopModule.ports.filterNot(p => prexistingPorts.contains(p))
 
       // Step 3: Group top-wired outputs by their associated clock
@@ -96,9 +121,6 @@ private[passes] object TriggerWiring extends firrtl.Transform {
         case c@Connect(_, WRef(name,_,_,_), _) if portName2WireMap.isDefinedAt(name) =>
           val defWire = portName2WireMap(name)
           Block(defWire, c.copy(loc = WRef(defWire)))
-        case c@Connect(_, _, WRef(name,_,_,_)) if portName2WireMap.isDefinedAt(name) =>
-          val defWire = portName2WireMap(name)
-          Block(defWire, c.copy(expr = WRef(defWire)))
         case o => o
       }
 
@@ -130,10 +152,10 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       val (localCredits, localDebits) = (for ((clockRT, oAnnos) <- groupedTriggers) yield {
         val credits = oAnnos.collect {
-          case a if srcCreditAnnos.exists(_.target == a.pathlessSource) => WRef(portName2WireMap(a.topSink.ref))
+          case a if gatedCredits.exists(_.target == a.pathlessSource) => WRef(portName2WireMap(a.topSink.ref))
         }
         val debits =  oAnnos.collect {
-          case a if srcDebitAnnos.exists(_.target == a.pathlessSource) => WRef(portName2WireMap(a.topSink.ref))
+          case a if gatedDebits.exists(_.target == a.pathlessSource) => WRef(portName2WireMap(a.topSink.ref))
         }
         def doLocalAccounting = doAccounting(localCType, WRef(clockRT.ref)) _
 

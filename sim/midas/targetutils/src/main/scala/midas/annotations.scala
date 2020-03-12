@@ -230,6 +230,8 @@ case class TriggerSourceAnnotation(
     val renamedReset  = reset map renamer.exactRename
     Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
   }
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, target.module)
+  def enclosingModule(): String = target.module
 }
 
 
