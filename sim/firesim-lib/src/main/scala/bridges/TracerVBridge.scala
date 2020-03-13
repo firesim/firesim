@@ -21,7 +21,7 @@ import TokenQueueConsts._
 
 case class TracerVKey(
   insnWidths: Seq[TracedInstructionWidths], // Widths of variable length fields in each TI
-  vecSizes: Seq[Int] // The number of insns in each vec (= max insns retired at that core) 
+  vecSizes: Seq[Int] // The number of insns in each vec (= max insns retired at that core)
 )
 
 class TracerVBridge(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox
@@ -97,23 +97,23 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
 
   //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
-  val hostTriggerStartInst = RegInit(0.U(insnWidth.W)) 
-  val hostTriggerStartInstMask = RegInit(0.U(insnWidth.W)) 
+  val hostTriggerStartInst = RegInit(0.U(insnWidth.W))
+  val hostTriggerStartInstMask = RegInit(0.U(insnWidth.W))
   attach(hostTriggerStartInst, "hostTriggerStartInst", WriteOnly)
   attach(hostTriggerStartInstMask, "hostTriggerStartInstMask", WriteOnly)
 
-  val hostTriggerEndInst = RegInit(0.U(insnWidth.W)) 
-  val hostTriggerEndInstMask = RegInit(0.U(insnWidth.W)) 
+  val hostTriggerEndInst = RegInit(0.U(insnWidth.W))
+  val hostTriggerEndInstMask = RegInit(0.U(insnWidth.W))
   attach(hostTriggerEndInst, "hostTriggerEndInst", WriteOnly)
   attach(hostTriggerEndInstMask, "hostTriggerEndInstMask", WriteOnly)
 
   //trigger selector
   val triggerSelector = RegInit(0.U((p(CtrlNastiKey).dataBits).W))
-  attach(triggerSelector, "triggerSelector", WriteOnly) 
+  attach(triggerSelector, "triggerSelector", WriteOnly)
 
   //set the trigger
   //assert(triggerCycleCountEnd >= triggerCycleCountStart)
-  val triggerCycleCountVal = RegInit(false.B) 
+  val triggerCycleCountVal = RegInit(false.B)
   triggerCycleCountVal := (trace_cycle_counter >= triggerCycleCountStart) & (trace_cycle_counter <= triggerCycleCountEnd)
 
   val triggerPCValVec = RegInit(VecInit(Seq.fill(traces.length)(false.B)))
@@ -155,7 +155,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
   val uint_traces = traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))
-  outgoingPCISdat.io.enq.bits := Cat(Cat(trace_cycle_counter, 
+  outgoingPCISdat.io.enq.bits := Cat(Cat(trace_cycle_counter,
                                          0.U((outgoingPCISdat.io.enq.bits.getWidth - Cat(uint_traces).getWidth - trace_cycle_counter.getWidth).W)),
                                      Cat(uint_traces))
 
