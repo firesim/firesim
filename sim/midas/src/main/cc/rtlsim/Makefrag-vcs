@@ -6,8 +6,10 @@
 #  All those described Makefrag-verilator
 #  vcs_wrapper_v: An additional verilog wrapper around the DUT not used in verilator
 #  CLOCK_PERIOD: Self explanatory
-#  TB := The top level module on which the stop and printf conditions are defined 
-#
+#  TB := The top level module on which the stop and printf conditions are defined
+
+# AJG: set to your path of dromajo
+DROMAJO_DIR = /scratch/abejgonza/boom-work/dromajo/src
 
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
@@ -20,8 +22,11 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_GARBAGE_ASSIGN \
 	+define+RANDOMIZE_INVALID_ASSIGN \
+	+define+RANDOM=0 \
 	+define+STOP_COND=!$(TB).reset \
 	+define+PRINTF_COND=!$(TB).reset \
+	-CC "-I$(DROMAJO_DIR)" \
+	$(DROMAJO_DIR)/libdromajo_cosim.a \
 	$(VCS_FLAGS)
 
 vcs_v := $(emul_v) $(vcs_wrapper_v)
