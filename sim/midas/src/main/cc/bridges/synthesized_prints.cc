@@ -16,6 +16,9 @@ synthesized_prints_t::synthesized_prints_t(
   const unsigned int* argument_counts,
   const unsigned int* argument_widths,
   unsigned int dma_address,
+  const char* const  clock_domain_name,
+  const unsigned int clock_multiplier,
+  const unsigned int clock_divisor,
   int printno) :
     bridge_driver_t(sim),
     mmio_addrs(mmio_addrs),
@@ -27,19 +30,26 @@ synthesized_prints_t::synthesized_prints_t(
     argument_counts(argument_counts),
     argument_widths(argument_widths),
     dma_address(dma_address),
+    clock_domain_name(clock_domain_name),
+    clock_multiplier(clock_multiplier),
+    clock_divisor(clock_divisor),
     printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
   assert(print_count > 0);
 
-  const char *printfilename = (default_filename + std::to_string(printno)).c_str();
+  auto printfilename = default_filename + std::to_string(printno);
 
   this->start_cycle = 0;
   this->end_cycle = -1ULL;
 
   std::string num_equals = std::to_string(printno) + std::string("=");
-  std::string printfile_arg  = std::string("+print-file") + num_equals;
-  std::string printstart_arg = std::string("+print-start") + num_equals;
-  std::string printend_arg   = std::string("+print-end") + num_equals;
+  // PlusArgs are shared across all Bridge Driver instances
+  // The file into which to emit captured prinfs. This is suffixed with the driver numbej
+  std::string printfile_arg  = std::string("+print-file=");
+  // The cycle at which to start printing in base clock cycles
+  std::string printstart_arg = std::string("+print-start=");
+  // The cycle at which to stop printing in base clock cycles
+  std::string printend_arg   = std::string("+print-end=");
   // Does not format the printfs, before writing them to file
   std::string binary_arg   = std::string("+print-binary");
   // Removes the cycle prefix from human-readable output
@@ -52,17 +62,19 @@ synthesized_prints_t::synthesized_prints_t(
     this->batch_beats = desired_batch_beats;
   }
 
-  for (auto &arg: args) {
+  for (auto arg: args) {
       if (arg.find(printfile_arg) == 0) {
-          printfilename = const_cast<char*>(arg.c_str()) + printfile_arg.length();
+          //printfilename = const_cast<char*>(arg.c_str()) + printfile_arg.length();
+          printfilename = arg.erase(0, printfile_arg.length()) + std::to_string(printno);
+          //printfilename = (std::string(file_stem) + std::to_string(printno)).c_str();
       }
       if (arg.find(printstart_arg) == 0) {
           char *str = const_cast<char*>(arg.c_str()) + printstart_arg.length();
-          this->start_cycle = atol(str);
+          this->start_cycle = (atol(str) * clock_multiplier) / clock_divisor;
       }
       if (arg.find(printend_arg) == 0) {
           char *str = const_cast<char*>(arg.c_str()) + printend_arg.length();
-          this->end_cycle = atol(str);
+          this->end_cycle = (atol(str) * clock_multiplier) / clock_divisor;
       }
       if (arg.find(binary_arg) == 0) {
           human_readable = false;
@@ -73,7 +85,7 @@ synthesized_prints_t::synthesized_prints_t(
   }
   current_cycle = start_cycle; // We won't receive tokens until start_cycle; so fast-forward
 
-  this->printfile.open(printfilename, std::ios_base::out | std::ios_base::binary);
+  this->printfile.open(printfilename.c_str(), std::ios_base::out | std::ios_base::binary);
   if (!this->printfile.is_open()) {
       fprintf(stderr, "Could not open print log file: %s\n", printfilename);
       abort();

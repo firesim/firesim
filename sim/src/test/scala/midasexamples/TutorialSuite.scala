@@ -121,17 +121,17 @@ class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule
   diffSynthesizedLog("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
 }
 class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
-    simulationArgs = Seq("+print-file0=synthprinttest.out"),
+    simulationArgs = Seq("+print-file=synthprinttest.out0"),
     platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
-  diffSynthesizedLog("synthprinttest.out", synthPrefix = "")
+  diffSynthesizedLog("synthprinttest.out0", synthPrefix = "")
 }
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
-  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file0=synthprinttest.out")) {
-  diffSynthesizedLog("synthprinttest.out")
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  diffSynthesizedLog("synthprinttest.out0")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
-  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file0=synthprinttest.out")) {
-  diffSynthesizedLog("synthprinttest.out")
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  diffSynthesizedLog("synthprinttest.out0")
 }
 
 class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")
@@ -145,11 +145,10 @@ class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
 class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
-  simulationArgs = Seq("+print-file0=synthprinttest0.out",
-                       "+print-file1=synthprinttest1.out",
+  simulationArgs = Seq("+print-file=synthprinttest.out",
                        "+print-no-cycle-prefix")) {
-  diffSynthesizedLog("synthprinttest0.out")
-  diffSynthesizedLog("synthprinttest1.out",
+  diffSynthesizedLog("synthprinttest.out0")
+  diffSynthesizedLog("synthprinttest.out1",
     stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ")
 }

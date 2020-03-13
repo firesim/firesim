@@ -173,6 +173,7 @@ class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: P
   val argumentWidths  = printPort.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
   val argumentOffsets = printPort.ports.map(_._2.argumentOffsets.map(UInt32(_)))
   val formatStrings   = printPort.ports.map(_._2.formatString).map(CStrLit)
+  val RationalClock(domainName, mul, div) = clockDomainInfo
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
@@ -186,6 +187,9 @@ class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: P
     sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
     sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))
     sb.append(genArray(s"${headerWidgetName}_argument_widths", argumentWidths))
+    sb.append(genStatic(s"${headerWidgetName}_clock_domain_name", CStrLit(domainName)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_multiplier", UInt32(mul)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_divisor", UInt32(div)))
   }
   genCRFile()
 }
