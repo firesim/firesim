@@ -65,6 +65,9 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
+      // We should consider moving these lower
+      ChannelClockInfoAnalysis,
+      UpdateBridgeClockInfo,
       new EmitFirrtl("post-debug-synthesis.fir"),
       new fame.EmitFAMEAnnotations("post-debug-synthesis.json"),
       fame.WrapTop,

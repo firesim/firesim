@@ -165,7 +165,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       // 6) Synchronize and aggregate counts in reference domain
       val refClockRT = wiredState.annotations.collectFirst({
-        case FAMEChannelConnectionAnnotation(_,TargetClockChannel,_,_,Some(clock :: _)) => clock
+        case FAMEChannelConnectionAnnotation(_,TargetClockChannel(_),_,_,Some(clock :: _)) => clock
       }).get
 
       def syncAndDiff(next: WRef): WRef = {

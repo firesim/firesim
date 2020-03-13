@@ -59,7 +59,7 @@ object FindDefaultClocks extends Transform {
 
     // Find an arbitrary clock channel sink
     val refClock = state.annotations.collectFirst {
-      case FAMEChannelConnectionAnnotation(_, TargetClockChannel, None, _, Some(sinks)) => sinks.head
+      case FAMEChannelConnectionAnnotation(_, TargetClockChannel(_), None, _, Some(sinks)) => sinks.head
     }
 
     // Get the wrapper top port reference it points to

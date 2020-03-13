@@ -212,7 +212,7 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   }
 
   val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel, _, _, Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -237,7 +237,7 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
 
   val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel, _, _, Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -302,7 +302,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
 
   @chiselName
   def genClockChannel(chAnno: FAMEChannelConnectionAnnotation): Unit = {
-    require(chAnno.channelInfo == fame.TargetClockChannel)
     val clockTokens = channelPorts.clockElement._2
     target.io.clockElement._2.valid := clockTokens.valid
     clockTokens.ready := target.io.clockElement._2.ready
@@ -382,7 +381,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   })
 
   // Generate clock channels
-  val clockChannels = chAnnos.collect({case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel,_,_,_)  => ch })
+  val clockChannels = chAnnos.collect({case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => ch })
   require(clockChannels.size == 1)
   genClockChannel(clockChannels.head)
 }

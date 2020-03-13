@@ -30,7 +30,7 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalC
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      Some((p: Parameters) => new ClockBridgeModule(clocks)(p))
+      widget = Some((p: Parameters) => new ClockBridgeModule(clocks)(p))
     )
   }
 }
@@ -48,7 +48,7 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
-        channelInfo = TargetClockChannel,
+        channelInfo = TargetClockChannel(allClocks),
         clock = None, // Clock channels do not have a reference clock
         sinks = Some(io.clocks.map(_.toTarget)),
         sources = None

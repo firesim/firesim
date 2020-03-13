@@ -7,7 +7,7 @@ import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
@@ -23,11 +23,15 @@ import scala.reflect.runtime.{universe => ru}
  *
  */
 
+// Set in FPGA Top before the BridgeModule is generated
+case object TargetClockInfo extends Field[Option[RationalClock]]
+
 abstract class TokenizedRecord extends Record with HasChannels
 
 abstract class BridgeModule[HostPortType <: TokenizedRecord]
   (implicit p: Parameters) extends Widget()(p) {
   def hPort: HostPortType
+  def clockDomainInfo: RationalClock = p(TargetClockInfo).get
 }
 
 trait Bridge[HPType <: TokenizedRecord, WidgetType <: BridgeModule[HPType]] {

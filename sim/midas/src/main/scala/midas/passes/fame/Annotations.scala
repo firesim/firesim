@@ -4,6 +4,7 @@ import firrtl._
 import annotations._
 
 import midas.targetutils.FAMEAnnotation
+import midas.widgets.RationalClock
 
 /**
   * An annotation that describes the ports that constitute one channel
@@ -146,7 +147,7 @@ case object DecoupledReverseChannel extends FAMEChannelInfo
 /**
   * Indicates that a channel connection carries target clocks
   */
-case object TargetClockChannel extends FAMEChannelInfo
+case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo
 
 /**
   * Indicates that a channel connection is the forward (valid) half of

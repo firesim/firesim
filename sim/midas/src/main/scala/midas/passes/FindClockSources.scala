@@ -63,7 +63,7 @@ object FindClockSources extends firrtl.Transform {
     sourceClock.map(sC => rT.moduleTarget.ref(sC.name))
   }
 
-  def analyze(state: CircuitState, queryTargets: Seq[ReferenceTarget]): Map[ReferenceTarget, Option[ReferenceTarget]] = {
+  def analyze(state: CircuitState, queryTargets: Iterable[ReferenceTarget]): Map[ReferenceTarget, Option[ReferenceTarget]] = {
     queryTargets.foreach(t => {
       require(t.component == Nil)
       require(t.module == t.circuit, s"Queried leaf clock ${t} must provide an absolute instance path")
