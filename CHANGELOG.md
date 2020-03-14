@@ -2,17 +2,36 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.8.1] - In Progress
+## [1.9.0] - 2020-03-14
 
 ### Added
+* TracerV + Flame Graph support from FirePerf ASPLOS 2020 paper (PR #496)
+  * and docs
 * Pre-packaged AGFI for Gemmini NN accelerator
 
 ### Changed
-* Unification of Configs/Tops between Chipyard and FireSim. Arbitrary Chipyard designs can be imported into FireSim
+* Parallelized verilator Midas-level (ML) simulation compilation (PR #475)
+* Default fesvr-step size in ML simulation (PR #474)
+  * Passing no plusArg will have the same behavior as on the FPGA
+* Significant overhaul / expansion of Debugging-on-FPGA docs (PR #496)
+* Disable zero-out-dram by default;  expose in config_runtime.ini (PR #506)
+* Update docs to note previously added suffixtag feature (PR #510)
+* Unification of `FireSimDUT` with `chipyard.Top`, all default firesim configs are now extensions of default Chipyard configs (PR #491)
+  * Unification of Configs/Tops between Chipyard and FireSim. Arbitrary Chipyard designs can be imported into FireSim
   * Users can define a FireSim version of a Chipyard config by building a TARGET_CONFIG that specifies WithFireSimDefaultBridges, WithFireSimDefaultMemModel, and WithFireSimConfigTweaks
   * FireSimHarness moved to FireChip. Harness now uses Chipyard's BuildTop key to control which Top to build
   * AGFI naming scheme changed. firesim -> firesim-rocket, fireboom -> firesim-boom
-* BridgeBinders field now replaced with generalized chipyard.IOBinders field.
+* BridgeBinders system is now generalized as IOBinders for attaching Bridges to the target (PR #491) 
+
+
+### Fixed
+* A bug when synthesizing printfs at the top-level (PR #485)
+* FPGA-level simulation to properly generate GG-side PLL (PR #487)
+* A non-determinism bug due to unreset target-state (PR #499)
+* A bug in ML-simulation of verilog black boxes in verilator (PR #499)
+* Fixed bug in manager that prevented use of f1.4xlarges with no_net_configs (PR #502 )
+* Allow simulations without block devices (#519)
+
 
 ### Deprecated
 * FireSimNoNIC design option removed, replaced with chipyard.Top
