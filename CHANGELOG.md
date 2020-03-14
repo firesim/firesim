@@ -6,7 +6,7 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 
 ### Added
 * TracerV + Flame Graph support from FirePerf ASPLOS 2020 paper (PR #496)
-  * and docs
+  * Docs: https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/TracerV-with-FlameGraph.html
 * Pre-packaged AGFI for Gemmini NN accelerator
 
 ### Changed
@@ -23,15 +23,13 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
   * AGFI naming scheme changed. firesim -> firesim-rocket, fireboom -> firesim-boom
 * BridgeBinders system is now generalized as IOBinders for attaching Bridges to the target (PR #491) 
 
-
 ### Fixed
 * A bug when synthesizing printfs at the top-level (PR #485)
 * FPGA-level simulation to properly generate GG-side PLL (PR #487)
 * A non-determinism bug due to unreset target-state (PR #499)
 * A bug in ML-simulation of verilog black boxes in verilator (PR #499)
-* Fixed bug in manager that prevented use of f1.4xlarges with no_net_configs (PR #502 )
+* Fixed bug in manager that prevented use of f1.4xlarges with no_net_configs (PR #502)
 * Allow simulations without block devices (#519)
-
 
 ### Deprecated
 * FireSimNoNIC design option removed, replaced with chipyard.Top
