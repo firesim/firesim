@@ -7,14 +7,22 @@
 
 int main(void)
 {
-	unsigned long cycle;
-	unsigned long time;
+	unsigned long startcycle, cycle;
+	unsigned long starttime, time;
+
+	startcycle = rdcycle();
+	starttime = reg_read64(MTIME_ADDR);
+
+	asm volatile ("addi x0, x1, 0");
 
 	do {
 		time = reg_read64(MTIME_ADDR);
-	} while (time < 100);
+	} while ((time - starttime) < 100);
 
-	cycle = rdcycle();
+	asm volatile ("addi x0, x2, 0");
+
+	time -= starttime;
+	cycle = rdcycle() - startcycle;
 
 	printf("%ld cycles per jiffy\n", cycle / time);
 

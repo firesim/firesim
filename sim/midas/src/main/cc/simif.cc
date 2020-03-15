@@ -28,10 +28,7 @@ simif_t::simif_t() {
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
-  // Simulation reset
-  write(this->master_mmio_addrs->SIM_RESET, 1);
-  while(!done());
-
+  while(!read(this->master_mmio_addrs->INIT_DONE));
   this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string loadmem;

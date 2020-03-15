@@ -35,7 +35,9 @@ class FireSimTopologyWithPasses:
                  defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
                  defaultnetbandwidth, defaultprofileinterval,
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
-                 defaultautocounterreadrate, terminateoncompletion):
+                 defaulttraceoutputformat,
+                 defaultautocounterreadrate, terminateoncompletion,
+                 defaultzerooutdram):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -52,7 +54,9 @@ class FireSimTopologyWithPasses:
         self.defaulttraceselect = defaulttraceselect
         self.defaulttracestart = defaulttracestart
         self.defaulttraceend = defaulttraceend
+        self.defaulttraceoutputformat = defaulttraceoutputformat
         self.defaultautocounterreadrate = defaultautocounterreadrate
+        self.defaultzerooutdram = defaultzerooutdram
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -153,6 +157,12 @@ class FireSimTopologyWithPasses:
         for f1_16x in self.run_farm.f1_16s:
             for x in range(f1_16x.get_num_fpga_slots_max()):
                 f1_16x.add_simulation(servers[serverind])
+                serverind += 1
+                if len(servers) == serverind:
+                    return
+        for f1_4x in self.run_farm.f1_4s:
+            for x in range(f1_4x.get_num_fpga_slots_max()):
+                f1_4x.add_simulation(servers[serverind])
                 serverind += 1
                 if len(servers) == serverind:
                     return
@@ -294,6 +304,7 @@ class FireSimTopologyWithPasses:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
+                # TODO: some of this stuff seems misplaced...
                 if node.server_profile_interval is None:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
@@ -304,8 +315,12 @@ class FireSimTopologyWithPasses:
                     node.trace_start = self.defaulttracestart
                 if node.trace_end is None:
                     node.trace_end = self.defaulttraceend
+                if node.trace_output_format is None:
+                    node.trace_output_format = self.defaulttraceoutputformat
                 if node.autocounter_readrate is None:
                     node.autocounter_readrate = self.defaultautocounterreadrate
+                if node.zerooutdram is None:
+                    node.zerooutdram = self.defaultzerooutdram
 
 
     def pass_allocate_nbd_devices(self):

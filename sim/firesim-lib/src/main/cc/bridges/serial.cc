@@ -4,12 +4,6 @@
 #include <assert.h>
 #include "serial.h"
 
-#if defined(SIMULATION_XSIM) || defined(RTLSIM)
-#define DEFAULT_STEPSIZE (128)
-#else
-#define DEFAULT_STEPSIZE (2004765L)
-#endif
-
 serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
         bridge_driver_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
 
@@ -21,7 +15,8 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
     char** argv_arr;
     int argc_count = 0;
 
-    step_size = DEFAULT_STEPSIZE;
+    // This particular selection is vestigial. You may change it freely.
+    step_size = 2004765L;
     for (auto &arg: args) {
         if (arg.find("+fesvr-step-size=") == 0) {
             step_size = atoi(arg.c_str()+17);

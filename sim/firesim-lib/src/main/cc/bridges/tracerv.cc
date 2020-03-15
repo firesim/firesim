@@ -30,13 +30,18 @@
 // The maximum number of beats available in the FPGA-side FIFO
 #define QUEUE_DEPTH 6144
 
+// put FIREPERF in a mode that writes a simple log for processing later.
+// useful for iterating on software side only without re-running on FPGA.
+//#define FIREPERF_LOGGER
+
 tracerv_t::tracerv_t(
     simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
 {
-    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores");
+    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores/Instruction Streams");
     this->mmio_addrs = mmio_addrs;
     this->dma_addr = dma_addr;
     const char *tracefilename = NULL;
+    const char *dwarf_file_name = NULL;
 
     for (int i = 0; i < NUM_CORES; i++) {
          this->tracefiles[i] = NULL;
@@ -46,6 +51,9 @@ tracerv_t::tracerv_t(
     this->trace_trigger_end = ULONG_MAX;
     this->trigger_selector = 0;
     this->tracefilename = "";
+    this->dwarf_file_name = "";
+
+    long outputfmtselect = 0;
 
     std::string num_equals = std::to_string(tracerno) + std::string("=");
     std::string tracefile_arg =        std::string("+tracefile") + num_equals;
@@ -56,6 +64,9 @@ tracerv_t::tracerv_t(
     std::string testoutput_arg =         std::string("+trace-test-output") + std::to_string(tracerno);
     // Formats the output before dumping the trace to file
     std::string humanreadable_arg =    std::string("+trace-humanreadable") + std::to_string(tracerno);
+
+    std::string trace_output_format_arg = std::string("+trace-output-format") + num_equals;
+    std::string dwarf_file_arg =           std::string("+dwarf-file-name") + num_equals;
 
     for (auto &arg: args) {
         if (arg.find(tracefile_arg) == 0) {
@@ -79,25 +90,53 @@ tracerv_t::tracerv_t(
         if (arg.find(testoutput_arg) == 0) {
             this->test_output = true;
         }
-        if (arg.find(humanreadable_arg) == 0) {
-            this->human_readable = true;
+        if (arg.find(trace_output_format_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + trace_output_format_arg.length();
+            outputfmtselect = atol(str);
         }
-
-
+        if (arg.find(dwarf_file_arg) == 0) {
+            dwarf_file_name = const_cast<char*>(arg.c_str()) + dwarf_file_arg.length();
+            this->dwarf_file_name = std::string(dwarf_file_name);
+        }
     }
 
     if (tracefilename) {
         // giving no tracefilename means we will create NO tracefiles
         for (int i = 0; i < NUM_CORES; i++) {
-            std::string tfname = std::string(tracefilename) + std::to_string(i);
+            std::string tfname = std::string(tracefilename) + std::string("-C") + std::to_string(i);
             this->tracefiles[i] = fopen(tfname.c_str(), "w");
             if (!this->tracefiles[i]) {
                 fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
                 abort();
             }
         }
+
+        // This must be kept consistent with config_runtime.ini's output_format.
+        // That file's comments are the single source of truth for this.
+        if (outputfmtselect == 0) {
+            this->human_readable = true;
+            this->fireperf = false;
+        } else if (outputfmtselect == 1) {
+            this->human_readable = false;
+            this->fireperf = false;
+        } else if (outputfmtselect == 2) {
+            this->human_readable = false;
+            this->fireperf = true;
+        } else {
+            fprintf(stderr, "Invalid trace format arg\n");
+        }
     } else {
         fprintf(stderr, "TraceRV: Warning: No +tracefileN given!\n");
+    }
+
+    if (fireperf) {
+        if (this->dwarf_file_name.compare("") == 0) {
+            fprintf(stderr, "+fireperf specified but no +dwarf-file-name given\n");
+            abort();
+        }
+        for (int i = 0; i < NUM_CORES; i++) {
+            this->trace_trackers[i] = new TraceTracker(this->dwarf_file_name, this->tracefiles[i]);
+        }
     }
 }
 
@@ -106,7 +145,7 @@ tracerv_t::~tracerv_t() {
         if (this->tracefiles[i]) {
             fclose(this->tracefiles[i]);
         }
-    } 
+    }
     free(this->mmio_addrs);
 }
 
@@ -165,7 +204,6 @@ void tracerv_t::tick() {
             if (this->human_readable || this->test_output) {
                 for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
                     if (this->test_output) {
-                        fprintf(this->tracefiles[0], "TRACEPORT: ");
                         fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
                         fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
                         fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
@@ -177,8 +215,23 @@ void tracerv_t::tick() {
                     } else {
                         for (int q = 0; q < NUM_CORES; q++) {
                            if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                             fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                             fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
                            }
+                        }
+                    }
+                }
+            } else if (this->fireperf) {
+                for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                    uint64_t cycle_internal = OUTBUF[i+7];
+
+                    for (int q = 0; q < NUM_CORES; q++) {
+                        if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                            uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
+                            this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
+#ifdef FIREPERF_LOGGER
+                            fprintf(this->tracefiles[q], "%016llx", iaddr);
+                            fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+#endif //FIREPERF_LOGGER
                         }
                     }
                 }
@@ -225,7 +278,6 @@ void tracerv_t::flush() {
             for (int i = 0; i < beats_available * 8; i+=8) {
 
                 if (this->test_output) {
-                    fprintf(this->tracefiles[0], "TRACEPORT: ");
                     fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
                     fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
                     fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
@@ -237,8 +289,26 @@ void tracerv_t::flush() {
                 } else {
                     for (int q = 0; q < NUM_CORES; q++) {
                       if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                        fprintf(this->tracefiles[q], "TRACEPORT C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                        fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
                       }
+                    }
+                }
+            }
+        } else if (this->fireperf) {
+            for (int i = 0; i < beats_available * 8; i+=8) {
+                uint64_t cycle_internal = OUTBUF[i+7];
+
+                for (int q = 0; q < NUM_CORES; q++) {
+                    if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                        // is a valid instruction
+                        //
+                        // sign extended from sv39
+                        uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
+                        this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
+#ifdef FIREPERF_LOGGER
+                    fprintf(this->tracefiles[q], "%016llx", iaddr);
+                    fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+#endif //FIREPERF_LOGGER
                     }
                 }
             }
