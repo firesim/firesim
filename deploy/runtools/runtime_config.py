@@ -127,7 +127,7 @@ class RuntimeHWConfig:
         command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
         command_netbws = array_to_plusargs(all_netbws, "+netbw")
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
-        command_dromajo = "+drj_dtb=" + all_bootbinaries[0] + ".rom" +  " +drj_bin=" + all_bootbinaries[0] + " +drj_rom=" + all_bootbinaries[0] + ".rom"
+        command_dromajo = "+drj_dtb=" + all_bootbinaries[0] + ".dtb" +  " +drj_bin=" + all_bootbinaries[0] + " +drj_rom=" + all_bootbinaries[0] + ".rom"
 
         command_niclogs = array_to_lognames(all_macs, "niclog")
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")

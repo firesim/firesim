@@ -51,16 +51,20 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 # Driver Sources & Flags #
 ##########################
 
+DROMAJO_DIR = /home/centos/general/dromajo/src
+
 # AJG: make sure at the $(long_name).dromajo_params.h is renamed to dromajo_params.h
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 		   $(shell find $(firesim_lib_dir) -name "*.h") \
-		   $(GENERATED_DIR)/dromajo_params.h
+		   $(GENERATED_DIR)/dromajo_params.h \
+		   $(wildcard $(DROMAJO_DIR)/*.h)
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
             $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
-			$(RISCV)/lib/libfesvr.a
+			$(RISCV)/lib/libfesvr.a \
+			$(wildcard $(DROMAJO_DIR)/*.cc)
 
 TARGET_CXX_FLAGS := -g -I$(GENERATED_DIR) -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz

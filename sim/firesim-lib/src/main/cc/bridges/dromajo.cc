@@ -185,6 +185,10 @@ void dromajo_t::init() {
     local_argv[local_argc] = (char*)this->dromajo_bin.c_str();
     local_argc += 1;
 
+    for(int i = 0; i < local_argc; ++i) {
+        printf("%d: %s\n", i, local_argv[i]);
+    }
+
     this->dromajo_state = dromajo_cosim_init(local_argc, local_argv);
     if (this->dromajo_state == NULL) {
         printf("[ERROR] Error setting up Dromajo\n");
@@ -199,9 +203,10 @@ void dromajo_t::init() {
 int dromajo_t::invoke_dromajo(uint8_t* buf) {
     bool valid = buf[0];
     int hartid = 0; // only works for single core
-    uint64_t pc = *((uint64_t*)(buf + this->_iaddr_offset)) & BIT_MASK(uint64_t, this->_iaddr_width*8);
-    uint32_t insn = *((uint32_t*)(buf + this->_insn_offset)) & BIT_MASK(uint32_t, this->_insn_width*8);
-    uint64_t wdata = *((uint64_t*)(buf + this->_wdata_offset)) & BIT_MASK(uint64_t, this->_wdata_width*8);
+    // this crazy to extract the right value then sign extend within the size
+    uint64_t pc = ((int64_t)(*((int64_t*)(buf + this->_iaddr_offset)) & BIT_MASK(uint64_t, this->_iaddr_width*8)) << (sizeof(uint64_t) - this->_iaddr_width)*8) >> (sizeof(uint64_t) - this->_iaddr_width)*8;
+    uint32_t insn = ((int32_t)(*((int32_t*)(buf + this->_insn_offset)) & BIT_MASK(uint32_t, this->_insn_width*8)) << (sizeof(uint32_t) - this->_insn_width)*8) >> (sizeof(uint32_t) - this->_insn_width)*8;
+    uint64_t wdata = ((int64_t)(*((int64_t*)(buf + this->_wdata_offset)) & BIT_MASK(uint64_t, this->_wdata_width*8)) << (sizeof(uint64_t) - this->_wdata_width)*8) >> (sizeof(uint64_t) - this->_wdata_width)*8;
     uint64_t mstatus = 0; // default not checked
     bool check = true; // default check all
     bool interrupt = buf[this->_interrupt_offset];
@@ -209,10 +214,13 @@ int dromajo_t::invoke_dromajo(uint8_t* buf) {
     int64_t cause = (*((uint64_t*)(buf + this->_cause_offset)) & BIT_MASK(uint64_t, this->_cause_width*8)) | ((uint64_t)interrupt << 63);
 
     if (valid) {
+        if (interrupt || exception)
+            fprintf(stderr, "INT/EXCEP raised: cause = %lx\n", cause);
         return dromajo_cosim_step(this->dromajo_state, hartid, pc, insn, wdata, mstatus, check);
     }
 
     if ((interrupt || exception) && !(this->saw_int_excp)) {
+        fprintf(stderr, "INT/EXCEP raised: cause = %lx\n", cause);
         dromajo_cosim_raise_trap(this->dromajo_state, hartid, cause);
         this->saw_int_excp = true;
     }

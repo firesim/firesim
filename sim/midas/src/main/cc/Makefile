@@ -49,10 +49,14 @@ $(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
 $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
-override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
-# The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
+# AJG: set to your path of dromajo
+DROMAJO_DIR = /home/centos/general/dromajo/src
 
+override CXXFLAGS += -I$(midas_dir) -I$(util_dir) -I$(DROMAJO_DIR)
+# The trailing whitespace is important for some reason...
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -L$(DROMAJO_DIR) -ldromajo_cosim
+
+dromajo_srcs := $(wildcard $(DROMAJO_DIR)/*.h) $(wildcard $(DROMAJO_DIR)/*.cc)
 design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
 design_vh := $(GEN_DIR)/$(DESIGN)-const.vh
@@ -72,12 +76,16 @@ $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o) $(dromajo_srcs)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) -include $< \
 	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(bridge_o) $(LDFLAGS)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
+#.PHONY: $(PLATFORM)
+#$(PLATFORM):
+#	echo $(DROMAJO_DIR)
+
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
 override CFLAGS += -include $(design_h)
