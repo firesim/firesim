@@ -44,7 +44,7 @@ synthesized_prints_t::synthesized_prints_t(
 
   std::string num_equals = std::to_string(printno) + std::string("=");
   // PlusArgs are shared across all Bridge Driver instances
-  // The file into which to emit captured prinfs. This is suffixed with the driver numbej
+  // The file into which to emit captured prinfs. This is suffixed with the driver number
   std::string printfile_arg  = std::string("+print-file=");
   // The cycle at which to start printing in base clock cycles
   std::string printstart_arg = std::string("+print-start=");
@@ -64,9 +64,7 @@ synthesized_prints_t::synthesized_prints_t(
 
   for (auto arg: args) {
       if (arg.find(printfile_arg) == 0) {
-          //printfilename = const_cast<char*>(arg.c_str()) + printfile_arg.length();
           printfilename = arg.erase(0, printfile_arg.length()) + std::to_string(printno);
-          //printfilename = (std::string(file_stem) + std::to_string(printno)).c_str();
       }
       if (arg.find(printstart_arg) == 0) {
           char *str = const_cast<char*>(arg.c_str()) + printstart_arg.length();
