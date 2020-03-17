@@ -50,11 +50,12 @@ $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
 # AJG: set to your path of dromajo
-DROMAJO_DIR = /home/centos/general/dromajo/src
+#DROMAJO_DIR = /home/centos/general/dromajo/src
+DROMAJO_DIR = /scratch/abejgonza/boom-work/dromajo/src
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) -I$(DROMAJO_DIR)
 # The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -L$(DROMAJO_DIR) -ldromajo_cosim
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -L$(DROMAJO_DIR) -ldromajo_cosim 
 
 dromajo_srcs := $(wildcard $(DROMAJO_DIR)/*.h) $(wildcard $(DROMAJO_DIR)/*.cc)
 design_v  := $(GEN_DIR)/$(shim).v
@@ -82,10 +83,6 @@ $(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(pla
 	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(bridge_o) $(LDFLAGS)
 
 $(PLATFORM): $(OUT_DIR)/$(DESIGN)-$(PLATFORM) $(OUT_DIR)/$(DESIGN).chain
-#.PHONY: $(PLATFORM)
-#$(PLATFORM):
-#	echo $(DROMAJO_DIR)
-
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
 override CFLAGS += -include $(design_h)

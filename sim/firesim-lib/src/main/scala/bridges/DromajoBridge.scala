@@ -132,7 +132,11 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
   val (cnt, wrap) = Counter(counterFire, numTokenForAll)
 
   val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalStreamsPerToken))
-  val paddedTracesTruncated = (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))(outDataSzBits-1, 0)
+  val paddedTracesTruncated = if (numStreams == 1) {
+    (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))
+  } else {
+    (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))(outDataSzBits-1, 0)
+  }
 
   outgoingPCISdat.io.enq.valid := hPort.toHost.hValid
   outgoingPCISdat.io.enq.bits := paddedTracesTruncated
