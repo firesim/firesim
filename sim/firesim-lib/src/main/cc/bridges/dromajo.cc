@@ -185,9 +185,11 @@ void dromajo_t::init() {
     local_argv[local_argc] = (char*)this->dromajo_bin.c_str();
     local_argc += 1;
 
+    printf("[INFO] Dromajo command: \n");
     for(int i = 0; i < local_argc; ++i) {
-        printf("%d: %s\n", i, local_argv[i]);
+        printf("%s ", local_argv[i]);
     }
+    printf("\n");
 
     this->dromajo_state = dromajo_cosim_init(local_argc, local_argv);
     if (this->dromajo_state == NULL) {
@@ -215,12 +217,12 @@ int dromajo_t::invoke_dromajo(uint8_t* buf) {
 
     if (valid) {
         if (interrupt || exception)
-            fprintf(stderr, "INT/EXCEP raised: cause = %lx\n", cause);
+            fprintf(stderr, "[DEBUG] INT/EXCEP raised (on valid): cause = %lx\n", cause);
         return dromajo_cosim_step(this->dromajo_state, hartid, pc, insn, wdata, mstatus, check);
     }
 
     if ((interrupt || exception) && !(this->saw_int_excp)) {
-        fprintf(stderr, "INT/EXCEP raised: cause = %lx\n", cause);
+        fprintf(stderr, "[DEBUG] INT/EXCEP raised (normal): cause = %lx\n", cause);
         dromajo_cosim_raise_trap(this->dromajo_state, hartid, cause);
         this->saw_int_excp = true;
     }
@@ -257,6 +259,25 @@ void dromajo_t::tick() {
             if (rval) {
                 dromajo_failed = true;
                 dromajo_exit_code = rval;
+                printf("[ERROR] Dromajo: Errored during simulation tick with %d\n", rval);
+
+                fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
+
+                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                    fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
+                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+                }
+                fprintf(stderr, ")\n");
+
+                fprintf(stderr, "get_next_token token(");
+                uint32_t next_off = offset += PCIE_SZ_B;
+
+                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                    fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
+                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+                }
+                fprintf(stderr, ")\n");
+
                 return;
             }
 
@@ -312,7 +333,25 @@ void dromajo_t::flush() {
             if (rval) {
                 dromajo_failed = true;
                 dromajo_exit_code = rval;
-                printf("[ERR] Dromajo: Errored when flushing tokens with %d\n", rval);
+                printf("[ERROR] Dromajo: Errored when flushing tokens with %d\n", rval);
+
+                fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
+
+                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                    fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
+                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+                }
+                fprintf(stderr, ")\n");
+
+                fprintf(stderr, "get_next_token token(");
+                uint32_t next_off = offset += PCIE_SZ_B;
+
+                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                    fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
+                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+                }
+                fprintf(stderr, ")\n");
+
                 return;
             }
 
