@@ -14,20 +14,6 @@
 
 #include <sys/mman.h>
 
-// TODO: generate a header with these automatically
-
-// bitwidths for stuff in the trace. assume this order too.
-#define VALID_WID 1
-#define IADDR_WID 40
-#define INSN_WID 32
-#define PRIV_WID 3
-#define EXCP_WID 1
-#define INT_WID 1
-#define CAUSE_WID 8
-#define TVAL_WID 40
-#define RESET_WID 1
-#define TOTAL_WID (VALID_WID + IADDR_WID + INSN_WID + PRIV_WID + EXCP_WID + INT_WID + CAUSE_WID + TVAL_WID + RESET_WID)
-
 // The maximum number of beats available in the FPGA-side FIFO
 #define QUEUE_DEPTH 6144
 
