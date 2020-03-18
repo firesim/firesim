@@ -91,7 +91,6 @@ abstract class TutorialSuite(
     }
   }
 
-  clean
   mkdirs
   elaborate
   runTest(backendSimulator)
@@ -121,7 +120,7 @@ class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule
   diffSynthesizedLog("AUTOCOUNTERFILE0", "AutoCounterCoverModule.autocounter.out")
 }
 class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
-    simulationArgs = Seq("+print-file=synthprinttest.out0"),
+    simulationArgs = Seq("+print-file=synthprinttest.out"),
     platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
   diffSynthesizedLog("synthprinttest.out0", synthPrefix = "")
 }

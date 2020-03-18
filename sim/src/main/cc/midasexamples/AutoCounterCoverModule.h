@@ -11,7 +11,9 @@ class AutoCounterCoverModule_t: public autocounter_module_t, virtual simif_t
 public:
     AutoCounterCoverModule_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
     virtual void run() {
-        autocounter_endpoint->init();
+        for (auto &autocounter_endpoint: autocounter_endpoints) {
+            autocounter_endpoint->init();
+        }
         poke(reset, 1);
         poke(io_a, 0);
         step(1);

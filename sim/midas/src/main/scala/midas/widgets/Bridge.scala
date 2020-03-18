@@ -32,6 +32,14 @@ abstract class BridgeModule[HostPortType <: TokenizedRecord]
   (implicit p: Parameters) extends Widget()(p) {
   def hPort: HostPortType
   def clockDomainInfo: RationalClock = p(TargetClockInfo).get
+  def emitClockDomainInfo(headerWidgetName: String, sb: StringBuilder): Unit = {
+    import CppGenerationUtils._
+    val RationalClock(domainName, mul, div) = clockDomainInfo
+    sb.append(genStatic(s"${headerWidgetName}_clock_domain_name", CStrLit(domainName)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_multiplier", UInt32(mul)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_divisor", UInt32(div)))
+  }
+
 }
 
 trait Bridge[HPType <: TokenizedRecord, WidgetType <: BridgeModule[HPType]] {

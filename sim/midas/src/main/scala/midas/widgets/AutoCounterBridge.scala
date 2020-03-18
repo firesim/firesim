@@ -105,8 +105,10 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
     headerComment(sb)
     // Exclude counter addresses as their names can vary across AutoCounter instances, but 
     // we only generate a single struct typedef
-    crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb, lowCountAddrs ++ highCountAddrs)
-    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    val headerWidgetName = wName.getOrElse(name).toUpperCase
+    crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)
+    crRegistry.genArrayHeader(headerWidgetName, base, sb)
+    emitClockDomainInfo(headerWidgetName, sb)
   }
   genCRFile()
 }

@@ -15,25 +15,33 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(
-    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map, int autocounterno) : bridge_driver_t(sim), addr_map(addr_map)
-{
-    this->mmio_addrs = mmio_addrs;
+    simif_t *sim,
+    std::vector<std::string> &args,
+    AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs,
+    AddressMap addr_map,
+    const char* const  clock_domain_name,
+    const unsigned int clock_multiplier,
+    const unsigned int clock_divisor,
+    int autocounterno) :
+        bridge_driver_t(sim),
+        mmio_addrs(mmio_addrs),
+        addr_map(addr_map),
+        clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename_in = NULL;
-    std::string num_equals   =        std::to_string(autocounterno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-readrate") + num_equals;
-    std::string filename_arg =        std::string("+autocounter-filename") + num_equals;
+    std::string readrate_arg = std::string("+autocounter-readrate=");
+    std::string filename_arg = std::string("+autocounter-filename=");
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + readrate_arg.length();
-            this->readrate = atol(str);;
+            this->readrate = this->clock_info.to_local_cycles(atol(str));
         }
         if (arg.find(filename_arg) == 0) {
             autocounter_filename_in = const_cast<char*>(arg.c_str()) + filename_arg.length();
-            this->autocounter_filename = std::string(autocounter_filename_in);
+            this->autocounter_filename = std::string(autocounter_filename_in) + std::to_string(autocounterno);
         }
     }
 
@@ -41,6 +49,7 @@ autocounter_t::autocounter_t(
     if(!autocounter_file.is_open()) {
       throw std::runtime_error("Could not open output file: " + this->autocounter_filename);
     }
+    this->clock_info.emit_file_header(autocounter_file);
 }
 
 autocounter_t::~autocounter_t() {
