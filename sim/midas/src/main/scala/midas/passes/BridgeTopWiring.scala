@@ -11,7 +11,7 @@ import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, Top
 import TargetToken.{Instance, OfModule}
 
 import midas.passes.fame.RTRenamer
-
+import midas.targetutils.FAMEAnnotation
 
 case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[BridgeTopWiringAnnotation] =
