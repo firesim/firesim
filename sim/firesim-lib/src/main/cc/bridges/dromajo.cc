@@ -20,6 +20,8 @@
         ((__TYPE__) (-((__ONE_COUNT__) != 0))) \
         & (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
 
+//#define DEBUG
+
 /**
  * Constructor for Dromajo
  */
@@ -216,13 +218,17 @@ int dromajo_t::invoke_dromajo(uint8_t* buf) {
     int64_t cause = (*((uint64_t*)(buf + this->_cause_offset)) & BIT_MASK(uint64_t, this->_cause_width*8)) | ((uint64_t)interrupt << 63);
 
     if (valid) {
+#ifdef DEBUG
         if (interrupt || exception)
             fprintf(stderr, "[DEBUG] INT/EXCEP raised (on valid): cause = %lx\n", cause);
+#endif
         return dromajo_cosim_step(this->dromajo_state, hartid, pc, insn, wdata, mstatus, check);
     }
 
     if ((interrupt || exception) && !(this->saw_int_excp)) {
+#ifdef DEBUG
         fprintf(stderr, "[DEBUG] INT/EXCEP raised (normal): cause = %lx\n", cause);
+#endif
         dromajo_cosim_raise_trap(this->dromajo_state, hartid, cause);
         this->saw_int_excp = true;
     }
@@ -247,6 +253,7 @@ void dromajo_t::tick() {
 
         for (uint32_t offset = 0; offset < QUEUE_DEPTH*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
             // invoke dromajo
+#ifdef DEBUG
             //fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
 
             //for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
@@ -254,6 +261,7 @@ void dromajo_t::tick() {
             //    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
             //}
             //fprintf(stderr, ")\n");
+#endif
 
             int rval = this->invoke_dromajo(OUTBUF + offset);
             if (rval) {
@@ -261,6 +269,7 @@ void dromajo_t::tick() {
                 dromajo_exit_code = rval;
                 printf("[ERROR] Dromajo: Errored during simulation tick with %d\n", rval);
 
+#ifdef DEBUG
                 fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
 
                 for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
@@ -277,6 +286,7 @@ void dromajo_t::tick() {
                     if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
                 }
                 fprintf(stderr, ")\n");
+#endif
 
                 return;
             }
@@ -291,7 +301,9 @@ void dromajo_t::tick() {
 
             // add an extra PCIE_SZ_B if there is an odd amount of streams
             if (this->_stream_idx == 0 && (this->_num_streams % 2 == 1)) {
+#ifdef DEBUG
                 //fprintf(stderr, "off(%d + 1) = %d\n", offset / (PCIE_SZ_B/2), (offset + PCIE_SZ_B/2) / (PCIE_SZ_B/2));
+#endif
                 offset += PCIE_SZ_B/2;
             }
         }
@@ -335,6 +347,7 @@ void dromajo_t::flush() {
                 dromajo_exit_code = rval;
                 printf("[ERROR] Dromajo: Errored when flushing tokens with %d\n", rval);
 
+#ifdef DEBUG
                 fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
 
                 for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
@@ -351,6 +364,7 @@ void dromajo_t::flush() {
                     if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
                 }
                 fprintf(stderr, ")\n");
+#endif
 
                 return;
             }

@@ -59,10 +59,10 @@ object DromajoBridge {
   }
 }
 
-//************************
+//*************************************************
 //* GOLDEN GATE MODULE
-//* This lives in the host
-//************************
+//* This lives in the host (still runs on the FPGA)
+//*************************************************
 
 class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TraceOutputTop]]()(p)
     with UnidirectionalDMAToHostCPU
