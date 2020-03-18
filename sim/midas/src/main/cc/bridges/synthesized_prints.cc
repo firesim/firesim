@@ -30,9 +30,7 @@ synthesized_prints_t::synthesized_prints_t(
     argument_counts(argument_counts),
     argument_widths(argument_widths),
     dma_address(dma_address),
-    clock_domain_name(clock_domain_name),
-    clock_multiplier(clock_multiplier),
-    clock_divisor(clock_divisor),
+    clock_info(clock_domain_name, clock_multiplier, clock_divisor),
     printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
   assert(print_count > 0);
@@ -68,11 +66,11 @@ synthesized_prints_t::synthesized_prints_t(
       }
       if (arg.find(printstart_arg) == 0) {
           char *str = const_cast<char*>(arg.c_str()) + printstart_arg.length();
-          this->start_cycle = (atol(str) * clock_multiplier) / clock_divisor;
+          this->start_cycle = this->clock_info.to_local_cycles(atol(str));
       }
       if (arg.find(printend_arg) == 0) {
           char *str = const_cast<char*>(arg.c_str()) + printend_arg.length();
-          this->end_cycle = (atol(str) * clock_multiplier) / clock_divisor;
+          this->end_cycle = this->clock_info.to_local_cycles(atol(str));
       }
       if (arg.find(binary_arg) == 0) {
           human_readable = false;
@@ -90,6 +88,7 @@ synthesized_prints_t::synthesized_prints_t(
   }
 
   this->printstream = &(this->printfile);
+  this->clock_info.emit_file_header(*(this->printstream));
 
   widths.resize(print_count);
   // Used to reconstruct the relative position of arguments in the flattened argument_widths array

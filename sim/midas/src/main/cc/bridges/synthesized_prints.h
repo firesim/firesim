@@ -9,6 +9,7 @@
 #include <gmp.h>
 
 #include "bridge_driver.h"
+#include "clock_info.h"
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_PRINTF(FUNC,IDX) \
@@ -76,9 +77,7 @@ class synthesized_prints_t: public bridge_driver_t
         const unsigned int* argument_counts;
         const unsigned int* argument_widths;
         const unsigned int dma_address;
-        const char* const  clock_domain_name;
-        const unsigned int clock_multiplier;
-        const unsigned int clock_divisor;
+        ClockInfo clock_info;
         const int printno;
 
         // DMA batching parameters
