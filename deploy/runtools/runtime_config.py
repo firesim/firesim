@@ -94,8 +94,8 @@ class RuntimeHWConfig:
         runtime parameters currently. """
 
         # TODO: supernode support
-        tracefile = "+tracefile0=TRACEFILE0" if trace_enable else ""
-        autocounterfile = "+autocounter-filename0=AUTOCOUNTERFILE0"
+        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
+        autocounterfile = "+autocounter-filename=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
@@ -127,10 +127,10 @@ class RuntimeHWConfig:
         zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
 
         # TODO supernode support
-        dwarf_file_name = "+dwarf-file-name0=" + all_bootbinaries[0] + "-dwarf"
+        dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
-        # TODO: supernode support (tracefile0, trace-select0.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select0={trace_select} +trace-start0={trace_start} +trace-end0={trace_end} +trace-output-format0={trace_output_format} {dwarf_file_name} +autocounter-readrate0={autocounter_readrate} {autocounterfile} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        # TODO: supernode support (tracefile, trace-select.. etc)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid, driver=driver, runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
