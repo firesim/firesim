@@ -8,8 +8,7 @@ DESIGN ?= FireSim
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.firesim
-TARGET_CONFIG ?= FireSimRocketChipConfig
-# TARGET_CONFIG ?= FireSimBoomConfig
+TARGET_CONFIG ?= FireSimRocketConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
@@ -64,6 +63,33 @@ DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*)))
 TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz
 # DOC include end: Bridge Build System Changes
+
+#######################################
+# Setup Extra Verilator Compile Flags #
+#######################################
+
+## default flags added for ariane
+ARIANE_VERILATOR_FLAGS = \
+	--unroll-count 256 \
+	-Werror-PINMISSING \
+	-Werror-IMPLICIT \
+	-Wno-fatal \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-ASSIGNDLY \
+	-Wno-DECLFILENAME \
+	-Wno-UNUSED \
+	-Wno-UNOPTFLAT \
+	-Wno-BLKANDNBLK \
+	-Wno-style \
+	-Wall
+
+# normal flags used for midas builds (that are incompatible with ariane)
+DEFAULT_MIDAS_VERILATOR_FLAGS = \
+	--assert
+
+# AJG: this must be evaluated after verilog generation to work (hence the =)
+EXTRA_VERILATOR_FLAGS = \
+	$(shell if ! grep -iq "module.*ariane" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi)
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #

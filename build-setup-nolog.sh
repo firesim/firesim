@@ -86,7 +86,7 @@ if [ "$IS_LIBRARY" = false ]; then
     # If this is a fresh init of chipyard, we can safely overwrite the marshal
     # config, otherwise we have to assume the user might have changed it
     if [ $first_init = true ]; then
-      echo "firesim-dir: '../../../../'" > $marshal_cfg 
+      echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
 fi
 
@@ -104,10 +104,15 @@ fi
 # 2) If fast was not specified, but the toolchain from source
 if [ "$IS_LIBRARY" = true ]; then
     target_chipyard_dir=$RDIR/../..
+
+    # setup marshal symlink
+    ln -s ../../../software/firemarshal $RDIR/sw/firesim-software
 else
     target_chipyard_dir=$RDIR/target-design/chipyard
-fi
 
+    # setup marshal symlink
+    ln -s ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
+fi
 
 # Restrict the devtoolset environment to a subshell
 #
@@ -156,7 +161,8 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     make
 
     # Install firesim-software dependencies
-    marshal_dir=$RDIR/target-design/chipyard/software/firemarshal
+    # We always setup the symlink correctly above, so use sw/firesim-software
+    marshal_dir=$RDIR/sw/firesim-software
     cd $RDIR
     sudo pip3 install -r $marshal_dir/python-requirements.txt
     cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y

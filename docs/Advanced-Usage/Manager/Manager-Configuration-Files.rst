@@ -224,6 +224,27 @@ Set this to ``no`` if you want your Run Farm to keep running once the workload
 has completed. Set this to ``yes`` if you want your Run Farm to be TERMINATED
 after the workload has completed and results have been copied off.
 
+``suffixtag``
+""""""""""""""""""""""""""
+
+This allows you to append a string to a workload's output directory name,
+useful for differentiating between successive runs of the same workload,
+without renaming the entire workload. For example, specifying
+``suffixtag=test-v1`` with a workload named ``super-application`` will result
+in a workload results directory named
+``results-workload/DATE--TIME-super-application-test-v1/``.
+
+``[hostdebug]``
+^^^^^^^^^^^^^^^^^^
+
+``zerooutdram``
+"""""""""""""""""""""""""""""
+
+Set this to ``yes`` to zero-out FPGA-attached DRAM before simulation begins.
+This process takes 2-5 minutes. In general, this is not required to produce
+deterministic simulations on target machines running linux, but should be
+enabled if you observe simulation non-determinism.
+
 .. _config-build:
 
 ``config_build.ini``
@@ -310,7 +331,7 @@ configuration in ``config_hwdb.ini``. For example, to share the hardware config:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -321,7 +342,7 @@ you would use:
 ::
 
     [agfistoshare]
-    firesim-quadcore-nic-l2-llc4mb-ddr3
+    firesim-rocket-quadcore-nic-l2-llc4mb-ddr3
 
 
 ``[sharewithaccounts]``
@@ -356,18 +377,15 @@ you made up). Such a section must contain the following fields:
 """""""""""""""""""""""""""""
 
 This specifies the basic target design that will be built. Unless you
-are defining a custom system, this should either be ``FireSim``, for
-systems with a NIC, or ``FireSimNoNIC``, for systems without a NIC. These
-are defined in ``firesim/sim/src/main/scala/firesim/Targets.scala``. We
-describe this in greater detail in :ref:`Generating Different
+are defining a custom system, this should be set to ``FireSim``.
+We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
 ``TARGET_CONFIG``
 """""""""""""""""""
 
 This specifies the hardware configuration of the target being simulated. Some
-examples include ``FireSimRocketChipConfig`` and ``FireSimRocketChipQuadCoreConfig``.
-These are defined in ``firesim/sim/src/main/scala/firesim/TargetConfigs.scala``.
+examples include ``FireSimRocketConfig`` and ``FireSimQuadRocketConfig``.
 We describe this in greater detail in :ref:`Generating Different
 Targets<generating-different-targets>`).
 
@@ -437,7 +455,7 @@ these as necessary:
 
 ::
 
-    [firesim-quadcore-nic-l2-llc4mb-ddr3]
+    [firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
     # this is a comment that describes my favorite configuration!
     agfi=agfi-0a6449b5894e96e53
     deploytripletoverride=None
@@ -446,7 +464,7 @@ these as necessary:
 ``[NAME_GOES_HERE]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, ``firesim-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
+In this example, ``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 

@@ -13,12 +13,16 @@ r_dir = $(abspath ../resources)
 # 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
 # 5) DRIVER: software driver written by user (not necessary for replay)
 # 6) CLOCK_PERIOD(optional): clock period of tests
+# 7) VERILATOR_FLAGS(optional): set of verilator flags to add
 ########################################################################
 ifeq ($(strip $(DESIGN)),)
 $(error Define DESIGN, the target design)
 endif
 ifeq ($(strip $(GEN_DIR)),)
 $(error Define GEN_DIR, where all midas generated code reside)
+endif
+ifeq ($(strip $(TOP_DIR)),)
+$(error Define TOP_DIR, the top of the chipyard directory)
 endif
 ifeq ($(filter $(MAKECMDGOALS),vcs-replay $(REPLAY_BINARY)),)
 ifeq ($(strip $(DRIVER)),)
@@ -39,11 +43,15 @@ $(info clock period: $(CLOCK_PERIOD))
 
 shim := FPGATop
 
-override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(midas_dir)/dramsim2
+testchip_dir=$(TOP_DIR)/generators/testchipip/src/main/resources
+testchip_csrc_dir=$(testchip_dir)/testchipip/csrc
+dramsim_dir=$(TOP_DIR)/tools/DRAMSim2
+
+override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
 
 include $(util_dir)/utils.mk
 
-$(OUT_DIR)/dramsim2_ini: $(r_dir)/dramsim2_ini
+$(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
 	ln -sf $< $@
 
 $(OUT_DIR)/$(DESIGN).chain:
