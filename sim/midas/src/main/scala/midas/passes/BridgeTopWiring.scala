@@ -13,7 +13,7 @@ import TargetToken.{Instance, OfModule}
 import midas.passes.fame.RTRenamer
 
 
-case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation {
+case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[BridgeTopWiringAnnotation] =
     Seq(this.copy(RTRenamer.exact(renames)(target), RTRenamer.exact(renames)(clock)))
 
