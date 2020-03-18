@@ -309,36 +309,52 @@ uint64_t host_mem_offset = -0x80000000LL;
 
 #ifdef TRACERVBRIDGEMODULE_struct_guard
     #ifdef TRACERVBRIDGEMODULE_0_PRESENT
-    TRACERVBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_0_substruct, 0, TRACERVBRIDGEMODULE_0_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 0)
     #endif
     #ifdef TRACERVBRIDGEMODULE_1_PRESENT
-    TRACERVBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_1_substruct, 1, TRACERVBRIDGEMODULE_1_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 1)
     #endif
     #ifdef TRACERVBRIDGEMODULE_2_PRESENT
-    TRACERVBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_2_substruct, 2, TRACERVBRIDGEMODULE_2_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 2)
     #endif
     #ifdef TRACERVBRIDGEMODULE_3_PRESENT
-    TRACERVBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_3_substruct, 3, TRACERVBRIDGEMODULE_3_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 3)
     #endif
     #ifdef TRACERVBRIDGEMODULE_4_PRESENT
-    TRACERVBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_4_substruct, 4, TRACERVBRIDGEMODULE_4_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 4)
     #endif
     #ifdef TRACERVBRIDGEMODULE_5_PRESENT
-    TRACERVBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_5_substruct, 5, TRACERVBRIDGEMODULE_5_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 5)
     #endif
     #ifdef TRACERVBRIDGEMODULE_6_PRESENT
-    TRACERVBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_6_substruct, 6, TRACERVBRIDGEMODULE_6_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 6)
     #endif
     #ifdef TRACERVBRIDGEMODULE_7_PRESENT
-    TRACERVBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_7_substruct, 7, TRACERVBRIDGEMODULE_7_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 7)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_8_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 8)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_9_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 9)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_10_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 10)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_11_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 11)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_12_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 12)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_13_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 13)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_14_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 14)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_15_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 15)
     #endif
 #endif
 

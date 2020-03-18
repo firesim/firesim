@@ -28,10 +28,15 @@ public:
     return (local_clock_cycles * clock_divisor) / clock_multiplier;
   };
 
+  std::string file_header() {
+    char buf[200];
+    sprintf(buf, "# Clock Domain: %s, Relative Frequency: %d/%d of Base Clock\n",
+            clock_domain_name, clock_multiplier, clock_divisor);
+    return std::string(buf);
+  };
+
   void emit_file_header(std::ostream& os) {
-    os << "# Clock Domain: " << std::string(clock_domain_name);
-    os << ", Relative Frequency: " << clock_multiplier << "/" << clock_divisor;
-    os << " of Base Clock" << std::endl;
+    os << file_header();
   }
 
 };

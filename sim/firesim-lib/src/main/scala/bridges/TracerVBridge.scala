@@ -174,23 +174,12 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     trace_cycle_counter := trace_cycle_counter + 1.U
   }
 
-  // This need to go on a debug switch
-  //when (outgoingPCISdat.io.enq.fire()) {
-  //  hPort.hBits.traces.zipWithIndex.foreach({ case (bundle, bIdx) =>
-  //    printf("Tile %d Trace Bundle\n", bIdx.U)
-  //    bundle.zipWithIndex.foreach({ case (insn, insnIdx) =>
-  //      printf(p"insn ${insnIdx}: ${insn}\n")
-  //      //printf(b"insn ${insnIdx}, valid: ${insn.valid}")
-  //      //printf(b"insn ${insnIdx}, iaddr: ${insn.iaddr}")
-  //      //printf(b"insn ${insnIdx}, insn: ${insn.insn}")
-  //      //printf(b"insn ${insnIdx}, priv:  ${insn.priv}")
-  //      //printf(b"insn ${insnIdx}, exception: ${insn.exception}")
-  //      //printf(b"insn ${insnIdx}, interrupt: ${insn.interrupt}")
-  //      //printf(b"insn ${insnIdx}, cause: ${insn.cause}")
-  //      //printf(b"insn ${insnIdx}, tval: ${insn.tval}")
-  //    })
-  //  })
-  //}
   attach(outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready, "tracequeuefull", ReadOnly)
   genCRFile()
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    val headerWidgetName = getWName.toUpperCase
+    super.genHeader(base, sb)
+    emitClockDomainInfo(headerWidgetName, sb)
+  }
 }

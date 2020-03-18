@@ -22,17 +22,23 @@
 //#define FIREPERF_LOGGER
 
 tracerv_t::tracerv_t(
-    simif_t *sim, std::vector<std::string> &args, TRACERVBRIDGEMODULE_struct * mmio_addrs, int tracerno, long dma_addr) : bridge_driver_t(sim)
-{
-    static_assert(NUM_CORES <= 7, "TRACERV CURRENTLY ONLY SUPPORT <= 7 Cores/Instruction Streams");
-    this->mmio_addrs = mmio_addrs;
-    this->dma_addr = dma_addr;
+    simif_t *sim,
+    std::vector<std::string> &args,
+    TRACERVBRIDGEMODULE_struct * mmio_addrs,
+    long dma_addr,
+    const char* const  clock_domain_name,
+    const unsigned int clock_multiplier,
+    const unsigned int clock_divisor,
+    int tracerno) :
+        bridge_driver_t(sim),
+        mmio_addrs(mmio_addrs),
+        clock_info(clock_domain_name, clock_multiplier, clock_divisor),
+        dma_addr(dma_addr) {
+    //Biancolin: move into elaboration
+    //assert(this->core_ipc <= 7 && "TracerV only supports cores with a maximum IPC <= 7");
     const char *tracefilename = NULL;
     const char *dwarf_file_name = NULL;
-
-    for (int i = 0; i < NUM_CORES; i++) {
-         this->tracefiles[i] = NULL;
-    }
+    this->tracefile = NULL;
 
     this->trace_trigger_start = 0;
     this->trace_trigger_end = ULONG_MAX;
@@ -42,18 +48,18 @@ tracerv_t::tracerv_t(
 
     long outputfmtselect = 0;
 
-    std::string num_equals = std::to_string(tracerno) + std::string("=");
-    std::string tracefile_arg =        std::string("+tracefile") + num_equals;
-    std::string tracestart_arg =       std::string("+trace-start") + num_equals;
-    std::string traceend_arg =         std::string("+trace-end") + num_equals;
-    std::string traceselect_arg =         std::string("+trace-select") + num_equals;
+    std::string suffix = std::string("=");
+    std::string tracefile_arg =        std::string("+tracefile") + suffix;
+    std::string tracestart_arg =       std::string("+trace-start") + suffix;
+    std::string traceend_arg =         std::string("+trace-end") + suffix;
+    std::string traceselect_arg =         std::string("+trace-select") + suffix;
     // Testing: provides a reference file to diff the collected trace against
-    std::string testoutput_arg =         std::string("+trace-test-output") + std::to_string(tracerno);
+    std::string testoutput_arg =         std::string("+trace-test-output");
     // Formats the output before dumping the trace to file
-    std::string humanreadable_arg =    std::string("+trace-humanreadable") + std::to_string(tracerno);
+    std::string humanreadable_arg =    std::string("+trace-humanreadable");
 
-    std::string trace_output_format_arg = std::string("+trace-output-format") + num_equals;
-    std::string dwarf_file_arg =           std::string("+dwarf-file-name") + num_equals;
+    std::string trace_output_format_arg = std::string("+trace-output-format") + suffix;
+    std::string dwarf_file_arg =           std::string("+dwarf-file-name") + suffix;
 
     for (auto &arg: args) {
         if (arg.find(tracefile_arg) == 0) {
@@ -64,15 +70,26 @@ tracerv_t::tracerv_t(
             char *str = const_cast<char*>(arg.c_str()) + traceselect_arg.length();
             this->trigger_selector = atol(str);
         }
+        // These next two arguments are overloaded to provide trigger start and
+        // stop condition information based on setting of the +trace-select
         if (arg.find(tracestart_arg) == 0) {
+            // Start and end cycles are given in decimal
             char *str = const_cast<char*>(arg.c_str()) + tracestart_arg.length();
-            char * pEnd;
-            this->trace_trigger_start = trigger_selector==1 ? atol(str) : strtoul (str,&pEnd,16);
+            this->trace_trigger_start = this->clock_info.to_local_cycles(atol(str));
+            // PCs values, and instruction and mask encodings are given in hex
+            uint64_t mask_and_insn = strtoul(str, NULL, 16);
+            this->trigger_start_insn = (uint32_t) mask_and_insn;
+            this->trigger_start_insn_mask = mask_and_insn >> 32;
+            this->trigger_start_pc = mask_and_insn;
         }
         if (arg.find(traceend_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + traceend_arg.length();
-            char * pEnd;
-            this->trace_trigger_end = trigger_selector==1 ? atol(str) : strtoul (str,&pEnd,16);
+            this->trace_trigger_end = this->clock_info.to_local_cycles(atol(str));
+
+            uint64_t mask_and_insn = strtoul(str, NULL, 16);
+            this->trigger_stop_insn = (uint32_t) mask_and_insn;
+            this->trigger_stop_insn_mask = mask_and_insn >> 32;
+            this->trigger_stop_pc = mask_and_insn;
         }
         if (arg.find(testoutput_arg) == 0) {
             this->test_output = true;
@@ -89,14 +106,13 @@ tracerv_t::tracerv_t(
 
     if (tracefilename) {
         // giving no tracefilename means we will create NO tracefiles
-        for (int i = 0; i < NUM_CORES; i++) {
-            std::string tfname = std::string(tracefilename) + std::string("-C") + std::to_string(i);
-            this->tracefiles[i] = fopen(tfname.c_str(), "w");
-            if (!this->tracefiles[i]) {
-                fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
-                abort();
-            }
+        std::string tfname = std::string(tracefilename) + std::string("-C") + std::to_string(tracerno);
+        this->tracefile = fopen(tfname.c_str(), "w");
+        if (!this->tracefile) {
+            fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
+            abort();
         }
+        fputs(this->clock_info.file_header().c_str(), this->tracefile);
 
         // This must be kept consistent with config_runtime.ini's output_format.
         // That file's comments are the single source of truth for this.
@@ -113,25 +129,22 @@ tracerv_t::tracerv_t(
             fprintf(stderr, "Invalid trace format arg\n");
         }
     } else {
-        fprintf(stderr, "TraceRV: Warning: No +tracefileN given!\n");
+        fprintf(stderr, "TraceRV: Warning: No +tracefile given!\n");
     }
 
     if (fireperf) {
+        assert(false && "FirePerf support temporarily disabled pending multiclock bringup");
         if (this->dwarf_file_name.compare("") == 0) {
             fprintf(stderr, "+fireperf specified but no +dwarf-file-name given\n");
             abort();
         }
-        for (int i = 0; i < NUM_CORES; i++) {
-            this->trace_trackers[i] = new TraceTracker(this->dwarf_file_name, this->tracefiles[i]);
-        }
+        this->trace_tracker = new TraceTracker(this->dwarf_file_name, this->tracefile);
     }
 }
 
 tracerv_t::~tracerv_t() {
-    for (int i = 0; i < NUM_CORES; i++) {
-        if (this->tracefiles[i]) {
-            fclose(this->tracefiles[i]);
-        }
+    if (this->tracefile) {
+        fclose(this->tracefile);
     }
     free(this->mmio_addrs);
 }
@@ -149,93 +162,91 @@ void tracerv_t::init() {
     else if (this->trigger_selector == 2)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      write(this->mmio_addrs->hostTriggerPCStartHigh, this->trace_trigger_start >> 32);
-      write(this->mmio_addrs->hostTriggerPCStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
-      write(this->mmio_addrs->hostTriggerPCEndHigh, this->trace_trigger_end >> 32);
-      write(this->mmio_addrs->hostTriggerPCEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
-      printf("TracerV: Collect trace from instruction address %lx to %lx\n", trace_trigger_start, trace_trigger_end);
+      write(this->mmio_addrs->hostTriggerPCStartHigh, this->trigger_start_pc >> 32);
+      write(this->mmio_addrs->hostTriggerPCStartLow, this->trigger_start_pc & ((1ULL << 32) - 1));
+      write(this->mmio_addrs->hostTriggerPCEndHigh, this->trigger_stop_pc >> 32);
+      write(this->mmio_addrs->hostTriggerPCEndLow, this->trigger_stop_pc & ((1ULL << 32) - 1));
+      printf("TracerV: Collect trace from instruction address %lx to %lx\n", trigger_start_pc, trigger_stop_pc);
     }
     else if (this->trigger_selector == 3)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      write(this->mmio_addrs->hostTriggerStartInst, this->trace_trigger_start & ((1ULL << 32) - 1));
-      write(this->mmio_addrs->hostTriggerStartInstMask, this->trace_trigger_start >> 32);
-      write(this->mmio_addrs->hostTriggerEndInst, this->trace_trigger_end & ((1ULL << 32) - 1));
-      write(this->mmio_addrs->hostTriggerEndInstMask, this->trace_trigger_end >> 32);
+      write(this->mmio_addrs->hostTriggerStartInst, this->trigger_start_insn);
+      write(this->mmio_addrs->hostTriggerStartInstMask, this->trigger_start_insn_mask);
+      write(this->mmio_addrs->hostTriggerEndInst, this->trigger_stop_insn);
+      write(this->mmio_addrs->hostTriggerEndInstMask, this->trigger_stop_insn_mask);
       printf("TracerV: Collect trace with start trigger instruction %x masked with %x, and end trigger instruction %x masked with %x\n",
-              this->trace_trigger_start & ((1ULL << 32) - 1), this->trace_trigger_start >> 32,
-              this->trace_trigger_end & ((1ULL << 32) - 1), this->trace_trigger_end >> 32);
+              this->trigger_start_insn, this->trigger_start_insn_mask,
+              this->trigger_stop_insn, this->trigger_stop_insn_mask);
     }
     else
     {
+      // Biancolin: should we not error here?
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
       printf("TracerV: Collecting trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
 }
 
-// defining this stores as human readable hex (e.g. open in VIM)
-// undefining this stores as bin (e.g. open with vim hex mode)
-
-void tracerv_t::tick() {
-    uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
-
+void tracerv_t::process_tokens(int num_beats) {
+    // TODO. as opt can mmap file and just load directly into it.
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
-
-    if (outfull) {
-        // TODO. as opt can mmap file and just load directly into it.
-        pull(dma_addr, (char*)OUTBUF, QUEUE_DEPTH * 64);
-        //check that a tracefile exists (one is enough) since the manager
-        //does not create a tracefile when trace_enable is disabled, but the
-        //TracerV bridge still exists, and no tracefiles are create be default.
-        if (this->tracefiles[0]) {
-            if (this->human_readable || this->test_output) {
-                for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    if (this->test_output) {
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+4]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+3]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+2]);
-                        fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
-                        fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
-                    } else {
-                        for (int q = 0; q < NUM_CORES; q++) {
-                           if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                             fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
-                           }
-                        }
+    pull(dma_addr, (char*)OUTBUF, num_beats * 64);
+    //check that a tracefile exists (one is enough) since the manager
+    //does not create a tracefile when trace_enable is disabled, but the
+    //TracerV bridge still exists, and no tracefile is created by default.
+    if (this->tracefile) {
+        if (this->human_readable || this->test_output) {
+            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                if (this->test_output) {
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+5]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+4]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+3]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+2]);
+                    fprintf(this->tracefile, "%016lx", OUTBUF[i+1]);
+                    fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
+                } else {
+                    for (int q = 0; q < core_ipc; q++) {
+                       if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                         fprintf(this->tracefile, "I%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
+                       }
                     }
                 }
-            } else if (this->fireperf) {
-                for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    uint64_t cycle_internal = OUTBUF[i+7];
+            }
+        } else if (this->fireperf) {
 
-                    for (int q = 0; q < NUM_CORES; q++) {
-                        if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                            uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
-                            this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
+            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                uint64_t cycle_internal = OUTBUF[i+7];
+
+                for (int q = 0; q < core_ipc; q++) {
+                    if ((OUTBUF[i+0+q] >> 40) & 0x1) {
+                        uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
+                        this->trace_tracker->addInstruction(iaddr, cycle_internal);
 #ifdef FIREPERF_LOGGER
-                            fprintf(this->tracefiles[q], "%016llx", iaddr);
-                            fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
+                        fprintf(this->tracefile, "%016llx", iaddr);
+                        fprintf(this->tracefile, "%016llx\n", cycle_internal);
 #endif //FIREPERF_LOGGER
-                        }
                     }
                 }
-            } else {
-                for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                    // this stores as raw binary. stored as little endian.
-                    // e.g. to get the same thing as the human readable above,
-                    // flip all the bytes in each 512-bit line.
-                    for (int q = 0; q < 8; q++) {
-                        fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[0]);
-                    }
+            }
+        } else {
+            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+                // this stores as raw binary. stored as little endian.
+                // e.g. to get the same thing as the human readable above,
+                // flip all the bytes in each 512-bit line.
+                for (int q = 0; q < 8; q++) {
+                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
                 }
             }
         }
     }
 }
 
+void tracerv_t::tick() {
+    uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
+    if (outfull) process_tokens(QUEUE_DEPTH);
+}
 
 int tracerv_t::beats_available_stable() {
   size_t prev_beats_available = 0;
@@ -251,63 +262,7 @@ int tracerv_t::beats_available_stable() {
 // Pull in any remaining tokens and flush them to file
 // WARNING: may not function correctly if the simulator is actively running
 void tracerv_t::flush() {
-
-    alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
     size_t beats_available = beats_available_stable();
-
-    // TODO. as opt can mmap file and just load directly into it.
-    pull(dma_addr, (char*)OUTBUF, beats_available * 64);
-    //check that a tracefile exists (one is enough) since the manager
-    //does not create a tracefile when trace_enable is disabled, but the
-    //TracerV bridge still exists, and no tracefiles are create be default.
-    if (this->tracefiles[0]) {
-        if (this->human_readable || this->test_output) {
-            for (int i = 0; i < beats_available * 8; i+=8) {
-                if (this->test_output) {
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+7]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+6]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+5]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+4]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+3]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+2]);
-                    fprintf(this->tracefiles[0], "%016lx", OUTBUF[i+1]);
-                    fprintf(this->tracefiles[0], "%016lx\n", OUTBUF[i+0]);
-                } else {
-                    for (int q = 0; q < NUM_CORES; q++) {
-                      if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                        fprintf(this->tracefiles[q], "C%d: %016llx, cycle: %016llx\n", q, OUTBUF[i+0+q], OUTBUF[i+7]);
-                      }
-                    }
-                }
-            }
-        } else if (this->fireperf) {
-            for (int i = 0; i < beats_available * 8; i+=8) {
-                uint64_t cycle_internal = OUTBUF[i+7];
-
-                for (int q = 0; q < NUM_CORES; q++) {
-                    if ((OUTBUF[i+0+q] >> 40) & 0x1) {
-                        // is a valid instruction
-                        //
-                        // sign extended from sv39
-                        uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+0+q])) << 24) >> 24);
-                        this->trace_trackers[q]->addInstruction(iaddr, cycle_internal);
-#ifdef FIREPERF_LOGGER
-                    fprintf(this->tracefiles[q], "%016llx", iaddr);
-                    fprintf(this->tracefiles[q], "%016llx\n", cycle_internal);
-#endif //FIREPERF_LOGGER
-                    }
-                }
-            }
-        } else {
-            for (int i = 0; i < beats_available * 8; i+=8) {
-                // this stores as raw binary. stored as little endian.
-                // e.g. to get the same thing as the human readable above,
-                // flip all the bytes in each 512-bit line.
-                for (int q = 0; q < 8; q++) {
-                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefiles[0]);
-                }
-            }
-        }
-    }
+    process_tokens(beats_available);
 }
 #endif // TRACERVBRIDGEMODULE_struct_guard
