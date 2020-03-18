@@ -43,18 +43,14 @@ object FindClockSources extends firrtl.Transform {
       val source = if (mGraph.findSinks(currentNode)) currentNode else {
         val potentialSources =  mGraph.reachableFrom(currentNode)
         // FIXME: There should only be a single source here.
-        assert(potentialSources.size >= 1)
+        assert(potentialSources.size == 1)
         potentialSources.head
       }
       (restOfPath, source) match {
         // Source is a port on the top level module -> we're done
         case (Nil, LogicNode(_, None, _)) => Some(source)
-        // Source and sink nodes are the same port on an instance -> unconnected clock port
+        // Source and sink nodes are the same node -> unconnected clock port
         case (_, LogicNode(_, Some(_),_)) if source == currentNode => None
-        // Source is a port on an instance in our current module; prepend it to the path and recurse
-        case (_, LogicNode(port, Some(instName),_)) =>
-          val childModule = moduleDeps(module.value)(instName)
-          walkModule(LogicNode(port), (Some(Instance(instName)), OfModule(childModule)) +: path)
         // Source is a port but we are not yet at the top; recurse into parent module
         case (nonEmptyPath, _) => walkModule(LogicNode(source.name, instOpt.map(_.value)), nonEmptyPath)
       }
@@ -78,11 +74,8 @@ object FindClockSources extends firrtl.Transform {
     val clockPortsByModule = c.modules.map(m => m.name -> m.ports.collect({ case p@Port(_, _, _, ClockType) => LogicNode(p.name) }) ).toMap
     val clockConnectivity = connectivity map { case (module, subgraph) =>
         val clockPorts = clockPortsByModule(module)
-        val instClockNodes = moduleDeps(module) flatMap {
-          case (inst, module) => clockPortsByModule(module).map(_.copy(inst = Some(inst)))
-        }
         val queriedNodes = qTsByModule.getOrElse(module, Seq()).map(rT => LogicNode(rT.ref))
-        val simplifiedSubgraph = subgraph.simplify((clockPorts ++ instClockNodes ++ queriedNodes).toSet)
+        val simplifiedSubgraph = subgraph.simplify((clockPorts ++ queriedNodes).toSet)
         module -> simplifiedSubgraph
     }
     (queryTargets.map(qT => qT -> getSourceClock(clockConnectivity.toMap, moduleDeps)(qT))).toMap
