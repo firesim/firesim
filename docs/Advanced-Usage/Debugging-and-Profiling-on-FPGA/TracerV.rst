@@ -201,7 +201,7 @@ And then run the following at the bash prompt on the simulated system:
 The trace will contain primarily only traces for the duration of
 ``my-interesting-benchmark``.  Note that there will be a small amount of extra
 trace information from ``firesim-start-trigger`` and ``firesim-end-trigger``,
-as well as the OS switching between these and ``my-interesting-benchmark``. 
+as well as the OS switching between these and ``my-interesting-benchmark``.
 
 
 .. Attention::  While it is unlikely that a compiler will generate the
@@ -270,8 +270,8 @@ when using TracerV under certain conditions:
 * TracerV by default outputs only instruction address and a valid bit and assumes
   that the combination of these fits within 64 bits. Changing this requires
   modifying ``sim/firesim-lib/src/main/scala/bridges/TracerVBridge.scala``.
-* The number of cores/instruction streams is currently not automatically detected.
-  To collect data for multiple cores/instruction streams, you must change the
+* The number of cores or instruction streams is currently not automatically detected.
+  To collect data for multiple cores or instruction streams, you must change the
   ``NUM_CORES`` macro at the top of ``sim/firesim-lib/src/main/cc/bridges/tracerv.h``.
    * TracerV currently packs the entire trace into a 512-bit word, so the maximum
      supported value for ``NUM_CORES`` is 7. (7x 64-bit traces + a 64 bit cycle

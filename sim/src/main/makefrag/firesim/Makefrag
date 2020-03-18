@@ -70,6 +70,33 @@ TARGET_CXX_FLAGS := -g -I$(GENERATED_DIR) -I$(firesim_lib_dir) -I$(driver_dir)/f
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz
 # DOC include end: Bridge Build System Changes
 
+#######################################
+# Setup Extra Verilator Compile Flags #
+#######################################
+
+## default flags added for ariane
+ARIANE_VERILATOR_FLAGS = \
+	--unroll-count 256 \
+	-Werror-PINMISSING \
+	-Werror-IMPLICIT \
+	-Wno-fatal \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-ASSIGNDLY \
+	-Wno-DECLFILENAME \
+	-Wno-UNUSED \
+	-Wno-UNOPTFLAT \
+	-Wno-BLKANDNBLK \
+	-Wno-style \
+	-Wall
+
+# normal flags used for midas builds (that are incompatible with ariane)
+DEFAULT_MIDAS_VERILATOR_FLAGS = \
+	--assert
+
+# AJG: this must be evaluated after verilog generation to work (hence the =)
+EXTRA_VERILATOR_FLAGS = \
+	$(shell if ! grep -iq "module.*ariane" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi)
+
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
 ################################################################
