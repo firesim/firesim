@@ -27,8 +27,7 @@ case class ClockSourceAnnotation(queryTarget: ReferenceTarget, source: Option[Re
 object FindClockSources extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = LowForm
-  private def getSourceClock(moduleGraphs: Map[String,DiGraph[LogicNode]],
-                             moduleDeps: Map[String, Map[String,String]])
+  private def getSourceClock(moduleGraphs: Map[String,DiGraph[LogicNode]])
                             (rT: ReferenceTarget): Option[ReferenceTarget] = {
     val modulePath   = (OfModule(rT.module) +: rT.path.map(_._2)).reverse
     val instancePath = (None +: rT.path.map(tuple => Some(tuple._1))).reverse
@@ -64,21 +63,17 @@ object FindClockSources extends firrtl.Transform {
       require(t.component == Nil)
       require(t.module == t.circuit, s"Queried leaf clock ${t} must provide an absolute instance path")
     })
-    val c = state.circuit
-    val moduleMap = c.modules.map({m => (m.name,m) }).toMap
-    val iGraph = new InstanceGraph(c).graph
-    val moduleDeps = iGraph.getEdgeMap.map({ case (k,v) => (k.module, (v map { i => (i.name, i.module) }).toMap) }).toMap
+    val moduleMap = state.circuit.modules.map({m => (m.name,m) }).toMap
     val connectivity = new CheckCombLoops().analyzeFull(state)
     val qTsByModule = queryTargets.groupBy(_.encapsulatingModule)
 
-    val clockPortsByModule = c.modules.map(m => m.name -> m.ports.collect({ case p@Port(_, _, _, ClockType) => LogicNode(p.name) }) ).toMap
     val clockConnectivity = connectivity map { case (module, subgraph) =>
-        val clockPorts = clockPortsByModule(module)
+        val clockPorts = moduleMap(module).ports.collect { case Port(_, name, _, ClockType) => LogicNode(name) }
         val queriedNodes = qTsByModule.getOrElse(module, Seq()).map(rT => LogicNode(rT.ref))
         val simplifiedSubgraph = subgraph.simplify((clockPorts ++ queriedNodes).toSet)
         module -> simplifiedSubgraph
     }
-    (queryTargets.map(qT => qT -> getSourceClock(clockConnectivity.toMap, moduleDeps)(qT))).toMap
+    (queryTargets.map(qT => qT -> getSourceClock(clockConnectivity.toMap)(qT))).toMap
   }
 
   def execute(state: CircuitState): CircuitState = {
