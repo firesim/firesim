@@ -24,7 +24,7 @@ case class BridgeTopWiringOutputAnnotation(
     pathlessSource: ReferenceTarget,
     absoluteSource: ReferenceTarget,
     topSink: ReferenceTarget,
-    clockPort: ReferenceTarget) extends Annotation {
+    clockPort: ReferenceTarget) extends Annotation with FAMEAnnotation {
 
   def update(renames: RenameMap): Seq[BridgeTopWiringOutputAnnotation] = {
     val renameExact = RTRenamer.exact(renames)
