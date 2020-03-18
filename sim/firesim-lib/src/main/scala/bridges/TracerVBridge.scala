@@ -50,8 +50,13 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   val hPort = IO(HostPort(new TracerVTargetIO(key.insnWidths, key.vecSize)))
 
   val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
-  //trigger conditions
-  val traces = hPort.hBits.trace.insns
+
+  // Mask off valid committed instructions when under reset
+  val traces = hPort.hBits.trace.insns.map({ unmasked =>
+    val masked = WireDefault(unmasked)
+    masked.valid := unmasked.valid && !hPort.hBits.trace.reset
+    masked
+  })
   private val pcWidth = traces.map(_.iaddr.getWidth).max
   private val insnWidth = traces.map(_.insn.getWidth).max
 
