@@ -13,6 +13,7 @@ import freechips.rocketchip.tile.TileKey
 
 import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
 
+import midas.targetutils.TriggerSource
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import junctions.{NastiIO, NastiKey}
@@ -26,19 +27,28 @@ case class TracerVKey(
 
 class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extends Bundle {
   val trace = Input(new TileTraceIO(insnWidths, numInsns))
+  val triggerCredit = Output(Bool())
+  val triggerDebit = Output(Bool())
 }
 
+// Warning: If you're not going to use the companion object to instantiate this
+// bridge you must call generate trigger annotations _in the parent module_.
+//
+// TODO: Generalize a mechanism to promote annotations from extracted bridges...
 class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[TracerVTargetIO], TracerVBridgeModule] {
   val io = IO(new TracerVTargetIO(insnWidths, numInsns))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(TracerVKey(insnWidths, numInsns))
   generateAnnotations()
+  // Use in parent module: annotates the bridge instance's ports to indicate its trigger sources
+  def generateTriggerAnnotations(): Unit = TriggerSource(io.triggerCredit, io.triggerDebit)
 }
 
 object TracerVBridge {
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
     val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
+    ep.generateTriggerAnnotations
     ep.io.trace := tracedInsns
     ep
   }
@@ -153,11 +163,9 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     2.U -> triggerPCValVec.reduce(_ || _),
     3.U -> triggerInstValVec.reduce(_ || _)))
 
-  //TODO: for inter-widget triggering
-  //io.trigger_out.head <> trigger
-  if (p(midas.TraceTrigger)) {
-    BoringUtils.addSource(trigger, s"trace_trigger")
-  }
+  val triggerReg = RegEnable(trigger, false.B, tFire)
+  hPort.hBits.triggerDebit := !trigger && triggerReg
+  hPort.hBits.triggerCredit := trigger && !triggerReg
 
   // DMA mixin parameters
   lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH

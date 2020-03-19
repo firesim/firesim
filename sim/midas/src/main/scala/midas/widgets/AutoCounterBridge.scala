@@ -12,9 +12,12 @@ trait AutoCounterConsts {
   val counterWidth = 64
 }
 
-class AutoCounterBundle(predicateNames: Seq[String]) extends Record {
-  val elements = collection.immutable.ListMap(predicateNames.map(_ -> Input(Bool())):_*)
-  override def cloneType = new AutoCounterBundle(predicateNames).asInstanceOf[this.type]
+class AutoCounterBundle(eventNames: Seq[String], triggerName: String) extends Record {
+  val triggerEnable = Input(Bool())
+  val events = eventNames.map(_ -> Input(Bool()))
+  val elements = collection.immutable.ListMap(((triggerName, triggerEnable) +:
+                                               events):_*)
+  override def cloneType = new AutoCounterBundle(eventNames, triggerName).asInstanceOf[this.type]
 }
 
 class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCounterConsts {
@@ -22,14 +25,14 @@ class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCount
   val cycle = UInt(counterWidth.W)
 }
 
-class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget: Boolean)(implicit p: Parameters)
+class AutoCounterBridgeModule(events: Seq[(String, String)], triggerName: String)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
-  val numCounters = predicates.size
-  val (portNames, labels) = predicates.unzip
-  val trigger = WireDefault(true.B)
+  val numCounters = events.size
+  val (portNames, labels) = events.unzip
 
   val io = IO(new WidgetIO())
-  val hPort = IO(HostPort(new AutoCounterBundle(portNames)))
+  val hPort = IO(HostPort(new AutoCounterBundle(portNames, triggerName)))
+  val trigger = hPort.hBits.triggerEnable
   val cycles = RegInit(0.U(counterWidth.W))
   val acc_cycles = RegInit(0.U(counterWidth.W))
 
@@ -49,10 +52,6 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
   val readrate_high = RegInit(0.U(hostReadrateHighWidth.W))
   val readrate = Cat(readrate_high, readrate_low)
   val initDone = RegInit(false.B)
-  hastracerwidget match {
-      case true => BoringUtils.addSink(trigger, s"trace_trigger")
-      case _ => trigger := true.B
-   }
 
   val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
   val targetFire = tFireHelper.fire
@@ -63,7 +62,7 @@ class AutoCounterBridgeModule(predicates: Seq[(String, String)], hastracerwidget
     cycles := cycles + 1.U
   }
 
-  val counters = hPort.hBits.elements.unzip._2.map({ increment =>
+  val counters = hPort.hBits.events.unzip._2.map({ increment =>
     val count = RegInit(0.U(counterWidth.W))
     when (targetFire && increment) {
       count := count + 1.U

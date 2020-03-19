@@ -56,13 +56,11 @@ class FireSimPropertyLibrary extends BasePropertyLibrary {
 class AutoCounterTransform(dir: File = new File("/tmp/"))
     (implicit p: Parameters) extends Transform with AutoCounterConsts {
   def inputForm: CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
+  def outputForm: CircuitForm = MidForm
   override def name = "[Golden Gate] AutoCounter Cover Transform"
 
   val enableTransform         = p(EnableAutoCounter)
   val usePrintfImplementation = p(AutoCounterUsePrintfImpl)
-  //identify if there is a TracerV bridge to supply a trigger signal
-  val hasTracerWidget         = p(midas.TraceTrigger)
 
 
   // Gates each auto-counter event with the associated reset, moving the
@@ -86,22 +84,14 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
   }
 
   private def onModulePrintfImpl(coverTupleAnnoMap: Map[String, Seq[AutoCounterFirrtlAnnotation]],
-                                 hasTracerWidget: Boolean = false,
                                  addedAnnos: mutable.ArrayBuffer[Annotation])
                                 (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
       val mT = coverAnnos.head.enclosingModuleTarget
       val moduleNS = Namespace(mod)
-
-      // Forward declare a boolean for the trigger. Use the Wiring transform to bring it in later
-      val triggerName = moduleNS.newName("trigger")
-      val trigger = DefWire(NoInfo, triggerName, BoolType)
       val addedStmts = new mutable.ArrayBuffer[Statement]
-      addedStmts ++= Seq(trigger, Connect(NoInfo, WRef(trigger), one))
-      if (hasTracerWidget) {
-        addedAnnos += SinkAnnotation(mT.ref(triggerName).toNamed, "trace_trigger")
-      }
+
       val countType = UIntType(IntWidth(64))
       val zeroLit = UIntLiteral(0, IntWidth(64))
       val oneLit = UIntLiteral(1, IntWidth(64))
@@ -112,6 +102,14 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
         val plusOneName = moduleNS.newName(label + "_plusOne")
         val plusOne = DefNode(NoInfo, plusOneName, DoPrim(PrimOps.Add, Seq(WRef(count), oneLit), Seq.empty, countType))
         val countUpdate = Connect(NoInfo, WRef(count), Mux(WRef(target.ref), WRef(plusOne), WRef(count), countType))
+
+        // Generate a trigger sink and annotate it
+        val triggerName = moduleNS.newName("trigger")
+        val trigger = DefWire(NoInfo, triggerName, BoolType)
+        addedStmts ++= Seq(trigger, Connect(NoInfo, WRef(trigger), one))
+        addedAnnos += TriggerSinkAnnotation(mT.ref(triggerName), clock)
+
+        // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
         val printStmt = Print(NoInfo, printFormat, Seq(WRef(count)),
                               WRef(clock.ref), And(WRef(trigger), WRef(target.ref)))
@@ -124,33 +122,40 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
 
   private def implementViaPrintf(
       state: CircuitState,
-      hasTracerWidget: Boolean,
       eventModuleMap: Map[String, Seq[AutoCounterFirrtlAnnotation]]): CircuitState = {
 
     val addedAnnos = new mutable.ArrayBuffer[Annotation]()
     val updatedModules = state.circuit.modules.map(
-      onModulePrintfImpl(eventModuleMap, hasTracerWidget, addedAnnos))
+      onModulePrintfImpl(eventModuleMap, addedAnnos))
     state.copy(circuit = state.circuit.copy(modules = updatedModules),
                annotations = state.annotations ++ addedAnnos)
   }
 
   private def implementViaBridge(
       state: CircuitState,
-      hasTracerWidget: Boolean,
       eventModuleMap: Map[String, Seq[AutoCounterFirrtlAnnotation]]): CircuitState = {
 
     val labelMap = eventModuleMap.values.flatten.map(anno => anno.target -> anno.label).toMap
     val bridgeTopWiringAnnos = eventModuleMap.values.flatten.map(
       anno => BridgeTopWiringAnnotation(anno.target, anno.clock))
 
-    val topWiringPrefix = "autocounter_"
-    val wiredState = (new BridgeTopWiring(topWiringPrefix)).execute(
+    // Step 1: Call BridgeTopWiring, grouping all events by their source clock
+    val topWiringPrefix = "autocounter"
+    val wiredState = (new BridgeTopWiring(topWiringPrefix + "_")).execute(
       state.copy(annotations = state.annotations ++ bridgeTopWiringAnnos))
     val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
     val groupedOutputs = outputAnnos.groupBy(_.clockPort)
 
+    // Step 2: For each group of wired events, generate associated bridge annotations
+    val c = wiredState.circuit
+    val topModule = c.modules.collectFirst({ case m: Module if m.name == c.main => m }).get
+    val topMT = ModuleTarget(c.main, c.main)
+    val topNS = Namespace(topModule)
+    val addedPorts = mutable.ArrayBuffer[Port]()
+    val addedStmts = mutable.ArrayBuffer[Statement]()
+
     val bridgeAnnos = for ((clockRT, oAnnos) <- groupedOutputs) yield {
-      val fccaAnnos = oAnnos.map({ anno =>
+      val fccas = oAnnos.map({ anno =>
         FAMEChannelConnectionAnnotation.source(
           anno.topSink.ref,
           WireChannel,
@@ -164,18 +169,39 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
         anno.topSink.ref -> (pathlessLabel +: instPath).mkString("_")
       })
 
+      // Step 2b. Manually add a boolean channel to carry the trigger signal to the bridge
+      val triggerPortName = topNS.newName(s"${topWiringPrefix}_triggerEnable")
+      addedPorts += Port(NoInfo, triggerPortName, Output, BoolType)
+      // In the event there are no trigger sources, default to enabled
+      addedStmts += Connect(NoInfo, WRef(triggerPortName), one)
+      val triggerPortRT  = topMT.ref(triggerPortName)
+      val triggerFcca = FAMEChannelConnectionAnnotation.source(
+        triggerPortName,
+        WireChannel,
+        Some(clockRT),
+        Seq(triggerPortRT))
+      val triggerSinkAnno = TriggerSinkAnnotation(triggerPortRT, clockRT)
+
       val bridgeAnno = BridgeIOAnnotation(
-        target = ModuleTarget(state.circuit.main, state.circuit.main).ref(topWiringPrefix.stripSuffix("_")),
-        widget = (p: Parameters) => new AutoCounterBridgeModule(labels, hasTracerWidget)(p),
-        channelNames = fccaAnnos.map(_.globalName)
+        target = topMT.ref(topWiringPrefix),
+        // We need to pass the name of the trigger port so each bridge can
+        // disambiguate between them and connect to the correct one in simulation mapping
+        widget = (p: Parameters) => new AutoCounterBridgeModule(labels, triggerPortName)(p),
+        channelNames = (triggerFcca +: fccas).map(_.globalName)
       )
-      bridgeAnno +: fccaAnnos
+      Seq(bridgeAnno, triggerSinkAnno, triggerFcca) ++ fccas
     }
+
+    val updatedCircuit = c.copy(modules = c.modules.map({
+      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts:_*))
+      case o => o
+    }))
+
     val cleanedAnnotations = wiredState.annotations.flatMap({
       case a: BridgeTopWiringOutputAnnotation => None
       case o => Some(o)
     })
-    wiredState.copy(annotations = cleanedAnnotations ++ bridgeAnnos.flatten)
+    CircuitState(updatedCircuit, wiredState.form, cleanedAnnotations ++ bridgeAnnos.flatten)
   }
 
   def doTransform(state: CircuitState): CircuitState = {
@@ -224,9 +250,9 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
                                     annotations = remainingAnnos)
 
       if (usePrintfImplementation) {
-        implementViaPrintf(preppedState, hasTracerWidget, eventModuleMap)
+        implementViaPrintf(preppedState, eventModuleMap)
       } else {
-        implementViaBridge(preppedState, hasTracerWidget, eventModuleMap)
+        implementViaBridge(preppedState, eventModuleMap)
       }
     } else { state }
   }

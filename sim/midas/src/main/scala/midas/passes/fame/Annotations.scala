@@ -65,10 +65,6 @@ case class FAMEChannelConnectionAnnotation(
 
   def getBridgeModule(): String = sources.getOrElse(sinks.get).head.module
 
-  // TODO (David): Maybe clocks should become associated with module port here?
-  // If so, the pass calling this would handle the clocks.
-  // Otherwise, give this a different name to make it clear that it's not moving everything
-  // POSSIBLY FIXED (Albert): I included the clock in the renamed targets
   def moveFromBridge(portName: String): FAMEChannelConnectionAnnotation = {
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
 
