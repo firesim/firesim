@@ -128,7 +128,6 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
 
     val transforms = Seq(
       new Fame1Instances,
-      new WiringTransform,
       new PreLinkRenaming(Namespace(innerCircuit)))
     val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
 

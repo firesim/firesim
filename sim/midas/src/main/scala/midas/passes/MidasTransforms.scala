@@ -56,15 +56,10 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new AssertPass(dir),
       new PrintSynthesis(dir),
       new ResolveAndCheck,
+      // All trigger sources and sinks must exist in the target RTL before this pass runs
       TriggerWiring,
       new EmitFirrtl("post-trigger-wiring.fir"),
       new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
-      new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new WiringTransform,
-      new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new MiddleFirrtlToLowFirrtl,
       // We should consider moving these lower
       ChannelClockInfoAnalysis,
       UpdateBridgeClockInfo,

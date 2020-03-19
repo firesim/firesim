@@ -201,7 +201,14 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val wiringAnnos = new mutable.ArrayBuffer[Annotation]
       wiringAnnos += SourceAnnotation(triggerSourceRT.toNamed, sinkWiringKey)
       val preSinkWiringCircuit = updatedCircuit.map(onModuleSink(sinkModuleMap, wiringAnnos))
-      CircuitState(preSinkWiringCircuit, HighForm, wiredState.annotations ++ wiringAnnos)
+      val preSinkWiringState = CircuitState(preSinkWiringCircuit, HighForm, wiredState.annotations ++ wiringAnnos)
+
+      val sinkWiringTransforms = Seq(
+        new ResolveAndCheck,
+        new HighFirrtlToMiddleFirrtl,
+        new WiringTransform,
+        new ResolveAndCheck)
+      sinkWiringTransforms.foldLeft(preSinkWiringState)((in, xform) => xform.runTransform(in))
     }
 
     val cleanedAnnos = updatedState.annotations.flatMap({
