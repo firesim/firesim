@@ -129,7 +129,8 @@ tracerv_t::tracerv_t(
             fprintf(stderr, "Invalid trace format arg\n");
         }
     } else {
-        fprintf(stderr, "TraceRV: Warning: No +tracefile given!\n");
+        fprintf(stderr, "TraceRV %d: Tracing disabled, since +tracefile was not provided.\n", tracerno);
+        this->trace_enabled = false;
     }
 
     if (fireperf) {
@@ -150,7 +151,16 @@ tracerv_t::~tracerv_t() {
 }
 
 void tracerv_t::init() {
-    if (this->trigger_selector == 1)
+    if (!this->trace_enabled) {
+      // Explicitly disable token collection inthe bridge by only collecting
+      // tokens from cycle 0 to cycle 0, saving DMA bandwidth and improving FMR
+      write(this->mmio_addrs->triggerSelector, 1);
+      write(this->mmio_addrs->hostTriggerCycleCountStartHigh, 0);
+      write(this->mmio_addrs->hostTriggerCycleCountStartLow, 0);
+      write(this->mmio_addrs->hostTriggerCycleCountEndHigh, 0);
+      write(this->mmio_addrs->hostTriggerCycleCountEndLow, 0);
+    }
+    else if (this->trigger_selector == 1)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
       write(this->mmio_addrs->hostTriggerCycleCountStartHigh, this->trace_trigger_start >> 32);
@@ -244,8 +254,10 @@ void tracerv_t::process_tokens(int num_beats) {
 }
 
 void tracerv_t::tick() {
+  if (this->trace_enabled) {
     uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
     if (outfull) process_tokens(QUEUE_DEPTH);
+  }
 }
 
 int tracerv_t::beats_available_stable() {
@@ -262,7 +274,9 @@ int tracerv_t::beats_available_stable() {
 // Pull in any remaining tokens and flush them to file
 // WARNING: may not function correctly if the simulator is actively running
 void tracerv_t::flush() {
-    size_t beats_available = beats_available_stable();
-    process_tokens(beats_available);
+    if (this->trace_enabled) {
+        size_t beats_available = beats_available_stable();
+        process_tokens(beats_available);
+    }
 }
 #endif // TRACERVBRIDGEMODULE_struct_guard

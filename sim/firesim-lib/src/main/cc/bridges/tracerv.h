@@ -64,6 +64,9 @@ class tracerv_t: public bridge_driver_t
         TraceTracker * trace_tracker;
 
         bool human_readable = false;
+        // If no filename is provided, the instruction trace is not collected
+        // and the bridge drops all tokens to improve FMR
+        bool trace_enabled = true;
         // Used in unit testing to check TracerV is correctly pulling instuctions off the target
         bool test_output = false;
         long dma_addr;
