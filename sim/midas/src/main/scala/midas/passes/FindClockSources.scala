@@ -63,15 +63,21 @@ object FindClockSources extends firrtl.Transform {
       require(t.component == Nil)
       require(t.module == t.circuit, s"Queried leaf clock ${t} must provide an absolute instance path")
     })
-    val moduleMap = state.circuit.modules.map({m => (m.name,m) }).toMap
+
+    val c = state.circuit
+    val moduleMap = c.modules.map({m => (m.name,m) }).toMap
+    val moduleDeps = (new InstanceGraph(state.circuit)).getChildrenInstances
     val connectivity = new CheckCombLoops().analyzeFull(state)
     val qTsByModule = queryTargets.groupBy(_.encapsulatingModule)
+    val clockPortsByModule = c.modules.map(m => m.name -> m.ports.collect({ case p@Port(_, _, _, ClockType) => LogicNode(p.name) }) ).toMap
 
     val clockConnectivity = connectivity map { case (module, subgraph) =>
-        val clockPorts = moduleMap(module).ports.collect { case Port(_, name, _, ClockType) => LogicNode(name) }
-        val queriedNodes = qTsByModule.getOrElse(module, Seq()).map(rT => LogicNode(rT.ref))
-        val simplifiedSubgraph = subgraph.simplify((clockPorts ++ queriedNodes).toSet)
-        module -> simplifiedSubgraph
+      val queriedNodes = qTsByModule.getOrElse(module, Seq()).map(rT => LogicNode(rT.ref))
+      val instClockNodes = moduleDeps(module) flatMap {
+        case WDefInstance(_, inst, module, _) => clockPortsByModule(module).map(_.copy(inst = Some(inst)))
+      }
+      val simplifiedSubgraph = subgraph.simplify((clockPortsByModule(module) ++ queriedNodes ++ instClockNodes).toSet)
+      module -> simplifiedSubgraph
     }
     (queryTargets.map(qT => qT -> getSourceClock(clockConnectivity.toMap)(qT))).toMap
   }
