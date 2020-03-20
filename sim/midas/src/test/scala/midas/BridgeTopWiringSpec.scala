@@ -6,15 +6,9 @@ import midas.passes._
 
 import firrtl._
 import firrtl.ir._
-import firrtl.Parser.{IgnoreInfo, UseInfo}
-import firrtl.analyses.{GetNamespace, InstanceGraph, ModuleNamespaceAnnotation}
 import firrtl.annotations._
-import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
-import firrtl.util.BackendCompilationUtilities
 // Switch to FIRRTL in 3.2
 import midas.firrtl.testutils._
-import scala.collection.mutable
 
 class BridgeTopWiringSpec extends MiddleTransformSpec with FirrtlRunners  {
 
