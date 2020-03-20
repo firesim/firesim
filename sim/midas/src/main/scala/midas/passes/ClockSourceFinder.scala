@@ -41,7 +41,8 @@ class ClockSourceFinder(state: CircuitState) {
   def findRootDriver(queryTarget: ReferenceTarget): Option[ReferenceTarget] = {
     require(queryTarget.component.isEmpty)
     def getPortDriver(rT: ReferenceTarget): Option[ReferenceTarget] = {
-      val node = LogicNode(rT.ref, rT.component.collectFirst { case Field(f) => f })
+      val portOption = rT.component.collectFirst { case Field(f) => f }
+      val node = portOption.map(p => LogicNode(p, Some(rT.ref))).getOrElse(LogicNode(rT.ref))
       val (inst, module) = rT.path.lastOption.getOrElse((Instance(rT.module), OfModule(rT.module)))
       val drivingCone = connectivity(module.value).reachableFrom(node)
       val drivingPorts = (drivingCone + node) & inputClockNodeSets(module.value)
