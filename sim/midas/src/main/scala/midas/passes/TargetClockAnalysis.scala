@@ -12,7 +12,7 @@ import firrtl.annotations._
 case class ChannelClockInfoAnnotation(infoMap: Map[String, RationalClock]) extends NoTargetAnnotation
 
 /**  Returns a map from a channel's global name to a RationalClock case class which
-  *  contains metadata about the target clock including it's name and relative
+  *  contains metadata about the target clock including its name and relative
   *  frequency to the base clock
   *
   */
@@ -33,7 +33,8 @@ object ChannelClockInfoAnalysis extends Transform {
       case FAMEChannelConnectionAnnotation(name,_,Some(clock),_,_) => (name, clock)
     }).toMap
 
-    val clockSourceMap = FindClockSources.analyze(state, channelClocks.values)
+    val finder = new ClockSourceFinder(state)
+    val clockSourceMap = channelClocks.map({ case (k, v) => v -> finder.findRootDriver(v) }).toMap
     channelClocks.mapValues(sinkClock => sourceInfoMap(clockSourceMap(sinkClock).get))
   }
   def execute(state: CircuitState): CircuitState = {
