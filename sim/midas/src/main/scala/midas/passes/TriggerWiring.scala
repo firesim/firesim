@@ -15,15 +15,33 @@ import firrtl.Utils.{zero, BoolType}
 
 import scala.collection.mutable
 
+/*
+ * Implements Golden Gate's trigger system by emitting target-hardware to aggregate
+ * all trigger source signals into trigger enables.
+ *
+ * Refer to the FireSim Docs for more detail, and for a schematic of the generated HW.
+ */
 private[passes] object TriggerWiring extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   override def name = "[Golden Gate] Trigger Wiring"
   val topWiringPrefix = "simulationTrigger_"
   val sinkWiringKey = "trigger_sink"
+
+  // Defines the width of credit and debit counters local to a specific clock domain 
+  // For the trigger to function correctly:
+  // localWidth >= log2Ceil(max(localCreditSources, localDebitSources) * Ceil(N/M))
+  // where:
+  //   local{Credit,Debit}Sources are the number of the associated source in the local clock domain,
+  //   the local clock frequency is (N/M) times the base frequency
   val localCType = UIntType(IntWidth(16))
+  // Defines the type of the global counter in the base clock domain.  This
+  // just needs to be large enough to represent the largest number of credits
+  // the system will produce. Since there are only two of these, make it large
+  // to be safe.
   val globalCType = UIntType(IntWidth(32))
 
+  // Masks off trigger sources when the are under reset.
   private def gateEventsWithReset(sourceModuleMap: Map[String, Seq[TriggerSourceAnnotation]],
                                   updatedAnnos: mutable.ArrayBuffer[TriggerSourceAnnotation])
                                  (mod: DefModule): DefModule = mod match {
@@ -45,7 +63,8 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       case o => o
   }
 
-  def onModuleSink(sinkAnnoModuleMap: Map[String, Seq[TriggerSinkAnnotation]],
+  // Generates the sink-side hardware. See onStmtSink
+  private def onModuleSink(sinkAnnoModuleMap: Map[String, Seq[TriggerSinkAnnotation]],
                    addedAnnos: mutable.ArrayBuffer[Annotation])
                   (m: DefModule): DefModule = m match {
     case m: Module if sinkAnnoModuleMap.isDefinedAt(m.name) =>
@@ -55,7 +74,12 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     case o => o
   }
 
-  def onStmtSink(sinkAnnos: Map[String, TriggerSinkAnnotation],
+  /**
+    * For each TriggerSink:
+    * 1) Emit a register that will synchronize the trigger signal to the to local domain (from the base one)
+    * 2) Emit a wiring annotation pointing at that register.
+    */
+  private def onStmtSink(sinkAnnos: Map[String, TriggerSinkAnnotation],
                  addedAnnos: mutable.ArrayBuffer[Annotation],
                  ns: Namespace)
                 (s: Statement): Statement = s.map(onStmtSink(sinkAnnos, addedAnnos, ns)) match {
@@ -70,7 +94,6 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     case r@DefRegister(_,name,_,_,_,_) if sinkAnnos.isDefinedAt(name) => ???
     case s => s
   }
-
 
   def execute(state: CircuitState): CircuitState = {
 
@@ -126,11 +149,11 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       val portRemovedBody = wiredTopModule.body.map(updateAssignments)
 
-      // 5) Per-clock-domain: generate clock-domain popcount
+      // 5) Per-clock-domain: count local credits and debits
       val ns = Namespace(wiredTopModule)
       val addedStmts = new mutable.ArrayBuffer[Statement]()
 
-      def popCount(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) => 
+      def addReduce(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) => 
         val name = ns.newTemp
         val node = DefNode(NoInfo, name, DoPrim(PrimOps.Add, Seq(a, b), Seq.empty, UnknownType))
         addedStmts += node
@@ -147,9 +170,12 @@ private[passes] object TriggerWiring extends firrtl.Transform {
         (count, next)
       }
 
+      // Add-reduces a set of UInt signals, before adding it to a running count,
+      // returning a reference to value the counter will take on in the next cycle.
       def doAccounting(counterType: UIntType, clock: WRef)(name: String, bools: Seq[WRef]): WRef =
-        WRef(counter(name, counterType, clock, popCount(bools))._2)
+        WRef(counter(name, counterType, clock, addReduce(bools))._2)
 
+      // In each clock domain, add up all of the credits and debits
       val (localCredits, localDebits) = (for ((clockRT, oAnnos) <- groupedTriggers) yield {
         val credits = oAnnos.collect {
           case a if gatedCredits.exists(_.target == a.pathlessSource) => WRef(portName2WireMap(a.topSink.ref))
@@ -163,11 +189,13 @@ private[passes] object TriggerWiring extends firrtl.Transform {
         (doLocalAccounting(s"${domainName}_credits", credits), doLocalAccounting(s"${domainName}_debits", debits))
       }).unzip
 
-      // 6) Synchronize and aggregate counts in reference domain
+      // Step 6) Synchronize and aggregate local counts into global counts in the base clock domain
       val refClockRT = wiredState.annotations.collectFirst({
         case FAMEChannelConnectionAnnotation(_,TargetClockChannel(_),_,_,Some(clock :: _)) => clock
       }).get
 
+      // We only need to use a single register to synchronize a signal in GG, we use two here
+      // to measure how much the local count has changed between base clock cycles (hence, Diff).
       def syncAndDiff(next: WRef): WRef = {
         val name = next.name
         val syncNameS1 = ns.newName(s"${name}_count_sync_s1")
@@ -185,10 +213,15 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       }
       val creditUpdates = localCredits.map(syncAndDiff).toSeq
       val debitUpdates = localDebits.map(syncAndDiff).toSeq
+
+      // Add together the changes in local debits and credits, and apply them
+      // to the global count
       def doGlobalAccounting = doAccounting(globalCType, WRef(refClockRT.ref)) _
       val totalCredit = doGlobalAccounting("totalCredits", creditUpdates)
       val totalDebit = doGlobalAccounting("totalDebits", debitUpdates)
 
+      // Step 7) Generate the trigger enable, and prep all sinks for Wiring by
+      // adding a synchronization register
       val triggerName = ns.newName("trigger_source")
       val triggerSource = DefNode(NoInfo, triggerName, Neq(totalCredit, totalDebit))
       val triggerSourceRT = ModuleTarget(topModName, topModName).ref(triggerName)
@@ -196,7 +229,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val topModWithTrigger = wiredTopModule.copy(ports = prexistingPorts, body = Block(portRemovedBody,  addedStmts:_*))
       val updatedCircuit = wiredState.circuit.copy(modules = topModWithTrigger +: otherModules)
 
-      // Step 7) Wire generated trigger to all sinks
+      // Step 8) Wire the generated trigger to all sinks using the WiringTranform
       val sinkModuleMap = sinkAnnos.groupBy(_.target.module)
       val wiringAnnos = new mutable.ArrayBuffer[Annotation]
       wiringAnnos += SourceAnnotation(triggerSourceRT.toNamed, sinkWiringKey)

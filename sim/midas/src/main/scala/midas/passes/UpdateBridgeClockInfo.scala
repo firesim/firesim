@@ -2,12 +2,16 @@
 
 package midas.passes
 
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel}
 import midas.widgets.{RationalClock, BridgeIOAnnotation}
 
 import firrtl._
 import firrtl.annotations._
 
+/**
+  * Determines which clock each bridge is synchronous with, and updates that bridge's IO annotation
+  * to include it's domain clock info.
+  *
+  */
 object UpdateBridgeClockInfo extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm

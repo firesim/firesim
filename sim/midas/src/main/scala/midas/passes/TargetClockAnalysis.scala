@@ -9,9 +9,14 @@ import firrtl._
 import firrtl.annotations._
 
 
+/**
+  *  [[ChannelClockInfoAnalysis]]'s output annotation. Maps channel global name
+  *  (See [[FAMEChannelConnectionAnnotation]] to a clock info class.
+  */
 case class ChannelClockInfoAnnotation(infoMap: Map[String, RationalClock]) extends NoTargetAnnotation
 
-/**  Returns a map from a channel's global name to a RationalClock case class which
+/**
+  *  Returns a map from a channel's global name to a RationalClock case class which
   *  contains metadata about the target clock including its name and relative
   *  frequency to the base clock
   *

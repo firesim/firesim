@@ -13,6 +13,14 @@ import TargetToken.{Instance, OfModule}
 import midas.passes.fame.RTRenamer
 import midas.targetutils.FAMEAnnotation
 
+/**
+  * Provides signals for the transform to wire to the top-level of hte module hierarchy.
+  *
+  * @param target The signal to be plumbed to the top
+  *
+  * @param clock The clock to which this signal is sychronous. This will _not_ be wired.
+  *
+  */
 case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[BridgeTopWiringAnnotation] =
     Seq(this.copy(RTRenamer.exact(renames)(target), RTRenamer.exact(renames)(clock)))
@@ -20,6 +28,21 @@ case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTa
   def toWiringAnnotation(prefix: String): TopWiringAnnotation = TopWiringAnnotation(target.pathlessTarget.toNamed, prefix)
 }
 
+/**
+  * Provides reference targets to the newly generated top-level IO and a
+  * generated output-clock port that output is synchronous to.
+  *
+  * @param pathlessSource The original target passed in a [[BridgeTopWiringAnnotation]]
+  *
+  * @param absoluteSource An absolute reference target to the particular
+  *        instance of that signal that drives the new output. NB: A single [[BridgeTopWiringAnnotation]]
+  *        will generate as many output annotations as there are instances of the pathless source.
+  *
+  * @param topSink The new top-level port the source has been connected to
+  *
+  * @param clockPort The new output clock port the topSink port is synchronous to. 
+  *
+  */
 case class BridgeTopWiringOutputAnnotation(
     pathlessSource: ReferenceTarget,
     absoluteSource: ReferenceTarget,
@@ -34,6 +57,27 @@ case class BridgeTopWiringOutputAnnotation(
                                         renameExact(clockPort)))
   }
 }
+
+/**
+  * A utility transform used to implement features that are finely distrubuted
+  * through out the target, such as assertion and printf synthesis. This
+  * transform preforms most of the circuit modifications and analysis to emit
+  * BridgeIOAnnotations and FCCAs directly. For this pass to function
+  * correctly, the clock bridge must already be extracted.
+  *
+  * For each BridgeTopWiringAnnotation, this transform:
+  * 1) Wires out every instance of that signal to a unique port in the top-level module
+  *    These will be referenced by Bridge FCCAs and will become simulation channels.
+  * 2) Determines the source clock (these are now inputs on the top-level module) to which each that port is synchronous
+  *
+  * For each clock that is synchronous with at least one output port:
+  * 1) Loop that clock back to a new output port (Bridge FCCAs will point at this clock)
+  *
+  * Finally emit a [[BridgeTopWiringOutputAnnotation]] for each created data-output port.
+  *
+  * @param prefix Provides the top-wiring prefix
+  *
+  */
 
 class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
   def inputForm = MidForm
