@@ -37,7 +37,18 @@ autocounter_t::autocounter_t(
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + readrate_arg.length();
-            this->readrate = this->clock_info.to_local_cycles(atol(str));
+            uint64_t base_cycles = atol(str);
+            this->readrate = this->clock_info.to_local_cycles(base_cycles);
+            // TODO: Just fix this in the bridge by not sampling with a fixed frequency
+            if (this->clock_info.to_base_cycles(this->readrate) != base_cycles) {
+                fprintf(stderr,
+"[AutoCounter] Warning: requested sample rate of %llu [base] cycles does not map to a whole number\n\
+                       of cycles in clock domain: %s, (%d/%d) of base clock.\n",
+                       base_cycles, this->clock_info.domain_name,
+                       this->clock_info.multiplier, this->clock_info.divisor);
+                fprintf(stderr, "[AutoCounter] Workaround: Pick a sample rate that is divisible by all clock divisors.\n");
+            }
+
         }
         if (arg.find(filename_arg) == 0) {
             autocounter_filename_in = const_cast<char*>(arg.c_str()) + filename_arg.length();
