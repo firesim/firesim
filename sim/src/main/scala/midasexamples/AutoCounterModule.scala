@@ -11,7 +11,8 @@ import freechips.rocketchip.util.property._
 
 class AutoCounterModuleDUT(
   printfPrefix: String = "AUTOCOUNTER_PRINT ",
-  instPath: String = "AutoCounterModule_AutoCounterModuleDUT") extends Module {
+  instPath: String = "AutoCounterModule_AutoCounterModuleDUT",
+  clockDivision: Int = 1) extends Module {
   val io = IO(new Bundle {
     val a = Input(Bool())
   })
@@ -31,12 +32,13 @@ class AutoCounterModuleDUT(
 
   //--------VALIDATION---------------
 
+  val samplePeriod = 1000 / clockDivision
   val enabled_printcount = freechips.rocketchip.util.WideCounter(64, io.a)
   val enabled4_printcount = freechips.rocketchip.util.WideCounter(64, enabled4)
   val oddlfsr_printcount = freechips.rocketchip.util.WideCounter(64, childInst.io.oddlfsr)
   val cycle_print = Reg(UInt(64.W))
   cycle_print := cycle_print + 1.U
-  when ((cycle_print >= 999.U) & (cycle_print % 1000.U === 999.U)) {
+  when ((cycle_print >= (samplePeriod - 1).U) & (cycle_print % samplePeriod.U === (samplePeriod - 1).U)) {
     printf(s"${printfPrefix}Cycle %d\n", cycle_print)
     printf(s"${printfPrefix}============================\n")
     printf(s"${printfPrefix}PerfCounter ENABLED_${instPath}: %d\n", enabled_printcount)
@@ -82,9 +84,10 @@ class AutoCounterCoverModuleDUT extends Module {
   when (cycle8) {
     cycle8_printcount := cycle8_printcount + 1.U
   }
+  val samplePeriod = 1000
   val cycle_print = Reg(UInt(64.W))
   cycle_print := cycle_print + 1.U
-  when ((cycle_print >= 999.U) & (cycle_print % 1000.U === 999.U)) {
+  when ((cycle_print >= (samplePeriod - 1).U) & (cycle_print % 1000.U === (samplePeriod - 1).U)) {
     printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
     printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_8_AutoCounterCoverModule_AutoCounterCoverModuleDUT: %d\n", cycle8_printcount)

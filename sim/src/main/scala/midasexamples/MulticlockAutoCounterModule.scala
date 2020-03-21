@@ -12,7 +12,7 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 // from verilator/vcs and compare against the two files produced by
 // the bridges
 class MulticlockAutoCounterModule extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
+  val clockBridge = Module(new RationalClockBridge(RationalClock("ThirdRate", 1, 3)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
   val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
@@ -26,8 +26,9 @@ class MulticlockAutoCounterModule extends RawModule {
   }
   withClockAndReset(div2Clock, resetHalfRate) {
     val lfsr = chisel3.util.LFSR16()
-    val fullRateMod = Module(new AutoCounterModuleDUT("AUTOCOUNTER_PRINT_HALFRATE ",
-                                                      instPath = instPath + "_1"))
+    val fullRateMod = Module(new AutoCounterModuleDUT("AUTOCOUNTER_PRINT_THIRDRATE ",
+                                                      instPath = instPath + "_1",
+                                                      clockDivision = 3))
     fullRateMod.io.a := lfsr(0)
   }
 }
