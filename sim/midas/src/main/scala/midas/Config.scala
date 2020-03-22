@@ -38,9 +38,6 @@ case object EnableAutoCounter extends Field[Boolean](false)
   */
 case object AutoCounterUsePrintfImpl extends Field[Boolean](false)
 
-case object TraceTrigger extends Field[Boolean]
-// Exclude module instances from assertion and print synthesis
-// Tuple of Parent Module (where the instance is instantiated) and the instance name
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -65,7 +62,6 @@ class SimConfig extends Config((site, here, up) => {
   case DaisyWidth       => 32
   case SynthAsserts     => false
   case SynthPrints      => false
-  case TraceTrigger     => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
