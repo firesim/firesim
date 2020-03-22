@@ -18,6 +18,7 @@
         args, \
         TRACERVBRIDGEMODULE_ ## IDX ## _substruct, \
         TRACERVBRIDGEMODULE_ ## IDX ## _DMA_ADDR, \
+        TRACERVBRIDGEMODULE_ ## IDX ## _core_ipc, \
         TRACERVBRIDGEMODULE_ ## IDX ## _clock_domain_name, \
         TRACERVBRIDGEMODULE_ ## IDX ## _clock_multiplier, \
         TRACERVBRIDGEMODULE_ ## IDX ## _clock_divisor, \
@@ -31,6 +32,7 @@ class tracerv_t: public bridge_driver_t
                   std::vector<std::string> &args,
                   TRACERVBRIDGEMODULE_struct * mmio_addrs,
                   long dma_addr,
+                  const unsigned int core_ipc,
                   const char* const  clock_domain_name,
                   const unsigned int clock_multiplier,
                   const unsigned int clock_divisor,
@@ -45,8 +47,8 @@ class tracerv_t: public bridge_driver_t
 
     private:
         TRACERVBRIDGEMODULE_struct * mmio_addrs;
+        const int core_ipc;
         ClockInfo clock_info;
-        const int core_ipc = 1;
 
         FILE * tracefile;
         uint64_t cur_cycle;

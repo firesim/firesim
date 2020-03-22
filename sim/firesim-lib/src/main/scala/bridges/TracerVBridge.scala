@@ -69,6 +69,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   })
   private val pcWidth = traces.map(_.iaddr.getWidth).max
   private val insnWidth = traces.map(_.insn.getWidth).max
+  val cycleCountWidth = 64
 
   //Program Counter trigger value can be configured externally
   val hostTriggerPCWidthOffset = pcWidth - p(CtrlNastiKey).dataBits
@@ -101,7 +102,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   attach(hostTriggerCycleCountStartHigh, "hostTriggerCycleCountStartHigh", WriteOnly)
   attach(hostTriggerCycleCountStartLow, "hostTriggerCycleCountStartLow", WriteOnly)
   val hostTriggerCycleCountStart = Cat(hostTriggerCycleCountStartHigh, hostTriggerCycleCountStartLow)
-  val triggerCycleCountStart = RegInit(0.U(64.W))
+  val triggerCycleCountStart = RegInit(0.U(cycleCountWidth.W))
   triggerCycleCountStart := hostTriggerCycleCountStart
 
   val hostTriggerCycleCountEndHigh = RegInit(0.U(hostTriggerCycleCountHighWidth.W))
@@ -109,10 +110,10 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   attach(hostTriggerCycleCountEndHigh, "hostTriggerCycleCountEndHigh", WriteOnly)
   attach(hostTriggerCycleCountEndLow, "hostTriggerCycleCountEndLow", WriteOnly)
   val hostTriggerCycleCountEnd = Cat(hostTriggerCycleCountEndHigh, hostTriggerCycleCountEndLow)
-  val triggerCycleCountEnd = RegInit(0.U(64.W))
+  val triggerCycleCountEnd = RegInit(0.U(cycleCountWidth.W))
   triggerCycleCountEnd := hostTriggerCycleCountEnd
 
-  val trace_cycle_counter = RegInit(0.U(64.W))
+  val trace_cycle_counter = RegInit(0.U(cycleCountWidth.W))
 
   //target instruction type trigger (trigger through target software)
   //can configure the trigger instruction type externally though simulation driver
@@ -172,9 +173,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
   val uint_traces = (traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))).reverse
-  outgoingPCISdat.io.enq.bits := Cat(Cat(trace_cycle_counter,
-                                         0.U((outgoingPCISdat.io.enq.bits.getWidth - Cat(uint_traces).getWidth - trace_cycle_counter.getWidth).W)),
-                                     Cat(uint_traces))
+  outgoingPCISdat.io.enq.bits := Cat(uint_traces :+ trace_cycle_counter.pad(64)).pad(BIG_TOKEN_WIDTH)
 
   val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid)
   hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
@@ -193,6 +192,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     import CppGenerationUtils._
     val headerWidgetName = getWName.toUpperCase
     super.genHeader(base, sb)
+    sb.append(genConstStatic(s"${headerWidgetName}_core_ipc", UInt32(traces.size)))
     emitClockDomainInfo(headerWidgetName, sb)
   }
 }
