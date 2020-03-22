@@ -30,10 +30,7 @@ object FindClockSources extends firrtl.Transform {
     val sourceMappings = queryAnnotations.map(qA => qA.target -> sourceFinder.findRootDriver(qA.target)).toMap
     val clockSourceAnnotations = queryAnnotations.map(qAnno =>
       ClockSourceAnnotation(qAnno.originalTarget.getOrElse(qAnno.target), sourceMappings(qAnno.target)))
-    val prunedAnnos = state.annotations.flatMap({
-      case _: FindClockSourceAnnotation => None
-      case o => Some(o)
-    })
+    val prunedAnnos = state.annotations.filterNot(queryAnnotations.toSet)
     state.copy(annotations = clockSourceAnnotations ++ prunedAnnos)
   }
 }
