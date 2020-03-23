@@ -224,7 +224,9 @@ object FAMEModuleTransformer {
     }
 
     def onStmt(stmt: Statement): Statement = stmt match {
-      case Connect(_, WRef(_, ClockType, PortKind, _), _) => EmptyStmt // don't drive clock outputs
+      case Connect(info, WRef(name, ClockType, PortKind, flow), rhs) =>
+        // Don't substitute gated clock for LHS expressions
+        Connect(info, WRef(name, ClockType, WireKind, flow), onExpr(rhs))
       case s => s map onStmt map onExpr
     }
 
@@ -240,8 +242,11 @@ object FAMEModuleTransformer {
     val topRules = Seq(clockChannel.setReady(allFiredOrFiring),
       Connect(NoInfo, WRef(finishing), And(allFiredOrFiring, clockChannel.isValid)))
 
+    // Keep output clock ports around as wires just for convenience to keep connects legal
+    val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
+
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = finishing +: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
+    val decls = finishing +: clockOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
     val assigns = targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
     Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
   }
