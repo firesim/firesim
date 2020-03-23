@@ -3,13 +3,13 @@
 #include "simif.h"
 #include "bridges/synthesized_assertions.h"
 
-class MultiClockAssertModule_t: virtual simif_t
+class MulticlockAssertModule_t: virtual simif_t
 {
 public:
     std::vector<synthesized_assertions_t *> assert_endpoints;
     synthesized_assertions_t * full_rate_assert_ep;
     synthesized_assertions_t * half_rate_assert_ep;
-    MultiClockAssertModule_t(int argc, char** argv) {
+    MulticlockAssertModule_t(int argc, char** argv) {
         ASSERTBRIDGEMODULE_0_substruct_create;
         ASSERTBRIDGEMODULE_1_substruct_create;
         full_rate_assert_ep = new synthesized_assertions_t(this,

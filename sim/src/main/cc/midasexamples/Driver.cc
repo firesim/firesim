@@ -49,8 +49,8 @@
 #include "VerilogAccumulator.h"
 #elif defined DESIGNNAME_TrivialMulticlock
 #include "TrivialMulticlock.h"
-#elif defined DESIGNNAME_MultiClockAssertModule
-#include "MultiClockAssertModule.h"
+#elif defined DESIGNNAME_MulticlockAssertModule
+#include "MulticlockAssertModule.h"
 #elif defined DESIGNNAME_TriggerWiringModule
 #include "TriggerWiringModule.h"
 #elif defined DESIGNNAME_TwoAdders

@@ -80,7 +80,7 @@ class StimulusGenerator extends MultiIOModule {
 }
 
 
-class MultiClockAssertModule extends RawModule {
+class MulticlockAssertModule extends RawModule {
   val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)

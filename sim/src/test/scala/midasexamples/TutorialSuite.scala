@@ -146,7 +146,7 @@ class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
 
 class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
 
-class MulticlockAssertF1Test extends TutorialSuite("MultiClockAssertModule")
+class MulticlockAssertF1Test extends TutorialSuite("MulticlockAssertModule")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file=synthprinttest.out",
