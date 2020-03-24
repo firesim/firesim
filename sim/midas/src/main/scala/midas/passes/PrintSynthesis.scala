@@ -117,7 +117,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val topModule = wiredState.circuit.modules.find(_.name == c.main).get
     val portMap = topModule.ports.map(p => portRT(p) -> p).toMap
 
-    val printRecordAnnos = for ((clockRT, oAnnos) <- groupedPrints) yield {
+    val printRecordAnnos = for ((clockRT, oAnnos) <- groupedPrints.toSeq.sortBy(_._1.ref)) yield {
       val fccaAnnos = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,_,oClockRT) =>
         genFCCAsFromPort(portMap(oPortRT), oPortRT, oClockRT) })
 

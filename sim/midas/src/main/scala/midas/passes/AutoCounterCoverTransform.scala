@@ -154,7 +154,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
     val addedPorts = mutable.ArrayBuffer[Port]()
     val addedStmts = mutable.ArrayBuffer[Statement]()
 
-    val bridgeAnnos = for ((srcClockRT, oAnnos) <- groupedOutputs) yield {
+    val bridgeAnnos = for ((srcClockRT, oAnnos) <- groupedOutputs.toSeq.sortBy(_._1.ref)) yield {
       val sinkClockRT = oAnnos.head.sinkClockPort
       val fccas = oAnnos.map({ anno =>
         FAMEChannelConnectionAnnotation.source(
