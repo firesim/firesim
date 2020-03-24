@@ -313,12 +313,22 @@ object TriggerSource {
 object TriggerSink {
   /**
     * Marks a bool as receiving the global trigger signal.
+    *
+    * @param target A Bool node that will be driven with the trigger
+    *
+    * @param noSourceDefault The value that the trigger signal should take on
+    * if no trigger soruces are found in the target. This is a temporary parameter required
+    * while this apply method generates a wire. Otherwise this can be punted to the target's RTL.
     */
-  def apply(target: Bool): Unit = {
+  def apply(target: Bool, noSourceDefault: =>Bool = true.B): Unit = {
     // Hack: Create dummy nodes until chisel-side instance annotations have been improved
-    val clock = WireDefault(Module.clock)
-    val targetWire = WireDefault(target)
+    val targetWire = WireDefault(noSourceDefault)
+    val clock = Module.clock
+    target := targetWire
     dontTouch(targetWire)
+    // Both the provided node and the generated one need to be dontTouched to stop
+    // constProp from optimizing the down stream logic(?)
+    dontTouch(target)
     dontTouch(clock)
     annotate(new ChiselAnnotation {
       def toFirrtl = TriggerSinkAnnotation(targetWire.toTarget, clock.toTarget)

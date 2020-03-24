@@ -18,26 +18,18 @@ class TriggerSinkModule extends MultiIOModule {
   assert(reference === generated)
 }
 
-trait SourceCredit { self: MultiIOModule =>
+class TriggerSourceModule extends MultiIOModule {
   val referenceCredit = IO(Output(Bool()))
   private val lfsr = LFSR16()
   val credit = lfsr(0)
   TriggerSource.credit(credit)
   referenceCredit := ~reset.toBool && credit
-}
 
-trait SourceDebit { self: MultiIOModule =>
   val referenceDebit = IO(Output(Bool()))
-  private val lfsr = LFSR16()
   val debit = ShiftRegister(lfsr(0), 5)
   TriggerSource.debit(debit)
   referenceDebit := ~reset.toBool && debit
 }
-
-class TriggerSourceModule extends MultiIOModule with SourceCredit with SourceDebit
-class TriggerCreditModule extends MultiIOModule with SourceCredit
-class TriggerDebitModule extends MultiIOModule with SourceDebit
-
 
 class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOModule {
   def counterType = UInt(16.W)
@@ -112,14 +104,14 @@ class TriggerWiringModule extends RawModule {
 
   @chiselName
   class ReferenceImpl {
-    val totalCredit = Reg(UInt(32.W))
-    val totalDebit  = Reg(UInt(32.W))
-    val creditNext  = totalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
-    val debitNext = totalDebit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
-    totalCredit := creditNext
-    totalDebit  := debitNext
-    val triggerEnable = creditNext =/= debitNext
-    refSinks foreach { _ := triggerEnable }
+    val refTotalCredit = Reg(UInt(32.W))
+    val refTotalDebit  = Reg(UInt(32.W))
+    val refCreditNext  = refTotalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
+    val refDebitNext   = refTotalDebit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
+    refTotalCredit := refCreditNext
+    refTotalDebit  := refDebitNext
+    val refTriggerEnable = refCreditNext =/= refDebitNext
+    refSinks foreach { _ := refTriggerEnable }
   }
 
   // Reference Trigger Enable
