@@ -197,7 +197,7 @@ void tracerv_t::init() {
     {
       // Biancolin: should we not error here?
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      printf("TracerV: Collecting trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
+      printf("TracerV: No trigger selected. Collecting trace from %lu to %lu cycles\n", 0, ULONG_MAX);
     }
     write(this->mmio_addrs->initDone, true);
 }
