@@ -186,7 +186,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
         Some(sinkClockRT),
         Seq(triggerPortRT))
 
-      val triggerSinkAnno = TriggerSinkAnnotation(topMT.ref(triggerPortNode), srcClockRT)
+      val triggerSinkAnno = TriggerSinkAnnotation(topMT.ref(triggerPortNode), sinkClockRT)
 
       val bridgeAnno = BridgeIOAnnotation(
         target = topMT.ref(topWiringPrefix),

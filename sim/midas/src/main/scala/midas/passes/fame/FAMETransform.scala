@@ -211,6 +211,7 @@ object FAMEModuleTransformer {
     val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
+    val clockChannelPortNames = clockChannel.ports.map(_.name).toSet
     def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
       case iWR @ WRef(name, tpe, PortKind, SourceFlow) if tpe != ClockType =>
         // Generally SourceFlow references to ports will be input channels, but RTL may use
@@ -218,7 +219,7 @@ object FAMEModuleTransformer {
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
       case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType =>
         outChannelMap(name).replacePortRef(oWR)
-      case cWR @ WRef(name, ClockType, PortKind, SourceFlow) =>
+      case cWR @ WRef(name, ClockType, PortKind, SourceFlow) if clockChannelPortNames(name) =>
         replaceClocksMap(WrappedExpression.we(cWR))
       case e => e map onExpr
     }
