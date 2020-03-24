@@ -44,6 +44,7 @@ class PipeChannel[T <: ChLeafType](
     val initializing = RegNext(reset.toBool)
     when(initializing) {
       tokens.io.enq.valid := true.B
+      tokens.io.enq.bits := 0.U.asTypeOf(tokens.io.enq.bits)
       io.in.ready := false.B
     }
   }
