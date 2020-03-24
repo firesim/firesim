@@ -87,7 +87,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
       executeAnnosOnly(input, annos, checkAnnos)
    }
 
-   it should s"find sources for intermediate nodes of a set of a chain of clock connections" in {
+   it should s"find sources for intermediate nodes in a chain of clock connections" in {
       val input =
          """circuit Top :
            |  module Top :
