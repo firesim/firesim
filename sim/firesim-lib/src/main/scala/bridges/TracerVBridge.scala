@@ -42,7 +42,9 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
   val constructorArg = Some(TracerVKey(insnWidths, numInsns))
   generateAnnotations()
   // Use in parent module: annotates the bridge instance's ports to indicate its trigger sources
-  def generateTriggerAnnotations(): Unit = TriggerSource(io.triggerCredit, io.triggerDebit)
+  // def generateTriggerAnnotations(): Unit = TriggerSource(io.triggerCredit, io.triggerDebit)
+  def generateTriggerAnnotations(): Unit =
+    TriggerSource.evenUnderReset(WireDefault(io.triggerCredit), WireDefault(io.triggerDebit))
 }
 
 object TracerVBridge {
@@ -59,7 +61,6 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new TracerVTargetIO(key.insnWidths, key.vecSize)))
 
-  val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
 
   // Mask off valid committed instructions when under reset
   val traces = hPort.hBits.trace.insns.map({ unmasked =>
@@ -71,6 +72,9 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   private val insnWidth = traces.map(_.insn.getWidth).max
   val cycleCountWidth = 64
 
+  // Set after trigger-dependent memory-mapped registers have been set, to
+  // prevent spurious credits
+  val initDone    = genWORegInit(Wire(Bool()), "initDone", false.B)
   //Program Counter trigger value can be configured externally
   val hostTriggerPCWidthOffset = pcWidth - p(CtrlNastiKey).dataBits
   val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else pcWidth
@@ -164,7 +168,9 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     2.U -> triggerPCValVec.reduce(_ || _),
     3.U -> triggerInstValVec.reduce(_ || _)))
 
-  val triggerReg = RegEnable(trigger, false.B, tFire)
+  val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
+
+  val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire)
   hPort.hBits.triggerDebit := !trigger && triggerReg
   hPort.hBits.triggerCredit := trigger && !triggerReg
 
@@ -175,10 +181,8 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
   val uint_traces = (traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))).reverse
   outgoingPCISdat.io.enq.bits := Cat(uint_traces :+ trace_cycle_counter.pad(64)).pad(BIG_TOKEN_WIDTH)
 
-  val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid)
   hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
-  // We don't drive tokens back to the target.
-  hPort.fromHost.hValid := true.B
+  hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
 
   outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready, trigger)
 

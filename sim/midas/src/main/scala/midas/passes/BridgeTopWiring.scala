@@ -40,22 +40,31 @@ case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTa
   *
   * @param topSink The new top-level port the source has been connected to
   *
-  * @param clockPort The new output clock port the topSink port is synchronous to. 
+  * @param srcClockPort The input clock associated with the source
+  *
+  * @param clockPort The new output clock port the topSink port to be referenced in FCCAs
   *
   */
 case class BridgeTopWiringOutputAnnotation(
     pathlessSource: ReferenceTarget,
     absoluteSource: ReferenceTarget,
     topSink: ReferenceTarget,
-    clockPort: ReferenceTarget) extends Annotation with FAMEAnnotation {
+    srcClockPort: ReferenceTarget,
+    sinkClockPort: ReferenceTarget) extends Annotation with FAMEAnnotation {
 
   def update(renames: RenameMap): Seq[BridgeTopWiringOutputAnnotation] = {
     val renameExact = RTRenamer.exact(renames)
     Seq(BridgeTopWiringOutputAnnotation(renameExact(pathlessSource),
                                         renameExact(absoluteSource),
                                         renameExact(topSink),
-                                        renameExact(clockPort)))
+                                        renameExact(srcClockPort),
+                                        renameExact(sinkClockPort)))
   }
+}
+
+object BridgeTopWiring {
+  class NoClockSourceFoundException(data: ReferenceTarget, clock: ReferenceTarget)
+      extends Exception(s"Could not determine the source of clock ${clock} for target-to-wire ${data}")
 }
 
 /**
@@ -183,10 +192,12 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
 
     // Step 5: Generate output annotations
     val outputAnnotations = (for ((localRT, absRTs) <- localToAbsSource) yield {
-      absRTs.flatMap({ case (absSourceRT, absClockRT) =>
-        clockSourceMap(absClockRT).map(clock =>
-          BridgeTopWiringOutputAnnotation(localRT, absSourceRT, absSrcToPort(absSourceRT), src2sinkClockMap(clock)))
-      })
+      absRTs.map { case (absSourceRT, absClockRT) =>
+        clockSourceMap(absClockRT) match {
+          case Some(clock) => BridgeTopWiringOutputAnnotation(localRT, absSourceRT, absSrcToPort(absSourceRT), clock, src2sinkClockMap(clock))
+          case None => throw new BridgeTopWiring.NoClockSourceFoundException(absSourceRT, absClockRT)
+        }
+      }
     }).flatten
 
     val updatedAnnotations = outputAnnotations.toSeq ++ wiredState.annotations.flatMap({

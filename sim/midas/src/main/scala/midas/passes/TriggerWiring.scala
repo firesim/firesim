@@ -115,13 +115,13 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     // This would enable trigger without posibility of disabling it in the future
     require(!(srcDebitAnnos.isEmpty && srcCreditAnnos.nonEmpty), "Provided trigger credit sources but no debit sources")
 
-    val updatedState = if (srcCreditAnnos.isEmpty && srcDebitAnnos.isEmpty || sinkAnnos.isEmpty) {
+    val updatedState = if ((srcCreditAnnos.isEmpty && srcDebitAnnos.isEmpty) || sinkAnnos.isEmpty) {
       state
     } else {
       // Step 1) Gate credits and debits with their associated reset, if provided
       val updatedAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
       val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule)
-      val gatedCircuit = state.circuit.map((gateEventsWithReset(srcAnnoMap, updatedAnnos)))
+      val gatedCircuit = state.circuit.map(gateEventsWithReset(srcAnnoMap, updatedAnnos))
       val (gatedCredits, gatedDebits) = updatedAnnos.partition(_.sourceType)
 
       // Step 2) Use bridge topWiring to generate inter-module connectivity -- but drop the port list
@@ -136,7 +136,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       // Step 3: Group top-wired outputs by their associated clock
       val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
-      val groupedTriggers = outputAnnos.groupBy(_.clockPort)
+      val groupedTriggers = outputAnnos.groupBy(_.srcClockPort)
 
       // Step 4: Convert port assignments to wire assignments
       val portName2WireMap = addedPorts.map(p => p.name -> DefWire(NoInfo, p.name, p.tpe)).toMap

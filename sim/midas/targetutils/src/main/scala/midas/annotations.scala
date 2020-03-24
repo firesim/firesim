@@ -161,7 +161,12 @@ object ExcludeInstanceAsserts {
 }
 
 
-//AutoCounter annotations
+/**
+  * AutoCounter annotations. Do not emit the FIRRTL annotations unless you are
+  * writing a target transformation, use the Chisel-side [[PerfCounter]] object
+  * instead.
+  *
+  */
 case class AutoCounterFirrtlAnnotation(
   target: ReferenceTarget,
   clock: ReferenceTarget,
@@ -184,7 +189,7 @@ case class AutoCounterFirrtlAnnotation(
 }
 
 case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
-    SingleTargetAnnotation[ModuleTarget] {
+    SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
   def duplicate(n: ModuleTarget) = this.copy(target = n)
 }
 
@@ -195,7 +200,22 @@ case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnota
 }
 
 object PerfCounter {
-  // Biancolin - WIP: Previously target was chisel3.data. Figure out why.
+  /**
+    * Annotates a Bool representing a target event (ex. L1 D$ miss)  that
+    * should be tracked by AutoCounter
+    *
+    * @param target The event
+    *
+    * @param clock The clock to which this event is sychronized.
+    *
+    * @param reset If the event is asserted while under the provide reset, it
+    * is not counted. TODO: This should be made optional.
+    *
+    * @param label A verilog-friendly identifier for the event signal
+    *
+    * @param message A description of the event.
+    *
+    */
   def apply(target: chisel3.Bool,
             clock: chisel3.Clock,
             reset: Reset,
@@ -203,12 +223,17 @@ object PerfCounter {
             message: String): Unit = {
     dontTouch(reset)
     dontTouch(target)
+    dontTouch(clock)
     annotate(new ChiselAnnotation {
       def toFirrtl = AutoCounterFirrtlAnnotation(target.toTarget, clock.toTarget,
         reset.toTarget, label, message)
     })
   }
 
+  /**
+    * A simplified variation of the full apply method above that uses the
+    * implicit clock and reset.
+    */
   def apply(target: chisel3.Bool, label: String, message: String): Unit =
     apply(target, Module.clock, Module.reset, label, message)
 }
@@ -222,7 +247,7 @@ case class TriggerSourceAnnotation(
     target: ReferenceTarget,
     clock: ReferenceTarget,
     reset: Option[ReferenceTarget],
-    sourceType: Boolean) extends Annotation {
+    sourceType: Boolean) extends Annotation with FAMEAnnotation{
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -237,7 +262,7 @@ case class TriggerSourceAnnotation(
 
 case class TriggerSinkAnnotation(
     target: ReferenceTarget,
-    clock: ReferenceTarget) extends Annotation {
+    clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -248,32 +273,55 @@ case class TriggerSinkAnnotation(
 }
 
 object TriggerSource {
-  private def annotateTrigger(tpe: Boolean, target: Bool): Unit = {
-    val clock = Module.clock
-    val reset = Module.reset
+  private def annotateTrigger(tpe: Boolean)(target: Bool, reset: Option[Bool]): Unit = {
+    // Hack: Create dummy nodes until chisel-side instance annotations have been improved
+    val clock = WireDefault(Module.clock)
     dontTouch(target)
     dontTouch(clock)
-    dontTouch(reset)
+    reset.map(dontTouch.apply)
     annotate(new ChiselAnnotation {
-      def toFirrtl = TriggerSourceAnnotation(target.toTarget, clock.toTarget, Some(reset.toTarget), tpe)
+      def toFirrtl = TriggerSourceAnnotation(target.toNamed.toTarget, clock.toNamed.toTarget, reset.map(_.toTarget), tpe)
     })
   }
+  def annotateCredit = annotateTrigger(true) _
+  def annotateDebit = annotateTrigger(false) _
 
-  def credit(credit: Bool): Unit = annotateTrigger(true, credit)
-  def debit(debit: Bool): Unit = annotateTrigger(false, debit)
+  /**
+    * Methods to annotate a Boolean as a trigger credit or debit. Credits and
+    * debits issued while the module's implicit reset is asserted are not
+    * counted.
+    */
+  def credit(credit: Bool): Unit = annotateCredit(credit, Some(Module.reset.toBool))
+  def debit(debit: Bool): Unit = annotateDebit(debit, Some(Module.reset.toBool))
   def apply(creditSig: Bool, debitSig: Bool): Unit = {
     credit(creditSig)
     debit(debitSig)
   }
+
+  /**
+    * Variations of the above methods that count credits and debits provided
+    * while the implicit reset is asserted.
+    */
+  def creditEvenUnderReset(credit: Bool): Unit = annotateCredit(credit, None)
+  def debitEvenUnderReset(debit: Bool): Unit = annotateDebit(debit, None)
+  def evenUnderReset(creditSig: Bool, debitSig: Bool): Unit = {
+    creditEvenUnderReset(creditSig)
+    debitEvenUnderReset(debitSig)
+  }
 }
 
 object TriggerSink {
+  /**
+    * Marks a bool as receiving the global trigger signal.
+    */
   def apply(target: Bool): Unit = {
-    val clock = Module.clock
-    dontTouch(target)
+    // Hack: Create dummy nodes until chisel-side instance annotations have been improved
+    val clock = WireDefault(Module.clock)
+    val targetWire = WireDefault(target)
+    dontTouch(targetWire)
     dontTouch(clock)
     annotate(new ChiselAnnotation {
-      def toFirrtl = TriggerSinkAnnotation(target.toTarget, clock.toTarget)
+      def toFirrtl = TriggerSinkAnnotation(targetWire.toTarget, clock.toTarget)
     })
   }
 }

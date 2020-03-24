@@ -52,6 +52,8 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new AutoCounterTransform,
+      new EmitFirrtl("post-autocounter.fir"),
+      new fame.EmitFAMEAnnotations("post-autocounter.json"),
       new ResolveAndCheck,
       new AssertPass(dir),
       new PrintSynthesis(dir),

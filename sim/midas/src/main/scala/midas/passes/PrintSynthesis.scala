@@ -109,7 +109,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
 
     // Step 3: Group top-wired ports by their associated clock
     val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
-    val groupedPrints = outputAnnos.groupBy(_.clockPort)
+    val groupedPrints = outputAnnos.groupBy(_.sinkClockPort)
 
     println(s"[Golden Gate] total # of printf instances synthesized: ${outputAnnos.size}")
 
@@ -118,10 +118,10 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
     val portMap = topModule.ports.map(p => portRT(p) -> p).toMap
 
     val printRecordAnnos = for ((clockRT, oAnnos) <- groupedPrints) yield {
-      val fccaAnnos = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,oClockRT) =>
+      val fccaAnnos = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,_,oClockRT) =>
         genFCCAsFromPort(portMap(oPortRT), oPortRT, oClockRT) })
 
-      val portTuples = oAnnos.map({ case BridgeTopWiringOutputAnnotation(srcRT,_,oPortRT,_) =>
+      val portTuples = oAnnos.map({ case BridgeTopWiringOutputAnnotation(srcRT,_,oPortRT,_,_) =>
         portMap(oPortRT) -> formatStringMap(srcRT) })
 
       val bridgeAnno = BridgeIOAnnotation(
@@ -132,10 +132,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
       bridgeAnno +: fccaAnnos
     }
     // Remove added Annotations to prevent being reconsumed by a downstream pass
-    val cleanedAnnotations = wiredState.annotations.flatMap({
-      case a: BridgeTopWiringOutputAnnotation => None
-      case otherAnno => Some(otherAnno)
-    })
+    val cleanedAnnotations = wiredState.annotations.filterNot(outputAnnos.toSet)
     wiredState.copy(annotations = cleanedAnnotations ++ printRecordAnnos.toSeq.flatten)
   }
 

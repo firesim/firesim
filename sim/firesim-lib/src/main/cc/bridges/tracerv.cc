@@ -199,6 +199,7 @@ void tracerv_t::init() {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
       printf("TracerV: Collecting trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
+    write(this->mmio_addrs->initDone, true);
 }
 
 void tracerv_t::process_tokens(int num_beats) {

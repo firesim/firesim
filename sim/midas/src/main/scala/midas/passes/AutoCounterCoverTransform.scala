@@ -144,7 +144,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
     val wiredState = (new BridgeTopWiring(topWiringPrefix + "_")).execute(
       state.copy(annotations = state.annotations ++ bridgeTopWiringAnnos))
     val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
-    val groupedOutputs = outputAnnos.groupBy(_.clockPort)
+    val groupedOutputs = outputAnnos.groupBy(_.srcClockPort)
 
     // Step 2: For each group of wired events, generate associated bridge annotations
     val c = wiredState.circuit
@@ -154,12 +154,13 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
     val addedPorts = mutable.ArrayBuffer[Port]()
     val addedStmts = mutable.ArrayBuffer[Statement]()
 
-    val bridgeAnnos = for ((clockRT, oAnnos) <- groupedOutputs) yield {
+    val bridgeAnnos = for ((srcClockRT, oAnnos) <- groupedOutputs) yield {
+      val sinkClockRT = oAnnos.head.sinkClockPort
       val fccas = oAnnos.map({ anno =>
         FAMEChannelConnectionAnnotation.source(
           anno.topSink.ref,
           WireChannel,
-          Some(anno.clockPort),
+          Some(sinkClockRT),
           Seq(anno.topSink))
       })
 
@@ -171,16 +172,21 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
 
       // Step 2b. Manually add a boolean channel to carry the trigger signal to the bridge
       val triggerPortName = topNS.newName(s"${topWiringPrefix}_triggerEnable")
+      // Introduce an extra node until TriggerWriring supports port sinks
+      val triggerPortNode = topNS.newName(s"${topWiringPrefix}_triggerEnable_node")
       addedPorts += Port(NoInfo, triggerPortName, Output, BoolType)
       // In the event there are no trigger sources, default to enabled
-      addedStmts += Connect(NoInfo, WRef(triggerPortName), one)
+      addedStmts ++= Seq(
+        DefNode(NoInfo, triggerPortNode, one),
+        Connect(NoInfo, WRef(triggerPortName), WRef(triggerPortNode)))
       val triggerPortRT  = topMT.ref(triggerPortName)
       val triggerFcca = FAMEChannelConnectionAnnotation.source(
         triggerPortName,
         WireChannel,
-        Some(clockRT),
+        Some(sinkClockRT),
         Seq(triggerPortRT))
-      val triggerSinkAnno = TriggerSinkAnnotation(triggerPortRT, clockRT)
+
+      val triggerSinkAnno = TriggerSinkAnnotation(topMT.ref(triggerPortNode), srcClockRT)
 
       val bridgeAnno = BridgeIOAnnotation(
         target = topMT.ref(topWiringPrefix),
@@ -197,10 +203,7 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
       case o => o
     }))
 
-    val cleanedAnnotations = wiredState.annotations.flatMap({
-      case a: BridgeTopWiringOutputAnnotation => None
-      case o => Some(o)
-    })
+    val cleanedAnnotations = wiredState.annotations.filterNot(outputAnnos.toSet)
     CircuitState(updatedCircuit, wiredState.form, cleanedAnnotations ++ bridgeAnnos.flatten)
   }
 
