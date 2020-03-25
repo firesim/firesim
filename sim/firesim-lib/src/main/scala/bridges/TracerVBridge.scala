@@ -196,7 +196,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     import CppGenerationUtils._
     val headerWidgetName = getWName.toUpperCase
     super.genHeader(base, sb)
-    sb.append(genConstStatic(s"${headerWidgetName}_core_ipc", UInt32(traces.size)))
+    sb.append(genConstStatic(s"${headerWidgetName}_max_core_ipc", UInt32(traces.size)))
     emitClockDomainInfo(headerWidgetName, sb)
   }
 }

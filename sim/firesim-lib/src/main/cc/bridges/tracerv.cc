@@ -28,18 +28,18 @@ tracerv_t::tracerv_t(
     std::vector<std::string> &args,
     TRACERVBRIDGEMODULE_struct * mmio_addrs,
     long dma_addr,
-    const unsigned int core_ipc,
+    const unsigned int max_core_ipc,
     const char* const  clock_domain_name,
     const unsigned int clock_multiplier,
     const unsigned int clock_divisor,
     int tracerno) :
         bridge_driver_t(sim),
         mmio_addrs(mmio_addrs),
-        core_ipc(core_ipc),
+        max_core_ipc(max_core_ipc),
         clock_info(clock_domain_name, clock_multiplier, clock_divisor),
         dma_addr(dma_addr) {
     //Biancolin: move into elaboration
-    //assert(this->core_ipc <= 7 && "TracerV only supports cores with a maximum IPC <= 7");
+    assert(this->max_core_ipc <= 7 && "TracerV only supports cores with a maximum IPC <= 7");
     const char *tracefilename = NULL;
     const char *dwarf_file_name = NULL;
     this->tracefile = NULL;
@@ -138,7 +138,6 @@ tracerv_t::tracerv_t(
     }
 
     if (fireperf) {
-        assert(false && "FirePerf support temporarily disabled pending multiclock bringup");
         if (this->dwarf_file_name.compare("") == 0) {
             fprintf(stderr, "+fireperf specified but no +dwarf-file-name given\n");
             abort();
@@ -223,9 +222,9 @@ void tracerv_t::process_tokens(int num_beats) {
                     fprintf(this->tracefile, "%016lx\n", OUTBUF[i+0]);
                 // At least one valid instruction
                 } else {
-                    for (int q = 0; q < core_ipc; q++) {
+                    for (int q = 0; q < max_core_ipc; q++) {
                        if (OUTBUF[i+q+1] & valid_mask) {
-                           fprintf(this->tracefile, "Cycle: %016lld I%d: %016llx\n", OUTBUF[i], q, OUTBUF[i+q+1] & (~valid_mask));
+                           fprintf(this->tracefile, "Cycle: %016lld I%d: %016llx\n", OUTBUF[i+0], q, OUTBUF[i+q+1] & (~valid_mask));
                        } else {
                            break;
                        }
@@ -235,9 +234,9 @@ void tracerv_t::process_tokens(int num_beats) {
         } else if (this->fireperf) {
 
             for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                uint64_t cycle_internal = OUTBUF[i+7];
+                uint64_t cycle_internal = OUTBUF[i+0];
 
-                for (int q = 0; q < core_ipc; q++) {
+                for (int q = 0; q < max_core_ipc; q++) {
                     if (OUTBUF[i+1+q] & valid_mask) {
                         uint64_t iaddr = (uint64_t)((((int64_t)(OUTBUF[i+1+q])) << 24) >> 24);
                         this->trace_tracker->addInstruction(iaddr, cycle_internal);
