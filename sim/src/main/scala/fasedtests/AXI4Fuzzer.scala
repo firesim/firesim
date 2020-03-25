@@ -11,7 +11,7 @@ import freechips.rocketchip.config.Parameters
 
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.widgets.{PeekPokeBridge}
+import midas.widgets.{PeekPokeBridge, RationalClockBridge}
 
 object AXI4Printf {
   def apply(axi4: AXI4Bundle): Unit = {
@@ -90,18 +90,18 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
 }
 
 class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
-  val clock = IO(Input(Clock()))
   val reset = WireInit(false.B)
-
+  val clockBridge = Module(new RationalClockBridge())
+  val clock = clockBridge.io.clocks(0)
   withClockAndReset(clock, reset) {
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
     val nastiKey = NastiParameters(fuzzer.axi4.r.bits.data.getWidth,
                                    fuzzer.axi4.ar.bits.addr.getWidth,
                                    fuzzer.axi4.ar.bits.id.getWidth)
 
-    val fasedInstance =  FASEDBridge(fuzzer.axi4, reset,
+    val fasedInstance =  FASEDBridge(clock, fuzzer.axi4, reset,
       CompleteConfig(p(firesim.configs.MemModelKey), nastiKey, Some(AXI4EdgeSummary(fuzzer.axi4Edge))))
-    val peekPokeBridge = PeekPokeBridge(reset,
+    val peekPokeBridge = PeekPokeBridge(clock, reset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
   }

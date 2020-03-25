@@ -3,11 +3,10 @@
 package midas.targetutils
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import firrtl.{RenameMap}
-import firrtl.annotations.{NoTargetAnnotation, SingleTargetAnnotation, ComponentName} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
+import firrtl.annotations._
 
 // This is currently consumed by a transformation that runs after MIDAS's core
 // transformations In FireSim, targeting an F1 host, these are consumed by the
@@ -33,9 +32,11 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
   // TODO: determine order for multiple renames, or just check of == 1 rename?
   def exactRename(rt: ReferenceTarget): ReferenceTarget = {
     val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
-    assert(renameMatches.length == 1)
+    assert(renameMatches.length == 1,
+      s"${rt} should be renamed exactly once. Suggested renames: ${renameMatches}")
     renameMatches.head
   }
+
   def apply(rt: ReferenceTarget): Seq[ReferenceTarget] = {
     renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
   }
@@ -92,7 +93,51 @@ object SynthesizePrintf {
   // TODO: Accept a printable -> need to somehow get the format string from 
 }
 
-// This labels a target Mem so that it is extracted and replaced with a separate model
+
+/**
+  * A mixed-in ancestor trait for all FAME annotations, useful for type-casing.
+  */
+trait FAMEAnnotation {
+  this: Annotation =>
+}
+
+/**
+  * This labels an instance so that it is extracted as a separate FAME model.
+  */
+case class FAMEModelAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl: FirrtlFAMEModelAnnotation = {
+    val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+    FirrtlFAMEModelAnnotation(parent.instOf(target.instanceName, target.name))
+  }
+}
+
+case class FirrtlFAMEModelAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: InstanceTarget) = this.copy(n)
+}
+
+/**
+  * This specifies that the module should be automatically multi-threaded (Chisel annotator).
+  */
+case class EnableModelMultiThreadingAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
+  def toFirrtl: FirrtlEnableModelMultiThreadingAnnotation = {
+    FirrtlEnableModelMultiThreadingAnnotation(target.toNamed.toTarget)
+  }
+}
+
+/**
+  * This specifies that the module should be automatically multi-threaded (FIRRTL annotation).
+  */
+case class FirrtlEnableModelMultiThreadingAnnotation(
+  target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: ModuleTarget) = this.copy(n)
+}
+
+/**
+  * This labels a target Mem so that it is extracted and replaced with a separate model.
+  */
 case class MemModelAnnotation[T <: chisel3.Data](target: chisel3.MemBase[T])
     extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl = FirrtlMemModelAnnotation(target.toNamed.toTarget)
@@ -116,38 +161,177 @@ object ExcludeInstanceAsserts {
 }
 
 
-//AutoCounter annotations
-
-case class AutoCounterCoverAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
-}
-
-case class AutoCounterFirrtlAnnotation(target: ReferenceTarget, label: String, message: String) extends
-    SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(n: ReferenceTarget) = this.copy(target = n)
+/**
+  * AutoCounter annotations. Do not emit the FIRRTL annotations unless you are
+  * writing a target transformation, use the Chisel-side [[PerfCounter]] object
+  * instead.
+  *
+  */
+case class AutoCounterFirrtlAnnotation(
+  target: ReferenceTarget,
+  clock: ReferenceTarget,
+  reset: ReferenceTarget,
+  label: String,
+  message: String,
+  coverGenerated: Boolean = false)
+    extends firrtl.annotations.Annotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    val renamedReset  = renamer.exactRename(reset)
+    Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
+  }
+  // The AutoCounter tranform will reject this annotation if it's not enclosed
+  def shouldBeIncluded(modList: Seq[String]): Boolean = !coverGenerated || modList.contains(target.module)
+  def enclosingModule(): String = target.module
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule)
 }
 
 case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
-    SingleTargetAnnotation[ModuleTarget] {
+    SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
   def duplicate(n: ModuleTarget) = this.copy(target = n)
 }
 
-import chisel3.experimental.ChiselAnnotation
 case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnotation {
   //TODO: fix the CircuitName arguemnt of ModuleTarget after chisel implements Target
   //It currently doesn't matter since the transform throws away the circuit name
   def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
 }
 
-case class AutoCounterAnnotation(target: chisel3.Data, label: String, message: String) extends ChiselAnnotation {
-  def toFirrtl =  AutoCounterFirrtlAnnotation(target.toNamed.toTarget, label, message)
+object PerfCounter {
+  /**
+    * Annotates a Bool representing a target event (ex. L1 D$ miss)  that
+    * should be tracked by AutoCounter
+    *
+    * @param target The event
+    *
+    * @param clock The clock to which this event is sychronized.
+    *
+    * @param reset If the event is asserted while under the provide reset, it
+    * is not counted. TODO: This should be made optional.
+    *
+    * @param label A verilog-friendly identifier for the event signal
+    *
+    * @param message A description of the event.
+    *
+    */
+  def apply(target: chisel3.Bool,
+            clock: chisel3.Clock,
+            reset: Reset,
+            label: String,
+            message: String): Unit = {
+    dontTouch(reset)
+    dontTouch(target)
+    dontTouch(clock)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = AutoCounterFirrtlAnnotation(target.toTarget, clock.toTarget,
+        reset.toTarget, label, message)
+    })
+  }
+
+  /**
+    * A simplified variation of the full apply method above that uses the
+    * implicit clock and reset.
+    */
+  def apply(target: chisel3.Bool, label: String, message: String): Unit =
+    apply(target, Module.clock, Module.reset, label, message)
 }
 
-object PerfCounter {
-  def apply(target: chisel3.Data, label: String, message: String): Unit = {
-    chisel3.experimental.annotate(AutoCounterAnnotation(target, label, message))
+// Need serialization utils to be upstreamed to FIRRTL before i can use these.
+//sealed trait TriggerSourceType
+//case object Credit extends TriggerSourceType
+//case object Debit extends TriggerSourceType
+
+case class TriggerSourceAnnotation(
+    target: ReferenceTarget,
+    clock: ReferenceTarget,
+    reset: Option[ReferenceTarget],
+    sourceType: Boolean) extends Annotation with FAMEAnnotation{
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    val renamedReset  = reset map renamer.exactRename
+    Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
+  }
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, target.module)
+  def enclosingModule(): String = target.module
+}
+
+
+case class TriggerSinkAnnotation(
+    target: ReferenceTarget,
+    clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    Seq(this.copy(target = renamedTarget, clock = renamedClock))
+  }
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, target.module)
+}
+
+object TriggerSource {
+  private def annotateTrigger(tpe: Boolean)(target: Bool, reset: Option[Bool]): Unit = {
+    // Hack: Create dummy nodes until chisel-side instance annotations have been improved
+    val clock = WireDefault(Module.clock)
+    dontTouch(target)
+    dontTouch(clock)
+    reset.map(dontTouch.apply)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = TriggerSourceAnnotation(target.toNamed.toTarget, clock.toNamed.toTarget, reset.map(_.toTarget), tpe)
+    })
+  }
+  def annotateCredit = annotateTrigger(true) _
+  def annotateDebit = annotateTrigger(false) _
+
+  /**
+    * Methods to annotate a Boolean as a trigger credit or debit. Credits and
+    * debits issued while the module's implicit reset is asserted are not
+    * counted.
+    */
+  def credit(credit: Bool): Unit = annotateCredit(credit, Some(Module.reset.toBool))
+  def debit(debit: Bool): Unit = annotateDebit(debit, Some(Module.reset.toBool))
+  def apply(creditSig: Bool, debitSig: Bool): Unit = {
+    credit(creditSig)
+    debit(debitSig)
+  }
+
+  /**
+    * Variations of the above methods that count credits and debits provided
+    * while the implicit reset is asserted.
+    */
+  def creditEvenUnderReset(credit: Bool): Unit = annotateCredit(credit, None)
+  def debitEvenUnderReset(debit: Bool): Unit = annotateDebit(debit, None)
+  def evenUnderReset(creditSig: Bool, debitSig: Bool): Unit = {
+    creditEvenUnderReset(creditSig)
+    debitEvenUnderReset(debitSig)
   }
 }
 
-
+object TriggerSink {
+  /**
+    * Marks a bool as receiving the global trigger signal.
+    *
+    * @param target A Bool node that will be driven with the trigger
+    *
+    * @param noSourceDefault The value that the trigger signal should take on
+    * if no trigger soruces are found in the target. This is a temporary parameter required
+    * while this apply method generates a wire. Otherwise this can be punted to the target's RTL.
+    */
+  def apply(target: Bool, noSourceDefault: =>Bool = true.B): Unit = {
+    // Hack: Create dummy nodes until chisel-side instance annotations have been improved
+    val targetWire = WireDefault(noSourceDefault)
+    val clock = Module.clock
+    target := targetWire
+    dontTouch(targetWire)
+    // Both the provided node and the generated one need to be dontTouched to stop
+    // constProp from optimizing the down stream logic(?)
+    dontTouch(target)
+    dontTouch(clock)
+    annotate(new ChiselAnnotation {
+      def toFirrtl = TriggerSinkAnnotation(targetWire.toTarget, clock.toTarget)
+    })
+  }
+}

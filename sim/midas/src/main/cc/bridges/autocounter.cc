@@ -15,33 +15,52 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(
-    simif_t *sim, std::vector<std::string> &args, AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs, AddressMap addr_map, int autocounterno) : bridge_driver_t(sim), addr_map(addr_map)
-{
-    this->mmio_addrs = mmio_addrs;
+    simif_t *sim,
+    std::vector<std::string> &args,
+    AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs,
+    AddressMap addr_map,
+    const char* const  clock_domain_name,
+    const unsigned int clock_multiplier,
+    const unsigned int clock_divisor,
+    int autocounterno) :
+        bridge_driver_t(sim),
+        mmio_addrs(mmio_addrs),
+        addr_map(addr_map),
+        clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
 
     this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename_in = NULL;
-    std::string num_equals   =        std::to_string(autocounterno) + std::string("=");
-    std::string readrate_arg =        std::string("+autocounter-readrate") + num_equals;
-    std::string filename_arg =        std::string("+autocounter-filename") + num_equals;
+    std::string readrate_arg = std::string("+autocounter-readrate=");
+    std::string filename_arg = std::string("+autocounter-filename=");
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + readrate_arg.length();
-            this->readrate = atol(str);;
+            uint64_t base_cycles = atol(str);
+            this->readrate = this->clock_info.to_local_cycles(base_cycles);
+            // TODO: Just fix this in the bridge by not sampling with a fixed frequency
+            if (this->clock_info.to_base_cycles(this->readrate) != base_cycles) {
+                fprintf(stderr,
+"[AutoCounter] Warning: requested sample rate of %llu [base] cycles does not map to a whole number\n\
+                       of cycles in clock domain: %s, (%d/%d) of base clock.\n",
+                       base_cycles, this->clock_info.domain_name,
+                       this->clock_info.multiplier, this->clock_info.divisor);
+                fprintf(stderr, "[AutoCounter] Workaround: Pick a sample rate that is divisible by all clock divisors.\n");
+            }
+
         }
         if (arg.find(filename_arg) == 0) {
             autocounter_filename_in = const_cast<char*>(arg.c_str()) + filename_arg.length();
-            this->autocounter_filename = std::string(autocounter_filename_in);
+            this->autocounter_filename = std::string(autocounter_filename_in) + std::to_string(autocounterno);
         }
     }
 
     autocounter_file.open(this->autocounter_filename, std::ofstream::out);
     if(!autocounter_file.is_open()) {
-      //throw std::runtime_error("Could not open autocounter output file\n");
       throw std::runtime_error("Could not open output file: " + this->autocounter_filename);
     }
+    this->clock_info.emit_file_header(autocounter_file);
 }
 
 autocounter_t::~autocounter_t() {
@@ -50,67 +69,46 @@ autocounter_t::~autocounter_t() {
 
 void autocounter_t::init() {
     cur_cycle = 0;
-      
-    write(addr_map.w_registers.at("readrate_low"), readrate & ((1ULL << 32) - 1));
+    // Decrement the readrate by one to simplify the HW a little bit
+    write(addr_map.w_registers.at("readrate_low"), (readrate - 1) & ((1ULL << 32) - 1));
     write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
-    write(addr_map.w_registers.at("readdone"), 1);
-
+    write(mmio_addrs->init_done, 1);
 }
 
+bool autocounter_t::drain_sample() {
+  bool bridge_has_sample = read(addr_map.r_registers.at("countersready"));
+
+  if (bridge_has_sample) {
+    cur_cycle = read(this->mmio_addrs->cycles_low);
+    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
+    autocounter_file << "Cycle " << cur_cycle << std::endl;
+    autocounter_file << "============================" << std::endl;
+    for (auto pair: addr_map.r_registers) {
+
+      std::string low_prefix = std::string("autocounter_low_");
+      std::string high_prefix = std::string("autocounter_high_");
+
+      if (pair.first.find("autocounter_low_") == 0) {
+          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
+          std::string countername(str);
+          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
+          counter_val |= read(pair.second);
+          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
+      }
+
+    }
+    write(addr_map.w_registers.at("readdone"), 1);
+    autocounter_file << "" << std::endl;
+  }
+  return bridge_has_sample;
+}
 
 void autocounter_t::tick() {
-  write(addr_map.w_registers.at("readdone"), 0);
-  if (read(addr_map.r_registers.at("countersready"))) {
-    write(addr_map.w_registers.at("readdone"), 1);
-    cur_cycle = read(this->mmio_addrs->cycles_low);
-    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
-    autocounter_file << "Cycle " << cur_cycle << std::endl;
-    autocounter_file << "============================" << std::endl;
-    for (auto pair: addr_map.r_registers) {
-
-      std::string low_prefix = std::string("autocounter_low_");
-      std::string high_prefix = std::string("autocounter_high_");
-
-      if (pair.first.find("autocounter_low_") == 0) {
-          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
-          std::string countername(str);
-          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
-          counter_val |= read(pair.second);
-          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
-      }
-
-    }
-    write(addr_map.w_registers.at("readdone"), 1);
-    autocounter_file << "" << std::endl;
-  }
+  drain_sample();
 }
 
-
 void autocounter_t::finish() {
-  write(addr_map.w_registers.at("readdone"), 0);
-  if (read(addr_map.r_registers.at("countersready"))) {
-    write(addr_map.w_registers.at("readdone"), 1);
-    cur_cycle = read(this->mmio_addrs->cycles_low);
-    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
-    autocounter_file << "Cycle " << cur_cycle << std::endl;
-    autocounter_file << "============================" << std::endl;
-    for (auto pair: addr_map.r_registers) {
-
-      std::string low_prefix = std::string("autocounter_low_");
-      std::string high_prefix = std::string("autocounter_high_");
-
-      if (pair.first.find("autocounter_low_") == 0) {
-          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
-          std::string countername(str);
-          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
-          counter_val |= read(pair.second);
-          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
-      }
-
-    }
-    write(addr_map.w_registers.at("readdone"), 1);
-    autocounter_file << "" << std::endl;
-  }
+ while(drain_sample());
 }
 
 #endif // AUTOCOUNTERBRIDGEMODULE_struct_guard

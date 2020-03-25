@@ -18,9 +18,26 @@ case object Platform extends Field[(Parameters) => PlatformShim]
 // Switches to synthesize prints and assertions
 case object SynthAsserts extends Field[Boolean]
 case object SynthPrints extends Field[Boolean]
-case object TraceTrigger extends Field[Boolean]
-// Exclude module instances from assertion and print synthesis
-// Tuple of Parent Module (where the instance is instantiated) and the instance name
+
+// Auto Counter Switches
+case object EnableAutoCounter extends Field[Boolean](false)
+/**
+  * Chooses between the two implementation strategies for Auto Counter.
+  *
+  * True: Synthesized Printf Implementation
+  *       - Generates a counter directly in the target module, adds a printf,
+  *         and annotates it for printf synthesis
+  *       - Pros: cycle-exact event resolution; counters are printed every time the event is asserted
+  *       - Cons: considerably more resource intensive (64-bit values are synthesized in the printf)
+  *       Biancolin: This seems like a waste of bandwidth? Maybe just print the message?
+  *
+  * False: Native Bridge Implementation (Default)
+  *        - Wires out each annotated event (Bool) to a dedicated AutoCounter bridge.
+  *        - Pros: More resource efficient;
+  *        - Cons: Coarse event resolution (depends on the sampling frequency set in the bridge)
+  */
+case object AutoCounterUsePrintfImpl extends Field[Boolean](false)
+
 case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
 case object KeepSamplesInMem extends Field[Boolean]
@@ -45,7 +62,6 @@ class SimConfig extends Config((site, here, up) => {
   case DaisyWidth       => 32
   case SynthAsserts     => false
   case SynthPrints      => false
-  case TraceTrigger     => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
