@@ -51,15 +51,18 @@ Runtime Arguments
 ---------------------------
 
 **+print-file**
-    Specifies the file into which the synthesized printf log should written.
+    Specifies the file name stem. Generated files will be of the form `<print-file><N>`,
+    with one output file generated per clock domain. The associated clock
+    domain's name and frequency relative to the base clock is included in the
+    header of the output file.
 
 **+print-start**
-    Specifies the target-cycle at which the printf trace should be captured in the
+    Specifies the target-cycle in cycles of the base clock at which the printf trace should be captured in the
     simulator. Since capturing high-bandwidth printf traces will slow down
     simulation, this allows the user to reach the region-of-interest at full simulation speed.
 
 **+print-end**
-    Specifies the target cycle at which to stop pulling the synthesized print
+    Specifies the target-cycle in cycles of the base clock at which to stop pulling the synthesized print
     trace from the simulator.
 
 **+print-binary**
