@@ -24,9 +24,9 @@ Building a Design with TracerV
 -------------------------------
 
 In all FireChip designs, TracerV is included by default. Other targets can
-enable it by attaching a TracerV Bridge to the RISC-V trace port of one-or-more
-cores. By default, only the cycle number, instruction address, and valid bit
-are collected.
+enable it by attaching a TracerV Bridge to the RISC-V trace port of each core
+they wish to trace (there should be one bridge per core).  By default, only the
+cycle number, instruction address, and valid bit are pulled off the FPGA.
 
 .. _tracerv-enabling:
 
@@ -44,10 +44,8 @@ instead of ``no``:
     enable=yes
 
 Now when you run a workload, a trace output file will be placed in the
-``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE0-C0``.
-The first ``0`` in this filename disambiguates between multiple SoCs on one FPGA
-if you're running in supernode mode and will always be ``0`` if you're not running
-in supernode mode. The ``C0`` represents core 0 in the simulated
+``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE-C0``.
+The ``C0`` represents core 0 in the simulated
 SoC. If you have multiple cores, each will have its own file (ending in ``C1``,
 ``C2``, etc).  To copy all TracerV trace files back to your manager, you can
 add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
@@ -153,7 +151,7 @@ Instruction value trigger
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Trace recording begins when a specific instruction is seen in the instruction
-trace and recording ends when a specific instruction is seen in the instruction
+trace and  when a specific instruction is seen in the instruction
 trace. This method is particularly valuable for setting the trigger from
 within the target software under evaluation, by inserting custom "NOP"
 instructions. Linux distributions included with FireSim include small trigger
@@ -228,21 +226,12 @@ The human readable trace output format looks like so:
 .. include:: TRACERV-HUMAN-READABLE-EXAMPLE
    :code: ini
 
-In this output, C0 represents instruction stream (or core) zero. The next field
-represents the address of the instruction committed that cycle and a valid bit,
-in hex, interpreted like so:
-
-.. code-block:: ini
-
-    0000010080000000
-         ^|--------|
-         |       \--- 40 bits of address
-         |
-         \-------- valid bit
-
-
-The final field is the target cycle on which this instruction was committed,
-in hex.
+In this output, each line begins with the cycle (in decimal) in the core's
+clock domain that instruction was committed. For a given cycle, the instruction
+address (in hex) of each committed is prefixed ``I<#>`` according to their
+appearance in program order: ``I0`` is the oldest instruction committed, ``I1``
+is the second oldest, and so forth. If no instructions were committed in a
+given cycle, that cycle will be skipped in the output file.
 
 Binary output
 ^^^^^^^^^^^^^^^^^
@@ -250,11 +239,9 @@ Binary output
 This is ``output_format=1``.
 
 This simply writes the 512 bits received from the FPGA each cycle to the output
-file in binary. Each 512-bit chunk is stored little-endian, that is, the first
-64-bits stores the address and valid bits of core 0 in little-endian, the next
-64-bits stores the address and valid bits of core 1 in little-endian, and so on,
-until the final 64-bit value in the 512-bit value, which stores the cycle number
-in little-endian.
+file in binary. Each 512-bit chunk is stored little-endian. The lowermost 64 bits stores the cycle,
+the second 64-bits stores the address and valid bits of committed instruction  0 in little-endian, the next
+64-bits stores the address and valid bits of committed instruction 1 in little-endian, and so on, up to a maximum of 7 instructions.
 
 Flame Graph output
 ^^^^^^^^^^^^^^^^^^^^
@@ -270,11 +257,6 @@ when using TracerV under certain conditions:
 * TracerV by default outputs only instruction address and a valid bit and assumes
   that the combination of these fits within 64 bits. Changing this requires
   modifying ``sim/firesim-lib/src/main/scala/bridges/TracerVBridge.scala``.
-* The number of cores or instruction streams is currently not automatically detected.
-  To collect data for multiple cores or instruction streams, you must change the
-  ``NUM_CORES`` macro at the top of ``sim/firesim-lib/src/main/cc/bridges/tracerv.h``.
-   * TracerV currently packs the entire trace into a 512-bit word, so the maximum
-     supported value for ``NUM_CORES`` is 7. (7x 64-bit traces + a 64 bit cycle
-     number = 512 bits).
+* The maximum IPC of the traced core cannot exceed 7. 
 * Please reach out on the FireSim mailing list if you need help addressing any
   of these restrictions: https://groups.google.com/forum/#!forum/firesim
