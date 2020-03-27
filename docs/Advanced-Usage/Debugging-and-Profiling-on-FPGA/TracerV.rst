@@ -125,9 +125,12 @@ The ``start`` and ``end`` fields are ignored.
 Target cycle trigger
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Trace recording begins when a specified start cycle is
-reached and ends when a specified end cycle is reached, based on the
-target's simulation cycle count.
+Trace recording begins when a specified start cycle is reached and ends when a
+specified end cycle is reached. Cycles are specified in base target-clock
+cycles (the zeroth output clock from the ClockBridge). For example, if the base
+clock drives the uncore, and the core clock frequency is 2x the uncore frequency,
+specifying start and end cycles of 100 and 200 result in instructions being collected
+between core-clock cycles 200 and 400.
 
 This is option ``1`` in the ``.ini`` above.
 
@@ -257,6 +260,6 @@ when using TracerV under certain conditions:
 * TracerV by default outputs only instruction address and a valid bit and assumes
   that the combination of these fits within 64 bits. Changing this requires
   modifying ``sim/firesim-lib/src/main/scala/bridges/TracerVBridge.scala``.
-* The maximum IPC of the traced core cannot exceed 7. 
+* The maximum IPC of the traced core cannot exceed 7.
 * Please reach out on the FireSim mailing list if you need help addressing any
   of these restrictions: https://groups.google.com/forum/#!forum/firesim
