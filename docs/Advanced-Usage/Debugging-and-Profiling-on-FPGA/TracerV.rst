@@ -26,7 +26,7 @@ Building a Design with TracerV
 In all FireChip designs, TracerV is included by default. Other targets can
 enable it by attaching a TracerV Bridge to the RISC-V trace port of each core
 they wish to trace (there should be one bridge per core).  By default, only the
-cycle number, instruction address, and valid bit are pulled off the FPGA.
+cycle number, instruction address, and valid bit are collected.
 
 .. _tracerv-enabling:
 
@@ -154,7 +154,7 @@ Instruction value trigger
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Trace recording begins when a specific instruction is seen in the instruction
-trace and  when a specific instruction is seen in the instruction
+trace and ends when a specific instruction is seen in the instruction
 trace. This method is particularly valuable for setting the trigger from
 within the target software under evaluation, by inserting custom "NOP"
 instructions. Linux distributions included with FireSim include small trigger
@@ -235,6 +235,15 @@ address (in hex) of each committed is prefixed ``I<#>`` according to their
 appearance in program order: ``I0`` is the oldest instruction committed, ``I1``
 is the second oldest, and so forth. If no instructions were committed in a
 given cycle, that cycle will be skipped in the output file.
+
+.. code-block:: ini
+
+    Cycle: 0000000000000337 I0: 0000000000010010
+    Cycle: 0000000000000337 I1: 0000000000010014
+           |--------------|  ^        |--------|
+                  |          |            └ 40 bits of instruction address (hex)
+                  |          └ per-cycle commit-order
+                  └ 64-bit local-cycle count
 
 Binary output
 ^^^^^^^^^^^^^^^^^

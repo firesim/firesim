@@ -20,7 +20,9 @@ transformed and thus used in FireSim:
 #. Black boxes must be "clock-gateable" by replacing its input clock with a gated equivalent which will be used
    to stall simulation time in that module.
   #. As a consequence, target clock-gating cannot be implemented using black-box primitives, and must instead be modelled by
-     adding clock-enables to all state elements of the gated clock domain.
+     adding clock-enables to all state elements of the gated clock domain (i.e., by adding a feedback mux on registers to
+     conditionally block updates, and by gating write-enables on memories).
+     .
 #. Asynchronous reset must only be implemented using Rocket Chip's black-box async reset. 
    These are replaced with synchronously reset registers using a FIRRTL transformation.
 

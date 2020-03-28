@@ -51,7 +51,7 @@ Runtime Arguments
 ---------------------------
 
 **+print-file**
-    Specifies the file name stem. Generated files will be of the form `<print-file><N>`,
+    Specifies the file name prefix. Generated files will be of the form `<print-file><N>`,
     with one output file generated per clock domain. The associated clock
     domain's name and frequency relative to the base clock is included in the
     header of the output file.
