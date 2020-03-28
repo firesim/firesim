@@ -14,6 +14,7 @@ import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDevi
 class BlockDevBridgeTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
   val reset = Input(Bool())
+  val clock = Input(Clock())
 }
 
 class BlockDevBridge(implicit p: Parameters) extends BlackBox
@@ -25,9 +26,10 @@ class BlockDevBridge(implicit p: Parameters) extends BlackBox
 }
 
 object BlockDevBridge  {
-  def apply(blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevBridge = {
+  def apply(clock: Clock, blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevBridge = {
     val ep = Module(new BlockDevBridge)
     ep.io.bdev <> blkdevIO
+    ep.io.clock := clock
     ep.io.reset := reset
     ep
   }

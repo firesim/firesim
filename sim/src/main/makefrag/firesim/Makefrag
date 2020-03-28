@@ -64,6 +64,33 @@ TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/i
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz
 # DOC include end: Bridge Build System Changes
 
+#######################################
+# Setup Extra Verilator Compile Flags #
+#######################################
+
+## default flags added for ariane
+ARIANE_VERILATOR_FLAGS = \
+	--unroll-count 256 \
+	-Werror-PINMISSING \
+	-Werror-IMPLICIT \
+	-Wno-fatal \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-ASSIGNDLY \
+	-Wno-DECLFILENAME \
+	-Wno-UNUSED \
+	-Wno-UNOPTFLAT \
+	-Wno-BLKANDNBLK \
+	-Wno-style \
+	-Wall
+
+# normal flags used for midas builds (that are incompatible with ariane)
+DEFAULT_MIDAS_VERILATOR_FLAGS = \
+	--assert
+
+# AJG: this must be evaluated after verilog generation to work (hence the =)
+EXTRA_VERILATOR_FLAGS = \
+	$(shell if ! grep -iq "module.*ariane" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi)
+
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
 ################################################################
@@ -79,9 +106,9 @@ NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
 nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
-tracer_args = +tracefile0=TRACEFILE0
+tracer_args = +tracefile=TRACEFILE
 blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
-autocounter_args = +autocounter-readrate0=1000 +autocounter-filename0=AUTOCOUNTERFILE0
+autocounter_args = +autocounter-readrate=1000 +autocounter-filename=AUTOCOUNTERFILE
 # Neglecting this +arg will make the simulator use the same step size as on the
 # FPGA. This will make ML simulation more closely match results seen on the
 # FPGA at the expense of dramatically increased target runtime

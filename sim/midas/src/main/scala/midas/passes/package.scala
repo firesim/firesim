@@ -15,22 +15,12 @@ import scala.language.implicitConversions
 
 
 package object passes {
-
   /**
     * A utility for keeping statements defining and connecting signals to a piece of hardware
     * together with a reference to the component. This is useful for passes that insert hardware,
     * since the "collateral" of that object can be kept in one place.
     */
-  trait WrappedComponent {
-    val decl: Statement
-    val assigns: Statement
-    val ref: Expression
-  }
-
-  /**
-    * Holds the definition of a signal along with the statements that assign to it and its reference.
-    */
-  case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression) extends WrappedComponent
+  case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression)
 
   /**
     * A utility for creating a wire that "echoes" the value of an existing expression.
@@ -41,29 +31,6 @@ package object passes {
       val decl = DefWire(NoInfo, ns.newName(suggestedName), source.tpe)
       val ref = WRef(decl)
       SignalInfo(decl, Connect(NoInfo, WRef(decl), source), ref)
-    }
-  }
-
-  object InstanceInfo {
-    def apply(m: DefModule)(implicit ns: Namespace): InstanceInfo = {
-      val inst = fame.Instantiate(m, ns.newName(m.name))
-      InstanceInfo(inst, Block(Nil), WRef(inst))
-    }
-  }
-
-  /**
-    * Holds the declaration of an instance, along with the set of statements that create connections
-    * to its ports, along with a reference to the instance.
-    */
-  case class InstanceInfo(decl: WDefInstance, assigns: Block, ref: WRef) extends WrappedComponent {
-    def addAssign(s: Statement): InstanceInfo = {
-      copy(assigns = Block(assigns.stmts :+ s))
-    }
-    def connect(pName: String, rhs: Expression): InstanceInfo = {
-      addAssign(Connect(NoInfo, WSubField(ref, pName), rhs))
-    }
-    def connect(lhs: Expression, pName: String): InstanceInfo = {
-      addAssign(Connect(NoInfo, lhs, WSubField(ref, pName)))
     }
   }
 

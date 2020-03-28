@@ -14,6 +14,7 @@ import firrtl.ir._
 import logger._
 import firrtl.Mappers._
 import firrtl.transforms.{DedupModules, DeadCodeElimination}
+import firrtl.passes.wiring.{WiringTransform}
 import Utils._
 
 import java.io.{File, FileWriter}
@@ -44,18 +45,29 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       firrtl.passes.SplitExpressions,
       firrtl.passes.CommonSubexpressionElimination,
       new firrtl.transforms.DeadCodeElimination,
-      new EnsureNoTargetIO,
-      // NB: Carelessly removing this pass will break the FireSim manager as we always
-      // need to generate the *.asserts file. Fix by baking into driver.
+      EnsureNoTargetIO,
+      new BridgeExtraction,
+      new ResolveAndCheck,
+      new EmitFirrtl("post-bridge-extraction.fir"),
+      new HighFirrtlToMiddleFirrtl,
+      new MiddleFirrtlToLowFirrtl,
+      new AutoCounterTransform,
+      new EmitFirrtl("post-autocounter.fir"),
+      new fame.EmitFAMEAnnotations("post-autocounter.json"),
+      new ResolveAndCheck,
       new AssertPass(dir),
       new PrintSynthesis(dir),
       new ResolveAndCheck,
-      new HighFirrtlToMiddleFirrtl,
-      new MiddleFirrtlToLowFirrtl,
-      new BridgeExtraction,
-      new ResolveAndCheck,
-      new MiddleFirrtlToLowFirrtl,
-      new fame.WrapTop,
+      new EmitFirrtl("post-debug-synthesis.fir"),
+      new fame.EmitFAMEAnnotations("post-debug-synthesis.json"),
+      // All trigger sources and sinks must exist in the target RTL before this pass runs
+      TriggerWiring,
+      new EmitFirrtl("post-trigger-wiring.fir"),
+      new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
+      // We should consider moving these lower
+      ChannelClockInfoAnalysis,
+      UpdateBridgeClockInfo,
+      fame.WrapTop,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++
     optionalTargetTransforms ++
@@ -66,16 +78,22 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new fame.FAMEDefaults,
+      new EmitFirrtl("post-fame-defaults.fir"),
+      new fame.EmitFAMEAnnotations("post-fame-defaults.json"),
+      fame.FindDefaultClocks,
+      new fame.EmitFAMEAnnotations("post-find-default-clocks.json"),
       new fame.ChannelExcision,
-      new fame.InferModelPorts,
-      new ResolveAndCheck,
+      new fame.EmitFAMEAnnotations("post-channel-excision.json"),
       new EmitFirrtl("post-channel-excision.fir"),
+      new fame.InferModelPorts,
+      new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
       new fame.FAMETransform,
       DefineAbstractClockGate,
       new EmitFirrtl("post-fame-transform.fir"),
+      new fame.EmitFAMEAnnotations("post-fame-transform.json"),
+      new ResolveAndCheck,
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
-      ConnectHostClock,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck) ++
     Seq(

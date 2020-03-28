@@ -16,15 +16,17 @@ class GroundTestBridge extends BlackBox
 }
 
 object GroundTestBridge {
-  def apply(success: Bool)(implicit p: Parameters): GroundTestBridge = {
+  def apply(clock: Clock, success: Bool)(implicit p: Parameters): GroundTestBridge = {
     val bridge = Module(new GroundTestBridge)
     bridge.io.success := success
+    bridge.io.clock := clock
     bridge
   }
 }
 
 class GroundTestBridgeTargetIO extends Bundle {
   val success = Input(Bool())
+  val clock = Input(Clock())
 }
 
 class GroundTestBridgeModule(implicit p: Parameters)

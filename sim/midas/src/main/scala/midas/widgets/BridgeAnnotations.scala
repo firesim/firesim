@@ -99,6 +99,9 @@ case class InMemoryBridgeAnnotation(
   * @param channelMapping A mapping from the channel names initially emitted by the Chisel Module, to uniquified global ones
   *  to find associated FCCAs for this bridge
   *
+  * @param clockInfo Contains information about the domain in which the bridge is instantiated. 
+  *  This will always be nonEmpty for bridges instantiated in the input FIRRTL
+  *
   * @param widget An optional lambda to elaborate the host-land BridgeModule. See InMemoryBridgeAnnotation
   *
   * @param widgetClass The BridgeModule's full class name. See SerializableBridgeAnnotation
@@ -110,6 +113,7 @@ case class InMemoryBridgeAnnotation(
 private[midas] case class BridgeIOAnnotation(
     val target: ReferenceTarget,
     channelMapping: Map[String, String],
+    clockInfo: Option[RationalClock] = None,
     widget: Option[(Parameters) => BridgeModule[_ <: TokenizedRecord]] = None,
     widgetClass: Option[String] = None,
     widgetConstructorKey: Option[_ <: AnyRef] = None) extends SingleTargetAnnotation[ReferenceTarget] {
@@ -119,17 +123,20 @@ private[midas] case class BridgeIOAnnotation(
   // Elaborates the BridgeModule using the lambda if it exists
   // Otherwise, uses reflection to find the constructor for the class given by
   // widgetClass, passing it the widgetConstructorKey
-  def elaborateWidget(implicit p: Parameters): BridgeModule[_ <: TokenizedRecord] = widget match {
-    case Some(elaborator) => elaborator(p)
-    case None =>
-      println(s"Instantiating bridge ${target.ref} of type ${widgetClass.get}")
-      val constructor = Class.forName(widgetClass.get).getConstructors()(0)
-      (widgetConstructorKey match {
-        case Some(key) =>
-          println(s"  With constructor arguments: $key")
-          constructor.newInstance(key, p)
-        case None => constructor.newInstance(p)
-      }).asInstanceOf[BridgeModule[_ <: TokenizedRecord]]
+  def elaborateWidget(implicit p: Parameters): BridgeModule[_ <: TokenizedRecord] = {
+    val px = p alterPartial { case TargetClockInfo => clockInfo }
+    widget match {
+      case Some(elaborator) => elaborator(px)
+      case None =>
+        println(s"Instantiating bridge ${target.ref} of type ${widgetClass.get}")
+        val constructor = Class.forName(widgetClass.get).getConstructors()(0)
+        (widgetConstructorKey match {
+          case Some(key) =>
+            println(s"  With constructor arguments: $key")
+            constructor.newInstance(key, px)
+          case None => constructor.newInstance(px)
+        }).asInstanceOf[BridgeModule[_ <: TokenizedRecord]]
+    }
   }
 }
 
@@ -139,6 +146,6 @@ private[midas] object BridgeIOAnnotation {
   def apply(target: ReferenceTarget,
             widget: (Parameters) => BridgeModule[_ <: TokenizedRecord],
             channelNames: Seq[String]): BridgeIOAnnotation =
-   BridgeIOAnnotation(target, channelNames.map(p => p -> p).toMap, Some(widget))
+   BridgeIOAnnotation(target, channelNames.map(p => p -> p).toMap, widget = Some(widget))
 }
 

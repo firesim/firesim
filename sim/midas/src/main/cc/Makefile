@@ -13,6 +13,7 @@ r_dir = $(abspath ../resources)
 # 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
 # 5) DRIVER: software driver written by user (not necessary for replay)
 # 6) CLOCK_PERIOD(optional): clock period of tests
+# 7) VERILATOR_FLAGS(optional): set of verilator flags to add
 ########################################################################
 ifeq ($(strip $(DESIGN)),)
 $(error Define DESIGN, the target design)

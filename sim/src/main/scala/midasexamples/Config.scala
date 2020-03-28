@@ -18,11 +18,11 @@ import firesim.configs.WithDefaultMemModel
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class DefaultF1Config extends Config(new Config((site, here, up) => {
-    case DesiredHostFrequency => 75
-    case SynthAsserts => true
-    case midas.GenerateMultiCycleRamModels => true
-    case SynthPrints => true
-    case TargetTransforms => ((p: Parameters) => Seq(new midas.passes.AutoCounterTransform()(p))) +: up(TargetTransforms, site)
+  case DesiredHostFrequency => 75
+  case SynthAsserts => true
+  case GenerateMultiCycleRamModels => true
+  case SynthPrints => true
+  case EnableAutoCounter => true
 }) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
@@ -33,3 +33,8 @@ class PointerChaserConfig extends Config((site, here, up) => {
   case NastiKey => NastiParameters(dataBits = 64, addrBits = 32, idBits = 3)
   case Seed => System.currentTimeMillis
 })
+
+class AutoCounterPrintf extends Config((site, here, up) => {
+  case AutoCounterUsePrintfImpl => true
+})
+

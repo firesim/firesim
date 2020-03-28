@@ -51,9 +51,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
   val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
   val tCycleAdvancing = WireInit(false.B)
 
-  val hCycleName = "hCycle"
-  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
-
   // needs back pressure from reset queues
   io.idle := cycleHorizon === 0.U
 
@@ -137,8 +134,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     tCycleAdvancing := true.B
   }
 
-  hCycle := hCycle + 1.U
-
   when (io.step.fire) {
     cycleHorizon := io.step.bits
   }
@@ -201,8 +196,10 @@ object PeekPokeTokenizedIO {
 }
 
 class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extends Record {
+  val clock = Input(Clock())
   val reset = if (withReset) Some(Output(Bool())) else None
   override val elements = ListMap((
+    Seq("clock" -> clock) ++
     reset.map("reset" -> _).toSeq ++
     targetIO.map({ case (name, field) => name -> Flipped(chiselTypeOf(field)) })
   ):_*)
@@ -219,10 +216,11 @@ class PeekPokeBridge(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends
 
 object PeekPokeBridge {
   @chiselName
-  def apply(reset: Bool, ioList: (String, Data)*): PeekPokeBridge = {
+  def apply(clock: Clock, reset: Bool, ioList: (String, Data)*): PeekPokeBridge = {
     val peekPokeBridge = Module(new PeekPokeBridge(ioList, Some(reset)))
     ioList.foreach({ case (name, field) => field <> peekPokeBridge.io.elements(name) })
     reset := peekPokeBridge.io.reset.get
+    peekPokeBridge.io.clock := clock
     peekPokeBridge
   }
 }

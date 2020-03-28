@@ -2,4 +2,4 @@
 // syntactically different clocks are aliases of one another if they are
 // driven by seperate ports.
 `verilator_config
-lint_off -msg MULTIDRIVEN
+lint_off -rule MULTIDRIVEN

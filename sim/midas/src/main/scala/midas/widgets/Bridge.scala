@@ -7,7 +7,7 @@ import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
@@ -23,11 +23,23 @@ import scala.reflect.runtime.{universe => ru}
  *
  */
 
+// Set in FPGA Top before the BridgeModule is generated
+case object TargetClockInfo extends Field[Option[RationalClock]]
+
 abstract class TokenizedRecord extends Record with HasChannels
 
 abstract class BridgeModule[HostPortType <: TokenizedRecord]
   (implicit p: Parameters) extends Widget()(p) {
   def hPort: HostPortType
+  def clockDomainInfo: RationalClock = p(TargetClockInfo).get
+  def emitClockDomainInfo(headerWidgetName: String, sb: StringBuilder): Unit = {
+    import CppGenerationUtils._
+    val RationalClock(domainName, mul, div) = clockDomainInfo
+    sb.append(genStatic(s"${headerWidgetName}_clock_domain_name", CStrLit(domainName)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_multiplier", UInt32(mul)))
+    sb.append(genConstStatic(s"${headerWidgetName}_clock_divisor", UInt32(div)))
+  }
+
 }
 
 trait Bridge[HPType <: TokenizedRecord, WidgetType <: BridgeModule[HPType]] {
@@ -85,9 +97,17 @@ trait HasChannels {
    * Implementation follows
    *
    */
+  private[midas] def getClock(): Clock = {
+    val allTargetClocks = SimUtils.findClocks(targetPortProto)
+    require(allTargetClocks.nonEmpty,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has no clock field.")
+    require(allTargetClocks.size == 1,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has ${allTargetClocks.size} clocks but must define only one.")
+    allTargetClocks.head
+  }
 
-  private[midas] def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
   private[midas] def outputChannelNames(): Seq[String] = outputWireChannels.map(_._2)
+  private[midas] def inputChannelNames(): Seq[String] = inputWireChannels.map(_._2)
 
   private def getRVChannelNames(channels: Seq[RVChTuple]): Seq[String] =
     channels.flatMap({ channel =>
@@ -113,9 +133,9 @@ trait HasChannels {
     for ((field, chName) <- channels) {
       annotate(new ChiselAnnotation { def toFirrtl =
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
         } else {
-          FAMEChannelConnectionAnnotation.sink  (chName, PipeChannel(latency), Seq(field.toNamed.toTarget))
+          FAMEChannelConnectionAnnotation.sink(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
         }
       })
     }
@@ -127,6 +147,7 @@ trait HasChannels {
       // Generate the forward channel annotation
       val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
       annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
         val validTarget = field.valid.toNamed.toTarget
         val readyTarget = field.ready.toNamed.toTarget
         val leafTargets = Seq(validTarget) ++ lowerAggregateIntoLeafTargets(field.bits)
@@ -135,6 +156,7 @@ trait HasChannels {
           FAMEChannelConnectionAnnotation.source(
             fwdChName,
             DecoupledForwardChannel.source(validTarget, readyTarget),
+            clockTarget,
             leafTargets
           )
         } else {
@@ -142,17 +164,19 @@ trait HasChannels {
           FAMEChannelConnectionAnnotation.sink(
             fwdChName,
             DecoupledForwardChannel.sink(validTarget, readyTarget),
+            clockTarget,
             leafTargets
           )
         }
       }})
 
       annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
         val readyTarget = Seq(field.ready.toNamed.toTarget)
         if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
         } else {
-          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, readyTarget)
+          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
         }
       }})
     }

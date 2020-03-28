@@ -7,30 +7,28 @@
 
 class print_module_t: virtual simif_t
 {
-    public:
-        std::unique_ptr<synthesized_prints_t> print_endpoint;
-        print_module_t(int argc, char** argv) {
-            PRINTBRIDGEMODULE_0_substruct_create;
-            std::vector<std::string> args(argv + 1, argv + argc);
-            print_endpoint = std::unique_ptr<synthesized_prints_t>(new synthesized_prints_t(this,
-                args,
-                PRINTBRIDGEMODULE_0_substruct,
-                PRINTBRIDGEMODULE_0_print_count,
-                PRINTBRIDGEMODULE_0_token_bytes,
-                PRINTBRIDGEMODULE_0_idle_cycles_mask,
-                PRINTBRIDGEMODULE_0_print_offsets,
-                PRINTBRIDGEMODULE_0_format_strings,
-                PRINTBRIDGEMODULE_0_argument_counts,
-                PRINTBRIDGEMODULE_0_argument_widths,
-                PRINTBRIDGEMODULE_0_DMA_ADDR));
-        };
-        void run_and_collect_prints(int cycles) {
-            step(cycles, false);
-            while (!done()) {
-                print_endpoint->tick();
-            }
-            print_endpoint->finish();
-        };
+  public:
+    std::vector<synthesized_prints_t*> print_endpoints;
+    print_module_t(int argc, char** argv) {
+      std::vector<std::string> args(argv + 1, argv + argc);
+#ifdef PRINTBRIDGEMODULE_0_PRESENT
+      INSTANTIATE_PRINTF(print_endpoints.push_back,0)
+#endif
+#ifdef PRINTBRIDGEMODULE_1_PRESENT
+      INSTANTIATE_PRINTF(print_endpoints.push_back,1)
+#endif
+    };
+    void run_and_collect_prints(int cycles) {
+      step(cycles, false);
+      while (!done()) {
+        for (auto &print_endpoint: print_endpoints) {
+          print_endpoint->tick();
+        }
+      }
+    for (auto &print_endpoint: print_endpoints) {
+      print_endpoint->finish();
+    }
+    };
 };
 
 #ifdef DESIGNNAME_PrintfModule
@@ -39,7 +37,9 @@ class PrintfModule_t: public print_module_t, virtual simif_t
 public:
     PrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};
     virtual void run() {
-        print_endpoint->init();
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
         poke(reset, 1);
         poke(io_a, 0);
         poke(io_b, 0);
@@ -52,3 +52,23 @@ public:
     };
 };
 #endif //DESIGNNAME_PrintfModule
+
+#ifdef DESIGNNAME_AutoCounterPrintfModule
+class AutoCounterPrintfModule_t: public print_module_t, virtual simif_t
+{
+public:
+    AutoCounterPrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};
+    virtual void run() {
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
+        poke(reset, 1);
+        poke(io_a, 0);
+        step(1);
+        poke(reset, 0);
+        step(1);
+        poke(io_a, 1);
+        run_and_collect_prints(3000);
+    };
+};
+#endif // DESIGNNAME_AutoCounterPrintf
