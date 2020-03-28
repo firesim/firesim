@@ -103,7 +103,7 @@ By default, the read-rate is set to 0 cycles, which disables AutoCounter.
 
 Upon setting this value, when you run a workload, an AutoCounter output file
 will be placed in the ``sim_slot_<slot #>`` directory on the F1 instance under
-the name ``AUTOCOUNTERFILE<N>``. with one file generated per clock domain
+the name ``AUTOCOUNTERFILE<N>``, with one file generated per clock domain
 containing an AutoCounter event. The header of each output file indicates the
 associated clock domain and its frequency relative to the base clock.
 
@@ -136,4 +136,3 @@ printed to the same output stream as other synthesizable printfs.  This mode
 uses considerably more FPGA resources per counter, and may consume considerable
 amounts of DMA bandwidth (since it prints every cycle a counter
 increments), which may adversly affect simulation performance (increased FMR).
-
