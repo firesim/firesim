@@ -88,10 +88,11 @@ AutoCounter Runtime Parameters
 AutoCounter currently takes a single runtime configurable parameter, defined
 under the ``[autocounter]`` section in the ``config_runtime.ini`` file.  The
 ``readrate`` parameter defines the rate at which the counters should be read,
-and is measured in target-cycles. Hence, if the read-rate is defined to be 100,
-the simulator will read and print the values of the counters every 100 cycles.
-By default, the read-rate is set to 0 cycles, which is equivalent to disabling
-AutoCounter.
+and is measured in target-cycles of the base target-clock (clock 0 produced by the ClockBridge). 
+Hence, if the read-rate is defined to be 100 and the tile frequency is 2x the base clock (ex., which may drive the uncore),
+the simulator will read and print the values of the counters every 200 core-clock cycles.
+If the core-domain clock is the base clock, it would do so every 100 cycles.
+By default, the read-rate is set to 0 cycles, which disables AutoCounter.
 
 .. code-block:: ini
 
@@ -102,13 +103,16 @@ AutoCounter.
 
 Upon setting this value, when you run a workload, an AutoCounter output file
 will be placed in the ``sim_slot_<slot #>`` directory on the F1 instance under
-the name ``AUTOCOUNTERFILE0``.
+the name ``AUTOCOUNTERFILE<N>``, with one file generated per clock domain
+containing an AutoCounter event. The header of each output file indicates the
+associated clock domain and its frequency relative to the base clock.
 
-.. Note:: AutoCounter is designed as a coarse-grained observability mechanism.
-      It assumes the counters will be read at intervals greater than O(10000) cycles.
+.. Note:: AutoCounter is designed as a coarse-grained observability mechanism, as sampling 
+      each counter requires two (blocking) MMIO reads (each read takes O(100) ns on EC2 F1).
+      As a result sampling at intervals less than O(10000) cycles may adversely affect
+      simulation performance for large numbers of counters.
       If you intend on reading counters at a finer granularity, please consider using
-      synthesizable printfs (otherwise, simulation performance may degrade more than
-      necessary)
+      synthesizable printfs.
 
 Using TracerV Trigger with AutoCounter
 -----------------------------------------
@@ -119,17 +123,16 @@ triggers. See the :ref:`tracerv-trigger` section for more information.
 
 AutoCounter using Synthesizable Printfs
 ------------------------------------------------
-The AutoCounter transformation in the Golden Gate compiler includes a legacy
-mode that uses Synthesizable Printfs (learn more about these on the
-:ref:`printf-synthesis` page) to export counter results rather than
-a dedicated Bridge. This mode can be enabled by prepending the
+The AutoCounter transformation in the Golden Gate compiler includes an event-driven
+mode that uses Synthesizable Printfs (see
+:ref:`printf-synthesis`) to export counter results `as they are updated` rather than sampling them
+periodically with a dedicated Bridge. This mode can be enabled by prepending the
 ``WithAutoCounterCoverPrintf`` config to your ``PLATFORM_CONFIG`` instead of
-``WithAutoCounterCover``. In this mode, the counter values will be printed
-using a synthesizable printf every time the counter is incremented (hence, you
-will observe a series of printfs incrementing by 1).  Nevertheless, the printf
-statements include the exact cycle of the printf, and therefore this mode may
-be useful for fine grained observation of counters.  The counter values will be
+``WithAutoCounterCover``. In this mode, the counter values and the local cycle count will be printed
+every time the counter is incremented using a synthesized printf (hence, you
+will observe a series of printfs incrementing by 1). This mode may
+be useful for fine-grained observation of counters.  The counter values will be
 printed to the same output stream as other synthesizable printfs.  This mode
-may export a large amount of data (since it prints every cycle a counter
-increments), and therefore it is not recommended unless you require such high
-fidelity.
+uses considerably more FPGA resources per counter, and may consume considerable
+amounts of DMA bandwidth (since it prints every cycle a counter
+increments), which may adversly affect simulation performance (increased FMR).
