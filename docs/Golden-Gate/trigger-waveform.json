@@ -1,0 +1,14 @@
+{ comment: "Trigger update waveform. Upload this to wavedrom.com to render a waveform",
+  signal: [
+  {name: 'srcClk', wave: 'p...........', period: 1, phase: 0},
+  {name: 'credit0', wave: '010.10.......', node: '.a.....', period: 1, phase: 1},
+  {name: 'debit0', wave: '0...10..10...', node: '........d', period: 1, phase: 1},
+  {name: 'baseClk', wave: 'p.....', period: 2, phase: 0},
+  {name: 'trigger', wave: '0..1.....0...', node: '...b.....e', period: 1, phase: 1},
+  {name: 'sinkClk', wave: 'p...', period: 3, phase: 0},
+  {name: 'sink0', wave: '0...1.....0..', node: '....c.....f', period: 1, phase: 1},
+  ],
+  edge:['a-~>b', 'b-~>c', 'd-~>e', 'e-~>f'],
+  config: {hscale: 1.25},
+ }
+   

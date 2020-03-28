@@ -14,21 +14,36 @@ import scala.collection.mutable
 
 class TriggerSinkModule extends MultiIOModule {
   val reference = IO(Input(Bool()))
-  val generated = WireDefault(true.B)
-  TriggerSink(generated)
-  assert(reference === generated)
+  // DOC include start: TriggerSink Usage
+  // Note: this can be any reference you wish to have driven by the trigger.
+  val sinkBool = WireDefault(true.B)
+
+  import midas.targetutils.TriggerSink
+  // Drives true.B if no TriggerSource credits exist in the design.
+  // Note: noSourceDefault defaults to true.B if unset, and can be omitted for brevity
+  TriggerSink(sinkBool, noSourceDefault = true.B)
+  // DOC include end: TriggerSink Usage
+  assert(reference === sinkBool)
 }
 
 class TriggerSourceModule extends MultiIOModule {
   val referenceCredit = IO(Output(Bool()))
-  private val lfsr = LFSR16()
-  val credit = lfsr(0)
-  TriggerSource.credit(credit)
-  referenceCredit := ~reset.toBool && credit
-
   val referenceDebit = IO(Output(Bool()))
-  val debit = ShiftRegister(lfsr(0), 5)
-  TriggerSource.debit(debit)
+  private val lfsr = LFSR16()
+
+  // DOC include start: TriggerSource Usage
+  // Some arbitarily logic to drive the credit source and sink. Replace with your own!
+  val creditBool = lfsr(0)
+  val debitBool = ShiftRegister(lfsr(0), 5)
+
+  // Now annotate the signals.
+  import midas.targetutils.TriggerSource
+  TriggerSource.credit(creditBool)
+  TriggerSource.debit(debitBool)
+  // Note one could alternatively write: TriggerSource(creditBool, debitBool)
+  // DOC include end: TriggerSource Usage
+
+  referenceCredit := ~reset.toBool && credit
   referenceDebit := ~reset.toBool && debit
 }
 
