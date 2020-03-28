@@ -9,7 +9,7 @@ import freechips.rocketchip.util.DecoupledHelper
 
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
-import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey, BlockDeviceConfig}
+import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, LocalBlockDeviceKey, BlockDeviceConfig}
 
 class BlockDevBridgeTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
@@ -21,7 +21,7 @@ class BlockDevBridge(implicit p: Parameters) extends BlackBox
     with Bridge[HostPortIO[BlockDevBridgeTargetIO], BlockDevBridgeModule]  {
   val io = IO(new BlockDevBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = p(BlockDeviceKey)
+  val constructorArg = Some(p(LocalBlockDeviceKey))
   generateAnnotations()
 }
 
@@ -36,7 +36,7 @@ object BlockDevBridge  {
 }
 
 class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameters) extends BridgeModule[HostPortIO[BlockDevBridgeTargetIO]]()(hostP) {
-  implicit override val p = hostP.alterPartial({ case BlockDeviceKey => Some(blockDevExternal) })
+  implicit override val p = hostP.alterPartial({ case LocalBlockDeviceKey => blockDevExternal })
   // TODO use HasBlockDeviceParameters
   val dataBytes = 512
   val sectorBits = 32
