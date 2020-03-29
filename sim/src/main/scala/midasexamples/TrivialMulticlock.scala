@@ -23,11 +23,23 @@ class RegisterModule extends MultiIOModule {
 
 class TrivialMulticlock extends RawModule {
   // TODO: Resolve bug in PeekPoke bridge for 3/7 case
-  //val clockBridge = Module(new RationalClockBridge(1000, (1,2), (1,3), (3,7)))
   //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
+
+  // DOC include start: RationalClockBridge Usage
+  // Here we request four target clocks (the base clock is implicit). All
+  // clocks beyond the base clock are specified using the RationalClock case
+  // class which gives the clock domain's name, and its clock multiplier and
+  // divisor relative to the base clock.
   val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2), 
-                                                   RationalClock("ThirdRate", 1, 3)))
-  val List(fullRate, halfRate, thirdRate) = clockBridge.io.clocks.toList
+                                                   RationalClock("ThirdRate", 1, 3),
+                                                   RationalClock("ThreeSeventhsRate", 3, 7))
+
+  // The clock bridge has a single output: a Vec[Clock] of the requested clocks
+  // in the order they were specified, which we are now free to use through our
+  // Chisel design.  While not necessary, here we unassign the Vec to give them
+  // more informative references in our Chisel.
+  val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
+  // DOC include end: RationalClockBridge Usage
   val reset = WireInit(false.B)
 
   withClockAndReset(fullRate, reset) {
