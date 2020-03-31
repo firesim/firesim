@@ -34,14 +34,16 @@ case class DromajoKey(
 /**
  * Blackbox that is connected to the host
  */
-class DromajoBridge(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends BlackBox
+class DromajoBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[TraceOutputTop], DromajoBridgeModule]
 {
-  val io = IO(Flipped(new TraceOutputTop(traceProto)))
+  val io = IO(new Bundle {
+    val trace = Input( new TileTraceIO(insnWidths, numInsns))
+  })
   val bridgeIO = HostPort(io)
 
   // give the Dromajo key to the GG module
-  val constructorArg = Some(DromajoKey(io.getWidths, io.getVecSizes))
+  val constructorArg = Some(DromajoKey(insnWidths, numInsns))
 
   // generate annotations to pass to GG
   generateAnnotations()
@@ -51,11 +53,10 @@ class DromajoBridge(traceProto: Seq[Vec[DeclockedTracedInstruction]]) extends Bl
  * Helper function to connect blackbox
  */
 object DromajoBridge {
-  def apply(port: TraceOutputTop)(implicit p:Parameters): Seq[DromajoBridge] = {
-    val b = Module(new DromajoBridge(port.getProto))
-    b.io <> port
-
-    Seq(b)
+  def apply(tracedInsns: TileTraceIO)(implicit p: Parameters): DromajoBridge = {
+    val b = Module(new DromajoBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
+    b.io.trace := tracedInsns
+    b
   }
 }
 
@@ -85,7 +86,11 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
   def roundUp(num: Int, mult: Int): Int = { (((num - 1) / mult) + 1) * mult }
 
   // get the traces
-  val traces = hPort.hBits.traces.flatten
+  val traces = hPort.hBits.trace.insns.map({ unmasked =>
+    val masked = WireDefault(unmasked)
+    masked.valid := unmasked.valid && !hPort.hBits.trace.reset
+    masked
+  })
   private val iaddrWidth = roundUp(traces.map(_.iaddr.getWidth).max, 8)
   private val insnWidth  = roundUp(traces.map(_.insn.getWidth).max, 8)
   private val wdataWidth = roundUp(traces.map(_.wdata.getWidth).max, 8)
