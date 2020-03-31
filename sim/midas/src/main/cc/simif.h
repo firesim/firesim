@@ -41,6 +41,7 @@ class simif_t
     SIMULATIONMASTER_struct * master_mmio_addrs;
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
     PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
+    CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {
@@ -108,8 +109,8 @@ class simif_t
     // Returns an upper bound for the cycle reached by the target
     // If using blocking steps, this will be ~equivalent to actual_tcycle()
     uint64_t cycles(){ return t; };
-    // Returns the current target cycle as measured by a hardware counter in the DefaultIOWidget
-    // (# of reset tokens generated)
+    // Returns the current target cycle of the fastest clock in the simulated system, based
+    // on the number of clock tokens enqueued (will report a larger number)
     uint64_t actual_tcycle();
     // Returns the current host cycle as measured by a hardware counter
     uint64_t hcycle();

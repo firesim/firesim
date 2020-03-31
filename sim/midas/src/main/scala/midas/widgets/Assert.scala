@@ -15,7 +15,8 @@ class AssertBundle(val numAsserts: Int) extends Bundle {
   val asserts = Output(UInt(numAsserts.W))
 }
 
-class AssertBridgeModule(numAsserts: Int)(implicit p: Parameters) extends BridgeModule[HostPortIO[UInt]]()(p) {
+class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) extends BridgeModule[HostPortIO[UInt]]()(p) {
+  val numAsserts = assertMessages.size
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
   val resume = WireInit(false.B)
@@ -43,4 +44,12 @@ class AssertBridgeModule(numAsserts: Int)(implicit p: Parameters) extends Bridge
   genROReg(cycles >> 32, "cycle_high")
   Pulsify(genWORegInit(resume, "resume", false.B), pulseLength = 1)
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    val headerWidgetName = getWName.toUpperCase
+    super.genHeader(base, sb)
+    sb.append(genConstStatic(s"${headerWidgetName}_assert_count", UInt32(assertMessages.size)))
+    sb.append(genArray(s"${headerWidgetName}_assert_messages", assertMessages.map(CStrLit)))
+  }
 }

@@ -14,7 +14,7 @@ import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, gender, module_type}
 import firrtl.passes.wiring._
-import fame.{FAMEChannelConnectionAnnotation, FAMEChannelAnalysis, FAME1Transform}
+import fame.{FAMEChannelConnectionAnnotation, FAMEChannelPortsAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
 
@@ -128,7 +128,6 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
 
     val transforms = Seq(
       new Fame1Instances,
-      new WiringTransform,
       new PreLinkRenaming(Namespace(innerCircuit)))
     val outerState = new LowFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
 
@@ -144,7 +143,7 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
 
     // FIXME: Renamer complains if i leave these in
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
-      case _: FAMEChannelConnectionAnnotation => false
+      case _: FAMEChannelConnectionAnnotation | _: FAMEChannelPortsAnnotation => false
       case _: BridgeIOAnnotation => false
       case _ => true
     })

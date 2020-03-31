@@ -48,11 +48,31 @@ object Negate {
   def apply(arg: Expression): Expression = DoPrim(PrimOps.Not, Seq(arg), Seq.empty, arg.tpe)
 }
 
-object Reduce {
-  private def _reduce(op: PrimOp, args: Iterable[Expression]): Expression = {
-    args.tail.foldLeft(args.head){ (l, r) => DoPrim(op, Seq(l, r), Seq.empty, UIntType(IntWidth(1))) }
+sealed trait BinaryBooleanOp {
+  def op: PrimOp
+  def apply(l: Expression, r: Expression): DoPrim = DoPrim(op, Seq(l, r), Nil, BoolType)
+  def reduce(args: Iterable[Expression]): Expression = {
+    require(args.nonEmpty)
+    args.tail.foldLeft(args.head){ (l, r) => apply(l, r) }
   }
-  def and(args: Iterable[Expression]): Expression = _reduce(PrimOps.And, args)
-  def or(args: Iterable[Expression]): Expression = _reduce(PrimOps.Or, args)
 }
 
+object And extends BinaryBooleanOp {
+  val op = PrimOps.And
+}
+
+object Or extends BinaryBooleanOp {
+  val op = PrimOps.Or
+}
+
+object Neq extends BinaryBooleanOp {
+  val op = PrimOps.Neq
+}
+
+/** Generates a DefRegister with no reset, relying instead on FPGA programming
+  * to preset the register to 0
+  */
+object RegZeroPreset {
+  def apply(info: Info, name: String, tpe: Type, clock: Expression): DefRegister =
+    DefRegister(info, name, tpe, clock, zero, WRef(name))
+}

@@ -33,14 +33,28 @@
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
 #include "NarrowPrintfModule.h"
+#elif defined DESIGNNAME_MulticlockPrintfModule
+#include "MulticlockPrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
 #include "AutoCounterCoverModule.h"
+#elif defined DESIGNNAME_AutoCounterPrintfModule
+#include "PrintfModule.h"
+#elif defined DESIGNNAME_MulticlockAutoCounterModule
+#include "MulticlockAutoCounterModule.h"
 #elif defined DESIGNNAME_Accumulator
 #include "Accumulator.h"
 #elif defined DESIGNNAME_VerilogAccumulator
 #include "VerilogAccumulator.h"
+#elif defined DESIGNNAME_TrivialMulticlock
+#include "TrivialMulticlock.h"
+#elif defined DESIGNNAME_MulticlockAssertModule
+#include "MulticlockAssertModule.h"
+#elif defined DESIGNNAME_TriggerWiringModule
+#include "TriggerWiringModule.h"
+#elif defined DESIGNNAME_TwoAdders
+#include "TwoAdders.h"
 #endif
 
 class dut_emul_t:

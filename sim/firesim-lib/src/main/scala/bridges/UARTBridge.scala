@@ -15,6 +15,7 @@ import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
 
 // DOC include start: UART Bridge Target-Side Interface
 class UARTBridgeTargetIO extends Bundle {
+  val clock = Input(Clock())
   val uart = Flipped(new UARTPortIO)
   // Note this reset is optional and used only to reset target-state modelled
   // in the bridge This reset just like any other Bool included in your target
@@ -58,9 +59,10 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
 
 // DOC include start: UART Bridge Companion Object
 object UARTBridge {
-  def apply(uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
+  def apply(clock: Clock, uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
     val ep = Module(new UARTBridge)
     ep.io.uart <> uart
+    ep.io.clock := clock
     ep
   }
 }

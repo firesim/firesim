@@ -9,6 +9,27 @@
 #include <gmp.h>
 
 #include "bridge_driver.h"
+#include "clock_info.h"
+
+// Bridge Driver Instantiation Template
+#define INSTANTIATE_PRINTF(FUNC,IDX) \
+     PRINTBRIDGEMODULE_ ## IDX ## _substruct_create; \
+     FUNC(new synthesized_prints_t( \
+        this, \
+        args, \
+        PRINTBRIDGEMODULE_ ## IDX ## _substruct, \
+        PRINTBRIDGEMODULE_ ## IDX ## _print_count, \
+        PRINTBRIDGEMODULE_ ## IDX ## _token_bytes, \
+        PRINTBRIDGEMODULE_ ## IDX ## _idle_cycles_mask, \
+        PRINTBRIDGEMODULE_ ## IDX ## _print_offsets, \
+        PRINTBRIDGEMODULE_ ## IDX ## _format_strings, \
+        PRINTBRIDGEMODULE_ ## IDX ## _argument_counts, \
+        PRINTBRIDGEMODULE_ ## IDX ## _argument_widths, \
+        PRINTBRIDGEMODULE_ ## IDX ## _DMA_ADDR, \
+        PRINTBRIDGEMODULE_ ## IDX ## _clock_domain_name, \
+        PRINTBRIDGEMODULE_ ## IDX ## _clock_multiplier, \
+        PRINTBRIDGEMODULE_ ## IDX ## _clock_divisor, \
+        IDX)); \
 
 struct print_vars_t {
   std::vector<mpz_t*> data;
@@ -34,7 +55,11 @@ class synthesized_prints_t: public bridge_driver_t
                              const char* const*  format_strings,
                              const unsigned int* argument_counts,
                              const unsigned int* argument_widths,
-                             unsigned int dma_address);
+                             unsigned int dma_address,
+                             const char* const  clock_domain_name,
+                             const unsigned int clock_multiplier,
+                             const unsigned int clock_divisor,
+                             int printno);
         ~synthesized_prints_t();
         virtual void init();
         virtual void tick();
@@ -52,6 +77,8 @@ class synthesized_prints_t: public bridge_driver_t
         const unsigned int* argument_counts;
         const unsigned int* argument_widths;
         const unsigned int dma_address;
+        ClockInfo clock_info;
+        const int printno;
 
         // DMA batching parameters
         const size_t beat_bytes  = DMA_DATA_BITS / 8;

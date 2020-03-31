@@ -3,22 +3,25 @@ package midas.passes.fame
 import firrtl._
 import annotations._
 
+import midas.targetutils.FAMEAnnotation
+import midas.widgets.RationalClock
+
 /**
   * An annotation that describes the ports that constitute one channel
   * from the perspective of a particular module that will be replaced
   * by a simulation model. Note that this describes the channels as
   * they appear locally from within the module, so this annotation will
   * apply to *all* instances of that module.
-  * 
+  *
   * Upon creation, this annotation is associated with a particular
   * target RTL module M that will eventually be transformed into a FAME
   * model. This module must only be instantiated at the top level.
-  * 
+  *
   * @param localName  refers to the name of the channel within the scope of the
   *  eventual FAME model.  This will be used as the channel’s port
   *  name in the model. It will also be used to identify
   *  microarchitectural state associated with the channel
-  * 
+  *
   * @param ports  a list of the ports that are grouped into the channel.  The
   *  ReferenceTargets should be rooted at M, since this information is
   *  local to the module. This is also what associates the annotation
@@ -26,12 +29,13 @@ import annotations._
   */
 case class FAMEChannelPortsAnnotation(
   localName: String,
-  ports: Seq[ReferenceTarget]) extends Annotation {
+  clockPort: Option[ReferenceTarget],
+  ports: Seq[ReferenceTarget]) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(FAMEChannelPortsAnnotation(localName, ports.map(renamer)))
+    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), ports.map(renamer)))
   }
-  override def getTargets: Seq[ReferenceTarget] = ports
+  override def getTargets: Seq[ReferenceTarget] = clockPort ++: ports
 }
 
 /**
@@ -42,15 +46,20 @@ case class FAMEChannelPortsAnnotation(
   *
   * @param channelInfo  describes the type of the channel (Wire, Forward/Reverse
   *  Decoupled)
+  *
+  * @param clock the *source* of the clock (if any) associated with this channel
+  *
+  * @note The clock source must be a port on the model side of the channel
   */
 case class FAMEChannelConnectionAnnotation(
   globalName: String,
   channelInfo: FAMEChannelInfo,
+  clock: Option[ReferenceTarget],
   sources: Option[Seq[ReferenceTarget]],
-  sinks: Option[Seq[ReferenceTarget]]) extends Annotation with HasSerializationHints {
+  sinks: Option[Seq[ReferenceTarget]]) extends Annotation with FAMEAnnotation with HasSerializationHints {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
+    Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), clock.map(renamer), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
   }
   def typeHints(): Seq[Class[_]] = Seq(channelInfo.getClass)
 
@@ -60,7 +69,7 @@ case class FAMEChannelConnectionAnnotation(
     def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
 
     require(sources == None || sinks == None, "Bridge-connected channels cannot loopback")
-    val rTs = sources.getOrElse(sinks.get) ++ (channelInfo match {
+    val rTs = sources.getOrElse(sinks.get) ++ clock ++ (channelInfo match {
       case i: DecoupledForwardChannel => Seq(i.readySink.getOrElse(i.readySource.get))
       case other => Seq()
     })
@@ -69,22 +78,41 @@ case class FAMEChannelConnectionAnnotation(
     copy(globalName = s"${portName}_${globalName}").update(localRenames).head.asInstanceOf[this.type]
   }
 
-  override def getTargets: Seq[ReferenceTarget] = sources.toSeq.flatten ++ sinks.toSeq.flatten
+  override def getTargets: Seq[ReferenceTarget] = clock ++: (sources.toSeq.flatten ++ sinks.toSeq.flatten)
 }
 
-// Helper factory methods for generating bridge annotations that have only sinks or sources
+// Helper factory methods for generating common patterns
 object FAMEChannelConnectionAnnotation {
+  def implicitlyClockedLoopback(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sources: Seq[ReferenceTarget],
+    sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
+    FAMEChannelConnectionAnnotation(globalName, channelInfo, None, Some(sources), Some(sinks))
+
   def sink(
     globalName: String,
     channelInfo: FAMEChannelInfo,
+    clock: Option[ReferenceTarget],
     sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
-  FAMEChannelConnectionAnnotation(globalName, channelInfo, None, Some(sinks))
+  FAMEChannelConnectionAnnotation(globalName, channelInfo, clock, None, Some(sinks))
+
+  def implicitlyClockedSink(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sinks: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation = sink(globalName, channelInfo, None, sinks)
 
   def source(
     globalName: String,
     channelInfo: FAMEChannelInfo,
+    clock: Option[ReferenceTarget],
     sources: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation =
-  FAMEChannelConnectionAnnotation(globalName, channelInfo, Some(sources), None)
+  FAMEChannelConnectionAnnotation(globalName, channelInfo, clock, Some(sources), None)
+
+  def implicitlyClockedSource(
+    globalName: String,
+    channelInfo: FAMEChannelInfo,
+    sources: Seq[ReferenceTarget]): FAMEChannelConnectionAnnotation = source(globalName, channelInfo, None, sources)
 }
 
 /**
@@ -104,7 +132,7 @@ sealed trait FAMEChannelInfo {
   */
 case class PipeChannel(val latency: Int) extends FAMEChannelInfo
 
-/** 
+/**
   * Indicates that a channel connection is the reverse (ready) half of
   * a decoupled target connection. Since the forward half incorporates
   * references to the ready signals, this channel contains no signal
@@ -113,17 +141,22 @@ case class PipeChannel(val latency: Int) extends FAMEChannelInfo
 case object DecoupledReverseChannel extends FAMEChannelInfo
 
 /**
-  * Indicates that a channel connection is the reverse (ready) half of
+  * Indicates that a channel connection carries target clocks
+  */
+case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo
+
+/**
+  * Indicates that a channel connection is the forward (valid) half of
   * a decoupled target connection.
-  * 
+  *
   * @param readySink  sink port component of the corresponding reverse channel
-  * 
+  *
   * @param validSource  valid port component from this channel's sources
-  * 
+  *
   * @param readySource  source port component of the corresponding reverse channel
-  * 
+  *
   * @param validSink  valid port component from this channel's sinks
-  * 
+  *
   * @note  (readySink, validSource) are on one model, (readySource, validSink) on the other
   */
 case class DecoupledForwardChannel(
@@ -151,15 +184,6 @@ object DecoupledForwardChannel {
 }
 
 /**
-  * Indicates that a particular instance is a FAME Model
-  */
-case class FAMEModelAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
-  def targets = Seq(target)
-  def duplicate(n: InstanceTarget) = this.copy(n)
-}
-
-
-/**
   * Specifies what form of FAME transform should be applied when
   * generated a simulation model from a target module.
   */
@@ -184,7 +208,9 @@ case object FAME1Transform extends FAMETransformType
   *  this is a ModuleTarget, all instances at the top level will be
   *  transformed identically.
   */
-case class FAMETransformAnnotation(transformType: FAMETransformType, target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
+case class FAMETransformAnnotation(
+  transformType: FAMETransformType,
+  target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: ModuleTarget) = this.copy(transformType, n)
 }
@@ -194,17 +220,18 @@ case class FAMETransformAnnotation(transformType: FAMETransformType, target: Mod
   * level in the hierarchy. The specified instance will be pulled out
   * of its parent module and will reside in its "grandparent" module
   * after the PromoteSubmodule transform has run.
-  * 
+  *
   * @param target  The instance to be promoted. Note that this must
   *  be a *local* instance target, as all instances of the parent
   *  module will be transformed identically.
   */
-case class PromoteSubmoduleAnnotation(target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] {
+case class PromoteSubmoduleAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: InstanceTarget) = this.copy(n)
 }
 
-abstract class FAMEGlobalSignal extends SingleTargetAnnotation[ReferenceTarget] {
+abstract class FAMEGlobalSignal extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation {
   val target: ReferenceTarget
   def targets = Seq(target)
   def duplicate(n: ReferenceTarget): FAMEGlobalSignal
@@ -218,7 +245,7 @@ case class FAMEHostReset(target: ReferenceTarget) extends FAMEGlobalSignal {
   def duplicate(t: ReferenceTarget): FAMEHostReset = this.copy(t)
 }
 
-abstract class MemPortAnnotation extends Annotation {
+abstract class MemPortAnnotation extends Annotation with FAMEAnnotation {
   val en: ReferenceTarget
   val addr: ReferenceTarget
 }
@@ -286,4 +313,25 @@ case class ModelReadWritePort(
     Seq(ModelReadWritePort(renamer(wmode), renamer(rdata), renamer(wdata), renamer(wmask), renamer(addr), renamer(en)))
   }
   override def getTargets: Seq[ReferenceTarget] = Seq(wmode, rdata, wdata, wmask, addr, en)
+}
+
+/**
+  * A pass that dumps all FAME annotations to a file for debugging.
+  */
+class EmitFAMEAnnotations(fileName: String) extends firrtl.Transform {
+  import firrtl.options.TargetDirAnnotation
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override def name = s"[Golden Gate] Debugging FAME Annotation Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    val targetDir = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
+    val dirName = targetDir.getOrElse(".")
+    val outputFile = new java.io.PrintWriter(s"${dirName}/${fileName}")
+    val fameAnnos = state.annotations.collect { case fa: FAMEAnnotation => fa }
+    outputFile.write(JsonProtocol.serialize(fameAnnos))
+    outputFile.close()
+    state
+  }
 }

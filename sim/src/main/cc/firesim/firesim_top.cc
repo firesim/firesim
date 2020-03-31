@@ -310,36 +310,52 @@ uint64_t host_mem_offset = -0x80000000LL;
 
 #ifdef TRACERVBRIDGEMODULE_struct_guard
     #ifdef TRACERVBRIDGEMODULE_0_PRESENT
-    TRACERVBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_0_substruct, 0, TRACERVBRIDGEMODULE_0_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 0)
     #endif
     #ifdef TRACERVBRIDGEMODULE_1_PRESENT
-    TRACERVBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_1_substruct, 1, TRACERVBRIDGEMODULE_1_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 1)
     #endif
     #ifdef TRACERVBRIDGEMODULE_2_PRESENT
-    TRACERVBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_2_substruct, 2, TRACERVBRIDGEMODULE_2_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 2)
     #endif
     #ifdef TRACERVBRIDGEMODULE_3_PRESENT
-    TRACERVBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_3_substruct, 3, TRACERVBRIDGEMODULE_3_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 3)
     #endif
     #ifdef TRACERVBRIDGEMODULE_4_PRESENT
-    TRACERVBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_4_substruct, 4, TRACERVBRIDGEMODULE_4_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 4)
     #endif
     #ifdef TRACERVBRIDGEMODULE_5_PRESENT
-    TRACERVBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_5_substruct, 5, TRACERVBRIDGEMODULE_5_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 5)
     #endif
     #ifdef TRACERVBRIDGEMODULE_6_PRESENT
-    TRACERVBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_6_substruct, 6, TRACERVBRIDGEMODULE_6_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 6)
     #endif
     #ifdef TRACERVBRIDGEMODULE_7_PRESENT
-    TRACERVBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new tracerv_t(this, args, TRACERVBRIDGEMODULE_7_substruct, 7, TRACERVBRIDGEMODULE_7_DMA_ADDR));
+    INSTANTIATE_TRACERV(add_bridge_driver, 7)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_8_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 8)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_9_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 9)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_10_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 10)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_11_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 11)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_12_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 12)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_13_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 13)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_14_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 14)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_15_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 15)
     #endif
 #endif
 
@@ -402,117 +418,118 @@ uint64_t host_mem_offset = -0x80000000LL;
     #endif
 #endif
 
-#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
-    #ifdef AUTOCOUNTERBRIDGEMODULE_0_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_0_substruct,
-                 AddressMap(AUTOCOUNTERBRIDGEMODULE_0_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_0_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_0_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_0_W_names), 0));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_1_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_1_substruct,
-                 AddressMap(AUTOCOUNTERBRIDGEMODULE_1_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_1_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_1_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_1_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_1_W_names), 1));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_2_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_2_substruct,
-                AddressMap(AUTOCOUNTERBRIDGEMODULE_2_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_2_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_2_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_2_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_2_W_names), 2));
-    #endif
-    #ifdef AUTCOUNTERBRIDGEMODULE_3_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_3_substruct,
-                 AddressMap(AUTOCOUNTERBRIDGEMODULE_3_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_3_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_3_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_3_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_3_W_names), 3));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_4_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_4_substruct,
-                AddressMap(AUTOCOUNTERBRIDGEMODULE_4_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_4_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_4_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_4_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_4_W_names), 4));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_5_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_5_substruct,
-               AddressMap(AUTOCOUNTERBRIDGEMODULE_5_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_5_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_5_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_5_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_5_W_names), 5));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_6_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_6_substruct,
-                AddressMap(AUTOCOUNTERBRIDGEMODULE_6_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_6_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_6_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_6_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_6_W_names), 6));
-    #endif
-    #ifdef AUTOCOUNTERBRIDGEMODULE_7_PRESENT
-    AUTOCOUNTERBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new autocounter_t(
-            this, args, AUTOCOUNTERBRIDGEMODULE_7_substruct,
-                AddressMap(AUTOCOUNTERBRIDGEMODULE_7_R_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_7_R_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_R_names,
-                    AUTOCOUNTERBRIDGEMODULE_7_W_num_registers,
-                    (const unsigned int*) AUTOCOUNTERBRIDGEMODULE_7_W_addrs,
-                    (const char* const*) AUTOCOUNTERBRIDGEMODULE_7_W_names), 7));
-    #endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_0_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 0)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_1_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 1)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_2_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 2)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_3_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 3)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_4_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 4)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_5_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 5)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_6_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 6)
+#endif
+#ifdef AUTOCOUNTERBRIDGEMODULE_7_PRESENT
+    INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 7)
 #endif
 
-// There can only be one instance of assert and print widgets as their IO is
-// uniquely generated by a FIRRTL transform
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
     ASSERTBRIDGEMODULE_0_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this, ASSERTBRIDGEMODULE_0_substruct));
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_0_substruct,
+                                                   ASSERTBRIDGEMODULE_0_assert_count,
+                                                   ASSERTBRIDGEMODULE_0_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_1_PRESENT
+    ASSERTBRIDGEMODULE_1_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_1_substruct,
+                                                   ASSERTBRIDGEMODULE_1_assert_count,
+                                                   ASSERTBRIDGEMODULE_1_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_2_PRESENT
+    ASSERTBRIDGEMODULE_2_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_2_substruct,
+                                                   ASSERTBRIDGEMODULE_2_assert_count,
+                                                   ASSERTBRIDGEMODULE_2_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_3_PRESENT
+    ASSERTBRIDGEMODULE_3_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_3_substruct,
+                                                   ASSERTBRIDGEMODULE_3_assert_count,
+                                                   ASSERTBRIDGEMODULE_3_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_3_PRESENT
+    ASSERTBRIDGEMODULE_3_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_3_substruct,
+                                                   ASSERTBRIDGEMODULE_3_assert_count,
+                                                   ASSERTBRIDGEMODULE_3_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_4_PRESENT
+    ASSERTBRIDGEMODULE_4_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_4_substruct,
+                                                   ASSERTBRIDGEMODULE_4_assert_count,
+                                                   ASSERTBRIDGEMODULE_4_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_5_PRESENT
+    ASSERTBRIDGEMODULE_5_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_5_substruct,
+                                                   ASSERTBRIDGEMODULE_5_assert_count,
+                                                   ASSERTBRIDGEMODULE_5_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_6_PRESENT
+    ASSERTBRIDGEMODULE_6_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_6_substruct,
+                                                   ASSERTBRIDGEMODULE_6_assert_count,
+                                                   ASSERTBRIDGEMODULE_6_assert_messages));
+#endif
+#ifdef ASSERTBRIDGEMODULE_7_PRESENT
+    ASSERTBRIDGEMODULE_7_substruct_create
+    add_bridge_driver(new synthesized_assertions_t(this,
+                                                   ASSERTBRIDGEMODULE_7_substruct,
+                                                   ASSERTBRIDGEMODULE_7_assert_count,
+                                                   ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
 
 #ifdef PRINTBRIDGEMODULE_0_PRESENT
-    PRINTBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new synthesized_prints_t(this,
-                                          args,
-                                          PRINTBRIDGEMODULE_0_substruct,
-                                          PRINTBRIDGEMODULE_0_print_count,
-                                          PRINTBRIDGEMODULE_0_token_bytes,
-                                          PRINTBRIDGEMODULE_0_idle_cycles_mask,
-                                          PRINTBRIDGEMODULE_0_print_offsets,
-                                          PRINTBRIDGEMODULE_0_format_strings,
-                                          PRINTBRIDGEMODULE_0_argument_counts,
-                                          PRINTBRIDGEMODULE_0_argument_widths,
-                                          PRINTBRIDGEMODULE_0_DMA_ADDR));
+    INSTANTIATE_PRINTF(add_bridge_driver,0)
+#endif
+#ifdef PRINTBRIDGEMODULE_1_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,1)
+#endif
+#ifdef PRINTBRIDGEMODULE_2_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,2)
+#endif
+#ifdef PRINTBRIDGEMODULE_3_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,3)
+#endif
+#ifdef PRINTBRIDGEMODULE_4_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,4)
+#endif
+#ifdef PRINTBRIDGEMODULE_5_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,5)
+#endif
+#ifdef PRINTBRIDGEMODULE_6_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,6)
+#endif
+#ifdef PRINTBRIDGEMODULE_7_PRESENT
+    INSTANTIATE_PRINTF(add_bridge_driver,7)
 #endif
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
@@ -593,6 +610,7 @@ void firesim_top_t::run() {
         fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
     }
     double fmr = ((double) hcycles / end_cycle);
+    // This returns the FMR of the fastest target clock
     fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
     expect(!exitcode, NULL);
 

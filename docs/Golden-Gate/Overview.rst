@@ -10,8 +10,8 @@ Golden Gate vs FPGA Prototyping
 
 Key to understanding the design of Golden Gate, is understanding that Golden Gate-generated
 simulators are not FPGA prototypes. Unlike in a prototype, Golden Gate-generated simulators decouple the
-target-design clock from the FPGA-host clock (we say it is *host-decoupled*): one cycle in the target machine is
-simulated over a one-or-more FPGA clock cycles. In constrast, a
+target-design clocks from all FPGA-host clocks (we say it is *host-decoupled*): one cycle in the target machine is
+simulated over a dynamically variable number FPGA clock cycles. In constrast, a
 conventional FPGA-prototype "emulates" the SoC by implementing the target
 directly in FPGA logic, with each FPGA-clock edge executing a clock edge of the
 SoC.

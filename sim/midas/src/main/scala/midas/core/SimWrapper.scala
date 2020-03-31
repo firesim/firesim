@@ -14,7 +14,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.{Direction, chiselName, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
 import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 
@@ -106,22 +106,21 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
     // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_),Some(srcs),_) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_), _, Some(srcs),_) =>
       ch -> regenPayloadType(srcs.filterNot(_ == vsrc))
-    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)),_,Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)), _, _, Some(sinks)) =>
       ch -> regenPayloadType(sinks.filterNot(_ == vsink))
   }).toMap
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(sinks)) => ch -> regenWireType(sinks)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(srcs),_) => ch -> regenWireType(srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,Some(sinks)) => ch -> regenWireType(sinks)
   }).toMap
 
   val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
 
-
   val wirePortMap: Map[String, WirePortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_),sources,sinks) => {
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.PipeChannel(_), _, sources, sinks) => {
       val sinkP = sinks.map({ tRefs =>
         val name = tRefs.head.ref.stripSuffix("_bits")
         val port = Flipped(Decoupled(wireTypeMap(ch)))
@@ -152,7 +151,7 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
 
   // Using a channel's globalName; look up it's associated port tuple
   val rvPortMap: Map[String, TargetRVPortTuple] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), leafSources, leafSinks) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, info@DecoupledForwardChannel(_,_,_,_), _, leafSources, leafSinks) =>
       val sourcePortPair = leafSources.map({ tRefs =>
         require(!tRefs.isEmpty, "FIXME: Are empty decoupleds OK?")
         val validTRef: ReferenceTarget = info.validSource.getOrElse(throw new RuntimeException(
@@ -198,15 +197,30 @@ abstract class ChannelizedWrapperIO(chAnnos: Seq[FAMEChannelConnectionAnnotation
   val chNameToAnnoMap = chAnnos.map(anno => anno.globalName -> anno)
 }
 
+class ClockRecord(numClocks: Int) extends Record {
+  override val elements = ListMap(Seq.tabulate(numClocks)(i => s"_$i" -> Clock()):_*)
+  override def cloneType = new ClockRecord(numClocks).asInstanceOf[this.type]
+}
+
 class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
                   extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
-  val clock = Input(Clock())
+  def regenClockType(refTargets: Seq[ReferenceTarget]): Data = refTargets.size match {
+    case 1 => Clock()
+    case size => new ClockRecord(refTargets.size)
+  }
+
+  val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
+      sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
+  }).get
+
+  val hostClock = Input(Clock())
   val hostReset = Input(Bool())
-  override val elements = ListMap((wireElements ++ rvElements):_*) ++
+  override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*) ++
     // Untokenized ports
-    ListMap("clock" -> clock, "hostReset" -> hostReset)
+    ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
   override def cloneType: this.type = new TargetBoxIO(chAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
@@ -220,7 +234,14 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
     extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
-  override val elements = ListMap((wireElements ++ rvElements):_*)
+  def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
+
+  val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
+      sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
+  }).get
+
+  override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*)
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
@@ -236,8 +257,8 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
   // to bridges and will be presented in the SimWrapper's IO
   val bridgeChAnnos = chAnnos.collect({
-    case fca @ FAMEChannelConnectionAnnotation(_,_,_,None) => fca
-    case fca @ FAMEChannelConnectionAnnotation(_,_,None,_) => fca
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,None) => fca
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,None,_) => fca
   })
 
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
@@ -249,7 +270,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   })
 
   target.io.hostReset := reset.toBool
-  target.io.clock := clock
+  target.io.hostClock := clock
   import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 
   def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
@@ -277,6 +298,17 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
     channel.io.trace.ready := DontCare
     channel.io.traceLen := DontCare
     channel
+  }
+
+  @chiselName
+  def genClockChannel(chAnno: FAMEChannelConnectionAnnotation): Unit = {
+    val clockTokens = channelPorts.clockElement._2
+    target.io.clockElement._2.valid := clockTokens.valid
+    clockTokens.ready := target.io.clockElement._2.ready
+    target.io.clockElement._2.bits match {
+      case port: Clock => port := clockTokens.bits(0).asClock
+      case port: ClockRecord => port.elements.zip(clockTokens.bits).foreach({ case ((_, p), i) => p := i.asClock})
+    }
   }
 
   // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
@@ -314,12 +346,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
       val chName = chAnno.globalName
       val strippedName = chName.stripSuffix("_fwd")
-      // Determine which bridge this channel belongs to by looking it up with the valid
-      //val bridgeClockRatio = io.bridges.find(_(rvInterface.valid)) match {
-      //  case Some(bridge) => bridge.clockRatio
-      //  case None => UnityClockRatio
-      //}
-      val bridgeClockRatio = UnityClockRatio // TODO: FIXME
       // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an bridge)
       val channel = Module(new ReadyValidChannel(getReadyValidChannelType(chAnno).cloneType))
 
@@ -346,11 +372,16 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
 
   // Generate all ready-valid channels
   val rvChannels = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_) => genReadyValidChannel(ch)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.DecoupledForwardChannel(_,_,_,_),_,_,_) => genReadyValidChannel(ch)
   })
 
   // Generate all wire channels, excluding reset
   chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_)  => genPipeChannel(ch, latency)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_,_)  => genPipeChannel(ch, latency)
   })
+
+  // Generate clock channels
+  val clockChannels = chAnnos.collect({case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => ch })
+  require(clockChannels.size == 1)
+  genClockChannel(clockChannels.head)
 }
