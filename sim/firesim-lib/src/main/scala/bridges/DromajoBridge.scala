@@ -11,7 +11,7 @@ import freechips.rocketchip.rocket.TracedInstruction
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
 
-import testchipip.{TraceOutputTop, DeclockedTracedInstruction, TracedInstructionWidths}
+import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
 
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
@@ -23,23 +23,25 @@ import TokenQueueConsts._
 //******
 
 case class DromajoKey(
-  insnWidths: Seq[TracedInstructionWidths], // Widths of variable length fields in each TI
-  vecSizes: Seq[Int] // The number of insns in each vec (= max insns retired at that core)
+  insnWidths: TracedInstructionWidths, // Widths of variable length fields in each TI
+  vecSizes: Int // The number of insns in each vec (= max insns retired at that core)
 )
 
 //*************
 //* TARGET LAND
 //*************
 
+class DromajoTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extends Bundle {
+    val trace = Input(new TileTraceIO(insnWidths, numInsns))
+}
+
 /**
  * Blackbox that is connected to the host
  */
 class DromajoBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
-    with Bridge[HostPortIO[TraceOutputTop], DromajoBridgeModule]
+    with Bridge[HostPortIO[DromajoTargetIO], DromajoBridgeModule]
 {
-  val io = IO(new Bundle {
-    val trace = Input( new TileTraceIO(insnWidths, numInsns))
-  })
+  val io = IO(new DromajoTargetIO(insnWidths, numInsns))
   val bridgeIO = HostPort(io)
 
   // give the Dromajo key to the GG module
@@ -65,7 +67,7 @@ object DromajoBridge {
 //* This lives in the host (still runs on the FPGA)
 //*************************************************
 
-class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TraceOutputTop]]()(p)
+class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[DromajoTargetIO]]()(p)
     with UnidirectionalDMAToHostCPU
 {
   // CONSTANTS: DMA Parameters
@@ -77,7 +79,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
 
   // setup io
   val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(Flipped(TraceOutputTop(key.insnWidths, key.vecSizes))))
+  val hPort = IO(HostPort(new DromajoTargetIO(key.insnWidths, key.vecSizes)))
 
   // the target is ready to both send/receive data
   val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
