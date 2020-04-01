@@ -36,10 +36,12 @@ class BridgeTopWiringSpec extends MiddleTransformSpec with FirrtlRunners  {
         BridgeTopWiringOutputAnnotation(aIT.ref("x"),
                                         aIT.addHierarchy("Top", "a1").ref("x"),
                                         topMT.ref("t_a1_x"),
+                                        topMT.ref("clock1"),
                                         topMT.ref("t_clock1")),
         BridgeTopWiringOutputAnnotation(aIT.ref("x"),
                                         aIT.addHierarchy("Top", "a2").ref("x"),
                                         topMT.ref("t_a2_x"),
+                                        topMT.ref("clock2"),
                                         topMT.ref("t_clock2")))
       val check =
          """circuit Top :

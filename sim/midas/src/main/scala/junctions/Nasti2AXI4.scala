@@ -12,11 +12,7 @@ class AXI42NastiIdentityModule(params: AXI4BundleParameters)(implicit p: Paramet
     val axi4 = Flipped(new AXI4Bundle(params))
     val nasti = new NastiIO()(p alterPartial { case NastiKey => NastiParameters(params) } )
   })
-
-  import chisel3.ExplicitCompileOptions.NotStrict
-  io.nasti <> io.axi4
-  io.nasti.ar.bits.user := io.axi4.ar.bits.user.getOrElse(DontCare)
-  io.nasti.aw.bits.user := io.axi4.aw.bits.user.getOrElse(DontCare)
+  AXI4NastiAssigner.toNasti(io.nasti, io.axi4)
 }
 
 class Nasti2AXI4IdentityModule(params: AXI4BundleParameters)(implicit p: Parameters) extends Module {
@@ -24,10 +20,7 @@ class Nasti2AXI4IdentityModule(params: AXI4BundleParameters)(implicit p: Paramet
     val axi4 = new AXI4Bundle(params)
     val nasti = Flipped(new NastiIO()(p alterPartial { case NastiKey => NastiParameters(params) } ))
   })
-  import chisel3.ExplicitCompileOptions.NotStrict
-  io.axi4 <> io.nasti
-  io.nasti.r.bits.user := io.axi4.r.bits.user.getOrElse(DontCare)
-  io.nasti.b.bits.user := io.axi4.b.bits.user.getOrElse(DontCare)
+  AXI4NastiAssigner.toAXI4(io.axi4, io.nasti)
 }
 
 class Nasti2AXI4Monitor(params: AXI4BundleParameters)(implicit p: Parameters) extends Module {
@@ -51,7 +44,7 @@ object Nasti2AXI4 {
     val axi4Params =  AXI4BundleParameters(nastiIO.ar.bits.addr.getWidth,
                                            nastiIO.r.bits.data.getWidth,
                                            nastiIO.ar.bits.id  .getWidth,
-                                           nastiIO.ar.bits.user.getWidth)
+                                           Nil)
     val conv = Module(new Nasti2AXI4Monitor(axi4Params))
     conv.io.nasti := nastiIO
     conv.io.axi4
@@ -59,7 +52,7 @@ object Nasti2AXI4 {
 }
 
 /**
-  * THe AXI4 -> Nastplies here that all methods of this object accept
+  * THe AXI4 -> Nasti implies here that all methods of this object accept
   * AXI4 as their primary argument. 
   *
   */

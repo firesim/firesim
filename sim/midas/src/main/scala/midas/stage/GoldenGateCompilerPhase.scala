@@ -14,7 +14,7 @@ import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.passes.memlib._
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
-import freechips.rocketchip.util.{ParsedInputNames}
+import midas.rocketchip.util.{ParsedInputNames}
 import java.io.{File, FileWriter, Writer}
 import logger._
 

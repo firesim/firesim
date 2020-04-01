@@ -41,7 +41,7 @@ class Midas2QoRTargets extends Config((site, here, up) => {
 //
 // TODO: Make the core of this generator a trait that can be mixed into
 // FireSim's ScalaTests for more type safety
-object QoRShimGenerator extends App with freechips.rocketchip.util.HasGeneratorUtilities {
+object QoRShimGenerator extends App with midas.rocketchip.util.HasGeneratorUtilities {
 
  case class QoRShimOptions(
       configProject: String = "midas.unittest",

@@ -27,7 +27,7 @@ class UARTBridgeTargetIO extends Bundle {
 // DOC include start: UART Bridge Constructor Arg
 // Out bridge module constructor argument. This captures all of the extra
 // metadata we'd like to pass to the host-side BridgeModule. Note, we need to
-// use a single case-class to do so, even if it is simply to wrap a primitive
+// use a single case class to do so, even if it is simply to wrap a primitive
 // type, as is the case for UART (int)
 case class UARTKey(div: Int)
 // DOC include end: UART Bridge Constructor Arg
@@ -44,15 +44,15 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
   val bridgeIO = HostPort(io)
 
   // Do some intermediate work to compute our host-side BridgeModule's constructor argument
-  val frequency = p(PeripheryBusKey).frequency
+  val frequency = p(PeripheryBusKey).dtsFrequency.get
   val baudrate = 3686400L
-  val div = (p(PeripheryBusKey).frequency / baudrate).toInt
+  val div = (frequency / baudrate).toInt
 
   // And then implement the constructorArg member
   val constructorArg = Some(UARTKey(div))
 
   // Finally, and this is critical, emit the Bridge Annotations -- without
-  // this, this BlackBox would appear like any other BlackBox to golden-gate
+  // this, this BlackBox would appear like any other BlackBox to Golden Gate
   generateAnnotations()
 }
 // DOC include end: UART Bridge Target-Side Module
@@ -74,7 +74,7 @@ object UARTBridge {
 // 2) It accepts one implicit parameter of type Parameters
 // 3) It extends BridgeModule passing the type of the HostInterface
 //
-// While the scala-type system will check if you parameterized BridgeModule
+// While the Scala type system will check if you parameterized BridgeModule
 // correctly, the types of the constructor arugument (in this case UARTKey),
 // don't match, you'll only find out later when Golden Gate attempts to generate your module.
 class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[UARTBridgeTargetIO]]()(p) {
