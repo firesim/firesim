@@ -20,8 +20,8 @@ transformed and thus used in FireSim:
 #. Black boxes must be "clock-gateable" by replacing its input clock with a gated equivalent which will be used
    to stall simulation time in that module.
 
-   a. As a consequence, target clock-gating cannot be implemented using black-box primitives, and must instead be modelled by
-      adding clock-enables to all state elements of the gated clock domain (i.e., by adding a feedback mux on registers to
+   a. As a consequence, target clock-gating cannot be implemented using black-box primitives, and must instead be modeled by
+      adding clock-enables to all state elements of the gated clock domain (i.e., by adding an enable or feedback mux on registers to
       conditionally block updates, and by gating write-enables on memories).
 #. Asynchronous reset must only be implemented using Rocket Chip's black-box async reset. 
    These are replaced with synchronously reset registers using a FIRRTL transformation.
@@ -78,10 +78,10 @@ frequency, this is not a constraint.
 ============
 Limitations:
 ============
-* The number of target clocks FireSim can simulate is bound by the number of BUFGCE resources
-  available on the host-FPGA, as these are used to independently clock-gate each target clock.
-* As its name suggests, the ``RationalClockBridge`` can only generate target-clocks
-  that are rationally related. Specifically, all requested frequencies must
+* The number of target clocks FireSim can simulate is bounded by the number of BUFGCE resources
+  available on the host FPGA, as these are used to independently clock-gate each target clock.
+* As its name suggests, the ``RationalClockBridge`` can only generate target clocks
+  that are rationally related. Specifically, all requested frequencies must be
   expressable in the form:
 
   .. math::
@@ -96,9 +96,9 @@ Limitations:
   An arbitrary frequency can be modeled using a sufficiently precise rational
   multiple. Golden Gate will raise a compile-time error if it cannot support
   a desired frequency.
-* Bridge modules must reside in a single clock domain. The Bridge's target-interface
-  must contain a single input clock, and all inputs and outputs to the
-  bridge module must be launched and latched, respectively, by registers in the
+* Each bridge module must reside entirely within a single clock domain. The Bridge's target interface
+  must contain a single input clock, and all inputs and outputs of the
+  bridge module must be latched and launched, respectively, by registers in the
   same clock domain.
 
 .. _generating-different-targets:
