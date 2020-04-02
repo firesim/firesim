@@ -37,6 +37,7 @@ object BlockDevBridge  {
 
 class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameters) extends BridgeModule[HostPortIO[BlockDevBridgeTargetIO]]()(hostP) {
   implicit override val p = hostP.alterPartial({ case BlockDeviceKey => Some(blockDevExternal) })
+  lazy val module = new BridgeModuleImp(this) {
   // TODO use HasBlockDeviceParameters
   val dataBytes = 512
   val sectorBits = 32
@@ -255,5 +256,6 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     super.genHeader(base, sb)
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_latency_bits", UInt32(latencyBits)))
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_trackers", UInt32(nTrackers)))
+  }
   }
 }

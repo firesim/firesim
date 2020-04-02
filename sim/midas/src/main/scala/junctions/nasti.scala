@@ -5,12 +5,18 @@ package junctions
 import Chisel._
 import scala.math.{min, max}
 import scala.collection.mutable.ArraySeq
+import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.util.{DecoupledHelper, ParameterizedBundle, HellaPeekingArbiter}
 import freechips.rocketchip.config.{Parameters, Field}
 
 case object NastiKey extends Field[NastiParameters]
 
 case class NastiParameters(dataBits: Int, addrBits: Int, idBits: Int)
+
+object NastiParameters {
+  def apply(params: AXI4BundleParameters): NastiParameters =
+    NastiParameters(params.dataBits, params.addrBits, params.idBits)
+}
 
 trait HasNastiParameters {
   implicit val p: Parameters

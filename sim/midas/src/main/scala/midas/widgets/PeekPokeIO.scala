@@ -40,6 +40,7 @@ object PeekPokeKey {
 // Maximum channel decoupling puts a bound on the number of cycles the fastest
 // channel can advance ahead of the slowest channel
 class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends BridgeModule[PeekPokeTokenizedIO] {
+  lazy val module = new BridgeModuleImp(this) {
   val io = IO(new PeekPokeWidgetIO)
   val hPort = IO(PeekPokeTokenizedIO(key))
 
@@ -168,6 +169,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
     sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
     sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
+  }
   }
 }
 

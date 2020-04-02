@@ -31,6 +31,7 @@ class GroundTestBridgeTargetIO extends Bundle {
 
 class GroundTestBridgeModule(implicit p: Parameters)
     extends BridgeModule[HostPortIO[GroundTestBridgeTargetIO]] {
+  lazy val module = new BridgeModuleImp(this) {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new GroundTestBridgeTargetIO))
 
@@ -43,4 +44,5 @@ class GroundTestBridgeModule(implicit p: Parameters)
 
   genROReg(success, "success")
   genCRFile()
+  }
 }

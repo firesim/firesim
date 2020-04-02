@@ -181,8 +181,8 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICTargetIO]]()(p)
-    with BidirectionalDMA {
+class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICTargetIO]]()(p) {
+  lazy val module = new BridgeModuleImp(this) with BidirectionalDMA {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new NICTargetIO))
   // DMA mixin parameters
@@ -258,4 +258,5 @@ class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPor
   genROReg(!tFire, "done")
 
   genCRFile()
+  }
 }

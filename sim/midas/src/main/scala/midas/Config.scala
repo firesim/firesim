@@ -68,21 +68,25 @@ class SimConfig extends Config((site, here, up) => {
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
-  case HostMemChannelNastiKey => NastiParameters(64, 32, 6)
   case HostMemNumChannels => 1
 
-  case MemNastiKey      => site(HostMemChannelNastiKey).copy(
-    addrBits = chisel3.util.log2Ceil(site(HostMemNumChannels)) + site(HostMemChannelNastiKey).addrBits,
-    // TODO: We should try to constrain masters to 4 bits of ID space -> but we need to map
-    // multiple target-ids on a single host-id in the DRAM timing model to support that
-    idBits   = 6
-  )
+  // Remove once AXI4 port is complete
+  case MemNastiKey      => {
+    NastiParameters(
+      addrBits = chisel3.util.log2Ceil(site(HostMemChannelKey).size * site(HostMemNumChannels)),
+      dataBits = site(HostMemChannelKey).beatBytes * 8,
+      idBits   = 6)
+  }
 })
 
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new ZynqShim()(p)
   case HasDMAChannel  => false
   case MasterNastiKey => site(CtrlNastiKey)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x100000000L, // 4 GiB
+    beatBytes = 8,
+    idBits    = 4)
 }) ++ new SimConfig)
 
 class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
@@ -95,7 +99,10 @@ class F1Config extends Config(new Config((site, here, up) => {
   case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case MasterNastiKey => site(CtrlNastiKey)
-  case HostMemChannelNastiKey => NastiParameters(64, 34, 16)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x400000000L, // 16 GiB
+    beatBytes = 8,
+    idBits    = 4)
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 

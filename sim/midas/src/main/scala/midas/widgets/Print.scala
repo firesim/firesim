@@ -53,7 +53,9 @@ class PrintRecordBag(printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
 }
 
 class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
-    extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) with UnidirectionalDMAToHostCPU {
+    extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) {
+
+  lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(Flipped(new PrintRecordBag(printPorts))))
 
@@ -189,4 +191,5 @@ class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: P
     emitClockDomainInfo(headerWidgetName, sb)
   }
   genCRFile()
+  }
 }

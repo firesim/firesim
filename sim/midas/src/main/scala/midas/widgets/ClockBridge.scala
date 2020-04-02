@@ -128,6 +128,7 @@ class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeC
   */
 class ClockBridgeModule(clockInfo: Seq[RationalClock])(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
+  lazy val module = new BridgeModuleImp(this) {
   val io = IO(new WidgetIO())
   val hPort = IO(new ClockTokenVector(clockInfo.size))
   val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
@@ -204,4 +205,5 @@ class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends M
     }
     clockFiring
   })
+  }
 }

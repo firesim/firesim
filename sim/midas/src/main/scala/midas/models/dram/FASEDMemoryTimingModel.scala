@@ -5,8 +5,8 @@ package models
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
-import freechips.rocketchip.diplomacy.{LazyModule}
-import freechips.rocketchip.amba.axi4.{AXI4EdgeParameters, AXI4Bundle}
+import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet, TransferSizes}
+import freechips.rocketchip.amba.axi4._
 import junctions._
 
 import chisel3._
@@ -33,6 +33,11 @@ case class BaseParams(
   maxWrites: Int,
   nastiKey: Option[NastiParameters] = None,
   edge: Option[AXI4EdgeParameters] = None,
+
+  // If not providing an AXI4 edge, use these to constrain the amount of FPGA DRAM
+  // used by the memory model
+  targetAddressOffset: Option[BigInt]    = None,
+  targetAddressSpaceSize: Option[BigInt] = None,
 
   // AREA OPTIMIZATIONS:
   // AXI4 bursts(INCR) can be 256 beats in length -- some
@@ -72,7 +77,10 @@ case class AXI4EdgeSummary(
   maxWriteTransfer: Int,
   idReuse: Option[Int],
   maxFlight: Option[Int],
-)
+  address: Seq[AddressSet]
+) {
+  def targetAddressOffset(): BigInt = address.map(_.base).min
+}
 
 object AXI4EdgeSummary {
   // Returns max ID reuse; None -> unbounded
@@ -101,11 +109,15 @@ object AXI4EdgeSummary {
     })
   }
 
-  def apply(e: AXI4EdgeParameters): AXI4EdgeSummary = AXI4EdgeSummary(
+  def apply(e: AXI4EdgeParameters, idx: Int = 0): AXI4EdgeSummary = {
+    val slave = e.slave.slaves(idx)
+    AXI4EdgeSummary(
     getMaxTransferFromEdge(e)._1,
     getMaxTransferFromEdge(e)._2,
     getIDReuseFromEdge(e),
-    getMaxTotalFlightFromEdge(e))
+    getMaxTotalFlightFromEdge(e),
+    slave.address)
+  }
 }
 
 abstract class BaseConfig {
@@ -145,6 +157,17 @@ abstract class BaseConfig {
 
   def maxWritesBits(implicit p: Parameters) = log2Up(maxWrites)
   def maxReadsBits(implicit p: Parameters) = log2Up(maxReads)
+
+  def targetAddressSpace(implicit p: Parameters): Seq[AddressSet] =
+    p(FasedAXI4Edge).map(_.address)
+                    .getOrElse(AddressSet.misaligned(params.targetAddressOffset.getOrElse(0),
+                                                     params.targetAddressSpaceSize.getOrElse(BigInt(1) << p(NastiKey).addrBits)))
+
+  def targetWTransfer(implicit p: Parameters): TransferSizes =
+    TransferSizes(1, maxWriteLength * p(NastiKey).dataBits/8)
+
+  def targetRTransfer(implicit p: Parameters): TransferSizes =
+    TransferSizes(1, maxReadLength * p(NastiKey).dataBits/8)
 }
 
 
@@ -169,34 +192,46 @@ class FASEDTargetIO(implicit val p: Parameters) extends Bundle {
   val clock = Input(Clock())
 }
 
-class MemModelIO(implicit val p: Parameters) extends WidgetIO()(p){
-  // The default NastiKey is expected to be that of the target
-  val host_mem = new NastiIO()(p.alterPartial({ case NastiKey => p(MemNastiKey)}))
-}
-
 // Need to wrap up all the parameters in a case class for serialization. The edge and width
 // were previously passed in via the target's Parameters object
 case class CompleteConfig(
     userProvided: BaseConfig,
     axi4Widths: NastiParameters,
-    axi4Edge: Option[AXI4EdgeSummary] = None) extends HasSerializationHints {
+    axi4Edge: Option[AXI4EdgeSummary] = None,
+    memoryRegionName: Option[String] = None) extends HasSerializationHints {
   def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
-class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams) {
+class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
+    with UsesHostDRAM {
+
   val cfg = completeConfig.userProvided
+
   // Reconstitute the parameters object
   implicit override val p = hostParams.alterPartial({
     case NastiKey => completeConfig.axi4Widths
     case FasedAXI4Edge => completeConfig.axi4Edge
   })
 
+  // Begin: Implementation of UsesHostDRAM
+  val memoryMasterNode = AXI4MasterNode(
+    Seq(AXI4MasterPortParameters(
+      masters = Seq(AXI4MasterParameters(
+        name = "fased-memory-timing-model",
+        id   = IdRange(0, 1 << p(NastiKey).idBits))))))
+
+  val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
+  val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
+  // End: Implementation of UsesHostDRAM
+
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
   )
 
-  val io = IO(new MemModelIO)
+  lazy val module = new BridgeModuleImp(this) {
+  val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new FASEDTargetIO))
+  val toHostDRAM: AXI4Bundle = memoryMasterNode.out.head._1
   val tNasti = hPort.hBits.axi4
   val tReset = hPort.hBits.reset
 
@@ -214,24 +249,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
   ).module)
 
-  val hostMemOffsetWidthOffset = io.host_mem.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
-  val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else io.host_mem.aw.bits.addr.getWidth 
-  val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 0 
-  val hostMemOffsetHigh = RegInit(0.U(hostMemOffsetHighWidth.W))
-  val hostMemOffsetLow = RegInit(0.U(hostMemOffsetLowWidth.W))
-  val hostMemOffset = Cat(hostMemOffsetHigh, hostMemOffsetLow)
-  attach(hostMemOffsetHigh, "hostMemOffsetHigh", WriteOnly)
-  attach(hostMemOffsetLow, "hostMemOffsetLow", WriteOnly)
-
-  io.host_mem <> widthAdapter.sAxi4
-  io.host_mem.aw.bits.user := DontCare
-  io.host_mem.aw.bits.region := DontCare
-  io.host_mem.ar.bits.user := DontCare
-  io.host_mem.ar.bits.region := DontCare
-  io.host_mem.w.bits.id := DontCare
-  io.host_mem.w.bits.user := DontCare
-  io.host_mem.ar.bits.addr := widthAdapter.sAxi4.ar.bits.addr + hostMemOffset
-  io.host_mem.aw.bits.addr := widthAdapter.sAxi4.aw.bits.addr + hostMemOffset
+  toHostDRAM <> widthAdapter.sAxi4
 
   widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
   widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar
@@ -255,12 +273,12 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
   // Track outstanding requests to the host memory system
   val hOutstandingReads = SatUpDownCounter(cfg.maxReads)
-  hOutstandingReads.inc := io.host_mem.ar.fire()
-  hOutstandingReads.dec := io.host_mem.r.fire() && io.host_mem.r.bits.last
+  hOutstandingReads.inc := toHostDRAM.ar.fire()
+  hOutstandingReads.dec := toHostDRAM.r.fire() && toHostDRAM.r.bits.last
   hOutstandingReads.max := cfg.maxReads.U
   val hOutstandingWrites = SatUpDownCounter(cfg.maxWrites)
-  hOutstandingWrites.inc := io.host_mem.aw.fire()
-  hOutstandingWrites.dec := io.host_mem.b.fire()
+  hOutstandingWrites.inc := toHostDRAM.aw.fire()
+  hOutstandingWrites.dec := toHostDRAM.b.fire()
   hOutstandingWrites.max := cfg.maxWrites.U
 
   val host_mem_idle = hOutstandingReads.empty && hOutstandingWrites.empty
@@ -366,11 +384,11 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs))
     collision_checker.io.read_req.valid  := targetFire && tNasti.ar.fire
     collision_checker.io.read_req.bits   := tNasti.ar.bits.addr >> discardedMSBs
-    collision_checker.io.read_done       := io.host_mem.r.fire && io.host_mem.r.bits.last
+    collision_checker.io.read_done       := toHostDRAM.r.fire && toHostDRAM.r.bits.last
 
     collision_checker.io.write_req.valid := targetFire && tNasti.aw.fire
     collision_checker.io.write_req.bits  := tNasti.aw.bits.addr >> discardedMSBs
-    collision_checker.io.write_done      := io.host_mem.b.fire
+    collision_checker.io.write_done      := toHostDRAM.b.fire
 
     val collision_addr = RegEnable(collision_checker.io.collision_addr.bits,
                                    targetFire & collision_checker.io.collision_addr.valid)
@@ -487,10 +505,10 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     attach(numRanges, "numRanges", ReadOnly)
   }
 
-  val rrespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
-    io.host_mem.r.bits.resp =/= 0.U && io.host_mem.r.fire)
-  val brespError = RegEnable(io.host_mem.r.bits.resp, 0.U,
-    io.host_mem.b.bits.resp =/= 0.U && io.host_mem.b.fire)
+  val rrespError = RegEnable(toHostDRAM.r.bits.resp, 0.U,
+    toHostDRAM.r.bits.resp =/= 0.U && toHostDRAM.r.fire)
+  val brespError = RegEnable(toHostDRAM.r.bits.resp, 0.U,
+    toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
 
   // Generate the configuration registers and tie them to the ctrl bus
   attachIO(model.io.mmReg)
@@ -510,10 +528,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     }
     import midas.widgets.CppGenerationUtils._
     super.genHeader(base, sb)
-
     sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
-
-    //crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
   }
 
   // Prints out key elaboration time settings
@@ -555,6 +570,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     val functionalModelSettings = funcModelRegs.getDefaults()
     val timingModelSettings = model.io.mmReg.getDefaults()
     emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
+  }
   }
 }
 

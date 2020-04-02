@@ -27,6 +27,7 @@ class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCount
 
 class AutoCounterBridgeModule(events: Seq[(String, String)], triggerName: String)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
+  lazy val module = new BridgeModuleImp(this) {
   val numCounters = events.size
   val (portNames, labels) = events.unzip
 
@@ -110,4 +111,5 @@ class AutoCounterBridgeModule(events: Seq[(String, String)], triggerName: String
     emitClockDomainInfo(headerWidgetName, sb)
   }
   genCRFile()
+  }
 }

@@ -5,6 +5,7 @@ package midas.stage
 import midas.{OutputDir}
 import midas.widgets.{SerializableBridgeAnnotation}
 
+import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 import freechips.rocketchip.util.{ParsedInputNames}
 
 import firrtl.{Transform, CircuitState, AnnotationSeq}
@@ -35,9 +36,10 @@ class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
     // FASED BridgeAnnotation, and use that to elaborate a memory model
     fasedBridgeAnnos.headOption.map({ anno =>
       // Here we're spoofing elaboration that occurs in FPGATop, which assumes ExtractBridges has been run
+      implicit val valName = ValName("MemModelConfGen")
       lazy val memModel = anno.toIOAnnotation("").elaborateWidget.asInstanceOf[midas.models.FASEDMemoryTimingModel]
-      chisel3.Driver.elaborate(() => memModel)
-      memModel.getSettings(runtimeConfigName)
+      chisel3.Driver.elaborate(() => LazyModule(memModel).module)
+      memModel.module.getSettings(runtimeConfigName)
     })
     annotations
   }

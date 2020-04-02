@@ -10,16 +10,16 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.SerialIO
 
-class SerialBridge extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
+class SerialBridge(memoryRegionName: String) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
   val io = IO(new SerialBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = None
+  val constructorArg = Some(memoryRegionName)
   generateAnnotations()
 }
 
 object SerialBridge {
-  def apply(clock: Clock, port: SerialIO)(implicit p: Parameters): SerialBridge = {
-    val ep = Module(new SerialBridge)
+  def apply(clock: Clock, port: SerialIO, memoryRegionName: String)(implicit p: Parameters): SerialBridge = {
+    val ep = Module(new SerialBridge(memoryRegionName))
     ep.io.serial <> port
     ep.io.clock := clock
     ep
@@ -32,7 +32,9 @@ class SerialBridgeTargetIO extends Bundle {
   val clock = Input(Clock())
 }
 
-class SerialBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {
+class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) with HostDramHeaderConsts {
+  lazy val module = new BridgeModuleImp(this) {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new SerialBridgeTargetIO))
 
@@ -76,4 +78,12 @@ class SerialBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO
   Pulsify(genWORegInit(start, "start", false.B), pulseLength = 1)
 
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder) {
+    import CppGenerationUtils._
+    val headerWidgetName = getWName.toUpperCase
+    super.genHeader(base, sb)
+    sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
+  }
+  }
 }

@@ -16,6 +16,7 @@ class AssertBundle(val numAsserts: Int) extends Bundle {
 }
 
 class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) extends BridgeModule[HostPortIO[UInt]]()(p) {
+  lazy val module = new BridgeModuleImp(this) {
   val numAsserts = assertMessages.size
   val io = IO(new WidgetIO())
   val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
@@ -51,5 +52,6 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     super.genHeader(base, sb)
     sb.append(genConstStatic(s"${headerWidgetName}_assert_count", UInt32(assertMessages.size)))
     sb.append(genArray(s"${headerWidgetName}_assert_messages", assertMessages.map(CStrLit)))
+  }
   }
 }

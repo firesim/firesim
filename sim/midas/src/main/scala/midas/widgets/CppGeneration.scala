@@ -24,9 +24,15 @@ case class UInt32(value: BigInt) extends IntLikeLiteral {
 }
 
 case class UInt64(value: BigInt) extends IntLikeLiteral {
-  def typeString = "uint64_t"
+  def typeString = "unsigned long long"
   def bitWidth = 64
-  def literalSuffix = "L"
+  def literalSuffix = "ULL"
+}
+
+case class Int64(value: BigInt) extends IntLikeLiteral {
+  def typeString = "long long"
+  def bitWidth = 64
+  def literalSuffix = "LL"
 }
 
 case class CStrLit(val value: String) extends CPPLiteral {

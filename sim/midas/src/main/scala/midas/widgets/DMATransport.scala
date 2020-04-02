@@ -12,7 +12,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.{DecoupledHelper}
 
 trait HasDMA {
-  self: Widget =>
+  self: WidgetImp =>
   val dma = IO(Flipped(new NastiIO()( p.alterPartial({ case NastiKey => p(DMANastiKey) }))))
   // Specify the size that you want the address region to be in the DMA memory map
   // For proper functioning, the region should be at least as big as the
@@ -22,7 +22,7 @@ trait HasDMA {
 }
 
 trait DMAToHostCPU extends HasDMA {
-  self: Widget =>
+  self: WidgetImp =>
   val toHostCPUQueueDepth: Int
 
   require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
@@ -75,7 +75,7 @@ trait DMAToHostCPU extends HasDMA {
 }
 
 trait DMAFromHostCPU extends HasDMA {
-  self: Widget =>
+  self: WidgetImp =>
   val fromHostCPUQueueDepth: Int
 
   require(dma.nastiXDataBits == 512, "DMA width must be 512 bits (PCIS)")
@@ -131,14 +131,14 @@ trait DMAFromHostCPU extends HasDMA {
 
 
 trait TieOffDMAToHostCPU extends HasDMA {
-  self: Widget =>
+  self: WidgetImp =>
   dma.ar.ready := false.B
   dma.r.valid := false.B
   dma.r.bits := DontCare
 }
 
 trait TieOffDMAFromHostCPU extends HasDMA {
-  self: Widget =>
+  self: WidgetImp =>
   dma.aw.ready := false.B
   dma.w.ready := false.B
   dma.b.valid := false.B
@@ -147,13 +147,13 @@ trait TieOffDMAFromHostCPU extends HasDMA {
 
 // Complete Bridge mixins for DMA-based transport
 trait UnidirectionalDMAToHostCPU extends HasDMA with DMAToHostCPU with TieOffDMAFromHostCPU {
-  self: Widget =>
+  self: WidgetImp =>
 }
 
 trait UnidirecitonalDMAFromHostCPU extends HasDMA with DMAFromHostCPU with TieOffDMAToHostCPU {
-  self: Widget =>
+  self: WidgetImp =>
 }
 
 trait BidirectionalDMA extends HasDMA with DMAFromHostCPU with DMAToHostCPU {
-  self: Widget =>
+  self: WidgetImp =>
 }

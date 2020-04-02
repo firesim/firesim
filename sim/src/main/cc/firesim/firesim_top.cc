@@ -80,162 +80,103 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct, 7));
     #endif
 
-std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = -0x80000000LL;
-#ifdef FASEDMEMORYTIMINGMODEL_0
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
-                    FASEDMEMORYTIMINGMODEL_0_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
-#endif
+    #ifdef FASEDMEMORYTIMINGMODEL_0
+    INSTANTIATE_FASED(fpga_models.push_back, 0)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_1
+    INSTANTIATE_FASED(fpga_models.push_back, 1)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_2
+    INSTANTIATE_FASED(fpga_models.push_back, 2)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_3
+    INSTANTIATE_FASED(fpga_models.push_back, 3)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_4
+    INSTANTIATE_FASED(fpga_models.push_back, 4)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_5
+    INSTANTIATE_FASED(fpga_models.push_back, 5)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_6
+    INSTANTIATE_FASED(fpga_models.push_back, 6)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_7
+    INSTANTIATE_FASED(fpga_models.push_back, 7)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_8
+    INSTANTIATE_FASED(fpga_models.push_back, 8)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_9
+    INSTANTIATE_FASED(fpga_models.push_back, 9)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_10
+    INSTANTIATE_FASED(fpga_models.push_back, 10)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_11
+    INSTANTIATE_FASED(fpga_models.push_back, 11)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_12
+    INSTANTIATE_FASED(fpga_models.push_back, 12)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_13
+    INSTANTIATE_FASED(fpga_models.push_back, 13)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_14
+    INSTANTIATE_FASED(fpga_models.push_back, 14)
+    #endif
+    #ifdef FASEDMEMORYTIMINGMODEL_15
+    INSTANTIATE_FASED(fpga_models.push_back, 15)
+    #endif
 
-#ifdef FASEDMEMORYTIMINGMODEL_1
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_1_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_R_names,
-                    FASEDMEMORYTIMINGMODEL_1_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << FASEDMEMORYTIMINGMODEL_1_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_1_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_2
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_2_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_R_names,
-                    FASEDMEMORYTIMINGMODEL_2_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << FASEDMEMORYTIMINGMODEL_2_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_2_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_3
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_3_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_R_names,
-                    FASEDMEMORYTIMINGMODEL_3_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << FASEDMEMORYTIMINGMODEL_3_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_3_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_4
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_4_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_R_names,
-                    FASEDMEMORYTIMINGMODEL_4_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_4_W_names),
-                argc, argv, "memory_stats4.csv", 1L << FASEDMEMORYTIMINGMODEL_4_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_4_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_5
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_5_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_R_names,
-                    FASEDMEMORYTIMINGMODEL_5_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_5_W_names),
-                argc, argv, "memory_stats5.csv", 1L << FASEDMEMORYTIMINGMODEL_5_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_5_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_6
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_6_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_R_names,
-                    FASEDMEMORYTIMINGMODEL_6_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_6_W_names),
-                argc, argv, "memory_stats6.csv", 1L << FASEDMEMORYTIMINGMODEL_6_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_6_target_addr_bits;
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_7
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                // Casts are required for now since the emitted type can change...
-                AddressMap(FASEDMEMORYTIMINGMODEL_7_R_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_R_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_R_names,
-                    FASEDMEMORYTIMINGMODEL_7_W_num_registers,
-                    (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_W_addrs,
-                    (const char* const*) FASEDMEMORYTIMINGMODEL_7_W_names),
-                argc, argv, "memory_stats7.csv", 1L << FASEDMEMORYTIMINGMODEL_7_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_7_target_addr_bits;
-#endif
-
-#ifdef SERIALBRIDGEMODULE_struct_guard
     #ifdef SERIALBRIDGEMODULE_0_PRESENT
-    SERIALBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_0_substruct, 0, host_mem_offsets[0]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 0)
     #endif
     #ifdef SERIALBRIDGEMODULE_1_PRESENT
-    SERIALBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_1_substruct, 1, host_mem_offsets[1]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 1)
     #endif
     #ifdef SERIALBRIDGEMODULE_2_PRESENT
-    SERIALBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_2_substruct, 2, host_mem_offsets[2]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 2)
     #endif
     #ifdef SERIALBRIDGEMODULE_3_PRESENT
-    SERIALBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_3_substruct, 3, host_mem_offsets[3]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 3)
     #endif
     #ifdef SERIALBRIDGEMODULE_4_PRESENT
-    SERIALBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_4_substruct, 4, host_mem_offsets[4]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 4)
     #endif
     #ifdef SERIALBRIDGEMODULE_5_PRESENT
-    SERIALBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_5_substruct, 5, host_mem_offsets[5]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 5)
     #endif
     #ifdef SERIALBRIDGEMODULE_6_PRESENT
-    SERIALBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_6_substruct, 6, host_mem_offsets[6]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 6)
     #endif
     #ifdef SERIALBRIDGEMODULE_7_PRESENT
-    SERIALBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_7_substruct, 7, host_mem_offsets[7]));
+    INSTANTIATE_SERIAL(add_bridge_driver, 7)
     #endif
-#endif
+    #ifdef SERIALBRIDGEMODULE_8_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 8)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_9_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 9)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_10_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 10)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_11_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 11)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_12_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 12)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_13_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 13)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_14_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 14)
+    #endif
+    #ifdef SERIALBRIDGEMODULE_15_PRESENT
+    INSTANTIATE_SERIAL(add_bridge_driver, 15)
+    #endif
 
 #ifdef BLOCKDEVBRIDGEMODULE_struct_guard
     #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT

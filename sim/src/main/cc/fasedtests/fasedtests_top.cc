@@ -31,29 +31,45 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
     }
 
 
-std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = -0x80000000LL;
-#ifdef FASEDMEMORYTIMINGMODEL_0_PRESENT
-    // Casts are required for now since the emitted type can change...
-    AddressMap fased_addr_map = AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
-                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
-                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
-                                           FASEDMEMORYTIMINGMODEL_0_W_num_registers,
-                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
-                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names);
-    fpga_models.push_back(new FASEDMemoryTimingModel(
-                this,
-                fased_addr_map,
-                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
+#ifdef FASEDMEMORYTIMINGMODEL_0
+    INSTANTIATE_FASED(fpga_models.push_back, 0)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_1
+    INSTANTIATE_FASED(fpga_models.push_back, 1)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_2
+    INSTANTIATE_FASED(fpga_models.push_back, 2)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_3
+    INSTANTIATE_FASED(fpga_models.push_back, 3)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_4
+    INSTANTIATE_FASED(fpga_models.push_back, 4)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_5
+    INSTANTIATE_FASED(fpga_models.push_back, 5)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_6
+    INSTANTIATE_FASED(fpga_models.push_back, 6)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_7
+    INSTANTIATE_FASED(fpga_models.push_back, 7)
+#endif
+#ifdef FASEDMEMORYTIMINGMODEL_8
+    INSTANTIATE_FASED(fpga_models.push_back, 8)
 #endif
 
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
         register_task([this](){ return this->profile_models();}, 0);
     }
-    // Test harness
+    // Test harness.
+    AddressMap fased_addr_map = AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
+                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_R_addrs,
+                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_R_names,
+                                           FASEDMEMORYTIMINGMODEL_0_W_num_registers,
+                                           (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
+                                           (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names);
     add_bridge_driver(new test_harness_bridge_t(this, fased_addr_map, args));
 }
 

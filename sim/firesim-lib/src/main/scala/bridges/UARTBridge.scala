@@ -78,6 +78,7 @@ object UARTBridge {
 // correctly, the types of the constructor arugument (in this case UARTKey),
 // don't match, you'll only find out later when Golden Gate attempts to generate your module.
 class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[UARTBridgeTargetIO]]()(p) {
+  lazy val module = new BridgeModuleImp(this) {
   val div = key.div
   // This creates the interfaces for all of the host-side transport
   // AXI4-lite for the simulation control bus, =
@@ -197,4 +198,5 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
   // the simulation control bus (AXI4-lite)
   genCRFile()
   // DOC include end: UART Bridge Footer
+  }
 }

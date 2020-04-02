@@ -56,8 +56,8 @@ object TracerVBridge {
   }
 }
 
-class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TracerVTargetIO]]()(p)
-    with UnidirectionalDMAToHostCPU {
+class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TracerVTargetIO]]()(p) {
+  lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
   val io = IO(new WidgetIO)
   val hPort = IO(HostPort(new TracerVTargetIO(key.insnWidths, key.vecSize)))
 
@@ -198,5 +198,6 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     super.genHeader(base, sb)
     sb.append(genConstStatic(s"${headerWidgetName}_max_core_ipc", UInt32(traces.size)))
     emitClockDomainInfo(headerWidgetName, sb)
+  }
   }
 }
