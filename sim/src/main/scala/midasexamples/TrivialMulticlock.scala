@@ -26,19 +26,18 @@ class TrivialMulticlock extends RawModule {
   //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
 
   // DOC include start: RationalClockBridge Usage
-  // Here we request four target clocks (the base clock is implicit). All
+  // Here we request three target clocks (the base clock is implicit). All
   // clocks beyond the base clock are specified using the RationalClock case
   // class which gives the clock domain's name, and its clock multiplier and
   // divisor relative to the base clock.
   val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2), 
-                                                   RationalClock("ThirdRate", 1, 3),
-                                                   RationalClock("ThreeSeventhsRate", 3, 7))
+                                                   RationalClock("ThirdRate", 1, 3)))
 
   // The clock bridge has a single output: a Vec[Clock] of the requested clocks
   // in the order they were specified, which we are now free to use through our
   // Chisel design.  While not necessary, here we unassign the Vec to give them
   // more informative references in our Chisel.
-  val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
+  val Seq(fullRate, halfRate, thirdRate) = clockBridge.io.clocks.toSeq
   // DOC include end: RationalClockBridge Usage
   val reset = WireInit(false.B)
 
@@ -48,18 +47,18 @@ class TrivialMulticlock extends RawModule {
     val thirdRateInst = Module(new RegisterModule)
     thirdRateInst.slowClock := thirdRate
     thirdRateInst.in := halfRateInst.in
-    val threeSeventhsRateInst = Module(new RegisterModule)
-    // TODO: See above
+    //val threeSeventhsRateInst = Module(new RegisterModule)
+    // Fix peek-poke bridge under frequencies that aren't divisons of the base clock.
     //threeSeventhsRateInst.slowClock := threeSeventhsRate
-    threeSeventhsRateInst.slowClock := fullRate
-    threeSeventhsRateInst.in := halfRateInst.in
+    //threeSeventhsRateInst.slowClock := fullRate
+    //threeSeventhsRateInst.in := halfRateInst.in
 
     // TODO: Remove reset
     val peekPokeBridge = PeekPokeBridge(fullRate,
                                         reset,
                                         ("in", halfRateInst.in),
                                         ("halfOut",halfRateInst.out),
-                                        ("thirdOut", thirdRateInst.out),
-                                        ("threeSeventhsOut", threeSeventhsRateInst.out))
+                                        ("thirdOut", thirdRateInst.out))
+    //                                    ("threeSeventhsOut", threeSeventhsRateInst.out))
   }
 }
