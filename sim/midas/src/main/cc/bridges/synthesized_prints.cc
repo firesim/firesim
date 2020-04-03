@@ -83,7 +83,7 @@ synthesized_prints_t::synthesized_prints_t(
 
   this->printfile.open(printfilename.c_str(), std::ios_base::out | std::ios_base::binary);
   if (!this->printfile.is_open()) {
-      fprintf(stderr, "Could not open print log file: %s\n", printfilename);
+      fprintf(stderr, "Could not open print log file: %s\n", printfilename.c_str());
       abort();
   }
 
