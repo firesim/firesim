@@ -18,19 +18,19 @@ sealed trait IntLikeLiteral extends CPPLiteral {
 }
 
 case class UInt32(value: BigInt) extends IntLikeLiteral {
-  def typeString = "unsigned int"
+  def typeString = "uint32_t"
   def bitWidth = 32
   def literalSuffix = ""
 }
 
 case class UInt64(value: BigInt) extends IntLikeLiteral {
-  def typeString = "unsigned long long"
+  def typeString = "uint64_t"
   def bitWidth = 64
   def literalSuffix = "ULL"
 }
 
 case class Int64(value: BigInt) extends IntLikeLiteral {
-  def typeString = "long long"
+  def typeString = "int64_t"
   def bitWidth = 64
   def literalSuffix = "LL"
 }
