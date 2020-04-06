@@ -94,7 +94,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   val maxBurst = edge.slave.slaves.map(s => min(s.supportsRead.max, s.supportsWrite.max)).min / (edge.bundle.dataBits / 8)
   val io = IO(new LoadMemIO)
   // Gives us a bi-directional hook to a nasti interface so we don't have to port all the code below
-  val memNasti = Nasti2AXI4.convertFromAXI4Sink(memAXI4)
+  val memNasti = AXI42Nasti.fromSink(memAXI4)
 
   // prefix h -> host memory we are writing to
   // prefix c -> control nasti interface who is the master of this unit

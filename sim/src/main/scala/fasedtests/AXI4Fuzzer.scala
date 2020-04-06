@@ -14,51 +14,6 @@ import junctions.{NastiKey, NastiParameters}
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
 import midas.widgets.{PeekPokeBridge, RationalClockBridge}
 
-object AXI4Printf {
-  def apply(axi4: AXI4Bundle): Unit = {
-    val tCycle = RegInit(0.U(32.W))
-    tCycle.suggestName("tCycle")
-    tCycle := tCycle + 1.U
-
-    when (axi4.ar.fire) {
-      printf("TCYCLE: %d,  AR addr: %x, id: %d, size: %d, len: %d\n",
-        tCycle,
-        axi4.ar.bits.addr,
-        axi4.ar.bits.id,
-        axi4.ar.bits.size,
-        axi4.ar.bits.len)
-    }
-
-    when (axi4.aw.fire) {
-      printf("TCYCLE: %d,  AW addr: %x, id: %d, size: %d, len: %d\n",
-        tCycle,
-        axi4.aw.bits.addr,
-        axi4.aw.bits.id,
-        axi4.aw.bits.size,
-        axi4.aw.bits.len)
-    }
-    when (axi4.w.fire) {
-      printf("TCYCLE: %d,  W data: %x, last: %b\n",
-        tCycle,
-        axi4.w.bits.data,
-        axi4.w.bits.last)
-    }
-
-    when (axi4.r.fire) {
-      printf("TCYCLE: %d,  R data: %x, last: %b, id: %d\n",
-        tCycle,
-        axi4.r.bits.data,
-        axi4.r.bits.last,
-        axi4.r.bits.id)
-    }
-    when (axi4.b.fire) {
-      printf("TCYCLE: %d,  B id: %d\n", tCycle, axi4.r.bits.id)
-    }
-  }
-}
-
-
-
 // TODO: Handle errors and reinstatiate the TLErrorEvaluator
 class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
   val fuzz  = LazyModule(new TLFuzzer(p(NumTransactions), p(MaxFlight)))
@@ -102,7 +57,6 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
                                      axi4.ar.bits.addr.getWidth,
                                      axi4.ar.bits.id.getWidth)
-      AXI4Printf(axi4)
       val fasedInstance =  FASEDBridge(clock, axi4, reset.toBool,
         CompleteConfig(p(firesim.configs.MemModelKey),
                        nastiKey,
