@@ -118,19 +118,33 @@ void TraceTracker::addInstruction(uint64_t inst_addr, uint64_t cycle)
 
 
 #ifdef TRACERV_TOP_MAIN
-int main() {
-    std::string tracefile = "/home/centos/trace2/TRACEFILE";
 
-    std::ifstream is(tracefile);
-    std::string line;
+#define ENTRIES_PER_ROW 8
 
-    TraceTracker * t = new TraceTracker("/home/centos/trace2/vmlinux-dwarf", stdout);
-    while(getline(is, line)) {
-        std::string addr_str = line.substr(0, 16);
-        std::string cycle_str = line.substr(16, 32);
-        uint64_t addr = (uint64_t) strtoull(addr_str.c_str(), NULL, 16);
-        uint64_t cycle = (uint64_t) strtoull(cycle_str.c_str(), NULL, 16);
-        t->addInstruction(addr, cycle);
+int main(int argc, char *argv[]) {
+    std::string tracefile = std::string(argv[1]);
+    std::string bindwarf = std::string(argv[2]);
+    FILE *f = fopen(tracefile.c_str(), "r");
+    const uint64_t valid_mask = (1ULL << 40);
+
+    if (f == NULL) {
+        perror("fopen");
+        abort();
+    }
+
+    TraceTracker *t = new TraceTracker(bindwarf, stdout);
+    uint64_t row[ENTRIES_PER_ROW];
+
+    while (fread(row, sizeof(uint64_t), ENTRIES_PER_ROW, f) == ENTRIES_PER_ROW) {
+        uint64_t cycle = row[0];
+
+        for (int i = 1; i < ENTRIES_PER_ROW; i++) {
+            uint64_t addr = row[i] & ~valid_mask;
+            if (row[i] & valid_mask) {
+                t->addInstruction(addr, cycle);
+                fprintf(stderr, "%llu: C%d: %llx\n", cycle, i-1, addr);
+            }
+        }
     }
 }
 #endif

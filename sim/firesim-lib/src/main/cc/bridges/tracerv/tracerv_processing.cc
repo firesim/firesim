@@ -143,10 +143,12 @@ ObjdumpedBinary::ObjdumpedBinary(std::string binaryWithDwarf)
 
 
 Instr * ObjdumpedBinary::getInstrFromAddr(uint64_t lookupaddress) {
-    if (lookupaddress < this->baseaddr) {
+    uint64_t shortbaseaddr = this->baseaddr & ((1ULL << 40)-1);
+
+    if (lookupaddress < shortbaseaddr) {
         return NULL;
     }
-    uint64_t computeaddr = lookupaddress - this->baseaddr;
+    uint64_t computeaddr = lookupaddress - shortbaseaddr;
     if (computeaddr >= this->progtext.size()) {
         return NULL;
     }

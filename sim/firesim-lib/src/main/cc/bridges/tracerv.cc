@@ -116,7 +116,6 @@ tracerv_t::tracerv_t(
             fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
             abort();
         }
-        fputs(this->clock_info.file_header().c_str(), this->tracefile);
 
         // This must be kept consistent with config_runtime.ini's output_format.
         // That file's comments are the single source of truth for this.
@@ -132,6 +131,9 @@ tracerv_t::tracerv_t(
         } else {
             fprintf(stderr, "Invalid trace format arg\n");
         }
+
+        if (this->human_readable)
+            fputs(this->clock_info.file_header().c_str(), this->tracefile);
     } else {
         fprintf(stderr, "TraceRV %d: Tracing disabled, since +tracefile was not provided.\n", tracerno);
         this->trace_enabled = false;
@@ -233,7 +235,7 @@ void tracerv_t::process_tokens(int num_beats) {
             }
         } else if (this->fireperf) {
 
-            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+            for (int i = 0; i < num_beats * 8; i+=8) {
                 uint64_t cycle_internal = OUTBUF[i+0];
 
                 for (int q = 0; q < max_core_ipc; q++) {
@@ -248,14 +250,10 @@ void tracerv_t::process_tokens(int num_beats) {
                 }
             }
         } else {
-            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
-                // this stores as raw binary. stored as little endian.
-                // e.g. to get the same thing as the human readable above,
-                // flip all the bytes in each 512-bit line.
-                for (int q = 0; q < 8; q++) {
-                    fwrite(OUTBUF + (i+q), sizeof(uint64_t), 1, this->tracefile);
-                }
-            }
+            // this stores as raw binary. stored as little endian.
+            // e.g. to get the same thing as the human readable above,
+            // flip all the bytes in each 512-bit line.
+            fwrite(OUTBUF, sizeof(uint64_t), 8 * num_beats, this->tracefile);
         }
     }
 }
