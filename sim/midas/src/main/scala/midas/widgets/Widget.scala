@@ -14,6 +14,7 @@ import freechips.rocketchip.util.ParameterizedBundle
 
 import scala.collection.mutable
 
+// The AXI4-lite key for the simulation control bus
 case object CtrlNastiKey extends Field[NastiParameters]
 
 // Just NASTI, but pointing at the right key.

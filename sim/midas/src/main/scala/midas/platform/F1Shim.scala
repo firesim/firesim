@@ -8,13 +8,13 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.{LazyModule}
 import freechips.rocketchip.util.HeterogeneousBag
 
-import midas.core.{DMANastiKey, HostMemNumChannels}
-import midas.widgets.{AXI4Printf}
+import midas.core.{DMANastiKey}
+import midas.widgets.{AXI4Printf, CtrlNastiKey}
 
 case object AXIDebugPrint extends Field[Boolean]
 
 class F1ShimIO(implicit val p: Parameters) extends Bundle {
-  val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
+  val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
   val dma    = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
 }
 

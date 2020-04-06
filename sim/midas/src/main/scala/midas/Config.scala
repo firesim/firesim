@@ -82,7 +82,6 @@ class SimConfig extends Config((site, here, up) => {
 class ZynqConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new ZynqShim()(p)
   case HasDMAChannel  => false
-  case MasterNastiKey => site(CtrlNastiKey)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x100000000L, // 4 GiB
     beatBytes = 8,
@@ -98,7 +97,6 @@ class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
-  case MasterNastiKey => site(CtrlNastiKey)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
     beatBytes = 8,

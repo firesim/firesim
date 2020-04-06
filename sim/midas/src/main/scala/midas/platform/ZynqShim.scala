@@ -1,41 +1,16 @@
 // See LICENSE for license details.
 
-package midas
-package platform
+package midas.platform
 
 import chisel3._
-import chisel3.util._
 import junctions._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule}
-import freechips.rocketchip.util.ParameterizedBundle
 
-import midas.core.ChannelWidth
+import midas.widgets.CtrlNastiKey
 
-abstract class PlatformShim(implicit p: Parameters) extends MultiIOModule {
-  def top: midas.core.FPGATopImp
-  def headerConsts: Seq[(String, Long)]
-  def genHeader(sb: StringBuilder, target: String) {
-    import widgets.CppGenerationUtils._
-    sb.append("#include <stdint.h>\n")
-    sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
-    sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
-    if (p(EnableSnapshot)) {
-      sb append(genMacro("ENABLE_SNAPSHOT"))
-      if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
-    }
-    sb.append(genMacro("data_t", "uint%d_t".format(p(ChannelWidth))))
-    top.genHeader(sb)
-    sb.append("\n// Simulation Constants\n")
-    headerConsts map { case (name, value) =>
-      genMacro(name, widgets.UInt32(value)) } addString sb
-  }
-}
-
-case object MasterNastiKey extends Field[NastiParameters]
-
-class ZynqShimIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
-  val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(MasterNastiKey) })))
+class ZynqShimIO(implicit p: Parameters) extends Bundle {
+  val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
 }
 
 class ZynqShim(implicit p: Parameters) extends PlatformShim {

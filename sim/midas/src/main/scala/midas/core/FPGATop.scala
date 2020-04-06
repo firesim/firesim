@@ -16,15 +16,23 @@ import freechips.rocketchip.util.{DecoupledHelper, HeterogeneousBag}
 
 import scala.collection.mutable
 
-case object DMANastiKey extends Field[NastiParameters]
-case object FpgaMMIOSize extends Field[BigInt]
+/**
+  * The following case objects define the widths of the three AXI4 bus types presented
+  * to a simulator.
+  */
 
+// The AXI4 key for the DMA bus
+case object DMANastiKey extends Field[NastiParameters]
 // The AXI4 widths for a single host-DRAM channel
 case object HostMemChannelKey extends Field[HostMemChannelParams]
 // The number of host-DRAM channels -> all channels must have the same AXI4 widths
 case object HostMemNumChannels extends Field[Int]
-// The aggregate memory-space seen by masters wanting DRAM
+// See widgets/Widget.scala for CtrlNastiKey -> Configures the simulation control bus
+
+// Legacy: the aggregate memory-space seen by masters wanting DRAM. Derived from the above.
 case object MemNastiKey extends Field[NastiParameters]
+
+case object FpgaMMIOSize extends Field[BigInt]
 
 class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
