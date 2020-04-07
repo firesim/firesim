@@ -33,12 +33,7 @@ import chisel3.util.isPow2
   * be forced to work the slaves it is given?
   *
   */
-case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: TransferSizes, supportsWrite: TransferSizes) {
-  // This can be relaxed in the future.
-  val requestedCapacity = BytesOfDRAMRequired(address)
-  require(isPow2(requestedCapacity),
-    s"Requested Host-DRAM address must span a power-of-two range of bytes. Requested ${requestedCapacity}B")
-}
+case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: TransferSizes, supportsWrite: TransferSizes)
 
 /**
   * A common trait for referring collateral in the generated header.
@@ -47,11 +42,15 @@ case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: Transf
 trait HostDramHeaderConsts {
   /*
    * A string identifier the requested memory region.
-   * NOTE(!): Bridges that provide the same region name will share the same
+   * NOTE: Bridges that provide the same region name will share the same
    * allocated DRAM region. See [[UsesHostDRAM]].
+   *
+   * Setting the regionName to the bridge's instace name (.getWName) will suffice
+   * to give it an independent region.
+   *
    */
   def memoryRegionName: String
-  def offsetConstName() : String = s"${memoryRegionName}_offset"
+  def offsetConstName = s"${memoryRegionName}_offset"
 }
 
 /**

@@ -72,6 +72,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val dramOffsetsRev = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({
     case (offsets, (bridgeSeq, addresses)) =>
       val requestedCapacity = BytesOfDRAMRequired(addresses)
+      val pageAligned = ((requestedCapacity >> 12) + 1) << 12
       (offsets.head + requestedCapacity) +: offsets
   })
   val totalDRAMAllocated = dramOffsetsRev.head
@@ -111,7 +112,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   def hostMemoryBundleParams(): AXI4BundleParameters = memAXI4Node.in(0)._1.params
 
   def printHostDRAMSummary(): Unit = {
-    println(f"Total Host-FPGA DRAM Allocated: ${totalDRAMAllocated.doubleValue / (1024 * 1024 * 1024)}%.3f GiB")
+    val allocatedDRAMStr = if (totalDRAMAllocated.doubleValue > 1e8) {
+      f"${totalDRAMAllocated.doubleValue / (1024 * 1024 * 1024)}%.3f GiB"
+    } else {
+      f"${totalDRAMAllocated.doubleValue / (1024)}%.3f KiB"
+    }
+    println(s"Total Host-FPGA DRAM Allocated: ${allocatedDRAMStr}")
     println("Host-FPGA DRAM Allocation Map:")
     sortedRegionTuples.zip(dramOffsets).foreach({ case ((bridgeSeq, addresses), offset) =>
       val regionName = bridgeSeq.head.memoryRegionName
