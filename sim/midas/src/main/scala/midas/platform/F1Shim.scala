@@ -33,10 +33,11 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     top.module.io.dma  <> io.dma
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
-    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 4097)
+    // Biancolin: It would be good to put in writing why ID is being reassigned...
+    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 1 << p(CtrlNastiKey).idBits)
     top.module.io.ctrl.aw.bits.id := wCounterValue
 
-    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 4097)
+    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
     top.module.io.ctrl.ar.bits.id := rCounterValue
   }
 }
