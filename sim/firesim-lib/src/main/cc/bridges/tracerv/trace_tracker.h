@@ -1,4 +1,5 @@
 #include "tracerv_processing.h"
+#include <map>
 
 
 //#define INDENT_SPACES
@@ -40,11 +41,18 @@ class TraceTracker
     private:
         ObjdumpedBinary * bin_dump;
         std::vector<LabelMeta *> label_stack;
+	std::vector<ObjdumpedBinary *> mod_dumps;
         FILE * tracefile;
         Instr * last_instr;
 
     public:
-        TraceTracker(std::string binary_with_dwarf, FILE * tracefile);
+	TraceTracker(std::string binary_with_dwarf, FILE * tracefile);
+        TraceTracker(
+		std::string binary_with_dwarf,
+		FILE * tracefile,
+		std::map<std::string, uint64_t> &modbasemap,
+		std::vector<std::string> &modules);
+	~TraceTracker();
         void addInstruction(uint64_t inst_addr, uint64_t cycle);
 
 };

@@ -48,6 +48,7 @@ class ObjdumpedBinary
 public:
     ObjdumpedBinary(std::string binaryWithDwarf);
     Instr* getInstrFromAddr(uint64_t lookupaddress);
+    void relocate(uint64_t newbase) { this->baseaddr = newbase; }
 };
 
 #endif

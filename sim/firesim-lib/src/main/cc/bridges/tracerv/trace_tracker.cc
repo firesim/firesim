@@ -1,17 +1,57 @@
 #include "trace_tracker.h"
 
 //#define TRACETRACKER_LOG_PC_REGION
+#include <regex>
 
+std::string modpath_to_name(std::string &modpath)
+{
+    size_t name_start = modpath.rfind('/') + 1;
+    size_t name_end = modpath.rfind('.');
+    auto modname = modpath.substr(name_start, name_end - name_start);
+    size_t dash_pos = 0;
 
-TraceTracker::TraceTracker(std::string binary_with_dwarf, FILE * tracefile)
+    while ((dash_pos = modname.find('-', dash_pos)) != std::string::npos) {
+        modname[dash_pos] = '_';
+    }
+
+    return modname;
+}
+
+TraceTracker::TraceTracker(
+        std::string binary_with_dwarf, FILE * tracefile)
 {
     this->bin_dump = new ObjdumpedBinary(binary_with_dwarf);
     this->tracefile = tracefile;
 }
 
+TraceTracker::TraceTracker(
+        std::string binary_with_dwarf, FILE * tracefile,
+        std::map<std::string, uint64_t> &modbasemap,
+        std::vector<std::string> &modules)
+{
+    this->bin_dump = new ObjdumpedBinary(binary_with_dwarf);
+    this->tracefile = tracefile;
+
+    for (auto modpath : modules) {
+        ObjdumpedBinary *dump = new ObjdumpedBinary(modpath);
+        auto modname = modpath_to_name(modpath);
+        auto modbase = modbasemap[modname];
+        dump->relocate(modbase);
+        mod_dumps.push_back(dump);
+    }
+}
+
 void TraceTracker::addInstruction(uint64_t inst_addr, uint64_t cycle)
 {
     Instr * this_instr = this->bin_dump->getInstrFromAddr(inst_addr);
+
+    if (!this_instr) {
+        for (auto mod : mod_dumps) {
+            this_instr = mod->getInstrFromAddr(inst_addr);
+            if (this_instr)
+                break;
+        }
+    }
 
 #ifdef TRACETRACKER_LOG_PC_REGION
     if (!this_instr) {
@@ -122,29 +162,65 @@ void TraceTracker::addInstruction(uint64_t inst_addr, uint64_t cycle)
 #define ENTRIES_PER_ROW 8
 
 int main(int argc, char *argv[]) {
+    uint64_t row[ENTRIES_PER_ROW];
+    const uint64_t valid_mask = (1ULL << 40);
+    std::string line;
+
+    if (argc < 4) {
+        fprintf(stderr, "Usage: %s <tracefile> <bindwarf> <uartlog> [modules ...]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
     std::string tracefile = std::string(argv[1]);
     std::string bindwarf = std::string(argv[2]);
-    FILE *f = fopen(tracefile.c_str(), "r");
-    const uint64_t valid_mask = (1ULL << 40);
+    std::string uartlog = std::string(argv[3]);
+    std::vector<std::string> moddwarfs(argv + 4, argv + argc);
 
-    if (f == NULL) {
+    std::ifstream uls(uartlog);
+    const std::regex modre("(.*) [0-9]* 0 - Live 0x([0-9a-f]*) \\(O\\)");
+    std::smatch modmatch;
+    std::map<std::string, uint64_t> modbasemap;
+
+    while (!uls.eof()) {
+        getline(uls, line);
+        auto lastpos = line.find('\r');
+        if (lastpos != std::string::npos)
+            line.erase(lastpos);
+
+        if (std::regex_match(line, modmatch, modre)) {
+            auto name = modmatch[1].str();
+            uint64_t addr = strtoull(modmatch[2].str().c_str(), NULL, 16);
+            printf("%s -> %" PRIx64 "\n", name.c_str(), addr);
+            modbasemap[name] = addr;
+        }
+    }
+    uls.close();
+
+    TraceTracker *t = new TraceTracker(bindwarf, stdout, modbasemap, moddwarfs);
+
+    FILE *tf = fopen(tracefile.c_str(), "r");
+    if (tf == NULL) {
         perror("fopen");
         abort();
     }
 
-    TraceTracker *t = new TraceTracker(bindwarf, stdout);
-    uint64_t row[ENTRIES_PER_ROW];
-
-    while (fread(row, sizeof(uint64_t), ENTRIES_PER_ROW, f) == ENTRIES_PER_ROW) {
+    while (fread(row, sizeof(uint64_t), ENTRIES_PER_ROW, tf) == ENTRIES_PER_ROW) {
         uint64_t cycle = row[0];
 
         for (int i = 1; i < ENTRIES_PER_ROW; i++) {
             uint64_t addr = row[i] & ~valid_mask;
             if (row[i] & valid_mask) {
                 t->addInstruction(addr, cycle);
-                fprintf(stderr, "%llu: C%d: %llx\n", cycle, i-1, addr);
             }
         }
     }
+
+    fclose(tf);
+}
+
+TraceTracker::~TraceTracker()
+{
+    delete bin_dump;
+    for (auto dump : mod_dumps) { delete dump; }
 }
 #endif

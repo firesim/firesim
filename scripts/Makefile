@@ -14,3 +14,8 @@ format-trace: format-trace.c
 
 trace-tracker: $(TRACERV_SOURCES)
 	$(CXX) $(CXXFLAGS) -DTRACERV_TOP_MAIN $^ $(LDFLAGS) -o $@
+
+clean:
+	rm -f format-trace trace-tracker
+
+.PHONY: clean
