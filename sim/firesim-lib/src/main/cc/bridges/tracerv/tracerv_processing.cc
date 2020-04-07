@@ -68,11 +68,19 @@ ObjdumpedBinary::ObjdumpedBinary(std::string binaryWithDwarf)
             fprintf(stderr, "subroutine overlap: %" PRIx64 " <%s>\n", pc_low, sub.name.c_str());
             continue;
         }
-        Instr* entry = new Instr();
-        entry->addr = pc_low; // FIXME: unused
-        entry->function_name = sub.name;
-        entry->is_fn_entry = true;
-        entry->in_asm_sequence = !sub.function;
+
+        Instr *entry;
+
+        if (sub.name[0] == '.' && prev) {
+            entry = new Instr(*prev);
+            entry->is_fn_entry = false;
+        } else {
+            entry = new Instr();
+            entry->addr = pc_low; // FIXME: unused
+            entry->function_name = sub.name;
+            entry->is_fn_entry = true;
+            entry->in_asm_sequence = !sub.function;
+        }
         this->progtext[start] = entry;
 
         // Populate callsites
