@@ -6,6 +6,8 @@ import chisel3._
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget}
 import freechips.rocketchip.config.Parameters
+
+import midas.targetutils.FAMEAnnotation
 import midas.passes.fame.{JsonProtocol, HasSerializationHints}
 
 trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
@@ -41,7 +43,7 @@ case class SerializableBridgeAnnotation[T <: AnyRef](
     channelNames: Seq[String],
     widgetClass: String,
     widgetConstructorKey: Option[T])
-  extends BridgeAnnotation with HasSerializationHints {
+  extends BridgeAnnotation with HasSerializationHints with FAMEAnnotation {
 
   def typeHints() = widgetConstructorKey match {
     // If the key has extra type hints too, grab them as well
@@ -116,7 +118,15 @@ private[midas] case class BridgeIOAnnotation(
     clockInfo: Option[RationalClock] = None,
     widget: Option[(Parameters) => BridgeModule[_ <: TokenizedRecord]] = None,
     widgetClass: Option[String] = None,
-    widgetConstructorKey: Option[_ <: AnyRef] = None) extends SingleTargetAnnotation[ReferenceTarget] {
+    widgetConstructorKey: Option[_ <: AnyRef] = None)
+    extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation with HasSerializationHints {
+
+  def typeHints() = widgetConstructorKey match {
+    // If the key has extra type hints too, grab them as well
+    case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
+    case Some(key) => Seq(key.getClass)
+    case None => Seq()
+  }
   def duplicate(n: ReferenceTarget) = this.copy(target)
   def channelNames = channelMapping.map(_._2)
 

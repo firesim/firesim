@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey}
@@ -19,25 +19,24 @@ class F1ShimIO(implicit val p: Parameters) extends Bundle {
 }
 
 class F1Shim(implicit p: Parameters) extends PlatformShim {
-  val io = IO(new F1ShimIO)
-  val top = Module(LazyModule(new midas.core.FPGATop).module)
-  val io_slave = IO(HeterogeneousBag(top.mem.map(x => x.cloneType)))
-  val headerConsts = top.headerConsts
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new F1ShimIO)
+    val io_slave = IO(HeterogeneousBag(top.module.mem.map(x => x.cloneType)))
 
-  if (p(AXIDebugPrint)) {
-    AXI4Printf(io.master, "master")
-    AXI4Printf(io.dma,    "dma")
-    io_slave.zipWithIndex foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
+    if (p(AXIDebugPrint)) {
+      AXI4Printf(io.master, "master")
+      AXI4Printf(io.dma,    "dma")
+      io_slave.zipWithIndex foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
+    }
+
+    top.module.io.ctrl <> io.master
+    top.module.io.dma  <> io.dma
+    io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
+
+    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 4097)
+    top.module.io.ctrl.aw.bits.id := wCounterValue
+
+    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 4097)
+    top.module.io.ctrl.ar.bits.id := rCounterValue
   }
-
-  top.io.ctrl <> io.master
-  top.io.dma  <> io.dma
-  io_slave.zip(top.mem).foreach({ case (io, bundle) => io <> bundle })
-
-  val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 4097)
-  top.io.ctrl.aw.bits.id := wCounterValue
-
-  val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 4097)
-  top.io.ctrl.ar.bits.id := rCounterValue
-
 }

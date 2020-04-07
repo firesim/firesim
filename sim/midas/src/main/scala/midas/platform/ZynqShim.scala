@@ -5,7 +5,7 @@ package midas.platform
 import chisel3._
 import junctions._
 import freechips.rocketchip.config.{Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 import midas.widgets.CtrlNastiKey
 
@@ -14,12 +14,10 @@ class ZynqShimIO(implicit p: Parameters) extends Bundle {
 }
 
 class ZynqShim(implicit p: Parameters) extends PlatformShim {
-  val io = IO(new ZynqShimIO)
-  val top = Module(LazyModule(new midas.core.FPGATop).module)
-  val headerConsts = top.headerConsts
-
-  top.io.ctrl <> io.master
-
-  val io_slave = IO(top.mem(0).cloneType)
-  io_slave <> top.mem(0)
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new ZynqShimIO)
+    top.module.io.ctrl <> io.master
+    val io_slave = IO(top.module.mem(0).cloneType)
+    io_slave <> top.module.mem(0)
+  }
 }

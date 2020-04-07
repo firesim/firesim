@@ -47,7 +47,6 @@ case class HostMemChannelParams(
 
 // Platform agnostic wrapper of the simulation models for FPGA
 class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
-  val headerConsts = new mutable.ArrayBuffer[(String, Long)]
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
   val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap

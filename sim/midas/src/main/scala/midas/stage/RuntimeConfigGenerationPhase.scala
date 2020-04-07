@@ -3,11 +3,15 @@
 package midas.stage
 
 import midas.{OutputDir}
-import midas.widgets.{SerializableBridgeAnnotation}
+import midas.widgets.{BridgeIOAnnotation}
+import midas.models.FASEDMemoryTimingModel
+import midas.platform.PlatformShim
 
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 import freechips.rocketchip.util.{ParsedInputNames}
 
+import firrtl.ir.Port
+import firrtl.annotations.ReferenceTarget
 import firrtl.{Transform, CircuitState, AnnotationSeq}
 import firrtl.options.{Phase, TargetDirAnnotation}
 
@@ -28,18 +32,17 @@ class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
       case OutputDir => targetDir
     })
 
-    val fasedBridgeAnnos = annotations.collect({
-      case anno @ SerializableBridgeAnnotation(_,_,className,_)
-        if className == classOf[midas.models.FASEDMemoryTimingModel].getName => anno
-    })
+    val bridgeIOAnnotations = annotations.collect { case b: BridgeIOAnnotation if b.widgetClass.nonEmpty => b }
+    val shim = LazyModule(PlatformShim(bridgeIOAnnotations, Map[ReferenceTarget, Port]()))
+    // Collect only FASEDBridges since they are the only ones that provide
+    // runtime configuration generation
+    val fasedBridges = shim.top.bridgeModuleMap.values.collect { case f: FASEDMemoryTimingModel  => f }
     // Since presently all memory models share the same runtime configuration. Grab only the first 
     // FASED BridgeAnnotation, and use that to elaborate a memory model
-    fasedBridgeAnnos.headOption.map({ anno =>
-      // Here we're spoofing elaboration that occurs in FPGATop, which assumes ExtractBridges has been run
-      implicit val valName = ValName("MemModelConfGen")
-      lazy val memModel = anno.toIOAnnotation("").elaborateWidget.asInstanceOf[midas.models.FASEDMemoryTimingModel]
-      chisel3.Driver.elaborate(() => LazyModule(memModel).module)
-      memModel.module.getSettings(runtimeConfigName)
+    fasedBridges.headOption.map({ lm =>
+      lazy val fasedBridge = lm.module
+      chisel3.Driver.elaborate(() => fasedBridge)
+      fasedBridge.getSettings(runtimeConfigName)
     })
     annotations
   }

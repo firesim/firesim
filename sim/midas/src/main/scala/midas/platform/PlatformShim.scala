@@ -2,17 +2,40 @@
 
 package midas.platform
 
-import chisel3._
+import firrtl.annotations.{Annotation, CircuitName, ReferenceTarget, ModuleTarget}
+import firrtl.ir.{Circuit, Port}
 import freechips.rocketchip.config.{Parameters}
+import freechips.rocketchip.diplomacy.{LazyModule}
 
+import midas.Platform
 import midas.{EnableSnapshot, KeepSamplesInMem}
-import midas.core.ChannelWidth
-import midas.widgets.{CStrLit, UInt32}
+import midas.core._
+import midas.passes.fame.{FAMEChannelConnectionAnnotation}
+import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
 import midas.widgets.CppGenerationUtils._
 
-abstract class PlatformShim(implicit p: Parameters) extends MultiIOModule {
-  def top: midas.core.FPGATopImp
-  def headerConsts: Seq[(String, Long)]
+/**
+  * Generates the platform wrapper (which includes most of the chisel-generated
+  * RTL that constitutes the simulator, including BridgeModules) using
+  * parameters instance and the required annotations from the transformed
+  * target design.
+  *
+  */
+private [midas] object PlatformShim {
+  def apply(annotations: Seq[Annotation], portTypeMap: Map[ReferenceTarget, Port])
+           (implicit p: Parameters): PlatformShim = {
+    // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
+    // SimWrapper generation. We want the targets to point at un-lowered ports
+    val chAnnos = annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
+    val bridgeAnnos = annotations.collect({ case ep: BridgeIOAnnotation => ep })
+    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, portTypeMap)
+    val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
+    p(Platform)(completeParams)
+  }
+}
+
+abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
+  val top = LazyModule(new midas.core.FPGATop)
   def genHeader(sb: StringBuilder, target: String) {
     sb.append("#include <stdint.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))
@@ -22,9 +45,9 @@ abstract class PlatformShim(implicit p: Parameters) extends MultiIOModule {
       if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
     }
     sb.append(genMacro("data_t", "uint%d_t".format(p(ChannelWidth))))
-    top.genHeader(sb)
+    top.module.genHeader(sb)
     sb.append("\n// Simulation Constants\n")
-    headerConsts map { case (name, value) =>
+    top.module.headerConsts map { case (name, value) =>
       genMacro(name, UInt32(value)) } addString sb
   }
 }

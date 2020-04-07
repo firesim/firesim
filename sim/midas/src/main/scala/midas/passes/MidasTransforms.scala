@@ -49,6 +49,7 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new BridgeExtraction,
       new ResolveAndCheck,
       new EmitFirrtl("post-bridge-extraction.fir"),
+      new fame.EmitFAMEAnnotations("post-bridge-extraction.json"),
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new AutoCounterTransform,
@@ -95,8 +96,7 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
-      new ResolveAndCheck) ++
-    Seq(
+      new ResolveAndCheck,
       new SimulationMapping(state.circuit.main),
       xilinx.HostSpecialization)
       (xforms foldLeft state)((in, xform) =>
