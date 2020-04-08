@@ -30,7 +30,12 @@ def replace_rtl(conf, buildconfig):
 
     rootLogger.info("Running replace-rtl to generate verilog for " + str(buildconfig.get_chisel_triplet()))
 
-    with prefix('cd ' + ddir + '/../'), prefix('source sourceme-f1-manager.sh'), prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
+    with prefix('cd ' + ddir + '/../'), \
+         prefix('source sourceme-f1-manager.sh'), \
+         prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), \
+         prefix('cd sim/'), \
+         InfoStreamLogger('stdout'), \
+         InfoStreamLogger('stderr'):
         run(buildconfig.make_recipe("replace-rtl"))
         run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
         run("""cp $CL_DIR/design/cl_firesim_generated.sv {}/results-build/{}/cl_firesim_generated.sv""".format(ddir, builddir))
