@@ -157,8 +157,8 @@ def aws_build(global_build_config, bypass=False):
 
     rootLogger.info("Waiting for create-fpga-image completion.")
     results_build_dir = """{}/results-build/{}/""".format(ddir, builddir)
+    checkstate = "pending"
     with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-        checkstate = "pending"
         while checkstate == "pending":
             imagestate = local("""aws ec2 describe-fpga-images --fpga-image-id {} | tee AGFI_INFO""".format(afi), capture=True)
             state_as_dict = json.loads(imagestate)
@@ -166,34 +166,49 @@ def aws_build(global_build_config, bypass=False):
             rootLogger.info("Current state: " + str(checkstate))
             time.sleep(10)
 
-    # copy the image to all regions for the current user
-    copy_afi_to_all_regions(afi)
 
-    message_title = "FireSim FPGA Build Completed"
-    agfi_entry = "[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\n\n"
-    message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+    if checkstate == "available":
+        # copy the image to all regions for the current user
+        copy_afi_to_all_regions(afi)
 
-    send_firesim_notification(message_title, message_body)
+        message_title = "FireSim FPGA Build Completed"
+        agfi_entry = "[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\n\n"
+        message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
-    rootLogger.info(message_title)
-    rootLogger.info(message_body)
+        send_firesim_notification(message_title, message_body)
 
-    # for convenience when generating a bunch of images. you can just
-    # cat all the files in this directory after your builds finish to get
-    # all the entries to copy into config_hwdb.ini
-    hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(ddir)
-    local("mkdir -p " + hwdb_entry_file_location)
-    with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
-        outputfile.write(agfi_entry)
+        rootLogger.info(message_title)
+        rootLogger.info(message_body)
 
-    if global_build_config.post_build_hook:
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            localcap = local("""{} {}""".format(global_build_config.post_build_hook,
-                                                results_build_dir,
-                                                capture=True))
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
+        # for convenience when generating a bunch of images. you can just
+        # cat all the files in this directory after your builds finish to get
+        # all the entries to copy into config_hwdb.ini
+        hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(ddir)
+        local("mkdir -p " + hwdb_entry_file_location)
+        with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
+            outputfile.write(agfi_entry)
 
-    rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
+        if global_build_config.post_build_hook:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                localcap = local("""{} {}""".format(global_build_config.post_build_hook,
+                                                    results_build_dir,
+                                                    capture=True))
+                rootLogger.debug("[localhost] " + str(localcap))
+                rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
+    else:
+        # Something went awry. This is generally due to some underlying vivado
+        # build problem that is only promoted to a failure during bitstream creation
+        message_title = "FireSim FPGA Build Failed"
+        message_body = "Your FPGA build failed. Inspect output from IP address " + env.host_string + " in the log for more information."
+
+        send_firesim_notification(message_title, message_body)
+
+        rootLogger.info(message_title)
+        rootLogger.info(message_body)
+        # Something went awry. This is generally due to some underlying vivado
+        # build problem that is only promoted to a failure during bitstream creation
+
     rootLogger.info("Terminating the build instance now.")
     buildconfig.terminate_build_instance()
