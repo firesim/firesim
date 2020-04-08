@@ -65,8 +65,9 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     val unifiedAS = AddressSet.unify(bridgeSeq.flatMap(_.memorySlaveConstraints.address).toSeq)
     (bridgeSeq, unifiedAS)
   }
-  val sortedRegionTuples = regionTuples.toSeq.sortBy(region => BytesOfDRAMRequired(region._2))
 
+  // Tie-break with the name of the region.
+  val sortedRegionTuples = regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName))
 
   // Allocate memory regions using a base-and-bounds scheme
   val dramOffsetsRev = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({
