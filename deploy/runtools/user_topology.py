@@ -372,7 +372,7 @@ class UserTopologies(object):
         hwdb_entries = [
             "firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3",
             "firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3",
-            "firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3-halfrate",
+            "firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3-half-freq-uncore",
         ]
         assert len(hwdb_entries) == self.no_net_num_nodes
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
