@@ -32,17 +32,17 @@ class GroundTestBridgeTargetIO extends Bundle {
 class GroundTestBridgeModule(implicit p: Parameters)
     extends BridgeModule[HostPortIO[GroundTestBridgeTargetIO]] {
   lazy val module = new BridgeModuleImp(this) {
-  val io = IO(new WidgetIO)
-  val hPort = IO(HostPort(new GroundTestBridgeTargetIO))
+    val io = IO(new WidgetIO)
+    val hPort = IO(HostPort(new GroundTestBridgeTargetIO))
 
-  hPort.toHost.hReady := true.B
-  hPort.fromHost.hValid := true.B
+    hPort.toHost.hReady := true.B
+    hPort.fromHost.hValid := true.B
 
-  val success = RegInit(false.B)
+    val success = RegInit(false.B)
 
-  when (hPort.hBits.success && !success) { success := true.B }
+    when (hPort.hBits.success && !success) { success := true.B }
 
-  genROReg(success, "success")
-  genCRFile()
+    genROReg(success, "success")
+    genCRFile()
   }
 }

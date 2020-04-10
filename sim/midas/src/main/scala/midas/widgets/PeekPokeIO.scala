@@ -41,135 +41,135 @@ object PeekPokeKey {
 // channel can advance ahead of the slowest channel
 class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends BridgeModule[PeekPokeTokenizedIO] {
   lazy val module = new BridgeModuleImp(this) {
-  val io = IO(new PeekPokeWidgetIO)
-  val hPort = IO(PeekPokeTokenizedIO(key))
+    val io = IO(new PeekPokeWidgetIO)
+    val hPort = IO(PeekPokeTokenizedIO(key))
 
-  require(key.maxChannelDecoupling > 1, "A smaller channel decoupling will affect FMR")
-  // Tracks the number of tokens the slowest channel has to produce or consume
-  // before we reach the desired target cycle
-  val cycleHorizon = RegInit(0.U(ctrlWidth.W))
-  val tCycleName = "tCycle"
-  val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
-  val tCycleAdvancing = WireInit(false.B)
+    require(key.maxChannelDecoupling > 1, "A smaller channel decoupling will affect FMR")
+    // Tracks the number of tokens the slowest channel has to produce or consume
+    // before we reach the desired target cycle
+    val cycleHorizon = RegInit(0.U(ctrlWidth.W))
+    val tCycleName = "tCycle"
+    val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
+    val tCycleAdvancing = WireInit(false.B)
 
-  // needs back pressure from reset queues
-  io.idle := cycleHorizon === 0.U
+    // needs back pressure from reset queues
+    io.idle := cycleHorizon === 0.U
 
-  def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
-      (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
-    val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
-    Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
-  })
+    def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
+        (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+      val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
+      Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
+    })
 
-  // Asserted by a channel when it is advancing or has advanced ahead of tCycle
-  val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
-  val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
+    // Asserted by a channel when it is advancing or has advanced ahead of tCycle
+    val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
+    val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
-  @chiselName
-  def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
-    val reg = genWideReg(name, channel.bits)
-    // Track local-channel decoupling
-    val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
-    val isAhead = !cyclesAhead.empty || channel.fire
-    cyclesAhead.inc := channel.fire
-    cyclesAhead.dec := tCycleAdvancing
+    @chiselName
+    def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+      val reg = genWideReg(name, channel.bits)
+      // Track local-channel decoupling
+      val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
+      val isAhead = !cyclesAhead.empty || channel.fire
+      cyclesAhead.inc := channel.fire
+      cyclesAhead.dec := tCycleAdvancing
 
-    // If a channel is being poked, allow it to enqueue it's output token
-    // This lets us peek outputs that depend combinationally on inputs we poke
-    // poke will be asserted when a memory-mapped register associated with
-    // this channel is being written to
-    val poke = Wire(Bool()).suggestName(s"${name}_poke")
-    // Handle the fields > 32 bits
-    val wordsReceived = RegInit(0.U(log2Ceil(reg.size + 1).W))
-    val advanceViaPoke = wordsReceived === reg.size.U
+      // If a channel is being poked, allow it to enqueue it's output token
+      // This lets us peek outputs that depend combinationally on inputs we poke
+      // poke will be asserted when a memory-mapped register associated with
+      // this channel is being written to
+      val poke = Wire(Bool()).suggestName(s"${name}_poke")
+      // Handle the fields > 32 bits
+      val wordsReceived = RegInit(0.U(log2Ceil(reg.size + 1).W))
+      val advanceViaPoke = wordsReceived === reg.size.U
 
-    when (poke) {
-      wordsReceived := wordsReceived + 1.U
-    }.elsewhen(channel.fire) {
-      wordsReceived := 0.U
+      when (poke) {
+        wordsReceived := wordsReceived + 1.U
+      }.elsewhen(channel.fire) {
+        wordsReceived := 0.U
+      }
+
+      channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
+      channel.valid := !cyclesAhead.full && cyclesAhead.value < cycleHorizon || advanceViaPoke
+
+      val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
+      channelDecouplingFlags += isAhead
+      channelPokes += regAddrs -> poke
+      regAddrs
     }
 
-    channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
-    channel.valid := !cyclesAhead.full && cyclesAhead.value < cycleHorizon || advanceViaPoke
+    @chiselName
+    def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+      val reg = genWideReg(name, channel.bits)
+      // Track local-channel decoupling
+      val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
+      val isAhead = !cyclesAhead.empty || channel.fire
+      cyclesAhead.inc := channel.fire
+      cyclesAhead.dec := tCycleAdvancing
 
-    val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
-    channelDecouplingFlags += isAhead
-    channelPokes += regAddrs -> poke
-    regAddrs
-  }
+      // Let token sinks accept one more token than sources can produce (if
+      // they aren't poked) This enables peeking outputs that depend
+      // combinationally on other input channels (these channels may not
+      // necessarily sourced (poked) by this bridge)
+      channel.ready := cyclesAhead.value < (cycleHorizon + 1.U)
+      when (channel.fire) {
+        reg.zipWithIndex.foreach({ case (reg, i) =>
+          val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
+          reg := channel.bits(msb, ctrlWidth * i)
+        })
+      }
 
-  @chiselName
-  def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
-    val reg = genWideReg(name, channel.bits)
-    // Track local-channel decoupling
-    val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
-    val isAhead = !cyclesAhead.empty || channel.fire
-    cyclesAhead.inc := channel.fire
-    cyclesAhead.dec := tCycleAdvancing
-
-    // Let token sinks accept one more token than sources can produce (if
-    // they aren't poked) This enables peeking outputs that depend
-    // combinationally on other input channels (these channels may not
-    // necessarily sourced (poked) by this bridge)
-    channel.ready := cyclesAhead.value < (cycleHorizon + 1.U)
-    when (channel.fire) {
-      reg.zipWithIndex.foreach({ case (reg, i) =>
-        val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
-        reg := channel.bits(msb, ctrlWidth * i)
-      })
+      channelDecouplingFlags += isAhead
+      reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
     }
 
-    channelDecouplingFlags += isAhead
-    reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
-  }
+    val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))
+    val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
-  val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))
-  val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
+    val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
+    // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment
+    // tCycle if we've been asked to step (cycleHorizon > 0.U)
+    when (tCycleWouldAdvance && cycleHorizon > 0.U) {
+      tCycle := tCycle + 1.U
+      cycleHorizon := cycleHorizon - 1.U
+      tCycleAdvancing := true.B
+    }
 
-  val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
-  // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment
-  // tCycle if we've been asked to step (cycleHorizon > 0.U)
-  when (tCycleWouldAdvance && cycleHorizon > 0.U) {
-    tCycle := tCycle + 1.U
-    cycleHorizon := cycleHorizon - 1.U
-    tCycleAdvancing := true.B
-  }
+    when (io.step.fire) {
+      cycleHorizon := io.step.bits
+    }
+    // Do not allow the block to be stepped further, unless it has gone idle
+    io.step.ready := io.idle
 
-  when (io.step.fire) {
-    cycleHorizon := io.step.bits
-  }
-  // Do not allow the block to be stepped further, unless it has gone idle
-  io.step.ready := io.idle
+    val crFile = genCRFile()
+    // Now that we've bound registers, snoop the poke register addresses for writes
+    // Yay Chisel!
+    channelPokes.foreach({ case (addrs: Seq[Int], poked: Bool) =>
+      poked := addrs.map(i => crFile.io.mcr.write(i).valid).reduce(_ || _)
+    })
 
-  val crFile = genCRFile()
-  // Now that we've bound registers, snoop the poke register addresses for writes
-  // Yay Chisel!
-  channelPokes.foreach({ case (addrs: Seq[Int], poked: Bool) =>
-    poked := addrs.map(i => crFile.io.mcr.write(i).valid).reduce(_ || _)
-  })
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+      import CppGenerationUtils._
 
-  override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-    import CppGenerationUtils._
+      val name = getWName.toUpperCase
+      def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
+        case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
-    val name = getWName.toUpperCase
-    def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
-      case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
+      super.genHeader(base, sb)
+      sb.append(genComment("Pokeable target inputs"))
+      sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
+      genOffsets(hPort.ins.unzip._1)
+      sb.append(genArray("INPUT_ADDRS", inputAddrs.map(off => UInt32(base + off.head)).toSeq))
+      sb.append(genArray("INPUT_NAMES", hPort.ins.unzip._1 map CStrLit))
+      sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
 
-    super.genHeader(base, sb)
-    sb.append(genComment("Pokeable target inputs"))
-    sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
-    genOffsets(hPort.ins.unzip._1)
-    sb.append(genArray("INPUT_ADDRS", inputAddrs.map(off => UInt32(base + off.head)).toSeq))
-    sb.append(genArray("INPUT_NAMES", hPort.ins.unzip._1 map CStrLit))
-    sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
-
-    sb.append(genComment("Peekable target outputs"))
-    sb.append(genMacro("PEEK_SIZE", UInt64(hPort.outs.size)))
-    genOffsets(hPort.outs.unzip._1)
-    sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
-    sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
-    sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
-  }
+      sb.append(genComment("Peekable target outputs"))
+      sb.append(genMacro("PEEK_SIZE", UInt64(hPort.outs.size)))
+      genOffsets(hPort.outs.unzip._1)
+      sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
+      sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
+      sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
+    }
   }
 }
 
