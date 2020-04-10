@@ -73,11 +73,14 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val dramOffsetsRev = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({
     case (offsets, (bridgeSeq, addresses)) =>
       val requestedCapacity = BytesOfDRAMRequired(addresses)
-      val pageAligned = ((requestedCapacity >> 12) + 1) << 12
-      (offsets.head + requestedCapacity) +: offsets
+      val pageAligned4k = ((requestedCapacity + 4095) >> 12) << 12
+      (offsets.head + pageAligned4k) +: offsets
   })
   val totalDRAMAllocated = dramOffsetsRev.head
   val dramOffsets = dramOffsetsRev.tail.reverse
+  val availableDRAM =  p(HostMemNumChannels) * p(HostMemChannelKey).size
+  require(totalDRAMAllocated <= availableDRAM,
+    s"Total requested DRAM of ${totalDRAMAllocated}B, exceeds host capacity of ${availableDRAM}B") 
 
   val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
   // Host DRAM handling
@@ -113,12 +116,17 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   def hostMemoryBundleParams(): AXI4BundleParameters = memAXI4Node.in(0)._1.params
 
   def printHostDRAMSummary(): Unit = {
-    val allocatedDRAMStr = if (totalDRAMAllocated.doubleValue > 1e8) {
-      f"${totalDRAMAllocated.doubleValue / (1024 * 1024 * 1024)}%.3f GiB"
-    } else {
-      f"${totalDRAMAllocated.doubleValue / (1024)}%.3f KiB"
+    def toIECString(value: BigInt): String = {
+      val dv = value.doubleValue
+      if (dv >= 1e9) {
+        f"${dv / (1024 * 1024 * 1024)}%.3f GiB"
+      } else if (dv >= 1e6) {
+        f"${dv / (1024 * 1024)}%.3f MiB"
+      } else {
+        f"${dv / 1024}%.3f KiB"
+      }
     }
-    println(s"Total Host-FPGA DRAM Allocated: ${allocatedDRAMStr}")
+    println(s"Total Host-FPGA DRAM Allocated: ${toIECString(totalDRAMAllocated)} of ${toIECString(availableDRAM)} available.")
     println("Host-FPGA DRAM Allocation Map:")
     sortedRegionTuples.zip(dramOffsets).foreach({ case ((bridgeSeq, addresses), offset) =>
       val regionName = bridgeSeq.head.memoryRegionName
