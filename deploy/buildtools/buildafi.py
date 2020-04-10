@@ -206,14 +206,14 @@ def aws_build(global_build_config, bypass=False):
         # Something went awry. This is generally due to some underlying vivado
         # build problem that is only promoted to a failure during bitstream creation
         message_title = "FireSim FPGA Build Failed"
-        message_body = "Your FPGA build failed. Inspect output from IP address " + env.host_string + " in the log for more information."
+
+        message_body = "Your FPGA build failed for triplet: " + buildconfig.get_chisel_triplet()
+        message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
 
         send_firesim_notification(message_title, message_body)
 
         rootLogger.info(message_title)
         rootLogger.info(message_body)
-        # Something went awry. This is generally due to some underlying vivado
-        # build problem that is only promoted to a failure during bitstream creation
 
     rootLogger.info("Terminating the build instance now.")
     buildconfig.terminate_build_instance()
