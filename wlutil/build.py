@@ -121,11 +121,13 @@ def addDep(loader, config):
     # Add a rule for running script after binary is created (i.e. for ext. modules)
     # Similar to 'host-init' always runs if exists
     binPost = []
-    bin_post_deps = diskBin + nodiskBin
+    bin_post_task_deps = diskBin + nodiskBin
+    print(bin_post_task_deps)
     if 'bin-post' in config:
         loader.addTask({
             'name' : str(config['bin-post']),
             'actions' : [(handleBinPost, [config])],
+            'task_dep' : bin_post_task_deps,
         })
         binPost = [str(config['bin-post'])]
 
@@ -174,7 +176,7 @@ def buildDepGraph(cfgs):
     loader.workloads.append({
         'name' : 'BuildBusybox',
         'actions' : [(buildBusybox, [])],
-        'targets' : [getOpt('initramfs-dir') /'disk' / 'bin' / 'busybox'],
+        'targets' : [getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
         'uptodate': [config_changed(checkGitStatus(getOpt('busybox-dir'))),
             config_changed(getToolVersions())]
         })
@@ -225,7 +227,6 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
 
     if 'jobs' in config.keys():
         for jCfg in config['jobs'].values():
-            handleHostInit(jCfg)
             if buildBin:
                 binList.append(jCfg['bin'])
                 if jCfg['nodisk']:
