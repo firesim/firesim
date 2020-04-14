@@ -111,8 +111,12 @@ bin-post
 --------------
 A script to run natively on your host (i.e., them machine where you
 invoked FireMarshal) from the workload source directory after you build the
-binary for this workload. This option may include arguments for the script, e.g.
-``"bin-post" : "foo.sh bar baz"``.
+binary(s) for this workload but before the image(s) is/are built. This option may
+include arguments for the script, e.g. ``"bin-post" : "foo.sh bar baz"``.
+
+*Non-heritable*: The bin-post script will not be re-run for child workloads.
+However, any affects that bin-post has on the resulting rootfs *will* be
+reflected in the child.
 
 guest-init
 ^^^^^^^^^^^^^^
