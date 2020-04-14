@@ -36,6 +36,8 @@ configUser = [
         'pk-src',
         # Path to script to run on host before building this config
         'host-init',
+        # Path to script to run on host after building the binary
+        'bin-post',
         # Script to run on results dir after running workload
         'post_run_hook',
         # Path to folder containing overlay files to apply to img
@@ -56,7 +58,7 @@ configUser = [
         'workdir',
         # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
         'launch',
-        # Size of root filesystem (human-readable string) 
+        # Size of root filesystem (human-readable string)
         'rootfs-size',
         # Number of CPU cores to simulate (applies only to functional simulation). Converted to int after loading.
         'cpus',
@@ -200,7 +202,7 @@ class Config(collections.MutableMapping):
             self.cfg['cfg-file'] = cfgFile
         else:
             self.cfg = cfgDict
-            
+
         cfgDir = None
         if 'cfg-file' in self.cfg:
             cfgDir = self.cfg['cfg-file'].parent
@@ -214,7 +216,7 @@ class Config(collections.MutableMapping):
                 assert('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
                 self.cfg['workdir'] = cfgDir / self.cfg['workdir']
         else:
-            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided" 
+            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided"
             self.cfg['workdir'] = cfgDir / self.cfg['name']
 
         if 'nodisk' not in self.cfg:
@@ -237,7 +239,7 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['img-sz'] = configDefaults['img-sz']
 
-        # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs) 
+        # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs)
         if 'files' in self.cfg:
             fList = []
             for f in self.cfg['files']:
@@ -265,7 +267,7 @@ class Config(collections.MutableMapping):
             self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
 
         # Handle script arguments
-        for sOpt in ['guest-init', 'post_run_hook', 'host-init']:
+        for sOpt in ['guest-init', 'post_run_hook', 'host-init', 'bin-post']:
             if sOpt in self.cfg:
                 self.cfg[sOpt] = RunSpec.fromString(
                         self.cfg[sOpt],
@@ -285,12 +287,12 @@ class Config(collections.MutableMapping):
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
             self.cfg['jobs'] = collections.OrderedDict()
-            
+
             for jCfg in jList:
                 jCfg['workdir'] = self.cfg['workdir']
                 # TODO come up with a better scheme here, name is used to
                 # derive the img and bin names, but naming jobs this way makes
-                # for ugly hacks later when looking them up. 
+                # for ugly hacks later when looking them up.
                 jCfg['name'] = self.cfg['name'] + '-' + jCfg['name']
                 jCfg['cfg-file'] = self.cfg['cfg-file']
 
@@ -299,14 +301,14 @@ class Config(collections.MutableMapping):
                     jCfg['base'] = cfgFile.name
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
-            
+
     # Finalize this config using baseCfg (which is assumed to be fully
     # initialized).
     def applyBase(self, baseCfg):
         # For any heritable trait that is defined in baseCfg but not self.cfg
         for k in ((set(baseCfg.keys()) - set(self.cfg.keys())) & set(configInherit)):
             self.cfg[k] = baseCfg[k]
-        
+
         # Distros always specify an image if they use one. We assume that this
         # config will not generate a new image if it's base didn't
         if 'img' in baseCfg:
@@ -323,7 +325,7 @@ class Config(collections.MutableMapping):
         if 'linux-config' in baseCfg:
             if 'linux-config' not in self.cfg:
                 self.cfg['linux-config'] = []
-            # Order matters here! Later kfrags take precedence over earlier. 
+            # Order matters here! Later kfrags take precedence over earlier.
             self.cfg['linux-config'] = baseCfg['linux-config'] + self.cfg['linux-config']
 
         if 'pk-src' not in self.cfg:
@@ -381,9 +383,9 @@ class ConfigManager(collections.MutableMapping):
         cfgPaths = []
         if paths != None:
             cfgPaths += paths
-        
+
         if dirs != None:
-            for d in dirs: 
+            for d in dirs:
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
 

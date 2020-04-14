@@ -107,6 +107,13 @@ explicitly build this workload. This option may include arguments for the script
 However, any affects that host-init has on the resulting rootfs *will* be
 reflected in the child.
 
+bin-post
+--------------
+A script to run natively on your host (i.e., them machine where you
+invoked FireMarshal) from the workload source directory after you build the
+binary for this workload. This option may include arguments for the script, e.g.
+``"bin-post" : "foo.sh bar baz"``.
+
 guest-init
 ^^^^^^^^^^^^^^
 A script to run natively on the guest (in qemu) exactly once while building.
@@ -208,7 +215,7 @@ command
 ^^^^^^^^^^^^
 A command to run every time this workload runs. The command will be run from
 the root directory and will automatically call ``poweroff`` when complete (the
-user does not need to include this). 
+user does not need to include this).
 
 *Non-heritable*
 
