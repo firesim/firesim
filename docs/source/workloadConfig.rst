@@ -44,7 +44,7 @@ base
 ^^^^^^^^^^
 Configuration file to inherit from. FireMarshal will look in the same directory
 as the workload config file for the base configuration (or the workdir if
-``^^workdir`` was passed to the marshal command). A copy of the rootfs from ``base``
+``--workdir`` was passed to the marshal command). A copy of the rootfs from ``base``
 will be used when building this workload. Additionally, most configuration
 options will be inherited if not explicitly provided (options that cannot be
 inherited will be marked as 'non-heritable' in this documentation).
