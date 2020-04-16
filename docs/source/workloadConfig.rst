@@ -88,6 +88,9 @@ only the minimum necessary changes for your workload. In particular, you should
 avoid specifying a custom initramfs since Marshal provides it's own for loading
 platform drivers.
 
+Inheritance happens by merging the current workload's linux-config with all
+parent configs, with more recent options taking precedence of earlier options.
+
 pk-src
 ^^^^^^^^^^^^^^
 Path to riscv-pk source directory to use for this workload. This provides the bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
