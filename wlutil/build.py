@@ -62,7 +62,7 @@ def addDep(loader, config):
     bin_task_deps = [] + hostInit + config['base-deps']
     bin_targets = []
     if 'linux-config' in config:
-        bin_file_deps.append(config['linux-config'])
+        bin_file_deps += config['linux-config']
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
     
@@ -243,18 +243,20 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     return finalPath
 
 def generateKConfig(kfrags, linuxSrc):
-        linuxCfg = linuxSrc / '.config'
-        defCfg = getOpt('gen-dir') / 'defconfig'
+    """Generate the final .config in linuxSrc from the provided list of kernel
+    configuration fragments. Fragments will be applied on top of defconfig."""
+    linuxCfg = linuxSrc / '.config'
+    defCfg = getOpt('gen-dir') / 'defconfig'
 
-        # Create a defconfig to use as reference
-        run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
-        shutil.copy(linuxCfg, defCfg)
+    # Create a defconfig to use as reference
+    run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
+    shutil.copy(linuxCfg, defCfg)
 
-        # Create a config from the user fragments
-        kconfigEnv = os.environ.copy()
-        kconfigEnv['ARCH'] = 'riscv'
-        run([linuxSrc / 'scripts/kconfig/merge_config.sh',
-            str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
+    # Create a config from the user fragments
+    kconfigEnv = os.environ.copy()
+    kconfigEnv['ARCH'] = 'riscv'
+    run([linuxSrc / 'scripts/kconfig/merge_config.sh',
+        str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
 
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:
@@ -323,7 +325,7 @@ def makeBin(config, nodisk=False):
             checkSubmodule(config['linux-src'])
             checkSubmodule(config['pk-src'])
             
-            makeDrivers([config['linux-config']], getOpt('board-dir'), config['linux-src'])
+            makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
 
@@ -343,7 +345,7 @@ def makeBin(config, nodisk=False):
                 initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
-            generateKConfig([config['linux-config'], cpioDir / "initramfs.kfrag"], config['linux-src'])
+            generateKConfig(config['linux-config'] + [cpioDir / "initramfs.kfrag"], config['linux-src'])
             run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', getOpt('jlevel')], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes

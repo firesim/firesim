@@ -29,7 +29,8 @@ configUser = [
         'qemu-args',
         # Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
-        # Path to linux configuration file to use
+        # Path to linux configuration fragments to use (can be a list or scalar
+        # string from the user but will be converted to a list of pathlib.Path)
         'linux-config',
         # Path to riscv-pk (used for bbl)
         'pk-src',
@@ -84,16 +85,17 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'linux-config', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'linux-src', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
-# explicitly provided)
+# explicitly provided). Additional options may also be inherited if they require
+# more advanced inheritance semantics (e.g. linux-config is a list that needs
+# to be appended).
 configInherit = [
         'runSpec',
         'files',
         'outputs',
         'linux-src',
-        'linux-config',
         'pk-src',
         'builder',
         'distro',
@@ -166,7 +168,17 @@ class RunSpec():
             return str(self.path) + " " + ' '.join(self.args)
         else:
             return "uninitialized"
-    
+
+
+def cleanPath(path, workdir):
+    """Take a string or pathlib path argument and return a pathlib.Path
+    representing the final absolute path to that option"""
+    path = pathlib.Path(path)
+    if not path.is_absolute():
+        path = workdir / path
+    return path
+
+
 class Config(collections.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
@@ -212,9 +224,13 @@ class Config(collections.MutableMapping):
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
         for k in (set(configToAbs) & set(self.cfg.keys())):
-            self.cfg[k] = pathlib.Path(self.cfg[k])
-            if not self.cfg[k].is_absolute():
-                self.cfg[k] = self.cfg['workdir'] / self.cfg[k]
+            self.cfg[k] = cleanPath(self.cfg[k], self.cfg['workdir'])
+
+        if 'linux-config' in self.cfg:
+            if isinstance(self.cfg['linux-config'], list):
+                self.cfg['linux-config'] = [ cleanPath(p, self.cfg['workdir']) for p in self.cfg['linux-config'] ]
+            else:
+                self.cfg['linux-config'] = [ cleanPath(self.cfg['linux-config'], self.cfg['workdir']) ]
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
@@ -303,6 +319,12 @@ class Config(collections.MutableMapping):
 
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = getOpt('linux-dir')
+
+        if 'linux-config' in baseCfg:
+            if 'linux-config' not in self.cfg:
+                self.cfg['linux-config'] = []
+            # Order matters here! Later kfrags take precedence over earlier. 
+            self.cfg['linux-config'] = baseCfg['linux-config'] + self.cfg['linux-config']
 
         if 'pk-src' not in self.cfg:
             self.cfg['pk-src'] = getOpt('pk-dir')
