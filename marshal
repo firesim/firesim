@@ -86,6 +86,10 @@ def main():
     # board builtin workloads (the *-base.json's).
     workdirs[wlutil.getOpt('workdir-builtin')] = None
 
+    # Configured search paths
+    for d in wlutil.getOpt('workload-dirs'):
+        workdirs[d] = None
+
     # User-provided workload search path
     if args.workdir is not None:
         workdirs[args.workdir] = None
@@ -113,7 +117,11 @@ def main():
             print("To check on progress, either call marshal with '-v' or see the live output at: ")
             print(wlutil.getOpt('log-dir') / (wlutil.getOpt('run-name') + ".log"))
 
-        targetCfg = cfgs[cfgName]
+        try:
+            targetCfg = cfgs[cfgName]
+        except KeyError as e:
+            log.error("Cannot locate workload: " + cfgName)
+            sys.exit(1)
    
         if args.initramfs or args.no_disk:
             targetCfg['nodisk'] = True

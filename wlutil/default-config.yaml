@@ -1,3 +1,7 @@
+# List of paths to search for parent workloads. See FireMarshal documentation
+# for details of how workload search paths are determined.
+workload-dirs: []
+
 # Root for default board (platform-specific stuff)
 board-dir : '../boards/firechip'
 

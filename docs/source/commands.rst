@@ -13,11 +13,14 @@ The base ``marshal`` command provides a number of options that apply to most
 sub-commands. You can also run ``marshal -h`` for the most up-to-date
 documentation.
 
+.. _command-opt-workdir:
+
 ``--workdir``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 By default, FireMarshal will search the same directory as the provided
 configuration file for ``base`` references and the workload source directory.
-This option instructs FireMarshal to look elsewhere for these references.
+This option instructs FireMarshal to look elsewhere for these references. See
+:ref:`workload-search-paths` for details of how workloads are located.
 
 ``-d --nodisk``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -88,7 +91,7 @@ test
 --------------------------------------
 The test command will build and run the workload, and compare its output
 against the ``testing`` specification provided in its configuration. See
-:ref:`firemarshal-config` for details of the testing specification. If jobs
+:ref:`config-testing` for details of the testing specification. If jobs
 are specified, all jobs will be run independently and their outputs will be
 included in the output directory.
 
@@ -104,9 +107,10 @@ specification against a pre-existing output. This allows you to check the
 output of firesim runs against a workload. It is also useful when developing a
 workload test.
 
+.. _command-install:
+
 install
 --------------------------------------
-.. _firemarshal-install:
 
 Creates a firesim workload definition file in ``firesim/deploy/workloads`` with
 all appropriate links to the generated workload. This allows you to launch the

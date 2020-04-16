@@ -25,8 +25,8 @@ by building the workload:
 
 .. Note:: The ``base-workloads`` directory is on the default search path for
    FireMarshal workloads. This means that we do not need to provide the full-path
-   to the br-base.json configuration file. For custom workloads, you will need to
-   provide a path to the workload configuration file. 
+   to the br-base.json configuration file. See :ref:`workload-search-paths` for
+   details on how workloads are located.
 
 The first time you build a workload may take a long time (buildroot must
 download and cross-compile a large number of packages), but subsequent builds
@@ -64,7 +64,7 @@ caches intermediate build steps whenever possible.
 Finally, FireMarshal supports installing workloads to the FireSim cycle-exact
 simulator. To do this, you will need to use the FireMarshal that comes with
 `FireSim <https://www.fires.im>`_ or `Chipyard
-<https://chipyard.readthedocs.io/en/latest/>`_. To run a workload in FireSim,
+<https://chipyard.readthedocs.io/en/latest/>`_ (or manually :ref:`configure firesim <config-firesim>`). To run a workload in FireSim,
 you must first install it from FireMarshal:
 
 ::

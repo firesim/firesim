@@ -10,12 +10,8 @@ A custom workload takes the form of a workload configuration file, and a
 directory containing any files needed by the workload. Additionally, workloads
 can be based on a parent workload to avoid duplicate work. These files can
 be anywhere you like, but FireMarshal must be able to find the workload
-descriptions. The default search paths for FireMarshal are as follows (in
-order):
-
-    #. Built-in workloads (defined in ``boards/firechip/base-workloads``)
-    #. The directory specified by the ``--workdir`` command-line option
-    #. The current working directory
+descriptions. See :ref:`workload-search-paths` for details on how FireMarshal
+searches for workloads.
 
 We now walk through two examples of building a custom workload. For full
 documentation of every option, see :ref:`workload-config`.
@@ -38,10 +34,7 @@ specifies an existing workload to base off of. FireMarshal will first build
 ``fedora-base.json``, and use a copy of its rootfs for example-fed before
 applying the remaining options. Additionally, if fedora-base.json specifies any
 configuration options that we do not include, we will inherit those (e.g. we
-will use the ``linux-config`` option specified by fedora-base). Notice that we
-do not specify a workload source directory. FireMarshal will look in
-``example-workloads/example-fed/`` for any sources specified in the remaining options
-(you can change this behavior with the :ref:`config-workdir` configuration option).
+will use the ``linux-config`` option specified by fedora-base).
 
 Next come a few options that specify common setup options used by all jobs in
 this workload. The ``overlay`` option specifies a filesystem overlay to copy
