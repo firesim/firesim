@@ -44,14 +44,19 @@ def handleHostInit(config):
 
        run([config['host-init'].path] + config['host-init'].args, cwd=config['workdir'])
 
-def handleBinPost(config):
+def handlePostBin(config, linuxSrc, linuxBin):
     log = logging.getLogger()
-    if 'bin-post' in config:
-       log.info("Applying bin-post: " + str(config['bin-post']))
-       if not config['bin-post'].path.exists():
-           raise ValueError("bin-post script " + str(config['bin-post']) + " not found.")
+    if 'post-bin' in config:
+       log.info("Applying post-bin: " + str(config['post-bin']))
+       if not config['post-bin'].path.exists():
+           raise ValueError("post-bin script " + str(config['post-bin']) + " not found.")
 
-       run([config['bin-post'].path] + config['bin-post'].args, cwd=config['workdir'])
+       # add linux src and bin path to the environment
+       postbinEnv = os.environ.copy()
+       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : linuxSrc.as_posix()})
+       postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
+
+       run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
 
 def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
@@ -120,20 +125,19 @@ def addDep(loader, config):
 
     # Add a rule for running script after binary is created (i.e. for ext. modules)
     # Similar to 'host-init' always runs if exists
-    binPost = []
-    bin_post_task_deps = diskBin + nodiskBin
-    print(bin_post_task_deps)
-    if 'bin-post' in config:
+    postBin = []
+    post_bin_task_deps = diskBin + nodiskBin
+    if 'post-bin' in config:
         loader.addTask({
-            'name' : str(config['bin-post']),
-            'actions' : [(handleBinPost, [config])],
-            'task_dep' : bin_post_task_deps,
+            'name' : str(config['post-bin']),
+            'actions' : [(handlePostBin, [config, config.get('linux-src'), post_bin_task_deps[0]])],
+            'task_dep' : post_bin_task_deps,
         })
-        binPost = [str(config['bin-post'])]
+        postBin = [str(config['post-bin'])]
 
     # Add a rule for the image (if any)
     img_file_deps = []
-    img_task_deps = [] + hostInit + binPost + config['base-deps']
+    img_task_deps = [] + hostInit + postBin + config['base-deps']
     if 'img' in config:
         if 'files' in config:
             for fSpec in config['files']:

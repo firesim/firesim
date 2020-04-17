@@ -37,7 +37,7 @@ configUser = [
         # Path to script to run on host before building this config
         'host-init',
         # Path to script to run on host after building the binary
-        'bin-post',
+        'post-bin',
         # Script to run on results dir after running workload
         'post_run_hook',
         # Path to folder containing overlay files to apply to img
@@ -267,7 +267,7 @@ class Config(collections.MutableMapping):
             self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
 
         # Handle script arguments
-        for sOpt in ['guest-init', 'post_run_hook', 'host-init', 'bin-post']:
+        for sOpt in ['guest-init', 'post_run_hook', 'host-init', 'post-bin']:
             if sOpt in self.cfg:
                 self.cfg[sOpt] = RunSpec.fromString(
                         self.cfg[sOpt],
