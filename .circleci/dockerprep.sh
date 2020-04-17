@@ -25,4 +25,3 @@ sudo yum -y install dtc # TODO: replace in machine-launch script, now available 
 sudo pip2 install numpy==1.16.6
 sudo pip2 install kiwisolver==1.1.0
 
-
