@@ -46,7 +46,7 @@ class TimeOutCheck extends Config(new WithTimeOutCheck ++ new midas.SimConfig)
 //
 // TODO: Make the core of this generator a trait that can be mixed into
 // FireSim's ScalaTests for more type safety
-object Generator extends App with freechips.rocketchip.util.HasGeneratorUtilities {
+object Generator extends App with midas.rocketchip.util.HasGeneratorUtilities {
 
  case class UnitTestOptions(
       configProject: String = "midas.unittest",

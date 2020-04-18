@@ -65,7 +65,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     // Mask off valid committed instructions when under reset
     val traces = hPort.hBits.trace.insns.map({ unmasked =>
       val masked = WireDefault(unmasked)
-      masked.valid := unmasked.valid && !hPort.hBits.trace.reset
+      masked.valid := unmasked.valid && !hPort.hBits.trace.reset.asBool
       masked
     })
     private val pcWidth = traces.map(_.iaddr.getWidth).max

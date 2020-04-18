@@ -9,7 +9,8 @@ import chisel3.internal.firrtl.Port
 
 import freechips.rocketchip.config.{Config, Parameters}
 import freechips.rocketchip.diplomacy.{ValName, LazyModule, AutoBundle}
-import freechips.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
+
+import midas.rocketchip.util.{HasGeneratorUtilities, ParsedInputNames}
 
 import freechips.rocketchip.util.property.cover
 

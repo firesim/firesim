@@ -8,7 +8,7 @@ import midas.models.FASEDMemoryTimingModel
 import midas.platform.PlatformShim
 
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
-import freechips.rocketchip.util.{ParsedInputNames}
+import midas.rocketchip.util.{ParsedInputNames}
 
 import firrtl.ir.Port
 import firrtl.annotations.ReferenceTarget

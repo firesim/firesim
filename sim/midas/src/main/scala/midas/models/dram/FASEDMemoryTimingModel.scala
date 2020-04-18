@@ -251,16 +251,18 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     toHostDRAM <> widthAdapter.sAxi4
 
-    widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
-    widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar
-    widthAdapter.mAxi4.w <> ingress.io.nastiOutputs.w
+    val toWidthAdapter = Wire(new NastiIO)
+    AXI4NastiAssigner.toAXI4(widthAdapter.mAxi4, toWidthAdapter)
+    toWidthAdapter.aw <> ingress.io.nastiOutputs.aw
+    toWidthAdapter.ar <> ingress.io.nastiOutputs.ar
+    toWidthAdapter.w  <> ingress.io.nastiOutputs.w
 
     val readEgress = Module(new ReadEgress(
       maxRequests = cfg.maxReads,
       maxReqLength = cfg.maxReadLength,
       maxReqsPerId = cfg.maxReadsPerID))
 
-    readEgress.io.enq <> widthAdapter.mAxi4.r
+    readEgress.io.enq <> toWidthAdapter.r
     readEgress.io.enq.bits.user := DontCare
 
     val writeEgress = Module(new WriteEgress(
@@ -268,7 +270,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxWriteLength,
       maxReqsPerId = cfg.maxWritesPerID))
 
-    writeEgress.io.enq <> widthAdapter.mAxi4.b
+    writeEgress.io.enq <> toWidthAdapter.b
     writeEgress.io.enq.bits.user := DontCare
 
     // Track outstanding requests to the host memory system
@@ -587,8 +589,11 @@ object FASEDBridge {
     val ep = Module(new FASEDBridge(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
     ep.io.reset := reset
     ep.io.clock := clock
-    import chisel3.ExplicitCompileOptions.NotStrict
-    ep.io.axi4 <> axi4
+    // HACK: Nasti and Diplomatic have diverged to the point where it's no longer
+    // safe to emit a partial connect leaf fields.
+    AXI4NastiAssigner.toNasti(ep.io.axi4, axi4)
+    //import chisel3.ExplicitCompileOptions.NotStrict
+    //ep.io.axi4 <> axi4
     ep
   }
 }

@@ -24,7 +24,7 @@ object AXI4Printf {
         io.aw.bits.prot,
         io.aw.bits.qos,
         io.aw.bits.id,
-        io.aw.bits.user.getOrElse(0.U)
+        io.aw.bits.user.asUInt
         )
     }
 
@@ -42,7 +42,7 @@ object AXI4Printf {
         cyclecount,
         io.b.bits.resp,
         io.b.bits.id,
-        io.b.bits.user.getOrElse(0.U)
+        io.b.bits.user.asUInt
         )
     }
 
@@ -58,7 +58,7 @@ object AXI4Printf {
         io.ar.bits.prot,
         io.ar.bits.qos,
         io.ar.bits.id,
-        io.ar.bits.user.getOrElse(0.U)
+        io.ar.bits.user.asUInt
         )
     }
 
@@ -69,7 +69,7 @@ object AXI4Printf {
         io.r.bits.data,
         io.r.bits.last,
         io.r.bits.id,
-        io.r.bits.user.getOrElse(0.U)
+        io.r.bits.user.asUInt
         )
     }
   }
