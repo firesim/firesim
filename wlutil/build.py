@@ -44,7 +44,7 @@ def handleHostInit(config):
 
        run([config['host-init'].path] + config['host-init'].args, cwd=config['workdir'])
 
-def handlePostBin(config, linuxSrc, linuxBin):
+def handlePostBin(config, linuxBin):
     log = logging.getLogger()
     if 'post-bin' in config:
        log.info("Applying post-bin: " + str(config['post-bin']))
@@ -53,7 +53,7 @@ def handlePostBin(config, linuxSrc, linuxBin):
 
        # add linux src and bin path to the environment
        postbinEnv = os.environ.copy()
-       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : linuxSrc.as_posix()})
+       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config.get('linux-src').as_posix()})
        postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
 
        run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
@@ -126,11 +126,11 @@ def addDep(loader, config):
     # Add a rule for running script after binary is created (i.e. for ext. modules)
     # Similar to 'host-init' always runs if exists
     postBin = []
-    post_bin_task_deps = diskBin + nodiskBin
+    post_bin_task_deps = diskBin + nodiskBin # also used to get the bin path
     if 'post-bin' in config:
         loader.addTask({
             'name' : str(config['post-bin']),
-            'actions' : [(handlePostBin, [config, config.get('linux-src'), post_bin_task_deps[0]])],
+            'actions' : [(handlePostBin, [config, post_bin_task_deps[0]])],
             'task_dep' : post_bin_task_deps,
         })
         postBin = [str(config['post-bin'])]
