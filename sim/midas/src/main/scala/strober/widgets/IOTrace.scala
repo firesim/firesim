@@ -23,11 +23,19 @@ class IOTraceWidgetIO(
 }
 
 class IOTraceWidget(
-     wireIns: Seq[(String, Int)],
-     wireOuts: Seq[(String, Int)],
-     readyValidIns: Seq[(String, ReadyValidIO[Data])],
-     readyValidOuts: Seq[(String, ReadyValidIO[Data])])
+     val wireIns: Seq[(String, Int)],
+     val wireOuts: Seq[(String, Int)],
+     val readyValidIns: Seq[(String, ReadyValidIO[Data])],
+     val readyValidOuts: Seq[(String, ReadyValidIO[Data])])
     (implicit p: Parameters) extends Widget()(p) {
+  lazy val module = new IOTraceWidgetImp(this)
+}
+
+class IOTraceWidgetImp(wrapper: IOTraceWidget)(implicit p: Parameters) extends WidgetImp(wrapper) {
+  val wireIns = wrapper.wireIns
+  val wireOuts = wrapper.wireOuts
+  val readyValidIns = wrapper.readyValidIns
+  val readyValidOuts = wrapper.readyValidOuts
   val numWireInChannels = wireIns.unzip._2 reduce (_ + _)
   val numWireOutChannels = wireOuts.unzip._2 reduce (_ + _)
   val io = IO(new IOTraceWidgetIO(

@@ -17,6 +17,19 @@
 
 #include "fpga_model.h"
 
+// Bridge Driver Instantiation Template
+// Casts are required for now since the emitted type can change
+#define INSTANTIATE_FASED(FUNC,IDX) \
+    FUNC(new FASEDMemoryTimingModel( \
+            this, \
+            AddressMap(FASEDMEMORYTIMINGMODEL_ ## IDX ## _R_num_registers, \
+                (const unsigned int*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _R_addrs, \
+                (const char* const*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _R_names, \
+                FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_num_registers, \
+                (const unsigned int*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_addrs, \
+                (const char* const*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_names), \
+            argc, argv, "memory_stats" #IDX ".csv", 1L << FASEDMEMORYTIMINGMODEL_ ## IDX ## _target_addr_bits)); \
+
 
 // MICRO HACKS.
 constexpr int HISTOGRAM_SIZE = 1024;
@@ -66,7 +79,7 @@ class FASEDMemoryTimingModel: public FpgaModel
 {
 public:
   FASEDMemoryTimingModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
-                  std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset, std::string suffix);
+                  std::string stats_file_name, size_t mem_size, std::string suffix);
   void init();
   void profile();
   void finish();
@@ -108,7 +121,6 @@ private:
 
   bool has_latency_histograms() { return histograms.size() > 0; };
   size_t mem_size;
-  uint64_t mem_host_offset;
 };
 
 #endif // __FASED_MEMORY_TIMING_MODEL_H

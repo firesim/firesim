@@ -6,10 +6,11 @@ package passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.annotations._
 import firrtl.Utils.{sub_type, field_type}
 import mdf.macrolib._
 import mdf.macrolib.Utils.writeMDFToString
-import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashSet}
+import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashSet, LinkedHashMap}
 import java.io.{File, FileWriter, Writer}
 
 object Utils {

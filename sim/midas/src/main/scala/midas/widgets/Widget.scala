@@ -9,10 +9,12 @@ import chisel3.core.ActualDirection
 import chisel3.core.DataMirror.directionOf
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.ParameterizedBundle
 
 import scala.collection.mutable
 
+// The AXI4-lite key for the simulation control bus
 case object CtrlNastiKey extends Field[NastiParameters]
 
 // Just NASTI, but pointing at the right key.
@@ -31,27 +33,37 @@ object WidgetMMIO {
 class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
+abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
+  override def module: WidgetImp
+  val wName = Some(Widget.assignName(this))
+  // Legacy API
+  def getWName = wName.get
 
-abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
-  private var _finalized = false
-  protected val crRegistry = new MCRFileMap()
+  // Returns widget-relative word address
+  def getCRAddr(name: String): Int = {
+    module.crRegistry.lookupAddress(name).getOrElse(
+      throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
+  }
+
+  def headerComment(sb: StringBuilder) {
+    val name = getWName.toUpperCase
+    sb.append("\n// Widget: %s\n".format(getWName))
+    sb.append(CppGenerationUtils.genMacro(s"${name}(x)", s"${name}_ ## x"))
+  }
+
+  val customSize: Option[BigInt] = None
+  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.io.ctrl.nastiXDataBits/8))))
+
+  def printCRs = module.crRegistry.printCRs
+}
+
+abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
+  val crRegistry = new MCRFileMap()
   def numRegs = crRegistry.numRegs
 
   def io: WidgetIO
 
-  val customSize: Option[BigInt] = None
   // Default case we set the region to be large enough to hold the CRs
-  lazy val memRegionSize = customSize.getOrElse(
-    BigInt(1 << log2Up(numRegs * (io.ctrl.nastiXDataBits/8))))
-
-  protected var wName: Option[String] = None
-  private def setWidgetName(n: String) {
-    wName = Some(n)
-  }
-  def getWName: String = {
-    wName.getOrElse(throw new  RuntimeException("Must build widgets with their companion object"))
-  }
-
   lazy val ctrlWidth = io.ctrl.nastiXDataBits
   def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
 
@@ -146,49 +158,28 @@ abstract class Widget(implicit val p: Parameters) extends MultiIOModule {
     crFile
   }
 
-  // Returns widget-relative word address
-  def getCRAddr(name: String): Int = {
-    require(_finalized, "Must build Widgets with their companion object")
-    crRegistry.lookupAddress(name).getOrElse(
-      throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
-  }
-
-  def headerComment(sb: StringBuilder) {
-    val name = getWName.toUpperCase
-    sb.append("\n// Widget: %s\n".format(getWName))
-    sb.append(CppGenerationUtils.genMacro(s"${name}(x)", s"${name}_ ## x"))
-  }
-
   def genHeader(base: BigInt, sb: StringBuilder){
-    require(_finalized, "Must build Widgets with their companion object")
-    headerComment(sb)
-    crRegistry.genHeader(wName.getOrElse(name).toUpperCase, base, sb)
-    crRegistry.genArrayHeader(wName.getOrElse(name).toUpperCase, base, sb)
+    wrapper.headerComment(sb)
+    crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
+    crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
   }
 
-  def printCRs = crRegistry.printCRs
+
 }
 
-// TODO: Need to handle names better; try and stick ctrl IO elaboration in here,
-// instead of relying on the widget writer
 object Widget {
   private val widgetInstCount = mutable.HashMap[String, Int]().withDefaultValue(0)
-  def apply[T <: Widget](m: =>T): T = {
-    val w = Module(m)
+  def assignName[T <: Widget](m: T): String = {
     // Assign stable widget names by using the class name and suffix using the
     // number of other instances.
     // We could let the user specify this in their bridge --> we'd need to consider:
     // 1) Name collisions for embedded bridges
     // 2) We currently rely on having fixed widget names based on the class
     //    name, in the simulation driver.
-    val widgetBasename = w.getClass.getSimpleName
+    val widgetBasename = m.getClass.getSimpleName
     val idx = widgetInstCount(widgetBasename)
-    val wName = widgetBasename + "_" + idx
     widgetInstCount(widgetBasename) = idx + 1
-    w suggestName wName
-    w setWidgetName wName // TODO: This can be removed; just use the module name
-    w._finalized = true
-    w
+    widgetBasename + "_" + idx
   }
 }
 
@@ -214,7 +205,7 @@ trait HasWidgets {
   })
 
   def addWidget[T <: Widget](m: => T): T = {
-    val w = Widget(m)
+    val w = LazyModule(m)
     widgets += w
     name2inst += (w.getWName -> w)
     w
@@ -234,12 +225,12 @@ trait HasWidgets {
     ctrlInterconnect.io.masters(0).aw.bits.addr := master.aw.bits.addr(addrSizeBits, 0)
     ctrlInterconnect.io.masters(0).ar.bits.addr := master.ar.bits.addr(addrSizeBits, 0)
     sortedWidgets.zip(ctrlInterconnect.io.slaves) foreach {
-      case (w: Widget, m) => w.io.ctrl <> m
+      case (w: Widget, m) => w.module.io.ctrl <> m
     }
   }
 
   def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
-    widgets foreach ((w: Widget) => w.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
+    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
   }
 
   def printWidgets {

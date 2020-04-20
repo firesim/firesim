@@ -19,3 +19,5 @@ addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.9.3")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
 
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0")
+
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")

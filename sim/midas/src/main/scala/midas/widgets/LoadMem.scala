@@ -1,22 +1,18 @@
 // See LICENSE for license details.
 
-package midas
-package widgets
+package midas.widgets
 
 import chisel3._
 import chisel3.util._
 import junctions._
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
 
 import scala.math.{max, min}
 
-class LoadMemIO(val hKey: Field[NastiParameters])(implicit val p: Parameters) extends WidgetIO()(p){
-  // TODO: Slave nasti key should be passed in explicitly
-  val toSlaveMem = new NastiIO()(p alterPartial ({ case NastiKey => p(hKey) }))
-}
-
-class NastiParams()(implicit val p: Parameters) extends HasNastiParameters
+class LoadMemIO(implicit val p: Parameters) extends WidgetIO()(p)
 
 class LoadMemWriteRequest(implicit p: Parameters) extends NastiBundle {
   val zero = Bool()
@@ -86,28 +82,36 @@ class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
   }
 }
 
-// A crude load mem unit that writes in single beats into the destination memory system
-// Arguments:
-//  Hkey -> the Nasti key for the interconnect of the memory system we are writing to
-//  maxBurst -> the maximum number of beats in a request made to the host memory system
-class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p: Parameters) extends Widget()(p) {
-  val io = IO(new LoadMemIO(hKey))
+class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) extends Widget()(p) {
+  val toHostMemory = AXI4MasterNode(
+    Seq(AXI4MasterPortParameters(
+      masters = Seq(AXI4MasterParameters(
+        name = "Host LoadMem Unit",
+        id   = IdRange(0, 1))))))
+
+  lazy val module = new WidgetImp(this) {
+  val (memAXI4, edge) = toHostMemory.out.head
+  val maxBurst = edge.slave.slaves.map(s => min(s.supportsRead.max, s.supportsWrite.max)).min / (edge.bundle.dataBits / 8)
+  val io = IO(new LoadMemIO)
+  // Gives us a bi-directional hook to a nasti interface so we don't have to port all the code below
+  val memNasti = AXI42Nasti.fromSink(memAXI4)
 
   // prefix h -> host memory we are writing to
   // prefix c -> control nasti interface who is the master of this unit
-  val hParams = new NastiParams()(p alterPartial ({ case NastiKey => p(hKey) }))
-  val cParams = new NastiParams()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) }))
+  val hKey = NastiParameters(memAXI4.params)
+  val hParams = p alterPartial ({ case NastiKey => hKey })
+  val cParams = p alterPartial ({ case NastiKey => p(CtrlNastiKey) })
 
   val cWidth = p(CtrlNastiKey).dataBits
-  val hWidth = p(hKey).dataBits
-  val size = hParams.bytesToXSize((hWidth/8).U)
+  val hWidth = hKey.dataBits
+  val size = log2Ceil(hWidth/8).U
   val widthRatio = hWidth/cWidth
   require(hWidth >= cWidth)
-  require(p(hKey).addrBits <= 2 * cWidth)
+  require(hKey.addrBits <= 2 * cWidth)
 
-  val wAddrH = genWOReg(Wire(UInt(max(0,  p(hKey).addrBits - 32).W)), "W_ADDRESS_H")
-  val wAddrL = genWOReg(Wire(UInt(min(32, p(hKey).addrBits     ).W)), "W_ADDRESS_L")
-  val wLen = Wire(Decoupled(UInt(p(hKey).addrBits.W)))
+  val wAddrH = genWOReg(Wire(UInt(max(0,  hKey.addrBits - 32).W)), "W_ADDRESS_H")
+  val wAddrL = genWOReg(Wire(UInt(min(32, hKey.addrBits     ).W)), "W_ADDRESS_L")
+  val wLen = Wire(Decoupled(UInt(hKey.addrBits.W)))
   // When set, instructs the unit to write 0s to the complete address space
   // Cleared when completed
   val zeroOutDram = Wire(Decoupled(Bool()))
@@ -115,8 +119,7 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
   attachDecoupledSink(wLen, "W_LENGTH")
   attachDecoupledSink(zeroOutDram, "ZERO_OUT_DRAM")
 
-  val hAlterP = p.alterPartial({ case NastiKey => p(hKey) })
-  val wAddrQ = Module(new Queue(new LoadMemWriteRequest()(hAlterP), 2))
+  val wAddrQ = Module(new Queue(new LoadMemWriteRequest()(hParams), 2))
   wAddrQ.io.enq.valid := wLen.valid
   wAddrQ.io.enq.bits.zero := false.B
   wAddrQ.io.enq.bits.addr := Cat(wAddrH, wAddrL)
@@ -130,24 +133,24 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
     case Some(memPortParams) => memPortParams.master
     case None => MasterPortParams(
       base = BigInt(0),
-      size = BigInt(1L << p(hKey).addrBits),
+      size = BigInt(1L << hKey.addrBits),
       beatBytes = hWidth/8,
-      idBits = p(hKey).idBits)
+      idBits = hKey.idBits)
   }
 
-  val reqArb = Module(new Arbiter(new LoadMemWriteRequest()(hAlterP), 2))
+  val reqArb = Module(new Arbiter(new LoadMemWriteRequest()(hParams), 2))
   reqArb.io.in(0) <> wAddrQ.io.deq
   reqArb.io.in(1).valid := zeroOutDram.valid
   reqArb.io.in(1).bits.zero := true.B
   reqArb.io.in(1).bits.addr := extMem.base.U
-  reqArb.io.in(1).bits.len  := (extMem.size >> log2Ceil(hWidth/8)).U
+  reqArb.io.in(1).bits.len  := (totalDRAMAllocated >> log2Ceil(hWidth/8)).U
   zeroOutDram.ready := reqArb.io.in(1).ready
 
-  val writer = Module(new LoadMemWriter(maxBurst)(hAlterP))
+  val writer = Module(new LoadMemWriter(maxBurst)(hParams))
   writer.io.req <> reqArb.io.out
-  io.toSlaveMem.aw <> writer.io.mem.aw
-  io.toSlaveMem.w  <> writer.io.mem.w
-  writer.io.mem.b <> io.toSlaveMem.b
+  memNasti.aw <> writer.io.mem.aw
+  memNasti.w  <> writer.io.mem.w
+  writer.io.mem.b <> memNasti.b
   writer.io.mem.ar.ready := false.B
   writer.io.mem.r.valid := false.B
   writer.io.mem.r.bits := DontCare
@@ -155,21 +158,21 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
 
   attach(writer.io.req.ready, "ZERO_FINISHED", ReadOnly)
 
-  val rAddrH = genWOReg(Wire(UInt(max(0, p(hKey).addrBits - 32).W)), "R_ADDRESS_H")
-  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(p(hKey).addrBits.W))), "R_ADDRESS_L")
+  val rAddrH = genWOReg(Wire(UInt(max(0, hKey.addrBits - 32).W)), "R_ADDRESS_H")
+  val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(hKey.addrBits.W))), "R_ADDRESS_L")
 
-  io.toSlaveMem.ar.bits := NastiReadAddressChannel(
+  memNasti.ar.bits := NastiReadAddressChannel(
       id = 0.U,
       addr = Cat(rAddrH, rAddrQ.bits),
-      size = size)(p alterPartial ({ case NastiKey => p(hKey) }))
-  io.toSlaveMem.ar.valid := rAddrQ.valid
-  rAddrQ.ready := io.toSlaveMem.ar.ready
+      size = size)(p alterPartial ({ case NastiKey => hKey }))
+  memNasti.ar.valid := rAddrQ.valid
+  rAddrQ.ready := memNasti.ar.ready
 
   val rDataQ = Module(new MultiWidthFifo(hWidth, cWidth, 2))
   attachDecoupledSource(rDataQ.io.out, "R_DATA")
-  io.toSlaveMem.r.ready := rDataQ.io.in.ready
-  rDataQ.io.in.valid := io.toSlaveMem.r.valid
-  rDataQ.io.in.bits := io.toSlaveMem.r.bits.data
+  memNasti.r.ready := rDataQ.io.in.ready
+  rDataQ.io.in.valid := memNasti.r.valid
+  rDataQ.io.in.bits := memNasti.r.bits.data
 
   genCRFile()
 
@@ -177,6 +180,7 @@ class LoadMemWidget(hKey: Field[NastiParameters], maxBurst: Int = 8)(implicit p:
     super.genHeader(base, sb)
     import CppGenerationUtils._
     sb.append(genMacro("MEM_DATA_CHUNK", UInt64(
-      (p(hKey).dataBits - 1) / p(midas.core.ChannelWidth) + 1)))
+      (hKey.dataBits - 1) / p(midas.core.ChannelWidth) + 1)))
+  }
   }
 }

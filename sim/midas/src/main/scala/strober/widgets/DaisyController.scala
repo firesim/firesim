@@ -13,8 +13,12 @@ class DaisyControllerIO(daisyIO: DaisyBundle)(implicit p: Parameters) extends Wi
   val daisy = Flipped(daisyIO.cloneType)
 }
 
-class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widget()(p) {
-  val io = IO(new DaisyControllerIO(daisyIF))
+class DaisyController(val daisyIF: DaisyBundle)(implicit p: Parameters) extends Widget()(p) {
+  lazy val module = new DaisyControllerImp(this)
+}
+
+class DaisyControllerImp(wrapper: DaisyController)(implicit p: Parameters) extends WidgetImp(wrapper) {
+  val io = IO(new DaisyControllerIO(wrapper.daisyIF))
 
   // Handle SRAM restarts
   io.daisy.sram.zipWithIndex foreach { case (sram, i) =>
@@ -39,8 +43,8 @@ class DaisyController(daisyIF: DaisyBundle)(implicit p: Parameters) extends Widg
 
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
-    headerComment(sb)
-    sb.append(genMacro("DAISY_WIDTH", UInt32(daisyIF.daisyWidth)))
+    wrapper.headerComment(sb)
+    sb.append(genMacro("DAISY_WIDTH", UInt32(wrapper.daisyIF.daisyWidth)))
     sb.append(genMacro("SRAM_RESTART_ADDR", UInt32(base)))
     sb.append(genMacro("REGFILE_RESTART_ADDR", UInt32(base + 1)))
     sb.append(genEnum("CHAIN_TYPE", (chains map (t => s"${names(t)}_CHAIN")) :+ "CHAIN_NUM"))

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "serial.h"
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, uint64_t mem_host_offset):
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset):
         bridge_driver_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;

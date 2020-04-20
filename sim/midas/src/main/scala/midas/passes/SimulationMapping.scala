@@ -17,22 +17,11 @@ import firrtl.passes.wiring._
 import fame.{FAMEChannelConnectionAnnotation, FAMEChannelPortsAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._
+import midas.platform.PlatformShim
 import midas.widgets.BridgeIOAnnotation
-
-private[passes] object ReferenceTargetToPortMap {
-  def apply(state: CircuitState): Map[ReferenceTarget, Port] = {
-    val circuit = state.circuit
-    val portNodes = new mutable.LinkedHashMap[ReferenceTarget, Port]
-    val moduleNodes = new mutable.LinkedHashMap[ModuleTarget, DefModule]
-    circuit.modules.filter(_.name == circuit.main).foreach({m =>
-      val mTarget = ModuleTarget(circuit.main, m.name)
-      m.ports.foreach({ p => portNodes(mTarget.ref(p.name)) = p })
-    })
-    portNodes.toMap
-  }
-}
 
 private[passes] class SimulationMapping(targetName: String)(implicit val p: Parameters) extends firrtl.Transform
     with HasSimWrapperParams {
@@ -41,7 +30,7 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
   def outputForm = HighForm
   override def name = "[Golden Gate] Simulation Mapping"
 
-  private def dumpHeader(c: platform.PlatformShim) {
+  private def dumpHeader(c: PlatformShim) {
     def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
 
     val dir = p(OutputDir)
@@ -54,7 +43,7 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
     val vsb = new StringBuilder
     vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
     vsb append "`define __%s_H\n".format(targetName.toUpperCase)
-    c.headerConsts map vMacro addString vsb
+    c.top.module.headerConsts map vMacro addString vsb
     vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
 
     val ch = new FileWriter(new File(dir, s"${targetName}-const.h"))
@@ -106,25 +95,22 @@ private[passes] class SimulationMapping(targetName: String)(implicit val p: Para
   }
 
   def execute(innerState: CircuitState) = {
-
-    // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
-    // SimWrapper generation. We want the targets to point at un-lowered ports
-    val chAnnos = innerState.annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
-    val bridgeAnnos = innerState.annotations.collect({ case ep: BridgeIOAnnotation => ep })
     // Generate a port map to look up the types of the IO of the channels
-    val portTypeMap: Map[ReferenceTarget, Port] = ReferenceTargetToPortMap(innerState)
-    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, portTypeMap)
+    val circuit = innerState.circuit
+    val portTypeMap = circuit.modules.filter(_.name == circuit.main).flatMap({m =>
+      val mTarget = ModuleTarget(circuit.main, m.name)
+      m.ports.map({ p => mTarget.ref(p.name) ->  p })
+    }).toMap
+    // Generate the encapsulating simulator RTL
+    lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
+    val c3circuit = chisel3.Driver.elaborate(() => LazyModule(shim).module)
+    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
+    val annos = c3circuit.annotations.map(_.toFirrtl)
 
-    // Now lower the inner circuit in preparation for linking
+    // Lower the inner circuit in preparation for linking
     // This prevents having to worry about matching aggregate structure in the wrapper IO
     val loweredInnerState = new IntermediateLoweringCompiler(innerState.form, LowForm).compile(innerState, Seq())
     val innerCircuit = loweredInnerState.circuit
-
-    val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
-    lazy val shim = p(Platform)(completeParams)
-    val c3circuit = chisel3.Driver.elaborate(() => shim)
-    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = c3circuit.annotations.map(_.toFirrtl)
 
     val transforms = Seq(
       new Fame1Instances,

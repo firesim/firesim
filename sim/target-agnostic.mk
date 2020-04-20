@@ -48,7 +48,11 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 midas_sbt_project := {file:$(firesim_base_dir)}midas
 
-$(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
+# Pre-simulation-mapping annotations which includes all Bridge Annotations
+# extracted used to generate new runtime configurations.
+fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
+
+$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
 	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-ggaf $(ANNO_FILE) \
@@ -67,12 +71,12 @@ $(VERILOG) $(HEADER): $(FIRRTL_FILE) $(ANNO_FILE)
 # to generate a runtime configuration that is compatible with the generated
 # hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
 .PHONY: conf
-conf: $(ANNO_FILE)
+conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
 	cd $(base_dir) && \
 	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
-		-ggaf $(ANNO_FILE) \
+		-ggaf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-ggrc $(CONF_NAME)"
