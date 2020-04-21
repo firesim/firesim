@@ -93,7 +93,8 @@ parent configs, with more recent options taking precedence of earlier options.
 
 pk-src
 ^^^^^^^^^^^^^^
-Path to riscv-pk source directory to use for this workload. This provides the bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
+Path to riscv-pk source directory to use for this workload. This provides the
+bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
 
 host-init
 ^^^^^^^^^^^^^^
@@ -105,6 +106,28 @@ explicitly build this workload. This option may include arguments for the script
 
 *Non-heritable*: The host-init script will not be re-run for child workloads.
 However, any affects that host-init has on the resulting rootfs *will* be
+reflected in the child.
+
+post-bin
+--------------
+A script to run natively on your host (i.e., them machine where you
+invoked FireMarshal) from the workload source directory after you build the
+binary(s) for this workload but before the image(s) is/are built.
+This option is useful for such things as building kernel modules against the specific
+kernel and ``kconfig`` used or analyzing the kernel binary to extract debugging or tracing
+information.
+
+You can expect to have the Linux ``.config`` file that built the Linux binary in the Linux source
+directory. Additionally, you can expect all build artifacts from building the kernel to be
+present in the Linux source directory (i.e no ``make clean`` or equivalent will be run in the
+kernel source).
+
+This option may include arguments for the script, e.g. ``"post-bin" : "foo.sh bar baz"``.
+Additionally, you may use the ``FIREMARSHAL_LINUX_SRC`` and ``FIREMARSHAL_LINUX_BIN`` environment
+variables within the script (they give the path to the Linux source used and the binary created).
+
+*Non-heritable*: The post-bin script will not be re-run for child workloads.
+However, any affects that post-bin has on the resulting rootfs *will* be
 reflected in the child.
 
 guest-init
@@ -208,7 +231,7 @@ command
 ^^^^^^^^^^^^
 A command to run every time this workload runs. The command will be run from
 the root directory and will automatically call ``poweroff`` when complete (the
-user does not need to include this). 
+user does not need to include this).
 
 *Non-heritable*
 

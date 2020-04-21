@@ -21,7 +21,7 @@ class doitLoader(doit.cmd_base.TaskLoader):
 
 def buildBusybox():
     """Builds the local copy of busybox (needed by linux initramfs).
-    
+
     This is called as a doit task (added to the graph in buildDepGraph())
     """
 
@@ -29,7 +29,7 @@ def buildBusybox():
         checkSubmodule(getOpt('busybox-dir'))
     except SubmoduleError as e:
         return doit.exceptions.TaskFailed(e)
-    
+
     shutil.copy(getOpt('wlutil-dir') / 'busybox-config', getOpt('busybox-dir') / '.config')
     run(['make', getOpt('jlevel')], cwd=getOpt('busybox-dir'))
     shutil.copy(getOpt('busybox-dir') / 'busybox', getOpt('initramfs-dir') / 'disk' / 'bin/')
@@ -43,7 +43,21 @@ def handleHostInit(config):
            raise ValueError("host-init script " + str(config['host-init']) + " not found.")
 
        run([config['host-init'].path] + config['host-init'].args, cwd=config['workdir'])
- 
+
+def handlePostBin(config, linuxBin):
+    log = logging.getLogger()
+    if 'post-bin' in config:
+       log.info("Applying post-bin: " + str(config['post-bin']))
+       if not config['post-bin'].path.exists():
+           raise ValueError("post-bin script " + str(config['post-bin']) + " not found.")
+
+       # add linux src and bin path to the environment
+       postbinEnv = os.environ.copy()
+       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config.get('linux-src').as_posix()})
+       postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
+
+       run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
+
 def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
 
@@ -65,7 +79,8 @@ def addDep(loader, config):
         bin_file_deps += config['linux-config']
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
-    
+
+    diskBin = []
     if 'bin' in config:
         if 'dwarf' in config:
             targets = [str(config['bin']), str(config['dwarf'])]
@@ -81,8 +96,10 @@ def addDep(loader, config):
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
                     config_changed(checkGitStatus(config.get('pk-src')))]
                 })
+        diskBin = [str(config['bin'])]
 
     # Add a rule for the nodisk version if requested
+    nodiskBin = []
     if config['nodisk'] and 'bin' in config:
         nodisk_file_deps = bin_file_deps.copy()
         nodisk_task_deps = bin_task_deps.copy()
@@ -104,10 +121,23 @@ def addDep(loader, config):
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
                     config_changed(checkGitStatus(config.get('pk-src')))]
                 })
+        nodiskBin = [str(noDiskPath(config['bin']))]
+
+    # Add a rule for running script after binary is created (i.e. for ext. modules)
+    # Similar to 'host-init' always runs if exists
+    postBin = []
+    post_bin_task_deps = diskBin + nodiskBin # also used to get the bin path
+    if 'post-bin' in config:
+        loader.addTask({
+            'name' : str(config['post-bin']),
+            'actions' : [(handlePostBin, [config, post_bin_task_deps[0]])],
+            'task_dep' : post_bin_task_deps,
+        })
+        postBin = [str(config['post-bin'])]
 
     # Add a rule for the image (if any)
     img_file_deps = []
-    img_task_deps = [] + hostInit + config['base-deps']
+    img_task_deps = [] + hostInit + postBin + config['base-deps']
     if 'img' in config:
         if 'files' in config:
             for fSpec in config['files']:
@@ -122,7 +152,7 @@ def addDep(loader, config):
                 else:
                     # Ignore symlinks
                     if not os.path.islink(fSpec.src):
-                        img_file_deps.append(fSpec.src)			
+                        img_file_deps.append(fSpec.src)
         if 'guest-init' in config:
             img_file_deps.append(config['guest-init'].path)
             img_task_deps.append(str(config['bin']))
@@ -130,7 +160,7 @@ def addDep(loader, config):
             img_file_deps.append(config['runSpec'].path)
         if 'cfg-file' in config:
             img_file_deps.append(config['cfg-file'])
-        
+
         loader.addTask({
             'name' : str(config['img']),
             'actions' : [(makeImage, [config])],
@@ -150,7 +180,7 @@ def buildDepGraph(cfgs):
     loader.workloads.append({
         'name' : 'BuildBusybox',
         'actions' : [(buildBusybox, [])],
-        'targets' : [getOpt('initramfs-dir') /'disk' / 'bin' / 'busybox'],
+        'targets' : [getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
         'uptodate': [config_changed(checkGitStatus(getOpt('busybox-dir'))),
             config_changed(getToolVersions())]
         })
@@ -168,7 +198,7 @@ def buildDepGraph(cfgs):
                         [config_changed(getToolVersions())]
                 })
 
-    # Non-distro configs 
+    # Non-distro configs
     for cfgPath in (set(cfgs.keys()) - set(distros)):
         config = cfgs[cfgPath]
         addDep(loader, config)
@@ -184,10 +214,9 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     global taskLoader
     if taskLoader == None:
         taskLoader = buildDepGraph(cfgs)
-        
+
     config = cfgs[cfgName]
 
-    # handleHostInit(config)
     imgList = []
     binList = []
 
@@ -196,13 +225,12 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             binList.append(noDiskPath(config['bin']))
         else:
             binList.append(config['bin'])
-   
+
     if 'img' in config and buildImg:
         imgList.append(config['img'])
 
     if 'jobs' in config.keys():
         for jCfg in config['jobs'].values():
-            handleHostInit(jCfg)
             if buildBin:
                 binList.append(jCfg['bin'])
                 if jCfg['nodisk']:
@@ -211,7 +239,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
 
-    # The order isn't critical here, we should have defined the dependencies correctly in loader 
+    # The order isn't critical here, we should have defined the dependencies correctly in loader
     doitHandle = doit.doit_cmd.DoitMain(taskLoader, extra_config={'run': getOpt('doitOpts')})
     return doitHandle.run([str(p) for p in binList + imgList])
 
@@ -222,7 +250,7 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     cpioDir: Scratch directory to produce outputs in
     applied in-order (potentially overwriting duplicate files).
     includeDevNodes: If true, will include '/dev/console' and '/dev/tty' special files."""
-    
+
     # Generate individual cpios for each source
     cpios = []
     for src in srcs:
@@ -256,7 +284,7 @@ def generateKConfig(kfrags, linuxSrc):
     kconfigEnv = os.environ.copy()
     kconfigEnv['ARCH'] = 'riscv'
     run([linuxSrc / 'scripts/kconfig/merge_config.sh',
-        str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc) 
+        str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc)
 
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:
@@ -324,7 +352,7 @@ def makeBin(config, nodisk=False):
         try:
             checkSubmodule(config['linux-src'])
             checkSubmodule(config['pk-src'])
-            
+
             makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
@@ -374,7 +402,7 @@ def makeImage(config):
     if not config['img'].exists():
         if 'base-img' in config:
             shutil.copy(config['base-img'], config['img'])
-  
+
     # Resize if needed
     if config['img-sz'] != 0:
         resizeFS(config['img'], config['img-sz'])
@@ -391,7 +419,6 @@ def makeImage(config):
         # Apply and run the init script
         init_overlay = config['builder'].generateBootScriptOverlay(str(config['guest-init'].path), config['guest-init'].args)
         applyOverlay(config['img'], init_overlay)
-        print("Launching: " + str(config['bin']))
         run(getQemuCmd(config), shell=True, level=logging.DEBUG)
 
         # Clear the init script
@@ -412,7 +439,7 @@ def makeImage(config):
 
         run_overlay = config['builder'].generateBootScriptOverlay(scriptPath, spec.args)
         applyOverlay(config['img'], run_overlay)
-    
+
     # Tighten the image size if requested
     if config['img-sz'] == 0:
         resizeFS(config['img'], 0)

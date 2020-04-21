@@ -1,0 +1,10 @@
+{
+  "name" : "post-bin",
+  "base" : "br-base.json",
+  "command" : "cat /usr/share/base.txt",
+  "post-bin" : "create-file.sh base",
+  "files" : [["base.txt", "/usr/share/base.txt"]],
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}
