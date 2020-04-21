@@ -68,6 +68,7 @@ abstract class FASEDTest(
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
+class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "QuadChannel_DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
 class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
 class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "DefaultF1Config") {

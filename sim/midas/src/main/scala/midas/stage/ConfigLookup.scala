@@ -3,7 +3,7 @@
 package midas.stage
 
 import freechips.rocketchip.config.{Parameters, Config}
-import freechips.rocketchip.util.{ParsedInputNames}
+import midas.rocketchip.util.{ParsedInputNames}
 
 trait ConfigLookup {
   // This copies the rocketChip get config code, but adds support for looking up a config class

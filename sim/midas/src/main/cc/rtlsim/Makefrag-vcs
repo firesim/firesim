@@ -8,15 +8,19 @@
 #  CLOCK_PERIOD: Self explanatory
 #  TB := The top level module on which the stop and printf conditions are defined
 
-# AJG: set to your path of dromajo
-DROMAJO_DIR = /scratch/abejgonza/boom-work/dromajo/src
+DROMAJO_DIR = $(TOP_DIR)/tools/dromajo/dromajo-src/src
 
+# The -D_GNU_SOURCE is used only in VCS to placate the compiler under
+# compilation of VCS-provided C sources. We include <stdint.h> in the generated
+# header which then proceeds the #define _GNU_SOURCE present in the
+# aforementioned sources. This should removed once we remove the global
+# -include of the generated header.
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
 	-notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_pp +no_notifier -cpp $(CXX) \
 	-Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc \
 	+vc+list \
-	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -DVCS -I$(VCS_HOME)/include" \
+	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include" \
 	-LDFLAGS "$(LDFLAGS)" \
 	-sverilog \
 	-assert svaext \

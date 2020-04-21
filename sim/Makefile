@@ -1,7 +1,7 @@
 # See LICENSE for license details.
 
 ifndef FIRESIM_ENV_SOURCED
-$(error You must source sourceme-f1-manager.sh or env.sh to use this Makefile)
+#$(error You must source sourceme-f1-manager.sh or env.sh to use this Makefile)
 endif
 
 firesim_base_dir := $(abspath .)

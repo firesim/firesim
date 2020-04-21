@@ -21,11 +21,21 @@ struct serial_data_t {
     } out;
 };
 
+// Bridge Driver Instantiation Template
+// Casts are required for now since the emitted type can change
+#define INSTANTIATE_SERIAL(FUNC,IDX) \
+    SERIALBRIDGEMODULE_## IDX ##_substruct_create; \
+    FUNC(new serial_t(this,\
+                      args, \
+                      SERIALBRIDGEMODULE_ ## IDX ## _substruct, \
+                      IDX, \
+                      SERIALBRIDGEMODULE_ ## IDX ## _memory_offset)); \
+
 #ifdef SERIALBRIDGEMODULE_struct_guard
 class serial_t: public bridge_driver_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, uint64_t mem_host_offset);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();
@@ -38,7 +48,7 @@ class serial_t: public bridge_driver_t
         simif_t* sim;
         firesim_fesvr_t* fesvr;
         // host memory offset based on the number of memory models and their size
-        uint64_t mem_host_offset;
+        int64_t mem_host_offset;
         // Number of target cycles between fesvr interactions
         uint32_t step_size;
         // Tell the widget to start enqueuing tokens

@@ -8,6 +8,7 @@ import junctions._
 import chisel3._
 import chisel3.util.{Decoupled, Counter, log2Up}
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
 
 class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
   val done = Input(Bool())
@@ -30,7 +31,9 @@ object Pulsify {
   }
 }
 
+
 class SimulationMaster(implicit p: Parameters) extends Widget()(p) {
+  lazy val module = new WidgetImp(this) {
   val io = IO(new SimulationMasterIO)
   genAndAttachQueue(io.step, "STEP")
   genRORegInit(io.done, "DONE", 0.U)
@@ -40,10 +43,10 @@ class SimulationMaster(implicit p: Parameters) extends Widget()(p) {
   genRORegInit(initDelay === 0.U, "INIT_DONE", 0.U)
 
   genCRFile()
-
   override def genHeader(base: BigInt, sb: StringBuilder) {
     import CppGenerationUtils._
     super.genHeader(base, sb)
     sb.append(genMacro("CHANNEL_SIZE", UInt32(log2Up(p(midas.core.ChannelWidth)/8))))
+  }
   }
 }

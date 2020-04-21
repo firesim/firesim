@@ -18,7 +18,7 @@ sealed trait IntLikeLiteral extends CPPLiteral {
 }
 
 case class UInt32(value: BigInt) extends IntLikeLiteral {
-  def typeString = "unsigned int"
+  def typeString = "uint32_t"
   def bitWidth = 32
   def literalSuffix = ""
 }
@@ -26,7 +26,13 @@ case class UInt32(value: BigInt) extends IntLikeLiteral {
 case class UInt64(value: BigInt) extends IntLikeLiteral {
   def typeString = "uint64_t"
   def bitWidth = 64
-  def literalSuffix = "L"
+  def literalSuffix = "ULL"
+}
+
+case class Int64(value: BigInt) extends IntLikeLiteral {
+  def typeString = "int64_t"
+  def bitWidth = 64
+  def literalSuffix = "LL"
 }
 
 case class CStrLit(val value: String) extends CPPLiteral {

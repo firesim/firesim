@@ -490,6 +490,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.get_job().rootfs_path(),
                               self.get_rootfs_name()])
 
+        # shared libraries
+        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
+        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
         for x in range(1, num_siblings):

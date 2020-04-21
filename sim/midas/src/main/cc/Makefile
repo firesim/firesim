@@ -57,15 +57,13 @@ $(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
 $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
-# AJG: set to your path of dromajo
-#DROMAJO_DIR = /home/centos/general/dromajo/src
-DROMAJO_DIR = /scratch/abejgonza/boom-work/dromajo/src
+
+DROMAJO_DIR = $(TOP_DIR)/tools/dromajo/dromajo-src/src
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir) -I$(DROMAJO_DIR)
 # The trailing whitespace is important for some reason...
 override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -L$(DROMAJO_DIR) -ldromajo_cosim 
 
-dromajo_srcs := $(wildcard $(DROMAJO_DIR)/*.h) $(wildcard $(DROMAJO_DIR)/*.cc)
 design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
 design_vh := $(GEN_DIR)/$(DESIGN)-const.vh
@@ -85,7 +83,7 @@ $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o) $(dromajo_srcs)
+$(OUT_DIR)/$(DESIGN)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) -include $< \
 	-o $@ $(DRIVER) $(dramsim_o) $(lib_o) $(platform_o) $(bridge_o) $(LDFLAGS)
