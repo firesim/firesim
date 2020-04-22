@@ -109,7 +109,7 @@ However, any affects that host-init has on the resulting rootfs *will* be
 reflected in the child.
 
 post-bin
---------------
+^^^^^^^^^^^^^^
 A script to run natively on your host (i.e., them machine where you
 invoked FireMarshal) from the workload source directory after you build the
 binary(s) for this workload but before the image(s) is/are built.
