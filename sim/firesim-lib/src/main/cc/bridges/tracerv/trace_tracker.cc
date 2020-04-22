@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
         uint64_t cycle = row[0];
 
         for (int i = 1; i < ENTRIES_PER_ROW; i++) {
-            uint64_t addr = row[i] & ~valid_mask;
+            uint64_t addr = (row[i] << 24) >> 24;
             if (row[i] & valid_mask) {
                 t->addInstruction(addr, cycle);
             }
