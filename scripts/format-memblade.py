@@ -2,6 +2,7 @@ import re
 import struct
 import sys
 from collections import namedtuple, defaultdict
+import argparse
 
 FLITRE = re.compile(r"valid data chunk: ([0-9a-f]+), last ([01]), (send|recv)cycle: (\d+)")
 RMEM_REQ_ETH_TYPE  = 0x0408
@@ -82,7 +83,7 @@ def parse_packets(flitgroups):
                         ethtype, len(group.data) - 2,
                         group.sendrecv, group.timestamp)
 
-def format_log(f):
+def format_log(f, show_body):
     flits = parse_flits(f)
     groups = group_flits(flits)
     packets = parse_packets(groups)
@@ -96,15 +97,17 @@ def format_log(f):
             elif pkt.opcode == RMEM_OC_SPAN_WRITE:
                 print("{} write req spanid={} xactid={}".format(
                     pkt.timestamp, pkt.spanid, pkt.xactid))
-                for flit in pkt.data:
-                    print("{:016x}".format(flit))
+                if show_body:
+                    for flit in pkt.data:
+                        print("{:016x}".format(flit))
             xactmatches[pkt.xactid] += 1
         elif isinstance(pkt, RemoteMemResponse):
             if pkt.respcode == RMEM_RC_SPAN_OK:
                 print("{} read resp xactid={}".format(
                     pkt.timestamp, pkt.xactid))
-                for flit in pkt.data:
-                    print("{:016x}".format(flit))
+                if show_body:
+                    for flit in pkt.data:
+                        print("{:016x}".format(flit))
             elif pkt.respcode == RMEM_RC_NODATA_OK:
                 print("{} write resp xactid={}".format(
                     pkt.timestamp, pkt.xactid))
@@ -115,11 +118,15 @@ def format_log(f):
             print("Unmatched xact id " + str(xactid))
 
 def main():
-    if len(sys.argv) < 2:
-        format_log(sys.stdin)
-    else:
-        with open(sys.argv[1]) as f:
-            format_log(f)
+    parser = argparse.ArgumentParser("Format memory blade packets from niclog")
+    parser.add_argument("--show-body", dest="show_body", action="store_const",
+                        const=True, default=False,
+                        help="Show the body of memblade packets with data")
+    parser.add_argument("niclog", help="niclog from FPGA simulation")
+    args = parser.parse_args()
+
+    with open(args.niclog) as f:
+        format_log(f, args.show_body)
 
 if __name__ == "__main__":
     main()
