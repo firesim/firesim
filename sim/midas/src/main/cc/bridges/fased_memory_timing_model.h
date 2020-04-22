@@ -28,7 +28,8 @@
                 FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_num_registers, \
                 (const unsigned int*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_addrs, \
                 (const char* const*) FASEDMEMORYTIMINGMODEL_ ## IDX ## _W_names), \
-            argc, argv, "memory_stats" #IDX ".csv", 1L << FASEDMEMORYTIMINGMODEL_ ## IDX ## _target_addr_bits)); \
+            argc, argv, "memory_stats" #IDX ".csv", \
+            1L << FASEDMEMORYTIMINGMODEL_ ## IDX ## _target_addr_bits, "_" #IDX));
 
 
 // MICRO HACKS.
