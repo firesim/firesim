@@ -1,0 +1,9 @@
+{
+  "name" : "t",
+  "workdir" : "t0",
+  "base" : "tBase.json",
+  "command" : "/t0.sh",
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}
