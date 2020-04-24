@@ -71,7 +71,8 @@ sbt: $(FIRRTL_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "shell"
 test: $(FIRRTL_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"
-
+testOnly: $(FIRRTL_JAR)
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "testOnly $(SCALA_TEST)"
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
 
