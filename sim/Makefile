@@ -37,7 +37,7 @@ rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
 JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
-SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar ++$(SCALA_VERSION)
+SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
@@ -71,7 +71,8 @@ sbt: $(FIRRTL_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "shell"
 test: $(FIRRTL_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"
-
+testOnly: $(FIRRTL_JAR)
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "testOnly $(SCALA_TEST)"
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
 
