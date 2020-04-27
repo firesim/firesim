@@ -64,11 +64,9 @@ class SimConfig extends Config((site, here, up) => {
   case SynthPrints      => false
   case EnableSnapshot   => false
   case KeepSamplesInMem => true
-  case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
-  case HostMemNumChannels => 1
 
   // Remove once AXI4 port is complete
   case MemNastiKey      => {
@@ -79,20 +77,27 @@ class SimConfig extends Config((site, here, up) => {
   }
 })
 
-class ZynqConfig extends Config(new Config((site, here, up) => {
+class ZynqBaseConfig extends Config(new Config((site, here, up) => {
+  case CtrlNastiKey     => NastiParameters(32, 32, 12)
   case Platform       => (p: Parameters) => new ZynqShim()(p)
+  case HostMemNumChannels => 1
   case HasDMAChannel  => false
-  case HostMemChannelKey => HostMemChannelParams(
-    size      = 0x100000000L, // 4 GiB
-    beatBytes = 8,
-    idBits    = 4)
 }) ++ new SimConfig)
 
-class ZynqConfigWithSnapshot extends Config(new Config((site, here, up) => {
-  case EnableSnapshot => true
-}) ++ new ZynqConfig)
+class ZC706Config extends Config(new Config((site, here, up) => {
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x40000000L, // 1 GiB
+    beatBytes = 8,
+    idBits    = 4)
+}) ++ new ZynqBaseConfig)
 
-// we are assuming the host-DRAM size is 2^chAddrBits
+class ZedboardConfig extends Config(new Config((site, here, up) => {
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x10000000L, // 256 MiB
+    beatBytes = 8,
+    idBits    = 4)
+}) ++ new ZynqBaseConfig)
+
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
@@ -103,10 +108,6 @@ class F1Config extends Config(new Config((site, here, up) => {
     idBits    = 4)
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
-
-class F1ConfigWithSnapshot extends Config(new Config((site, here, up) => {
-  case EnableSnapshot => true
-}) ++ new F1Config)
 
 // Turns on all additional synthesizable debug features for checking the
 // implementation of the simulator.
