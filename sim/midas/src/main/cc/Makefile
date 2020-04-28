@@ -57,9 +57,16 @@ $(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
 $(OUT_DIR)/$(DESIGN).chain:
 	$(if $(wildcard $(GEN_DIR)/$(DESIGN).chain),cp $(GEN_DIR)/$(DESIGN).chain $@,)
 
-override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
+# dromajo setup
+DROMAJO_DIR = $(TOP_DIR)/tools/dromajo/dromajo-src/src
+DROMAJO_LIB_NAME = dromajo_cosim
+DROMAJO_LIB = $(DROMAJO_DIR)/lib$(DROMAJO_LIB_NAME).a
+$(DROMAJO_LIB):
+	$(MAKE) -C $(DROMAJO_DIR)
+
+override CXXFLAGS += -I$(midas_dir) -I$(util_dir) -I$(DROMAJO_DIR) -I$(GEN_DIR)
 # The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -L$(DROMAJO_DIR) -l$(DROMAJO_LIB_NAME) 
 
 design_v  := $(GEN_DIR)/$(shim).v
 design_h  := $(GEN_DIR)/$(DESIGN)-const.h
@@ -116,9 +123,11 @@ verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DI
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/emul_$(PLATFORM).v
 TB := emul
-VCS_FLAGS := -e vcs_main
+VCS_FLAGS := $(DROMAJO_LIB) -e vcs_main
 include rtlsim/Makefrag-vcs
 
+$(OUT_DIR)/$(DESIGN): $(DROMAJO_LIB)
+$(OUT_DIR)/$(DESIGN)-debug: $(DROMAJO_LIB)
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 

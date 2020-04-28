@@ -119,6 +119,7 @@ class RuntimeHWConfig:
         command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
         command_netbws = array_to_plusargs(all_netbws, "+netbw")
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
+        command_dromajo = "+drj_dtb=" + all_bootbinaries[0] + ".dtb" +  " +drj_bin=" + all_bootbinaries[0] + " +drj_rom=" + all_bootbinaries[0] + ".rom"
 
         command_niclogs = array_to_lognames(all_macs, "niclog")
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
@@ -129,9 +130,11 @@ class RuntimeHWConfig:
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
-        # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
-            slotid=slotid, driver=driver, runtimeconf=runtimeconf,
+        # TODO: supernode support (tracefile0, trace-select0.. etc)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+            slotid=slotid,
+            driver=driver,
+            runtimeconf=runtimeconf,
             command_macs=command_macs,
             command_rootfses=command_rootfses,
             command_niclogs=command_niclogs,
@@ -145,7 +148,9 @@ class RuntimeHWConfig:
             trace_start=trace_start, trace_end=trace_end, tracefile=tracefile,
             trace_output_format=trace_output_format,
             dwarf_file_name=dwarf_file_name,
-            autocounterfile=autocounterfile, autocounter_readrate=autocounter_readrate)
+            autocounterfile=autocounterfile,
+            autocounter_readrate=autocounter_readrate,
+            command_dromajo=command_dromajo)
 
         return basecommand
 
