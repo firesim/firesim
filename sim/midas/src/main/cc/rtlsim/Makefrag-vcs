@@ -8,7 +8,6 @@
 #  CLOCK_PERIOD: Self explanatory
 #  TB := The top level module on which the stop and printf conditions are defined
 
-DROMAJO_DIR = $(TOP_DIR)/tools/dromajo/dromajo-src/src
 
 # The -D_GNU_SOURCE is used only in VCS to placate the compiler under
 # compilation of VCS-provided C sources. We include <stdint.h> in the generated
@@ -27,11 +26,8 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	+define+RANDOMIZE_GARBAGE_ASSIGN \
 	+define+RANDOMIZE_INVALID_ASSIGN \
-	+define+RANDOM=0 \
 	+define+STOP_COND=!$(TB).reset \
 	+define+PRINTF_COND=!$(TB).reset \
-	-CC "-I$(DROMAJO_DIR)" \
-	$(DROMAJO_DIR)/libdromajo_cosim.a \
 	$(VCS_FLAGS)
 
 vcs_v := $(emul_v) $(vcs_wrapper_v)

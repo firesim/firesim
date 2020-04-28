@@ -111,3 +111,30 @@ At this point you are ready to run the simulation with Dromajo.
 The commit log trace will by default print to the ``uartlog``.
 However, you can avoid printing it out by changing ``verbose == false`` in the ``dromajo_cosim.cpp`` file
 located in ``$CHIPYARD/tools/dromajo/dromajo-src/src/`` folder.
+
+Troubleshooting Dromajo Simulations with MIDAS Simulations
+----------------------------------------------------------
+
+If FPGA simulation fails with Dromajo, you can use MIDAS-level simulation to determine if your Dromajo setup is correct.
+First refer to :ref:`Debugging & Testing with RTL Simulation` for more information on MIDAS-level simulation.
+The main difference between those instructions and simulations with Dromajo is that you need to manually point to the ``dtb``, ``rom``, and binary files when invoking the simulator.
+Here is an example of a ``make`` command that can be run to check for a correct setup.
+
+.. code-block:: shell
+
+    # enter simulation directory
+    cd $FIRESIM/sims/
+
+    # make command to run a binary
+    # <BIN> - absolute path to binary
+    # <DTB> - absolute path to dtb file created earlier
+    # <BOOTROM> - absolute path to rom file copied from earlier
+    # <YourBoomConfig> - Single-core BOOM configuration to test
+    make TARGET_CONFIG=<YourBoomConfig> SIM_BINARY=<BIN> EXTRA_SIM_ARGS="+drj_dtb=<DTB> +drj_rom=<BOOTROM> +drj_bin=<BIN>" run-vcs
+
+It is important to have the ``+drj_*`` arguments, otherwise Dromajo will not match the simulation running on the DUT.
+
+.. note:: Sometimes simulations in VCS will diverge unless a ``+define+RANDOM=0`` is added to the VCS flags in ``sim/midas/src/main/cc/rtlsim/Makefrag-vcs``.
+
+.. warning:: Dromajo currently only works in VCS and FireSim simulations.
+
