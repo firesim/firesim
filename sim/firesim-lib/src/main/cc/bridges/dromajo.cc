@@ -130,62 +130,36 @@ void dromajo_t::init() {
 
     printf("[INFO] Dromajo: Attached Dromajo to %d instruction streams\n", this->_num_streams);
 
-    char *local_argv[MAX_ARGS];
-    char local_argc = 0;
-    char mmio_range[MAX_STR_LEN] = "";
-    char plic_params[MAX_STR_LEN] = "";
-    char clint_params[MAX_STR_LEN] = "";
+    // setup arguments
+    char local_argc = 21;
+    char* local_argv[MAX_ARGS] = {
+        "./dromajo",
+        "--compact_bootrom",
+        "--custom_extension",
+        "--clear_ids",
+        "--reset_vector",
+        DROMAJO_RESET_VECTOR,
+        "--bootrom",
+        (char*)this->dromajo_bootrom.c_str(),
+        "--mmio_range",
+        DROMAJO_MMIO_START ":" DROMAJO_MMIO_END,
+        "--plic",
+        DROMAJO_PLIC_BASE ":" DROMAJO_PLIC_SIZE,
+        "--clint",
+        DROMAJO_CLINT_BASE ":" DROMAJO_CLINT_SIZE,
+        "--memory_size",
+        DROMAJO_MEM_SIZE,
+        "--save",
+        "dromajo_snap",
+        "--dtb",
+        (char*)this->dromajo_dtb.c_str(),
+        (char*)this->dromajo_bin.c_str()
+    };
 
-    local_argv[local_argc] = (char*)"./dromajo";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--compact_bootrom";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--custom_extension";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--reset_vector";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)DROMAJO_RESET_VECTOR;
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--bootrom";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)this->dromajo_bootrom.c_str();
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--mmio_range";
-    local_argc += 1;
-    strcat(mmio_range, (char*)DROMAJO_MMIO_START);
-    strcat(mmio_range, ":");
-    strcat(mmio_range, (char*)DROMAJO_MMIO_END);
-    local_argv[local_argc] = (char*)mmio_range;
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--plic";
-    local_argc += 1;
-    strcat(plic_params, (char*)DROMAJO_PLIC_BASE);
-    strcat(plic_params, ":");
-    strcat(plic_params, (char*)DROMAJO_PLIC_SIZE);
-    local_argv[local_argc] = (char*)plic_params;
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--clint";
-    local_argc += 1;
-    strcat(clint_params, (char*)DROMAJO_CLINT_BASE);
-    strcat(clint_params, ":");
-    strcat(clint_params, (char*)DROMAJO_CLINT_SIZE);
-    local_argv[local_argc] = (char*)clint_params;
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--memory_size";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)DROMAJO_MEM_SIZE;
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--save";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"dromajo_snap";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)"--dtb";
-    local_argc += 1;
-    local_argv[local_argc] = (char*)this->dromajo_dtb.c_str();
-    local_argc += 1;
-
-    local_argv[local_argc] = (char*)this->dromajo_bin.c_str();
-    local_argc += 1;
+    if (MAX_ARGS < local_argc) {
+        printf("[DRJ_ERR] Too many arguments\n");
+        exit(1);
+    }
 
     printf("[INFO] Dromajo command: \n");
     for(int i = 0; i < local_argc; ++i) {
@@ -252,17 +226,7 @@ void dromajo_t::tick() {
         pull(this->_dma_addr, (char*)OUTBUF, QUEUE_DEPTH * sizeof(uint64_t) * 8);
 
         for (uint32_t offset = 0; offset < QUEUE_DEPTH*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
-            // invoke dromajo
-#ifdef DEBUG
-            //fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
-
-            //for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
-            //    fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-            //    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
-            //}
-            //fprintf(stderr, ")\n");
-#endif
-
+            // invoke dromajo (requires that buffer is aligned properly)
             int rval = this->invoke_dromajo(OUTBUF + offset);
             if (rval) {
                 dromajo_failed = true;

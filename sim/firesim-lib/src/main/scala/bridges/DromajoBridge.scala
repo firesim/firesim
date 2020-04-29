@@ -36,7 +36,7 @@ class DromajoTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
 }
 
 /**
- * Blackbox that is connected to the host
+ * Blackbox that is instantiated in the target
  */
 class DromajoBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[DromajoTargetIO], DromajoBridgeModule]
@@ -81,9 +81,6 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new DromajoTargetIO(key.insnWidths, key.vecSizes)))
 
-    // the target is ready to both send/receive data
-    val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
-
     // helper to get number to round up to nearest multiple
     def roundUp(num: Int, mult: Int): Int = { (((num - 1) / mult) + 1) * mult }
 
@@ -107,14 +104,17 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     }
 
     val paddedTraces = traces.map { trace =>
-      Cat(trace.tval.pad(tvalWidth),
-        Cat(trace.cause.pad(causeWidth),
-          Cat(boolPad(trace.interrupt, 8),
-            Cat(boolPad(trace.exception, 8),
-              Cat(trace.priv.asUInt.pad(8),
-                Cat(trace.wdata.pad(wdataWidth),
-                  Cat(trace.insn.pad(insnWidth),
-                    Cat(trace.iaddr.pad(iaddrWidth), boolPad(trace.valid, 8)))))))))
+      Cat(
+        trace.tval.pad(tvalWidth),
+        trace.cause.pad(causeWidth),
+        boolPad(trace.interrupt, 8),
+        boolPad(trace.exception, 8),
+        trace.priv.asUInt.pad(8),
+        trace.wdata.pad(wdataWidth),
+        trace.insn.pad(insnWidth),
+        trace.iaddr.pad(iaddrWidth),
+        boolPad(trace.valid, 8)
+      )
     }
 
     val maxTraceSize = paddedTraces.map(t => t.getWidth).max
