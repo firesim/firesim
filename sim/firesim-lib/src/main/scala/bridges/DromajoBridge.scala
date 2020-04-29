@@ -71,7 +71,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
 {
   lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
     // CONSTANTS: DMA Parameters
-    lazy val QUEUE_DEPTH = 64
+    lazy val QUEUE_DEPTH = TOKEN_QUEUE_DEPTH
     lazy val TOKEN_WIDTH = 512 // in b
     lazy val toHostCPUQueueDepth = QUEUE_DEPTH
     lazy val dmaSize = BigInt((TOKEN_WIDTH / 8) * QUEUE_DEPTH)

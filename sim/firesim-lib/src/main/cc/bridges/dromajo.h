@@ -36,6 +36,7 @@ class dromajo_t: public bridge_driver_t
 
         int invoke_dromajo(uint8_t* buf);
         int beats_available_stable();
+        void process_tokens(int num_beats);
         void flush();
 
         // in bytes

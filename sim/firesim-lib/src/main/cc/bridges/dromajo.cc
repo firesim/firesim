@@ -12,7 +12,7 @@
 #include "dromajo_params.h"
 
 // The maximum number of beats available in the FPGA-side FIFO
-#define QUEUE_DEPTH 64
+#define QUEUE_DEPTH 6144
 // Size of PCI intf. in bytes
 #define PCIE_SZ_B 64
 // Create bitmask macro
@@ -211,67 +211,71 @@ int dromajo_t::invoke_dromajo(uint8_t* buf) {
 }
 
 /**
- * Move forward the simulation
+ * Read queue and co-simulate
  */
-void dromajo_t::tick() {
+void dromajo_t::process_tokens(int num_beats) {
+    // TODO: as opt can mmap file and just load directly into it.
+    alignas(4096) uint8_t OUTBUF[QUEUE_DEPTH * sizeof(uint64_t) * 8];
+    pull(this->_dma_addr, (char*)OUTBUF, num_beats * sizeof(uint64_t) * 8);
+
     // skip if co-sim not enabled
     if (!this->dromajo_cosim) return;
 
-    uint64_t trace_queue_full = read(this->_mmio_addrs->trace_queue_full);
-
-    alignas(4096) uint8_t OUTBUF[QUEUE_DEPTH * sizeof(uint64_t) * 8];
-
-    if (trace_queue_full) {
-        // TODO: as opt can mmap file and just load directly into it.
-        pull(this->_dma_addr, (char*)OUTBUF, QUEUE_DEPTH * sizeof(uint64_t) * 8);
-
-        for (uint32_t offset = 0; offset < QUEUE_DEPTH*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
-            // invoke dromajo (requires that buffer is aligned properly)
-            int rval = this->invoke_dromajo(OUTBUF + offset);
-            if (rval) {
-                dromajo_failed = true;
-                dromajo_exit_code = rval;
-                printf("[ERROR] Dromajo: Errored during simulation tick with %d\n", rval);
+    for (uint32_t offset = 0; offset < num_beats*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
+        // invoke dromajo (requires that buffer is aligned properly)
+        int rval = this->invoke_dromajo(OUTBUF + offset);
+        if (rval) {
+            dromajo_failed = true;
+            dromajo_exit_code = rval;
+            printf("[ERROR] Dromajo: Errored during simulation with %d\n", rval);
 
 #ifdef DEBUG
-                fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
+            fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
 
-                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
-                    fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
-                }
-                fprintf(stderr, ")\n");
+            for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
+                if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+            }
+            fprintf(stderr, ")\n");
 
-                fprintf(stderr, "get_next_token token(");
-                uint32_t next_off = offset += PCIE_SZ_B;
+            fprintf(stderr, "get_next_token token(");
+            uint32_t next_off = offset += PCIE_SZ_B;
 
-                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
-                    fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
-                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
-                }
-                fprintf(stderr, ")\n");
+            for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+                fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
+                if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
+            }
+            fprintf(stderr, ")\n");
 #endif
 
-                return;
-            }
+            return;
+        }
 
-            // move to next i stream
-            this->_stream_idx = (this->_stream_idx + 1) % this->_num_streams;
+        // move to next i stream
+        this->_stream_idx = (this->_stream_idx + 1) % this->_num_streams;
 
-            // if int/excp was found in this set of commit traces... reset on next set of commit traces
-            if (this->_stream_idx == 0){
-                this->saw_int_excp = false;
-            }
+        // if int/excp was found in this set of commit traces... reset on next set of commit traces
+        if (this->_stream_idx == 0){
+            this->saw_int_excp = false;
+        }
 
-            // add an extra PCIE_SZ_B if there is an odd amount of streams
-            if (this->_stream_idx == 0 && (this->_num_streams % 2 == 1)) {
+        // add an extra PCIE_SZ_B if there is an odd amount of streams
+        if (this->_stream_idx == 0 && (this->_num_streams % 2 == 1)) {
 #ifdef DEBUG
-                //fprintf(stderr, "off(%d + 1) = %d\n", offset / (PCIE_SZ_B/2), (offset + PCIE_SZ_B/2) / (PCIE_SZ_B/2));
+            fprintf(stderr, "off(%d + 1) = %d\n", offset / (PCIE_SZ_B/2), (offset + PCIE_SZ_B/2) / (PCIE_SZ_B/2));
 #endif
-                offset += PCIE_SZ_B/2;
-            }
+            offset += PCIE_SZ_B/2;
         }
     }
+}
+
+/**
+ * Move forward the simulation
+ */
+void dromajo_t::tick() {
+    uint64_t trace_queue_full = read(this->_mmio_addrs->trace_queue_full);
+
+    if (trace_queue_full) this->process_tokens(QUEUE_DEPTH);
 }
 
 /**
@@ -291,61 +295,10 @@ int dromajo_t::beats_available_stable() {
  * Pull in any remaining tokens and use them (if the simulation hasn't already failed)
  */
 void dromajo_t::flush() {
-    // skip if co-sim not enabled
-    if (!this->dromajo_cosim) return;
-
     // only flush if there wasn't a failure before
     if (!dromajo_failed) {
-        alignas(4096) uint8_t OUTBUF[QUEUE_DEPTH * sizeof(uint64_t) * 8];
-
         size_t beats_available = beats_available_stable();
-
-        // TODO. as opt can mmap file and just load directly into it.
-        pull(this->_dma_addr, (char*)OUTBUF, beats_available * sizeof(uint64_t) * 8);
-
-        for (uint32_t offset = 0; offset < beats_available*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
-            // invoke dromajo
-            int rval = this->invoke_dromajo(OUTBUF + offset);
-            if (rval) {
-                dromajo_failed = true;
-                dromajo_exit_code = rval;
-                printf("[ERROR] Dromajo: Errored when flushing tokens with %d\n", rval);
-
-#ifdef DEBUG
-                fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
-
-                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
-                    fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
-                }
-                fprintf(stderr, ")\n");
-
-                fprintf(stderr, "get_next_token token(");
-                uint32_t next_off = offset += PCIE_SZ_B;
-
-                for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
-                    fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
-                    if (i == PCIE_SZ_B/2) fprintf(stderr, " ");
-                }
-                fprintf(stderr, ")\n");
-#endif
-
-                return;
-            }
-
-            // move to next i stream
-            this->_stream_idx = (this->_stream_idx + 1) % this->_num_streams;
-
-            // if int/excp was found in this set of commit traces... reset on next set of commit traces
-            if (this->_stream_idx == 0){
-                this->saw_int_excp = false;
-            }
-
-            // add an extra PCIE_SZ_B if there is an odd amount of streams
-            if (this->_stream_idx == 0 && (this->_num_streams % 2 == 1)) {
-                offset += PCIE_SZ_B/2;
-            }
-        }
+        this->process_tokens(beats_available);
     }
 }
 
