@@ -22,7 +22,7 @@ midas_context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
 #else
-PLATFORM_TYPE* top = NULL;
+Vverilator_top* top = NULL;
 #if VM_TRACE
 VerilatedVcdC* tfp = NULL;
 #endif // VM_TRACE
@@ -98,7 +98,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 #else
   Verilated::commandArgs(argc, argv); // Remember args
 
-  top = new PLATFORM_TYPE;
+  top = new Vverilator_top;
 #if VM_TRACE                         // If emul was invoked with --trace
   tfp = new VerilatedVcdC;
   Verilated::traceEverOn(true);      // Verilator must compute traced signals

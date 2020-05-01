@@ -4,8 +4,9 @@
 #
 # Compulsory variables:
 #  All those described Makefrag-verilator
-#  vcs_wrapper_v: An additional verilog wrapper around the DUT not used in verilator
-#  CLOCK_PERIOD: Self explanatory
+#  vcs_wrapper_v: An additional verilog wrapper around the DUT
+#  vcs_harness: Additional C++ sources for vcs simulation
+#  CLOCK_PERIOD
 #  TB := The top level module on which the stop and printf conditions are defined
 
 
@@ -31,17 +32,18 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	$(VCS_FLAGS)
 
 vcs_v := $(emul_v) $(vcs_wrapper_v)
+vcs_cc := $(emul_cc) $(vcs_harness)
 
-$(OUT_DIR)/$(DESIGN): $(vcs_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN): $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN).csrc
 	rm -rf $(OUT_DIR)/$(DESIGN).daidir
 	$(VCS) $(VCS_FLAGS) \
-	-o $@ $(vcs_v) $(emul_cc)
+	-o $@ $(vcs_v) $(vcs_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
 	$(VCS) $(VCS_FLAGS) +define+DEBUG \
-	-o $@ $(vcs_v) $(emul_cc)
+	-o $@ $(vcs_v) $(vcs_cc)

@@ -29,15 +29,15 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
       io_slave.zipWithIndex foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
     }
 
-    top.module.io.ctrl <> io.master
-    top.module.io.dma  <> io.dma
+    top.module.ctrl <> io.master
+    top.module.dma  <> io.dma
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
     val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 1 << p(CtrlNastiKey).idBits)
-    top.module.io.ctrl.aw.bits.id := wCounterValue
+    top.module.ctrl.aw.bits.id := wCounterValue
 
     val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
-    top.module.io.ctrl.ar.bits.id := rCounterValue
+    top.module.ctrl.ar.bits.id := rCounterValue
   }
 }
