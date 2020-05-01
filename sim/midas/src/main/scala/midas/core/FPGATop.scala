@@ -47,6 +47,7 @@ case class HostMemChannelParams(
 
 // Platform agnostic wrapper of the simulation models for FPGA
 class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
+  require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
   val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
@@ -149,8 +150,15 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val loadMem = outer.loadMem
   val master  = outer.master
 
-  val io = IO(new FPGATopIO)
-  val mem = IO(HeterogeneousBag.fromNode(outer.memAXI4Node.in))
+  val ctrl = IO(Flipped(WidgetMMIO()))
+  // Don't use a heterogenous bag here to uniformly truncate the address fields of the
+  // higher-numbered memory channels.
+  val mem = IO(Vec(p(HostMemNumChannels), outer.memAXI4Node.in.head._1.cloneType))
+  val dma = IO(Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) }))))
+  dontTouch(ctrl)
+  dontTouch(mem)
+  dontTouch(dma)
+
   (mem zip outer.memAXI4Node.in).foreach({ case (io, (bundle, _)) => io <> bundle })
 
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
@@ -194,18 +202,18 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   if (dmaPorts.isEmpty) {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
     val error = Module(new NastiErrorSlave()(dmaParams))
-    error.io <> io.dma
+    error.io <> dma
   } else if (dmaPorts.size == 1) {
-    dmaPorts(0) <> io.dma
+    dmaPorts(0) <> dma
   } else {
     val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
     val router = Module(new NastiRecursiveInterconnect(
       1, new AddrMap(dmaAddrMap))(dmaParams))
-    router.io.masters.head <> NastiQueue(io.dma)(dmaParams)
+    router.io.masters.head <> NastiQueue(dma)(dmaParams)
     dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> NastiQueue(slave)(dmaParams) }
   }
 
-  outer.genCtrlIO(io.ctrl, p(FpgaMMIOSize))
+  outer.genCtrlIO(ctrl, p(FpgaMMIOSize))
   outer.printHostDRAMSummary
 
   val addrConsts = dmaAddrMap.map {
@@ -214,12 +222,13 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   }
 
   val headerConsts = addrConsts ++ List[(String, Long)](
-    "CTRL_ID_BITS"   -> io.ctrl.nastiXIdBits,
-    "CTRL_ADDR_BITS" -> io.ctrl.nastiXAddrBits,
-    "CTRL_DATA_BITS" -> io.ctrl.nastiXDataBits,
-    "CTRL_STRB_BITS" -> io.ctrl.nastiWStrobeBits,
-    "MMIO_WIDTH"     -> io.ctrl.nastiWStrobeBits,
+    "CTRL_ID_BITS"   -> ctrl.nastiXIdBits,
+    "CTRL_ADDR_BITS" -> ctrl.nastiXAddrBits,
+    "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
+    "CTRL_STRB_BITS" -> ctrl.nastiWStrobeBits,
+    "MMIO_WIDTH"     -> ctrl.nastiWStrobeBits,
     // These specify channel widths; used mostly in the test harnesses
+    "MEM_NUM_CHANNELS" -> p(HostMemNumChannels),
     "MEM_ADDR_BITS"  -> outer.hostMemoryBundleParams.addrBits,
     "MEM_DATA_BITS"  -> outer.hostMemoryBundleParams.dataBits,
     "MEM_ID_BITS"    -> outer.hostMemoryBundleParams.idBits,
@@ -230,12 +239,12 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "MEM_LEN_BITS"   -> AXI4Parameters.lenBits,
     "MEM_RESP_BITS"  -> AXI4Parameters.respBits,
     // Address width of the aggregated host-DRAM space
-    "DMA_ID_BITS"    -> io.dma.nastiXIdBits,
-    "DMA_ADDR_BITS"  -> io.dma.nastiXAddrBits,
-    "DMA_DATA_BITS"  -> io.dma.nastiXDataBits,
-    "DMA_STRB_BITS"  -> io.dma.nastiWStrobeBits,
+    "DMA_ID_BITS"    -> dma.nastiXIdBits,
+    "DMA_ADDR_BITS"  -> dma.nastiXAddrBits,
+    "DMA_DATA_BITS"  -> dma.nastiXDataBits,
+    "DMA_STRB_BITS"  -> dma.nastiWStrobeBits,
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
-  )
+  ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
   def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)(p(ChannelWidth))
 }

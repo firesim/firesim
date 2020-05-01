@@ -39,7 +39,6 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
   def genHeader(sb: StringBuilder, target: String) {
     sb.append("#include <stdint.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))
-    sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
     if (p(EnableSnapshot)) {
       sb append(genMacro("ENABLE_SNAPSHOT"))
       if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
