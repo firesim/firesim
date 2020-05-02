@@ -88,14 +88,14 @@ class ZC706Config extends Config(new Config((site, here, up) => {
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x40000000L, // 1 GiB
     beatBytes = 8,
-    idBits    = 4)
+    idBits    = 6)
 }) ++ new ZynqBaseConfig)
 
 class ZedboardConfig extends Config(new Config((site, here, up) => {
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x10000000L, // 256 MiB
     beatBytes = 8,
-    idBits    = 4)
+    idBits    = 6)
 }) ++ new ZynqBaseConfig)
 
 class F1Config extends Config(new Config((site, here, up) => {
@@ -105,7 +105,7 @@ class F1Config extends Config(new Config((site, here, up) => {
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
     beatBytes = 8,
-    idBits    = 4)
+    idBits    = 16)
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
