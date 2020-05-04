@@ -184,7 +184,13 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   val io = IO(new FPGATopIO)
   val mem = IO(HeterogeneousBag.fromNode(outer.memAXI4Node.in))
-  (mem zip outer.memAXI4Node.in).foreach({ case (io, (bundle, _)) => io <> bundle })
+  (mem zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) =>
+    require(bundle.params.idBits <= p(HostMemChannelKey).idBits,
+      s"""| Required memory channel ID bits exceeds that present on host.
+          | Required: ${bundle.params.idBits} Available: ${p(HostMemChannelKey).idBits}
+          | Enable host ID reuse with the HostMemIdSpaceKey""".stripMargin)
+    io <> bundle
+  }
 
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
   val simIo = sim.channelPorts
