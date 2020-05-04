@@ -174,22 +174,20 @@ def main():
             log.info("\n")
 
         elif args.command == 'clean':
-            if 'bin' in targetCfg:
-                deleteSafe(targetCfg['bin'])
-                deleteSafe(targetCfg['dwarf'])
-                deleteSafe(wlutil.noDiskPath(targetCfg['bin']))
-                deleteSafe(wlutil.noDiskPath(targetCfg['dwarf']))
-            if 'img' in targetCfg:
-                deleteSafe(targetCfg['img'])
+            def cleanCfg(cfg):
+                if 'bin' in cfg:
+                    deleteSafe(cfg['bin'])
+                    deleteSafe(wlutil.noDiskPath(cfg['bin']))
+                if 'dwarf' in cfg:
+                    deleteSafe(cfg['dwarf'])
+                    deleteSafe(wlutil.noDiskPath(cfg['dwarf']))
+                if 'img' in cfg:
+                    deleteSafe(cfg['img'])
+
+            cleanCfg(targetCfg)
             if 'jobs' in targetCfg:
                 for jCfg in targetCfg['jobs'].values():
-                    if 'bin' in jCfg:
-                        deleteSafe(jCfg['bin'])
-                        deleteSafe(jCfg['dwarf'])
-                        deleteSafe(wlutil.noDiskPath(jCfg['bin']))
-                        deleteSafe(wlutil.noDiskPath(jCfg['dwarf']))
-                    if 'img' in jCfg:
-                        deleteSafe(jCfg['img'])
+                    cleanCfg(jCfg('bin'))
 
         elif args.command == 'install':
             try:
