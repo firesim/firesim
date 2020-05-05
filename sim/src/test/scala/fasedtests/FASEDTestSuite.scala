@@ -50,7 +50,7 @@ abstract class FASEDTest(
   def runTest(backend: String, debug: Boolean, args: Seq[String] = Nil, name: String = "pass") = {
     compileMlSimulator(backend, debug)
     if (isCmdAvailable(backend)) {
-      it should name in {
+      it should s"run on $backend" in {
         assert(invokeMlSimulator(backend, debug, args) == 0)
       }
     }
@@ -64,11 +64,11 @@ abstract class FASEDTest(
   mkdirs
   elaborate
   behavior of s"FASED Instance configured with ${platformConfigs} driven by target: ${topModuleClass}"
-  runTests()
+  runTest("verilator", false)
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
-class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "QuadChannel_DefaultConfig", "DefaultF1Config")
+class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
 class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
 class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "DefaultF1Config") {
@@ -84,3 +84,15 @@ class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "De
      })
   }
 }
+
+// Generate a target memory system that uses the whole host memory system.
+class BaselineMultichannelTest extends FASEDTest(
+    "AXI4Fuzzer",
+    "AddrBits22_QuadFuzzer_DefaultConfig",
+    "AddrBits22_SmallQuadChannelHostConfig") {
+  runTest("vcs", true)
+}
+
+// Checks that id-reallocation works for platforms with limited ID space
+class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "ConstrainedIdHostConfig")
+
