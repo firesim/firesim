@@ -89,7 +89,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   }
 
   // Tie-break with the name of the region.
-  val sortedRegionTuples = regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName))
+  val sortedRegionTuples = regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName)).reverse
 
   // Allocate memory regions using a base-and-bounds scheme
   val dramOffsetsRev = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({
