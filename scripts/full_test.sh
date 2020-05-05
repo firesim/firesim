@@ -3,18 +3,20 @@
 shopt -s extglob
 
 TEST_DIR=../test
+MARSHAL_BIN=../marshal
+
 SUITE_PASS=true
-LOGNAME=$(realpath $(mktemp results_full_test.XXXX))
+mkdir -p test_logs
+LOGNAME=$(realpath $(mktemp test_logs/results_full_test.XXXX))
 
 echo "Running Full Test. Results available in $LOGNAME"
 
 # These tests need to run on spike, but not with the no-disk option
 echo "Running bare-metal tests" | tee -a $LOGNAME
-IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args|rocc)"
-./marshal clean $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
-# This is a temporary workaround for bug #38
-./marshal build $TEST_DIR/spike.json
-./marshal test -s $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
+# IS_INCLUDE="@(bare|dummy-bare|spike|spike-jobs|spike-args|rocc)"
+IS_INCLUDE="@(bare)"
+$MARSHAL_BIN clean $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
+$MARSHAL_BIN test -s $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
@@ -29,13 +31,13 @@ echo ""
 
 # We pre-build to avoid potential timeouts on a fresh clone
 echo "Pre-building base workloads" | tee -a $LOGNAME
-./marshal build $TEST_DIR/br-base.json
-./marshal build $TEST_DIR/fedora-base.json
+$MARSHAL_BIN build $TEST_DIR/br-base.json
+$MARSHAL_BIN build $TEST_DIR/fedora-base.json
 echo ""
 
 echo "Running launch timeout test (should timeout):" | tee -a $LOGNAME
 echo "This test will reset your terminal"
-./marshal test $TEST_DIR/timeout-run.json | grep "timeout while running"
+$MARSHAL_BIN test $TEST_DIR/timeout-run.json | grep "timeout while running"
 res=${PIPESTATUS[1]}
 reset
 echo "Ran launch timeout test (screen was reset)"
@@ -48,7 +50,7 @@ fi
 echo ""
 
 echo "Running build timeout test (should timeout):" | tee -a $LOGNAME
-./marshal test $TEST_DIR/timeout-build.json | grep "timeout while building"
+$MARSHAL_BIN test $TEST_DIR/timeout-build.json | grep "timeout while building"
 if [ ${PIPESTATUS[1]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
@@ -63,8 +65,8 @@ echo ""
 # tests)
 echo "Running regular tests" | tee -a $LOGNAME
 BULK_EXCLUDE="(br-base|fedora-base|incremental|clean|timeout-build|timeout-run|bare|dummy-bare|spike-jobs|spike|spike-args|rocc|fsSize)"
-./marshal clean $TEST_DIR/!$BULK_EXCLUDE.json | tee -a $LOGNAME
-./marshal test $TEST_DIR/!$BULK_EXCLUDE.json | tee -a $LOGNAME
+$MARSHAL_BIN clean $TEST_DIR/!$BULK_EXCLUDE.json | tee -a $LOGNAME
+$MARSHAL_BIN test $TEST_DIR/!$BULK_EXCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
@@ -77,8 +79,8 @@ echo ""
 # we only run a few tests here to test basic capabilities
 echo "Running no-disk capable tests on spike" | tee -a $LOGNAME
 IS_INCLUDE="@(command|flist|host-init|jobs|linux-src|overlay|post-run-hook|run|smoke0|simArgs)"
-./marshal -d clean $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
-./marshal -d test -s $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
+$MARSHAL_BIN -d clean $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
+$MARSHAL_BIN -d test -s $TEST_DIR/$IS_INCLUDE.json | tee -a $LOGNAME
 if [ ${PIPESTATUS[0]} != 0 ]; then
   echo "Failure" | tee -a $LOGNAME
   SUITE_PASS=false
