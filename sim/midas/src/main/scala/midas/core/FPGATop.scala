@@ -201,7 +201,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
-    bridgeMod.module.suggestName(bridgeMod.wName.get)
     bridgeMod match {
       case peekPoke: PeekPokeBridgeModule =>
         peekPoke.module.io.step <> master.module.io.step
