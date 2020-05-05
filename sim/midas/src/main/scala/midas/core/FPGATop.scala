@@ -108,8 +108,13 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     val regionName = bridgeSeq.head.memoryRegionName
     val virtualBaseAddr = addresses.map(_.base).min
     val offset = hostBaseAddr - virtualBaseAddr
-    val preTranslationPort = (xbar :=* AXI4Buffer() :=* AXI4AddressTranslation(offset, addresses, regionName))
-    bridgeSeq.foreach { preTranslationPort := _.memoryMasterNode }
+    val preTranslationPort = (xbar
+      :=* AXI4Buffer()
+      :=* AXI4AddressTranslation(offset, addresses, regionName))
+    bridgeSeq.foreach { bridge =>
+      (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
+                          := bridge.memoryMasterNode)
+    }
     HostMemoryMapping(regionName, offset)
   })
 
