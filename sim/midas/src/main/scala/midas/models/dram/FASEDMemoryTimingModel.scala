@@ -226,10 +226,6 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
 
-  require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
-    "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
-  )
-
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new FASEDTargetIO))
