@@ -2,6 +2,12 @@
 CONFIG_DEFAULT_HOSTNAME="ucbvax"
 
 #
+# SoC selection
+#
+
+# CONFIG_SOC_SIFIVE is not set
+
+#
 # Kernel Performance Events And Counters
 #
 CONFIG_PERF_EVENTS=y
@@ -63,6 +69,12 @@ CONFIG_VIRTIO_INPUT=y
 CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES=y
 
 CONFIG_MAILBOX=y
+
+#
+# Non-8250 serial port support
+#
+
+# CONFIG_SERIAL_SIFIVE is not set
 
 #
 # File systems
