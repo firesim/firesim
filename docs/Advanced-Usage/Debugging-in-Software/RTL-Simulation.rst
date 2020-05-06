@@ -57,7 +57,7 @@ verilator version: 3.904)
 Target-Level Simulation
 --------------------------
 
-This is described in the documentation for `Chipyard <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulators.html>`_.
+This is described in the documentation for `Chipyard <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
 
 MIDAS-Level Simulation
 ------------------------
