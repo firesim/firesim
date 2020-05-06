@@ -187,7 +187,7 @@ def main():
             cleanCfg(targetCfg)
             if 'jobs' in targetCfg:
                 for jCfg in targetCfg['jobs'].values():
-                    cleanCfg(jCfg('bin'))
+                    cleanCfg(jCfg)
 
         elif args.command == 'install':
             try:
