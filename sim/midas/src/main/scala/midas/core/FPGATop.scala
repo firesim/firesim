@@ -29,7 +29,29 @@ case object HostMemChannelKey extends Field[HostMemChannelParams]
 case object HostMemNumChannels extends Field[Int]
 // See widgets/Widget.scala for CtrlNastiKey -> Configures the simulation control bus
 
-// Legacy: the aggregate memory-space seen by masters wanting DRAM. Derived from the above.
+
+/**
+  * DRAM Allocation Knobs
+  *
+  * Constrains how much of memory controller's id space is used. If no
+  * constraint is provided, the unified id space of all masters is presented
+  * directly to each memory controller. If this id width exceeds that of the
+  * controller, Golden Gate will throw an get an elaboration-time error
+  * requesting a constraint. See [[AXI4IdSpaceConstraint]].
+  */
+case object HostMemIdSpaceKey extends Field[Option[AXI4IdSpaceConstraint]](None)
+
+/**  Constrains how many id bits of the host memory channel are used, as well
+  *  as how many requests are issued per id. This generates hardware
+  *  proportional to (2^idBits) * maxFlight.
+  *
+  * @param idBits The number of lower idBits of the host memory channel to use.
+  * @param maxFlight A bound on the number of requests the simulator will make per id.
+  *
+  */
+case class AXI4IdSpaceConstraint(idBits: Int = 4, maxFlight: Int = 8)
+
+// Legacy: the aggregate memory-space seen by masters wanting DRAM. Derived from HostMemChannelKey
 case object MemNastiKey extends Field[NastiParameters]
 
 case object FpgaMMIOSize extends Field[BigInt]
@@ -102,7 +124,18 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 
   // In keeping with the Nasti implementation, we put all channels on a single XBar.
   val xbar = AXI4Xbar()
-  memAXI4Node :*= AXI4Buffer() :*= xbar
+  p(HostMemIdSpaceKey) match {
+    case Some(AXI4IdSpaceConstraint(idBits, maxFlight)) =>
+      (memAXI4Node :*= AXI4Buffer()
+                   :*= AXI4UserYanker(Some(maxFlight))
+                   :*= AXI4IdIndexer(idBits)
+                   :*= AXI4Buffer()
+                   :*= xbar)
+    case None =>
+      (memAXI4Node :*= AXI4Buffer()
+                   :*= xbar)
+  }
+
   xbar := loadMem.toHostMemory
   val targetMemoryRegions = sortedRegionTuples.zip(dramOffsets).map({ case ((bridgeSeq, addresses), hostBaseAddr) =>
     val regionName = bridgeSeq.head.memoryRegionName
@@ -156,7 +189,13 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   val io = IO(new FPGATopIO)
   val mem = IO(HeterogeneousBag.fromNode(outer.memAXI4Node.in))
-  (mem zip outer.memAXI4Node.in).foreach({ case (io, (bundle, _)) => io <> bundle })
+  (mem zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) =>
+    require(bundle.params.idBits <= p(HostMemChannelKey).idBits,
+      s"""| Required memory channel ID bits exceeds that present on host.
+          | Required: ${bundle.params.idBits} Available: ${p(HostMemChannelKey).idBits}
+          | Enable host ID reuse with the HostMemIdSpaceKey""".stripMargin)
+    io <> bundle
+  }
 
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
   val simIo = sim.channelPorts
@@ -167,7 +206,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
-    bridgeMod.module.suggestName(bridgeMod.wName.get)
     bridgeMod match {
       case peekPoke: PeekPokeBridgeModule =>
         peekPoke.module.io.step <> master.module.io.step

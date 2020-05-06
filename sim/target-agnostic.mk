@@ -271,7 +271,7 @@ veryclean:
 tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
 
-.PHONY: sbt test
+.PHONY: sbt test testOnly
 .PHONY: default verilog compile
 .PHONY: verilator verilator-debug
 .PHONY: vcs vcs-debug

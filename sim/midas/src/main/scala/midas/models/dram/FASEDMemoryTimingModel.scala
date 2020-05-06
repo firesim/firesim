@@ -222,15 +222,13 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
         name = "fased-memory-timing-model",
-        id   = IdRange(0, 1 << p(NastiKey).idBits))))))
+        id   = IdRange(0, 1 << p(NastiKey).idBits),
+        maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
+      )))))
 
   val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
-
-  require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
-    "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
-  )
 
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
