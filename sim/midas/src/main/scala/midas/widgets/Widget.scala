@@ -36,6 +36,7 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   override def module: WidgetImp
   val wName = Some(Widget.assignName(this))
+  this.suggestName(wName.get)
   // Legacy API
   def getWName = wName.get
 

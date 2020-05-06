@@ -89,7 +89,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   }
 
   // Tie-break with the name of the region.
-  val sortedRegionTuples = regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName))
+  val sortedRegionTuples = regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName)).reverse
 
   // Allocate memory regions using a base-and-bounds scheme
   val dramOffsetsRev = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({
@@ -141,8 +141,13 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     val regionName = bridgeSeq.head.memoryRegionName
     val virtualBaseAddr = addresses.map(_.base).min
     val offset = hostBaseAddr - virtualBaseAddr
-    val preTranslationPort = (xbar :=* AXI4Buffer() :=* AXI4AddressTranslation(offset, addresses, regionName))
-    bridgeSeq.foreach { preTranslationPort := _.memoryMasterNode }
+    val preTranslationPort = (xbar
+      :=* AXI4Buffer()
+      :=* AXI4AddressTranslation(offset, addresses, regionName))
+    bridgeSeq.foreach { bridge =>
+      (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
+                          := bridge.memoryMasterNode)
+    }
     HostMemoryMapping(regionName, offset)
   })
 
@@ -201,7 +206,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
-    bridgeMod.module.suggestName(bridgeMod.wName.get)
     bridgeMod match {
       case peekPoke: PeekPokeBridgeModule =>
         peekPoke.module.io.step <> master.module.io.step
