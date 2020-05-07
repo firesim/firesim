@@ -37,7 +37,8 @@ class FireSimTopologyWithPasses:
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
                  defaulttraceoutputformat,
                  defaultautocounterreadrate, terminateoncompletion,
-                 defaultzerooutdram):
+                 defaultzerooutdram,
+                 defaultprintstart, defaultprintend, defaultprintcycleprefix):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -57,6 +58,9 @@ class FireSimTopologyWithPasses:
         self.defaulttraceoutputformat = defaulttraceoutputformat
         self.defaultautocounterreadrate = defaultautocounterreadrate
         self.defaultzerooutdram = defaultzerooutdram
+        self.defaultprintstart = defaultprintstart
+        self.defaultprintend = defaultprintend
+        self.defaultprintcycleprefix = defaultprintcycleprefix
         self.terminateoncompletion = terminateoncompletion
 
         self.phase_one_passes()
@@ -321,6 +325,12 @@ class FireSimTopologyWithPasses:
                     node.autocounter_readrate = self.defaultautocounterreadrate
                 if node.zerooutdram is None:
                     node.zerooutdram = self.defaultzerooutdram
+                if node.print_start is None:
+                    node.print_start = self.defaultprintstart
+                if node.print_end is None:
+                    node.print_end = self.defaultprintend
+                if node.print_cycle_prefix is None:
+                    node.print_cycle_prefix = self.defaultprintcycleprefix
 
 
     def pass_allocate_nbd_devices(self):
