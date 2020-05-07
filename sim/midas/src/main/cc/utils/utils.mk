@@ -1,6 +1,6 @@
 # Compile DRAMSim2
 dramsim_o := $(foreach f, \
-                $(patsubst %.cpp, %.o, $(wildcard $(midas_dir)/dramsim2/*.cpp)), \
+                $(patsubst %.cpp, %.o, $(wildcard $(dramsim_dir)/*.cpp)), \
                 $(GEN_DIR)/$(notdir $(f)))
 $(dramsim_o): $(GEN_DIR)/%.o: $(dramsim_dir)/%.cpp
 	$(CXX) $(CXXFLAGS) -DNO_STORAGE -DNO_OUTPUT -Dmain=nomain -c -o $@ $<
