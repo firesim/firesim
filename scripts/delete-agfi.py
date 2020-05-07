@@ -104,13 +104,14 @@ class ImageDeleter(object):
     def list_images_before(self, before):
         return [image for image in self.iter_non_shared_images() if image["UpdateTime"] < before]
 
-    def list_old_images(self):
+    def list_old_images(self, img_name):
         latest = []
         oldimages = []
         imagedict = defaultdict(list)
 
         for image in self.iter_non_shared_images():
-            imagedict[image["Name"]].append(image)
+            if not img_name or image["Name"] == img_name:
+                imagedict[image["Name"]].append(image)
 
         for name in imagedict:
             imagegroup = imagedict[name]
@@ -144,8 +145,8 @@ class ImageDeleter(object):
     def delete_before(self, before):
         self.confirm_and_delete(self.list_images_before(before))
 
-    def delete_old(self):
-        latest, oldimages = self.list_old_images()
+    def delete_old(self, name=None):
+        latest, oldimages = self.list_old_images(name)
         print("Skipping:")
         for image in latest:
             self.print_image(image)
@@ -158,7 +159,8 @@ def main():
     parser.add_argument("--before", help="Delete all images created before this date (YYYY-mm-dd)")
     parser.add_argument("--list", help="Delete AGFIs from list")
     parser.add_argument("--region", help="EC2 Region to resolve AGFIs in")
-    parser.add_argument("--old", action="store_const", const=True, default=False,
+    parser.add_argument("--old", help="Delete old AGFIs for image name")
+    parser.add_argument("--all_old", action="store_const", const=True, default=False,
             help="Delete old AGFIs for each image name")
     args = parser.parse_args()
 
@@ -175,7 +177,10 @@ def main():
         before = before.replace(tzinfo=pytz.UTC)
         deleter.delete_before(before)
     elif args.old:
+        deleter.delete_old(args.old)
+    elif args.all_old:
         deleter.delete_old()
+
 
     print("Deleted {} images".format(len(deleter.deleted)))
 
