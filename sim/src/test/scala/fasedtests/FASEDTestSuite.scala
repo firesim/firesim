@@ -95,4 +95,5 @@ class BaselineMultichannelTest extends FASEDTest(
 
 // Checks that id-reallocation works for platforms with limited ID space
 class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "ConstrainedIdHostConfig")
-
+class AXI4FuzzerZC706LBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultZC706Config")
+class AXI4FuzzerZedboardTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultZedboardConfig")
