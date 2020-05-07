@@ -88,12 +88,12 @@ bool mmio_t::write_resp() {
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
-std::unique_ptr<mm_t> slave[4];
+std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
 void* init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_t(MMIO_WIDTH));
   dma.reset(new mmio_t(DMA_WIDTH));
-  for (int mem_channel_index=0; mem_channel_index < 4; mem_channel_index++) {
+  for (int mem_channel_index=0; mem_channel_index < MEM_NUM_CHANNELS; mem_channel_index++) {
     slave[mem_channel_index].reset(dramsim ? (mm_t*) new mm_dramsim2_t(1 << MEM_ID_BITS) : (mm_t*) new mm_magic_t);
     slave[mem_channel_index]->init(memsize, MEM_WIDTH, 64);
   }

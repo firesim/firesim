@@ -13,7 +13,7 @@ extern bool vcs_rst;
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
-extern std::unique_ptr<mm_t> slave[4];
+extern std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
 static const size_t CTRL_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
 static const size_t DMA_DATA_SIZE = DMA_WIDTH / sizeof(uint32_t);
