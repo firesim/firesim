@@ -15,10 +15,10 @@ extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
 extern std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
-static const size_t CTRL_DATA_SIZE = MMIO_WIDTH / sizeof(uint32_t);
-static const size_t DMA_DATA_SIZE = DMA_WIDTH / sizeof(uint32_t);
-static const size_t DMA_STRB_SIZE = (DMA_WIDTH/8 + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-static const size_t MEM_DATA_SIZE = MEM_WIDTH / sizeof(uint32_t);
+static const size_t CTRL_DATA_SIZE = CTRL_BEAT_BYTES / sizeof(uint32_t);
+static const size_t DMA_DATA_SIZE = DMA_BEAT_BYTES / sizeof(uint32_t);
+static const size_t DMA_STRB_SIZE = (DMA_BEAT_BYTES/8 + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+static const size_t MEM_DATA_SIZE = MEM_BEAT_BYTES / sizeof(uint32_t);
 extern "C" {
 void tick(
   vc_handle reset,

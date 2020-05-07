@@ -44,7 +44,7 @@ void tick() {
 
   top->ctrl_r_ready = m->r_ready();
   top->ctrl_b_ready = m->b_ready();
-  memcpy(&top->ctrl_w_bits_data, m->w_data(), MMIO_WIDTH);
+  memcpy(&top->ctrl_w_bits_data, m->w_data(), CTRL_BEAT_BYTES);
 
 
   top->dma_aw_valid = d->aw_valid();
@@ -66,9 +66,9 @@ void tick() {
   top->dma_r_ready = d->r_ready();
   top->dma_b_ready = d->b_ready();
 #if DMA_DATA_BITS > 64
-  memcpy(top->dma_w_bits_data, d->w_data(), DMA_WIDTH);
+  memcpy(top->dma_w_bits_data, d->w_data(), DMA_BEAT_BYTES);
 #else
-  memcpy(&top->dma_w_bits_data, d->w_data(), DMA_WIDTH);
+  memcpy(&top->dma_w_bits_data, d->w_data(), DMA_BEAT_BYTES);
 #endif
 
   top->mem_0_aw_ready = slave[0]->aw_ready();
@@ -82,9 +82,9 @@ void tick() {
   top->mem_0_r_bits_resp = slave[0]->r_resp();
   top->mem_0_r_bits_last = slave[0]->r_last();
 #if MEM_DATA_BITS > 64
-  memcpy(top->mem_0_r_bits_data, slave[0]->r_data(), MEM_WIDTH);
+  memcpy(top->mem_0_r_bits_data, slave[0]->r_data(), MEM_BEAT_BYTES);
 #else
-  memcpy(&top->mem_0_r_bits_data, slave[0]->r_data(), MEM_WIDTH);
+  memcpy(&top->mem_0_r_bits_data, slave[0]->r_data(), MEM_BEAT_BYTES);
 #endif
 #ifdef MEM_HAS_CHANNEL1
   top->mem_1_aw_ready = slave[1]->aw_ready();
@@ -98,9 +98,9 @@ void tick() {
   top->mem_1_r_bits_resp = slave[1]->r_resp();
   top->mem_1_r_bits_last = slave[1]->r_last();
 #if MEM_DATA_BITS > 64
-  memcpy(top->mem_1_r_bits_data, slave[1]->r_data(), MEM_WIDTH);
+  memcpy(top->mem_1_r_bits_data, slave[1]->r_data(), MEM_BEAT_BYTES);
 #else
-  memcpy(&top->mem_1_r_bits_data, slave[1]->r_data(), MEM_WIDTH);
+  memcpy(&top->mem_1_r_bits_data, slave[1]->r_data(), MEM_BEAT_BYTES);
 #endif
 #endif // MEM_HAS_CHANNEL1
 
@@ -116,9 +116,9 @@ void tick() {
   top->mem_2_r_bits_resp = slave[2]->r_resp();
   top->mem_2_r_bits_last = slave[2]->r_last();
 #if MEM_DATA_BITS > 64
-  memcpy(top->mem_2_r_bits_data, slave[2]->r_data(), MEM_WIDTH);
+  memcpy(top->mem_2_r_bits_data, slave[2]->r_data(), MEM_BEAT_BYTES);
 #else
-  memcpy(&top->mem_2_r_bits_data, slave[2]->r_data(), MEM_WIDTH);
+  memcpy(&top->mem_2_r_bits_data, slave[2]->r_data(), MEM_BEAT_BYTES);
 #endif
 #endif // MEM_HAS_CHANNEL2
 
@@ -134,9 +134,9 @@ void tick() {
   top->mem_3_r_bits_resp = slave[3]->r_resp();
   top->mem_3_r_bits_last = slave[3]->r_last();
 #if MEM_DATA_BITS > 64
-  memcpy(top->mem_3_r_bits_data, slave[3]->r_data(), MEM_WIDTH);
+  memcpy(top->mem_3_r_bits_data, slave[3]->r_data(), MEM_BEAT_BYTES);
 #else
-  memcpy(&top->mem_3_r_bits_data, slave[3]->r_data(), MEM_WIDTH);
+  memcpy(&top->mem_3_r_bits_data, slave[3]->r_data(), MEM_BEAT_BYTES);
 #endif
 #endif // MEM_HAS_CHANNEL3
 

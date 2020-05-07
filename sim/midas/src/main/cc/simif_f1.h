@@ -22,8 +22,8 @@ class simif_f1_t: public virtual simif_t
     void fpga_shutdown();
     void fpga_setup(int slot_id);
   private:
-    char in_buf[MMIO_WIDTH];
-    char out_buf[MMIO_WIDTH];
+    char in_buf[CTRL_BEAT_BYTES];
+    char out_buf[CTRL_BEAT_BYTES];
 #ifdef SIMULATION_XSIM
     char * driver_to_xsim = "/tmp/driver_to_xsim";
     char * xsim_to_driver = "/tmp/xsim_to_driver";

@@ -268,14 +268,14 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "CTRL_ADDR_BITS" -> ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> ctrl.nastiWStrobeBits,
-    "MMIO_WIDTH"     -> ctrl.nastiWStrobeBits,
+    "CTRL_BEAT_BYTES"-> ctrl.nastiWStrobeBits,
     // These specify channel widths; used mostly in the test harnesses
     "MEM_NUM_CHANNELS" -> p(HostMemNumChannels),
     "MEM_ADDR_BITS"  -> p(HostMemChannelKey).axi4BundleParams.addrBits,
     "MEM_DATA_BITS"  -> p(HostMemChannelKey).axi4BundleParams.dataBits,
     "MEM_ID_BITS"    -> p(HostMemChannelKey).axi4BundleParams.idBits,
     "MEM_STRB_BITS"  -> p(HostMemChannelKey).axi4BundleParams.dataBits / 8,
-    "MEM_WIDTH"      -> p(HostMemChannelKey).axi4BundleParams.dataBits / 8,
+    "MEM_BEAT_BYTES" -> p(HostMemChannelKey).axi4BundleParams.dataBits / 8,
     // These are fixed by the AXI4 standard, only used in SW DRAM model
     "MEM_SIZE_BITS"  -> AXI4Parameters.sizeBits,
     "MEM_LEN_BITS"   -> AXI4Parameters.lenBits,
@@ -285,7 +285,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "DMA_ADDR_BITS"  -> dma.nastiXAddrBits,
     "DMA_DATA_BITS"  -> dma.nastiXDataBits,
     "DMA_STRB_BITS"  -> dma.nastiWStrobeBits,
-    "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
+    "DMA_BEAT_BYTES" -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
   def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)(p(ChannelWidth))
