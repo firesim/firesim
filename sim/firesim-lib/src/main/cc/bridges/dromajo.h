@@ -19,7 +19,7 @@ class dromajo_t: public bridge_driver_t
             int wdata_width,
             int cause_width,
             int tval_width,
-            int num_streams,
+            int num_traces,
             DROMAJOBRIDGEMODULE_struct * mmio_addrs,
             long dma_addr);
         ~dromajo_t();
@@ -62,9 +62,9 @@ class dromajo_t: public bridge_driver_t
         uint32_t _tval_offset;
 
         // other misc members
-        uint32_t _num_streams;
+        uint32_t _num_traces;
         long _dma_addr;
-        uint8_t _stream_idx;
+        uint8_t _trace_idx;
         bool dromajo_failed;
         int dromajo_exit_code;
         bool dromajo_cosim;

@@ -310,7 +310,7 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             DROMAJOBRIDGEMODULE_0_wdata_width,
             DROMAJOBRIDGEMODULE_0_cause_width,
             DROMAJOBRIDGEMODULE_0_tval_width,
-            DROMAJOBRIDGEMODULE_0_num_streams,
+            DROMAJOBRIDGEMODULE_0_num_traces,
             DROMAJOBRIDGEMODULE_0_substruct,
             DROMAJOBRIDGEMODULE_0_DMA_ADDR));
     #endif

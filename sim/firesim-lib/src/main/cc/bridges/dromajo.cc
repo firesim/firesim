@@ -33,12 +33,12 @@ dromajo_t::dromajo_t(
     int wdata_width,
     int cause_width,
     int tval_width,
-    int num_streams,
+    int num_traces,
     DROMAJOBRIDGEMODULE_struct * mmio_addrs,
     long dma_addr) : bridge_driver_t(sim)
 {
     // setup max constants given from the RTL
-    this->_num_streams = num_streams;
+    this->_num_traces = num_traces;
 
     this->_valid_width = 1;
     this->_iaddr_width = iaddr_width/8;
@@ -62,7 +62,7 @@ dromajo_t::dromajo_t(
     // setup misc. state variables
     this->_mmio_addrs = mmio_addrs;
     this->_dma_addr = dma_addr;
-    this->_stream_idx = 0;
+    this->_trace_idx = 0;
     this->dromajo_failed = false;
     this->dromajo_exit_code = 0;
     this->dromajo_state = NULL;
@@ -128,7 +128,7 @@ void dromajo_t::init() {
     // skip if co-sim not enabled
     if (!this->dromajo_cosim) return;
 
-    printf("[INFO] Dromajo: Attached Dromajo to %d instruction streams\n", this->_num_streams);
+    printf("[INFO] Dromajo: Attached Dromajo to %d instruction traces\n", this->_num_traces);
 
     // setup arguments
     char local_argc = 21;
@@ -230,7 +230,7 @@ void dromajo_t::process_tokens(int num_beats) {
             printf("[ERROR] Dromajo: Errored during simulation with %d\n", rval);
 
 #ifdef DEBUG
-            fprintf(stderr, "C[%d] off(%d) token(", this->_stream_idx, offset / (PCIE_SZ_B/2));
+            fprintf(stderr, "C[%d] off(%d) token(", this->_trace_idx, offset / (PCIE_SZ_B/2));
 
             for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
                 fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
@@ -251,16 +251,16 @@ void dromajo_t::process_tokens(int num_beats) {
             return;
         }
 
-        // move to next i stream
-        this->_stream_idx = (this->_stream_idx + 1) % this->_num_streams;
+        // move to next inst. trace
+        this->_trace_idx = (this->_trace_idx + 1) % this->_num_traces;
 
         // if int/excp was found in this set of commit traces... reset on next set of commit traces
-        if (this->_stream_idx == 0){
+        if (this->_trace_idx == 0){
             this->saw_int_excp = false;
         }
 
-        // add an extra PCIE_SZ_B if there is an odd amount of streams
-        if (this->_stream_idx == 0 && (this->_num_streams % 2 == 1)) {
+        // add an extra PCIE_SZ_B if there is an odd amount of traces
+        if (this->_trace_idx == 0 && (this->_num_traces % 2 == 1)) {
 #ifdef DEBUG
             fprintf(stderr, "off(%d + 1) = %d\n", offset / (PCIE_SZ_B/2), (offset + PCIE_SZ_B/2) / (PCIE_SZ_B/2));
 #endif
