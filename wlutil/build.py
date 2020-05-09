@@ -277,12 +277,13 @@ def generateKConfig(kfrags, linuxSrc):
     defCfg = getOpt('gen-dir') / 'defconfig'
 
     # Create a defconfig to use as reference
-    run(['make', 'ARCH=riscv', 'defconfig'], cwd=linuxSrc)
+    run(['make'] + getOpt('linux-make-args') + ['defconfig'], cwd=linuxSrc)
     shutil.copy(linuxCfg, defCfg)
 
     # Create a config from the user fragments
     kconfigEnv = os.environ.copy()
     kconfigEnv['ARCH'] = 'riscv'
+    kconfigEnv['CROSS_COMPILE'] = 'riscv64-unknown-linux-gnu-'
     run([linuxSrc / 'scripts/kconfig/merge_config.sh',
         str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc)
 
@@ -308,7 +309,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     # Prepare the linux source for building external drivers
     generateKConfig(kfrags, linuxSrc)
-    run(["make", "ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-", "modules_prepare", getOpt('jlevel')], cwd=linuxSrc)
+    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linuxSrc)
     kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
@@ -352,13 +353,11 @@ def makeBin(config, nodisk=False):
         try:
             checkSubmodule(config['linux-src'])
             checkSubmodule(config['pk-src'])
-
             makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
 
         initramfsIncludes.append(getOpt('initramfs-dir') / 'drivers')
-
         with tempfile.TemporaryDirectory() as cpioDir:
             cpioDir = pathlib.Path(cpioDir)
             initramfsPath = ""
@@ -374,7 +373,7 @@ def makeBin(config, nodisk=False):
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
             generateKConfig(config['linux-config'] + [cpioDir / "initramfs.kfrag"], config['linux-src'])
-            run(['make', 'ARCH=riscv', 'CROSS_COMPILE=riscv64-unknown-linux-gnu-', 'vmlinux', getOpt('jlevel')], cwd=config['linux-src'])
+            run(['make'] + getOpt('linux-make-args') + ['vmlinux', getOpt('jlevel')], cwd=config['linux-src'])
 
         # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
         pk_build = (config['pk-src'] / 'build')

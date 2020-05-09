@@ -2,7 +2,7 @@
   "name" : "driversJob",
   "base" : "br-base.json",
   "workdir" : "drivers",
-  "command" : "lsmod",
+  "command" : "lsmod | grep -o 'icenet\\|iceblk'",
   "testing" : {
     "refDir" : "jobOutput",
     "strip" : true

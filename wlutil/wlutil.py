@@ -175,7 +175,10 @@ derivedOpts = [
         'driver-dirs',
 
         # Buildroot source directory
-        'buildroot-dir'
+        'buildroot-dir',
+
+        # Arguments to pass when calling make on linux
+        'linux-make-args'
         ]
 
 class marshalCtx(collections.MutableMapping):
@@ -289,6 +292,7 @@ class marshalCtx(collections.MutableMapping):
         self['jlevel'] = '-j' + str(self['jlevel'])
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
+        self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
 
         if self['doitOpts']['dep_file'] == '':
             self['doitOpts']['dep_file'] = str(self['gen-dir'] / 'marshaldb')

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Perform a test of incremental builds in FireMarshal. This should be called
+on the host and will run a series of marshal commands.
+
+Usage: ./test.py PATH/TO/MARSHAL
+"""
 
 import subprocess as sp
 import sys
@@ -6,16 +11,21 @@ import os
 import pathlib as pth
 import re
 
+usage = """Usage: ./test.py PATH/TO/MARSHAL"""
+
 # Should be the directory containing the incremental test
 testSrc = pth.Path(__file__).parent
 testCfg = testSrc.parent / "incremental.json"
 
 # Should be the directory containing marshal
-managerPath = pth.Path(os.getcwd()) / "marshal"
+if len(sys.argv) != 2:
+    print(usage)
+    exit(1)
+
+managerPath = pth.Path(sys.argv[1])
 if not managerPath.exists:
-    managerPath = pth.Path(os.getcwd()) / "../../marshal"
-    if not managerPath.exists:
-        print("Can't find marshal, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
+    print("Provided marshal command does not exist: ",managerPath)
+    exit(1)
 
 # Reset the test, just in case it was left in a weird state
 sp.check_call(str(managerPath) + " clean " + str(testCfg), shell=True)
