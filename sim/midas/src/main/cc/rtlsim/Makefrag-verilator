@@ -18,8 +18,9 @@
 VERILATOR ?= verilator --cc --exe
 
 # Use --timescale to approximate timescale behavior of pre-4.034
+TIMESCALE_OPTS := $(shell verilator --version | perl -lne 'if (/(\d.\d+)/ && $$1 >= 4.034) { print "--timescale 1ns/1ps"; }')
 override VERILATOR_FLAGS := \
-	--timescale 1ns/1ps \
+	$(TIMESCALE_OPTS) \
 	-Wno-STMTDLY \
 	-O3 \
 	--output-split 10000 \
