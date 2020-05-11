@@ -17,7 +17,9 @@
 
 VERILATOR ?= verilator --cc --exe
 
+# Use --timescale to approximate timescale behavior of pre-4.034
 override VERILATOR_FLAGS := \
+	--timescale 1ns/1ps \
 	-Wno-STMTDLY \
 	-O3 \
 	--output-split 10000 \
