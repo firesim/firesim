@@ -12,33 +12,25 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.ir._
 import logger._
-import firrtl.Mappers._
-import firrtl.transforms.{DedupModules, DeadCodeElimination}
-import firrtl.passes.wiring.{WiringTransform}
+import firrtl.transforms.{DeadCodeElimination}
 import Utils._
 
 import java.io.{File, FileWriter}
 
-private[passes] class WCircuit(
-  info: Info,
-  modules: Seq[DefModule],
-  main: String,
-  val sim: SimWrapperChannels) extends Circuit(info, modules, main)
-
-private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
+private[midas] class MidasTransforms extends Transform {
   def inputForm = LowForm
-  def outputForm = LowForm
-  val dir = p(OutputDir)
+  def outputForm = HighForm
 
-  // Optionally run if the GenerateMultiCycleRamModels parameter is set
-  val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
-    new fame.LabelSRAMModels,
-    new ResolveAndCheck,
-    new EmitFirrtl("post-wrap-sram-models.fir"))
-  else Seq()
-
-  //Logger.setLevel(LogLevel.Debug)
+  //Logger.setLevel(LogLevel.Info)
   def execute(state: CircuitState) = {
+    // Optionally run if the GenerateMultiCycleRamModels parameter is set
+    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
+    val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
+      new fame.LabelSRAMModels,
+      new ResolveAndCheck,
+      new EmitFirrtl("post-wrap-sram-models.fir"))
+    else Seq()
+
     val xforms = Seq(
       firrtl.passes.RemoveValidIf,
       new firrtl.transforms.ConstantPropagation,
@@ -59,8 +51,8 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new EmitFirrtl("post-autocounter.fir"),
       new fame.EmitFAMEAnnotations("post-autocounter.json"),
       new ResolveAndCheck,
-      new AssertPass(dir),
-      new PrintSynthesis(dir),
+      new AssertPass,
+      new PrintSynthesis,
       new ResolveAndCheck,
       new EmitFirrtl("post-debug-synthesis.fir"),
       new fame.EmitFAMEAnnotations("post-debug-synthesis.json"),
@@ -101,7 +93,8 @@ private[midas] class MidasTransforms(implicit p: Parameters) extends Transform {
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck,
       new SimulationMapping(state.circuit.main),
-      xilinx.HostSpecialization)
+      xilinx.HostSpecialization,
+      new ResolveAndCheck)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)
   }

@@ -4,30 +4,36 @@
 package firesim.passes
 
 import midas.targetutils.FirrtlFpgaDebugAnnotation
+import midas.stage.phases.ConfigParametersAnnotation
 
 import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.annotations._
+import firrtl.transforms.TopWiring._
+import freechips.rocketchip.config.{Parameters, Field}
 
 import java.io._
 import scala.io.Source
 import collection.mutable
 
-import firrtl.transforms.TopWiring._
+case object ILADepthKey extends Field[Int](1024)
 
 /** Add ports punch out annotated ports out to the toplevel of the circuit.
     This also has an option to pass a function as a parmeter to generate custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class ILATopWiringTransform(datadepth: Int = 1024) extends Transform {
+class ILATopWiringTransform extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] ILA Top Wiring Transform"
 
   type InstPath = Seq[String]
 
-  def ILAWiringOutputFiles(dir: String, mapping: Seq[((ComponentName, Type, Boolean, InstPath, String), Int)], state: CircuitState): CircuitState = {
+  def ILAWiringOutputFiles(dataDepth: Int)(
+        dir: String,
+        mapping: Seq[((ComponentName, Type, Boolean, InstPath, String), Int)],
+        state: CircuitState): CircuitState = {
 
     //val targetFile: Option[String] = state.annotations.collectFirst { case ILADebugFileAnnotation(fn) => fn }
 
@@ -97,7 +103,7 @@ class ILATopWiringTransform(datadepth: Int = 1024) extends Transform {
     //vivado tcl epilogue
     val numprobes = if (mapping.size > 0) {mapping.size} else {1}
     tclOutputFile.append(s"CONFIG.C_NUM_OF_PROBES {$numprobes} ")
-    tclOutputFile.append(s"CONFIG.C_DATA_DEPTH {$datadepth} ")
+    tclOutputFile.append(s"CONFIG.C_DATA_DEPTH {$dataDepth} ")
     tclOutputFile.append(s"CONFIG.C_TRIGOUT_EN {false} ")
     tclOutputFile.append(s"CONFIG.C_EN_STRG_QUAL {1} ")
     tclOutputFile.append(s"CONFIG.C_ADV_TRIGGER {true} ")
@@ -135,9 +141,13 @@ class ILATopWiringTransform(datadepth: Int = 1024) extends Transform {
       case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_")  }
     }
 
+    val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
     val dir = state.annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
+
+    val dataDepth = p(ILADepthKey)
     //dirname should be some aws-fpga synthesis directory
-    val topwiringannos = targetannos ++ Seq(TopWiringOutputFilesAnnotation(dir.getPath(), ILAWiringOutputFiles))
+    val topwiringannos = targetannos :+
+      TopWiringOutputFilesAnnotation(dir.getPath(), ILAWiringOutputFiles(dataDepth))
 
     def topwiringtransform = new TopWiringTransform
     topwiringtransform.execute(state.copy(annotations = state.annotations ++ topwiringannos))

@@ -7,7 +7,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils.create_exps
 import firrtl.passes.LowerTypes.loweredName
-import firrtl.passes.VerilogRename.verilogRenameN
+import firrtl.transforms.VerilogRename
 import strober.core.ChainType
 import mdf.macrolib.SRAMMacro
 import java.io.{File, FileWriter}
@@ -64,7 +64,9 @@ class DumpChains(
                   (s.readers.size + s.readwriters.size) * width.toInt
               }
             case s: DefMemory =>
-              val name = verilogRenameN(s.name)
+              // Biancolin: I broke this in the FIRRTL 1.3 bump
+              //val name = verilogRenameN(s.name)
+              val name = s.name
               val width = bitWidth(s.dataType).toInt
               chainType match {
                 case ChainType.RegFile =>
@@ -76,7 +78,8 @@ class DumpChains(
                 })
               }
             case s: DefRegister =>
-              val name = verilogRenameN(s.name)
+              //val name = verilogRenameN(s.name)
+              val name = s.name
               val width = bitWidth(s.tpe).toInt
               chainFile write s"$id $path.$name $width -1\n"
               width

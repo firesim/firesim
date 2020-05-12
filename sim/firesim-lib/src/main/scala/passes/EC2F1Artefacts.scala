@@ -3,6 +3,7 @@
 package firesim.passes
 
 import firesim.util.{DesiredHostFrequency, BuildStrategy}
+import midas.stage.phases.ConfigParametersAnnotation
 
 import freechips.rocketchip.config.Parameters
 
@@ -15,7 +16,7 @@ import java.io.{File, FileWriter}
   *  to configure a PLL with the desired frequency and to pick a desired
   *  build strategy
   */
-class EC2F1Artefacts(implicit p: Parameters) extends Transform {
+object EC2F1Artefacts extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
   override def name = "[FireSim] EC2 F1 Artefact Generation"
@@ -46,6 +47,7 @@ ${buildStrategy.emitTcl}
   }
 
   def execute(state: CircuitState): CircuitState = {
+    implicit val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
     val targetDir = state.annotations.collectFirst({
       case TargetDirAnnotation(dir) => new File(dir)
     }).get

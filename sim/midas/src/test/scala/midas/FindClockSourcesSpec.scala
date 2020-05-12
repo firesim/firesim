@@ -6,6 +6,9 @@ import midas.passes._
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
+import firrtl.stage.transforms.Compiler
+import firrtl.stage.Forms
+import firrtl.options.Dependency
 // Switch to FIRRTL in 3.2
 import midas.firrtl.testutils._
 
@@ -14,7 +17,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
    def transform = FindClockSources
 
    def executeAnnosOnly(input: String, annotations: Seq[Annotation], checkAnnotations: Seq[Annotation]): CircuitState = {
-      val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
+      val finalState = new Compiler(Forms.LowForm :+ Dependency(transform)).execute(CircuitState(parse(input), ChirrtlForm, annotations))
 
       annotations.foreach { anno =>
         logger.debug(anno.serialize)
