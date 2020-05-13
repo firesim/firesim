@@ -9,13 +9,14 @@ import firrtl.ir._
 import firrtl.Utils.zero
 
 // Remove RocketChip's plusarg_reader
-object PlusArgReaderPass extends firrtl.passes.Pass {
+object PlusArgReaderPass extends firrtl.Transform {
   override def name = "[FireSim] PlusArgReader Pass"
-  override def inputForm = MidForm
-  override def outputForm = MidForm
+  def inputForm = MidForm
+  def outputForm = MidForm
 
-  def run(c: Circuit): Circuit = {
-    c.copy(modules = c.modules map {
+  def execute(cs: CircuitState): CircuitState = {
+    val c = cs.circuit
+    cs.copy(circuit = c.copy(modules = c.modules map {
       case m: Module => m
       case m: ExtModule if m.defname == "plusarg_reader" => {
         val default = m.params.find(_.name == "DEFAULT")
@@ -28,6 +29,6 @@ object PlusArgReaderPass extends firrtl.passes.Pass {
         )))
       }
       case m: ExtModule => m
-    })
+    }))
   }
-} 
+}

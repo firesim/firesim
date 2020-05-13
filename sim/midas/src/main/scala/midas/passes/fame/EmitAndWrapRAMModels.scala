@@ -8,7 +8,7 @@ import Mappers._
 import Utils._
 import annotations._
 
-import midas.passes.SingleModulePrelinkRename
+import midas.passes.{PreLinkRenamingAnnotation, PreLinkRenaming}
 import midas.targetutils.FirrtlMemModelAnnotation
 
 import collection.mutable
@@ -166,7 +166,7 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
   def refInst() = WRef(defInst)
 
   private def portNo(vecName: String, elmType: Type)(idx: Int) =
-    new Decoupled(WSubIndex(WSubField(WSubField(refInst, "channels"), vecName), idx, elmType, UNKNOWNGENDER))
+    new Decoupled(WSubIndex(WSubField(WSubField(refInst, "channels"), vecName), idx, elmType, UnknownFlow))
   def readCmdPort: Int => Decoupled = portNo("read_cmds", readCommand)
   def readDataPort: Int => Decoupled = portNo("read_resps", readDataType)
   def writePort: Int => Decoupled = portNo("write_cmds", writeCommand)
@@ -185,13 +185,12 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
     ) ++ readConnects ++ writeConnects
   }
 
-  def elaborateModel(parentCircuitName: String): (DefModule, Seq[Annotation]) = {
+  def elaborateModel(parentCircuitNS: Namespace): (DefModule, Seq[Annotation]) = {
     val c3circuit = chisel3.Driver.elaborate(() =>
       new midas.models.sram.AsyncMemChiselModel(depth.toInt, dataWidth, readPorts.size, writePorts.size))
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = c3circuit.annotations.map(_.toFirrtl)
-    val transforms = Seq(new SingleModulePrelinkRename(parentCircuitName, name))
-    val state = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
+    val annos = PreLinkRenamingAnnotation(parentCircuitNS) +: c3circuit.annotations.map(_.toFirrtl)
+    val state = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), Seq(PreLinkRenaming))
     require(state.circuit.modules.size == 1)
     val mod = state.circuit.modules.head
     (mod, state.annotations)
@@ -237,7 +236,7 @@ class EmitAndWrapRAMModels extends Transform {
 
       val name = ns.newName("RamModel")
       val inst = new RAMModelInst(name, readPorts, writePorts)
-      val (module, newAnnos) = inst.elaborateModel(c.main)
+      val (module, newAnnos) = inst.elaborateModel(Namespace(c))
       addedModules += module
       addedAnnotations ++= newAnnos
       Module(NoInfo, mod.name, updatedPortList, Block(inst.emitStatements(WRef(hostClock), WRef(hostReset))))

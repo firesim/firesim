@@ -21,17 +21,10 @@ import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
+
 case object ChannelLen extends Field[Int]
 case object ChannelWidth extends Field[Int]
 case object SimWrapperKey extends Field[SimWrapperConfig]
-
-trait HasSimWrapperParams {
-  implicit val p: Parameters
-  implicit val channelWidth = p(ChannelWidth)
-  val traceMaxLen = p(strober.core.TraceMaxLen)
-  val daisyWidth = p(strober.core.DaisyWidth)
-  val sramChainNum = p(strober.core.SRAMChainNum)
-}
 
 private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
@@ -249,7 +242,7 @@ case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          bridgeAnnos: Seq[BridgeIOAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
-class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
+class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule {
 
   outer =>
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config

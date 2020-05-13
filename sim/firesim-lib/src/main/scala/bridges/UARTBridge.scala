@@ -8,15 +8,15 @@ import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey}
+import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey, UARTParams}
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs
 
 // DOC include start: UART Bridge Target-Side Interface
-class UARTBridgeTargetIO extends Bundle {
+class UARTBridgeTargetIO(val uParams: UARTParams) extends Bundle {
   val clock = Input(Clock())
-  val uart = Flipped(new UARTPortIO)
+  val uart = Flipped(new UARTPortIO(uParams))
   // Note this reset is optional and used only to reset target-state modelled
   // in the bridge This reset just like any other Bool included in your target
   // interface, simply appears as another Bool in the input token.
@@ -29,14 +29,14 @@ class UARTBridgeTargetIO extends Bundle {
 // metadata we'd like to pass to the host-side BridgeModule. Note, we need to
 // use a single case class to do so, even if it is simply to wrap a primitive
 // type, as is the case for UART (int)
-case class UARTKey(div: Int)
+case class UARTKey(uParams: UARTParams, div: Int)
 // DOC include end: UART Bridge Constructor Arg
 
 // DOC include start: UART Bridge Target-Side Module
-class UARTBridge(implicit p: Parameters) extends BlackBox
+class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
     with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] {
   // Since we're extending BlackBox this is the port will connect to in our target's RTL
-  val io = IO(new UARTBridgeTargetIO)
+  val io = IO(new UARTBridgeTargetIO(uParams))
   // Implement the bridgeIO member of Bridge using HostPort. This indicates that
   // we want to divide io, into a bidirectional token stream with the input
   // token corresponding to all of the inputs of this BlackBox, and the output token consisting of 
@@ -49,7 +49,7 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
   val div = (frequency / baudrate).toInt
 
   // And then implement the constructorArg member
-  val constructorArg = Some(UARTKey(div))
+  val constructorArg = Some(UARTKey(uParams, div))
 
   // Finally, and this is critical, emit the Bridge Annotations -- without
   // this, this BlackBox would appear like any other BlackBox to Golden Gate
@@ -60,7 +60,7 @@ class UARTBridge(implicit p: Parameters) extends BlackBox
 // DOC include start: UART Bridge Companion Object
 object UARTBridge {
   def apply(clock: Clock, uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
-    val ep = Module(new UARTBridge)
+    val ep = Module(new UARTBridge(uart.c))
     ep.io.uart <> uart
     ep.io.clock := clock
     ep
@@ -86,7 +86,7 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     val io = IO(new WidgetIO())
 
     // This creates the host-side interface of your TargetIO
-    val hPort = IO(HostPort(new UARTBridgeTargetIO))
+    val hPort = IO(HostPort(new UARTBridgeTargetIO(key.uParams)))
 
     // Generate some FIFOs to capture tokens...
     val txfifo = Module(new Queue(UInt(8.W), 128))

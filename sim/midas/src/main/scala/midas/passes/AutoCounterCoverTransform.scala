@@ -53,15 +53,10 @@ class FireSimPropertyLibrary extends BasePropertyLibrary {
 /**
   * Take the annotated cover points and convert them to counters
   */
-class AutoCounterTransform(dir: File = new File("/tmp/"))
-    (implicit p: Parameters) extends Transform with AutoCounterConsts {
+class AutoCounterTransform extends Transform with AutoCounterConsts {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = MidForm
   override def name = "[Golden Gate] AutoCounter Cover Transform"
-
-  val enableTransform         = p(EnableAutoCounter)
-  val usePrintfImplementation = p(AutoCounterUsePrintfImpl)
-
 
   // Gates each auto-counter event with the associated reset, moving the
   // annotation's target to point at the new boolean (updatedAnnos).
@@ -207,7 +202,8 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
     CircuitState(updatedCircuit, wiredState.form, cleanedAnnotations ++ bridgeAnnos.flatten)
   }
 
-  def doTransform(state: CircuitState): CircuitState = {
+  def doTransform(state: CircuitState, usePrintfImplementation: Boolean): CircuitState = {
+    val dir = state.annotations.collectFirst({ case TargetDirAnnotation(dir) => dir }).get
     //select/filter which modules do we want to actually look at, and generate counters for
     //this can be done in one of two way:
     //1. Using an input file called `covermodules.txt` in a directory declared in the transform concstructor
@@ -261,6 +257,10 @@ class AutoCounterTransform(dir: File = new File("/tmp/"))
   }
 
   def execute(state: CircuitState): CircuitState = {
-    if (enableTransform) doTransform(state) else state
+    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
+    val enableTransform         = p(EnableAutoCounter)
+    val usePrintfImplementation = p(AutoCounterUsePrintfImpl)
+
+    if (enableTransform) doTransform(state, usePrintfImplementation) else state
   }
 }

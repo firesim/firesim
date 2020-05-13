@@ -17,11 +17,10 @@ import Utils._
 import strober.passes.{StroberMetaData, postorder}
 import midas.widgets.{BridgeIOAnnotation, AssertBundle, AssertBridgeModule}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
+import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.ExcludeInstanceAssertsAnnotation
 
-private[passes] class AssertPass(
-     dir: File)
-    (implicit p: Parameters) extends firrtl.Transform {
+private[passes] class AssertPass extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   override def name = "[Golden Gate] Assertion Synthesis"
@@ -168,7 +167,7 @@ private[passes] class AssertPass(
       case a @ (_: ExcludeInstanceAssertsAnnotation) => excludeInstAsserts += a.target
     }
 
-    // Step 2: Replace stop statements (asserts) and find associated message 
+    // Step 2: Replace stop statements (asserts) and find associated message
     val c = state.circuit.copy(modules = state.circuit.modules.map(replaceStopsAndFindMessages))
     val topModule = c.modules.collectFirst({ case m: Module if m.name == c.main => m }).get
     val topMT = ModuleTarget(c.main, c.main)
@@ -240,6 +239,7 @@ private[passes] class AssertPass(
   }
 
   def execute(state: CircuitState): CircuitState = {
+    val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
     if (p(SynthAsserts)) synthesizeAsserts(state) else state
   }
 }

@@ -16,7 +16,7 @@ import java.io.{File, FileWriter, Writer}
 object Utils {
   val ut = UnknownType
   val uw = UnknownWidth
-  val ug = UNKNOWNGENDER
+  val ug = UnknownFlow
   
   def wref(s: String, t: Type = ut, k: Kind = ExpKind) = WRef(s, t, k, ug)
   def wsub(e: Expression, s: String) = WSubField(e, s, field_type(e.tpe, s), ug)

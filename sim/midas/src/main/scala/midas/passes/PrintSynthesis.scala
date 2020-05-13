@@ -21,7 +21,7 @@ import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule}
 import midas.targetutils.SynthPrintfAnnotation
 
-private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends firrtl.Transform {
+private[passes] class PrintSynthesis extends firrtl.Transform {
   def inputForm = MidForm
   def outputForm = MidForm
   override def name = "[Golden Gate] Print Synthesis"
@@ -137,6 +137,7 @@ private[passes] class PrintSynthesis(dir: File)(implicit p: Parameters) extends 
   }
 
   def execute(state: CircuitState): CircuitState = {
+    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
     val printfAnnos = state.annotations.collect({
       case anno @ SynthPrintfAnnotation(_, mod, _, _) =>
         printMods += mod

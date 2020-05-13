@@ -2,35 +2,28 @@
 
 package midas.stage
 
-import midas.{OutputDir}
+import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnotation}
 import midas.widgets.{BridgeIOAnnotation}
 import midas.models.FASEDMemoryTimingModel
 import midas.platform.PlatformShim
 
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
-import midas.rocketchip.util.{ParsedInputNames}
 
 import firrtl.ir.Port
 import firrtl.annotations.ReferenceTarget
 import firrtl.{Transform, CircuitState, AnnotationSeq}
-import firrtl.options.{Phase, TargetDirAnnotation}
+import firrtl.options.{Phase, TargetDirAnnotation, Dependency}
 
 import java.io.{File, FileWriter, Writer}
 import logger._
 
 class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
 
+  override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
+
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val targetDir = annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
-    val configPackage = annotations.collectFirst({ case ConfigPackageAnnotation(p) => p }).get
-    val configString  = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get
     val runtimeConfigName  = annotations.collectFirst({ case RuntimeConfigNameAnnotation(s) => s }).get
-
-    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString, None)
-
-    implicit val p = getParameters(pNames).alterPartial({
-      case OutputDir => targetDir
-    })
+    implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
     val bridgeIOAnnotations = annotations.collect { case b: BridgeIOAnnotation if b.widgetClass.nonEmpty => b }
     val shim = LazyModule(PlatformShim(bridgeIOAnnotations, Map[ReferenceTarget, Port]()))

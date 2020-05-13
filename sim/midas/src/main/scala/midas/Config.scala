@@ -7,6 +7,7 @@ import widgets._
 import platform._
 import models._
 import strober.core._
+import firrtl.stage.TransformManager.TransformDependency
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.UnitTests
@@ -47,9 +48,9 @@ case object GenerateMultiCycleRamModels extends Field[Boolean](false)
 // User provided transforms to run before Golden Gate transformations
 // These are constructor functions accept a Parameters instance and produce a
 // sequence of firrtl Transforms to run
-case object TargetTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
+case object TargetTransforms extends Field[Seq[TransformDependency]](Seq())
 // User provided transforms to run after Golden Gate transformations
-case object HostTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
+case object HostTransforms extends Field[Seq[TransformDependency]](Seq())
 
 // Directory into which output files are dumped. Set by -td when invoking the Stage
 case object OutputDir extends Field[File]

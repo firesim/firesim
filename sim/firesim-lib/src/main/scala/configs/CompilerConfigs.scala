@@ -1,6 +1,7 @@
 //See LICENSE for license details.
 package firesim.configs
 
+import firrtl.options.Dependency
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import midas.{TargetTransforms, HostTransforms}
 import firesim.bridges._
@@ -34,11 +35,11 @@ class WithNICWidgetLoopback  extends Config((site, here, up) => {
 
 // Replaces Rocket Chip's black-box async resets with a synchronous equivalent
 class WithAsyncResetReplacement extends Config((site, here, up) => {
-  case TargetTransforms => ((p: Parameters) => Seq(firesim.passes.AsyncResetRegPass)) +: up(TargetTransforms, site)
+  case TargetTransforms => Dependency(firesim.passes.AsyncResetRegPass) +: up(TargetTransforms, site)
 })
 
 class WithPlusArgReaderRemoval extends Config((site, here, up) => {
-  case TargetTransforms => ((p: Parameters) => Seq(firesim.passes.PlusArgReaderPass)) +: up(TargetTransforms, site)
+  case TargetTransforms => Dependency(firesim.passes.PlusArgReaderPass) +: up(TargetTransforms, site)
 })
 
 // ADDITIONAL HOST TRANSFORMATIONS
@@ -47,12 +48,13 @@ class WithPlusArgReaderRemoval extends Config((site, here, up) => {
 
 // Generates additional TCL scripts requried by FireSim's EC2 F1 vivado flow
 class WithEC2F1Artefacts extends Config((site, here, up) => {
-    case HostTransforms => ((p: Parameters) => Seq(new firesim.passes.EC2F1Artefacts()(p))) +: up(HostTransforms, site)
+    case HostTransforms => Dependency(firesim.passes.EC2F1Artefacts) +: up(HostTransforms, site)
 })
 
 // Implements the AutoILA feature on EC2 F1
 class WithILATopWiringTransform extends Config((site, here, up) => {
-  case HostTransforms => ((p: Parameters) => Seq(new firesim.passes.ILATopWiringTransform)) +: up(HostTransforms, site)
+  case firesim.passes.ILADepthKey => 1024
+  case HostTransforms => Dependency[firesim.passes.ILATopWiringTransform] +: up(HostTransforms, site)
 })
 
 // Implements the AutoCounter performace counters features
