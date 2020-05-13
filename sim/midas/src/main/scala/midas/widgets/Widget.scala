@@ -35,10 +35,10 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
 }
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   override def module: WidgetImp
-  val wName = Some(Widget.assignName(this))
-  this.suggestName(wName.get)
-  // Legacy API
-  def getWName = wName.get
+  val (wName, wId) = Widget.assignName(this)
+  this.suggestName(wName)
+
+  def getWName = wName
 
   // Returns widget-relative word address
   def getCRAddr(name: String): Int = {
@@ -170,7 +170,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
 object Widget {
   private val widgetInstCount = mutable.HashMap[String, Int]().withDefaultValue(0)
-  def assignName[T <: Widget](m: T): String = {
+  def assignName[T <: Widget](m: T): (String, Int) = {
     // Assign stable widget names by using the class name and suffix using the
     // number of other instances.
     // We could let the user specify this in their bridge --> we'd need to consider:
@@ -180,7 +180,7 @@ object Widget {
     val widgetBasename = m.getClass.getSimpleName
     val idx = widgetInstCount(widgetBasename)
     widgetInstCount(widgetBasename) = idx + 1
-    widgetBasename + "_" + idx
+    (widgetBasename + "_" + idx, idx)
   }
 }
 

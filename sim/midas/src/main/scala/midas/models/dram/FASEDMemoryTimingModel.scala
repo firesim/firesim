@@ -22,10 +22,6 @@ import Console.{UNDERLINED, RESET}
 
 import java.io.{File, FileWriter}
 
-object ModelID {
-  var id = 0
-}
-
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
 
@@ -556,11 +552,10 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Accepts an elaborated memory model and generates a runtime configuration for it
     private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
       val file = new File(p(OutputDir), fileName)
-      val writer = new FileWriter(file, ModelID.id != 0)
+      val writer = new FileWriter(file, wId != 0)
       settings.foreach({
-        case (field, value) => writer.write(s"+mm_${field}_${ModelID.id}=${value}\n")
+        case (field, value) => writer.write(s"+mm_${field}_${wId}=${value}\n")
       })
-      ModelID.id += 1
       writer.close
     }
 

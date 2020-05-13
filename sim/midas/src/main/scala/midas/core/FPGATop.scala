@@ -168,7 +168,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     println("Host-FPGA DRAM Allocation Map:")
     sortedRegionTuples.zip(dramOffsets).foreach({ case ((bridgeSeq, addresses), offset) =>
       val regionName = bridgeSeq.head.memoryRegionName
-      val bridgeNames = bridgeSeq.map(_.wName.get).mkString(", ")
+      val bridgeNames = bridgeSeq.map(_.getWName).mkString(", ")
       println(f"  ${regionName} -> [0x${offset}%X, 0x${offset + BytesOfDRAMRequired(addresses) - 1}%X]")
       println(f"    Associated bridges: ${bridgeNames}")
     })
