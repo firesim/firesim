@@ -105,7 +105,7 @@ class AutoCounterBridgeModule(events: Seq[(String, String)], triggerName: String
       headerComment(sb)
       // Exclude counter addresses as their names can vary across AutoCounter instances, but 
       // we only generate a single struct typedef
-      val headerWidgetName = wName.getOrElse(name).toUpperCase
+      val headerWidgetName = wName.toUpperCase
       crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)
       crRegistry.genArrayHeader(headerWidgetName, base, sb)
       emitClockDomainInfo(headerWidgetName, sb)

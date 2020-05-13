@@ -552,9 +552,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Accepts an elaborated memory model and generates a runtime configuration for it
     private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
       val file = new File(p(OutputDir), fileName)
-      val writer = new FileWriter(file)
+      val writer = new FileWriter(file, wId != 0)
       settings.foreach({
-        case (field, value) => writer.write(s"+mm_${field}=${value}\n")
+        case (field, value) => writer.write(s"+mm_${field}_${wId}=${value}\n")
       })
       writer.close
     }

@@ -52,15 +52,16 @@ void AddrRangeCounter::finish() {
 
 FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     simif_t* sim, AddressMap addr_map, int argc,char** argv,
-    std::string stats_file_name, size_t mem_size)
+    std::string stats_file_name, size_t mem_size, std::string suffix)
   : FpgaModel(sim, addr_map), mem_size(mem_size) {
 
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg: args) {
-    if(arg.find("+mm_") == 0) {
-      auto sub_arg = std::string(arg.c_str() + 4);
-      size_t delimit_idx = sub_arg.find_first_of("=");
-      std::string key = sub_arg.substr(0, delimit_idx).c_str();
+    if(arg.find("+mm_") == 0 && arg.find(suffix) != std::string::npos) {
+      auto sub_arg = arg.substr(4);
+      size_t delimit_idx = sub_arg.find("=");
+      size_t suffix_idx = sub_arg.find(suffix);
+      std::string key = sub_arg.substr(0, suffix_idx).c_str();
       int value = std::stoi(sub_arg.substr(delimit_idx+1).c_str());
       model_configuration[key] = value;
     }

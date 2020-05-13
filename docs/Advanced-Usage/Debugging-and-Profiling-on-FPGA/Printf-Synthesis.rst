@@ -76,6 +76,19 @@ Runtime Arguments
     binary-output mode, since the target cycle is implicit in the token stream,
     this flag has no effect.
 
+You can set some of these options by changing the fields in the "synthprint"
+section of your config_runtime.ini.
+
+::
+
+    [synthprint]
+    start=0
+    end=-1
+    cycleprefix=yes
+
+The "start" field corresponds to "print-start", "end" to "print-end", and
+"cycleprefix" to "print-no-cycle-prefix".
+
 Related Publications
 --------------------
 
