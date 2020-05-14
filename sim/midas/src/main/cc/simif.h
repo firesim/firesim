@@ -9,9 +9,6 @@
 #include <map>
 #include <queue>
 #include <random>
-#ifdef ENABLE_SNAPSHOT
-#include "sample/sample.h"
-#endif
 #include <gmp.h>
 #include <sys/time.h>
 #define TIME_DIV_CONST 1000000.0;
@@ -116,53 +113,6 @@ class simif_t
     uint64_t hcycle();
     uint64_t rand_next(uint64_t limit) { return gen() % limit; }
 
-#ifdef ENABLE_SNAPSHOT
-  private:
-    // sample information
-#ifdef KEEP_SAMPLES_IN_MEM
-    sample_t** samples;
-#endif
-    sample_t* last_sample;
-    size_t sample_num;
-    size_t last_sample_id;
-    std::string sample_file;
-    uint64_t sample_cycle;
-    uint64_t snap_cycle;
-
-    size_t trace_count;
-
-    // profile information
-    bool profile;
-    size_t sample_count;
-    midas_time_t sample_time;
-
-    void init_sampling(int argc, char** argv);
-    void finish_sampling();
-    void reservoir_sampling(size_t n);
-    void deterministic_sampling(size_t n);
-    size_t trace_ready_valid_bits(
-      sample_t* sample, bool poke, size_t id, size_t bits_id);
-    inline void save_sample();
-
-  protected:
-    size_t tracelen;
-    sample_t* read_snapshot(bool load = false);
-    sample_t* read_traces(sample_t* s);
-
-  public:
-    uint64_t get_snap_cycle() const {
-      return snap_cycle;
-    }
-    uint64_t get_sample_cycle() const {
-      return sample_cycle;
-    }
-    void set_sample_cycle(uint64_t cycle) {
-      sample_cycle = cycle;
-    }
-    void set_trace_count(uint64_t count) {
-      trace_count = count;
-    }
-#endif
 };
 
 #endif // __SIMIF_H
