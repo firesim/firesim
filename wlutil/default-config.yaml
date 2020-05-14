@@ -12,7 +12,7 @@ image-dir : '../images'
 linux-dir : '../riscv-linux'
 
 # Default pk source
-pk-dir : '../riscv-pk'
+pk-dir : '../opensbi'
 
 # Runtime Logs
 log-dir : '../logs' 
