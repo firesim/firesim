@@ -9,8 +9,7 @@ import firrtl.annotations._
 import firrtl.stage.transforms.Compiler
 import firrtl.stage.Forms
 import firrtl.options.Dependency
-// Switch to FIRRTL in 3.2
-import midas.firrtl.testutils._
+import firrtl.testutils._
 
 
 class FindClockSourceSpec extends LowTransformSpec  {
