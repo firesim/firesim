@@ -94,7 +94,7 @@ def addDep(loader, config):
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
-                    config_changed(checkGitStatus(config.get('pk-src')))]
+                    config_changed(checkGitStatus(config.get('firmware-src')))]
                 })
         diskBin = [str(config['bin'])]
 
@@ -119,7 +119,7 @@ def addDep(loader, config):
                 'file_dep': nodisk_file_deps,
                 'task_dep' : nodisk_task_deps,
                 'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
-                    config_changed(checkGitStatus(config.get('pk-src')))]
+                    config_changed(checkGitStatus(config.get('firmware-src')))]
                 })
         nodiskBin = [str(noDiskPath(config['bin']))]
 
@@ -340,16 +340,16 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
 def makeBBL(config, nodisk=False):
     # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
-    pkBuild = (config['pk-src'] / 'build')
-    if pkBuild.exists():
-        shutil.rmtree(pkBuild)
-    pkBuild.mkdir()
+    bblBuild = config['bbl-src'] / 'build'
+    if bblBuild.exists():
+        shutil.rmtree(bblBuild)
+    bblBuild.mkdir()
 
     run(['../configure', '--host=riscv64-unknown-elf',
-        '--with-payload=' + str(config['linux-src'] / 'vmlinux')], cwd=pkBuild)
-    run(['make', getOpt('jlevel')], cwd=pkBuild)
+        '--with-payload=' + str(config['linux-src'] / 'vmlinux')], cwd=bblBuild)
+    run(['make', getOpt('jlevel')], cwd=bblBuild)
 
-    return pkBuild / 'bbl'
+    return bblBuild / 'bbl'
 
 
 def makeOpenSBI(config, nodisk=False):
@@ -357,10 +357,10 @@ def makeOpenSBI(config, nodisk=False):
         getOpt('linux-make-args') +
         ['PLATFORM=generic',
          'FW_PAYLOAD_PATH=' + str(config['linux-src'] / 'arch' / 'riscv' / 'boot' / 'Image')],
-        cwd=config['pk-src']
+        cwd=config['opensbi-src']
         )
 
-    return config['pk-src'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
+    return config['opensbi-src'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
 
 def makeBin(config, nodisk=False):
     """Build the binary specified in 'config'.
@@ -377,7 +377,8 @@ def makeBin(config, nodisk=False):
         # Some submodules are only needed if building Linux
         try:
             checkSubmodule(config['linux-src'])
-            checkSubmodule(config['pk-src'])
+            checkSubmodule(config['firmware-src'])
+
             makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
@@ -398,10 +399,12 @@ def makeBin(config, nodisk=False):
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
             generateKConfig(config['linux-config'] + [cpioDir / "initramfs.kfrag"], config['linux-src'])
-            run(['make'] + getOpt('linux-make-args') + ['vmlinux', getOpt('jlevel')], cwd=config['linux-src'])
+            run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux-src'])
 
-        # fw = makeBBL(config, nodisk)
-        fw = makeOpenSBI(config, nodisk)
+        if config['use-bbl']:
+            fw = makeBBL(config, nodisk)
+        else:
+            fw = makeOpenSBI(config, nodisk)
 
         if nodisk:
             shutil.copy(fw, noDiskPath(config['bin']))

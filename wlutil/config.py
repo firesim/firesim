@@ -32,8 +32,14 @@ configUser = [
         # Path to linux configuration fragments to use (can be a list or scalar
         # string from the user but will be converted to a list of pathlib.Path)
         'linux-config',
-        # Path to riscv-pk (used for bbl)
+        # Path to bbl source
+        'bbl-src',
+        # deprecated alias for bbl-src
         'pk-src',
+        # Path to openSBI source to use
+        'opensbi-src',
+        # Boolean indicating whether bbl should be used (True) or openSBI (False or undefined)
+        'use-bbl',
         # Path to script to run on host before building this config
         'host-init',
         # Path to script to run on host after building the binary
@@ -83,11 +89,12 @@ configDerived = [
         'initramfs', # boolean: should we use an initramfs with this config?
         'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
         'base-deps' # A list of tasks that this workload needs from its base (a potentially empty list)
+        'firmware-src' # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
         ]
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'linux-src', 'bbl-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided). Additional options may also be inherited if they require
@@ -98,7 +105,8 @@ configInherit = [
         'files',
         'outputs',
         'linux-src',
-        'pk-src',
+        'bbl-src',
+        'opensbi-src',
         'builder',
         'distro',
         'spike',
@@ -111,6 +119,12 @@ configInherit = [
         'qemu-args',
         'cpus',
         'mem']
+
+# Some options have changed names or aliases, we only use one canonical version
+# internally. The entries in this map are alias -> cannonical
+configAlias = {
+        'pk-src' : 'bbl-src'
+        }
 
 # These are the permissible base-distributions to use (they get treated special)
 distros = {
@@ -181,6 +195,12 @@ def cleanPath(path, workdir):
     return path
 
 
+def replaceAliases(config):
+    """Replace any options that have aliases with their connonical name"""
+    for alias,canon in configAlias.items():
+        if alias in config:
+            config[canon] = config[alias]
+
 class Config(collections.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
@@ -196,6 +216,7 @@ class Config(collections.MutableMapping):
     #   - All paths will be absolute
     #   - Jobs will be a dictionary of { 'name' : Config } for each job
     def __init__(self, cfgFile=None, cfgDict=None):
+
         if cfgFile != None:
             with open(cfgFile, 'r') as f:
                 self.cfg = json.load(f)
@@ -203,12 +224,17 @@ class Config(collections.MutableMapping):
         else:
             self.cfg = cfgDict
 
+        replaceAliases(self.cfg)
+
         cfgDir = None
         if 'cfg-file' in self.cfg:
             cfgDir = self.cfg['cfg-file'].parent
 
         # Some default values
         self.cfg['base-deps'] = []
+
+        if 'use-bbl' not in self.cfg:
+            self.cfg['use-bbl'] = False
 
         if 'workdir' in self.cfg:
             self.cfg['workdir'] = pathlib.Path(self.cfg['workdir'])
@@ -328,8 +354,20 @@ class Config(collections.MutableMapping):
             # Order matters here! Later kfrags take precedence over earlier.
             self.cfg['linux-config'] = baseCfg['linux-config'] + self.cfg['linux-config']
 
-        if 'pk-src' not in self.cfg:
-            self.cfg['pk-src'] = getOpt('pk-dir')
+        if self.cfg['use-bbl']:
+            if 'bbl-src' not in self.cfg:
+                if getOpt('bbl-dir').exists():
+                    self.cfg['bbl-src'] = getOpt('bbl-dir')
+                else:
+                    raise ConfigurationOptionError('bbl-src', "bbl-src not found: " + getOpt('bbl-src'))
+            self.cfg['firmware-src'] = self.cfg['bbl-src']
+        else:
+            if 'opensbi-src' not in self.cfg:
+                if getOpt('opensbi-dir').exists():
+                    self.cfg['opensbi-src'] = getOpt('opensbi-dir')
+                else:
+                    raise ConfigurationOptionError('opensbi-src', "opensbi-src not found: " + getOpt('opensbi-src'))
+            self.cfg['firmware-src'] = self.cfg['opensbi-src']
 
         # We inherit the parent's binary for bare-metal configs, but not linux configs
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.

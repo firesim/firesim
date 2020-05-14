@@ -28,7 +28,8 @@ ctx = None
 # List of marshal submodules (those enabled by init-submodules.sh)
 marshalSubmods = [
         'linux-dir',
-        'pk-dir',
+        'bbl-dir',
+        'opensbi-dir',
         'busybox-dir',
         'buildroot-dir',
         'driver-dirs'
@@ -100,7 +101,8 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
         'image-dir',
         'linux-dir',
         'firesim-dir',
-        'pk-dir',
+        'bbl-dir',
+        'opensbi-dir',
         'log-dir',
         'res-dir',
         'workload-dirs'
@@ -131,9 +133,7 @@ userOpts = [
         'workload-dirs',
         'board-dir',
         'image-dir',
-        'linux-dir',
         'firesim-dir',
-        'pk-dir',
         'log-dir',
         'res-dir',
         'jlevel',  # int or str from user, converted to '-jN' after loading
@@ -173,6 +173,15 @@ derivedOpts = [
 
         # List of paths to linux driver sources to use
         'driver-dirs',
+
+        # Linux source to use by default (can be overwritten by user config). Derived from board-dir.
+        'linux-dir',
+
+        # Default pk/bbl source to use by default (can be overwritten by user config). Derived from board-dir.
+        'bbl-dir',
+
+        # Default OpenSBI source to use by default (can be overwritten by user config). Derived from board-dir.
+        'opensbi-dir',
 
         # Buildroot source directory
         'buildroot-dir',
@@ -290,7 +299,12 @@ class marshalCtx(collections.MutableMapping):
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
+
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
+        self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
+        self['opensbi-dir'] = self['board-dir'] / 'firmware' / 'opensbi'
+        self['linux-dir'] = self['board-dir'] / 'linux'
+
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
         self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
 

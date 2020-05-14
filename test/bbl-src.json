@@ -1,8 +1,9 @@
 {
-  "name" : "pk-src",
+  "name" : "bbl-src",
   "base" : "br-base.json",
   "host-init" : "copy-src.sh",
-  "pk-src" : "riscv-pk",
+  "bbl-src" : "riscv-pk",
+  "use-bbl" : true,
   "command" : "echo Global : command",
   "testing" : {
     "refDir" : "refOutput"
