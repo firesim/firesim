@@ -33,10 +33,9 @@ endif
 submodules = \
     $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
     $(addprefix $(chipyard_dir)/, \
-		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
-		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
+		$(addprefix generators/, rocket-chip) \
+		$(addprefix tools/, firrtl chisel3))
 
-src_path = src/main/scala
 chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_path) -name "*.scala"))
 
 common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
