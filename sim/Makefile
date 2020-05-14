@@ -77,10 +77,13 @@ verilog: $(VERILOG)
 compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
+.PHONY: sbt
 sbt: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "shell"
+.PHONY: test
 test: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"
+.PHONY: testOnly
 testOnly: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "testOnly $(SCALA_TEST)"
 # All target-agnostic firesim recipes are defined here

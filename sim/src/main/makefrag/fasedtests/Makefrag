@@ -98,6 +98,7 @@ run-vcs: $(vcs)
 run-vcs-debug: $(vcs_debug)
 	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=waves.vpd 2> err
 
+.PHONY: run-xsim
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS)
 
