@@ -14,7 +14,6 @@ import firrtl.Utils.{zero, to_flip}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
-import strober.passes.{StroberMetaData, postorder}
 import midas.widgets.{BridgeIOAnnotation, AssertBundle, AssertBridgeModule}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation

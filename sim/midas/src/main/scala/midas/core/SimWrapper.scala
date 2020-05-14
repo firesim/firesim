@@ -40,13 +40,6 @@ class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record 
   def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
 }
 
-class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
-  val elements = ListMap() ++ (es map {
-    case (name, rv) => name -> ReadyValidTrace(rv.bits.cloneType)
-  })
-  def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
-}
-
 // Regenerates the "bits" field of a target ready-valid interface from a list of flattened
 // elements that include the "bits_" prefix. This is stripped off.
 class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
@@ -287,9 +280,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
       case Some(sinkP) => sinkP <> channel.io.out
       case None => channelPorts.elements(s"${chAnno.globalName}_source") <> channel.io.out
     }
-
-    channel.io.trace.ready := DontCare
-    channel.io.traceLen := DontCare
     channel
   }
 
@@ -356,8 +346,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
       })
       bindRVChannelDeq(channel.io.deq, deqPortPair)
 
-      channel.io.trace := DontCare
-      channel.io.traceLen := DontCare
       channel.io.targetReset.bits := false.B
       channel.io.targetReset.valid := true.B
       channel
