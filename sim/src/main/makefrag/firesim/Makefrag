@@ -156,6 +156,7 @@ run-vcs-debug: $(vcs_debug)
 	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
 
+.PHONY: run-xsim
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	+sample=$(notdir $(SIM_BINARY)).sample  +permissive-off $(abspath $(SIM_BINARY))

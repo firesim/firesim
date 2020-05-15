@@ -36,6 +36,7 @@ lazy val chipyardDir = if(firesimAsLibrary) {
   file("../target-design/chipyard")
 }
 
+lazy val chipyardRoot  = ProjectRef(chipyardDir, "chipyardRoot")
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
 lazy val chisel        = ProjectRef(chipyardDir, "chisel")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
@@ -57,6 +58,7 @@ lazy val firesimRef = ProjectRef(file("."), "firesim")
 lazy val midas = (project in file("midas"))
   .dependsOn(barstools, rocketchip)
   .settings(commonSettings,
+    Test / unmanagedBase := (chipyardRoot / baseDirectory).value / "test_lib",
     Runtime / fullClasspathAsJars ++= ((firesimRef / Runtime / fullClasspath).value ++
                                        (firechip / Runtime / fullClasspath).value)
   )

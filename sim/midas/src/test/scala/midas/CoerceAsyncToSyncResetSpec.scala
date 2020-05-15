@@ -7,8 +7,7 @@ import midas.passes._
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
-// Switch to FIRRTL in 3.2
-import midas.firrtl.testutils._
+import firrtl.testutils._
 import logger._
 
 class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
