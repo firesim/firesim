@@ -82,7 +82,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     val hPort = IO(HostPort(new DromajoTargetIO(key.insnWidths, key.vecSizes)))
 
     // helper to get number to round up to nearest multiple
-    def roundUp(num: Int, mult: Int): Int = { (num/mult).ceil * mult }
+    def roundUp(num: Int, mult: Int): Int = { (num/mult).ceil.toInt * mult }
 
     // get the traces
     val traces = hPort.hBits.trace.insns.map({ unmasked =>
