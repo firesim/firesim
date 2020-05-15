@@ -66,7 +66,10 @@ case class HostMemChannelParams(
     beatBytes: Int,
     idBits: Int,
     maxXferBytes: Int = 256) {
-  def axi4BundleParams = AXI4BundleParameters(log2Ceil(size), 8 * beatBytes, idBits) 
+  def axi4BundleParams = AXI4BundleParameters(
+    addrBits = log2Ceil(size),
+    dataBits = 8 * beatBytes,
+    idBits   = idBits)
 }
 
 
