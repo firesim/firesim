@@ -93,28 +93,24 @@ override CFLAGS += -include $(design_h)
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_files := simif simif_emul emul/mmio_$(PLATFORM) sample/sample
+emul_files := simif simif_emul emul/mmio sample/sample
 emul_h     := $(driver_h) $(bridge_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
 # This includes c sources and static libraries
 emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files) sample/simif_sample)) $(lib)
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
-# The lop level module must be called out for verilator
-ifeq ($(PLATFORM),zynq)
-top_module = ZynqShim
-endif
-ifeq ($(PLATFORM),f1)
-top_module = F1Shim
-endif
-
 verilator_conf := rtlsim/ml-verilator-conf.vlt
+verilator_wrapper_v := $(v_dir)/verilator_top.sv
+verilator_harness := emul/verilator-harness.cc
+top_module := verilator_top
 include rtlsim/Makefrag-verilator
 
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
 # Add an extra wrapper source for VCS simulators
-vcs_wrapper_v := $(v_dir)/emul_$(PLATFORM).v
+vcs_wrapper_v := $(v_dir)/vcs_top.v
+vcs_harness := emul/vcs-harness.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs

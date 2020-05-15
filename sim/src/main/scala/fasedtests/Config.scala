@@ -130,6 +130,8 @@ class ConstrainHostIds(idBits: Int) extends Config((site, here, up) => {
   */
 
 class DefaultF1Config extends Config(new midas.F1Config)
+class DefaultZC706Config extends Config(new midas.ZC706Config)
+class DefaultZedboardConfig extends Config(new midas.ZedboardConfig)
 
 class SmallQuadChannelHostConfig extends Config(new Config((site, here, up) => {
   case midas.core.HostMemNumChannels => 4

@@ -11,16 +11,20 @@
 # 	emul_v: verilog sources and headers
 #
 # Verilator Only:
-#   top_module: The top of the DUT
+#   verilator_wrapper_v: An additional verilog wrapper around the DUT
+#   verilator_harness: Additional C++ sources for verilator simulation
+#   top_module: The name of the top-level module (contained within the provided wrapper)
 #   (optional) verilator_conf: An verilator configuration file
 #   (optional) VERILATOR_FLAGS: extra flags depending on the target
 
 VERILATOR ?= verilator --cc --exe
+verilator_v := $(emul_v) $(verilator_wrapper_v)
+verilator_cc := $(emul_cc) $(verilator_harness)
 
-# Use --timescale to approximate timescale behavior of pre-4.034
 TIMESCALE_OPTS := $(shell verilator --version | perl -lne 'if (/(\d.\d+)/ && $$1 >= 4.034) { print "--timescale 1ns/1ps"; }')
 override VERILATOR_FLAGS := \
 	$(TIMESCALE_OPTS) \
+	--top-module verilator_top \
 	-Wno-STMTDLY \
 	-O3 \
 	--output-split 10000 \
@@ -29,18 +33,18 @@ override VERILATOR_FLAGS := \
 	-LDFLAGS "$(LDFLAGS) " \
 	$(VERILATOR_FLAGS)
 
-$(OUT_DIR)/V$(DESIGN): $(emul_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN): $(verilator_v) $(verilator_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
+	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
 	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN).csrc/V$(top_module).h" \
-	-o $@ $(emul_v) $(verilator_conf) $(emul_cc)
+	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(emul_v) $(emul_cc) $(emul_h)
+$(OUT_DIR)/V$(DESIGN)-debug: $(verilator_v) $(verilator_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --trace --top-module $(top_module) -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
 	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(top_module).h" \
-	-o $@ $(emul_v) $(verilator_conf) $(emul_cc)
+	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
 	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(top_module).mk
