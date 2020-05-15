@@ -48,10 +48,10 @@ class PromoteSubmodule extends Transform {
     instancesToPromote.toSet
   }
 
-  private def instanceRef(inst: WDefInstance): WRef = WRef(inst.name, inst.tpe, InstanceKind, FEMALE)
+  private def instanceRef(inst: WDefInstance): WRef = WRef(inst.name, inst.tpe, InstanceKind, SinkFlow)
   private def instanceField(inst: WDefInstance, field: String): WSubField = {
     val wref = instanceRef(inst)
-    WSubField(wref, field, field_type(wref.tpe, field), FEMALE)
+    WSubField(wref, field, field_type(wref.tpe, field), SinkFlow)
   }
 
   private def portBundle(m: DefModule): BundleType = {

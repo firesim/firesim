@@ -7,11 +7,12 @@ import java.io.{PrintWriter, File}
 import firrtl._
 import ir._
 import Mappers._
-import firrtl.Utils.{BoolType, kind, ceilLog2, one}
+import firrtl.Utils.{BoolType, kind}
 import firrtl.passes.MemPortUtils
 import annotations._
 import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
+import chisel3.util.log2Ceil
 
 import midas.passes._
 
@@ -23,7 +24,7 @@ object PatientMemTransformer {
     val syncReadPorts = (newMem.readers ++ newMem.readwriters).filter(rp => mem.readLatency > 0)
     val preserveReads = syncReadPorts.flatMap {
       case rpName =>
-        val addrWidth = IntWidth(ceilLog2(mem.depth) max 1)
+        val addrWidth = IntWidth(log2Ceil(mem.depth) max 1)
         val dummyReset = DefWire(NoInfo, ns.newName(s"${mem.name}_${rpName}_dummyReset"), BoolType)
         val tieOff = Connect(NoInfo, WRef(dummyReset), UIntLiteral(0))
         val addrReg = new DefRegister(NoInfo, ns.newName(s"${mem.name}_${rpName}"),

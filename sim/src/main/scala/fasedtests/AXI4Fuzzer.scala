@@ -3,21 +3,33 @@
 package firesim.fasedtests
 
 import chisel3._
+import chisel3.util.{isPow2, log2Ceil}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.{ExtMem, MemoryPortParams}
 
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
 import midas.widgets.{PeekPokeBridge, RationalClockBridge}
 
-// TODO: Handle errors and reinstatiate the TLErrorEvaluator
+case class FuzzerParameters(numTransactions: Int, maxFlight: Int, overrideAddress: Option[AddressSet])
+case object FuzzerParametersKey extends Field[Seq[FuzzerParameters]]()
+
 class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarget {
-  val fuzz  = LazyModule(new TLFuzzer(p(NumTransactions), p(MaxFlight)))
-  val model = LazyModule(new TLRAMModel("AXI4FuzzMaster"))
+  val fuzzerModelPairs  = for ((params, idx) <- p(FuzzerParametersKey).zipWithIndex) yield {
+    val fuzzer =  LazyModule(new TLFuzzer(
+      params.numTransactions,
+      params.maxFlight,
+      overrideAddress = params.overrideAddress))
+
+    val model = LazyModule(new TLRAMModel(s"AXI4FuzzMaster_${idx}"))
+    (fuzzer, model)
+  }
+
+  val (fuzzers, models) = fuzzerModelPairs.unzip
   val xbar = AXI4Xbar()
   val MemoryPortParams(portParams, nMemoryChannels) = p(ExtMem).get
   val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i =>
@@ -38,20 +50,24 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
     :*= AXI4Buffer() // Required to cut combinational paths through FASED instance
     :*= AXI4UserYanker()
     :*= AXI4IdIndexer(p(IDBits))
-    :*= xbar
-    := AXI4Deinterleaver(p(MaxTransferSize))
-    := TLToAXI4()
-    := TLDelayer(0.1)
-    := TLBuffer(BufferParams.flow)
-    := TLDelayer(0.1)
-    := model.node
-    := fuzz.node)
+    :*= xbar)
+
+  for ((fuzz, model) <- fuzzerModelPairs) {
+    (xbar := AXI4Deinterleaver(p(MaxTransferSize))
+      := TLToAXI4()
+      := TLDelayer(0.1)
+      := TLBuffer(BufferParams.flow)
+      // Should there be a Filter in here?
+      := TLDelayer(0.1)
+      := model.node
+      := fuzz.node)
+  }
 
   lazy val module = new LazyModuleImp(this) {
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 
-    done := fuzz.module.io.finished
+    done := fuzzers.map(_.module.io.finished).reduce(_ && _)
     error := false.B
     for ((axi4, edge) <- slave.in) {
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,

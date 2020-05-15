@@ -7,7 +7,7 @@ import java.io.{PrintWriter, File}
 import firrtl._
 import ir._
 import Mappers._
-import firrtl.Utils.{BoolType, kind, ceilLog2, one}
+import firrtl.Utils.{BoolType, kind, one}
 import firrtl.passes.MemPortUtils
 import firrtl.transforms.DontTouchAnnotation
 import annotations._

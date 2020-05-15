@@ -218,15 +218,13 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
         name = "fased-memory-timing-model",
-        id   = IdRange(0, 1 << p(NastiKey).idBits))))))
+        id   = IdRange(0, 1 << p(NastiKey).idBits),
+        maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
+      )))))
 
   val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
-
-  require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
-    "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
-  )
 
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
@@ -554,9 +552,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Accepts an elaborated memory model and generates a runtime configuration for it
     private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
       val file = new File(p(OutputDir), fileName)
-      val writer = new FileWriter(file)
+      val writer = new FileWriter(file, wId != 0)
       settings.foreach({
-        case (field, value) => writer.write(s"+mm_${field}=${value}\n")
+        case (field, value) => writer.write(s"+mm_${field}_${wId}=${value}\n")
       })
       writer.close
     }

@@ -159,7 +159,8 @@ class FireSimServerNode(FireSimNode):
     def __init__(self, server_hardware_config=None, server_link_latency=None,
                  server_bw_max=None, server_profile_interval=None,
                  trace_enable=None, trace_select=None, trace_start=None, trace_end=None, trace_output_format=None, autocounter_readrate=None,
-                 zerooutdram=None):
+                 zerooutdram=None,
+                 print_start=None, print_end=None, print_cycle_prefix=None):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -172,6 +173,9 @@ class FireSimServerNode(FireSimNode):
         self.trace_output_format = trace_output_format
         self.autocounter_readrate = autocounter_readrate
         self.zerooutdram = zerooutdram
+        self.print_start = print_start
+        self.print_end = print_end
+        self.print_cycle_prefix = print_cycle_prefix
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         FireSimServerNode.SERVERS_CREATED += 1
@@ -245,7 +249,8 @@ class FireSimServerNode(FireSimNode):
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
             self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram)
+            self.autocounter_readrate, all_shmemportnames, self.zerooutdram,
+            self.print_start, self.print_end, self.print_cycle_prefix)
 
         run(runcommand)
 

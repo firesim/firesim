@@ -22,9 +22,6 @@
 [submodule "deploy/workloads/coremark/riscv-coremark"]
 	path = deploy/workloads/coremark/riscv-coremark
 	url = https://github.com/riscv-boom/riscv-coremark
-[submodule "sim/midas/src/main/cc/dramsim2"]
-	path = sim/midas/src/main/cc/dramsim2
-	url = https://github.com/firesim/DRAMSim2.git
 [submodule "utils/FlameGraph"]
 	path = utils/fireperf/FlameGraph
 	url = https://github.com/brendangregg/FlameGraph.git

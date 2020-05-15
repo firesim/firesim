@@ -13,10 +13,10 @@ import java.io.{File, FileWriter, StringWriter}
 // preparation for linking (eg. PlatformMapping). Subsumes Utils.renameMods
 // We want to preserve the module names of the circuit we are wrapping (the child),
 // so we reference its namespace to generate new names.
-private[passes] class PreLinkRenaming(childNamespace: Namespace) extends firrtl.Transform {
+private[passes] case class PreLinkRenamingAnnotation(ns: Namespace) extends NoTargetAnnotation
+private[passes] object PreLinkRenaming extends firrtl.Transform {
 
-  override def name = "[MIDAS] Pre-link Module Renaming"
-  // TODO: Technically this xform should be able to accept AnyForm(TM); and be form idempotent
+  override def name = "[Golden Gate] Pre-link Module Renaming"
   def inputForm = HighForm
   def outputForm = HighForm
 
@@ -32,6 +32,7 @@ private[passes] class PreLinkRenaming(childNamespace: Namespace) extends firrtl.
   }) map updateInsts(nameMap)
 
   def execute(state: CircuitState): CircuitState = {
+    val childNamespace = state.annotations.collectFirst({ case PreLinkRenamingAnnotation(ns) => ns }).get
     val circuit = state.circuit
     require(!childNamespace.contains(circuit.main), "Submodule in child has same name as parent's top")
 
@@ -51,24 +52,3 @@ private[passes] class PreLinkRenaming(childNamespace: Namespace) extends firrtl.
                renames = Some(renameMap))
   }
 }
-
-// A simpler version of the above
-class SingleModulePrelinkRename(newCName: String, newMName: String) extends firrtl.Transform {
-  def inputForm = HighForm
-  def outputForm = HighForm
-  override def name = s"[MIDAS 2.0] SingleModulePrelinkRename"
-
-  def execute(state: CircuitState) = {
-    val oldName = state.circuit.main
-    state.copy(
-      circuit = state.circuit.copy(
-        main = newCName,
-        modules = state.circuit.modules.map({
-          case m: ExtModule if m.name == oldName => m.copy(name = newMName)
-          case m: Module    if m.name == oldName => m.copy(name = newMName)
-        })),
-      renames = Some(RenameMap.create(Map(
-        ModuleTarget(oldName, oldName) -> Seq(ModuleTarget(newCName, newMName))))))
-  }
-}
-

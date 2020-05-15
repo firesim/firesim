@@ -22,9 +22,9 @@ import midas.passes._
 
 trait ReadyValidSignal {
   val ref: Expression
-  def ready: WSubField = WSubField(ref, "ready", BoolType, UNKNOWNGENDER)
-  def valid: WSubField = WSubField(ref, "valid", BoolType, UNKNOWNGENDER)
-  def bits: WSubField = WSubField(ref, "bits", UnknownType, UNKNOWNGENDER)
+  def ready: WSubField = WSubField(ref, "ready", BoolType, UnknownFlow)
+  def valid: WSubField = WSubField(ref, "valid", BoolType, UnknownFlow)
+  def bits: WSubField = WSubField(ref, "bits", UnknownType, UnknownFlow)
 }
 
 case class ReadyValidSink(ref: Expression) extends ReadyValidSignal

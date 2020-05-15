@@ -8,6 +8,9 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
+import firrtl.options.Dependency
+import firrtl.stage.Forms
+import firrtl.stage.transforms.Compiler
 import TargetToken.{Instance, OfModule}
 
 import midas.passes.fame.RTRenamer
@@ -136,7 +139,8 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
 
     val topWiringOFileAnno = TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc)
     val topWiringAnnos = topWiringOFileAnno +: inputAnnos.map(_.toWiringAnnotation(prefix)).distinct
-    val wiredState = new TopWiringTransform().execute(state.copy(annotations = topWiringAnnos ++ state.annotations))
+    val wiredState = new Compiler(Forms.MidForm :+ Dependency[TopWiringTransform], Forms.MidForm)
+      .execute(state.copy(annotations = topWiringAnnos ++ state.annotations))
 
     // Step 2: Reconstruct a map from source RT to newly wired reference target
     val instanceMaps = new InstanceGraph(wiredState.circuit).getChildrenInstanceMap
@@ -161,9 +165,8 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
     // Step 3: Do clock analysis using complete paths to clocks
     val findClockSourceAnnos = allAbsClockRTs.map(src => FindClockSourceAnnotation(src)).toSeq
     val stateToAnalyze = wiredState.copy(annotations = findClockSourceAnnos)
-    val loweredState = Seq(new ResolveAndCheck,
-                           new MiddleFirrtlToLowFirrtl,
-                           FindClockSources).foldLeft(stateToAnalyze)((state, xform) => xform.transform(state))
+    val loweredState = new Compiler(Seq(Dependency(FindClockSources)), Forms.MidForm)
+      .execute(stateToAnalyze)
 
     val clockSourceMap = loweredState.annotations.collect({
       case ClockSourceAnnotation(qT, source) => qT -> source

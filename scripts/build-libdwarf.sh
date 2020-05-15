@@ -1,7 +1,10 @@
 #!/bin/sh
 
 set -e
-test -n "${RISCV}" || exit 1
+if [ -z "$RISCV" ]; then
+    echo "You must set \$RISCV to run this script."
+    exit 1
+fi
 
 cd sim/firesim-lib/src/main/cc/lib/libdwarf
 sh scripts/FIX-CONFIGURE-TIMES

@@ -86,7 +86,9 @@ class RuntimeHWConfig:
                                               trace_select, trace_start, trace_end,
                                               trace_output_format,
                                               autocounter_readrate, all_shmemportnames,
-                                              enable_zerooutdram):
+                                              enable_zerooutdram,
+                                              print_start, print_end,
+                                              enable_print_cycle_prefix):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -126,12 +128,13 @@ class RuntimeHWConfig:
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
         zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
+        print_cycle_prefix = "+print-no-cycle-prefix" if not enable_print_cycle_prefix else ""
 
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
-        # TODO: supernode support (tracefile0, trace-select0.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        # TODO: supernode support (tracefile, trace-select.. etc)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid,
             driver=driver,
             runtimeconf=runtimeconf,
@@ -144,13 +147,19 @@ class RuntimeHWConfig:
             profile_interval=profile_interval,
             zero_out_dram=zero_out_dram,
             command_shmemportnames=command_shmemportnames,
-            command_bootbinaries=command_bootbinaries, trace_select=trace_select,
-            trace_start=trace_start, trace_end=trace_end, tracefile=tracefile,
+            command_bootbinaries=command_bootbinaries,
+            trace_select=trace_select,
+            trace_start=trace_start,
+            trace_end=trace_end,
+            tracefile=tracefile,
             trace_output_format=trace_output_format,
             dwarf_file_name=dwarf_file_name,
             autocounterfile=autocounterfile,
             autocounter_readrate=autocounter_readrate,
-            command_dromajo=command_dromajo)
+            command_dromajo=command_dromajo,
+            print_cycle_prefix=print_cycle_prefix,
+            print_start=print_start,
+            print_end=print_end)
 
         return basecommand
 
@@ -265,6 +274,10 @@ class InnerRuntimeConfiguration:
         self.trace_output_format = "0"
         self.autocounter_readrate = 0
         self.zerooutdram = False
+        self.print_start = "0"
+        self.print_end = "-1"
+        self.print_cycle_prefix = True
+
         if 'tracing' in runtime_dict:
             self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
@@ -276,6 +289,10 @@ class InnerRuntimeConfiguration:
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
         if 'hostdebug' in runtime_dict:
             self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
+        if 'synthprint' in runtime_dict:
+            self.print_start = runtime_dict['synthprint'].get("start", "0")
+            self.print_end = runtime_dict['synthprint'].get("end", "-1")
+            self.print_cycle_prefix = runtime_dict['synthprint'].get("cycleprefix", "yes") == "yes"
 
         self.workload_name = runtime_dict['workload']['workloadname']
         # an extra tag to differentiate workloads with the same name in results names
@@ -331,7 +348,9 @@ class RuntimeConfig:
             self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
             self.innerconf.trace_output_format,
             self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion,
-            self.innerconf.zerooutdram)
+            self.innerconf.zerooutdram,
+            self.innerconf.print_start, self.innerconf.print_end,
+            self.innerconf.print_cycle_prefix)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """

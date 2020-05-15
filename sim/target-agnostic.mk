@@ -102,6 +102,7 @@ $(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir) VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)"
 
+.PHONY: verilator verilator-debug
 verilator: $(verilator)
 verilator-debug: $(verilator_debug)
 
@@ -125,6 +126,7 @@ $(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILO
 	$(MAKE) -C $(simif_dir) vcs-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
+.PHONY: vcs vcs-debug
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
 
@@ -212,6 +214,7 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 #############################
 
 # Run XSIM DUT
+.PHONY: xsim-dut
 xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
 
@@ -225,6 +228,7 @@ $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
+.PHONY: xsim
 xsim: $(xsim)
 
 #########################
@@ -271,12 +275,7 @@ veryclean:
 tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
 
-.PHONY: sbt test
 .PHONY: default verilog compile
-.PHONY: verilator verilator-debug
-.PHONY: vcs vcs-debug
-.PHONY: run
-.PHONY: xsim-dut xsim run-xsim
 .PHONY: $(PLATFORM)-driver fpga
 .PHONY: mostlyclean clean
 

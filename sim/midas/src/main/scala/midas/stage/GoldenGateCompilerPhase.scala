@@ -2,52 +2,42 @@
 
 package midas.stage
 
-import midas._
-import midas.passes.{MidasCompiler, HostTransformCompiler, LastStageVerilogCompiler}
+import midas.{TargetTransforms, HostTransforms}
+import midas.passes.{MidasTransforms}
+import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnotation}
 
-import firrtl.ir.Circuit
-import firrtl.{Transform, CircuitState, AnnotationSeq}
+import firrtl.{CircuitState, AnnotationSeq}
 import firrtl.annotations.{Annotation}
-import firrtl.options.{Phase, TargetDirAnnotation}
-import firrtl.stage.{FirrtlCircuitAnnotation}
-import firrtl.CompilerUtils.getLoweringTransforms
-import firrtl.passes.memlib._
-
-import freechips.rocketchip.config.{Parameters, Config, Field}
-import midas.rocketchip.util.{ParsedInputNames}
-import java.io.{File, FileWriter, Writer}
-import logger._
+import firrtl.options.{Phase, Dependency}
+import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation}
+import firrtl.stage.{Forms, FirrtlCircuitAnnotation}
+import firrtl.stage.transforms.Compiler
 
 class GoldenGateCompilerPhase extends Phase with ConfigLookup {
+
+  override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
+  override val optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.phases.WriteEmitted])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val allCircuits = annotations.collect({ case FirrtlCircuitAnnotation(circuit) => circuit })
     require(allCircuits.size == 1, "Golden Gate can only process a single Firrtl Circuit at a time.")
-    val circuit = allCircuits.head
 
-    val targetDir = annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
-    val configPackage = annotations.collectFirst({ case ConfigPackageAnnotation(p) => p }).get
-    val configString  = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get
-    val pNames = ParsedInputNames("UNUSED", "UNUSED", "UNUSED", configPackage, configString, None)
+    implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
     val midasAnnos = Seq(InferReadWriteAnnotation)
+    val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations ++ midasAnnos)
 
-    implicit val p = getParameters(pNames).alterPartial({
-      case OutputDir => targetDir
-    })
-    // Ran prior to Golden Gate tranforms (target-time)
-    val targetTransforms = p(TargetTransforms).flatMap(transformCtor => transformCtor(p))
-    // Ran after Golden Gate transformations (host-time)
-    val hostTransforms = p(HostTransforms).flatMap(transformCtor => transformCtor(p))
-    val midasTransforms = new passes.MidasTransforms()
-    val compiler = new MidasCompiler
-    val midas = compiler.compile(firrtl.CircuitState(
-      circuit, firrtl.HighForm, annotations ++ midasAnnos),
-      targetTransforms :+ midasTransforms)
+    // Lower the target design and run additional target transformations before Golden Gate xforms
+    val loweredTarget = new Compiler(Forms.LowForm ++ p(TargetTransforms)).execute(state)
 
-    val postHostTransforms = new HostTransformCompiler().compile(midas, hostTransforms)
-    val result = new LastStageVerilogCompiler().compileAndEmit(postHostTransforms, Seq())
-    result.annotations
+    // Run Golden Gate transformations, introducing host-decoupling and generating additional imulator RTL
+    val simulator = new Compiler(
+      Forms.LowForm ++ Seq(Dependency[InferReadWrite], Dependency[MidasTransforms]),
+      Forms.LowForm).execute(loweredTarget)
+
+    // Lower and emit simulator RTL and run user-requested host-transforms
+    new Compiler(Dependency[firrtl.VerilogEmitter] +: p(HostTransforms),Forms.LowForm)
+      .execute(simulator)
+      .annotations
   }
-
 }
