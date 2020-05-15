@@ -60,7 +60,7 @@ DROMAJO_LIB = $(DROMAJO_DIR)/lib$(DROMAJO_LIB_NAME).a
 DROMAJO_H = $(GENERATED_DIR)/dromajo_params.h
 DROMAJO_LONG_H = $(GENERATED_DIR)/$(long_name).dromajo_params.h
 
-CHIPYARD_ROM = $(chipyard_dir)/bootrom/bootrom.rv64.img
+CHIPYARD_ROM = $(chipyard_dir)/generators/testchipip/bootrom/bootrom.rv64.img
 DROMAJO_ROM = $(GENERATED_DIR)/$(long_name).rom
 
 DTS_FILE = $(GENERATED_DIR)/$(long_name).dts
