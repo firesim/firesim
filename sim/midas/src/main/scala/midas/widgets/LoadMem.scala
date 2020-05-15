@@ -180,7 +180,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
     super.genHeader(base, sb)
     import CppGenerationUtils._
     sb.append(genMacro("MEM_DATA_CHUNK", UInt64(
-      (hKey.dataBits - 1) / p(midas.core.ChannelWidth) + 1)))
+      ((hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1)))
   }
   }
 }

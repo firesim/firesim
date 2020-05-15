@@ -53,8 +53,6 @@ case object HostTransforms extends Field[Seq[TransformDependency]](Seq())
 case object OutputDir extends Field[File]
 
 class SimConfig extends Config((site, here, up) => {
-  case ChannelLen       => 16
-  case ChannelWidth     => 32
   case SynthAsserts     => false
   case SynthPrints      => false
   case DMANastiKey      => NastiParameters(512, 64, 6)

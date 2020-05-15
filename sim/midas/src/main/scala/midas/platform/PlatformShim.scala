@@ -38,7 +38,8 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
   def genHeader(sb: StringBuilder, target: String) {
     sb.append("#include <stdint.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))
-    sb.append(genMacro("data_t", "uint%d_t".format(p(ChannelWidth))))
+    sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
+    sb.append(genMacro("data_t", "uint32_t"))
     top.module.genHeader(sb)
     sb.append("\n// Simulation Constants\n")
     top.module.headerConsts map { case (name, value) =>

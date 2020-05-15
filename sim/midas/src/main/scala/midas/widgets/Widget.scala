@@ -230,8 +230,9 @@ trait HasWidgets {
     }
   }
 
-  def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start >> log2Up(channelWidth/8), sb))
+  def genHeader(sb: StringBuilder) {
+    // Converts byte addresses to AXI4-lite (i.e., 32-bit wide) word addresses
+    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start >> 2, sb))
   }
 
   def printWidgets {

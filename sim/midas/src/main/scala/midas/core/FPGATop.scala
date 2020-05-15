@@ -179,7 +179,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     })
   }
 
-  override def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
+  override def genHeader(sb: StringBuilder) {
     super.genHeader(sb)
     targetMemoryRegions.foreach(_.serializeToHeader(sb))
   }
@@ -291,5 +291,5 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "DMA_BEAT_BYTES" -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
-  def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)(p(ChannelWidth))
+  def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
 }

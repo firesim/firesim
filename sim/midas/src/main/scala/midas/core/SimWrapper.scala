@@ -21,9 +21,6 @@ import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
-
-case object ChannelLen extends Field[Int]
-case object ChannelWidth extends Field[Int]
 case object SimWrapperKey extends Field[SimWrapperConfig]
 
 private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
