@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.LFSR16
 import chisel3.core.MultiIOModule
 
@@ -63,7 +64,7 @@ class AutoCounterModuleChild extends MultiIOModule {
   io.oddlfsr := odd_lfsr
 }
 
-class AutoCounterModule extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
+class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
 
 class AutoCounterCoverModuleDUT extends Module {
   val io = IO(new Bundle {
@@ -96,7 +97,7 @@ class AutoCounterCoverModuleDUT extends Module {
 
 }
 
-class AutoCounterCoverModule extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
+class AutoCounterCoverModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
 
 class AutoCounterPrintfDUT extends Module {
   val io = IO(new Bundle {
@@ -116,5 +117,5 @@ class AutoCounterPrintfDUT extends Module {
   }
 }
 
-class AutoCounterPrintfModule extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
+class AutoCounterPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
 

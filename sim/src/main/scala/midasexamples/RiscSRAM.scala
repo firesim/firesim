@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util._
 import midas.targetutils._
 
@@ -82,4 +83,4 @@ class RiscSRAMDUT extends Module {
   }
 }
 
-class RiscSRAM extends PeekPokeMidasExampleHarness(() => new RiscSRAMDUT)
+class RiscSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new RiscSRAMDUT)

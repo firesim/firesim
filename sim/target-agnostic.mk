@@ -55,7 +55,7 @@ fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
 	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
-		-ggaf $(ANNO_FILE) \
+		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-E verilog"

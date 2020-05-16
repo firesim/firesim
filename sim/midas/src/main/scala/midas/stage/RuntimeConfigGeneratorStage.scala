@@ -14,7 +14,6 @@ class RuntimeConfigGeneratorStage extends Stage with PreservesAll[Phase] {
 
   private val phases: Seq[Phase] =
     Seq(
-        new GoldenGateGetIncludes,
         new midas.stage.phases.CreateParametersInstancePhase,
         new firrtl.stage.phases.AddDefaults,
         new midas.stage.RuntimeConfigGenerationPhase)

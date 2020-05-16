@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.{unless, HasBlackBoxInline}
 import chisel3.experimental.{withClockAndReset}
 
@@ -53,5 +54,5 @@ class VerilogAccumulatorDUT extends Module {
   io.out := impl.io.out
 }
 
-class Accumulator extends PeekPokeMidasExampleHarness(() => new AccumulatorDUT)
-class VerilogAccumulator extends PeekPokeMidasExampleHarness(() => new VerilogAccumulatorDUT)
+class Accumulator(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AccumulatorDUT)
+class VerilogAccumulator(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new VerilogAccumulatorDUT)

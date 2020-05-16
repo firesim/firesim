@@ -5,14 +5,14 @@ package widgets
 
 import midas.core.{SimWrapperChannels, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel, JsonProtocol, HasSerializationHints}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
 import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
-import firrtl.annotations.{ReferenceTarget}
+import firrtl.annotations.{ReferenceTarget, JsonProtocol, HasSerializationHints}
 
 import scala.reflect.runtime.{universe => ru}
 

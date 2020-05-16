@@ -5,35 +5,22 @@ import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import scala.io.Source
 
-import firesim.util.GeneratorArgs
-
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
     targetConfigs: String = "NoConfig",
     platformConfigs: String = "HostDebugFeatures_DefaultF1Config",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
-  ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
+  ) extends firesim.TestSuiteCommon {
 
-  val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
   val backendSimulator = "verilator"
 
-  lazy val generatorArgs = GeneratorArgs(
-    midasFlowKind = "midas",
-    targetDir = "generated-src",
-    topModuleProject = "firesim.midasexamples",
-    topModuleClass = targetName,
-    targetConfigProject = "firesim.midasexamples",
-    targetConfigs = targetConfigs,
-    platformConfigProject = "firesim.midasexamples",
-    platformConfigs = platformConfigs)
-
+  val targetTuple = s"$targetName-$targetConfigs-$platformConfigs"
   val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
   val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
                            s"DESIGN=$targetName",
-                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}",
-                           s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
-  val targetTuple = generatorArgs.tupleName
+                           s"TARGET_CONFIG=${targetConfigs}",
+                           s"PLATFORM_CONFIG=${platformConfigs}")
 
   def run(backend: String,
           debug: Boolean = false,
@@ -95,8 +82,7 @@ abstract class TutorialSuite(
     }
   }
 
-  mkdirs
-  elaborate
+  clean
   runTest(backendSimulator)
 }
 

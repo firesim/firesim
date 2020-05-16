@@ -36,9 +36,10 @@ submodules = \
 		$(addprefix generators/, rocket-chip) \
 		$(addprefix tools/, firrtl chisel3))
 
-chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_path) -name "*.scala"))
 
-common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+chisel_srcs = $(foreach submodule,$(submodules),\
+	$(shell find -L $(submodule)/ -name target -prune -o -iname "*.scala" -print 2> /dev/null))
+
 CONF_NAME ?= runtime.conf
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
@@ -48,7 +49,11 @@ vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 

@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 
 class ShiftRegisterDUT extends Module {
   val io = IO(new Bundle {
@@ -16,4 +17,4 @@ class ShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-class ShiftRegister extends PeekPokeMidasExampleHarness(() => new ShiftRegisterDUT)
+class ShiftRegister(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new ShiftRegisterDUT)

@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.Enum
 
 class ParityDUT extends Module {
@@ -19,4 +20,4 @@ class ParityDUT extends Module {
   io.out := (state === s_odd)
 }
 
-class Parity extends PeekPokeMidasExampleHarness(() => new ParityDUT)
+class Parity(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new ParityDUT)

@@ -91,7 +91,7 @@ trait HasFireSimGeneratorUtilities extends HasTargetAgnosticUtilites {
     chisel3.Driver.dumpFirrtl(c3circuit, Some(new File(genDir, s"$longName.fir"))) // FIRRTL
     val annotationFile = new File(genDir, s"$longName.anno.json")
     val af = new FileWriter(annotationFile)
-    af.write(midas.passes.fame.JsonProtocol.serialize(c3circuit.annotations.map(_.toFirrtl)))
+    af.write(firrtl.annotations.JsonProtocol.serialize(c3circuit.annotations.map(_.toFirrtl)))
     af.close()
   }
 }

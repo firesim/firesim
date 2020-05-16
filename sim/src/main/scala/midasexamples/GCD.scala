@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.unless
 import chisel3.experimental.{withClock, annotate}
 
@@ -75,4 +76,4 @@ class GCDDUT extends Module {
   assert(!done1 || !done2 || (result1 === result2), "Outputs do not match!")
 }
 
-class GCD extends PeekPokeMidasExampleHarness(() => new GCDDUT)
+class GCD(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new GCDDUT)
