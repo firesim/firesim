@@ -67,6 +67,7 @@ class AutoCounterModuleChild extends MultiIOModule {
 class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
 
 class AutoCounterCoverModuleDUT extends Module {
+  cover.setPropLib(new midas.passes.FireSimPropertyLibrary())
   val io = IO(new Bundle {
     val a = Input(Bool())
   })
