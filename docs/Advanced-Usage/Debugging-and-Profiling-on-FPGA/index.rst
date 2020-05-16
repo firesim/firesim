@@ -17,3 +17,4 @@ features.
    Debugging-Hardware-Using-ILA.rst
    AutoCounter.rst
    TracerV-with-FlameGraph.rst
+   Dromajo.rst

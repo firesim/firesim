@@ -136,30 +136,11 @@ trait GeneratorApp extends App with HasGeneratorUtilities {
     writeOutputFile(td, s"$longName.rom.conf", enumerateROMs(circuit))
   }
 
-  /** Output files created as a side-effect of elaboration */
-  def generateArtefacts {
-    ElaborationArtefacts.files.foreach { case (extension, contents) =>
-      writeOutputFile(td, s"$longName.$extension", contents ())
-    }
-  }
-
   def writeOutputFile(targetDir: String, fname: String, contents: String): File = {
     val f = new File(targetDir, fname)
     val fw = new FileWriter(f)
     fw.write(contents)
     fw.close
     f
-  }
-}
-
-object ElaborationArtefacts {
-  var files: Seq[(String, () => String)] = Nil
-
-  def add(extension: String, contents: => String) {
-    files = (extension, () => contents) +: files
-  }
-
-  def contains(extension: String): Boolean = {
-    files.foldLeft(false)((t, s) => {s._1 == extension | t})
   }
 }

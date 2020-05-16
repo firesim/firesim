@@ -10,6 +10,7 @@
 #include "bridges/tracerv.h"
 #include "bridges/groundtest.h"
 #include "bridges/autocounter.h"
+#include "bridges/dromajo.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fpga_model.h"
@@ -296,6 +297,22 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #endif
     #ifdef TRACERVBRIDGEMODULE_15_PRESENT
     INSTANTIATE_TRACERV(add_bridge_driver, 15)
+    #endif
+#endif
+
+#ifdef DROMAJOBRIDGEMODULE_struct_guard
+    #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
+    DROMAJOBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new dromajo_t(
+            this, args,
+            DROMAJOBRIDGEMODULE_0_iaddr_width,
+            DROMAJOBRIDGEMODULE_0_insn_width,
+            DROMAJOBRIDGEMODULE_0_wdata_width,
+            DROMAJOBRIDGEMODULE_0_cause_width,
+            DROMAJOBRIDGEMODULE_0_tval_width,
+            DROMAJOBRIDGEMODULE_0_num_traces,
+            DROMAJOBRIDGEMODULE_0_substruct,
+            DROMAJOBRIDGEMODULE_0_DMA_ADDR));
     #endif
 #endif
 
