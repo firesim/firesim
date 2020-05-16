@@ -162,7 +162,7 @@ $(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
 #############################
 board_dir 	   := $(fpga_dir)/hdk/cl/developer_designs
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
-build_dir      := $(fpga_work_dir)/build
+fpga_build_dir := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
 ila_work_dir   := $(fpga_work_dir)/design/ila_files/
@@ -201,12 +201,12 @@ replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh) $(fpga_tcl_env)
 
 $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/stamp
 	mkdir -p $(@D)
-	ln -sf $(build_dir)/checkpoints/to_aws $@
+	ln -sf $(fpga_build_dir)/checkpoints/to_aws $@
 
 # Runs a local fpga-bitstream build. Strongly consider using the manager instead.
 fpga: export CL_DIR := $(fpga_work_dir)
 fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
-	cd $(build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
+	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
 
 
 #############################
