@@ -164,8 +164,9 @@ if [ "$SKIP_TOOLCHAIN" != true ]; then
         fi
     )
     source "$target_chipyard_dir/env.sh"
-    env_append "source $target_chipyard_dir/env.sh"
 fi
+
+env_append "source $target_chipyard_dir/env.sh"
 
 cd $RDIR
 
