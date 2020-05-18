@@ -32,6 +32,9 @@ def replace_rtl(conf, buildconfig):
     rootLogger.info("Running replace-rtl to generate verilog for " + str(buildconfig.get_chisel_triplet()))
 
     with prefix('cd ' + ddir + '/../'), \
+         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
          prefix('source sourceme-f1-manager.sh'), \
          prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), \
          prefix('cd sim/'), \
