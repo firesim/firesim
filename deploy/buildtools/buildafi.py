@@ -4,6 +4,7 @@ import time
 import random
 import string
 import logging
+import os
 
 from fabric.api import *
 from fabric.contrib.console import confirm
@@ -41,7 +42,14 @@ def replace_rtl(conf, buildconfig):
         run("""cp $CL_DIR/design/cl_firesim_generated.sv {}/results-build/{}/cl_firesim_generated.sv""".format(ddir, builddir))
 
     # build the fpga driver that corresponds with this version of the RTL
-    with prefix('cd ' + ddir + '/../'), prefix('source sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
+    with prefix('cd ' + ddir + '/../'), \
+         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+         prefix('source sourceme-f1-manager.sh'), \
+         prefix('cd sim/'), \
+         StreamLogger('stdout'), \
+         StreamLogger('stderr'):
         run(buildconfig.make_recipe("f1"))
 
 @parallel
