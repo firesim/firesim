@@ -4,6 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.util.ResetCatchAndSync
+import freechips.rocketchip.config.Parameters
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 
@@ -11,7 +12,7 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 // Use two separate prefixes so that we can partition the output
 // from verilator/vcs and compare against the two files produced by
 // the bridges
-class MulticlockAutoCounterModule extends RawModule {
+class MulticlockAutoCounterModule(implicit p: Parameters) extends RawModule {
   val clockBridge = Module(new RationalClockBridge(RationalClock("ThirdRate", 1, 3)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
