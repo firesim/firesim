@@ -28,7 +28,6 @@ abstract class TutorialSuite(
     platformConfigProject = "firesim.midasexamples",
     platformConfigs = platformConfigs)
 
-  val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
   val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
                            s"DESIGN=$targetName",
                            s"TARGET_CONFIG=${generatorArgs.targetConfigs}",
@@ -37,13 +36,11 @@ abstract class TutorialSuite(
 
   def run(backend: String,
           debug: Boolean = false,
-          sample: Option[File] = None,
           logFile: Option[File] = None,
           waveform: Option[File] = None,
           args: Seq[String] = Nil) = {
     val makeArgs = Seq(
       s"run-$backend%s".format(if (debug) "-debug" else ""),
-      "SAMPLE=%s".format(sample map toStr getOrElse ""),
       "LOGFILE=%s".format(logFile map toStr getOrElse ""),
       "WAVEFORM=%s".format(waveform map toStr getOrElse ""),
       "ARGS=%s".format(args mkString " "))
@@ -56,11 +53,10 @@ abstract class TutorialSuite(
   def runTest(b: String, debug: Boolean = false) {
     behavior of s"$targetName in $b"
     compileMlSimulator(b, debug)
-    val sample = Some(new File(outDir, s"$targetName.$b.sample"))
     val testEnv = "MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
     if (isCmdAvailable(b)) {
       it should s"pass in ${testEnv}" in {
-        assert(run(b, debug, sample, args=args) == 0)
+        assert(run(b, debug, args = simulationArgs) == 0)
       }
     } else {
       ignore should s"pass in ${testEnv}" in { }

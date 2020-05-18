@@ -142,13 +142,16 @@ void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
 
 void simif_emul_t::write(size_t addr, data_t data) {
   size_t strb = (1 << CTRL_STRB_BITS) - 1;
-  master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0, &data, &strb);
+  // LS by 2 (the AXI4 size field) because the driver presents word addresses, but AXI4-lite expects
+  // byte addresses
+  static_assert(CTRL_AXI4_SIZE == 2, "AXI4-lite control interface has unexpected size");
+  master->write_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0, &data, &strb);
   wait_write(master);
 }
 
 data_t simif_emul_t::read(size_t addr) {
   data_t data;
-  master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
+  master->read_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0);
   wait_read(master, &data);
   return data;
 }

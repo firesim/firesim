@@ -76,6 +76,8 @@ case class HostMemChannelParams(
 // Platform agnostic wrapper of the simulation models for FPGA
 class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
+  require(p(CtrlNastiKey).dataBits == 32,
+    "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
   val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
@@ -179,7 +181,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     })
   }
 
-  override def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
+  override def genHeader(sb: StringBuilder) {
     super.genHeader(sb)
     targetMemoryRegions.foreach(_.serializeToHeader(sb))
   }
@@ -272,6 +274,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
     "CTRL_STRB_BITS" -> ctrl.nastiWStrobeBits,
     "CTRL_BEAT_BYTES"-> ctrl.nastiWStrobeBits,
+    "CTRL_AXI4_SIZE" -> log2Ceil(ctrl.nastiWStrobeBits),
     // These specify channel widths; used mostly in the test harnesses
     "MEM_NUM_CHANNELS" -> p(HostMemNumChannels),
     "MEM_ADDR_BITS"  -> p(HostMemChannelKey).axi4BundleParams.addrBits,
@@ -291,5 +294,5 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "DMA_BEAT_BYTES" -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
-  def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)(p(ChannelWidth))
+  def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
 }

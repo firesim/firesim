@@ -139,7 +139,7 @@ simif_f1_t::~simif_f1_t() {
 
 void simif_f1_t::write(size_t addr, uint32_t data) {
     // addr is really a (32-byte) word address because of zynq implementation
-    addr <<= 2;
+    addr <<= CTRL_AXI4_SIZE;
 #ifdef SIMULATION_XSIM
     uint64_t cmd = (((uint64_t)(0x80000000 | addr)) << 32) | (uint64_t)data;
     char * buf = (char*)&cmd;
@@ -151,7 +151,8 @@ void simif_f1_t::write(size_t addr, uint32_t data) {
 }
 
 uint32_t simif_f1_t::read(size_t addr) {
-    addr <<= 2;
+    // Convert the word address into a byte-address
+    addr <<= CTRL_AXI4_SIZE;
 #ifdef SIMULATION_XSIM
     uint64_t cmd = addr;
     char * buf = (char*)&cmd;
