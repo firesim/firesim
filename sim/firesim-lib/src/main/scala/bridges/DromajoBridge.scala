@@ -92,7 +92,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     })
     private val iaddrWidth = roundUp(traces.map(_.iaddr.getWidth).max, 8)
     private val insnWidth  = roundUp(traces.map(_.insn.getWidth).max, 8)
-    private val wdataWidth = roundUp(traces.map(_.wdata.getWidth).max, 8)
+    private val wdataWidth = roundUp(traces.map(_.wdata.get.getWidth).max, 8)
     private val causeWidth = roundUp(traces.map(_.cause.getWidth).max, 8)
     private val tvalWidth  = roundUp(traces.map(_.tval.getWidth).max, 8)
 
@@ -110,7 +110,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
         boolPad(trace.interrupt, 8),
         boolPad(trace.exception, 8),
         trace.priv.asUInt.pad(8),
-        trace.wdata.pad(wdataWidth),
+        trace.wdata.get.pad(wdataWidth),
         trace.insn.pad(insnWidth),
         trace.iaddr.pad(iaddrWidth),
         boolPad(trace.valid, 8)
