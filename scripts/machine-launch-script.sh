@@ -1,5 +1,8 @@
 #!/bin/bash
+
 echo "machine launch script started" > /home/centos/machine-launchstatus
+
+{
 sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
@@ -31,7 +34,7 @@ rm -rf $DTCversion
 sudo yum -y remove git
 sudo yum -y install epel-release
 sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-sudo yum -y install git2u
+sudo yum -y install git224
 
 # install verilator
 git clone http://git.veripool.org/git/verilator
@@ -60,6 +63,8 @@ sudo pip2 install pandas==0.22.0
 sudo pip2 install awscli==1.15.76
 
 sudo activate-global-python-argcomplete
+
+} 2>&1 | tee /home/centos/machine-launchstatus.log
 
 # get a regular prompt
 echo "PS1='\u@\H:\w\\$ '" >> /home/centos/.bashrc
