@@ -64,7 +64,7 @@ sudo pip2 install awscli==1.15.76
 
 sudo activate-global-python-argcomplete
 
-} > /home/centos/machine-launchstatus.log 2>&1
+} 2>&1 | tee /home/centos/machine-launchstatus.log
 
 # get a regular prompt
 echo "PS1='\u@\H:\w\\$ '" >> /home/centos/.bashrc
