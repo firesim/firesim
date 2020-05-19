@@ -52,10 +52,6 @@ void simif_t::init(int argc, char** argv, bool log) {
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
-
-#ifdef ENABLE_SNAPSHOT
-  init_sampling(argc, argv);
-#endif
 }
 
 uint64_t simif_t::actual_tcycle() {
@@ -76,19 +72,9 @@ void simif_t::target_reset(int pulse_length) {
   poke(reset, 1);
   take_steps(pulse_length, true);
   poke(reset, 0);
-#ifdef ENABLE_SNAPSHOT
-  // flush I/O traces by target resets
-  trace_count = std::min((size_t)(pulse_length), tracelen);
-  read_traces(NULL);
-  trace_count = 0;
-#endif
 }
 
 int simif_t::finish() {
-#ifdef ENABLE_SNAPSHOT
-  finish_sampling();
-#endif
-
   fprintf(stderr, "Ran %llu cycles (fastest target clock)\n", actual_tcycle());
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
@@ -145,9 +131,6 @@ bool simif_t::expect(size_t id, mpz_t& expected) {
 
 void simif_t::step(uint32_t n, bool blocking) {
   if (n == 0) return;
-#ifdef ENABLE_SNAPSHOT
-  reservoir_sampling(n);
-#endif
   // take steps
   if (log) fprintf(stderr, "* STEP %d -> %llu *\n", n, (t + n));
   take_steps(n, blocking);

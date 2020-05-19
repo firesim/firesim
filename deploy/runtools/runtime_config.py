@@ -17,7 +17,6 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
 
-
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
@@ -182,7 +181,14 @@ class RuntimeHWConfig:
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
         rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
-        with prefix('cd ../'), prefix('source ./sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
+        with prefix('cd ../'), \
+             prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+             prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+             prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+             prefix('source ./sourceme-f1-manager.sh'), \
+             prefix('cd sim/'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
             localcap = None
             with settings(warn_only=True):
                 driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)
