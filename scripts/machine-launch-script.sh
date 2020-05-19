@@ -49,6 +49,9 @@ sudo yum -y install bash-completion
 # graphviz for manager
 sudo yum -y install graphviz python-devel
 
+# used for CI
+sudo yum -y install expect
+
 # these need to match what's in deploy/requirements.txt
 sudo pip2 install fabric==1.14.0
 sudo pip2 install boto3==1.6.2
