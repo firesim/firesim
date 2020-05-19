@@ -50,7 +50,7 @@ sudo yum -y install bash-completion
 sudo yum -y install graphviz python-devel
 
 # used for CI
-sudo yum -y expect
+sudo yum -y install expect
 
 # these need to match what's in deploy/requirements.txt
 sudo pip2 install fabric==1.14.0
