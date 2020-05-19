@@ -3,6 +3,7 @@
 
 package firesim.midasexamples
 
+import freechips.rocketchip.config.Parameters
 import chisel3._
 import chisel3.util._
 
@@ -38,4 +39,4 @@ class WireInterconnectDUT extends Module {
   io.bOut := PipeModule(io.bIn, 1)
 }
 
-class WireInterconnect extends PeekPokeMidasExampleHarness(() => new WireInterconnectDUT)
+class WireInterconnect(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new WireInterconnectDUT)

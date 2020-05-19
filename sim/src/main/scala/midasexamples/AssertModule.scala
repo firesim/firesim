@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 class ChildModule extends Module {
@@ -30,7 +31,7 @@ class AssertModuleDUT extends Module {
   cMod.io.pred := io.c && io.cycleToFail === cycle
 }
 
-class AssertModule extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)
+class AssertModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)
 
 class RegisteredAssertModule extends Module {
   val io = IO(new Bundle {
@@ -80,7 +81,7 @@ class StimulusGenerator extends MultiIOModule {
 }
 
 
-class MulticlockAssertModule extends RawModule {
+class MulticlockAssertModule(implicit p: Parameters) extends RawModule {
   val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)

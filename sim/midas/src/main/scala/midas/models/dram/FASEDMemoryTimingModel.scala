@@ -2,6 +2,8 @@
 package midas
 package models
 
+import firrtl.annotations.HasSerializationHints
+
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
@@ -15,7 +17,6 @@ import chisel3.util._
 import midas.core._
 import midas.widgets._
 import midas.passes.{Fame1ChiselAnnotation}
-import midas.passes.fame.{HasSerializationHints}
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}

@@ -14,7 +14,7 @@ class GoldenGateStage extends Stage with PreservesAll[Phase] {
 
   private val phases: Seq[Phase] =
     Seq(
-        new GoldenGateGetIncludes,
+        new firrtl.options.phases.GetIncludes,
         new midas.stage.phases.CreateParametersInstancePhase,
         new firrtl.stage.phases.AddDefaults,
         new firrtl.stage.phases.AddImplicitEmitter,

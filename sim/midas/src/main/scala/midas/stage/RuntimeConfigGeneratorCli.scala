@@ -6,8 +6,7 @@ import firrtl.options.Shell
 
 trait RuntimeConfigGeneratorCli { this: Shell =>
   parser.note("Golden Gate Runtime Configuration Generator Options")
-  Seq(GoldenGateInputAnnotationFileAnnotation,
-      ConfigPackageAnnotation,
+  Seq(ConfigPackageAnnotation,
       ConfigStringAnnotation,
       RuntimeConfigNameAnnotation
     )

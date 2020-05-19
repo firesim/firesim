@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.LFSR16
 
 import midas.targetutils.SynthesizePrintf
@@ -43,7 +44,7 @@ class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {
   //}
 }
 
-class PrintfModule extends PeekPokeMidasExampleHarness(() => new PrintfModuleDUT)
+class PrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PrintfModuleDUT)
 
 class NarrowPrintfModuleDUT extends Module {
   val io = IO(new Bundle {
@@ -57,4 +58,4 @@ class NarrowPrintfModuleDUT extends Module {
   }
 }
 
-class NarrowPrintfModule extends PeekPokeMidasExampleHarness(() => new NarrowPrintfModuleDUT)
+class NarrowPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new NarrowPrintfModuleDUT)

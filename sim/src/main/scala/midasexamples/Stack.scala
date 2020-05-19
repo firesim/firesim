@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.log2Ceil
 
 class StackDUT extends Module {
@@ -33,4 +34,4 @@ class StackDUT extends Module {
 
   io.dataOut := out
 }
-class Stack extends PeekPokeMidasExampleHarness(() => new StackDUT)
+class Stack(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new StackDUT)

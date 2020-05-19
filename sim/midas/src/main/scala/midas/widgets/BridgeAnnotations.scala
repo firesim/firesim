@@ -4,11 +4,10 @@ package midas.widgets
 
 import chisel3._
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget}
+import firrtl.annotations.{ReferenceTarget, ModuleTarget, HasSerializationHints}
 import freechips.rocketchip.config.Parameters
 
 import midas.targetutils.FAMEAnnotation
-import midas.passes.fame.{JsonProtocol, HasSerializationHints}
 
 trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
   // A list of channel names that match the globalName emitted in the FCCAs

@@ -29,8 +29,6 @@ ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
-common_chisel_args = $(patsubst $(base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
-
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := {file:${chipyard_dir}}firechip
 
@@ -43,8 +41,11 @@ endif
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	cd $(base_dir) && \
-	$(SBT) "project $(firesim_sbt_project)" "runMain firesim.firesim.FireSimGenerator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
 
 # DOC include start: Bridge Build System Changes
 ##########################
