@@ -5,6 +5,7 @@ package midas.passes.fame
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.passes.memlib
 import firrtl.passes.MemPortUtils._
 import firrtl.traversals.Foreachers._
 import firrtl.Utils.{BoolType, kind}
@@ -69,7 +70,7 @@ object MuxingMultiThreader {
   def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
     // TODO: this is ugly and uses copied code instead of bumping FIRRTL
     // Simplify all memories first
-    val loweredMod = (new MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
+    val loweredMod = (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
     val ns = Namespace(loweredMod)
 
     val hostClock = WRef(WrapTop.hostClockName)
