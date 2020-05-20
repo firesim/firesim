@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
 import firrtl.annotations.TargetToken.{OfModule, Instance, Field}
+import firrtl.transforms.{CheckCombLoops, LogicNode}
 
 /**
   * Contains exception classes for [[midas.passes.ClockSourceFinder]]
