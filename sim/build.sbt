@@ -12,6 +12,11 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  // ScalaDoc
+  autoAPIMappings  := true,
+  apiMappings += (
+    (chipyardRoot / unmanagedBase).value / "firrtl.jar" -> url("https://www.chisel-lang.org/api/firrtl/latest/")
+  ),
   exportJars := true,
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
@@ -68,4 +73,14 @@ lazy val firesimLib = (project in file("firesim-lib"))
 
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
-  .settings(commonSettings).dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, SiteScaladocPlugin)
+  .settings(commonSettings,
+    git.remoteRepo := "git@github.com:firesim/firesim.git",
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(targetutils, midas, firesimLib),
+    siteSubdirName in ScalaUnidoc := "latest/api",
+    // Clobber the existing doc task to instead have it use the unified one
+    Compile / doc := (doc in ScalaUnidoc).value,
+    // Registers the unidoc-generated html with sbt-site
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc)
+  )
+  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)

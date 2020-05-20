@@ -2,7 +2,7 @@ resolvers += "jgit-repo" at "https://download.eclipse.org/jgit/maven"
 
 resolvers += "simplytyped" at "https://simplytyped.github.io/repo/releases"
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.1")
 
