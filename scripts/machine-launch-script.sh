@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -ex
+set -o pipefail
+
 echo "machine launch script started" > /home/centos/machine-launchstatus
 
 {
