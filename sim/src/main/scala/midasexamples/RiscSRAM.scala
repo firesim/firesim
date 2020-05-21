@@ -3,8 +3,10 @@
 package firesim.midasexamples
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
 import chisel3.util._
+import chisel3.experimental.annotate
+import freechips.rocketchip.config.Parameters
+
 import midas.targetutils._
 
 class RiscSRAMDUT extends Module {
@@ -16,9 +18,10 @@ class RiscSRAMDUT extends Module {
     val valid  = Output(Bool())
     val out    = Output(UInt(32.W))
   })
-  val fileMem = SyncReadMem(256, UInt(32.W))
+
+  val fileMem = Mem(256, UInt(32.W))
   // We only support combinational mems for now
-  //chisel3.experimental.annotate(MemModelAnnotation(fileMem))
+  chisel3.experimental.annotate(MemModelAnnotation(fileMem))
   val codeMem = SyncReadMem(128, UInt(32.W))
   //chisel3.experimental.annotate(MemModelAnnotation(codeMem))
 
@@ -48,7 +51,8 @@ class RiscSRAMDUT extends Module {
 
   val file_wen = state === rc_write && rci =/= 255.U
   val file_addr = Mux(state === decode, rai, rbi)
-  val file = fileMem.read(file_addr)//, !file_wen)
+  val file_addr_pipe = RegNext(file_addr)
+  val file = fileMem.read(file_addr_pipe)//, !file_wen)
   when(file_wen) {
     fileMem.write(rci, io.out)
   }
