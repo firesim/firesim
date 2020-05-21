@@ -1,0 +1,756 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title></title>
+          <meta name="description" content="" />
+          <meta name="keywords" content="" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../lib/index.js"></script>
+      <script type="text/javascript" src="../../index.js"></script>
+      <script type="text/javascript" src="../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title"><span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.midas" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="midas"></a><a id="midas:midas"></a>
+      <span class="permalink">
+      <a href="../../midas/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">midas</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="midas.core" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="core"></a><a id="core:core"></a>
+      <span class="permalink">
+      <a href="../../midas/core/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../core/index.html"><span class="name">core</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.models" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="models"></a><a id="models:models"></a>
+      <span class="permalink">
+      <a href="../../midas/models/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../models/index.html"><span class="name">models</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.passes" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="passes"></a><a id="passes:passes"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../passes/index.html"><span class="name">passes</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.platform" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="platform"></a><a id="platform:platform"></a>
+      <span class="permalink">
+      <a href="../../midas/platform/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../platform/index.html"><span class="name">platform</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.rocketchip" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="rocketchip"></a><a id="rocketchip:rocketchip"></a>
+      <span class="permalink">
+      <a href="../../midas/rocketchip/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../rocketchip/index.html"><span class="name">rocketchip</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.stage" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stage"></a><a id="stage:stage"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../stage/index.html"><span class="name">stage</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.targetutils" visbl="pub" class="indented2 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="targetutils"></a><a id="targetutils:targetutils"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">targetutils</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterCoverModuleAnnotation.html" title=""></a>
+                        <a href="AutoCounterCoverModuleAnnotation.html" title="">AutoCounterCoverModuleAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterCoverModuleFirrtlAnnotation.html" title=""></a>
+                        <a href="AutoCounterCoverModuleFirrtlAnnotation.html" title="">AutoCounterCoverModuleFirrtlAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterFirrtlAnnotation.html" title="AutoCounter annotations."></a>
+                        <a href="AutoCounterFirrtlAnnotation.html" title="AutoCounter annotations.">AutoCounterFirrtlAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="EnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (Chisel annotator)."></a>
+                        <a href="EnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (Chisel annotator).">EnableModelMultiThreadingAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ExcludeInstanceAsserts$.html" title=""></a>
+                        <a href="ExcludeInstanceAsserts$.html" title="">ExcludeInstanceAsserts</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ExcludeInstanceAssertsAnnotation.html" title=""></a>
+                        <a href="ExcludeInstanceAssertsAnnotation.html" title="">ExcludeInstanceAssertsAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="FAMEAnnotation.html" title="A mixed-in ancestor trait for all FAME annotations, useful for type-casing."></a>
+                        <a href="FAMEAnnotation.html" title="A mixed-in ancestor trait for all FAME annotations, useful for type-casing.">FAMEAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FAMEModelAnnotation.html" title="This labels an instance so that it is extracted as a separate FAME model."></a>
+                        <a href="FAMEModelAnnotation.html" title="This labels an instance so that it is extracted as a separate FAME model.">FAMEModelAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FirrtlEnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (FIRRTL annotation)."></a>
+                        <a href="FirrtlEnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (FIRRTL annotation).">FirrtlEnableModelMultiThreadingAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FirrtlFAMEModelAnnotation.html" title=""></a>
+                        <a href="FirrtlFAMEModelAnnotation.html" title="">FirrtlFAMEModelAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FirrtlFpgaDebugAnnotation.html" title=""></a>
+                        <a href="FirrtlFpgaDebugAnnotation.html" title="">FirrtlFpgaDebugAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FirrtlMemModelAnnotation.html" title=""></a>
+                        <a href="FirrtlMemModelAnnotation.html" title="">FirrtlMemModelAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FpgaDebug$.html" title=""></a>
+                        <a href="FpgaDebug$.html" title="">FpgaDebug</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FpgaDebugAnnotation.html" title=""></a>
+                        <a href="FpgaDebugAnnotation.html" title="">FpgaDebugAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="MemModelAnnotation.html" title="This labels a target Mem so that it is extracted and replaced with a separate model."></a>
+                        <a href="MemModelAnnotation.html" title="This labels a target Mem so that it is extracted and replaced with a separate model.">MemModelAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PerfCounter$.html" title=""></a>
+                        <a href="PerfCounter$.html" title="">PerfCounter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="SynthesizePrintf$.html" title=""></a>
+                        <a href="SynthesizePrintf$.html" title="">SynthesizePrintf</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="TriggerSink$.html" title=""></a>
+                        <a href="TriggerSink$.html" title="">TriggerSink</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TriggerSinkAnnotation.html" title=""></a>
+                        <a href="TriggerSinkAnnotation.html" title="">TriggerSinkAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="TriggerSource$.html" title=""></a>
+                        <a href="TriggerSource$.html" title="">TriggerSource</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TriggerSourceAnnotation.html" title=""></a>
+                        <a href="TriggerSourceAnnotation.html" title="">TriggerSourceAnnotation</a>
+                      </li><li name="midas.unittest" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unittest"></a><a id="unittest:unittest"></a>
+      <span class="permalink">
+      <a href="../../midas/unittest/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../unittest/index.html"><span class="name">unittest</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.widgets" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="widgets"></a><a id="widgets:widgets"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../widgets/index.html"><span class="name">widgets</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a></p>
+        <h1>targetutils<span class="permalink">
+      <a href="../../midas/targetutils/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">targetutils</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              
+            </ol>
+          </div>
+          
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="midas.targetutils.AutoCounterCoverModuleAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AutoCounterCoverModuleAnnotationextendsChiselAnnotationwithProductwithSerializable"></a><a id="AutoCounterCoverModuleAnnotation:AutoCounterCoverModuleAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/AutoCounterCoverModuleAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="AutoCounterCoverModuleAnnotation.html"><span class="name">AutoCounterCoverModuleAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.AutoCounterCoverModuleFirrtlAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AutoCounterCoverModuleFirrtlAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleTarget]withFAMEAnnotationwithProductwithSerializable"></a><a id="AutoCounterCoverModuleFirrtlAnnotation:AutoCounterCoverModuleFirrtlAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/AutoCounterCoverModuleFirrtlAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="AutoCounterCoverModuleFirrtlAnnotation.html"><span class="name">AutoCounterCoverModuleFirrtlAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleTarget.html#firrtl.annotations.ModuleTarget" class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleTarget.html#firrtl.annotations.ModuleTarget" class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</a>] with <a href="FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.AutoCounterFirrtlAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AutoCounterFirrtlAnnotationextendsAnnotationwithProductwithSerializable"></a><a id="AutoCounterFirrtlAnnotation:AutoCounterFirrtlAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/AutoCounterFirrtlAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="AutoCounter annotations." href="AutoCounterFirrtlAnnotation.html"><span class="name">AutoCounterFirrtlAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="clock">clock: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="reset">reset: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="coverGenerated">coverGenerated: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">AutoCounter annotations.</p><div class="fullcomment"><div class="comment cmt"><p>AutoCounter annotations. Do not emit the FIRRTL annotations unless you are
+writing a target transformation, use the Chisel-side <a href="PerfCounter$.html" class="extype" name="midas.targetutils.PerfCounter">PerfCounter</a> object
+instead.</p></div></div>
+    </li><li name="midas.targetutils.EnableModelMultiThreadingAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EnableModelMultiThreadingAnnotationextendsChiselAnnotationwithProductwithSerializable"></a><a id="EnableModelMultiThreadingAnnotation:EnableModelMultiThreadingAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/EnableModelMultiThreadingAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="This specifies that the module should be automatically multi-threaded (Chisel annotator)." href="EnableModelMultiThreadingAnnotation.html"><span class="name">EnableModelMultiThreadingAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This specifies that the module should be automatically multi-threaded (Chisel annotator).</p>
+    </li><li name="midas.targetutils.ExcludeInstanceAssertsAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExcludeInstanceAssertsAnnotationextendsNoTargetAnnotationwithProductwithSerializable"></a><a id="ExcludeInstanceAssertsAnnotation:ExcludeInstanceAssertsAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/ExcludeInstanceAssertsAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ExcludeInstanceAssertsAnnotation.html"><span class="name">ExcludeInstanceAssertsAnnotation</span></a><span class="params">(<span name="target">target: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/NoTargetAnnotation.html#firrtl.annotations.NoTargetAnnotation" class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.FAMEAnnotation" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FAMEAnnotationextendsAnyRef"></a><a id="FAMEAnnotation:FAMEAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FAMEAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="A mixed-in ancestor trait for all FAME annotations, useful for type-casing." href="FAMEAnnotation.html"><span class="name">FAMEAnnotation</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A mixed-in ancestor trait for all FAME annotations, useful for type-casing.</p>
+    </li><li name="midas.targetutils.FAMEModelAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FAMEModelAnnotationextendsChiselAnnotationwithProductwithSerializable"></a><a id="FAMEModelAnnotation:FAMEModelAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FAMEModelAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="This labels an instance so that it is extracted as a separate FAME model." href="FAMEModelAnnotation.html"><span class="name">FAMEModelAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This labels an instance so that it is extracted as a separate FAME model.</p>
+    </li><li name="midas.targetutils.FirrtlEnableModelMultiThreadingAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FirrtlEnableModelMultiThreadingAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleTarget]withFAMEAnnotationwithProductwithSerializable"></a><a id="FirrtlEnableModelMultiThreadingAnnotation:FirrtlEnableModelMultiThreadingAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FirrtlEnableModelMultiThreadingAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="This specifies that the module should be automatically multi-threaded (FIRRTL annotation)." href="FirrtlEnableModelMultiThreadingAnnotation.html"><span class="name">FirrtlEnableModelMultiThreadingAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleTarget.html#firrtl.annotations.ModuleTarget" class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleTarget.html#firrtl.annotations.ModuleTarget" class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</a>] with <a href="FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This specifies that the module should be automatically multi-threaded (FIRRTL annotation).</p>
+    </li><li name="midas.targetutils.FirrtlFAMEModelAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FirrtlFAMEModelAnnotationextendsSingleTargetAnnotation[firrtl.annotations.InstanceTarget]withFAMEAnnotationwithProductwithSerializable"></a><a id="FirrtlFAMEModelAnnotation:FirrtlFAMEModelAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FirrtlFAMEModelAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FirrtlFAMEModelAnnotation.html"><span class="name">FirrtlFAMEModelAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/InstanceTarget.html#firrtl.annotations.InstanceTarget" class="extype" name="firrtl.annotations.InstanceTarget">InstanceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/InstanceTarget.html#firrtl.annotations.InstanceTarget" class="extype" name="firrtl.annotations.InstanceTarget">InstanceTarget</a>] with <a href="FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.FirrtlFpgaDebugAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FirrtlFpgaDebugAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ComponentName]withProductwithSerializable"></a><a id="FirrtlFpgaDebugAnnotation:FirrtlFpgaDebugAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FirrtlFpgaDebugAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FirrtlFpgaDebugAnnotation.html"><span class="name">FirrtlFpgaDebugAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ComponentName.html#firrtl.annotations.ComponentName" class="extype" name="firrtl.annotations.ComponentName">ComponentName</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ComponentName.html#firrtl.annotations.ComponentName" class="extype" name="firrtl.annotations.ComponentName">ComponentName</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.FirrtlMemModelAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FirrtlMemModelAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withProductwithSerializable"></a><a id="FirrtlMemModelAnnotation:FirrtlMemModelAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FirrtlMemModelAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FirrtlMemModelAnnotation.html"><span class="name">FirrtlMemModelAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.FpgaDebugAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FpgaDebugAnnotationextendsChiselAnnotationwithProductwithSerializable"></a><a id="FpgaDebugAnnotation:FpgaDebugAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FpgaDebugAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FpgaDebugAnnotation.html"><span class="name">FpgaDebugAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.MemModelAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemModelAnnotation[T&lt;:chisel3.Data]extendsChiselAnnotationwithProductwithSerializable"></a><a id="MemModelAnnotation[T&lt;:Data]:MemModelAnnotation[T]"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/MemModelAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="This labels a target Mem so that it is extracted and replaced with a separate model." href="MemModelAnnotation.html"><span class="name">MemModelAnnotation</span></a><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.MemBase">MemBase</span>[<span class="extype" name="midas.targetutils.MemModelAnnotation.T">T</span>]</span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This labels a target Mem so that it is extracted and replaced with a separate model.</p>
+    </li><li name="midas.targetutils.TriggerSinkAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TriggerSinkAnnotationextendsAnnotationwithFAMEAnnotationwithProductwithSerializable"></a><a id="TriggerSinkAnnotation:TriggerSinkAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSinkAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TriggerSinkAnnotation.html"><span class="name">TriggerSinkAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="clock">clock: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.TriggerSourceAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TriggerSourceAnnotationextendsAnnotationwithFAMEAnnotationwithProductwithSerializable"></a><a id="TriggerSourceAnnotation:TriggerSourceAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSourceAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TriggerSourceAnnotation.html"><span class="name">TriggerSourceAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="clock">clock: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="reset">reset: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>, <span name="sourceType">sourceType: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="midas.targetutils.ExcludeInstanceAsserts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExcludeInstanceAsserts"></a><a id="ExcludeInstanceAsserts:ExcludeInstanceAsserts"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/ExcludeInstanceAsserts$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ExcludeInstanceAsserts$.html"><span class="name">ExcludeInstanceAsserts</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.FpgaDebug" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FpgaDebug"></a><a id="FpgaDebug:FpgaDebug"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/FpgaDebug$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FpgaDebug$.html"><span class="name">FpgaDebug</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.PerfCounter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PerfCounter"></a><a id="PerfCounter:PerfCounter"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PerfCounter$.html"><span class="name">PerfCounter</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.SynthesizePrintf" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SynthesizePrintf"></a><a id="SynthesizePrintf:SynthesizePrintf"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/SynthesizePrintf$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="SynthesizePrintf$.html"><span class="name">SynthesizePrintf</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.TriggerSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TriggerSink"></a><a id="TriggerSink:TriggerSink"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSink$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TriggerSink$.html"><span class="name">TriggerSink</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.TriggerSource" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TriggerSource"></a><a id="TriggerSource:TriggerSource"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSource$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TriggerSource$.html"><span class="name">TriggerSource</span></a>
+      </span>
+      
+      
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>
