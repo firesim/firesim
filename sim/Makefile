@@ -44,7 +44,7 @@ FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
 FIRRTL_JAR ?= $(chipyard_dir)/lib/firrtl.jar
 FIRRTL_TEST_JAR ?= $(chipyard_dir)/test_lib/firrtl.jar
 
-firrtl_srcs := $(shell find $(FIRRTL_SUBMODULE_DIR) -iname "*.scala")
+firrtl_srcs := $(shell find $(FIRRTL_SUBMODULE_DIR) -iname "[!.]*.scala")
 
 $(FIRRTL_JAR): $(firrtl_srcs)
 	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala

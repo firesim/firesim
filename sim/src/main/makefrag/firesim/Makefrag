@@ -32,7 +32,7 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := {file:${chipyard_dir}}firechip
 
-	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "*.scala" -print 2> /dev/null)
+	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null)
 	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
 	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
