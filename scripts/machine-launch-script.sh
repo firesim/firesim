@@ -55,6 +55,8 @@ sudo pip2 install argcomplete==1.9.3
 sudo pip2 install graphviz==0.8.3
 # for some of our workload plotting scripts
 sudo pip2 install --upgrade --ignore-installed pyparsing
+sudo pip2 install numpy==1.16.6
+sudo pip2 install kiwisolver==1.1.0
 sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
 # new awscli on 1.6.0 AMI is broken with our versions of boto3
