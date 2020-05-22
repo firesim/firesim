@@ -56,12 +56,13 @@ commands:
           command: |
              make -C /home/centos/$CIRCLE_PROJECT_REPONAME/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
 
-  firesimtest-fased:
-    description: "Run a test"
+  build-scala-doc:
+    description: "Compiles Scala Doc"
     steps:
+      - sim-env-setup
       - run:
           command: |
-            su centos -c "cd ~/$CIRCLE_PROJECT_REPONAME && source env.sh && cd sim && make TARGET_PROJECT=fasedtests test"
+            sbt "project firesim" "unidoc"
 
 
 jobs:
@@ -73,8 +74,7 @@ jobs:
       - checkoutascentos
       - buildsetup
       - firesimtest-manual-midasexamples
-        #- firesimtest-midasexamples
-        #- firesimtest-fased
+      - build-scala-doc
 
 
 workflows:
