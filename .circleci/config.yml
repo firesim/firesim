@@ -3,7 +3,7 @@ version: 2.1
 executors:
   main-env:
     docker:
-      - image: firesim/firesim-ci:wip
+      - image: firesim/firesim-ci:wip-git
         user: "centos"
     environment:
         JVM_MEMORY: 2200m # Customize the JVM maximum heap limit
