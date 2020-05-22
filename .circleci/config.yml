@@ -28,31 +28,33 @@ commands:
   checkoutascentos:
     description: "Checkout repo as centos user"
     steps:
+      - assume-centos-user
       - run:
           command: |
-            su centos -c 'cd ~/ && git config --global url."https://github.com/".insteadOf git@github.com:'
-            su centos -c "cd ~/ && git clone $CIRCLE_REPOSITORY_URL && cd $CIRCLE_PROJECT_REPONAME && git checkout $CIRCLE_SHA1"
+            cd ~/ && git config --global url."https://github.com/".insteadOf git@github.com:
+            cd ~/ && git clone $CIRCLE_REPOSITORY_URL && cd $CIRCLE_PROJECT_REPONAME && git checkout $CIRCLE_SHA1
 
   buildsetup:
     description: "Run firesim's build-setup.sh"
     steps:
       - run:
           command: |
-            su centos -c "cd ~/$CIRCLE_PROJECT_REPONAME && ./build-setup.sh fast"
+            cd ~/$CIRCLE_PROJECT_REPONAME && ./build-setup.sh fast
+
+  sim-env-setup:
+    description: "Source env.sh and cd into sim/"
+    steps:
+      - run:
+          command: |
+            cd ~/$CIRCLE_PROJECT_REPONAME && source env.sh && cd sim
 
   firesimtest-manual-midasexamples:
     description: "Run a test"
     steps:
+      - sim-env-setup
       - run:
           command: |
-            su centos -c "cd ~/$CIRCLE_PROJECT_REPONAME && source env.sh && cd sim && make -C /home/centos/$CIRCLE_PROJECT_REPONAME/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1"
-
-  firesimtest-midasexamples:
-    description: "Run a test"
-    steps:
-      - run:
-          command: |
-            su centos -c "cd ~/$CIRCLE_PROJECT_REPONAME && source env.sh && cd sim && make TARGET_PROJECT=midasexamples test"
+             make -C /home/centos/$CIRCLE_PROJECT_REPONAME/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
 
   firesimtest-fased:
     description: "Run a test"
