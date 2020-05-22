@@ -10,14 +10,6 @@ executors:
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
 
 commands:
-  dockerprep:
-    description: "Setup the docker image"
-    steps:
-      - checkout
-      - run:
-          command: |
-            sudo .circleci/dockerprep.sh
-
   machinelaunchscript:
     description: "Run firesim's machine launch script"
     steps:
@@ -25,28 +17,20 @@ commands:
           command: |
             cd scripts && /usr/bin/bash ./machine-launch-script.sh
 
-  checkoutascentos:
-    description: "Checkout repo as centos user"
-    steps:
-      - assume-centos-user
-      - run:
-          command: |
-            cd ~/ && git config --global url."https://github.com/".insteadOf git@github.com:
-            cd ~/ && git clone $CIRCLE_REPOSITORY_URL && cd $CIRCLE_PROJECT_REPONAME && git checkout $CIRCLE_SHA1
-
   buildsetup:
     description: "Run firesim's build-setup.sh"
     steps:
       - run:
           command: |
-            cd ~/$CIRCLE_PROJECT_REPONAME && ./build-setup.sh fast
+            git config --global url."https://github.com/".insteadOf git@github.com:
+            ./build-setup.sh fast
 
   sim-env-setup:
     description: "Source env.sh and cd into sim/"
     steps:
       - run:
           command: |
-            cd ~/$CIRCLE_PROJECT_REPONAME && source env.sh && cd sim
+            source env.sh && cd sim
 
   firesimtest-manual-midasexamples:
     description: "Run a test"
@@ -54,7 +38,7 @@ commands:
       - sim-env-setup
       - run:
           command: |
-             make -C /home/centos/$CIRCLE_PROJECT_REPONAME/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
+             make -C $CIRCLE_WORKING_DIRECTORY/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
 
   build-scala-doc:
     description: "Compiles Scala Doc"
@@ -69,9 +53,8 @@ jobs:
   runall:
     executor: main-env
     steps:
-      - dockerprep
+      - checkout
       - machinelaunchscript
-      - checkoutascentos
       - buildsetup
       - firesimtest-manual-midasexamples
       - build-scala-doc
