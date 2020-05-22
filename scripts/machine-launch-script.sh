@@ -22,16 +22,8 @@ sudo yum install -y python36-pip python36-devel rsync
 sudo yum install -y centos-release-scl
 sudo yum install -y devtoolset-8-make
 
-# install DTC. it's not available in repos in FPGA AMI
-DTCversion=dtc-1.4.4
-wget https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/$DTCversion.tar.gz
-tar -xvf $DTCversion.tar.gz
-cd $DTCversion
-make -j16
-make install
-cd ..
-rm -rf $DTCversion.tar.gz
-rm -rf $DTCversion
+# install DTC
+sudo yum -y install dtc
 
 # get a proper version of git
 sudo yum -y remove git
