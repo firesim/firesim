@@ -2,22 +2,13 @@
 
 set -e
 
+pwd
 # expect firesim to be checked out for prep scripts.
 ls -la /
 
-ls -la /root/
+ls -la /home/centos/
 
-ls -la /root/project/
-
-yum -y install sudo epel-release
-yum -y install python-pip # aws fpga dev ami comes with this: pip2
-
-# you will be root, so:
-adduser centos
-usermod -aG wheel centos
-
-# let the new acct run sudo without password
-echo "centos ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+ls -la /home/centos/project/
 
 # fixes to machine launch script to merge later:
 sudo yum -y install dtc # TODO: replace in machine-launch script, now available in epel
