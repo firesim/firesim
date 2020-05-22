@@ -7,3 +7,4 @@ sim[0-9]
 build-setup-log
 tags
 build
+scala-doc-env.sh
