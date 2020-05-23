@@ -254,7 +254,16 @@ run-midas-unittests: $(chisel_srcs)
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
+#########################
+# ScalaDoc              #
+#########################
+scaladoc:
+	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
 
+.PHONY: scaladoc
+#########################
+# Cleaning Recipes      #
+#########################
 cleanfpga:
 	rm -rf $(fpga_work_dir)
 
