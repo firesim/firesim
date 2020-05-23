@@ -24,29 +24,21 @@ commands:
           command: |
             ./build-setup.sh fast
 
-  sim-env-setup:
-    description: "Source env.sh and cd into sim/"
-    steps:
-      - run:
-          command: |
-            source env.sh && cd sim
-
   firesimtest-manual-midasexamples:
     description: "Run a test"
     steps:
-      - sim-env-setup
       - run:
           command: |
-             make -C $CIRCLE_WORKING_DIRECTORY/sim run-verilator SAMPLE=/home/centos/$CIRCLE_PROJECT_REPONAME/sim/output/f1/Stack-NoConfig-HostDebugFeatures_DefaultF1Config/Stack.verilator.sample LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
+            source env.sh
+            make -C sim run-verilator LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
 
   build-scala-doc:
     description: "Compiles Scala Doc"
     steps:
-      - sim-env-setup
       - run:
           command: |
-            sbt "project firesim" "unidoc"
-
+            source env.sh
+            make -C sim scaladoc
 
 jobs:
   runall:
