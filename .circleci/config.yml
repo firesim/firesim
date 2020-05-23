@@ -3,7 +3,7 @@ version: 2.1
 executors:
   main-env:
     docker:
-      - image: firesim/firesim-ci:wip-git
+      - image: firesim/firesim-ci:v1.0
         user: "centos"
     environment:
         JVM_MEMORY: 2200m # Customize the JVM maximum heap limit
@@ -24,6 +24,14 @@ commands:
           command: |
             ./build-setup.sh fast
 
+  scala-build:
+    description: "Compile all relevant Scala sources for CI"
+    steps:
+      - run:
+          command: |
+            source env.sh
+            make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND=test:compile
+
   firesimtest-manual-midasexamples:
     description: "Run a test"
     steps:
@@ -40,20 +48,68 @@ commands:
             source env.sh
             make -C sim scaladoc
 
-jobs:
-  runall:
-    executor: main-env
+  push-scaladoc-to-ghpages:
+    description: "Pushes scaladoc to ghphage branch"
     steps:
+      - run:
+          command: |
+            git config --global user.email "biancolin@berkeley.edu"
+            git config --global user.name "circleci"
+      - when:
+          condition: << pipeline.git.tag >>
+          steps:
+          - run:
+              command: |
+                source env.sh
+                make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND='set apiDirectory := \"<< pipeline.git.tag >>\"; ghpagesPushSite'
+      - unless:
+          condition: << pipeline.git.tag >>
+          steps:
+          - run:
+              command: |
+                source env.sh
+                make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
+
+  repo-setup:
+    description: "Runs all baseline setup tasks up to scala compilation."
+    steps:
+      - add_ssh_keys:
+          fingerprint:
+            - 0e:d9:c3:3b:62:03:7a:da:17:1f:a9:5a:4f:34:50:4c
       - checkout
       - machinelaunchscript
       - buildsetup
+      - scala-build
+
+jobs:
+  run-tests:
+    executor: main-env
+    steps:
+      - repo-setup
       - firesimtest-manual-midasexamples
       - build-scala-doc
 
+  publish-scala-doc:
+    executor: main-env
+    steps:
+      - repo-setup
+      - build-scala-doc
+      - push-scaladoc-to-ghpages
 
 workflows:
    version: 2
 
    firesimCIall:
      jobs:
-       - runall
+       - run-tests
+
+       - publish-scala-doc:
+           filters:
+             branches:
+               only:
+                 - dev
+                 - scala-doc-ci-builds
+             tags:
+               only:
+                 - /[0-9]*\.[0-9]*\.[0-9]*/
+
