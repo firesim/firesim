@@ -22,7 +22,6 @@ commands:
     steps:
       - run:
           command: |
-            git config --global url."https://github.com/".insteadOf git@github.com:
             ./build-setup.sh fast
 
   sim-env-setup:
