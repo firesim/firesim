@@ -69,8 +69,8 @@ private[midas] class MidasTransforms extends Transform {
     optionalTargetTransforms ++
     Seq(
       new fame.ExtractModel,
-      new ResolveAndCheck,
       new EmitFirrtl("post-extract-model.fir"),
+      new ResolveAndCheck,
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
       new fame.FAMEDefaults,
