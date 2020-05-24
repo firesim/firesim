@@ -34,9 +34,9 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
-JVM_MEMORY ?= 16G
+JVM_MEMORY ?= 32G
 SCALA_VERSION ?= 2.12.10
-JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
+JAVA_ARGS ?= -Xmx$(JVM_MEMORY) -Xss32768M
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
 
 # Manage the FIRRTL dependency manually
