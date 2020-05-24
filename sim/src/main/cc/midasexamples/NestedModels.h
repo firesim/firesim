@@ -3,12 +3,13 @@
 #include "simif.h"
 #include "stdio.h"
 
+uint32_t i0[] = { 4, 8, 7, 3, 2, 0, 4, 9, 11, 3, 7, 2, 5, 2, 7, 8 };
+uint32_t i1[] = { 9, 1, 2, 6, 5, 3, 5, 2,  1, 7, 6, 5, 4, 3, 2, 1 };
+
 class NestedModels_t: virtual simif_t
 {
 public:
   NestedModels_t(int argc, char** argv) {}
-  uint32_t i0[] = { 4, 8, 7, 3, 2, 0, 4, 9, 11, 3, 7, 2, 5, 2, 7, 8 };
-  uint32_t i1[] = { 9, 1, 2, 6, 5, 3, 5, 2,  1, 7, 6, 5, 4, 3, 2, 1 };
   int ntests = sizeof(i0) / sizeof(i0[0]);
   int latency = 2;
   void run() {
