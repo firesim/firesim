@@ -37,8 +37,15 @@ rpm2cpio "${DISTSITE}/updates/${TARGET}/Packages/kernel-devel-${KSRC}.${TARGET}.
 # this file is not kept up to date and does not compile, need to patch it
 sed -i 's/REQ_TYPE_SPECIAL/REQ_TYPE_DRV_PRIV/g' drivers/block/nbd.c
 
-# turn on NBD in the config
-sed -i 's/# CONFIG_BLK_DEV_NBD is not set/CONFIG_BLK_DEV_NBD=m/g' .config
+# use non-debug kernel config
+(
+    export LC_ALL='' LC_COLLATE=C
+    for KCFG in configs/kernel-*-"$TARGET".config ; do break ; done
+    test -r "$KCFG"
+
+    # turn on NBD in the config
+    sed 's/# CONFIG_BLK_DEV_NBD is not set/CONFIG_BLK_DEV_NBD=m/g' "$KCFG" > .config
+)
 
 make olddefconfig
 make prepare
