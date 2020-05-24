@@ -28,25 +28,27 @@ rpmbuild --define="_topdir $NBDBUILDDIR" -bp --target="$TARGET" kernel.spec
 
 cd "${NBDBUILDDIR}/BUILD/kernel-${KSRC}/linux-${KSRC}.${TARGET}"
 
-# acquire Module.symvers from kernel-devel binary package;
-# this enables proper symbol versioning (modversions) without requiring
-# a full kernel build
-rpm2cpio "${DISTSITE}/updates/${TARGET}/Packages/kernel-devel-${KSRC}.${TARGET}.rpm" |
-    cpio -iv --to-stdout "./usr/src/kernels/${KSRC}.${TARGET}/Module.symvers" > Module.symvers
+exit 1
 
-# this file is not kept up to date and does not compile, need to patch it
-sed -i 's/REQ_TYPE_SPECIAL/REQ_TYPE_DRV_PRIV/g' drivers/block/nbd.c
-
-# turn on NBD in the config
-sed -i 's/# CONFIG_BLK_DEV_NBD is not set/CONFIG_BLK_DEV_NBD=m/g' .config
-
-make olddefconfig
-make prepare
-make modules_prepare
-make M=drivers/block nbd.ko
-
-KMOD=drivers/block/nbd.ko
-
-modinfo "$KMOD"
-modprobe --dump-modversions "$KMOD" | grep -F module_layout
-cp "$KMOD" "$OUTPUTFILE"
+## acquire Module.symvers from kernel-devel binary package;
+## this enables proper symbol versioning (modversions) without requiring
+## a full kernel build
+#rpm2cpio "${DISTSITE}/updates/${TARGET}/Packages/kernel-devel-${KSRC}.${TARGET}.rpm" |
+#    cpio -iv --to-stdout "./usr/src/kernels/${KSRC}.${TARGET}/Module.symvers" > Module.symvers
+#
+## this file is not kept up to date and does not compile, need to patch it
+#sed -i 's/REQ_TYPE_SPECIAL/REQ_TYPE_DRV_PRIV/g' drivers/block/nbd.c
+#
+## turn on NBD in the config
+#sed -i 's/# CONFIG_BLK_DEV_NBD is not set/CONFIG_BLK_DEV_NBD=m/g' .config
+#
+#make olddefconfig
+#make prepare
+#make modules_prepare
+#make M=drivers/block nbd.ko
+#
+#KMOD=drivers/block/nbd.ko
+#
+#modinfo "$KMOD"
+#modprobe --dump-modversions "$KMOD" | grep -F module_layout
+#cp "$KMOD" "$OUTPUTFILE"
