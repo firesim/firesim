@@ -11,21 +11,26 @@ import midas.widgets.PeekPokeBridge
 import midas.targetutils._
 
 class SimpleIO extends Bundle {
-    val i = Input(UInt(4.W))
-    val o = Output(UInt(4.W))
+  val i0 = Input(UInt(4.W))
+  val i1 = Input(UInt(4.W))
+  val o0 = Output(UInt(4.W))
+  val o1 = Output(UInt(4.W))
 }
 
 class Inner extends Module {
   val io = IO(new SimpleIO)
-  io.o := RegNext(io.i + 1.U)
+  io.o0 := RegNext(io.i0 + 1.U)
+  io.o1 := RegNext(RegNext(io.i1 + 1.U))
 }
 
 class Mid extends Module {
   val io = IO(new SimpleIO)
   val inner = Module(new Inner)
   annotate(FAMEModelAnnotation(inner))
-  inner.io.i := RegNext(io.i)
-  io.o := inner.io.o
+  inner.io.i0 := RegNext(RegNext(io.i0))
+  inner.io.i1 := RegNext(io.i1)
+  io.o0 := inner.io.o0
+  io.o1 := inner.io.o1
 }
 
 class NestedModelsDUT extends Module {
