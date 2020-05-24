@@ -150,6 +150,8 @@ class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 
 class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
 
+class NestedModelsF1Test extends TutorialSuite("NestedModels")
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
