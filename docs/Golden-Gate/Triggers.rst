@@ -4,16 +4,48 @@ Simulation Triggers
 It is often useful to globally coordinate debug and instrumentation features using specific target-events that may be distributed across the target design.
 For instance, you may wish to enable collection of synthesized prints and sampling of
 AutoCounters simulataenously when a specific instruction is committed on any
-core, or alternatively if the memory system sees a ready or write to a
+core, or alternatively if the memory system sees a write to a
 particular memory address. Golden Gate's trigger system enables this by aggregating annotated ``TriggerSources``
 distributed throughout the design using a centralized credit-based system
-which then drives a single-bit level-sensitive enable to all ``TriggerSinks`` sinks distributed throughout the design.
-This enable is asserted while the design remains in the region-of-interested
+which then drives a single-bit level-sensitive enable to all ``TriggerSinks`` distributed throughout the design.
+This enable signal is asserted while the design remains in the region-of-interest
 (ROI).  Sources signal the start of the ROI by granting a
 credit and signal the end of the ROI by asserting a debit. Since there can be
 multiple sources, each of which might grant credits, the trigger is only
 disabled when the system has been debited as exactly as many times as it has
 been credited (it has a balance of 0).
+
+Quick-Start Guide
+--------------------
+
+Level-Sensitive Trigger Source
+******************************
+
+Assert the trigger while some boolean ``enable`` is true.
+
+.. literalinclude:: ../../sim/src/main/scala/midasexamples/TriggerWiringModule.scala
+    :language: scala
+    :start-after: DOC include start: TriggerSource Level-Sensitive Usage
+    :end-before: DOC include end: TriggerSource Level-Sensitive Usage
+
+Caveats:
+ - The trigger visible at the sink is delayed. See :ref:`trigger-timing`.
+ - Assumes this is the only source; the trigger is only cleared if no additional credit has been granted.
+
+Distributed, Edge-Sensitive Trigger Source
+******************************************
+
+Assert trigger enable when some boolean `start` undergoes a positive transition, and clear the trigger
+when a second signal `stop` undergoes a positive transition.
+
+.. literalinclude:: ../../sim/src/main/scala/midasexamples/TriggerWiringModule.scala
+    :language: scala
+    :start-after: DOC include start: TriggerSource Usage
+    :end-before: DOC include end: TriggerSource Usage
+
+Caveats:
+ - The trigger visible at the sink is delayed. See :ref:`trigger-timing`.
+ - Assumes these are the only sources; the trigger is only cleared if no additional credit has been granted.
 
 Chisel API
 -----------
@@ -27,7 +59,7 @@ Trigger Sources
 ***************
 In order to permit distributing trigger sources across the whole design, you
 must annotate distinct boolean signals as credits and debits using methods
-provided by the ``TriggerSource`` object. We provide an example below.
+provided by the ``TriggerSource`` object. We provide an example below (the distributed example from the quick-start guide).
 
 .. literalinclude:: ../../sim/src/main/scala/midasexamples/TriggerWiringModule.scala
     :language: scala
@@ -44,15 +76,18 @@ Trigger Sinks
 *************
 Like sources, trigger sinks are boolean signals that have been annotated
 alongside their associated clock. These signals will be driven by a Boolean
-value created by the trigger system. If trigger sources exist your design, the
-generated trigger will override all assignments made in the chisel to the same
-signal, otherwise, it will take on a default value provided by the user. We
+value created by the trigger system. If trigger sources exist in your design, the
+generated trigger will **override all assignments made in the chisel to the same
+signal**, otherwise, it will take on a default value provided by the user. We
 provide an example of annotating a sink using the the ``TriggerSink`` object below.
 
 .. literalinclude:: ../../sim/src/main/scala/midasexamples/TriggerWiringModule.scala
     :language: scala
     :start-after: DOC include start: TriggerSink Usage
     :end-before: DOC include end: TriggerSink Usage
+
+
+.. _trigger-timing:
 
 Trigger Timing
 ---------------
