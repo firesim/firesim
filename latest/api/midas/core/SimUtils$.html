@@ -413,7 +413,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">RVChTuple</span><span class="result alias"> = (<a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)</span>
+        <span class="name">RVChTuple</span><span class="result alias"> = (<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)</span>
       </span>
       
       
@@ -445,7 +445,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">TargetRVPortType</span><span class="result alias"> = (<a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.ValidIO">ValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]], <a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.Bool">Bool</span>])</span>
+        <span class="name">TargetRVPortType</span><span class="result alias"> = (<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.util.ValidIO">ValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]], <span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Bool">Bool</span>])</span>
       </span>
       
       
@@ -461,7 +461,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="SimUtils$$WirePortTuple.html"><span class="name">WirePortTuple</span></a><span class="params">(<span name="source">source: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.Data">Data</span>]]</span>, <span name="sink">sink: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.Data">Data</span>]]</span>)</span><span class="result"> extends <a href="SimUtils$$PortTuple.html" class="extype" name="midas.core.SimUtils.PortTuple">PortTuple</a>[<a href="https://www.chisel-lang.org/api/latest/chisel3/util/ReadyValidIO.html#chisel3.util.ReadyValidIO" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.Data">Data</span>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="SimUtils$$WirePortTuple.html"><span class="name">WirePortTuple</span></a><span class="params">(<span name="source">source: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]]</span>, <span name="sink">sink: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]]</span>)</span><span class="result"> extends <a href="SimUtils$$PortTuple.html" class="extype" name="midas.core.SimUtils.PortTuple">PortTuple</a>[<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -560,8 +560,6 @@
               
                 <span class="name">@native</span><span class="args">()</span>
               
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
-              
         </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
@@ -595,6 +593,28 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimUtils$.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="midas.core.SimUtils#findClocks" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="findClocks(field:chisel3.Data):Seq[chisel3.Clock]"></a><a id="findClocks(Data):Seq[Clock]"></a>
       <span class="permalink">
@@ -629,8 +649,6 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
-              
         </dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
@@ -649,8 +667,6 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
-              
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -703,8 +719,6 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
-              
         </dd></dl></div>
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
@@ -723,8 +737,6 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
-              
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="midas.core.SimUtils#parsePorts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
@@ -929,36 +941,7 @@
 
         
 
-        <div class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="finalize():Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/core/SimUtils$.html#finalize():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Throwable]</span>
-    </span>)</span>
-              
-                <span class="name">@Deprecated</span>
-              
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
