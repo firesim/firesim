@@ -101,7 +101,11 @@ workflows:
 
    firesimCIall:
      jobs:
-       - run-tests
+       - run-tests:
+           filters:
+             branches:
+               ignore:
+                 - gh-pages
 
        - publish-scala-doc:
            filters:
