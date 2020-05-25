@@ -3,6 +3,39 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
+## [1.9.0] - 2021-05-21
+This is largely a maintenance release with a few minor features and a bunch of
+bug fixes. The most significant change is a bump to Linux 5.7rc3. The new
+'firesim-dir' configuration option is also signficant because it enables more
+flexible deployment of FireMarshal in Chipyard and FireSim and is required for
+Chipyard 1.3.0.
+
+### Added
+* A number of new global configuration options were added. This includes
+  specifying where the 'install' command finds firesim (PR #127) and allowing
+  for custom workload searchpaths (PR #140)
+* PR #129 adds a number of new features to help support profiling and debug. In
+  particular, Marshal now saves the raw kernel ELF file including debug symbols
+  (BBL strips DWARF info). It also handles a few handy scripts for running
+  FirePerf tools.
+* PR #141 adds the 'post-bin' script option to workloads. This is primarily
+  useful for building custom drivers but may have other uses.
+
+### Changed
+* PR #139 enables RVC in the kernel by default
+* PR #143 changes the behavior of kernel fragments. Previously, workload kfrags
+  were applied directly on top of the distro's default config. Now kfrags are
+  inherited through the chain of parents.
+* PR #151 bumps us to Linux 5.7rc3
+* PR #148 switches to the SBI serial driver from the sifive uart due to a
+  baud-rate configuration issue. This will be reversed eventually.
+
+### Fixed
+* PR #126 adds detection of changes in overlay directories that were missed before
+* PR #128 fixes an issue when calling FireMarshal inside a makefile
+* PR #133 fixes the --workdir option that had broken (and adds tests so it won't happen again)
+* PR #135 jobs were not including device drivers
+
 ## [1.8.0] - 2020-01-24
 This release introduces user-configurable options for FireMarshal through a
 config file or environment variables. It also relaxes constraints on the
