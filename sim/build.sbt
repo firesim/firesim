@@ -1,5 +1,9 @@
 import Tests._
 
+// This is set by CI and should otherwise be unmodified
+val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
+apiDirectory := "latest"
+
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
@@ -76,8 +80,16 @@ lazy val firesim    = (project in file("."))
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, SiteScaladocPlugin)
   .settings(commonSettings,
     git.remoteRepo := "git@github.com:firesim/firesim.git",
+    // Publish scala doc only for the library projects -- classes under this
+    // project are all integration test-related
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(targetutils, midas, firesimLib),
-    siteSubdirName in ScalaUnidoc := "latest/api",
+    siteSubdirName in ScalaUnidoc := apiDirectory.value + "/api",
+    // Only delete the files in the docs branch that are in the directory were
+    // trying to publish to.  This prevents dev-versions from blowing away
+    // tagged versions and vice versa
+    includeFilter in ghpagesCleanSite := new sbt.io.PrefixFilter(apiDirectory.value),
+    excludeFilter in ghpagesCleanSite := NothingFilter,
+
     // Clobber the existing doc task to instead have it use the unified one
     Compile / doc := (doc in ScalaUnidoc).value,
     // Registers the unidoc-generated html with sbt-site
