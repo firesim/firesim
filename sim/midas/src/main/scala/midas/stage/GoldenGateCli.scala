@@ -8,7 +8,7 @@ trait GoldenGateCli { this: Shell =>
   parser.note("Golden Gate Compiler Options")
   Seq(ConfigPackageAnnotation,
       ConfigStringAnnotation,
-      firrtl.checks.SkipChecks,
+      firrtl.checks.SkipChecksAnnotation,
       firrtl.stage.FirrtlFileAnnotation,
       firrtl.stage.OutputFileAnnotation,
       firrtl.stage.FirrtlSourceAnnotation,
