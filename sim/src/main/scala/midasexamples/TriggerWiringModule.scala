@@ -33,18 +33,33 @@ class TriggerSourceModule extends MultiIOModule {
 
   // DOC include start: TriggerSource Usage
   // Some arbitarily logic to drive the credit source and sink. Replace with your own!
-  val creditBool = lfsr(0)
-  val debitBool = ShiftRegister(lfsr(0), 5)
+  val start = lfsr(1)
+  val stop = ShiftRegister(lfsr(0), 5)
 
   // Now annotate the signals.
   import midas.targetutils.TriggerSource
-  TriggerSource.credit(creditBool)
-  TriggerSource.debit(debitBool)
-  // Note one could alternatively write: TriggerSource(creditBool, debitBool)
+  TriggerSource.credit(start)
+  TriggerSource.debit(stop)
+  // Note one could alternatively write: TriggerSource(start, stop)
   // DOC include end: TriggerSource Usage
 
-  referenceCredit := ~reset.toBool && credit
-  referenceDebit := ~reset.toBool && debit
+  referenceCredit := ~reset.toBool && start
+  referenceDebit := ~reset.toBool && stop
+}
+
+class LevelSensitiveTriggerSourceModule extends MultiIOModule {
+  val referenceCredit = IO(Output(Bool()))
+  val referenceDebit = IO(Output(Bool()))
+  private val enable = LFSR16()(0)
+
+  // DOC include start: TriggerSource Level-Sensitive Usage
+  import midas.targetutils.TriggerSource
+  TriggerSource.levelSensitiveEnable(enable)
+  // DOC include end: TriggerSource Level-Sensitive Usage
+
+  val enLast = RegNext(enable)
+  referenceCredit := !enLast && enable
+  referenceDebit  := enLast && !enable
 }
 
 class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOModule {
@@ -97,8 +112,12 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
     val src  = Module(new TriggerSourceModule)
     val sink = Module(new TriggerSinkModule)
 
+    val levelSensitiveSrc = Module(new LevelSensitiveTriggerSourceModule)
+
     // Reference Hardware
-    refSourceCounts += ReferenceSourceCounters(Seq(src.referenceCredit), Seq(src.referenceDebit))
+    refSourceCounts += ReferenceSourceCounters(
+      Seq(src.referenceCredit, levelSensitiveSrc.referenceCredit),
+      Seq(src.referenceDebit, levelSensitiveSrc.referenceDebit))
     refSinks += {
       val syncReg = Reg(Bool())
       sink.reference := syncReg
