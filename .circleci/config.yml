@@ -61,6 +61,7 @@ commands:
           - run:
               command: |
                 source env.sh
+                export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for << pipeline.git.tag >> release"
                 make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND='set apiDirectory := \"<< pipeline.git.tag >>\"; ghpagesPushSite'
       - unless:
           condition: << pipeline.git.tag >>
@@ -68,6 +69,7 @@ commands:
           - run:
               command: |
                 source env.sh
+                export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for dev:<< pipeline.git.revision >>"
                 make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
 
   repo-setup:
