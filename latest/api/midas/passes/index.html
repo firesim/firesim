@@ -190,10 +190,6 @@
                         <a class="class" href="ChannelClockInfoAnnotation.html" title="ChannelClockInfoAnalysis's output annotation."></a>
                         <a href="ChannelClockInfoAnnotation.html" title="ChannelClockInfoAnalysis's output annotation.">ChannelClockInfoAnnotation</a>
                       </li><li class="current-entities indented2">
-                        <a class="object" href="CheckCombLoops$.html" title=""></a>
-                        <a class="class" href="CheckCombLoops.html" title="Finds and detects combinational logic loops in a circuit, if any exist."></a>
-                        <a href="CheckCombLoops.html" title="Finds and detects combinational logic loops in a circuit, if any exist.">CheckCombLoops</a>
-                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockSourceAnnotation.html" title=""></a>
                         <a href="ClockSourceAnnotation.html" title="">ClockSourceAnnotation</a>
@@ -207,10 +203,6 @@
                         <a href="CoerceAsyncToSyncReset$.html" title="Replaces all AsyncResets and Reset types with Bools (synchronous reset).">CoerceAsyncToSyncReset</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="CombinationalPath.html" title=""></a>
-                        <a href="CombinationalPath.html" title="">CombinationalPath</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="ConfToJSON.html" title=""></a>
                         <a href="ConfToJSON.html" title="">ConfToJSON</a>
                       </li><li class="current-entities indented2">
@@ -219,20 +211,12 @@
                         <a href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated.">DefineAbstractClockGate</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="DontCheckCombLoopsAnnotation$.html" title=""></a>
-                        <a href="DontCheckCombLoopsAnnotation$.html" title="">DontCheckCombLoopsAnnotation</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="EmitFirrtl.html" title=""></a>
                         <a href="EmitFirrtl.html" title="">EmitFirrtl</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$ExpressionTransformer$.html" title="Generates a function transforming a circuit from a partial function describing how each expression, if matched, is transformed."></a>
                         <a href="package$$ExpressionTransformer$.html" title="Generates a function transforming a circuit from a partial function describing how each expression, if matched, is transformed.">ExpressionTransformer</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ExtModulePathAnnotation.html" title=""></a>
-                        <a href="ExtModulePathAnnotation.html" title="">ExtModulePathAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="Fame1Annotation.html" title=""></a>
@@ -265,10 +249,6 @@
                         <span class="separator"></span>
                         <a class="class" href="IntermediateLoweringCompiler.html" title=""></a>
                         <a href="IntermediateLoweringCompiler.html" title="">IntermediateLoweringCompiler</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="LogicNode.html" title=""></a>
-                        <a href="LogicNode.html" title="">LogicNode</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="MemConf.html" title=""></a>
@@ -612,24 +592,6 @@ generated output-clock port that output is synchronous to.
       <p class="shortcomment cmt"> <a href="ChannelClockInfoAnalysis$.html" class="extype" name="midas.passes.ChannelClockInfoAnalysis">ChannelClockInfoAnalysis</a>'s output annotation.</p><div class="fullcomment"><div class="comment cmt"><p> <a href="ChannelClockInfoAnalysis$.html" class="extype" name="midas.passes.ChannelClockInfoAnalysis">ChannelClockInfoAnalysis</a>'s output annotation. Maps channel global name
  (See <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span> to a clock info class.
 </p></div></div>
-    </li><li name="midas.passes.CheckCombLoops" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="CheckCombLoopsextendsTransformwithRegisteredTransform"></a><a id="CheckCombLoops:CheckCombLoops"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/CheckCombLoops.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="Finds and detects combinational logic loops in a circuit, if any exist." href="CheckCombLoops.html"><span class="name">CheckCombLoops</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a> with <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/RegisteredTransform.html#firrtl.options.RegisteredTransform" class="extype" name="firrtl.options.RegisteredTransform">RegisteredTransform</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">Finds and detects combinational logic loops in a circuit, if any exist.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and detects combinational logic loops in a circuit, if any exist. Returns the input circuit with no
-modifications.
-</p></div><dl class="attributes block"> <dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="firrtl.transforms.CheckCombLoops.CombLoopException"><code>firrtl.transforms.CheckCombLoops.CombLoopException</code></span> if a loop is found</p></span></dd><dt>Note</dt><dd><span class="cmt"><p>Input form: Low FIRRTL</p></span>, <span class="cmt"><p>Output form: Low FIRRTL (identity transform)</p></span>, <span class="cmt"><p>The pass looks for loops through combinational-read memories</p></span>, <span class="cmt"><p>The pass relies on ExtModulePathAnnotations to find loops through ExtModules</p></span>, <span class="cmt"><p>The pass will throw exceptions on &quot;false paths&quot;</p></span></dd></dl></div>
     </li><li name="midas.passes.ClockSourceAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ClockSourceAnnotationextendsAnnotationwithProductwithSerializable"></a><a id="ClockSourceAnnotation:ClockSourceAnnotation"></a>
       <span class="permalink">
@@ -664,22 +626,6 @@ modifications.
       <p class="shortcomment cmt">A utility for finding the upstream drivers of arbitrary clock signals in a circuit.</p><div class="fullcomment"><div class="comment cmt"><p>A utility for finding the upstream drivers of arbitrary clock signals in a circuit.
 find and return that input port.
 </p></div></div>
-    </li><li name="midas.passes.CombinationalPath" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CombinationalPathextendsAnnotationwithProductwithSerializable"></a><a id="CombinationalPath:CombinationalPath"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/CombinationalPath.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="CombinationalPath.html"><span class="name">CombinationalPath</span></a><span class="params">(<span name="sink">sink: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="sources">sources: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      
     </li><li name="midas.passes.ConfToJSON" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ConfToJSONextendsTransform"></a><a id="ConfToJSON:ConfToJSON"></a>
       <span class="permalink">
@@ -709,22 +655,6 @@ find and return that input port.
       </span>
       <span class="symbol">
         <a title="" href="EmitFirrtl.html"><span class="name">EmitFirrtl</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.ExtModulePathAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ExtModulePathAnnotationextendsAnnotationwithProductwithSerializable"></a><a id="ExtModulePathAnnotation:ExtModulePathAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/ExtModulePathAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="ExtModulePathAnnotation.html"><span class="name">ExtModulePathAnnotation</span></a><span class="params">(<span name="source">source: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="sink">sink: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -841,22 +771,6 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       </span>
       <span class="symbol">
         <a title="" href="IntermediateLoweringCompiler.html"><span class="name">IntermediateLoweringCompiler</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Compiler.html#firrtl.Compiler" class="extype" name="firrtl.Compiler">Compiler</a></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.LogicNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="LogicNodeextendsProductwithSerializable"></a><a id="LogicNode:LogicNode"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/LogicNode.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="LogicNode.html"><span class="name">LogicNode</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="inst">inst: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>, <span name="memport">memport: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -1019,22 +933,6 @@ since the &quot;collateral&quot; of that object can be kept in one place.
       <p class="shortcomment cmt"> Returns a map from a channel's global name to a RationalClock case class which
  contains metadata about the target clock including its name and relative
  frequency to the base clock</p>
-    </li><li name="midas.passes.CheckCombLoops" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CheckCombLoops"></a><a id="CheckCombLoops:CheckCombLoops"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/CheckCombLoops$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="CheckCombLoops$.html"><span class="name">CheckCombLoops</span></a>
-      </span>
-      
-      
     </li><li name="midas.passes.ClockSourceFinder" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ClockSourceFinder"></a><a id="ClockSourceFinder:ClockSourceFinder"></a>
       <span class="permalink">
@@ -1087,22 +985,6 @@ since the &quot;collateral&quot; of that object can be kept in one place.
 later be instantiated.</p><div class="fullcomment"><div class="comment cmt"><p>This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can
 later be instantiated. The blackbox clock gate has the following signature:</p><p>module AbstractClockGate(input I, input CE, output O);</p><p>I and O are the input and output clocks, respectively, while CE is the enable signal.
 </p></div></div>
-    </li><li name="midas.passes.DontCheckCombLoopsAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DontCheckCombLoopsAnnotation"></a><a id="DontCheckCombLoopsAnnotation:DontCheckCombLoopsAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/DontCheckCombLoopsAnnotation$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="DontCheckCombLoopsAnnotation$.html"><span class="name">DontCheckCombLoopsAnnotation</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/NoTargetAnnotation.html#firrtl.annotations.NoTargetAnnotation" class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      
     </li><li name="midas.passes.ExpressionTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ExpressionTransformer"></a><a id="ExpressionTransformer:ExpressionTransformer"></a>
       <span class="permalink">
