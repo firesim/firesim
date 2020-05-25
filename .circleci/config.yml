@@ -112,7 +112,6 @@ workflows:
              branches:
                only:
                  - dev
-                 - scala-doc-ci-builds
              tags:
                only:
                  - /[0-9]*\.[0-9]*\.[0-9]*/
