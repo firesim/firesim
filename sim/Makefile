@@ -77,9 +77,10 @@ verilog: $(VERILOG)
 compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
+SBT_COMMAND ?= shell
 .PHONY: sbt
 sbt: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "shell"
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "$(SBT_COMMAND)"
 .PHONY: test
 test: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"

@@ -235,12 +235,7 @@ xsim: $(xsim)
 # MIDAS Unit Tests      #
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
-
-ifdef FIRESIM_STANDALONE
-	firesimLib_sbt_project := firesim
-else
-	firesimLib_sbt_project := {file:${firesim_base_dir}/}firesimLib
-endif
+firesimLib_sbt_project := {file:${firesim_base_dir}/}firesimLib
 
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
@@ -259,7 +254,16 @@ run-midas-unittests: $(chisel_srcs)
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
+#########################
+# ScalaDoc              #
+#########################
+scaladoc:
+	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
 
+.PHONY: scaladoc
+#########################
+# Cleaning Recipes      #
+#########################
 cleanfpga:
 	rm -rf $(fpga_work_dir)
 

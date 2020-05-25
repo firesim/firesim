@@ -22,16 +22,8 @@ sudo yum install -y python36-pip python36-devel rsync
 sudo yum install -y centos-release-scl
 sudo yum install -y devtoolset-8-make
 
-# install DTC. it's not available in repos in FPGA AMI
-DTCversion=dtc-1.4.4
-wget https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/$DTCversion.tar.gz
-tar -xvf $DTCversion.tar.gz
-cd $DTCversion
-make -j16
-make install
-cd ..
-rm -rf $DTCversion.tar.gz
-rm -rf $DTCversion
+# install DTC
+sudo yum -y install dtc
 
 # get a proper version of git
 sudo yum -y remove git
@@ -63,6 +55,8 @@ sudo pip2 install argcomplete==1.9.3
 sudo pip2 install graphviz==0.8.3
 # for some of our workload plotting scripts
 sudo pip2 install --upgrade --ignore-installed pyparsing
+sudo pip2 install numpy==1.16.6
+sudo pip2 install kiwisolver==1.1.0
 sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
 # new awscli on 1.6.0 AMI is broken with our versions of boto3
