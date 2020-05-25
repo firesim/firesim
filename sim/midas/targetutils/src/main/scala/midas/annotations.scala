@@ -308,6 +308,21 @@ object TriggerSource {
     creditEvenUnderReset(creditSig)
     debitEvenUnderReset(debitSig)
   }
+
+  /**
+    * Level sensitive trigger sources. Implemented using [[credit]] and [[debit]].
+    * Note: This generated hardware in your target design.
+    *
+    * @param src Enables the trigger when asserted. If no other credits have
+    * been issued since (e.g., a second level-sensitive enable was asserted),
+    * the trigger is disabled when src is desasserted.
+    */
+  def levelSensitiveEnable(src: Bool): Unit = {
+    val srcLast = RegNext(src)
+    credit(src && !srcLast)
+    debit(!src && srcLast)
+  }
+
 }
 
 object TriggerSink {
