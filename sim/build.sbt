@@ -35,8 +35,6 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
       new Group(test.name, Seq(test), SubProcess(options))
   } toSeq
 
-testGrouping in Test := isolateAllTests( (definedTests in Test).value )
-
 lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
 
 lazy val chipyardDir = if(firesimAsLibrary) {
@@ -93,6 +91,7 @@ lazy val firesim    = (project in file("."))
     // Clobber the existing doc task to instead have it use the unified one
     Compile / doc := (doc in ScalaUnidoc).value,
     // Registers the unidoc-generated html with sbt-site
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc)
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
   .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
