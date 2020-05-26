@@ -14,11 +14,11 @@ import chisel3.experimental.{chiselName}
 // modelChannel: a hardware handle to the input channel on the model
 // tokenGenFunc: a option carrying a function that when excuted,
 //               generates hardware to produce a new input value each cycle
-case class IChannelDesc(
+case class IChannelDesc[T <: Data](
   name: String,
-  reference: Data,
-  modelChannel: DecoupledIO[Data],
-  tokenGenFunc: Option[() => Data] = None) {
+  reference: T,
+  modelChannel: DecoupledIO[T],
+  tokenGenFunc: Option[() => T] = None) {
 
   private def tokenSequenceGenerator(typ: Data): Data =
     Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
@@ -54,10 +54,10 @@ case class IChannelDesc(
 // modelChannel: a hardware handle to the output channel on the model
 // comparisonFunc: a function that elaborates hardware to compare
 //                 an output token Decoupled[Data] to the correct reference output [Data]
-case class OChannelDesc(
+case class OChannelDesc[T <: Data](
   name: String,
-  reference: Data,
-  modelChannel: DecoupledIO[Data],
+  reference: T,
+  modelChannel: DecoupledIO[T],
   comparisonFunc: (Data, DecoupledIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
 
   // Generate the testing hardware for a single output channel of a model
@@ -105,8 +105,8 @@ object TokenComparisonFunctions{
 object DirectedLIBDNTestHelper{
   @chiselName
   def apply(
-      inputChannelMapping:  Seq[IChannelDesc],
-      outputChannelMapping: Seq[OChannelDesc],
+      inputChannelMapping:  Seq[IChannelDesc[_]],
+      outputChannelMapping: Seq[OChannelDesc[_]],
       testLength: Int = 4096): Bool = {
     inputChannelMapping.foreach(_.genEnvironment(testLength))
     val finished = outputChannelMapping.map(_.genEnvironment(testLength)).foldLeft(true.B)(_ && _)

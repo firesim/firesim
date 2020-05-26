@@ -25,12 +25,18 @@ csrc := $(ROCKETCHIP_DIR)/src/main/resources/csrc
 src_path = src/main/scala
 scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
 
-$(GEN_DIR)/$(DESIGN).v $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
+$(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
-	cd $(BASE_DIR) && $(SBT) "runMain midas.unittest.Generator -td $(GEN_DIR) -conf $(CONFIG)"
+	cd $(BASE_DIR) && $(SBT) "runMain chipyard.Generator \
+		--target-dir $(GEN_DIR) \
+		--name $(DESIGN) \
+		--top-module freechips.rocketchip.unittest.TestHarness \
+		--legacy-configs midas.unittest.$(CONFIG)"
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
-verilog: $(GEN_DIR)/$(DESIGN).v
+$(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
+	cd $(BASE_DIR) && $(SBT) "runMain firrtl.stage.FirrtlMain -i $< -o $@ \
+		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 
 # Common SW RTL simulation Makefrag arguments
 # These aren't required as yet, but will be in the future
@@ -80,4 +86,4 @@ run-midas-unittests: $($(EMUL))
 run-midas-unittests-debug: $($(EMUL)_debug)
 	cd $(GEN_DIR) && $<
 
-.PHONY: run-midas-unittests run-midas-unittests-debug verilog
+.PHONY: run-midas-unittests run-midas-unittests-debug
