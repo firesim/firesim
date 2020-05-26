@@ -598,6 +598,26 @@ while the implicit reset is asserted.</p>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.targetutils.TriggerSource#levelSensitiveEnable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelSensitiveEnable(src:chisel3.Bool):Unit"></a><a id="levelSensitiveEnable(Bool):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSource$.html#levelSensitiveEnable(src:chisel3.Bool):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelSensitiveEnable</span><span class="params">(<span name="src">src: <span class="extype" name="chisel3.Bool">Bool</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Level sensitive trigger sources.</p><div class="fullcomment"><div class="comment cmt"><p>Level sensitive trigger sources. Implemented using <a href="#credit(credit:chisel3.Bool):Unit" class="extmbr" name="midas.targetutils.TriggerSource#credit">credit</a> and <a href="#debit(debit:chisel3.Bool):Unit" class="extmbr" name="midas.targetutils.TriggerSource#debit">debit</a>.
+Note: This generated hardware in your target design.
+</p></div><dl class="paramcmts block"><dt class="param">src</dt><dd class="cmt"><p>Enables the trigger when asserted. If no other credits have
+been issued since (e.g., a second level-sensitive enable was asserted),
+the trigger is disabled when src is desasserted.</p></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
