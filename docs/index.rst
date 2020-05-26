@@ -39,6 +39,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Golden-Gate/LI-BDN
    Golden-Gate/Bridges
    Golden-Gate/Bridge-Walkthrough
+   Golden-Gate/Triggers
 
 
 Indices and tables
