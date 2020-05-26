@@ -4,8 +4,8 @@ package firesim.fasedtests
 import java.io.File
 
 import scala.concurrent.{Future, Await, ExecutionContext}
-import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import scala.util.Random
+import org.scalatest.Suites
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.system.{RocketTestSuite, BenchmarkTestSuite}
@@ -81,3 +81,16 @@ class BaselineMultichannelTest extends FASEDTest(
 class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "ConstrainedIdHostConfig")
 class AXI4FuzzerZC706LBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultZC706Config")
 class AXI4FuzzerZedboardTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultZedboardConfig")
+
+// Suite Collections for CI
+class CIGroupA extends Suites(
+  new AXI4FuzzerLBPTest,
+  new AXI4FuzzerMultiChannelTest,
+  new AXI4FuzzerFRFCFSTest
+)
+
+class CIGroupB extends Suites(
+  new AXI4FuzzerLLCDRAMTest,
+  new NarrowIdConstraint
+)
+
