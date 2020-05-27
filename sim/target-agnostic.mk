@@ -47,7 +47,7 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 # Golden Gate Invocation           #
 ####################################
 midas_sbt_project := {file:$(firesim_base_dir)}midas
-
+firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
@@ -235,7 +235,6 @@ xsim: $(xsim)
 # MIDAS Unit Tests      #
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
-firesimLib_sbt_project := {file:${firesim_base_dir}/}firesimLib
 
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
@@ -244,7 +243,7 @@ unittest_args = \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT) \"project $(firesimLib_sbt_project)\" " \
+		SBT="$(SBT) \"project $(firesim_root_sbt_project)\" " \
 		CONFIG=$(UNITTEST_CONFIG) \
 		TOP_DIR=$(chipyard_dir)
 

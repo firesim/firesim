@@ -241,6 +241,8 @@ class ReadyValidChannelUnitTest(
 
   val dut = Module(new ReadyValidChannel(payloadType))
   val reference = Module(new ShiftQueue(payloadType, queueDepth))
+  val referenceReset = Wire(Bool())
+  reference.reset := referenceReset
 
   // Generates target-reset tokens
   def resetTokenGen(): Bool = {
@@ -293,7 +295,7 @@ class ReadyValidChannelUnitTest(
 
   val inputChannelMapping = Seq(IChannelDesc("enqFwd", refEnqFwd, enqFwd),
                                 IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
-                                IChannelDesc("reset" , reference.reset, dut.io.targetReset, Some(resetTokenGen)))
+                                IChannelDesc("reset" , referenceReset, dut.io.targetReset, Some(resetTokenGen _)))
 
   val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
                                  OChannelDesc("enqRev", reference.io.enq.ready, enqRev, TokenComparisonFunctions.ignoreNTokens(resetLength)))

@@ -24,7 +24,7 @@ verilator_cc := $(emul_cc) $(verilator_harness)
 TIMESCALE_OPTS := $(shell verilator --version | perl -lne 'if (/(\d.\d+)/ && $$1 >= 4.034) { print "--timescale 1ns/1ps"; }')
 override VERILATOR_FLAGS := \
 	$(TIMESCALE_OPTS) \
-	--top-module verilator_top \
+	--top-module $(top_module) \
 	-Wno-STMTDLY \
 	-O3 \
 	--output-split 10000 \
