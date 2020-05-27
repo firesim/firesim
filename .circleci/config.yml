@@ -6,7 +6,7 @@ executors:
       - image: firesim/firesim-ci:v1.0
         user: "centos"
     environment:
-        JVM_MEMORY: 2200m # Customize the JVM maximum heap limit
+        JVM_MEMORY: 2200M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
 
 commands:
@@ -67,6 +67,9 @@ commands:
   run-scala-test:
     description: "Runs the scala test with name <test-package>.<test-name>"
     parameters:
+      project:
+        type: string
+        default: "firesim"
       test-name:
         type: string
       test-package:
@@ -79,7 +82,8 @@ commands:
         - run:
             command: |
                 source env.sh
-                make -C sim TARGET_PROJECT=midasexamples testOnly SCALA_TEST=<< parameters.test-package >>.<< parameters.test-name >>
+                make -C sim TARGET_PROJECT=midasexamples sbt \
+                    SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >>"
             no_output_timeout: << parameters.timeout >>
 
   repo-setup:
@@ -108,6 +112,10 @@ jobs:
       - repo-setup
       - run-scala-test:
           test-name: "CIGroupB"
+      - run-scala-test:
+           project: "midas"
+           test-package: "*"
+           test-name: "*"
 
   publish-scala-doc:
     executor: main-env

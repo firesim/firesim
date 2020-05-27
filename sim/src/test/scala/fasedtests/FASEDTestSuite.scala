@@ -85,7 +85,6 @@ class AXI4FuzzerZedboardTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "D
 // Suite Collections for CI
 class CIGroupA extends Suites(
   new AXI4FuzzerLBPTest,
-  new AXI4FuzzerMultiChannelTest,
   new AXI4FuzzerFRFCFSTest
 )
 
