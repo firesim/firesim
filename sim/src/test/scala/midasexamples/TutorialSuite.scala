@@ -196,4 +196,6 @@ class CIGroupB extends Suites(
   new MulticlockAssertF1Test,
   new GoldenGateMiscCITests,
   new firesim.fasedtests.CIGroupB,
+  new firesim.AllMidasUnitTests,
+  new firesim.FailingUnitTests
 )
