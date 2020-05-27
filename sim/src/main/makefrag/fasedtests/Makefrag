@@ -36,15 +36,12 @@ ifdef FIRESIM_STANDALONE
 else
 	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 endif
+chisel_src_dirs = \
+		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
+		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
-submodules = \
-    $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-    $(addprefix $(chipyard_dir)/, \
-		$(addprefix generators/, rocket-chip) \
-		$(addprefix tools/, firrtl chisel3))
-
-chisel_srcs = $(foreach submodule,$(submodules),\
-	$(shell find -L $(submodule)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null))
+chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
+	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
