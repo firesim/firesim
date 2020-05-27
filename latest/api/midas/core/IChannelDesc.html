@@ -280,7 +280,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">IChannelDesc</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="reference">reference: <span class="extype" name="chisel3.Data">Data</span></span>, <span name="modelChannel">modelChannel: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Data">Data</span>]</span>, <span name="tokenGenFunc">tokenGenFunc: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="chisel3.Data">Data</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">IChannelDesc</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="reference">reference: <span class="extype" name="midas.core.IChannelDesc.T">T</span></span>, <span name="modelChannel">modelChannel: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.core.IChannelDesc.T">T</span>]</span>, <span name="tokenGenFunc">tokenGenFunc: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="midas.core.IChannelDesc.T">T</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
@@ -336,9 +336,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.core.IChannelDesc#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(name:String,reference:chisel3.Data,modelChannel:chisel3.util.DecoupledIO[chisel3.Data],tokenGenFunc:Option[()=&gt;chisel3.Data]):midas.core.IChannelDesc"></a><a id="&lt;init&gt;:IChannelDesc"></a>
+      <a id="&lt;init&gt;(name:String,reference:T,modelChannel:chisel3.util.DecoupledIO[T],tokenGenFunc:Option[()=&gt;T]):midas.core.IChannelDesc[T]"></a><a id="&lt;init&gt;:IChannelDesc[T]"></a>
       <span class="permalink">
-      <a href="../../midas/core/IChannelDesc.html#&lt;init&gt;(name:String,reference:chisel3.Data,modelChannel:chisel3.util.DecoupledIO[chisel3.Data],tokenGenFunc:Option[()=&gt;chisel3.Data]):midas.core.IChannelDesc" title="Permalink">
+      <a href="../../midas/core/IChannelDesc.html#&lt;init&gt;(name:String,reference:T,modelChannel:chisel3.util.DecoupledIO[T],tokenGenFunc:Option[()=&gt;T]):midas.core.IChannelDesc[T]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -347,7 +347,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">IChannelDesc</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="reference">reference: <span class="extype" name="chisel3.Data">Data</span></span>, <span name="modelChannel">modelChannel: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Data">Data</span>]</span>, <span name="tokenGenFunc">tokenGenFunc: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="chisel3.Data">Data</span>] = <span class="symbol">None</span></span>)</span>
+        <span class="name">IChannelDesc</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="reference">reference: <span class="extype" name="midas.core.IChannelDesc.T">T</span></span>, <span name="modelChannel">modelChannel: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.core.IChannelDesc.T">T</span>]</span>, <span name="tokenGenFunc">tokenGenFunc: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="midas.core.IChannelDesc.T">T</span>] = <span class="symbol">None</span></span>)</span>
       </span>
       
       
@@ -539,9 +539,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="midas.core.IChannelDesc#modelChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="modelChannel:chisel3.util.DecoupledIO[chisel3.Data]"></a><a id="modelChannel:DecoupledIO[Data]"></a>
+      <a id="modelChannel:chisel3.util.DecoupledIO[T]"></a><a id="modelChannel:DecoupledIO[T]"></a>
       <span class="permalink">
-      <a href="../../midas/core/IChannelDesc.html#modelChannel:chisel3.util.DecoupledIO[chisel3.Data]" title="Permalink">
+      <a href="../../midas/core/IChannelDesc.html#modelChannel:chisel3.util.DecoupledIO[T]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -550,7 +550,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">modelChannel</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Data">Data</span>]</span>
+        <span class="name">modelChannel</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.core.IChannelDesc.T">T</span>]</span>
       </span>
       
       
@@ -625,9 +625,9 @@
               
         </dd></dl></div>
     </li><li name="midas.core.IChannelDesc#reference" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="reference:chisel3.Data"></a><a id="reference:Data"></a>
+      <a id="reference:T"></a>
       <span class="permalink">
-      <a href="../../midas/core/IChannelDesc.html#reference:chisel3.Data" title="Permalink">
+      <a href="../../midas/core/IChannelDesc.html#reference:T" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -636,7 +636,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">reference</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
+        <span class="name">reference</span><span class="result">: <span class="extype" name="midas.core.IChannelDesc.T">T</span></span>
       </span>
       
       
@@ -657,9 +657,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="midas.core.IChannelDesc#tokenGenFunc" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tokenGenFunc:Option[()=&gt;chisel3.Data]"></a><a id="tokenGenFunc:Option[()⇒Data]"></a>
+      <a id="tokenGenFunc:Option[()=&gt;T]"></a><a id="tokenGenFunc:Option[()⇒T]"></a>
       <span class="permalink">
-      <a href="../../midas/core/IChannelDesc.html#tokenGenFunc:Option[()=&gt;chisel3.Data]" title="Permalink">
+      <a href="../../midas/core/IChannelDesc.html#tokenGenFunc:Option[()=&gt;T]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -668,7 +668,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">tokenGenFunc</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="chisel3.Data">Data</span>]</span>
+        <span class="name">tokenGenFunc</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[() ⇒ <span class="extype" name="midas.core.IChannelDesc.T">T</span>]</span>
       </span>
       
       
