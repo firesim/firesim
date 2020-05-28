@@ -1,0 +1,9 @@
+{
+  "name" : "drivers",
+  "base" : "br-base.json",
+  "command" : "lsmod | grep -o 'icenet\\|iceblk'",
+  "testing" : {
+    "refDir" : "baseOutput",
+    "strip" : true
+  }
+}

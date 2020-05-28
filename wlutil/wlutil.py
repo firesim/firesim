@@ -68,7 +68,7 @@ class ConfigurationError(Exception):
         self.cause = cause
 
     def __str__(self):
-        return "Configuration Error: " + cause
+        return "Configuration Error: " + self.cause
 
 class ConfigurationOptionError(ConfigurationError):
     """Error representing a problem with marshal configuration."""
@@ -99,16 +99,28 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
         'board-dir',
         'image-dir',
         'linux-dir',
+        'firesim-dir',
         'pk-dir',
         'log-dir',
-        'res-dir'
+        'res-dir',
+        'workload-dirs'
     ]
 
+    def clean(path):
+        return (baseDir / pathlib.Path(path)).resolve(strict=True)
+
     for opt in pathOpts:
-        if opt in opts:
+        if opt in opts and opts[opt] is not None:
             try:
-                path = (baseDir / pathlib.Path(opts[opt])).resolve(strict=True)
-                opts[opt] = path
+                if isinstance(opts[opt], str):
+                    # Scalar path
+                    opts[opt] = clean(opts[opt])
+                else:
+                    # List of paths
+                    cleanedPaths = []
+                    for p in opts[opt]:
+                        cleanedPaths.append(clean(p))
+                    opts[opt] = cleanedPaths
             except Exception as e:
                 raise ConfigurationOptionError(opt, "Invalid path: " + str(e))
 
@@ -116,9 +128,11 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
 # environment or config files). See default-config.yaml or the documentation
 # for the meaning of these options.
 userOpts = [
+        'workload-dirs',
         'board-dir',
         'image-dir',
         'linux-dir',
+        'firesim-dir',
         'pk-dir',
         'log-dir',
         'res-dir',
@@ -161,7 +175,10 @@ derivedOpts = [
         'driver-dirs',
 
         # Buildroot source directory
-        'buildroot-dir'
+        'buildroot-dir',
+
+        # Arguments to pass when calling make on linux
+        'linux-make-args'
         ]
 
 class marshalCtx(collections.MutableMapping):
@@ -273,8 +290,9 @@ class marshalCtx(collections.MutableMapping):
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
-        self['driver-dirs'] = self['board-dir'].glob('drivers/*')
+        self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
+        self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
 
         if self['doitOpts']['dep_file'] == '':
             self['doitOpts']['dep_file'] = str(self['gen-dir'] / 'marshaldb')
@@ -691,5 +709,9 @@ class config_changed(object):
             return False
         return (last_success == self.config_digest)
 
+def appendPath(basepath, appendval):
+    return basepath.parent / (basepath.name + appendval)
+
 def noDiskPath(path):
-    return path.parent / (path.name + '-nodisk')
+    return appendPath(path, '-nodisk')
+

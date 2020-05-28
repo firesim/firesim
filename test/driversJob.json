@@ -1,0 +1,15 @@
+{
+  "name" : "driversJob",
+  "base" : "br-base.json",
+  "workdir" : "drivers",
+  "command" : "lsmod | grep -o 'icenet\\|iceblk'",
+  "testing" : {
+    "refDir" : "jobOutput",
+    "strip" : true
+  },
+  "jobs" : [
+    {
+      "name" : "j0"
+    }
+  ]
+}

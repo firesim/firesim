@@ -86,6 +86,10 @@ def main():
     # board builtin workloads (the *-base.json's).
     workdirs[wlutil.getOpt('workdir-builtin')] = None
 
+    # Configured search paths
+    for d in wlutil.getOpt('workload-dirs'):
+        workdirs[d] = None
+
     # User-provided workload search path
     if args.workdir is not None:
         workdirs[args.workdir] = None
@@ -113,7 +117,11 @@ def main():
             print("To check on progress, either call marshal with '-v' or see the live output at: ")
             print(wlutil.getOpt('log-dir') / (wlutil.getOpt('run-name') + ".log"))
 
-        targetCfg = cfgs[cfgName]
+        try:
+            targetCfg = cfgs[cfgName]
+        except KeyError as e:
+            log.error("Cannot locate workload: " + cfgName)
+            sys.exit(1)
    
         if args.initramfs or args.no_disk:
             targetCfg['nodisk'] = True
@@ -166,22 +174,27 @@ def main():
             log.info("\n")
 
         elif args.command == 'clean':
-            if 'bin' in targetCfg:
-                deleteSafe(targetCfg['bin'])
-                deleteSafe(wlutil.noDiskPath(targetCfg['bin']))
-            if 'img' in targetCfg:
-                deleteSafe(targetCfg['img'])
+            def cleanCfg(cfg):
+                if 'bin' in cfg:
+                    deleteSafe(cfg['bin'])
+                    deleteSafe(wlutil.noDiskPath(cfg['bin']))
+                if 'dwarf' in cfg:
+                    deleteSafe(cfg['dwarf'])
+                    deleteSafe(wlutil.noDiskPath(cfg['dwarf']))
+                if 'img' in cfg:
+                    deleteSafe(cfg['img'])
+
+            cleanCfg(targetCfg)
             if 'jobs' in targetCfg:
                 for jCfg in targetCfg['jobs'].values():
-                    if 'bin' in jCfg:
-                        deleteSafe(jCfg['bin'])
-                        deleteSafe(wlutil.noDiskPath(jCfg['bin']))
-                    if 'img' in jCfg:
-                        deleteSafe(jCfg['img'])
+                    cleanCfg(jCfg)
 
         elif args.command == 'install':
-            wlutil.installWorkload(cfgName, cfgs)
-
+            try:
+                wlutil.installWorkload(cfgName, cfgs)
+            except wlutil.ConfigurationError as e:
+                print(e)
+                sys.exit(1)
         else:
             log.error("No subcommand specified")
             sys.exit(1)

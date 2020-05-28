@@ -29,12 +29,15 @@ configUser = [
         'qemu-args',
         # Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
-        # Path to linux configuration file to use
+        # Path to linux configuration fragments to use (can be a list or scalar
+        # string from the user but will be converted to a list of pathlib.Path)
         'linux-config',
         # Path to riscv-pk (used for bbl)
         'pk-src',
         # Path to script to run on host before building this config
         'host-init',
+        # Path to script to run on host after building the binary
+        'post-bin',
         # Script to run on results dir after running workload
         'post_run_hook',
         # Path to folder containing overlay files to apply to img
@@ -55,7 +58,7 @@ configUser = [
         'workdir',
         # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
         'launch',
-        # Size of root filesystem (human-readable string) 
+        # Size of root filesystem (human-readable string)
         'rootfs-size',
         # Number of CPU cores to simulate (applies only to functional simulation). Converted to int after loading.
         'cpus',
@@ -71,6 +74,7 @@ configDerived = [
         'img', # Path to output filesystem image
         'img-sz', # Desired size of image in bytes (optional)
         'bin', # Path to output binary (e.g. bbl-vmlinux)
+        'dwarf', # Additional debugging symbols for the kernel (bbl strips them from 'bin')
         'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
         'base-format', # The format of base-img
@@ -83,16 +87,17 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'linux-config', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'linux-src', 'pk-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
-# explicitly provided)
+# explicitly provided). Additional options may also be inherited if they require
+# more advanced inheritance semantics (e.g. linux-config is a list that needs
+# to be appended).
 configInherit = [
         'runSpec',
         'files',
         'outputs',
         'linux-src',
-        'linux-config',
         'pk-src',
         'builder',
         'distro',
@@ -165,7 +170,17 @@ class RunSpec():
             return str(self.path) + " " + ' '.join(self.args)
         else:
             return "uninitialized"
-    
+
+
+def cleanPath(path, workdir):
+    """Take a string or pathlib path argument and return a pathlib.Path
+    representing the final absolute path to that option"""
+    path = pathlib.Path(path)
+    if not path.is_absolute():
+        path = workdir / path
+    return path
+
+
 class Config(collections.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
@@ -187,7 +202,7 @@ class Config(collections.MutableMapping):
             self.cfg['cfg-file'] = cfgFile
         else:
             self.cfg = cfgDict
-            
+
         cfgDir = None
         if 'cfg-file' in self.cfg:
             cfgDir = self.cfg['cfg-file'].parent
@@ -201,7 +216,7 @@ class Config(collections.MutableMapping):
                 assert('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
                 self.cfg['workdir'] = cfgDir / self.cfg['workdir']
         else:
-            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided" 
+            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided"
             self.cfg['workdir'] = cfgDir / self.cfg['name']
 
         if 'nodisk' not in self.cfg:
@@ -211,23 +226,34 @@ class Config(collections.MutableMapping):
         # Convert stuff to absolute paths (this should happen as early as
         # possible because the next steps all assume absolute paths)
         for k in (set(configToAbs) & set(self.cfg.keys())):
-            self.cfg[k] = pathlib.Path(self.cfg[k])
-            if not self.cfg[k].is_absolute():
-                self.cfg[k] = self.cfg['workdir'] / self.cfg[k]
+            self.cfg[k] = cleanPath(self.cfg[k], self.cfg['workdir'])
+
+        if 'linux-config' in self.cfg:
+            if isinstance(self.cfg['linux-config'], list):
+                self.cfg['linux-config'] = [ cleanPath(p, self.cfg['workdir']) for p in self.cfg['linux-config'] ]
+            else:
+                self.cfg['linux-config'] = [ cleanPath(self.cfg['linux-config'], self.cfg['workdir']) ]
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
         else:
             self.cfg['img-sz'] = configDefaults['img-sz']
 
-        # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs) 
+        # Convert files to namedtuple and expand source paths to absolute (dest is already absolute to rootfs)
         if 'files' in self.cfg:
             fList = []
             for f in self.cfg['files']:
                 fList.append(FileSpec(src=self.cfg['workdir'] / f[0], dst=pathlib.Path(f[1])))
 
             self.cfg['files'] = fList
-        
+
+        # Convert overlay to file list. Internal code can safely ignore the 'overlay' argument now.
+        if 'overlay' in self.cfg:
+            self.cfg.setdefault('files', [])
+            files = self.cfg['overlay'].glob('*')
+            for f in files:
+                self.cfg['files'].append(FileSpec(src=f, dst=pathlib.Path('/')))
+
         if 'outputs' in self.cfg:
             self.cfg['outputs'] = [ pathlib.Path(f) for f in self.cfg['outputs'] ]
 
@@ -241,7 +267,7 @@ class Config(collections.MutableMapping):
             self.cfg['runSpec'] = RunSpec(command=self.cfg['command'])
 
         # Handle script arguments
-        for sOpt in ['guest-init', 'post_run_hook', 'host-init']:
+        for sOpt in ['guest-init', 'post_run_hook', 'host-init', 'post-bin']:
             if sOpt in self.cfg:
                 self.cfg[sOpt] = RunSpec.fromString(
                         self.cfg[sOpt],
@@ -261,12 +287,12 @@ class Config(collections.MutableMapping):
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
             self.cfg['jobs'] = collections.OrderedDict()
-            
+
             for jCfg in jList:
                 jCfg['workdir'] = self.cfg['workdir']
                 # TODO come up with a better scheme here, name is used to
                 # derive the img and bin names, but naming jobs this way makes
-                # for ugly hacks later when looking them up. 
+                # for ugly hacks later when looking them up.
                 jCfg['name'] = self.cfg['name'] + '-' + jCfg['name']
                 jCfg['cfg-file'] = self.cfg['cfg-file']
 
@@ -275,14 +301,14 @@ class Config(collections.MutableMapping):
                     jCfg['base'] = cfgFile.name
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
-            
+
     # Finalize this config using baseCfg (which is assumed to be fully
     # initialized).
     def applyBase(self, baseCfg):
         # For any heritable trait that is defined in baseCfg but not self.cfg
         for k in ((set(baseCfg.keys()) - set(self.cfg.keys())) & set(configInherit)):
             self.cfg[k] = baseCfg[k]
-        
+
         # Distros always specify an image if they use one. We assume that this
         # config will not generate a new image if it's base didn't
         if 'img' in baseCfg:
@@ -296,6 +322,12 @@ class Config(collections.MutableMapping):
         if 'linux-src' not in self.cfg:
             self.cfg['linux-src'] = getOpt('linux-dir')
 
+        if 'linux-config' in baseCfg:
+            if 'linux-config' not in self.cfg:
+                self.cfg['linux-config'] = []
+            # Order matters here! Later kfrags take precedence over earlier.
+            self.cfg['linux-config'] = baseCfg['linux-config'] + self.cfg['linux-config']
+
         if 'pk-src' not in self.cfg:
             self.cfg['pk-src'] = getOpt('pk-dir')
 
@@ -303,6 +335,7 @@ class Config(collections.MutableMapping):
         # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
         if 'linux-config' in self.cfg or 'bin' not in self.cfg:
             self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
+            self.cfg['dwarf'] = getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
 
         # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:
@@ -350,9 +383,9 @@ class ConfigManager(collections.MutableMapping):
         cfgPaths = []
         if paths != None:
             cfgPaths += paths
-        
+
         if dirs != None:
-            for d in dirs: 
+            for d in dirs:
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
 

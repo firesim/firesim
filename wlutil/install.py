@@ -15,15 +15,19 @@ def fullRel(base, target):
     return os.path.relpath(str(target), start=str(base))
 
 def installWorkload(cfgName, cfgs):
-    fsWork = ((getOpt('root-dir') / "../../deploy/workloads").resolve())
-    if fsWork == None:
-        raise RuntimeError("The install command is not supported when firesim-software is checked out standalone (i.e. not a submodule of firesim).")
+    fsDir = getOpt('firesim-dir')
+    if fsDir is None:
+        raise ConfigurationError("No firesim-dir option is set. Please configure the location of firesim in your config.yaml.")
+
+    fsWork = getOpt('firesim-dir') / "deploy/workloads"
+    if not fsWork.exists():
+        raise ConfigurationError("Configured firesim-dir (" + str(fsDir) + ") does not appear to be a valid firesim installation")
 
     targetCfg = cfgs[cfgName]
     # if 'jobs' in targetCfg:
     #     raise NotImplementedError("Jobs not currently supported by the install command")
     if targetCfg['nodisk'] == True:
-        raise NotImplementedError("Initramfs-based builds not currently supported by the install command")
+        raise NotImplementedError("nodisk builds not currently supported by the install command")
 
     fsTargetDir = fsWork / targetCfg['name']
     if not fsTargetDir.exists():

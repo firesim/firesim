@@ -1,5 +1,3 @@
-*.img
-*-bin
 *.swp
 test.log
 wlutil/_command.sh

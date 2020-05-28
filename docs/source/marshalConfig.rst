@@ -41,6 +41,15 @@ All path-like options are interpreted as relative to the location of the
 configuration file. Size options can be written in human readable form (e.g.
 '4KiB') or simply as the number of bytes (e.g. '4096').
 
+.. _config-workload-dirs:
+
+``workload-dirs``
+^^^^^^^^^^^^^^^^^^^^^
+List of paths to search when looking up workloads (either the target workload,
+or parent workloads). This list is ordered with later entries taking precedence
+of earlier entries. See :ref:`workload-search-paths` for details of how
+workloads are located.
+
 ``board-dir``
 ^^^^^^^^^^^^^^^^^
 Root for default board (platform-specific resources).
@@ -54,6 +63,12 @@ Location to store all outputs (binaries and images)
 Default linux source. This is intended to override the global default linux
 version, if you need a special kernel for your workload, you should set that in
 your workload configuration directly (see :ref:`workload-linux-src`).
+
+.. _config-firesim:
+
+``firesim-dir``
+^^^^^^^^^^^^^^^^^^^
+Location of the firesim repository to use for the :ref:`command-install` command.
 
 ``pk-dir``
 ^^^^^^^^^^^^^^^^^

@@ -1,0 +1,24 @@
+{
+  "name" : "post-bin-jobs",
+  "base" : "br-base.json",
+  "workdir" : "post-bin",
+  "jobs" : [
+    {
+      "name" : "j0",
+      "command" : "cat /usr/share/job0.txt",
+      "post-bin" : "create-file.sh job0",
+      "post_run_hook" : "cleanup.sh job0.txt",
+      "files" : [["job0.txt", "/usr/share/job0.txt"]]
+    },
+    {
+      "name" : "j1",
+      "command" : "cat /usr/share/job1.txt",
+      "post-bin" : "create-file.sh job1",
+      "post_run_hook" : "cleanup.sh job1.txt",
+      "files" : [["job1.txt", "/usr/share/job1.txt"]]
+    }
+  ],
+  "testing" : {
+      "refDir" : "refOutputJobs"
+  }
+}

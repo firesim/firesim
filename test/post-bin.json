@@ -1,0 +1,12 @@
+{
+  "name" : "post-bin",
+  "base" : "br-base.json",
+  "workdir" : "post-bin",
+  "command" : "cat /usr/share/base.txt",
+  "post-bin" : "create-file.sh base",
+  "files" : [["base.txt", "/usr/share/base.txt"]],
+  "post_run_hook" : "cleanup.sh base.txt",
+  "testing" : {
+      "refDir" : "refOutputBase"
+  }
+}
