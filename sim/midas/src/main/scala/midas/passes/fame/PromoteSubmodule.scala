@@ -70,11 +70,12 @@ class PromoteSubmodule extends Transform {
   }
 
   private def transformParentInstances(stmt: Statement, parentTemplate: WDefInstance, childTemplate: WDefInstance, namespace: Namespace, promotedNames: mutable.ArrayBuffer[String]): Statement = stmt match {
+    // TODO: this does not handle instances inside of whens
     case oldParentInstance @ WDefInstance(_, _, parentTemplate.module, _) =>
       val retypedParentInst = oldParentInstance.copy(tpe = parentTemplate.tpe)
       val childPeerInst = childTemplate.copy(name = namespace.newName(oldParentInstance.name + "_" + childTemplate.name))
       promotedNames += childPeerInst.name
-      val connection = Connect(childTemplate.info, instanceField(retypedParentInst, childTemplate.name), instanceRef(childPeerInst))
+      val connection = PartialConnect(childTemplate.info, instanceField(retypedParentInst, childTemplate.name), instanceRef(childPeerInst))
       Block(Seq(retypedParentInst, childPeerInst, connection))
   case Block(stmts) => Block(stmts map (s => transformParentInstances(s, parentTemplate, childTemplate, namespace, promotedNames)))
     case s => s
@@ -95,7 +96,7 @@ class PromoteSubmodule extends Transform {
       val parentModule = updatedModules(parentInstances.head.module)
       val originalTarget = CircuitTarget(state.circuit.main).module(parentModule.name).instOf(childInstance.name, childInstance.module)
       if (parentModule.name == state.circuit.main) {
-        throw new PassException("Cannot promote child instance ${childInstance.name} from top module ${parentModule.name}")
+        throw new PassException(s"Cannot promote child instance ${childInstance.name} from top module ${parentModule.name}")
       }
       updatedModules(parentModule.name) = instanceToPort(parentModule, childInstance, childModule)
       val grandparentInstances = parentInstances.flatMap(reversedIGraph.getEdges(_))

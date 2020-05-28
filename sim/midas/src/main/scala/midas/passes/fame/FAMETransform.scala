@@ -307,9 +307,14 @@ class FAMETransform extends Transform {
     renames
   }
 
+  def staleTopPort(p: Port, analysis: FAMEChannelAnalysis): Boolean = p match {
+    case Port(_, name, _, ClockType) => name != WrapTop.hostClockName
+    case Port(_, name, _, _) => analysis.staleTopPorts.contains(analysis.topTarget.ref(name))
+  }
+
   def transformTop(top: DefModule, analysis: FAMEChannelAnalysis): Module = top match {
     case Module(info, name, ports, body) =>
-      val transformedPorts = ports.filterNot(p => analysis.staleTopPorts.contains(analysis.topTarget.ref(p.name))) ++
+      val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++ 
         analysis.transformedSinks.map(c => Port(NoInfo, s"${c}_sink", Input, analysis.getSinkHostDecoupledChannelType(c))) ++
         analysis.transformedSources.map(c => Port(NoInfo, s"${c}_source", Output, analysis.getSourceHostDecoupledChannelType(c)))
       val transformedStmts = Seq(body.map(updateNonChannelConnects(analysis))) ++
