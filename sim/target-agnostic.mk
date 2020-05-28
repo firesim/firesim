@@ -52,13 +52,14 @@ firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
-	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
+$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
+	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-E verilog"
+		-E verilog \
+	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
 
@@ -252,6 +253,13 @@ run-midas-unittests: $(chisel_srcs)
 
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
+
+#########################
+# Bloop Project Defs    #
+#########################
+.bloop/TIMESTAMP : build.sbt
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
+	touch $@
 
 #########################
 # ScalaDoc              #

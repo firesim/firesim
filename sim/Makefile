@@ -34,10 +34,26 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
+# Scala invocation options
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
 JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
+BLOOP ?= bloop
+
+SCALA_BUILDTOOL_DEPS ?= build.sbt
+
+ifdef FIRESIM_USE_BLOOP
+override SCALA_BUILDTOOL_DEPS += .bloop/TIMESTAMP
+define run_scala_main
+	bloop run $(shell echo $(1) | sed 's/{.*}//') --main $(2) -- $(3)
+endef
+else
+define run_scala_main
+	cd $(base_dir) && $(SBT) "project $(1)" "runMain $(2) $(3)"
+endef
+endif
+
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
