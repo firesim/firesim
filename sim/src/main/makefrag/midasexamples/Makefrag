@@ -39,7 +39,6 @@ chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 
 CONF_NAME ?= runtime.conf
 
-$(info $(chisel_srcs))
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
 COMMON_SIM_ARGS ?= $(mem_model_args)
