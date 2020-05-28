@@ -284,6 +284,6 @@ tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 .PRECIOUS: $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
 
-# Remove all implicit suffix rules; THis improves make performance substantially as it no longer
+# Remove all implicit suffix rules; This improves make performance substantially as it no longer
 # attempts to resolve implicit rules on 1000+ scala files.
 .SUFFIXES:
