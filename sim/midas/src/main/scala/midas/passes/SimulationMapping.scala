@@ -17,7 +17,6 @@ import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, flow, module_type}
 import firrtl.passes.wiring._
-import fame.{FAMEChannelConnectionAnnotation, FAMEChannelPortsAnnotation, FAMEChannelAnalysis, FAME1Transform}
 import Utils._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.LazyModule
@@ -117,7 +116,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
 
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
-      case _: FAMEChannelConnectionAnnotation | _: FAMEChannelPortsAnnotation => false
+      case _: midas.targetutils.FAMEAnnotation => false
       case _: BridgeIOAnnotation => false
       case _ => true
     })
