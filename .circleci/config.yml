@@ -6,7 +6,7 @@ executors:
       - image: firesim/firesim-ci:v1.0
         user: "centos"
     environment:
-        JVM_MEMORY: 2200m # Customize the JVM maximum heap limit
+        JVM_MEMORY: 2200M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
 
 commands:
@@ -31,14 +31,6 @@ commands:
           command: |
             source env.sh
             make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND=test:compile
-
-  firesimtest-manual-midasexamples:
-    description: "Run a test"
-    steps:
-      - run:
-          command: |
-            source env.sh
-            make -C sim run-verilator LOGFILE= WAVEFORM= ARGS=+tracelen=8 TARGET_PROJECT=midasexamples DESIGN=Stack TARGET_CONFIG=NoConfig PLATFORM_CONFIG=HostDebugFeatures_DefaultF1Config PLATFORM=f1
 
   build-scala-doc:
     description: "Compiles Scala Doc"
@@ -72,6 +64,28 @@ commands:
                 export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for dev:<< pipeline.git.revision >>"
                 make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
 
+  run-scala-test:
+    description: "Runs the scala test with name <test-package>.<test-name>"
+    parameters:
+      project:
+        type: string
+        default: "firesim"
+      test-name:
+        type: string
+      test-package:
+        type: string
+        default: "firesim.midasexamples"
+      timeout:
+        type: string
+        default: "120m"
+    steps:
+        - run:
+            command: |
+                source env.sh
+                make -C sim TARGET_PROJECT=midasexamples sbt \
+                    SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >>"
+            no_output_timeout: << parameters.timeout >>
+
   repo-setup:
     description: "Runs all baseline setup tasks up to scala compilation."
     steps:
@@ -84,12 +98,24 @@ commands:
       - scala-build
 
 jobs:
-  run-tests:
+  run-test-groupA:
     executor: main-env
     steps:
       - repo-setup
-      - firesimtest-manual-midasexamples
+      - run-scala-test:
+          test-name: "CIGroupA"
       - build-scala-doc
+
+  run-test-groupB:
+    executor: main-env
+    steps:
+      - repo-setup
+      - run-scala-test:
+          test-name: "CIGroupB"
+      - run-scala-test:
+           project: "midas"
+           test-package: "*"
+           test-name: "*"
 
   publish-scala-doc:
     executor: main-env
@@ -103,12 +129,8 @@ workflows:
 
    firesimCIall:
      jobs:
-       - run-tests:
-           filters:
-             branches:
-               ignore:
-                 - gh-pages
-
+       - run-test-groupA
+       - run-test-groupB
        - publish-scala-doc:
            filters:
              branches:

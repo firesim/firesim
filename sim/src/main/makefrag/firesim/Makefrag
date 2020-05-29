@@ -67,7 +67,7 @@ DROMAJO_ROM = $(GENERATED_DIR)/$(long_name).rom
 DTS_FILE = $(GENERATED_DIR)/$(long_name).dts
 DROMAJO_DTB = $(GENERATED_DIR)/$(long_name).dtb
 
-DROMAJO_LIB:
+$(DROMAJO_LIB):
 	$(MAKE) -C $(DROMAJO_DIR)
 
 $(DROMAJO_LONG_H) $(DTS_FILE): $(VERILOG)

@@ -2,8 +2,8 @@
 package firesim.midasexamples
 
 import java.io.File
-import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import scala.io.Source
+import org.scalatest.Suites
 
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
@@ -147,3 +147,55 @@ class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterMo
 }
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
+
+// Suite Collections
+class ChiselExampleDesigns extends Suites(
+  new GCDF1Test,
+  new ParityF1Test,
+  new ResetShiftRegisterF1Test,
+  new EnableShiftRegisterF1Test,
+  new StackF1Test,
+  new RiscF1Test,
+  new RiscSRAMF1Test
+)
+
+class PrintfSynthesisCITests extends Suites(
+  new PrintfModuleF1Test,
+  new NarrowPrintfModuleF1Test,
+  new MulticlockPrintF1Test
+)
+
+class AssertionSynthesisCITests extends Suites(
+  new AssertModuleF1Test,
+  new MulticlockAssertF1Test
+)
+
+class AutoCounterCITests extends Suites(
+  new AutoCounterModuleF1Test,
+  new AutoCounterCoverModuleF1Test,
+  new AutoCounterPrintfF1Test,
+  new MulticlockAutoCounterF1Test
+)
+
+class GoldenGateMiscCITests extends Suites(
+  new TwoAddersF1Test,
+  new TriggerWiringModuleF1Test,
+  new WireInterconnectF1Test,
+  new TrivialMulticlockF1Test
+)
+
+// Each group runs on a single worker instance
+class CIGroupA extends Suites(
+  new ChiselExampleDesigns,
+  new PrintfSynthesisCITests,
+  new firesim.fasedtests.CIGroupA,
+)
+
+class CIGroupB extends Suites(
+  new AssertModuleF1Test,
+  new MulticlockAssertF1Test,
+  new GoldenGateMiscCITests,
+  new firesim.fasedtests.CIGroupB,
+  new firesim.AllMidasUnitTests,
+  new firesim.FailingUnitTests
+)
