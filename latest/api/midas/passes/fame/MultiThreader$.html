@@ -565,7 +565,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="threadedModuleNames">threadedModuleNames: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="module">module: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Module.html#firrtl.ir.Module" class="extype" name="firrtl.ir.Module">Module</a></span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Module.html#firrtl.ir.Module" class="extype" name="firrtl.ir.Module">Module</a></span>
+        <span class="name">apply</span><span class="params">(<span name="threadedModuleNames">threadedModuleNames: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="module">module: <span class="extype" name="firrtl.ir.Module">Module</span></span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Module">Module</span></span>
       </span>
       
       
@@ -675,7 +675,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">findClocks</span><span class="params">(<span name="clocks">clocks: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/mutable/Set.html#scala.collection.mutable.Set" class="extype" name="scala.collection.mutable.Set">Set</a>[<span class="extype" name="firrtl.WrappedExpression">WrappedExpression</span>]</span>)</span><span class="params">(<span name="stmt">stmt: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">findClocks</span><span class="params">(<span name="clocks">clocks: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/mutable/Set.html#scala.collection.mutable.Set" class="extype" name="scala.collection.mutable.Set">Set</a>[<span class="extype" name="firrtl.WrappedExpression">WrappedExpression</span>]</span>)</span><span class="params">(<span name="stmt">stmt: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       
@@ -745,7 +745,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">multiThread</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>, <span name="edgeStatus">edgeStatus: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Map.html#scala.collection.Map" class="extype" name="scala.collection.Map">Map</a>[<span class="extype" name="firrtl.WrappedExpression">WrappedExpression</span>, <a href="../package$$SignalInfo.html" class="extype" name="midas.passes.SignalInfo">SignalInfo</a>]</span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="counter">counter: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/DefRegister.html#firrtl.ir.DefRegister" class="extype" name="firrtl.ir.DefRegister">DefRegister</a></span>)</span><span class="params">(<span name="stmt">stmt: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>
+        <span class="name">multiThread</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>, <span name="edgeStatus">edgeStatus: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Map.html#scala.collection.Map" class="extype" name="scala.collection.Map">Map</a>[<span class="extype" name="firrtl.WrappedExpression">WrappedExpression</span>, <a href="../package$$SignalInfo.html" class="extype" name="midas.passes.SignalInfo">SignalInfo</a>]</span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="counter">counter: <span class="extype" name="firrtl.ir.DefRegister">DefRegister</span></span>)</span><span class="params">(<span name="stmt">stmt: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
       </span>
       
       
@@ -815,7 +815,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">renameRegs</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="ns">ns: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Namespace.html#firrtl.Namespace" class="extype" name="firrtl.Namespace">Namespace</a></span>, <span name="stmt">stmt: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>)</span><span class="result">: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>
+        <span class="name">renameRegs</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>, <span name="n">n: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="ns">ns: <span class="extype" name="firrtl.Namespace">Namespace</span></span>, <span name="stmt">stmt: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>)</span><span class="result">: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>
       </span>
       
       
@@ -831,7 +831,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">replaceRegRefs</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>
+        <span class="name">replaceRegRefs</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>
       </span>
       
       
@@ -847,7 +847,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">replaceRegRefsLHS</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>
+        <span class="name">replaceRegRefsLHS</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>
       </span>
       
       
@@ -863,7 +863,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">replaceRegRefsRHS</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>
+        <span class="name">replaceRegRefsRHS</span><span class="params">(<span name="freshNames">freshNames: <a href="#FreshNames=Map[String,Seq[String]]" class="extmbr" name="midas.passes.fame.MultiThreader.FreshNames">FreshNames</a></span>)</span><span class="params">(<span name="expr">expr: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>
       </span>
       
       
@@ -911,7 +911,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformAddr</span><span class="params">(<span name="counter">counter: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/DefRegister.html#firrtl.ir.DefRegister" class="extype" name="firrtl.ir.DefRegister">DefRegister</a></span>, <span name="expr">expr: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>
+        <span class="name">transformAddr</span><span class="params">(<span name="counter">counter: <span class="extype" name="firrtl.ir.DefRegister">DefRegister</span></span>, <span name="expr">expr: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>
       </span>
       
       
@@ -943,7 +943,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">updateReg</span><span class="params">(<span name="reg">reg: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/DefRegister.html#firrtl.ir.DefRegister" class="extype" name="firrtl.ir.DefRegister">DefRegister</a></span>, <span name="slotName">slotName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/DefRegister.html#firrtl.ir.DefRegister" class="extype" name="firrtl.ir.DefRegister">DefRegister</a></span>
+        <span class="name">updateReg</span><span class="params">(<span name="reg">reg: <span class="extype" name="firrtl.ir.DefRegister">DefRegister</span></span>, <span name="slotName">slotName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.DefRegister">DefRegister</span></span>
       </span>
       
       

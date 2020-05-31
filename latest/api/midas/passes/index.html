@@ -509,7 +509,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="Take the annotated cover points and convert them to counters" href="AutoCounterTransform.html"><span class="name">AutoCounterTransform</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a> with <a href="../widgets/AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></span>
+        <a title="Take the annotated cover points and convert them to counters" href="AutoCounterTransform.html"><span class="name">AutoCounterTransform</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <a href="../widgets/AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></span>
       </span>
       
       <p class="shortcomment cmt">Take the annotated cover points and convert them to counters
@@ -526,7 +526,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="A utility transform used to implement features that are finely distrubuted through out the target, such as assertion and printf synthesis." href="BridgeTopWiring.html"><span class="name">BridgeTopWiring</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="A utility transform used to implement features that are finely distrubuted through out the target, such as assertion and printf synthesis." href="BridgeTopWiring.html"><span class="name">BridgeTopWiring</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       <p class="shortcomment cmt">A utility transform used to implement features that are finely distrubuted
@@ -552,7 +552,7 @@ correctly, the clock bridge must already be extracted.</p><p>For each BridgeTopW
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Provides signals for the transform to wire to the top-level of hte module hierarchy." href="BridgeTopWiringAnnotation.html"><span class="name">BridgeTopWiringAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="clock">clock: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Provides signals for the transform to wire to the top-level of hte module hierarchy." href="BridgeTopWiringAnnotation.html"><span class="name">BridgeTopWiringAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="clock">clock: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Provides signals for the transform to wire to the top-level of hte module hierarchy.</p><div class="fullcomment"><div class="comment cmt"><p>Provides signals for the transform to wire to the top-level of hte module hierarchy.
@@ -569,7 +569,7 @@ correctly, the clock bridge must already be extracted.</p><p>For each BridgeTopW
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to." href="BridgeTopWiringOutputAnnotation.html"><span class="name">BridgeTopWiringOutputAnnotation</span></a><span class="params">(<span name="pathlessSource">pathlessSource: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="absoluteSource">absoluteSource: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="topSink">topSink: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="srcClockPort">srcClockPort: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="sinkClockPort">sinkClockPort: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to." href="BridgeTopWiringOutputAnnotation.html"><span class="name">BridgeTopWiringOutputAnnotation</span></a><span class="params">(<span name="pathlessSource">pathlessSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="absoluteSource">absoluteSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="topSink">topSink: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="srcClockPort">srcClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="sinkClockPort">sinkClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Provides reference targets to the newly generated top-level IO and a
@@ -590,7 +590,7 @@ generated output-clock port that output is synchronous to.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="ChannelClockInfoAnalysis's output annotation." href="ChannelClockInfoAnnotation.html"><span class="name">ChannelClockInfoAnnotation</span></a><span class="params">(<span name="infoMap">infoMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../widgets/RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/NoTargetAnnotation.html#firrtl.annotations.NoTargetAnnotation" class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="ChannelClockInfoAnalysis's output annotation." href="ChannelClockInfoAnnotation.html"><span class="name">ChannelClockInfoAnnotation</span></a><span class="params">(<span name="infoMap">infoMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../widgets/RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt"> <a href="ChannelClockInfoAnalysis$.html" class="extype" name="midas.passes.ChannelClockInfoAnalysis">ChannelClockInfoAnalysis</a>'s output annotation.</p><div class="fullcomment"><div class="comment cmt"><p> <a href="ChannelClockInfoAnalysis$.html" class="extype" name="midas.passes.ChannelClockInfoAnalysis">ChannelClockInfoAnalysis</a>'s output annotation. Maps channel global name
@@ -608,7 +608,7 @@ generated output-clock port that output is synchronous to.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="ClockSourceAnnotation.html"><span class="name">ClockSourceAnnotation</span></a><span class="params">(<span name="queryTarget">queryTarget: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="source">source: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="ClockSourceAnnotation.html"><span class="name">ClockSourceAnnotation</span></a><span class="params">(<span name="queryTarget">queryTarget: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="source">source: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -642,7 +642,7 @@ find and return that input port.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="ConfToJSON.html"><span class="name">ConfToJSON</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="" href="ConfToJSON.html"><span class="name">ConfToJSON</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       
@@ -658,7 +658,7 @@ find and return that input port.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="EmitFirrtl.html"><span class="name">EmitFirrtl</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="" href="EmitFirrtl.html"><span class="name">EmitFirrtl</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       
@@ -674,7 +674,7 @@ find and return that input port.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="Fame1Annotation.html"><span class="name">Fame1Annotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleName.html#firrtl.annotations.ModuleName" class="extype" name="firrtl.annotations.ModuleName">ModuleName</a></span>, <span name="tFire">tFire: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/SingleTargetAnnotation.html#firrtl.annotations.SingleTargetAnnotation" class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ModuleName.html#firrtl.annotations.ModuleName" class="extype" name="firrtl.annotations.ModuleName">ModuleName</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="Fame1Annotation.html"><span class="name">Fame1Annotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>, <span name="tFire">tFire: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -709,7 +709,7 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="Fame1Instances.html"><span class="name">Fame1Instances</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="" href="Fame1Instances.html"><span class="name">Fame1Instances</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       
@@ -725,7 +725,7 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FindClockSourceAnnotation.html"><span class="name">FindClockSourceAnnotation</span></a><span class="params">(<span name="target">target: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>, <span name="originalTarget">originalTarget: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="FindClockSourceAnnotation.html"><span class="name">FindClockSourceAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="originalTarget">originalTarget: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -774,7 +774,7 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="IntermediateLoweringCompiler.html"><span class="name">IntermediateLoweringCompiler</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Compiler.html#firrtl.Compiler" class="extype" name="firrtl.Compiler">Compiler</a></span>
+        <a title="" href="IntermediateLoweringCompiler.html"><span class="name">IntermediateLoweringCompiler</span></a><span class="result"> extends <span class="extype" name="firrtl.Compiler">Compiler</span></span>
       </span>
       
       
@@ -838,7 +838,7 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="A utility for keeping statements defining and connecting signals to a piece of hardware together with a reference to the component." href="package$$SignalInfo.html"><span class="name">SignalInfo</span></a><span class="params">(<span name="decl">decl: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>, <span name="assigns">assigns: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Statement.html#firrtl.ir.Statement" class="extype" name="firrtl.ir.Statement">Statement</a></span>, <span name="ref">ref: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Expression.html#firrtl.ir.Expression" class="extype" name="firrtl.ir.Expression">Expression</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="A utility for keeping statements defining and connecting signals to a piece of hardware together with a reference to the component." href="package$$SignalInfo.html"><span class="name">SignalInfo</span></a><span class="params">(<span name="decl">decl: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>, <span name="assigns">assigns: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>, <span name="ref">ref: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">A utility for keeping statements defining and connecting signals to a piece of hardware
@@ -858,7 +858,7 @@ since the &quot;collateral&quot; of that object can be kept in one place.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="Lowers memories without splitting them, but without the complexity of ReplaceMemMacros" href="SimplifyMems.html"><span class="name">SimplifyMems</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="Lowers memories without splitting them, but without the complexity of ReplaceMemMacros" href="SimplifyMems.html"><span class="name">SimplifyMems</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       <p class="shortcomment cmt">Lowers memories without splitting them, but without the complexity of ReplaceMemMacros
@@ -931,7 +931,7 @@ since the &quot;collateral&quot; of that object can be kept in one place.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="Returns a map from a channel's global name to a RationalClock case class which contains metadata about the target clock including its name and relative frequency to the base clock" href="ChannelClockInfoAnalysis$.html"><span class="name">ChannelClockInfoAnalysis</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="Returns a map from a channel's global name to a RationalClock case class which contains metadata about the target clock including its name and relative frequency to the base clock" href="ChannelClockInfoAnalysis$.html"><span class="name">ChannelClockInfoAnalysis</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       <p class="shortcomment cmt"> Returns a map from a channel's global name to a RationalClock case class which
@@ -966,7 +966,7 @@ since the &quot;collateral&quot; of that object can be kept in one place.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="Replaces all AsyncResets and Reset types with Bools (synchronous reset)." href="CoerceAsyncToSyncReset$.html"><span class="name">CoerceAsyncToSyncReset</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="Replaces all AsyncResets and Reset types with Bools (synchronous reset)." href="CoerceAsyncToSyncReset$.html"><span class="name">CoerceAsyncToSyncReset</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       <p class="shortcomment cmt">Replaces all AsyncResets and Reset types with Bools (synchronous reset).</p>
@@ -982,7 +982,7 @@ since the &quot;collateral&quot; of that object can be kept in one place.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated." href="package$$DefineAbstractClockGate$.html"><span class="name">DefineAbstractClockGate</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a> with <a href="package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/CircuitName.html#firrtl.annotations.CircuitName" class="extype" name="firrtl.annotations.CircuitName">CircuitName</a>]</span>
+        <a title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated." href="package$$DefineAbstractClockGate$.html"><span class="name">DefineAbstractClockGate</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <a href="package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a>[<span class="extype" name="firrtl.annotations.CircuitName">CircuitName</span>]</span>
       </span>
       
       <p class="shortcomment cmt">This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can
@@ -1021,7 +1021,7 @@ circuit.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="" href="FindClockSources$.html"><span class="name">FindClockSources</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="" href="FindClockSources$.html"><span class="name">FindClockSources</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       
@@ -1102,7 +1102,7 @@ module, if matched, is transformed.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="" href="RemoveTrivialPartialConnects$.html"><span class="name">RemoveTrivialPartialConnects</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/passes/Pass.html#firrtl.passes.Pass" class="extype" name="firrtl.passes.Pass">Pass</a> with <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/PreservesAll.html#firrtl.options.PreservesAll" class="extype" name="firrtl.options.PreservesAll">PreservesAll</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</span>
+        <a title="" href="RemoveTrivialPartialConnects$.html"><span class="name">RemoveTrivialPartialConnects</span></a><span class="result"> extends <span class="extype" name="firrtl.passes.Pass">Pass</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>
       </span>
       
       
@@ -1175,7 +1175,7 @@ FIRRTL at the time of Strober's development. These continue to be used in:
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="Determines which clock each bridge is synchronous with, and updates that bridge's IO annotation to include it's domain clock info." href="UpdateBridgeClockInfo$.html"><span class="name">UpdateBridgeClockInfo</span></a><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>
+        <a title="Determines which clock each bridge is synchronous with, and updates that bridge's IO annotation to include it's domain clock info." href="UpdateBridgeClockInfo$.html"><span class="name">UpdateBridgeClockInfo</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
       <p class="shortcomment cmt">Determines which clock each bridge is synchronous with, and updates that bridge's IO annotation

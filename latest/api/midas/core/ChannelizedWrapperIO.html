@@ -352,7 +352,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ChannelizedWrapperIO</span><span class="params">(<span name="chAnnos">chAnnos: <span class="extype" name="scala.Seq">Seq</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>, <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Port.html#firrtl.ir.Port" class="extype" name="firrtl.ir.Port">Port</a>]</span>)</span>
+        <span class="name">ChannelizedWrapperIO</span><span class="params">(<span name="chAnnos">chAnnos: <span class="extype" name="scala.Seq">Seq</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span>
       </span>
       
       
@@ -1028,7 +1028,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">regenPayloadType</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>)</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
+        <span class="name">regenPayloadType</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>)</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
       </span>
       
       
@@ -1044,7 +1044,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">regenTypes</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>)]</span>
+        <span class="name">regenTypes</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>)]</span>
       </span>
       
       
@@ -1060,7 +1060,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">regenTypesFromField</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tpe">tpe: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/ir/Type.html#firrtl.ir.Type" class="extype" name="firrtl.ir.Type">Type</a></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>)]</span>
+        <span class="name">regenTypesFromField</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tpe">tpe: <span class="extype" name="firrtl.ir.Type">Type</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>)]</span>
       </span>
       
       
@@ -1076,7 +1076,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">regenWireType</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a>]</span>)</span><span class="result">: <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a></span>
+        <span class="name">regenWireType</span><span class="params">(<span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>)</span><span class="result">: <a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a></span>
       </span>
       
       
@@ -1188,7 +1188,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toAbsoluteTarget</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>
+        <span class="name">toAbsoluteTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
@@ -1204,7 +1204,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toNamed</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ComponentName.html#firrtl.annotations.ComponentName" class="extype" name="firrtl.annotations.ComponentName">ComponentName</a></span>
+        <span class="name">toNamed</span><span class="result">: <span class="extype" name="firrtl.annotations.ComponentName">ComponentName</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
@@ -1252,7 +1252,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toTarget</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>
+        <span class="name">toTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>

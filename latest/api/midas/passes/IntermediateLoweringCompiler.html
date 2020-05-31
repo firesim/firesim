@@ -312,7 +312,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">IntermediateLoweringCompiler</span><span class="result"> extends <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Compiler.html#firrtl.Compiler" class="extype" name="firrtl.Compiler">Compiler</a></span>
+        <span class="name">IntermediateLoweringCompiler</span><span class="result"> extends <span class="extype" name="firrtl.Compiler">Compiler</span></span>
       </span>
       </h4>
 
@@ -321,7 +321,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Compiler.html#firrtl.Compiler" class="extype" name="firrtl.Compiler">Compiler</a>, <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/DependencyAPIMigration.html#firrtl.DependencyAPIMigration" class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</a>, <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>, <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/DependencyAPI.html#firrtl.options.DependencyAPI" class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>], <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/TransformLike.html#firrtl.options.TransformLike" class="extype" name="firrtl.options.TransformLike">TransformLike</a>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <a href="https://www.chisel-lang.org/api/firrtl/latest/logger/LazyLogging.html#logger.LazyLogging" class="extype" name="logger.LazyLogging">LazyLogging</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.Compiler">Compiler</span>, <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span>, <span class="extype" name="firrtl.Transform">Transform</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -379,7 +379,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">IntermediateLoweringCompiler</span><span class="params">(<span name="inputForm">inputForm: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/CircuitForm.html#firrtl.CircuitForm" class="extype" name="firrtl.CircuitForm">CircuitForm</a></span>, <span name="outputForm">outputForm: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/CircuitForm.html#firrtl.CircuitForm" class="extype" name="firrtl.CircuitForm">CircuitForm</a></span>)</span>
+        <span class="name">IntermediateLoweringCompiler</span><span class="params">(<span name="inputForm">inputForm: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>, <span name="outputForm">outputForm: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>)</span>
       </span>
       
       
@@ -493,7 +493,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compile</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+        <span class="name">compile</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Compiler</dd></dl></div>
@@ -509,7 +509,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compileAndEmit</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+        <span class="name">compileAndEmit</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Compiler</dd></dl></div>
@@ -525,7 +525,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">emitter</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Emitter.html#firrtl.Emitter" class="extype" name="firrtl.Emitter">Emitter</a></span>
+        <span class="name">emitter</span><span class="result">: <span class="extype" name="firrtl.Emitter">Emitter</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.IntermediateLoweringCompiler">IntermediateLoweringCompiler</a> → Compiler</dd></dl></div>
@@ -649,7 +649,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">invalidates</span><span class="params">(<span name="a">a: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+        <span class="name">invalidates</span><span class="params">(<span name="a">a: <span class="extype" name="firrtl.Transform">Transform</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd></dl></div>
@@ -681,7 +681,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">logger</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/logger/Logger.html#logger.Logger" class="extype" name="logger.Logger">Logger</a></span>
+        <span class="name">logger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
@@ -879,7 +879,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transforms</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</span>
+        <span class="name">transforms</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.IntermediateLoweringCompiler">IntermediateLoweringCompiler</a> → Compiler</dd></dl></div>
@@ -971,7 +971,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version firrtl 1.0) Please use compileAndEmit or other compile method instead">compile</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="writer">writer: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+        <span class="name deprecated" title="Deprecated: (Since version firrtl 1.0) Please use compileAndEmit or other compile method instead">compile</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>, <span name="writer">writer: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="customTransforms">customTransforms: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Compiler</dd><dt>Annotations</dt><dd>
@@ -990,7 +990,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]]</span>
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.Transform">Transform</span>]]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd><dt>Annotations</dt><dd>
@@ -1009,7 +1009,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 1.1) Just collect the actual Annotation types the transform wants">getMyAnnotations</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/annotations/Annotation.html#firrtl.annotations.Annotation" class="extype" name="firrtl.annotations.Annotation">Annotation</a>]</span>
+        <span class="name deprecated" title="Deprecated: (Since version 1.1) Just collect the actual Annotation types the transform wants">getMyAnnotations</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform</dd><dt>Annotations</dt><dd>
@@ -1028,7 +1028,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">inputForm</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/CircuitForm.html#firrtl.CircuitForm" class="extype" name="firrtl.CircuitForm">CircuitForm</a></span>
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">inputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
@@ -1047,7 +1047,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">outputForm</span><span class="result">: <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/CircuitForm.html#firrtl.CircuitForm" class="extype" name="firrtl.CircuitForm">CircuitForm</a></span>
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">outputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
@@ -1060,17 +1060,17 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="firrtl.Compiler">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Compiler.html#firrtl.Compiler" class="extype" name="firrtl.Compiler">Compiler</a></h3>
+              <h3>Inherited from <span class="extype" name="firrtl.Compiler">Compiler</span></h3>
             </div><div class="parent" name="firrtl.DependencyAPIMigration">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/DependencyAPIMigration.html#firrtl.DependencyAPIMigration" class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</a></h3>
+              <h3>Inherited from <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></h3>
             </div><div class="parent" name="firrtl.Transform">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a></h3>
+              <h3>Inherited from <span class="extype" name="firrtl.Transform">Transform</span></h3>
             </div><div class="parent" name="firrtl.options.DependencyAPI">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/DependencyAPI.html#firrtl.options.DependencyAPI" class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</a>[<a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/Transform.html#firrtl.Transform" class="extype" name="firrtl.Transform">Transform</a>]</h3>
+              <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</h3>
             </div><div class="parent" name="firrtl.options.TransformLike">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/firrtl/options/TransformLike.html#firrtl.options.TransformLike" class="extype" name="firrtl.options.TransformLike">TransformLike</a>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>]</h3>
+              <h3>Inherited from <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>]</h3>
             </div><div class="parent" name="logger.LazyLogging">
-              <h3>Inherited from <a href="https://www.chisel-lang.org/api/firrtl/latest/logger/LazyLogging.html#logger.LazyLogging" class="extype" name="logger.LazyLogging">LazyLogging</a></h3>
+              <h3>Inherited from <span class="extype" name="logger.LazyLogging">LazyLogging</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
