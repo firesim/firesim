@@ -18,9 +18,6 @@ lazy val commonSettings = Seq(
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // ScalaDoc
   autoAPIMappings  := true,
-  apiMappings += (
-    (chipyardRoot / unmanagedBase).value / "firrtl.jar" -> url("https://www.chisel-lang.org/api/firrtl/latest/")
-  ),
   exportJars := true,
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
