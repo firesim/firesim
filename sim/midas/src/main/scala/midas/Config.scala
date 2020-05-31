@@ -52,7 +52,10 @@ case object HostTransforms extends Field[Seq[TransformDependency]](Seq())
 // Directory into which output files are dumped. Set by -td when invoking the Stage
 case object OutputDir extends Field[File]
 
-class SimConfig extends Config((site, here, up) => {
+// Alias WithoutTLMonitors into this package so that it can be used in config strings
+class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
+
+class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
   case DMANastiKey      => NastiParameters(512, 64, 6)
@@ -66,7 +69,7 @@ class SimConfig extends Config((site, here, up) => {
       dataBits = site(HostMemChannelKey).beatBytes * 8,
       idBits   = 6)
   }
-})
+}) ++ new WithoutTLMonitors)
 
 class ZynqBaseConfig extends Config(new Config((site, here, up) => {
   case CtrlNastiKey     => NastiParameters(32, 32, 12)
