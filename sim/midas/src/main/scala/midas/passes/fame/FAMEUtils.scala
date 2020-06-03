@@ -108,7 +108,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       transformedModules += mt
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
-        println(s"Channel ${fca.globalName} is timestamped.")
+      if (fca.channelInfo.hasTimestamp) channelHasTimestamp += fca.globalName
       fca.clock.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sinks.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
