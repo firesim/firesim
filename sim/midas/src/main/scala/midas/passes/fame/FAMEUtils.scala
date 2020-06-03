@@ -32,7 +32,7 @@ object RTRenamer {
   }
 }
 
-private[fame] object FAMEChannelAnalysis {
+private[fame] object FAMEChannelAnalysis extends midas.widgets.HasTimestampConstants {
   def removeCommonPrefix(a: String, b: String): (String, String) = (a, b) match {
     case (a, b) if (a.length == 0 || b.length == 0) => (a, b)
     case (a, b) if (a.charAt(0) == b.charAt(0)) => removeCommonPrefix(a.drop(1), b.drop(1))
@@ -48,7 +48,17 @@ private[fame] object FAMEChannelAnalysis {
     }
   }
 
-  def getHostDecoupledChannelType(name: String, ports: Seq[Port]): Type = Decouple(getHostDecoupledChannelPayloadType(name, ports))
+  def getHostDecoupledChannelType(name: String, ports: Seq[Port], hasTimestamp: Boolean): Type = {
+    val payloadType = getHostDecoupledChannelPayloadType(name, ports)
+    if (hasTimestamp) {
+      Decouple(new BundleType(Seq(
+        Field("data", Default, payloadType),
+        Field("time", Default, UIntType(IntWidth(timestampWidth)))
+      )))
+    } else {
+      Decouple(payloadType)
+    }
+  }
 }
 
 private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: FAMETransformType) {
@@ -90,6 +100,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   lazy val connectivity = (new CheckCombLoops).analyze(state)
 
   val channels = new LinkedHashSet[String]
+  val channelHasTimestamp = new LinkedHashSet[String]
   val channelsByPort = new LinkedHashMap[ReferenceTarget, String]
   val transformedModules = new LinkedHashSet[ModuleTarget]
   state.annotations.collect({
@@ -97,6 +108,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       transformedModules += mt
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
+        println(s"Channel ${fca.globalName} is timestamped.")
       fca.clock.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sinks.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
       fca.sources.toSeq.flatten.foreach({ rt => channelsByPort(rt) = fca.globalName })
@@ -215,11 +227,11 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   def modelChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])]       = genModelChannelPortMap(None)
 
   def getSinkHostDecoupledChannelType(cName: String): Type = {
-    FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sinkPorts(cName).map(portNodes(_)))
+    FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sinkPorts(cName).map(portNodes(_)), channelHasTimestamp(cName))
   }
 
   def getSourceHostDecoupledChannelType(cName: String): Type = {
-    FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sourcePorts(cName).map(portNodes(_)))
+    FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sourcePorts(cName).map(portNodes(_)), channelHasTimestamp(cName))
   }
 
   // Coalesces channel connectivity annotations to produce a single port list

@@ -121,16 +121,23 @@ object FAMEChannelConnectionAnnotation {
   */
 sealed trait FAMEChannelInfo {
   def update(renames: RenameMap): FAMEChannelInfo = this
+  def hasTimestamp: Boolean
 }
 
+sealed trait Untimestamped { this: FAMEChannelInfo =>
+  val hasTimestamp = false
+}
 
+sealed trait Timestamped { this: FAMEChannelInfo =>
+  val hasTimestamp = true
+}
 /**
   * Indicates that a channel connection is a pipe with <latency> register stages
   * Setting latency = 0 models a wire
   *
   * TODO: How to handle registers that are reset? Add an Option[RT]?
   */
-case class PipeChannel(val latency: Int) extends FAMEChannelInfo
+case class PipeChannel(val latency: Int) extends FAMEChannelInfo with Untimestamped
 
 /**
   * Indicates that a channel connection is the reverse (ready) half of
@@ -138,12 +145,18 @@ case class PipeChannel(val latency: Int) extends FAMEChannelInfo
   * references to the ready signals, this channel contains no signal
   * references.
   */
-case object DecoupledReverseChannel extends FAMEChannelInfo
+case object DecoupledReverseChannel extends FAMEChannelInfo with Untimestamped
 
 /**
   * Indicates that a channel connection carries target clocks
   */
-case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo
+case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo with Timestamped
+
+/**
+  * Indicates the channel is a wire-type connection with timestamped tokens. This is used to drive signals
+  * that are sunk by clock-generating models
+  */
+case object ClockControlChannel extends FAMEChannelInfo with Timestamped
 
 /**
   * Indicates that a channel connection is the forward (valid) half of
@@ -163,7 +176,7 @@ case class DecoupledForwardChannel(
   readySink: Option[ReferenceTarget],
   validSource: Option[ReferenceTarget],
   readySource: Option[ReferenceTarget],
-  validSink: Option[ReferenceTarget]) extends FAMEChannelInfo {
+  validSink: Option[ReferenceTarget]) extends FAMEChannelInfo with Untimestamped {
   override def update(renames: RenameMap): DecoupledForwardChannel = {
     val renamer = RTRenamer.exact(renames)
     DecoupledForwardChannel(

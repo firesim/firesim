@@ -28,6 +28,7 @@ trait FAME1Channel {
   def direction: Direction
   def ports: Seq[Port]
   def isValid: Expression
+  def hasTimestamp: Boolean
   def asHostModelPort: Option[Port] = None
   def replacePortRef(wr: WRef): Expression
 }
@@ -47,7 +48,7 @@ trait HasModelPort {
   def setReady(advanceCycle: Expression): Statement = Connect(NoInfo, isReady, advanceCycle)
 
   override def asHostModelPort: Option[Port] = {
-    val tpe = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports)
+    val tpe = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports, hasTimestamp)
     direction match {
       case Input => Some(Port(NoInfo, s"${name}_sink", Input, tpe))
       case Output => Some(Port(NoInfo, s"${name}_source", Output, tpe))
@@ -55,7 +56,11 @@ trait HasModelPort {
   }
 
   def replacePortRef(wr: WRef): Expression = {
-    val payload = WSubField(WRef(asHostModelPort.get), "bits")
+    val payload = if (hasTimestamp) {
+      WSubField(WSubField(WRef(asHostModelPort.get), "bits"), "data")
+    } else {
+      WSubField(WRef(asHostModelPort.get), "bits")
+    }
     if (ports.size == 1) payload else WSubField(payload, FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
   }
 }
@@ -70,9 +75,12 @@ trait FAME1DataChannel extends FAME1Channel with HasModelPort {
   }
 }
 
-case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel with InputChannel with HasModelPort
+case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel with InputChannel with HasModelPort {
+  val hasTimestamp = true
+}
 
 case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel {
+  val hasTimestamp = false
   val name = "VirtualClockChannel"
   val ports = Seq(targetClock)
   val isValid: Expression = UIntLiteral(1)
@@ -84,7 +92,8 @@ case class FAME1InputChannel(
   name: String,
   clockDomainEnable: Expression,
   ports: Seq[Port],
-  firedReg: DefRegister) extends FAME1DataChannel with InputChannel {
+  firedReg: DefRegister,
+  hasTimestamp: Boolean) extends FAME1DataChannel with InputChannel {
   override def setReady(advanceCycle: Expression): Statement = {
     Connect(NoInfo, isReady, And(advanceCycle, Negate(isFired)))
   }
@@ -94,7 +103,8 @@ case class FAME1OutputChannel(
   name: String,
   clockDomainEnable: Expression,
   ports: Seq[Port],
-  firedReg: DefRegister) extends FAME1DataChannel {
+  firedReg: DefRegister,
+  hasTimestamp: Boolean) extends FAME1DataChannel {
   val direction = Output
   val portName = s"${name}_source"
   def setValid(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Statement = {
@@ -176,11 +186,11 @@ object FAMEModuleTransformer {
         val clockRef = WRef(srcClockPorts.head)
         val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(clockRef)), Nil, BoolType)
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
-        (cName, clockFlag, ports, firedReg)
+        (cName, clockFlag, ports, firedReg, analysis.channelHasTimestamp(cName))
       case (cName, (None, ports)) => clockChannel match {
         case vc: VirtualClockChannel =>
           val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
-          (cName, UIntLiteral(1), ports, firedReg)
+          (cName, UIntLiteral(1), ports, firedReg, false)
         case _ =>
           throw new RuntimeException(s"Channel ${cName} has no associated clock.")
       }
@@ -271,24 +281,33 @@ class FAMETransform extends Transform {
   def hostDecouplingRenames(analysis: FAMEChannelAnalysis): RenameMap = {
     // Handle renames at the top-level to new channelized names
     val renames = RenameMap()
-    val sinkRenames = analysis.transformedSinks.flatMap({c =>
-      if (analysis.sinkPorts(c).size == 1)
-        analysis.sinkPorts(c).map(rt => (rt, rt.copy(ref = s"${c}_sink").field("bits")))
-      else
-        analysis.sinkPorts(c).map(rt => (rt, rt.copy(ref = s"${c}_sink").field("bits").field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1)))
-    })
-    val sourceRenames = analysis.transformedSources.flatMap({c =>
-      if (analysis.sourcePorts(c).size == 1)
-        analysis.sourcePorts(c).map(rt => (rt, rt.copy(ref = s"${c}_source").field("bits")))
-      else
-        analysis.sourcePorts(c).map(rt => (rt, rt.copy(ref = s"${c}_source").field("bits").field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1)))
-    })
+    def renameTop(suffix: String, lookup: String => Seq[ReferenceTarget])
+                 (c: String): Seq[(ReferenceTarget, ReferenceTarget)] =
+      lookup(c).map { rt =>
+        val baseRT = if (analysis.channelHasTimestamp(c)) {
+          rt.copy(ref = s"${c}${suffix}").field("bits").field("data")
+        } else {
+          rt.copy(ref = s"${c}${suffix}").field("bits")
+        }
+
+        if (lookup(c).size == 1)
+         (rt, baseRT)
+        else
+         (rt, baseRT.field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1))
+      }
+
+    val sinkRenames = analysis.transformedSinks.flatMap(renameTop("_sink", analysis.sinkPorts))
+    val sourceRenames = analysis.transformedSources.flatMap(renameTop("_source", analysis.sourcePorts))
 
     def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, (Option[Port], Seq[Port])])
                    (mT: ModuleTarget): Seq[(ReferenceTarget, ReferenceTarget)] = {
         lookup(mT).toSeq.flatMap({ case (cName, (clockOption, pList)) =>
           pList.map({ port =>
-            val decoupledTarget = mT.ref(s"${cName}${suffix}").field("bits")
+            val decoupledTarget = if (analysis.channelHasTimestamp(cName)) {
+              mT.ref(s"${cName}${suffix}").field("bits").field("data")
+            } else {
+              mT.ref(s"${cName}${suffix}").field("bits")
+            }
             if (pList.size == 1)
               (mT.ref(port.name), decoupledTarget)
             else

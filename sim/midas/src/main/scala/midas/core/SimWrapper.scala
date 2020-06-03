@@ -4,7 +4,7 @@ package midas
 package core
 
 
-import midas.widgets.BridgeIOAnnotation
+import midas.widgets.{BridgeIOAnnotation, TimestampedToken}
 import midas.passes.fame
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel}
 import midas.core.SimUtils._
@@ -189,12 +189,12 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
                   extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
-  def regenClockType(refTargets: Seq[ReferenceTarget]): Data = refTargets.size match {
+  def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = new TimestampedToken(refTargets.size match {
     case 1 => Clock()
     case size => new ClockRecord(refTargets.size)
-  }
+  })
 
-  val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
+  val clockElement: (String, DecoupledIO[TimestampedToken[Data]]) = chAnnos.collectFirst({
     case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
@@ -217,9 +217,9 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
     extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
-  def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
+  def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Vec[Bool]] = new TimestampedToken(Vec(refTargets.size, Bool()))
 
-  val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
+  val clockElement: (String, DecoupledIO[TimestampedToken[Vec[Bool]]]) = chAnnos.collectFirst({
     case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
@@ -285,9 +285,9 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
     val clockTokens = channelPorts.clockElement._2
     target.io.clockElement._2.valid := clockTokens.valid
     clockTokens.ready := target.io.clockElement._2.ready
-    target.io.clockElement._2.bits match {
-      case port: Clock => port := clockTokens.bits(0).asClock
-      case port: ClockRecord => port.elements.zip(clockTokens.bits).foreach({ case ((_, p), i) => p := i.asClock})
+    target.io.clockElement._2.bits.data match {
+      case port: Clock => port := clockTokens.bits.data(0).asClock
+      case port: ClockRecord => port.elements.zip(clockTokens.bits.data).foreach({ case ((_, p), i) => p := i.asClock})
     }
   }
 

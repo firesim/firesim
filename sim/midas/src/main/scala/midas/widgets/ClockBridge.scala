@@ -37,10 +37,12 @@ sealed trait ClockBridgeConsts {
   *
   * @param target The target-side module for the CB
   *
+  * @param baseClockPeriodPS Period of the base clock in picoseconds
+  *
   * @param clocks The associated clock information for each output clock (including the base).
   */
 
-case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalClock])
+case class ClockBridgeAnnotation(val target: ModuleTarget, baseClockPeriodPS: BigInt, clocks: Seq[RationalClock])
     extends BridgeAnnotation with ClockBridgeConsts {
   val channelNames = Seq(clockChannelName)
   def duplicate(n: ModuleTarget) = this.copy(target)
@@ -49,14 +51,14 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalC
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      widget = Some((p: Parameters) => new ClockBridgeModule(clocks)(p))
+      widget = Some((p: Parameters) => new ClockBridgeModule(baseClockPeriodPS, clocks)(p))
     )
   }
 }
 
 /**
   * The default target-side clock bridge. Generates a "base clock" and a vector of
-  * additional clocks related to that base clock. Simulation times are
+  * additional clocks rationally related to that base clock. Simulation times are
   * generally expressed in terms of this base clock.
   *
   * @param additionalClocks Rational clock information for each additional
@@ -72,7 +74,7 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
   })
 
   // Generate the bridge annotation
-  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation( outer.toTarget, allClocks) })
+  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation( outer.toTarget, 3000, allClocks) })
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
@@ -96,8 +98,7 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
   */
 class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeConsts {
   def targetPortProto(): Vec[Bool] = Vec(numClocks, Bool())
-  val clocks = new DecoupledIO(targetPortProto)
-
+  val clocks = new DecoupledIO(new TimestampedToken(targetPortProto))
   def outputWireChannels = Seq(clocks -> clockChannelName)
   def inputWireChannels = Seq()
   def outputRVChannels = Seq()
@@ -126,31 +127,32 @@ class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeC
   * @param clockInfo Clock frequency information for each target clock
   *
   */
-class ClockBridgeModule(clockInfo: Seq[RationalClock])(implicit p: Parameters)
+class ClockBridgeModule(baseClockPeriodPS: BigInt, clockInfo: Seq[RationalClock])(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
   lazy val module = new BridgeModuleImp(this) {
-  val io = IO(new WidgetIO())
-  val hPort = IO(new ClockTokenVector(clockInfo.size))
-  val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
-  val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
-  hPort.clocks <> clockTokenGen.io
+    val io = IO(new WidgetIO())
+    val hPort = IO(new ClockTokenVector(clockInfo.size))
+    val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
+    val clockTokenGen = Module(new RationalClockTokenGenerator(baseClockPeriodPS, phaseRelationships))
+    hPort.clocks <> clockTokenGen.io
 
-  val hCycleName = "hCycle"
-  val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
-  hCycle := hCycle + 1.U
+    val hCycleName = "hCycle"
+    val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
+    hCycle := hCycle + 1.U
 
-  // Count the number of clock tokens for which the fastest clock is scheduled to fire
-  //  --> Use to calculate FMR
-  val tCycleFastest = genWideRORegInit(0.U(64.W), "tCycle")
-  val fastestClockIdx = (phaseRelationships).map({ case (n, d) => n.toDouble / d })
-                                            .zipWithIndex
-                                            .sortBy(_._1)
-                                            .last._2
+    // Count the number of clock tokens for which the fastest clock is scheduled to fire
+    //  --> Use to calculate FMR
+    val tCycleFastest = genWideRORegInit(0.U(64.W), "tCycle")
+    val fastestClockIdx = (phaseRelationships).map({ case (n, d) => n.toDouble / d })
+                                              .zipWithIndex
+                                              .sortBy(_._1)
+                                              .last._2
 
-  when (hPort.clocks.fire && hPort.clocks.bits(fastestClockIdx)) {
-    tCycleFastest := tCycleFastest + 1.U
+    when (hPort.clocks.fire && hPort.clocks.bits.data(fastestClockIdx)) {
+      tCycleFastest := tCycleFastest + 1.U
+    }
+    genCRFile()
   }
-  genCRFile()
 }
 
 /**
@@ -175,14 +177,17 @@ object FindScaledPeriodGCD {
   *
   * @param phaseRelationships multiplier, divisor pairs for each clock
   */
-class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends Module {
+class RationalClockTokenGenerator(baseClockPeriodPS: BigInt, phaseRelationships: Seq[(Int, Int)]) extends Module with HasTimestampConstants {
   val numClocks = phaseRelationships.size
-  val io = IO(new DecoupledIO(Vec(numClocks, Bool())))
+  val io = IO(new DecoupledIO(new TimestampedToken(Vec(numClocks, Bool()))))
   // The clock token stream is known a priori!
   io.valid := true.B
 
   // Determine the number of virtual-clock cycles for each target clock.
   val clockPeriodicity = FindScaledPeriodGCD(phaseRelationships)
+  assert(baseClockPeriodPS % clockPeriodicity.head == 0)
+  val virtualClockPeriod = baseClockPeriodPS / clockPeriodicity.head
+
   val counterWidth     = clockPeriodicity.map(p => log2Ceil(p + 1)).reduce((a, b) => math.max(a, b))
 
   // This is an arbitrarily selected number; feel free to increase it. If we
@@ -190,20 +195,24 @@ class RationalClockTokenGenerator(phaseRelationships: Seq[(Int, Int)]) extends M
   val maxCounterWidth = 16
   require(counterWidth <= maxCounterWidth, "Ensure this circuit doesn't blow up")
 
+  val simulationTime = RegInit(0.U(timestampWidth.W))
   // For each target clock, count the number of virtual cycles until the next expected clock edge
   val timeToNextEdge   = RegInit(VecInit(Seq.fill(numClocks)(0.U(counterWidth.W))))
   // Find the smallest number of virtual-clock cycles that must must advance
   // before one real clock would fire.
   val minStepsToEdge   = DensePrefixSum(timeToNextEdge)({ case (a, b) => Mux(a < b, a, b) }).last
+  io.bits.time := simulationTime + virtualClockPeriod.U * minStepsToEdge
 
   // Advance the virtual clock (minStepsToEdge) cycles, and determine which
   // target clocks have an edge at that time to populate the clock token
-  io.bits := VecInit(for ((reg, period) <- timeToNextEdge.zip(clockPeriodicity)) yield {
+  io.bits.data := VecInit(for ((reg, period) <- timeToNextEdge.zip(clockPeriodicity)) yield {
     val clockFiring = reg === minStepsToEdge
     when (io.ready) {
       reg := Mux(clockFiring, period.U, reg - minStepsToEdge)
     }
     clockFiring
   })
+  when(io.ready) {
+    simulationTime := io.bits.time
   }
 }
