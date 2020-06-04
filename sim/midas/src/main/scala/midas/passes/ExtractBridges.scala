@@ -6,11 +6,12 @@ import midas.widgets.{BridgeAnnotation, ClockBridgeAnnotation}
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
 
 import firrtl._
-import firrtl.annotations._
 import firrtl.ir._
+import firrtl.passes.{InferTypes, ResolveKinds}
 import firrtl.traversals.Foreachers._
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
 import firrtl.passes.wiring.{Wiring, WiringInfo}
+import firrtl.annotations._
 import Utils._
 
 import scala.collection.mutable
@@ -129,8 +130,13 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
     // Annotate all bridge instances
     val instAnnoedState = annotateInstances(wrappedTopState)
 
+    def normalize(state: CircuitState): CircuitState = {
+      val cx = RemoveTrivialPartialConnects.run(InferTypes.run(ResolveKinds.run(state.circuit)))
+      state.copy(circuit = cx)
+    }
+
     // Promote all modules that are annotated as bridges
-    val promotedState = promoteBridges(instAnnoedState)
+    val promotedState = normalize(promoteBridges(instAnnoedState))
 
     // Propogate bridge annotations to the IO created on the true top module
     val commutedState = commuteBridgeAnnotations(promotedState)

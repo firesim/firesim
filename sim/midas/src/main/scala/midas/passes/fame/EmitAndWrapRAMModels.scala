@@ -8,7 +8,7 @@ import Mappers._
 import Utils._
 import annotations._
 
-import midas.passes.SingleModulePrelinkRename
+import midas.passes.{PreLinkRenamingAnnotation, PreLinkRenaming}
 import midas.targetutils.FirrtlMemModelAnnotation
 
 import collection.mutable
@@ -166,7 +166,7 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
   def refInst() = WRef(defInst)
 
   private def portNo(vecName: String, elmType: Type)(idx: Int) =
-    new Decoupled(WSubIndex(WSubField(WSubField(refInst, "channels"), vecName), idx, elmType, UNKNOWNGENDER))
+    new Decoupled(WSubIndex(WSubField(WSubField(refInst, "channels"), vecName), idx, elmType, UnknownFlow))
   def readCmdPort: Int => Decoupled = portNo("read_cmds", readCommand)
   def readDataPort: Int => Decoupled = portNo("read_resps", readDataType)
   def writePort: Int => Decoupled = portNo("write_cmds", writeCommand)
@@ -185,16 +185,15 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
     ) ++ readConnects ++ writeConnects
   }
 
-  def elaborateModel(parentCircuitName: String): (DefModule, Seq[Annotation]) = {
+  def elaborateModel(parentCircuitNS: Namespace): Module = {
     val c3circuit = chisel3.Driver.elaborate(() =>
       new midas.models.sram.AsyncMemChiselModel(depth.toInt, dataWidth, readPorts.size, writePorts.size))
     val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
-    val annos = c3circuit.annotations.map(_.toFirrtl)
-    val transforms = Seq(new SingleModulePrelinkRename(parentCircuitName, name))
-    val state = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, annos), transforms)
-    require(state.circuit.modules.size == 1)
-    val mod = state.circuit.modules.head
-    (mod, state.annotations)
+    val state = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, Nil), Nil)
+    require(state.circuit.modules.length == 1)
+    state.circuit.modules.collectFirst({
+      case m: Module => m.copy(name = name)
+    }).get
   }
 }
 
@@ -226,21 +225,13 @@ class EmitAndWrapRAMModels extends Transform {
       val readWritePorts = annos.collect({ case anno: ModelReadWritePort  => new ReadWritePort(anno, mod.ports)})
       require(readWritePorts.isEmpty)
 
-      val (hostClock, updatedPortList) = mod.ports.find(p => p.tpe == ClockType && p.name == "clock") match {
-        case Some(port) => (port, mod.ports)
-        case None =>
-          val cPort = Port(NoInfo, "clock", Input, ClockType)
-          (cPort, cPort +: mod.ports)
-      }
-
-      val hostReset = mod.ports.find(_.name == "hostReset").get
+      val hostClock = mod.ports.find(_.name == WrapTop.hostClockName).get
+      val hostReset = mod.ports.find(_.name == WrapTop.hostResetName).get
 
       val name = ns.newName("RamModel")
       val inst = new RAMModelInst(name, readPorts, writePorts)
-      val (module, newAnnos) = inst.elaborateModel(c.main)
-      addedModules += module
-      addedAnnotations ++= newAnnos
-      Module(NoInfo, mod.name, updatedPortList, Block(inst.emitStatements(WRef(hostClock), WRef(hostReset))))
+      addedModules += inst.elaborateModel(Namespace(c))
+      Module(NoInfo, mod.name, mod.ports, Block(inst.emitStatements(WRef(hostClock), WRef(hostReset))))
     }
 
     def onModule(mod: DefModule): DefModule = mod match {
@@ -250,11 +241,6 @@ class EmitAndWrapRAMModels extends Transform {
 
     val newCircuit = state.circuit.map(onModule)
 
-    val renames = RenameMap.create(addedModules.map(m =>
-      ModuleTarget(m.name, m.name) -> Seq(CircuitTarget(c.main))).toMap)
-
-    state.copy(circuit = newCircuit.copy(modules = newCircuit.modules ++ addedModules),
-               annotations = state.annotations ++ addedAnnotations,
-               renames = Some(renames))
+    state.copy(circuit = newCircuit.copy(modules = newCircuit.modules ++ addedModules))
   }
 }

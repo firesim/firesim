@@ -12,7 +12,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.{chiselName}
 
-import strober.core.{TraceQueue, TraceMaxLen}
 import midas.core.SimUtils.{ChLeafType}
 
 // Generates stateful assertions on the ports of channels to check that token
@@ -23,8 +22,6 @@ case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
-  val trace = Decoupled(gen)
-  val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
   override def cloneType = new PipeChannelIO(gen)(p).asInstanceOf[this.type]
 
 }
@@ -50,13 +47,6 @@ class PipeChannel[T <: ChLeafType](
   }
 
   if (p(GenerateTokenIrrevocabilityAssertions)) AssertTokenIrrevocable(io.in, None)
-
-  if (p(EnableSnapshot)) {
-    io.trace <> TraceQueue(tokens.io.deq, io.traceLen)
-  } else {
-    io.trace := DontCare
-    io.trace.valid := false.B
-  }
 }
 
 // Generates stateful assertions to check that an ReadyValid interface is irrevocable
@@ -95,9 +85,6 @@ class PipeChannelUnitTest(
   val outputChannelMapping = Seq(OChannelDesc("out", referenceOutput, dut.io.out, TokenComparisonFunctions.ignoreNTokens(1)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
-
-  dut.io.traceLen := DontCare
-  dut.io.trace.ready := DontCare
 }
 
 // A bidirectional token channel wrapping a target-decoupled (ready-valid) interface
@@ -177,22 +164,9 @@ object SimReadyValid {
   def apply[T <: Data](gen: T) = new SimReadyValidIO(gen)
 }
 
-class ReadyValidTraceIO[T <: Data](gen: T) extends Bundle {
-  val bits = Decoupled(gen)
-  val valid = Decoupled(Bool())
-  val ready = Decoupled(Bool())
-  override def cloneType = new ReadyValidTraceIO(gen).asInstanceOf[this.type]
-}
-
-object ReadyValidTrace {
-  def apply[T <: Data](gen: T) = new ReadyValidTraceIO(gen)
-}
-
 class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
-  val trace = ReadyValidTrace(gen)
-  val traceLen = Input(UInt(log2Up(p(TraceMaxLen)+1).W))
   val targetReset = Flipped(Decoupled(Bool()))
   override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
@@ -252,11 +226,6 @@ class ReadyValidChannel[T <: Data](
     io.enq.generateFwdIrrevocabilityAssertions()
     io.deq.generateRevIrrevocabilityAssertions()
   }
-
-  io.trace := DontCare
-  io.trace.bits.valid  := false.B
-  io.trace.valid.valid := false.B
-  io.trace.ready.valid := false.B
 }
 
 @chiselName
@@ -272,6 +241,8 @@ class ReadyValidChannelUnitTest(
 
   val dut = Module(new ReadyValidChannel(payloadType))
   val reference = Module(new ShiftQueue(payloadType, queueDepth))
+  val referenceReset = Wire(Bool())
+  reference.reset := referenceReset
 
   // Generates target-reset tokens
   def resetTokenGen(): Bool = {
@@ -324,17 +295,10 @@ class ReadyValidChannelUnitTest(
 
   val inputChannelMapping = Seq(IChannelDesc("enqFwd", refEnqFwd, enqFwd),
                                 IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
-                                IChannelDesc("reset" , reference.reset, dut.io.targetReset, Some(resetTokenGen)))
+                                IChannelDesc("reset" , referenceReset, dut.io.targetReset, Some(resetTokenGen _)))
 
   val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
                                  OChannelDesc("enqRev", reference.io.enq.ready, enqRev, TokenComparisonFunctions.ignoreNTokens(resetLength)))
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
-
-  dut.io.traceLen := DontCare
-  dut.io.traceLen := DontCare
-  dut.io.trace.ready.ready := DontCare
-  dut.io.trace.valid.ready := DontCare
-  dut.io.trace.bits.ready := DontCare
-  dut.io.traceLen := DontCare
 }

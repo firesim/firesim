@@ -7,8 +7,7 @@ import midas.passes._
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
-// Switch to FIRRTL in 3.2
-import midas.firrtl.testutils._
+import firrtl.testutils._
 import logger._
 
 class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
@@ -49,7 +48,7 @@ class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
            """.stripMargin
       execute(input, check, Nil)
    }
-   "asAsyncReset PrimOps" should "be replaced with passthroughs" in {
+   "asAsyncReset PrimOps" should "be replaced with asUInt" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -62,12 +61,12 @@ class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
            |  module Top :
            |    input reset : UInt<1>
            |    output o_reset : UInt<1>
-           |    o_reset <= reset
+           |    o_reset <= asUInt(reset)
            """.stripMargin
       execute(input, check, Nil)
    }
 
- "asAsyncReset PrimOps on constants" should "be replaced with passthroughs" in {
+ "asAsyncReset PrimOps on constants" should "be replaced with asUInt" in {
     val input =
        """circuit Top :
          |  module Top :
@@ -78,7 +77,7 @@ class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
        """circuit Top :
          |  module Top :
          |    output o_reset : UInt<1>
-         |    o_reset <= UInt<1>(1)
+         |    o_reset <= asUInt(UInt<1>(1))
          """.stripMargin
     execute(input, check, Nil)
   }

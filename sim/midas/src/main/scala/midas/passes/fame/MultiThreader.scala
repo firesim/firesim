@@ -5,6 +5,7 @@ package midas.passes.fame
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.passes.memlib
 import firrtl.traversals.Foreachers._
 import firrtl.Utils.{BoolType, kind, zero, one}
 
@@ -133,7 +134,7 @@ object MultiThreader {
         Connect(info, replaceRegRefsLHS(freshNames)(lhs), transformAddr(counter, replaceRegRefsRHS(freshNames)(rhs)))
       case Connect(info, lhs, rhs) =>
         // TODO: LHS vs RHS is kind of a hack
-        // We need a new method to swap register refs on the LHS because VerilogMemDelays puts in un-gendered register refs
+        // We need a new method to swap register refs on the LHS because VerilogMemDelays puts in un-flowed register refs
         Connect(info, replaceRegRefsLHS(freshNames)(lhs), replaceRegRefsRHS(freshNames)(rhs))
       case s => s.map(multiThread(freshNames, edgeStatus, n, counter)).map(replaceRegRefsRHS(freshNames))
     }
@@ -141,7 +142,7 @@ object MultiThreader {
 
   def findClocks(clocks: mutable.Set[WrappedExpression])(stmt: Statement): Unit = {
     def findClocksExpr(expr: Expression): Unit = {
-      if (expr.tpe == ClockType && Utils.gender(expr) == MALE) {
+      if (expr.tpe == ClockType && Utils.flow(expr) == SourceFlow) {
         clocks += WrappedExpression(expr)
       }
       expr.foreach(findClocksExpr)
@@ -154,7 +155,7 @@ object MultiThreader {
   def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
     // TODO: this is ugly and uses copied code instead of bumping FIRRTL
     // Simplify all memories first
-    val loweredMod = (new MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
+    val loweredMod = (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
 
     val ns = Namespace(loweredMod)
     val hostClock = WRef(WrapTop.hostClockName)

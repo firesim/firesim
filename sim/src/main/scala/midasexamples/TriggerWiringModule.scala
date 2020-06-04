@@ -5,6 +5,7 @@ package firesim.midasexamples
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 import midas.targetutils.{TriggerSource, TriggerSink}
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
+import freechips.rocketchip.config.Parameters
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.chiselName
@@ -13,22 +14,52 @@ import scala.collection.mutable
 
 class TriggerSinkModule extends MultiIOModule {
   val reference = IO(Input(Bool()))
-  val generated = WireDefault(true.B)
-  TriggerSink(generated)
-  assert(reference === generated)
+  // DOC include start: TriggerSink Usage
+  // Note: this can be any reference you wish to have driven by the trigger.
+  val sinkBool = WireDefault(true.B)
+
+  import midas.targetutils.TriggerSink
+  // Drives true.B if no TriggerSource credits exist in the design.
+  // Note: noSourceDefault defaults to true.B if unset, and can be omitted for brevity
+  TriggerSink(sinkBool, noSourceDefault = true.B)
+  // DOC include end: TriggerSink Usage
+  assert(reference === sinkBool)
 }
 
 class TriggerSourceModule extends MultiIOModule {
   val referenceCredit = IO(Output(Bool()))
-  private val lfsr = LFSR16()
-  val credit = lfsr(0)
-  TriggerSource.credit(credit)
-  referenceCredit := ~reset.toBool && credit
-
   val referenceDebit = IO(Output(Bool()))
-  val debit = ShiftRegister(lfsr(0), 5)
-  TriggerSource.debit(debit)
-  referenceDebit := ~reset.toBool && debit
+  private val lfsr = LFSR16()
+
+  // DOC include start: TriggerSource Usage
+  // Some arbitarily logic to drive the credit source and sink. Replace with your own!
+  val start = lfsr(1)
+  val stop = ShiftRegister(lfsr(0), 5)
+
+  // Now annotate the signals.
+  import midas.targetutils.TriggerSource
+  TriggerSource.credit(start)
+  TriggerSource.debit(stop)
+  // Note one could alternatively write: TriggerSource(start, stop)
+  // DOC include end: TriggerSource Usage
+
+  referenceCredit := ~reset.toBool && start
+  referenceDebit := ~reset.toBool && stop
+}
+
+class LevelSensitiveTriggerSourceModule extends MultiIOModule {
+  val referenceCredit = IO(Output(Bool()))
+  val referenceDebit = IO(Output(Bool()))
+  private val enable = LFSR16()(0)
+
+  // DOC include start: TriggerSource Level-Sensitive Usage
+  import midas.targetutils.TriggerSource
+  TriggerSource.levelSensitiveEnable(enable)
+  // DOC include end: TriggerSource Level-Sensitive Usage
+
+  val enLast = RegNext(enable)
+  referenceCredit := !enLast && enable
+  referenceDebit  := enLast && !enable
 }
 
 class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOModule {
@@ -69,7 +100,7 @@ object ReferenceSourceCounters {
 // This test target implements in Chisel what the Trigger Transformation should
 // implement in FIRRTL. The test fails if the firrtl-generated trigger-enables,
 // as seen by all nodes with a trigger sink, fail to match their references.
-class TriggerWiringModule extends RawModule {
+class TriggerWiringModule(implicit p: Parameters) extends RawModule {
   val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
   val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
@@ -81,8 +112,12 @@ class TriggerWiringModule extends RawModule {
     val src  = Module(new TriggerSourceModule)
     val sink = Module(new TriggerSinkModule)
 
+    val levelSensitiveSrc = Module(new LevelSensitiveTriggerSourceModule)
+
     // Reference Hardware
-    refSourceCounts += ReferenceSourceCounters(Seq(src.referenceCredit), Seq(src.referenceDebit))
+    refSourceCounts += ReferenceSourceCounters(
+      Seq(src.referenceCredit, levelSensitiveSrc.referenceCredit),
+      Seq(src.referenceDebit, levelSensitiveSrc.referenceDebit))
     refSinks += {
       val syncReg = Reg(Bool())
       sink.reference := syncReg

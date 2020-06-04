@@ -1,16 +1,18 @@
 // See LICENSE for license details.
 
-package strober
-package passes
+package midas.passes
 
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
-import core.ChainType
-import mdf.macrolib.SRAMMacro
-import mdf.macrolib.Utils.readMDFFromString
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, LinkedHashSet}
+
+/**
+  * This file contains legacy FIRRTL features that did not exist in upstream
+  * FIRRTL at the time of Strober's development. These continue to be used in:
+  *   AssertionSynthesis
+  */
 
 object StroberMetaData {
   private def collectChildren(
@@ -46,7 +48,6 @@ object StroberMetaData {
 }
 
 class StroberMetaData {
-  type ChainMap = HashMap[String, ArrayBuffer[ir.Statement]]
   type ChildMods = HashMap[String, LinkedHashSet[String]]
   type ChildInsts = HashMap[String, ArrayBuffer[String]]
   type InstModMap = HashMap[(String, String), String]
@@ -54,7 +55,6 @@ class StroberMetaData {
   val childMods = new ChildMods
   val childInsts = new ChildInsts
   val instModMap = new InstModMap
-  val chains = (ChainType.values.toList map (_ -> new ChainMap)).toMap
 }
 
 object preorder {
@@ -89,30 +89,5 @@ object postorder {
       }
     }
     loop(head) ++ (c.modules collect { case m: ExtModule => m })
-  }
-}
-
-class StroberTransforms(
-    dir: java.io.File,
-    json: java.io.File)
-   (implicit param: freechips.rocketchip.config.Parameters) extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
-  def execute(state: CircuitState) = {
-    if (param(midas.EnableSnapshot)) {
-      lazy val srams = {
-        val str = io.Source.fromFile(json).mkString
-        val srams = readMDFFromString(str).get collect { case x: SRAMMacro => x }
-        (srams map (sram => sram.name -> sram)).toMap
-      }
-      val meta = StroberMetaData(state.circuit)
-      val xforms = Seq(
-        new AddDaisyChains(meta, srams),
-        new DumpChains(dir, meta, srams))
-      (xforms foldLeft state)((in, xform) =>
-        xform runTransform in).copy(form=outputForm)
-    } else {
-      state
-    }
   }
 }

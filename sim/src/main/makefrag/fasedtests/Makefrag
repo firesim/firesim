@@ -36,21 +36,20 @@ ifdef FIRESIM_STANDALONE
 else
 	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 endif
+chisel_src_dirs = \
+		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
+		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
-submodules = \
-    $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-    $(addprefix $(chipyard_dir)/, \
-		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
-		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
-
-src_path = src/main/scala
-chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_path) -name "*.scala"))
-
-common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
+chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
+	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
 
 ##########################
 # Driver Sources & Flags #
@@ -99,6 +98,7 @@ run-vcs: $(vcs)
 run-vcs-debug: $(vcs_debug)
 	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=waves.vpd 2> err
 
+.PHONY: run-xsim
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS)
 

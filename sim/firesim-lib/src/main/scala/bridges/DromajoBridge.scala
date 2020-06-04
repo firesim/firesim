@@ -36,7 +36,7 @@ class DromajoTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
 }
 
 /**
- * Blackbox that is connected to the host
+ * Blackbox that is instantiated in the target
  */
 class DromajoBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[DromajoTargetIO], DromajoBridgeModule]
@@ -71,7 +71,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
 {
   lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
     // CONSTANTS: DMA Parameters
-    lazy val QUEUE_DEPTH = 64
+    lazy val QUEUE_DEPTH = TOKEN_QUEUE_DEPTH
     lazy val TOKEN_WIDTH = 512 // in b
     lazy val toHostCPUQueueDepth = QUEUE_DEPTH
     lazy val dmaSize = BigInt((TOKEN_WIDTH / 8) * QUEUE_DEPTH)
@@ -81,11 +81,8 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new DromajoTargetIO(key.insnWidths, key.vecSizes)))
 
-    // the target is ready to both send/receive data
-    val tFire = hPort.toHost.hValid && hPort.fromHost.hReady
-
     // helper to get number to round up to nearest multiple
-    def roundUp(num: Int, mult: Int): Int = { (((num - 1) / mult) + 1) * mult }
+    def roundUp(num: Int, mult: Int): Int = { (num/mult).ceil.toInt * mult }
 
     // get the traces
     val traces = hPort.hBits.trace.insns.map({ unmasked =>
@@ -95,7 +92,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     })
     private val iaddrWidth = roundUp(traces.map(_.iaddr.getWidth).max, 8)
     private val insnWidth  = roundUp(traces.map(_.insn.getWidth).max, 8)
-    private val wdataWidth = roundUp(traces.map(_.wdata.getWidth).max, 8)
+    private val wdataWidth = roundUp(traces.map(_.wdata.get.getWidth).max, 8)
     private val causeWidth = roundUp(traces.map(_.cause.getWidth).max, 8)
     private val tvalWidth  = roundUp(traces.map(_.tval.getWidth).max, 8)
 
@@ -107,39 +104,42 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     }
 
     val paddedTraces = traces.map { trace =>
-      Cat(trace.tval.pad(tvalWidth),
-        Cat(trace.cause.pad(causeWidth),
-          Cat(boolPad(trace.interrupt, 8),
-            Cat(boolPad(trace.exception, 8),
-              Cat(trace.priv.asUInt.pad(8),
-                Cat(trace.wdata.pad(wdataWidth),
-                  Cat(trace.insn.pad(insnWidth),
-                    Cat(trace.iaddr.pad(iaddrWidth), boolPad(trace.valid, 8)))))))))
+      Cat(
+        trace.tval.pad(tvalWidth),
+        trace.cause.pad(causeWidth),
+        boolPad(trace.interrupt, 8),
+        boolPad(trace.exception, 8),
+        trace.priv.asUInt.pad(8),
+        trace.wdata.get.pad(wdataWidth),
+        trace.insn.pad(insnWidth),
+        trace.iaddr.pad(iaddrWidth),
+        boolPad(trace.valid, 8)
+      )
     }
 
     val maxTraceSize = paddedTraces.map(t => t.getWidth).max
     val outDataSzBits = outgoingPCISdat.io.enq.bits.getWidth
 
     // constant
-    val totalStreamsPerToken = 2 // minTraceSz==190b so round up to nearest is 256b
-                                 // constant
+    val totalTracesPerToken = 2 // minTraceSz==190b so round up to nearest is 256b
+    // constant
 
-    require(maxTraceSize < (outDataSzBits / totalStreamsPerToken), "All instruction trace bits must fit in 256b")
+    require(maxTraceSize < (outDataSzBits / totalTracesPerToken), "All instruction trace bits (i.e. valid, pc, instBits...) must fit in 256b")
 
-    // how many streams being sent over
-    val numStreams = traces.size
-    // num tokens needed to display full stream
-    val numTokenForAll = ((numStreams - 1) / totalStreamsPerToken) + 1
+    // how many traces being sent over
+    val numTraces = traces.size
+    // num tokens needed to display full set of instructions from one cycle
+    val numTokenForAll = ((numTraces - 1) / totalTracesPerToken) + 1
 
     // tracequeue is full
     val traceQueueFull = outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready
 
-    // only inc the counter when the something is sent... input is valid... and output is avail
-    val counterFire = outgoingPCISdat.io.enq.fire() && hPort.toHost.hValid && !traceQueueFull
+    // only inc the counter when the something is sent (this implies that the input is valid and output is avail on the other side)
+    val counterFire = outgoingPCISdat.io.enq.fire()
     val (cnt, wrap) = Counter(counterFire, numTokenForAll)
 
-    val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalStreamsPerToken))
-    val paddedTracesTruncated = if (numStreams == 1) {
+    val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalTracesPerToken))
+    val paddedTracesTruncated = if (numTraces == 1) {
       (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))
     } else {
       (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))(outDataSzBits-1, 0)
@@ -168,11 +168,11 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_wdata_width", UInt32(wdataWidth)))
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_cause_width", UInt32(causeWidth)))
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_tval_width", UInt32(tvalWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_streams", UInt32(numStreams)))
+      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_traces", UInt32(numTraces)))
     }
 
     // general information printout
     println(s"Dromajo Bridge Information")
-    println(s"  Total Inst. Streams: ${numStreams}")
+    println(s"  Total Inst. Traces / Commit Width: ${numTraces}")
   }
 }

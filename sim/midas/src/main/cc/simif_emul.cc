@@ -22,7 +22,7 @@ midas_context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
 #else
-PLATFORM_TYPE* top = NULL;
+Vverilator_top* top = NULL;
 #if VM_TRACE
 VerilatedVcdC* tfp = NULL;
 #endif // VM_TRACE
@@ -98,7 +98,7 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 #else
   Verilated::commandArgs(argc, argv); // Remember args
 
-  top = new PLATFORM_TYPE;
+  top = new Vverilator_top;
 #if VM_TRACE                         // If emul was invoked with --trace
   tfp = new VerilatedVcdC;
   Verilated::traceEverOn(true);      // Verilator must compute traced signals
@@ -142,13 +142,16 @@ void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
 
 void simif_emul_t::write(size_t addr, data_t data) {
   size_t strb = (1 << CTRL_STRB_BITS) - 1;
-  master->write_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0, &data, &strb);
+  // LS by 2 (the AXI4 size field) because the driver presents word addresses, but AXI4-lite expects
+  // byte addresses
+  static_assert(CTRL_AXI4_SIZE == 2, "AXI4-lite control interface has unexpected size");
+  master->write_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0, &data, &strb);
   wait_write(master);
 }
 
 data_t simif_emul_t::read(size_t addr) {
   data_t data;
-  master->read_req(addr << CHANNEL_SIZE, CHANNEL_SIZE, 0);
+  master->read_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0);
   wait_read(master, &data);
   return data;
 }
@@ -156,7 +159,7 @@ data_t simif_emul_t::read(size_t addr) {
 #define MAX_LEN 255
 
 ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
-  ssize_t len = (size - 1) / DMA_WIDTH;
+  ssize_t len = (size - 1) / DMA_BEAT_BYTES;
 
   while (len >= 0) {
       size_t part_len = len % (MAX_LEN + 1);
@@ -165,22 +168,22 @@ ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
       wait_read(dma, data);
 
       len -= (part_len + 1);
-      addr += (part_len + 1) * DMA_WIDTH;
-      data += (part_len + 1) * DMA_WIDTH;
+      addr += (part_len + 1) * DMA_BEAT_BYTES;
+      data += (part_len + 1) * DMA_BEAT_BYTES;
   }
   return size;
 }
 
 ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
-  ssize_t len = (size - 1) / DMA_WIDTH;
-  size_t remaining = size - len * DMA_WIDTH;
+  ssize_t len = (size - 1) / DMA_BEAT_BYTES;
+  size_t remaining = size - len * DMA_BEAT_BYTES;
   size_t strb[len + 1];
   size_t *strb_ptr = &strb[0];
 
   for (int i = 0; i < len; i++)
-      strb[i] = (1LL << DMA_WIDTH) - 1;
+      strb[i] = (1LL << DMA_BEAT_BYTES) - 1;
 
-  if (remaining == DMA_WIDTH)
+  if (remaining == DMA_BEAT_BYTES)
       strb[len] = strb[0];
   else
       strb[len] = (1LL << remaining) - 1;
@@ -192,8 +195,8 @@ ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
       wait_write(dma);
 
       len -= (part_len + 1);
-      addr += (part_len + 1) * DMA_WIDTH;
-      data += (part_len + 1) * DMA_WIDTH;
+      addr += (part_len + 1) * DMA_BEAT_BYTES;
+      data += (part_len + 1) * DMA_BEAT_BYTES;
       strb_ptr += (part_len + 1);
   }
 

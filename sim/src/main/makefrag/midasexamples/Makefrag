@@ -30,16 +30,13 @@ else
 	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 endif
 
-submodules = \
-    $(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-    $(addprefix $(chipyard_dir)/, \
-		$(addprefix generators/, rocket-chip rocket-chip/hardfloat rocket-chip/macros) \
-		$(addprefix tools/, firrtl chisel3 chisel3/chiselFrontend))
+chisel_src_dirs = \
+		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
+		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
-src_path = src/main/scala
-chisel_srcs = $(foreach submodule,$(submodules),$(shell find $(submodule)/$(src_path) -name "*.scala"))
+chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
+	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
-common_chisel_args = $(patsubst $(firesim_base_dir)/%,%,$(GENERATED_DIR)) $(DESIGN_PACKAGE) $(DESIGN) $(TARGET_CONFIG_PACKAGE) $(TARGET_CONFIG) $(PLATFORM_CONFIG_PACKAGE) $(PLATFORM_CONFIG)
 CONF_NAME ?= runtime.conf
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
@@ -49,7 +46,11 @@ vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
 	mkdir -p $(@D)
-	$(SBT) "project $(firesim_sbt_project)" "runMain $(DESIGN_PACKAGE).Generator $(if $(STROBER),strober,midas) $(common_chisel_args)"
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 
@@ -82,10 +83,8 @@ LOADMEM ?=
 endif
 
 # These are from MIDAS examples
-strober = $(if $(STROBER),strober,midas)
 loadmem = $(if $(LOADMEM),+loadmem=$(abspath $(LOADMEM)),)
 benchmark = $(notdir $(basename $(if $(LOADMEM),$(notdir $(LOADMEM)),$(DESIGN))))
-sample = $(if $(SAMPLE),$(abspath $(SAMPLE)),$(OUTPUT_DIR)/$(benchmark).sample)
 logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$(benchmark).$1.out)
 waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$(benchmark).$1.$2)
 runconf = $(GENERATED_DIR)/runtime.conf
@@ -93,11 +92,11 @@ runconf = $(GENERATED_DIR)/runtime.conf
 run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
 	cd $(GENERATED_DIR) && ./$(notdir $<) $(COMMON_SIM_ARGS) $(ARGS) \
-	$(loadmem) +dramsim +sample=$(sample) \
+	$(loadmem) +dramsim \
 	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
 run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
 	cd $(GENERATED_DIR) && ./$(notdir $<) $(vcs_args) $(COMMON_SIM_ARGS) $(ARGS) \
-	$(loadmem) +dramsim +sample=$(sample) \
+	$(loadmem) +dramsim \
 	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)

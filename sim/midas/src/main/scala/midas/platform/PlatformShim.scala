@@ -8,7 +8,6 @@ import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule}
 
 import midas.Platform
-import midas.{EnableSnapshot, KeepSamplesInMem}
 import midas.core._
 import midas.passes.fame.{FAMEChannelConnectionAnnotation}
 import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
@@ -40,11 +39,7 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
     sb.append("#include <stdint.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))
     sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
-    if (p(EnableSnapshot)) {
-      sb append(genMacro("ENABLE_SNAPSHOT"))
-      if (p(KeepSamplesInMem)) sb append(genMacro("KEEP_SAMPLES_IN_MEM"))
-    }
-    sb.append(genMacro("data_t", "uint%d_t".format(p(ChannelWidth))))
+    sb.append(genMacro("data_t", "uint32_t"))
     top.module.genHeader(sb)
     sb.append("\n// Simulation Constants\n")
     top.module.headerConsts map { case (name, value) =>

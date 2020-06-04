@@ -2,10 +2,8 @@
 package firesim.midasexamples
 
 import java.io.File
-import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import scala.io.Source
-
-import firesim.util.GeneratorArgs
+import org.scalatest.Suites
 
 abstract class TutorialSuite(
     val targetName: String, // See GeneratorUtils
@@ -13,37 +11,23 @@ abstract class TutorialSuite(
     platformConfigs: String = "HostDebugFeatures_DefaultF1Config",
     tracelen: Int = 8,
     simulationArgs: Seq[String] = Seq()
-  ) extends firesim.TestSuiteCommon with firesim.util.HasFireSimGeneratorUtilities {
+  ) extends firesim.TestSuiteCommon {
 
-  val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
   val backendSimulator = "verilator"
 
-  lazy val generatorArgs = GeneratorArgs(
-    midasFlowKind = "midas",
-    targetDir = "generated-src",
-    topModuleProject = "firesim.midasexamples",
-    topModuleClass = targetName,
-    targetConfigProject = "firesim.midasexamples",
-    targetConfigs = targetConfigs,
-    platformConfigProject = "firesim.midasexamples",
-    platformConfigs = platformConfigs)
-
-  val args = Seq(s"+tracelen=$tracelen") ++ simulationArgs
+  val targetTuple = s"$targetName-$targetConfigs-$platformConfigs"
   val commonMakeArgs = Seq(s"TARGET_PROJECT=midasexamples",
                            s"DESIGN=$targetName",
-                           s"TARGET_CONFIG=${generatorArgs.targetConfigs}",
-                           s"PLATFORM_CONFIG=${generatorArgs.platformConfigs}")
-  val targetTuple = generatorArgs.tupleName
+                           s"TARGET_CONFIG=${targetConfigs}",
+                           s"PLATFORM_CONFIG=${platformConfigs}")
 
   def run(backend: String,
           debug: Boolean = false,
-          sample: Option[File] = None,
           logFile: Option[File] = None,
           waveform: Option[File] = None,
           args: Seq[String] = Nil) = {
     val makeArgs = Seq(
       s"run-$backend%s".format(if (debug) "-debug" else ""),
-      "SAMPLE=%s".format(sample map toStr getOrElse ""),
       "LOGFILE=%s".format(logFile map toStr getOrElse ""),
       "WAVEFORM=%s".format(waveform map toStr getOrElse ""),
       "ARGS=%s".format(args mkString " "))
@@ -56,11 +40,10 @@ abstract class TutorialSuite(
   def runTest(b: String, debug: Boolean = false) {
     behavior of s"$targetName in $b"
     compileMlSimulator(b, debug)
-    val sample = Some(new File(outDir, s"$targetName.$b.sample"))
     val testEnv = "MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
     if (isCmdAvailable(b)) {
       it should s"pass in ${testEnv}" in {
-        assert(run(b, debug, sample, args=args) == 0)
+        assert(run(b, debug, args = simulationArgs) == 0)
       }
     } else {
       ignore should s"pass in ${testEnv}" in { }
@@ -95,8 +78,7 @@ abstract class TutorialSuite(
     }
   }
 
-  mkdirs
-  elaborate
+  clean
   runTest(backendSimulator)
 }
 
@@ -165,3 +147,55 @@ class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterMo
 }
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
+
+// Suite Collections
+class ChiselExampleDesigns extends Suites(
+  new GCDF1Test,
+  new ParityF1Test,
+  new ResetShiftRegisterF1Test,
+  new EnableShiftRegisterF1Test,
+  new StackF1Test,
+  new RiscF1Test,
+  new RiscSRAMF1Test
+)
+
+class PrintfSynthesisCITests extends Suites(
+  new PrintfModuleF1Test,
+  new NarrowPrintfModuleF1Test,
+  new MulticlockPrintF1Test
+)
+
+class AssertionSynthesisCITests extends Suites(
+  new AssertModuleF1Test,
+  new MulticlockAssertF1Test
+)
+
+class AutoCounterCITests extends Suites(
+  new AutoCounterModuleF1Test,
+  new AutoCounterCoverModuleF1Test,
+  new AutoCounterPrintfF1Test,
+  new MulticlockAutoCounterF1Test
+)
+
+class GoldenGateMiscCITests extends Suites(
+  new TwoAddersF1Test,
+  new TriggerWiringModuleF1Test,
+  new WireInterconnectF1Test,
+  new TrivialMulticlockF1Test
+)
+
+// Each group runs on a single worker instance
+class CIGroupA extends Suites(
+  new ChiselExampleDesigns,
+  new PrintfSynthesisCITests,
+  new firesim.fasedtests.CIGroupA,
+)
+
+class CIGroupB extends Suites(
+  new AssertModuleF1Test,
+  new MulticlockAssertF1Test,
+  new GoldenGateMiscCITests,
+  new firesim.fasedtests.CIGroupB,
+  new firesim.AllMidasUnitTests,
+  new firesim.FailingUnitTests
+)

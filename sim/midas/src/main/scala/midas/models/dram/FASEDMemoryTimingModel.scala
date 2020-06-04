@@ -2,6 +2,8 @@
 package midas
 package models
 
+import firrtl.annotations.HasSerializationHints
+
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
@@ -15,7 +17,6 @@ import chisel3.util._
 import midas.core._
 import midas.widgets._
 import midas.passes.{Fame1ChiselAnnotation}
-import midas.passes.fame.{HasSerializationHints}
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}
@@ -556,11 +557,10 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Accepts an elaborated memory model and generates a runtime configuration for it
     private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
       val file = new File(p(OutputDir), fileName)
-      val writer = new FileWriter(file, ModelID.id != 0)
+      val writer = new FileWriter(file, wId != 0)
       settings.foreach({
-        case (field, value) => writer.write(s"+mm_${field}_${ModelID.id}=${value}\n")
+        case (field, value) => writer.write(s"+mm_${field}_${wId}=${value}\n")
       })
-      ModelID.id += 1
       writer.close
     }
 

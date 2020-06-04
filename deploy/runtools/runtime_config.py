@@ -17,7 +17,6 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
 
-
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
@@ -133,8 +132,8 @@ class RuntimeHWConfig:
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
-        # TODO: supernode support (tracefile0, trace-select0.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_dromajo} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        # TODO: supernode support (tracefile, trace-select.. etc)
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid,
             driver=driver,
             runtimeconf=runtimeconf,
@@ -147,16 +146,19 @@ class RuntimeHWConfig:
             profile_interval=profile_interval,
             zero_out_dram=zero_out_dram,
             command_shmemportnames=command_shmemportnames,
-            command_bootbinaries=command_bootbinaries, trace_select=trace_select,
-            trace_start=trace_start, trace_end=trace_end, tracefile=tracefile,
+            command_bootbinaries=command_bootbinaries,
+            trace_select=trace_select,
+            trace_start=trace_start,
+            trace_end=trace_end,
+            tracefile=tracefile,
             trace_output_format=trace_output_format,
             dwarf_file_name=dwarf_file_name,
             autocounterfile=autocounterfile,
             autocounter_readrate=autocounter_readrate,
+            command_dromajo=command_dromajo,
             print_cycle_prefix=print_cycle_prefix,
             print_start=print_start,
-            print_end=print_end,
-            command_dromajo=command_dromajo)
+            print_end=print_end)
 
         return basecommand
 
@@ -179,7 +181,14 @@ class RuntimeHWConfig:
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
         rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
-        with prefix('cd ../'), prefix('source ./sourceme-f1-manager.sh'), prefix('cd sim/'), StreamLogger('stdout'), StreamLogger('stderr'):
+        with prefix('cd ../'), \
+             prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+             prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+             prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+             prefix('source ./sourceme-f1-manager.sh'), \
+             prefix('cd sim/'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
             localcap = None
             with settings(warn_only=True):
                 driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)

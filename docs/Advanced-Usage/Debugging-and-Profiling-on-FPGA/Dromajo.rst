@@ -17,44 +17,25 @@ Building a Design with Dromajo
 -------------------------------
 
 In all FireChip designs, TracerV is included by default.
-However, Dromajo currently doesn't work with TracerV.
-To disable TracerV and enable Dromajo, you must navigate to the target design (i.e. Chipyard folder)
-and change the default FireSim bridges to use Dromajo.
+To enable Dromajo, you just need to add the Dromajo bridge (``WithDromajoBridge``) to your BOOM target design config (default configs. located in ``$CHIPYARD/generators/firechip/src/main/scala/TargetConfigs.scala``).
+An example configuration with Dromajo is shown below:
 
-.. code-block:: shell
+.. code-block:: scala
 
-    # enter the target design directory
-    cd $CHIPYARD_DIR
-
-    # open the BridgeBinders.scala file (in whatever editor works for you)
-    vim generators/firechip/src/main/scala/BridgeBinders.scala
-
-Now change the ``WithTracerVBridge`` to ``WithDromajoBridge``.
-This enables Dromajo on your design.
+    class FireSimLargeBoomConfig extends Config(
+      new WithDromajoBridge ++ // add Dromajo bridge to simulation
+      new WithDefaultFireSimBridges ++
+      new WithDefaultMemModel ++
+      new WithFireSimConfigTweaks ++
+      new chipyard.LargeBoomConfig)
 
 At this point, you should run the ``firesim buildafi`` command for the BOOM config wanted.
-Before an AFI is generated, the command should fail stating that a ``dromajo_params.h`` file
-doesn't exist when trying to create the FireSim simualtion driver.
-The following steps create this file from the generated sources from the config.
-
-.. code-block:: shell
-
-    cd $FIRESIM
-
-    # enter the gen-srcs of the specified design
-    cd sim/generated-src/f1/<LONG_NAME_OF_CONFIG_YOU_WANT_TO_RUN>
-
-    # rename the "<long_name>.dromajo_params.h" file to the necessary file
-    mv <long_name>.dromajo_params.h dromajo_params.h
-
-At this point you should be able to re-run the ``buildafi`` command and get a working afi/driver.
 
 Running a FireSim Simulation
 ----------------------------
 
-To run a simulation with Dromajo, you must modify the workload json to support Dromajo.
-The following is an example using the base Linux workload generated from FireMarshal and modifying it
-for Dromajo.
+To run a simulation with Dromajo, you must modify the workload ``json`` to support Dromajo.
+The following is an example using the base Linux workload generated from FireMarshal and modifying it for Dromajo.
 Here is the modified workload json (renamed to ``br-base-dromajo`` from ``br-base``):
 
 .. code-block:: json
@@ -74,29 +55,18 @@ Here is the modified workload json (renamed to ``br-base-dromajo`` from ``br-bas
     }
 
 You will notice there are two extra simulation inputs needed compared to the "base" unmodified
-``br-base`` workload: a bootrom and a ``dtb``.
-The ``rom`` bootrom file is located in Chipyard and should be moved to the workload directory
-(i.e. ``workloads/br-base-dromajo``).
+``br-base`` workload: a bootrom (``rom``) and a device tree blob (``dtb``).
+Both files are found in your generated sources and should be moved into the workload directory (i.e. ``workloads/br-base-dromajo``).
 
 .. code-block:: shell
 
     cd $CHIPYARD
 
     # copy/rename the rom file and put in the proper folder
-    cp generators/testchipip/src/main/resources/testchipip/bootrom/bootrom.rv64.img $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.rom
+    cp sim/generated-src/f1/<LONG_NAME>/<LONG_NAME>.rom $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.rom
 
-The ``dtb`` file needs to be generated from a ``dts`` file that comes from the generated sources.
-Then, it must be moved to the same folder location.
-
-.. code-block:: shell
-
-    cd $FIRESIM
-
-    # enter the gen-srcs of the specified design
-    cd sim/generated-src/f1/<LONG_NAME_OF_CONFIG_YOU_WANT_TO_RUN>
-
-    # create the dtb from the dts and put in the proper folder
-    dtc -I dts -O dtb -o $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.dtb <long_name>.dts
+    # copy/rename the dtb file and put in the proper folder
+    cp sim/generated-src/f1/<LONG_NAME>/<LONG_NAME>.dtb $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.dtb
 
 After this process, you should see the following ``workloads/br-base-dromajo`` folder layout:
 
@@ -106,6 +76,8 @@ After this process, you should see the following ``workloads/br-base-dromajo`` f
         br-base-bin.rom
         br-base-bin.dtb
         README
+
+.. note:: The name of the ``rom`` and ``dtb`` files must match the name of the workload binary i.e. ``common_bootbinary``.
 
 At this point you are ready to run the simulation with Dromajo.
 The commit log trace will by default print to the ``uartlog``.
@@ -123,12 +95,12 @@ Here is an example of a ``make`` command that can be run to check for a correct 
 .. code-block:: shell
 
     # enter simulation directory
-    cd $FIRESIM/sims/
+    cd $FIRESIM/sim/
 
     # make command to run a binary
     # <BIN> - absolute path to binary
-    # <DTB> - absolute path to dtb file created earlier
-    # <BOOTROM> - absolute path to rom file copied from earlier
+    # <DTB> - absolute path to dtb file
+    # <BOOTROM> - absolute path to rom file
     # <YourBoomConfig> - Single-core BOOM configuration to test
     make TARGET_CONFIG=<YourBoomConfig> SIM_BINARY=<BIN> EXTRA_SIM_ARGS="+drj_dtb=<DTB> +drj_rom=<BOOTROM> +drj_bin=<BIN>" run-vcs
 

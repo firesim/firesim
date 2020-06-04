@@ -6,7 +6,7 @@ import core._
 import widgets._
 import platform._
 import models._
-import strober.core._
+import firrtl.stage.TransformManager.TransformDependency
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.UnitTests
@@ -38,32 +38,26 @@ case object EnableAutoCounter extends Field[Boolean](false)
   */
 case object AutoCounterUsePrintfImpl extends Field[Boolean](false)
 
-case object EnableSnapshot extends Field[Boolean]
 case object HasDMAChannel extends Field[Boolean]
-case object KeepSamplesInMem extends Field[Boolean]
 
 // Enables multi-cycle RAM model generation (as demonstrated in the ICCAD2019 paper)
 case object GenerateMultiCycleRamModels extends Field[Boolean](false)
 // User provided transforms to run before Golden Gate transformations
 // These are constructor functions accept a Parameters instance and produce a
 // sequence of firrtl Transforms to run
-case object TargetTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
+case object TargetTransforms extends Field[Seq[TransformDependency]](Seq())
 // User provided transforms to run after Golden Gate transformations
-case object HostTransforms extends Field[Seq[(Parameters) => Seq[firrtl.Transform]]](Seq())
+case object HostTransforms extends Field[Seq[TransformDependency]](Seq())
 
 // Directory into which output files are dumped. Set by -td when invoking the Stage
 case object OutputDir extends Field[File]
 
-class SimConfig extends Config((site, here, up) => {
-  case TraceMaxLen      => 1024
-  case SRAMChainNum     => 1
-  case ChannelLen       => 16
-  case ChannelWidth     => 32
-  case DaisyWidth       => 32
+// Alias WithoutTLMonitors into this package so that it can be used in config strings
+class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
+
+class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
-  case EnableSnapshot   => false
-  case KeepSamplesInMem => true
   case DMANastiKey      => NastiParameters(512, 64, 6)
   case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
@@ -75,7 +69,7 @@ class SimConfig extends Config((site, here, up) => {
       dataBits = site(HostMemChannelKey).beatBytes * 8,
       idBits   = 6)
   }
-})
+}) ++ new WithoutTLMonitors)
 
 class ZynqBaseConfig extends Config(new Config((site, here, up) => {
   case CtrlNastiKey     => NastiParameters(32, 32, 12)

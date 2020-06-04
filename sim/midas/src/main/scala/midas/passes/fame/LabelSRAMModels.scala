@@ -16,10 +16,18 @@ class LabelSRAMModels extends Transform {
   val confwriter = new passes.memlib.ConfWriter("NONE")
   val memutil = new passes.memlib.ReplaceMemMacros(confwriter)
 
+
+  // Wrapper gets converted to strip clocks from ports, has one top-level clock
   def mem2Module(mem: DefMemory): Module = {
-    val ports = passes.MemPortUtils.memType(mem).fields.map(f => Port(NoInfo, f.name, Input, f.tpe))
-    val connects = ports.map(p => Connect(NoInfo, WSubField(WRef(mem.name), p.name), WRef(p.name)))
-    Module(mem.info, mem.name, ports, Block(mem +: connects))
+    val clockPort = Port(NoInfo, "clk", Input, ClockType)
+    def stripClocks(tpe: Type): Type = tpe match {
+      case BundleType(fields) => BundleType(fields.filterNot(_.tpe == ClockType))
+    }
+    val ports = mem.readers ++ mem.writers ++ mem.readwriters
+    val connects = ports.map(p => PartialConnect(NoInfo, WSubField(WRef(mem.name), p), WRef(p)))
+    val clkConnects = ports.map(p => Connect(NoInfo, WSubField(WSubField(WRef(mem.name), p), "clk"), WRef(clockPort)))
+    val modPorts = clockPort +: passes.MemPortUtils.memType(mem).fields.map(f => Port(NoInfo, f.name, Input, stripClocks(f.tpe)))
+    Module(mem.info, mem.name, modPorts, Block(mem +: connects ++: clkConnects))
   }
 
   override def execute(state: CircuitState): CircuitState = {
@@ -46,6 +54,11 @@ class LabelSRAMModels extends Transform {
             memModelAnnotations ++= mem.writers.map(rp => ModelWritePort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.readwriters.map(rp => ModelReadWritePort(wrapperTarget.ref(rp)))
             WDefInstance(mem.info, mem.name, wrapper.name, UnknownType)
+          case c: Connect if (Utils.kind(c.loc) == MemKind && c.loc.tpe == ClockType) =>
+            // change clock connects to target single mem wrapper clock
+            val (wr, e) = Utils.splitRef(c.loc)
+            val wrapperClock = Utils.mergeRef(wr, Utils.splitRef(e)._2)
+            if (annotatedMems.contains(mt.ref(wr.name))) c.copy(loc = wrapperClock) else c
           case s => s
         }
         m.copy(body = m.body.map(onStmt))

@@ -12,3 +12,4 @@ vivado*.log
 awsver.txt
 scripts/format-trace
 build
+scala-doc-env.sh

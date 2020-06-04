@@ -65,6 +65,10 @@ object Or extends BinaryBooleanOp {
   val op = PrimOps.Or
 }
 
+object Xor extends BinaryBooleanOp {
+  val op = PrimOps.Xor
+}
+
 object Neq extends BinaryBooleanOp {
   val op = PrimOps.Neq
 }
@@ -75,4 +79,12 @@ object Neq extends BinaryBooleanOp {
 object RegZeroPreset {
   def apply(info: Info, name: String, tpe: Type, clock: Expression): DefRegister =
     DefRegister(info, name, tpe, clock, zero, WRef(name))
+  def apply(info: Info, name: String, clock: Expression): DefRegister =
+    DefRegister(info, name, BoolType, clock, zero, WRef(name))
+}
+
+object ConditionalConnect {
+  def apply(cond: Expression, lhs: Expression, rhs: Expression): Conditionally = {
+    Conditionally(NoInfo, cond, Connect(NoInfo, lhs, rhs), EmptyStmt)
+  }
 }

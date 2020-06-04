@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
+import freechips.rocketchip.config.Parameters
 import chisel3.util.unless
 import chisel3.experimental.{withClock, annotate}
 
@@ -57,4 +58,4 @@ class TwoAddersDUT extends Module {
   io.o1 := a1.io.z
 }
 
-class TwoAdders extends PeekPokeMidasExampleHarness(() => new TwoAddersDUT)
+class TwoAdders(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new TwoAddersDUT)

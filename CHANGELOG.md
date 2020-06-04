@@ -2,6 +2,57 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.10.0] - 2020-05-31
+Adds initial support for simulating multi-clock targets in FireSim.
+
+### Added
+* Support for simulating targets with multiple fixed-frequency clock (MC) domains (PR #441)
+  * All clocks must be generated using the RationalClockBridge
+  * See docs (PR #527)
+* Generalized trigger system (part of MC, PR #441) (resolves #497)
+  * See docs (PR #526)
+* Intelligent Bridge DRAM allocation (PR #433)
+  * Mix in `UsesHostDRAM` into a bridge that needs FPGA-DRAM
+* CircleCI  integration (PR #534, PR #574)
+* ScalaDoc for dev branch automatically published as part of CI (#569):
+  * Dev: https://fires.im/firesim/latest/api/
+  * Releases will reside at : https://fires.im/firesim/<version>/api
+* Add `expect` to `machine-launch` script (#562)
+* Add support for Dromajo co-simulation using an extended TracePort (currently only supported by BOOM) (#541,#556)
+
+### Changed
+* FIRRTL bumped to version 1.3, Chisel Bumped to version 3.3 (#549)
+  * Custom transforms now injected using the FIRRTL Dependency API
+* TracerV multiclock changes (PR #441)
+  * One TracerV per tile, maximum 7 instructions per tile (resolves #484)
+    * One output file per tile
+  * FirePerf now supports cores with IPC > 1 (BOOM)
+* Assert file no longer copied to manager, baked into driver via header (PR #441)
+* Bridges are now diplomatic (LazyModules) (PR #433)
+* Synthesized Printfs in different clocks domains are captured in different output files (#441) 
+* The default version of Verilator has changed to v4.034 (#550). Since this release adds enhanced support for Verilog timescales, the build detects if Verilator v4.034 or newer is visible in the build environment and sets default timescale flags appropriately.
+*  Elaboration output piped to stdout in `buildafi` (PR #433, resolves #440)
+* Midas-Level simulation no longer simulates the Shim layer, and instead simulates the module hierarchy rooted at FPGATop #548
+* Firesim target project use Chipyard's stage to generate RTL (#557)
+* Build setup updates (#544)
+  * Users can skip building a toolchain if supplying their own
+   * Now requires the user provide `$RISCV` when running under `--library`.
+  * Generated env.sh no longer sources chipyard's env.sh when using firesim-as-a-library
+* Allow `machine-launch` script to error, log, and use Git 2.2.4 (#538,#563)
+
+### Fixed
+* Manager will now report failures in AGFI creation (PR #433, resolves #327)
+* Ensure that the NBD kernel module (`nbd.ko`) is built with the non-debug config to avoid symbol compatibility issues (#571).
+* Use proper iuscommunity URL during machine launch (#563)
+* When using Chipyard-as-Top, properly pass `RISCV/LD_LIB/PATH` variables for `buildafi/infrasetup` (#560)
+* plus_arg reader exception thrown when compiling designs with FASED memory widths != 64 bits (PR #577)
+
+### Deprecated
+
+### Removed
+* FireSim generatorUtils and subclasses; replaced with Chipyard's stage (#557)
+
+
 ## [1.9.0] - 2020-03-14
 
 ### Added

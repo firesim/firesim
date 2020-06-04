@@ -21,17 +21,7 @@ import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
-case object ChannelLen extends Field[Int]
-case object ChannelWidth extends Field[Int]
 case object SimWrapperKey extends Field[SimWrapperConfig]
-
-trait HasSimWrapperParams {
-  implicit val p: Parameters
-  implicit val channelWidth = p(ChannelWidth)
-  val traceMaxLen = p(strober.core.TraceMaxLen)
-  val daisyWidth = p(strober.core.DaisyWidth)
-  val sramChainNum = p(strober.core.SRAMChainNum)
-}
 
 private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
@@ -45,13 +35,6 @@ class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record 
     }
   })
   def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
-}
-
-class ReadyValidTraceRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
-  val elements = ListMap() ++ (es map {
-    case (name, rv) => name -> ReadyValidTrace(rv.bits.cloneType)
-  })
-  def cloneType = new ReadyValidTraceRecord(es).asInstanceOf[this.type]
 }
 
 // Regenerates the "bits" field of a target ready-valid interface from a list of flattened
@@ -249,7 +232,7 @@ case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          bridgeAnnos: Seq[BridgeIOAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
-class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with HasSimWrapperParams {
+class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule {
 
   outer =>
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config
@@ -294,9 +277,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
       case Some(sinkP) => sinkP <> channel.io.out
       case None => channelPorts.elements(s"${chAnno.globalName}_source") <> channel.io.out
     }
-
-    channel.io.trace.ready := DontCare
-    channel.io.traceLen := DontCare
     channel
   }
 
@@ -363,8 +343,6 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
       })
       bindRVChannelDeq(channel.io.deq, deqPortPair)
 
-      channel.io.trace := DontCare
-      channel.io.traceLen := DontCare
       channel.io.targetReset.bits := false.B
       channel.io.targetReset.valid := true.B
       channel
