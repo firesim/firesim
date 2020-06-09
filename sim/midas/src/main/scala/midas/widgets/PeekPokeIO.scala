@@ -55,8 +55,8 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // needs back pressure from reset queues
     io.idle := cycleHorizon === 0.U
 
-    def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
-        (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+    def genWideReg(name: String, field: Data): Seq[UInt] = Seq.tabulate(
+        (field.asUInt.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
       val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
       Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
     })
@@ -66,7 +66,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
     @chiselName
-    def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindInputs(name: String, channel: DecoupledIO[Data]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
@@ -99,7 +99,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     }
 
     @chiselName
-    def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindOutputs(name: String, channel: DecoupledIO[Data]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
@@ -115,7 +115,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       when (channel.fire) {
         reg.zipWithIndex.foreach({ case (reg, i) =>
           val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
-          reg := channel.bits(msb, ctrlWidth * i)
+          reg := channel.bits.asUInt()(msb, ctrlWidth * i)
         })
       }
 
@@ -173,8 +173,9 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
   }
 }
 
-class PeekPokeTokenizedIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
+class PeekPokeTokenizedIO(private val targetIO: Record) extends Record with ChannelizedHostPortIO {
   //NB: Directions of targetIO are WRT to the bridge, but "ins" and "outs" WRT to the target RTL
+  def targetPortProto = targetIO
   val (targetOutputs, targetInputs, _, _) = parsePorts(targetIO)
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })

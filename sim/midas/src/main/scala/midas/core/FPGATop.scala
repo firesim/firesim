@@ -80,7 +80,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
-  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
+  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified

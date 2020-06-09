@@ -115,6 +115,11 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
     generateRVChannelFCCAs(inputRVChannels, bridgeSunk = true)
     generateRVChannelFCCAs(outputRVChannels, bridgeSunk = false)
   }
+  def allChannelNames: Seq[String] = ins.unzip._2 ++ outs.unzip._2 ++
+  (rvIns.unzip._2 ++ rvOuts.unzip._2).flatMap { ch =>
+    val (fwd, rev) = SimUtils.rvChannelNamePair(ch)
+    Seq(fwd, rev)
+  }
 }
 
 object HostPort {

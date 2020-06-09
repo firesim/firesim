@@ -32,61 +32,6 @@ sealed trait ClockBridgeConsts {
 }
 
 /**
-  * A custom bridge annotation for the Clock Bridge. Unique so that we can
-  * trivially match against it in bridge extraction.
-  *
-  * @param target The target-side module for the CB
-  *
-  * @param baseClockPeriodPS Period of the base clock in picoseconds
-  *
-  * @param clocks The associated clock information for each output clock (including the base).
-  */
-
-case class ClockBridgeAnnotation(val target: ModuleTarget, baseClockPeriodPS: BigInt, clocks: Seq[RationalClock])
-    extends BridgeAnnotation with ClockBridgeConsts {
-  val channelNames = Seq(clockChannelName)
-  def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String): BridgeIOAnnotation = {
-    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
-    BridgeIOAnnotation(
-      target.copy(module = target.circuit).ref(port),
-      channelMapping.toMap,
-      widget = Some((p: Parameters) => new ClockBridgeModule(baseClockPeriodPS, clocks)(p))
-    )
-  }
-}
-
-/**
-  * The default target-side clock bridge. Generates a "base clock" and a vector of
-  * additional clocks rationally related to that base clock. Simulation times are
-  * generally expressed in terms of this base clock.
-  *
-  * @param additionalClocks Rational clock information for each additional
-  * clock beyond the base
-  */
-class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox with ClockBridgeConsts {
-  outer =>
-  // Always generate the base (element 0 in our output vec)
-  val baseClock = RationalClock(refClockDomain, 1, 1)
-  val allClocks = baseClock +: additionalClocks
-  val io = IO(new Bundle {
-    val clocks = Output(Vec(allClocks.size, Clock()))
-  })
-
-  // Generate the bridge annotation
-  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation( outer.toTarget, 3000, allClocks) })
-  annotate(new ChiselAnnotation { def toFirrtl =
-      FAMEChannelConnectionAnnotation(
-        clockChannelName,
-        channelInfo = TargetClockChannel(allClocks),
-        clock = None, // Clock channels do not have a reference clock
-        sinks = Some(io.clocks.map(_.toTarget)),
-        sources = None
-      )
-  })
-}
-
-/**
   * The host-land clock bridge interface. This consists of a single channel,
   * carrying clock tokens. A clock token is a Vec[Bool], one element per clock, When a bit is set,
   * that clock domain will fire in the simulator time step that consumes this clock token.
@@ -96,24 +41,35 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
   * @param numClocks The total number of clocks in the channel (inclusive of the base clock)
   *
   */
-class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeConsts {
-  def targetPortProto(): Vec[Bool] = Vec(numClocks, Bool())
-  val clocks = new DecoupledIO(new TimestampedToken(targetPortProto))
-  def outputWireChannels = Seq(clocks -> clockChannelName)
-  def inputWireChannels = Seq()
-  def outputRVChannels = Seq()
-  def inputRVChannels = Seq()
 
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit = {
-    val local2globalName = bridgeAnno.channelMapping.toMap
-    for (localName <- outputChannelNames) {
-      simIo.clockElement._2 <> elements(localName)
-    }
-  }
+class ClockTokenVector(protected val targetPortProto: ClockBridgeTargetIO) extends Bundle with TimestampedHostPortIO {
+  val clocks = OutputClockVecChannel(targetPortProto.clocks)
+}
 
-  val elements = collection.immutable.ListMap(clockChannelName -> clocks)
-  override def cloneType(): this.type = new ClockTokenVector(numClocks).asInstanceOf[this.type]
-  def generateAnnotations(): Unit = {}
+class ClockBridgeTargetIO(numClocks: Int) extends Bundle {
+  val clocks = Output(Vec(numClocks, Clock()))
+}
+
+case class ClockBridgeCtorArgument(baseClockPeriodPS: BigInt, clockInfo: Seq[RationalClock])
+
+/**
+  * The default target-side clock bridge. Generates a "base clock" and a vector of
+  * additional clocks rationally related to that base clock. Simulation times are
+  * generally expressed in terms of this base clock.
+  *
+  * @param additionalClocks Rational clock information for each additional
+  * clock beyond the base
+  */
+class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox with  
+    Bridge[ClockTokenVector, ClockBridgeModule] with ClockBridgeConsts {
+  outer =>
+  // Always generate the base (element 0 in our output vec)
+  val baseClock = RationalClock(refClockDomain, 1, 1)
+  val allClocks = baseClock +: additionalClocks
+  val io = IO(new ClockBridgeTargetIO(allClocks.length))
+  val bridgeIO = new ClockTokenVector(io)
+  val constructorArg = Some(ClockBridgeCtorArgument(3000, allClocks))
+  generateAnnotations()
 }
 
 /**
@@ -124,16 +80,16 @@ class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeC
   *
   * Target and host time measurements provided by simif_t are facilitated with MMIO to this bridge
   *
-  * @param clockInfo Clock frequency information for each target clock
+  * @param arg Serialized constructor argument
   *
   */
-class ClockBridgeModule(baseClockPeriodPS: BigInt, clockInfo: Seq[RationalClock])(implicit p: Parameters)
+class ClockBridgeModule(arg: ClockBridgeCtorArgument)(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
-    val hPort = IO(new ClockTokenVector(clockInfo.size))
-    val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
-    val clockTokenGen = Module(new RationalClockTokenGenerator(baseClockPeriodPS, phaseRelationships))
+    val hPort = IO(new ClockTokenVector(new ClockBridgeTargetIO(arg.clockInfo.size)))
+    val phaseRelationships = arg.clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
+    val clockTokenGen = Module(new RationalClockTokenGenerator(arg.baseClockPeriodPS, phaseRelationships))
     hPort.clocks <> clockTokenGen.io
 
     val hCycleName = "hCycle"
@@ -148,7 +104,7 @@ class ClockBridgeModule(baseClockPeriodPS: BigInt, clockInfo: Seq[RationalClock]
                                               .sortBy(_._1)
                                               .last._2
 
-    when (hPort.clocks.fire && hPort.clocks.bits.data(fastestClockIdx)) {
+    when (hPort.clocks.fire && hPort.clocks.bits.data(0)) {
       tCycleFastest := tCycleFastest + 1.U
     }
     genCRFile()

@@ -89,6 +89,7 @@ lazy val firesim    = (project in file("."))
     Compile / doc := (doc in ScalaUnidoc).value,
     // Registers the unidoc-generated html with sbt-site
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    testOptions in Test += Tests.Argument("-oF"),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
   .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
