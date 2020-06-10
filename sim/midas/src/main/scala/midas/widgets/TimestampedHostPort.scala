@@ -4,10 +4,11 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.chiselName
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest._
-import freechips.rocketchip.tilelink.LFSR64
+import freechips.rocketchip.tilelink.{LFSRNoiseMaker, LFSR64}
 
 trait HasTimestampConstants {
   val timestampWidth = 64
@@ -40,6 +41,7 @@ class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTim
   def unchanged(): Bool = old.bits.data.asUInt === latest.bits.data.asUInt
 }
 
+
 class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extends MultiIOModule {
   val source = IO(Flipped(gen.cloneType))
   val value  = IO(new TimestampedTuple(gen.bits.data))
@@ -61,6 +63,14 @@ class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extend
   value.old.bits := old
   value.latest.valid := source.valid
   value.latest.bits := source.bits
+}
+
+object TimestampedSource {
+  def apply[T <: Data](in: DecoupledIO[TimestampedToken[T]]): TimestampedTuple[T] = {
+    val mod = Module(new TimestampedSource(in))
+    mod.source <> in
+    mod.value
+  }
 }
 
 trait EdgeSensitivity
@@ -115,24 +125,113 @@ class TimestampedRegisterTest(timeout: Int = 50000)(implicit p: Parameters) exte
   io.finished := true.B
 }
 
-class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, init: Bool = false.B) extends MultiIOModule {
+class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = false) extends MultiIOModule {
   val clockOut = IO(Decoupled(new TimestampedToken(Bool())))
-  val time = RegInit(0.U(clockOut.timestampWidth.W))
-  val highTime = (period * dutyCycle) / 100
+  val time = RegInit(0.U(clockOut.bits.timestampWidth.W))
+  val highTime = (periodPS * dutyCycle) / 100
   val lowTime = periodPS - highTime
-  val currentValue = RegInit(init)
+  val currentValue = RegInit(initValue.B)
   clockOut.valid := true.B
   clockOut.bits.time := time
   clockOut.bits.data := currentValue
 
   when(clockOut.ready) {
-    time := Mux(currentValue, highTime, lowTime) + time
+    time := Mux(currentValue, highTime.U, lowTime.U) + time
     currentValue := ~currentValue
   }
 }
 
-class ClockSourceReference(periodPS: BigInt, dutyCycle: Int = 50, Int, initValue: String = "TRUE")
-    extends BlackBox(Map("PERIOD_PS" -> period_ps, "DUTY_CYCLE" -> dutyCycle, "INIT_VALUE" -> init)) {
-  val io = IO(new Bundle { val clockOut = Output(Clock()) })
+class ClockSourceReference(periodPS: BigInt, dutyCycle: Int = 50, initValue: Int = 0)
+    extends BlackBox(Map("PERIOD_PS" -> periodPS, "DUTY_CYCLE" -> dutyCycle, "INIT_VALUE" -> initValue))
+    with HasBlackBoxResource {
+  addResource("/midas/widgets/ClockSourceReference.sv")
+  val io = IO(new Bundle { val clockOut = Output(Bool()) })
 }
 
+class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH" -> dataWidth))
+  with HasBlackBoxResource {
+  addResource("/midas/widgets/ReferenceTimestamper.sv")
+  val io = IO(new Bundle {
+    val clock = Input(Clock())
+    val reset = Input(Reset())
+    val value = Input(UInt(dataWidth.W))
+    val timestamped = Decoupled(new TimestampedToken(UInt(dataWidth.W)))
+  })
+}
+
+class ReferenceTimestamper[T <: Data](gen: T) extends MultiIOModule {
+  val value = IO(Input(gen.cloneType))
+  val timestamped = IO(Decoupled(new TimestampedToken(gen.cloneType)))
+
+  val ts = Module(new ReferenceTimestamperImpl(value.getWidth))
+  ts.io.clock := clock
+  ts.io.reset := reset
+  ts.io.value := value.asUInt
+  timestamped.valid := ts.io.timestamped.valid
+  timestamped.bits := ts.io.timestamped.bits.asTypeOf(timestamped.bits)
+  ts.io.timestamped.ready := timestamped.ready
+}
+
+object ReferenceTimestamper {
+  def apply[T <: Data](value: T): DecoupledIO[TimestampedToken[T]] = {
+    val timestamper = Module(new ReferenceTimestamper(value))
+    timestamper.value := value
+    timestamper.timestamped
+  }
+}
+
+class ClockSourceTest(periodPS: BigInt, initValue: Boolean, timeout: Int = 100000)(implicit p: Parameters) extends UnitTest(timeout) with HasTimestampConstants{
+  val reference = ReferenceTimestamper(Module(new ClockSourceReference(periodPS, initValue = if (initValue) 1 else 0)).io.clockOut)
+  val model = Module(new ClockSource(periodPS, initValue = initValue))
+  val targetTime = TimestampedTokenTraceEquivalence(reference, model.clockOut)
+  io.finished := targetTime > (timeout / 2).U
+}
+
+
+// This checks two timestamped token streams model the same underlying target
+// signal by comparing non-null messages (transition times + values). Either
+// stream can provide different numbers of null-messages
+object TimestampedTokenTraceEquivalence {
+  @chiselName
+  def apply[T <: Data](aSource: DecoupledIO[TimestampedToken[T]], bSource: DecoupledIO[TimestampedToken[T]]): UInt = {
+    val a = TimestampedSource(aSource)
+    val b = TimestampedSource(bSource)
+    // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
+    // These non-null messages should be indentical
+    a.observed := (a.old.valid && a.unchanged) || b.latest.valid && b.old.valid && !b.unchanged
+    b.observed := (b.old.valid && b.unchanged) || a.latest.valid && a.old.valid && !a.unchanged
+
+    // Check that last takes on indentical values, including init
+    assert(!a.old.valid || !b.old.valid || a.old.bits.data.asUInt === b.old.bits.data.asUInt,
+      "Non-null messages do not have matching data")
+    // Check that non-null messages arrive at the same cycles. (The data check
+    // is captured by the assertion above, since the transition is observed
+    // on the same host cycle.)
+    assert((!a.old.valid || !b.old.valid) || (a.unchanged || b.unchanged) || (!a.latest.valid || !b.latest.valid) ||
+       a.latest.bits.time === b.latest.bits.time,
+      "Non-null messages do not arrive at the same target times")
+    Mux(a.old.valid && b.old.valid,
+      Mux(a.old.bits.time > b.old.bits.time, a.old.bits.time, b.old.bits.time),
+      0.U
+    )
+  }
+}
+
+
+class DecoupledDelayer[T <: Data](gen: DecoupledIO[T], q: Double) extends MultiIOModule {
+  val i = IO(Flipped(gen.cloneType))
+  val o = IO(gen.cloneType)
+  val allow = ((q * 65535.0).toInt).U <= LFSRNoiseMaker(16, i.valid)
+  o <> i
+  o.valid := i.valid && allow
+  i.ready := o.ready && allow
+}
+
+// Inspired by RC TLDelayer
+object DecoupledDelayer {
+  def apply[T <: Data](in: DecoupledIO[T], q: Double): DecoupledIO[T] = {
+    val delay = Module(new DecoupledDelayer(in, q))
+    delay.i <> in
+    delay.o
+  }
+}

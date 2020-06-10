@@ -38,6 +38,17 @@ class WithTimeOutCheck extends Config((site, here, up) => {
   }
 })
 
+// Timestamped model tests
+class WithTimestampTests extends Config((site, here, up) => {
+  case UnitTests => (q: Parameters) => {
+    implicit val p = q
+    Seq(
+      Module(new midas.widgets.ClockSourceTest(1000, true)),
+    )
+  }
+})
+
 // Complete configs
 class AllUnitTests extends Config(new WithAllUnitTests ++ new midas.SimConfig)
 class TimeOutCheck extends Config(new WithTimeOutCheck ++ new midas.SimConfig)
+class TimestampTests extends Config(new WithTimestampTests ++ new midas.SimConfig)

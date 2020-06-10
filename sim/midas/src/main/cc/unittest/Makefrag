@@ -17,6 +17,7 @@ CLOCK_PERIOD ?= 1.0
 
 MAKEFRAG_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 sim_makefrag_dir := $(MAKEFRAG_DIR)/../rtlsim
+midas_vsrc_dir := $(abspath $(MAKEFRAG_DIR)/../../resources/)
 
 vsrc := $(ROCKETCHIP_DIR)/src/main/resources/vsrc
 csrc := $(ROCKETCHIP_DIR)/src/main/resources/csrc
@@ -38,17 +39,9 @@ $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
 	cd $(BASE_DIR) && $(SBT) "runMain firrtl.stage.FirrtlMain -i $< -o $@ \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 
-# Common SW RTL simulation Makefrag arguments
-# These aren't required as yet, but will be in the future
-#bb_vsrcs = \
-#    $(vsrc)/ClockDivider2.v \
-#    $(vsrc)/ClockDivider3.v \
-#    $(vsrc)/AsyncResetReg.v \
-#
-#sim_vsrcs = \
-#    $(bb_vsrcs)
+bb_vsrcs = $(shell find $(midas_vsrc_dir) -iname "*.sv")
 
-emul_v     := $(GEN_DIR)/$(DESIGN).v #$(sim_vsrcs)
+emul_v     := $(GEN_DIR)/$(DESIGN).v $(bb_vsrcs)
 emul_h     :=
 emul_cc    :=
 

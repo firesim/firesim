@@ -199,3 +199,8 @@ class CIGroupB extends Suites(
   new firesim.AllMidasUnitTests,
   new firesim.FailingUnitTests
 )
+
+// DVFS tests
+class TimestampUnittests extends firesim.MidasUnitTestSuite("TimestampTests") {
+  runUnitTestSuite("vcs")
+}
